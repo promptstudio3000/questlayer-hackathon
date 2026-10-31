@@ -1,0 +1,11 @@
+✔ consistent WAL snapshots include only private state artifacts and can be reopened (179.389375ms)
+✔ failed snapshots leave a previously verified backup intact and remove pending files (263.082541ms)
+✔ retention removes only owned expired snapshots and preserves the newest two (127.373833ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 728.605834

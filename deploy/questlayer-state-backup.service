@@ -1,0 +1,19 @@
+[Unit]
+Description=QuestLayer private state snapshot
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/python3 /opt/ps3000/apps/auratrail/operations/backup-state.py --state /var/lib/auratrail --destination /opt/ps3000/apps/auratrail/state-backups --retention-days 14
+UMask=0077
+NoNewPrivileges=yes
+PrivateNetwork=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadOnlyPaths=/var/lib/auratrail
+ReadWritePaths=/opt/ps3000/apps/auratrail/state-backups
+MemoryMax=256M
+CPUQuota=25%
+TimeoutStartSec=120
