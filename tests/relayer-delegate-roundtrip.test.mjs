@@ -23,7 +23,7 @@ async function signed(extra = {}) {
     publicKey = await signer.getPublicKey();
   const delegateAction = buildDelegateAction({
     senderId: "alice.players.testnet",
-    receiverId: "nfts.auratrail-dev-20261030.testnet",
+    receiverId: "nfts.questlayer-dev-20261031.testnet",
     actions: [
       actions.functionCall(
         "mint_avatar",

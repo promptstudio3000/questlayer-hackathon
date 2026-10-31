@@ -8,7 +8,7 @@ const account = "alice.testnet",
   now = 1_000_000;
 const c = {
   network: "testnet",
-  contractId: "nfts.auratrail-dev-20261030.testnet",
+  contractId: "nfts.questlayer-dev-20261031.testnet",
   sourceContractId: "questlayer-rewards-20261031.testnet",
   policy: NATIVE_LEVEL_POLICY,
   level: 2,

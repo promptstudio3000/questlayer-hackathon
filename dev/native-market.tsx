@@ -13,7 +13,7 @@ function Review() {
       nativeAccount: account,
     } as Player,
     wardrobe = {
-      contractId: "nfts.auratrail-dev-20261030.testnet",
+      contractId: "nfts.questlayer-dev-20261031.testnet",
       accounts: [
         {
           accountId: account,

@@ -1,0 +1,50 @@
+{
+  "network": "testnet",
+  "startedAt": "2026-10-31T23:35:09.895Z",
+  "steps": [
+    {
+      "label": "guest session",
+      "playerId": "player_2013bedf-cdbc-4ebb-9e27-429748a1d527"
+    },
+    {
+      "label": "account requested",
+      "accountId": "proof-mvx1gsxi.play-20261031.questlayer-dev-20261031.testnet",
+      "state": "creating"
+    },
+    {
+      "label": "account ready",
+      "accountId": "proof-mvx1gsxi.play-20261031.questlayer-dev-20261031.testnet",
+      "transactionHash": "4f8HQFz2Q1pEwv9VUiTwFwubUjCShKXjcE5XBYSbn7WA"
+    },
+    {
+      "label": "avatar minted without a wallet",
+      "transactionHash": "6sRT6Q7gfhRyyQKKjNRwQM9QNaNKNMeTUs7SDeeTzJpM",
+      "result": {
+        "transactionHash": "6sRT6Q7gfhRyyQKKjNRwQM9QNaNKNMeTUs7SDeeTzJpM",
+        "tokenId": "avatar:proof-mvx1gsxi.play-20261031.questlayer-dev-20261031.testnet",
+        "methodName": "mint_avatar",
+        "receiverId": "nfts.questlayer-dev-20261031.testnet"
+      }
+    },
+    {
+      "label": "collection read",
+      "tokens": null
+    }
+  ],
+  "finishedAt": "2026-10-31T23:35:42.166Z",
+  "accountId": "proof-mvx1gsxi.play-20261031.questlayer-dev-20261031.testnet",
+  "relayer": {
+    "enabled": true,
+    "relayer": "relay-20261031.questlayer-dev-20261031.testnet",
+    "lease": {
+      "owner": null,
+      "untilMs": 0,
+      "lastSuccess": 1793489703601,
+      "lastError": null
+    },
+    "jobs": {
+      "confirmed": 1,
+      "failed": 1
+    }
+  }
+}
