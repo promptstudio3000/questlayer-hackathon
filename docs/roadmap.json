@@ -1,9 +1,8 @@
 {
   "schemaVersion": 1,
   "updated": "2026-10-31",
-  "currentRuntimeStage": "alpha_demo",
-  "nextMilestone": "W00",
-  "runtimeChangedByThisPlanningDelivery": false,
+  "currentRuntimeStage": "city_alpha_demo",
+  "nextMilestone": "W01",
   "statusVocabulary": [
     "planned",
     "building",
@@ -28,7 +27,7 @@
     {
       "id": "W00",
       "title": "Reproducible baseline and integration decisions",
-      "status": "planned",
+      "status": "building",
       "size": "M",
       "dependsOn": [],
       "requirementIds": [
@@ -52,12 +51,12 @@
         {
           "id": "W00.1",
           "title": "Capture source and deployment baseline",
-          "status": "planned"
+          "status": "passed"
         },
         {
           "id": "W00.2",
           "title": "Establish domain and database boundaries",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W00.3",
@@ -67,7 +66,7 @@
         {
           "id": "W00.4",
           "title": "Separate arena testnet and mainnet configuration",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W00.5",
@@ -77,17 +76,19 @@
         {
           "id": "W00.6",
           "title": "Prepare isolated tests and secret-safe evidence",
-          "status": "planned"
+          "status": "building"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/OVERNIGHT-2026-10-31.md"
+      ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W00/"
     },
     {
       "id": "W01",
       "title": "City worlds and designed outdoor activities",
-      "status": "planned",
+      "status": "building",
       "size": "L",
       "dependsOn": [
         "W00"
@@ -142,37 +143,37 @@
         {
           "id": "W01.1",
           "title": "Review the Plzen CityPack and pedestrian graph",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W01.2",
           "title": "Implement city world identity and H3 chunk reads",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W01.3",
           "title": "Validate varied polygons gaps and sector coverage",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W01.4",
           "title": "Design multiple objectives and quest requirements",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W01.5",
           "title": "Implement schedules rotation and bounded supply",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W01.6",
           "title": "Build idempotent generation activation expiry and budgets",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W01.7",
           "title": "Add outdoor context and honest pedestrian distances",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W01.8",
@@ -180,14 +181,16 @@
           "status": "planned"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/OVERNIGHT-2026-10-31.md"
+      ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W01/"
     },
     {
       "id": "W02",
       "title": "Complete solo experience and interface",
-      "status": "planned",
+      "status": "building",
       "size": "L",
       "dependsOn": [
         "W01"
@@ -251,35 +254,37 @@
         {
           "id": "W02.1",
           "title": "Adopt readable semantic visual and input foundations",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W02.2",
           "title": "Implement objective compositions sheets camera and Back",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W02.3",
           "title": "Model all objective and evidence states truthfully",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W02.4",
           "title": "Complete confirmed result preview equip and return",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W02.5",
           "title": "Unify game art feedback selection and progress",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W02.6",
           "title": "Verify accessibility failures and newcomer experience",
-          "status": "planned"
+          "status": "building"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/OVERNIGHT-2026-10-31.md"
+      ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W02/"
     },
@@ -1222,5 +1227,8 @@
       "completedAt": null,
       "evidenceDirectory": "output/qa/W14/"
     }
-  ]
+  ],
+  "runtimeChangedSincePlanningBaseline": true,
+  "lastImplementationUpdate": "2026-10-31T01:22:13.497713+00:00",
+  "implementationReport": "docs/OVERNIGHT-2026-10-31.md"
 }

@@ -1,4 +1,4 @@
-# AuraTrail — implementation specification
+# QuestLayer — implementation specification
 
 Updated 31 October 2026. Product, source comments, public documentation, errors and competition materials use English. Private development conversations may use Czech.
 

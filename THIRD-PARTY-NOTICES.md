@@ -7,8 +7,9 @@
 - NEAR SDK / contract standards: upstream MIT / Apache-2.0 licensing as applicable, https://github.com/near/near-sdk-rs and https://github.com/near/near-sdk-rs/tree/master/near-contract-standards.
 - NEAR Connect and near-api-js: respective upstream package licenses.
 - SimpleWebAuthn, viem, h3-js, tz-lookup and sharp: respective package licenses.
-- DM Sans and Outfit fonts: SIL Open Font License; currently loaded through Google Fonts.
+- Turf spatial utilities: MIT, https://github.com/Turfjs/turf. The versioned CityPack retains OpenStreetMap source IDs and ODbL attribution; see `server/data/README.md`.
+- Kanit font: SIL Open Font License; currently loaded through Google Fonts, https://github.com/google/fonts/tree/main/ofl/kanit.
 - Aavegotchi integration reads canonical Base contracts. Connected original appearances are their on-chain SVGs; ownership does not grant a blanket license to redistribute unrelated artwork. No Unity/GLB asset catalog has been copied into this repository.
-- AuraTrail's fallback explorer SVG, app icon and Aura effects were created for this implementation.
+- QuestLayer's fallback explorer SVG, app icon and Aura effects were created for this implementation.
 
 License availability and NFT ownership are distinct checks. Add source-specific permission and attribution before distributing additional external models or artwork.

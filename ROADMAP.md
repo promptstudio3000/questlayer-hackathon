@@ -1,10 +1,12 @@
-# AuraTrail implementation roadmap
+# QuestLayer implementation roadmap
 
 Updated 31 October 2026. This is the execution plan from the current alpha to a complete V1. It combines [game rules](docs/GAME-RULES.md), [city generation](docs/WORLD-GENERATION.md), [design direction](DESIGN.md), the [UI backlog](docs/UI-UX-IMPROVEMENT-PLAN.md), [native product requirements](IMPLEMENTATION-PLAN.md) and [creator economics](CREATOR-ECONOMY-PLAN.md).
 
 The next priority is a convincing exploration game across Plzeň: six distinct zones, real walking, understandable objectives and a complete discovery/equipment loop. Native finance, social features and creator payments must connect to that same experience rather than remain separate demonstrations.
 
 The public deployment is an **alpha demonstration**. Its 20 application tests, eight contract tests and nine recorded native testnet operations establish useful foundations, not completion of the milestones below. The [delivery record](docs/DELIVERY-2026-10-31.md) describes that baseline. Implementation status is tracked in [docs/roadmap.json](docs/roadmap.json); every milestone starts as planned until its actual delivery work begins.
+
+Implementation update, 31 October: W00, W01 and W02 are **building**. The citywide alpha and its evidence are recorded in [the overnight log](docs/OVERNIGHT-2026-10-31.md). No complete milestone exit gate has passed yet; the machine-readable tracker records partial work without converting disconnected native proofs into completed integration.
 
 ## What complete V1 means
 

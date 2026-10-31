@@ -1,4 +1,4 @@
-# AuraTrail development rules
+# QuestLayer development rules
 
 ## Product and design context
 

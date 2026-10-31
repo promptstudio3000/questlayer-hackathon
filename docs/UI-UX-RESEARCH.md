@@ -1,6 +1,6 @@
 # Game UI and AI-assisted design research
 
-Reviewed 31 October 2026. Source review and AuraTrail-specific synthesis; not an
+Reviewed 31 October 2026. Source review and QuestLayer-specific synthesis; not an
 installation, benchmark, security audit or endorsement of all upstream rules.
 
 ## Scope and evidence
@@ -26,7 +26,7 @@ findings; no physical-phone verification is claimed.
 
 ## Supplied sources
 
-| Source | Useful takeaway | AuraTrail interpretation |
+| Source | Useful takeaway | QuestLayer interpretation |
 | --- | --- | --- |
 | [kiosa's collection](https://x.com/thegreatest_sv/status/2115876572464812071) | Tools cover design context, critique, Figma, effects, animation, video and 3D authoring. | These are different jobs. Installing all seven does not establish game quality. Promotional counts and performance claims are not benchmarks. |
 | [Ayush Soni's critique](https://x.com/ayushsoni_io/status/2115322579187867898) | Repeated stylistic devices make unrelated products feel templated. | Ask what each label, divider or frame communicates. Keep necessary structure and collectible frames; remove ornament without meaning. |
@@ -45,7 +45,7 @@ Adopt its priority on accessibility, touch, feedback and platform-aware layout b
 decoration. Use it for a concrete problem such as keyboard-open sheets or inline
 errors. Do not ask its industry palette generator to override the explicit brand.
 The detailed CSV distinguishes platform units and context; shorthand touch-size
-recommendations are not universal web requirements. AuraTrail deliberately chooses
+recommendations are not universal web requirements. QuestLayer deliberately chooses
 48 CSS px effective touch targets. No search scripts were executed.
 
 ### Impeccable: critique vocabulary and adaptation
@@ -71,7 +71,7 @@ Impeccable command run or detector result.
 
 The documented role is simplifying Figma layout/style data for agents. Useful when
 a chosen design is maintained in Figma. It neither invents good game design nor
-proves one-shot fidelity. No AuraTrail Figma design was supplied; this environment
+proves one-shot fidelity. No QuestLayer Figma design was supplied; this environment
 already has Figma tools. Defer an additional connector until it supplies a specific
 missing capability.
 
@@ -128,12 +128,12 @@ keep the lightweight renderer for the first UI slice. No models were generated.
 | Repository and reviewed scope | Concrete lesson | Adoption boundary |
 | --- | --- | --- |
 | [emilkowalski/skills](https://github.com/emilkowalski/skills), tree `a81dbca07f2217b7103e510c0f13f8d5b017afc9`; `emil-design-eng` and `mobile-native` | Press feedback; purposeful, interruptible movement; safe areas, large inputs, capability-gated hover and real-phone checks. | Keep a local timing policy; do not blindly copy blur tricks, universal easing claims or platform assumptions. |
-| [ibelick/ui-skills](https://github.com/ibelick/ui-skills), tree `3823f1573f6fb564a091a062594b95066dbd974c`; `baseline-ui` and `fixing-accessibility` | Hierarchy, meaningful empty states, visible labels, dialog focus, inline errors. | Preserve the React/CSS stack. Its Tailwind/Motion requirements, custom-easing ban and purple-gradient ban are not AuraTrail policy. |
+| [ibelick/ui-skills](https://github.com/ibelick/ui-skills), tree `3823f1573f6fb564a091a062594b95066dbd974c`; `baseline-ui` and `fixing-accessibility` | Hierarchy, meaningful empty states, visible labels, dialog focus, inline errors. | Preserve the React/CSS stack. Its Tailwind/Motion requirements, custom-easing ban and purple-gradient ban are not QuestLayer policy. |
 | [anthropics/skills frontend-design](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md), current file | Ground composition in the product's world; choose type deliberately; critique template habits. | Adapt website-oriented advice to playable UI. Do not make a game into a landing page. |
 | [godotengine/godot-demo-projects](https://github.com/godotengine/godot-demo-projects), tree `b761b4cd5718a7118f2c95eb55f181d0a5f004f1`; multiple-resolutions README/`main.gd`, accessibility README/`custom_control.gd`, drag/drop README | HUD bounds, aspect ratio and interface scale are distinct; custom visuals still need accessible names, state and input actions. | Use principles in HTML/React. No engine migration or direct adoption of engine units. |
 | [00-Evan/shattered-pixel-dungeon](https://github.com/00-Evan/shattered-pixel-dungeon), tree `57a4e06a4caf162446d1c28caa7983f0493fecf0`; README, `Toolbar.java`, `WndBag.java` | One inventory window, stable grid, explicit selection/use states and alternative input affordances. Item selection checks the item is still present. | Source is GPL-3.0-or-later. Study behavior rather than copying source/art. Internal canvas sizes are not CSS target sizes. Game not run. |
 | [munificent/game-programming-patterns](https://github.com/munificent/game-programming-patterns), tree `898b1f2e1818c80d7eed5eba98e9903ec13b7771`; State chapter | Model legal quest/reward/sheet transitions instead of accumulating interacting flags. | A small reducer/discriminated union can suffice; no mandatory state-machine package. |
-| [aavegotchi/aavegotchi-assets](https://github.com/aavegotchi/aavegotchi-assets), tree `b302ce569ac7f98a97947ce4e66f63bae85a0c66`; tree/`colors.js` | Intentional ecosystem color roles and separately named item colors. | Module palette differs from brand PDF. Do not mix unrecorded or replace AuraTrail's rarity model. |
+| [aavegotchi/aavegotchi-assets](https://github.com/aavegotchi/aavegotchi-assets), tree `b302ce569ac7f98a97947ce4e66f63bae85a0c66`; tree/`colors.js` | Intentional ecosystem color roles and separately named item colors. | Module palette differs from brand PDF. Do not mix unrecorded or replace QuestLayer's rarity model. |
 | [aavegotchi/aavegotchi-game-sprites](https://github.com/aavegotchi/aavegotchi-game-sprites), tree `c2004f55e175edc82ee7936d21e62b06ca46680c`; tree/README | Configured trait layers can preserve individual character identity. | Validate coverage, layering, missing assets, permissions and mobile output before adopting a sprite pipeline. |
 
 ## Other primary references
@@ -152,7 +152,7 @@ keep the lightweight renderer for the first UI slice. No models were generated.
 
 ## Resolve source disagreements deliberately
 
-| Disagreement | AuraTrail decision | Reason |
+| Disagreement | QuestLayer decision | Reason |
 | --- | --- | --- |
 | Generic deslop advice discourages purple; the requested identity uses it. | Documented purple action role, restrained pink discovery accent. | Identity takes precedence over a fashion blacklist. |
 | Emil favors custom easing; baseline-ui forbids it by default. | One reviewed local curve with separate timing roles. | Consistent response is more useful than incompatible rule sets. |

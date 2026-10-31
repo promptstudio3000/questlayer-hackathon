@@ -26,7 +26,19 @@ source=sqlite3.connect('file:/var/lib/auratrail/auratrail.sqlite?mode=ro',uri=Tr
 dest=sqlite3.connect(sys.argv[1]);source.backup(dest);dest.close();source.close()
 PY
 fi
+RELEASE_ACTIVATED=0
 rollback(){
+ if [[ "$RELEASE_ACTIVATED" == 1 ]]; then
+  systemctl stop auratrail || true
+  if [[ -f "$BACKUP_DIR/database.sqlite" ]]; then
+   python3 - "$BACKUP_DIR/database.sqlite" <<'PYRESTORE'
+import sqlite3,sys
+source=sqlite3.connect('file:'+sys.argv[1]+'?mode=ro',uri=True)
+destination=sqlite3.connect('/var/lib/auratrail/auratrail.sqlite')
+source.backup(destination);destination.close();source.close()
+PYRESTORE
+  fi
+ fi
  cp -a "$BACKUP_DIR/domain.caddy" "$CADDY_FILE"
  if [[ -n "$OLD_TARGET" ]]; then ln -sfn "$OLD_TARGET" "$APP_DIR/current"; fi
  if [[ -f "$BACKUP_DIR/auratrail.service" ]]; then cp -a "$BACKUP_DIR/auratrail.service" /etc/systemd/system/auratrail.service; fi
@@ -39,6 +51,7 @@ tar -xzf "/tmp/auratrail-${RELEASE_TAG}.tgz" -C "$RELEASE_DIR"
 cd "$RELEASE_DIR"
 npm ci --omit=dev --no-audit --no-fund
 ln -sfn "$RELEASE_DIR" "$APP_DIR/current"
+RELEASE_ACTIVATED=1
 install -m 644 deploy/auratrail.service /etc/systemd/system/auratrail.service
 systemctl daemon-reload
 systemctl enable auratrail >/dev/null
@@ -64,7 +77,7 @@ replacement='''questlayer.promptstudio3000.com {
     }
 }'''
 if 'reverse_proxy 127.0.0.1:7091' in source:
- print('Domain already points to AuraTrail; preserving route.')
+ print('Domain already points to QuestLayer; preserving route.')
 else:
  updated,n=re.subn(pattern,replacement,source,count=1)
  if n!=1:raise SystemExit('Expected one existing domain block; refusing to change routing.')

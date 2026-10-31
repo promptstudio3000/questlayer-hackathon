@@ -1,4 +1,4 @@
-# AuraTrail game and interface direction
+# QuestLayer game and interface direction
 
 31 October 2026. Project design policy and proposed visual specification.
 This document establishes the direction for subsequent work; it does not describe a
@@ -13,7 +13,7 @@ complete UI backlog without implying that the alpha has adopted it.
 
 ## The experience we are building
 
-AuraTrail is a pocket exploration game: your character discovers small adventures in
+QuestLayer is a pocket exploration game: your character discovers small adventures in
 real places, brings back a collectible and becomes recognizably yours. The intended
 audience includes curious first-time players and existing Aavegotchi owners. The
 first experience must make sense to both without requiring wallet knowledge.
@@ -85,19 +85,19 @@ contains a different named palette. These are two source systems, not one set of
 interchangeable values. We choose a documented adaptation of the PDF palette for
 this direction; existing on-chain asset colors remain unchanged.
 
-| Evidence from the brand guide | AuraTrail application | Boundary |
+| Evidence from the brand guide | QuestLayer application | Boundary |
 | --- | --- | --- |
 | Purple `#672EEB`, dark purple `#441C6C`, off-black `#1A0335` | Strong primary action, character frame and readable ink. | These are not the current app's CSS colors. |
 | Pink `#FF1DFF`, light pink `#FFE8FF` | A rare discovery accent and soft character stage. | Never pink microcopy on a white map. |
 | Green/teal `#51B4BA`, yellow `#FEF87D` | Reference hues for world/cosmetic art. | Do not assume either passes text or control contrast. |
-| Kanit; bespoke Aavegotchi display lettering | Proposed Kanit 400/500/600 for UI and headings; original AuraTrail wordmark treatment. | Do not invent access to the proprietary display font or recreate the official logo. |
+| Kanit; bespoke Aavegotchi display lettering | Proposed Kanit 400/500/600 for UI and headings; original QuestLayer wordmark treatment. | Do not invent access to the proprietary display font or recreate the official logo. |
 | Pixel faces, expressive wearables, collectible silhouette | Consistent character renderer and a coherent chest/coin/Aura asset family. | Verified originals must retain their identity and provenance. |
 | Branded gradients on promotional compositions | Optional small reward or title treatment when deliberately art directed. | No automatic full-screen animated gradient behind the walking map. |
 
 This is an Aavegotchi-compatible game direction, not an assertion of official
-endorsement. Keep AuraTrail's name and NEAR gameplay identity. The existing Base
+endorsement. Keep QuestLayer's name and NEAR gameplay identity. The existing Base
 ownership integration does not transfer originals to NEAR or turn them into saleable
-AuraTrail items. Follow `THIRD-PARTY-NOTICES.md` before distributing new assets.
+QuestLayer items. Follow `THIRD-PARTY-NOTICES.md` before distributing new assets.
 
 ### Palette roles and typography
 
@@ -272,7 +272,7 @@ Keep necessary mode, network, ownership and financial labels readable.
 
 Reusable task brief:
 
-> Improve [one player moment] in AuraTrail. Read DESIGN.md and the relevant backlog
+> Improve [one player moment] in QuestLayer. Read DESIGN.md and the relevant backlog
 > item. Preserve the accepted economy and integration boundaries. Explain the player
 > problem, compare compositions if hierarchy changes, implement the chosen interaction
 > with real data and all important states, inspect it at phone and desktop sizes,

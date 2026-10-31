@@ -1,4 +1,4 @@
-# AuraTrail
+# QuestLayer
 
 **Little adventures. Real discoveries.** A native NEAR exploration game on real OpenStreetMap geography, designed to be fun even when nobody else is nearby.
 

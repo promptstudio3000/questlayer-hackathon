@@ -6,7 +6,7 @@ use near_sdk::{collections::{LazyOption,LookupMap},env,json_types::U128,near_bin
 pub struct Collectibles { tokens:NonFungibleToken,metadata:LazyOption<NFTContractMetadata>,oracle:AccountId,minted:LookupMap<String,u32>,equipped:LookupMap<AccountId,TokenId> }
 #[near_bindgen]
 impl Collectibles{
- #[init]pub fn new(owner_id:AccountId,oracle_id:AccountId)->Self{Self{tokens:NonFungibleToken::new(b"t".to_vec(),owner_id,Some(b"m".to_vec()),Some(b"e".to_vec()),Some(b"a".to_vec())),metadata:LazyOption::new(b"c".to_vec(),Some(&NFTContractMetadata{spec:NFT_METADATA_SPEC.into(),name:"AuraTrail Collectibles".into(),symbol:"AURA".into(),icon:None,base_uri:None,reference:None,reference_hash:None})),oracle:oracle_id,minted:LookupMap::new(b"s"),equipped:LookupMap::new(b"w")}}
+ #[init]pub fn new(owner_id:AccountId,oracle_id:AccountId)->Self{Self{tokens:NonFungibleToken::new(b"t".to_vec(),owner_id,Some(b"m".to_vec()),Some(b"e".to_vec()),Some(b"a".to_vec())),metadata:LazyOption::new(b"c".to_vec(),Some(&NFTContractMetadata{spec:NFT_METADATA_SPEC.into(),name:"QuestLayer Collectibles".into(),symbol:"AURA".into(),icon:None,base_uri:None,reference:None,reference_hash:None})),oracle:oracle_id,minted:LookupMap::new(b"s"),equipped:LookupMap::new(b"w")}}
  #[payable]pub fn mint_aura(&mut self,edition:String,receiver_id:AccountId,metadata:TokenMetadata)->Token{
   assert_eq!(env::predecessor_account_id(),self.oracle,"Oracle only");assert!(["polar","moon","gold"].contains(&edition.as_str()),"Unknown edition");let n=self.minted.get(&edition).unwrap_or(0);assert!(n<256,"Edition exhausted");self.minted.insert(&edition,&(n+1));self.tokens.internal_mint(format!("aura:{}:{}",edition,n+1),receiver_id,Some(metadata))
  }

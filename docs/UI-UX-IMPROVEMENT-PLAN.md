@@ -1,4 +1,4 @@
-# AuraTrail UI and game experience improvement plan
+# QuestLayer UI and game experience improvement plan
 
 31 October 2026. Prepared backlog, not an implementation report. Read with
 `../DESIGN.md`, `UI-UX-RESEARCH.md` and the accepted product/economy plans.

@@ -1,4 +1,4 @@
-# AuraTrail — creator economy integration plan
+# QuestLayer — creator economy integration plan
 
 Updated 31 October 2026. Accepted product direction for a future integration phase, linked from [the implementation specification](IMPLEMENTATION-PLAN.md). This document specifies intended behavior; it does not claim that creator payments, XP locks, follows or paid unlocks are implemented or deployed. Demo micro-GOLD and native yoctoNEAR remain separate ledgers.
 
