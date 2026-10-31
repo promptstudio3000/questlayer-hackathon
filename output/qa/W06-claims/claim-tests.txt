@@ -1,0 +1,14 @@
+✔ earned vouchers bind contract, receiver, edition and expiry and lock the demo market (13.128625ms)
+✔ ownership, open listings, signer configuration and full editions prevent issuance (4.266834ms)
+✔ confirmed mint is recorded once even after its native NFT transfers (2.804417ms)
+✔ a claim cannot restore a demo item until a finalized post-expiry block proves no mint (2.490375ms)
+✔ claim confirmation rejects a mismatched on-chain recipient (3.155667ms)
+✔ the application attestation key persists privately without being a wallet access key (2.836875ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 408.729708

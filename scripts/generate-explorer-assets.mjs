@@ -24,3 +24,16 @@ writeFileSync(
   ) + "\n",
 );
 console.log("Canonical explorer art generated; SHA-256 " + sha256);
+const { auraSvg } = await import("../src/character-art.ts");
+for (const [edition, color] of Object.entries({
+  polar: "#9edfc5",
+  moon: "#c2a0df",
+  gold: "#e7c35f",
+})) {
+  const art = auraSvg(color);
+  writeFileSync(`public/aura-${edition}.svg`, art);
+  writeFileSync(
+    `contracts/collectibles/assets/aura-${edition}-uri.txt`,
+    "data:image/svg+xml;base64," + Buffer.from(art).toString("base64") + "\n",
+  );
+}

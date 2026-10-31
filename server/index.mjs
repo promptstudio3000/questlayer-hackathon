@@ -1,3 +1,4 @@
+import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
@@ -71,6 +72,14 @@ const nativeCollectibles = new NativeCollectibles(
 db.exec(
   `CREATE TABLE IF NOT EXISTS passkeys(id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),public_key TEXT NOT NULL,counter INTEGER NOT NULL,transports TEXT NOT NULL);`,
 );
+const awardSigner = loadAwardSigner(
+  process.env.AWARD_SIGNER_PATH ||
+    resolve(
+      dirname(process.env.DATABASE_PATH || ".data/auratrail.sqlite"),
+      "award-attestor.pem",
+    ),
+);
+const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner);
 const listeners = new Set(),
   rates = new Map();
 function emit(type, data) {
@@ -465,9 +474,40 @@ async function api(req, res, url) {
     });
     return createReadStream(file).pipe(res);
   }
+  if (path === "/api/native/claim-signer" && method === "GET")
+    return respond(res, awardVouchers.publicInfo());
   if (path === "/api/native/collection" && method === "GET")
     return respond(res, await nativeCollectibles.collection());
   const player = auth(req);
+  if (path === "/api/native/claims" && method === "POST") {
+    const input = await body(req),
+      key = `native-claim:${player}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 12,
+      "Please wait before requesting another native claim.",
+      429,
+    );
+    return respond(
+      res,
+      await awardVouchers.issue(player, input.itemId, input.accountId),
+    );
+  }
+  if (path === "/api/native/claims/confirm" && method === "POST") {
+    const input = await body(req);
+    return respond(res, {
+      claim: await awardVouchers.confirm(player, input.itemId),
+      player: profile(player),
+    });
+  }
+  if (path === "/api/native/claims/restore" && method === "POST") {
+    const input = await body(req);
+    return respond(res, {
+      ...(await awardVouchers.restoreDemo(player, input.itemId)),
+      player: profile(player),
+    });
+  }
   if (path === "/api/native/wardrobe" && method === "GET") {
     const ids = db
         .prepare(
@@ -486,7 +526,14 @@ async function api(req, res, url) {
         429,
       );
     }
-    return respond(res, await nativeCollectibles.wardrobe(ids, fresh));
+    const state = await nativeCollectibles.wardrobe(ids, fresh);
+    let claimsEnabled = false;
+    try {
+      claimsEnabled =
+        (await nativeCollectibles.view("get_award_signer", {}, fresh)) ===
+        awardSigner.publicKey;
+    } catch {}
+    return respond(res, { ...state, claimsEnabled });
   }
   if (path === "/api/native/outfit" && method === "POST") {
     const input = await body(req);

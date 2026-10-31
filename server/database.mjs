@@ -33,6 +33,7 @@ export function openDatabase(
     CREATE TABLE IF NOT EXISTS external_links(address TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), data TEXT NOT NULL, verified_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS bounties(id TEXT PRIMARY KEY, creator TEXT NOT NULL REFERENCES players(id), title TEXT NOT NULL, description TEXT NOT NULL, amount_u INTEGER NOT NULL CHECK(amount_u>0), lat REAL NOT NULL, lng REAL NOT NULL, deadline INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'open', winner TEXT REFERENCES players(id), created_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS bounty_submissions(id INTEGER PRIMARY KEY AUTOINCREMENT, bounty_id TEXT NOT NULL REFERENCES bounties(id), player_id TEXT NOT NULL REFERENCES players(id), evidence TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS native_awards(item_id TEXT PRIMARY KEY REFERENCES inventory(id),claim_id TEXT UNIQUE NOT NULL,player_id TEXT NOT NULL REFERENCES players(id),receiver_id TEXT NOT NULL,edition TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('issued','minted')),expires_at INTEGER NOT NULL,token_id TEXT,created_at INTEGER NOT NULL,confirmed_at INTEGER);
     CREATE TABLE IF NOT EXISTS world_blueprints(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,body TEXT NOT NULL,body_hash TEXT NOT NULL,created_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS world_jobs(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('queued','running','ready','failed')),attempts INTEGER NOT NULL DEFAULT 0,run_after INTEGER NOT NULL,lease_owner TEXT,lease_until INTEGER,last_error TEXT,updated_at INTEGER NOT NULL);
     CREATE INDEX IF NOT EXISTS world_job_schedule ON world_jobs(state,run_after,lease_until);
@@ -152,7 +153,9 @@ export function playerView(db, playerId) {
       )
       .all(playerId),
     inventory: db
-      .prepare("SELECT * FROM inventory WHERE player_id=? ORDER BY created_at")
+      .prepare(
+        "SELECT i.*,a.claim_id AS native_claim_id,a.receiver_id AS native_claim_receiver,a.state AS native_claim_state,a.expires_at AS native_claim_expires_at,a.token_id AS native_token_id FROM inventory i LEFT JOIN native_awards a ON a.item_id=i.id WHERE i.player_id=? ORDER BY i.created_at",
+      )
       .all(playerId),
     history: db
       .prepare(

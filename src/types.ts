@@ -1,6 +1,11 @@
 export type Point = { lat: number; lng: number };
 export type Fix = Point & { accuracy: number; timestamp: number };
 export type Item = {
+  native_claim_id?: string | null;
+  native_claim_receiver?: string | null;
+  native_claim_state?: "issued" | "minted" | null;
+  native_claim_expires_at?: number | null;
+  native_token_id?: string | null;
   id: string;
   kind: string;
   name: string;
@@ -177,6 +182,7 @@ export type NativeAccount = {
   truncated: boolean;
 };
 export type NativeWardrobeState = {
+  claimsEnabled?: boolean;
   status: string;
   network: "testnet";
   contractId: string;
@@ -192,4 +198,15 @@ export type NativeCollectionState = {
   supply: string;
   items: NativeItem[];
   truncated: boolean;
+};
+
+export type NativeAuraClaim = {
+  state: "issued" | "minted";
+  claim_id: string;
+  receiver_id: string;
+  edition: string;
+  expires_at: number;
+  signature: string;
+  contractId: string;
+  token_id?: string;
 };

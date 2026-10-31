@@ -504,7 +504,7 @@
     {
       "id": "W06",
       "title": "Gameplay settlement and reconciliation",
-      "status": "planned",
+      "status": "building",
       "size": "L",
       "dependsOn": [
         "W01",
@@ -549,35 +549,39 @@
         {
           "id": "W06.2",
           "title": "Separate local feedback receipt and finalization",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W06.3",
           "title": "Settle actual player XP item and cash rights",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W06.4",
           "title": "Resolve receipt order review expiry and backing",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W06.5",
           "title": "Reconcile chain views and crash recovery",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W06.6",
           "title": "Review and minimize public receipt location linkability",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W06.7",
           "title": "Bound operator gas storage and exposure",
-          "status": "planned"
+          "status": "building"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/NATIVE-AURA-CLAIMS.md",
+        "output/qa/W06-claims/checks.txt",
+        "output/qa/W06-claims/contracts.txt"
+      ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W06/"
     },

@@ -426,6 +426,15 @@ export function equip(db, player, itemId) {
         .get(itemId),
       "Cancel the listing before equipping this Aura.",
     );
+    assert(
+      !db
+        .prepare(
+          "SELECT 1 FROM native_awards WHERE item_id=? AND state='minted'",
+        )
+        .get(itemId),
+      "Equip this Aura from your NEAR inventory.",
+      409,
+    );
     db.prepare(
       "UPDATE inventory SET equipped=0 WHERE player_id=? AND slot=?",
     ).run(player, item.slot);
@@ -446,6 +455,11 @@ export function listItem(db, player, itemId, price, now = Date.now()) {
       )
       .get(itemId, player);
     assert(item, "Only your own Aura can be listed.", 403);
+    assert(
+      !db.prepare("SELECT 1 FROM native_awards WHERE item_id=?").get(itemId),
+      "This Aura is reserved for NEAR and cannot enter the demo market.",
+      409,
+    );
     assert(
       !db
         .prepare("SELECT 1 FROM listings WHERE item_id=? AND state='open'")

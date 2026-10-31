@@ -11,7 +11,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
     collections::{LazyOption, LookupMap},
     env,
-    json_types::U128,
+    json_types::{Base64VecU8, U128},
     near_bindgen, AccountId, PanicOnDefault, Promise, PromiseOrValue,
 };
 const EXPLORER_MEDIA: &str = include_str!("../assets/explorer-uri.txt");
@@ -57,6 +57,18 @@ struct LegacyCollectibles {
     minted: LookupMap<String, u32>,
     equipped: LookupMap<AccountId, TokenId>,
 }
+#[derive(BorshDeserialize, BorshSerialize)]
+#[borsh(crate = "near_sdk::borsh")]
+struct CollectiblesV2 {
+    tokens: NonFungibleToken,
+    metadata: LazyOption<NFTContractMetadata>,
+    oracle: AccountId,
+    minted: LookupMap<String, u32>,
+    legacy_equipped: LookupMap<AccountId, TokenId>,
+    equipment: LookupMap<String, TokenId>,
+    claims: LookupMap<String, MintClaim>,
+    schema_version: u32,
+}
 #[near_sdk::near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct Collectibles {
@@ -68,6 +80,7 @@ pub struct Collectibles {
     equipment: LookupMap<String, TokenId>,
     claims: LookupMap<String, MintClaim>,
     schema_version: u32,
+    award_signer: Option<[u8; 32]>,
 }
 #[near_bindgen]
 impl Collectibles {
@@ -98,7 +111,8 @@ impl Collectibles {
             legacy_equipped: LookupMap::new(b"w"),
             equipment: LookupMap::new(b"w2".to_vec()),
             claims: LookupMap::new(b"q2".to_vec()),
-            schema_version: 2,
+            schema_version: 3,
+            award_signer: None,
         }
     }
     #[init(ignore_state)]
@@ -122,8 +136,124 @@ impl Collectibles {
             legacy_equipped: old.equipped,
             equipment: LookupMap::new(b"w2".to_vec()),
             claims: LookupMap::new(b"q2".to_vec()),
-            schema_version: 2,
+            schema_version: 3,
+            award_signer: None,
         }
+    }
+    #[init(ignore_state)]
+    pub fn migrate_v3() -> Self {
+        let old: CollectiblesV2 = env::state_read().expect("V2 state is required");
+        assert!(
+            env::predecessor_account_id() == old.tokens.owner_id
+                || env::predecessor_account_id() == env::current_account_id(),
+            "Owner only"
+        );
+        assert_eq!(old.schema_version, 2, "Expected V2 state");
+        Self {
+            tokens: old.tokens,
+            metadata: old.metadata,
+            oracle: old.oracle,
+            minted: old.minted,
+            legacy_equipped: old.legacy_equipped,
+            equipment: old.equipment,
+            claims: old.claims,
+            schema_version: 3,
+            award_signer: None,
+        }
+    }
+    #[payable]
+    pub fn set_award_signer(&mut self, public_key: Base64VecU8) {
+        near_sdk::assert_one_yocto();
+        assert_eq!(
+            env::predecessor_account_id(),
+            self.tokens.owner_id,
+            "Owner only"
+        );
+        self.award_signer = Some(
+            public_key
+                .0
+                .try_into()
+                .expect("An Ed25519 public key has 32 bytes"),
+        );
+    }
+    pub fn get_award_signer(&self) -> Option<Base64VecU8> {
+        self.award_signer.map(|key| Base64VecU8(key.to_vec()))
+    }
+    pub fn award_message(
+        &self,
+        claim_id: String,
+        edition: String,
+        receiver_id: AccountId,
+        expires_at_ms: u64,
+    ) -> String {
+        format!("QuestLayer Aura claim v1\nContract: {}\nNetwork: testnet\nClaim: {}\nReceiver: {}\nEdition: {}\nExpires: {}",env::current_account_id(),claim_id,receiver_id,edition,expires_at_ms)
+    }
+    #[payable]
+    pub fn redeem_aura(
+        &mut self,
+        claim_id: String,
+        edition: String,
+        receiver_id: AccountId,
+        expires_at_ms: u64,
+        signature: Base64VecU8,
+    ) -> Token {
+        assert!(
+            env::current_account_id().as_str().ends_with(".testnet"),
+            "Claims are testnet-only"
+        );
+        assert_eq!(
+            env::predecessor_account_id(),
+            receiver_id,
+            "Claim belongs to a different wallet"
+        );
+        assert!(
+            claim_id.starts_with("earned:") && claim_id.len() <= 160,
+            "Invalid earned claim"
+        );
+        let key = self.award_signer.expect("Earned claims are not enabled");
+        let bytes: [u8; 64] = signature
+            .0
+            .try_into()
+            .expect("An Ed25519 signature has 64 bytes");
+        let message = self.award_message(
+            claim_id.clone(),
+            edition.clone(),
+            receiver_id.clone(),
+            expires_at_ms,
+        );
+        assert!(
+            env::ed25519_verify(&bytes, message.as_bytes(), &key),
+            "Invalid award signature"
+        );
+        if self.claims.get(&claim_id).is_none() {
+            assert!(
+                env::block_timestamp_ms() <= expires_at_ms,
+                "Award claim expired"
+            );
+        }
+        let (name, media) = match edition.as_str() {
+            "polar" => (
+                "Northern Lights",
+                include_str!("../assets/aura-polar-uri.txt"),
+            ),
+            "moon" => ("Moonwake Aura", include_str!("../assets/aura-moon-uri.txt")),
+            "gold" => ("Sunlit Aura", include_str!("../assets/aura-gold-uri.txt")),
+            _ => env::panic_str("Unknown edition"),
+        };
+        self.mint_claim(
+            claim_id,
+            edition,
+            receiver_id,
+            TokenMetadata {
+                title: Some(name.into()),
+                description: Some(
+                    "Earned through a QuestLayer adventure. Testnet collectible.".into(),
+                ),
+                media: Some(media.trim().into()),
+                copies: Some(256),
+                ..Default::default()
+            },
+        )
     }
     pub fn get_version(&self) -> u32 {
         self.schema_version
@@ -171,6 +301,15 @@ impl Collectibles {
         metadata: TokenMetadata,
     ) -> Token {
         self.assert_oracle();
+        self.mint_claim(claim_id, edition, receiver_id, metadata)
+    }
+    fn mint_claim(
+        &mut self,
+        claim_id: String,
+        edition: String,
+        receiver_id: AccountId,
+        metadata: TokenMetadata,
+    ) -> Token {
         assert!(
             !claim_id.is_empty() && claim_id.len() <= 160,
             "Invalid claim ID"
@@ -197,6 +336,9 @@ impl Collectibles {
             },
         );
         self.finish_mint(token_id, receiver_id, metadata, initial)
+    }
+    pub fn get_claim(&self, claim_id: String) -> Option<near_sdk::serde_json::Value> {
+        self.claims.get(&claim_id).map(|claim|near_sdk::serde_json::json!({"token_id":claim.token_id,"receiver_id":claim.receiver_id,"edition":claim.edition}))
     }
     pub fn get_claim_token(&self, claim_id: String) -> Option<TokenId> {
         self.claims.get(&claim_id).map(|c| c.token_id)
@@ -585,7 +727,7 @@ mod tests {
         env::state_write(&old);
         context("owner.testnet", NearToken::from_yoctonear(0));
         let mut migrated = Collectibles::migrate();
-        assert_eq!(migrated.get_version(), 2);
+        assert_eq!(migrated.get_version(), 3);
         assert_eq!(migrated.edition_minted("polar".into()), 1);
         assert_eq!(
             migrated.get_equipment(a("alice.testnet")).above,
@@ -612,7 +754,7 @@ mod tests {
             equipped: c.legacy_equipped,
         });
         context("nfts.testnet", NearToken::from_yoctonear(0));
-        assert_eq!(Collectibles::migrate().get_version(), 2);
+        assert_eq!(Collectibles::migrate().get_version(), 3);
     }
     #[test]
     #[should_panic(expected = "Owner only")]
@@ -682,5 +824,168 @@ mod tests {
             a("bob.testnet"),
             TokenMetadata::default(),
         );
+    }
+    fn award_key(c: &mut Collectibles) -> ed25519_dalek::SigningKey {
+        let key = ed25519_dalek::SigningKey::from_bytes(&[7u8; 32]);
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.set_award_signer(Base64VecU8(key.verifying_key().to_bytes().to_vec()));
+        key
+    }
+    fn award_signature(
+        c: &Collectibles,
+        key: &ed25519_dalek::SigningKey,
+        claim: &str,
+        edition: &str,
+        receiver: &str,
+        expiry: u64,
+    ) -> Base64VecU8 {
+        use ed25519_dalek::Signer;
+        Base64VecU8(
+            key.sign(
+                c.award_message(claim.into(), edition.into(), a(receiver), expiry)
+                    .as_bytes(),
+            )
+            .to_bytes()
+            .to_vec(),
+        )
+    }
+    #[test]
+    fn signed_award_redeems_once_and_survives_transfer() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:1", "polar", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        let token = c.redeem_aura(
+            "earned:1".into(),
+            "polar".into(),
+            a("alice.testnet"),
+            1000,
+            signature.clone(),
+        );
+        assert_eq!(token.token_id, "aura:polar:1");
+        assert!(token
+            .metadata
+            .unwrap()
+            .media
+            .unwrap()
+            .starts_with("data:image/svg+xml;base64,"));
+        context("alice.testnet", NearToken::from_yoctonear(1));
+        c.nft_transfer(a("bob.testnet"), token.token_id.clone(), None, None);
+        context("alice.testnet", NearToken::from_near(1));
+        let replay = c.redeem_aura(
+            "earned:1".into(),
+            "polar".into(),
+            a("alice.testnet"),
+            1000,
+            signature,
+        );
+        assert_eq!(replay.owner_id, a("bob.testnet"));
+        assert_eq!(c.edition_minted("polar".into()), 1);
+    }
+    #[test]
+    #[should_panic(expected = "Invalid award signature")]
+    fn award_signature_cannot_change_edition() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:2", "polar", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura(
+            "earned:2".into(),
+            "moon".into(),
+            a("alice.testnet"),
+            1000,
+            signature,
+        );
+    }
+    #[test]
+    #[should_panic(expected = "Invalid award signature")]
+    fn award_signature_is_bound_to_contract() {
+        use ed25519_dalek::Signer;
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let message = c
+            .award_message("earned:3".into(), "polar".into(), a("alice.testnet"), 1000)
+            .replace("nfts.testnet", "other.testnet");
+        let signature = Base64VecU8(key.sign(message.as_bytes()).to_bytes().to_vec());
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura(
+            "earned:3".into(),
+            "polar".into(),
+            a("alice.testnet"),
+            1000,
+            signature,
+        );
+    }
+    #[test]
+    #[should_panic(expected = "different wallet")]
+    fn another_wallet_cannot_redeem_a_signed_award() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:4", "polar", "alice.testnet", 1000);
+        context("mallory.testnet", NearToken::from_near(1));
+        c.redeem_aura(
+            "earned:4".into(),
+            "polar".into(),
+            a("alice.testnet"),
+            1000,
+            signature,
+        );
+    }
+    #[test]
+    #[should_panic(expected = "Award claim expired")]
+    fn unredeemed_award_expires_on_chain() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:5", "polar", "alice.testnet", 1);
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(a("nfts.testnet"))
+            .predecessor_account_id(a("alice.testnet"))
+            .account_balance(NearToken::from_near(100))
+            .attached_deposit(NearToken::from_near(1))
+            .block_timestamp(2_000_000);
+        testing_env!(b.build());
+        c.redeem_aura(
+            "earned:5".into(),
+            "polar".into(),
+            a("alice.testnet"),
+            1,
+            signature,
+        );
+    }
+    #[test]
+    fn v2_migration_preserves_claims_and_both_equipment_slots() {
+        let mut c = fresh();
+        context("oracle.testnet", NearToken::from_near(1));
+        let token = c.mint_aura_once(
+            "old:1".into(),
+            "polar".into(),
+            a("alice.testnet"),
+            TokenMetadata::default(),
+        );
+        context("alice.testnet", NearToken::from_near(1));
+        c.equip_aura(token.token_id.clone(), Some(AuraSlot::Below));
+        let old = CollectiblesV2 {
+            tokens: c.tokens,
+            metadata: c.metadata,
+            oracle: c.oracle,
+            minted: c.minted,
+            legacy_equipped: c.legacy_equipped,
+            equipment: c.equipment,
+            claims: c.claims,
+            schema_version: 2,
+        };
+        env::state_write(&old);
+        context("owner.testnet", NearToken::from_near(0));
+        let migrated = Collectibles::migrate_v3();
+        assert_eq!(migrated.get_version(), 3);
+        assert_eq!(
+            migrated.get_claim_token("old:1".into()),
+            Some(token.token_id.clone())
+        );
+        assert_eq!(
+            migrated.get_equipment(a("alice.testnet")).below,
+            Some(token.token_id)
+        );
+        assert!(migrated.get_award_signer().is_none());
     }
 }

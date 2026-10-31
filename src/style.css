@@ -3690,3 +3690,55 @@ select {
   font-size: 12px;
   margin-top: 8px;
 }
+.aura-claims {
+  border-top: 1px solid #ded2e8;
+  padding-top: 24px;
+  margin-top: 24px;
+}
+.aura-claims h2 {
+  font-size: 20px;
+}
+.aura-claims > p,
+.aura-claim > p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.aura-claim {
+  border: 1px solid #ded2e8;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 16px;
+  background: #faf7ff;
+}
+.aura-claim-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.aura-claim-heading > .aura-art {
+  margin: 0;
+  width: 64px;
+  height: 76px;
+  flex: none;
+}
+.aura-claim-heading h3 {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+.aura-claim-heading span,
+.native-item-state {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.aura-claim .native-equip-actions {
+  margin-top: 16px;
+}
+.aura-claim button {
+  min-height: 48px;
+  font-size: 14px;
+}
+.item-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

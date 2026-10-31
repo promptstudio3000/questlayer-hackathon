@@ -105,3 +105,18 @@ Added offline preparation for today's and tomorrow's city plan, SQLite job lease
 The app starts its worker automatically. Public health reports only readiness/date states; the operator CLI exports a nonfinancial GeoJSON preview. Older preparation cache entries expire after 14 days, independently of published worlds and receipts. Existing city manifests remain unchanged for their day. The generation in-flight cache is scoped to each database connection.
 
 All 40 application tests pass. Six focused worker cases cover deterministic geography, unchanged treasury during future preparation, retry, lease takeover, actual SQLite reopen after interruption and conserved rollover. The live local service reports both dates ready. Details: `docs/WORLD-WORKER.md`; evidence: `output/qa/W01-worker/`.
+
+
+Worker release `20261031T031845Z` / commit `5405fbd` is live. Public health confirms both the current and next Plzeň date prepared in one attempt; evidence: `output/qa/W01-worker/public-health.json`.
+
+## Earned Aura claim increment — pre-activation
+
+Implemented an application attestor with a private persistent non-wallet signing key, domain/receiver/edition/expiry-bound vouchers, a 15-minute resumable demo-item reservation, finalized claim confirmation and safe post-expiry demo restoration. The server never signs a player NEAR transaction. Contract V3 adds owner-configured public attestation verification, canonical on-chain Aura images and state-preserving V2 migration. Existing avatars/equipment/legacy claims remain compatible. Current checks: 47 application tests and 25 Rust tests pass; locked WASM build succeeds.
+
+| Before | After | Why / source |
+| --- | --- | --- |
+| A chest cosmetic could only remain in the demo inventory. | Its owner can request a bound claim and approve a native NFT mint in their own wallet. | Connect gameplay to owned NEAR assets; `server/native/award-vouchers.mjs`, `src/AuraClaims.tsx`. |
+| Cancelling a wallet prompt had no native reward state. | Issued, confirmed and safely restorable states are durable; duplicate mints and demo resale are excluded. | Retry without duplicating rights; `server/game.mjs`, `contracts/collectibles/src/lib.rs`. |
+| A signing outage could hide recovery actions. | Existing claims keep Check/Restore controls independently of mint availability. | Recovery must remain usable; `src/AuraClaims.tsx`. |
+
+UI evidence is explicitly labelled fixture-based: 360/390 px, 20px enlarged text, long addresses, landscape, desktop and keyboard activation. Fixtures perform no blockchain transaction and are excluded from production. Real wallet approval on physical devices remains unverified. Live contract migration and end-to-end application proof are the next activation steps. Details: `docs/NATIVE-AURA-CLAIMS.md`.

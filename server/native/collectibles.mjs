@@ -84,6 +84,37 @@ export class NativeCollectibles {
       if (this.pending.get(key) === pending) this.pending.delete(key);
     }
   }
+  async claimSnapshot(claimId) {
+    await assertTestnetRpc(this.provider);
+    const response = await this.provider.query({
+      request_type: "call_function",
+      account_id: this.contractId,
+      method_name: "get_claim",
+      args_base64: Buffer.from(JSON.stringify({ claim_id: claimId })).toString(
+        "base64",
+      ),
+      finality: "final",
+    });
+    const claim = JSON.parse(Buffer.from(response.result).toString());
+    const block = await this.provider.viewBlock({
+      blockId: response.block_hash,
+    });
+    const blockTimestampMs = Number(
+      BigInt(block.header.timestamp_nanosec) / 1000000n,
+    );
+    assert(
+      Number.isSafeInteger(blockTimestampMs),
+      "The finalized block time is unavailable.",
+      503,
+    );
+    return {
+      tokenId: claim?.token_id || null,
+      receiverId: claim?.receiver_id || null,
+      edition: claim?.edition || null,
+      blockTimestampMs,
+      blockHash: response.block_hash,
+    };
+  }
   async collection(fresh = false) {
     const [metadata, supply, tokens, version] = await Promise.all([
       this.view("nft_metadata", {}, fresh),
@@ -92,7 +123,7 @@ export class NativeCollectibles {
       this.view("get_version", {}, fresh),
     ]);
     assert(
-      version === 2,
+      version === 2 || version === 3,
       "Native wardrobe is awaiting its contract upgrade.",
       503,
     );

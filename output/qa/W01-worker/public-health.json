@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "app": "QuestLayer",
+  "version": "0.1.0",
+  "mode": "demo",
+  "worldPreparation": {
+    "cityId": "plzen",
+    "timezone": "Europe/Prague",
+    "version": 1,
+    "financialMode": "demo",
+    "days": [
+      {
+        "day": "2026-10-31",
+        "state": "ready",
+        "attempts": 1,
+        "updatedAt": 1793416757052
+      },
+      {
+        "day": "2026-11-01",
+        "state": "ready",
+        "attempts": 1,
+        "updatedAt": 1793416757246
+      }
+    ]
+  },
+  "now": 1793416844887
+}

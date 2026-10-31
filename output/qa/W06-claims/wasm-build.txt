@@ -1,0 +1,3 @@
+   Compiling auratrail-game v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/game)
+   Compiling auratrail-collectibles v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/collectibles)
+    Finished `release` profile [optimized] target(s) in 3.41s

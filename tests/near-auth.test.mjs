@@ -92,6 +92,7 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
         nft_total_supply: "2",
         nft_tokens: [avatar, aura],
         get_version: 2,
+        get_award_signer: null,
         nft_tokens_for_owner:
           args.account_id === "alice.testnet" ? [avatar, aura] : [],
         get_equipment: {

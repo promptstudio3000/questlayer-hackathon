@@ -1,3 +1,5 @@
+import { AuraClaims } from "./AuraClaims";
+import type { NativeAuraClaim } from "./types";
 import { NativeWardrobe, nativeAppearanceItems } from "./NativeWardrobe";
 import type { NativeWardrobeState, NativeItem } from "./types";
 import {
@@ -641,6 +643,104 @@ export default function App() {
           ? "Your NEAR outfit is on the map."
           : "Your demo outfit is on the map.",
       );
+    });
+  }
+  async function mintEarnedAura(item: Item) {
+    await action("native-claim", async () => {
+      try {
+        const { wallet, accountId } = await chooseNearAccount();
+        if (!player?.wallets.some((w) => w.account_id === accountId))
+          throw Error("Select the linked NEAR wallet receiving this Aura.");
+        if (!wallet.manifest.features.signAndSendTransaction)
+          throw Error("Choose a wallet that supports NEAR transactions.");
+        const claim = await api<NativeAuraClaim>("/native/claims", {
+          itemId: item.id,
+          accountId,
+        });
+        await me();
+        if (claim.state !== "minted") {
+          if (!claim.contractId.endsWith(".testnet"))
+            throw Error("Aura claims are testnet-only.");
+          if (!wallet.manifest.features.signAndSendTransaction)
+            throw Error("Choose a wallet that supports NEAR transactions.");
+          const result = await wallet.signAndSendTransaction({
+            network: "testnet",
+            signerId: accountId,
+            receiverId: claim.contractId,
+            actions: [
+              {
+                type: "FunctionCall",
+                params: {
+                  methodName: "redeem_aura",
+                  args: {
+                    claim_id: claim.claim_id,
+                    edition: claim.edition,
+                    receiver_id: claim.receiver_id,
+                    expires_at_ms: claim.expires_at,
+                    signature: claim.signature,
+                  },
+                  gas: "100000000000000",
+                  deposit: (5n * 10n ** 22n).toString(),
+                },
+              },
+            ],
+          });
+          if (
+            result.final_execution_status === "NONE" ||
+            "Failure" in result.status
+          )
+            throw Error(
+              "The NFT transaction was not confirmed. Your claim remains available.",
+            );
+        }
+        let minted = false;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const result = await api<{ claim: NativeAuraClaim; player: Player }>(
+            "/native/claims/confirm",
+            { itemId: item.id },
+          );
+          setPlayer(result.player);
+          if (result.claim.state === "minted") {
+            minted = true;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 800));
+        }
+        if (!minted)
+          throw Error(
+            "Your NFT confirmation is still pending. Use Check claim before retrying.",
+          );
+        await refreshNative(true);
+        notify(
+          "Your Aura NFT is ready. Choose where to wear it in your NEAR inventory.",
+        );
+      } finally {
+        await me();
+      }
+    });
+  }
+  async function checkAuraClaim(item: Item) {
+    await action("native-claim-check", async () => {
+      const result = await api<{ claim: NativeAuraClaim; player: Player }>(
+        "/native/claims/confirm",
+        { itemId: item.id },
+      );
+      setPlayer(result.player);
+      await refreshNative(true);
+      notify(
+        result.claim.state === "minted"
+          ? "Your native Aura is confirmed."
+          : "No NFT mint is confirmed yet. You can finish the claim or restore it after expiry.",
+      );
+    });
+  }
+  async function restoreDemoAura(item: Item) {
+    await action("native-claim-restore", async () => {
+      const result = await api<{ player: Player }>("/native/claims/restore", {
+        itemId: item.id,
+      });
+      setPlayer(result.player);
+      notify("Your Aura is available in the demo again.");
     });
   }
   async function nativeTransaction(
@@ -1300,30 +1400,41 @@ export default function App() {
             <Inventory
               characterItems={appearanceItems}
               nativeContent={
-                <NativeWardrobe
-                  player={player}
-                  data={nativeWardrobe}
-                  error={nativeError}
-                  busy={busy}
-                  onConnect={connectNear}
-                  onRefresh={() => void refreshNative(true).catch(() => {})}
-                  onMint={(account) =>
-                    nativeTransaction("mint_avatar", account)
-                  }
-                  onEquip={(account, item, slot) =>
-                    nativeTransaction(
-                      nativeWardrobe?.accounts.find(
-                        (a) => a.accountId === account,
-                      )?.equipment[slot] === item.tokenId
-                        ? "unequip_aura"
-                        : "equip_aura",
-                      account,
-                      item,
-                      slot,
-                    )
-                  }
-                  onSource={useNativeOutfit}
-                />
+                <>
+                  <NativeWardrobe
+                    player={player}
+                    data={nativeWardrobe}
+                    error={nativeError}
+                    busy={busy}
+                    onConnect={connectNear}
+                    onRefresh={() => void refreshNative(true).catch(() => {})}
+                    onMint={(account) =>
+                      nativeTransaction("mint_avatar", account)
+                    }
+                    onEquip={(account, item, slot) =>
+                      nativeTransaction(
+                        nativeWardrobe?.accounts.find(
+                          (a) => a.accountId === account,
+                        )?.equipment[slot] === item.tokenId
+                          ? "unequip_aura"
+                          : "equip_aura",
+                        account,
+                        item,
+                        slot,
+                      )
+                    }
+                    onSource={useNativeOutfit}
+                  />
+                  <AuraClaims
+                    player={player}
+                    enabled={!!nativeWardrobe?.claimsEnabled}
+                    busy={busy}
+                    onConnect={connectNear}
+                    onMint={mintEarnedAura}
+                    onConfirm={checkAuraClaim}
+                    onRestore={restoreDemoAura}
+                  />
+                </>
               }
               player={player}
               busy={busy}
@@ -1845,7 +1956,9 @@ function Inventory({
   }, [busy]);
   const [selling, setSelling] = useState<Item | null>(null),
     [price, setPrice] = useState("10");
-  const auras = player.inventory.filter((i) => i.kind === "aura");
+  const auras = player.inventory.filter(
+    (i) => i.kind === "aura" && i.native_claim_state !== "minted",
+  );
   return (
     <>
       <p className="panel-subtitle">
@@ -1937,13 +2050,17 @@ function Inventory({
         </p>
       </section>
       <div className="section-label">
-        <h2>Your Auras</h2>
+        <h2>Your demo Auras</h2>
         <span>{auras.length} ITEMS</span>
       </div>
       {!auras.length && (
         <div className="empty-state">
           <Backpack size={35} />
-          <h3>Your first treasure is waiting</h3>
+          <h3>
+            {player.inventory.some((i) => i.native_claim_state === "minted")
+              ? "More discoveries await"
+              : "Your first treasure is waiting"}
+          </h3>
           <p>
             Find an open free zone and its park chest. No deposit is needed.
           </p>
@@ -1961,10 +2078,17 @@ function Inventory({
               #{i.serial} / 256 ·{" "}
               {i.slot === "above" ? "above character" : "below character"}
             </small>
+            {i.native_claim_state && (
+              <p className="native-item-state">
+                {i.native_claim_state === "minted"
+                  ? "Minted on NEAR · use your NEAR inventory"
+                  : "Reserved for a NEAR claim"}
+              </p>
+            )}
             <div className="item-actions">
               <button
                 onClick={() => onEquip(i)}
-                disabled={!!busy}
+                disabled={!!busy || i.native_claim_state === "minted"}
                 className={i.equipped ? "equipped" : ""}
               >
                 {i.equipped ? (
@@ -1979,6 +2103,7 @@ function Inventory({
               <button
                 onClick={() => setSelling(i)}
                 aria-label={`Sell ${i.name}`}
+                disabled={!!busy || !!i.native_claim_state}
               >
                 <Storefront size={17} />
               </button>

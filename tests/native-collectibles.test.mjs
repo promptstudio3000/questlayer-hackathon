@@ -165,3 +165,35 @@ test("parallel native reads share network verification and a failed check can re
   await assertTestnetRpc(unavailable);
   assert.equal(attempts, 2);
 });
+
+test("claim expiry proof reads the timestamp of the exact finalized claim state block", async () => {
+  const p = {
+    viewNodeStatus: async () => ({ chain_id: "testnet" }),
+    query: async (args) => {
+      assert.equal(args.finality, "final");
+      assert.equal(args.method_name, "get_claim");
+      return {
+        result: Array.from(
+          Buffer.from(
+            JSON.stringify({
+              token_id: "aura:polar:1",
+              receiver_id: "alice.testnet",
+              edition: "polar",
+            }),
+          ),
+        ),
+        block_hash: "final-block-hash",
+      };
+    },
+    viewBlock: async (args) => {
+      assert.deepEqual(args, { blockId: "final-block-hash" });
+      return { header: { timestamp_nanosec: "1793417000123456789" } };
+    },
+  };
+  const result = await new NativeCollectibles(p, contract).claimSnapshot(
+    "earned:test",
+  );
+  assert.equal(result.blockTimestampMs, 1793417000123);
+  assert.equal(result.receiverId, "alice.testnet");
+  assert.equal(result.tokenId, "aura:polar:1");
+});

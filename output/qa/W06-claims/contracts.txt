@@ -1,0 +1,65 @@
+
+> questlayer@0.1.0 test:contracts
+> env PATH="$HOME/.cargo/bin:$PATH" cargo test --manifest-path contracts/Cargo.toml --workspace
+
+   Compiling curve25519-dalek v4.1.3
+   Compiling ed25519 v2.2.3
+   Compiling ed25519-dalek v2.2.0
+   Compiling near-crypto v0.38.0
+   Compiling near-sdk-core v4.4.1
+   Compiling near-vm-runner v0.38.0
+   Compiling near-primitives v0.38.0
+   Compiling near-global-contracts v0.3.2
+   Compiling near-sdk v5.30.0
+   Compiling near-contract-standards v5.30.0
+   Compiling auratrail-collectibles v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/collectibles)
+   Compiling auratrail-game v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/game)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.36s
+     Running unittests src/lib.rs (contracts/target/debug/deps/auratrail_collectibles-08df1961d26c9ac4)
+
+running 19 tests
+test tests::deployment_account_can_migrate_atomically ... ok
+test tests::claim_cannot_redirect_a_retried_mint - should panic ... ok
+test tests::another_wallet_cannot_redeem_a_signed_award - should panic ... ok
+test tests::edition_cap_is_enforced - should panic ... ok
+test tests::award_signature_is_bound_to_contract - should panic ... ok
+test tests::migration_preserves_tokens_counters_and_legacy_equipment ... ok
+test tests::award_signature_cannot_change_edition - should panic ... ok
+test tests::independent_slots_and_moving_one_item ... ok
+test tests::once_only_mint_preserves_the_claim_after_transfer ... ok
+test tests::public_mint_rejected - should panic ... ok
+test tests::starter_avatar_is_owned_by_its_minter ... ok
+test tests::stranger_cannot_migrate - should panic ... ok
+test tests::starter_cannot_be_minted_twice - should panic ... ok
+test tests::stranger_cannot_equip - should panic ... ok
+test tests::returned_transfer_removes_receiver_equipment_storage ... ok
+test tests::signed_award_redeems_once_and_survives_transfer ... ok
+test tests::unredeemed_award_expires_on_chain - should panic ... ok
+test tests::transfer_removes_old_equipment_and_changes_owner ... ok
+test tests::v2_migration_preserves_claims_and_both_equipment_slots ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+
+     Running unittests src/lib.rs (contracts/target/debug/deps/auratrail_game-7f3683b669a478ed)
+
+running 6 tests
+test tests::unfunded_rewards_rejected - should panic ... ok
+test tests::odd_yield_is_conserved ... ok
+test tests::forged_oracle_rejected - should panic ... ok
+test tests::expiration_rolls_same_money_once ... ok
+test tests::solo_quest_and_personal_xp ... ok
+test tests::coin_cannot_pay_twice ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+   Doc-tests auratrail_collectibles
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests auratrail_game
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

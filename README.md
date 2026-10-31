@@ -48,7 +48,7 @@ The deploy target is **https://questlayer.promptstudio3000.com/**. Deployment is
 | Demo staking, maturity, retained yield, withdrawals | Implemented simulation; not a validator deposit |
 | Passkey registration and recovery | Implemented demo identity; not a native NEAR account |
 | Native NEAR sign-in and recovery | Real NEP-413 FullAccess verification; existing wallet restores the same player |
-| Native avatar and Aura wardrobe | Live testnet ownership, caller-minted starter NFT, independent above/below equipment and native appearance selection; gameplay drops still use the demo ledger |
+| Native avatar and Aura wardrobe | Live testnet ownership, caller-minted starter NFT, independent above/below equipment and native appearance selection; earned demo Auras can use player-approved signed NFT claims after testnet activation |
 | Aavegotchi linking | EVM signature verification, read-only Base ownership, loose/nested/equipped inventory and original SVG appearances |
 | Notes with images and optional author GPS | Implemented server storage; image metadata removed |
 | Sponsored tasks | Demo escrow, evidence, creator approval; public arbitration is a later gate |
@@ -93,3 +93,5 @@ See [third-party notices](THIRD-PARTY-NOTICES.md). All public product text and d
 `node scripts/upgrade-collectibles-testnet.mjs` upgrades the existing owned testnet collectible contract with a checked V1→V2 migration and records live equipment/transfer/idempotency proofs. `node scripts/smoke-near-identity.mjs --wardrobe` verifies signed application identity, actual NFT ownership and outfit selection without sending a blockchain transaction. The application uses current public testnet endpoints listed in [NEAR's provider documentation](https://docs.near.org/api/rpc/providers); no player signing key is stored by the server.
 
 Daily city geography is prepared ahead of time by a durable leased worker, independently of treasury allocation. See [daily preparation operations and boundaries](docs/WORLD-WORKER.md). `npm run world:preview -- YYYY-MM-DD` exports a nonfinancial CityPack preview; the public health endpoint exposes readiness without future coordinates.
+
+[Native Aura claims](docs/NATIVE-AURA-CLAIMS.md) connect an earned cosmetic to a capped NEAR NFT through a receiver-bound, expiring signature. The server attests the entitlement; the player's own wallet approves storage and minting. GOLD and staking remain a separate demo economy.

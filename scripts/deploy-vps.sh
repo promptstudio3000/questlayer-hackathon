@@ -26,6 +26,7 @@ source=sqlite3.connect('file:/var/lib/auratrail/auratrail.sqlite?mode=ro',uri=Tr
 dest=sqlite3.connect(sys.argv[1]);source.backup(dest);dest.close();source.close()
 PY
 fi
+if [[ -f /var/lib/auratrail/award-attestor.pem ]]; then cp -a /var/lib/auratrail/award-attestor.pem "$BACKUP_DIR/award-attestor.pem"; fi
 RELEASE_ACTIVATED=0
 rollback(){
  if [[ "$RELEASE_ACTIVATED" == 1 ]]; then
@@ -58,6 +59,7 @@ systemctl enable auratrail >/dev/null
 systemctl restart auratrail
 for i in {1..25}; do if curl -fsS http://127.0.0.1:7091/api/health >/dev/null; then break; fi; sleep 1; done
 curl -fsS http://127.0.0.1:7091/api/health
+if [[ -f /var/lib/auratrail/award-attestor.pem && ! -f "$BACKUP_DIR/award-attestor.pem" ]]; then cp -a /var/lib/auratrail/award-attestor.pem "$BACKUP_DIR/award-attestor.pem"; fi
 python3 - "$CADDY_FILE" <<'PY'
 import pathlib,re,sys
 p=pathlib.Path(sys.argv[1]);source=p.read_text()
