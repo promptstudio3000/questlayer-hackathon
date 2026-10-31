@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-10-31T00:12:30.685Z",
+  "url": "https://questlayer.promptstudio3000.com/",
+  "service": "auratrail",
+  "active": "active",
+  "mode": "demo",
+  "release": "/opt/ps3000/apps/auratrail/releases/20261031T001105Z",
+  "backup": "/opt/ps3000/apps/auratrail/backups/20261031T001105Z",
+  "health": "ok",
+  "testnetOperations": 9,
+  "applicationTests": 20,
+  "contractTests": 8,
+  "productionBuild": "passed",
+  "browserViewport": {
+    "width": 512,
+    "height": 792
+  },
+  "realDeviceValidation": false,
+  "gameplaySettlement": "separate-demo-ledger",
+  "mainnet": false
+}

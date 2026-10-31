@@ -1,0 +1,41 @@
+{
+  "name": "auratrail",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite --host 127.0.0.1",
+    "dev:server": "node --watch server/index.mjs",
+    "build": "tsc -b && vite build",
+    "start": "node server/index.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm test && npm run build",
+    "test:contracts": "env PATH=$HOME/.cargo/bin:$PATH cargo test --manifest-path contracts/Cargo.toml --workspace"
+  },
+  "dependencies": {
+    "@hot-labs/near-connect": "latest",
+    "@phosphor-icons/react": "^2.1.10",
+    "@simplewebauthn/browser": "^14.0.0",
+    "@simplewebauthn/server": "^14.0.3",
+    "h3-js": "^4.3.0",
+    "maplibre-gl": "^5.6.1",
+    "near-api-js": "latest",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sharp": "^0.35.5",
+    "tz-lookup": "^6.1.25",
+    "viem": "^2.57.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.13"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "name": "AuraTrail proposed interface tokens",
+  "status": "proposal-not-imported-by-runtime",
+  "date": "2026-10-31",
+  "brandReference": "https://www.aavegotchi.com/press-kit/AAVEGOTCHi_BRAND_STYLE_GUIDE.pdf",
+  "color": {
+    "ink": "#1A0335",
+    "inkSecondary": "#665577",
+    "surface": "#FCFAFF",
+    "surfaceRaised": "#FFFFFF",
+    "surfaceSoft": "#F2EBFF",
+    "action": "#672EEB",
+    "onAction": "#FFFFFF",
+    "discovery": "#FF1DFF",
+    "onDiscovery": "#1A0335",
+    "coin": "#FEF87D",
+    "onCoin": "#1A0335",
+    "success": "#176553",
+    "successSurface": "#E3F6EE",
+    "error": "#A32947",
+    "errorSurface": "#FFF0F3",
+    "decorativeBorder": "#D7CBE9",
+    "controlBorder": "#806A99",
+    "focus": "#672EEB"
+  },
+  "textPairsToVerify": [
+    ["ink", "surface"],
+    ["ink", "surfaceRaised"],
+    ["inkSecondary", "surface"],
+    ["inkSecondary", "surfaceRaised"],
+    ["inkSecondary", "surfaceSoft"],
+    ["onAction", "action"],
+    ["onDiscovery", "discovery"],
+    ["onCoin", "coin"],
+    ["success", "successSurface"],
+    ["error", "errorSurface"]
+  ],
+  "type": {
+    "familyProposal": "Kanit, system-ui, sans-serif",
+    "weights": [400, 500, 600],
+    "body": { "sizePx": 16, "lineHeight": 1.5 },
+    "secondary": { "sizePx": 14, "lineHeight": 1.45 },
+    "annotation": { "sizePx": 12, "lineHeight": 1.4 },
+    "headingPx": [20, 24, 32],
+    "amountNumerals": "tabular-nums"
+  },
+  "spacePx": [4, 8, 12, 16, 24, 32, 48],
+  "radiusPx": { "control": 8, "item": 12, "sheet": 20 },
+  "touchTargetMinPx": 48,
+  "layer": { "map": 0, "markers": 10, "hud": 20, "navigation": 30, "sheet": 40, "modal": 50, "feedback": 60 },
+  "motion": {
+    "pressMs": 100,
+    "feedbackMs": 160,
+    "sheetMs": 240,
+    "firstAuraRevealMaxMs": 900,
+    "easeOut": "cubic-bezier(0.23, 1, 0.32, 1)",
+    "reducedMotion": "Remove spatial/camera movement and decorative loops; retain optional brief opacity feedback."
+  }
+}

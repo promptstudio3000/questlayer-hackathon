@@ -1,0 +1,68 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-10-30T23:54:07.204Z",
+  "gameContract": "game.auratrail-dev-20261030.testnet",
+  "collectiblesContract": "nfts.auratrail-dev-20261030.testnet",
+  "operator": "auratrail-dev-20261030.testnet",
+  "smokeAccount": "explorer.auratrail-dev-20261030.testnet",
+  "tokenId": "aura:polar:1",
+  "transactions": [
+    {
+      "label": "publish shared street coin batch",
+      "transaction": "YLAq4h8KLkUZ49QfxbefSNXfnoe7wQgdmnzQUv1qwf1"
+    },
+    {
+      "label": "settle one shared coin",
+      "transaction": "7vvSDdnwNygbB4KBeRdFjDhoqucFbeRYgawd1EUswRrb"
+    },
+    {
+      "label": "replay coin without duplicate credit",
+      "transaction": "H9KVZiSddKhgXF5P8QsBwcoPbszA7NNMebhKbnmqRvGN"
+    },
+    {
+      "label": "publish funded solo quest",
+      "transaction": "BLP9DwHUcJN3Ga2yPkGF8fH4KTPVcGCQzL8pN8wiCRtM"
+    },
+    {
+      "label": "complete a quest without another player",
+      "transaction": "3AbnGMNMkWWEfCxvXVPbsDBPuYf2JxFAPZzViP4XKHqF"
+    },
+    {
+      "label": "withdraw actual testnet reward",
+      "transaction": "6EXUUn3ZtbeX23nVbVMXXRpgr355Jh92M5WTVzBvMG56"
+    },
+    {
+      "label": "mint a real NEP-171 Aura",
+      "transaction": "A4vcKDB3E2Kq6H5S6ZGPS5mTV9AinfqCXn7JXkuTi926"
+    },
+    {
+      "label": "equip owned NFT",
+      "transaction": "7mMAdhbGL4V4PMw1Tptg1VScpg7gCg1y53VRXECMUF9a"
+    },
+    {
+      "label": "transfer NFT and clear original equipment",
+      "transaction": "8copWwRPhb6nTHahaTENazvEaNgoX1xkmjGgmEj6BkZZ"
+    }
+  ],
+  "treasury": {
+    "coins": {
+      "available": "99960000000000000000000",
+      "reserved": "30000000000000000000",
+      "awarded": "10000000000000000000"
+    },
+    "zones": {
+      "available": "99900000000000000000000",
+      "reserved": "0",
+      "awarded": "100000000000000000000"
+    },
+    "funded": "200000000000000000000000",
+    "owed": "0",
+    "pending": "0",
+    "paid": "110000000000000000000",
+    "oracle": "auratrail-dev-20261030.testnet",
+    "paused": false
+  },
+  "gameEconomy": "separate-demo-ledger",
+  "intents": "not-deployed",
+  "vault": "not-deployed"
+}

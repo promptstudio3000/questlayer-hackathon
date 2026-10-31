@@ -1,0 +1,14 @@
+{
+  "result": "passed",
+  "localLinkFilesChecked": 10,
+  "requirements": 102,
+  "milestones": 15,
+  "tasks": 89,
+  "acceptanceJourneys": 13,
+  "spatialAcceptanceChecks": 12,
+  "uiPackages": 14,
+  "runtimeChanges": false,
+  "applicationTestsRerun": false,
+  "milestoneTaskCountsMatchText": true,
+  "whitespaceCheck": "passed"
+}

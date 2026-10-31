@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.data/
+target/
+test-results/
+playwright-report/
+.DS_Store
+*.log
+*.tsbuildinfo
+.private/
+*.pem
+*.key
+.near-credentials/

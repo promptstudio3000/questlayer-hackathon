@@ -1,0 +1,1226 @@
+{
+  "schemaVersion": 1,
+  "updated": "2026-10-31",
+  "currentRuntimeStage": "alpha_demo",
+  "nextMilestone": "W00",
+  "runtimeChangedByThisPlanningDelivery": false,
+  "statusVocabulary": [
+    "planned",
+    "building",
+    "verifying",
+    "passed"
+  ],
+  "completionPolicy": "All tasks and the full milestone exit scenario require recorded evidence; disconnected demos do not pass.",
+  "sourceDocuments": [
+    "ROADMAP.md",
+    "docs/GAME-RULES.md",
+    "docs/WORLD-GENERATION.md",
+    "AGENTS.md",
+    "DESIGN.md",
+    "IMPLEMENTATION-PLAN.md",
+    "CREATOR-ECONOMY-PLAN.md",
+    "docs/UI-UX-IMPROVEMENT-PLAN.md",
+    "docs/UI-UX-RESEARCH.md",
+    "docs/design-tokens.json"
+  ],
+  "requirementsCount": 102,
+  "milestones": [
+    {
+      "id": "W00",
+      "title": "Reproducible baseline and integration decisions",
+      "status": "planned",
+      "size": "M",
+      "dependsOn": [],
+      "requirementIds": [
+        "D27",
+        "D28",
+        "D29",
+        "D30",
+        "I01",
+        "I02",
+        "I03",
+        "I07",
+        "I09",
+        "I10",
+        "O08",
+        "O09"
+      ],
+      "acceptanceJourneys": [],
+      "uiPackages": [],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W00.1",
+          "title": "Capture source and deployment baseline",
+          "status": "planned"
+        },
+        {
+          "id": "W00.2",
+          "title": "Establish domain and database boundaries",
+          "status": "planned"
+        },
+        {
+          "id": "W00.3",
+          "title": "Specify spatial migration and durable workers",
+          "status": "planned"
+        },
+        {
+          "id": "W00.4",
+          "title": "Separate arena testnet and mainnet configuration",
+          "status": "planned"
+        },
+        {
+          "id": "W00.5",
+          "title": "Resolve identity assets Intents and iOS spikes",
+          "status": "planned"
+        },
+        {
+          "id": "W00.6",
+          "title": "Prepare isolated tests and secret-safe evidence",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W00/"
+    },
+    {
+      "id": "W01",
+      "title": "City worlds and designed outdoor activities",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W00"
+      ],
+      "requirementIds": [
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15",
+        "E16",
+        "G01",
+        "G02",
+        "G03",
+        "G04",
+        "G05",
+        "G06",
+        "G07",
+        "G08",
+        "G09",
+        "G10",
+        "G11",
+        "G12",
+        "G13",
+        "G14"
+      ],
+      "acceptanceJourneys": [
+        "J01",
+        "J02"
+      ],
+      "uiPackages": [
+        "U03",
+        "U13"
+      ],
+      "spatialAcceptance": [
+        "GEO01",
+        "GEO02",
+        "GEO03",
+        "GEO04",
+        "GEO05",
+        "GEO06",
+        "GEO07",
+        "GEO08",
+        "GEO09",
+        "GEO10",
+        "GEO11",
+        "GEO12"
+      ],
+      "tasks": [
+        {
+          "id": "W01.1",
+          "title": "Review the Plzen CityPack and pedestrian graph",
+          "status": "planned"
+        },
+        {
+          "id": "W01.2",
+          "title": "Implement city world identity and H3 chunk reads",
+          "status": "planned"
+        },
+        {
+          "id": "W01.3",
+          "title": "Validate varied polygons gaps and sector coverage",
+          "status": "planned"
+        },
+        {
+          "id": "W01.4",
+          "title": "Design multiple objectives and quest requirements",
+          "status": "planned"
+        },
+        {
+          "id": "W01.5",
+          "title": "Implement schedules rotation and bounded supply",
+          "status": "planned"
+        },
+        {
+          "id": "W01.6",
+          "title": "Build idempotent generation activation expiry and budgets",
+          "status": "planned"
+        },
+        {
+          "id": "W01.7",
+          "title": "Add outdoor context and honest pedestrian distances",
+          "status": "planned"
+        },
+        {
+          "id": "W01.8",
+          "title": "Provide an operator generation preview",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W01/"
+    },
+    {
+      "id": "W02",
+      "title": "Complete solo experience and interface",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W01"
+      ],
+      "requirementIds": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05",
+        "D06",
+        "D07",
+        "D08",
+        "D09",
+        "D10",
+        "D11",
+        "D12",
+        "D13",
+        "D14",
+        "D15",
+        "D16",
+        "D17",
+        "D18",
+        "D19",
+        "D20",
+        "D21",
+        "D22",
+        "D23",
+        "D24",
+        "D25",
+        "D26",
+        "D27",
+        "D28",
+        "D29",
+        "D30",
+        "D31",
+        "G05",
+        "G12",
+        "G14"
+      ],
+      "acceptanceJourneys": [
+        "J01",
+        "J02"
+      ],
+      "uiPackages": [
+        "U01",
+        "U02",
+        "U03",
+        "U04",
+        "U05",
+        "U06",
+        "U07",
+        "U08",
+        "U09",
+        "U11",
+        "U12",
+        "U13"
+      ],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W02.1",
+          "title": "Adopt readable semantic visual and input foundations",
+          "status": "planned"
+        },
+        {
+          "id": "W02.2",
+          "title": "Implement objective compositions sheets camera and Back",
+          "status": "planned"
+        },
+        {
+          "id": "W02.3",
+          "title": "Model all objective and evidence states truthfully",
+          "status": "planned"
+        },
+        {
+          "id": "W02.4",
+          "title": "Complete confirmed result preview equip and return",
+          "status": "planned"
+        },
+        {
+          "id": "W02.5",
+          "title": "Unify game art feedback selection and progress",
+          "status": "planned"
+        },
+        {
+          "id": "W02.6",
+          "title": "Verify accessibility failures and newcomer experience",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W02/"
+    },
+    {
+      "id": "W03",
+      "title": "Native identity and independent recovery",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W00"
+      ],
+      "requirementIds": [
+        "E02",
+        "E18",
+        "I01",
+        "I02",
+        "I03",
+        "I04",
+        "I08",
+        "I12",
+        "I13"
+      ],
+      "acceptanceJourneys": [
+        "J03"
+      ],
+      "uiPackages": [],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W03.1",
+          "title": "Implement native sign-in and account creation",
+          "status": "planned"
+        },
+        {
+          "id": "W03.2",
+          "title": "Select and prove actual passkey signing",
+          "status": "planned"
+        },
+        {
+          "id": "W03.3",
+          "title": "Define linking recovery and guest migration",
+          "status": "planned"
+        },
+        {
+          "id": "W03.4",
+          "title": "Verify independent recovery and revocation",
+          "status": "planned"
+        },
+        {
+          "id": "W03.5",
+          "title": "Publish profile references and bound delegations",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W03/"
+    },
+    {
+      "id": "W04",
+      "title": "Native avatar Auras and wardrobe",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W02",
+        "W03"
+      ],
+      "requirementIds": [
+        "D07",
+        "D08",
+        "D14",
+        "D16",
+        "D18",
+        "D19",
+        "E17",
+        "E18",
+        "I05",
+        "I06",
+        "I07",
+        "I08",
+        "I13"
+      ],
+      "acceptanceJourneys": [
+        "J04"
+      ],
+      "uiPackages": [
+        "U04",
+        "U07",
+        "U08",
+        "U09",
+        "U14"
+      ],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W04.1",
+          "title": "Mint native avatars and actual capped Aura awards",
+          "status": "planned"
+        },
+        {
+          "id": "W04.2",
+          "title": "Implement both equipment slots and transfer safety",
+          "status": "planned"
+        },
+        {
+          "id": "W04.3",
+          "title": "Unify character composition and loading states",
+          "status": "planned"
+        },
+        {
+          "id": "W04.4",
+          "title": "Complete Base ownership wardrobe and pagination",
+          "status": "planned"
+        },
+        {
+          "id": "W04.5",
+          "title": "Record approved asset catalog rights and origins",
+          "status": "planned"
+        },
+        {
+          "id": "W04.6",
+          "title": "Verify modular GLB coverage and device fallbacks",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W04/"
+    },
+    {
+      "id": "W05",
+      "title": "Staking vault and realized game yield",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W03"
+      ],
+      "requirementIds": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E19",
+        "I01",
+        "I02",
+        "I03",
+        "O08"
+      ],
+      "acceptanceJourneys": [
+        "J05"
+      ],
+      "uiPackages": [],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W05.1",
+          "title": "Specify shares balances fees yield and losses",
+          "status": "planned"
+        },
+        {
+          "id": "W05.2",
+          "title": "Implement pool selection contribution and tier maturity",
+          "status": "planned"
+        },
+        {
+          "id": "W05.3",
+          "title": "Realize genuine net game yield separately from estimates",
+          "status": "planned"
+        },
+        {
+          "id": "W05.4",
+          "title": "Implement independent withdrawal cohorts",
+          "status": "planned"
+        },
+        {
+          "id": "W05.5",
+          "title": "Allocate liquid receipts and calibrate affordable rewards",
+          "status": "planned"
+        },
+        {
+          "id": "W05.6",
+          "title": "Complete authoritative financial states in Wallet",
+          "status": "planned"
+        },
+        {
+          "id": "W05.7",
+          "title": "Review permissions upgrades callbacks and recovery",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W05/"
+    },
+    {
+      "id": "W06",
+      "title": "Gameplay settlement and reconciliation",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W01",
+        "W02",
+        "W04",
+        "W05"
+      ],
+      "requirementIds": [
+        "D05",
+        "D12",
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15",
+        "E16",
+        "E17",
+        "E18",
+        "G10",
+        "G11",
+        "I08",
+        "O10"
+      ],
+      "acceptanceJourneys": [
+        "J02",
+        "J06"
+      ],
+      "uiPackages": [
+        "U03",
+        "U07",
+        "U11"
+      ],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W06.1",
+          "title": "Publish native funded activity commitments",
+          "status": "planned"
+        },
+        {
+          "id": "W06.2",
+          "title": "Separate local feedback receipt and finalization",
+          "status": "planned"
+        },
+        {
+          "id": "W06.3",
+          "title": "Settle actual player XP item and cash rights",
+          "status": "planned"
+        },
+        {
+          "id": "W06.4",
+          "title": "Resolve receipt order review expiry and backing",
+          "status": "planned"
+        },
+        {
+          "id": "W06.5",
+          "title": "Reconcile chain views and crash recovery",
+          "status": "planned"
+        },
+        {
+          "id": "W06.6",
+          "title": "Review and minimize public receipt location linkability",
+          "status": "planned"
+        },
+        {
+          "id": "W06.7",
+          "title": "Bound operator gas storage and exposure",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W06/"
+    },
+    {
+      "id": "W07",
+      "title": "Signed Aura market and Intents compatibility",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W04",
+        "W06"
+      ],
+      "requirementIds": [
+        "E02",
+        "E17",
+        "E18",
+        "I09",
+        "I10"
+      ],
+      "acceptanceJourneys": [
+        "J07"
+      ],
+      "uiPackages": [],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W07.1",
+          "title": "Prove pinned verifier NFT and wNEAR compatibility",
+          "status": "planned"
+        },
+        {
+          "id": "W07.2",
+          "title": "Specify exact-price replay-safe orders",
+          "status": "planned"
+        },
+        {
+          "id": "W07.3",
+          "title": "Implement escrow browse fill cancel and expiry",
+          "status": "planned"
+        },
+        {
+          "id": "W07.4",
+          "title": "Verify atomic exchange and recoverable withdrawal",
+          "status": "planned"
+        },
+        {
+          "id": "W07.5",
+          "title": "Exercise two-player runtime with honest network labels",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W07/"
+    },
+    {
+      "id": "W08",
+      "title": "Community authoring and XP commitments",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W02",
+        "W03"
+      ],
+      "requirementIds": [
+        "C01",
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C06",
+        "D20",
+        "G13",
+        "O03"
+      ],
+      "acceptanceJourneys": [
+        "J08"
+      ],
+      "uiPackages": [
+        "U10"
+      ],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W08.1",
+          "title": "Build Community and move economy navigation",
+          "status": "planned"
+        },
+        {
+          "id": "W08.2",
+          "title": "Implement stable authoring revisions and moderation",
+          "status": "planned"
+        },
+        {
+          "id": "W08.3",
+          "title": "Add atomic earned locked and available XP",
+          "status": "planned"
+        },
+        {
+          "id": "W08.4",
+          "title": "Resolve closing rights and exact XP release",
+          "status": "planned"
+        },
+        {
+          "id": "W08.5",
+          "title": "Implement free follows profiles and useful feeds",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W08/"
+    },
+    {
+      "id": "W09",
+      "title": "Creator funds donations and paid access",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W05",
+        "W06",
+        "W08"
+      ],
+      "requirementIds": [
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "C14",
+        "C15",
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13"
+      ],
+      "acceptanceJourneys": [
+        "J09"
+      ],
+      "uiPackages": [
+        "U10"
+      ],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W09.1",
+          "title": "Migrate conserved native creator funding",
+          "status": "planned"
+        },
+        {
+          "id": "W09.2",
+          "title": "Implement versioned allocation and player routing",
+          "status": "planned"
+        },
+        {
+          "id": "W09.3",
+          "title": "Distribute bounded support rounds with abuse review",
+          "status": "planned"
+        },
+        {
+          "id": "W09.4",
+          "title": "Settle voluntary donations",
+          "status": "planned"
+        },
+        {
+          "id": "W09.5",
+          "title": "Deliver paid entitlements and exact 80/20 settlement",
+          "status": "planned"
+        },
+        {
+          "id": "W09.6",
+          "title": "Protect content and resolve cancellation and refunds",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W09/"
+    },
+    {
+      "id": "W10",
+      "title": "Social publishing evidence and moderation",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W03",
+        "W08"
+      ],
+      "requirementIds": [
+        "C13",
+        "C14",
+        "C15",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O10"
+      ],
+      "acceptanceJourneys": [
+        "J10"
+      ],
+      "uiPackages": [],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W10.1",
+          "title": "Publish public records and pin sanitized media",
+          "status": "planned"
+        },
+        {
+          "id": "W10.2",
+          "title": "Protect paid and private records and disclose permanence",
+          "status": "planned"
+        },
+        {
+          "id": "W10.3",
+          "title": "Complete sponsored evidence rejection appeal and refunds",
+          "status": "planned"
+        },
+        {
+          "id": "W10.4",
+          "title": "Implement reports blocks closures and operator audit",
+          "status": "planned"
+        },
+        {
+          "id": "W10.5",
+          "title": "Finish bounded private-by-default presence",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W10/"
+    },
+    {
+      "id": "W11",
+      "title": "Bounded AI and operator world controls",
+      "status": "planned",
+      "size": "M",
+      "dependsOn": [
+        "W01",
+        "W06",
+        "W10"
+      ],
+      "requirementIds": [
+        "G01",
+        "G02",
+        "G03",
+        "G04",
+        "G05",
+        "G06",
+        "G07",
+        "G08",
+        "G09",
+        "I11",
+        "O05"
+      ],
+      "acceptanceJourneys": [
+        "J11"
+      ],
+      "uiPackages": [],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W11.1",
+          "title": "Ground guide responses in current authoritative content",
+          "status": "planned"
+        },
+        {
+          "id": "W11.2",
+          "title": "Restrict content proposals to approved capabilities",
+          "status": "planned"
+        },
+        {
+          "id": "W11.3",
+          "title": "Validate and snapshot accepted outputs",
+          "status": "planned"
+        },
+        {
+          "id": "W11.4",
+          "title": "Bound costs signatures and operational access",
+          "status": "planned"
+        },
+        {
+          "id": "W11.5",
+          "title": "Preserve deterministic fallback and review controls",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W11/"
+    },
+    {
+      "id": "W12",
+      "title": "Device quality and distribution builds",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W02",
+        "W03",
+        "W04",
+        "W07",
+        "W09",
+        "W10",
+        "W11"
+      ],
+      "requirementIds": [
+        "D04",
+        "D05",
+        "D06",
+        "D07",
+        "D08",
+        "D09",
+        "D10",
+        "D11",
+        "D22",
+        "D23",
+        "D24",
+        "D25",
+        "D26",
+        "O06"
+      ],
+      "acceptanceJourneys": [
+        "J12"
+      ],
+      "uiPackages": [
+        "U01",
+        "U02",
+        "U06",
+        "U12",
+        "U14"
+      ],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W12.1",
+          "title": "Complete viewport keyboard accessibility and motion matrix",
+          "status": "planned"
+        },
+        {
+          "id": "W12.2",
+          "title": "Profile complete journeys on named physical devices",
+          "status": "planned"
+        },
+        {
+          "id": "W12.3",
+          "title": "Deliver PWA cache update and quality fallbacks",
+          "status": "planned"
+        },
+        {
+          "id": "W12.4",
+          "title": "Build iOS account wallet and location integration",
+          "status": "planned"
+        },
+        {
+          "id": "W12.5",
+          "title": "Resolve current store-specific requirements",
+          "status": "planned"
+        },
+        {
+          "id": "W12.6",
+          "title": "Finish purposeful optional effects and visual review",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W12/"
+    },
+    {
+      "id": "W13",
+      "title": "Complete release candidate and city pilot",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W01",
+        "W02",
+        "W03",
+        "W04",
+        "W05",
+        "W06",
+        "W07",
+        "W08",
+        "W09",
+        "W10",
+        "W11",
+        "W12"
+      ],
+      "requirementIds": [
+        "C01",
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "C14",
+        "C15",
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05",
+        "D06",
+        "D07",
+        "D08",
+        "D09",
+        "D10",
+        "D11",
+        "D12",
+        "D13",
+        "D14",
+        "D15",
+        "D16",
+        "D17",
+        "D18",
+        "D19",
+        "D20",
+        "D21",
+        "D22",
+        "D23",
+        "D24",
+        "D25",
+        "D26",
+        "D27",
+        "D28",
+        "D29",
+        "D30",
+        "D31",
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15",
+        "E16",
+        "E17",
+        "E18",
+        "E19",
+        "G01",
+        "G02",
+        "G03",
+        "G04",
+        "G05",
+        "G06",
+        "G07",
+        "G08",
+        "G09",
+        "G10",
+        "G11",
+        "G12",
+        "G13",
+        "G14",
+        "I01",
+        "I02",
+        "I03",
+        "I04",
+        "I05",
+        "I06",
+        "I07",
+        "I08",
+        "I09",
+        "I10",
+        "I11",
+        "I12",
+        "I13",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08",
+        "O09",
+        "O10"
+      ],
+      "acceptanceJourneys": [
+        "J01",
+        "J02",
+        "J03",
+        "J04",
+        "J05",
+        "J06",
+        "J07",
+        "J08",
+        "J09",
+        "J10",
+        "J11",
+        "J12",
+        "J13"
+      ],
+      "uiPackages": [
+        "U01",
+        "U02",
+        "U03",
+        "U04",
+        "U05",
+        "U06",
+        "U07",
+        "U08",
+        "U09",
+        "U10",
+        "U11",
+        "U12",
+        "U13",
+        "U14"
+      ],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W13.1",
+          "title": "Run the integrated city testnet pilot",
+          "status": "planned"
+        },
+        {
+          "id": "W13.2",
+          "title": "Observe daily resets and at least two real exit cycles",
+          "status": "planned"
+        },
+        {
+          "id": "W13.3",
+          "title": "Complete acceptance adverse cases and load targets",
+          "status": "planned"
+        },
+        {
+          "id": "W13.4",
+          "title": "Reconcile native rights and rehearse restore",
+          "status": "planned"
+        },
+        {
+          "id": "W13.5",
+          "title": "Resolve release-blocking defects with evidence",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W13/"
+    },
+    {
+      "id": "W14",
+      "title": "Reviewed mainnet and public distribution",
+      "status": "planned",
+      "size": "L",
+      "dependsOn": [
+        "W13"
+      ],
+      "requirementIds": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15",
+        "E16",
+        "E17",
+        "E18",
+        "E19",
+        "I01",
+        "I02",
+        "I03",
+        "I04",
+        "I05",
+        "I06",
+        "I07",
+        "I08",
+        "I09",
+        "I10",
+        "I11",
+        "I12",
+        "I13",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08",
+        "O09",
+        "O10"
+      ],
+      "acceptanceJourneys": [
+        "J05",
+        "J06",
+        "J07",
+        "J09",
+        "J13"
+      ],
+      "uiPackages": [],
+      "spatialAcceptance": [],
+      "tasks": [
+        {
+          "id": "W14.1",
+          "title": "Complete independent review and emergency rehearsals",
+          "status": "planned"
+        },
+        {
+          "id": "W14.2",
+          "title": "Review rights distribution and real-value requirements",
+          "status": "planned"
+        },
+        {
+          "id": "W14.3",
+          "title": "Prepare concrete reviewed mainnet rollout",
+          "status": "planned"
+        },
+        {
+          "id": "W14.4",
+          "title": "Prove canonical mainnet Intents with authorized amounts",
+          "status": "planned"
+        },
+        {
+          "id": "W14.5",
+          "title": "Validate capped production rights and operations",
+          "status": "planned"
+        },
+        {
+          "id": "W14.6",
+          "title": "Publish honest source and competition materials",
+          "status": "planned"
+        },
+        {
+          "id": "W14.7",
+          "title": "Release web and separately complete iOS distribution",
+          "status": "planned"
+        }
+      ],
+      "evidence": [],
+      "completedAt": null,
+      "evidenceDirectory": "output/qa/W14/"
+    }
+  ]
+}
