@@ -1,0 +1,57 @@
+/* Light Aavegotchi-inspired accents on top of the clean interface: crisp
+   outlines and hard offset shadows on game controls and map objects. The
+   surfaces, typography and map stay as designed in DESIGN.md. */
+.primary-button {
+  border: 2px solid var(--ink, #1a0335);
+  box-shadow: 3px 3px 0 var(--ink, #1a0335);
+  border-radius: 10px;
+  transition:
+    transform var(--motion-press, 100ms) ease-out,
+    box-shadow var(--motion-press, 100ms) ease-out;
+}
+.primary-button:not(:disabled):active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink, #1a0335);
+}
+.primary-button:disabled {
+  box-shadow: none;
+  border-color: var(--decorative-border, #d7cbe9);
+}
+.recommended-quest {
+  box-shadow: 4px 4px 0 var(--action, #672eeb);
+}
+/* Map objects read as crisp sprites: 2px ink outline, hard shadow, no blur. */
+.zone-map-pin.game-object-map-pin,
+.quest-map-pin.game-object-map-pin {
+  border: 2px solid var(--ink, #1a0335);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 #1a033566;
+  image-rendering: pixelated;
+}
+.game-object-map-pin[aria-pressed="true"] {
+  outline: 3px solid var(--discovery, #ff1dff);
+  outline-offset: 2px;
+}
+.zone-map-pin.game-object-map-pin:hover,
+.quest-map-pin.game-object-map-pin:hover {
+  transform: translateY(-1px);
+}
+.player-marker,
+.other-player-marker {
+  filter: drop-shadow(0 2px 0 #1a033540);
+}
+@media (prefers-reduced-motion: reduce) {
+  .primary-button,
+  .zone-map-pin.game-object-map-pin,
+  .quest-map-pin.game-object-map-pin {
+    transition: none;
+  }
+}
+/* No eyebrow-style labels: form labels read as sentences. */
+.welcome-card label,
+.inventory-kicker,
+.section-label span {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 14px;
+}

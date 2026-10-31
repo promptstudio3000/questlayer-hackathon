@@ -57,6 +57,7 @@ import {
   type VaultRequest,
 } from "./native-vault-quote";
 import "./styles.css";
+import "./theme-accents.css";
 import type { NativeTradeRequest } from "./types";
 import { AuraClaims } from "./AuraClaims";
 import type { NativeAuraClaim } from "./types";
@@ -3483,7 +3484,6 @@ function Welcome({
       onClose={() => {}}
     >
       <section className="welcome-card">
-        <div className="eyebrow">WELCOME TO QUESTLAYER</div>
         <div className="welcome-art">
           <span className="orbit one" />
           <span className="orbit two" />

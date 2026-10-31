@@ -73,7 +73,6 @@ export function NativeProfilePanel({
     >
       <header>
         <div>
-          <span className="eyebrow">NEAR SOCIAL · TESTNET</span>
           <h3>Your public explorer</h3>
         </div>
         <Wallet size={24} aria-hidden="true" />

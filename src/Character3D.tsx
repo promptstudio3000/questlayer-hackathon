@@ -84,7 +84,6 @@ export function Character3D({
       <section className="character-room">
         <header>
           <div>
-            <span className="eyebrow">DRESSING ROOM</span>
             <h2>Your look, in 3D</h2>
           </div>
           <button
