@@ -1,0 +1,340 @@
+/* Native expeditions use the same map-first identity with explicit testnet value. */
+.native-expeditions {
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border, #615477);
+  border-radius: 20px;
+  background: var(--panel, #211b35);
+  color: var(--text, #f3edff);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.native-expedition-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.native-expedition-heading h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.native-expedition-heading p {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+.native-expeditions button,
+.native-expeditions select {
+  min-height: 48px;
+  font: inherit;
+  max-width: 100%;
+  white-space: normal;
+}
+.native-expedition-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.native-expedition-actions label {
+  display: grid;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+}
+.native-expedition-actions select {
+  width: 100%;
+  min-width: 0;
+}
+.native-expeditions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+.native-expeditions svg {
+  flex: none;
+}
+.native-expeditions p {
+  margin: 12px 0;
+}
+.native-expeditions .native-secondary,
+.native-expeditions small {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d1c5e5;
+}
+.native-consent {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #7d669e;
+  border-radius: 12px;
+}
+.native-consent label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.native-consent input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  margin-top: 3px;
+}
+.native-consent label {
+  min-height: 48px;
+  cursor: pointer;
+}
+.native-balance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid #615477;
+}
+.native-balance > div {
+  display: grid;
+  gap: 4px;
+}
+.native-balance strong {
+  font-size: 22px;
+}
+.native-balance span {
+  font-size: 14px;
+}
+.native-location-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px;
+  background: #33283f;
+  border-radius: 12px;
+  margin: 16px 0;
+}
+.native-location-state span {
+  flex: 1;
+  min-width: 170px;
+}
+.native-board-toggle {
+  width: 100%;
+  font-weight: 700;
+}
+.native-coin-list > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #615477;
+}
+.native-coin-list span {
+  flex: 1;
+}
+.native-quest-list {
+  display: grid;
+  gap: 16px;
+}
+.native-quest {
+  padding: 16px;
+  border-radius: 16px;
+  background: #302441;
+  border: 1px solid #625076;
+}
+.native-quest h4 {
+  font-size: 20px;
+  margin: 4px 0;
+}
+.native-quest > small:last-child {
+  display: block;
+  margin-top: 12px;
+}
+.native-notice {
+  padding: 12px;
+  background: #224138;
+  border-radius: 10px;
+}
+.native-error {
+  padding: 12px;
+  background: #562d40;
+  border-radius: 10px;
+}
+.native-receipts {
+  margin-top: 18px;
+}
+.native-receipts summary {
+  min-height: 48px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+.native-receipts > div {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.native-receipts span {
+  overflow-wrap: anywhere;
+}
+.native-receipts a {
+  color: #e0c4ff;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+}
+.native-receipts .native-vault {
+  display: grid;
+  gap: 4px;
+}
+.native-target-pin {
+  padding: 8px 12px;
+  max-width: 210px;
+  background: #342249;
+  color: #fff;
+  border: 2px solid #c8ff76;
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: center;
+  box-shadow: 0 4px 16px #0005;
+}
+.native-objective {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #9fc762;
+  border-radius: 14px;
+  background: #302441;
+  margin: 8px 0;
+  color: #fff;
+  overflow: hidden;
+}
+.native-objective button {
+  min-height: 48px;
+  min-width: 48px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+}
+.native-objective .native-objective-open {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.native-objective span {
+  flex: 1;
+  min-width: 0;
+}
+.native-objective svg {
+  flex-shrink: 0;
+}
+.native-objective strong {
+  display: block;
+  font-size: 16px;
+}
+.native-objective small {
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.sheet-compact .native-objective {
+  margin: 0;
+  min-height: 100px;
+}
+@media (max-width: 420px) {
+  .native-expeditions {
+    padding: 16px;
+  }
+  .native-expedition-actions > * {
+    flex: 1 1 100%;
+  }
+  .native-quest {
+    padding: 13px;
+  }
+  .native-consent {
+    padding: 10px;
+  }
+}
+.native-staking h2 {
+  font-size: 22px;
+  margin-top: 0;
+}
+.native-staking-fields {
+  display: grid;
+  gap: 16px;
+}
+.native-staking-fields label,
+.native-stake-amount {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+.native-staking input:not([type="checkbox"]),
+.native-staking select {
+  min-height: 48px;
+  font-size: 16px;
+  width: 100%;
+  min-width: 0;
+}
+.native-staking input[type="range"] {
+  accent-color: #bdf47e;
+}
+.native-setup-consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 48px;
+  margin: 16px 0;
+}
+.native-setup-consent input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+}
+.native-position {
+  margin: 18px 0;
+}
+.native-position h3 {
+  overflow-wrap: anywhere;
+  font-size: 20px;
+}
+.native-position a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: #e0c4ff;
+}
+.native-position dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.native-position dt {
+  font-size: 14px;
+  color: #d1c5e5;
+}
+.native-position dd {
+  margin: 2px 0;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 420px) {
+  .native-position dl {
+    grid-template-columns: 1fr;
+  }
+}
+.native-expeditions label {
+  color: #e4dbf5;
+  font-size: 16px;
+}
+.native-expeditions select {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

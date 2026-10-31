@@ -14,7 +14,7 @@
     "start": "node server/index.mjs",
     "test": "node --test --test-concurrency=4 tests/*.test.mjs",
     "check": "npm test && npm run build",
-    "test:contracts": "env PATH=\"$HOME/.cargo/bin:$PATH\" cargo test --manifest-path contracts/Cargo.toml --workspace",
+    "test:contracts": "bash scripts/build-contracts.sh --test",
     "world:prepare": "node server/prepare-worlds.mjs --once",
     "world:preview": "node server/prepare-worlds.mjs --preview",
     "staking:probe": "node scripts/probe-staking-testnet.mjs",

@@ -483,7 +483,7 @@
         {
           "id": "W05.3",
           "title": "Realize genuine net game yield separately from estimates",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W05.4",
@@ -498,19 +498,22 @@
         {
           "id": "W05.6",
           "title": "Complete authoritative financial states in Wallet",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W05.7",
           "title": "Review permissions upgrades callbacks and recovery",
-          "status": "planned"
+          "status": "building"
         }
       ],
       "evidence": [
         "docs/NATIVE-STAKING-FOUNDATION.md",
         "output/qa/W05/staking-pools.json",
         "output/qa/W05/native-funding-simulation.json",
-        "output/qa/W05/checks.txt"
+        "output/qa/W05/checks.txt",
+        "docs/NATIVE-REWARDS-AND-VAULT.md",
+        "public/native-rewards-testnet.json",
+        "output/qa/W05-W06-native/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W05/"
@@ -558,7 +561,7 @@
         {
           "id": "W06.1",
           "title": "Publish native funded activity commitments",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W06.2",
@@ -594,7 +597,10 @@
       "evidence": [
         "docs/NATIVE-AURA-CLAIMS.md",
         "output/qa/W06-claims/checks.txt",
-        "output/qa/W06-claims/contracts.txt"
+        "output/qa/W06-claims/contracts.txt",
+        "docs/NATIVE-REWARDS-AND-VAULT.md",
+        "public/native-rewards-testnet.json",
+        "output/qa/W05-W06-native/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W06/"

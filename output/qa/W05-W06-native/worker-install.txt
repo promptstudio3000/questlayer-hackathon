@@ -1,0 +1,1 @@
+{"nativeServiceKeys": "installed privately", "playerWalletKeysUploaded": false, "workerReceiver": "questlayer-rewards-20261031.testnet", "serviceRestarted": false}

@@ -2,6 +2,14 @@ import type { NearbyExplorer } from "./types";
 import { Character3D } from "./Character3D";
 import { OriginalItemGallery } from "./OriginalItemGallery";
 import { NativeMarketPanel } from "./NativeMarketPanel";
+import { NativeExpeditions } from "./NativeExpeditions";
+import { NativeStaking } from "./NativeStaking";
+import {
+  assertVaultQuote,
+  type VaultQuote,
+  type VaultRequest,
+} from "./native-vault-quote";
+import "./styles.css";
 import type { NativeTradeRequest } from "./types";
 import { AuraClaims } from "./AuraClaims";
 import type { NativeAuraClaim } from "./types";
@@ -150,6 +158,9 @@ export default function App() {
     [arena, setArena] = useState(true),
     [tab, setTab] = useState<Tab>("explore"),
     [selected, setSelected] = useState<Zone | null>(null),
+    [nativeTarget, setNativeTarget] = useState<
+      (Point & { label: string }) | null
+    >(null),
     [globe, setGlobe] = useState(false),
     [overview, setOverview] = useState(false),
     [sheetExpanded, setSheetExpanded] = useState(false),
@@ -795,6 +806,89 @@ export default function App() {
     });
     return result === true;
   }
+  async function withdrawNativeReward(
+    expectedAccount: string,
+    contractId: string,
+  ): Promise<boolean> {
+    const result = await action("native-withdrawal", async () => {
+      const { wallet, accountId } = await chooseNearAccount();
+      if (
+        accountId !== expectedAccount ||
+        !player?.wallets.some((w) => w.account_id === accountId)
+      )
+        throw Error("Choose the linked receiving wallet.");
+      const configured = await api<{ contractId: string }>(
+        "/native/rewards?account=" + encodeURIComponent(accountId),
+      );
+      if (
+        configured.contractId !== contractId ||
+        !contractId.endsWith(".testnet")
+      )
+        throw Error("The native reward contract changed. Refresh first.");
+      const outcome = await wallet.signAndSendTransaction({
+        network: "testnet",
+        signerId: accountId,
+        receiverId: contractId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: "withdraw",
+              args: {},
+              gas: "100000000000000",
+              deposit: "1",
+            },
+          },
+        ],
+      });
+      if (
+        outcome.final_execution_status === "NONE" ||
+        "Failure" in outcome.status
+      )
+        throw Error(
+          "Withdrawal has not confirmed. Your pending or available balance remains on NEAR.",
+        );
+      return true;
+    });
+    return result === true;
+  }
+  async function operateNativeVault(request: VaultRequest): Promise<boolean> {
+    const result = await action("native-staking", async () => {
+      const { wallet, accountId } = await chooseNearAccount();
+      if (
+        accountId !== request.accountId ||
+        !player?.wallets.some((w) => w.account_id === accountId)
+      )
+        throw Error("Choose the linked wallet shown for this position.");
+      const quote = await api<VaultQuote>("/native/vaults/prepare", request);
+      assertVaultQuote(quote, request);
+      const outcome = await wallet.signAndSendTransaction({
+        network: "testnet",
+        signerId: accountId,
+        receiverId: quote.receiverId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: quote.methodName,
+              args: quote.args,
+              gas: quote.gas,
+              deposit: quote.deposit,
+            },
+          },
+        ],
+      });
+      if (
+        outcome.final_execution_status === "NONE" ||
+        "Failure" in outcome.status
+      )
+        throw Error(
+          "The staking operation has not confirmed. Refresh the position before retrying.",
+        );
+      return true;
+    });
+    return result === true;
+  }
   async function publishNativeProfile(
     account: string,
     avatar: { contractId: string; tokenId: string } | null,
@@ -1137,6 +1231,7 @@ export default function App() {
         onQuest={() => setSheetExpanded(true)}
         overview={overview}
         focusZone={selected}
+        nativeTarget={nativeTarget}
         world={world}
         position={position}
         arena={arena}
@@ -1308,6 +1403,27 @@ export default function App() {
               <ArrowRight />
             </button>
           )}
+          {tab === "explore" && nativeTarget && (
+            <div className="native-objective">
+              <button
+                className="native-objective-open"
+                onClick={() => setTab("wallet")}
+              >
+                <MapPin size={22} />
+                <span>
+                  <strong>{nativeTarget.label}</strong>
+                  <small>Native testnet · Open task</small>
+                </span>
+                <ArrowRight size={18} />
+              </button>
+              <button
+                aria-label="Clear native checkpoint"
+                onClick={() => setNativeTarget(null)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+          )}
           <div className="panel-heading">
             <div>
               <div className="eyebrow">
@@ -1332,7 +1448,7 @@ export default function App() {
               <p className="panel-subtitle">
                 Step outside. Your next discovery is around the corner.
               </p>
-              {recommended && recommendedZone && (
+              {recommended && recommendedZone && !nativeTarget && (
                 <button
                   className="recommended-quest"
                   onClick={() => selectZone(recommendedZone, recommended.id)}
@@ -1706,14 +1822,39 @@ export default function App() {
             />
           )}
           {tab === "wallet" && (
-            <WalletPanel
-              player={player}
-              busy={busy}
-              action={action}
-              onPlayer={setPlayer}
-              onNear={connectNear}
-              notify={notify}
-            />
+            <>
+              <NativeExpeditions
+                player={player}
+                fix={fix}
+                arena={arena}
+                position={position}
+                onConnect={connectNear}
+                onLocate={() => void locate()}
+                onWithdraw={withdrawNativeReward}
+                onFocus={(target) => {
+                  setNativeTarget(target);
+                  setSelected(null);
+                  setOverview(false);
+                  setFollow(false);
+                  setGlobe(false);
+                  setSheetExpanded(false);
+                  setTab("explore");
+                }}
+              />
+              <NativeStaking
+                player={player}
+                onConnect={connectNear}
+                onTransaction={operateNativeVault}
+              />
+              <WalletPanel
+                player={player}
+                busy={busy}
+                action={action}
+                onPlayer={setPlayer}
+                onNear={connectNear}
+                notify={notify}
+              />
+            </>
           )}
           {tab === "fund" && <FundPanel />}
           {tab === "market" && (
@@ -2035,7 +2176,7 @@ export default function App() {
       )}
       {showNpc && <Npc onClose={() => setShowNpc(false)} />}
       <div className="demo-footer">
-        DEMO GOLD · no real deposits <span>✦</span> Built on NEAR
+        DEMO GOLD · NEAR TESTNET <span>✦</span> QuestLayer
       </div>
     </div>
   );
@@ -2811,9 +2952,9 @@ function WalletPanel({
           </button>
         )}
         <p className="fine-print">
-          The staking vault and on-chain market are not connected to gameplay
-          yet. Demo GOLD stays separate from your real balance. Never enter a
-          recovery phrase here.
+          Native expeditions and Aura trading use separate testnet contracts.
+          The staking vault is an experimental project pilot. Demo GOLD stays
+          separate from native rewards. Never enter a recovery phrase here.
         </p>
       </section>
       <section className="form-section">

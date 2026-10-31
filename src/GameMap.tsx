@@ -22,6 +22,7 @@ export type GameMapProps = {
   onQuest: () => void;
   overview: boolean;
   focusZone: Zone | null;
+  nativeTarget?: (Point & { label: string }) | null;
   world: World | null;
   position: Point;
   arena: boolean;
@@ -85,6 +86,30 @@ export function GameMap(props: GameMapProps) {
   const equipmentKey = props.equipped
     .map((i) => `${i.id}:${i.color}:${i.slot}`)
     .join("|");
+  useEffect(() => {
+    const m = map.current,
+      target = props.nativeTarget;
+    if (!m || !ready || !target || props.globe) return;
+    const node = document.createElement("div");
+    node.className = "native-target-pin";
+    node.textContent = target.label;
+    const marker = new maplibregl.Marker({ element: node, anchor: "bottom" })
+      .setLngLat([target.lng, target.lat])
+      .addTo(m);
+    if (!props.follow)
+      m.easeTo({
+        center: [target.lng, target.lat],
+        zoom: 17,
+        pitch: 43,
+        offset: window.innerWidth < 760 ? [0, -100] : [200, 0],
+        duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? 0
+          : 400,
+      });
+    return () => {
+      marker.remove();
+    };
+  }, [ready, props.nativeTarget, props.globe, props.follow]);
   useEffect(() => {
     if (!el.current) return;
     let gone = false;

@@ -138,3 +138,25 @@ test("referenced note images are privately preserved and unsafe media references
   assert.throws(f.run);
   assert.ok(readdirSync(f.destination).includes(report.snapshotId));
 });
+
+test("native attestor and scoped worker key are included privately without becoming player wallet keys", (t) => {
+  const f = fixture(t);
+  for (const name of ["reward-attestor.pem", "reward-worker.json"])
+    writeFileSync(join(f.state, name), "test-only service capability", {
+      mode: 0o600,
+    });
+  const r = f.run();
+  const folder = readdirSync(f.destination).find((x) =>
+    /^\d{8}T\d{6}Z-/.test(x),
+  );
+  const metadata = JSON.parse(
+    readFileSync(join(f.destination, folder, "metadata.json")),
+  );
+  assert.deepEqual(metadata.nativeServiceKeysIncluded, [
+    "reward-attestor.pem",
+    "reward-worker.json",
+  ]);
+  assert.equal(metadata.playerWalletSigningKeysIncluded, false);
+  for (const name of metadata.nativeServiceKeysIncluded)
+    assert.equal(statSync(join(f.destination, folder, name)).mode & 0o077, 0);
+});

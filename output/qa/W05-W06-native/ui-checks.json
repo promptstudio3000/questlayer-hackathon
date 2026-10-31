@@ -1,0 +1,31 @@
+{
+  "labelContrast": 12.37,
+  "measuredLabelFont": "16px",
+  "bodyFont": "16px",
+  "enlargedTextFixture": "20px",
+  "actualDeviceKeyboardVerified": false,
+  "horizontalOverflowObserved": false,
+  "walletViewports": [
+    [
+      360,
+      800
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      844,
+      390
+    ],
+    [
+      1280,
+      720
+    ]
+  ],
+  "reducedHeightFixture": [
+    390,
+    420
+  ],
+  "minimumObservedNewButtonHeight": 48
+}

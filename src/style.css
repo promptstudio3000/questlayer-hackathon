@@ -3244,7 +3244,7 @@ select {
     z-index: 3;
   }
   .sheet-compact
-    > :not(.sheet-toggle):not(.recommended-quest):not(.compact-selection) {
+    > :not(.sheet-toggle):not(.recommended-quest):not(.compact-selection):not(.native-objective) {
     display: none !important;
   }
   .sheet-compact .recommended-quest {

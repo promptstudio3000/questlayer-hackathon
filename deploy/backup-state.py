@@ -71,6 +71,18 @@ with open(destination / ".backup.lock", "a") as lock:
                 shutil.copyfileobj(src, dst)
                 dst.flush()
                 os.fsync(dst.fileno())
+        native_keys = []
+        for name in ("reward-attestor.pem", "reward-worker.json"):
+            key = state / name
+            assert not key.is_symlink(), "Native service key must be a regular state file"
+            if key.is_file():
+                assert key.stat().st_size <= 4096, "Unexpected service key size"
+                with open(key, "rb") as src, open(pending / name, "xb") as dst:
+                    shutil.copyfileobj(src, dst)
+                    dst.flush()
+                    os.fsync(dst.fileno())
+                (pending / name).chmod(0o600)
+                native_keys.append(name)
         media = []
         for reference in sorted(media_references):
             match = re.fullmatch(r"/api/media/(image_[a-f0-9-]{1,80}\.jpg)", reference)
@@ -89,6 +101,7 @@ with open(destination / ".backup.lock", "a") as lock:
         metadata = {"application": "QuestLayer", "format": 1, "snapshotId": identifier,
                     "createdAt": now.isoformat(), "integrity": "ok", "databaseBytes": snapshot.stat().st_size,
                     "databaseSha256": digest.hexdigest(), "awardAttestorIncluded": included,
+                    "nativeServiceKeysIncluded": native_keys,
                     "referencedMedia": media,
                     "playerWalletSigningKeysIncluded": False}
         with open(pending / "metadata.json", "x") as file:

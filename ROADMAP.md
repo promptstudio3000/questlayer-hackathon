@@ -368,3 +368,8 @@ Each extension needs a complete rule/state/funding specification and its own acc
 ### W04 follow-up — actual artwork in play
 
 The local map now uses the actual bounded SDK GLB and follows visual heading, with official starter SVG layers shared across the UI and a persistent 2D fallback preference. Map Auras remain screen-space for readability. Original portrait backgrounds are distinguished from unsupported character slots, preserving more accurate 3D character coverage without losing clothing. Linked original item pictures use canonical `getItemSvg` reads in a paginated, ownership-checked gallery; manual refresh clears an unverifiable selected appearance. Evidence: `docs/ASSET-CATALOG.md` and `output/qa/W04-real-assets/`. W04 remains **building**: the first-50-original limit, complete modular dressing/catalog rights and physical-device acceptance are not passed.
+
+
+### Native funding implementation, 31 October 2026
+
+W05/W06 now include deployed testnet vault, keyless vault factory and funded reward contracts, wallet-signed position actions, six location-specific three-stop walks, a separate native coin trail and a durable settlement/distribution worker. Read [Native rewards and vault](docs/NATIVE-REWARDS-AND-VAULT.md) and [verification evidence](output/qa/W05-W06-native/README.md) before extending this boundary. These work packages remain **building**: real epoch-based exit completion, observed realized yield, partial exits/contribution changes, hardened GPS and independent contract review are still gates. Mainnet and the demo ledger are not enabled for real-money settlement.

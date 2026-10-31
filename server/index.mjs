@@ -7,6 +7,9 @@ import {
 } from "./gotchi-items.mjs";
 import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
+import { NativeRewards } from "./native/rewards.mjs";
+import { startRewardWorker } from "./native/reward-worker.mjs";
+import { NativeVaults } from "./native/vaults.mjs";
 import { NativeSocialProfile } from "./native/social-profile.mjs";
 import { resolvePublicFile } from "./static-files.mjs";
 import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
@@ -107,6 +110,26 @@ const awardSigner = loadAwardSigner(
     ),
 );
 const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner);
+const rewardsManifestPath = [
+  resolve(APP_ROOT, "public/native-rewards-testnet.json"),
+  resolve(APP_ROOT, "dist/native-rewards-testnet.json"),
+].find((p) => existsSync(p));
+const rewardsConfig = rewardsManifestPath
+  ? JSON.parse(readFileSync(rewardsManifestPath, "utf8"))
+  : null;
+const nativeRewards =
+  rewardsConfig && process.env.REWARD_ATTESTOR_PATH
+    ? new NativeRewards(
+        db,
+        provider,
+        rewardsConfig,
+        loadAwardSigner(process.env.REWARD_ATTESTOR_PATH),
+      )
+    : null;
+const nativeVaults = rewardsConfig?.factory
+  ? new NativeVaults(db, provider, rewardsConfig)
+  : null;
+if (nativeRewards) nativeRewards.vaultRegistry = nativeVaults;
 const gotchiModels = new GotchiModels();
 const gotchiItemArt = new GotchiItemArt();
 const originalLookups = new Map();
@@ -296,6 +319,9 @@ async function api(req, res, url) {
       version: "0.1.0",
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
+      nativeRewards: nativeRewards
+        ? nativeRewards.workerStatus()
+        : { status: "not-configured" },
       now: Date.now(),
     });
   if (path === "/api/config")
@@ -536,6 +562,77 @@ async function api(req, res, url) {
   if (path === "/api/native/collection" && method === "GET")
     return respond(res, await nativeCollectibles.collection());
   const player = auth(req);
+  if (
+    path.startsWith("/api/native/rewards") ||
+    path.startsWith("/api/native/vaults")
+  ) {
+    const key = `native-api:${player}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 80,
+      "Please wait before checking native operations again.",
+      429,
+    );
+  }
+  if (path === "/api/native/vaults" && method === "GET") {
+    if (!nativeVaults) return respond(res, { status: "not-configured" });
+    return respond(
+      res,
+      await nativeVaults.snapshot(
+        player,
+        url.searchParams.get("account") || undefined,
+      ),
+    );
+  }
+  if (path === "/api/native/vaults/prepare" && method === "POST") {
+    assert(nativeVaults, "Native staking is not configured yet.", 503);
+    return respond(res, await nativeVaults.prepare(player, await body(req)));
+  }
+  if (path === "/api/native/rewards" && method === "GET") {
+    if (!nativeRewards)
+      return respond(res, { status: "not-configured", network: "testnet" });
+    return respond(
+      res,
+      await nativeRewards.snapshot(player, {
+        accountId: url.searchParams.get("account") || undefined,
+        fresh: url.searchParams.get("refresh") === "1",
+      }),
+    );
+  }
+  if (path === "/api/native/rewards/nearby" && method === "POST") {
+    if (!nativeRewards)
+      return respond(res, { status: "not-configured", network: "testnet" });
+    const input = await body(req);
+    return respond(
+      res,
+      await nativeRewards.snapshot(player, {
+        accountId: input.accountId || undefined,
+        location: input.location,
+        fresh: input.fresh === true,
+      }),
+    );
+  }
+  if (path === "/api/native/rewards/join" && method === "POST") {
+    assert(nativeRewards, "Native expeditions are not configured yet.", 503);
+    const input = await body(req);
+    return respond(
+      res,
+      nativeRewards.enroll(player, input.accountId, input.consent),
+    );
+  }
+  if (path === "/api/native/rewards/visit" && method === "POST") {
+    assert(nativeRewards, "Native expeditions are not configured yet.", 503);
+    const key = `native-visit:${player}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 30,
+      "Please wait before recording another native visit.",
+      429,
+    );
+    return respond(res, await nativeRewards.submit(player, await body(req)));
+  }
   if (
     [
       "/api/native/profile",
@@ -1501,6 +1598,12 @@ const server = createServer(async (req, res) => {
   }
 });
 const worldPlanner = startWorldPlanner(db);
+const rewardWorker =
+  nativeRewards && process.env.REWARD_WORKER_KEY_PATH
+    ? startRewardWorker(nativeRewards, {
+        keyPath: process.env.REWARD_WORKER_KEY_PATH,
+      })
+    : null;
 const maintenance = setInterval(() => {
   try {
     expireWorlds(db);
@@ -1527,6 +1630,7 @@ server.listen(port, process.env.HOST || "127.0.0.1", () =>
 async function close() {
   clearInterval(maintenance);
   await worldPlanner.stop();
+  await rewardWorker?.stop();
   for (const r of listeners) r.end();
   server.close(() => {
     db.close();
