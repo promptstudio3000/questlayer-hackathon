@@ -109,6 +109,7 @@ import {
   GearSix,
   UsersThree,
   Footprints,
+  UserCircle,
   Path,
   ArrowUUpLeft,
 } from "@phosphor-icons/react";
@@ -149,15 +150,16 @@ const HOME = { lat: 49.74745, lng: 13.3774 };
 const nav = [
   { id: "explore", label: "Explore", icon: Compass },
   { id: "inventory", label: "Inventory", icon: Backpack },
-  { id: "market", label: "Market", icon: Storefront },
   { id: "community", label: "Community", icon: UsersThree },
-  { id: "wallet", label: "Wallet", icon: Wallet },
+  { id: "settings", label: "Profile", icon: UserCircle },
 ] as const;
 function navigationActive(tab: Tab, id: string) {
   return (
     tab === id ||
     (id === "community" && ["messages", "bounties"].includes(tab)) ||
-    (id === "explore" && tab === "expeditions")
+    (id === "explore" && tab === "expeditions") ||
+    (id === "inventory" && tab === "market") ||
+    (id === "settings" && ["wallet", "fund"].includes(tab))
   );
 }
 const rarityNames: Record<string, string> = {
@@ -166,6 +168,11 @@ const rarityNames: Record<string, string> = {
   epic: "Epic",
   legendary: "Legendary",
 };
+function distanceLabel(m: number) {
+  if (!Number.isFinite(m)) return "";
+  if (m < 1000) return `${Math.round(m / 10) * 10} m away`;
+  return `${(m / 1000).toFixed(m < 10000 ? 1 : 0)} km away`;
+}
 function units(v: string) {
   const n = Number(v.replace(",", "."));
   return Number.isFinite(n) ? Math.round(n * GOLD) : 0;
@@ -2096,31 +2103,19 @@ export default function App() {
             </button>
           ))}
         </div>
-        <button
-          className="rail-help"
-          onClick={() => setShowNpc(true)}
-          aria-label="Guide"
-        >
-          <Question size={24} />
-        </button>
-        <span className="rail-near">N</span>
       </aside>
       <header className="topbar">
         <div className="wordmark" onClick={() => setTab("explore")}>
           <span>
             QUEST<span>LAYER</span>
           </span>
-          <small>WALK. DISCOVER. COLLECT.</small>
         </div>
         <div className="realm-label">
           <span className="status-dot" />
-          {nativePlay ? "NEAR TESTNET" : "DEMO WORLD"} <span>·</span>{" "}
           <span>
-            {nativePlay
-              ? "Plzeň"
-              : arena
-                ? "Plzeň city demo"
-                : "Your surroundings"}
+            {nativePlay || !arena
+              ? world?.cityName || "Your surroundings"
+              : "Plzeň · city demo"}
           </span>
         </div>
         <div className="topbar-right">
@@ -2146,8 +2141,7 @@ export default function App() {
                       : "—"
                     : gold(player.gold_u)}
                 </b>
-                <span>{nativePlay ? "TEST GOLD" : "GOLD"}</span>
-                <Plus size={14} />
+                <span>GOLD</span>
               </button>
               <button
                 ref={profileButton}
@@ -2165,17 +2159,7 @@ export default function App() {
                 <span>
                   <b>{player.name}</b>
                   <small>
-                    {nativePlay
-                      ? nativeGame.state?.balance
-                        ? `NEAR · Level ${1 + Math.floor(Math.sqrt(Number(nativeGame.state.balance.xp) / 100))}`
-                        : !playAccount
-                          ? "NEAR · Guest"
-                          : nativeGame.error
-                            ? "NEAR · Unavailable"
-                            : nativeGame.state
-                              ? "NEAR · New explorer"
-                              : "NEAR · Loading"
-                      : `Demo · Level ${player.level}`}
+                    {hudLevel !== null ? `Level ${hudLevel}` : "Explorer"}
                   </small>
                 </span>
                 <span className="level-bubble">{hudLevel ?? "—"}</span>
@@ -2187,15 +2171,7 @@ export default function App() {
       {menu && player && (
         <div id="explorer-profile" className="profile-menu">
           <b>{player.name}</b>
-          <span>Your character and demo progress are saved.</span>
-          <button
-            onClick={() => {
-              setTab("wallet");
-              setMenu(false);
-            }}
-          >
-            <Wallet /> Wallet and sign-in
-          </button>
+          <span>Your explorer and progress are saved on this device.</span>
           <button
             onClick={() => {
               setTab("settings");
@@ -2203,23 +2179,15 @@ export default function App() {
             }}
           >
             <GearSix />
-            Settings
+            Profile and settings
           </button>
           <details className="presence-consent">
             <summary>Location sharing</summary>
             <p>
-              Sharing shows your name, chosen look and precise map position to
-              nearby explorers for up to 15 minutes while this tab is visible.
-              Switching away stops sharing. Demo presence stays separate from
-              GPS play.
+              Sharing shows your name, look and map position to nearby explorers
+              for up to 15 minutes while this tab is open.
             </p>
           </details>
-          {!presence && (
-            <p className="play-hint">
-              Sharing publishes your name, look and precise location to nearby
-              players for up to 15 minutes.
-            </p>
-          )}
           <button onClick={() => setPresence((x) => !x)}>
             {presence ? <EyeSlash /> : <Eye />}
             {presence ? "Stop sharing presence" : "Share presence for 15 min"}
@@ -2363,30 +2331,6 @@ export default function App() {
               </button>
             )}
           </div>
-          {tab === "explore" && (
-            <div
-              className="play-mode-switch"
-              role="group"
-              aria-label="Adventure mode"
-            >
-              <button
-                aria-pressed={!nativePlay}
-                onClick={() => {
-                  setNativePlay(false);
-                }}
-              >
-                Demo
-              </button>
-              <button
-                aria-pressed={nativePlay}
-                onClick={() => {
-                  setNativePlay(true);
-                }}
-              >
-                NEAR testnet
-              </button>
-            </div>
-          )}
           {tab === "explore" && !selected && !nativePlay && (
             <>
               {recommended &&
@@ -2411,8 +2355,7 @@ export default function App() {
                       <strong>{recommended.title}</strong>
                       <span>
                         {recommendedZone.name} ·{" "}
-                        {Math.round(meters(position, questPoint(recommended)))}{" "}
-                        m straight-line
+                        {distanceLabel(meters(position, questPoint(recommended)))}
                       </span>
                     </span>
                     <ArrowRight size={20} />
@@ -2427,21 +2370,10 @@ export default function App() {
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
-              <button
-                className="play-entry"
-                onClick={() => setTab("expeditions")}
-              >
-                <Footprints size={24} />
-                <span>
-                  <b>Testnet walks</b>
-                  <small>GPS checkpoints · NEAR rewards</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
               <div className="section-label">
-                <h2>Where to today?</h2>
+                <h2>Nearby discoveries</h2>
                 <span>
-                  {world?.cityZoneCount ?? activeZones.length} CITY ZONES
+                  {world?.cityZoneCount ?? activeZones.length} places today
                 </span>
               </div>
               {world?.quality && (
@@ -2662,8 +2594,7 @@ export default function App() {
                     </div>
                     <div className="distance-note">
                       <MapPin size={16} />
-                      {Math.round(meters(position, questPoint(q)))} m
-                      straight-line ·{" "}
+                      {distanceLabel(meters(position, questPoint(q)))} ·{" "}
                       {q.opens_at > now
                         ? `opens in ${remaining(q.opens_at)}`
                         : `closes in ${remaining(q.closes_at)}`}
@@ -2677,7 +2608,7 @@ export default function App() {
                         className="primary-button"
                         onClick={() => move(questPoint(q))}
                       >
-                        Move here in demo <NavigationArrow />
+                        Walk there <NavigationArrow />
                       </button>
                     ) : (
                       <button
@@ -2997,20 +2928,65 @@ export default function App() {
           )}
           {tab === "settings" && (
             <div className="play-menu">
+              <button className="play-entry" onClick={() => setTab("market")}>
+                <Storefront size={24} />
+                <span>
+                  <b>Market</b>
+                  <small>Trade Auras with other explorers</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
+              <button className="play-entry" onClick={() => setTab("wallet")}>
+                <Wallet size={24} />
+                <span>
+                  <b>Rewards and balance</b>
+                  <small>Collected GOLD, withdrawals, staking pilot</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
               <AccountSessions
                 player={player}
                 onConnect={connectNear}
                 onRevoke={revokeGameSessions}
                 busy={busy}
               />
-              <button className="play-entry" onClick={() => setTab("fund")}>
-                <ChartDonut size={24} />
-                <span>
-                  <b>Game economy</b>
-                  <small>NEAR funding, pools and distribution</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
+              <details className="advanced-settings">
+                <summary>Advanced</summary>
+                <div
+                  className="play-mode-switch"
+                  role="group"
+                  aria-label="Reward ledger"
+                >
+                  <button
+                    aria-pressed={!nativePlay}
+                    onClick={() => setNativePlay(false)}
+                  >
+                    Practice ledger
+                  </button>
+                  <button
+                    aria-pressed={nativePlay}
+                    onClick={() => setNativePlay(true)}
+                  >
+                    Test network
+                  </button>
+                </div>
+                <p className="fine-print">
+                  The practice ledger uses simulated GOLD. The test network uses
+                  NEAR testnet tokens without monetary value. Receipts for both
+                  stay in Rewards and balance.
+                </p>
+                <button
+                  className="play-entry"
+                  onClick={() => setTab("fund")}
+                >
+                  <ChartDonut size={24} />
+                  <span>
+                    <b>Game economy</b>
+                    <small>Funding, pools and distribution</small>
+                  </span>
+                  <ArrowRight size={20} />
+                </button>
+              </details>
               <button
                 className="play-entry"
                 aria-pressed={map3D}
@@ -3157,19 +3133,19 @@ export default function App() {
               <div
                 className="play-mode-switch"
                 role="group"
-                aria-label="Community task network"
+                aria-label="Task board"
               >
                 <button
                   aria-pressed={taskRealm === "near"}
                   onClick={() => setTaskRealm("near")}
                 >
-                  NEAR testnet
+                  Sponsored tasks
                 </button>
                 <button
                   aria-pressed={taskRealm === "demo"}
                   onClick={() => setTaskRealm("demo")}
                 >
-                  Demo
+                  Practice tasks
                 </button>
               </div>
               {taskRealm === "near" ? (
@@ -3196,14 +3172,16 @@ export default function App() {
           <div className="map-top-chip">
             <span className="status-dot" />
             {nativePlay
-              ? `NEAR TESTNET · ${arena ? "GPS REQUIRED" : `GPS ${fix ? Math.round(fix.accuracy) : "…"} m`}`
+              ? arena
+                ? "Turn on location to play"
+                : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
               : arena
-                ? "CITY DEMO · CLICK TO MOVE"
-                : `DEMO · GPS ${fix ? Math.round(fix.accuracy) : "…"} m`}
+                ? "City demo · tap to walk"
+                : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`}
             <button
               onClick={() => (arena || nativePlay ? locate() : returnToArena())}
             >
-              {arena || nativePlay ? "My surroundings" : "Back to arena"}
+              {arena || nativePlay ? "Use my location" : "Back to city demo"}
               <ArrowUpRight size={12} />
             </button>
           </div>
@@ -3278,9 +3256,7 @@ export default function App() {
               <span>{hudLevel ?? "—"}</span>
             </div>
             <div>
-              <b>
-                {player.name} <Badge>EXPLORER</Badge>
-              </b>
+              <b>{player.name}</b>
               <div className="xp-bar">
                 <i
                   style={{
@@ -3293,42 +3269,16 @@ export default function App() {
               </div>
               <small>
                 {hudXp !== null && hudLevel !== null
-                  ? `${hudXp} / ${100 * hudLevel ** 2} ${nativePlay ? "confirmed" : player.lockedXp ? "available demo" : "demo"} XP${!nativePlay && player.lockedXp ? ` · ${player.lockedXp} committed` : ""}`
+                  ? `${hudXp} / ${100 * hudLevel ** 2} XP${!nativePlay && player.lockedXp ? ` · ${player.lockedXp} committed` : ""}`
                   : playAccount
-                    ? "No confirmed XP available"
-                    : "Link a NEAR wallet to save testnet XP"}
+                    ? "Loading your progress…"
+                    : "Secure your explorer to keep progress"}
               </small>
               {!nativePlay && <PickupSummary totals={pickupFeedback.totals} />}
             </div>
             <button onClick={() => setTab("inventory")} aria-label="Inventory">
               <Backpack size={23} />
             </button>
-          </div>
-          <button
-            className="npc-button"
-            aria-label="Ask your guide"
-            onClick={() => setShowNpc(true)}
-          >
-            <Ghost color="#c4a165" hat />
-            <span>
-              Need a little direction?
-              <b>
-                Ask your guide <ArrowUpRight size={13} />
-              </b>
-            </span>
-            <span className="npc-dot" />
-          </button>
-          <div className="map-legend">
-            <span>
-              <GameObjectArt kind="place" size={20} /> Place
-            </span>
-            <span>
-              <GameObjectArt kind="discovery" state="completed" size={20} />{" "}
-              Completed
-            </span>
-            <span>
-              <GameObjectArt kind="coin" size={20} /> GOLD coin
-            </span>
           </div>
         </>
       )}
@@ -3437,12 +3387,6 @@ export default function App() {
         />
       )}
       {showNpc && <Npc onClose={() => setShowNpc(false)} />}
-      {tab === "explore" && (
-        <div className="demo-footer">
-          {nativePlay ? "NEAR TESTNET" : "DEMO GOLD · NEAR TESTNET"}{" "}
-          <span>✦</span> QuestLayer
-        </div>
-      )}
     </div>
   );
 }
@@ -3525,10 +3469,10 @@ function Welcome({
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
-            void onNear(name || "Explorer");
+            void start();
           }}
         >
-          <label htmlFor="nickname">WHAT SHOULD WE CALL YOU?</label>
+          <label htmlFor="nickname">What should we call you?</label>
           <input
             id="nickname"
             placeholder="Your explorer name"
@@ -3539,47 +3483,50 @@ function Welcome({
             autoComplete="nickname"
           />
           <button className="primary-button" type="submit" disabled={!!busy}>
-            <Wallet size={20} />
-            {busy === "near"
-              ? "Waiting for your wallet…"
-              : "Continue with NEAR"}
-          </button>
-          <p className="identity-note">
-            NEAR testnet · sign a message, not a payment. Returning wallets
-            restore the same explorer.
-          </p>
-          <button
-            className="secondary-button"
-            disabled={!!busy}
-            type="button"
-            onClick={() => void start()}
-          >
-            {busy === "welcome"
-              ? "Preparing your adventure…"
-              : "Enter the demo world"}
+            {busy === "welcome" ? "Preparing your explorer…" : "Start exploring"}
             <ArrowRight size={20} />
           </button>
         </form>
         <button
-          className="passkey-button"
+          className="text-button"
           disabled={!!busy}
-          onClick={() => void passkey()}
+          onClick={() => {
+            setExisting(true);
+            void passkey();
+          }}
         >
-          <Key size={18} />
-          {existing
-            ? "Sign in with a passkey"
-            : "Create a demo explorer with a passkey"}
+          <Key size={16} /> I already have an explorer
         </button>
-        <button className="text-button" onClick={() => setExisting((x) => !x)}>
-          {existing ? "I am new here" : "I already have a passkey"}
-        </button>
+        <details className="welcome-advanced">
+          <summary>Advanced</summary>
+          <button
+            className="passkey-button"
+            disabled={!!busy}
+            onClick={() => {
+              setExisting(false);
+              void passkey();
+            }}
+          >
+            <Key size={18} /> Create an explorer secured by a passkey
+          </button>
+          <button
+            className="passkey-button"
+            disabled={!!busy}
+            onClick={() => void onNear(name || "Explorer")}
+          >
+            <Wallet size={18} />
+            {busy === "near"
+              ? "Waiting for your wallet…"
+              : "Continue with an external NEAR wallet"}
+          </button>
+          <p className="identity-note">
+            A wallet signs a message, not a payment. Returning wallets restore
+            the same explorer.
+          </p>
+        </details>
         <div className="welcome-note">
           <ShieldCheck size={17} />
-          <span>
-            No deposit. Your wallet keeps your keys.
-            <br />
-            Demo GOLD is not real NEAR.
-          </span>
+          <span>No sign-up, no deposit. Play first, secure later.</span>
         </div>
       </section>
     </Dialog>
@@ -3598,7 +3545,7 @@ function WalletNavigation({
         [
           { id: "rewards", label: "Rewards", icon: Wallet },
           { id: "staking", label: "Staking", icon: Leaf },
-          { id: "demo", label: "Demo", icon: Compass },
+          { id: "demo", label: "Practice", icon: Compass },
         ] as const
       ).map((v) => (
         <button
@@ -4164,7 +4111,7 @@ function Market({
   return (
     <>
       {nativeContent}
-      <h2 className="demo-market-heading">Demo GOLD market</h2>
+      <h2 className="demo-market-heading">Practice GOLD market</h2>
       <p className="panel-subtitle">
         Find an Aura that feels like you. Or pass your discovery along.
       </p>

@@ -100,7 +100,7 @@ function assertion(key, challenge) {
   };
 }
 test("HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery", async (t) => {
-  const dir = mkdtempSync(join(tmpdir(), "auratrail-http-"));
+  const dir = mkdtempSync(join(tmpdir(), "questlayer-http-"));
   const child = spawn(process.execPath, ["server/index.mjs"], {
     env: {
       ...process.env,

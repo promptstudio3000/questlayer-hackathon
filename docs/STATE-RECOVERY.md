@@ -4,7 +4,7 @@
 
 QuestLayer has a dedicated daily `questlayer-state-backup.timer`, scheduled at 03:20 UTC with up to ten minutes of jitter. The oneshot job has no network access, a private temporary directory, a 256 MiB memory limit, 25% CPU quota and a 120-second service timeout. It reads the game's state and writes only its own private snapshot directory. It does not restart the game or connect to a chain.
 
-Snapshots live under `/opt/ps3000/apps/auratrail/state-backups`. The directory and each snapshot are mode 0700; snapshot files are mode 0600. They are outside every public static directory and are not copied into releases or local evidence files.
+Snapshots live under `/opt/ps3000/apps/questlayer-hackathon/state-backups`. The directory and each snapshot are mode 0700; snapshot files are mode 0600. They are outside every public static directory and are not copied into releases or local evidence files.
 
 A snapshot contains:
 

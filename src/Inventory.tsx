@@ -275,7 +275,7 @@ export function Inventory({
           <h2>{player.name}</h2>
           <span className="inventory-source">
             <Check size={16} aria-hidden="true" />
-            {player.nativeOutfit ? "NEAR testnet outfit" : "Demo outfit"}
+            {player.nativeOutfit ? "Secured outfit" : "Practice outfit"}
           </span>
           <p>
             {player.appearance?.originTokenId
@@ -320,20 +320,20 @@ export function Inventory({
             onClick={() => setCollection("demo")}
             disabled={locked}
           >
-            Demo <span>{auras.length}</span>
+            Practice <span>{auras.length}</span>
           </button>
           <button
             aria-pressed={collection === "near"}
             onClick={() => setCollection("near")}
             disabled={locked}
           >
-            <Wallet size={19} aria-hidden="true" /> NEAR testnet
+            <Wallet size={19} aria-hidden="true" /> Secured
           </button>
         </div>
         {collection === "demo" ? (
           <>
             <p className="inventory-collection-caption">
-              Collect Auras in the demo world. Equip one above and one below.
+              Find Auras on your adventures. Equip one above and one below.
             </p>
             {!!auras.length && (
               <div className="inventory-item-grid">
@@ -635,8 +635,8 @@ export function Inventory({
                 </div>
                 {selected.native_claim_state === "issued" && (
                   <p className="inventory-notice">
-                    This Aura is reserved for a NEAR claim and cannot be listed.
-                    Manage its claim in the NEAR testnet collection.
+                    This Aura is being secured and cannot be listed yet. Find it in
+                    the Secured collection.
                   </p>
                 )}
                 {selling && selected.native_claim_state !== "issued" ? (
@@ -667,8 +667,8 @@ export function Inventory({
                       />
                     </div>
                     <p className="inventory-sale-note">
-                      Demo market only. This listing does not transfer a NEAR
-                      NFT or Base original.
+                      Practice market only. Secured Auras and Base originals are not
+                      moved by this listing.
                     </p>
                     {priceDraft.hasDraft && (
                       <p className="inventory-sale-note" role="status">
@@ -733,11 +733,11 @@ export function Inventory({
                       onClick={() => setSelling(true)}
                     >
                       <Tag size={20} aria-hidden="true" />
-                      List on demo market
+                      List on market
                     </button>
                     <p className="inventory-sale-note" role="status">
                       {selected.equipped
-                        ? "Saved in your demo outfit."
+                        ? "Saved in your practice outfit."
                         : "Choose Equip to save and wear this demo outfit."}
                       {player.nativeOutfit
                         ? " Your map currently uses the NEAR outfit."
