@@ -26,6 +26,8 @@ import { makeNativeObjective } from "./native-objective";
 import { useAdventureSelection } from "./useAdventureSelection";
 import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
 import { sendConfirmedNative } from "./confirmed-native-transaction";
+import { walletSigner, type NativeSigner } from "./native-signer";
+import { useInvisibleAccount } from "./useInvisibleAccount";
 import { MapNotes } from "./MapNotes";
 import { useNativeGame } from "./useNativeGame";
 import { useNativeAutoCollect } from "./useNativeAutoCollect";
@@ -360,6 +362,18 @@ export default function App() {
   const discovery = adventureResults.selection;
   const nativeAccount = useNativePlayAccount(player);
   const playAccount = nativeAccount.account;
+  const invisible = useInvisibleAccount(player?.id);
+  const invisibleEnsure = invisible.ensure,
+    invisibleStatus = invisible.status;
+  useEffect(() => {
+    // Prepare the invisible account in the background; play never waits for it.
+    if (player?.id) void invisibleEnsure();
+  }, [player?.id, invisibleEnsure]);
+  useEffect(() => {
+    // The managed account appears in the player's linked accounts once ready.
+    if (invisibleStatus === "ready") void me();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invisibleStatus]);
   const setPlayAccount = nativeAccount.select;
   const demoObjective = useAdventureSelection(
     player?.id,
@@ -1162,6 +1176,18 @@ export default function App() {
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
     );
   }
+  // The invisible account signs without a popup; an external wallet is the
+  // fallback when the player chose one or the managed account is not ready.
+  async function resolveSigner(): Promise<{
+    signer: NativeSigner;
+    accountId: string;
+  }> {
+    const managed = invisible.signer;
+    if (managed && (!playAccount || playAccount === managed.accountId))
+      return { signer: managed, accountId: managed.accountId };
+    const { wallet, accountId } = await chooseNearAccount();
+    return { signer: walletSigner(wallet, accountId), accountId };
+  }
   async function chooseNearAccount() {
     if (!nearConnector.current) {
       const { NearConnector } = await import("@hot-labs/near-connect");
@@ -1269,14 +1295,12 @@ export default function App() {
   }
   async function tradeNative(request: NativeTradeRequest): Promise<boolean> {
     const result = await action("native-market", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
         throw Error("Choose the linked NEAR wallet shown for this trade.");
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
       if (
         !request.marketId.endsWith(".testnet") ||
         request.nftContractId !== nativeWardrobe?.contractId
@@ -1304,8 +1328,7 @@ export default function App() {
         : request.kind === "withdraw"
           ? {}
           : { token_id: request.tokenId, listing_id: request.listingId };
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
           network: "testnet",
           signerId: accountId,
@@ -1334,7 +1357,7 @@ export default function App() {
     contractId: string,
   ): Promise<boolean> {
     const result = await action("native-withdrawal", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -1348,8 +1371,7 @@ export default function App() {
         !contractId.endsWith(".testnet")
       )
         throw Error("The native reward contract changed. Refresh first.");
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
           network: "testnet",
           signerId: accountId,
@@ -1374,7 +1396,7 @@ export default function App() {
   }
   async function operateNativeVault(request: VaultRequest): Promise<boolean> {
     const result = await action("native-staking", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -1382,8 +1404,7 @@ export default function App() {
         throw Error("Choose the linked wallet shown for this position.");
       const quote = await api<VaultQuote>("/native/vaults/prepare", request);
       assertVaultQuote(quote, request);
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
           network: "testnet",
           signerId: accountId,
@@ -1408,18 +1429,15 @@ export default function App() {
   }
   async function operateNativeTask(request: TaskRequest): Promise<boolean> {
     const result = await action("native-task", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
         throw Error("Choose the linked wallet shown for this task.");
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
       const quote = await api<TaskQuote>("/native/tasks/prepare", request);
       assertTaskQuote(quote, request);
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
           network: "testnet",
           signerId: accountId,
@@ -1447,21 +1465,18 @@ export default function App() {
     avatar: { contractId: string; tokenId: string } | null,
   ): Promise<boolean> {
     const result = await action("native-profile", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== account ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
         throw Error("Choose the linked NEAR wallet shown for your profile.");
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
       const quote = await api<NativeProfileQuote>("/native/profile/prepare", {
         accountId,
         publicConsent: true,
       });
       assertProfileQuote(quote, { accountId, name: player.name, avatar });
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
           network: "testnet",
           signerId: accountId,
@@ -1561,7 +1576,7 @@ export default function App() {
     milestone: NativeMilestone,
   ) {
     const ok = await action("native-level", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -1569,8 +1584,6 @@ export default function App() {
         throw Error(
           "Choose the linked NEAR wallet shown for this level reward.",
         );
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
       const claim = await api<NativeLevelClaim>("/native/progression/claim", {
         accountId,
         level: milestone.level,
@@ -1584,8 +1597,7 @@ export default function App() {
       if (claim.claim_id !== milestone.claimId)
         throw Error("The level reward changed. Refresh before signing.");
       if (claim.state !== "minted") {
-        await sendConfirmedNative(
-          wallet,
+        await signer.send(
           {
             network: "testnet",
             signerId: accountId,
@@ -1637,11 +1649,9 @@ export default function App() {
   async function mintEarnedAura(item: Item) {
     await action("native-claim", async () => {
       try {
-        const { wallet, accountId } = await chooseNearAccount();
+        const { signer, accountId } = await resolveSigner();
         if (!player?.wallets.some((w) => w.account_id === accountId))
           throw Error("Select the linked NEAR wallet receiving this Aura.");
-        if (!wallet.manifest.features.signAndSendTransaction)
-          throw Error("Choose a wallet that supports NEAR transactions.");
         const claim = await api<NativeAuraClaim>("/native/claims", {
           itemId: item.id,
           accountId,
@@ -1650,10 +1660,7 @@ export default function App() {
         if (claim.state !== "minted") {
           if (!claim.contractId.endsWith(".testnet"))
             throw Error("Aura claims are testnet-only.");
-          if (!wallet.manifest.features.signAndSendTransaction)
-            throw Error("Choose a wallet that supports NEAR transactions.");
-          await sendConfirmedNative(
-            wallet,
+          await signer.send(
             {
               network: "testnet",
               signerId: accountId,
@@ -1736,19 +1743,16 @@ export default function App() {
     slot?: "above" | "below",
   ) {
     await action("native-transaction", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== account ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
         throw Error("Select the linked NEAR wallet that owns this item.");
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
       const contractId = nativeWardrobe?.contractId;
       if (!contractId?.endsWith(".testnet"))
         throw Error("The NEAR testnet collection is unavailable.");
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
           network: "testnet",
           signerId: accountId,
