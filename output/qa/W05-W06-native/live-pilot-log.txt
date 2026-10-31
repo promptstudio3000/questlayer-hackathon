@@ -1,0 +1,6 @@
+{"label":"Prepared exit","transaction":"64vTwmpbT4DpotyvZzBZq66N1NAoZHU11diyjria9crv"}
+{"checkpoint":1,"state":"progress","syntheticGPS":true}
+{"checkpoint":2,"state":"progress","syntheticGPS":true}
+{"checkpoint":3,"state":"queued","syntheticGPS":true}
+{"label":"Withdraw actual native exploration reward","transaction":"9m1ygLM4Fv9LW2eZRxNoHiwQkgKZmtNbH6XHqUxL37yD"}
+{"verified":true,"vaultId":"v0.questlayer-vaults-20261031.testnet","unlockEpoch":"5402","nativeXP":82,"withdrawn":"1000000000000000000","physicalWalkVerified":false}

@@ -513,7 +513,9 @@
         "output/qa/W05/checks.txt",
         "docs/NATIVE-REWARDS-AND-VAULT.md",
         "public/native-rewards-testnet.json",
-        "output/qa/W05-W06-native/README.md"
+        "output/qa/W05-W06-native/README.md",
+        "public/native-pilot-proof.json",
+        "output/qa/W05-W06-native/live-pilot.json"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W05/"
@@ -600,7 +602,9 @@
         "output/qa/W06-claims/contracts.txt",
         "docs/NATIVE-REWARDS-AND-VAULT.md",
         "public/native-rewards-testnet.json",
-        "output/qa/W05-W06-native/README.md"
+        "output/qa/W05-W06-native/README.md",
+        "public/native-pilot-proof.json",
+        "output/qa/W05-W06-native/live-pilot.json"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W06/"
@@ -1179,7 +1183,8 @@
         "output/qa/W13-recovery/live-restore-with-media.json",
         "output/qa/W12-movement/checks.txt",
         "docs/DELIVERY-2026-10-31.md",
-        "output/qa/final-2026-10-31/public-status.json"
+        "output/qa/final-2026-10-31/public-status.json",
+        "output/qa/W05-W06-native/restore-rehearsal.txt"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W13-recovery/"

@@ -1,0 +1,149 @@
+{
+  "verifiedAt": "2026-10-31T12:49:35.804Z",
+  "network": "testnet",
+  "api": "https://questlayer.promptstudio3000.com",
+  "participant": "questlayer-pilot-20261031.testnet",
+  "participantControl": "Project-controlled developer account; no personal wallet used",
+  "evidenceMode": "Synthetic GPS API rehearsal, not physical walking or mobile wallet approval",
+  "factory": "questlayer-vaults-20261031.testnet",
+  "vaultId": "v0.questlayer-vaults-20261031.testnet",
+  "vaultKeyCount": 0,
+  "actualDeposit": "0.01 test NEAR",
+  "poolPosition": {
+    "account_id": "v0.questlayer-vaults-20261031.testnet",
+    "unstaked_balance": "10000000000000000000001",
+    "staked_balance": "0",
+    "can_withdraw": false
+  },
+  "exitState": {
+    "version": 1,
+    "network": "testnet",
+    "beneficiary": "questlayer-pilot-20261031.testnet",
+    "pool": "aurora.pool.f863973.m0",
+    "rewards": "questlayer-rewards-20261031.testnet",
+    "contribution_bps": 5000,
+    "stage": "unlocking",
+    "nonce": "3",
+    "operation": "exit",
+    "exit_requested": true,
+    "unlock_epoch": "5402",
+    "epoch": "5398",
+    "observed_epoch": "5398",
+    "principal": "10000000000000000000000",
+    "high_water_basis": "10000000000000000000000",
+    "staked": "9999999999999999999994",
+    "unstaked": "6",
+    "pending_pool_cash": "0",
+    "owner_credit": "0",
+    "owner_pending": "0",
+    "game_credit": "0",
+    "game_pending": "0",
+    "deposited": "10000000000000000000000",
+    "owner_paid": "0",
+    "game_paid": "0",
+    "weighted_stake": "0",
+    "tier": 1,
+    "contribution_policy": "fixed-per-vault",
+    "tier_policy": "conservative-mature-principal-v1"
+  },
+  "repeatedExitPreservedUnlock": true,
+  "unauthorizedOwnerExitRejected": true,
+  "fullExitCycleComplete": false,
+  "whyExitPending": "Real validator epochs must elapse; worker will progress the sealed batch without resetting it",
+  "nativeDay": "plzen-2026-10-31-v1",
+  "quest": {
+    "index": 4,
+    "title": "Textures of the trail",
+    "location": "Univerzitní park",
+    "checkpointCount": 3
+  },
+  "coinReceiptId": "native_a228090f-5bc0-4707-bce5-7fb7ab6fa228",
+  "duplicateReceiptPreserved": true,
+  "confirmedReceipts": [
+    {
+      "id": "native_a228090f-5bc0-4707-bce5-7fb7ab6fa228",
+      "dayId": "plzen-2026-10-31-v1",
+      "kind": "coin",
+      "index": 4,
+      "accountId": "questlayer-pilot-20261031.testnet",
+      "state": "confirmed",
+      "amount": "1000000000000000000",
+      "xp": 2,
+      "transaction": "8X2BBC2XreBTEW9L7N7dfoRtsAcLymaA7xyxcFkVysgb",
+      "createdAt": 1793450959362,
+      "error": null
+    },
+    {
+      "id": "native_79c41bde-3da5-4952-9022-1d61be1870cf",
+      "dayId": "plzen-2026-10-31-v1",
+      "kind": "quest",
+      "index": 4,
+      "accountId": "questlayer-pilot-20261031.testnet",
+      "state": "confirmed",
+      "amount": "0",
+      "xp": 80,
+      "transaction": "Fdt8KggmMhyhz8Pqp6LnLPGiP2xGQ4wQxSZKrLawLaT4",
+      "createdAt": 1793450954662,
+      "error": null
+    }
+  ],
+  "withdrawnThisRun": "1000000000000000000",
+  "nativeAccountAfterWithdrawal": {
+    "credit": "0",
+    "pending": "0",
+    "withdrawn": "1000000000000000000",
+    "xp": 82
+  },
+  "treasury": {
+    "coins": {
+      "available": "88000000000000000000000",
+      "reserved": "11999000000000000000000",
+      "awarded": "1000000000000000000"
+    },
+    "zones": {
+      "available": "88000000000000000000000",
+      "reserved": "12000000000000000000000",
+      "awarded": "0"
+    },
+    "funded": "200000000000000000000000",
+    "owed": "0",
+    "pending": "0",
+    "withdrawn": "1000000000000000000",
+    "policy": "50/50-v1"
+  },
+  "transactions": [
+    {
+      "label": "Prepared create",
+      "transaction": "E8wP34zUiww5YiGRLeWwQE2eGfRe9XJ5Rtx5ZnMzuF2R"
+    },
+    {
+      "label": "Prepared deposit",
+      "transaction": "DHg47ZPKTWad2qAcvegDXTSjacmwZERH3AHWTeNa94Bq"
+    },
+    {
+      "label": "Prepared refresh",
+      "transaction": "DBCQPUwYorv15NAbDojGi9nWMK7jV4gEtVFJVd4yNgmX"
+    },
+    {
+      "label": "Prepared exit",
+      "transaction": "68XebBtdCEQMkPtN5Ro1KpaDkvM5x9wHD1vEJ6A6CS2Z"
+    },
+    {
+      "label": "Prepared exit",
+      "transaction": "3fRy6VAeEq5fcJ7AxuVc2EdinKsDvTuVQbmLVAeo7tYx"
+    },
+    {
+      "label": "Prepared exit",
+      "transaction": "64vTwmpbT4DpotyvZzBZq66N1NAoZHU11diyjria9crv"
+    },
+    {
+      "label": "Reject non-beneficiary exit request",
+      "transaction": "5iuf2efA1JLrKWcfQPuySX1E9f8kGPoJGQkUq8HmZ76j",
+      "expectedFailure": true
+    },
+    {
+      "label": "Withdraw actual native exploration reward",
+      "transaction": "9m1ygLM4Fv9LW2eZRxNoHiwQkgKZmtNbH6XHqUxL37yD"
+    }
+  ]
+}

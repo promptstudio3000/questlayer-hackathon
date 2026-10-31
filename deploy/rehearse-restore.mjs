@@ -83,6 +83,11 @@ try {
     "history",
     "world_jobs",
     "world_blueprints",
+    "native_days",
+    "native_reward_claims",
+    "native_progress",
+    "native_enrollments",
+    "native_vault_jobs",
   ]) {
     if (names.has(table))
       counts[table] = db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n;
@@ -97,6 +102,80 @@ try {
     db.exec("BEGIN");
     db.prepare("UPDATE players SET xp=xp+1 WHERE id=?").run(first.id);
     db.exec("ROLLBACK");
+  }
+  let nativeRecovery = null;
+  if (process.argv.includes("--native")) {
+    const load = async (relative) =>
+      import(pathToFileURL(join(app, "current", relative)).href);
+    const config = JSON.parse(
+      readFileSync(join(app, "current", "dist", "native-rewards-testnet.json")),
+    );
+    for (const name of ["reward-attestor.pem", "reward-worker.json"]) {
+      assert((metadata.nativeServiceKeysIncluded || []).includes(name));
+      assert.equal(statSync(join(snapshot, name)).mode & 0o077, 0);
+    }
+    const { loadAwardSigner } = await load("server/native/award-vouchers.mjs"),
+      signer = loadAwardSigner(join(snapshot, "reward-attestor.pem"));
+    assert.equal(signer.publicKey, config.attestor);
+    const { createNearProvider } = await load("server/near-provider.mjs"),
+      provider = createNearProvider();
+    const { rewardTransport, runRewardWorker } = await load(
+      "server/native/reward-worker.mjs",
+    );
+    // Validate the restored restricted key, but never invoke the returned sender.
+    await rewardTransport(
+      provider,
+      config.contractId,
+      join(snapshot, "reward-worker.json"),
+      config.codeHash,
+    );
+    const { NativeRewards } = await load("server/native/rewards.mjs"),
+      native = new NativeRewards(db, provider, config, signer);
+    assert.equal(
+      db
+        .prepare(
+          "SELECT COUNT(*) n FROM native_reward_claims WHERE state!='confirmed'",
+        )
+        .get().n,
+      0,
+      "Choose a snapshot with a drained queue for this bounded rehearsal",
+    );
+    const accepted = db
+      .prepare(
+        "SELECT * FROM native_reward_claims WHERE account_id='questlayer-pilot-20261031.testnet' AND state='confirmed' ORDER BY seq LIMIT 1",
+      )
+      .get();
+    assert(accepted, "Project pilot receipt missing from snapshot");
+    db.prepare(
+      "UPDATE native_reward_claims SET state='queued',amount=NULL,xp=NULL,transaction_hash=NULL,confirmed_at=NULL,run_after=0 WHERE id=?",
+    ).run(accepted.id);
+    db.prepare(
+      "UPDATE native_worker_lease SET owner=NULL,until_ms=0 WHERE id=1",
+    ).run();
+    db.prepare("UPDATE native_vault_jobs SET next_check=?").run(
+      Date.now() + 86400000,
+    );
+    let transmissions = 0;
+    const result = await runRewardWorker(native, async () => {
+      transmissions++;
+      throw Error("Chain transmissions are disabled during restore rehearsal");
+    });
+    assert.equal(transmissions, 0);
+    assert.equal(result.completed, 1);
+    const recovered = db
+      .prepare("SELECT * FROM native_reward_claims WHERE id=?")
+      .get(accepted.id);
+    assert.equal(recovered.state, "confirmed");
+    assert.equal(recovered.amount, accepted.amount);
+    assert.equal(recovered.xp, accepted.xp);
+    nativeRecovery = {
+      restoredAttestorMatches: true,
+      restrictedWorkerKeyVerified: true,
+      crashBeforeAcknowledgementRecovered: true,
+      receiptsReconciled: 1,
+      chainTransactionsSent: 0,
+      liveDatabaseTouched: false,
+    };
   }
   db.close();
   db = null;
@@ -114,7 +193,8 @@ try {
       isolatedWriteAndRollbackVerified: !!first,
       tableCounts: counts,
       liveApplicationStateChanged: false,
-      chainReconciliationPerformed: false,
+      chainReconciliationPerformed: !!nativeRecovery,
+      nativeRecovery,
       offsiteCopyCreated: false,
     }),
   );

@@ -22,7 +22,7 @@ There are no transferred provisional fee shares. A harvest only requests unstaki
 
 At cash receipt, recompute gain against the remaining pool stake plus that exact incoming amount. Vested game yield is `min(received, max(total - high_water, 0) × contribution)`. Any part no longer supported by gain belongs to the beneficiary. Advance the high-water basis to `max(old_basis, total) - received`. This makes loss recovery non-chargeable and prevents charging retained profit twice. A completed full exit allocates only gain to the game and returns the rest to the owner, then closes that position's basis. Future losses cannot undo already realized/paid historical yields; staking principal is not guaranteed.
 
-The prototype serializes its asynchronous state with nonces and private callbacks. Normal pool/read/transfer failure has a retryable state. Catastrophic callback exhaustion or protocol-incompatible behavior still requires a reviewed recovery mechanism before player deposits/mainnet. Keyless immutable deployment and independent recovery tests are release gates, not assumptions from successful unit tests.
+The prototype serializes its asynchronous state with nonces and private callbacks. Normal pool/read/transfer failure has a retryable state. Catastrophic callback exhaustion or protocol-incompatible behavior still requires a reviewed recovery mechanism before deposits with monetary value. Factory-created keyless positions are implemented; independent catastrophic-recovery review remains a release gate.
 
 ## Daily world and worker
 
@@ -36,7 +36,7 @@ A durable outbox stores signed claim contents before transmission. The worker lo
 
 Protocol references: [official staking pool](https://github.com/near/core-contracts/tree/master/staking-pool), [asynchronous calls](https://docs.near.org/smart-contracts/anatomy/crosscontract), [private callbacks](https://docs.near.org/smart-contracts/security/cross-contract-calls/callbacks). Sources are evidence, not a deployment permission.
 
-Required evidence: Rust financial/callback/adversarial tests, server outbox retry and GPS/tier isolation tests, live funded coin/XP/withdrawal proof, live pool deposit plus epoch-delayed exit, scoped access-key inspection, exact deployed code hashes, VPS health, and actual browser states. Independent financial review, complete live yield/exit timing, physical GPS/device testing, full native tiers and public self-service staking stay explicit until demonstrated.
+Required evidence: Rust financial/callback/adversarial tests, server outbox retry and GPS/tier isolation tests, live funded coin/XP/withdrawal proof, live pool deposit plus epoch-delayed exit, scoped access-key inspection, exact deployed code hashes, VPS health, and actual browser states. Independent financial review, complete live yield/exit timing, physical GPS/device testing, full native tiers and personal-wallet/device journeys remain explicit gates. Self-service creation and actual API settlement are evidenced in the live pilot artifact.
 
 
 ## Self-service testnet positions
@@ -57,6 +57,13 @@ The 256-receipt cap applies across all players, to both native coins and complet
 
 Build with `bash scripts/build-contracts.sh`: compile the vault first, then the factory embedding that artifact. The worker has a restricted FunctionCall key for `publish_day`, `close_day`, `claim`, and `maintain_vault` on the rewards contract only, initially capped at 0.4 test NEAR gas allowance. Its Ed25519 receipt attestor is a separate key. These two service credentials are installed privately on the VPS and included in private state snapshots. No player or operator FullAccess wallet key is uploaded.
 
-The worker uses a database lease, durable accepted claims, on-chain receipt reconciliation before retry, immutable day hashes, same-bucket rollover and independent vault maintenance. The local area plan regenerates at Europe/Prague midnight; the native worker publishes today and tomorrow from the prepared city plan. Accepted claim order is preserved. A code rollback does **not** rewind the database after native side effects. Disaster recovery requires restoring the accepted queue and reconciling chain receipts; a full disaster rehearsal after this native rollout is still required. Expired gas allowance, unavailable RPC and funding/storage exhaustion remain visible operating states requiring maintenance.
+The worker uses a database lease, durable accepted claims, on-chain receipt reconciliation before retry, immutable day hashes, same-bucket rollover and independent vault maintenance. The local area plan regenerates at Europe/Prague midnight; the native worker publishes today and tomorrow from the prepared city plan. Accepted claim order is preserved. A code rollback does **not** rewind the database after native side effects. Disaster recovery requires restoring the accepted queue and reconciling chain receipts; a bounded private-copy rehearsal now recovers a confirmed claim without resubmitting it; full host-replacement disaster recovery remains open. Expired gas allowance, unavailable RPC and funding/storage exhaustion remain visible operating states requiring maintenance.
 
 Live deposit/exit and native settlement evidence is produced by `scripts/prove-native-pilot.mjs` against the deployed API, with project-owned test accounts and explicitly synthetic GPS. It does not prove a physical walk, anti-spoofing, personal-wallet approval, mature yield or the final validator exit. Those gates remain separate.
+
+
+## Recorded live outcome
+
+At 2026-10-31T12:49:35Z the public API rehearsal confirmed a factory-created keyless position, a 0.01 test NEAR pool deposit, a full exit queued for epoch 5402, unchanged unlock under repeated requests, rejection of a non-beneficiary exit, three contextual checkpoints, one idempotent shared coin, 82 native XP and actual withdrawal of 0.000001 test NEAR. At observation the epoch was 5398 and the pool explicitly reported `can_withdraw: false`; no full-exit or realized-yield completion is claimed. All GPS points were synthetic fixtures. The native reward came from the labeled sponsor grant. See `public/native-pilot-proof.json`.
+
+Snapshot `20261031T125419Z-0ff09c92` contains the two native receipts and both restricted service credentials. The isolated native rehearsal reset one confirmed receipt to its crash-before-ack state, then recovered its original amount and XP from the live testnet without invoking a sender. See `output/qa/W05-W06-native/restore-rehearsal.txt` and `deploy/rehearse-restore.mjs --native`.

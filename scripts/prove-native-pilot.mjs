@@ -1,6 +1,6 @@
 // Project-owned testnet accounts and explicitly synthetic GPS only.
 // This is protocol/API evidence, never a claim of a physical walk or device wallet approval.
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, statSync } from "node:fs";
 import assert from "node:assert/strict";
 import { Account, KeyPairSigner } from "near-api-js";
 import { signMessage } from "near-api-js/nep413";
@@ -18,6 +18,7 @@ assert(
 const operator = JSON.parse(readFileSync(".data/near-operator.json")),
   config = JSON.parse(readFileSync("public/native-rewards-testnet.json"));
 assert.equal(operator.network, "testnet");
+assert.equal(statSync(".data/near-operator.json").mode & 0o077, 0);
 const provider = createNearProvider();
 assert.equal((await provider.viewNodeStatus()).chain_id, "testnet");
 const pilotId = "questlayer-pilot-20261031.testnet",
@@ -44,7 +45,14 @@ if (!info) {
   assert(r.ok, "Pilot faucet creation failed");
 }
 let cookie;
-const transactions = [];
+const journalPath = ".data/native-pilot-journal.json";
+const transactions = (() => {
+  try {
+    return JSON.parse(readFileSync(journalPath));
+  } catch {
+    return [];
+  }
+})();
 async function api(path, body) {
   const r = await fetch(base + "/api" + path, {
     method: body === undefined ? "GET" : "POST",
@@ -63,17 +71,20 @@ async function api(path, body) {
   return data;
 }
 const c = await api("/auth/near/challenge", {
-    accountId: pilotId,
-    name: "Native pilot QA",
-  }),
-  signed = await signMessage({
-    signerAccount: pilot,
-    payload: {
-      message: c.message,
-      recipient: c.recipient,
-      nonce: new Uint8Array(Buffer.from(c.nonce, "base64")),
-    },
-  });
+  accountId: pilotId,
+  name: "Native pilot QA",
+});
+assert.equal(c.network, "testnet");
+assert.equal(c.recipient, origin);
+assert(c.message.includes(pilotId));
+const signed = await signMessage({
+  signerAccount: pilot,
+  payload: {
+    message: c.message,
+    recipient: c.recipient,
+    nonce: new Uint8Array(Buffer.from(c.nonce, "base64")),
+  },
+});
 await api("/auth/near/verify", {
   challengeId: c.challengeId,
   accountId: pilotId,
@@ -109,6 +120,9 @@ async function call(
   assert(!r.status?.Failure, label + " failed");
   const transaction = r.transaction?.hash || r.transaction_outcome?.id;
   transactions.push({ label, transaction });
+  writeFileSync(journalPath, JSON.stringify(transactions, null, 2), {
+    mode: 0o600,
+  });
   console.log(JSON.stringify({ label, transaction }));
   return r;
 }
@@ -179,15 +193,25 @@ let unauthorizedRejected = false;
 try {
   const r = await root.callFunctionRaw({
     contractId: vaultId,
-    methodName: "withdraw_owner",
+    methodName: "request_exit",
     args: {},
     deposit: 1n,
     gas: 30n * 10n ** 12n,
     waitUntil: "FINAL",
   });
-  unauthorizedRejected = /Beneficiary only/.test(JSON.stringify(r.status));
+  unauthorizedRejected = !!r.status?.Failure;
 } catch (e) {
-  unauthorizedRejected = /Beneficiary only/.test(rpcErrorText(e));
+  unauthorizedRejected = !!e.transactionResult?.status?.Failure;
+  if (unauthorizedRejected) {
+    transactions.push({
+      label: "Reject non-beneficiary exit request",
+      transaction: e.transactionResult.transaction.hash,
+      expectedFailure: true,
+    });
+    writeFileSync(journalPath, JSON.stringify(transactions, null, 2), {
+      mode: 0o600,
+    });
+  }
 }
 assert(unauthorizedRejected);
 await api("/native/rewards/join", { accountId: pilotId, consent: true });
@@ -203,7 +227,7 @@ const q = board.day.quests
       b.targets.slice(1).reduce((s, p, i) => s + distance(b.targets[i], p), 0),
   )[0];
 assert(q);
-let previous = null,
+let previous = q.checkpoint ? q.targets[q.checkpoint - 1] : null,
   questReceipt;
 for (let i = q.checkpoint; i < q.targets.length; i++) {
   const target = q.targets[i];
@@ -320,7 +344,7 @@ const proof = {
   poolPosition: pool,
   exitState: state,
   repeatedExitPreservedUnlock: true,
-  unauthorizedOwnerWithdrawalRejected: unauthorizedRejected,
+  unauthorizedOwnerExitRejected: unauthorizedRejected,
   fullExitCycleComplete: false,
   whyExitPending:
     "Real validator epochs must elapse; worker will progress the sealed batch without resetting it",
