@@ -89,7 +89,7 @@ impl Game {
  fn assert_running(&self){assert!(!self.paused,"Publication paused");}
  fn credit(&mut self,a:&AccountId,value:u128,xp:u64){let old=self.balances.get(a).unwrap_or(0);self.balances.insert(a,&(old+value));self.owed_total+=value;let mut p=self.profiles.get(a).unwrap_or_default();p.xp=p.xp.checked_add(xp).expect("XP overflow");self.profiles.insert(a,&p);}
  fn check(&self){assert_eq!(self.coins.available+self.coins.reserved+self.zones.available+self.zones.reserved+self.owed_total+self.pending_total+self.paid_total,self.funded,"Conservation failure");}
- fn event(&self,name:&str,data:near_sdk::serde_json::Value){env::log_str(&format!("EVENT_JSON:{}",near_sdk::serde_json::json!({"standard":"auratrail","version":"1.0.0","event":name,"data":[data]})));}
+ fn event(&self,name:&str,data:near_sdk::serde_json::Value){env::log_str(&format!("EVENT_JSON:{}",near_sdk::serde_json::json!({"standard":"questlayer","version":"1.0.0","event":name,"data":[data]})));}
 }
 
 #[cfg(test)]mod tests{

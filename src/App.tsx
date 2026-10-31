@@ -2422,7 +2422,7 @@ export default function App() {
                           {z.opensAt > now && (
                             <small>Opens in {remaining(z.opensAt)}</small>
                           )}
-                          <small>{Math.round(meters(position, z))} m</small>
+                          <small>{distanceLabel(meters(position, z))}</small>
                         </div>
                         <h3>{z.name}</h3>
                         <div className="zone-rewards">
@@ -4292,7 +4292,7 @@ function Bounties({
             <h3>{b.title}</h3>
             <p>{b.description}</p>
             <small>
-              {b.creator_name} · {Math.round(meters(position, b))} m
+              {b.creator_name} · {distanceLabel(meters(position, b))}
             </small>
             {b.state === "open" &&
               (b.creator === player.id ? (

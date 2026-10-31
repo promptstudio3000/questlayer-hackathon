@@ -9,9 +9,14 @@ import { nearAccountId } from "../identity/near.mjs";
 import { FACTORY_ID, VAULT_POOLS } from "./vaults.mjs";
 import { SOCIAL_TESTNET, SOCIAL_CODE_HASH } from "./social-profile.mjs";
 
-const MARKET_ID = "questlayer-market-20261031.testnet";
-const NFT_ID = "nfts.auratrail-dev-20261030.testnet";
-const REWARDS_ID = "questlayer-rewards-20261031.testnet";
+import { readFileSync } from "node:fs";
+// Contract identities are pinned by the reviewed public manifests, so a redeploy
+// under a new account only changes the manifests and their recorded code hashes.
+const manifest = (name) =>
+  JSON.parse(readFileSync(new URL(`../../public/${name}.json`, import.meta.url), "utf8"));
+const MARKET_ID = manifest("native-market-testnet").marketContract;
+const NFT_ID = manifest("native-claims-testnet").contractId;
+const REWARDS_ID = manifest("native-rewards-testnet").contractId;
 const integer = (value) => Number.isSafeInteger(value) && value >= 0;
 const amount = (value) =>
   typeof value === "string" &&
