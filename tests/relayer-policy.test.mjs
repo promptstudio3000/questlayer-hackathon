@@ -514,3 +514,26 @@ test("staking through the player's own factory position is relayed but never spo
     "RELAY_RECEIVER",
   );
 });
+
+test("creator payments relay the player's own money and creators withdraw with one yocto", async () => {
+  const CREATORS = "questlayer-creators-20261101.testnet";
+  const money = () => ({ ...ctx(), contracts: { ...CONTRACTS, creators: CREATORS } });
+  const buy = validateDelegate(
+    await decoded({ receiverId: CREATORS, action: call("buy_access", { quest_id: "q:1" }, 10n ** 23n) }),
+    money(),
+  );
+  assert.equal(buy.sponsorDeposit, false);
+  const donate = validateDelegate(
+    await decoded({ receiverId: CREATORS, action: call("donate", { quest_id: "q:1" }, 10n ** 22n) }),
+    money(),
+  );
+  assert.equal(donate.sponsorDeposit, false);
+  assert.equal(
+    validateDelegate(await decoded({ receiverId: CREATORS, action: call("withdraw", {}, 1n) }), money()).methodName,
+    "withdraw",
+  );
+  await rejects(decoded({ receiverId: CREATORS, action: call("buy_access", { quest_id: "q:1" }, 0n) }), "RELAY_DEPOSIT", money());
+  await rejects(decoded({ receiverId: CREATORS, action: call("buy_access", {}, 10n ** 23n) }), "RELAY_ARGS", money());
+  await rejects(decoded({ receiverId: CREATORS, action: call("register_quest", { quest_id: "q:2", author_id: SENDER, price: "0" }, 0n) }), "RELAY_METHOD", money());
+  await rejects(decoded({ receiverId: CREATORS, action: call("buy_access", { quest_id: "q:1" }, 10n ** 23n) }), "RELAY_RECEIVER");
+});

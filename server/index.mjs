@@ -177,6 +177,14 @@ const relayer = managedAccounts
           collectibles: nativeCollectibles.contractId,
           market: marketContractId,
           factory: rewardsConfig?.factory?.contractId || FACTORY_ID,
+          creators: existsSync(resolve(APP_ROOT, "public/native-creators-testnet.json"))
+            ? JSON.parse(
+                readFileSync(
+                  resolve(APP_ROOT, "public/native-creators-testnet.json"),
+                  "utf8",
+                ),
+              ).contractId
+            : undefined,
           rewards:
             rewardsConfig?.contractId ||
             JSON.parse(

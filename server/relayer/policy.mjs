@@ -72,6 +72,8 @@ function checkContext(ctx) {
       social: ctx.contracts.social || SOCIAL_CONTRACT,
       factory:
         typeof ctx.contracts.factory === "string" ? ctx.contracts.factory : null,
+      creators:
+        typeof ctx.contracts.creators === "string" ? ctx.contracts.creators : null,
     },
     factorySetupDeposit:
       ctx.factorySetupDeposit === undefined || ctx.factorySetupDeposit === null
@@ -312,6 +314,26 @@ export function validateDelegate(decoded, context) {
   } else if (receiverId === c.rewards) {
     if (method === "withdraw") depositIs(1n, "Reward withdrawal");
     else unsupported();
+  } else if (c.creators && receiverId === c.creators) {
+    // Creator money: the buyer's or donor's own NEAR; gas is sponsored.
+    if (method === "buy_access" || method === "donate") {
+      sponsorDeposit = false;
+      demand(
+        deposit > 0n && deposit <= ctx.maxBuyDeposit,
+        "RELAY_DEPOSIT",
+        "The amount is outside the relayed range.",
+      );
+      demand(
+        keysOf(args, ["quest_id"]) &&
+          typeof args.quest_id === "string" &&
+          args.quest_id.length <= 64,
+        "RELAY_ARGS",
+        "Creator payments name one quest.",
+      );
+    } else if (method === "withdraw") {
+      depositIs(1n, "Creator withdrawal");
+      demand(keysOf(args, []), "RELAY_ARGS", "Withdrawal takes no arguments.");
+    } else unsupported();
   } else if (c.factory && receiverId === c.factory) {
     // Staking money is the player's own: gas is sponsored, deposits are not.
     sponsorDeposit = false;
