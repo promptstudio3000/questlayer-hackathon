@@ -190,7 +190,15 @@ impl Rewards {
     }
     /// Only the pinned factory can register its successfully initialized children.
     pub fn register_factory_vault(&mut self, account_id: AccountId) {
-        let factory = "questlayer-vaults-20261031.testnet";
+        // The factory of the same testnet generation: questlayer-rewards-<gen>
+        // trusts exactly questlayer-vaults-<gen>. Both ids are published in the
+        // manifest; no caller-supplied factory is accepted.
+        let own = env::current_account_id();
+        let generation = own
+            .as_str()
+            .strip_prefix("questlayer-rewards-")
+            .expect("Pinned reward contract only");
+        let factory = format!("questlayer-vaults-{generation}");
         assert_eq!(
             env::predecessor_account_id().as_str(),
             factory,

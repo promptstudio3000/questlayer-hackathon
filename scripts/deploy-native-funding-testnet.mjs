@@ -19,9 +19,18 @@ const provider = createNearProvider();
 assert.equal((await provider.viewNodeStatus()).chain_id, "testnet");
 const signer = KeyPairSigner.fromSecretKey(operator.secretKey),
   root = new Account(operator.accountId, provider, signer);
-const contractId = "questlayer-rewards-20261031.testnet",
-  factoryId = "questlayer-vaults-20261031.testnet",
-  vaultId = "questlayer-vault-20261031.testnet",
+// Account ids can be overridden for a new deployment generation; defaults are
+// the 2026-10-31 pilot accounts.
+const contractId =
+    process.env.NEAR_REWARDS_ACCOUNT || "questlayer-rewards-20261031.testnet",
+  factoryId =
+    process.env.NEAR_VAULT_FACTORY_ACCOUNT ||
+    "questlayer-vaults-20261031.testnet",
+  vaultId =
+    process.env.NEAR_VAULT_ACCOUNT || "questlayer-vault-20261031.testnet",
+  vaultDepositYocto = BigInt(
+    process.env.VAULT_DEPOSIT_YOCTO || (10n ** 23n).toString(),
+  ),
   pool = "aurora.pool.f863973.m0";
 const rewardSigner = loadAwardSigner(".data/reward-attestor.pem");
 const workerPath = ".data/reward-worker.json";
@@ -220,7 +229,7 @@ if (treasury.funded === "0")
     root.callFunctionRaw({
       contractId,
       methodName: "fund_rewards",
-      args: { source: "sponsor", receipt_id: "initial-pilot-20261031" },
+      args: { source: "sponsor", receipt_id: `initial-pilot-${contractId.replace(/[^a-z0-9]/g, "-").slice(0, 48)}` },
       deposit: 2n * 10n ** 23n + BigInt(cfg.sponsor_storage_fee),
       gas: 50n * 10n ** 12n,
       waitUntil: "FINAL",
@@ -245,20 +254,20 @@ assert.equal(await view(pool, "is_staking_paused"), false);
 let state = await view(vaultId, "get_state");
 if (state.deposited === "0")
   await record(
-    "Deposit 0.1 actual test NEAR into validator through vault",
+    `Deposit ${vaultDepositYocto} yoctoNEAR into the validator through the vault`,
     () =>
       root.callFunctionRaw({
         contractId: vaultId,
         methodName: "deposit_and_stake",
         args: {},
-        deposit: 10n ** 23n,
+        deposit: vaultDepositYocto,
         gas: 200n * 10n ** 12n,
         waitUntil: "FINAL",
       }),
   );
 state = await view(vaultId, "get_state");
 assert.equal(state.stage, "idle");
-assert.equal(state.deposited, "100000000000000000000000");
+assert.equal(state.deposited, vaultDepositYocto.toString());
 const poolPosition = await view(pool, "get_account", { account_id: vaultId });
 assert(BigInt(poolPosition.staked_balance) > 0n);
 const factory = await provision(

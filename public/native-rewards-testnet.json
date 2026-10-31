@@ -1,26 +1,26 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-10-31T13:08:04.700Z",
-  "contractId": "questlayer-rewards-20261031.testnet",
-  "codeHash": "FC4cKvohogoAH26FbRXrcF17rTb1ofYxPVNmZQc8fAAo",
-  "wasmSha256": "d2d9162f863086f39bf862b0928c64b1a6512a2974ff86bd629755c197c1c87c",
-  "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
-  "workerPublicKey": "ed25519:D7aVXb3Y6URXZ3znnWBVRHbYY1gLrZz2UiyV2dTWUSRb",
+  "verifiedAt": "2026-10-31T23:47:40.076Z",
+  "contractId": "questlayer-rewards-20261101.testnet",
+  "codeHash": "F6g2rDdk61fWLCjCAChkRT9Mt6Js3DgiFbZVxq3RUnZs",
+  "wasmSha256": "d177a78cd75bb5302e7498d9d5a3ebbd0ae849a338def07e154473716142ef3e",
+  "attestor": "oG4sZ5xicVWRG62fvb9VMdykHVpp/Uu3epAvhgU14QM=",
+  "workerPublicKey": "ed25519:8JiuMcnC4oR1vf7ZALzSpVrb5uxWFmXVTF8m54fem84e",
   "factory": {
-    "contractId": "questlayer-vaults-20261031.testnet",
-    "codeHash": "D5C5L4wfmiDXNtQrTymSFPvWZt1vetPJRztQf4VMX55H",
-    "wasmSha256": "b35f16a6ae3d72a1821f849acafb091c8041550a41aba8f8bc837027ec0cc3b8",
-    "vaultCodeHash": "2EqRH4nVgKLp4kezRk8mrfXZivC3kjKw4Z33GeStDUmD",
-    "vaultWasmSha256": "1266fc07d590607ddc84457454f0e96399664cbe4d7b7e9139d6d5c284323040",
+    "contractId": "questlayer-vaults-20261101.testnet",
+    "codeHash": "3nFKkbo6kdU7Cnb7mL1GHGuFj9Db2tSK89ebNUTadEbA",
+    "wasmSha256": "294eb4a7125d45953c14336d9c0448839a997aa10bd12d29dfb0a5c936dee2c1",
+    "vaultCodeHash": "4px7AFQqS96QFMPv1fFfEuBTHXYFCpeZWg43j8rkvp2u",
+    "vaultWasmSha256": "38dbaae6a37c77bf5ea884ae160da461293bd2eda1e851f45b4c13bd3dd12262",
     "setupDeposit": "3520000000000000000000000"
   },
   "vaults": [
     {
-      "accountId": "questlayer-vault-20261031.testnet",
-      "beneficiary": "auratrail-dev-20261030.testnet",
+      "accountId": "questlayer-vault-20261101.testnet",
+      "beneficiary": "questlayer-dev-20261031.testnet",
       "pool": "aurora.pool.f863973.m0",
-      "codeHash": "2EqRH4nVgKLp4kezRk8mrfXZivC3kjKw4Z33GeStDUmD",
-      "wasmSha256": "1266fc07d590607ddc84457454f0e96399664cbe4d7b7e9139d6d5c284323040"
+      "codeHash": "4px7AFQqS96QFMPv1fFfEuBTHXYFCpeZWg43j8rkvp2u",
+      "wasmSha256": "38dbaae6a37c77bf5ea884ae160da461293bd2eda1e851f45b4c13bd3dd12262"
     }
   ],
   "funding": "explicit sponsor; realized staking yield not yet demonstrated",
@@ -28,27 +28,27 @@
   "state": {
     "version": 1,
     "network": "testnet",
-    "beneficiary": "auratrail-dev-20261030.testnet",
+    "beneficiary": "questlayer-dev-20261031.testnet",
     "pool": "aurora.pool.f863973.m0",
-    "rewards": "questlayer-rewards-20261031.testnet",
+    "rewards": "questlayer-rewards-20261101.testnet",
     "contribution_bps": 5000,
     "stage": "idle",
-    "nonce": "3",
+    "nonce": "1",
     "operation": "",
     "exit_requested": false,
     "unlock_epoch": "0",
-    "epoch": "5398",
-    "observed_epoch": "5398",
-    "principal": "100000000000000000000000",
-    "high_water_basis": "100000000000000000000000",
-    "staked": "99999999999999999999998",
-    "unstaked": "2",
+    "epoch": "5400",
+    "observed_epoch": "5400",
+    "principal": "5000000000000000000000000",
+    "high_water_basis": "5000000000000000000000000",
+    "staked": "5000000000000000000000000",
+    "unstaked": "0",
     "pending_pool_cash": "0",
     "owner_credit": "0",
     "owner_pending": "0",
     "game_credit": "0",
     "game_pending": "0",
-    "deposited": "100000000000000000000000",
+    "deposited": "5000000000000000000000000",
     "owner_paid": "0",
     "game_paid": "0",
     "weighted_stake": "0",
@@ -57,79 +57,63 @@
     "tier_policy": "conservative-mature-principal-v1"
   },
   "poolPosition": {
-    "account_id": "questlayer-vault-20261031.testnet",
-    "unstaked_balance": "2",
-    "staked_balance": "99999999999999999999998",
+    "account_id": "questlayer-vault-20261101.testnet",
+    "unstaked_balance": "4",
+    "staked_balance": "4999999999999999999999996",
     "can_withdraw": true
   },
   "transactions": [
     {
-      "label": "Deploy and initialize questlayer-rewards-20261031.testnet",
-      "transaction": "4Mwv3FnxwgEiZ25RrGEDzoxvEiGtwxwTDXJrW8FwqxGK"
+      "label": "Deploy and initialize questlayer-rewards-20261101.testnet",
+      "transaction": "E6cGi26E75vy5S45kwLQBY9Y4Z1mhhm17Y85FBKRPPLV"
     },
     {
       "label": "Install bounded publisher and claim relay key",
-      "transaction": "GzDxZ39T8NPfUYGxBeyaHfGzFt3UcXitwFxnKfchDZQ8"
+      "transaction": "HxdS1g95Har7XYMDgkWzMNXuT411y3E4ptZSJrDsjocj"
     },
     {
-      "label": "Deploy and initialize questlayer-vault-20261031.testnet",
-      "transaction": "9ejXoQer2nE4LiZ9MX9Te9JakThYJAnJHKctnKwUEYDs"
+      "label": "Deploy and initialize questlayer-vault-20261101.testnet",
+      "transaction": "5qPLCqCVX8bhMyRb9zEXQcYm6MzsWFPVADvetWRd2Pnj"
     },
     {
       "label": "Allow only the isolated native vault as yield source",
-      "transaction": "HB4R85ZCgyR1RvYXipQLNZ9FNg6nvN888nRdYmg6px7W"
+      "transaction": "9sLrQ26tRHRxPTjQdP6wJNiP6q8JxiiTyVPtyQYrccvu"
+    },
+    {
+      "label": "Allow only the isolated native vault as yield source",
+      "transaction": "4tmw7HXL6iTJMcVgbgdeSDNJHez9n3ofrVisD339Q1ou"
+    },
+    {
+      "label": "Allow only the isolated native vault as yield source",
+      "transaction": "HJcgTaGwKZoFb4EGUTBpnM7g23PPcjZem9KoY5VU5BEK"
     },
     {
       "label": "Sponsor 0.2 test NEAR with separate 50/50 accounting",
-      "transaction": "9HMefp1EbNNzV8JUBuZixTmX9kmgHxabwfYyBsX1prbp"
+      "transaction": "4yuTUTF8uZc3MeBZrt1SCjZtmtxZfM894ZFm2sAm38az"
     },
     {
-      "label": "Deposit 0.1 actual test NEAR into validator through vault",
-      "transaction": "tWptNrmhty8U3YSP2PQnkXm3fkPwHSz7YunmLhXDMZd"
-    },
-    {
-      "label": "Upgrade reviewed compatible bytecode questlayer-rewards-20261031.testnet",
-      "transaction": "wMMgXtR328bvbHwpWJC3qtCj7dc9gsDCQ1W4sJBZ9nY"
-    },
-    {
-      "label": "Upgrade reviewed compatible bytecode questlayer-vault-20261031.testnet",
-      "transaction": "54sDkGj5kASz7vQooGHKfPCKQFSD6L3oyQU52nDnoKm"
+      "label": "Deposit 5000000000000000000000000 yoctoNEAR into the validator through the vault",
+      "transaction": "4yaXbAkurfgYRa2inHqcw229uTUjTebYsyQxxK4BFN8n"
     },
     {
       "label": "Allow only the isolated native vault as yield source",
-      "transaction": "5w7mWEEMWLrqpqMit35KFfLjvwRxXYXLViYqxjmDRGEJ"
+      "transaction": "3v8KRiwaAM75nMZr72mmUrGaPKigJMcBHNYsjifZMWTE"
     },
     {
-      "label": "Deploy and initialize questlayer-vaults-20261031.testnet",
-      "transaction": "9sp2238qa8q5KJoC8auXViB79bYAXqs71E7i8SRZ6xHa"
-    },
-    {
-      "label": "Upgrade reviewed compatible bytecode questlayer-rewards-20261031.testnet",
-      "transaction": "h2vv8fQBDPtRq6Lkjo9rqkcE8hyjLwWPhwD1J97ngiw"
-    },
-    {
-      "label": "Reserve operating storage for existing native day 2026-10-31",
-      "transaction": "9uuezm6enrbb7jZFEYqRLSfhVvHCS9R9n5rW1yPeiZtm"
-    },
-    {
-      "label": "Reserve operating storage for existing native day 2026-11-01",
-      "transaction": "DnuHpWgC4NHzfq2KDLSC3HsN6Mh3TmPVKgehisS1s2Pi"
+      "label": "Upgrade reviewed compatible bytecode questlayer-rewards-20261101.testnet",
+      "transaction": "5ghj9c4RRmoaUzmpoG9m3ahwfkfLAzHESVT1uzAR8k6K"
     },
     {
       "label": "Allow only the isolated native vault as yield source",
-      "transaction": "87cbo8NPab2YKER913VyfReoDMjT2fKEbtSBLbMABrgk"
+      "transaction": "9VRXsttQHDU7fcSSyYMfQf7e216hw1XQwp7uCC6WzGYV"
+    },
+    {
+      "label": "Deploy and initialize questlayer-vaults-20261101.testnet",
+      "transaction": "8TebHDYNQgau6UZ3SQmYB6SK39qZC9vr2YBY9tWK9cs9"
     },
     {
       "label": "Top up separate reward storage and gas reserve",
-      "transaction": "GyFQQWhmSiR6trgPMeYZvWSdEccikb1vRmrm476en2yy"
-    },
-    {
-      "label": "Upgrade reviewed compatible bytecode questlayer-rewards-20261031.testnet",
-      "transaction": "GAYkBGvAWTaEkFACxdAX8bEAtonDpr3AcHRzGCaXvvBd"
-    },
-    {
-      "label": "Allow only the isolated native vault as yield source",
-      "transaction": "3Q25vjkRB7yA6MjUcqdECAhDWx5ySPAdxz5ese3qTxe2"
+      "transaction": "FTv693G7jNPioupzDHKRtKMdJYE454e2vmQqNQJ5APa3"
     }
   ]
 }

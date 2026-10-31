@@ -1,4 +1,6 @@
-export const NATIVE_VAULT_FACTORY = "questlayer-vaults-20261031.testnet";
+import rewardsManifest from "../public/native-rewards-testnet.json" with { type: "json" };
+// The factory of the current deployment generation, pinned by the public manifest.
+export const NATIVE_VAULT_FACTORY: string = rewardsManifest.factory.contractId;
 export type VaultRequest = {
   accountId: string;
   action:

@@ -1,7 +1,12 @@
 import { NativeContractReader } from "./reader.mjs";
 import { assert } from "../domain.mjs";
 import { nativeInteger, readStakingPool } from "./staking-pool.mjs";
-export const FACTORY_ID = "questlayer-vaults-20261031.testnet";
+import { readFileSync } from "node:fs";
+// The factory of the current deployment generation is pinned by the public
+// rewards manifest; the server never accepts a caller-supplied factory.
+export const FACTORY_ID = JSON.parse(
+  readFileSync(new URL("../../public/native-rewards-testnet.json", import.meta.url), "utf8"),
+).factory.contractId;
 export const VAULT_POOLS = [
   { id: "aurora.pool.f863973.m0", name: "Aurora validator" },
   { id: "stakely_v2.pool.f863973.m0", name: "Stakely validator" },

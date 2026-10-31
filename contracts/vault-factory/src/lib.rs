@@ -50,14 +50,18 @@ trait Callbacks {
 impl Factory {
     #[init]
     pub fn new(rewards_id: AccountId) -> Self {
-        assert_eq!(
-            env::current_account_id().as_str(),
-            "questlayer-vaults-20261031.testnet",
+        // Testnet-only generations: the factory and its treasury are both
+        // project-owned `questlayer-*` testnet accounts; the exact generation
+        // is bound at deployment and recorded in the public manifest.
+        let factory = env::current_account_id();
+        assert!(
+            factory.as_str().starts_with("questlayer-vaults-")
+                && factory.as_str().ends_with(".testnet"),
             "Pinned testnet factory only"
         );
-        assert_eq!(
-            rewards_id.as_str(),
-            "questlayer-rewards-20261031.testnet",
+        assert!(
+            rewards_id.as_str().starts_with("questlayer-rewards-")
+                && rewards_id.as_str().ends_with(".testnet"),
             "Pinned reward contract only"
         );
         Self {
