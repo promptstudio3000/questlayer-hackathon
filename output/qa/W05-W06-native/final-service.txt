@@ -1,0 +1,10 @@
+NRestarts=0
+MemoryCurrent=101060608
+ActiveState=active
+SubState=running
+/opt/ps3000/apps/auratrail/releases/20261031T131132Z
+auratrail.service: Consumed 13.106s CPU time, 103.4M memory peak, 0B memory swap peak.
+Started auratrail.service - QuestLayer exploration game.
+(node:590157) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+QuestLayer server: http://127.0.0.1:7091 · DEMO realm

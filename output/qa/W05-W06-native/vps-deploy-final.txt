@@ -1,0 +1,26 @@
+
+added 306 packages in 24s
+{"publicAssetsCopied": 0, "expiredAssetsRemoved": 0, "assetPoolBytes": 38609012, "retentionDays": 7, "protectedRecentReleases": 5}
+curl: (7) Failed to connect to 127.0.0.1 port 7091 after 0 ms: Couldn't connect to server
+curl: (7) Failed to connect to 127.0.0.1 port 7091 after 0 ms: Couldn't connect to server
+curl: (7) Failed to connect to 127.0.0.1 port 7091 after 0 ms: Couldn't connect to server
+{"status":"ok","app":"QuestLayer","version":"0.1.0","mode":"demo","worldPreparation":{"cityId":"plzen","timezone":"Europe/Prague","version":1,"financialMode":"demo","days":[{"day":"2026-10-31","state":"ready","attempts":1,"updatedAt":1793416757052},{"day":"2026-11-01","state":"ready","attempts":1,"updatedAt":1793416757246}]},"nativeRewards":{"last_success":1793452323782,"last_error":null,"queued":0},"now":1793452328929}Domain already points to QuestLayer; preserving route.
+{"level":"info","ts":1793452329.0201254,"msg":"using provided configuration","config_file":"/etc/caddy/Caddyfile","config_adapter":""}
+{"level":"warn","ts":1793452329.079264,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.0792968,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.0793586,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.0793624,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.0797708,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.0797997,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.0800743,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.0800872,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.082876,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.0829017,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793452329.09542,"msg":"Caddyfile input is not formatted; run the 'caddy fmt' command to fix inconsistencies","adapter":"caddyfile","file":"/etc/caddy/Caddyfile","line":4}
+{"level":"info","ts":1793452329.1112294,"logger":"http","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+{"status":"ok","app":"QuestLayer","version":"0.1.0","mode":"demo","worldPreparation":{"cityId":"plzen","timezone":"Europe/Prague","version":1,"financialMode":"demo","days":[{"day":"2026-10-31","state":"ready","attempts":1,"updatedAt":1793416757052},{"day":"2026-11-01","state":"ready","attempts":1,"updatedAt":1793416757246}]},"nativeRewards":{"last_success":1793452329167,"last_error":null,"queued":0},"now":1793452329422}
+Deployed release: /opt/ps3000/apps/auratrail/releases/20261031T131132Z
+Backup: /opt/ps3000/apps/auratrail/backups/20261031T131132Z
+{"level":"info","ts":1793452329.1117804,"logger":"http","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+{"level":"info","ts":1793452329.1116488,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0xc000573ea0"}
+{"level":"info","ts":1793452329.125563,"logger":"tls.cache.maintenance","msg":"stopped background certificate maintenance","cache":"0xc000573ea0"}

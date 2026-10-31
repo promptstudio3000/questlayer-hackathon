@@ -33,3 +33,8 @@ Real validator release and beneficiary withdrawal after the required epochs, a m
 
 
 A final adversarial review added sponsor-funded record storage and an operating/backing check to `fund_rewards`. The compatible upgrade preserves existing receipt state. `storage-live-proof.json` records rejection of a 1-yocto sponsor call and a successful 0.000002 test NEAR grant with separate 0.005 storage funding. This additional sponsor amount is distinct from the initial 0.2 grant and is not validator yield.
+
+
+## Final deployed verification
+
+Release `20261031T131132Z`, source `092c0ab`, is live on the public domain. At 13:13 UTC its served bundle matched the local build, the public manifest matched the actual chain code hash, both transaction proof files were available, and the worker reported no error and zero queued receipts. The public Wallet rendered its two confirmed native receipts in the daily capacity counter; no browser console errors were observed. The final service check showed active/running with zero automatic restarts. The private-copy recovery rehearsal passed again against the final contract at 13:14 UTC (`restore-final.txt`). Full staking release remains pending real epoch 5402 or later; no complete roadmap exit gate has been marked passed.
