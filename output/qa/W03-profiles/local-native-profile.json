@@ -1,0 +1,29 @@
+{
+  "verifiedAt": "2026-10-31T06:39:35.217Z",
+  "network": "testnet",
+  "api": "http://127.0.0.1:8787",
+  "contractId": "v1.social08.testnet",
+  "accountId": "auratrail-dev-20261030.testnet",
+  "transaction": "8MxWn5jpnSptfKntufo58F4e7PpHWWQ9P6RU6eQj39wy",
+  "attachment": "50000000000000000000000",
+  "previousStorage": null,
+  "profile": {
+    "name": "Native proof explorer",
+    "mutationId": "profile_0123c224-91c6-4237-b28a-9c2656045c1d",
+    "updatedAt": "1793428770380",
+    "avatar": {
+      "contractId": "nfts.auratrail-dev-20261030.testnet",
+      "tokenId": "avatar:auratrail-dev-20261030.testnet"
+    }
+  },
+  "storage": {
+    "total": "50000000000000000000000",
+    "available": "25930000000000000000000"
+  },
+  "avatarVerified": true,
+  "duplicateHistoryPrevented": true,
+  "demoBalanceUnchanged": true,
+  "playerPrivateKeysOnServer": false,
+  "signer": "Own local project developer key; not a browser or hardware-wallet approval",
+  "scope": "Only account/questlayer/profile; no location, inventory, balance or original EVM link"
+}

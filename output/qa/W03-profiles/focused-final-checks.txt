@@ -1,0 +1,13 @@
+✔ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (3808.389209ms)
+✔ profile publication uses only its owner's namespace and a currently owned avatar (10.22325ms)
+✔ existing SocialDB credit reduces attachment to one yocto; transferred avatars are omitted (0.896625ms)
+✔ profile writes fail closed on a changed contract, wrong network, or invalid alias (3.277959ms)
+✔ public leaf parsing and fresh confirmation require the exact publication nonce (1.362917ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4655.236833

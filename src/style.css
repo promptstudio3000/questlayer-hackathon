@@ -3505,6 +3505,143 @@ select {
   margin: 24px 0;
   color: #441c6c;
 }
+.native-profile {
+  margin: 24px 0;
+  padding: 20px 0;
+  border-top: 1px solid #ded2e8;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  color: #441c6c;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.native-profile header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.native-profile header h3 {
+  font-size: 20px;
+  margin: 6px 0 0;
+}
+.native-profile .eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color:#634979;
+}
+.native-profile p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.native-profile .native-account-id {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.profile-alias {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid #dbcee9;
+  background: #f5effb;
+  border-radius: 14px;
+  overflow-wrap: anywhere;
+}
+.profile-alias .subtle {
+  font-size: 14px;
+  color: #634979;
+}
+.native-profile .profile-avatar {
+  display: grid;
+  gap: 6px;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.profile-published {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #e6f6ed;
+  color: #22563c;
+}
+.profile-published span {
+  display: block;
+  font-size: 14px;
+}
+.profile-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #c8b2ef;
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 48px;
+  font-size: 16px;
+}
+.profile-consent input {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  flex-shrink: 0;
+  margin: 3px 0 0;
+  accent-color: #6b35ad;
+}
+.profile-consent > span {color:#441c6c;}
+.profile-consent small {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 8px;
+  color: #634979;
+}
+.profile-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.profile-links a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  font-size: 14px;
+  color: #50247c;
+  text-decoration: underline;
+}
+.profile-links svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.native-profile > .primary-button,
+.native-profile > .secondary-button {
+  font-size: 16px;
+  line-height: 1.3;
+  min-height: 48px;
+}
+.profile-links .text-button {
+  font-size: 14px;
+  min-height: 48px;
+  color:#50247c;
+}
+.profile-account {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  color:#634979;
+}
+.profile-account select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  font: inherit;
+  font-size: 16px;
+}
 .native-wardrobe > p,
 .native-account > p {
   font-size: 16px;

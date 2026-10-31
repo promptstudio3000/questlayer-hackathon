@@ -5,6 +5,9 @@ import type { NativeTradeRequest } from "./types";
 import { AuraClaims } from "./AuraClaims";
 import type { NativeAuraClaim } from "./types";
 import { NativeWardrobe, nativeAppearanceItems } from "./NativeWardrobe";
+import { NativeProfilePanel, SOCIAL_TESTNET } from "./NativeProfile";
+import type { NativeProfileQuote } from "./types";
+import { assertProfileQuote } from "./native-profile-quote";
 import type { NativeWardrobeState, NativeItem } from "./types";
 import {
   useEffect,
@@ -768,6 +771,66 @@ export default function App() {
         );
       await refreshNative(true);
       return true;
+    });
+    return result === true;
+  }
+  async function publishNativeProfile(
+    account: string,
+    avatar: { contractId: string; tokenId: string } | null,
+  ): Promise<boolean> {
+    const result = await action("native-profile", async () => {
+      const { wallet, accountId } = await chooseNearAccount();
+      if (
+        accountId !== account ||
+        !player?.wallets.some((w) => w.account_id === accountId)
+      )
+        throw Error("Choose the linked NEAR wallet shown for your profile.");
+      if (!wallet.manifest.features.signAndSendTransaction)
+        throw Error("Choose a wallet that supports NEAR transactions.");
+      const quote = await api<NativeProfileQuote>("/native/profile/prepare", {
+        accountId,
+        publicConsent: true,
+      });
+      assertProfileQuote(quote, { accountId, name: player.name, avatar });
+      const outcome = await wallet.signAndSendTransaction({
+        network: "testnet",
+        signerId: accountId,
+        receiverId: SOCIAL_TESTNET,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: "set",
+              args: quote.args,
+              gas: "80000000000000",
+              deposit: quote.deposit,
+            },
+          },
+        ],
+      });
+      if (
+        outcome.final_execution_status === "NONE" ||
+        "Failure" in outcome.status
+      )
+        throw Error(
+          "The profile transaction did not confirm. Refresh your public profile before trying again.",
+        );
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const response = await api<{ confirmed: boolean; player: Player }>(
+          "/native/profile/confirm",
+          { accountId, mutationId: quote.profile.mutation_id },
+        );
+        if (response.confirmed) {
+          setPlayer(response.player);
+          notify("Your QuestLayer profile is public on NEAR testnet.");
+          return true;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+      notify(
+        "Your transaction was sent. Refresh your public profile to check confirmation.",
+      );
+      return false;
     });
     return result === true;
   }
@@ -1568,6 +1631,12 @@ export default function App() {
                     onMint={mintEarnedAura}
                     onConfirm={checkAuraClaim}
                     onRestore={restoreDemoAura}
+                  />
+                  <NativeProfilePanel
+                    player={player}
+                    busy={busy}
+                    onConnect={connectNear}
+                    onPublish={publishNativeProfile}
                   />
                 </>
               }

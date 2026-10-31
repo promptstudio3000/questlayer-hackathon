@@ -172,6 +172,42 @@ export type NativeItem = {
   rarity: string;
   serial: number | null;
 };
+export type NativePublicProfile = {
+  name: string;
+  mutationId: string;
+  updatedAt: string | null;
+  avatar: { contractId: string; tokenId: string } | null;
+};
+export type NativeProfileState = {
+  network: "testnet";
+  contractId: string;
+  accountId: string;
+  status: "unpublished" | "published" | "unsupported";
+  profile: NativePublicProfile | null;
+  avatarVerified: boolean;
+  publishAvatar: { contractId: string; tokenId: string } | null;
+  storage: { total: string; available: string } | null;
+  minimumStorage: string;
+  deposit: string;
+  publishEnabled: boolean;
+};
+export type NativeProfileQuote = {
+  network: "testnet";
+  receiverId: string;
+  accountId: string;
+  methodName: "set";
+  gas: string;
+  deposit: string;
+  profile: {
+    mutation_id: string;
+    name: string;
+    schema: string;
+    avatar_contract: string;
+    avatar_token_id: string;
+    updated_at: string;
+  };
+  args: { data: Record<string, unknown> };
+};
 export type NativeAccount = {
   accountId: string;
   items: NativeItem[];

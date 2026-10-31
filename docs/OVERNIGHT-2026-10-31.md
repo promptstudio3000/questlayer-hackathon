@@ -2,6 +2,13 @@
 
 Work in progress. This is a factual implementation log, not a declaration that V1 is complete. The requested morning report is due at 10:00 Europe/Berlin. Product content is English; the private morning summary will be Czech.
 
+## Latest increment: public profiles and deployed 3D
+
+- The optional 3D wardrobe is deployed in release `20261031T062835Z` from `fd80eea`. The actual public starter GLB downloaded with the expected SHA-256 and rendered with the equipped Aura. The service remained active at approximately 96 MB resident memory under its 512 MB limit; this is a starter-load observation, not a worst-case device or model benchmark. Public evidence: `output/qa/W04-models/public-model-api.json` and `public-phone-3d.png` in that directory.
+- Added voluntary native public explorer profiles through the existing NEAR SocialDB testnet contract. The player signs their own alias and currently owned starter reference in their own app namespace; no GPS, balance, inventory or private EVM link is written. Consent defaults off and resets on wallet changes. See [the profile implementation](NATIVE-PROFILES.md).
+- A real own-developer-account SocialDB publication confirmed as `8MxWn5jpnSptfKntufo58F4e7PpHWWQ9P6RU6eQj39wy`. Current NFT ownership, exact publication confirmation, unchanged demo balance and duplicate-history prevention were checked through the actual app API. The local server never received the developer signing key. This does not establish a browser or hardware-wallet approval.
+- Profile source checks: **78 application tests passed**, plus the focused final HTTP/profile checks after adding request limits and narrow field reads. A successful production build is recorded in `output/qa/W03-profiles/`. W03.5 is building; native passkey account creation, bounded delegation, independent recovery and device gates remain open.
+
 ## Delivered source
 
 - Active product identity is **QuestLayer**, including interface, manifest, package, server responses and current design/planning documents. Historical testnet account addresses and operational service paths remain truthful and unchanged.

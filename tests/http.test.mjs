@@ -161,6 +161,49 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
   assert.equal(
     (
       await request(
+        "/native/profile?accountId=unlinked.testnet",
+        undefined,
+        a.cookie,
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(
+        "/native/profile/prepare",
+        { accountId: "unlinked.testnet", publicConsent: true },
+        a.cookie,
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(
+        "/native/profile/prepare",
+        { accountId: "unlinked.testnet", publicConsent: false },
+        a.cookie,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request(
+        "/native/profile/confirm",
+        {
+          accountId: "unlinked.testnet",
+          mutationId: "profile_12345678-1234-1234-1234-123456789abc",
+        },
+        a.cookie,
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(
         "/session",
         { name: "Cross Site" },
         null,

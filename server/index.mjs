@@ -2,6 +2,7 @@ import { updatePresence, nearbyPresence } from "./presence.mjs";
 import { GotchiModels } from "./gotchi-models.mjs";
 import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
+import { NativeSocialProfile } from "./native/social-profile.mjs";
 import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
@@ -72,6 +73,10 @@ const nativeCollectibles = new NativeCollectibles(
   provider,
   process.env.NEAR_COLLECTIBLES_CONTRACT ||
     testnetManifest.collectiblesContract,
+);
+const nativeSocialProfile = new NativeSocialProfile(
+  provider,
+  nativeCollectibles,
 );
 db.exec(
   `CREATE TABLE IF NOT EXISTS passkeys(id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),public_key TEXT NOT NULL,counter INTEGER NOT NULL,transports TEXT NOT NULL);`,
@@ -508,6 +513,123 @@ async function api(req, res, url) {
   if (path === "/api/native/collection" && method === "GET")
     return respond(res, await nativeCollectibles.collection());
   const player = auth(req);
+  if (
+    [
+      "/api/native/profile",
+      "/api/native/profile/prepare",
+      "/api/native/profile/confirm",
+    ].includes(path)
+  ) {
+    const key = `profile-api:${player}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 60,
+      "Please wait before checking your public profile again.",
+      429,
+    );
+  }
+  if (path === "/api/native/profile" && method === "GET") {
+    const accountId = nearAccountId(url.searchParams.get("accountId"));
+    assert(
+      db
+        .prepare(
+          "SELECT 1 FROM wallet_links WHERE player_id=? AND account_id=?",
+        )
+        .get(player, accountId),
+      "Link this NEAR wallet before viewing its game profile.",
+      403,
+    );
+    return respond(
+      res,
+      await nativeSocialProfile.read(
+        accountId,
+        url.searchParams.get("refresh") === "1",
+      ),
+    );
+  }
+  if (path === "/api/native/profile/prepare" && method === "POST") {
+    const input = await body(req),
+      accountId = nearAccountId(input.accountId);
+    assert(
+      input.publicConsent === true,
+      "Choose whether to publish your alias and avatar reference.",
+    );
+    assert(
+      db
+        .prepare(
+          "SELECT 1 FROM wallet_links WHERE player_id=? AND account_id=?",
+        )
+        .get(player, accountId),
+      "Link this NEAR wallet before publishing a game profile.",
+      403,
+    );
+    const key = `native-profile:${player}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 12,
+      "Please wait before preparing another public profile.",
+      429,
+    );
+    const quote = await nativeSocialProfile.prepare(
+      accountId,
+      profile(player).name,
+    );
+    assert(
+      db
+        .prepare(
+          "SELECT 1 FROM wallet_links WHERE player_id=? AND account_id=?",
+        )
+        .get(player, accountId),
+      "Your linked wallet changed. Try again.",
+      409,
+    );
+    return respond(res, quote);
+  }
+  if (path === "/api/native/profile/confirm" && method === "POST") {
+    const input = await body(req),
+      accountId = nearAccountId(input.accountId);
+    assert(
+      db
+        .prepare(
+          "SELECT 1 FROM wallet_links WHERE player_id=? AND account_id=?",
+        )
+        .get(player, accountId),
+      "Link this NEAR wallet before confirming its profile.",
+      403,
+    );
+    const result = await nativeSocialProfile.confirm(
+      accountId,
+      input.mutationId,
+    );
+    assert(
+      db
+        .prepare(
+          "SELECT 1 FROM wallet_links WHERE player_id=? AND account_id=?",
+        )
+        .get(player, accountId),
+      "Your linked wallet changed. Try again.",
+      409,
+    );
+    if (result.confirmed)
+      db.prepare(
+        "INSERT OR IGNORE INTO history(id,player_id,kind,title,gold_u,meta,created_at) VALUES(?,?,?,?,0,?,?)",
+      ).run(
+        `native-profile:${accountId}:${input.mutationId}`,
+        player,
+        "native_profile",
+        "QuestLayer profile published on NEAR",
+        JSON.stringify({
+          network: "testnet",
+          contractId: result.snapshot.contractId,
+          accountId,
+          mutationId: input.mutationId,
+        }),
+        Date.now(),
+      );
+    return respond(res, { ...result, player: profile(player) });
+  }
   if (path === "/api/native/market/accounts" && method === "GET") {
     assert(nativeMarket, "The native market is not available yet.", 503);
     const accounts = db

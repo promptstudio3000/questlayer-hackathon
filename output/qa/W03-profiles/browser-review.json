@@ -1,0 +1,22 @@
+{
+  "verifiedAt": "2026-10-31T06:58:08.258Z",
+  "mode": "Explicit development layout fixture; no connected wallet or chain transaction",
+  "viewports": [
+    "360x640",
+    "390x640 with20px text",
+    "844x390"
+  ],
+  "checks": {
+    "consentDefaultsOff": true,
+    "publishDisabledWithoutConsent": true,
+    "simulatedCancellationPreservesChoice": true,
+    "changingWalletResetsConsent": true,
+    "fullWalletAddressWraps": true,
+    "essentialConsentAndButtonTextAtLeast16px": true,
+    "scrollingControlsReachable": true
+  },
+  "limitations": [
+    "No browser or hardware-wallet approval",
+    "No physical-device test"
+  ]
+}

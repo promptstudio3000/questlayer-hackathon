@@ -339,13 +339,16 @@
         {
           "id": "W03.5",
           "title": "Publish profile references and bound delegations",
-          "status": "planned"
+          "status": "building"
         }
       ],
       "evidence": [
         "docs/OVERNIGHT-2026-10-31.md",
         "output/qa/W03/checks.txt",
-        "output/qa/W03/live-near-identity.json"
+        "output/qa/W03/live-near-identity.json",
+        "docs/NATIVE-PROFILES.md",
+        "output/qa/W03-profiles/checks.txt",
+        "output/qa/W03-profiles/local-native-profile.json"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W03/"
