@@ -59,7 +59,7 @@ snapshot; do not reconstruct them by guessing.
 | Document/source | Role and precedence |
 | --- | --- |
 | [IMPLEMENTATION-PLAN.md](../IMPLEMENTATION-PLAN.md) | Main product, economy and integration specification. Compare its initial Git version with the present version to distinguish original requirements from delivered scope. |
-| [PLAN-HRY.md](../PLAN-HRY.md) | A compatibility entry point pointing to the English specification. It is not a separate current implementation plan. |
+| `PLAN-HRY.md` (removed 1 November 2026) | Former compatibility pointer to the English specification; `IMPLEMENTATION-PLAN.md` is the only specification. |
 | [ROADMAP.md](../ROADMAP.md) / [roadmap.json](roadmap.json) | Delivery order, dependencies, task IDs, journeys and full acceptance gates. Tracker statuses are coarse and some implementation notes predate the latest batch. |
 | [CREATOR-ECONOMY-PLAN.md](../CREATOR-ECONOMY-PLAN.md) | Accepted creator direction: Community, refundable XP locks, creator support/funding, donations and paid access. The financial portions remain planned. |
 | [GAME-RULES.md](GAME-RULES.md) | Consolidated 102 rules, including economic, identity, privacy and delivery boundaries. |
