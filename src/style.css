@@ -4059,3 +4059,9 @@ select {
   .character-room .model-controls { justify-content:flex-start; }
   .character-room .model-instructions { text-align:left; }
 }
+/* Keep navigation, financial mode and map credits readable in every layout. */
+.rail-links button {font-size:12px;line-height:1.25;}
+.demo-footer {font-size:12px;line-height:16px;letter-spacing:0;color:#574365;pointer-events:none;}
+.map-legend {font-size:12px;color:#574365;left:calc(50% + 43px);right:auto;transform:translateX(-50%);bottom:30px;}
+.game-map .maplibregl-ctrl-attrib {font-size:12px!important;line-height:1.4;max-width:280px;}
+@media (min-width:1001px) {.maplibregl-ctrl-bottom-right {bottom:8px!important;}}
