@@ -103,7 +103,8 @@ svg {
   overflow: hidden;
   position: relative;
 }
-.game-map {
+.game-map,
+.game-map.maplibregl-map {
   position: absolute;
   inset: 0;
 }
