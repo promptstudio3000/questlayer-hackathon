@@ -1178,6 +1178,23 @@ export default function App() {
   }
   // The invisible account signs without a popup; an external wallet is the
   // fallback when the player chose one or the managed account is not ready.
+  // Attaches a passkey to the explorer that is already playing, so the player
+  // keeps everything and can return from a synced device.
+  async function attachPasskey() {
+    await action("passkey", async () => {
+      const r = await api<{ options: any; challengeId: string }>(
+        "/passkey/options",
+        { action: "register", attach: true },
+      );
+      const response = await startRegistration({ optionsJSON: r.options });
+      const verified = await api<{ player: Player }>("/passkey/verify", {
+        challengeId: r.challengeId,
+        response,
+      });
+      setPlayer(verified.player);
+      notify("Your explorer is secured with a passkey.");
+    });
+  }
   async function resolveSigner(): Promise<{
     signer: NativeSigner;
     accountId: string;
@@ -2953,6 +2970,7 @@ export default function App() {
               <AccountSessions
                 player={player}
                 onConnect={connectNear}
+                onSecure={() => void attachPasskey()}
                 onRevoke={revokeGameSessions}
                 busy={busy}
               />

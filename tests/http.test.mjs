@@ -428,6 +428,52 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     ).status,
     401,
   );
+  // Play first, secure later: a guest attaches a passkey to the same explorer.
+  const guest = await request("/session", { name: "Guest Securing" });
+  assert.equal(guest.status, 201);
+  assert.equal(
+    (await request("/passkey/options", { action: "register", attach: true }))
+      .status,
+    401,
+    "attaching needs a signed-in explorer",
+  );
+  const attachOptions = await request(
+    "/passkey/options",
+    { action: "register", attach: true },
+    guest.cookie,
+  );
+  assert.equal(attachOptions.status, 200, JSON.stringify(attachOptions.data));
+  const attachKey = credential(attachOptions.data.options.challenge);
+  assert.equal(
+    (
+      await request("/passkey/verify", {
+        challengeId: attachOptions.data.challengeId,
+        response: attachKey.registration,
+      })
+    ).status,
+    401,
+    "the same session must finish the attachment",
+  );
+  const attachOptions2 = await request(
+    "/passkey/options",
+    { action: "register", attach: true },
+    guest.cookie,
+  );
+  const attachKey2 = credential(attachOptions2.data.options.challenge);
+  const attached = await request(
+    "/passkey/verify",
+    { challengeId: attachOptions2.data.challengeId, response: attachKey2.registration },
+    guest.cookie,
+  );
+  assert.equal(attached.status, 200, JSON.stringify(attached.data));
+  assert.equal(attached.data.player.id, guest.data.player.id);
+  assert.equal(attached.data.player.name, "Guest Securing");
+  const attachedLogin = await request("/passkey/options", { action: "login" });
+  const attachedRecovered = await request("/passkey/verify", {
+    challengeId: attachedLogin.data.challengeId,
+    response: assertion(attachKey2, attachedLogin.data.options.challenge),
+  });
+  assert.equal(attachedRecovered.data.player.id, guest.data.player.id);
   const wrong = await request("/passkey/options", {
     action: "register",
     name: "Wrong Origin",

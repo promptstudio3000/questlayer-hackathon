@@ -413,16 +413,27 @@ async function api(req, res, url) {
       "Choose passkey sign-in or registration.",
     );
     if (input.action === "register") {
+      // "Play first, secure later": a signed-in explorer attaches the passkey
+      // to the existing player instead of creating a second one.
+      const attachTo = input.attach === true ? auth(req) : null;
       assert(
-        typeof input.name === "string" &&
-          input.name.trim().length >= 2 &&
-          input.name.trim().length <= 24,
+        input.attach !== true || attachTo,
+        "Sign in before securing this explorer.",
+        401,
+      );
+      const name = attachTo
+        ? db.prepare("SELECT name FROM players WHERE id=?").get(attachTo).name
+        : input.name;
+      assert(
+        typeof name === "string" &&
+          name.trim().length >= 2 &&
+          name.trim().length <= 24,
         "Your name must be 2–24 characters.",
       );
       const options = await generateRegistrationOptions({
         rpName: "QuestLayer",
         rpID,
-        userName: input.name,
+        userName: name,
         userID: randomBytes(32),
         attestationType: "none",
         authenticatorSelection: {
@@ -433,7 +444,8 @@ async function api(req, res, url) {
       const c = challenge("passkey", {
         purpose: "demo-passkey-auth",
         action: "register",
-        name: input.name,
+        name,
+        attachTo,
         challenge: options.challenge,
       });
       return respond(res, { options, challengeId: c.id });
@@ -478,9 +490,15 @@ async function api(req, res, url) {
         "The passkey could not be verified.",
         401,
       );
+      if (c.attachTo)
+        assert(
+          auth(req) === c.attachTo,
+          "Sign in with the same explorer to secure it.",
+          401,
+        );
       player = atomic(db, () => {
         consumeChallenge(input.challengeId);
-        const p = createPlayer(db, c.name);
+        const p = c.attachTo || createPlayer(db, c.name);
         const credential = v.registrationInfo.credential;
         db.prepare("INSERT INTO passkeys VALUES (?,?,?,?,?)").run(
           credential.id,

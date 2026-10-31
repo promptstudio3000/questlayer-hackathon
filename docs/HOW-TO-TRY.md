@@ -30,6 +30,8 @@ What to check:
 3. Open the objective card ("Your next quest"), press **Walk there**, then **Open chest** when in range.
 4. The result sheet shows the exact XP and item. Press **Try it on**; the same Aura is now on your map character.
 5. Reload the page: name, XP, item and equipment are still there.
+6. Profile → **Secure with a passkey**: the same explorer now opens from any device that syncs the passkey
+   (Welcome → "I already have an explorer").
 
 ## 2. Run the cloud/Codespace variant
 

@@ -32,6 +32,7 @@ const readCurrentSessions = () => api<SessionView>("/identity/sessions");
 export function AccountSessions({
   player,
   onConnect,
+  onSecure,
   onRevoke,
   busy,
   readSessions = readCurrentSessions,
@@ -39,6 +40,7 @@ export function AccountSessions({
   readSessions?: () => Promise<SessionView>;
   player: Player;
   onConnect: () => void;
+  onSecure?: () => void;
   onRevoke: (account: string) => Promise<boolean>;
   busy: string;
 }) {
@@ -96,17 +98,37 @@ export function AccountSessions({
         <>
           <p className="play-hint">
             {state.recovery.nearAccounts.length
-              ? "Sign in with the same linked NEAR wallet to restore this explorer."
-              : "This guest explorer is saved in this browser. Link a NEAR wallet to return from another browser."}
+              ? "Sign in with the same linked account to restore this explorer."
+              : state.recovery.demoPasskeys
+                ? "A passkey can restore this explorer on this device or any device that syncs it."
+                : "This explorer is saved in this browser. Add a passkey to come back from another device."}
           </p>
-          {!state.recovery.nearAccounts.length && (
+          {!state.recovery.demoPasskeys && onSecure && (
             <button
               className="secondary-button"
-              onClick={onConnect}
+              onClick={onSecure}
               disabled={!!busy}
             >
-              <Key size={20} /> Link NEAR wallet
+              <ShieldCheck size={20} /> Secure with a passkey
             </button>
+          )}
+          {!state.recovery.nearAccounts.length && (
+            <details className="native-extras">
+              <summary>
+                <Key size={20} /> Link an external NEAR wallet
+              </summary>
+              <p className="play-hint">
+                Optional. A wallet signs a message, not a payment, and restores
+                the same explorer from any browser.
+              </p>
+              <button
+                className="secondary-button"
+                onClick={onConnect}
+                disabled={!!busy}
+              >
+                <Key size={20} /> Link NEAR wallet
+              </button>
+            </details>
           )}
           <details className="native-extras">
             <summary>
