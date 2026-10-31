@@ -1,0 +1,20 @@
+✔ initial root replaces rather than traps browser Back and preserves external wallet state (1.240125ms)
+✔ multiple navigation writes use one root, stable depths and deduplicate identical state (0.186792ms)
+✔ Back/Forward restores screens and safe target identity without replaying actions or consent (0.308833ms)
+✔ reload restores the same actor but cross-actor and malformed entries reset presentation safely (0.317291ms)
+✔ navigation parser refuses coercing enum objects without executing coercion (0.127916ms)
+✔ history stores only presentation and IDs, never draft content, GPS, settlement or accepted consent (0.1665ms)
+✔ native history IDs remain account/day/hash-bound and strip saved coordinates, rewards and checkpoints (0.1735ms)
+✔ structured-clone cyclic metadata is ignored or rejected without crashing popstate parsing (0.117333ms)
+✔ creator route parsing accepts current presentation states and refuses unsupported/private data (0.114584ms)
+✔ a normal modal close can append its chosen destination while preserving Explore as the prior root (0.168416ms)
+✔ blocked history writes retain the last durable depth/signature and can retry without crashing navigation (0.116834ms)
+✔ history depth is bounded by replacement without trapping or dropping external state (0.079916ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 90.711542

@@ -1,0 +1,34 @@
+{
+  "initial": {
+    "hasFocus": null,
+    "hasFocusSupported": false,
+    "id": "creator-observation-evidence",
+    "insideDialog": true,
+    "tag": "TEXTAREA",
+    "text": ""
+  },
+  "afterLastTab": {
+    "hasFocus": null,
+    "hasFocusSupported": false,
+    "id": "",
+    "insideDialog": false,
+    "tag": "BODY",
+    "text": "Interaction fixture · simulated API only. No real publication, XP locking or rew"
+  },
+  "beforeFirstShiftTab": {
+    "hasFocus": null,
+    "hasFocusSupported": false,
+    "id": "",
+    "insideDialog": false,
+    "tag": "BODY",
+    "text": "Interaction fixture · simulated API only. No real publication, XP locking or rew"
+  },
+  "afterEscape": {
+    "hasFocus": null,
+    "hasFocusSupported": false,
+    "id": "",
+    "insideDialog": false,
+    "tag": "BUTTON",
+    "text": "Write private observation"
+  }
+}

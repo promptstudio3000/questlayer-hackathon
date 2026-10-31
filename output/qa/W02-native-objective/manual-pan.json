@@ -1,0 +1,32 @@
+{
+  "beforePan": {
+    "bottom": 223,
+    "height": 60,
+    "left": 138,
+    "right": 348,
+    "top": 163,
+    "width": 210,
+    "x": 138,
+    "y": 163
+  },
+  "afterPan": {
+    "bottom": 208,
+    "height": 60,
+    "left": 233,
+    "right": 443,
+    "top": 148,
+    "width": 210,
+    "x": 233,
+    "y": 148
+  },
+  "stablePan": {
+    "bottom": 208,
+    "height": 60,
+    "left": 233,
+    "right": 443,
+    "top": 148,
+    "width": 210,
+    "x": 233,
+    "y": 148
+  }
+}

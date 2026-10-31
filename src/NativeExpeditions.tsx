@@ -14,6 +14,8 @@ import {
 } from "@phosphor-icons/react";
 import { api, meters } from "./api";
 import type { Fix, Player, Point, QuestActivity } from "./types";
+import { nativeVisitReadReason } from "./native-objective";
+import type { useNativeObjective } from "./useNativeObjective";
 import "./play-ui.css";
 import type {
   NativeQuest as Quest,
@@ -37,8 +39,7 @@ export function NativeExpeditions({
   onFocus,
   onWithdraw,
   view = "board",
-  initialIndex,
-  initialCoinIndex,
+  objective,
   control,
   onWallet,
   onBusyChange,
@@ -49,12 +50,9 @@ export function NativeExpeditions({
   position: Point;
   onConnect: () => void;
   onLocate: () => void;
-  onFocus: (
-    p: Point & { label: string; questIndex?: number; coinIndex?: number },
-  ) => void;
+  onFocus: (kind: "quest" | "coin", index: number) => void;
   view?: "board" | "wallet";
-  initialIndex?: number;
-  initialCoinIndex?: number;
+  objective: ReturnType<typeof useNativeObjective>;
   control?: {
     account: string;
     state: State | null;
@@ -62,7 +60,7 @@ export function NativeExpeditions({
     refresh: (fresh?: boolean) => Promise<void>;
     onAccount: (account: string) => void;
   };
-  onWallet?: () => void;
+  onWallet?: (showReceipts?: boolean) => void;
   onBusyChange?: (busy: boolean) => void;
   onWithdraw: (account: string, contract: string) => Promise<boolean>;
 }) {
@@ -75,11 +73,11 @@ export function NativeExpeditions({
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
-    [consent, setConsent] = useState(false),
-    [chosen, setChosen] = useState<number | null>(initialIndex ?? null),
-    [chosenCoin, setChosenCoin] = useState<number | null>(
-      initialCoinIndex ?? null,
-    );
+    [consent, setConsent] = useState(false);
+  const chosen =
+    objective.reference?.kind === "quest" ? objective.reference.index : null;
+  const chosenCoin =
+    objective.reference?.kind === "coin" ? objective.reference.index : null;
   const account = control?.account ?? accountValue;
   useEffect(() => {
     onBusyChange?.(busy);
@@ -95,38 +93,18 @@ export function NativeExpeditions({
     : snapshot?.account === account
       ? snapshot.data
       : null;
-  const selectionSource = useRef({
-    account,
-    dayId: state?.day?.id,
-    questIndex: initialIndex,
-    coinIndex: initialCoinIndex,
-  });
-  useEffect(() => {
-    const previous = selectionSource.current;
-    const dayId = state?.day?.id;
-    const accountChanged = previous.account !== account;
-    const dayChanged = !!previous.dayId && !!dayId && previous.dayId !== dayId;
-    const targetChanged =
-      previous.questIndex !== initialIndex ||
-      previous.coinIndex !== initialCoinIndex;
-    if (accountChanged || dayChanged) {
-      setChosen(null);
-      setChosenCoin(null);
-    } else if (targetChanged) {
-      setChosen(initialCoinIndex === undefined ? (initialIndex ?? null) : null);
-      setChosenCoin(initialCoinIndex ?? null);
-    }
-    // A temporary failed read must not turn the next refresh into a new day.
-    selectionSource.current = {
-      account,
-      dayId: dayId ?? (accountChanged ? undefined : previous.dayId),
-      questIndex: initialIndex,
-      coinIndex: initialCoinIndex,
-    };
-  }, [account, state?.day?.id, initialIndex, initialCoinIndex]);
   const latest = useRef({ position, account });
   latest.current = { position, account };
   const mounted = useRef(true);
+  const section = useRef<HTMLElement>(null);
+  function browseWalks() {
+    objective.clear();
+    requestAnimationFrame(() =>
+      section.current
+        ?.querySelector<HTMLElement>(".walk-card h2")
+        ?.focus({ preventScroll: true }),
+    );
+  }
   async function refresh(fresh = false) {
     if (control) {
       await control.refresh(fresh);
@@ -190,6 +168,7 @@ export function NativeExpeditions({
   ) {
     await act(async () => {
       if (!state?.day) throw Error("The native day is not ready.");
+      objective.select(kind, index);
       const result = await api<{
         state: string;
         checkpoint?: number;
@@ -215,9 +194,11 @@ export function NativeExpeditions({
     !!fix &&
     fix.accuracy <= 35 &&
     Date.now() - fix.timestamp <= 15000;
+  const readReason = nativeVisitReadReason(state, account, Date.now());
   const eligible =
     !!account &&
     state?.enrolled &&
+    !readReason &&
     gpsReady &&
     !busy &&
     !!state.day &&
@@ -237,22 +218,31 @@ export function NativeExpeditions({
       a.index - b.index
     );
   });
-  const selected = quests.find((q) => q.index === chosen) || ordered[0];
-  useEffect(() => {
-    if (chosenCoin === null && selected && chosen !== selected.index)
-      setChosen(selected.index);
-  }, [selected?.index, chosen, chosenCoin]);
+  const selected =
+    chosen === null ? ordered[0] : quests.find((q) => q.index === chosen);
+  const recovering =
+    !!objective.reference && objective.view.status !== "active";
+  const alternatives = ordered.filter(
+    (q) =>
+      chosenCoin !== null ||
+      (objective.reference &&
+        (objective.reference.dayId !== state?.day?.id ||
+          objective.reference.manifestHash !== state?.day?.hash)) ||
+      q.index !== selected?.index,
+  );
   const readyReason = !account
     ? "Connect a wallet to record visits"
-    : !state?.enrolled
-      ? "Join the testnet walks below"
-      : !gpsReady
-        ? arena
-          ? "Turn on GPS to record visits"
-          : "Waiting for accurate, fresh GPS"
-        : state.day && state.day.claimsAccepted >= state.day.claimsLimit
-          ? "Today's pilot is full"
-          : "";
+    : readReason
+      ? readReason
+      : !state?.enrolled
+        ? "Join the testnet walks below"
+        : !gpsReady
+          ? arena
+            ? "Turn on GPS to record visits"
+            : "Waiting for accurate, fresh GPS"
+          : state.day && state.day.claimsAccepted >= state.day.claimsLimit
+            ? "Today's pilot is full"
+            : "";
   function renderQuest(q: Quest) {
     const done = q.checkpoint >= q.targets.length;
     const target = q.targets[Math.min(q.checkpoint, q.targets.length - 1)];
@@ -287,7 +277,7 @@ export function NativeExpeditions({
           {q.name}
           <span>{q.tier === 1 ? "Free" : `Tier ${q.tier}`}</span>
         </div>
-        <h2>{q.title}</h2>
+        <h2 tabIndex={-1}>{q.title}</h2>
         <p className="play-hint">{q.targets.length} stops · solo walk</p>
         <div className="play-facts">
           <span>
@@ -315,16 +305,11 @@ export function NativeExpeditions({
               ? "secondary-button"
               : "primary-button"
           }
-          onClick={() =>
-            onFocus({
-              ...target,
-              label: `${q.title} · stop ${Math.min(q.checkpoint + 1, q.targets.length)}`,
-              questIndex: q.index,
-            })
-          }
+          disabled={done ? !onWallet : !objective.canSelect("quest", q.index)}
+          onClick={() => (done ? onWallet?.(true) : onFocus("quest", q.index))}
         >
           <MapPin size={20} />
-          {done ? "View final stop" : "Show next stop"}
+          {done ? "View reward receipts" : "Show next stop"}
           <ArrowRight size={20} />
         </button>
         <button
@@ -388,8 +373,10 @@ export function NativeExpeditions({
           ) && (
             <button
               className="primary-button"
+              disabled={!objective.canSelect("quest", q.index)}
               onClick={() =>
-                setChosen(
+                objective.select(
+                  "quest",
                   ordered.find(
                     (other) =>
                       other.index !== q.index &&
@@ -441,6 +428,7 @@ export function NativeExpeditions({
   }
   return (
     <section
+      ref={section}
       className="play-native"
       aria-label={view === "board" ? "Testnet walks" : "Testnet rewards"}
     >
@@ -469,7 +457,40 @@ export function NativeExpeditions({
           {notice}
         </p>
       )}
-      {!state && <p role="status">Loading adventures…</p>}
+      {!state && (view === "wallet" || !objective.reference) && (
+        <p role="status">Loading adventures…</p>
+      )}
+      {view === "board" && recovering && (
+        <article className="walk-card native-objective-recovery">
+          <h2>{objective.view.label}</h2>
+          <p role="status">{objective.view.message}</p>
+          {objective.view.receipt?.state === "confirmed" && (
+            <p>
+              {objective.view.receipt.amount === null ||
+              objective.view.receipt.xp === null
+                ? "Confirmed receipt · reward details unavailable"
+                : `${nativeGold(objective.view.receipt.amount)} GOLD · ${objective.view.receipt.xp} confirmed XP`}
+            </p>
+          )}
+          {objective.view.status !== "confirmed" && (
+            <button
+              className="primary-button"
+              disabled={busy}
+              onClick={() => void refresh(true)}
+            >
+              <ArrowClockwise size={20} /> Refresh adventure
+            </button>
+          )}
+          {onWallet && (
+            <button className="secondary-button" onClick={() => onWallet(true)}>
+              View reward receipts <ArrowRight size={20} />
+            </button>
+          )}
+          <button className="text-button" onClick={browseWalks}>
+            Browse current walks <ArrowRight size={20} />
+          </button>
+        </article>
+      )}
       {state?.status === "not-configured" && (
         <p>The testnet walks are not available yet.</p>
       )}
@@ -477,7 +498,7 @@ export function NativeExpeditions({
         <>
           {view === "board" && (
             <>
-              {chosenCoin !== null ? (
+              {recovering ? null : chosenCoin !== null ? (
                 (() => {
                   const coin = state.day?.coins.find(
                     (c) => c.index === chosenCoin,
@@ -516,7 +537,7 @@ export function NativeExpeditions({
                       )}
                       <button
                         className="secondary-button"
-                        onClick={() => setChosenCoin(null)}
+                        onClick={browseWalks}
                       >
                         Browse walks
                         <ArrowRight size={20} />
@@ -565,46 +586,44 @@ export function NativeExpeditions({
               <details className="play-details">
                 <summary>
                   <Footprints size={20} />
-                  Other walks <span>{Math.max(0, quests.length - 1)}</span>
+                  Other walks <span>{alternatives.length}</span>
                 </summary>
                 <div className="walk-picker">
-                  {ordered
-                    .filter((q) => q.index !== selected?.index)
-                    .map((q) => (
-                      <button
-                        key={q.index}
-                        onClick={() => {
-                          setChosen(q.index);
-                          setChosenCoin(null);
-                        }}
-                      >
-                        <span className="play-object">
-                          {q.checkpoint >= q.targets.length ? (
-                            <CheckCircle size={24} />
-                          ) : q.tier > state.access.tier ? (
-                            <LockKey size={24} />
-                          ) : (
-                            <Footprints size={24} />
-                          )}
-                        </span>
-                        <span>
-                          <b>{q.title}</b>
-                          <small>
-                            {q.name} ·{" "}
-                            {Math.round(
-                              meters(
-                                position,
-                                q.targets[
-                                  Math.min(q.checkpoint, q.targets.length - 1)
-                                ],
-                              ),
-                            )}{" "}
-                            m
-                          </small>
-                        </span>
-                        <ArrowRight size={20} />
-                      </button>
-                    ))}
+                  {alternatives.map((q) => (
+                    <button
+                      key={q.index}
+                      disabled={!objective.canSelect("quest", q.index)}
+                      onClick={() => {
+                        objective.select("quest", q.index);
+                      }}
+                    >
+                      <span className="play-object">
+                        {q.checkpoint >= q.targets.length ? (
+                          <CheckCircle size={24} />
+                        ) : q.tier > state.access.tier ? (
+                          <LockKey size={24} />
+                        ) : (
+                          <Footprints size={24} />
+                        )}
+                      </span>
+                      <span>
+                        <b>{q.title}</b>
+                        <small>
+                          {q.name} ·{" "}
+                          {Math.round(
+                            meters(
+                              position,
+                              q.targets[
+                                Math.min(q.checkpoint, q.targets.length - 1)
+                              ],
+                            ),
+                          )}{" "}
+                          m
+                        </small>
+                      </span>
+                      <ArrowRight size={20} />
+                    </button>
+                  ))}
                 </div>
               </details>
               <details className="play-details">
@@ -625,13 +644,8 @@ export function NativeExpeditions({
                       <button
                         className="play-icon"
                         aria-label={`Show native coin ${c.index} on map`}
-                        onClick={() =>
-                          onFocus({
-                            ...c,
-                            coinIndex: c.index,
-                            label: "Native street coin",
-                          })
-                        }
+                        disabled={!objective.canSelect("coin", c.index)}
+                        onClick={() => onFocus("coin", c.index)}
                       >
                         <MapPin size={22} />
                       </button>
@@ -732,13 +746,13 @@ export function NativeExpeditions({
             </button>
           )}
           {view === "board" && onWallet && (
-            <button className="text-button" onClick={onWallet}>
+            <button className="text-button" onClick={() => onWallet()}>
               <Wallet size={20} />
               My rewards
               <ArrowRight size={18} />
             </button>
           )}
-          <details className="play-details">
+          <details className="play-details" data-native-receipts>
             <summary>
               <CheckCircle size={20} />
               Receipts & pilot status

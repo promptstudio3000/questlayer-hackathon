@@ -1,0 +1,24 @@
+
+> questlayer@0.1.0 test:contracts
+> env PATH="$HOME/.cargo/bin:$PATH" cargo test --manifest-path contracts/Cargo.toml --workspace
+
+   Compiling questlayer-market v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/market)
+error[E0382]: use of partially moved value: `listing`
+   --> market/src/lib.rs:176:30
+    |
+159 |             SaleState::Buying { buyer } => buyer,
+    |                                 ----- value partially moved here
+...
+176 |             let mut active = listing;
+    |                              ^^^^^^^ value used here after partial move
+    |
+    = note: partial move occurs because value has type `near_sdk::AccountId`, which does not implement the `Copy` trait
+help: borrow this binding in the pattern to avoid moving the value
+    |
+159 |             SaleState::Buying { ref buyer } => buyer,
+    |                                 +++
+
+For more information about this error, try `rustc --explain E0382`.
+error: could not compile `questlayer-market` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `questlayer-market` (lib test) due to 1 previous error

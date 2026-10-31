@@ -1,0 +1,149 @@
+[
+  {
+    "name": "360-result-preview.png",
+    "next": "360-result-preview.jpg",
+    "width": 360,
+    "height": 740,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "390-enlarged-actions.png",
+    "next": "390-enlarged-actions.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "390-enlarged-text.png",
+    "next": "390-enlarged-text.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "390-equipped-map.png",
+    "next": "390-equipped-map.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "390-legacy-result.png",
+    "next": "390-legacy-result.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "390-listed-result.png",
+    "next": "390-listed-result.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "390-no-item-result.png",
+    "next": "390-no-item-result.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "390-recovered.png",
+    "next": "390-recovered.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "390-result-preview.png",
+    "next": "390-result-preview.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "desktop-result-preview.png",
+    "next": "desktop-result-preview.jpg",
+    "width": 1280,
+    "height": 900,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "dialog-focus-after.png",
+    "next": "dialog-focus-after.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "fixture-reconnect-needs-check.png",
+    "next": "fixture-reconnect-needs-check.jpg",
+    "width": 1280,
+    "height": 720,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "landscape-result-actions.png",
+    "next": "landscape-result-actions.jpg",
+    "width": 844,
+    "height": 390,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "landscape-result-top.png",
+    "next": "landscape-result-top.jpg",
+    "width": 844,
+    "height": 390,
+    "directory": "output/qa/W02-durable-results"
+  },
+  {
+    "name": "root-enlarged-draft-consent-reset-390.png",
+    "next": "root-enlarged-draft-consent-reset-390.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W08-completion"
+  },
+  {
+    "name": "root-enlarged-observation-390.png",
+    "next": "root-enlarged-observation-390.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W08-completion"
+  },
+  {
+    "name": "root-lost-reply-recovered-390.png",
+    "next": "root-lost-reply-recovered-390.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W08-completion"
+  },
+  {
+    "name": "root-lost-reply-retained-390.png",
+    "next": "root-lost-reply-retained-390.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W08-completion"
+  },
+  {
+    "name": "root-rejected-390.png",
+    "next": "root-rejected-390.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W08-completion"
+  },
+  {
+    "name": "root-rejected-feedback-390.png",
+    "next": "root-rejected-feedback-390.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W08-completion"
+  },
+  {
+    "name": "root-terminal-390.png",
+    "next": "root-terminal-390.jpg",
+    "width": 390,
+    "height": 844,
+    "directory": "output/qa/W08-completion"
+  }
+]

@@ -1,0 +1,348 @@
+[
+  {
+    "stage": "fixture-360x780",
+    "dom": {
+      "art": [
+        {
+          "height": 64,
+          "type": "CANVAS",
+          "width": 64
+        },
+        {
+          "height": 64,
+          "type": "svg",
+          "width": 64
+        },
+        {
+          "height": 32,
+          "type": "svg",
+          "width": 32
+        }
+      ],
+      "buttons": [
+        {
+          "height": 48,
+          "label": "Select coin illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select chest illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select discovery illustration",
+          "pressed": "true",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select route illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select place illustration",
+          "pressed": "false",
+          "width": 48
+        }
+      ],
+      "height": 780,
+      "scrollWidth": 360,
+      "width": 360
+    }
+  },
+  {
+    "stage": "fixture-390x844",
+    "dom": {
+      "art": [
+        {
+          "height": 64,
+          "type": "CANVAS",
+          "width": 64
+        },
+        {
+          "height": 64,
+          "type": "svg",
+          "width": 64
+        },
+        {
+          "height": 32,
+          "type": "svg",
+          "width": 32
+        }
+      ],
+      "buttons": [
+        {
+          "height": 48,
+          "label": "Select coin illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select chest illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select discovery illustration",
+          "pressed": "true",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select route illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select place illustration",
+          "pressed": "false",
+          "width": 48
+        }
+      ],
+      "height": 844,
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "stage": "fixture-844x390",
+    "dom": {
+      "art": [
+        {
+          "height": 64,
+          "type": "CANVAS",
+          "width": 64
+        },
+        {
+          "height": 64,
+          "type": "svg",
+          "width": 64
+        },
+        {
+          "height": 32,
+          "type": "svg",
+          "width": 32
+        }
+      ],
+      "buttons": [
+        {
+          "height": 48,
+          "label": "Select coin illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select chest illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select discovery illustration",
+          "pressed": "true",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select route illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select place illustration",
+          "pressed": "false",
+          "width": 48
+        }
+      ],
+      "height": 390,
+      "scrollWidth": 844,
+      "width": 844
+    }
+  },
+  {
+    "stage": "fixture-1280x800",
+    "dom": {
+      "art": [
+        {
+          "height": 64,
+          "type": "CANVAS",
+          "width": 64
+        },
+        {
+          "height": 64,
+          "type": "svg",
+          "width": 64
+        },
+        {
+          "height": 32,
+          "type": "svg",
+          "width": 32
+        }
+      ],
+      "buttons": [
+        {
+          "height": 48,
+          "label": "Select coin illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select chest illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select discovery illustration",
+          "pressed": "true",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select route illustration",
+          "pressed": "false",
+          "width": 48
+        },
+        {
+          "height": 48,
+          "label": "Select place illustration",
+          "pressed": "false",
+          "width": 48
+        }
+      ],
+      "height": 800,
+      "scrollWidth": 1280,
+      "width": 1280
+    }
+  },
+  {
+    "stage": "fixture-large-text",
+    "dom": {
+      "font": "32px",
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "stage": "actual-welcome-360x780",
+    "dom": {
+      "height": 780,
+      "objects": [
+        {
+          "height": 37.953895568847656,
+          "kind": "coin",
+          "state": "ready",
+          "width": 37.953887939453125
+        }
+      ],
+      "scrollWidth": 360,
+      "width": 360
+    }
+  },
+  {
+    "stage": "actual-welcome-390x844",
+    "dom": {
+      "height": 844,
+      "objects": [
+        {
+          "height": 37.953895568847656,
+          "kind": "coin",
+          "state": "ready",
+          "width": 37.953887939453125
+        }
+      ],
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "stage": "actual-welcome-844x390",
+    "dom": {
+      "height": 390,
+      "objects": [
+        {
+          "height": 37.953895568847656,
+          "kind": "coin",
+          "state": "ready",
+          "width": 37.95391845703125
+        }
+      ],
+      "scrollWidth": 844,
+      "width": 844
+    }
+  },
+  {
+    "stage": "actual-welcome-1280x800",
+    "dom": {
+      "height": 800,
+      "objects": [
+        {
+          "height": 37.953895568847656,
+          "kind": "coin",
+          "state": "ready",
+          "width": 37.95391845703125
+        }
+      ],
+      "scrollWidth": 1280,
+      "width": 1280
+    }
+  },
+  {
+    "stage": "fixture-log-errors",
+    "logs": [
+      {
+        "level": "error",
+        "message": "MetaMask encountered an error setting the global Ethereum provider - this is likely due to another Ethereum wallet extension also setting the global Ethereum provider: TypeError: Cannot set property ethereum of #<Window> which has only a getter\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:13:947\n    at s (chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:13:1203)\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:25:40\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:25:4052\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:25:4056",
+        "timestamp": "2026-10-31T18:15:41.580Z",
+        "url": "chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js"
+      },
+      {
+        "level": "error",
+        "message": "TypeError: Cannot redefine property: ethereum\n    at Object.defineProperty (<anonymous>)\n    at t.inject (chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/evmAsk.js:76:5093)\n    at I5.window.addEventListener.once (chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/evmAsk.js:76:9013)",
+        "timestamp": "2026-10-31T18:15:41.636Z",
+        "url": "chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/evmAsk.js"
+      },
+      {
+        "level": "error",
+        "message": "TypeError: Cannot redefine property: ethereum\n    at Object.defineProperty (<anonymous>)\n    at t.inject (chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/evmAsk.js:76:5093)\n    at I5.window.addEventListener.once (chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/evmAsk.js:76:9013)",
+        "timestamp": "2026-10-31T18:16:00.213Z",
+        "url": "chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/evmAsk.js"
+      },
+      {
+        "level": "error",
+        "message": "MetaMask encountered an error setting the global Ethereum provider - this is likely due to another Ethereum wallet extension also setting the global Ethereum provider: TypeError: Cannot set property ethereum of #<Window> which has only a getter\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:13:947\n    at s (chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:13:1203)\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:25:40\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:25:4052\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:25:4056",
+        "timestamp": "2026-10-31T18:16:00.443Z",
+        "url": "chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js"
+      }
+    ]
+  },
+  {
+    "stage": "actual-welcome-log-errors",
+    "logs": [
+      {
+        "level": "error",
+        "message": "MetaMask encountered an error setting the global Ethereum provider - this is likely due to another Ethereum wallet extension also setting the global Ethereum provider: TypeError: Cannot set property ethereum of #<Window> which has only a getter\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:13:947\n    at s (chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:13:1203)\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:25:40\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:25:4052\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js:25:4056",
+        "timestamp": "2026-10-31T18:16:02.429Z",
+        "url": "chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js"
+      },
+      {
+        "level": "error",
+        "message": "TypeError: Cannot redefine property: ethereum\n    at Object.defineProperty (<anonymous>)\n    at t.inject (chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/evmAsk.js:76:5093)\n    at I5.window.addEventListener.once (chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/evmAsk.js:76:9013)",
+        "timestamp": "2026-10-31T18:16:02.458Z",
+        "url": "chrome-extension://bfnaelmomeimhlpmgjnjophhpkkoljpa/evmAsk.js"
+      }
+    ]
+  }
+]

@@ -52,6 +52,7 @@ export type NativeGameState = {
   } | null;
   day: {
     id: string;
+    hash: string;
     day: string;
     endsAt: number;
     startsAt: number;

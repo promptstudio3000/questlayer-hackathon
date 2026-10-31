@@ -6,27 +6,27 @@ Wants=network-online.target
 [Service]
 Type=simple
 DynamicUser=yes
-StateDirectory=auratrail
+StateDirectory=questlayer-hackathon
 StateDirectoryMode=0700
-WorkingDirectory=/var/lib/auratrail
-ExecStart=/usr/local/bin/node /opt/ps3000/apps/auratrail/current/server/index.mjs
+WorkingDirectory=/var/lib/questlayer-hackathon
+ExecStart=/usr/local/bin/node /opt/ps3000/apps/questlayer-hackathon/current/server/index.mjs
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
 Environment=TRUST_PROXY=loopback
 Environment=PORT=7091
 Environment=APP_ORIGIN=https://questlayer.promptstudio3000.com
-Environment=DATABASE_PATH=/var/lib/auratrail/auratrail.sqlite
-Environment=STATIC_ASSET_DIR=/opt/ps3000/apps/auratrail/assets
+Environment=DATABASE_PATH=/var/lib/questlayer-hackathon/questlayer-hackathon.sqlite
+Environment=STATIC_ASSET_DIR=/opt/ps3000/apps/questlayer-hackathon/assets
 Environment=NEAR_NETWORK=testnet
 Environment=NEAR_RPC_URL=https://test.rpc.fastnear.com
-EnvironmentFile=-/opt/ps3000/apps/auratrail/runtime.env
+EnvironmentFile=-/opt/ps3000/apps/questlayer-hackathon/runtime.env
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
-ReadWritePaths=/var/lib/auratrail
+ReadWritePaths=/var/lib/questlayer-hackathon
 MemoryMax=512M
 CPUQuota=75%
 LimitNOFILE=65536

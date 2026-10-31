@@ -1,5 +1,6 @@
 import { Footprints, Pause, Play } from "@phosphor-icons/react";
 import type { NativeAutoView } from "./native-autocollect";
+import { GameObjectArt } from "./game-object-art";
 import "./native-collection.css";
 
 function rewardGold(value: string) {
@@ -49,18 +50,7 @@ export function NativeCollectionControl({
           role="status"
           aria-live="polite"
         >
-          <svg
-            width="18"
-            height="21"
-            viewBox="0 0 24 28"
-            aria-hidden="true"
-            shapeRendering="crispEdges"
-          >
-            <path fill="#a37429" d="M6 2h12v4h3v16h-3v4H6v-4H3V6h3z" />
-            <path fill="#f4c957" d="M6 5h12v3h1v12h-1v3H6v-3H5V8h1z" />
-            <path fill="#fff1b2" d="M7 6h4v13H7zm4-1h5v3h-5z" />
-            <path fill="#d69c36" d="M13 11h3v8h-3z" />
-          </svg>
+          <GameObjectArt kind="coin" size={24} />
           <span>
             <b>{rewardGold(collection.confirmed.amount)} GOLD</b> ·{" "}
             {collection.confirmed.count} confirmed this session

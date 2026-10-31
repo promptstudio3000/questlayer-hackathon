@@ -1,0 +1,14 @@
+✔ result recovery is scoped to the actual actor, realm and demo reward domain (0.518375ms)
+✔ returning to an actor or realm never reopens an old result or revives an old response (0.118833ms)
+✔ reconnecting preserves the historical result but requires a fresh ownership check (0.080959ms)
+✔ an actively selected native outfit can be deliberately replaced by a recorded owned demo Aura (0.076917ms)
+✔ an exact old award cannot authorize equipping a transferred, listed, reserved or native-minted item (0.103625ms)
+✔ zero-item and genuinely unavailable legacy results remain inspectable without fabricating equipment (0.071083ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 93.458833

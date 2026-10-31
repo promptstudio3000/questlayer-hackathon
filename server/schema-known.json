@@ -1,0 +1,352 @@
+{
+  "format": 1,
+  "core": [
+    {
+      "revision": "a889641",
+      "tables": {
+        "auth_challenges": "CREATE TABLE auth_challenges(id TEXT PRIMARY KEY, nonce TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)",
+        "bounties": "CREATE TABLE bounties(id TEXT PRIMARY KEY, creator TEXT NOT NULL REFERENCES players(id), title TEXT NOT NULL, description TEXT NOT NULL, amount_u INTEGER NOT NULL CHECK(amount_u>0), lat REAL NOT NULL, lng REAL NOT NULL, deadline INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'open', winner TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "bounty_submissions": "CREATE TABLE bounty_submissions(id INTEGER PRIMARY KEY AUTOINCREMENT, bounty_id TEXT NOT NULL REFERENCES bounties(id), player_id TEXT NOT NULL REFERENCES players(id), evidence TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "coins": "CREATE TABLE coins(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), lat REAL NOT NULL, lng REAL NOT NULL, value_u INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER)",
+        "daily_jobs": "CREATE TABLE daily_jobs(job_key TEXT PRIMARY KEY, created_at INTEGER NOT NULL)",
+        "editions": "CREATE TABLE editions(name TEXT PRIMARY KEY, minted INTEGER NOT NULL, max_supply INTEGER NOT NULL)",
+        "external_links": "CREATE TABLE external_links(address TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), data TEXT NOT NULL, verified_at INTEGER NOT NULL)",
+        "geo_cache": "CREATE TABLE geo_cache(region TEXT PRIMARY KEY, data TEXT NOT NULL, expires_at INTEGER NOT NULL)",
+        "history": "CREATE TABLE history(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, title TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0, meta TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL)",
+        "inventory": "CREATE TABLE inventory(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, name TEXT NOT NULL, rarity TEXT NOT NULL, slot TEXT NOT NULL, color TEXT NOT NULL, equipped INTEGER NOT NULL DEFAULT 0, serial INTEGER, created_at INTEGER NOT NULL)",
+        "listings": "CREATE TABLE listings(id TEXT PRIMARY KEY, item_id TEXT NOT NULL REFERENCES inventory(id), seller TEXT NOT NULL REFERENCES players(id), price_u INTEGER NOT NULL CHECK(price_u>0), state TEXT NOT NULL DEFAULT 'open', buyer TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "messages": "CREATE TABLE messages(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), text TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, image TEXT, author_fix TEXT, created_at INTEGER NOT NULL)",
+        "players": "CREATE TABLE players(id TEXT PRIMARY KEY, name TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0 CHECK(gold_u>=0), xp INTEGER NOT NULL DEFAULT 0, appearance TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL)",
+        "positions": "CREATE TABLE positions(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), pool TEXT NOT NULL, active_u INTEGER NOT NULL CHECK(active_u>=0), contribution INTEGER NOT NULL CHECK(contribution BETWEEN 0 AND 100), matures_at INTEGER NOT NULL, accrued_u INTEGER NOT NULL DEFAULT 0, settled_at INTEGER NOT NULL, eligible_contribution INTEGER NOT NULL DEFAULT 0)",
+        "presence": "CREATE TABLE presence(player_id TEXT PRIMARY KEY REFERENCES players(id), lat REAL NOT NULL, lng REAL NOT NULL, expires_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)",
+        "quest_claims": "CREATE TABLE quest_claims(quest_id TEXT NOT NULL REFERENCES quests(id), player_id TEXT NOT NULL REFERENCES players(id), created_at INTEGER NOT NULL, PRIMARY KEY(quest_id,player_id))",
+        "quests": "CREATE TABLE quests(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), title TEXT NOT NULL, description TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, tier INTEGER NOT NULL, gold_u INTEGER NOT NULL, xp INTEGER NOT NULL, kind TEXT NOT NULL, opens_at INTEGER NOT NULL, closes_at INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER)",
+        "sessions": "CREATE TABLE sessions(token_hash TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), expires_at INTEGER NOT NULL)",
+        "treasury": "CREATE TABLE treasury(bucket TEXT PRIMARY KEY, available_u INTEGER NOT NULL CHECK(available_u>=0), reserved_u INTEGER NOT NULL DEFAULT 0 CHECK(reserved_u>=0), paid_u INTEGER NOT NULL DEFAULT 0 CHECK(paid_u>=0))",
+        "treasury_events": "CREATE TABLE treasury_events(id TEXT PRIMARY KEY, kind TEXT NOT NULL, coins_u INTEGER NOT NULL, zones_u INTEGER NOT NULL, created_at INTEGER NOT NULL)",
+        "wallet_links": "CREATE TABLE wallet_links(account_id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), verified_at INTEGER NOT NULL)",
+        "withdrawals": "CREATE TABLE withdrawals(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), amount_u INTEGER NOT NULL, ready_at INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "worlds": "CREATE TABLE worlds(id TEXT PRIMARY KEY, day TEXT NOT NULL, region TEXT NOT NULL, timezone TEXT NOT NULL, manifest TEXT NOT NULL, created_at INTEGER NOT NULL)"
+      },
+      "indexes": {
+        "unique_open_listing": "CREATE UNIQUE INDEX unique_open_listing ON listings(item_id) WHERE state='open'"
+      }
+    },
+    {
+      "revision": "4043f52",
+      "tables": {
+        "auth_challenges": "CREATE TABLE auth_challenges(id TEXT PRIMARY KEY, nonce TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)",
+        "bounties": "CREATE TABLE bounties(id TEXT PRIMARY KEY, creator TEXT NOT NULL REFERENCES players(id), title TEXT NOT NULL, description TEXT NOT NULL, amount_u INTEGER NOT NULL CHECK(amount_u>0), lat REAL NOT NULL, lng REAL NOT NULL, deadline INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'open', winner TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "bounty_submissions": "CREATE TABLE bounty_submissions(id INTEGER PRIMARY KEY AUTOINCREMENT, bounty_id TEXT NOT NULL REFERENCES bounties(id), player_id TEXT NOT NULL REFERENCES players(id), evidence TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "coins": "CREATE TABLE coins(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), lat REAL NOT NULL, lng REAL NOT NULL, value_u INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER)",
+        "daily_jobs": "CREATE TABLE daily_jobs(job_key TEXT PRIMARY KEY, created_at INTEGER NOT NULL)",
+        "editions": "CREATE TABLE editions(name TEXT PRIMARY KEY, minted INTEGER NOT NULL, max_supply INTEGER NOT NULL)",
+        "external_links": "CREATE TABLE external_links(address TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), data TEXT NOT NULL, verified_at INTEGER NOT NULL)",
+        "geo_cache": "CREATE TABLE geo_cache(region TEXT PRIMARY KEY, data TEXT NOT NULL, expires_at INTEGER NOT NULL)",
+        "history": "CREATE TABLE history(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, title TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0, meta TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL)",
+        "inventory": "CREATE TABLE inventory(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, name TEXT NOT NULL, rarity TEXT NOT NULL, slot TEXT NOT NULL, color TEXT NOT NULL, equipped INTEGER NOT NULL DEFAULT 0, serial INTEGER, created_at INTEGER NOT NULL)",
+        "listings": "CREATE TABLE listings(id TEXT PRIMARY KEY, item_id TEXT NOT NULL REFERENCES inventory(id), seller TEXT NOT NULL REFERENCES players(id), price_u INTEGER NOT NULL CHECK(price_u>0), state TEXT NOT NULL DEFAULT 'open', buyer TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "messages": "CREATE TABLE messages(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), text TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, image TEXT, author_fix TEXT, created_at INTEGER NOT NULL)",
+        "players": "CREATE TABLE players(id TEXT PRIMARY KEY, name TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0 CHECK(gold_u>=0), xp INTEGER NOT NULL DEFAULT 0, appearance TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL)",
+        "positions": "CREATE TABLE positions(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), pool TEXT NOT NULL, active_u INTEGER NOT NULL CHECK(active_u>=0), contribution INTEGER NOT NULL CHECK(contribution BETWEEN 0 AND 100), matures_at INTEGER NOT NULL, accrued_u INTEGER NOT NULL DEFAULT 0, settled_at INTEGER NOT NULL, eligible_contribution INTEGER NOT NULL DEFAULT 0)",
+        "presence": "CREATE TABLE presence(player_id TEXT PRIMARY KEY REFERENCES players(id), lat REAL NOT NULL, lng REAL NOT NULL, expires_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)",
+        "quest_claims": "CREATE TABLE quest_claims(quest_id TEXT NOT NULL REFERENCES quests(id), player_id TEXT NOT NULL REFERENCES players(id), created_at INTEGER NOT NULL, PRIMARY KEY(quest_id,player_id))",
+        "quest_progress": "CREATE TABLE quest_progress(quest_id TEXT NOT NULL REFERENCES quests(id),player_id TEXT NOT NULL REFERENCES players(id),checkpoint INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,PRIMARY KEY(quest_id,player_id))",
+        "quests": "CREATE TABLE quests(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), title TEXT NOT NULL, description TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, tier INTEGER NOT NULL, gold_u INTEGER NOT NULL, xp INTEGER NOT NULL, kind TEXT NOT NULL, opens_at INTEGER NOT NULL, closes_at INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER, zone_id TEXT, metadata TEXT NOT NULL DEFAULT '{}')",
+        "sessions": "CREATE TABLE sessions(token_hash TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), expires_at INTEGER NOT NULL)",
+        "treasury": "CREATE TABLE treasury(bucket TEXT PRIMARY KEY, available_u INTEGER NOT NULL CHECK(available_u>=0), reserved_u INTEGER NOT NULL DEFAULT 0 CHECK(reserved_u>=0), paid_u INTEGER NOT NULL DEFAULT 0 CHECK(paid_u>=0))",
+        "treasury_events": "CREATE TABLE treasury_events(id TEXT PRIMARY KEY, kind TEXT NOT NULL, coins_u INTEGER NOT NULL, zones_u INTEGER NOT NULL, created_at INTEGER NOT NULL)",
+        "wallet_links": "CREATE TABLE wallet_links(account_id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), verified_at INTEGER NOT NULL)",
+        "withdrawals": "CREATE TABLE withdrawals(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), amount_u INTEGER NOT NULL, ready_at INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "worlds": "CREATE TABLE worlds(id TEXT PRIMARY KEY, day TEXT NOT NULL, region TEXT NOT NULL, timezone TEXT NOT NULL, manifest TEXT NOT NULL, created_at INTEGER NOT NULL)"
+      },
+      "indexes": {
+        "unique_open_listing": "CREATE UNIQUE INDEX unique_open_listing ON listings(item_id) WHERE state='open'"
+      }
+    },
+    {
+      "revision": "9d90a25",
+      "tables": {
+        "auth_challenges": "CREATE TABLE auth_challenges(id TEXT PRIMARY KEY, nonce TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)",
+        "bounties": "CREATE TABLE bounties(id TEXT PRIMARY KEY, creator TEXT NOT NULL REFERENCES players(id), title TEXT NOT NULL, description TEXT NOT NULL, amount_u INTEGER NOT NULL CHECK(amount_u>0), lat REAL NOT NULL, lng REAL NOT NULL, deadline INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'open', winner TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "bounty_submissions": "CREATE TABLE bounty_submissions(id INTEGER PRIMARY KEY AUTOINCREMENT, bounty_id TEXT NOT NULL REFERENCES bounties(id), player_id TEXT NOT NULL REFERENCES players(id), evidence TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "coins": "CREATE TABLE coins(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), lat REAL NOT NULL, lng REAL NOT NULL, value_u INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER)",
+        "daily_jobs": "CREATE TABLE daily_jobs(job_key TEXT PRIMARY KEY, created_at INTEGER NOT NULL)",
+        "editions": "CREATE TABLE editions(name TEXT PRIMARY KEY, minted INTEGER NOT NULL, max_supply INTEGER NOT NULL)",
+        "external_links": "CREATE TABLE external_links(address TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), data TEXT NOT NULL, verified_at INTEGER NOT NULL)",
+        "geo_cache": "CREATE TABLE geo_cache(region TEXT PRIMARY KEY, data TEXT NOT NULL, expires_at INTEGER NOT NULL)",
+        "history": "CREATE TABLE history(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, title TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0, meta TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL)",
+        "inventory": "CREATE TABLE inventory(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, name TEXT NOT NULL, rarity TEXT NOT NULL, slot TEXT NOT NULL, color TEXT NOT NULL, equipped INTEGER NOT NULL DEFAULT 0, serial INTEGER, created_at INTEGER NOT NULL)",
+        "listings": "CREATE TABLE listings(id TEXT PRIMARY KEY, item_id TEXT NOT NULL REFERENCES inventory(id), seller TEXT NOT NULL REFERENCES players(id), price_u INTEGER NOT NULL CHECK(price_u>0), state TEXT NOT NULL DEFAULT 'open', buyer TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "messages": "CREATE TABLE messages(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), text TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, image TEXT, author_fix TEXT, created_at INTEGER NOT NULL)",
+        "players": "CREATE TABLE players(id TEXT PRIMARY KEY, name TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0 CHECK(gold_u>=0), xp INTEGER NOT NULL DEFAULT 0, appearance TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL, native_outfit INTEGER NOT NULL DEFAULT 0, native_account TEXT)",
+        "positions": "CREATE TABLE positions(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), pool TEXT NOT NULL, active_u INTEGER NOT NULL CHECK(active_u>=0), contribution INTEGER NOT NULL CHECK(contribution BETWEEN 0 AND 100), matures_at INTEGER NOT NULL, accrued_u INTEGER NOT NULL DEFAULT 0, settled_at INTEGER NOT NULL, eligible_contribution INTEGER NOT NULL DEFAULT 0)",
+        "presence": "CREATE TABLE presence(player_id TEXT PRIMARY KEY REFERENCES players(id), lat REAL NOT NULL, lng REAL NOT NULL, expires_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)",
+        "quest_claims": "CREATE TABLE quest_claims(quest_id TEXT NOT NULL REFERENCES quests(id), player_id TEXT NOT NULL REFERENCES players(id), created_at INTEGER NOT NULL, PRIMARY KEY(quest_id,player_id))",
+        "quest_progress": "CREATE TABLE quest_progress(quest_id TEXT NOT NULL REFERENCES quests(id),player_id TEXT NOT NULL REFERENCES players(id),checkpoint INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,PRIMARY KEY(quest_id,player_id))",
+        "quests": "CREATE TABLE quests(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), title TEXT NOT NULL, description TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, tier INTEGER NOT NULL, gold_u INTEGER NOT NULL, xp INTEGER NOT NULL, kind TEXT NOT NULL, opens_at INTEGER NOT NULL, closes_at INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER, zone_id TEXT, metadata TEXT NOT NULL DEFAULT '{}')",
+        "sessions": "CREATE TABLE sessions(token_hash TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), expires_at INTEGER NOT NULL)",
+        "treasury": "CREATE TABLE treasury(bucket TEXT PRIMARY KEY, available_u INTEGER NOT NULL CHECK(available_u>=0), reserved_u INTEGER NOT NULL DEFAULT 0 CHECK(reserved_u>=0), paid_u INTEGER NOT NULL DEFAULT 0 CHECK(paid_u>=0))",
+        "treasury_events": "CREATE TABLE treasury_events(id TEXT PRIMARY KEY, kind TEXT NOT NULL, coins_u INTEGER NOT NULL, zones_u INTEGER NOT NULL, created_at INTEGER NOT NULL)",
+        "wallet_links": "CREATE TABLE wallet_links(account_id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), verified_at INTEGER NOT NULL)",
+        "withdrawals": "CREATE TABLE withdrawals(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), amount_u INTEGER NOT NULL, ready_at INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "worlds": "CREATE TABLE worlds(id TEXT PRIMARY KEY, day TEXT NOT NULL, region TEXT NOT NULL, timezone TEXT NOT NULL, manifest TEXT NOT NULL, created_at INTEGER NOT NULL)"
+      },
+      "indexes": {
+        "unique_open_listing": "CREATE UNIQUE INDEX unique_open_listing ON listings(item_id) WHERE state='open'"
+      }
+    },
+    {
+      "revision": "5405fbd",
+      "tables": {
+        "auth_challenges": "CREATE TABLE auth_challenges(id TEXT PRIMARY KEY, nonce TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)",
+        "bounties": "CREATE TABLE bounties(id TEXT PRIMARY KEY, creator TEXT NOT NULL REFERENCES players(id), title TEXT NOT NULL, description TEXT NOT NULL, amount_u INTEGER NOT NULL CHECK(amount_u>0), lat REAL NOT NULL, lng REAL NOT NULL, deadline INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'open', winner TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "bounty_submissions": "CREATE TABLE bounty_submissions(id INTEGER PRIMARY KEY AUTOINCREMENT, bounty_id TEXT NOT NULL REFERENCES bounties(id), player_id TEXT NOT NULL REFERENCES players(id), evidence TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "coins": "CREATE TABLE coins(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), lat REAL NOT NULL, lng REAL NOT NULL, value_u INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER)",
+        "daily_jobs": "CREATE TABLE daily_jobs(job_key TEXT PRIMARY KEY, created_at INTEGER NOT NULL)",
+        "editions": "CREATE TABLE editions(name TEXT PRIMARY KEY, minted INTEGER NOT NULL, max_supply INTEGER NOT NULL)",
+        "external_links": "CREATE TABLE external_links(address TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), data TEXT NOT NULL, verified_at INTEGER NOT NULL)",
+        "geo_cache": "CREATE TABLE geo_cache(region TEXT PRIMARY KEY, data TEXT NOT NULL, expires_at INTEGER NOT NULL)",
+        "history": "CREATE TABLE history(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, title TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0, meta TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL)",
+        "inventory": "CREATE TABLE inventory(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, name TEXT NOT NULL, rarity TEXT NOT NULL, slot TEXT NOT NULL, color TEXT NOT NULL, equipped INTEGER NOT NULL DEFAULT 0, serial INTEGER, created_at INTEGER NOT NULL)",
+        "listings": "CREATE TABLE listings(id TEXT PRIMARY KEY, item_id TEXT NOT NULL REFERENCES inventory(id), seller TEXT NOT NULL REFERENCES players(id), price_u INTEGER NOT NULL CHECK(price_u>0), state TEXT NOT NULL DEFAULT 'open', buyer TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "messages": "CREATE TABLE messages(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), text TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, image TEXT, author_fix TEXT, created_at INTEGER NOT NULL)",
+        "players": "CREATE TABLE players(id TEXT PRIMARY KEY, name TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0 CHECK(gold_u>=0), xp INTEGER NOT NULL DEFAULT 0, appearance TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL, native_outfit INTEGER NOT NULL DEFAULT 0, native_account TEXT)",
+        "positions": "CREATE TABLE positions(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), pool TEXT NOT NULL, active_u INTEGER NOT NULL CHECK(active_u>=0), contribution INTEGER NOT NULL CHECK(contribution BETWEEN 0 AND 100), matures_at INTEGER NOT NULL, accrued_u INTEGER NOT NULL DEFAULT 0, settled_at INTEGER NOT NULL, eligible_contribution INTEGER NOT NULL DEFAULT 0)",
+        "presence": "CREATE TABLE presence(player_id TEXT PRIMARY KEY REFERENCES players(id), lat REAL NOT NULL, lng REAL NOT NULL, expires_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)",
+        "quest_claims": "CREATE TABLE quest_claims(quest_id TEXT NOT NULL REFERENCES quests(id), player_id TEXT NOT NULL REFERENCES players(id), created_at INTEGER NOT NULL, PRIMARY KEY(quest_id,player_id))",
+        "quest_progress": "CREATE TABLE quest_progress(quest_id TEXT NOT NULL REFERENCES quests(id),player_id TEXT NOT NULL REFERENCES players(id),checkpoint INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,PRIMARY KEY(quest_id,player_id))",
+        "quests": "CREATE TABLE quests(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), title TEXT NOT NULL, description TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, tier INTEGER NOT NULL, gold_u INTEGER NOT NULL, xp INTEGER NOT NULL, kind TEXT NOT NULL, opens_at INTEGER NOT NULL, closes_at INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER, zone_id TEXT, metadata TEXT NOT NULL DEFAULT '{}')",
+        "sessions": "CREATE TABLE sessions(token_hash TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), expires_at INTEGER NOT NULL)",
+        "treasury": "CREATE TABLE treasury(bucket TEXT PRIMARY KEY, available_u INTEGER NOT NULL CHECK(available_u>=0), reserved_u INTEGER NOT NULL DEFAULT 0 CHECK(reserved_u>=0), paid_u INTEGER NOT NULL DEFAULT 0 CHECK(paid_u>=0))",
+        "treasury_events": "CREATE TABLE treasury_events(id TEXT PRIMARY KEY, kind TEXT NOT NULL, coins_u INTEGER NOT NULL, zones_u INTEGER NOT NULL, created_at INTEGER NOT NULL)",
+        "wallet_links": "CREATE TABLE wallet_links(account_id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), verified_at INTEGER NOT NULL)",
+        "withdrawals": "CREATE TABLE withdrawals(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), amount_u INTEGER NOT NULL, ready_at INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "world_blueprints": "CREATE TABLE world_blueprints(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,body TEXT NOT NULL,body_hash TEXT NOT NULL,created_at INTEGER NOT NULL)",
+        "world_jobs": "CREATE TABLE world_jobs(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('queued','running','ready','failed')),attempts INTEGER NOT NULL DEFAULT 0,run_after INTEGER NOT NULL,lease_owner TEXT,lease_until INTEGER,last_error TEXT,updated_at INTEGER NOT NULL)",
+        "worlds": "CREATE TABLE worlds(id TEXT PRIMARY KEY, day TEXT NOT NULL, region TEXT NOT NULL, timezone TEXT NOT NULL, manifest TEXT NOT NULL, created_at INTEGER NOT NULL)"
+      },
+      "indexes": {
+        "unique_open_listing": "CREATE UNIQUE INDEX unique_open_listing ON listings(item_id) WHERE state='open'",
+        "world_job_schedule": "CREATE INDEX world_job_schedule ON world_jobs(state,run_after,lease_until)"
+      }
+    },
+    {
+      "revision": "20dc5bd",
+      "tables": {
+        "auth_challenges": "CREATE TABLE auth_challenges(id TEXT PRIMARY KEY, nonce TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)",
+        "bounties": "CREATE TABLE bounties(id TEXT PRIMARY KEY, creator TEXT NOT NULL REFERENCES players(id), title TEXT NOT NULL, description TEXT NOT NULL, amount_u INTEGER NOT NULL CHECK(amount_u>0), lat REAL NOT NULL, lng REAL NOT NULL, deadline INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'open', winner TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "bounty_submissions": "CREATE TABLE bounty_submissions(id INTEGER PRIMARY KEY AUTOINCREMENT, bounty_id TEXT NOT NULL REFERENCES bounties(id), player_id TEXT NOT NULL REFERENCES players(id), evidence TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "coins": "CREATE TABLE coins(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), lat REAL NOT NULL, lng REAL NOT NULL, value_u INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER)",
+        "daily_jobs": "CREATE TABLE daily_jobs(job_key TEXT PRIMARY KEY, created_at INTEGER NOT NULL)",
+        "editions": "CREATE TABLE editions(name TEXT PRIMARY KEY, minted INTEGER NOT NULL, max_supply INTEGER NOT NULL)",
+        "external_links": "CREATE TABLE external_links(address TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), data TEXT NOT NULL, verified_at INTEGER NOT NULL)",
+        "geo_cache": "CREATE TABLE geo_cache(region TEXT PRIMARY KEY, data TEXT NOT NULL, expires_at INTEGER NOT NULL)",
+        "history": "CREATE TABLE history(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, title TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0, meta TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL)",
+        "inventory": "CREATE TABLE inventory(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, name TEXT NOT NULL, rarity TEXT NOT NULL, slot TEXT NOT NULL, color TEXT NOT NULL, equipped INTEGER NOT NULL DEFAULT 0, serial INTEGER, created_at INTEGER NOT NULL)",
+        "listings": "CREATE TABLE listings(id TEXT PRIMARY KEY, item_id TEXT NOT NULL REFERENCES inventory(id), seller TEXT NOT NULL REFERENCES players(id), price_u INTEGER NOT NULL CHECK(price_u>0), state TEXT NOT NULL DEFAULT 'open', buyer TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "messages": "CREATE TABLE messages(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), text TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, image TEXT, author_fix TEXT, created_at INTEGER NOT NULL)",
+        "native_awards": "CREATE TABLE native_awards(item_id TEXT PRIMARY KEY REFERENCES inventory(id),claim_id TEXT UNIQUE NOT NULL,player_id TEXT NOT NULL REFERENCES players(id),receiver_id TEXT NOT NULL,edition TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('issued','minted')),expires_at INTEGER NOT NULL,token_id TEXT,created_at INTEGER NOT NULL,confirmed_at INTEGER)",
+        "players": "CREATE TABLE players(id TEXT PRIMARY KEY, name TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0 CHECK(gold_u>=0), xp INTEGER NOT NULL DEFAULT 0, appearance TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL, native_outfit INTEGER NOT NULL DEFAULT 0, native_account TEXT)",
+        "positions": "CREATE TABLE positions(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), pool TEXT NOT NULL, active_u INTEGER NOT NULL CHECK(active_u>=0), contribution INTEGER NOT NULL CHECK(contribution BETWEEN 0 AND 100), matures_at INTEGER NOT NULL, accrued_u INTEGER NOT NULL DEFAULT 0, settled_at INTEGER NOT NULL, eligible_contribution INTEGER NOT NULL DEFAULT 0)",
+        "presence": "CREATE TABLE presence(player_id TEXT PRIMARY KEY REFERENCES players(id), lat REAL NOT NULL, lng REAL NOT NULL, expires_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)",
+        "quest_claims": "CREATE TABLE quest_claims(quest_id TEXT NOT NULL REFERENCES quests(id), player_id TEXT NOT NULL REFERENCES players(id), created_at INTEGER NOT NULL, PRIMARY KEY(quest_id,player_id))",
+        "quest_progress": "CREATE TABLE quest_progress(quest_id TEXT NOT NULL REFERENCES quests(id),player_id TEXT NOT NULL REFERENCES players(id),checkpoint INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,PRIMARY KEY(quest_id,player_id))",
+        "quests": "CREATE TABLE quests(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), title TEXT NOT NULL, description TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, tier INTEGER NOT NULL, gold_u INTEGER NOT NULL, xp INTEGER NOT NULL, kind TEXT NOT NULL, opens_at INTEGER NOT NULL, closes_at INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER, zone_id TEXT, metadata TEXT NOT NULL DEFAULT '{}')",
+        "sessions": "CREATE TABLE sessions(token_hash TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), expires_at INTEGER NOT NULL)",
+        "treasury": "CREATE TABLE treasury(bucket TEXT PRIMARY KEY, available_u INTEGER NOT NULL CHECK(available_u>=0), reserved_u INTEGER NOT NULL DEFAULT 0 CHECK(reserved_u>=0), paid_u INTEGER NOT NULL DEFAULT 0 CHECK(paid_u>=0))",
+        "treasury_events": "CREATE TABLE treasury_events(id TEXT PRIMARY KEY, kind TEXT NOT NULL, coins_u INTEGER NOT NULL, zones_u INTEGER NOT NULL, created_at INTEGER NOT NULL)",
+        "wallet_links": "CREATE TABLE wallet_links(account_id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), verified_at INTEGER NOT NULL)",
+        "withdrawals": "CREATE TABLE withdrawals(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), amount_u INTEGER NOT NULL, ready_at INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "world_blueprints": "CREATE TABLE world_blueprints(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,body TEXT NOT NULL,body_hash TEXT NOT NULL,created_at INTEGER NOT NULL)",
+        "world_jobs": "CREATE TABLE world_jobs(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('queued','running','ready','failed')),attempts INTEGER NOT NULL DEFAULT 0,run_after INTEGER NOT NULL,lease_owner TEXT,lease_until INTEGER,last_error TEXT,updated_at INTEGER NOT NULL)",
+        "worlds": "CREATE TABLE worlds(id TEXT PRIMARY KEY, day TEXT NOT NULL, region TEXT NOT NULL, timezone TEXT NOT NULL, manifest TEXT NOT NULL, created_at INTEGER NOT NULL)"
+      },
+      "indexes": {
+        "unique_open_listing": "CREATE UNIQUE INDEX unique_open_listing ON listings(item_id) WHERE state='open'",
+        "world_job_schedule": "CREATE INDEX world_job_schedule ON world_jobs(state,run_after,lease_until)"
+      }
+    },
+    {
+      "revision": "1907d3b",
+      "tables": {
+        "auth_challenges": "CREATE TABLE auth_challenges(id TEXT PRIMARY KEY, nonce TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0)",
+        "bounties": "CREATE TABLE bounties(id TEXT PRIMARY KEY, creator TEXT NOT NULL REFERENCES players(id), title TEXT NOT NULL, description TEXT NOT NULL, amount_u INTEGER NOT NULL CHECK(amount_u>0), lat REAL NOT NULL, lng REAL NOT NULL, deadline INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'open', winner TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "bounty_submissions": "CREATE TABLE bounty_submissions(id INTEGER PRIMARY KEY AUTOINCREMENT, bounty_id TEXT NOT NULL REFERENCES bounties(id), player_id TEXT NOT NULL REFERENCES players(id), evidence TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "coins": "CREATE TABLE coins(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), lat REAL NOT NULL, lng REAL NOT NULL, value_u INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER)",
+        "daily_jobs": "CREATE TABLE daily_jobs(job_key TEXT PRIMARY KEY, created_at INTEGER NOT NULL)",
+        "editions": "CREATE TABLE editions(name TEXT PRIMARY KEY, minted INTEGER NOT NULL, max_supply INTEGER NOT NULL)",
+        "external_links": "CREATE TABLE external_links(address TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), data TEXT NOT NULL, verified_at INTEGER NOT NULL)",
+        "geo_cache": "CREATE TABLE geo_cache(region TEXT PRIMARY KEY, data TEXT NOT NULL, expires_at INTEGER NOT NULL)",
+        "history": "CREATE TABLE history(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, title TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0, meta TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL)",
+        "inventory": "CREATE TABLE inventory(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, name TEXT NOT NULL, rarity TEXT NOT NULL, slot TEXT NOT NULL, color TEXT NOT NULL, equipped INTEGER NOT NULL DEFAULT 0, serial INTEGER, created_at INTEGER NOT NULL)",
+        "listings": "CREATE TABLE listings(id TEXT PRIMARY KEY, item_id TEXT NOT NULL REFERENCES inventory(id), seller TEXT NOT NULL REFERENCES players(id), price_u INTEGER NOT NULL CHECK(price_u>0), state TEXT NOT NULL DEFAULT 'open', buyer TEXT REFERENCES players(id), created_at INTEGER NOT NULL)",
+        "messages": "CREATE TABLE messages(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), text TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, image TEXT, author_fix TEXT, created_at INTEGER NOT NULL)",
+        "native_awards": "CREATE TABLE native_awards(item_id TEXT PRIMARY KEY REFERENCES inventory(id),claim_id TEXT UNIQUE NOT NULL,player_id TEXT NOT NULL REFERENCES players(id),receiver_id TEXT NOT NULL,edition TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('issued','minted')),expires_at INTEGER NOT NULL,token_id TEXT,created_at INTEGER NOT NULL,confirmed_at INTEGER)",
+        "players": "CREATE TABLE players(id TEXT PRIMARY KEY, name TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0 CHECK(gold_u>=0), xp INTEGER NOT NULL DEFAULT 0, appearance TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL, native_outfit INTEGER NOT NULL DEFAULT 0, native_account TEXT)",
+        "positions": "CREATE TABLE positions(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), pool TEXT NOT NULL, active_u INTEGER NOT NULL CHECK(active_u>=0), contribution INTEGER NOT NULL CHECK(contribution BETWEEN 0 AND 100), matures_at INTEGER NOT NULL, accrued_u INTEGER NOT NULL DEFAULT 0, settled_at INTEGER NOT NULL, eligible_contribution INTEGER NOT NULL DEFAULT 0)",
+        "presence": "CREATE TABLE presence(player_id TEXT PRIMARY KEY REFERENCES players(id), lat REAL NOT NULL, lng REAL NOT NULL, expires_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, arena INTEGER NOT NULL DEFAULT 1, lease_id TEXT NOT NULL DEFAULT '')",
+        "presence_revocations": "CREATE TABLE presence_revocations(player_id TEXT NOT NULL REFERENCES players(id), lease_id TEXT NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(player_id,lease_id))",
+        "quest_claims": "CREATE TABLE quest_claims(quest_id TEXT NOT NULL REFERENCES quests(id), player_id TEXT NOT NULL REFERENCES players(id), created_at INTEGER NOT NULL, PRIMARY KEY(quest_id,player_id))",
+        "quest_progress": "CREATE TABLE quest_progress(quest_id TEXT NOT NULL REFERENCES quests(id),player_id TEXT NOT NULL REFERENCES players(id),checkpoint INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,PRIMARY KEY(quest_id,player_id))",
+        "quests": "CREATE TABLE quests(id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id), title TEXT NOT NULL, description TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, tier INTEGER NOT NULL, gold_u INTEGER NOT NULL, xp INTEGER NOT NULL, kind TEXT NOT NULL, opens_at INTEGER NOT NULL, closes_at INTEGER NOT NULL, claimant TEXT REFERENCES players(id), claimed_at INTEGER, zone_id TEXT, metadata TEXT NOT NULL DEFAULT '{}')",
+        "sessions": "CREATE TABLE sessions(token_hash TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), expires_at INTEGER NOT NULL)",
+        "treasury": "CREATE TABLE treasury(bucket TEXT PRIMARY KEY, available_u INTEGER NOT NULL CHECK(available_u>=0), reserved_u INTEGER NOT NULL DEFAULT 0 CHECK(reserved_u>=0), paid_u INTEGER NOT NULL DEFAULT 0 CHECK(paid_u>=0))",
+        "treasury_events": "CREATE TABLE treasury_events(id TEXT PRIMARY KEY, kind TEXT NOT NULL, coins_u INTEGER NOT NULL, zones_u INTEGER NOT NULL, created_at INTEGER NOT NULL)",
+        "wallet_links": "CREATE TABLE wallet_links(account_id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), verified_at INTEGER NOT NULL)",
+        "withdrawals": "CREATE TABLE withdrawals(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), amount_u INTEGER NOT NULL, ready_at INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL)",
+        "world_blueprints": "CREATE TABLE world_blueprints(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,body TEXT NOT NULL,body_hash TEXT NOT NULL,created_at INTEGER NOT NULL)",
+        "world_jobs": "CREATE TABLE world_jobs(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('queued','running','ready','failed')),attempts INTEGER NOT NULL DEFAULT 0,run_after INTEGER NOT NULL,lease_owner TEXT,lease_until INTEGER,last_error TEXT,updated_at INTEGER NOT NULL)",
+        "worlds": "CREATE TABLE worlds(id TEXT PRIMARY KEY, day TEXT NOT NULL, region TEXT NOT NULL, timezone TEXT NOT NULL, manifest TEXT NOT NULL, created_at INTEGER NOT NULL)"
+      },
+      "indexes": {
+        "presence_revocations_expiry": "CREATE INDEX presence_revocations_expiry ON presence_revocations(expires_at)",
+        "unique_open_listing": "CREATE UNIQUE INDEX unique_open_listing ON listings(item_id) WHERE state='open'",
+        "world_job_schedule": "CREATE INDEX world_job_schedule ON world_jobs(state,run_after,lease_until)"
+      }
+    }
+  ],
+  "optional": [
+    {
+      "name": "social-blocks",
+      "version": 1,
+      "source": "server/social-content.mjs",
+      "tables": {
+        "social_blocks": "CREATE TABLE social_blocks (\n    actor_id TEXT NOT NULL REFERENCES players(id), target_id TEXT NOT NULL REFERENCES players(id),\n    created_at INTEGER NOT NULL, PRIMARY KEY(actor_id,target_id), CHECK(actor_id!=target_id))"
+      },
+      "indexes": {
+        "social_blocks_target": "CREATE INDEX IF NOT EXISTS social_blocks_target ON social_blocks(target_id,actor_id);"
+      }
+    },
+    {
+      "name": "social-content",
+      "version": 1,
+      "source": "server/social-content.mjs",
+      "tables": {
+        "social_audit": "CREATE TABLE social_audit (\n      id TEXT PRIMARY KEY, actor_id TEXT NOT NULL, action TEXT NOT NULL, target_id TEXT NOT NULL,\n      reason TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL)",
+        "social_media_retirements": "CREATE TABLE social_media_retirements (\n      image TEXT PRIMARY KEY, retired_at INTEGER NOT NULL)",
+        "social_note_meta": "CREATE TABLE social_note_meta (\n    note_id TEXT PRIMARY KEY REFERENCES messages(id), arena INTEGER NOT NULL CHECK(arena IN(0,1)),\n    state TEXT NOT NULL CHECK(state IN('published','hidden','deleted')), updated_at INTEGER NOT NULL)",
+        "social_note_operations": "CREATE TABLE social_note_operations (\n      player_id TEXT NOT NULL REFERENCES players(id), client_id TEXT NOT NULL, request_hash TEXT NOT NULL,\n      state TEXT NOT NULL CHECK(state IN('processing','failed','complete','abandoned')), lease_id TEXT,\n      lease_until INTEGER, note_id TEXT REFERENCES messages(id), created_at INTEGER NOT NULL,\n      updated_at INTEGER NOT NULL, PRIMARY KEY(player_id,client_id))",
+        "social_reports": "CREATE TABLE social_reports (\n      id TEXT PRIMARY KEY, note_id TEXT NOT NULL REFERENCES messages(id), reporter_id TEXT NOT NULL REFERENCES players(id),\n      reason TEXT NOT NULL, detail TEXT NOT NULL, state TEXT NOT NULL CHECK(state IN('open','resolved')),\n      created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, UNIQUE(note_id,reporter_id))"
+      },
+      "indexes": {
+        "social_note_operations_rate": "CREATE INDEX IF NOT EXISTS social_note_operations_rate ON social_note_operations(player_id,created_at);",
+        "social_audit_actor": "CREATE INDEX IF NOT EXISTS social_audit_actor ON social_audit(actor_id,created_at);"
+      }
+    },
+    {
+      "name": "identity",
+      "version": 1,
+      "source": "server/identity/sessions.mjs",
+      "tables": {
+        "identity_recovery_events": "CREATE TABLE identity_recovery_events(\n        id TEXT PRIMARY KEY,\n        player_id TEXT NOT NULL REFERENCES players(id),\n        session_id TEXT NOT NULL,\n        account_id TEXT NOT NULL,\n        revoked_sessions INTEGER NOT NULL,\n        created_at INTEGER NOT NULL\n      )",
+        "identity_sessions": "CREATE TABLE identity_sessions(\n        token_hash TEXT PRIMARY KEY REFERENCES sessions(token_hash) ON DELETE CASCADE,\n        public_id TEXT NOT NULL UNIQUE,\n        kind TEXT NOT NULL CHECK(kind IN ('guest','near-wallet','demo-passkey','legacy')),\n        account_id TEXT,\n        created_at INTEGER,\n        last_seen_at INTEGER,\n        verified_at INTEGER\n      )"
+      },
+      "indexes": {
+        "sessions_player": "CREATE INDEX IF NOT EXISTS sessions_player ON sessions(player_id);"
+      }
+    },
+    {
+      "name": "native-rewards",
+      "version": 1,
+      "source": "server/native/rewards.mjs",
+      "tables": {
+        "native_days": "CREATE TABLE native_days(id TEXT PRIMARY KEY,day TEXT NOT NULL,body TEXT NOT NULL,hash TEXT NOT NULL,state TEXT NOT NULL DEFAULT 'prepared',transaction_hash TEXT,updated_at INTEGER NOT NULL)",
+        "native_enrollments": "CREATE TABLE native_enrollments(account_id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),consented_at INTEGER NOT NULL)",
+        "native_locations": "CREATE TABLE native_locations(account_id TEXT PRIMARY KEY,lat REAL NOT NULL,lng REAL NOT NULL,received_at INTEGER NOT NULL)",
+        "native_progress": "CREATE TABLE native_progress(day_id TEXT NOT NULL,quest_index INTEGER NOT NULL,account_id TEXT NOT NULL,checkpoint INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(day_id,quest_index,account_id))",
+        "native_reward_claims": "CREATE TABLE native_reward_claims(seq INTEGER PRIMARY KEY AUTOINCREMENT,id TEXT UNIQUE NOT NULL,day_id TEXT NOT NULL,kind TEXT NOT NULL,item_index INTEGER NOT NULL,account_id TEXT NOT NULL,player_id TEXT NOT NULL,body TEXT NOT NULL,signature TEXT NOT NULL,state TEXT NOT NULL DEFAULT 'queued',attempts INTEGER NOT NULL DEFAULT 0,run_after INTEGER NOT NULL,transaction_hash TEXT,last_error TEXT,amount TEXT,xp INTEGER,created_at INTEGER NOT NULL,confirmed_at INTEGER,UNIQUE(day_id,kind,item_index,account_id))",
+        "native_vault_jobs": "CREATE TABLE native_vault_jobs(account_id TEXT PRIMARY KEY,next_check INTEGER NOT NULL DEFAULT 0,last_action TEXT,last_state TEXT,last_error TEXT)",
+        "native_worker_lease": "CREATE TABLE native_worker_lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT,until_ms INTEGER NOT NULL DEFAULT 0,last_success INTEGER,last_error TEXT)"
+      },
+      "indexes": {
+        "native_shared_coin": "CREATE UNIQUE INDEX IF NOT EXISTS native_shared_coin ON native_reward_claims(day_id,item_index) WHERE kind='coin';",
+        "native_claim_order": "CREATE INDEX IF NOT EXISTS native_claim_order ON native_reward_claims(state,seq);"
+      }
+    },
+    {
+      "name": "native-progression",
+      "version": 1,
+      "source": "server/native/progression.mjs",
+      "tables": {
+        "native_level_awards": "CREATE TABLE native_level_awards(\n        claim_id TEXT PRIMARY KEY,network TEXT NOT NULL,source_contract TEXT NOT NULL,\n        contract_id TEXT NOT NULL,receiver_id TEXT NOT NULL,level INTEGER NOT NULL,\n        policy TEXT NOT NULL,edition TEXT NOT NULL,state TEXT NOT NULL,\n        expires_at INTEGER NOT NULL,token_id TEXT,created_at INTEGER NOT NULL,\n        confirmed_at INTEGER,xp TEXT NOT NULL,block_hash TEXT NOT NULL,\n        UNIQUE(network,source_contract,contract_id,receiver_id,level))",
+        "native_level_observations": "CREATE TABLE native_level_observations(\n        source_contract TEXT NOT NULL,account_id TEXT NOT NULL,body TEXT NOT NULL,\n        PRIMARY KEY(source_contract,account_id))"
+      },
+      "indexes": {}
+    },
+    {
+      "name": "creator-lifecycle",
+      "version": 1,
+      "source": "server/creators/lifecycle.mjs",
+      "tables": {
+        "creator_operations": "CREATE TABLE creator_operations(\n        actor TEXT NOT NULL, operation_id TEXT NOT NULL, command TEXT NOT NULL,\n        fingerprint TEXT NOT NULL, receipt TEXT NOT NULL, created_at INTEGER NOT NULL,\n        PRIMARY KEY(actor,operation_id))",
+        "creator_participations": "CREATE TABLE creator_participations(\n        quest_id TEXT NOT NULL, participant TEXT NOT NULL REFERENCES players(id), revision INTEGER NOT NULL,\n        state TEXT NOT NULL CHECK(state IN ('open','resolved')), started_at INTEGER NOT NULL,\n        resolved_at INTEGER, resolved_by TEXT, resolution_reference TEXT,\n        PRIMARY KEY(quest_id,participant),\n        FOREIGN KEY(quest_id,revision) REFERENCES creator_revisions(quest_id,revision))",
+        "creator_policies": "CREATE TABLE creator_policies(\n        version TEXT PRIMARY KEY, xp_commitment INTEGER NOT NULL CHECK(xp_commitment>0))",
+        "creator_quests": "CREATE TABLE creator_quests(\n        id TEXT PRIMARY KEY, author TEXT NOT NULL REFERENCES players(id),\n        state TEXT NOT NULL CHECK(state IN ('draft','pending_review','rejected','published','closing','closed')),\n        version INTEGER NOT NULL, latest_revision INTEGER NOT NULL,\n        published_revision INTEGER, policy_version TEXT REFERENCES creator_policies(version),\n        created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)",
+        "creator_revisions": "CREATE TABLE creator_revisions(\n        quest_id TEXT NOT NULL REFERENCES creator_quests(id), revision INTEGER NOT NULL,\n        content TEXT NOT NULL, state TEXT NOT NULL CHECK(state IN ('draft','pending_review','approved','rejected','withdrawn')),\n        policy_version TEXT REFERENCES creator_policies(version), reviewed_by TEXT, reason TEXT,\n        PRIMARY KEY(quest_id,revision))",
+        "creator_xp_commitments": "CREATE TABLE creator_xp_commitments(\n        quest_id TEXT PRIMARY KEY REFERENCES creator_quests(id),\n        author TEXT NOT NULL REFERENCES players(id), amount INTEGER NOT NULL CHECK(amount>0),\n        policy_version TEXT NOT NULL REFERENCES creator_policies(version),\n        locked_at INTEGER NOT NULL, released_at INTEGER)"
+      },
+      "indexes": {
+        "creator_active_xp": "CREATE INDEX IF NOT EXISTS creator_active_xp ON creator_xp_commitments(author) WHERE released_at IS NULL;"
+      }
+    },
+    {
+      "name": "creator-community",
+      "version": 1,
+      "source": "server/creators/community.mjs",
+      "tables": {
+        "creator_follows": "CREATE TABLE creator_follows(\n      follower TEXT NOT NULL REFERENCES players(id), creator TEXT NOT NULL REFERENCES players(id),\n      created_at INTEGER NOT NULL, PRIMARY KEY(follower,creator), CHECK(follower!=creator))",
+        "creator_profiles": "CREATE TABLE creator_profiles(\n      player_id TEXT PRIMARY KEY REFERENCES players(id), display_name TEXT NOT NULL,\n      bio TEXT NOT NULL, public INTEGER NOT NULL CHECK(public IN(0,1)),\n      version INTEGER NOT NULL CHECK(version>0), updated_at INTEGER NOT NULL)"
+      },
+      "indexes": {
+        "creator_follow_targets": "CREATE INDEX IF NOT EXISTS creator_follow_targets ON creator_follows(creator,follower);"
+      }
+    },
+    {
+      "name": "creator-safety",
+      "version": 1,
+      "source": "server/creators/safety.mjs",
+      "tables": {
+        "creator_reports": "CREATE TABLE creator_reports(\n      id TEXT PRIMARY KEY, quest_id TEXT NOT NULL, revision INTEGER NOT NULL,\n      reporter TEXT NOT NULL REFERENCES players(id), reason TEXT NOT NULL,\n      detail TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN('open','reviewed')),\n      version INTEGER NOT NULL CHECK(version>0), created_at INTEGER NOT NULL,\n      reviewed_at INTEGER, reviewed_by TEXT, decision TEXT, review_reason TEXT,\n      FOREIGN KEY(quest_id,revision) REFERENCES creator_revisions(quest_id,revision),\n      UNIQUE(quest_id,reporter))"
+      },
+      "indexes": {
+        "creator_report_queue": "CREATE INDEX IF NOT EXISTS creator_report_queue ON creator_reports(status,created_at,id);",
+        "creator_report_actor_rate": "CREATE INDEX IF NOT EXISTS creator_report_actor_rate ON creator_reports(reporter,created_at);",
+        "creator_operation_actor_rate": "CREATE INDEX IF NOT EXISTS creator_operation_actor_rate ON creator_operations(actor,command,created_at);"
+      }
+    },
+    {
+      "name": "passkeys",
+      "version": 1,
+      "source": "server/index.mjs",
+      "tables": {
+        "passkeys": "CREATE TABLE passkeys(id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),public_key TEXT NOT NULL,counter INTEGER NOT NULL,transports TEXT NOT NULL)"
+      },
+      "indexes": {}
+    },
+    {
+      "name": "adventure-results",
+      "version": 1,
+      "source": "server/adventure-results.mjs",
+      "tables": {
+        "adventure_result_views": "CREATE TABLE adventure_result_views(\n player_id TEXT NOT NULL REFERENCES players(id),\n quest_id TEXT NOT NULL REFERENCES quests(id),\n viewed_at INTEGER NOT NULL,\n PRIMARY KEY(player_id,quest_id),\n FOREIGN KEY(quest_id,player_id) REFERENCES quest_claims(quest_id,player_id)\n)",
+        "adventure_results": "CREATE TABLE adventure_results(\n id TEXT PRIMARY KEY,\n player_id TEXT NOT NULL REFERENCES players(id),\n quest_id TEXT NOT NULL REFERENCES quests(id),\n world_id TEXT NOT NULL REFERENCES worlds(id),\n domain TEXT NOT NULL CHECK(domain='demo'),\n realm TEXT NOT NULL CHECK(realm IN ('arena','gps')),\n quest_title TEXT NOT NULL,\n quest_kind TEXT NOT NULL,\n xp INTEGER NOT NULL CHECK(xp>=0),\n gold_u INTEGER NOT NULL CHECK(gold_u>=0),\n item_id TEXT,\n item_snapshot TEXT CHECK(item_snapshot IS NULL OR json_valid(item_snapshot)),\n created_at INTEGER NOT NULL,\n UNIQUE(player_id,quest_id),\n FOREIGN KEY(quest_id,player_id) REFERENCES quest_claims(quest_id,player_id),\n CHECK((item_id IS NULL AND item_snapshot IS NULL) OR (item_id IS NOT NULL AND item_snapshot IS NOT NULL))\n)"
+      },
+      "indexes": {
+        "adventure_results_owner_time": "CREATE INDEX IF NOT EXISTS adventure_results_owner_time ON adventure_results(player_id,created_at DESC,quest_id DESC);"
+      }
+    },
+    {
+      "name": "creator-completion",
+      "version": 1,
+      "source": "server/creators/completion.mjs",
+      "tables": {
+        "creator_completion_receipts": "CREATE TABLE creator_completion_receipts(\n id TEXT PRIMARY KEY,quest_id TEXT NOT NULL,participant TEXT NOT NULL,revision INTEGER NOT NULL,\n submission_id TEXT NOT NULL UNIQUE REFERENCES creator_completion_submissions(id),receipt TEXT NOT NULL,completed_at INTEGER NOT NULL,\n FOREIGN KEY(quest_id,participant) REFERENCES creator_participations(quest_id,participant),UNIQUE(quest_id,participant))",
+        "creator_completion_submissions": "CREATE TABLE creator_completion_submissions(\n id TEXT PRIMARY KEY,quest_id TEXT NOT NULL,participant TEXT NOT NULL,revision INTEGER NOT NULL,\n attempt INTEGER NOT NULL CHECK(attempt BETWEEN 1 AND 3),policy_version TEXT NOT NULL,\n evidence TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('pending','accepted','rejected')),\n version INTEGER NOT NULL CHECK(version>0),submitted_at INTEGER NOT NULL,reviewed_at INTEGER,reviewed_by TEXT,feedback TEXT,\n FOREIGN KEY(quest_id,participant) REFERENCES creator_participations(quest_id,participant),\n FOREIGN KEY(quest_id,revision) REFERENCES creator_revisions(quest_id,revision),UNIQUE(quest_id,participant,attempt))"
+      },
+      "indexes": {
+        "creator_completion_pending": "CREATE UNIQUE INDEX IF NOT EXISTS creator_completion_pending ON creator_completion_submissions(quest_id,participant) WHERE state='pending';"
+      }
+    }
+  ]
+}

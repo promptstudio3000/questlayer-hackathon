@@ -16,7 +16,7 @@ const signer = KeyPairSigner.fromSecretKey(operator.secretKey),
   explorer = new Account(`explorer.${operator.accountId}`, provider, signer),
   NEAR = 10n ** 24n;
 const wasm = readFileSync(
-    "contracts/target/wasm32-unknown-unknown/release/auratrail_collectibles.wasm",
+    "contracts/target/wasm32-unknown-unknown/release/questlayer_collectibles.wasm",
   ),
   records = [];
 const view = async (method, args = {}) => {

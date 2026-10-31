@@ -5,6 +5,12 @@ import {
 } from "./character-art";
 import { loadCharacterModel } from "./character-model-client";
 import { moveMapMarker } from "./map-motion";
+import {
+  gameObjectMarkup,
+  rasterizeGameObject,
+  questObjectPresentation,
+  zoneObjectPresentation,
+} from "./game-object-art";
 import type { NearbyExplorer } from "./types";
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
@@ -24,6 +30,9 @@ export type GameMapProps = {
   overview: boolean;
   focusZone: Zone | null;
   nativeTarget?: (Point & { label: string }) | null;
+  nativeTargetKind?: "coin" | "route" | "discovery";
+  playerTier?: number;
+  now?: number;
   world: World | null;
   position: Point;
   arena: boolean;
@@ -69,6 +78,18 @@ export function GameMap(props: GameMapProps) {
     heading = useRef(180);
   const latest = useRef(props);
   latest.current = props;
+  const objectContext = {
+    now: props.now ?? Date.now(),
+    playerTier: props.playerTier,
+  };
+  const zoneArtKey = JSON.stringify(
+    props.world?.zones.map((z) =>
+      zoneObjectPresentation(z, props.world!.quests, objectContext),
+    ),
+  );
+  const questArtKey = JSON.stringify(
+    props.world?.quests.map((q) => questObjectPresentation(q, objectContext)),
+  );
   const [ready, setReady] = useState(false),
     [error, setError] = useState(false);
   const [viewportRevision, setViewportRevision] = useState(0);
@@ -93,7 +114,13 @@ export function GameMap(props: GameMapProps) {
     if (!m || !ready || !target || props.globe) return;
     const node = document.createElement("div");
     node.className = "native-target-pin";
-    node.textContent = target.label;
+    node.innerHTML = gameObjectMarkup({
+      kind: props.nativeTargetKind || "discovery",
+      selected: true,
+    });
+    const targetText = document.createElement("span");
+    targetText.textContent = target.label;
+    node.append(targetText);
     const marker = new maplibregl.Marker({ element: node, anchor: "bottom" })
       .setLngLat([target.lng, target.lat])
       .addTo(m);
@@ -102,7 +129,7 @@ export function GameMap(props: GameMapProps) {
         center: [target.lng, target.lat],
         zoom: 17,
         pitch: 43,
-        offset: window.innerWidth < 760 ? [0, -100] : [200, 0],
+        offset: cameraOffset(),
         duration: matchMedia("(prefers-reduced-motion: reduce)").matches
           ? 0
           : 400,
@@ -110,7 +137,17 @@ export function GameMap(props: GameMapProps) {
     return () => {
       marker.remove();
     };
-  }, [ready, props.nativeTarget, props.globe, props.follow]);
+    // Layout changes keep a deliberately selected stop outside the sheet. Manual
+    // pan changes follow but must not itself trigger another camera movement.
+  }, [
+    ready,
+    props.nativeTarget,
+    props.nativeTargetKind,
+    props.globe,
+    props.sheetExpanded,
+    props.panelMode,
+    viewportRevision,
+  ]);
   useEffect(() => {
     if (!el.current) return;
     let gone = false;
@@ -244,22 +281,7 @@ export function GameMap(props: GameMapProps) {
             "fill-extrusion-opacity": 0.68,
           },
         });
-      const canvas = document.createElement("canvas");
-      canvas.width = 24;
-      canvas.height = 28;
-      const ctx = canvas.getContext("2d")!;
-      ctx.fillStyle = "#a37429";
-      ctx.fillRect(6, 2, 12, 24);
-      ctx.fillRect(3, 6, 18, 16);
-      ctx.fillStyle = "#f4c957";
-      ctx.fillRect(6, 5, 12, 18);
-      ctx.fillRect(5, 8, 14, 12);
-      ctx.fillStyle = "#fff1b2";
-      ctx.fillRect(7, 6, 4, 13);
-      ctx.fillRect(11, 5, 5, 3);
-      ctx.fillStyle = "#d69c36";
-      ctx.fillRect(13, 11, 3, 8);
-      m.addImage("gold-coin", ctx.getImageData(0, 0, 24, 28));
+      m.addImage("gold-coin", rasterizeGameObject({ kind: "coin" }));
       m.addSource("zones", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -353,10 +375,13 @@ export function GameMap(props: GameMapProps) {
     labels.current = [];
     for (const z of props.world.zones) {
       const node = document.createElement("button");
-      node.className = `zone-map-pin tier-${z.tier}${props.overview ? " map-overview-pin" : ""}${props.globe ? " hidden" : ""}`;
-      node.title = z.name;
-      node.setAttribute("aria-label", z.name);
-      node.innerHTML = starterMarkerMarkup();
+      const art = zoneObjectPresentation(z, props.world.quests, objectContext);
+      const selected = props.focusZone?.id === z.id;
+      node.className = `zone-map-pin game-object-map-pin tier-${z.tier}${props.overview ? " map-overview-pin" : ""}${props.globe ? " hidden" : ""}`;
+      node.title = `${z.name} · ${art.label}`;
+      node.setAttribute("aria-label", node.title);
+      node.setAttribute("aria-pressed", String(selected));
+      node.innerHTML = gameObjectMarkup({ ...art, selected });
       node.addEventListener("click", (e) => {
         e.stopPropagation();
         latest.current.onZone(z);
@@ -367,7 +392,14 @@ export function GameMap(props: GameMapProps) {
           .addTo(m),
       );
     }
-  }, [props.world, ready, props.overview, props.globe]);
+  }, [
+    props.world,
+    ready,
+    props.overview,
+    props.globe,
+    props.focusZone?.id,
+    zoneArtKey,
+  ]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
@@ -668,13 +700,11 @@ export function GameMap(props: GameMapProps) {
       .map((q) => {
         const p = q.nextPoint || q;
         const node = document.createElement("button");
-        node.className = "quest-map-pin";
-        node.setAttribute("aria-label", q.title);
-        node.title = q.title;
-        node.innerHTML =
-          q.kind === "chest"
-            ? '<svg viewBox="0 0 32 32"shape-rendering="crispEdges"><path fill="#441c6c"d="M4 9h24v19H4z"/><path fill="#fef87d"d="M6 7h20v11H6z"/><path fill="#d4963b"d="M6 19h20v7H6z"/><path fill="#fff"d="M14 14h4v8h-4z"/></svg>'
-            : '<svg viewBox="0 0 32 32"shape-rendering="crispEdges"><path fill="#441c6c"d="M7 3h3v26H7z"/><path fill="#672eeb"d="M10 4h16v12H10z"/><path fill="#ff1dff"d="M10 5h6v5h-6zm6 5h9v5h-9z"/></svg>';
+        const art = questObjectPresentation(q, objectContext);
+        node.className = "quest-map-pin game-object-map-pin";
+        node.setAttribute("aria-label", `${q.title} · ${art.label}`);
+        node.title = `${q.title} · ${art.label}`;
+        node.innerHTML = gameObjectMarkup(art);
         node.addEventListener("click", (e) => {
           e.stopPropagation();
           latest.current.onQuest(q.id);
@@ -689,7 +719,7 @@ export function GameMap(props: GameMapProps) {
           .addTo(m);
       });
     return () => markers.forEach((x) => x.remove());
-  }, [props.focusZone, props.world, ready]);
+  }, [props.focusZone, props.world, ready, questArtKey]);
   return (
     <>
       <div

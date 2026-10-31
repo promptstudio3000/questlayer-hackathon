@@ -1,0 +1,41 @@
+{
+  "scope": "Actual isolated HTTP/browser submission, configured independent CLI text review; no physical proof or rewards.",
+  "submission": {
+    "id": "creator_submission_ee73a7cb-60f0-4d3f-b77b-9c01fe2aa75c",
+    "participant": "player_a2c2e445-5a1b-48a3-a31c-f1dd3d8aa696",
+    "revision": 1,
+    "version": 1
+  },
+  "receipt": {
+    "id": "creator_completion_6f4019bf-2e5e-4f1d-bffc-d545b282924e",
+    "version": 1,
+    "domain": "demo",
+    "source": "creator",
+    "questId": "qa-observation-scene",
+    "participant": "player_a2c2e445-5a1b-48a3-a31c-f1dd3d8aa696",
+    "revision": 1,
+    "submissionId": "creator_submission_ee73a7cb-60f0-4d3f-b77b-9c01fe2aa75c",
+    "state": "completed",
+    "template": "observation-v1",
+    "validationPolicyVersion": "creator-observation-v1",
+    "completedAt": 1793477282340,
+    "validation": "Independent review of private text against the accepted prompt. Does not verify GPS, a physical visit or the path walked.",
+    "rewardStatus": "not-configured",
+    "awardAdapterVersion": "unconfigured-v1",
+    "reward": {
+      "xp": 0,
+      "gold": 0,
+      "item": null
+    }
+  },
+  "economyUnchanged": true,
+  "exactCliReplay": true,
+  "participation": {
+    "quest_id": "qa-observation-scene",
+    "participant": "player_a2c2e445-5a1b-48a3-a31c-f1dd3d8aa696",
+    "revision": 1,
+    "state": "resolved",
+    "resolution_reference": "creator_completion_6f4019bf-2e5e-4f1d-bffc-d545b282924e"
+  },
+  "completionReceiptCount": 1
+}

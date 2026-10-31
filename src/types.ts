@@ -38,6 +38,9 @@ export type Player = {
   name: string;
   gold_u: number;
   xp: number;
+  earnedXp?: number;
+  lockedXp?: number;
+  availableXp?: number;
   level: number;
   tier: number;
   weighted_u: number;

@@ -1,5 +1,6 @@
 import { atomic } from "../database.mjs";
 import { levelFor } from "../domain.mjs";
+import { observationRequirement } from "./completion-policy.mjs";
 import {
   creatorAssert as fail,
   creatorKey as key,
@@ -10,18 +11,24 @@ import {
 
 const content = (value) => {
   fail(
-    value && Object.keys(value).sort().join() === "description,title",
-    "Only free quest title and description are supported.",
+    value &&
+      ["description,title", "description,requirement,title"].includes(
+        Object.keys(value).sort().join(),
+      ),
+    "Use free quest title, description and an optional supported requirement.",
     "CREATOR_INPUT",
     400,
   );
   return {
     title: text(value.title, 100),
     description: text(value.description, 4000),
+    ...(Object.hasOwn(value, "requirement")
+      ? { requirement: observationRequirement(value.requirement) }
+      : {}),
   };
 };
-// Explicit opt-in demo adapter. The running application does not import this module.
-// Identities and authority predicates must come from trusted server adapters.
+// Explicit opt-in demo adapter. The host initializes this only with reviewed
+// configuration; identities and authority predicates come from trusted adapters.
 export function createCreatorLifecycle(
   db,
   {
@@ -468,6 +475,20 @@ export function createCreatorLifecycle(
         { questId, participant, resolutionReference: reference },
         (now) => {
           const row = quest(questId);
+          const accepted = participation(questId, participant);
+          if (accepted) {
+            const saved = db
+              .prepare(
+                "SELECT content FROM creator_revisions WHERE quest_id=? AND revision=?",
+              )
+              .get(questId, accepted.revision);
+            fail(
+              !JSON.parse(saved.content).requirement,
+              "Structured participation requires independent completion review; legacy resolve cannot bypass it.",
+              "CREATOR_COMPLETION_REQUIRED",
+              409,
+            );
+          }
           fail(
             actor !== row.author &&
               actor !== participant &&
@@ -511,6 +532,39 @@ export function createCreatorLifecycle(
             now,
           );
           return result(questId);
+        },
+      );
+    },
+    suspend({ actor, operationId, questId, expectedVersion, reason }) {
+      const explanation = text(reason, 1000);
+      return operation(
+        "suspendCreatorQuest",
+        actor,
+        operationId,
+        { questId, expectedVersion, reason: explanation },
+        (now) => {
+          const row = quest(questId);
+          moderator(row, actor);
+          version(row, expectedVersion);
+          fail(row.state !== "closed", "This creator quest is already closed.");
+          db.prepare(
+            "UPDATE creator_revisions SET state='withdrawn' WHERE quest_id=? AND state IN ('draft','pending_review')",
+          ).run(questId);
+          touch(
+            questId,
+            row.published_revision === null ? "closed" : "closing",
+            now,
+          );
+          return {
+            ...result(questId),
+            suspension: {
+              reason: explanation,
+              moderator: actor,
+              at: now,
+              previousState: row.state,
+              previousVersion: row.version,
+            },
+          };
         },
       );
     },

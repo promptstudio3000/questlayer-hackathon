@@ -1,0 +1,3505 @@
+[
+  {
+    "name": "actual-map-explore-360x780",
+    "controls": [],
+    "document": {
+      "scrollWidth": 360,
+      "width": 360
+    },
+    "viewport": {
+      "height": 780,
+      "width": 360
+    }
+  },
+  {
+    "name": "actual-map-explore-390x844",
+    "controls": [],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-map-explore-844x390",
+    "controls": [],
+    "document": {
+      "scrollWidth": 844,
+      "width": 844
+    },
+    "viewport": {
+      "height": 390,
+      "width": 844
+    }
+  },
+  {
+    "name": "actual-map-explore-1280x800",
+    "controls": [],
+    "document": {
+      "scrollWidth": 1280,
+      "width": 1280
+    },
+    "viewport": {
+      "height": 800,
+      "width": 1280
+    }
+  },
+  {
+    "name": "actual-map-zone-selected-1280x800",
+    "controls": [],
+    "document": {
+      "scrollWidth": 1280,
+      "width": 1280
+    },
+    "viewport": {
+      "height": 800,
+      "width": 1280
+    }
+  },
+  {
+    "name": "actual-report-360x780",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 167.125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverbank Stories",
+        "tag": "BUTTON",
+        "width": 176.7578125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 296
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 296
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 52,
+        "label": "Choose a reasonUnsafe place or instructionsAbuse or harassmentMisleading questOther concer",
+        "tag": "SELECT",
+        "width": 270
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Synthetic QA rehearsal only: no real hazard was observed. Exercise the unsafe-place report",
+        "tag": "TEXTAREA",
+        "width": 270
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send this revision and selected reason for private review.",
+        "tag": "LABEL",
+        "width": 270
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send private report",
+        "tag": "BUTTON",
+        "width": 270
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard local report text",
+        "tag": "BUTTON",
+        "width": 270
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 270
+      }
+    ],
+    "dialog": {
+      "bottom": 764,
+      "height": 748,
+      "left": 19,
+      "right": 341,
+      "top": 16,
+      "width": 322,
+      "x": 19,
+      "y": 16
+    },
+    "document": {
+      "scrollWidth": 360,
+      "width": 360
+    },
+    "viewport": {
+      "height": 780,
+      "width": 360
+    }
+  },
+  {
+    "name": "actual-report-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 167.125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverbank Stories",
+        "tag": "BUTTON",
+        "width": 176.7578125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 52,
+        "label": "Choose a reasonUnsafe place or instructionsAbuse or harassmentMisleading questOther concer",
+        "tag": "SELECT",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Synthetic QA rehearsal only: no real hazard was observed. Exercise the unsafe-place report",
+        "tag": "TEXTAREA",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send this revision and selected reason for private review.",
+        "tag": "LABEL",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send private report",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard local report text",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 300
+      }
+    ],
+    "dialog": {
+      "bottom": 828,
+      "height": 812,
+      "left": 19,
+      "right": 371,
+      "top": 16,
+      "width": 352,
+      "x": 19,
+      "y": 16
+    },
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-report-844x390",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 167.125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverbank Stories",
+        "tag": "BUTTON",
+        "width": 176.7578125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 780
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 780
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 52,
+        "label": "Choose a reasonUnsafe place or instructionsAbuse or harassmentMisleading questOther concer",
+        "tag": "SELECT",
+        "width": 388
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Synthetic QA rehearsal only: no real hazard was observed. Exercise the unsafe-place report",
+        "tag": "TEXTAREA",
+        "width": 388
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send this revision and selected reason for private review.",
+        "tag": "LABEL",
+        "width": 388
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send private report",
+        "tag": "BUTTON",
+        "width": 388
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard local report text",
+        "tag": "BUTTON",
+        "width": 388
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 388
+      }
+    ],
+    "dialog": {
+      "bottom": 374,
+      "height": 358,
+      "left": 202,
+      "right": 642,
+      "top": 16,
+      "width": 440,
+      "x": 202,
+      "y": 16
+    },
+    "document": {
+      "scrollWidth": 844,
+      "width": 844
+    },
+    "viewport": {
+      "height": 390,
+      "width": 844
+    }
+  },
+  {
+    "name": "actual-report-1280x800",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 458
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 167.125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverbank Stories",
+        "tag": "BUTTON",
+        "width": 176.7578125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 458
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 458
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 458
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 52,
+        "label": "Choose a reasonUnsafe place or instructionsAbuse or harassmentMisleading questOther concer",
+        "tag": "SELECT",
+        "width": 388
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Synthetic QA rehearsal only: no real hazard was observed. Exercise the unsafe-place report",
+        "tag": "TEXTAREA",
+        "width": 388
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send this revision and selected reason for private review.",
+        "tag": "LABEL",
+        "width": 388
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send private report",
+        "tag": "BUTTON",
+        "width": 388
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard local report text",
+        "tag": "BUTTON",
+        "width": 388
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 388
+      }
+    ],
+    "dialog": {
+      "bottom": 784,
+      "height": 768,
+      "left": 420,
+      "right": 860,
+      "top": 16,
+      "width": 440,
+      "x": 420,
+      "y": 16
+    },
+    "document": {
+      "scrollWidth": 1280,
+      "width": 1280
+    },
+    "viewport": {
+      "height": 800,
+      "width": 1280
+    }
+  },
+  {
+    "name": "actual-report-focused-390x480",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 167.125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverbank Stories",
+        "tag": "BUTTON",
+        "width": 176.7578125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 52,
+        "label": "Choose a reasonUnsafe place or instructionsAbuse or harassmentMisleading questOther concer",
+        "tag": "SELECT",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Synthetic QA rehearsal only: no real hazard was observed. Exercise the unsafe-place report",
+        "tag": "TEXTAREA",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send this revision and selected reason for private review.",
+        "tag": "LABEL",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send private report",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard local report text",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 300
+      }
+    ],
+    "dialog": {
+      "bottom": 464,
+      "height": 448,
+      "left": 19,
+      "right": 371,
+      "top": 16,
+      "width": 352,
+      "x": 19,
+      "y": 16
+    },
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 480,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-report-confirmed-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 167.125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverbank Stories",
+        "tag": "BUTTON",
+        "width": 176.7578125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      }
+    ],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-block-confirmation-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 167.125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverbank Stories",
+        "tag": "BUTTON",
+        "width": 176.7578125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "I understand this changes public visibility between us.",
+        "tag": "LABEL",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Confirm creator block",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 300
+      }
+    ],
+    "dialog": {
+      "bottom": 721.59375,
+      "height": 599.1953125,
+      "left": 19,
+      "right": 371,
+      "top": 122.3984375,
+      "width": 352,
+      "x": 19,
+      "y": 122.3984375
+    },
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-blocked-accepted-instructions-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 167.125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      }
+    ],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-blocked-public-feed-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      }
+    ],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-owned-block-list-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Review unblock…",
+        "tag": "BUTTON",
+        "width": 154.8828125
+      }
+    ],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-unblocked-public-feed-restored-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 258.890625,
+        "label": "Free · demoThree quiet details beside the riverTake a free solo observation break on the p",
+        "tag": "BUTTON",
+        "width": 326
+      }
+    ],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "fixture-report-pending-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creator quests",
+        "tag": "BUTTON",
+        "width": 132.2109375
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverkeeper",
+        "tag": "BUTTON",
+        "width": 135.640625
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Start free quest",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 52,
+        "label": "Choose a reasonUnsafe place or instructionsAbuse or harassmentMisleading questOther concer",
+        "tag": "SELECT",
+        "width": 300
+      },
+      {
+        "background": "rgb(242, 235, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Simulated lost-response QA report only; no observed real-world hazard.",
+        "tag": "TEXTAREA",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send this revision and selected reason for private review.",
+        "tag": "LABEL",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(84, 84, 84)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(105, 84, 136)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Sending report…",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard local report text",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Close · request may still finish",
+        "tag": "BUTTON",
+        "width": 300
+      }
+    ],
+    "dialog": {
+      "bottom": 828,
+      "height": 812,
+      "left": 19,
+      "right": 371,
+      "top": 16,
+      "width": 352,
+      "x": 19,
+      "y": 16
+    },
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-suspended-public-hidden-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      }
+    ],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "actual-suspended-accepted-revision1-retained-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 167.125
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      }
+    ],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "fixture-report-lost-reply-error",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 146
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 146
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 146
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 146
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 608
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creator quests",
+        "tag": "BUTTON",
+        "width": 132.2109375
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverkeeper",
+        "tag": "BUTTON",
+        "width": 135.640625
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Start free quest",
+        "tag": "BUTTON",
+        "width": 608
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 608
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 608
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 608
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 52,
+        "label": "Choose a reasonUnsafe place or instructionsAbuse or harassmentMisleading questOther concer",
+        "tag": "SELECT",
+        "width": 388
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Simulated lost-response QA report only; no observed real-world hazard.",
+        "tag": "TEXTAREA",
+        "width": 388
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send this revision and selected reason for private review.",
+        "tag": "LABEL",
+        "width": 388
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Send private report",
+        "tag": "BUTTON",
+        "width": 388
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard local report text",
+        "tag": "BUTTON",
+        "width": 388
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 388
+      }
+    ],
+    "dialog": {
+      "bottom": 877,
+      "height": 861,
+      "left": 536,
+      "right": 976,
+      "top": 16,
+      "width": 440,
+      "x": 536,
+      "y": 16
+    },
+    "document": {
+      "scrollWidth": 1512,
+      "width": 1512
+    },
+    "viewport": {
+      "height": 893,
+      "width": 1512
+    }
+  },
+  {
+    "name": "fixture-report-receipt-recovered-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creator quests",
+        "tag": "BUTTON",
+        "width": 132.2109375
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverkeeper",
+        "tag": "BUTTON",
+        "width": 135.640625
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Start free quest",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      }
+    ],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "fixture-block-pending-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creator quests",
+        "tag": "BUTTON",
+        "width": 132.2109375
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverkeeper",
+        "tag": "BUTTON",
+        "width": 135.640625
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Start free quest",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "I understand this changes public visibility between us.",
+        "tag": "LABEL",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(84, 84, 84)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(105, 84, 136)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Confirming…",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Close · request may still finish",
+        "tag": "BUTTON",
+        "width": 300
+      }
+    ],
+    "dialog": {
+      "bottom": 721.59375,
+      "height": 599.1953125,
+      "left": 19,
+      "right": 371,
+      "top": 122.3984375,
+      "width": 352,
+      "x": 19,
+      "y": 122.3984375
+    },
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "fixture-block-lost-reply-error-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creator quests",
+        "tag": "BUTTON",
+        "width": 132.2109375
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "By Riverkeeper",
+        "tag": "BUTTON",
+        "width": 135.640625
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Start free quest",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 205.890625
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "I understand this changes public visibility between us.",
+        "tag": "LABEL",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Confirm creator block",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 300
+      }
+    ],
+    "dialog": {
+      "bottom": 790.59375,
+      "height": 737.1953125,
+      "left": 19,
+      "right": 371,
+      "top": 53.3984375,
+      "width": 352,
+      "x": 19,
+      "y": 53.3984375
+    },
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "fixture-block-receipt-recovered-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Review unblock…",
+        "tag": "BUTTON",
+        "width": 154.8828125
+      }
+    ],
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "fixture-report-large-focused-360x780",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 160
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 160
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 160
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 160
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 108.796875,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 328
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 62.3984375,
+        "label": "Creator quests",
+        "tag": "BUTTON",
+        "width": 236.421875
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 62.3984375,
+        "label": "By Riverkeeper",
+        "tag": "BUTTON",
+        "width": 243.2734375
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 68.3984375,
+        "label": "Start free quest",
+        "tag": "BUTTON",
+        "width": 328
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 72,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 328
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 68.3984375,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 328
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 68.3984375,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 328
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 108.796875,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 328
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 75.5,
+        "label": "Choose a reasonUnsafe place or instructionsAbuse or harassmentMisleading questOther concer",
+        "tag": "SELECT",
+        "width": 270
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 218,
+        "label": "creator-report-detail",
+        "tag": "TEXTAREA",
+        "width": 270
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 240,
+        "label": "Send this revision and selected reason for private review.",
+        "tag": "LABEL",
+        "width": 270
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "Send private report",
+        "tag": "BUTTON",
+        "width": 270
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 68.3984375,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 270
+      }
+    ],
+    "dialog": {
+      "bottom": 764,
+      "height": 748,
+      "left": 19,
+      "right": 341,
+      "top": 16,
+      "width": 322,
+      "x": 19,
+      "y": 16
+    },
+    "document": {
+      "scrollWidth": 360,
+      "width": 360
+    },
+    "viewport": {
+      "height": 780,
+      "width": 360
+    }
+  },
+  {
+    "name": "fixture-report-large-focused-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "Community",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "Following",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "Creators",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "My creations",
+        "tag": "BUTTON",
+        "width": 175
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 62.3984375,
+        "label": "Your started quests",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 62.3984375,
+        "label": "Creator quests",
+        "tag": "BUTTON",
+        "width": 236.421875
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 62.3984375,
+        "label": "By Riverkeeper",
+        "tag": "BUTTON",
+        "width": 243.2734375
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 68.3984375,
+        "label": "Start free quest",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 72,
+        "label": "Quest safety",
+        "tag": "SUMMARY",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 68.3984375,
+        "label": "Report revision 1…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 68.3984375,
+        "label": "Block creator…",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 108.796875,
+        "label": "Manage blocked creators",
+        "tag": "BUTTON",
+        "width": 358
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 75.5,
+        "label": "Choose a reasonUnsafe place or instructionsAbuse or harassmentMisleading questOther concer",
+        "tag": "SELECT",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 218,
+        "label": "creator-report-detail",
+        "tag": "TEXTAREA",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(102, 85, 119)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 192,
+        "label": "Send this revision and selected reason for private review.",
+        "tag": "LABEL",
+        "width": 300
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 24,
+        "label": "",
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "32px",
+        "height": 114.796875,
+        "label": "Send private report",
+        "tag": "BUTTON",
+        "width": 300
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "32px",
+        "height": 68.3984375,
+        "label": "Cancel",
+        "tag": "BUTTON",
+        "width": 300
+      }
+    ],
+    "dialog": {
+      "bottom": 828,
+      "height": 812,
+      "left": 19,
+      "right": 371,
+      "top": 16,
+      "width": 352,
+      "x": 19,
+      "y": 16
+    },
+    "document": {
+      "scrollWidth": 390,
+      "width": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  }
+]

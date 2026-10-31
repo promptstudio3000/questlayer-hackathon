@@ -1,0 +1,15 @@
+✔ a confirmed ready context permits the next client send (0.417208ms)
+✔ owner, world, realm, replacement and foreground changes stop the next send (0.122125ms)
+✔ confirmed bursts coalesce exact server amounts and suppress duplicate replies (0.961167ms)
+✔ failed, old, foreign, replayed and malformed claims cannot create feedback (0.145333ms)
+✔ errors, hidden views and reconnect do not replay a suppressed celebration (0.121541ms)
+✔ bounded session memory never forgets an old receipt to count it again (0.086959ms)
+✔ session reset does not restore old totals; accounting overflow fails closed (0.091333ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 81.988916

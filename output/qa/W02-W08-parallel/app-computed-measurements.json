@@ -1,0 +1,138 @@
+[
+  {
+    "controls": [
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": null
+      },
+      {
+        "fontSize": "16px",
+        "height": 50,
+        "label": "inventory-list-price"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard price draft"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "List for demo GOLD"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Back to item"
+      }
+    ],
+    "dialog": "List demo Aura",
+    "height": 780,
+    "price": "17.25",
+    "scrollWidth": 360,
+    "width": 360
+  },
+  {
+    "controls": [
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": null
+      },
+      {
+        "fontSize": "16px",
+        "height": 50,
+        "label": "inventory-list-price"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard price draft"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "List for demo GOLD"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Back to item"
+      }
+    ],
+    "dialog": "List demo Aura",
+    "height": 844,
+    "price": "17.25",
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "controls": [
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": null
+      },
+      {
+        "fontSize": "16px",
+        "height": 50,
+        "label": "inventory-list-price"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard price draft"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "List for demo GOLD"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Back to item"
+      }
+    ],
+    "dialog": "List demo Aura",
+    "height": 390,
+    "price": "17.25",
+    "scrollWidth": 844,
+    "width": 844
+  },
+  {
+    "controls": [
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": null
+      },
+      {
+        "fontSize": "16px",
+        "height": 50,
+        "label": "inventory-list-price"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Discard price draft"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "List for demo GOLD"
+      },
+      {
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Back to item"
+      }
+    ],
+    "dialog": "List demo Aura",
+    "height": 800,
+    "price": "17.25",
+    "scrollWidth": 1280,
+    "width": 1280
+  }
+]

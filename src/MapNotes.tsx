@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowClockwise,
   ArrowLeft,
@@ -15,6 +15,10 @@ import {
 import { Dialog } from "./Dialog";
 import { Ghost } from "./Ghost";
 import type { Fix, Point } from "./types";
+import { useFormDraft } from "./useFormDraft";
+import { browserDraftStorage } from "./form-draft";
+import { createReadEpoch } from "./read-epoch";
+import { createNotePublicationJournal } from "./note-publication-journal";
 import "./map-notes.css";
 
 export type MapNote = Point & {
@@ -53,10 +57,13 @@ type Receipt = {
 };
 type PendingNote = {
   clientId: string;
+  draftRevision?: string | null;
   payload?: Publication;
   receipt?: Receipt;
 };
 type Decision = { kind: "remove" | "report" | "block"; note: MapNote };
+export type MapNotesView = "browse" | "compose" | "blocked";
+const NOTE_DRAFT_FIELDS = { text: 500 } as const;
 class NoteError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -111,19 +118,6 @@ function freshFix(fix: Fix | null) {
     fix.timestamp <= Date.now() + 2000
   );
 }
-function pendingKey(player: string, arena: boolean) {
-  return `questlayer:note-operation:v1:${player}:${arena ? "arena" : "physical"}`;
-}
-function storedIntent(key: string): PendingNote | null {
-  try {
-    const value = sessionStorage.getItem(key);
-    return value && /^[A-Za-z0-9_-]{1,64}$/.test(value)
-      ? { clientId: value }
-      : null;
-  } catch {
-    return null;
-  }
-}
 function message(error: unknown) {
   return error instanceof Error && error.name !== "AbortError"
     ? error.message
@@ -138,6 +132,7 @@ export function MapNotes({
   notify,
   onBlockChange,
   onViewChange,
+  view: requestedView,
 }: {
   playerId: string;
   position: Point;
@@ -145,10 +140,13 @@ export function MapNotes({
   arena: boolean;
   notify?: (message: string, error?: boolean) => void;
   onBlockChange?: () => void;
-  onViewChange?: (view: "browse" | "compose" | "blocked") => void;
+  onViewChange?: (view: MapNotesView) => void;
+  view?: MapNotesView;
 }) {
   const identity = `${playerId}:${arena ? "arena" : "physical"}`;
   const latest = useRef(identity);
+  const operations = useRef(createReadEpoch());
+  if (latest.current !== identity) operations.current.invalidate();
   latest.current = identity;
   const latestPosition = useRef(position);
   latestPosition.current = position;
@@ -159,25 +157,53 @@ export function MapNotes({
   const controllers = useRef(new Set<AbortController>()),
     heading = useRef<HTMLHeadingElement>(null),
     composer = useRef<HTMLTextAreaElement>(null);
-  const journalKey = pendingKey(playerId, arena);
-  const [view, setView] = useState<"browse" | "compose" | "blocked">("browse");
-  useEffect(() => {
-    onViewChange?.(view);
-  }, [view, onViewChange]);
+  const journal = useMemo(() => {
+    let legacy: Storage | null = null;
+    try {
+      legacy = sessionStorage;
+    } catch {
+      /* Old tab-only intents may be unavailable. */
+    }
+    return createNotePublicationJournal(
+      playerId,
+      arena,
+      browserDraftStorage(),
+      legacy,
+    );
+  }, [identity]);
+  const [localView, setLocalView] = useState<MapNotesView>("browse");
+  const view = requestedView ?? localView;
+  function setView(next: MapNotesView) {
+    if (next !== "compose") {
+      setConsent(false);
+      setShareGps(false);
+    }
+    setLocalView(next);
+    onViewChange?.(next);
+  }
+  const draft = useFormDraft({
+    playerId,
+    form: "map-note",
+    realm: arena ? "arena" : "physical",
+    fields: NOTE_DRAFT_FIELDS,
+    initial: { text: "" },
+  });
+  const text = draft.values.text;
+  const setText = (next: string) => draft.setField("text", next);
+  const viewIdentity = useRef(identity);
   const [notes, setNotes] = useState<MapNote[]>([]),
     [blocks, setBlocks] = useState<BlockedPerson[]>([]);
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
-  const [text, setText] = useState(""),
-    [image, setImage] = useState<string | null>(null),
+  const [image, setImage] = useState<string | null>(null),
     [reading, setReading] = useState(false);
   const [anchor, setAnchor] = useState<Point>({ ...position }),
     [shareGps, setShareGps] = useState(false),
     [consent, setConsent] = useState(false);
   const [pending, setPending] = useState<PendingNote | null>(() =>
-    storedIntent(journalKey),
+    journal.loadFirst(),
   );
   const pendingRef = useRef(pending);
   pendingRef.current = pending;
@@ -191,6 +217,7 @@ export function MapNotes({
     mounted.current = true;
     return () => {
       mounted.current = false;
+      operations.current.invalidate();
       for (const c of controllers.current) c.abort();
       controllers.current.clear();
     };
@@ -203,22 +230,24 @@ export function MapNotes({
     flight.current = false;
     setBusy(false);
     setDecision(null);
-    setView("browse");
+    if (viewIdentity.current !== identity) setView("browse");
+    viewIdentity.current = identity;
     setNotes([]);
     setBlocks([]);
-    setText("");
     setImage(null);
     setReading(false);
     setConsent(false);
     setShareGps(false);
     setError("");
     setNotice("");
-    const restored = storedIntent(journalKey);
+    const restored = journal.loadFirst();
     pendingRef.current = restored;
     setPending(restored);
     setAnchor({ ...position });
   }, [identity]);
   useEffect(() => {
+    setConsent(false);
+    setShareGps(false);
     if (view === "compose") composer.current?.focus();
     else heading.current?.focus();
   }, [view]);
@@ -267,6 +296,7 @@ export function MapNotes({
   async function operate(action: () => Promise<void>) {
     if (flight.current) return;
     const who = identity;
+    const operation = operations.current.begin(who);
     flight.current = true;
     setBusy(true);
     setError("");
@@ -274,22 +304,25 @@ export function MapNotes({
     try {
       await action();
     } catch (e) {
-      if (current(who)) setError(message(e));
+      if (current(who) && operations.current.isCurrent(operation, identity))
+        setError(message(e));
     } finally {
-      if (current(who)) {
+      if (current(who) && operations.current.isCurrent(operation, identity)) {
         flight.current = false;
         setBusy(false);
       }
     }
   }
   function clearIntent() {
+    const completed = pendingRef.current;
     try {
-      sessionStorage.removeItem(journalKey);
+      if (completed) journal.clear(completed.clientId);
     } catch {
       /* A stale operation ID only triggers a read-back on the next visit. */
     }
-    pendingRef.current = null;
-    setPending(null);
+    const next = journal.loadFirst();
+    pendingRef.current = next;
+    setPending(next);
   }
   async function settleIntent(receipt: Receipt) {
     if (
@@ -299,9 +332,11 @@ export function MapNotes({
       )
     )
       return false;
+    const intent = pendingRef.current;
     clearIntent();
     if (receipt.state !== "abandoned") {
-      setText("");
+      if (intent?.draftRevision !== undefined)
+        draft.discard(intent.draftRevision);
       setImage(null);
     }
     setConsent(false);
@@ -325,26 +360,40 @@ export function MapNotes({
     const receipt = await call<Receipt>(
       `/messages/operation?clientId=${encodeURIComponent(intent.clientId)}`,
     );
-    if (!current(who)) return;
+    if (!current(who) || pendingRef.current?.clientId !== intent.clientId)
+      return;
     const updated = { ...intent, receipt };
     pendingRef.current = updated;
     setPending(updated);
     await settleIntent(receipt);
   }
   useEffect(() => {
-    if (storedIntent(journalKey)) void operate(checkPending);
+    if (journal.loadFirst()) void operate(checkPending);
   }, [identity]);
   async function publish(payload: Publication) {
     const who = identity;
-    // Persist only an operation ID, never the draft, image, map pin or GPS evidence.
+    // Keep operation identity separate from editable text; never persist photo,
+    // map pin, GPS evidence or the consented publication payload.
+    const existing = journal.loadFirst();
+    if (existing && existing.clientId !== payload.clientId) {
+      pendingRef.current = existing;
+      setPending(existing);
+      throw Error(
+        "Another unfinished publication needs a status check first. Your text draft is kept.",
+      );
+    }
+    const draftRevision =
+      pendingRef.current?.clientId === payload.clientId
+        ? (pendingRef.current.draftRevision ?? null)
+        : draft.revision;
     try {
-      sessionStorage.setItem(journalKey, payload.clientId);
+      journal.remember(payload.clientId, draftRevision);
     } catch {
       throw Error(
         "This browser could not save a publication receipt. Your note has not been sent; your draft is kept.",
       );
     }
-    const intent = { clientId: payload.clientId, payload };
+    const intent = { clientId: payload.clientId, payload, draftRevision };
     pendingRef.current = intent;
     setPending(intent);
     try {
@@ -353,10 +402,12 @@ export function MapNotes({
         state: "published" | "hidden" | "deleted";
         replayed: boolean;
       }>("/messages", "POST", payload);
-      if (!current(who)) return;
+      if (!current(who) || pendingRef.current?.clientId !== payload.clientId)
+        return;
       await settleIntent({ found: true, id: receipt.id, state: receipt.state });
     } catch (e) {
-      if (!current(who)) return;
+      if (!current(who) || pendingRef.current?.clientId !== payload.clientId)
+        return;
       setError(
         `${message(e)} Your publication receipt is kept. Check its status before starting another note.`,
       );
@@ -462,6 +513,20 @@ export function MapNotes({
   const locked = busy || !!pending;
   const retryGpsExpired =
     !!pending?.payload?.shareGps && !freshFix(pending.payload.fix);
+  function discardDraft() {
+    const removed = draft.discard();
+    photoGeneration.current++;
+    setImage(null);
+    setReading(false);
+    setConsent(false);
+    setShareGps(false);
+    setView("browse");
+    setNotice(
+      removed
+        ? "Text draft discarded. No published note was removed."
+        : "Draft cleared from this view. Browser storage could not be cleared; a saved copy may return after reload.",
+    );
+  }
   return (
     <section className="map-notes" aria-label="Map notes">
       <div className="map-notes-heading">
@@ -484,12 +549,13 @@ export function MapNotes({
             onClick={() => {
               if (!text && !image) setAnchor({ ...position });
               setConsent(false);
+              setShareGps(false);
               setView("compose");
               setError("");
             }}
           >
             <Plus size={20} />
-            Write a note
+            {draft.hasDraft ? "Resume draft" : "Write a note"}
           </button>
         ) : (
           <button
@@ -512,6 +578,20 @@ export function MapNotes({
           {error}
         </p>
       )}
+      {draft.hasDraft && (
+        <div className="map-notes-draft" aria-label="Note text draft">
+          <p className="map-notes-secondary" role="status">
+            {draft.storageAvailable
+              ? draft.restored
+                ? "Text draft restored on this device. Review the map pin, choose any photo again and confirm publication when ready."
+                : "Text draft kept on this device. Photos, map pin and location choices are not saved."
+              : "Your text remains in this tab. Browser storage is unavailable; it may be lost if you close or reload the page."}
+          </p>
+          <button type="button" disabled={locked} onClick={discardDraft}>
+            <Trash size={18} /> Discard draft
+          </button>
+        </div>
+      )}
       {pending && (
         <section className="map-notes-pending" aria-label="Publication status">
           <b>Check your last publication</b>
@@ -521,7 +601,11 @@ export function MapNotes({
               : "It may already be on the map. Checking again will not post a second note."}
           </p>
           {!pending.payload && (
-            <p>Your draft and photo were not saved on this device.</p>
+            <p>
+              Your text draft is kept separately. The previous photo, map pin
+              and publication consent are not restored. Check or discard this
+              publication before sending again.
+            </p>
           )}
           {pending.receipt?.state === "retryable" && retryGpsExpired && (
             <p>
@@ -553,7 +637,11 @@ export function MapNotes({
                       "POST",
                       { clientId: pending.clientId },
                     );
-                    if (current(who)) await settleIntent(result);
+                    if (
+                      current(who) &&
+                      pendingRef.current?.clientId === pending.clientId
+                    )
+                      await settleIntent(result);
                   })
                 }
               >

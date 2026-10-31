@@ -1,0 +1,14 @@
+✔ every authored state remains inside its declared pixel grid, with transparent binary-alpha output (8.086208ms)
+✔ coin, chest, compass, route and place have distinct silhouettes without relying on colour (2.277875ms)
+✔ canvas adapter and raster renderer paint the same bytes with exact nearest-neighbour scale (8.522667ms)
+✔ chest art requires known current item availability or confirmed personal completion (0.223333ms)
+✔ tier/window locks and completed visits remain distinct from somebody else's shared prize claim (0.1185ms)
+✔ a zone with mixed objectives or missing data does not pretend to be a reward chest (0.314625ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 96.980792

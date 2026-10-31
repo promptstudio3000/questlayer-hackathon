@@ -95,6 +95,10 @@ function Review() {
     ),
     credit = useRef(mode === "credit" ? base.reward_yocto : "0"),
     pending = useRef(false),
+    requests = useRef<TaskRequest[]>([]),
+    [requestCount, setRequestCount] = useState(0),
+    [showTasks, setShowTasks] = useState(true),
+    [codeVersion, setCodeVersion] = useState(1),
     [message, setMessage] = useState(
       "Interface fixture · no wallet, RPC or real transactions.",
     );
@@ -104,6 +108,7 @@ function Review() {
     selected: number | null,
   ): Promise<TaskSnapshot> => {
     const task = tasks.current.find((t) => t.task_id === selected);
+    const taskSubmissions = task?.task_id === 1 ? submissions.current : [];
     tasks.current[0].submission_count = submissions.current.length;
     return {
       status:
@@ -114,7 +119,7 @@ function Review() {
             : "available",
       network: "testnet",
       contractId: NATIVE_TASK_CONTRACT,
-      codeHash: "fixture-reviewed-code",
+      codeHash: `fixture-reviewed-code-${codeVersion}`,
       policy: TASK_POLICY,
       accountId: who,
       observedAt: now,
@@ -136,7 +141,7 @@ function Review() {
       },
       tasks: mode === "unavailable" ? [] : structuredClone(tasks.current),
       selectedTaskId: selected,
-      submissions: task ? structuredClone(submissions.current) : [],
+      submissions: structuredClone(taskSubmissions),
       account: who
         ? {
             account_id: who,
@@ -151,36 +156,46 @@ function Review() {
           ? {
               submit:
                 role === "explorer" &&
-                !submissions.current.length &&
+                !taskSubmissions.length &&
                 task.status === "open",
               cancel: role === "sponsor" && task.status === "open",
               reviewSubmissionId:
-                role === "sponsor" &&
-                submissions.current[0]?.status === "pending"
+                role === "sponsor" && taskSubmissions[0]?.status === "pending"
                   ? 0
                   : null,
               appealSubmissionId:
-                mode === "appeal" &&
-                submissions.current[0]?.status === "rejected"
+                mode === "appeal" && taskSubmissions[0]?.status === "rejected"
                   ? 0
                   : null,
-              resolveSubmissionIds: role === "arbiter" ? [0] : [],
+              resolveSubmissionIds:
+                role === "arbiter" && taskSubmissions.length ? [0] : [],
               finalize: task.status === "closing",
             }
           : null,
     };
   };
   const transact = async (r: TaskRequest) => {
+    requests.current.push(structuredClone(r));
+    setRequestCount(requests.current.length);
     if (outcome === "fail")
       throw Error(
         "Wallet service is offline. Your entries have been kept; reconnect and retry.",
       );
-    if (outcome !== "success") {
+    if (!["success", "lost-after-save"].includes(outcome)) {
       setMessage(
         "Wallet cancellation simulated. No test NEAR spent; form values remain.",
       );
       return false;
     }
+    if (
+      r.action === "create" &&
+      tasks.current.some(
+        (t) => t.sponsor_id === account && t.client_id === r.clientId,
+      )
+    )
+      throw Error(
+        "Fixture contract rejects an already used sponsor/client ID.",
+      );
     if (r.action === "create")
       tasks.current.push({
         ...base,
@@ -189,6 +204,8 @@ function Review() {
         sponsor_id: account,
         title: r.title!,
         description: r.description!,
+        reference: r.reference!,
+        content_hash: r.contentHash!,
         area: r.area!,
         reward_yocto: r.rewardYocto!,
         due_at_ms: r.dueAtMs!,
@@ -225,9 +242,11 @@ function Review() {
       pending.current = true;
     }
     setMessage(
-      `Fixture-only ${r.action} accepted; no real transaction was sent.`,
+      outcome === "lost-after-save"
+        ? "Fixture accepted the operation but its confirmation was lost. No real wallet or chain transaction."
+        : `Fixture-only ${r.action} accepted; no real transaction was sent.`,
     );
-    return true;
+    return outcome !== "lost-after-save";
   };
   return (
     <main
@@ -246,14 +265,36 @@ function Review() {
       <p role="status" style={{ fontSize: 14, margin: "0 0 20px" }}>
         {message}
       </p>
-      <NativeTasks
-        player={player}
-        onConnect={() =>
-          setMessage("Fixture connection only; no real wallet opened.")
-        }
-        onTransaction={transact}
-        readTasks={readTasks}
-      />
+      <details>
+        <summary>Review controls</summary>
+        <button onClick={() => setShowTasks(!showTasks)}>
+          {showTasks ? "Leave task panel" : "Return to task panel"}
+        </button>
+        <button
+          onClick={() => {
+            setCodeVersion(codeVersion + 1);
+            setMessage(
+              "Fixture code changed. Refresh native tasks to read the new code identity.",
+            );
+          }}
+        >
+          Change fixture code
+        </button>
+        <p>Fixture transaction requests: {requestCount}</p>
+        <output aria-label="Last fixture operation ID">
+          {requests.current.at(-1)?.clientId || "No creation attempted"}
+        </output>
+      </details>
+      {showTasks && (
+        <NativeTasks
+          player={player}
+          onConnect={() =>
+            setMessage("Fixture connection only; no real wallet opened.")
+          }
+          onTransaction={transact}
+          readTasks={readTasks}
+        />
+      )}
     </main>
   );
 }

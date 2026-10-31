@@ -1,4 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { trackDialogHistory } from "./dialog-history";
+import { dialogTabBoundary, dialogTabStops } from "./dialog-focus";
 export function Dialog({
   label,
   open = true,
@@ -11,6 +13,12 @@ export function Dialog({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(
+    () => (open ? trackDialogHistory(() => close.current()) : undefined),
+    [open],
+  );
   useEffect(() => {
     const d = ref.current;
     const previous = document.activeElement as HTMLElement | null;
@@ -29,6 +37,27 @@ export function Dialog({
       ref={ref}
       className="game-dialog"
       aria-label={label}
+      onKeyDown={(event) => {
+        if (
+          event.key !== "Tab" ||
+          event.defaultPrevented ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.altKey
+        )
+          return;
+        const dialog = event.currentTarget;
+        const stops = dialogTabStops(dialog);
+        const target = dialogTabBoundary(
+          stops,
+          document.activeElement as HTMLElement | null,
+          event.shiftKey,
+        );
+        if (target || !stops.length) {
+          event.preventDefault();
+          (target || dialog).focus();
+        }
+      }}
       onCancel={(e) => {
         e.preventDefault();
         onClose();

@@ -3,7 +3,12 @@
   "updated": "2026-10-31",
   "currentRuntimeStage": "city_alpha_demo",
   "nextMilestone": "W01",
-  "statusVocabulary": ["planned", "building", "verifying", "passed"],
+  "statusVocabulary": [
+    "planned",
+    "building",
+    "verifying",
+    "passed"
+  ],
   "completionPolicy": "All tasks and the full milestone exit scenario require recorded evidence; disconnected demos do not pass.",
   "sourceDocuments": [
     "ROADMAP.md",
@@ -15,7 +20,12 @@
     "CREATOR-ECONOMY-PLAN.md",
     "docs/UI-UX-IMPROVEMENT-PLAN.md",
     "docs/UI-UX-RESEARCH.md",
-    "docs/design-tokens.json"
+    "docs/design-tokens.json",
+    "docs/DEVELOPMENT-STATUS.md",
+    "docs/NEXT-DEVELOPMENT-PLAN.md",
+    "docs/RESULTS-AND-COMPLETION-HANDOFF.md",
+    "docs/PROJECT-REVIEW-AND-HANDOFF.md",
+    "docs/PROJECT-REVIEW-COVERAGE.md"
   ],
   "requirementsCount": 102,
   "milestones": [
@@ -74,16 +84,28 @@
           "status": "building"
         }
       ],
-      "evidence": ["docs/OVERNIGHT-2026-10-31.md"],
+      "evidence": [
+        "docs/OVERNIGHT-2026-10-31.md",
+        "output/qa/W08-runtime/README.md",
+        "output/qa/W08-runtime/restore/README.md",
+        "output/qa/W02-W08-parallel/README.md",
+        "output/qa/W02-W08-parallel/tests-final.txt",
+        "output/qa/W02-W08-parallel/build-final.txt",
+        "output/qa/W00-schema-compatibility/README.md",
+        "output/qa/W00-W02-W08-next/README.md"
+      ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W00/"
+      "evidenceDirectory": "output/qa/W00/",
+      "implementationNote": "Local source now has explicit core/optional schema versions, known-legacy adoption, fail-before-write foreign/future/corrupt preflight, active-WAL/checkpoint-safe reads and source/config-aware isolated restore. 16 focused schema cases and the combined 484 application suite pass. Source/build labels do not establish a reproducible clean release, full-host/offsite restore or live chain-right reconciliation. Whole-project handoff records uncommitted source and distinct public observations; no deployment/full exit pass."
     },
     {
       "id": "W01",
       "title": "City worlds and designed outdoor activities",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W00"],
+      "dependsOn": [
+        "W00"
+      ],
       "requirementIds": [
         "E09",
         "E10",
@@ -108,8 +130,14 @@
         "G13",
         "G14"
       ],
-      "acceptanceJourneys": ["J01", "J02"],
-      "uiPackages": ["U03", "U13"],
+      "acceptanceJourneys": [
+        "J01",
+        "J02"
+      ],
+      "uiPackages": [
+        "U03",
+        "U13"
+      ],
       "spatialAcceptance": [
         "GEO01",
         "GEO02",
@@ -181,7 +209,9 @@
       "title": "Complete solo experience and interface",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W01"],
+      "dependsOn": [
+        "W01"
+      ],
       "requirementIds": [
         "D01",
         "D02",
@@ -218,7 +248,10 @@
         "G12",
         "G14"
       ],
-      "acceptanceJourneys": ["J01", "J02"],
+      "acceptanceJourneys": [
+        "J01",
+        "J02"
+      ],
       "uiPackages": [
         "U01",
         "U02",
@@ -270,17 +303,34 @@
         "docs/OVERNIGHT-2026-10-31.md",
         "docs/UI-AUDIT-2026-10-31.md",
         "output/qa/W02-playability/README.md",
-        "output/qa/W03-W06-native-progression/README.md"
+        "output/qa/W03-W06-native-progression/README.md",
+        "output/qa/W02-adventure-continuity/README.md",
+        "output/qa/W02-native-objective/README.md",
+        "docs/DEVELOPMENT-STATUS.md",
+        "output/qa/W02-drafts/README.md",
+        "output/qa/W02-W08-parallel/navigation-tests-final.txt",
+        "output/qa/W02-W08-parallel/reviewer-tests.txt",
+        "output/qa/W02-W08-parallel/README.md",
+        "output/qa/W02-W08-parallel/tests-final.txt",
+        "output/qa/W02-W08-parallel/build-final.txt",
+        "output/qa/W02-W10-next/README.md",
+        "output/qa/W02-W10-next/tests.txt",
+        "output/qa/W02-W10-next/build.txt",
+        "output/qa/W02-durable-results/README.md",
+        "output/qa/W00-W02-W08-next/README.md"
       ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W02/"
+      "evidenceDirectory": "output/qa/W02/",
+      "implementationNote": "Local source now connects safe objective/Back/draft continuity, shared authored art, quiet confirmed pickups and exact durable actor/realm-scoped adventure receipts. Actual isolated App result recovery/preview/explicit idempotent equip/map/reload and no-item outcomes are recorded. Scope round trips/reconnect invalidate stale UI authority; native dialogs retain Tab/Shift-Tab/Escape/Back/focus return. Combined 484 tests/build pass, with source versus actual/synthetic browser limits in the whole-project handoff. Native/physical/device/accessibility/newcomer and configured demo level reward gates remain. No deployment/full exit pass."
     },
     {
       "id": "W03",
       "title": "Native identity and independent recovery",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W00"],
+      "dependsOn": [
+        "W00"
+      ],
       "requirementIds": [
         "E02",
         "E18",
@@ -292,7 +342,9 @@
         "I12",
         "I13"
       ],
-      "acceptanceJourneys": ["J03"],
+      "acceptanceJourneys": [
+        "J03"
+      ],
       "uiPackages": [],
       "spatialAcceptance": [],
       "tasks": [
@@ -342,7 +394,10 @@
       "title": "Native avatar Auras and wardrobe",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W02", "W03"],
+      "dependsOn": [
+        "W02",
+        "W03"
+      ],
       "requirementIds": [
         "D07",
         "D08",
@@ -358,8 +413,16 @@
         "I08",
         "I13"
       ],
-      "acceptanceJourneys": ["J04"],
-      "uiPackages": ["U04", "U07", "U08", "U09", "U14"],
+      "acceptanceJourneys": [
+        "J04"
+      ],
+      "uiPackages": [
+        "U04",
+        "U07",
+        "U08",
+        "U09",
+        "U14"
+      ],
       "spatialAcceptance": [],
       "tasks": [
         {
@@ -416,7 +479,9 @@
       "title": "Staking vault and realized game yield",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W03"],
+      "dependsOn": [
+        "W03"
+      ],
       "requirementIds": [
         "E01",
         "E02",
@@ -437,7 +502,9 @@
         "I03",
         "O08"
       ],
-      "acceptanceJourneys": ["J05"],
+      "acceptanceJourneys": [
+        "J05"
+      ],
       "uiPackages": [],
       "spatialAcceptance": [],
       "tasks": [
@@ -502,7 +569,12 @@
       "title": "Gameplay settlement and reconciliation",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W01", "W02", "W04", "W05"],
+      "dependsOn": [
+        "W01",
+        "W02",
+        "W04",
+        "W05"
+      ],
       "requirementIds": [
         "D05",
         "D12",
@@ -521,8 +593,15 @@
         "I08",
         "O10"
       ],
-      "acceptanceJourneys": ["J02", "J06"],
-      "uiPackages": ["U03", "U07", "U11"],
+      "acceptanceJourneys": [
+        "J02",
+        "J06"
+      ],
+      "uiPackages": [
+        "U03",
+        "U07",
+        "U11"
+      ],
       "spatialAcceptance": [],
       "tasks": [
         {
@@ -591,9 +670,20 @@
       "title": "Signed Aura market and Intents compatibility",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W04", "W06"],
-      "requirementIds": ["E02", "E17", "E18", "I09", "I10"],
-      "acceptanceJourneys": ["J07"],
+      "dependsOn": [
+        "W04",
+        "W06"
+      ],
+      "requirementIds": [
+        "E02",
+        "E17",
+        "E18",
+        "I09",
+        "I10"
+      ],
+      "acceptanceJourneys": [
+        "J07"
+      ],
       "uiPackages": [],
       "spatialAcceptance": [],
       "tasks": [
@@ -639,7 +729,10 @@
       "title": "Community authoring and XP commitments",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W02", "W03"],
+      "dependsOn": [
+        "W02",
+        "W03"
+      ],
       "requirementIds": [
         "C01",
         "C02",
@@ -651,8 +744,12 @@
         "G13",
         "O03"
       ],
-      "acceptanceJourneys": ["J08"],
-      "uiPackages": ["U10"],
+      "acceptanceJourneys": [
+        "J08"
+      ],
+      "uiPackages": [
+        "U10"
+      ],
       "spatialAcceptance": [],
       "tasks": [
         {
@@ -688,18 +785,35 @@
         "public/native-tasks-proof.json",
         "docs/CREATOR-COMMUNITY-HANDOFF.md",
         "docs/CREATOR-INTEGRATION-2026-10-31.md",
-        "output/qa/W08-creator-combined/tests.txt"
+        "output/qa/W08-creator-combined/tests.txt",
+        "output/qa/W08-runtime/README.md",
+        "output/qa/W08-runtime/restore/README.md",
+        "output/qa/W02-W08-parallel/reviewer-tests.txt",
+        "output/qa/W02-W08-parallel/README.md",
+        "output/qa/W02-W08-parallel/tests-final.txt",
+        "output/qa/W02-W08-parallel/build-final.txt",
+        "output/qa/W02-W08-parallel/creator-browser-notes.md",
+        "output/qa/W02-W10-next/README.md",
+        "output/qa/W02-W10-next/tests.txt",
+        "output/qa/W02-W10-next/build.txt",
+        "output/qa/W08-completion/README.md",
+        "docs/RESULTS-AND-COMPLETION-HANDOFF.md",
+        "output/qa/W00-W02-W08-next/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W08/",
-      "implementationNote": "Community navigation and independent native sponsored publication are deployed. A combined local source slice implements opt-in demo creator revisions/moderation, refundable XP commitments, admitted-revision rights, public profiles/free follows and disabled player/server adapters. 343 combined application tests and build pass. Creator UI, host activation, confirmed activity rewards, native XP commitments, paid access and creator funds remain open. No W08 exit journey has passed."
+      "implementationNote": "Optional local creator UI/runtime includes stable reviewed revisions, profiles/free follows/feed, atomic demo XP lock/available-level/closure release, private reports/blocks/suspension and reviewed observation requirements. Private text submission/independent trusted review/durable zero-reward completion/obligation resolution are atomic and retry-safe, with actual local browser-CLI-reload evidence and retained accepted rights. Creators remain default off; QA 200 is not a production policy. Native XP commitments, activity reward funding, creator money flows and production abandonment/appeal/support/device governance remain incomplete. Combined 484 tests/build pass; no deployment/full exit pass."
     },
     {
       "id": "W09",
       "title": "Creator funds donations and paid access",
       "status": "planned",
       "size": "L",
-      "dependsOn": ["W05", "W06", "W08"],
+      "dependsOn": [
+        "W05",
+        "W06",
+        "W08"
+      ],
       "requirementIds": [
         "C07",
         "C08",
@@ -716,8 +830,12 @@
         "E12",
         "E13"
       ],
-      "acceptanceJourneys": ["J09"],
-      "uiPackages": ["U10"],
+      "acceptanceJourneys": [
+        "J09"
+      ],
+      "uiPackages": [
+        "U10"
+      ],
       "spatialAcceptance": [],
       "tasks": [
         {
@@ -760,7 +878,10 @@
       "title": "Social publishing evidence and moderation",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W03", "W08"],
+      "dependsOn": [
+        "W03",
+        "W08"
+      ],
       "requirementIds": [
         "C13",
         "C14",
@@ -772,7 +893,9 @@
         "O05",
         "O10"
       ],
-      "acceptanceJourneys": ["J10"],
+      "acceptanceJourneys": [
+        "J10"
+      ],
       "uiPackages": [],
       "spatialAcceptance": [],
       "tasks": [
@@ -809,18 +932,25 @@
         "public/native-tasks-testnet.json",
         "public/native-tasks-proof.json",
         "output/qa/W10-social-finality/README.md",
-        "output/qa/W03-W13-durable-recovery/README.md"
+        "output/qa/W03-W13-durable-recovery/README.md",
+        "output/qa/W02-W10-next/README.md",
+        "output/qa/W02-W10-next/tests.txt",
+        "output/qa/W02-W10-next/build.txt"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W10/",
-      "implementationNote": "Bounded immutable public-text sponsored escrow: ordered review, rejection, appeal, disclosed trusted arbiter, cancellation preserving timely rights, timeout settlement and guarded withdrawal. Three project-owned synthetic testnet flows withdrew all 0.003 test NEAR; 0.25 test NEAR storage funding and 3 yoctoNEAR operating funding are separate. Policy: 48h sponsor review, up to 24h appeal capped at deadline+72h, resolution cutoff deadline+120h; 128 lifetime tasks, 32 submissions/task, max1 test NEAR prize, non-refundable 0.05 test NEAR each creation/submission. Public notes now have reports/blocks/local moderation. Private/photo task evidence, operational moderation coverage, independent governance, physical/device journeys and live elapsed timeout/failure proofs remain open."
+      "implementationNote": "Bounded immutable public-text sponsored escrow: ordered review, rejection, appeal, disclosed trusted arbiter, cancellation preserving timely rights, timeout settlement and guarded withdrawal. Three project-owned synthetic testnet flows withdrew all 0.003 test NEAR; 0.25 test NEAR storage funding and 3 yoctoNEAR operating funding are separate. Policy: 48h sponsor review, up to 24h appeal capped at deadline+72h, resolution cutoff deadline+120h; 128 lifetime tasks, 32 submissions/task, max1 test NEAR prize, non-refundable 0.05 test NEAR each creation/submission. Public notes now have reports/blocks/local moderation. Private/photo task evidence, operational moderation coverage, independent governance, physical/device journeys and live elapsed timeout/failure proofs remain open. Local creator safety extends public-note moderation with bounded private quest reports, block controls and trusted report review/suspension CLI. Suspension preserves admitted revisions, pending obligations and locks and prevents publication bypass. RealHTTP lost response, two SQLite races, old-schema additive initialization and actualWAL restore/CLI retries pass. This does not complete private task media, social adapters, physical-place safety or staffed governance."
     },
     {
       "id": "W11",
       "title": "Bounded AI and operator world controls",
       "status": "planned",
       "size": "M",
-      "dependsOn": ["W01", "W06", "W10"],
+      "dependsOn": [
+        "W01",
+        "W06",
+        "W10"
+      ],
       "requirementIds": [
         "G01",
         "G02",
@@ -834,7 +964,9 @@
         "I11",
         "O05"
       ],
-      "acceptanceJourneys": ["J11"],
+      "acceptanceJourneys": [
+        "J11"
+      ],
       "uiPackages": [],
       "spatialAcceptance": [],
       "tasks": [
@@ -873,7 +1005,15 @@
       "title": "Device quality and distribution builds",
       "status": "building",
       "size": "L",
-      "dependsOn": ["W02", "W03", "W04", "W07", "W09", "W10", "W11"],
+      "dependsOn": [
+        "W02",
+        "W03",
+        "W04",
+        "W07",
+        "W09",
+        "W10",
+        "W11"
+      ],
       "requirementIds": [
         "D04",
         "D05",
@@ -890,8 +1030,16 @@
         "D26",
         "O06"
       ],
-      "acceptanceJourneys": ["J12"],
-      "uiPackages": ["U01", "U02", "U06", "U12", "U14"],
+      "acceptanceJourneys": [
+        "J12"
+      ],
+      "uiPackages": [
+        "U01",
+        "U02",
+        "U06",
+        "U12",
+        "U14"
+      ],
       "spatialAcceptance": [],
       "tasks": [
         {
@@ -935,10 +1083,14 @@
         "output/qa/final-2026-10-31/public-status.json",
         "output/qa/W02-playability/README.md",
         "output/qa/W10-social-finality/README.md",
-        "output/qa/W03-W13-durable-recovery/README.md"
+        "output/qa/W03-W13-durable-recovery/README.md",
+        "output/qa/W02-W10-next/README.md",
+        "output/qa/W02-W10-next/tests.txt",
+        "output/qa/W02-W10-next/build.txt"
       ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W12-startup/"
+      "evidenceDirectory": "output/qa/W12-startup/",
+      "implementationNote": " Local object/pickup/safety browser verification is scoped to desktop viewports/focus/enlarged-text approximations.438 application tests pass; actual named iOS/Android, keyboard, GPS/wallet return, screen-reader and performance acceptance remain unverified. No milestone completion or distribution build is implied."
     },
     {
       "id": "W13",
@@ -1134,17 +1286,24 @@
         "output/qa/W05-W06-native/final-public-check.json",
         "output/qa/W05-W06-native/restore-final.txt",
         "docs/V1-REMAINING.md",
-        "output/qa/W03-W13-durable-recovery/README.md"
+        "output/qa/W03-W13-durable-recovery/README.md",
+        "output/qa/W08-runtime/restore/README.md",
+        "output/qa/W02-W08-parallel/README.md",
+        "output/qa/W02-W08-parallel/tests-final.txt",
+        "output/qa/W02-W08-parallel/build-final.txt"
       ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W13-recovery/"
+      "evidenceDirectory": "output/qa/W13-recovery/",
+      "implementationNote": "Existing private SQLite backup tooling was exercised against a live-WAL creator fixture and reopened through actual database/runtime factories. Schema/all rows, public/private profiles, follows, admitted revisions, closing obligations, XP locks and historical receipts match exactly. Premature release fails; independent resolution permits one exact release; a second restore/retry preserves remaining rights and unchanged inventory/treasury. Six focused backup/recovery tests pass. Full-host/offsite restoration, native-chain reconciliation, physical devices, live financial cycles and multi-day city pilot remain open. No deployment."
     },
     {
       "id": "W14",
       "title": "Reviewed mainnet and public distribution",
       "status": "planned",
       "size": "L",
-      "dependsOn": ["W13"],
+      "dependsOn": [
+        "W13"
+      ],
       "requirementIds": [
         "E01",
         "E02",
@@ -1189,7 +1348,13 @@
         "O09",
         "O10"
       ],
-      "acceptanceJourneys": ["J05", "J06", "J07", "J09", "J13"],
+      "acceptanceJourneys": [
+        "J05",
+        "J06",
+        "J07",
+        "J09",
+        "J13"
+      ],
       "uiPackages": [],
       "spatialAcceptance": [],
       "tasks": [
@@ -1235,7 +1400,14 @@
     }
   ],
   "runtimeChangedSincePlanningBaseline": true,
-  "lastImplementationUpdate": "2026-10-31T15:43:22.811195+00:00",
-  "implementationReport": "output/qa/W03-W13-durable-recovery/README.md",
-  "currentGapRegister": "docs/V1-REMAINING.md"
+  "lastImplementationUpdate": "2026-10-31T18:21:55+00:00",
+  "implementationReport": "docs/DEVELOPMENT-STATUS.md",
+  "currentGapRegister": "docs/V1-REMAINING.md",
+  "projectReview": {
+    "date": "2026-10-31",
+    "report": "docs/PROJECT-REVIEW-AND-HANDOFF.md",
+    "coverage": "docs/PROJECT-REVIEW-COVERAGE.md",
+    "snapshot": "docs/PROJECT-REVIEW-SNAPSHOT.json",
+    "scope": "Source/history/evidence and anonymous public HTTP observations; no SSH/deployment/chain action; full milestone gates unchanged."
+  }
 }

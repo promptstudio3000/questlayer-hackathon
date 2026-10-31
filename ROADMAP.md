@@ -2,11 +2,21 @@
 
 Updated 31 October 2026. This is the execution plan from the current alpha to a complete V1. It combines [game rules](docs/GAME-RULES.md), [city generation](docs/WORLD-GENERATION.md), [design direction](DESIGN.md), the [UI backlog](docs/UI-UX-IMPROVEMENT-PLAN.md), [native product requirements](IMPLEMENTATION-PLAN.md) and [creator economics](CREATOR-ECONOMY-PLAN.md).
 
+The three approved streams from the [source-based overall audit](docs/NEXT-DEVELOPMENT-PLAN.md) are now implemented locally: [durable results, creator observation completion and schema compatibility](docs/RESULTS-AND-COMPLETION-HANDOFF.md). Use the remaining scope and acceptance gates for subsequent batches. It distinguishes delivered code from missing mechanisms, policy decisions and remaining field/device/network acceptance.
+
 The next priority is a convincing exploration game across Plzeň: six distinct zones, real walking, understandable objectives and a complete discovery/equipment loop. Native finance, social features and creator payments must connect to that same experience rather than remain separate demonstrations.
+
+For a complete source/history/operations handoff, read [the whole-project review](docs/PROJECT-REVIEW-AND-HANDOFF.md) and [102-rule/89-task coverage appendix](docs/PROJECT-REVIEW-COVERAGE.md). These reconcile delivered slices with every milestone without promoting incomplete exit gates. Public runtime observations and uncommitted source inventory are recorded separately from historical deployment claims.
+
+For the combined source baseline and next work, start with [the development status](docs/DEVELOPMENT-STATUS.md). Native recovery and creator foundations are already combined on `main`; do not reapply their transfer patches. The current local batch adds W02 text-draft continuity, actor-scoped browser history and modal Back/close coordination, plus an optional mounted W08 creator runtime/interface and W00/W13 creator-state restore rehearsal. [Draft source/test evidence](output/qa/W02-drafts/README.md), [native objective fixtures](output/qa/W02-native-objective/README.md), [runtime and actual local HTTP/CLI evidence](output/qa/W08-runtime/README.md), [restore evidence](output/qa/W08-runtime/restore/README.md) and [final integration report](output/qa/W02-W08-parallel/README.md) and [creator browser observations](output/qa/W02-W08-parallel/creator-browser-notes.md) separate actual local author/participant/CLI behavior from controlled native fixtures. That batch's application suite passed 408/408 and builds; actual App navigation/modal checks and separate form fixtures are now verified locally. Creators remain disabled by default. This is local work, not a deployment or a passed milestone.
+
+Previous local follow-up: shared authored map/list object art and semantic states, calm confirmed demo pickup totals, private creator reports, bilateral block controls and trusted audited unsafe-publication stop are integrated. [Batch report](output/qa/W02-W10-next/README.md), [object provenance](output/qa/W02-object-art/README.md) and [safety/service evidence](output/qa/W08-W10-safety/README.md) distinguish source, fixtures and the isolated host. That batch's application suite passed 438/438; milestone statuses remain unchanged, creator enablement stays explicit and no deployment occurred.
+
+Latest local delivery: exact actor/realm-scoped adventure receipts, safe result/preview/equip recovery, private structured creator observation and independent durable completion, versioned schema/restore preflight and native-dialog keyboard boundaries. [Implementation handoff](docs/RESULTS-AND-COMPLETION-HANDOFF.md) and [combined evidence](output/qa/W00-W02-W08-next/README.md) record **484/484** application tests and a passing build. Creator rewards remain explicitly unconfigured; creators remain disabled by default. No full milestone exit, hardware verification or deployment is implied.
 
 The public deployment is an **alpha demonstration with native testnet pilots**. The latest implementation adds optional native coin collection and an independent sponsored-task escrow; 299 application tests pass; unchanged contracts last passed 100 Rust tests, including 31 tests for the new task contract. Three project-owned synthetic testnet task flows have settled and withdrawn a total 0.003 test NEAR. These are useful evidence, not completion of the milestones below or proof of physical gameplay. The [delivery record](docs/DELIVERY-2026-10-31.md), [playability evidence](output/qa/W02-playability/README.md), [native progression evidence](output/qa/W03-W06-native-progression/README.md), [task and collection slice evidence](output/qa/W08-W10-native-tasks/README.md) and [current V1 gap register](docs/V1-REMAINING.md) distinguish implementation, contract deployment, application deployment and remaining gates. Implementation status is tracked in [docs/roadmap.json](docs/roadmap.json).
 
-Implementation update, 31 October: W00, W01, W02, W03, W04, W05, W06, W07, W08, W10, W12 and W13 are **building**. W08 has Community navigation and independent sponsored publication, not creator XP commitments or a complete authoring platform. W10 has a bounded public-text task lifecycle plus public-note reports, blocks and local operator moderation; private/photo task evidence and operational coverage remain unfinished. The citywide alpha and its evidence are recorded in [the overnight log](docs/OVERNIGHT-2026-10-31.md). No complete milestone exit gate has passed yet; the machine-readable tracker records partial work without converting disconnected native proofs into completed integration.
+Implementation update, 31 October: W00, W01, W02, W03, W04, W05, W06, W07, W08, W10, W12 and W13 are **building**. W08 has existing Community/sponsored-task navigation and now a locally mounted optional creator authoring/profile/follow/XP-lock slice with trusted local review/resolve operations. It remains disabled by default; creator activity rewards, native XP commitments, payments and production governance are unfinished. W10 has a bounded public-text task lifecycle plus public-note reports, blocks and local operator moderation; private/photo task evidence and operational coverage remain unfinished. The citywide alpha and its evidence are recorded in [the overnight log](docs/OVERNIGHT-2026-10-31.md). No complete milestone exit gate has passed yet; the machine-readable tracker records partial work without converting disconnected native proofs into completed integration.
 
 ## What complete V1 means
 
@@ -38,9 +48,9 @@ The web mainnet release and App Store release have separate completion gates. A 
 | Staking | Native immutable-beneficiary vault/factory pilot, validator deposits and epoch-bound full exits; no completed live yield cycle | Confirmed native pool positions, real epoch maturity and liquidity-aware exits |
 | Rewards | Receiver-bound receipts, native XP/level 2–4 entitlements and explicit opt-in foreground GPS coin collection; field and recovery gates remain | Live gameplay receipts settle to native balances with bounded oracle permissions |
 | Market | Native fixed-price NFT escrow plus demo market; canonical Intents path unresolved | Signed orders plus native NFT/wNEAR settlement and retryable recovery |
-| Creators | Community navigation and independent native sponsored publication, with a separate Demo path; no creator XP/follows/access/fund integration | Full authoring, XP lifecycle, social discovery and conserved creator income |
+| Creators | Existing sponsored pilot plus a locally mounted, default-disabled demo authoring/profile/follow/XP-lock runtime; rewards, native locks and creator money flows unconfigured | Full authoring, XP lifecycle, social discovery and conserved creator income |
 | Social | Server notes/images, optional presence and a bounded native public-text task review/appeal/refund pilot | Storage adapters, public consent, private/media evidence, block/report and privacy controls |
-| Operations | Durable workers, bounded reconciliation, private backup/replay rehearsal and native economy observations; full-host restore pending | Versioned migrations, multiple-worker safety, reconciliation, restore, monitoring and reviewed release process |
+| Operations | Durable workers, bounded reconciliation, private backup/replay and isolated live-WAL creator-state restore; full-host/offsite restore pending | Versioned migrations, multiple-worker safety, reconciliation, restore, monitoring and reviewed release process |
 
 Do not tune real-value rewards from the current demonstration's 120,000 GOLD welcome credit or fixed 1,000/5,000 GOLD quest examples. They are not evidence that staking yield sustains those prizes. W05 and W09 establish affordable publication policies from actual liquid income.
 
@@ -206,7 +216,7 @@ Work:
 
 **W08. Owners:** Community, editor/lifecycle, progression contract/service, creator profiles and follows. **Rules:** C01–C06, D20, G13, O03. **UI package:** U10.
 
-Implemented slice: Community separates Native and Demo tasks. Native publication locks a sponsor-funded prize in a dedicated escrow, with stable operation IDs and an exact funding review. This establishes independent sponsored publication and navigation only. Creator rights remain unavailable in the deployed application. A subsequent local source slice adds opt-in demo creator revisions/moderation, earned/locked/available XP, once-only release after admitted obligations, explicit profiles, free follows and approved/private read projections, with disabled player/server adapters. The combined source passes 343 tests and builds; [the integration record](docs/CREATOR-INTEGRATION-2026-10-31.md) separates source integration from runtime activation. Community authoring UI, validated completion/reward delivery, native XP commitments, paid rights and the full W08 exit scenario remain open.
+Implemented locally: optional creator authoring/profile/follow/accepted-revision UI and authenticated runtime, exact demo XP commitments, trusted review/resolve and once-only closure are integrated. The latest follow-up adds private exact-revision reports, bilateral blocks, an owned block list and independently audited unsafe-publication suspension preserving accepted rights and locks. Source defaults disabled and requires explicit versioned policy/trusted roles. Existing sponsored native escrow remains separate. [Current batch evidence](output/qa/W02-W10-next/README.md) and [integration history](docs/CREATOR-INTEGRATION-2026-10-31.md) separate local source from deployment. Validated creator activity/rewards, native XP commitments, production governance, paid rights and the full exit gate remain open.
 
 Work:
 
@@ -241,7 +251,7 @@ Implemented W10.3 slice: a keyless, code-pinned testnet contract supports intent
 
 The [manifest](public/native-tasks-testnet.json) and [live proof](public/native-tasks-proof.json) record three project-owned, programmatic-wallet rehearsals: approval and claimant withdrawal; empty-task cancellation and sponsor refund withdrawal; and rejection, cancellation, appeal, arbiter approval and claimant withdrawal. All 0.003 test NEAR of prize funding was withdrawn; 0.25 test NEAR of storage funding and 3 yoctoNEAR of operating funding remain separately attributed. These synthetic records prove neither physical completion nor independent arbitration. Elapsed timeout and failed-transfer recovery are unit-tested, not demonstrated across live deadlines. Public photos, exact/private GPS evidence, protected submissions, content moderation and real-device wallet journeys remain open. See [implementation and QA evidence](output/qa/W08-W10-native-tasks/README.md); W10 stays **building**.
 
-Implemented follow-up: public server-hosted map notes now have explicit publication consent, optional fresh author GPS, sanitized photos, recoverable operation IDs, removal, reporting, bilateral blocking and an operator-only local moderation queue. Photo delivery respects current visibility; presence is rechecked after asynchronous appearance reads. Public SocialDB/IPFS publishing, private task photos, unsafe-place closure and staffed moderation remain open. See [social and receipt evidence](output/qa/W10-social-finality/README.md).
+Implemented follow-up: public server-hosted map notes now have explicit publication consent, optional fresh author GPS, sanitized photos, recoverable operation IDs, removal, reporting, bilateral blocking and an operator-only local moderation queue. Photo delivery respects current visibility; presence is rechecked after asynchronous appearance reads. The creator follow-up now adds independently audited unsafe-publication stop with protected accepted revisions; system-zone physical closure, public SocialDB/IPFS publishing, private task photos and staffed moderation remain open. See [social and receipt evidence](output/qa/W10-social-finality/README.md).
 
 Work:
 
@@ -402,3 +412,42 @@ New wallet operations persist in browser storage across tab closure, coordinate 
 Worker sends and result/retry writes now recheck durable lease ownership after asynchronous work. Old processes cannot overwrite successor state or health. A single-block read-only reconciliation still observes epoch 5399, unlock5402, no released owner payment and zero realized game yield; sponsor funding is separate. Deleted public notes immediately lose access, with a durable media cleanup grace for coherent backups.
 
 See [implementation and deployment evidence](output/qa/W03-W13-durable-recovery/README.md), [browser receipt model](docs/DURABLE-NATIVE-RECOVERY.md) and [staking observation](output/qa/W05-lifecycle/README.md). Native passkey recovery, live completed exit/yield cycles, physical phones and full-host/offsite restore remain required gates.
+
+
+### Parallel W02/W08 integration and W00/W13 recovery — 31 October 2026
+
+Local source now keeps allowlisted note/task/creator form text while requiring fresh
+consent/review, and records actor-scoped presentation/target IDs in browser history.
+Back/Forward and modal close coordinate without importing GPS, executable actions,
+wallet approvals or financial results. History failure leaves ordinary navigation
+usable; pure fake-history checks cover roots, actors, malformed state and retry.
+See [draft details](output/qa/W02-drafts/README.md) and
+[history checks](output/qa/W02-W08-parallel/navigation-tests-final.txt). Actual App navigation/modal and separate form fixture checks are verified locally; the verified creator
+author journey is recorded separately below.
+
+The optional CreatorCommunity UI is mounted under Community and authenticates
+through the real host runtime. Explicit immutable policy and trusted local operator
+roles are required; default startup creates no creator tables. Draft/quote/review,
+follow/discover/start, protected accepted revisions, closing and exact XP release
+work in actual isolated HTTP/CLI tests. Available demo XP/current-level reads and
+the HUD reflect active commitments while earned XP, inventory and once-only grants
+are preserved. All creator activity rewards report not configured. The 200-XP
+amounts in tests are QA fixtures, not an adopted production schedule. See
+[current creator integration](docs/CREATOR-INTEGRATION-2026-10-31.md),
+[runtime/operator evidence](output/qa/W08-runtime/README.md) and
+[actual-host browser report](output/qa/W02-W08-parallel/README.md). The author
+browser demonstrated Closing with one open obligation and disabled finalization,
+then independent synthetic QA resolution retained the 200-XP lock until explicit
+UI finalization. Closed then showed 1000 earned / 0 locked / 1000 available XP,
+Level 4 and unchanged GOLD. This is an actual isolated demo-host journey, not a
+physical visit, creator reward or native transaction proof. The
+[408-test run](output/qa/W02-W08-parallel/tests-final.txt) and
+[build](output/qa/W02-W08-parallel/build-final.txt) pass.
+
+The existing private backup tool also restored live-WAL creator state into isolated
+copies, preserving every row, receipt, private/public projection and active lock.
+Retries did not duplicate commitments or release rights. A second post-release
+snapshot preserved the remaining published commitment. [Restore evidence](output/qa/W08-runtime/restore/README.md)
+records six passing backup/recovery cases. Full-host/offsite/native-chain restore,
+production moderation/governance, physical devices and field/newcomer acceptance
+remain open. W00/W02/W08/W13 stay building. No deployment or chain action occurred.

@@ -1,0 +1,17 @@
+{
+  "origin": "http://localhost:8802",
+  "database": "/private/tmp/questlayer-completion-qa.PjK8GO/game.sqlite",
+  "scope": "Disposable synthetic QA; workers/native attestations disabled; local RPC disabled; no repo environment loaded.",
+  "author": "player_94135b2f-9a9f-4c7b-89bc-5e6b45c56dbf",
+  "questId": "qa-observation-scene",
+  "requirementPolicy": "creator-observation-v1",
+  "xpPolicy": {
+    "version": "qa-observation-200-v1",
+    "amount": 200
+  },
+  "publicationVersion": 3,
+  "roles": {
+    "reviewer": "qa-reviewer",
+    "validator": "qa-validator"
+  }
+}

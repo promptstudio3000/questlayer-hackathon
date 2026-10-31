@@ -1,0 +1,24 @@
+✔ new core records explicit version and bounded unrecorded source without creating creator storage (6.229167ms)
+✔ genuine unversioned core a889641 upgrades atomically preserving existing rights and amounts (24.86575ms)
+✔ genuine unversioned core 4043f52 upgrades atomically preserving existing rights and amounts (34.567792ms)
+✔ genuine unversioned core 9d90a25 upgrades atomically preserving existing rights and amounts (31.79175ms)
+✔ genuine unversioned core 5405fbd upgrades atomically preserving existing rights and amounts (27.425542ms)
+✔ genuine unversioned core 20dc5bd upgrades atomically preserving existing rights and amounts (43.493917ms)
+✔ genuine unversioned core 1907d3b upgrades atomically preserving existing rights and amounts (52.371875ms)
+✔ future user/core/module versions, foreign, altered and corrupt files fail before any bootstrap mutation (53.404709ms)
+✔ an actual interrupted legacy bootstrap rolls back its preceding DDL and seeds (36.120584ms)
+✔ module registration is pure and initialization/versioning nest and roll back with the owning transaction (19.112875ms)
+✔ partial optional modules and private-schema drift cannot be adopted as known legacy (11.832541ms)
+✔ recording already initialized optional module versions changes no existing data or default enablement (16.649167ms)
+✔ actual private snapshot and restore CLI preflight source/schema/config before isolated bootstrap (320.180875ms)
+✔ active WAL preflight sees a future committed version without touching source DB/WAL/SHM (18.7365ms)
+✔ a concurrent last writer checkpoint between WAL discovery and copy retries cleanly (11.930042ms)
+✔ known legacy shape with a foreign application ID is rejected without DB/WAL/SHM mutation (45.177583ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 868.0855

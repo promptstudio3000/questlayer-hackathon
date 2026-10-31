@@ -1,0 +1,52 @@
+.pickup-summary,
+.player-bottom .pickup-summary {
+  display: block;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-secondary, #665577);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-weight: 400;
+}
+.pickup-summary > span {
+  display: block;
+}
+.sheet-toggle > .sheet-toggle-label {
+  text-align: left;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.sheet-toggle .pickup-summary {
+  margin: 0;
+}
+.pickup-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.app-shell > .toast {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink, #1a0335);
+  background: var(--surface, #fcfaff);
+  border-color: var(--control-border, #806a99);
+  width: max-content;
+  max-width: min(520px, calc(100vw - 32px));
+  overflow-wrap: anywhere;
+}
+.app-shell > .toast.error {
+  color: #a32947;
+  background: #fff0f3;
+  border-color: #a32947;
+}
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  .main-panel.explore-panel.sheet-compact:has(.pickup-summary) {
+    height: auto;
+    max-height: min(50dvh, calc(100dvh - 190px));
+    overflow-y: auto;
+  }
+}

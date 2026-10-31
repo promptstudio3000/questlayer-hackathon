@@ -1,0 +1,472 @@
+
+> questlayer@0.1.0 test
+> node --test --test-concurrency=4 tests/*.test.mjs
+
+✔ Aavegotchi inventory decodes the canonical item ID before the quantity (1.7455ms)
+✔ a reload bookmark restores identities from fresh server data, not saved rewards or coordinates (0.938708ms)
+✔ player, realm and schema boundaries reject foreign or corrupted bookmarks (0.146709ms)
+✔ loading, failed reads and an old realm snapshot do not invalidate a bookmark (0.07725ms)
+✔ day rollover, expired targets and removed content stop presenting the old objective (0.095917ms)
+✔ a checkpoint refresh and a competing shared claim retain the selected activity with authoritative status (0.125708ms)
+✔ bookmarks cannot attach an activity to a different zone or account (0.071625ms)
+✔ zone-only selection stays valid before opening and does not choose a different activity (0.063125ms)
+✔ peer appearance resolves both demo Aura slots without returning wallet or item identifiers (6.42825ms)
+✔ native peer looks verify current token ownership and hide the account and NFT IDs (2.1705ms)
+✔ missing native linkage or failed reads never claim a stale native Aura is equipped (1.894583ms)
+✔ an original appearance is shared only while the ownership snapshot is current (1.89175ms)
+✔ shared map markup accepts only controlled colors and same-origin original-skin URLs (0.256958ms)
+✔ a shared original skin is served from its consenting owner's snapshot and expires with presence (2.089792ms)
+✔ earned vouchers bind contract, receiver, edition and expiry and lock the demo market (8.337833ms)
+✔ ownership, open listings, signer configuration and full editions prevent issuance (2.668041ms)
+✔ confirmed mint is recorded once even after its native NFT transfers (2.544667ms)
+✔ a claim cannot restore a demo item until a finalized post-expiry block proves no mint (2.999417ms)
+✔ claim confirmation rejects a mismatched on-chain recipient (2.282166ms)
+✔ the application attestation key persists privately without being a wallet access key (2.895291ms)
+✔ the map keeps a complete original SVG instead of downloading an incomplete 3D outfit (12.96825ms)
+✔ a model descriptor cannot redirect downloads or substitute another original (0.554875ms)
+✔ model bytes must match the descriptor digest before entering the cache (3.877666ms)
+✔ cached downloads still require a fresh authorized appearance response (1.3425ms)
+✔ the map accepts complete character geometry when only the original portrait background is omitted (0.492875ms)
+✔ 365 city manifests keep six distinct sectors and at least 250m of polygon separation (1344.856542ms)
+✔ city selection is deterministic but rotates across dates (7.394167ms)
+✔ physical mode requires the canonical polygon as well as target proximity (106.000875ms)
+✔ ordered walking checkpoints cannot be skipped replayed or completed from one place (93.073292ms)
+✔ exhausted Aura supply is visible and never mints beyond edition caps (81.327375ms)
+✔ city windows include four all-day zones one three-hour zone and one one-hour zone (60.906334ms)
+✔ optimistic execution only clears after exact final confirmation; wallet mutation cannot alter stored review (18.742041ms)
+✔ reload and exact retry verify the saved hash without another wallet signature (0.884416ms)
+✔ a different pending operation blocks new signing for the same account (0.934875ms)
+✔ concurrent submissions reserve before opening the wallet (3.91325ms)
+✔ definite wallet cancellation clears only its reservation; unknown wallet errors retain it (0.503958ms)
+✔ missing wallet hash can be recovered by exact receipt verification without another signature (0.412958ms)
+✔ incorrect manually supplied hash does not replace the recoverable missing-hash marker (0.368083ms)
+✔ false, substituted and unavailable confirmations retain one receipt rather than re-signing (1.056917ms)
+✔ corrupt, inaccessible and non-writing storage fail before signing and preserve existing bytes (0.265542ms)
+✔ a storage failure after broadcast leaves an ambiguous marker and exposes the actual receipt reference (0.25275ms)
+✔ pending records are isolated by player and wallet; a late old account response cannot clear a newer account (1.768167ms)
+✔ final failure is retained until acknowledged and freshly reverified; unknown/code-change cannot be discarded (0.993042ms)
+✔ full journals reject new signatures without evicting unresolved receipts (2.211ms)
+✔ default browser uses durable storage and another tab sees the reservation without signing (1.448041ms)
+✔ default browser refuses signing when Web Locks are unavailable (0.260125ms)
+✔ legacy session receipts migrate only after durable readback and survive session closure (0.399916ms)
+✔ migration retains both sources on conflicts, corrupt legacy or failed durable writes (0.316875ms)
+✔ migration merges different accounts and canonical repeats without discarding either pending operation (0.4205ms)
+✔ exports include missing-hash records and no error internals; imports cannot inherit failed state (0.61325ms)
+✔ imports reject wrong identity, unlinked signer, unsupported network, extra fields and oversized input without changing existing bytes (0.58825ms)
+✔ import conflicts preserve existing records and a restored receipt checks without signing (0.429459ms)
+✔ caller mutation while lock is queued cannot alter the transaction the wallet signs (1.03625ms)
+✔ a late confirmation never deletes a record whose reviewed terms changed (1.213541ms)
+✔ pre-sign checkpoint is persisted, exported and sent on recovery (0.3815ms)
+✔ failed checkpoint preparation never opens the wallet and releases only its unsubmitted reservation (0.120667ms)
+✔ legacy receipt without a checkpoint remains recoverable but importing it cannot downgrade a newer bound (0.3605ms)
+✔ removing a reservation while its checkpoint is pending prevents the wallet from opening (0.85075ms)
+✔ a reservation changed just after anchor persistence cannot reach the wallet (0.526334ms)
+✔ the player route journey creates, quotes, submits, follows, starts and safely closes (29.451333ms)
+✔ authentication comes from the server session, not actor/role payloads or queries (4.194667ms)
+✔ writes require the configured origin and JSON; disabled adapters never expose the feature (4.289916ms)
+✔ public API never returns pending content, profile private names or other participants (3.888834ms)
+✔ queries are bounded and reject guessed actor/GPS fields and ambiguous filters (5.43475ms)
+✔ malformed, oversized and streamed oversized JSON cannot create records (5.533875ms)
+✔ publication policy mismatch leaves the draft unchanged and preserves XP (4.308416ms)
+✔ API admission obeys bilateral blocks without discarding the existing participant's rights (3.683541ms)
+✔ unexpected server errors have a generic retry response without leaking internal details (3.351667ms)
+✔ profiles publish only with explicit consent and never borrow the private account name (5.751458ms)
+✔ free follows produce a useful feed and never change XP, balances, presence or history (4.500042ms)
+✔ public quest projections exclude pending edits, commitments, participants and moderation reasons (4.243625ms)
+✔ hidden profiles, pending quests and closing quests do not enter public discovery (3.975459ms)
+✔ bilateral block (viewer) hides profiles and feeds and prevents new admissions (7.511459ms)
+✔ bilateral block (author) hides profiles and feeds and prevents new admissions (3.60575ms)
+✔ existing personal content remains accessible after edits, hiding, blocks and closure (4.332458ms)
+✔ profile/follow/lifecycle mutations share one idempotency namespace (2.686417ms)
+✔ stale profile saves and receipt failures cannot overwrite or partially publish a profile (4.846125ms)
+✔ keyset pagination stays bounded and filtered in discovery and My creations (6.591041ms)
+✔ a changed publication quote cannot silently become an accepted XP commitment (2.829125ms)
+✔ Community initialization and reads require the actual existing player boundary (4.189042ms)
+✔ draft/review hold no XP; approval locks available XP and lowers current level (6.639917ms)
+✔ a solo participant survives closing; independent resolution permits exact XP release (5.271ms)
+✔ all action receipts replay across later state changes and reject changed terms (3.5605ms)
+✔ rejection and review withdrawal do not strand XP; corrected revisions retain stable identity (4.6185ms)
+✔ admissions pin immutable revisions; approving an edit does not relock XP (4.963791ms)
+✔ rejecting an edit preserves existing published content and participant rights (4.479792ms)
+✔ policy amounts are explicit, immutable and pinned through restart and new policies (3.614542ms)
+✔ failed approval leaves review pending and can retry after authoritative XP is earned (4.586292ms)
+✔ stale author/moderator requests cannot publish or overwrite another revision (3.003167ms)
+✔ server authority is required; author and participant cannot self-approve or resolve (3.633541ms)
+✔ closing a pending draft prevents delayed approval without any XP release (3.323666ms)
+✔ closing withdraws a pending edit but still permits old participation settlement (4.3665ms)
+✔ injected receipt-storage failure rolls publication and its XP lock back together (3.692875ms)
+✔ malformed values, floating XP and unsupported payment/reward fields fail closed (2.763917ms)
+✔ reconciliation errors cannot be hidden by negative available XP (2.835458ms)
+✔ restart replays durable receipts and daily world deletion preserves creator rights (18.111792ms)
+✔ two real SQLite connections cannot overcommit one author's XP (54.945625ms)
+✔ start versus cancellation race either preserves the admitted player or rejects the start (44.865ms)
+✔ releasing one of several commitments cannot release another quest's XP (4.864375ms)
+✔ a new policy affects new submissions while the existing quote is immutable (2.712875ms)
+✔ resolution is durable and deduplicated; edited quests cannot reopen eligibility (4.397292ms)
+✔ simultaneous identical approvals recover one durable receipt and one XP lock (43.425833ms)
+✖ the real Node HTTP bridge preserves sessions, origin, bounded bodies and host fallback (9.764833ms)
+✔ yield uses two conserved buckets and idempotent receipts (5.937542ms)
+✔ simultaneous activation shares a single world and one reserved coin budget (120.897542ms)
+✔ shared coin pays one player once and cannot be farmed by retries (73.80225ms)
+✔ expired coins cannot be collected and unclaimed backing rolls over once (80.707542ms)
+✔ a solo player can complete a free quest and mint one bounded Aura (65.933458ms)
+✔ tier access matures, withdrawals remove it, decreases apply immediately (3.618583ms)
+✔ a funded quest has one GOLD payout while everyone can still earn personal XP (64.748041ms)
+✔ unstaking preserves retained yield and withdrawal is redeemable once (2.379833ms)
+✔ yield allocation before contribution change cannot be reassigned retroactively (2.203833ms)
+✔ market sale is atomic, conserves balances and transfers equipment rights (59.002542ms)
+✔ cancelled listing cannot be filled or revive after relisting (69.363292ms)
+✔ invalid monetary actions do not change wallet or treasury (2.680833ms)
+✔ failed transaction rolls back all writes (2.843708ms)
+✔ physical GPS validation rejects stale, inaccurate and distant evidence (0.221834ms)
+✔ local world rollover handles 23-hour and 25-hour days (122.652791ms)
+✔ city snapshots share a fixed public center and never record the first visitor GPS (67.183916ms)
+✔ original item artwork requires a fresh positive ownership snapshot, including on cache hits (0.978125ms)
+✔ original art work deduplicates requested items and bounds queued and active reads (6.36ms)
+✔ original art failures do not poison retries and cache memory remains bounded (4.971166ms)
+✔ renderer identity preserves the documented right/left ordering and fails closed on unknown traits (0.976791ms)
+✔ mobile GLB validation rejects remote dependencies, unsupported decoders, excessive geometry and damaged containers (14.044792ms)
+✔ on-demand assets coalesce, remain bounded, use only the fixed CDN and never request a forced render (13.777709ms)
+✔ an original uses verified wardrobe expectations and cannot silently fall back to a generic model (0.764833ms)
+✔ serial texture optimization reduces mobile memory while preserving geometry and texture coordinates (67.631583ms)
+✔ forwarded addresses cannot bypass the client limit from an untrusted connection (0.464791ms)
+✔ the trusted local proxy separates clients and ignores forged address prefixes (4.498459ms)
+✖ HTTP notes preserve consent, replay, visibility, photo permissions and block/presence boundaries (13332.337958ms)
+✖ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (18048.110208ms)
+✔ session view is owner-scoped, bounded and never returns credentials or fabricated legacy metadata (7.665916ms)
+✔ fresh wallet proof revokes only other sessions, cancels pending links, preserves player/assets and persists across service restarts (3.57425ms)
+✔ recovery cannot use another account, browser, player, purpose or origin (3.652166ms)
+✔ expired challenge, expired/revoked browser and changed account link fail after slow verification (9.247875ms)
+✔ RPC failure leaves recovery retryable and simultaneous proofs cannot both settle (2.778ms)
+✔ recovery transaction failure rolls back session deletion and challenge consumption (2.757208ms)
+✔ outstanding recovery prompts are bounded and guest-only recovery cannot claim wallet custody (3.459041ms)
+✔ revocation remains effective after closing and reopening the on-disk database (19.308416ms)
+✔ short walking updates interpolate and stop at the exact target without idle frames (0.92375ms)
+✔ reduced motion, long jumps and tiny fixes do not schedule an animation (0.120333ms)
+✔ cancelled movement cannot overwrite a newer location even if a queued callback arrives late (0.09625ms)
+✔ wallet linking and valid GPS never opt a player into automatic collection (4.606542ms)
+✔ hidden tab stops submissions without silently re-enabling later (0.397917ms)
+✔ offline stops submissions without silently re-enabling later (0.136375ms)
+✔ other application surface stops submissions without silently re-enabling later (0.175792ms)
+✔ demo mode stops submissions without silently re-enabling later (0.327ms)
+✔ arena coordinates stops submissions without silently re-enabling later (0.175833ms)
+✔ unlinked account stops submissions without silently re-enabling later (0.169334ms)
+✔ missing GPS stops submissions without silently re-enabling later (0.113375ms)
+✔ only fresh finite accurate GPS and locally measured proximity permit a visit (0.496958ms)
+✔ unknown, stale, mismatched or unbacked observations never masquerade as available (0.455041ms)
+✔ one in-flight request, three-second pacing and three-pending backpressure bound walking (1.227959ms)
+✔ day/account capacity and global pause stop before any request (0.1965ms)
+✔ accepted receipts stay pending; only exact confirmed amounts coalesce once (0.437417ms)
+✔ existing ledger receipts and restored accepted history never replay a celebration (0.515084ms)
+✔ accepted ambiguous response is recovered by its durable receipt without resubmission (0.421833ms)
+✔ uncertain network failures retry the same identity with bounded exponential delays (1.076417ms)
+✔ rate limits pause, shared-coin rejection is skipped, caps and pause do not loop (1.148041ms)
+✔ server GPS rejection requires a newer fix instead of replaying rejected evidence (0.395083ms)
+✔ delayed receipt after account switch never refreshes or credits the new account (0.547125ms)
+✔ transient unavailable state preserves opt-in; a known new day resets it and old GPS (0.143541ms)
+✔ invalid receipt binding and unavailable durable storage fail closed (0.430958ms)
+✔ stale response and activity changes cannot mutate copied GPS evidence (1.297167ms)
+✔ native wardrobe verifies ownership and removes stale or duplicate equipment (2.386625ms)
+✔ native holdings retain equipped items beyond the first page and coalesce RPC calls (0.4265ms)
+✔ native asset normalization rejects foreign kinds and out-of-range editions (0.287375ms)
+✔ a confirmed refresh cannot be overwritten by an older in-flight ownership read (0.197583ms)
+✔ parallel native reads share network verification and a failed check can retry (0.490958ms)
+✔ claim expiry proof reads the timestamp of the exact finalized claim state block (0.904291ms)
+✔ economy preserves yocto precision, treasury conservation and independently observed pool balances (6.7235ms)
+✔ a failed pool read is missing balance, never zero or the vault's cached balance (4.856125ms)
+✔ a failed position read cannot become an aggregate zero or omit a known position (5.220584ms)
+✔ RPC outage preserves an explicitly stale observation and its original timestamp (7.415708ms)
+✔ first failed observation reports unavailable without fabricated amounts (2.43025ms)
+✔ treasury rejects broken conservation instead of silently displaying the balance (2.775417ms)
+✔ wrong network and mixed finalized blocks fail closed (5.101708ms)
+✔ stale vault observation is disclosed while a fresh pool view remains separate (2.721ms)
+✔ exit phases require both epoch maturity and pool release; owner credit is separate (4.318833ms)
+✔ factory code and keyless checks cannot be bypassed by healthy pool readings (9.77825ms)
+✔ worker reports age and attention without exposing account, errors or private evidence (3.7195ms)
+✔ shared cache avoids duplicate expensive observations while worker data stays current (2.807458ms)
+✔ oversized factory registries fail before reading positions (6.267209ms)
+✔ worker queue counters are capped and never publish claim payloads (46.832583ms)
+✔ a hanging RPC is bounded and returns unavailable, not a pending request forever (8.75875ms)
+✔ native level signing review binds exact network, contracts, receiver, milestone and expiry (0.696292ms)
+✔ native display geometry matches only the exact immutable published checkpoints (56.137542ms)
+✔ native map never reuses demo geometry or spendable display units during loading and errors (28.57225ms)
+✔ native prices preserve yoctoNEAR precision and reject unsupported representations (0.682417ms)
+✔ native market enables only active offers with a currently escrowed NFT (1.160458ms)
+✔ profile publication uses only its owner's namespace and a currently owned avatar (1.458584ms)
+✔ existing SocialDB credit reduces attachment to one yocto; transferred avatars are omitted (0.231708ms)
+✔ profile writes fail closed on a changed contract, wrong network, or invalid alias (0.463167ms)
+✔ public leaf parsing and fresh confirmation require the exact publication nonce (0.400666ms)
+✔ wallet profile quotes match the exact reviewed alias, avatar and namespace (0.491625ms)
+✔ wallet quotes reject alternate scopes, mismatched payloads, extra data and changed attachments (0.313292ms)
+✔ native level curve uses exact threshold boundaries and never rounds u64 XP (1.353334ms)
+✔ only finalized account XP drives milestones, isolated from demo and accepted receipts (8.907375ms)
+✔ confirmed level claims bind source, network, receiver, edition and deterministic identity (4.027125ms)
+✔ relink and lost-cookie account recovery preserve entitlement; other wallets cannot inherit XP (4.899375ms)
+✔ expiry and retry storms renew the same durable right without a second mint identity (7.538292ms)
+✔ mint finality is reconciled once, recovered after a missing acknowledgement and preserved after transfer (4.401166ms)
+✔ RPC failures are explicit stale/unavailable and cannot issue or confirm awards (35.311625ms)
+✔ unsafe chain, code, anchor, rounded XP and stale-block observations fail closed (24.937583ms)
+✔ backward finality, same-height hash fork and decreasing XP require reconciliation (11.472792ms)
+✔ edition cap and publisher permissions independently gate native level vouchers (17.137666ms)
+✔ tampered and disappeared immutable mint receipts never reopen a confirmed grant (12.809583ms)
+✔ wallet unlink during a remote read cannot produce a signed grant or leak another account (2.524375ms)
+✔ reviewed collectible WASM SHA256 converts to NEAR's base58 code fingerprint (1.951375ms)
+✔ ordinary polling shares a single active read (1.127125ms)
+✔ fresh post-visit refresh awaits one fresh follow-up instead of the older poll (0.273584ms)
+✔ account switches immediately follow the active read and supersede intermediate accounts (0.540458ms)
+✔ disable or unmount cancels queued reads while allowing an active read to settle (0.125583ms)
+✔ failed active reads do not prevent a queued fresh read (0.295416ms)
+✔ native funding uses finite actual buckets, six city slots, free XP and small shared coins (10.750041ms)
+✔ arena, absent consent, unlinked wallet and wrong GPS cannot issue native rewards (92.262833ms)
+✔ GPS coin acceptance is durable; retry after send-before-ack reads the original on-chain receipt (110.561084ms)
+✔ a second linked player cannot consume the same native street coin (71.765ms)
+✔ three ordered solo checkpoints produce one XP receipt; demo staking cannot unlock native tiers (119.212167ms)
+✔ worker lease excludes overlap; unavailable chain leaves accepted rights reserved (99.727459ms)
+✔ native receipt capacity includes accepted pending rights before another explorer can join the queue (64.487584ms)
+✔ paused claims preserve accepted rights while verified exit maintenance continues (64.18225ms)
+✔ a failing oldest claim cannot stop exit maintenance or let a later receipt overtake it (77.799375ms)
+✔ worker identity mismatch blocks maintenance as well as settlement (3.22825ms)
+✔ maintenance rejects changed code, non-keyless children and another strategy during pause (16.774875ms)
+✔ automatic collection metadata follows reviewed publication, actual pending rights and pause (95.505666ms)
+✔ changed reward code pauses automatic collection and blocks new capabilities but preserves old receipts (69.311917ms)
+✔ an expired worker cannot submit a claim after its receipt read or change retry state (120.202375ms)
+✔ a transaction completed after takeover cannot overwrite a successor's confirmed receipt (65.006292ms)
+✔ publication fences a late chain lookup before any new transaction (24.064167ms)
+✔ closure cannot send or replace a successor's day reconciliation after a late read (129.664833ms)
+✔ a late vault observation cannot replace another keeper's state or failure (5.071167ms)
+✔ task amount parsing and GOLD display never pass through floating point (0.714ms)
+✔ all native task quotes bind exact actor, contract, reviewed code, network, policy, method, arguments, fees and expiry (1.384ms)
+✔ a decision cannot silently change subject, evidence, approval or the chosen content hash (0.145625ms)
+✔ task read model pins one finalized block, keyless code, policy, bounded ordered receipts and exact conservation (7.718583ms)
+✔ missing deployment never shows a fake live escrow; failed refresh is stale with no action capabilities (3.808208ms)
+✔ fresh quotes reject changed network, deployment policy, access keys, mixed anchors or malformed accounting (30.273042ms)
+✔ linked actor is checked before and after asynchronous reads, including cached snapshots (2.79925ms)
+✔ create quote attaches only exact independent reward plus fixed nonrefundable storage; stable id prevents another publication (5.161041ms)
+✔ sponsor decision follows receipt order, cannot skip or review after a candidate, and has exact no-deposit binding (3.083375ms)
+✔ appeal and arbitration use claimant, immutable arbiter, exclusive deadline and public evidence (2.563416ms)
+✔ withdraw quotes only own available credit and never an arbitrary receiver; pending withdrawal cannot duplicate (2.163583ms)
+✔ an arbiter rejection cannot reopen an already resolved appeal (2.413ms)
+✔ bounded singleflight read model shares a refresh and fails closed on an RPC deadline (7.863583ms)
+✔ task confirmation asks the installed provider for FINAL and accepts an expired original quote without preparing another action (2.911834ms)
+✔ confirmation rejects substituted quote network, actor, contract, code, policy, gas, deposit and unsupported method (19.274584ms)
+✔ finalized receipt must match the exact transaction hash, actor, receiver and sole FunctionCall (59.708791ms)
+✔ optimistic execution, a top-level failure or a failed receipt is never confirmed as success (21.313541ms)
+✔ withdrawal confirmation requires a final true callback result; restored credit is not called paid (15.052583ms)
+✔ confirmation rechecks linked ownership after RPC and cannot read another player's receipt as their own (2.415417ms)
+✔ confirmation still pins current finalized network/code/keyless policy and bounds the final receipt RPC (16.322667ms)
+✔ shared recovery confirms task terms and rejects changed receipt arguments (3.173875ms)
+✔ shared recovery only marks explicit final failures as clearable (3.609708ms)
+✔ shared recovery rejects a restored task withdrawal and checks ownership first (2.172541ms)
+✔ task recovery also rejects an older identical receipt before handling terminal failure (3.235583ms)
+✔ malformed task outcomes cannot be cleared as known failure (4.168292ms)
+✔ final native withdrawal matches exact actor/action and both current and executed code (30.988916ms)
+✔ receipt identity, sole FunctionCall, amounts, gas and arguments cannot be substituted (21.584625ms)
+✔ optimistic, malformed, failed and false-callback results never establish payment (27.455042ms)
+✔ network, synchronization, stale anchors and changed current or historical code fail closed (19.373708ms)
+✔ only a linked wallet may confirm, including after asynchronous receipt and code reads (9.109542ms)
+✔ all read-only native RPC work is bounded (11.234625ms)
+✔ unknown contracts, methods, network or malformed comparison contexts are rejected (21.498458ms)
+✔ factory creation, owned registration and refund use reviewed terms and true callbacks (8.804208ms)
+✔ vault confirmation requires a real owned ready factory position and keyless pinned state (9.623625ms)
+✔ deposit, exit, refresh and advance callback false is final but not completed (8.264667ms)
+✔ market buy/cancel/withdraw and NFT escrow listing distinguish successful callback from compensation (8.498083ms)
+✔ collectible mint/redeem validates returned identity and equipment expects a void result (9.383583ms)
+✔ SocialDB set returns a publication height, not boolean success; private or foreign paths cannot be confirmed (2.947708ms)
+✔ pre-sign anchors require a linked wallet and a fresh synchronized testnet block (2.456ms)
+✔ pre-sign anchor rejects stale blocks and rechecks ownership after waiting (2.004709ms)
+✔ an identical older receipt cannot resolve a newer request or clear its pending failure (2.631583ms)
+✔ newer inclusion block verifies with the SDK blockId parameter and exact returned hash (1.926375ms)
+✔ unknown final statuses and incomplete receipt status cannot become clearable failures (2.106166ms)
+✔ missing failure data and nonboolean callbacks never authorize clearing an uncertain receipt (2.895625ms)
+✔ link revoked during executed-code lookup cannot expose a terminal failure result (2.506625ms)
+✔ native amounts stay integer-exact and reject exponents, negatives and oversized deposits (1.030375ms)
+✔ wallet quote binds receiver, selected contribution, method and exact deposit before signing (0.308584ms)
+✔ native vault preparation cannot operate an unlinked wallet, another position or arbitrary pool (3.72175ms)
+✔ native position quotes preserve integer deposits and reject a new deposit during exit (2.760375ms)
+✔ factory bytecode mismatch disables preparation before returning a wallet transaction (1.97675ms)
+✔ native identity validates account syntax and distinguishes RPC failures (0.959792ms)
+✖ NEAR sign-in verifies real signatures, restores one explorer, isolates purposes and prevents replay (38.532583ms)
+✔ identity refuses a mainnet RPC even when its access-key answer would be valid (0.209292ms)
+✔ note photos are bounded, re-encoded and stripped of source metadata (42.335875ms)
+✔ invalid, oversized and mislabeled media never creates a file (6.306958ms)
+✔ media cleanup cannot address unrelated paths and processing capacity is bounded (2.330375ms)
+✔ orphan cleanup preserves referenced and recent images across bounded passes (7.953ms)
+✔ deletion revokes access immediately but lets an earlier database snapshot finish copying media (8.341667ms)
+✔ media retirement and content removal roll back together (2.892ms)
+✖ HTTP original items preserve ownership checks around shared cache and refresh a removed appearance (6.058541ms)
+✔ a block acknowledged during appearance work removes coordinates in both directions (7.514333ms)
+✔ stopped, expired and mode-changed presence cannot escape a late appearance response (9.212791ms)
+✔ clock advancement during appearance lookup removes stale rows even without a cleanup worker (2.218125ms)
+✔ browser session revocation during appearance lookup rejects the entire response (2.598583ms)
+✔ fresh coordinates and names are paired by ID when row order changes; new arrivals need their own appearance read (2.303ms)
+✔ missing auth and a mismatched appearance result fail closed (2.735292ms)
+✔ stale cleanup and heartbeat cannot overwrite a newer sharing session or game mode (4.832167ms)
+✔ location heartbeats do not extend consent beyond its original 15 minute window (2.030125ms)
+✔ demo and GPS presence are isolated and stale positions disappear after 30 seconds (2.934333ms)
+✔ stop received before a delayed initial publication permanently revokes that session (1.844875ms)
+✔ catalog exposes enforceable mechanics, capability gaps and no invented durations (1.214042ms)
+✔ templates refuse missing, malformed, excluded and overlapping targets (0.435458ms)
+✔ city/day templates are deterministic and offer both trail mechanics without reward authority (75.171208ms)
+✔ already prepared future plans and already materialized worlds never gain new requirements (75.702292ms)
+✔ native v1 content commitments stay byte compatible across demo template activation (85.827416ms)
+✔ return trail requires ordered departure and return; retries and another player cannot duplicate XP (60.284083ms)
+✔ physical return rejects reusing the starting GPS fix and preserves progress until fresh evidence (59.712375ms)
+✔ final checkpoint and award roll back together when receipt persistence fails (61.572875ms)
+✔ notes require explicit public consent, keep optional GPS absent and isolate arena from real map (5.034292ms)
+✔ GPS requires a fresh accurate real fix and stores only the expressly selected fields (2.713042ms)
+✔ exact retries return the original receipt without another image write and changed payloads conflict (2.995167ms)
+✔ concurrent same-ID image submissions serialize before image work (2.520792ms)
+✔ expired image attempt cannot commit over its replacement and its orphan is cleaned (2.54475ms)
+✔ revoked browser session during media preparation cannot publish and retry keeps the same content (2.611ms)
+✔ abandon records an absent ID and prevents a delayed post; completed notes survive abandon (2.697417ms)
+✔ abandon during image work invalidates the lease and cleans the late image (2.430125ms)
+✔ owner removal strips public content and media, preserves an idempotent tombstone and cannot be restored (2.867875ms)
+✔ reports are private, deduplicated and never hide content solely by their count (2.761958ms)
+✔ moderation is default denied, hides images and text, and requires explicit restoration (3.006417ms)
+✔ blocks filter both directions from notes, image access and presence, with explicit unblock (3.239875ms)
+✔ legacy notes migrate once into arena without changing the messages table and orphan media fails closed (2.556666ms)
+✔ bounded publication rates reject new IDs but preserve receipt lookup and exact retries (3.664292ms)
+✔ a fresh process retains hidden receipts, permanent abandonment and bilateral blocks (17.785958ms)
+✔ local operator review requires explicit target/reason/apply and records hide/restore decisions (202.418833ms)
+✔ native math rejects floating and overflowing balances and never spends unrealized profit or loss recovery (0.700375ms)
+✔ E+2 tranche and contribution maturity preserves older access through top-ups and staged increases (0.216166ms)
+✔ new exits and daily game harvests cannot reset a sealed account's older unlock (1.679917ms)
+✔ failed asynchronous pool actions retain obligations and original ordering without fake receipts (0.357625ms)
+✔ restored native model state rejects changed policy allocations and duplicate cash receipts (0.480375ms)
+✔ liquid receipt policy is replay-safe, versioned and never recycles principal, rollover or awarded backing (0.832125ms)
+✔ integer treasury conservation holds across many policies, city reservations, expiries and winners (123.452584ms)
+✔ pool adapter pins every view, exposes no invented APY and accepts legitimate non-.testnet validator IDs (1.321ms)
+✔ consistent WAL snapshots include only private state artifacts and can be reopened (70.470125ms)
+✔ failed snapshots leave a previously verified backup intact and remove pending files (85.52575ms)
+✔ retention removes only owned expired snapshots and preserves the newest two (44.016ms)
+✔ referenced note images are privately preserved and unsafe media references fail closed (84.091542ms)
+✔ native attestor and scoped worker key are included privately without becoming player wallet keys (42.772625ms)
+✔ hashed files are immutable while page routes still receive uncached HTML (3.580958ms)
+✔ an open tab can load a retained chunk but cannot ask the pool for arbitrary files (2.538625ms)
+✔ public file paths reject traversal, malformed encoding and escaping symlinks (3.313334ms)
+✔ release retention copies public hashed assets and refuses changed contents under an existing hash (118.579208ms)
+✔ retention expires old unreferenced assets but protects current and five recent releases (44.594959ms)
+✔ local calendar boundaries preserve short and long DST days and calendar rotation (44.727333ms)
+✔ durable preparation is deterministic, idempotent and reserves no money or future loot (103.266541ms)
+✔ failed preparations back off and recover without duplicate reservations (55.8ms)
+✔ an expired preparation lease can be reclaimed and its stale worker cannot overwrite completion (43.521625ms)
+✔ a new local day immediately recovers uncollected backing before publishing its next world (106.96725ms)
+✔ a restarted process resumes persisted SQLite work without touching treasury (73.458417ms)
+ℹ tests 350
+ℹ suites 0
+ℹ pass 345
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19416.8995
+
+✖ failing tests:
+
+test at tests/creator-node-handler.test.mjs:9:1
+✖ the real Node HTTP bridge preserves sessions, origin, bounded bodies and host fallback (9.764833ms)
+  Error: listen EPERM: operation not permitted 127.0.0.1
+      at Server.setupListenHandle [as _listen2] (node:net:2306:21)
+      at listenInCluster (node:net:2437:12)
+      at node:net:2666:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'EPERM',
+    errno: -1,
+    syscall: 'listen',
+    address: '127.0.0.1'
+  }
+
+test at tests/http-social.test.mjs:9:1
+✖ HTTP notes preserve consent, replay, visibility, photo permissions and block/presence boundaries (13332.337958ms)
+  AssertionError [ERR_ASSERTION]: node:events:505
+      throw er; // Unhandled 'error' event
+      ^
+  
+  Error: listen EPERM: operation not permitted 127.0.0.1:19082
+      at Server.setupListenHandle [as _listen2] (node:net:2306:21)
+      at listenInCluster (node:net:2437:12)
+      at node:net:2666:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+  Emitted 'error' event on Server instance at:
+      at emitErrorNT (node:net:2416:8)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'EPERM',
+    errno: -1,
+    syscall: 'listen',
+    address: '127.0.0.1',
+    port: 19082
+  }
+  
+  Node.js v24.21.0
+  
+      at TestContext.<anonymous> (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/tests/http-social.test.mjs:46:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/http.test.mjs:102:1
+✖ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (18048.110208ms)
+  AssertionError [ERR_ASSERTION]: node:events:505
+      throw er; // Unhandled 'error' event
+      ^
+  
+  Error: listen EPERM: operation not permitted 127.0.0.1:19073
+      at Server.setupListenHandle [as _listen2] (node:net:2306:21)
+      at listenInCluster (node:net:2437:12)
+      at node:net:2666:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+  Emitted 'error' event on Server instance at:
+      at emitErrorNT (node:net:2416:8)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'EPERM',
+    errno: -1,
+    syscall: 'listen',
+    address: '127.0.0.1',
+    port: 19073
+  }
+  
+  Node.js v24.21.0
+  
+      at TestContext.<anonymous> (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/tests/http.test.mjs:137:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/near-auth.test.mjs:45:1
+✖ NEAR sign-in verifies real signatures, restores one explorer, isolates purposes and prevents replay (38.532583ms)
+  Error: listen EPERM: operation not permitted 127.0.0.1:19075
+      at Server.setupListenHandle [as _listen2] (node:net:2306:21)
+      at listenInCluster (node:net:2437:12)
+      at node:net:2666:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'EPERM',
+    errno: -1,
+    syscall: 'listen',
+    address: '127.0.0.1',
+    port: 19075
+  }
+
+test at tests/original-art-http.test.mjs:13:1
+✖ HTTP original items preserve ownership checks around shared cache and refresh a removed appearance (6.058541ms)
+  Error: listen EPERM: operation not permitted 127.0.0.1
+      at Server.setupListenHandle [as _listen2] (node:net:2306:21)
+      at listenInCluster (node:net:2437:12)
+      at node:net:2666:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    code: 'EPERM',
+    errno: -1,
+    syscall: 'listen',
+    address: '127.0.0.1'
+  }

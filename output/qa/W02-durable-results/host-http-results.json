@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "actualHost": true,
+  "scope": "Isolated localhost server; synthetic actors, official arena, simulated fixes",
+  "checks": [
+    "health/schema identity",
+    "anonymous401",
+    "actor404",
+    "foreign-origin403",
+    "claim retry exactly once",
+    "GET does not mark viewed",
+    "explicit view idempotency",
+    "realm validation",
+    "zero-item receipt",
+    "owner-bound pagination",
+    "explicit equip true remains equipped on retry"
+  ],
+  "source": {
+    "buildId": "qa-local-uncommitted-results",
+    "recorded": true
+  },
+  "schema": {
+    "coreVersion": 1,
+    "modules": {
+      "adventure-results": 1,
+      "identity": 1,
+      "passkeys": 1,
+      "social-blocks": 1,
+      "social-content": 1
+    }
+  },
+  "resultId": "adventure-result_92be07fd-7af6-402c-bd46-715ba8693c51",
+  "zeroItemResultId": "adventure-result_c3462fd9-d15e-48fe-b503-5aa2ce8ab976"
+}

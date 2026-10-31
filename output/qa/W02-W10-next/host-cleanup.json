@@ -1,0 +1,19 @@
+{
+  "cleanedAt": "2026-10-31T18:31:26.891Z",
+  "serverSessionId": 98261,
+  "serverStopped": true,
+  "port8798ConnectionRefusedOn": [
+    "127.0.0.1",
+    "localhost"
+  ],
+  "privateCookieAndSetupInputFilesRemoved": true,
+  "temporaryScriptsRemoved": true,
+  "publicEvidencePreserved": true,
+  "isolatedDatabasePreserved": true,
+  "questState": "closing",
+  "questVersion": 4,
+  "openObligations": 1,
+  "lockedXp": 200,
+  "resolutionPerformed": false,
+  "finalizationPerformed": false
+}

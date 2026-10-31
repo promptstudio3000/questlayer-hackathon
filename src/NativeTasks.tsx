@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowClockwise,
@@ -13,12 +13,21 @@ import {
 } from "@phosphor-icons/react";
 import { api } from "./api";
 import type { Player } from "./types";
+import { useFormDraft } from "./useFormDraft";
+import { createReadEpoch } from "./read-epoch";
+import {
+  matchingPublishedTask,
+  reviewedTaskClientId,
+  taskReviewBinding,
+  type TaskReviewScope,
+} from "./native-task-draft";
 import {
   exactTaskGold,
   exactTaskNear,
   parseTaskReward,
   TASK_POLICY,
   TASK_STORAGE,
+  NATIVE_TASK_CONTRACT,
   type TaskRequest,
 } from "./native-task-quote";
 import "./native-tasks.css";
@@ -116,6 +125,14 @@ const localDate = (n: number) => {
   const d = new Date(n);
   return new Date(n - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
+const CREATE_DRAFT_FIELDS = {
+  title: 96,
+  area: 80,
+  requirements: 512,
+  reward: 100,
+  due: 32,
+} as const;
+const EVIDENCE_DRAFT_FIELDS = { evidence: 512, reference: 256 } as const;
 async function digest(value: unknown) {
   const bytes = await crypto.subtle.digest(
     "SHA-256",
@@ -175,6 +192,7 @@ export function NativeTasks({
 }) {
   const [account, setAccount] = useState(player.wallets[0]?.account_id || ""),
     [snapshot, setSnapshot] = useState<TaskSnapshot | null>(null),
+    [snapshotOwner, setSnapshotOwner] = useState(""),
     [selectedId, setSelectedId] = useState<number | null>(null),
     [loading, setLoading] = useState(false),
     [busy, setBusy] = useState(false),
@@ -183,36 +201,109 @@ export function NativeTasks({
     [creating, setCreating] = useState(false),
     [reviewFunding, setReviewFunding] = useState(false),
     [publicAck, setPublicAck] = useState(false),
-    [title, setTitle] = useState(""),
-    [area, setArea] = useState(""),
-    [requirements, setRequirements] = useState(""),
-    [reward, setReward] = useState("0.1"),
-    [due, setDue] = useState(() => localDate(Date.now() + 2 * 86400000)),
-    [evidence, setEvidence] = useState(""),
-    [reference, setReference] = useState(""),
     [reason, setReason] = useState(""),
+    [reviewBinding, setReviewBinding] = useState<string | null>(null),
+    [ackBinding, setAckBinding] = useState<string | null>(null),
+    [createRevision, setCreateRevision] = useState<string | null>(null),
     [createRequest, setCreateRequest] = useState<Omit<
       TaskRequest,
       "accountId" | "codeHash" | "policy"
     > | null>(null);
-  const identity = `${account}:${selectedId || ""}`,
+  const identity = JSON.stringify([player.id, account, selectedId]),
     latest = useRef(identity),
     mounted = useRef(true),
     generation = useRef(0),
-    clientId = useRef(crypto.randomUUID()),
+    operations = useRef(createReadEpoch()),
+    operationContext = useRef(identity),
     heading = useRef<HTMLHeadingElement>(null);
   latest.current = identity;
+  if (operationContext.current !== identity) {
+    operations.current.invalidate();
+    operationContext.current = identity;
+  }
   const data =
-    snapshot?.accountId === account && snapshot.selectedTaskId === selectedId
+    snapshotOwner === identity &&
+    snapshot?.accountId === account &&
+    snapshot.selectedTaskId === selectedId
       ? snapshot
       : null;
   const fresh =
     data?.status === "available" &&
+    player.wallets.some((w) => w.account_id === account) &&
+    data.network === "testnet" &&
+    data.contractId === NATIVE_TASK_CONTRACT &&
     !!data.codeHash &&
     data.policy === TASK_POLICY;
   const task = data?.tasks.find((t) => t.task_id === selectedId);
   const canAct = !!fresh && !busy && !loading && !!account;
   const caps = fresh ? data?.actions : null;
+  const reviewScope: TaskReviewScope = {
+    playerId: player.id,
+    accountId: account,
+    network: data?.network || "",
+    contractId: data?.contractId || "",
+    codeHash: data?.codeHash || "",
+    policy: data?.policy || "",
+  };
+  const binding = fresh ? taskReviewBinding(reviewScope) : null;
+  const latestBinding = useRef(binding);
+  latestBinding.current = binding;
+  const createInitial = useMemo(
+    () => ({
+      title: "",
+      area: "",
+      requirements: "",
+      reward: "0.1",
+      due: localDate(Date.now() + 2 * 86400000),
+    }),
+    [player.id, account],
+  );
+  const draftRealm = `testnet:${NATIVE_TASK_CONTRACT}:${account || "guest"}`;
+  const createDraft = useFormDraft({
+    playerId: player.id,
+    form: "native-task-create",
+    realm: draftRealm,
+    fields: CREATE_DRAFT_FIELDS,
+    initial: createInitial,
+  });
+  const { title, area, requirements, reward, due } = createDraft.values;
+  const setTitle = (value: string) => createDraft.setField("title", value);
+  const setArea = (value: string) => createDraft.setField("area", value);
+  const setRequirements = (value: string) =>
+    createDraft.setField("requirements", value);
+  const setReward = (value: string) => createDraft.setField("reward", value);
+  const setDue = (value: string) => createDraft.setField("due", value);
+  const createTerms = JSON.stringify(createDraft.values);
+  const latestCreateTerms = useRef(createTerms);
+  latestCreateTerms.current = createTerms;
+  const evidenceRealm = `${draftRealm}:task:${selectedId ?? "none"}:stage:${caps?.appealSubmissionId !== null && caps?.appealSubmissionId !== undefined ? `appeal-${caps.appealSubmissionId}` : "submit"}`;
+  const evidenceDraft = useFormDraft({
+    playerId: player.id,
+    form: "native-task-evidence",
+    realm: evidenceRealm,
+    fields: EVIDENCE_DRAFT_FIELDS,
+    initial: { evidence: "", reference: "" },
+  });
+  const { evidence, reference } = evidenceDraft.values;
+  const setEvidence = (value: string) => {
+    evidenceDraft.setField("evidence", value);
+    setPublicAck(false);
+  };
+  const setReference = (value: string) => {
+    evidenceDraft.setField("reference", value);
+    setPublicAck(false);
+  };
+  const acknowledgementScope = JSON.stringify([
+    binding,
+    creating ? "create" : evidenceRealm,
+  ]);
+  const publicAckValid =
+    publicAck && ackBinding === acknowledgementScope && !!binding;
+  const latestAck = useRef(publicAckValid);
+  latestAck.current = publicAckValid;
+  const evidenceTerms = JSON.stringify(evidenceDraft.values);
+  const latestEvidenceTerms = useRef(evidenceTerms);
+  latestEvidenceTerms.current = evidenceTerms;
   const ownSubmission = data?.submissions.find(
     (s) => s.claimant_id === account,
   );
@@ -241,6 +332,7 @@ export function NativeTasks({
         generation.current === seq
       ) {
         setSnapshot(next);
+        setSnapshotOwner(who);
         setError("");
       }
     } catch (e) {
@@ -265,13 +357,24 @@ export function NativeTasks({
     mounted.current = true;
     return () => {
       mounted.current = false;
+      operations.current.invalidate();
     };
   }, []);
   useEffect(() => {
     void refresh(false);
+    setBusy(false);
     setPublicAck(false);
     setResolveId(null);
+    setReviewFunding(false);
+    setCreateRequest(null);
   }, [identity]);
+  useEffect(() => {
+    setPublicAck(false);
+    setAckBinding(null);
+    setReviewFunding(false);
+    setCreateRequest(null);
+    setReviewBinding(null);
+  }, [binding]);
   useEffect(() => {
     if (!player.wallets.some((w) => w.account_id === account))
       setAccount(player.wallets[0]?.account_id || "");
@@ -279,11 +382,69 @@ export function NativeTasks({
   useEffect(() => {
     heading.current?.focus();
   }, [selectedId, creating, reviewFunding]);
+  function reopenExistingCreation(
+    request: Omit<TaskRequest, "accountId" | "codeHash" | "policy">,
+    revision: string | null,
+  ) {
+    const existing = data?.tasks.find(
+      (t) => t.sponsor_id === account && t.client_id === request.clientId,
+    );
+    if (!existing) return false;
+    if (!matchingPublishedTask(request, account, existing)) {
+      setError(
+        "This publication identity already has different task terms. Check the existing record before funding anything.",
+      );
+      return true;
+    }
+    createDraft.discard(revision);
+    setCreating(false);
+    setSelectedId(existing.task_id);
+    setReviewFunding(false);
+    setCreateRequest(null);
+    setPublicAck(false);
+    setNotice(
+      "This exact task is already published. Its confirmed record is open; no new funding is needed.",
+    );
+    return true;
+  }
   async function run(
     request: Omit<TaskRequest, "accountId" | "codeHash" | "policy">,
   ) {
-    if (!canAct || !data?.codeHash) return;
+    if (
+      !canAct ||
+      !data?.codeHash ||
+      !mounted.current ||
+      latest.current !== identity ||
+      latestBinding.current !== binding
+    )
+      return;
+    if (
+      request.action === "create" &&
+      (!reviewFunding || reviewBinding !== binding)
+    ) {
+      setError(
+        "The account, contract or policy changed. Review funding again before signing.",
+      );
+      return;
+    }
+    if (
+      ["create", "submit", "appeal"].includes(request.action) &&
+      (!publicAckValid || !latestAck.current)
+    ) {
+      setError(
+        "Review the public information and current cost before signing.",
+      );
+      return;
+    }
     const who = identity;
+    const submittedCreateRevision = createRevision;
+    if (
+      request.action === "create" &&
+      reopenExistingCreation(request, submittedCreateRevision)
+    )
+      return;
+    const submittedEvidenceRevision = evidenceDraft.revision;
+    const operation = operations.current.begin(who);
     setBusy(true);
     setError("");
     setNotice("");
@@ -294,7 +455,11 @@ export function NativeTasks({
         codeHash: data.codeHash,
         policy: TASK_POLICY,
       });
-      if (!mounted.current || latest.current !== who) return;
+      if (
+        !mounted.current ||
+        !operations.current.isCurrent(operation, latest.current)
+      )
+        return;
       if (ok) {
         setNotice(
           "Wallet transaction confirmed. Check the updated task record below.",
@@ -303,13 +468,11 @@ export function NativeTasks({
           setCreating(false);
           setReviewFunding(false);
           setCreateRequest(null);
-          setTitle("");
-          setRequirements("");
-          clientId.current = crypto.randomUUID();
+          createDraft.discard(submittedCreateRevision);
+          setPublicAck(false);
         }
         if (["submit", "appeal"].includes(request.action)) {
-          setEvidence("");
-          setReference("");
+          evidenceDraft.discard(submittedEvidenceRevision);
           setPublicAck(false);
         }
         setReason("");
@@ -319,14 +482,27 @@ export function NativeTasks({
           "No confirmed transaction. Your entries are kept; refresh before retrying.",
         );
     } catch (e) {
-      if (mounted.current && latest.current === who)
+      if (
+        mounted.current &&
+        operations.current.isCurrent(operation, latest.current)
+      )
         setError((e as Error).message);
     } finally {
-      if (mounted.current) setBusy(false);
+      if (
+        mounted.current &&
+        operations.current.isCurrent(operation, latest.current)
+      )
+        setBusy(false);
     }
   }
   async function prepareCreate() {
+    const who = identity;
+    if (!canAct || !binding || !mounted.current || latest.current !== who)
+      return;
+    const operation = operations.current.begin(who);
     try {
+      const reviewedBinding = binding,
+        reviewedTerms = createTerms;
       const amount = parseTaskReward(reward),
         deadline = new Date(due).getTime();
       const fields = {
@@ -352,22 +528,49 @@ export function NativeTasks({
         throw Error(
           "Set a deadline between one hour and fourteen days from now.",
         );
-      setCreateRequest({
+      const request = {
         action: "create",
-        clientId: clientId.current,
         ...fields,
         rewardYocto: amount,
         dueAtMs: deadline,
         contentHash: await digest(fields),
-      });
+      } as Omit<TaskRequest, "accountId" | "codeHash" | "policy">;
+      request.clientId = await reviewedTaskClientId(reviewScope, request);
+      if (
+        !mounted.current ||
+        !operations.current.isCurrent(operation, latest.current) ||
+        latestBinding.current !== reviewedBinding ||
+        latestCreateTerms.current !== reviewedTerms
+      )
+        throw Error(
+          "The task entries or account changed. Review the current terms again.",
+        );
+      if (reopenExistingCreation(request, createDraft.revision)) return;
+      setCreateRequest(request);
+      setReviewBinding(reviewedBinding);
+      setCreateRevision(createDraft.revision);
       setReviewFunding(true);
       setPublicAck(false);
       setError("");
     } catch (e) {
-      setError((e as Error).message);
+      if (
+        mounted.current &&
+        operations.current.isCurrent(operation, latest.current)
+      )
+        setError((e as Error).message);
     }
   }
   async function submitEvidence() {
+    const who = identity,
+      terms = evidenceTerms;
+    if (
+      !canAct ||
+      !publicAckValid ||
+      !mounted.current ||
+      latest.current !== who
+    )
+      return;
+    const operation = operations.current.begin(who);
     try {
       const text = evidence.trim(),
         ref = reference.trim();
@@ -381,6 +584,16 @@ export function NativeTasks({
           "Enter an IPFS content address without a path, or leave it empty.",
         );
       const appealId = caps?.appealSubmissionId;
+      const contentHash = await digest({ text, reference: ref });
+      if (
+        !mounted.current ||
+        !operations.current.isCurrent(operation, latest.current) ||
+        latestEvidenceTerms.current !== terms ||
+        !latestAck.current
+      )
+        throw Error(
+          "The evidence or account changed. Review the current public information again.",
+        );
       await run({
         action:
           appealId !== null && appealId !== undefined ? "appeal" : "submit",
@@ -390,10 +603,14 @@ export function NativeTasks({
           : {}),
         text,
         reference: ref,
-        contentHash: await digest({ text, reference: ref }),
+        contentHash,
       });
     } catch (e) {
-      setError((e as Error).message);
+      if (
+        mounted.current &&
+        operations.current.isCurrent(operation, latest.current)
+      )
+        setError((e as Error).message);
     }
   }
   const publicNotice = (
@@ -407,8 +624,11 @@ export function NativeTasks({
     <label className="task-check">
       <input
         type="checkbox"
-        checked={publicAck}
-        onChange={(e) => setPublicAck(e.target.checked)}
+        checked={publicAckValid}
+        onChange={(e) => {
+          setPublicAck(e.target.checked);
+          setAckBinding(e.target.checked ? acknowledgementScope : null);
+        }}
         disabled={busy}
       />
       <span>I understand the public record and the cost shown.</span>
@@ -530,6 +750,13 @@ export function NativeTasks({
                 void prepareCreate();
               }}
             >
+              {createDraft.hasDraft && (
+                <p className="task-secondary" role="status">
+                  {createDraft.storageAvailable
+                    ? "Draft entries are kept on this device. Funding review and public consent are never restored."
+                    : "Entries remain in this tab; browser storage is unavailable. Keep this page open."}
+                </p>
+              )}
               <label>
                 Task title
                 <input
@@ -598,6 +825,24 @@ export function NativeTasks({
                 Review funding
                 <CaretRight />
               </button>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy}
+                onClick={() => {
+                  const removed = createDraft.discard();
+                  setReviewFunding(false);
+                  setCreateRequest(null);
+                  setPublicAck(false);
+                  setNotice(
+                    removed
+                      ? "Draft entries cleared. Any pending wallet transaction still requires recovery."
+                      : "Entries cleared from this view. Browser storage could not remove the saved draft; it may return. Any pending wallet transaction still requires recovery.",
+                  );
+                }}
+              >
+                Discard task draft
+              </button>
             </form>
           ) : (
             createRequest && (
@@ -646,7 +891,9 @@ export function NativeTasks({
                 {acknowledgement}
                 <button
                   className="primary-button"
-                  disabled={!canAct || !publicAck}
+                  disabled={
+                    !canAct || !publicAckValid || reviewBinding !== binding
+                  }
                   onClick={() => void run(createRequest)}
                 >
                   <ShieldCheck />
@@ -717,6 +964,13 @@ export function NativeTasks({
                   void submitEvidence();
                 }}
               >
+                {evidenceDraft.hasDraft && (
+                  <p className="task-secondary" role="status">
+                    {evidenceDraft.storageAvailable
+                      ? "Evidence draft kept for this wallet and task. Public consent must be confirmed again."
+                      : "Evidence remains in this tab; browser storage is unavailable."}
+                  </p>
+                )}
                 <h3>
                   {caps?.appealSubmissionId !== null
                     ? "Appeal your evidence"
@@ -762,11 +1016,27 @@ export function NativeTasks({
                 <button
                   className="primary-button"
                   type="submit"
-                  disabled={!canAct || !publicAck || !evidence.trim()}
+                  disabled={!canAct || !publicAckValid || !evidence.trim()}
                 >
                   {caps?.appealSubmissionId !== null
                     ? "Send appeal"
                     : "Submit evidence"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={() => {
+                    const removed = evidenceDraft.discard();
+                    setPublicAck(false);
+                    setNotice(
+                      removed
+                        ? "Evidence draft cleared. Any pending transaction or submitted claim is unchanged."
+                        : "Evidence cleared from this view. Browser storage could not remove the saved draft; it may return. Any pending transaction or submitted claim is unchanged.",
+                    );
+                  }}
+                >
+                  Discard evidence draft
                 </button>
               </form>
             ) : (
@@ -1039,7 +1309,7 @@ export function NativeTasks({
               }}
             >
               <Plus />
-              Sponsor a task
+              {createDraft.hasDraft ? "Resume task draft" : "Sponsor a task"}
             </button>
           )}
           {fresh && !data?.tasks.length && (
@@ -1063,8 +1333,6 @@ export function NativeTasks({
                   disabled={busy || loading}
                   onClick={() => {
                     setSelectedId(t.task_id);
-                    setEvidence("");
-                    setReference("");
                     setReason("");
                     setNotice("");
                   }}

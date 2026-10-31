@@ -1,0 +1,59 @@
+{
+  "performedAt": "2026-10-31T17:43:57.399Z",
+  "scope": "Actual isolated local HTTP host; fresh guest with no author cookie access; no native/wallet/signing/funding action.",
+  "host": "http://localhost:8796",
+  "qaOnlyPolicy": {
+    "version": "qa-w08-browser-v1",
+    "xpCommitment": 200
+  },
+  "productionPolicyAdopted": false,
+  "participantId": "player_fa3212e9-7336-4421-bda7-2dcd5cf8aabd",
+  "authorId": "player_fdda7055-078f-43a9-8a0f-9baf6f056096",
+  "questId": "creator-5ed881ca-35de-4b0d-8520-2750fd941889",
+  "revision": 2,
+  "followingFeedContainsQuest": true,
+  "followOperationId": "qa-walker-follow-20261031",
+  "startOperationId": "qa-walker-start-20261031",
+  "retryReceiptExactlyMatches": true,
+  "acceptedParticipation": {
+    "domain": "demo",
+    "questId": "creator-5ed881ca-35de-4b0d-8520-2750fd941889",
+    "revision": 2,
+    "state": "open",
+    "questState": "published",
+    "content": {
+      "title": "Three quiet details in Šafaříkovy sady",
+      "description": "Take a free observation break in Šafaříkovy sady, Plzeň. Stay on public paths and choose a comfortable stopping place. Notice one leaf shape, one building detail and one sound; keep your observations private. There is no timed route, purchase, photo upload or GPS check. Stop whenever you wish. This demo creator quest has no configured reward."
+    },
+    "rewardStatus": "not-configured"
+  },
+  "acceptedCount": 1,
+  "openParticipationCount": 1,
+  "economyBefore": {
+    "earnedXp": 0,
+    "lockedXp": 0,
+    "availableXp": 0,
+    "gold_u": 120000000000,
+    "level": 1,
+    "inventoryIds": [
+      "item_9de43278-312a-4f7f-8d6a-db4540fe173a"
+    ],
+    "historyIds": [
+      "event_d64c546e-e9b4-4726-a4ac-95aa2996d7e2"
+    ]
+  },
+  "economyAfter": {
+    "earnedXp": 0,
+    "lockedXp": 0,
+    "availableXp": 0,
+    "gold_u": 120000000000,
+    "level": 1,
+    "inventoryIds": [
+      "item_9de43278-312a-4f7f-8d6a-db4540fe173a"
+    ],
+    "historyIds": [
+      "event_d64c546e-e9b4-4726-a4ac-95aa2996d7e2"
+    ]
+  },
+  "noParticipantAward": true
+}

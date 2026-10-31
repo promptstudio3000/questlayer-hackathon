@@ -72,18 +72,31 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
     displayName: row.display_name,
     bio: row.bio,
   });
+  const creationView = (row) => ({
+    id: row.id,
+    state: row.state,
+    version: row.version,
+    latestRevision: row.latest_revision,
+    latestState: row.latest_state,
+    latestReviewReason: row.latest_review_reason ?? null,
+    publishedRevision: row.published_revision,
+    draft: JSON.parse(row.content),
+    lockedXp: row.released_at === null ? (row.commitment_xp ?? 0) : 0,
+    openParticipations: row.open_participations,
+  });
   const questView = (row) => ({
     id: row.id,
     revision: row.published_revision,
     title: row.title,
     description: row.description,
+    ...(row.requirement ? { requirement: JSON.parse(row.requirement) } : {}),
     creator: { id: row.author, displayName: row.display_name },
     access: "free",
     rewardStatus: "not-configured",
     domain: "demo",
   });
   const approvedColumns = `q.id,q.author,q.published_revision,p.display_name,
-    json_extract(r.content,'$.title') AS title,json_extract(r.content,'$.description') AS description`;
+    json_extract(r.content,'$.title') AS title,json_extract(r.content,'$.description') AS description,json_extract(r.content,'$.requirement') AS requirement`;
   const approvedJoins = `FROM creator_quests q
     JOIN creator_profiles p ON p.player_id=q.author AND p.public=1
     JOIN creator_revisions r ON r.quest_id=q.id AND r.revision=q.published_revision AND r.state='approved'`;
@@ -166,7 +179,7 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
       const { limit, cursor } = pagination(options);
       const rows = db
         .prepare(
-          `SELECT q.id,q.state,q.version,q.latest_revision,q.published_revision,r.content,
+          `SELECT q.id,q.state,q.version,q.latest_revision,q.published_revision,r.content,r.state AS latest_state,r.reason AS latest_review_reason,
         c.amount AS commitment_xp,c.released_at,
         (SELECT count(*) FROM creator_participations a WHERE a.quest_id=q.id AND a.state='open') AS open_participations
         FROM creator_quests q JOIN creator_revisions r ON r.quest_id=q.id AND r.revision=q.latest_revision
@@ -174,16 +187,22 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
         WHERE q.author=:viewer AND q.id>:cursor ORDER BY q.id LIMIT :take`,
         )
         .all({ viewer: actor, cursor, take: limit + 1 });
-      return page(rows, limit, (row) => ({
-        id: row.id,
-        state: row.state,
-        version: row.version,
-        latestRevision: row.latest_revision,
-        publishedRevision: row.published_revision,
-        draft: JSON.parse(row.content),
-        lockedXp: row.released_at === null ? (row.commitment_xp ?? 0) : 0,
-        openParticipations: row.open_participations,
-      }));
+      return page(rows, limit, creationView);
+    },
+    myCreation(actor, questId) {
+      player(actor);
+      key(questId);
+      const row = db
+        .prepare(
+          `SELECT q.id,q.state,q.version,q.latest_revision,q.published_revision,r.content,r.state AS latest_state,r.reason AS latest_review_reason,
+        c.amount AS commitment_xp,c.released_at,
+        (SELECT count(*) FROM creator_participations a WHERE a.quest_id=q.id AND a.state='open') AS open_participations
+        FROM creator_quests q JOIN creator_revisions r ON r.quest_id=q.id AND r.revision=q.latest_revision
+        LEFT JOIN creator_xp_commitments c ON c.quest_id=q.id WHERE q.author=? AND q.id=?`,
+        )
+        .get(actor, questId);
+      fail(row, "Your creator quest was not found.", "CREATOR_NOT_FOUND", 404);
+      return creationView(row);
     },
     myProfile(actor) {
       player(actor);
@@ -205,11 +224,13 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
       key(questId);
       const row = db
         .prepare(
-          `SELECT a.quest_id,a.revision,a.state,q.state AS quest_state,r.content
+          `SELECT a.quest_id,a.revision,a.state,q.state AS quest_state,q.author,r.content,
+        CASE WHEN p.public=1 AND ${unblocked("q.author")} THEN p.display_name ELSE NULL END AS creator_display_name
         FROM creator_participations a JOIN creator_revisions r ON r.quest_id=a.quest_id AND r.revision=a.revision
-        JOIN creator_quests q ON q.id=a.quest_id WHERE a.quest_id=? AND a.participant=?`,
+        JOIN creator_quests q ON q.id=a.quest_id LEFT JOIN creator_profiles p ON p.player_id=q.author
+        WHERE a.quest_id=:quest AND a.participant=:viewer`,
         )
-        .get(questId, actor);
+        .get({ quest: questId, viewer: actor });
       fail(
         row,
         "Your quest participation was not found.",
@@ -220,12 +241,37 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
       return {
         domain: "demo",
         questId: row.quest_id,
+        creator: { id: row.author, displayName: row.creator_display_name },
         revision: row.revision,
         state: row.state,
         questState: row.quest_state,
         content: JSON.parse(row.content),
         rewardStatus: "not-configured",
       };
+    },
+    myParticipations(actor, options = {}) {
+      player(actor);
+      const { limit, cursor } = pagination(options);
+      const rows = db
+        .prepare(
+          `SELECT a.quest_id AS id,a.quest_id,a.revision,a.state,q.state AS quest_state,q.author,r.content,
+        CASE WHEN p.public=1 AND ${unblocked("q.author")} THEN p.display_name ELSE NULL END AS creator_display_name
+        FROM creator_participations a JOIN creator_revisions r ON r.quest_id=a.quest_id AND r.revision=a.revision
+        JOIN creator_quests q ON q.id=a.quest_id LEFT JOIN creator_profiles p ON p.player_id=q.author
+        WHERE a.participant=:viewer AND a.quest_id>:cursor ORDER BY a.quest_id LIMIT :take`,
+        )
+        .all({ viewer: actor, cursor, take: limit + 1 });
+      return page(rows, limit, (row) => ({
+        id: row.quest_id,
+        domain: "demo",
+        questId: row.quest_id,
+        creator: { id: row.author, displayName: row.creator_display_name },
+        revision: row.revision,
+        state: row.state,
+        questState: row.quest_state,
+        content: JSON.parse(row.content),
+        rewardStatus: "not-configured",
+      }));
     },
     saveProfile({
       actor,

@@ -1,0 +1,42 @@
+{
+  "background": "rgb(48, 36, 65)",
+  "clear": {
+    "bottom": 744,
+    "height": 98,
+    "left": 316,
+    "right": 364,
+    "top": 646,
+    "width": 48,
+    "x": 316,
+    "y": 646
+  },
+  "height": 844,
+  "overflow": false,
+  "primary": "rgb(255, 255, 255)",
+  "secondary": "rgb(227, 218, 244)",
+  "sheet": {
+    "bottom": 760,
+    "height": 182,
+    "left": 10,
+    "right": 380,
+    "top": 578,
+    "width": 370,
+    "x": 10,
+    "y": 578
+  },
+  "summary": {
+    "bottom": 744,
+    "height": 98,
+    "left": 26,
+    "right": 316,
+    "top": 646,
+    "width": 290,
+    "x": 26,
+    "y": 646
+  },
+  "width": 390,
+  "contrastRatios": {
+    "primary": 14.44,
+    "secondary": 10.73
+  }
+}

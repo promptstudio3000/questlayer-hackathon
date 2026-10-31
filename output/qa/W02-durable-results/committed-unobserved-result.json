@@ -1,0 +1,53 @@
+{
+  "fixture": "Isolated synthetic actor; official demo arena chest, simulated evidence; the result is committed without delivery to the browser",
+  "result": {
+    "id": "adventure-result_f423b786-aab5-44d2-abf7-18bf8d87fccd",
+    "version": 1,
+    "domain": "demo",
+    "source": "system-quest",
+    "status": "confirmed",
+    "playerId": "player_9980e1f2-d56f-4001-bb98-d0debd3e26e9",
+    "questId": "demo:arena-city-plzen:2026-10-31:v2:quest:1:2",
+    "worldId": "demo:arena-city-plzen:2026-10-31:v2",
+    "realm": "arena",
+    "questKind": "chest",
+    "title": "Find the park chest",
+    "completedAt": 1793476666929,
+    "viewedAt": null,
+    "reward": {
+      "xp": 80,
+      "goldU": 0,
+      "item": {
+        "id": "aura_1586039a-9dc2-41a4-8f04-9b126d1cd831",
+        "kind": "aura",
+        "name": "Northern Lights",
+        "rarity": "rare",
+        "slot": "above",
+        "color": "#8dd8bd",
+        "serial": 1
+      }
+    },
+    "itemCurrent": {
+      "status": "owned",
+      "equippable": true,
+      "equipped": false,
+      "reason": "This Aura can be equipped in your demo inventory.",
+      "item": {
+        "id": "aura_1586039a-9dc2-41a4-8f04-9b126d1cd831",
+        "kind": "aura",
+        "name": "Northern Lights",
+        "rarity": "rare",
+        "slot": "above",
+        "color": "#8dd8bd",
+        "serial": 1,
+        "equipped": 0
+      }
+    }
+  },
+  "duplicateRetryUnchanged": {
+    "claims": 1,
+    "receipts": 1,
+    "xp": 80,
+    "auras": 1
+  }
+}

@@ -102,6 +102,8 @@ function query(url, allowed) {
 export function createCreatorApi({
   lifecycle,
   community,
+  safety,
+  completion,
   authenticate,
   origin,
   enabled = false,
@@ -156,7 +158,9 @@ export function createCreatorApi({
           parts.length === 1 && parts[0] === "quests"
             ? ["limit", "cursor", "creator", "following"]
             : (parts.length === 1 && parts[0] === "creators") ||
-                suffix === "/me/quests"
+                ["/me/quests", "/me/participations", "/me/blocks"].includes(
+                  suffix,
+                )
               ? ["limit", "cursor"]
               : [],
         );
@@ -166,8 +170,24 @@ export function createCreatorApi({
             profile: community.myProfile(actor),
             progression: lifecycle.progression(actor),
           };
+        else if (
+          parts.length === 3 &&
+          parts[0] === "quests" &&
+          parts[2] === "completion"
+        )
+          result = completion.read(actor, parts[1]);
         else if (suffix === "/me/quests")
           result = community.myCreations(actor, options);
+        else if (suffix === "/me/participations")
+          result = community.myParticipations(actor, options);
+        else if (suffix === "/me/blocks")
+          result = safety.myBlocks(actor, options);
+        else if (
+          parts.length === 3 &&
+          parts[0] === "me" &&
+          parts[1] === "quests"
+        )
+          result = community.myCreation(actor, parts[2]);
         else if (suffix === "/creators")
           result = community.listCreators(actor, options);
         else if (suffix === "/quests")
@@ -202,7 +222,20 @@ export function createCreatorApi({
           405,
         );
         const body = await jsonBody(request);
-        if (request.method === "PUT" && suffix === "/profile") {
+        if (
+          request.method === "POST" &&
+          parts.length === 3 &&
+          parts[0] === "quests" &&
+          parts[2] === "completion"
+        ) {
+          fields(body, [
+            "operationId",
+            "revision",
+            "evidence",
+            "privateConsent",
+          ]);
+          result = completion.submit({ actor, questId: parts[1], ...body });
+        } else if (request.method === "PUT" && suffix === "/profile") {
           fields(body, [
             "operationId",
             "expectedVersion",
@@ -222,6 +255,22 @@ export function createCreatorApi({
             creatorId: parts[1],
             ...body,
           });
+        } else if (
+          request.method === "PUT" &&
+          parts.length === 3 &&
+          parts[0] === "creators" &&
+          parts[2] === "block"
+        ) {
+          fields(body, ["operationId", "blocked"]);
+          result = safety.setBlocked({ actor, creatorId: parts[1], ...body });
+        } else if (
+          request.method === "POST" &&
+          parts.length === 3 &&
+          parts[0] === "quests" &&
+          parts[2] === "reports"
+        ) {
+          fields(body, ["operationId", "revision", "reason", "detail"]);
+          result = safety.report({ actor, questId: parts[1], ...body });
         } else if (request.method === "POST" && suffix === "/quests") {
           fields(body, ["operationId", "questId", "draft"]);
           result = lifecycle.createDraft({ actor, ...body });

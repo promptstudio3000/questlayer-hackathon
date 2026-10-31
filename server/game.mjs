@@ -18,6 +18,12 @@ import {
 import { contains } from "./spatial/city-pack.mjs";
 import { QUEST_POLICY } from "./quest-templates.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
+import {
+  createAdventureResults,
+  demoAdventureWorld,
+  recordAdventureResult,
+  replayAdventureResult,
+} from "./adventure-results.mjs";
 
 export function session(db, name, now = Date.now()) {
   assert(
@@ -104,23 +110,24 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
   });
 }
 export function claimQuest(db, player, questId, fix, now = Date.now()) {
-  return atomic(db, () => settleQuest(db, player, questId, fix, now));
+  const results = createAdventureResults(db);
+  return atomic(db, () => settleQuest(db, player, questId, fix, now, results));
 }
-function settleQuest(db, player, questId, fix, now) {
+function settleQuest(db, player, questId, fix, now, results) {
   const q = db
     .prepare(
       "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
     )
     .get(questId);
   assert(q, "Quest not found.", 404);
-  assert(now >= q.opens_at && now < q.closes_at, "The zone is closed.", 410);
-  assert(
-    !db
+  demoAdventureWorld(q);
+  if (
+    db
       .prepare("SELECT 1 FROM quest_claims WHERE quest_id=? AND player_id=?")
-      .get(q.id, player),
-    "You have already completed this quest.",
-    409,
-  );
+      .get(q.id, player)
+  )
+    return replayAdventureResult(results.forQuest(player, q.id));
+  assert(now >= q.opens_at && now < q.closes_at, "The zone is closed.", 410);
   validateQuestEvidence(db, player, q, fix, now, q);
   const meta = JSON.parse(q.metadata || "{}");
   if (q.kind === "route")
@@ -154,12 +161,27 @@ function settleQuest(db, player, questId, fix, now) {
   );
   let item = null;
   if (q.kind === "chest") item = mintAura(db, player, now);
+  const resultId = recordAdventureResult(db, {
+    player,
+    quest: q,
+    reward,
+    xp: q.xp,
+    item,
+    now,
+  });
   history(db, player, "quest", q.title, reward, {
     quest: q.id,
     xp: q.xp,
     item: item?.name,
+    resultId,
   });
-  return { reward, xp: q.xp, item };
+  return {
+    reward,
+    xp: q.xp,
+    item,
+    result: results.get(player, resultId),
+    replayed: false,
+  };
 }
 function validateQuestEvidence(db, player, q, fix, now, target) {
   assert(now >= q.opens_at && now < q.closes_at, "The zone is closed.", 410);
@@ -196,6 +218,7 @@ export function advanceRoute(
   expectedCheckpoint,
   now = Date.now(),
 ) {
+  const results = createAdventureResults(db);
   return atomic(db, () => {
     const q = db
       .prepare(
@@ -203,13 +226,7 @@ export function advanceRoute(
       )
       .get(questId);
     assert(q?.kind === "route", "Walking expedition not found.", 404);
-    assert(
-      !db
-        .prepare("SELECT 1 FROM quest_claims WHERE quest_id=? AND player_id=?")
-        .get(q.id, player),
-      "You have already completed this quest.",
-      409,
-    );
+    demoAdventureWorld(q);
     const metadata = JSON.parse(q.metadata),
       checkpoints = metadata.checkpoints,
       saved = db
@@ -218,6 +235,15 @@ export function advanceRoute(
         )
         .get(q.id, player),
       current = saved?.checkpoint || 0;
+    if (
+      db
+        .prepare("SELECT 1 FROM quest_claims WHERE quest_id=? AND player_id=?")
+        .get(q.id, player)
+    )
+      return {
+        ...replayAdventureResult(results.forQuest(player, q.id)),
+        progress: { completed: current, total: checkpoints.length },
+      };
     assert(
       Number.isInteger(expectedCheckpoint) && expectedCheckpoint === current,
       "Your expedition changed. Refresh its checkpoint.",
@@ -247,7 +273,10 @@ export function advanceRoute(
     ).run(q.id, player, current + 1, requiresNewFix ? fix.timestamp : now);
     const progress = { completed: current + 1, total: checkpoints.length };
     if (progress.completed === progress.total)
-      return { ...settleQuest(db, player, questId, fix, now), progress };
+      return {
+        ...settleQuest(db, player, questId, fix, now, results),
+        progress,
+      };
     return { awaiting: true, progress };
   });
 }
@@ -424,7 +453,11 @@ export function redeem(db, player, withdrawalId, now = Date.now()) {
     return { amount: w.amount_u };
   });
 }
-export function equip(db, player, itemId) {
+export function equip(db, player, itemId, desiredEquipped) {
+  assert(
+    desiredEquipped === undefined || typeof desiredEquipped === "boolean",
+    "Invalid equipment choice.",
+  );
   return atomic(db, () => {
     const item = db
       .prepare("SELECT * FROM inventory WHERE id=? AND player_id=?")
@@ -445,15 +478,35 @@ export function equip(db, player, itemId) {
       "Equip this Aura from your NEAR inventory.",
       409,
     );
+    assert(
+      !db
+        .prepare(
+          "SELECT 1 FROM native_awards WHERE item_id=? AND state='issued'",
+        )
+        .get(itemId),
+      "This Aura is reserved for NEAR. Check or restore its claim before equipping it.",
+      409,
+      "ITEM_RESERVED",
+    );
+    const nextEquipped = desiredEquipped ?? !item.equipped;
+    const nativeOutfit = !!db
+      .prepare("SELECT native_outfit FROM players WHERE id=?")
+      .get(player)?.native_outfit;
+    if (
+      desiredEquipped !== undefined &&
+      !!item.equipped === desiredEquipped &&
+      !(desiredEquipped && nativeOutfit)
+    )
+      return { equipped: desiredEquipped, replayed: true };
     db.prepare(
       "UPDATE inventory SET equipped=0 WHERE player_id=? AND slot=?",
     ).run(player, item.slot);
     db.prepare("UPDATE inventory SET equipped=? WHERE id=?").run(
-      item.equipped ? 0 : 1,
+      nextEquipped ? 1 : 0,
       item.id,
     );
     db.prepare("UPDATE players SET native_outfit=0 WHERE id=?").run(player);
-    return { equipped: !item.equipped };
+    return { equipped: nextEquipped };
   });
 }
 export function listItem(db, player, itemId, price, now = Date.now()) {

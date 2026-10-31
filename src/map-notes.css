@@ -102,6 +102,20 @@
   border-radius: 12px;
   overflow-wrap: anywhere;
 }
+.map-notes-draft {
+  margin: 12px 0 16px;
+  padding: 12px 0;
+  border-top: 1px solid #dcd1eb;
+  border-bottom: 1px solid #dcd1eb;
+}
+.map-notes-draft p {
+  margin: 0 0 8px;
+}
+.map-notes-draft button {
+  min-height: 48px;
+  color: #665577;
+  background: #fcfaff;
+}
 .map-notes-notice {
   background: #e3f6ee;
   color: #176553;
@@ -383,6 +397,13 @@
 .game-dialog .map-notes-dialog textarea {
   font-size: 16px;
   line-height: 1.5;
+}
+.map-notes .map-notes-compose > label,
+.map-notes .map-notes-photo-button,
+.map-notes .map-notes-photo-button > span,
+.map-notes .map-notes-check,
+.game-dialog .map-notes-dialog > label {
+  color: var(--ink-secondary, #665577);
 }
 .map-notes .map-note > p,
 .map-notes .map-notes-pending > p,

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowDown,
   ArrowRight,
@@ -19,6 +19,8 @@ import { api, GOLD } from "./api";
 import { Character } from "./Character";
 import { Character3D } from "./Character3D";
 import { Dialog } from "./Dialog";
+import { useFormDraft } from "./useFormDraft";
+import { createReadEpoch } from "./read-epoch";
 import { AuraArt, Ghost } from "./Ghost";
 import { OriginalItemGallery, type OriginalItem } from "./OriginalItemGallery";
 import type { Item, Player } from "./types";
@@ -31,6 +33,7 @@ const rarityNames: Record<string, string> = {
   epic: "Epic",
   legendary: "Legendary",
 };
+const PRICE_DRAFT_FIELDS = { price: 32 };
 export type OriginalInventory = {
   linked?: boolean;
   count?: number;
@@ -55,6 +58,7 @@ export function Inventory({
   characterItems,
   nativeContent,
   nativeExtras,
+  adventureResults,
   busy,
   onEquip,
   onSell,
@@ -71,6 +75,7 @@ export function Inventory({
   characterItems: Item[];
   nativeContent: ReactNode;
   nativeExtras?: ReactNode;
+  adventureResults?: ReactNode;
   busy: string;
   onEvm: () => Promise<void>;
   onSkin: (id: string | null) => Promise<void>;
@@ -89,9 +94,32 @@ export function Inventory({
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selling, setSelling] = useState(false);
-  const [price, setPrice] = useState("10");
+  const priceDraft = useFormDraft({
+    playerId: player.id,
+    form: "demo-aura-listing",
+    realm: `demo:${selectedId || "none"}`,
+    fields: PRICE_DRAFT_FIELDS,
+    initial: { price: "10" },
+  });
+  const price = priceDraft.values.price;
+  const setPrice = (value: string) => priceDraft.setField("price", value);
   const [listingError, setListingError] = useState("");
   const [listingPending, setListingPending] = useState(false);
+  const mounted = useRef(true);
+  const currentOwner = useRef(player.id);
+  currentOwner.current = player.id;
+  const currentSelection = useRef("");
+  currentSelection.current = JSON.stringify([player.id, selectedId]);
+  const originReads = useRef(createReadEpoch());
+  const listingOperations = useRef(createReadEpoch());
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      originReads.current.invalidate();
+      listingOperations.current.invalidate();
+    };
+  }, []);
   const [failedLooks, setFailedLooks] = useState<Set<string>>(new Set());
   const auras = player.inventory.filter(
     (item) => item.kind === "aura" && item.native_claim_state !== "minted",
@@ -112,33 +140,63 @@ export function Inventory({
       onOriginalAppearance(data.appearance);
   };
   const refreshOrigin = async () => {
+    if (!mounted.current || currentOwner.current !== player.id) return;
+    const token = originReads.current.begin(player.id);
     setOriginLoading(true);
     setOriginError("");
     try {
-      acceptOrigin(await loadOriginals(true));
+      const data = await loadOriginals(true);
+      if (
+        !mounted.current ||
+        !originReads.current.isCurrent(token, currentOwner.current)
+      )
+        return;
+      acceptOrigin(data);
       setFailedLooks(new Set());
     } catch (error) {
+      if (
+        !mounted.current ||
+        !originReads.current.isCurrent(token, currentOwner.current)
+      )
+        return;
       setOriginError(
         error instanceof Error
           ? error.message
           : "Original inventory is temporarily unavailable.",
       );
     } finally {
-      setOriginLoading(false);
+      if (
+        mounted.current &&
+        originReads.current.isCurrent(token, currentOwner.current)
+      )
+        setOriginLoading(false);
     }
   };
   useEffect(() => {
     let active = true;
+    const token = originReads.current.begin(player.id);
+    setOriginLoading(false);
     void loadOriginals(false)
       .then((data) => {
-        if (active) acceptOrigin(data);
+        if (
+          active &&
+          mounted.current &&
+          originReads.current.isCurrent(token, currentOwner.current)
+        )
+          acceptOrigin(data);
       })
       .catch(() => {});
     return () => {
       active = false;
     };
-  }, [busy, loadOriginals]);
+  }, [busy, loadOriginals, player.id]);
   const listItem = async () => {
+    if (
+      !mounted.current ||
+      currentOwner.current !== player.id ||
+      currentSelection.current !== JSON.stringify([player.id, selectedId])
+    )
+      return;
     const parsedPrice = Number(price.replace(",", "."));
     const amount = Number.isFinite(parsedPrice)
       ? Math.round(parsedPrice * GOLD)
@@ -154,8 +212,18 @@ export function Inventory({
     }
     setListingPending(true);
     setListingError("");
+    const submittedRevision = priceDraft.revision;
+    const owner = player.id;
+    const token = listingOperations.current.begin(currentSelection.current);
     try {
-      if (await onSell(selected, amount)) {
+      const confirmed = await onSell(selected, amount);
+      if (
+        !mounted.current ||
+        !listingOperations.current.isCurrent(token, currentSelection.current)
+      )
+        return;
+      if (confirmed) {
+        priceDraft.discard(submittedRevision);
         setSelectedId(null);
         setSelling(false);
       } else {
@@ -164,13 +232,25 @@ export function Inventory({
         );
       }
     } catch (error) {
+      if (
+        !mounted.current ||
+        !listingOperations.current.isCurrent(token, currentSelection.current)
+      )
+        return;
       setListingError(
         error instanceof Error
           ? error.message
           : "The Aura was not listed. Try again.",
       );
     } finally {
-      setListingPending(false);
+      // Closing the item must not leave the remaining collection locked. Only
+      // this operation's pending flag is released; another form is untouched.
+      if (
+        mounted.current &&
+        currentOwner.current === owner &&
+        listingOperations.current.isCurrent(token, token.context)
+      )
+        setListingPending(false);
     }
   };
 
@@ -312,6 +392,7 @@ export function Inventory({
                 switches to the demo outfit.
               </p>
             )}
+            {adventureResults}
           </>
         ) : (
           <div className="inventory-native-content">
@@ -578,6 +659,7 @@ export function Inventory({
                       <input
                         id="inventory-list-price"
                         inputMode="decimal"
+                        maxLength={32}
                         required
                         value={price}
                         disabled={locked}
@@ -588,6 +670,23 @@ export function Inventory({
                       Demo market only. This listing does not transfer a NEAR
                       NFT or Base original.
                     </p>
+                    {priceDraft.hasDraft && (
+                      <p className="inventory-sale-note" role="status">
+                        {priceDraft.storageAvailable
+                          ? "Price draft saved in this browser. Review the amount before listing."
+                          : "This browser could not save your price draft. Keep this tab open."}
+                      </p>
+                    )}
+                    {priceDraft.hasDraft && (
+                      <button
+                        className="inventory-secondary"
+                        type="button"
+                        disabled={locked}
+                        onClick={() => priceDraft.discard()}
+                      >
+                        Discard price draft
+                      </button>
+                    )}
                     {listingError && (
                       <p className="inventory-error" role="alert">
                         {listingError}

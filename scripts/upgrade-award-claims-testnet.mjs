@@ -57,7 +57,7 @@ writeFileSync(
   { mode: 0o600 },
 );
 const wasm = readFileSync(
-    "contracts/target/wasm32-unknown-unknown/release/auratrail_collectibles.wasm",
+    "contracts/target/wasm32-unknown-unknown/release/questlayer_collectibles.wasm",
   ),
   transactions = [];
 async function record(step, fn) {

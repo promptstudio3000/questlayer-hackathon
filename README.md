@@ -1,6 +1,23 @@
-# QuestLayer
+# questlayer-hackathon
 
 **Little adventures. Real discoveries.** A native NEAR exploration game on real OpenStreetMap geography, designed to be fun even when nobody else is nearby.
+
+## Whole-project handoff
+
+Start with the [whole-project review and engineering handoff](docs/PROJECT-REVIEW-AND-HANDOFF.md),
+its [complete coverage appendix](docs/PROJECT-REVIEW-COVERAGE.md) and
+[audit snapshot](docs/PROJECT-REVIEW-SNAPSHOT.json). They locate the original plan,
+compare all W00–W14 milestones with source/evidence, and separate local work from
+public deployment. This review is a historical snapshot taken before the GitHub source checkpoint.
+See [cloud development and naming](docs/CLOUD-DEVELOPMENT.md) for the current source and deployment boundary.
+
+## Continue in the cloud
+
+Repository: [promptstudio3000/questlayer-hackathon](https://github.com/promptstudio3000/questlayer-hackathon).
+Open [a GitHub Codespace](https://codespaces.new/promptstudio3000/questlayer-hackathon), wait for setup, then run `npm run dev` and open port **5173**.
+The development container installs Node.js 24 and dependencies. Use `npm run check` before committing.
+For another cloud coding environment, use Node.js 24+, `npm ci`, and the existing [roadmap](ROADMAP.md).
+Full setup, preview security, legacy compatibility and VPS migration boundaries are in [cloud development](docs/CLOUD-DEVELOPMENT.md).
 
 ## Design and development
 
@@ -14,6 +31,8 @@ runtime; these documents do not indicate a deployed redesign.
 ## Development direction
 
 Follow the [implementation roadmap](ROADMAP.md), [consolidated game rules](docs/GAME-RULES.md) and [city-world specification](docs/WORLD-GENERATION.md). The public alpha now uses six varied, non-overlapping park-derived zones across Plzeň. The [current delivery](docs/DELIVERY-2026-10-31.md) distinguishes connected native testnet features from the demo economy. Milestone status is in [the tracker](docs/roadmap.json); complete exit gates remain open.
+
+Continue from [the combined development status](docs/DEVELOPMENT-STATUS.md): native recovery and creator source are already integrated; local W02 adventure continuity is verified separately from deployment. This index connects the handoffs, research, current evidence and remaining work.
 
 ## Run locally
 
@@ -35,7 +54,7 @@ The deploy target is **https://questlayer.promptstudio3000.com/**. Deployment is
 3. Open a free park zone and choose its visit, chest or ordered three-point expedition. Discover an Aura without needing a second player.
 4. Open **Inventory**, equip the Aura or list it on the demo market. A second independent browser session can buy it; the old owner loses equipment rights.
 5. Open **Wallet**, stake demo GOLD and choose a 0–100% contribution. Arena tier activation takes 30 seconds. A withdrawal unlocks in 60 seconds. These are explicitly simulated timings.
-6. Open **Game fund** to inspect available/reserved/paid balances in the separate 50% street-coin and 50% zone buckets.
+6. Open **Settings → Game economy** (also linked from Wallet) to inspect available/reserved/paid balances in the separate 50% street-coin and 50% zone buckets.
 7. Switch to **My surroundings** to request browser geolocation and generate a shared local world from cached OSM pedestrian routes. In this mode, camera clicks do not move the character or prove location.
 
 ## Implemented vs. native integrations

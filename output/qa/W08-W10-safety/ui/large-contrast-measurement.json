@@ -1,0 +1,15 @@
+{
+  "dialog": {
+    "scrollWidth": 348,
+    "width": 348
+  },
+  "dialogBackground": "rgb(252, 250, 255)",
+  "documentOverflow": false,
+  "labelColors": [
+    "rgb(102, 85, 119)",
+    "rgb(102, 85, 119)",
+    "rgb(102, 85, 119)"
+  ],
+  "selectFont": "32px",
+  "width": 390
+}

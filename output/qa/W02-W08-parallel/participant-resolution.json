@@ -1,0 +1,83 @@
+{
+  "performedAt": "2026-10-31T17:45:32.565Z",
+  "scope": "Synthetic QA obligation resolution via trusted local CLI; no physical completion or activity reward established.",
+  "command": "creator-operator resolve",
+  "input": {
+    "actor": "qa-validator",
+    "operationId": "qa-browser-resolve:6979ce86-5212-4583-98bb-73b181097038",
+    "questId": "creator-5ed881ca-35de-4b0d-8520-2750fd941889",
+    "participant": "player_fa3212e9-7336-4421-bda7-2dcd5cf8aabd",
+    "resolutionReference": "synthetic-qa-no-physical-completion-20261031"
+  },
+  "receipt": {
+    "domain": "demo",
+    "operationId": "qa-browser-resolve:6979ce86-5212-4583-98bb-73b181097038",
+    "command": "resolve",
+    "confirmedAt": 1793468732552,
+    "participation": {
+      "quest_id": "creator-5ed881ca-35de-4b0d-8520-2750fd941889",
+      "participant": "player_fa3212e9-7336-4421-bda7-2dcd5cf8aabd",
+      "revision": 2,
+      "state": "resolved",
+      "started_at": 1793468637384,
+      "resolved_at": 1793468732552,
+      "resolved_by": "qa-validator",
+      "resolution_reference": "synthetic-qa-no-physical-completion-20261031"
+    }
+  },
+  "acceptedBefore": {
+    "domain": "demo",
+    "questId": "creator-5ed881ca-35de-4b0d-8520-2750fd941889",
+    "revision": 2,
+    "state": "open",
+    "questState": "closing",
+    "content": {
+      "title": "Three quiet details in Šafaříkovy sady",
+      "description": "Take a free observation break in Šafaříkovy sady, Plzeň. Stay on public paths and choose a comfortable stopping place. Notice one leaf shape, one building detail and one sound; keep your observations private. There is no timed route, purchase, photo upload or GPS check. Stop whenever you wish. This demo creator quest has no configured reward."
+    },
+    "rewardStatus": "not-configured"
+  },
+  "acceptedAfter": {
+    "domain": "demo",
+    "questId": "creator-5ed881ca-35de-4b0d-8520-2750fd941889",
+    "revision": 2,
+    "state": "resolved",
+    "questState": "closing",
+    "content": {
+      "title": "Three quiet details in Šafaříkovy sady",
+      "description": "Take a free observation break in Šafaříkovy sady, Plzeň. Stay on public paths and choose a comfortable stopping place. Notice one leaf shape, one building detail and one sound; keep your observations private. There is no timed route, purchase, photo upload or GPS check. Stop whenever you wish. This demo creator quest has no configured reward."
+    },
+    "rewardStatus": "not-configured"
+  },
+  "openParticipationCount": 0,
+  "questStillClosing": true,
+  "authorCommitmentStillHeld": 200,
+  "economyBefore": {
+    "earnedXp": 0,
+    "lockedXp": 0,
+    "availableXp": 0,
+    "gold_u": 120000000000,
+    "level": 1,
+    "inventoryIds": [
+      "item_9de43278-312a-4f7f-8d6a-db4540fe173a"
+    ],
+    "historyIds": [
+      "event_d64c546e-e9b4-4726-a4ac-95aa2996d7e2"
+    ]
+  },
+  "economyAfter": {
+    "earnedXp": 0,
+    "lockedXp": 0,
+    "availableXp": 0,
+    "gold_u": 120000000000,
+    "level": 1,
+    "inventoryIds": [
+      "item_9de43278-312a-4f7f-8d6a-db4540fe173a"
+    ],
+    "historyIds": [
+      "event_d64c546e-e9b4-4726-a4ac-95aa2996d7e2"
+    ]
+  },
+  "noParticipantAward": true,
+  "finalizationPerformed": false
+}

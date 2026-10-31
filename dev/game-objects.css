@@ -1,0 +1,91 @@
+body {
+  margin: 0;
+  overflow: auto;
+  background: #f2ebff;
+}
+#root {
+  min-height: 100dvh;
+}
+.object-field-kit {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px;
+  background: #fcfaff;
+  color: #1a0335;
+}
+.object-field-kit h1 {
+  font-size: 32px;
+  line-height: 1.2;
+  margin: 8px 0 16px;
+}
+.object-field-kit h2 {
+  font-size: 20px;
+  line-height: 1.3;
+  margin: 16px 0 8px;
+}
+.object-field-kit p {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #665577;
+  margin: 8px 0;
+}
+.object-field-kit .kit-eyebrow {
+  font-size: 14px;
+  color: #672eeb;
+}
+.object-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 32px 24px;
+  padding: 32px 0;
+}
+.object-gallery article {
+  border-bottom: 1px solid #dcd1eb;
+  padding-bottom: 24px;
+  min-width: 0;
+}
+.object-comparison,
+.object-state-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 24px 0;
+}
+.object-comparison > div,
+.object-state-row > div {
+  flex: 1 1 130px;
+}
+.object-comparison canvas {
+  image-rendering: pixelated;
+}
+.object-controls {
+  border-top: 2px solid #dcd1eb;
+  padding: 24px 0;
+}
+.object-marker-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 24px 0;
+}
+.object-field-kit footer {
+  border-top: 1px solid #dcd1eb;
+  padding-top: 16px;
+}
+.object-field-kit.large-text :is(p, h2, button) {
+  font-size: 32px;
+  line-height: 1.5;
+}
+@media (max-width: 540px) {
+  .object-field-kit {
+    padding: 20px;
+  }
+  .object-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
+  }
+  .object-field-kit.large-text .object-gallery {
+    grid-template-columns: 1fr;
+  }
+}

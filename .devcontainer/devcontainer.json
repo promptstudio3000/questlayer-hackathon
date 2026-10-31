@@ -1,0 +1,30 @@
+{
+  "name": "questlayer-hackathon",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:2": {
+      "version": "24"
+    }
+  },
+  "forwardPorts": [
+    5173
+  ],
+  "portsAttributes": {
+    "5173": {
+      "label": "QuestLayer Hackathon",
+      "onAutoForward": "notify"
+    },
+    "8787": {
+      "label": "Internal API",
+      "onAutoForward": "ignore"
+    }
+  },
+  "containerEnv": {
+    "HOST": "127.0.0.1",
+    "DISABLE_BACKGROUND_WORKERS": "1",
+    "DISABLE_NATIVE_ATTESTATIONS": "1",
+    "CREATOR_COMMUNITY_ENABLED": "0"
+  },
+  "postCreateCommand": "npm ci",
+  "remoteUser": "vscode"
+}

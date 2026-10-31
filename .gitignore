@@ -18,3 +18,12 @@ playwright-report/
 # Temporary upstream artwork used only by the local reference preview.
 dev/reference-6741.glb
 dev/reference-wearable-*.svg
+
+# Private state and cloud-local configuration never belong in source control.
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+runtime.env
+*.tgz
+*.tar.gz

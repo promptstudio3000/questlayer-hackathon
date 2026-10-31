@@ -1,0 +1,14 @@
+✔ existing private WAL backup restores creator publication/obligations and historical retries without duplicated rights (119.837458ms)
+✔ consistent WAL snapshots include only private state artifacts and can be reopened (56.551792ms)
+✔ failed snapshots leave a previously verified backup intact and remove pending files (79.166083ms)
+✔ retention removes only owned expired snapshots and preserves the newest two (40.597334ms)
+✔ referenced note images are privately preserved and unsafe media references fail closed (71.180459ms)
+✔ native attestor and scoped worker key are included privately without becoming player wallet keys (42.69325ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 347.123042

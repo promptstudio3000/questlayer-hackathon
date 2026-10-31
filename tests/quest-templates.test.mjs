@@ -280,10 +280,9 @@ test("return trail requires ordered departure and return; retries and another pl
     assert.equal(result.xp, 100);
     assert.equal(result.reward, 0);
     assert.equal(result.item, null);
-    assert.throws(
-      () => advanceRoute(db, player, q.id, points[3], 3, NOW),
-      /already completed/,
-    );
+    const replay = advanceRoute(db, player, q.id, points[3], 3, NOW);
+    assert.equal(replay.replayed, true);
+    assert.equal(replay.result.id, result.result.id);
     assert.equal(
       db.prepare("SELECT xp FROM players WHERE id=?").get(player).xp,
       100,
@@ -354,7 +353,7 @@ test("final checkpoint and award roll back together when receipt persistence fai
     for (let i = 0; i < points.length - 1; i++)
       advanceRoute(db, player, q.id, points[i], i, NOW);
     db.exec(
-      "CREATE TRIGGER reject_quest_history BEFORE INSERT ON history WHEN NEW.kind='quest' BEGIN SELECT RAISE(ABORT, 'Receipt store unavailable'); END",
+      "CREATE TEMP TRIGGER reject_quest_history BEFORE INSERT ON history WHEN NEW.kind='quest' BEGIN SELECT RAISE(ABORT, 'Receipt store unavailable'); END",
     );
     assert.throws(
       () =>

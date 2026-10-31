@@ -1,0 +1,134 @@
+[
+  {
+    "controls": [
+      {
+        "height": 70.296875,
+        "text": "Show adventures11 coins · 0.11 demo GOLD this session"
+      },
+      {
+        "height": 48,
+        "text": "Show an action error"
+      },
+      {
+        "height": 50,
+        "text": "Confirm one coin"
+      },
+      {
+        "height": 50,
+        "text": "Confirm five-coin burst"
+      },
+      {
+        "height": 50,
+        "text": "Replay last receipt"
+      },
+      {
+        "height": 50,
+        "text": "Switch synthetic player"
+      }
+    ],
+    "height": 780,
+    "live": "1 coin: 0.01 demo GOLD and 2 XP confirmed. 11 this session.",
+    "scrollWidth": 360,
+    "summary": "11 coins · 0.11 demo GOLD this session",
+    "width": 360
+  },
+  {
+    "controls": [
+      {
+        "height": 70.296875,
+        "text": "Show adventures11 coins · 0.11 demo GOLD this session"
+      },
+      {
+        "height": 48,
+        "text": "Show an action error"
+      },
+      {
+        "height": 50,
+        "text": "Confirm one coin"
+      },
+      {
+        "height": 50,
+        "text": "Confirm five-coin burst"
+      },
+      {
+        "height": 50,
+        "text": "Replay last receipt"
+      },
+      {
+        "height": 50,
+        "text": "Switch synthetic player"
+      }
+    ],
+    "height": 844,
+    "live": "1 coin: 0.01 demo GOLD and 2 XP confirmed. 11 this session.",
+    "scrollWidth": 390,
+    "summary": "11 coins · 0.11 demo GOLD this session",
+    "width": 390
+  },
+  {
+    "controls": [
+      {
+        "height": 70.296875,
+        "text": "Show adventures11 coins · 0.11 demo GOLD this session"
+      },
+      {
+        "height": 48,
+        "text": "Show an action error"
+      },
+      {
+        "height": 50,
+        "text": "Confirm one coin"
+      },
+      {
+        "height": 50,
+        "text": "Confirm five-coin burst"
+      },
+      {
+        "height": 50,
+        "text": "Replay last receipt"
+      },
+      {
+        "height": 50,
+        "text": "Switch synthetic player"
+      }
+    ],
+    "height": 390,
+    "live": "1 coin: 0.01 demo GOLD and 2 XP confirmed. 11 this session.",
+    "scrollWidth": 844,
+    "summary": "11 coins · 0.11 demo GOLD this session",
+    "width": 844
+  },
+  {
+    "controls": [
+      {
+        "height": 70.296875,
+        "text": "Show adventures11 coins · 0.11 demo GOLD this session"
+      },
+      {
+        "height": 48,
+        "text": "Show an action error"
+      },
+      {
+        "height": 50,
+        "text": "Confirm one coin"
+      },
+      {
+        "height": 50,
+        "text": "Confirm five-coin burst"
+      },
+      {
+        "height": 50,
+        "text": "Replay last receipt"
+      },
+      {
+        "height": 50,
+        "text": "Switch synthetic player"
+      }
+    ],
+    "height": 800,
+    "live": "1 coin: 0.01 demo GOLD and 2 XP confirmed. 11 this session.",
+    "scrollWidth": 1280,
+    "summary": "11 coins · 0.11 demo GOLD this session",
+    "width": 1280
+  }
+]

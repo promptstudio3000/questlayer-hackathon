@@ -1,0 +1,97 @@
+{
+  "verifiedAt": "2026-10-31T18:28:03.975Z",
+  "scope": "Read-only verification of two existing funded DEMO street-coin awards after creator safety assertions. These are not creator completion or native rewards; arena coordinates do not establish physical presence.",
+  "host": "http://localhost:8798",
+  "viewerId": "player_b163ccdf-548f-4d00-ac52-9f753bc49d3b",
+  "confirmedCoinCount": 2,
+  "totalMicroGold": 20000,
+  "totalDemoGold": "0.02",
+  "totalXp": 4,
+  "viewer": {
+    "xp": 4,
+    "gold_u": 120000020000
+  },
+  "coinClaims": [
+    {
+      "id": "demo:arena-city-plzen:2026-10-31:v2:coin:429",
+      "world_id": "demo:arena-city-plzen:2026-10-31:v2",
+      "value_u": 10000,
+      "claimant": "player_b163ccdf-548f-4d00-ac52-9f753bc49d3b",
+      "claimed_at": 1793471243719
+    },
+    {
+      "id": "demo:arena-city-plzen:2026-10-31:v2:coin:2191",
+      "world_id": "demo:arena-city-plzen:2026-10-31:v2",
+      "value_u": 10000,
+      "claimant": "player_b163ccdf-548f-4d00-ac52-9f753bc49d3b",
+      "claimed_at": 1793471243771
+    }
+  ],
+  "coinHistory": [
+    {
+      "id": "event_3abbcb22-905d-4133-99b2-eeed2c725583",
+      "title": "Street coin",
+      "gold_u": 10000,
+      "meta": "{\"coin\":\"demo:arena-city-plzen:2026-10-31:v2:coin:429\"}",
+      "created_at": 1793471243720
+    },
+    {
+      "id": "event_99ff97d9-48c7-4986-9dd2-918905b8735f",
+      "title": "Street coin",
+      "gold_u": 10000,
+      "meta": "{\"coin\":\"demo:arena-city-plzen:2026-10-31:v2:coin:2191\"}",
+      "created_at": 1793471243774
+    }
+  ],
+  "worlds": [
+    {
+      "id": "demo:arena-city-plzen:2026-10-31:v2",
+      "arena": true,
+      "day": "2026-10-31",
+      "endsAt": 1793487600000
+    }
+  ],
+  "viewerNativeAwardCount": 0,
+  "authorUnchangedFromSetupAndModeration": true,
+  "author": {
+    "earnedXp": 1000,
+    "lockedXp": 200,
+    "availableXp": 800,
+    "level": 3,
+    "gold_u": 120000000000,
+    "inventory": [
+      {
+        "id": "item_44ebf2fb-6418-42ef-9e29-90152ed554ab",
+        "kind": "avatar",
+        "name": "Explorer",
+        "equipped": 1
+      }
+    ],
+    "history": [
+      {
+        "id": "event_961733e2-0e57-4ca5-b98f-dccd4108dbbd",
+        "kind": "welcome",
+        "title": "Welcome to your first adventure",
+        "gold_u": 120000000000
+      }
+    ],
+    "nativeAwardCount": 0
+  },
+  "creatorQuest": {
+    "state": "closing",
+    "version": 4,
+    "published_revision": 1
+  },
+  "acceptedParticipation": {
+    "quest_id": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+    "revision": 1,
+    "state": "open"
+  },
+  "openCreatorObligations": 1,
+  "creatorCommitment": {
+    "amount": 200,
+    "policy_version": "qa-safety-v1",
+    "released_at": null
+  },
+  "creatorCompletionOrReleasePerformed": false
+}

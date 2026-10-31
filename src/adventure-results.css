@@ -1,0 +1,156 @@
+.game-dialog:has(> .adventure-results-dialog) {
+  padding: 0;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+}
+.adventure-history-button {
+  width: 100%;
+  margin-top: 16px;
+  min-height: 48px;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--surface-raised);
+  border: 1px solid var(--control-border);
+}
+.adventure-results-dialog .primary-button,
+.adventure-results-dialog .primary-button:hover {
+  color: var(--on-action);
+  background: var(--action);
+}
+.adventure-results-dialog .secondary-button {
+  color: var(--ink);
+  background: var(--surface-raised);
+  border: 1px solid var(--control-border);
+}
+.adventure-results-dialog .text-button {
+  color: var(--action);
+}
+.adventure-results-dialog {
+  padding: 24px;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.adventure-results-dialog h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+}
+.adventure-results-dialog h3 {
+  margin: 20px 0 12px;
+  font-size: 20px;
+}
+.game-dialog .adventure-results-dialog > p {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.adventure-results-dialog .panel-heading {
+  align-items: flex-start;
+  gap: 12px;
+}
+.adventure-results-dialog .icon-button {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  color: var(--ink);
+}
+.adventure-results-dialog > button {
+  width: 100%;
+  min-height: 48px;
+  margin: 6px 0;
+  font-size: 16px;
+}
+.adventure-results-dialog button:focus-visible {
+  outline: 3px solid var(--action);
+  outline-offset: 3px;
+}
+.game-dialog .adventure-results-dialog > .adventure-result-domain,
+.game-dialog .adventure-results-dialog > .adventure-result-date {
+  color: var(--ink-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.adventure-result-stage {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 20px 16px 16px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  text-align: center;
+}
+.adventure-result-stage .character-composition {
+  margin: 16px 0 24px;
+}
+.adventure-result-stage p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.adventure-result-stage span {
+  font-size: 14px;
+}
+.adventure-result-stage .aura-art {
+  margin: 0 0 12px;
+}
+.adventure-result-no-item {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.adventure-result-no-item svg {
+  flex-shrink: 0;
+}
+.adventure-result-award {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--control-border);
+}
+.adventure-result-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+.adventure-result-list li + li {
+  border-top: 1px solid var(--control-border);
+}
+.adventure-result-list button {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 64px;
+  padding: 16px 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font-size: 16px;
+}
+.adventure-result-list button > span {
+  flex: 1;
+  min-width: 0;
+}
+.adventure-result-list strong,
+.adventure-result-list small {
+  display: block;
+}
+.adventure-result-list small {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+.adventure-result-list svg {
+  flex-shrink: 0;
+}
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  .sheet-compact:has(.adventure-result-resume) > .recommended-quest,
+  .sheet-compact:has(.adventure-result-resume) > .compact-selection,
+  .sheet-compact:has(.adventure-result-resume)
+    > .adventure-notice:not(.adventure-result-resume) {
+    display: none;
+  }
+  .adventure-results-dialog {
+    padding: 20px 16px;
+  }
+}

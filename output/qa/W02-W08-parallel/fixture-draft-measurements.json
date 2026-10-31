@@ -1,0 +1,420 @@
+[
+  {
+    "stage": "note-after-remount",
+    "dom": {
+      "checkboxes": [
+        false,
+        false
+      ],
+      "text": "W02 riverbank draft: read the bridge plaque from the public footpath."
+    }
+  },
+  {
+    "stage": "GPS-after-remount",
+    "dom": {
+      "checkboxes": [
+        false,
+        false
+      ],
+      "text": "W02 GPS-scope text from a synthetic fixture location."
+    }
+  },
+  {
+    "stage": "arena-restored-separately",
+    "dom": {
+      "checkboxes": [
+        false,
+        false
+      ],
+      "text": "W02 riverbank draft: read the bridge plaque from the public footpath."
+    }
+  },
+  {
+    "stage": "other-player-empty",
+    "dom": {
+      "checkboxes": [
+        false,
+        false
+      ],
+      "text": ""
+    }
+  },
+  {
+    "stage": "note-after-reload",
+    "dom": {
+      "checkboxes": [
+        false,
+        false
+      ],
+      "text": "W02 riverbank draft: read the bridge plaque from the public footpath."
+    }
+  },
+  {
+    "stage": "note-layout-360x780",
+    "dom": {
+      "height": 780,
+      "labels": [
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "What did you discover?"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Add photo"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Also attach my exact GPS, accuracy and capture time"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "I agree to publish this note and its map pin publicly."
+        }
+      ],
+      "scrollWidth": 360,
+      "width": 360
+    }
+  },
+  {
+    "stage": "note-layout-390x844",
+    "dom": {
+      "height": 844,
+      "labels": [
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "What did you discover?"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Add photo"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Also attach my exact GPS, accuracy and capture time"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "I agree to publish this note and its map pin publicly."
+        }
+      ],
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "stage": "note-layout-844x390",
+    "dom": {
+      "height": 390,
+      "labels": [
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "What did you discover?"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Add photo"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Also attach my exact GPS, accuracy and capture time"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "I agree to publish this note and its map pin publicly."
+        }
+      ],
+      "scrollWidth": 844,
+      "width": 844
+    }
+  },
+  {
+    "stage": "note-layout-1280x800",
+    "dom": {
+      "height": 800,
+      "labels": [
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "What did you discover?"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Add photo"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Also attach my exact GPS, accuracy and capture time"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "I agree to publish this note and its map pin publicly."
+        }
+      ],
+      "scrollWidth": 1280,
+      "width": 1280
+    }
+  },
+  {
+    "stage": "note-large-text",
+    "dom": {
+      "scrollWidth": 390,
+      "textSize": "32px",
+      "width": 390
+    }
+  },
+  {
+    "stage": "note-lost-response-before-status-settles",
+    "dom": {
+      "cards": 0,
+      "pending": true,
+      "resume": false,
+      "texts": []
+    }
+  },
+  {
+    "stage": "note-lost-response-settled",
+    "dom": {
+      "cards": 1,
+      "notice": "Your note is on the map.",
+      "pending": false,
+      "resume": false,
+      "texts": [
+        "W02 lost-response note: one confirmed local fixture publication."
+      ]
+    }
+  },
+  {
+    "stage": "task-after-reload",
+    "dom": {
+      "checkboxes": [],
+      "fields": [
+        {
+          "type": "text",
+          "value": "W02 riverbank plaque observation"
+        },
+        {
+          "type": "text",
+          "value": "Plzeň · public riverside footpath"
+        },
+        {
+          "type": "textarea",
+          "value": "Read the year on the plaque from the public path and describe its position. Do not enter the road."
+        },
+        {
+          "type": "text",
+          "value": "0.12"
+        },
+        {
+          "type": "datetime-local",
+          "value": "2026-11-02T18:49"
+        }
+      ],
+      "review": "Sponsor a task"
+    }
+  },
+  {
+    "stage": "task-layout-360x780",
+    "dom": {
+      "height": 780,
+      "labels": [
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        }
+      ],
+      "scrollWidth": 360,
+      "width": 360
+    }
+  },
+  {
+    "stage": "task-layout-390x844",
+    "dom": {
+      "height": 844,
+      "labels": [
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        }
+      ],
+      "scrollWidth": 390,
+      "width": 390
+    }
+  },
+  {
+    "stage": "task-layout-844x390",
+    "dom": {
+      "height": 390,
+      "labels": [
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        }
+      ],
+      "scrollWidth": 844,
+      "width": 844
+    }
+  },
+  {
+    "stage": "task-layout-1280x800",
+    "dom": {
+      "height": 800,
+      "labels": [
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        },
+        {
+          "colour": "rgb(26, 3, 53)",
+          "font": "16px"
+        }
+      ],
+      "scrollWidth": 1280,
+      "width": 1280
+    }
+  },
+  {
+    "stage": "task-review-after-remount",
+    "dom": {
+      "checkbox": false,
+      "heading": "Review funding",
+      "publishDisabled": true
+    }
+  },
+  {
+    "stage": "task-code-change-revokes-review",
+    "dom": {
+      "checkbox": null,
+      "createTitle": "W02 riverbank plaque observation",
+      "heading": "Sponsor a task"
+    }
+  },
+  {
+    "stage": "task-lost-after-save-first-request",
+    "dom": {
+      "counter": "Fixture transaction requests: 1",
+      "notice": "No confirmed transaction. Your entries are kept; refresh before retrying.",
+      "operationId": "ddb54e7e5ca4a6af8f45dcd33da02597b67b9ce52f85d821ad277c359e3f5544"
+    }
+  },
+  {
+    "stage": "task-retry-opens-existing-no-second-request",
+    "dom": {
+      "checkboxes": [],
+      "counter": "Fixture transaction requests: 1",
+      "heading": "W02 riverbank plaque observation",
+      "notice": "This exact task is already published. Its confirmed record is open; no new funding is needed.",
+      "operationId": "ddb54e7e5ca4a6af8f45dcd33da02597b67b9ce52f85d821ad277c359e3f5544"
+    }
+  },
+  {
+    "stage": "task-final-corrected-fixture-one-request",
+    "dom": {
+      "counter": "Fixture transaction requests: 1",
+      "heading": "W02 riverbank plaque observation",
+      "notice": "This exact task is already published. Its confirmed record is open; no new funding is needed.",
+      "operationId": "3a53b1059fb394f67b199b4732abbeae37fb74d706319b6253c6ae12983ee4e6",
+      "submissionReview": false
+    }
+  },
+  {
+    "stage": "note-report-dialog-labels",
+    "dom": {
+      "dialogOpen": true,
+      "labels": [
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Reason"
+        },
+        {
+          "colour": "rgb(102, 85, 119)",
+          "font": "16px",
+          "text": "Details (optional)"
+        }
+      ]
+    }
+  },
+  {
+    "stage": "task-large-text",
+    "dom": {
+      "inputSize": "32px",
+      "scrollWidth": 390,
+      "width": 390
+    }
+  }
+]

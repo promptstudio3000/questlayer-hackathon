@@ -1,15 +1,26 @@
+import { defaultDatabasePath } from "./state-path.mjs";
 import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, existsSync } from "node:fs";
+import {
+  preflightDatabase,
+  inspectDatabaseSchema,
+  recordSchemaVersions,
+} from "./schema-compatibility.mjs";
 import { dirname } from "node:path";
-import { GOLD, id, hash, dayKey } from "./domain.mjs";
+import { GOLD, id, hash, dayKey, levelFor, assert } from "./domain.mjs";
 
 export function openDatabase(
-  path = process.env.DATABASE_PATH || ".data/auratrail.sqlite",
+  path = defaultDatabasePath(),
 ) {
+  if (path !== ":memory:" && existsSync(path)) preflightDatabase(path);
   if (path !== ":memory:")
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const db = new DatabaseSync(path);
-  db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
+  try {
+    db.exec(
+      "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; BEGIN IMMEDIATE",
+    );
+    db.exec(`
     CREATE TABLE IF NOT EXISTS players(id TEXT PRIMARY KEY, name TEXT NOT NULL, gold_u INTEGER NOT NULL DEFAULT 0 CHECK(gold_u>=0), xp INTEGER NOT NULL DEFAULT 0, appearance TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), expires_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS worlds(id TEXT PRIMARY KEY, day TEXT NOT NULL, region TEXT NOT NULL, timezone TEXT NOT NULL, manifest TEXT NOT NULL, created_at INTEGER NOT NULL);
@@ -41,99 +52,110 @@ export function openDatabase(
     CREATE INDEX IF NOT EXISTS world_job_schedule ON world_jobs(state,run_after,lease_until);
     CREATE TABLE IF NOT EXISTS daily_jobs(job_key TEXT PRIMARY KEY, created_at INTEGER NOT NULL);
   `);
-  db.prepare(
-    "INSERT OR IGNORE INTO treasury(bucket,available_u) VALUES (?,?)",
-  ).run("coins", 50_000 * GOLD);
-  db.prepare(
-    "INSERT OR IGNORE INTO treasury(bucket,available_u) VALUES (?,?)",
-  ).run("zones", 50_000 * GOLD);
-  db.prepare("INSERT OR IGNORE INTO treasury_events VALUES (?,?,?,?,?)").run(
-    "initial-demo-sponsor",
-    "demo-sponsor",
-    50_000 * GOLD,
-    50_000 * GOLD,
-    Date.now(),
-  );
-  if (
-    !db
-      .prepare("PRAGMA table_info(positions)")
-      .all()
-      .some((c) => c.name === "eligible_contribution")
-  )
-    db.exec(
-      "ALTER TABLE positions ADD COLUMN eligible_contribution INTEGER NOT NULL DEFAULT 0",
+    db.prepare(
+      "INSERT OR IGNORE INTO treasury(bucket,available_u) VALUES (?,?)",
+    ).run("coins", 50_000 * GOLD);
+    db.prepare(
+      "INSERT OR IGNORE INTO treasury(bucket,available_u) VALUES (?,?)",
+    ).run("zones", 50_000 * GOLD);
+    db.prepare("INSERT OR IGNORE INTO treasury_events VALUES (?,?,?,?,?)").run(
+      "initial-demo-sponsor",
+      "demo-sponsor",
+      50_000 * GOLD,
+      50_000 * GOLD,
+      Date.now(),
     );
-  if (
-    !db
-      .prepare("PRAGMA table_info(presence)")
-      .all()
-      .some((c) => c.name === "arena")
-  )
-    db.exec("ALTER TABLE presence ADD COLUMN arena INTEGER NOT NULL DEFAULT 1");
-  if (
-    !db
-      .prepare("PRAGMA table_info(presence)")
-      .all()
-      .some((c) => c.name === "lease_id")
-  )
+    if (
+      !db
+        .prepare("PRAGMA table_info(positions)")
+        .all()
+        .some((c) => c.name === "eligible_contribution")
+    )
+      db.exec(
+        "ALTER TABLE positions ADD COLUMN eligible_contribution INTEGER NOT NULL DEFAULT 0",
+      );
+    if (
+      !db
+        .prepare("PRAGMA table_info(presence)")
+        .all()
+        .some((c) => c.name === "arena")
+    )
+      db.exec(
+        "ALTER TABLE presence ADD COLUMN arena INTEGER NOT NULL DEFAULT 1",
+      );
+    if (
+      !db
+        .prepare("PRAGMA table_info(presence)")
+        .all()
+        .some((c) => c.name === "lease_id")
+    )
+      db.exec(
+        "ALTER TABLE presence ADD COLUMN lease_id TEXT NOT NULL DEFAULT ''",
+      );
+    const playerColumns = db.prepare("PRAGMA table_info(players)").all();
+    if (!playerColumns.some((c) => c.name === "native_outfit"))
+      db.exec(
+        "ALTER TABLE players ADD COLUMN native_outfit INTEGER NOT NULL DEFAULT 0",
+      );
+    if (!playerColumns.some((c) => c.name === "native_account"))
+      db.exec("ALTER TABLE players ADD COLUMN native_account TEXT");
+    const questColumns = db.prepare("PRAGMA table_info(quests)").all();
+    if (!questColumns.some((c) => c.name === "zone_id"))
+      db.exec("ALTER TABLE quests ADD COLUMN zone_id TEXT");
+    if (!questColumns.some((c) => c.name === "metadata"))
+      db.exec(
+        "ALTER TABLE quests ADD COLUMN metadata TEXT NOT NULL DEFAULT '{}'",
+      );
     db.exec(
-      "ALTER TABLE presence ADD COLUMN lease_id TEXT NOT NULL DEFAULT ''",
+      "CREATE TABLE IF NOT EXISTS quest_progress(quest_id TEXT NOT NULL REFERENCES quests(id),player_id TEXT NOT NULL REFERENCES players(id),checkpoint INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,PRIMARY KEY(quest_id,player_id))",
     );
-  const playerColumns = db.prepare("PRAGMA table_info(players)").all();
-  if (!playerColumns.some((c) => c.name === "native_outfit"))
-    db.exec(
-      "ALTER TABLE players ADD COLUMN native_outfit INTEGER NOT NULL DEFAULT 0",
+    // Translate only application-authored catalog entries. IDs, geography, claims and user content are preserved.
+    const catalog = [
+      ["Zahrada tichých duchů", "Quiet Spirit Garden"],
+      ["Náměstí malých zázraků", "Little Wonders Square"],
+      ["Stezka světlušek", "Firefly Trail"],
+      ["Poklad za rohem", "Around the Corner"],
+      ["Výprava za obzor", "Beyond the Horizon"],
+      ["Měsíční útočiště", "Moonlit Sanctuary"],
+      ["Pozdrav zahradě", "A Garden Hello"],
+      ["Najdi ukrytý příběh", "Find a Hidden Story"],
+      ["Otevři cestovatelskou truhlu", "Open the Explorer Chest"],
+      ["Výprava za světlem", "Follow the Light"],
+      ["Tajemství staré stezky", "The Old Trail Secret"],
+      ["Zlatá výprava", "The Golden Expedition"],
+      ["Polární záře", "Northern Lights"],
+      ["Měsíční kruh", "Moon Ring"],
+      ["Zlatý prach", "Golden Dust"],
+    ];
+    for (const [before, after] of catalog) {
+      db.prepare("UPDATE quests SET title=? WHERE title=?").run(after, before);
+      db.prepare("UPDATE inventory SET name=? WHERE name=?").run(after, before);
+      db.prepare("UPDATE editions SET name=? WHERE name=?").run(after, before);
+    }
+    for (const row of db.prepare("SELECT id,manifest FROM worlds").all()) {
+      let text = row.manifest;
+      for (const [a, b] of catalog) text = text.replaceAll(a, b);
+      if (text !== row.manifest)
+        db.prepare("UPDATE worlds SET manifest=? WHERE id=?").run(text, row.id);
+    }
+    db.prepare("UPDATE quests SET description=? WHERE description=?").run(
+      "Reach the marked point, confirm your visit and collect your reward.",
+      "Dojdi k označenému bodu. Potvrď návštěvu a získej odměnu.",
     );
-  if (!playerColumns.some((c) => c.name === "native_account"))
-    db.exec("ALTER TABLE players ADD COLUMN native_account TEXT");
-  const questColumns = db.prepare("PRAGMA table_info(quests)").all();
-  if (!questColumns.some((c) => c.name === "zone_id"))
-    db.exec("ALTER TABLE quests ADD COLUMN zone_id TEXT");
-  if (!questColumns.some((c) => c.name === "metadata"))
-    db.exec(
-      "ALTER TABLE quests ADD COLUMN metadata TEXT NOT NULL DEFAULT '{}'",
+    db.prepare("UPDATE quests SET description=? WHERE description=?").run(
+      "Reach the treasure chest and discover a new Aura.",
+      "Dojdi k truhle a objev novou Auru.",
     );
-  db.exec(
-    "CREATE TABLE IF NOT EXISTS quest_progress(quest_id TEXT NOT NULL REFERENCES quests(id),player_id TEXT NOT NULL REFERENCES players(id),checkpoint INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,PRIMARY KEY(quest_id,player_id))",
-  );
-  // Translate only application-authored catalog entries. IDs, geography, claims and user content are preserved.
-  const catalog = [
-    ["Zahrada tichých duchů", "Quiet Spirit Garden"],
-    ["Náměstí malých zázraků", "Little Wonders Square"],
-    ["Stezka světlušek", "Firefly Trail"],
-    ["Poklad za rohem", "Around the Corner"],
-    ["Výprava za obzor", "Beyond the Horizon"],
-    ["Měsíční útočiště", "Moonlit Sanctuary"],
-    ["Pozdrav zahradě", "A Garden Hello"],
-    ["Najdi ukrytý příběh", "Find a Hidden Story"],
-    ["Otevři cestovatelskou truhlu", "Open the Explorer Chest"],
-    ["Výprava za světlem", "Follow the Light"],
-    ["Tajemství staré stezky", "The Old Trail Secret"],
-    ["Zlatá výprava", "The Golden Expedition"],
-    ["Polární záře", "Northern Lights"],
-    ["Měsíční kruh", "Moon Ring"],
-    ["Zlatý prach", "Golden Dust"],
-  ];
-  for (const [before, after] of catalog) {
-    db.prepare("UPDATE quests SET title=? WHERE title=?").run(after, before);
-    db.prepare("UPDATE inventory SET name=? WHERE name=?").run(after, before);
-    db.prepare("UPDATE editions SET name=? WHERE name=?").run(after, before);
+    recordSchemaVersions(db);
+    db.exec("COMMIT; PRAGMA journal_mode=WAL");
+    return db;
+  } catch (error) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {}
+    db.close();
+    throw error;
   }
-  for (const row of db.prepare("SELECT id,manifest FROM worlds").all()) {
-    let text = row.manifest;
-    for (const [a, b] of catalog) text = text.replaceAll(a, b);
-    if (text !== row.manifest)
-      db.prepare("UPDATE worlds SET manifest=? WHERE id=?").run(text, row.id);
-  }
-  db.prepare("UPDATE quests SET description=? WHERE description=?").run(
-    "Reach the marked point, confirm your visit and collect your reward.",
-    "Dojdi k označenému bodu. Potvrď návštěvu a získej odměnu.",
-  );
-  db.prepare("UPDATE quests SET description=? WHERE description=?").run(
-    "Reach the treasure chest and discover a new Aura.",
-    "Dojdi k truhle a objev novou Auru.",
-  );
-  return db;
 }
 export function atomic(db, action) {
   db.exec("BEGIN IMMEDIATE");
@@ -159,8 +181,10 @@ export function history(db, player, kind, title, gold = 0, meta = {}) {
 }
 export function playerView(db, playerId) {
   const player = db.prepare("SELECT * FROM players WHERE id=?").get(playerId);
+  const progression = demoProgression(db, playerId, player);
   return {
     ...player,
+    ...progression,
     appearance: JSON.parse(player.appearance),
     positions: db
       .prepare("SELECT * FROM positions WHERE player_id=?")
@@ -186,6 +210,37 @@ export function playerView(db, playerId) {
       )
       .all(playerId),
   };
+}
+// Existing commitments survive publication shutdown. This read creates no creator
+// tables and changes neither cumulative earned XP nor inventory/reward grants.
+export function demoProgression(db, playerId, row) {
+  const player =
+    row || db.prepare("SELECT xp FROM players WHERE id=?").get(playerId);
+  assert(player, "Player not found.", 404);
+  const hasCommitments = !!db
+    .prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='creator_xp_commitments'",
+    )
+    .get();
+  const lockedXp = hasCommitments
+    ? db
+        .prepare(
+          "SELECT COALESCE(SUM(amount),0) AS n FROM creator_xp_commitments WHERE author=? AND released_at IS NULL",
+        )
+        .get(playerId).n
+    : 0;
+  const earnedXp = player.xp;
+  assert(
+    Number.isSafeInteger(earnedXp) &&
+      Number.isSafeInteger(lockedXp) &&
+      earnedXp >= lockedXp &&
+      lockedXp >= 0,
+    "Creator XP accounting needs reconciliation.",
+    503,
+    "CREATOR_XP_INVARIANT",
+  );
+  const availableXp = earnedXp - lockedXp;
+  return { earnedXp, lockedXp, availableXp, level: levelFor(availableXp) };
 }
 export function createPlayer(db, name, now = Date.now()) {
   const player = id("player");

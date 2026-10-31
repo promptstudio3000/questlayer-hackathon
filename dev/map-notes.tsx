@@ -155,6 +155,11 @@ window.fetch = async (input, init) => {
 };
 function Fixture() {
   const [player, setPlayer] = useState(account),
+    [showNotes, setShowNotes] = useState(true),
+    [arena, setArena] = useState(params.get("arena") !== "0"),
+    [noteView, setNoteView] = useState<"browse" | "compose" | "blocked">(
+      "browse",
+    ),
     [large, setLarge] = useState(params.get("text") === "large"),
     [message, setMessage] = useState(
       "Interface fixture · synthetic local notes · no server, chain or location permission.",
@@ -179,6 +184,20 @@ function Fixture() {
               Toggle read failure
             </button>
             <button onClick={() => setLarge(!large)}>Enlarge text</button>
+            <button onClick={() => setShowNotes(!showNotes)}>
+              {showNotes ? "Leave notes panel" : "Return to notes panel"}
+            </button>
+            <button
+              onClick={() => {
+                setArena(!arena);
+                setNoteView("browse");
+              }}
+            >
+              Switch arena / GPS draft
+            </button>
+            <button onClick={() => setNoteView("browse")}>
+              Navigate back to nearby notes
+            </button>
             <button
               onClick={() => {
                 account =
@@ -186,6 +205,7 @@ function Fixture() {
                     ? "second-explorer"
                     : "fixture-explorer";
                 setPlayer(account);
+                setNoteView("browse");
                 setMessage(`Switched to ${account}.`);
               }}
             >
@@ -207,15 +227,24 @@ function Fixture() {
           </div>
         </details>
       </aside>
-      <MapNotes
-        key={player}
-        playerId={player}
-        position={{ lat: 49.7475, lng: 13.3776 }}
-        fix={{ lat: 49.7475, lng: 13.3776, accuracy: 8, timestamp: Date.now() }}
-        arena={params.get("arena") !== "0"}
-        notify={setMessage}
-        onBlockChange={() => setMessage("Map presence refresh requested.")}
-      />
+      {showNotes && (
+        <MapNotes
+          key={player}
+          playerId={player}
+          position={{ lat: 49.7475, lng: 13.3776 }}
+          fix={{
+            lat: 49.7475,
+            lng: 13.3776,
+            accuracy: 8,
+            timestamp: Date.now(),
+          }}
+          arena={arena}
+          view={noteView}
+          onViewChange={setNoteView}
+          notify={setMessage}
+          onBlockChange={() => setMessage("Map presence refresh requested.")}
+        />
+      )}
       <style>{`body{margin:0;background:#f2ebff;overflow:auto}#root{min-height:100dvh}.map-notes-fixture{max-width:540px;margin:24px auto;padding:24px;background:#fcfaff;min-height:calc(100dvh - 48px);border-radius:20px}.map-notes-fixture>aside{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #dcd1eb;font-size:14px;color:#665577}.map-notes-fixture>aside p{margin:0 0 8px}.map-notes-fixture>aside summary{min-height:48px;display:flex;align-items:center;cursor:pointer}.map-notes-fixture>aside div{display:flex;flex-wrap:wrap;gap:8px}.map-notes-fixture>aside button{font:inherit;min-height:48px;padding:8px 12px;background:white;border:1px solid #dcd1eb;border-radius:8px}.map-notes-fixture.enlarged .map-notes,.map-notes-fixture.enlarged .map-notes input,.map-notes-fixture.enlarged .map-notes textarea,.map-notes-fixture.enlarged .map-notes label{font-size:32px}.map-notes-fixture.enlarged .map-notes-secondary{font-size:28px}#root .map-notes-fixture.enlarged .map-notes :is(input,textarea,button,select,label,span){font-size:32px}#root .map-notes-fixture.enlarged .map-notes :is(input,textarea){font-size:32px!important}@media(max-width:540px){.map-notes-fixture{margin:0;min-height:100dvh;border-radius:0;padding:20px}}`}</style>
     </main>
   );

@@ -1,5 +1,10 @@
 # Architecture and trust boundaries
 
+For the current implementation/deployment distinction and ownership inventory,
+read [the whole-project handoff](PROJECT-REVIEW-AND-HANDOFF.md). Deployment paths
+below describe checked-in configuration and historical operations; this review did
+not inspect the active VPS over SSH. Native pilots do not close full V1 gates.
+
 ## Runtime
 
 React/TypeScript/Vite renders a MapLibre vector map. Node 24 serves the built client, JSON endpoints and server-sent events. SQLite WAL is the durable single-service transactional store for the initial deployment; the spatial/queue boundaries are designed to migrate to PostgreSQL/PostGIS when horizontal workers are needed. There is no in-memory-only reward ledger.

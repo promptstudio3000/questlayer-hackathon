@@ -17,11 +17,19 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--state", required=True)
 parser.add_argument("--destination", required=True)
 parser.add_argument("--retention-days", type=int, default=14)
+parser.add_argument("--build-id", default="development-unrecorded")
+parser.add_argument("--config-sha256")
 args = parser.parse_args()
 assert 2 <= args.retention_days <= 90, "Invalid retention window"
+assert re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,95}", args.build_id), "Invalid reviewed build identifier"
+assert args.config_sha256 is None or re.fullmatch(r"[a-f0-9]{64}", args.config_sha256), "Invalid public configuration digest"
 os.umask(0o077)
 state = Path(args.state).resolve()
-database = state / "auratrail.sqlite"
+database = state / "questlayer-hackathon.sqlite"
+legacy_database = state / "auratrail.sqlite"
+assert not (database.exists() and legacy_database.exists()), "Ambiguous state databases"
+if not database.exists() and legacy_database.exists():
+    database = legacy_database
 assert database.is_file() and not database.is_symlink(), "Expected this app's regular state database"
 destination = Path(args.destination)
 assert not destination.is_symlink(), "Snapshot destination must not be a symlink"
@@ -55,6 +63,21 @@ with open(destination / ".backup.lock", "a") as lock:
             assert target.execute("PRAGMA integrity_check").fetchall() == [("ok",)], "Snapshot integrity failed"
             tables = {row[0] for row in target.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             media_references = {row[0] for row in target.execute("SELECT image FROM messages WHERE image IS NOT NULL")} if "messages" in tables else set()
+            def normalized_sql(sql):
+                literals = []
+                def save_literal(match):
+                    literals.append(match.group(0))
+                    return "__literal%d__" % (len(literals) - 1)
+                value = re.sub(r"'(?:[^']|'')*'", save_literal, sql)
+                value = re.sub(r"\bif\s+not\s+exists\b", "", value, flags=re.I)
+                value = re.sub(r'[\s"`\[\]]', "", value).lower()
+                value = re.sub(r"__literal(\d+)__", lambda match: literals[int(match.group(1))], value)
+                return value.removesuffix(";")
+            table_shapes = {name: normalized_sql(sql) for name, sql in target.execute("SELECT name,sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")}
+            ledger = dict(target.execute("SELECT name,version FROM questlayer_schema_modules")) if "questlayer_schema_modules" in tables else {}
+            schema_compatibility = {"coreVersion": ledger.get("core", 0),
+                                    "moduleVersions": {name: version for name, version in sorted(ledger.items()) if name != "core"},
+                                    "fingerprint": hashlib.sha256(json.dumps(table_shapes, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()}
             target.commit()
         finally:
             target.close()
@@ -104,6 +127,7 @@ with open(destination / ".backup.lock", "a") as lock:
         check_deadline()
         metadata = {"application": "QuestLayer", "format": 1, "snapshotId": identifier,
                     "createdAt": now.isoformat(), "integrity": "ok", "databaseBytes": snapshot.stat().st_size,
+                    "schemaCompatibility": schema_compatibility, "sourceBuildId": args.build_id, "publicConfigDigest": args.config_sha256,
                     "databaseSha256": digest.hexdigest(), "awardAttestorIncluded": included,
                     "nativeServiceKeysIncluded": native_keys,
                     "referencedMedia": media,

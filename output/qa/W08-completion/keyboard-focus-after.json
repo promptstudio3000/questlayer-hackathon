@@ -1,0 +1,34 @@
+{
+  "initial": {
+    "hasFocus": null,
+    "hasFocusSupported": false,
+    "id": "creator-observation-evidence",
+    "insideDialog": true,
+    "tag": "TEXTAREA",
+    "text": ""
+  },
+  "afterLastTab": {
+    "hasFocus": null,
+    "hasFocusSupported": false,
+    "id": "creator-observation-evidence",
+    "insideDialog": true,
+    "tag": "TEXTAREA",
+    "text": ""
+  },
+  "beforeFirstShiftTab": {
+    "hasFocus": null,
+    "hasFocusSupported": false,
+    "id": "",
+    "insideDialog": true,
+    "tag": "BUTTON",
+    "text": "Cancel"
+  },
+  "afterEscape": {
+    "hasFocus": null,
+    "hasFocusSupported": false,
+    "id": "",
+    "insideDialog": false,
+    "tag": "BUTTON",
+    "text": "Write private observation"
+  }
+}

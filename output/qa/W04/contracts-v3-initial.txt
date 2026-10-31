@@ -1,0 +1,50 @@
+
+> questlayer@0.1.0 test:contracts
+> env PATH="$HOME/.cargo/bin:$PATH" cargo test --manifest-path contracts/Cargo.toml --workspace
+
+   Compiling auratrail-game v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/game)
+   Compiling auratrail-collectibles v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/collectibles)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.05s
+     Running unittests src/lib.rs (contracts/target/debug/deps/auratrail_collectibles-4de6efbf1a508b20)
+
+running 13 tests
+test tests::deployment_account_can_migrate_atomically ... ok
+test tests::public_mint_rejected - should panic ... ok
+test tests::claim_cannot_redirect_a_retried_mint - should panic ... ok
+test tests::independent_slots_and_moving_one_item ... ok
+test tests::starter_avatar_is_owned_by_its_minter ... ok
+test tests::once_only_mint_preserves_the_claim_after_transfer ... ok
+test tests::edition_cap_is_enforced - should panic ... ok
+test tests::stranger_cannot_migrate - should panic ... ok
+test tests::starter_cannot_be_minted_twice - should panic ... ok
+test tests::migration_preserves_tokens_counters_and_legacy_equipment ... ok
+test tests::stranger_cannot_equip - should panic ... ok
+test tests::returned_transfer_removes_receiver_equipment_storage ... ok
+test tests::transfer_removes_old_equipment_and_changes_owner ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s
+
+     Running unittests src/lib.rs (contracts/target/debug/deps/auratrail_game-f57d149a4311294f)
+
+running 6 tests
+test tests::unfunded_rewards_rejected - should panic ... ok
+test tests::forged_oracle_rejected - should panic ... ok
+test tests::odd_yield_is_conserved ... ok
+test tests::expiration_rolls_same_money_once ... ok
+test tests::solo_quest_and_personal_xp ... ok
+test tests::coin_cannot_pay_twice ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+   Doc-tests auratrail_collectibles
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests auratrail_game
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

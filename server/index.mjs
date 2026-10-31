@@ -1,4 +1,8 @@
+import { defaultDatabasePath } from "./state-path.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
+import { createCreatorRuntime } from "./creators/runtime.mjs";
+import { createAdventureResults } from "./adventure-results.mjs";
+import { recordSchemaVersions, schemaStatus } from "./schema-compatibility.mjs";
 import { NoteMedia } from "./note-media.mjs";
 import { SocialContent, isSocialBlocked } from "./social-content.mjs";
 import { NativeProgression } from "./native/progression.mjs";
@@ -65,12 +69,18 @@ import {
 } from "./domain.mjs";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
+const nativeAttestationsDisabled =
+  process.env.DISABLE_NATIVE_ATTESTATIONS === "1";
+const backgroundWorkersDisabled =
+  process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
+const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
 const noteMedia = new NoteMedia();
 const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
+const creatorRuntime = createCreatorRuntime(db, { origin, authenticate: auth });
 const rpc = process.env.NEAR_RPC_URL || "https://test.rpc.fastnear.com";
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
@@ -106,13 +116,15 @@ const marketContractId =
 const nativeMarket = marketContractId
   ? new NativeMarket(provider, marketContractId, nativeCollectibles)
   : null;
-const awardSigner = loadAwardSigner(
-  process.env.AWARD_SIGNER_PATH ||
-    resolve(
-      dirname(process.env.DATABASE_PATH || ".data/auratrail.sqlite"),
-      "award-attestor.pem",
-    ),
-);
+const awardSigner = nativeAttestationsDisabled
+  ? null
+  : loadAwardSigner(
+      process.env.AWARD_SIGNER_PATH ||
+        resolve(
+          dirname(defaultDatabasePath()),
+          "award-attestor.pem",
+        ),
+    );
 const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner);
 const rewardsManifestPath = [
   resolve(APP_ROOT, "public/native-rewards-testnet.json"),
@@ -122,7 +134,9 @@ const rewardsConfig = rewardsManifestPath
   ? JSON.parse(readFileSync(rewardsManifestPath, "utf8"))
   : null;
 const nativeRewards =
-  rewardsConfig && process.env.REWARD_ATTESTOR_PATH
+  !nativeAttestationsDisabled &&
+  rewardsConfig &&
+  process.env.REWARD_ATTESTOR_PATH
     ? new NativeRewards(
         db,
         provider,
@@ -177,6 +191,7 @@ const nativeTransactionConfirmation = new NativeTransactionConfirmation(
 const gotchiModels = new GotchiModels();
 const gotchiItemArt = new GotchiItemArt();
 const originalLookups = new Map();
+recordSchemaVersions(db);
 async function refreshOriginals(address) {
   if (originalLookups.has(address)) return originalLookups.get(address);
   assert(
@@ -199,12 +214,12 @@ function emit(type, data) {
   for (const client of listeners) client.write(event);
 }
 function cookie(token) {
-  return `auratrail=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
+  return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
 function sessionToken(req) {
   return req.headers.cookie?.match(
-    /(?:^|; )auratrail=([a-f0-9]{64})(?:;|$)/,
-  )?.[1];
+    /(?:^|; )questlayer-hackathon=([a-f0-9]{64})(?:;|$)/,
+  )?.[1] || req.headers.cookie?.match(/(?:^|; )auratrail=([a-f0-9]{64})(?:;|$)/)?.[1];
 }
 function auth(req) {
   return identitySessions.authenticate(sessionToken(req)).playerId;
@@ -298,7 +313,7 @@ function profile(player) {
     coinsCollected: db
       .prepare("SELECT COUNT(*) AS n FROM coins WHERE claimant=?")
       .get(player).n,
-    level: 1 + Math.floor(Math.sqrt(p.xp / 100)),
+    level: p.level,
     tier: tierFor(p.positions.reduce((s, x) => s + positionTier(x), 0)),
     weighted_u: p.positions.reduce((s, x) => s + positionTier(x), 0),
   };
@@ -335,11 +350,13 @@ async function api(req, res, url) {
     rates.set(key, n);
     assert(n <= 600, "Please try again shortly.", 429);
   }
+  if (await creatorRuntime.handle(req, res)) return;
   if (path === "/api/health")
     return respond(res, {
       status: "ok",
       app: "QuestLayer",
       version: "0.1.0",
+      ...schemaStatus(db, { buildId: process.env.QUESTLAYER_BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
       nativeRewards: nativeRewards
@@ -381,12 +398,12 @@ async function api(req, res, url) {
   }
   if (path === "/api/logout" && method === "POST") {
     const player = auth(req);
-    const token = req.headers.cookie?.match(/auratrail=([a-f0-9]{64})/)?.[1];
+    const token = sessionToken(req);
     if (token)
       db.prepare("DELETE FROM sessions WHERE token_hash=?").run(hash(token));
     db.prepare("DELETE FROM presence WHERE player_id=?").run(player);
     return respond(res, { ok: true }, 200, {
-      "Set-Cookie": "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
+      "Set-Cookie": [cookie("").replace("Max-Age=2592000", "Max-Age=0"), "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"],
     });
   }
   if (path === "/api/passkey/options" && method === "POST") {
@@ -635,11 +652,58 @@ async function api(req, res, url) {
       }),
     );
   }
-  if (path === "/api/native/claim-signer" && method === "GET")
+  if (path === "/api/native/claim-signer" && method === "GET") {
+    assert(
+      awardSigner,
+      "Native attestations are disabled on this host.",
+      503,
+      "NATIVE_DISABLED",
+    );
     return respond(res, awardVouchers.publicInfo());
+  }
   if (path === "/api/native/collection" && method === "GET")
     return respond(res, await nativeCollectibles.collection());
   const player = auth(req);
+  if (path === "/api/adventure-results" && method === "GET") {
+    return respond(
+      res,
+      adventureResults.list(player, {
+        realm: url.searchParams.get("realm") || undefined,
+        limit: url.searchParams.has("limit")
+          ? Number(url.searchParams.get("limit"))
+          : 20,
+        cursor: url.searchParams.get("cursor") || undefined,
+        unviewedOnly: url.searchParams.get("unviewedOnly") === "true",
+      }),
+    );
+  }
+  const questResult = /^\/api\/adventure-results\/quest\/([^/]+)$/.exec(path);
+  if (questResult && method === "GET") {
+    const result = adventureResults.forQuest(
+      player,
+      decodeURIComponent(questResult[1]),
+    );
+    assert(result, "Adventure result not found.", 404);
+    return respond(res, { result });
+  }
+  const savedResult = /^\/api\/adventure-results\/([^/]+)(\/viewed)?$/.exec(
+    path,
+  );
+  if (savedResult) {
+    const resultId = decodeURIComponent(savedResult[1]);
+    if (!savedResult[2] && method === "GET") {
+      const result = adventureResults.get(player, resultId);
+      assert(result, "Adventure result not found.", 404);
+      return respond(res, { result });
+    }
+    if (savedResult[2] && method === "POST") {
+      await body(req);
+      return respond(res, {
+        result: adventureResults.markViewed(player, resultId),
+      });
+    }
+    assert(false, "Method not allowed.", 405);
+  }
   if (
     path.startsWith("/api/native/rewards") ||
     path.startsWith("/api/native/vaults")
@@ -967,6 +1031,12 @@ async function api(req, res, url) {
   }
 
   if (path === "/api/native/claims" && method === "POST") {
+    assert(
+      awardSigner,
+      "Native attestations are disabled on this host.",
+      503,
+      "NATIVE_DISABLED",
+    );
     const input = await body(req),
       key = `native-claim:${player}:${Math.floor(Date.now() / 60000)}`,
       count = (rates.get(key) || 0) + 1;
@@ -1017,8 +1087,9 @@ async function api(req, res, url) {
     let claimsEnabled = false;
     try {
       claimsEnabled =
+        !!awardSigner &&
         (await nativeCollectibles.view("get_award_signer", {}, fresh)) ===
-        awardSigner.publicKey;
+          awardSigner.publicKey;
     } catch {}
     return respond(res, { ...state, claimsEnabled });
   }
@@ -1133,7 +1204,7 @@ async function api(req, res, url) {
   if (path === "/api/equip" && method === "POST") {
     const i = await body(req);
     return respond(res, {
-      ...game.equip(db, player, i.itemId),
+      ...game.equip(db, player, i.itemId, i.desiredEquipped),
       player: profile(player),
     });
   }
@@ -1850,15 +1921,18 @@ const server = createServer(async (req, res) => {
     if (!e.status) console.error("Request failed:", e.name, e.code || "");
   }
 });
-const worldPlanner = startWorldPlanner(db);
+const worldPlanner = backgroundWorkersDisabled ? null : startWorldPlanner(db);
 const rewardWorker =
-  nativeRewards && process.env.REWARD_WORKER_KEY_PATH
+  !backgroundWorkersDisabled &&
+  nativeRewards &&
+  process.env.REWARD_WORKER_KEY_PATH
     ? startRewardWorker(nativeRewards, {
         keyPath: process.env.REWARD_WORKER_KEY_PATH,
       })
     : null;
 let nextMediaPrune = 0;
 const maintenance = setInterval(() => {
+  if (backgroundWorkersDisabled) return;
   try {
     expireWorlds(db);
     game.harvestDemo(db);
@@ -1882,12 +1956,12 @@ const maintenance = setInterval(() => {
 maintenance.unref();
 server.listen(port, process.env.HOST || "127.0.0.1", () =>
   console.log(
-    `QuestLayer server: http://${process.env.HOST || "127.0.0.1"}:${port} · DEMO realm`,
+    `QuestLayer server: http://${process.env.HOST || "127.0.0.1"}:${server.address().port} · DEMO realm`,
   ),
 );
 async function close() {
   clearInterval(maintenance);
-  await worldPlanner.stop();
+  await worldPlanner?.stop();
   await rewardWorker?.stop();
   for (const r of listeners) r.end();
   server.close(() => {

@@ -1,5 +1,7 @@
 import { createCreatorLifecycle } from "./lifecycle.mjs";
 import { createCreatorCommunity } from "./community.mjs";
+import { createCreatorSafety } from "./safety.mjs";
+import { createCreatorCompletion } from "./completion.mjs";
 
 // Supported Community composition: audience/block checks share the admission write lock.
 export function createCreatorServices(db, options) {
@@ -12,5 +14,7 @@ export function createCreatorServices(db, options) {
     },
   });
   community = createCreatorCommunity(db, options);
-  return { lifecycle, community };
+  const safety = createCreatorSafety(db, { ...options, community });
+  const completion = createCreatorCompletion(db, options);
+  return { lifecycle, community, safety, completion };
 }

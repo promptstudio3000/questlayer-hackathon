@@ -14,7 +14,7 @@ import {
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createHash, createPrivateKey } from "node:crypto";
-const app = resolve(process.argv[2] || "/opt/ps3000/apps/auratrail"),
+const app = resolve(process.argv[2] || "/opt/ps3000/apps/questlayer-hackathon"),
   root = resolve(process.argv[3] || join(app, "state-backups"));
 assert.equal(root, join(app, "state-backups"));
 assert.equal(statSync(root).mode & 0o077, 0);
@@ -33,6 +33,18 @@ assert.equal(statSync(file).mode & 0o077, 0);
 const digest = createHash("sha256");
 for await (const chunk of createReadStream(file)) digest.update(chunk);
 assert.equal(digest.digest("hex"), metadata.databaseSha256);
+// Validate the untouched source before any application bootstrap can migrate it.
+const schemaApi = await import(
+  pathToFileURL(join(app, "current", "server", "schema-compatibility.mjs")).href
+);
+const catalog = join(app, "current", "server", "schema-catalog.mjs");
+if (existsSync(catalog)) await import(pathToFileURL(catalog).href);
+const expectedConfigDigest = process.argv
+  .find((a) => a.startsWith("--config-sha256="))
+  ?.slice("--config-sha256=".length);
+const compatibility = schemaApi.restorePreflight(file, metadata, {
+  expectedConfigDigest,
+});
 let attestorValid = false;
 for (const media of metadata.referencedMedia || []) {
   assert.match(media.file, /^image_[a-f0-9-]{1,80}\.jpg$/);
@@ -57,7 +69,7 @@ chmodSync(temporary, 0o700);
 let db;
 try {
   const copy = join(temporary, "database.sqlite");
-  assert.notEqual(copy, resolve("/var/lib/auratrail/auratrail.sqlite"));
+  assert.notEqual(copy, resolve("/var/lib/questlayer-hackathon/questlayer-hackathon.sqlite"));
   copyFileSync(file, copy);
   chmodSync(copy, 0o600);
   const { openDatabase, playerView } = await import(
@@ -214,6 +226,7 @@ try {
       status: "ok",
       snapshot: metadata.snapshotId,
       checksumMatches: true,
+      compatibility,
       privatePermissionsVerified: true,
       attestorValid,
       referencedMediaVerified: (metadata.referencedMedia || []).length,

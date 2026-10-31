@@ -5,10 +5,12 @@ export function Character({
   items,
   originTokenId,
   compact = false,
+  preview = false,
 }: {
   items: Item[];
   originTokenId?: string;
   compact?: boolean;
+  preview?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [originTokenId]);
@@ -18,7 +20,11 @@ export function Character({
   return (
     <div
       className={`character-composition ${compact ? "compact" : ""}`}
-      aria-label="Equipped character appearance"
+      aria-label={
+        preview
+          ? "Preview of explorer appearance"
+          : "Equipped character appearance"
+      }
     >
       {bottom && (
         <i

@@ -11,8 +11,8 @@ await child(game,3n);await child(nfts,4n);await child(explorer,1n);
 async function deploy(accountId,wasm){const account=new Account(accountId,provider,signer);const existing=await provider.query({request_type:'view_account',account_id:accountId,finality:'final'});const state=await provider.query({request_type:'view_state',account_id:accountId,prefix_base64:'',finality:'final'});if(state.values?.some(v=>v.key==='U1RBVEU=')){console.log(JSON.stringify({step:`preserve initialized ${accountId}`}));return account;}
  await record(`deploy ${accountId}`,()=>account.signAndSendTransaction({receiverId:accountId,actions:[actions.deployContract(readFileSync(wasm)),actions.functionCall('new',{owner_id:operator.accountId,oracle_id:operator.accountId},100n*10n**12n,0n)],waitUntil:'FINAL'}));return account;
 }
-await deploy(game,'contracts/target/wasm32-unknown-unknown/release/auratrail_game.wasm');
-await deploy(nfts,'contracts/target/wasm32-unknown-unknown/release/auratrail_collectibles.wasm');
+await deploy(game,'contracts/target/wasm32-unknown-unknown/release/questlayer_game.wasm');
+await deploy(nfts,'contracts/target/wasm32-unknown-unknown/release/questlayer_collectibles.wasm');
 const tag=Date.now().toString(),batch=`smoke-${tag}`,quest=`solo-${tag}`;
 const call=(contractId,methodName,args,deposit=0n)=>root.callFunctionRaw({contractId,methodName,args,deposit,gas:150n*10n**12n,waitUntil:'FINAL'});
 const currentFund=await provider.query({request_type:'call_function',account_id:game,method_name:'get_treasury',args_base64:Buffer.from('{}').toString('base64'),finality:'final'});const current=JSON.parse(Buffer.from(currentFund.result).toString());if(BigInt(current.funded)===0n)await record('fund 50/50 reward buckets',()=>call(game,'fund_rewards',{source:'sponsor'},NEAR/5n));

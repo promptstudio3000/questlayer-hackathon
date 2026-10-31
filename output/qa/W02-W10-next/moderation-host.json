@@ -1,0 +1,185 @@
+{
+  "phase": "executed-and-replayed",
+  "preparedAt": "2026-10-31T18:21:59.706Z",
+  "scope": "Synthetic isolated localhost QA only; report review and suspension await explicit coordinator go. No physical hazard or completion finding.",
+  "host": "http://localhost:8798",
+  "authorId": "player_1328b1dd-4554-462f-91b0-73999cd3557f",
+  "participantId": "player_b163ccdf-548f-4d00-ac52-9f753bc49d3b",
+  "questId": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+  "reportId": "creator_report_daaf6829-c1a4-4611-8d0a-fdd6fd24aee7",
+  "reviewInput": {
+    "actor": "qa-reviewer",
+    "operationId": "qa-safety-report-review:ef225dfc-3f25-4ae2-9d49-64b4650d9a52",
+    "reportId": "creator_report_daaf6829-c1a4-4611-8d0a-fdd6fd24aee7",
+    "expectedVersion": 1,
+    "decision": "confirmed",
+    "reason": "Synthetic local QA confirmation of the report workflow only; no physical site safety finding is established."
+  },
+  "suspendInput": {
+    "actor": "qa-reviewer",
+    "operationId": "qa-safety-suspend:b394da46-242b-43d2-934f-e7b85840de9d",
+    "questId": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+    "expectedVersion": 3,
+    "reason": "Synthetic local QA safety stop to verify admitted rights remain protected; no field hazard or physical completion is asserted."
+  },
+  "authorBefore": {
+    "earnedXp": 1000,
+    "lockedXp": 200,
+    "availableXp": 800,
+    "level": 3,
+    "gold_u": 120000000000,
+    "inventory": [
+      {
+        "id": "item_44ebf2fb-6418-42ef-9e29-90152ed554ab",
+        "kind": "avatar",
+        "name": "Explorer",
+        "equipped": 1
+      }
+    ],
+    "history": [
+      {
+        "id": "event_961733e2-0e57-4ca5-b98f-dccd4108dbbd",
+        "kind": "welcome",
+        "title": "Welcome to your first adventure",
+        "gold_u": 120000000000
+      }
+    ],
+    "nativeAwardCount": 0
+  },
+  "questBefore": {
+    "state": "published",
+    "version": 3,
+    "published_revision": 1
+  },
+  "openParticipationsBefore": 1,
+  "reviewExecuted": true,
+  "suspensionExecuted": true,
+  "resolutionPerformed": false,
+  "finalizationPerformed": false,
+  "executedAt": "2026-10-31T18:22:18.197Z",
+  "reviewReceipt": {
+    "domain": "demo",
+    "operationId": "qa-safety-report-review:ef225dfc-3f25-4ae2-9d49-64b4650d9a52",
+    "command": "reviewCreatorReport",
+    "confirmedAt": 1793470938061,
+    "report": {
+      "id": "creator_report_daaf6829-c1a4-4611-8d0a-fdd6fd24aee7",
+      "questId": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+      "revision": 1,
+      "status": "reviewed",
+      "version": 2,
+      "decision": "confirmed",
+      "reason": "Synthetic local QA confirmation of the report workflow only; no physical site safety finding is established.",
+      "reviewedAt": 1793470938061
+    }
+  },
+  "questAfterReview": {
+    "state": "published",
+    "version": 3,
+    "published_revision": 1
+  },
+  "reviewDidNotAutoSuspend": true,
+  "suspendReceipt": {
+    "domain": "demo",
+    "operationId": "qa-safety-suspend:b394da46-242b-43d2-934f-e7b85840de9d",
+    "command": "suspendCreatorQuest",
+    "confirmedAt": 1793470938107,
+    "quest": {
+      "id": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+      "author": "player_1328b1dd-4554-462f-91b0-73999cd3557f",
+      "state": "closing",
+      "version": 4,
+      "latest_revision": 1,
+      "published_revision": 1,
+      "policy_version": "qa-safety-v1",
+      "created_at": 1793470518820,
+      "updated_at": 1793470938107,
+      "latest": {
+        "quest_id": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+        "revision": 1,
+        "content": {
+          "title": "Three quiet details beside the river",
+          "description": "Take a free solo observation break on the public riverside path in Plzeň. Stay on open pedestrian paths and choose a comfortable place to pause. Notice one pattern on a public railing, one tree silhouette and one change in the water. You may skip any stop or leave at any time. Do not cross barriers, enter private areas or approach the water edge. This local QA story offers no XP, GOLD or item reward; it is not a verified walking route."
+        },
+        "state": "approved",
+        "policy_version": "qa-safety-v1",
+        "reviewed_by": "qa-reviewer",
+        "reason": "Synthetic QA review of public-path text; no field safety or physical completion verified."
+      },
+      "published": {
+        "quest_id": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+        "revision": 1,
+        "content": {
+          "title": "Three quiet details beside the river",
+          "description": "Take a free solo observation break on the public riverside path in Plzeň. Stay on open pedestrian paths and choose a comfortable place to pause. Notice one pattern on a public railing, one tree silhouette and one change in the water. You may skip any stop or leave at any time. Do not cross barriers, enter private areas or approach the water edge. This local QA story offers no XP, GOLD or item reward; it is not a verified walking route."
+        },
+        "state": "approved",
+        "policy_version": "qa-safety-v1",
+        "reviewed_by": "qa-reviewer",
+        "reason": "Synthetic QA review of public-path text; no field safety or physical completion verified."
+      },
+      "commitment": {
+        "quest_id": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+        "author": "player_1328b1dd-4554-462f-91b0-73999cd3557f",
+        "amount": 200,
+        "policy_version": "qa-safety-v1",
+        "locked_at": 1793470518878,
+        "released_at": null
+      },
+      "openParticipations": 1
+    },
+    "progression": {
+      "domain": "demo",
+      "earnedXp": 1000,
+      "lockedXp": 200,
+      "availableXp": 800,
+      "level": 3
+    },
+    "suspension": {
+      "reason": "Synthetic local QA safety stop to verify admitted rights remain protected; no field hazard or physical completion is asserted.",
+      "moderator": "qa-reviewer",
+      "at": 1793470938107,
+      "previousState": "published",
+      "previousVersion": 3
+    }
+  },
+  "questAfterSuspend": {
+    "state": "closing",
+    "version": 4,
+    "published_revision": 1
+  },
+  "acceptedParticipation": {
+    "quest_id": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+    "participant": "player_b163ccdf-548f-4d00-ac52-9f753bc49d3b",
+    "revision": 1,
+    "state": "open"
+  },
+  "openParticipationsAfter": 1,
+  "authorAfter": {
+    "earnedXp": 1000,
+    "lockedXp": 200,
+    "availableXp": 800,
+    "level": 3,
+    "gold_u": 120000000000,
+    "inventory": [
+      {
+        "id": "item_44ebf2fb-6418-42ef-9e29-90152ed554ab",
+        "kind": "avatar",
+        "name": "Explorer",
+        "equipped": 1
+      }
+    ],
+    "history": [
+      {
+        "id": "event_961733e2-0e57-4ca5-b98f-dccd4108dbbd",
+        "kind": "welcome",
+        "title": "Welcome to your first adventure",
+        "gold_u": 120000000000
+      }
+    ],
+    "nativeAwardCount": 0
+  },
+  "authorEconomicInventoryHistoryNativeAwardsUnchanged": true,
+  "exactHistoricalReplayVerified": true,
+  "replayRightsUnchanged": true
+}

@@ -1,0 +1,74 @@
+{
+  "createdAt": "2026-10-31T18:15:18.888Z",
+  "scope": "Fresh disposable local QA host; seeded XP and policy are synthetic fixtures, not production tuning or physical verification.",
+  "host": "http://localhost:8798",
+  "database": "/private/tmp/questlayer-safety-qa/game.sqlite",
+  "hostSessionId": 98261,
+  "backgroundWorkersDisabled": true,
+  "nativeAttestationsDisabled": true,
+  "nativeRpc": "http://127.0.0.1:9",
+  "nativeSigningKeyGenerated": false,
+  "creatorPolicy": {
+    "version": "qa-safety-v1",
+    "xpCommitment": 200
+  },
+  "seed": {
+    "playerId": "player_1328b1dd-4554-462f-91b0-73999cd3557f",
+    "earnedXpBefore": 0,
+    "earnedXpAfter": 1000,
+    "method": "Direct SQL fixture in new disposable database only"
+  },
+  "authorId": "player_1328b1dd-4554-462f-91b0-73999cd3557f",
+  "publicCreatorName": "Riverbank Stories",
+  "questId": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+  "publishedRevision": 1,
+  "questVersion": 3,
+  "questState": "published",
+  "quoteAccepted": {
+    "expectedVersion": 1,
+    "policyVersion": "qa-safety-v1",
+    "xpCommitment": 200
+  },
+  "independentApproval": {
+    "actor": "qa-reviewer",
+    "operationId": "qa-safety-approve-v1",
+    "reason": "Synthetic QA review of public-path text; no field safety or physical completion verified."
+  },
+  "publicQuest": {
+    "id": "creator-qa-path-3d1af4fb-664b-47f6-9f58-b7d42b1c74da",
+    "revision": 1,
+    "title": "Three quiet details beside the river",
+    "description": "Take a free solo observation break on the public riverside path in Plzeň. Stay on open pedestrian paths and choose a comfortable place to pause. Notice one pattern on a public railing, one tree silhouette and one change in the water. You may skip any stop or leave at any time. Do not cross barriers, enter private areas or approach the water edge. This local QA story offers no XP, GOLD or item reward; it is not a verified walking route.",
+    "creator": {
+      "id": "player_1328b1dd-4554-462f-91b0-73999cd3557f",
+      "displayName": "Riverbank Stories"
+    },
+    "access": "free",
+    "rewardStatus": "not-configured",
+    "domain": "demo"
+  },
+  "authorSnapshot": {
+    "earnedXp": 1000,
+    "lockedXp": 200,
+    "availableXp": 800,
+    "level": 3,
+    "gold_u": 120000000000,
+    "inventory": [
+      {
+        "id": "item_44ebf2fb-6418-42ef-9e29-90152ed554ab",
+        "kind": "avatar",
+        "name": "Explorer",
+        "equipped": 1
+      }
+    ],
+    "history": [
+      {
+        "id": "event_961733e2-0e57-4ca5-b98f-dccd4108dbbd",
+        "kind": "welcome",
+        "title": "Welcome to your first adventure",
+        "gold_u": 120000000000
+      }
+    ],
+    "nativeAwardCount": 0
+  }
+}

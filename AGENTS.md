@@ -1,4 +1,8 @@
-# QuestLayer development rules
+# questlayer-hackathon development rules
+
+The canonical repository/project name is `questlayer-hackathon`; the game brand is QuestLayer.
+Read `docs/CLOUD-DEVELOPMENT.md` for cloud setup and legacy identifier boundaries.
+Use `npm ci` with Node.js 24+, then `npm run check`. Do not access production state or signing keys to develop the demo.
 
 ## Product and design context
 

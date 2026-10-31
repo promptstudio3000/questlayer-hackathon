@@ -1,0 +1,62 @@
+[
+  {
+    "height": 780,
+    "live": "2 coins: 0.02 demo GOLD and 4 XP confirmed. 2 this session.",
+    "scrollWidth": 360,
+    "sheetHeight": 182,
+    "summaries": [
+      {
+        "color": "rgb(102, 85, 119)",
+        "font": "14px",
+        "text": "2 coins · 0.02 demo GOLD this session"
+      }
+    ],
+    "toast": null,
+    "width": 360
+  },
+  {
+    "height": 844,
+    "live": "2 coins: 0.02 demo GOLD and 4 XP confirmed. 2 this session.",
+    "scrollWidth": 390,
+    "sheetHeight": 182,
+    "summaries": [
+      {
+        "color": "rgb(102, 85, 119)",
+        "font": "14px",
+        "text": "2 coins · 0.02 demo GOLD this session"
+      }
+    ],
+    "toast": null,
+    "width": 390
+  },
+  {
+    "height": 390,
+    "live": "2 coins: 0.02 demo GOLD and 4 XP confirmed. 2 this session.",
+    "scrollWidth": 844,
+    "sheetHeight": 182,
+    "summaries": [
+      {
+        "color": "rgb(102, 85, 119)",
+        "font": "14px",
+        "text": "2 coins · 0.02 demo GOLD this session"
+      }
+    ],
+    "toast": null,
+    "width": 844
+  },
+  {
+    "height": 800,
+    "live": "2 coins: 0.02 demo GOLD and 4 XP confirmed. 2 this session.",
+    "scrollWidth": 1280,
+    "sheetHeight": 576,
+    "summaries": [
+      {
+        "color": "rgb(102, 85, 119)",
+        "font": "14px",
+        "text": "2 coins · 0.02 demo GOLD this session"
+      }
+    ],
+    "toast": null,
+    "width": 1280
+  }
+]

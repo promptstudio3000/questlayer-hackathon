@@ -1,0 +1,152 @@
+✔ the player route journey creates, quotes, submits, follows, starts and safely closes (185.534958ms)
+✔ authentication comes from the server session, not actor/role payloads or queries (15.137041ms)
+✔ writes require the configured origin and JSON; disabled adapters never expose the feature (8.624917ms)
+✔ public API never returns pending content, profile private names or other participants (39.753167ms)
+✔ queries are bounded and reject guessed actor/GPS fields and ambiguous filters (19.03025ms)
+✔ malformed, oversized and streamed oversized JSON cannot create records (14.175958ms)
+✔ publication policy mismatch leaves the draft unchanged and preserves XP (7.2465ms)
+✔ API admission obeys bilateral blocks without discarding the existing participant's rights (11.310792ms)
+✔ unexpected server errors have a generic retry response without leaking internal details (9.521916ms)
+✔ creator history accepts navigation identity only, without operation or permission fields (4.618459ms)
+✔ report targeting keeps accepted instructions after closure/block and never substitutes a newer public revision (0.201542ms)
+✔ opposite block intent supersedes an unconfirmed earlier toggle before another deliberate block (71.866375ms)
+✔ a lost private report response recovers through the real API after the creator is blocked (25.106333ms)
+✔ creator capability never relabels native, paid or unconfigured policy data as this demo feature (1.47775ms)
+✔ a lost confirmed response retries the same durable operation ID through the actual creator API (15.048166ms)
+✔ a later identical follow intent receives a new ID after the earlier intent was confirmed (11.445208ms)
+✔ an unmatched success receipt is not acknowledged and a deliberate retry retains the original ID (2.880208ms)
+✔ changed terms and different actors do not inherit an unknown operation's ID (3.397708ms)
+✔ new quest identity persists through an uncertain create and clears only its own slot (1.645084ms)
+✔ unavailable storage permits same-tab safe retry without claiming reload durability (7.503375ms)
+✔ profiles publish only with explicit consent and never borrow the private account name (129.269292ms)
+✔ free follows produce a useful feed and never change XP, balances, presence or history (37.805834ms)
+✔ public quest projections exclude pending edits, commitments, participants and moderation reasons (44.874625ms)
+✔ hidden profiles, pending quests and closing quests do not enter public discovery (28.12675ms)
+✔ bilateral block (viewer) hides profiles and feeds and prevents new admissions (18.927125ms)
+✔ bilateral block (author) hides profiles and feeds and prevents new admissions (13.048375ms)
+✔ existing personal content remains accessible after edits, hiding, blocks and closure (14.339209ms)
+✔ profile/follow/lifecycle mutations share one idempotency namespace (12.37ms)
+✔ stale profile saves and receipt failures cannot overwrite or partially publish a profile (6.179708ms)
+✔ keyset pagination stays bounded and filtered in discovery and My creations (8.152291ms)
+✔ a changed publication quote cannot silently become an accepted XP commitment (10.348958ms)
+✔ Community initialization and reads require the actual existing player boundary (15.795625ms)
+✔ independent acceptance records one zero-reward receipt and resolves atomically; closure releases only original commitment (26.969292ms)
+✔ independence, consent, stale revision and legacy resolver cannot bypass declared review (17.926625ms)
+✔ rejection feedback is private, one pending submission, third independent rejection resolves NOT completed without losing history (19.360875ms)
+✔ accepted requirements, submission and private feedback survive newer revisions, block, hide, suspension, daily resets and reopen (59.087ms)
+✔ old plain admissions stay legacy after structured republication and remain independently resolvable (12.162292ms)
+✔ failed receipt journal rolls back review, resolution and completion receipt together (28.528416ms)
+✔ public/author/stranger APIs never expose private evidence or privileged review routes (34.272375ms)
+✔ actual HTTP lost reply and concurrent duplicate submit recover one actor-bound operation and attempt (69.230167ms)
+✔ draft/review hold no XP; approval locks available XP and lowers current level (36.287417ms)
+✔ a solo participant survives closing; independent resolution permits exact XP release (166.723708ms)
+✔ all action receipts replay across later state changes and reject changed terms (3.628834ms)
+✔ rejection and review withdrawal do not strand XP; corrected revisions retain stable identity (6.971417ms)
+✔ admissions pin immutable revisions; approving an edit does not relock XP (10.632833ms)
+✔ rejecting an edit preserves existing published content and participant rights (5.027709ms)
+✔ policy amounts are explicit, immutable and pinned through restart and new policies (22.420458ms)
+✔ failed approval leaves review pending and can retry after authoritative XP is earned (8.256167ms)
+✔ stale author/moderator requests cannot publish or overwrite another revision (11.286667ms)
+✔ server authority is required; author and participant cannot self-approve or resolve (7.882291ms)
+✔ closing a pending draft prevents delayed approval without any XP release (4.518166ms)
+✔ closing withdraws a pending edit but still permits old participation settlement (5.058458ms)
+✔ injected receipt-storage failure rolls publication and its XP lock back together (5.3375ms)
+✔ malformed values, floating XP and unsupported payment/reward fields fail closed (4.307ms)
+✔ reconciliation errors cannot be hidden by negative available XP (5.664459ms)
+✔ restart replays durable receipts and daily world deletion preserves creator rights (38.763334ms)
+✔ two real SQLite connections cannot overcommit one author's XP (84.726041ms)
+✔ start versus cancellation race either preserves the admitted player or rejects the start (55.878625ms)
+✔ releasing one of several commitments cannot release another quest's XP (5.461708ms)
+✔ a new policy affects new submissions while the existing quote is immutable (3.255583ms)
+✔ resolution is durable and deduplicated; edited quests cannot reopen eligibility (5.29875ms)
+✔ simultaneous identical approvals recover one durable receipt and one XP lock (42.091584ms)
+✔ the real Node HTTP bridge preserves sessions, origin, bounded bodies and host fallback (216.711208ms)
+✔ existing private WAL backup restores creator publication/obligations and historical retries without duplicated rights (425.10425ms)
+✔ creator runtime defaults off without creating storage and explicit configuration has no balancing default (5.969083ms)
+✔ application progression counts durable locks even with creator publication disabled, never earning or burning XP (17.515334ms)
+✔ private joined pagination retains accepted revisions through edits, hiding, bilateral blocks and closure (19.883708ms)
+✔ real host exposes authenticated disabled capability without creator tables or attestor generation (1091.085333ms)
+✔ actual host and operator CLI complete profile, publication, following, protected participation and once-only XP release (895.813875ms)
+✔ creator blocks share bilateral visibility/admission rules while retaining accepted instructions and follows (21.238333ms)
+✔ owned block pagination never borrows private names and unblock remains available after hiding (11.193417ms)
+✔ report admission binds only the currently visible approved or own accepted immutable revision (9.68425ms)
+✔ reports use one actor-scoped durable identity and duplicate new intents cannot flood the queue (10.540333ms)
+✔ operator report review is independent, versioned, receipt-safe and does not automatically stop or release (11.08075ms)
+✔ unsafe-publication suspension withdraws pending edits but preserves admitted content, locks and exact release obligations (14.623041ms)
+✔ suspending an unpublished review closes it without allocating or releasing any XP (7.068041ms)
+✔ report writes are daily bounded while duplicate receipt recovery stays available (21.748125ms)
+✔ creator and existing social block paths respect common change caps and bounded owned lists (22.211667ms)
+✔ receipt storage failure rolls back report, shared block audit, suspension and report review together (13.297375ms)
+✔ real SQLite start versus block race either rejects admission or preserves its accepted rights (50.849209ms)
+✔ real SQLite start versus suspend race either rejects admission or preserves its accepted rights (48.483334ms)
+✔ actual HTTP safety routes enforce session/origin/input privacy and recover a deliberately lost report acknowledgement (64.297625ms)
+✖ enabled-only additive safety initialization and private backup restore preserve old rows, reports, audit and locks (23.364417ms)
+ℹ tests 83
+ℹ suites 0
+ℹ pass 82
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2594.558167
+
+✖ failing tests:
+
+test at tests/creator-safety.test.mjs:1025:1
+✖ enabled-only additive safety initialization and private backup restore preserve old rows, reports, audit and locks (23.364417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        fingerprint: '4974becccf0aefac14208854ee9e9035859313085d340248ae0f9b53488070c5',
+        name: 'core',
+        version: 1
+      },
+  +   {
+  +     fingerprint: '5ff68c0b6da8aa88adff121a9ca7a42c36460f13bf7b257c98ce2417e025ead8',
+  +     name: 'social-blocks',
+  +     version: 1
+  +   },
+  +   {
+  +     fingerprint: '75ce3ba11f67e1bbae3e01423796c1aec5138c4fad358f559f96dc9b02adea11',
+  +     name: 'social-content',
+  +     version: 1
+  +   },
+  +   {
+  +     fingerprint: 'd59587243bd9401c67d23b077c4dbea139046dbdaf1078cac2d71b290e6cde6e',
+  +     name: 'creator-lifecycle',
+  +     version: 1
+  +   },
+  +   {
+  +     fingerprint: 'f054b812821903bd35c7cc85a7f0a245355f6e143292b3fd318d727457398250',
+  +     name: 'creator-community',
+  +     version: 1
+  +   },
+  +   {
+  +     fingerprint: 'c822d2fdee6de9dc7733360510740a7d42e935e81770d3391bde32a8e5877eac',
+  +     name: 'creator-safety',
+  +     version: 1
+  +   },
+  +   {
+  +     fingerprint: '037ee7d9e0ca7e495abf6e24c20c44db9438eebfac1c41b86b8018073e1972fe',
+  +     name: 'creator-completion',
+  +     version: 1
+  +   }
+    ]
+  
+      at TestContext.<anonymous> (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/tests/creator-safety.test.mjs:1050:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { name: 'core', version: 1, fingerprint: '4974becccf0aefac14208854ee9e9035859313085d340248ae0f9b53488070c5' }, { name: 'social-blocks', version: 1, fingerprint: '5ff68c0b6da8aa88adff121a9ca7a42c36460f13bf7b257c98ce2417e025ead8' }, { name: 'social-content', version: 1, fingerprint: '75ce3ba11f67e1bbae3e01423796c1aec5138c4fad358f559f96dc9b02adea11' }, { name: 'creator-lifecycle', version: 1, fingerprint: 'd59587243bd9401c67d23b077c4dbea139046dbdaf1078cac2d71b290e6cde6e' }, { name: 'creator-community', version: 1, fingerprint: 'f054b812821903bd35c7cc85a7f0a245355f6e143292b3fd318d727457398250' }, { name: 'creator-safety', version: 1, fingerprint: 'c822d2fdee6de9dc7733360510740a7d42e935e81770d3391bde32a8e5877eac' }, { name: 'creator-completion', version: 1, fingerprint: '037ee7d9e0ca7e495abf6e24c20c44db9438eebfac1c41b86b8018073e1972fe' } ],
+    expected: [ { name: 'core', version: 1, fingerprint: '4974becccf0aefac14208854ee9e9035859313085d340248ae0f9b53488070c5' } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

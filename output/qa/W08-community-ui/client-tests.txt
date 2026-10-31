@@ -1,0 +1,16 @@
+✔ creator history accepts navigation identity only, without operation or permission fields (1.520292ms)
+✔ creator capability never relabels native, paid or unconfigured policy data as this demo feature (0.15975ms)
+✔ a lost confirmed response retries the same durable operation ID through the actual creator API (21.990166ms)
+✔ a later identical follow intent receives a new ID after the earlier intent was confirmed (1.458459ms)
+✔ an unmatched success receipt is not acknowledged and a deliberate retry retains the original ID (0.507334ms)
+✔ changed terms and different actors do not inherit an unknown operation's ID (0.630167ms)
+✔ new quest identity persists through an uncertain create and clears only its own slot (0.237583ms)
+✔ unavailable storage permits same-tab safe retry without claiming reload durability (0.601416ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 117.398334

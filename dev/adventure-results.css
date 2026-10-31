@@ -1,0 +1,16 @@
+body { margin:0; overflow:auto; background:#f2ebff; }
+#root { min-height:100dvh; }
+.result-fixture { max-width:720px; margin:0 auto; padding:20px; color:var(--ink); background:var(--surface); min-height:100dvh; font-size:16px; line-height:1.5; }
+.result-fixture h1 { font-size:24px; line-height:1.2; }
+.result-fixture p { font-size:16px; }
+.result-fixture-actions { display:grid; gap:12px; }
+.result-fixture button { min-height:48px; padding:12px; font-size:16px; text-align:left; }
+.result-fixture-state { padding:12px; border:1px solid var(--control-border); overflow-wrap:anywhere; }
+body.result-fixture-large .result-fixture,
+body.result-fixture-large .game-dialog .adventure-results-dialog { font-size:32px; line-height:1.5; }
+body.result-fixture-large .result-fixture :is(p,button),
+body.result-fixture-large .game-dialog .adventure-results-dialog :is(p,button,strong) { font-size:32px; line-height:1.5; }
+body.result-fixture-large .result-fixture h1,
+body.result-fixture-large .game-dialog .adventure-results-dialog h2 { font-size:48px; line-height:1.2; }
+body.result-fixture-large .game-dialog .adventure-results-dialog h3 { font-size:40px; line-height:1.2; }
+body.result-fixture-large .game-dialog .adventure-results-dialog :is(small,.adventure-result-date,.adventure-result-domain,.adventure-result-stage span,.adventure-result-stage p) { font-size:28px; line-height:1.5; }

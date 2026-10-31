@@ -1,0 +1,6 @@
+dev/creator-community.tsx(618,9): error TS2322: Type 'Dispatch<SetStateAction<{ page: "following" | "blocked" | "community" | "creators" | "mine" | "participations" | "profile"; } | { page: "quest"; questId: string; } | { page: "edit"; questId: string; }>>' is not assignable to type '(view: CreatorCommunityView) => void'.
+  Types of parameters 'value' and 'view' are incompatible.
+    Type 'CreatorCommunityView' is not assignable to type 'SetStateAction<{ page: "following" | "blocked" | "community" | "creators" | "mine" | "participations" | "profile"; } | { page: "quest"; questId: string; } | { page: "edit"; questId: string; }>'.
+      Type '{ page: "creator"; creatorId: string; }' is not assignable to type 'SetStateAction<{ page: "following" | "blocked" | "community" | "creators" | "mine" | "participations" | "profile"; } | { page: "quest"; questId: string; } | { page: "edit"; questId: string; }>'.
+        Property 'questId' is missing in type '{ page: "creator"; creatorId: string; }' but required in type '{ page: "edit"; questId: string; }'.
+src/creator-community-types.ts(56,28): error TS2322: Type 'unknown' is not assignable to type 'string'.

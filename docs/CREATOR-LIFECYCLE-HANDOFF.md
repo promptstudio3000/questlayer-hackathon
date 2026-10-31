@@ -1,8 +1,17 @@
 # W08 creator quest lifecycle: isolated integration handoff
 
-31 October 2026. Base commit: `4149058` (`feat: add moderated map notes and native receipt recovery`). Prepared separately from the chat working on durable wallet receipts, staking lifecycle and host recovery. This is a tested server-side foundation for W08, not a completed creator platform or a deployed feature. W08 remains **building**.
+31 October 2026. Base commit: `4149058` (`feat: add moderated map notes and native receipt recovery`). Prepared separately from the chat working on durable wallet receipts, staking lifecycle and host recovery. This is a tested server-side foundation for W08, not a completed creator platform or a deployed feature. W08 remains **building**. The subsequent [runtime/interface integration](CREATOR-INTEGRATION-2026-10-31.md) and [creator WAL restore rehearsal](../output/qa/W08-runtime/restore/README.md) supersede the unmounted-source boundary in this original foundation record; default host configuration still disables creators.
 
-## Current follow-up
+## Latest integration boundary
+
+The [whole-project handoff](PROJECT-REVIEW-AND-HANDOFF.md) and
+[current completion/schema handoff](RESULTS-AND-COMPLETION-HANDOFF.md) supersede
+this original transfer inventory and title/description-only/resolve-only baseline.
+Private structured observation, independent review and durable zero-reward
+completion are now integrated locally. Do not reapply old source transfer steps.
+Native XP commitments, reward funding and production governance remain incomplete.
+
+## Historical service follow-up
 
 The [Community service/API follow-up](CREATOR-COMMUNITY-HANDOFF.md) adds profiles, free follows, private/public projections, explicit quote acceptance and optional server adapters. It supersedes the original three-file transfer inventory below. The combined isolated slice has 44 creator tests and passed 312 application tests. The earlier verification record is retained as history.
 

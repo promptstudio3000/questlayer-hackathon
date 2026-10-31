@@ -1,0 +1,221 @@
+{
+  "before": {
+    "color": "#8e7c99",
+    "background": "#fcfaff",
+    "contrast": 3.688
+  },
+  "after": {
+    "color": "#665577",
+    "background": "#fcfaff",
+    "contrast": 6.47
+  },
+  "states": [
+    {
+      "name": "creator-labels-after-large-390x844",
+      "buttons": [
+        {
+          "height": 48,
+          "text": ""
+        },
+        {
+          "height": 114.796875,
+          "text": "Community"
+        },
+        {
+          "height": 114.796875,
+          "text": "Following"
+        },
+        {
+          "height": 114.796875,
+          "text": "Creators"
+        },
+        {
+          "height": 114.796875,
+          "text": "My creations"
+        },
+        {
+          "height": 62.3984375,
+          "text": "Your started quests"
+        },
+        {
+          "height": 62.3984375,
+          "text": "My creations"
+        },
+        {
+          "height": 68.3984375,
+          "text": "Save public profile"
+        }
+      ],
+      "clientWidth": 390,
+      "labels": [
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "32px",
+          "height": 137,
+          "text": "Public display name"
+        },
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "32px",
+          "height": 281,
+          "text": "About your questsSmall stories along the public riverside pa"
+        },
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "32px",
+          "height": 96,
+          "text": "Make my creator profile public"
+        },
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "32px",
+          "height": 96,
+          "text": "I agree to publish this profile text publicly."
+        }
+      ],
+      "scrollWidth": 390,
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "name": "creator-labels-after-large-360x780",
+      "buttons": [
+        {
+          "height": 48,
+          "text": ""
+        },
+        {
+          "height": 114.796875,
+          "text": "Community"
+        },
+        {
+          "height": 114.796875,
+          "text": "Following"
+        },
+        {
+          "height": 114.796875,
+          "text": "Creators"
+        },
+        {
+          "height": 114.796875,
+          "text": "My creations"
+        },
+        {
+          "height": 108.796875,
+          "text": "Your started quests"
+        },
+        {
+          "height": 62.3984375,
+          "text": "My creations"
+        },
+        {
+          "height": 68.3984375,
+          "text": "Save public profile"
+        }
+      ],
+      "clientWidth": 360,
+      "labels": [
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "32px",
+          "height": 137,
+          "text": "Public display name"
+        },
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "32px",
+          "height": 281,
+          "text": "About your questsSmall stories along the public riverside pa"
+        },
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "32px",
+          "height": 96,
+          "text": "Make my creator profile public"
+        },
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "32px",
+          "height": 144,
+          "text": "I agree to publish this profile text publicly."
+        }
+      ],
+      "scrollWidth": 360,
+      "viewport": {
+        "height": 780,
+        "width": 360
+      }
+    },
+    {
+      "name": "creator-labels-after-normal-390x844",
+      "buttons": [
+        {
+          "height": 48,
+          "text": ""
+        },
+        {
+          "height": 48,
+          "text": "Community"
+        },
+        {
+          "height": 48,
+          "text": "Following"
+        },
+        {
+          "height": 48,
+          "text": "Creators"
+        },
+        {
+          "height": 48,
+          "text": "My creations"
+        },
+        {
+          "height": 48,
+          "text": "Your started quests"
+        },
+        {
+          "height": 48,
+          "text": "My creations"
+        },
+        {
+          "height": 48,
+          "text": "Save public profile"
+        }
+      ],
+      "clientWidth": 390,
+      "labels": [
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "16px",
+          "height": 89,
+          "text": "Public display name"
+        },
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "16px",
+          "height": 161,
+          "text": "About your questsSmall stories along the public riverside pa"
+        },
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "16px",
+          "height": 48,
+          "text": "Make my creator profile public"
+        },
+        {
+          "color": "rgb(102, 85, 119)",
+          "fontSize": "16px",
+          "height": 48,
+          "text": "I agree to publish this profile text publicly."
+        }
+      ],
+      "scrollWidth": 390,
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    }
+  ]
+}

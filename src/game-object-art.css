@@ -1,0 +1,51 @@
+.game-object-art {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  image-rendering: pixelated;
+  overflow: visible;
+}
+.zone-map-pin.game-object-map-pin,
+.quest-map-pin.game-object-map-pin {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 8px;
+  display: grid;
+  place-items: center;
+  background: #fcfaff;
+  border: 1px solid #441c6c;
+  border-radius: 8px;
+  filter: none;
+  box-shadow: 0 3px 0 #441c6c30;
+  cursor: pointer;
+}
+.zone-map-pin.game-object-map-pin > .game-object-art,
+.quest-map-pin.game-object-map-pin > .game-object-art {
+  width: 32px;
+  height: 32px;
+  filter: none;
+}
+.game-object-map-pin[aria-pressed="true"] {
+  outline: 3px solid #672eeb;
+  outline-offset: 2px;
+}
+.game-object-map-pin:focus-visible {
+  outline: 3px solid #672eeb;
+  outline-offset: 3px;
+}
+.native-target-pin > .game-object-art {
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
+}
+.native-target-pin:has(> .game-object-art) {
+  display: flex;
+  align-items: center;
+  line-height: 1.4;
+}
+.native-target-pin:has(> .game-object-art) > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

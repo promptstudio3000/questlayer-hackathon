@@ -9,7 +9,7 @@ scp -o BatchMode=yes -o ConnectTimeout=15 "$ARCHIVE" "$HOST_TARGET:/tmp/questlay
 ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST_TARGET" bash -s -- "$STAMP" <<'REMOTE'
 set -Eeuo pipefail
 STAMP="$1"
-APP=/opt/ps3000/apps/auratrail
+APP=/opt/ps3000/apps/questlayer-hackathon
 OPERATIONS="$APP/operations"
 BACKUP="$APP/backups/maintenance-$STAMP"
 mkdir -p "$OPERATIONS" "$BACKUP" "$APP/state-backups"

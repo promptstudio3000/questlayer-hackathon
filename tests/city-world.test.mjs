@@ -116,10 +116,9 @@ test("ordered walking checkpoints cannot be skipped replayed or completed from o
     worldView(db, w.id, player).quests.find((x) => x.id === q.id).completed,
     1,
   );
-  assert.throws(
-    () => advanceRoute(db, player, q.id, cps.at(-1), cps.length, now),
-    /already completed/,
-  );
+  const replay = advanceRoute(db, player, q.id, cps.at(-1), cps.length, now);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.result.id, result.result.id);
   assert.equal(
     db.prepare("SELECT xp FROM players WHERE id=?").get(player).xp,
     100,

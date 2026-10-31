@@ -12,6 +12,19 @@ One shared sequential reader supplies the main native map, walk board and wallet
 
 ## Limits and next work
 
+Local continuity follow-up, 31 October: selection now stores navigation identity
+per player and linked account, including the testnet contract, published day/hash,
+kind and index. It restores the next checkpoint from a fresh response, never stored
+coordinates or a saved XP/reward value. The last deliberately selected account is
+restored only if still linked. Failed/stale reads hide markers while retaining the
+bookmark; an exact own receipt distinguishes pending, retrying and confirmed from
+merely recorded progress. Missing nearby coins remain uncertain. Expired-day rights
+stay accessible through Wallet receipts. View reward receipts opens/focuses the
+actual disclosure. Native target camera placement uses current panel bounds and a
+manual pan does not itself restart target movement. [Delivery evidence](../output/qa/W02-native-objective/README.md)
+records 363 application tests, build and synthetic read-state browser checks. This
+follow-up is not deployed and does not prove physical visits or native wallet return.
+
 - The native v1 manifest still supports its published three-checkpoint walk. The richer demo quest registry is not silently applied to native rights.
 - GPS browser coordinates are attested, not trustless physical presence. Field-access review, anti-abuse evaluation and physical iOS/Android acceptance remain open.
 - Validate the implemented automatic collector through physical walking, wallet return, unavailable GPS and offline/foreground recovery on supported phones. Controller tests and browser viewport checks do not pass the field gate.

@@ -1,0 +1,109 @@
+{
+  "images": [
+    {
+      "file": "actual-completed-receipt-after-reload-390x844.jpg",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "actual-observation-draft-1280x800.jpg",
+      "pixels": [
+        1280,
+        800
+      ]
+    },
+    {
+      "file": "actual-observation-draft-360x780.jpg",
+      "pixels": [
+        360,
+        780
+      ]
+    },
+    {
+      "file": "actual-observation-draft-390x844.jpg",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "actual-observation-draft-844x390.jpg",
+      "pixels": [
+        844,
+        390
+      ]
+    },
+    {
+      "file": "actual-observation-focused-390x480.jpg",
+      "pixels": [
+        390,
+        480
+      ]
+    },
+    {
+      "file": "actual-observation-pending-390x844.jpg",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "root-enlarged-draft-consent-reset-390.png",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "root-enlarged-observation-390.png",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "root-lost-reply-recovered-390.png",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "root-lost-reply-retained-390.png",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "root-rejected-390.png",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "root-rejected-feedback-390.png",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "root-terminal-390.png",
+      "pixels": [
+        390,
+        844
+      ]
+    }
+  ],
+  "tokenContrast": {
+    "foreground": "#665577",
+    "background": "#fcfaff",
+    "ratio": 6.47,
+    "scope": "Source token calculation; not a new computed-style browser reading."
+  },
+  "notes": "Browser DOM metrics accumulated before a CUA reset were not recoverable; do not infer viewport overflow measurements from this manifest."
+}

@@ -1,0 +1,1898 @@
+[
+  {
+    "name": "creator-mine-xp-360x780",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 296
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "New quest",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 134.1640625
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "800 available demo XP · Level 3",
+        "readonly": false,
+        "tag": "SUMMARY",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.4921875,
+        "label": "Plzeň Path StoriesPublic profile",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 154.2890625,
+        "label": "PublishedThree quiet details in Šafaříkovy sadyRevision 2 · 200 XP committed",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 296
+      }
+    ],
+    "document": {
+      "clientWidth": 360,
+      "scrollWidth": 360
+    },
+    "viewport": {
+      "height": 780,
+      "width": 360
+    }
+  },
+  {
+    "name": "creator-profile-focused-360x780",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-display-name",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 296
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Short solo discoveries along public park paths.",
+        "readonly": false,
+        "tag": "TEXTAREA",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Make my creator profile public",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "I agree to publish this profile text publicly.",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Save public profile",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 296
+      }
+    ],
+    "document": {
+      "clientWidth": 360,
+      "scrollWidth": 360
+    },
+    "viewport": {
+      "height": 780,
+      "width": 360
+    }
+  },
+  {
+    "name": "creator-profile-focused-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-display-name",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Short solo discoveries along public park paths.",
+        "readonly": false,
+        "tag": "TEXTAREA",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Make my creator profile public",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "I agree to publish this profile text publicly.",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Save public profile",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      }
+    ],
+    "document": {
+      "clientWidth": 390,
+      "scrollWidth": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "creator-profile-landscape-844x390",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-display-name",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 780
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Short solo discoveries along public park paths.",
+        "readonly": false,
+        "tag": "TEXTAREA",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Make my creator profile public",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "I agree to publish this profile text publicly.",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Save public profile",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 780
+      }
+    ],
+    "document": {
+      "clientWidth": 844,
+      "scrollWidth": 844
+    },
+    "viewport": {
+      "height": 390,
+      "width": 844
+    }
+  },
+  {
+    "name": "creator-profile-landscape-focused-844x390",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 189
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-display-name",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 780
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Short solo discoveries along public park paths.",
+        "readonly": false,
+        "tag": "TEXTAREA",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Make my creator profile public",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "I agree to publish this profile text publicly.",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 780
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Save public profile",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 780
+      }
+    ],
+    "document": {
+      "clientWidth": 844,
+      "scrollWidth": 844
+    },
+    "viewport": {
+      "height": 390,
+      "width": 844
+    }
+  },
+  {
+    "name": "creator-profile-focused-1280x800",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 458
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-display-name",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 458
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Short solo discoveries along public park paths.",
+        "readonly": false,
+        "tag": "TEXTAREA",
+        "width": 458
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Make my creator profile public",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 458
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "I agree to publish this profile text publicly.",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 458
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Save public profile",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 458
+      }
+    ],
+    "document": {
+      "clientWidth": 1280,
+      "scrollWidth": 1280
+    },
+    "viewport": {
+      "height": 800,
+      "width": 1280
+    }
+  },
+  {
+    "name": "creator-profile-keyboard-approx-390x480",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-display-name",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 122,
+        "label": "Short solo discoveries along public park paths.",
+        "readonly": false,
+        "tag": "TEXTAREA",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Make my creator profile public",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(142, 124, 153)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "I agree to publish this profile text publicly.",
+        "readonly": false,
+        "tag": "LABEL",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 0)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 24,
+        "label": "",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 24
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Save public profile",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      }
+    ],
+    "document": {
+      "clientWidth": 390,
+      "scrollWidth": 390
+    },
+    "viewport": {
+      "height": 480,
+      "width": 390
+    }
+  },
+  {
+    "name": "creator-quest-editor-focused-360x780",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 144
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-quest-title",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 296
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 194,
+        "label": "Take a free observation break in Šafaříkovy sady, Plzeň. Stay on public paths and choose a",
+        "readonly": false,
+        "tag": "TEXTAREA",
+        "width": 296
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Save new revision",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 296
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Close this quest",
+        "readonly": false,
+        "tag": "SUMMARY",
+        "width": 296
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Stop new starts",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 296
+      }
+    ],
+    "document": {
+      "clientWidth": 360,
+      "scrollWidth": 360
+    },
+    "viewport": {
+      "height": 780,
+      "width": 360
+    }
+  },
+  {
+    "name": "creator-quest-editor-focused-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-quest-title",
+        "readonly": false,
+        "tag": "INPUT",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 194,
+        "label": "Take a free observation break in Šafaříkovy sady, Plzeň. Stay on public paths and choose a",
+        "readonly": false,
+        "tag": "TEXTAREA",
+        "width": 326
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Save new revision",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Close this quest",
+        "readonly": false,
+        "tag": "SUMMARY",
+        "width": 326
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Stop new starts",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      }
+    ],
+    "document": {
+      "clientWidth": 390,
+      "scrollWidth": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "creator-closing-one-open-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-quest-title",
+        "readonly": true,
+        "tag": "INPUT",
+        "width": 326
+      },
+      {
+        "background": "rgb(242, 235, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 194,
+        "label": "Take a free observation break in Šafaříkovy sady, Plzeň. Stay on public paths and choose a",
+        "readonly": true,
+        "tag": "TEXTAREA",
+        "width": 326
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": true,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Finalize closure and return XP",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      }
+    ],
+    "document": {
+      "clientWidth": 390,
+      "scrollWidth": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "creator-finalized-closed-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 119.4296875
+      },
+      {
+        "background": "rgb(255, 253, 248)",
+        "color": "rgb(103, 82, 117)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 50,
+        "label": "creator-quest-title",
+        "readonly": true,
+        "tag": "INPUT",
+        "width": 326
+      },
+      {
+        "background": "rgb(242, 235, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 194,
+        "label": "Take a free observation break in Šafaříkovy sady, Plzeň. Stay on public paths and choose a",
+        "readonly": true,
+        "tag": "TEXTAREA",
+        "width": 326
+      }
+    ],
+    "document": {
+      "clientWidth": 390,
+      "scrollWidth": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "creator-finalized-xp-restored-390x844",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 159
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "New quest",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 134.1640625
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "1,000 available demo XP · Level 4",
+        "readonly": false,
+        "tag": "SUMMARY",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.4921875,
+        "label": "Plzeň Path StoriesPublic profile",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 154.2890625,
+        "label": "ClosedThree quiet details in Šafaříkovy sadyRevision 2 · No XP committed",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 326
+      }
+    ],
+    "document": {
+      "clientWidth": 390,
+      "scrollWidth": 390
+    },
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "name": "creator-finalized-xp-restored-1280x800",
+    "controls": [
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Refresh creator quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 48
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "Community",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "Following",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "Creators",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.390625,
+        "label": "My creations",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 108.5
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(103, 46, 235)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "Your started quests",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 458
+      },
+      {
+        "background": "rgb(103, 46, 235)",
+        "color": "rgb(255, 255, 255)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "New quest",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 134.1640625
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 48,
+        "label": "1,000 available demo XP · Level 4",
+        "readonly": false,
+        "tag": "SUMMARY",
+        "width": 458
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 68.4921875,
+        "label": "Plzeň Path StoriesPublic profile",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 458
+      },
+      {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(26, 3, 53)",
+        "disabled": false,
+        "fontSize": "16px",
+        "height": 130.890625,
+        "label": "ClosedThree quiet details in Šafaříkovy sadyRevision 2 · No XP committed",
+        "readonly": false,
+        "tag": "BUTTON",
+        "width": 458
+      }
+    ],
+    "document": {
+      "clientWidth": 1280,
+      "scrollWidth": 1280
+    },
+    "viewport": {
+      "height": 800,
+      "width": 1280
+    }
+  }
+]

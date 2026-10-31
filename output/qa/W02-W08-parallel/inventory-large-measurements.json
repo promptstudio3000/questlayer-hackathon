@@ -1,0 +1,18 @@
+[
+  {
+    "dialogScrollWidth": 322,
+    "dialogWidth": 322,
+    "inputFont": "32px",
+    "labelColor": "rgb(102, 85, 119)",
+    "scrollWidth": 360,
+    "width": 360
+  },
+  {
+    "dialogScrollWidth": 352,
+    "dialogWidth": 352,
+    "inputFont": "32px",
+    "labelColor": "rgb(102, 85, 119)",
+    "scrollWidth": 390,
+    "width": 390
+  }
+]

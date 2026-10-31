@@ -1,6 +1,6 @@
 # W08 Community service and player API handoff
 
-31 October 2026. Continues the [creator lifecycle slice](CREATOR-LIFECYCLE-HANDOFF.md) in the same isolated worktree, based on `4149058`. These services are implemented and tested locally. They are not mounted in the application, exposed on the VPS or a completed W08 player experience.
+31 October 2026. Continues the [creator lifecycle slice](CREATOR-LIFECYCLE-HANDOFF.md) in the same isolated worktree, based on `4149058`. This is the original service-foundation handoff. The [current integration](CREATOR-INTEGRATION-2026-10-31.md) now mounts an optional local runtime and player interface; default configuration remains disabled, and no production deployment or completed W08 acceptance is claimed.
 
 ## Implemented
 
@@ -30,9 +30,9 @@ All public quests report `domain: demo`, `access: free` and `rewardStatus: not-c
 
 Use `createCreatorServices(db, options)` for Community rather than independently assembling lifecycle and Community objects. The factory binds audience validation to the same write transaction as participation creation. Standalone lifecycle use retains the earlier trusted-domain behavior; it has no public profile/discovery policy by itself.
 
-Initialize only after deliberate feature configuration. Lifecycle initialization creates its six `creator_*` tables; Community adds `creator_profiles`, `creator_follows` and initializes the existing social-block schema. There is no automatic application bootstrap or new account system. The policy must explicitly supply an immutable version and a positive safe-integer XP amount. Test fixture amounts are not production tuning decisions.
+Initialize only after deliberate feature configuration. Lifecycle initialization creates its six `creator_*` tables; Community adds `creator_profiles`, `creator_follows` and initializes the existing social-block schema. The current host bootstrap initializes these services only with explicit feature configuration; there is no new account system. The policy must explicitly supply an immutable version and a positive safe-integer XP amount. Test fixture amounts are not production tuning decisions.
 
-A future mounting change uses the existing `auth(req)` function in `server/index.mjs`. Instantiate the services with reviewed policy/operator capabilities, then create the Node handler with `authenticate: auth`, configured `origin` and an explicit enabled flag. In the host `api()` function call `if (await creatorHandler(req, res)) return;` **after** its existing origin/rate-limit checks and **before** any body parsing. The Node bridge constructs the request URL from the configured origin; do not pass the host's internal `http://localhost` parsing URL as a public origin. Instantiate neither services nor tables when the feature is disabled at the host configuration level.
+The current mounting uses the existing `auth(req)` function in `server/index.mjs`. `createCreatorRuntime` composes reviewed policy/operator capabilities and the Node handler with `authenticate: auth`, configured `origin` and an explicit enabled flag. The host `api()` calls `if (await creatorRuntime.handle(req, res)) return;` **after** its existing origin/rate-limit checks and **before** any body parsing. The Node bridge constructs the request URL from the configured origin; do not pass the host's internal `http://localhost` parsing URL as a public origin. Instantiate neither services nor tables when the feature is disabled at the host configuration level.
 
 Preserve the host's session revocation, authorization, request timeout, rate limits, logging and security headers. The adapter supplies neither player keys nor moderator/settlement credentials. No player endpoint grants those roles. Operator review/validation remains a separate capability, not a role field in a player request.
 
@@ -66,11 +66,11 @@ There are intentionally no player `/review`, `/resolve`, donation, payment, evid
 
 ## Evidence
 
-The complete isolated application suite passed **312/312** tests after this service/API slice was assembled. The focused set contains **44** tests: 22 lifecycle, 12 Community, 9 Web API and 1 actual Node HTTP bridge case. Additional final checks of the bridge cover ongoing oversized and interrupted uploads. Transcripts are in `output/qa/W08-creator-community/`.
+At the original service/API stage, the complete isolated application suite passed **312/312** tests. The focused set contains **44** tests: 22 lifecycle, 12 Community, 9 Web API and 1 actual Node HTTP bridge case. Additional final checks of the bridge cover ongoing oversized and interrupted uploads. Transcripts are in `output/qa/W08-creator-community/`.
 
 Tests verify a complete isolated profile → draft → accepted quote → independent approval → follow → discovery → start → closing → independent obligation settlement → XP release sequence. Actual concurrent connections protect XP, exact receipt recovery, immutable participant revisions and start/cancel ordering. Privacy checks cover unapproved content, other players' drafts/participation, private names, bilateral blocks, actor spoofing, origin changes, malformed/streamed input and generic error responses.
 
-This is server and adapter evidence, not an integrated browser/device playtest. No UI was changed, no screenshots were substituted for runtime behavior, no physical location was verified, and no native contract operation was performed. The full W08 exit scenario still requires Community UI, authored/validated activities, actual confirmed rewards, profiles/social adapters, migration/restore rehearsal, moderation operations and native XP commitments. W09 money flows remain separate and unimplemented.
+That original evidence covers server/adapters. The subsequent [runtime report](../output/qa/W08-runtime/README.md) and [restore rehearsal](../output/qa/W08-runtime/restore/README.md) cover current host/CLI and local database integration; the player UI is now mounted in source. The [actual-host creator journey](../output/qa/W02-W08-parallel/README.md) and [browser notes](../output/qa/W02-W08-parallel/creator-browser-notes.md) verify author closure, guarded finalization, separate trusted resolution and exact UI XP restoration. Separate actual App navigation/modal and form fixture checks are verified locally; physical devices remain unverified. The full W08 exit still requires validated activities, actual confirmed rewards, native/profile-storage adapters, full-host/migration recovery, governed moderation and native XP commitments. W09 money flows remain separate and unimplemented.
 
 ## Combining with the other chat
 
@@ -80,4 +80,17 @@ When that chat has finished, first verify the receiving checkout has no conflict
 
 ## Combined integration update
 
-The completed native-recovery commit `0ff170b` was subsequently combined with this slice. [The integration record](CREATOR-INTEGRATION-2026-10-31.md) records 343 passing application tests and a successful build, with creator routes still disabled.
+The completed native-recovery commit `0ff170b` was subsequently combined with this slice. [The integration record](CREATOR-INTEGRATION-2026-10-31.md) records 343 passing application tests and a successful build, with creator routes then still unmounted/disabled; current optional runtime mounting is recorded above.
+
+
+## Runtime follow-up API additions
+
+The mounted runtime adds authenticated `GET /status` in either mode, reporting the
+feature flag, demo domain, nullable explicit policy, unconfigured rewards and trusted
+review/completion availability without exposing operator lists. Disabled player
+routes remain 404 and create no tables. New private reads are `GET /me/quests/:id`
+(author-only latest revision/state/review feedback/lock/obligations) and
+`GET /me/participations` (bounded pagination of this player's accepted revisions).
+Review feedback never enters public or participant projections. See
+[the runtime report](../output/qa/W08-runtime/README.md) for exact configuration and
+operator commands. Test policy values do not constitute adopted production tuning.

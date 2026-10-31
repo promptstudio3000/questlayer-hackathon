@@ -1,0 +1,21 @@
+✔ native reload restores identity and takes the next checkpoint exclusively from the current snapshot (1.164959ms)
+✔ player, account, network, contract, manifest and stable day identities cannot be silently substituted (0.157958ms)
+✔ a failed, preparing, stale or wrong-clock snapshot hides the marker without losing the reference (0.113042ms)
+✔ pending and retrying receipts prevent presenting a new marker or confirmed reward (0.1335ms)
+✔ another player's shared prize or mismatched receipt does not erase personal checkpoint eligibility (0.098542ms)
+✔ own durable receipts remain visible after day rollover and missing nearby objects (0.288916ms)
+✔ a missing coin is not evidence of collection; a matching receipt establishes its actual state (0.131958ms)
+✔ expired, completed, removed and invalid checkpoints never restore an actionable location (0.14875ms)
+✔ future and tier-locked walks remain browseable and disclose the requirement (0.121083ms)
+✔ stored account preference can select only a currently linked wallet and stays scoped per player (0.125084ms)
+✔ guest browsing has its own bookmark and cannot acquire a linked account's visit rights (0.157125ms)
+✔ manual visit controls stop at exact day boundaries, stale reads, paused publication and mismatched accounts (0.173625ms)
+✔ corrupted or invented navigation data never supplies a target or claim authority (0.183625ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.232375

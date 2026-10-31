@@ -1,4 +1,30 @@
+import {
+  AdventureResultDialog,
+  AdventureResultResume,
+  AdventureResultHistoryButton,
+} from "./AdventureResults";
+import { useAdventureResults } from "./useAdventureResults";
+import {
+  adventureItemForEquip,
+  type AdventureResult,
+} from "./adventure-results";
 import { PendingNativeTransactions } from "./PendingNativeTransactions";
+import { CreatorCommunity } from "./CreatorCommunity";
+import { useAppNavigation } from "./useAppNavigation";
+import { createReadEpoch } from "./read-epoch";
+import { usePickupFeedback } from "./usePickupFeedback";
+import { demoPickupScope } from "./pickup-feedback";
+import { canContinueDemoCollection } from "./demo-collection";
+import { PickupSummary, PickupAnnouncement } from "./PickupSummary";
+import {
+  GameObjectArt,
+  questObjectPresentation,
+  zoneObjectPresentation,
+  representativeZoneQuest,
+} from "./game-object-art";
+import { makeNativeObjective } from "./native-objective";
+import { useAdventureSelection } from "./useAdventureSelection";
+import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
 import { sendConfirmedNative } from "./confirmed-native-transaction";
 import { MapNotes } from "./MapNotes";
 import { useNativeGame } from "./useNativeGame";
@@ -77,7 +103,6 @@ import {
   EyeSlash,
   Flag,
   TrendUp,
-  Diamond,
   Lightning,
   SealCheck,
   Question,
@@ -148,7 +173,7 @@ function units(v: string) {
 function CoinIcon() {
   return (
     <span className="gold-icon" aria-hidden="true">
-      ◆
+      <GameObjectArt kind="coin" size={20} />
     </span>
   );
 }
@@ -183,29 +208,18 @@ export default function App() {
       /* A private browsing session can still change the current view. */
     }
   };
+  const worldOwner = useRef<string | undefined>(undefined);
   const [player, setPlayer] = useState<Player | null>(null),
     [loaded, setLoaded] = useState(false),
-    [world, setWorld] = useState<World | null>(null),
+    [worldData, setWorld] = useState<World | null>(null),
     [position, setPosition] = useState<Point>(HOME),
     [fix, setFix] = useState<Fix | null>(null),
     [arena, setArena] = useState(true),
-    [tab, setTab] = useState<Tab>("explore"),
-    [walletView, setWalletView] = useState<"rewards" | "staking" | "demo">(
-      "rewards",
-    ),
-    [selected, setSelected] = useState<Zone | null>(null),
-    [selectedQuestId, setSelectedQuestId] = useState<string | null>(null),
-    [nativeTarget, setNativeTarget] = useState<
-      | (Point & { label: string; questIndex?: number; coinIndex?: number })
-      | null
-    >(null),
     [globe, setGlobe] = useState(false),
     [overview, setOverview] = useState(false),
-    [sheetExpanded, setSheetExpanded] = useState(false),
     [follow, setFollow] = useState(true),
     [busy, setBusy] = useState(""),
     [toast, setToast] = useState<{ text: string; error: boolean } | null>(null),
-    [coins, setCoins] = useState(0),
     [online, setOnline] = useState(navigator.onLine),
     [presence, setPresence] = useState(false),
     [presenceUntil, setPresenceUntil] = useState(0),
@@ -213,11 +227,40 @@ export default function App() {
     [showNpc, setShowNpc] = useState(false),
     [now, setNow] = useState(Date.now()),
     [menu, setMenu] = useState(false);
-  const [discovery, setDiscovery] = useState<{
-    item: Item;
-    xp: number;
-    reward: number;
+  const world =
+    worldOwner.current === player?.id && worldData?.arena === arena
+      ? worldData
+      : null;
+  const navigation = useAppNavigation(player?.id);
+  const [creatorCapability, setCreatorCapability] = useState<{
+    playerId: string;
+    enabled: boolean;
   } | null>(null);
+  const creatorsEnabled =
+    creatorCapability?.playerId === player?.id &&
+    creatorCapability?.enabled === true;
+  const { tab, walletView, sheetExpanded, taskRealm, notesView, creatorView } =
+    navigation;
+  const navigationContext = useRef({ signature: "", revision: 0 });
+  const navigationSignature = JSON.stringify([
+    tab,
+    walletView,
+    sheetExpanded,
+    taskRealm,
+    notesView,
+    creatorView,
+  ]);
+  if (navigationContext.current.signature !== navigationSignature)
+    navigationContext.current = {
+      signature: navigationSignature,
+      revision: navigationContext.current.revision + 1,
+    };
+  const setTab = navigation.setter("tab"),
+    setWalletView = navigation.setter("walletView"),
+    setSheetExpanded = navigation.setter("sheetExpanded"),
+    setTaskRealm = navigation.setter("taskRealm"),
+    setNotesView = navigation.setter("notesView"),
+    setCreatorView = navigation.setter("creatorView");
   const [nativeWardrobe, setNativeWardrobe] =
       useState<NativeWardrobeState | null>(null),
     [nativeError, setNativeError] = useState("");
@@ -301,8 +344,44 @@ export default function App() {
       );
     } catch {}
   }, [nativePlay]);
-  const [playAccount, setPlayAccount] = useState("");
-  const [taskRealm, setTaskRealm] = useState<"near" | "demo">("near");
+  const adventureResults = useAdventureResults({
+    playerId: player?.id,
+    realm: arena ? "arena" : "gps",
+    enabled: !nativePlay,
+    online,
+  });
+  const discovery = adventureResults.selection;
+  const nativeAccount = useNativePlayAccount(player);
+  const playAccount = nativeAccount.account;
+  const setPlayAccount = nativeAccount.select;
+  const demoObjective = useAdventureSelection(
+    player?.id,
+    world,
+    arena,
+    nativePlay,
+    now,
+  );
+  const {
+    selected: demoSelection,
+    selectedQuestId,
+    select: selectAdventure,
+    notice: adventureNotice,
+    dismissNotice: dismissAdventureNotice,
+  } = demoObjective;
+  function setSelected(zone: Zone | null, questId: string | null = null) {
+    selectAdventure(zone, questId);
+    navigation.update({
+      demoTarget:
+        zone && world
+          ? {
+              worldId: world.id,
+              zoneId: zone.id,
+              questId,
+              realm: arena ? "arena" : "gps",
+            }
+          : null,
+    });
+  }
   const [nativeVisitBusy, setNativeVisitBusy] = useState(false);
   const mainPanel = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -310,6 +389,7 @@ export default function App() {
   }, [tab, player?.id]);
   const nativeGame = useNativeGame(
     !!player &&
+      nativeAccount.ready &&
       (nativePlay ||
         tab === "expeditions" ||
         (tab === "wallet" && walletView === "rewards")),
@@ -317,6 +397,124 @@ export default function App() {
     playAccount,
     position,
   );
+  const nativeObjectiveBase = useNativeObjective(
+    player?.id,
+    playAccount,
+    nativeAccount.ready,
+    nativeGame.state,
+    nativeGame.error,
+    now,
+  );
+  const nativeObjective = {
+    ...nativeObjectiveBase,
+    select: (kind: "quest" | "coin", index: number) => {
+      if (!player) return;
+      const reference = makeNativeObjective(
+        player.id,
+        playAccount || null,
+        nativeGame.state,
+        kind,
+        index,
+        now,
+      );
+      if (!reference) return;
+      nativeObjectiveBase.restore(reference);
+      navigation.update({ nativeTarget: reference });
+    },
+    clear: () => {
+      nativeObjectiveBase.clear();
+      navigation.update({ nativeTarget: null });
+    },
+  };
+  const capturedNavigation = useRef("");
+  useEffect(() => {
+    if (!navigation.ready || !demoObjective.ready || !nativeObjectiveBase.ready)
+      return;
+    const identity = `${player?.id}:${playAccount}:${arena}`;
+    if (capturedNavigation.current === identity || navigation.restored) return;
+    capturedNavigation.current = identity;
+    const reference = demoObjective.reference;
+    navigation.update(
+      {
+        demoTarget: reference
+          ? {
+              worldId: reference.worldId,
+              zoneId: reference.zoneId,
+              questId: reference.questId,
+              realm: reference.realm,
+            }
+          : null,
+        nativeTarget: nativeObjectiveBase.reference,
+      },
+      "replace",
+    );
+  }, [
+    navigation.ready,
+    demoObjective.ready,
+    nativeObjectiveBase.ready,
+    player?.id,
+    playAccount,
+    arena,
+  ]);
+  const restoreNavigation = useRef({ token: "", demo: false, native: false });
+  useEffect(() => {
+    if (!navigation.ready || !navigation.restored) return;
+    const token = `${player?.id}:${navigation.restoreRevision}`;
+    if (restoreNavigation.current.token !== token) {
+      restoreNavigation.current = { token, demo: false, native: false };
+      setMenu(false);
+    }
+    const pending = restoreNavigation.current;
+    if (!pending.native && nativeObjectiveBase.ready) {
+      const reference = navigation.nativeTarget;
+      if (reference === null) nativeObjectiveBase.clear();
+      else if (reference && reference.accountId === (playAccount || null))
+        nativeObjectiveBase.restore(reference);
+      pending.native = true;
+    }
+    if (
+      !pending.demo &&
+      demoObjective.ready &&
+      world &&
+      world.arena === arena
+    ) {
+      const reference = navigation.demoTarget;
+      if (reference === null) selectAdventure(null);
+      else if (reference && reference.realm === (arena ? "arena" : "gps")) {
+        const zone =
+          world.id === reference.worldId
+            ? world.zones.find(
+                (z) => z.id === reference.zoneId && z.closesAt > now,
+              )
+            : null;
+        const questValid =
+          reference.questId === null ||
+          world.quests.some(
+            (q) =>
+              q.id === reference.questId &&
+              q.zone_id === zone?.id &&
+              q.closes_at > now,
+          );
+        if (zone && questValid) selectAdventure(zone, reference.questId);
+        else {
+          selectAdventure(null);
+          navigation.update({ demoTarget: null }, "replace");
+        }
+      }
+      pending.demo = true;
+    }
+  }, [
+    navigation.ready,
+    navigation.restoreRevision,
+    demoObjective.ready,
+    nativeObjectiveBase.ready,
+    world,
+    arena,
+    player?.id,
+    playAccount,
+  ]);
+  const nativeTarget = nativePlay ? nativeObjective.view.target : null;
+  const selected = nativePlay ? null : demoSelection;
   const nativeCollection = useNativeAutoCollect({
     playerId: player?.id,
     accountId: playAccount,
@@ -336,45 +534,79 @@ export default function App() {
     refresh: nativeGame.refresh,
   });
   useEffect(() => {
-    if (!player?.wallets.some((w) => w.account_id === playAccount))
-      setPlayAccount(player?.wallets[0]?.account_id || "");
-  }, [player?.wallets, playAccount]);
-  useEffect(() => {
     if (tab === "expeditions") setNativePlay(true);
   }, [tab]);
   const displayWorld = useMemo(
     () => (nativePlay ? nativeWorldView(nativeGame.state, HOME) : world),
     [nativePlay, nativeGame.state, world],
   );
-  const nativeSelectionIdentity = useRef("");
-  useEffect(() => {
-    const identity = `${playAccount}:${nativeGame.state?.day?.id || ""}`;
-    if (nativeSelectionIdentity.current !== identity || nativeGame.error)
-      setNativeTarget(null);
-    nativeSelectionIdentity.current = identity;
-  }, [playAccount, nativeGame.state?.day?.id, nativeGame.error]);
   const hudXp = nativePlay
     ? (nativeGame.state?.balance?.xp ?? null)
-    : (player?.xp ?? null);
+    : (player?.availableXp ?? player?.xp ?? null);
   const hudLevel =
     hudXp === null ? null : 1 + Math.floor(Math.sqrt(Number(hudXp) / 100));
   const nextWorldRefresh = useRef(0),
     collecting = useRef(new Set<string>()),
+    collectionRun = useRef<AbortController | null>(null),
     gps = useRef<number | null>(null),
     latest = useRef({ world, position, fix, arena, player, nativePlay });
   latest.current = { world, position, fix, arena, player, nativePlay };
+  const pickupFeedback = usePickupFeedback(
+    nativePlay ? "" : demoPickupScope(player?.id, world?.id, arena),
+    tab !== "explore" ||
+      !!toast ||
+      !!discovery ||
+      !!busy ||
+      !online ||
+      nativePlay,
+  );
+  const playerReads = useRef(createReadEpoch());
+  const worldReads = useRef(createReadEpoch());
+  const worldLoading = useRef(false);
+  function demoCollectionContext(state = latest.current) {
+    return {
+      playerId: state.player?.id,
+      worldId: state.world?.id,
+      arena: state.arena,
+      worldArena: state.world?.arena,
+      endsAt: state.world?.endsAt,
+      nativePlay: state.nativePlay,
+      loading: worldLoading.current,
+      visible: !document.hidden,
+      online: navigator.onLine,
+    };
+  }
+  const actionVersion = useRef(0);
+  const gpsVersion = useRef(0);
+  const ownerContext = () => latest.current.player?.id || "signed-out";
+  const worldContext = (kind: "replace" | "refresh") =>
+    JSON.stringify([
+      ownerContext(),
+      latest.current.arena,
+      kind,
+      ...(kind === "refresh" ? [latest.current.world?.id] : []),
+    ]);
   function notify(text: string, error = false) {
     setToast({ text, error });
+  }
+  function updateOwnedPlayer(next: Player) {
+    if (latest.current.player?.id !== next.id) return;
+    playerReads.current.invalidate();
+    setPlayer((current) => (current?.id === next.id ? next : current));
   }
   async function action<T>(
     name: string,
     fn: () => Promise<T>,
   ): Promise<T | undefined> {
     const focusBeforeAction = document.activeElement as HTMLElement | null;
+    const owner = ownerContext();
+    const version = ++actionVersion.current;
     setBusy(name);
     try {
       return await fn();
     } catch (e) {
+      if (ownerContext() !== owner || version !== actionVersion.current)
+        return undefined;
       if (
         e &&
         typeof e === "object" &&
@@ -384,42 +616,115 @@ export default function App() {
         return undefined;
       notify(e instanceof Error ? e.message : "Something went wrong.", true);
     } finally {
-      setBusy("");
-      requestAnimationFrame(() => {
-        if (
-          document.activeElement === document.body &&
-          !document.querySelector("dialog[open]") &&
-          focusBeforeAction?.isConnected
-        )
-          focusBeforeAction.focus();
-      });
+      if (ownerContext() === owner && version === actionVersion.current) {
+        setBusy("");
+        requestAnimationFrame(() => {
+          if (
+            document.activeElement === document.body &&
+            !document.querySelector("dialog[open]") &&
+            focusBeforeAction?.isConnected
+          )
+            focusBeforeAction.focus();
+        });
+      }
     }
   }
   async function me() {
+    const token = playerReads.current.begin(ownerContext());
     try {
       const r = await api<{ player: Player }>("/me");
-      setPlayer(r.player);
+      if (playerReads.current.isCurrent(token, ownerContext()))
+        setPlayer(r.player);
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) setPlayer(null);
+      if (
+        playerReads.current.isCurrent(token, ownerContext()) &&
+        e instanceof ApiError &&
+        e.status === 401
+      )
+        setPlayer(null);
     } finally {
-      setLoaded(true);
+      if (playerReads.current.isCurrent(token, ownerContext())) setLoaded(true);
     }
   }
   async function loadWorld(location: Point, asArena: boolean) {
+    collectionRun.current?.abort();
+    collectionRun.current = null;
+    const token = worldReads.current.begin(
+      JSON.stringify([ownerContext(), asArena, "replace"]),
+    );
+    worldLoading.current = true;
     setBusy("world");
     try {
       const w = await api<World>("/world", { location, arena: asArena });
-      setWorld(w);
-      setSelected(null);
+      if (
+        worldReads.current.isCurrent(token, worldContext("replace")) &&
+        w.arena === asArena
+      ) {
+        worldOwner.current = latest.current.player?.id;
+        setWorld(w);
+      }
     } catch (e) {
-      notify(
-        e instanceof Error ? e.message : "Could not prepare the area.",
-        true,
-      );
+      if (worldReads.current.isCurrent(token, worldContext("replace")))
+        notify(
+          e instanceof Error ? e.message : "Could not prepare the area.",
+          true,
+        );
     } finally {
-      setBusy("");
+      if (worldReads.current.isCurrent(token, worldContext("replace"))) {
+        worldLoading.current = false;
+        setBusy((value) => (value === "world" ? "" : value));
+      }
     }
   }
+  async function refreshWorld() {
+    const state = latest.current;
+    if (
+      !state.player ||
+      !state.world ||
+      state.world.arena !== state.arena ||
+      worldLoading.current
+    )
+      return;
+    const token = worldReads.current.begin(worldContext("refresh"));
+    try {
+      const w = await api<World>(
+        `/world?id=${encodeURIComponent(state.world.id)}`,
+      );
+      if (
+        worldReads.current.isCurrent(token, worldContext("refresh")) &&
+        w.id === state.world.id &&
+        w.arena === state.arena
+      )
+        setWorld(w);
+    } catch {
+      // Keep the current world while a later refresh can recover connectivity.
+    }
+  }
+  useEffect(() => {
+    playerReads.current.invalidate();
+    worldReads.current.invalidate();
+    worldOwner.current = undefined;
+    worldLoading.current = false;
+    actionVersion.current++;
+    gpsVersion.current++;
+    if (gps.current !== null) navigator.geolocation.clearWatch(gps.current);
+    gps.current = null;
+    collecting.current.clear();
+    collectionRun.current?.abort();
+    collectionRun.current = null;
+    nextWorldRefresh.current = 0;
+    setWorld(null);
+    setFix(null);
+    setPosition(HOME);
+    setArena(true);
+    setPresence(false);
+    setPresenceUntil(0);
+    setOthers([]);
+    setBusy("");
+    setToast(null);
+    setMenu(false);
+    if (player) void loadWorld(HOME, true);
+  }, [player?.id]);
   useEffect(() => {
     void me();
     const a = () => setOnline(navigator.onLine);
@@ -427,14 +732,16 @@ export default function App() {
     window.addEventListener("offline", a);
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => {
+      playerReads.current.invalidate();
+      worldReads.current.invalidate();
+      gpsVersion.current++;
+      collectionRun.current?.abort();
+      if (gps.current !== null) navigator.geolocation.clearWatch(gps.current);
       clearInterval(tick);
       window.removeEventListener("online", a);
       window.removeEventListener("offline", a);
     };
   }, []);
-  useEffect(() => {
-    if (player && !world) void loadWorld(position, arena);
-  }, [player?.id]);
   useEffect(() => {
     if (
       player &&
@@ -454,28 +761,23 @@ export default function App() {
   }, [toast]);
   useEffect(() => {
     if (!player) return;
+    const owner = player.id;
     const s = new EventSource("/api/events");
     s.addEventListener("coin", (e) => {
+      if (latest.current.player?.id !== owner) return;
       const d = JSON.parse((e as MessageEvent).data);
       setWorld((w) =>
         w ? { ...w, coins: w.coins.filter((c) => c.id !== d.id) } : w,
       );
     });
     s.addEventListener("quest", () => {
-      const w = latest.current.world;
-      if (w)
-        api<World>(`/world?id=${encodeURIComponent(w.id)}`)
-          .then(setWorld)
-          .catch(() => {});
+      if (latest.current.player?.id === owner) void refreshWorld();
     });
     s.addEventListener("market", () => void me());
     const sync = setInterval(() => {
+      if (latest.current.player?.id !== owner) return;
       void me();
-      const w = latest.current.world;
-      if (w)
-        api<World>(`/world?id=${encodeURIComponent(w.id)}`)
-          .then(setWorld)
-          .catch(() => {});
+      void refreshWorld();
     }, 15_000);
     return () => {
       s.close();
@@ -495,60 +797,83 @@ export default function App() {
     if (!player) return;
     const collect = setInterval(async () => {
       const state = latest.current;
-      if (
-        state.nativePlay ||
-        !state.world ||
-        !state.player ||
-        state.world.endsAt <= Date.now()
-      )
-        return;
-      const nearby = state.world.coins
-        .filter(
-          (c) =>
-            meters(state.position, c) < 17 && !collecting.current.has(c.id),
-        )
-        .slice(0, 2);
-      for (const coin of nearby) {
-        if (
-          latest.current.nativePlay ||
-          latest.current.player?.id !== state.player.id
-        )
-          break;
-        collecting.current.add(coin.id);
-        try {
-          const result = await api<{
-            player: Player;
-            value: number;
-            alreadyClaimed?: boolean;
-          }>("/coins/claim", {
-            coinId: coin.id,
-            fix: state.arena
-              ? { ...state.position, accuracy: 0, timestamp: Date.now() }
-              : state.fix,
-          });
-          if (latest.current.player?.id !== state.player.id) return;
-          setPlayer(result.player);
-          setWorld((w) =>
-            w ? { ...w, coins: w.coins.filter((c) => c.id !== coin.id) } : w,
-          );
-          if (!result.alreadyClaimed && !latest.current.nativePlay) {
-            setCoins((c) => c + 1);
-            notify(`+${gold(result.value)} GOLD · +2 XP`);
-          }
-        } catch (e) {
-          if (e instanceof ApiError && e.code === "ALREADY_CLAIMED")
+      if (!state.world || !state.player || collectionRun.current) return;
+      const expected = demoCollectionContext(state);
+      if (!canContinueDemoCollection(expected, expected, Date.now())) return;
+      const request = new AbortController();
+      collectionRun.current = request;
+      const timeout = setTimeout(() => request.abort(), 15000);
+      try {
+        const nearby = state.world.coins
+          .filter(
+            (c) =>
+              meters(state.position, c) < 17 && !collecting.current.has(c.id),
+          )
+          .slice(0, 2);
+        for (const coin of nearby) {
+          if (
+            request.signal.aborted ||
+            !canContinueDemoCollection(
+              expected,
+              demoCollectionContext(),
+              Date.now(),
+            )
+          )
+            break;
+          collecting.current.add(coin.id);
+          try {
+            const result = await api<{
+              player: Player;
+              value: number;
+              xp?: number;
+              alreadyClaimed?: boolean;
+            }>(
+              "/coins/claim",
+              {
+                coinId: coin.id,
+                fix: state.arena
+                  ? { ...state.position, accuracy: 0, timestamp: Date.now() }
+                  : state.fix,
+              },
+              { signal: request.signal },
+            );
+            if (
+              request.signal.aborted ||
+              latest.current.player?.id !== state.player.id
+            )
+              return;
+            updateOwnedPlayer(result.player);
             setWorld((w) =>
               w ? { ...w, coins: w.coins.filter((c) => c.id !== coin.id) } : w,
             );
-          else collecting.current.delete(coin.id);
+            if (!result.alreadyClaimed && !latest.current.nativePlay) {
+              pickupFeedback.confirm(
+                demoPickupScope(state.player.id, state.world.id, state.arena),
+                {
+                  coinId: coin.id,
+                  value: result.value,
+                  xp: result.xp ?? NaN,
+                  alreadyClaimed: result.alreadyClaimed,
+                },
+              );
+            }
+          } catch (e) {
+            if (e instanceof ApiError && e.code === "ALREADY_CLAIMED")
+              setWorld((w) =>
+                w
+                  ? { ...w, coins: w.coins.filter((c) => c.id !== coin.id) }
+                  : w,
+              );
+            else collecting.current.delete(coin.id);
+          }
         }
+      } finally {
+        clearTimeout(timeout);
+        if (collectionRun.current === request) collectionRun.current = null;
       }
     }, 600);
     return () => clearInterval(collect);
   }, [player?.id]);
-  const [notesView, setNotesView] = useState<"browse" | "compose" | "blocked">(
-    "browse",
-  );
   const profileButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!menu) return;
@@ -713,16 +1038,22 @@ export default function App() {
   function chooseNativeQuest(index: number) {
     const q = nativeGame.state?.day?.quests.find((q) => q.index === index);
     if (!q) return;
-    const point = q.targets[Math.min(q.checkpoint, q.targets.length - 1)];
-    setNativeTarget({ ...point, label: q.title, questIndex: q.index });
-    setSelected(null);
+    nativeObjective.select("quest", index);
+    setNativePlay(true);
     setFollow(false);
     setGlobe(false);
     setOverview(false);
     setTab("expeditions");
   }
   function chooseZoneQuest(questId: string) {
-    setSelectedQuestId(questId);
+    const quest = world?.quests.find((q) => q.id === questId);
+    const zone = world?.zones.find(
+      (z) =>
+        z.id === quest?.zone_id ||
+        quest?.id === z.id.replace(":zone:", ":quest:"),
+    );
+    if (!zone) return;
+    setSelected(zone, questId);
     setSheetExpanded(true);
     requestAnimationFrame(() => {
       const target = document.getElementById("quest-" + questId);
@@ -732,9 +1063,7 @@ export default function App() {
   }
   function selectZone(z: Zone, questId?: string) {
     setSheetExpanded(true);
-    setSelected(z);
-    setSelectedQuestId(questId || null);
-    setNativeTarget(null);
+    setSelected(z, questId || null);
     setTab("explore");
     setOverview(false);
     setFollow(false);
@@ -745,15 +1074,43 @@ export default function App() {
           ?.scrollIntoView({ block: "start", behavior: "auto" }),
       );
   }
+  function returnToAdventure() {
+    setTab("explore");
+    setSheetExpanded(false);
+    requestAnimationFrame(() => {
+      const panel = mainPanel.current;
+      const candidates = panel?.querySelectorAll<HTMLElement>(
+        ".compact-selection, .native-objective-open, .quest-detail, .sheet-toggle",
+      );
+      const target = [...(candidates || [])].find(
+        (element) => element.getClientRects().length > 0,
+      );
+      (target || panel)?.focus({ preventScroll: true });
+    });
+  }
   const questPoint = (q: Quest) => q.nextPoint || q;
+  function returnToArena() {
+    gpsVersion.current++;
+    if (gps.current !== null) navigator.geolocation.clearWatch(gps.current);
+    gps.current = null;
+    setFix(null);
+    setArena(true);
+    setPosition(HOME);
+    void loadWorld(HOME, true);
+  }
   async function locate() {
     if (!navigator.geolocation) {
       notify("This browser does not support geolocation.", true);
       return;
     }
+    const owner = ownerContext();
+    const version = ++gpsVersion.current;
+    const current = () =>
+      ownerContext() === owner && gpsVersion.current === version;
     setBusy("gps");
     navigator.geolocation.getCurrentPosition(
       (p) => {
+        if (!current()) return;
         const f = {
           lat: p.coords.latitude,
           lng: p.coords.longitude,
@@ -769,6 +1126,7 @@ export default function App() {
         if (gps.current !== null) navigator.geolocation.clearWatch(gps.current);
         gps.current = navigator.geolocation.watchPosition(
           (p) => {
+            if (!current()) return;
             const f = {
               lat: p.coords.latitude,
               lng: p.coords.longitude,
@@ -778,11 +1136,14 @@ export default function App() {
             setPosition(f);
             setFix(f);
           },
-          () => notify("Waiting for a fresh GPS fix.", true),
+          () => {
+            if (current()) notify("Waiting for a fresh GPS fix.", true);
+          },
           { enableHighAccuracy: true, maximumAge: 0 },
         );
       },
       () => {
+        if (!current()) return;
         setBusy("");
         notify(
           "Allow browser location access, or continue in the arena.",
@@ -888,7 +1249,7 @@ export default function App() {
         enabled: !!account,
         accountId: account,
       });
-      setPlayer(r.player);
+      updateOwnedPlayer(r.player);
       if (account) await refreshNative(true);
       notify(
         account
@@ -1116,7 +1477,7 @@ export default function App() {
           { accountId, mutationId: quote.profile.mutation_id },
         );
         if (response.confirmed) {
-          setPlayer(response.player);
+          updateOwnedPlayer(response.player);
           notify("Your QuestLayer profile is public on NEAR testnet.");
           return true;
         }
@@ -1315,7 +1676,7 @@ export default function App() {
             "/native/claims/confirm",
             { itemId: item.id },
           );
-          setPlayer(result.player);
+          updateOwnedPlayer(result.player);
           if (result.claim.state === "minted") {
             minted = true;
             break;
@@ -1341,7 +1702,7 @@ export default function App() {
         "/native/claims/confirm",
         { itemId: item.id },
       );
-      setPlayer(result.player);
+      updateOwnedPlayer(result.player);
       await refreshNative(true);
       notify(
         result.claim.state === "minted"
@@ -1355,7 +1716,7 @@ export default function App() {
       const result = await api<{ player: Player }>("/native/claims/restore", {
         itemId: item.id,
       });
-      setPlayer(result.player);
+      updateOwnedPlayer(result.player);
       notify("Your Aura is available in the demo again.");
     });
   }
@@ -1424,7 +1785,7 @@ export default function App() {
         enabled: true,
         accountId,
       });
-      setPlayer(r.player);
+      updateOwnedPlayer(r.player);
       notify(
         method === "mint_avatar"
           ? "Your explorer NFT is confirmed on NEAR testnet."
@@ -1455,41 +1816,129 @@ export default function App() {
       notify("Address verified. Original NFTs stay on Base.");
     });
   }
+  function inspectAdventureResult(id: string) {
+    setToast(null);
+    void adventureResults.inspect(id);
+    void me();
+  }
+  async function equipAdventureResult(result: AdventureResult) {
+    const owner = player?.id;
+    const realm = arena;
+    const inspection = adventureResults.inspectionVersion();
+    const navigationRevision = navigationContext.current.revision;
+    if (
+      !player ||
+      nativePlay ||
+      !online ||
+      !adventureResults.selection?.fresh ||
+      adventureResults.selection.result?.id !== result.id ||
+      !adventureItemForEquip(result, player, realm ? "arena" : "gps")
+    )
+      return;
+    await action("equip", async () => {
+      let response: { player: Player };
+      try {
+        response = await api<{ player: Player }>("/equip", {
+          itemId: result.reward!.item!.id,
+          desiredEquipped: true,
+        });
+      } catch (e) {
+        if (
+          latest.current.player?.id === owner &&
+          latest.current.arena === realm &&
+          !latest.current.nativePlay &&
+          adventureResults.isCurrentInspection(inspection) &&
+          navigationContext.current.revision === navigationRevision
+        ) {
+          await Promise.allSettled([adventureResults.inspect(result.id), me()]);
+          throw e;
+        }
+        return;
+      }
+      if (latest.current.player?.id !== owner) return;
+      updateOwnedPlayer(response.player);
+      if (latest.current.arena !== realm || latest.current.nativePlay) return;
+      if (
+        !adventureResults.isCurrentInspection(inspection) ||
+        navigationContext.current.revision !== navigationRevision
+      )
+        return;
+      const confirmed = response.player.inventory.find(
+        (item) => item.id === result.reward?.item?.id,
+      );
+      if (!confirmed?.equipped || response.player.nativeOutfit)
+        throw new Error(
+          "Equipment is not confirmed yet. Check your inventory before retrying.",
+        );
+      adventureResults.close();
+      setSelected(null);
+      setSheetExpanded(false);
+      setFollow(true);
+      setTab("explore");
+      notify("Aura equipped. Your new look is on the map.");
+    });
+  }
   async function complete(qId: string) {
+    const owner = player?.id;
+    const realm = arena;
+    const inspection = adventureResults.inspectionVersion();
+    const navigationRevision = navigationContext.current.revision;
     await action("quest", async () => {
-      const q = world?.quests.find((x) => x.id === qId);
-      const r = await api<{
-        player: Player;
-        reward: number;
-        xp: number;
-        item: Item | null;
-        awaiting?: boolean;
-        progress?: { completed: number; total: number };
-      }>(
-        q?.kind === "route" && (q.checkpoint || 0) < (q.checkpointCount || 0)
-          ? "/quests/checkpoint"
-          : "/quests/claim",
-        {
-          questId: qId,
-          checkpoint: q?.checkpoint || 0,
-          fix: arena
-            ? { ...position, accuracy: 0, timestamp: Date.now() }
-            : fix,
-        },
-      );
-      setPlayer(r.player);
-      notify(
-        r.awaiting
-          ? `Checkpoint ${r.progress?.completed}/${r.progress?.total} recorded. Head to the next marker.`
-          : r.item
-            ? `You discovered ${r.item.name}!`
-            : `Quest complete! +${r.xp} XP${r.reward ? ` and ${gold(r.reward)} GOLD` : ""}`,
-      );
-      if (world)
-        setWorld(await api<World>(`/world?id=${encodeURIComponent(world.id)}`));
-      if (r.item) {
-        const item = r.player.inventory.find((i) => i.id === r.item?.id);
-        if (item) setDiscovery({ item, xp: r.xp, reward: r.reward });
+      try {
+        const q = world?.quests.find((x) => x.id === qId);
+        const r = await api<{
+          player: Player;
+          reward: number;
+          xp: number;
+          item: Item | null;
+          result?: AdventureResult;
+          replayed?: boolean;
+          awaiting?: boolean;
+          progress?: { completed: number; total: number };
+        }>(
+          q?.kind === "route" && (q.checkpoint || 0) < (q.checkpointCount || 0)
+            ? "/quests/checkpoint"
+            : "/quests/claim",
+          {
+            questId: qId,
+            checkpoint: q?.checkpoint || 0,
+            fix: arena
+              ? { ...position, accuracy: 0, timestamp: Date.now() }
+              : fix,
+          },
+        );
+        if (latest.current.player?.id !== owner) return;
+        updateOwnedPlayer(r.player);
+        if (latest.current.arena !== realm || latest.current.nativePlay) return;
+        const sameView =
+          adventureResults.isCurrentInspection(inspection) &&
+          navigationContext.current.revision === navigationRevision;
+        if (sameView && r.result) adventureResults.accept(r.result);
+        if (sameView && r.awaiting)
+          notify(
+            `Checkpoint ${r.progress?.completed}/${r.progress?.total} recorded. Head to the next marker.`,
+          );
+        else if (sameView && !r.replayed)
+          notify(
+            r.item
+              ? `You discovered ${r.item.name}!`
+              : `Quest complete! +${r.xp} XP${r.reward ? ` and ${gold(r.reward)} demo GOLD` : ""}`,
+          );
+        else if (sameView) setToast(null);
+        await refreshWorld();
+      } catch (error) {
+        if (
+          latest.current.player?.id === owner &&
+          latest.current.arena === realm &&
+          !latest.current.nativePlay &&
+          adventureResults.isCurrentInspection(inspection) &&
+          navigationContext.current.revision === navigationRevision
+        )
+          throw error;
+      } finally {
+        // A lost HTTP response may follow a committed award. Recovery only reads
+        // the actor's receipts; it never retries a claim or replays its reveal.
+        void adventureResults.refresh();
       }
     });
   }
@@ -1566,6 +2015,8 @@ export default function App() {
   return (
     <div className="app-shell">
       <GameMap
+        playerTier={nativePlay ? nativeGame.state?.access?.tier : player?.tier}
+        now={now}
         map3D={!!player && map3D}
         sheetExpanded={sheetExpanded}
         panelMode={tab}
@@ -1576,12 +2027,7 @@ export default function App() {
                   (c) => `native-coin:${c.index}` === id,
                 );
                 if (!coin) return;
-                setNativeTarget({
-                  ...coin,
-                  label: "Street coin",
-                  coinIndex: coin.index,
-                });
-                setSelected(null);
+                nativeObjective.select("coin", coin.index);
                 setTab("expeditions");
                 setSheetExpanded(true);
                 setFollow(false);
@@ -1596,6 +2042,9 @@ export default function App() {
         overview={overview}
         focusZone={selected}
         nativeTarget={nativeTarget}
+        nativeTargetKind={
+          nativeObjective.reference?.kind === "coin" ? "coin" : "route"
+        }
         world={displayWorld}
         position={position}
         arena={arena && !nativePlay}
@@ -1623,7 +2072,6 @@ export default function App() {
           aria-label="QuestLayer home"
           onClick={() => {
             setTab("explore");
-            setSelected(null);
           }}
         >
           <Ghost />
@@ -1799,15 +2247,31 @@ export default function App() {
       {player && (
         <main
           ref={mainPanel}
+          tabIndex={-1}
           className={`main-panel ${tab === "explore" ? `explore-panel ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
+          {tab !== "explore" &&
+            (selected || (nativePlay && nativeObjective.reference)) && (
+              <button className="adventure-return" onClick={returnToAdventure}>
+                <ArrowLeft size={20} aria-hidden="true" />
+                <span>
+                  <strong>Back to adventure</strong>
+                  <small>{selected?.name || nativeObjective.view.label}</small>
+                </span>
+              </button>
+            )}
           {tab === "explore" && (
             <button
               className="sheet-toggle"
               aria-expanded={sheetExpanded}
               onClick={() => setSheetExpanded((v) => !v)}
             >
-              <span>{sheetExpanded ? "Show map" : "Show adventures"}</span>
+              <span className="sheet-toggle-label">
+                {sheetExpanded ? "Show map" : "Show adventures"}
+                {!nativePlay && (
+                  <PickupSummary totals={pickupFeedback.totals} />
+                )}
+              </span>
               <ArrowRight
                 size={20}
                 style={{
@@ -1816,12 +2280,42 @@ export default function App() {
               />
             </button>
           )}
+          {tab === "explore" && !nativePlay && adventureResults.unread && (
+            <AdventureResultResume
+              result={adventureResults.unread}
+              onInspect={() =>
+                inspectAdventureResult(adventureResults.unread!.id)
+              }
+            />
+          )}
+          {tab === "explore" && adventureNotice && (
+            <button
+              className="adventure-notice"
+              onClick={() => {
+                dismissAdventureNotice();
+                setSheetExpanded(true);
+              }}
+            >
+              <Compass size={24} aria-hidden="true" />
+              <span>
+                <strong>Choose another discovery</strong>
+                <small role="status">{adventureNotice}</small>
+              </span>
+              <ArrowRight size={20} aria-hidden="true" />
+            </button>
+          )}
           {tab === "explore" && selected && (
             <button
               className="compact-selection"
               onClick={() => setSheetExpanded(true)}
             >
-              <Flag size={24} />
+              <GameObjectArt
+                {...zoneObjectPresentation(selected, world?.quests || [], {
+                  now,
+                  playerTier: player.tier,
+                })}
+                size={32}
+              />
               <span>
                 <strong>{selected.name}</strong>
                 <small>View quests and checkpoints</small>
@@ -1829,7 +2323,7 @@ export default function App() {
               <ArrowRight />
             </button>
           )}
-          {tab === "explore" && nativeTarget && (
+          {tab === "explore" && nativePlay && nativeObjective.reference && (
             <div className="native-objective">
               <button
                 className="native-objective-open"
@@ -1837,14 +2331,17 @@ export default function App() {
               >
                 <MapPin size={22} />
                 <span>
-                  <strong>{nativeTarget.label}</strong>
-                  <small>Native testnet · Open task</small>
+                  <strong>{nativeObjective.view.label}</strong>
+                  <small role="status">{nativeObjective.view.message}</small>
                 </span>
                 <ArrowRight size={18} />
               </button>
               <button
-                aria-label="Clear native checkpoint"
-                onClick={() => setNativeTarget(null)}
+                aria-label="Clear saved testnet adventure"
+                onClick={() => {
+                  nativeObjective.clear();
+                  returnToAdventure();
+                }}
               >
                 <X size={20} />
               </button>
@@ -1852,7 +2349,9 @@ export default function App() {
           )}
           <div className="panel-heading">
             <div>
-              <h1>{tab === "explore" && selected ? selected.name : title}</h1>
+              <h1 tabIndex={-1}>
+                {tab === "explore" && selected ? selected.name : title}
+              </h1>
             </div>
             {tab !== "explore" && (
               <button
@@ -1874,8 +2373,6 @@ export default function App() {
                 aria-pressed={!nativePlay}
                 onClick={() => {
                   setNativePlay(false);
-                  setNativeTarget(null);
-                  setSelected(null);
                 }}
               >
                 Demo
@@ -1884,7 +2381,6 @@ export default function App() {
                 aria-pressed={nativePlay}
                 onClick={() => {
                   setNativePlay(true);
-                  setSelected(null);
                 }}
               >
                 NEAR testnet
@@ -1893,26 +2389,35 @@ export default function App() {
           )}
           {tab === "explore" && !selected && !nativePlay && (
             <>
-              {recommended && recommendedZone && !nativeTarget && (
-                <button
-                  className="recommended-quest"
-                  onClick={() => selectZone(recommendedZone, recommended.id)}
-                >
-                  <span className="recommended-art">
-                    <Backpack size={30} weight="duotone" />
-                  </span>
-                  <span>
-                    <small>Your next quest</small>
-                    <strong>{recommended.title}</strong>
-                    <span>
-                      {recommendedZone.name} ·{" "}
-                      {Math.round(meters(position, questPoint(recommended)))} m
-                      straight-line
+              {recommended &&
+                recommendedZone &&
+                !nativeTarget &&
+                !adventureNotice && (
+                  <button
+                    className="recommended-quest"
+                    onClick={() => selectZone(recommendedZone, recommended.id)}
+                  >
+                    <span className="recommended-art">
+                      <GameObjectArt
+                        {...questObjectPresentation(recommended, {
+                          now,
+                          playerTier: player.tier,
+                        })}
+                        size={32}
+                      />
                     </span>
-                  </span>
-                  <ArrowRight size={20} />
-                </button>
-              )}
+                    <span>
+                      <small>Your next quest</small>
+                      <strong>{recommended.title}</strong>
+                      <span>
+                        {recommendedZone.name} ·{" "}
+                        {Math.round(meters(position, questPoint(recommended)))}{" "}
+                        m straight-line
+                      </span>
+                    </span>
+                    <ArrowRight size={20} />
+                  </button>
+                )}
               <div className="day-row">
                 <Badge tone="green">
                   <Leaf size={12} /> {world?.cityName || "Your surroundings"}
@@ -1947,11 +2452,16 @@ export default function App() {
               )}
               <div className="zone-list">
                 {nearbyZones.map((z, i) => {
-                  const q = world?.quests.find(
-                    (q) =>
-                      q.zone_id === z.id ||
-                      q.id === z.id.replace(":zone:", ":quest:"),
-                  );
+                  const q = representativeZoneQuest(z, world?.quests || [], {
+                    now,
+                    playerTier: player.tier,
+                  });
+                  const activityArt = q
+                    ? questObjectPresentation(q, {
+                        now,
+                        playerTier: player.tier,
+                      })
+                    : null;
                   return (
                     <button
                       className="zone-card"
@@ -1961,13 +2471,13 @@ export default function App() {
                       <div className={`zone-illustration art-${z.kind}`}>
                         <span className="illustration-orb" />
                         <span>
-                          {z.kind === "garden" ? (
-                            <Leaf size={35} weight="duotone" />
-                          ) : z.kind === "cache" ? (
-                            <Backpack size={35} weight="duotone" />
-                          ) : (
-                            <Ghost color={z.color} />
-                          )}
+                          <GameObjectArt
+                            {...zoneObjectPresentation(z, world?.quests || [], {
+                              now,
+                              playerTier: player.tier,
+                            })}
+                            size={64}
+                          />
                         </span>
                         <i />
                         <i />
@@ -1986,7 +2496,11 @@ export default function App() {
                         <div className="zone-rewards">
                           <span>
                             <Sparkle size={12} />
-                            {q?.xp || 50} XP
+                            {q
+                              ? q.completed
+                                ? "Personal activity complete"
+                                : `${q.xp} XP`
+                              : "See activities"}
                           </span>
                           {q?.gold_u && !q.claimant ? (
                             <span>
@@ -1995,16 +2509,17 @@ export default function App() {
                             </span>
                           ) : (
                             <span>
-                              <Diamond size={12} />
-                              {world?.quests.some(
-                                (x) =>
-                                  x.zone_id === z.id &&
-                                  x.kind === "chest" &&
-                                  !x.completed &&
-                                  x.itemAvailable,
-                              )
-                                ? "Aura chest"
-                                : "XP discoveries"}
+                              <GameObjectArt kind="discovery" size={20} />
+                              {!q
+                                ? "Activity details"
+                                : activityArt?.state === "locked"
+                                  ? activityArt.label
+                                  : q.completed
+                                    ? "Completed"
+                                    : q.kind === "chest" &&
+                                        q.itemAvailable === true
+                                      ? "Aura chest"
+                                      : "XP discovery"}
                             </span>
                           )}
                           <ArrowUpRight size={15} />
@@ -2087,7 +2602,13 @@ export default function App() {
                           ) : q.activity.icon === "trail" ? (
                             <Path size={20} />
                           ) : q.activity.icon === "chest" ? (
-                            <Backpack size={20} />
+                            <GameObjectArt
+                              {...questObjectPresentation(q, {
+                                now,
+                                playerTier: player.tier,
+                              })}
+                              size={24}
+                            />
                           ) : (
                             <MapPin size={20} />
                           )}
@@ -2108,10 +2629,20 @@ export default function App() {
                       </span>
                       {q.kind === "chest" && (
                         <span>
-                          <Diamond />
-                          {q.itemAvailable
-                            ? "Aura chest"
-                            : "XP · editions exhausted"}
+                          <GameObjectArt
+                            {...questObjectPresentation(q, {
+                              now,
+                              playerTier: player.tier,
+                            })}
+                            size={24}
+                          />
+                          {q.completed
+                            ? "Activity complete"
+                            : q.itemAvailable === true
+                              ? "Aura chest"
+                              : q.itemAvailable === false
+                                ? "XP · editions exhausted"
+                                : "Item availability unconfirmed"}
                         </span>
                       )}
                       {q.kind === "route" && (
@@ -2171,7 +2702,9 @@ export default function App() {
                                   ? "Finish walk"
                                   : `Record checkpoint ${(q.checkpoint || 0) + 1}`
                                 : q.kind === "chest"
-                                  ? "Open the chest"
+                                  ? q.itemAvailable === true
+                                    ? "Open the chest"
+                                    : "Complete the activity"
                                   : q.activity?.actionLabel ||
                                     "Confirm your visit"}
                         <ArrowRight />
@@ -2201,15 +2734,13 @@ export default function App() {
                           onClick={() => chooseZoneQuest(q.id)}
                         >
                           <span className="play-object">
-                            {q.completed ? (
-                              <Check size={24} />
-                            ) : q.kind === "chest" ? (
-                              <Backpack size={24} />
-                            ) : q.kind === "route" ? (
-                              <Path size={24} />
-                            ) : (
-                              <MapPin size={24} />
-                            )}
+                            <GameObjectArt
+                              {...questObjectPresentation(q, {
+                                now,
+                                playerTier: player.tier,
+                              })}
+                              size={32}
+                            />
                           </span>
                           <span>
                             <b>{q.title}</b>
@@ -2241,108 +2772,130 @@ export default function App() {
             />
           )}
           {tab === "inventory" && (
-            <Inventory
-              onOriginalAppearance={(appearance) =>
-                setPlayer((current) =>
-                  current ? { ...current, appearance } : current,
-                )
-              }
-              map3D={map3D}
-              onMap3D={toggleMap3D}
-              initialCollection={nativePlay ? "near" : "demo"}
-              onExplore={() => setTab("explore")}
-              characterItems={appearanceItems}
-              nativeContent={
-                <>
-                  <NativeWardrobe
-                    player={player}
-                    data={nativeWardrobe}
-                    error={nativeError}
-                    busy={busy}
-                    onConnect={connectNear}
-                    onRefresh={() => void refreshNative(true).catch(() => {})}
-                    onMint={(account) =>
-                      nativeTransaction("mint_avatar", account)
-                    }
-                    onEquip={(account, item, slot) =>
-                      nativeTransaction(
-                        nativeWardrobe?.accounts.find(
-                          (a) => a.accountId === account,
-                        )?.equipment[slot] === item.tokenId
-                          ? "unequip_aura"
-                          : "equip_aura",
-                        account,
-                        item,
-                        slot,
-                      )
-                    }
-                    onSource={useNativeOutfit}
-                  />
-                  <NativeLevelRewards
-                    player={player}
-                    account={playAccount}
-                    onAccount={setPlayAccount}
-                    onConnect={connectNear}
-                    busy={busy}
-                    onMint={mintNativeLevel}
-                    onConfirm={checkNativeLevel}
-                  />
-                </>
-              }
-              nativeExtras={
-                <>
-                  <AuraClaims
-                    player={player}
-                    enabled={!!nativeWardrobe?.claimsEnabled}
-                    busy={busy}
-                    onConnect={connectNear}
-                    onMint={mintEarnedAura}
-                    onConfirm={checkAuraClaim}
-                    onRestore={restoreDemoAura}
-                  />
-                  <NativeProfilePanel
-                    player={player}
-                    busy={busy}
-                    onConnect={connectNear}
-                    onPublish={publishNativeProfile}
-                  />
-                </>
-              }
-              player={player}
-              busy={busy}
-              onEvm={connectEvm}
-              onSkin={async (tokenId) => {
-                await action("skin", async () => {
-                  const r = await api<{ player: Player }>("/aavegotchi/equip", {
-                    tokenId,
+            <>
+              <Inventory
+                key={player.id}
+                onOriginalAppearance={(appearance) =>
+                  setPlayer((current) =>
+                    current?.id === player.id
+                      ? { ...current, appearance }
+                      : current,
+                  )
+                }
+                map3D={map3D}
+                onMap3D={toggleMap3D}
+                initialCollection={nativePlay ? "near" : "demo"}
+                onExplore={() => setTab("explore")}
+                characterItems={appearanceItems}
+                adventureResults={
+                  !nativePlay ? (
+                    <AdventureResultHistoryButton
+                      onOpen={() => {
+                        setToast(null);
+                        adventureResults.history();
+                      }}
+                    />
+                  ) : undefined
+                }
+                nativeContent={
+                  <>
+                    <NativeWardrobe
+                      player={player}
+                      data={nativeWardrobe}
+                      error={nativeError}
+                      busy={busy}
+                      onConnect={connectNear}
+                      onRefresh={() => void refreshNative(true).catch(() => {})}
+                      onMint={(account) =>
+                        nativeTransaction("mint_avatar", account)
+                      }
+                      onEquip={(account, item, slot) =>
+                        nativeTransaction(
+                          nativeWardrobe?.accounts.find(
+                            (a) => a.accountId === account,
+                          )?.equipment[slot] === item.tokenId
+                            ? "unequip_aura"
+                            : "equip_aura",
+                          account,
+                          item,
+                          slot,
+                        )
+                      }
+                      onSource={useNativeOutfit}
+                    />
+                    <NativeLevelRewards
+                      player={player}
+                      account={playAccount}
+                      onAccount={setPlayAccount}
+                      onConnect={connectNear}
+                      busy={busy}
+                      onMint={mintNativeLevel}
+                      onConfirm={checkNativeLevel}
+                    />
+                  </>
+                }
+                nativeExtras={
+                  <>
+                    <AuraClaims
+                      player={player}
+                      enabled={!!nativeWardrobe?.claimsEnabled}
+                      busy={busy}
+                      onConnect={connectNear}
+                      onMint={mintEarnedAura}
+                      onConfirm={checkAuraClaim}
+                      onRestore={restoreDemoAura}
+                    />
+                    <NativeProfilePanel
+                      player={player}
+                      busy={busy}
+                      onConnect={connectNear}
+                      onPublish={publishNativeProfile}
+                    />
+                  </>
+                }
+                player={player}
+                busy={busy}
+                onEvm={connectEvm}
+                onSkin={async (tokenId) => {
+                  await action("skin", async () => {
+                    const r = await api<{ player: Player }>(
+                      "/aavegotchi/equip",
+                      {
+                        tokenId,
+                      },
+                    );
+                    if (latest.current.player?.id !== player.id) return;
+                    updateOwnedPlayer(r.player);
+                    notify("Your appearance has changed.");
                   });
-                  setPlayer(r.player);
-                  notify("Your appearance has changed.");
-                });
-              }}
-              onEquip={(item) =>
-                void action("equip", async () => {
-                  const r = await api<{ player: Player }>("/equip", {
-                    itemId: item.id,
+                }}
+                onEquip={(item) =>
+                  void action("equip", async () => {
+                    const r = await api<{ player: Player }>("/equip", {
+                      itemId: item.id,
+                    });
+                    if (latest.current.player?.id !== player.id) return;
+                    updateOwnedPlayer(r.player);
+                    notify(
+                      item.equipped
+                        ? "Aura unequipped."
+                        : "Your new look is equipped.",
+                    );
+                  })
+                }
+                onSell={async (item, price) => {
+                  const result = await action("listing", async () => {
+                    await api("/market/list", { itemId: item.id, price });
+                    if (latest.current.player?.id !== player.id) return false;
+                    await me();
+                    if (latest.current.player?.id !== player.id) return false;
+                    notify("Your Aura is listed on the demo market.");
+                    return true;
                   });
-                  setPlayer(r.player);
-                  notify(
-                    item.equipped
-                      ? "Aura unequipped."
-                      : "Your new look is equipped.",
-                  );
-                })
-              }
-              onSell={async (item, price) => {
-                const result = await action("listing", async () => {
-                  await api("/market/list", { itemId: item.id, price });
-                  await me();
-                  notify("Your Aura is listed on the demo market.");
-                  return true;
-                });
-                return result === true;
-              }}
-            />
+                  return result === true;
+                }}
+              />
+            </>
           )}
           {((tab === "explore" && nativePlay) ||
             tab === "expeditions" ||
@@ -2366,8 +2919,7 @@ export default function App() {
                   account: playAccount,
                   onAccount: setPlayAccount,
                 }}
-                initialIndex={nativeTarget?.questIndex}
-                initialCoinIndex={nativeTarget?.coinIndex}
+                objective={nativeObjective}
                 player={player}
                 fix={fix}
                 arena={arena}
@@ -2375,19 +2927,39 @@ export default function App() {
                 onConnect={connectNear}
                 onLocate={() => void locate()}
                 onWithdraw={withdrawNativeReward}
-                onWallet={() => {
+                onWallet={(showReceipts = false) => {
                   setWalletView("rewards");
                   setTab("wallet");
+                  if (showReceipts)
+                    requestAnimationFrame(() => {
+                      const details =
+                        mainPanel.current?.querySelector<HTMLDetailsElement>(
+                          "[data-native-receipts]",
+                        );
+                      if (!details) return;
+                      details.open = true;
+                      details
+                        .querySelector("summary")
+                        ?.focus({ preventScroll: true });
+                      details.scrollIntoView({
+                        block: "start",
+                        behavior: "auto",
+                      });
+                    });
                 }}
-                onFocus={(target) => {
+                onFocus={(kind, index) => {
                   setNativePlay(true);
-                  setNativeTarget(target);
-                  setSelected(null);
+                  nativeObjective.select(kind, index);
                   setOverview(false);
                   setFollow(false);
                   setGlobe(false);
                   setSheetExpanded(false);
                   setTab("explore");
+                  requestAnimationFrame(() =>
+                    mainPanel.current
+                      ?.querySelector<HTMLElement>(".native-objective-open")
+                      ?.focus({ preventScroll: true }),
+                  );
                 }}
               />
             </>
@@ -2474,28 +3046,56 @@ export default function App() {
             </>
           )}
           {tab === "community" && (
-            <div className="play-menu">
-              <button className="play-entry" onClick={() => setTab("messages")}>
-                <ChatCircle size={26} />
-                <span>
-                  <b>Map notes</b>
-                  <small>Leave a message at a place</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-              <button className="play-entry" onClick={() => setTab("bounties")}>
-                <Flag size={26} />
-                <span>
-                  <b>Community tasks</b>
-                  <small>Fund a task · share proof · earn a reward</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-              <p className="play-hint">
-                Notes use the selected demo or GPS location. Tasks have their
-                own sponsor-funded rewards.
-              </p>
-            </div>
+            <>
+              <details className="play-details" open={!creatorsEnabled}>
+                <summary>Map notes and sponsored tasks</summary>
+                <div className="play-menu">
+                  <button
+                    className="play-entry"
+                    onClick={() => setTab("messages")}
+                  >
+                    <ChatCircle size={26} />
+                    <span>
+                      <b>Map notes</b>
+                      <small>Leave a message at a place</small>
+                    </span>
+                    <ArrowRight size={20} />
+                  </button>
+                  <button
+                    className="play-entry"
+                    onClick={() => setTab("bounties")}
+                  >
+                    <Flag size={26} />
+                    <span>
+                      <b>Community tasks</b>
+                      <small>Fund a task · share proof · earn a reward</small>
+                    </span>
+                    <ArrowRight size={20} />
+                  </button>
+                  <p className="play-hint">
+                    Notes use the selected demo or GPS location. Tasks have
+                    their own sponsor-funded rewards.
+                  </p>
+                </div>
+              </details>
+              <CreatorCommunity
+                key={player.id}
+                player={player}
+                notify={notify}
+                view={creatorView}
+                onViewChange={setCreatorView}
+                onPlayerChange={me}
+                onCapabilityChange={(enabled) => {
+                  if (latest.current.player?.id !== player.id) return;
+                  setCreatorCapability((previous) =>
+                    previous?.playerId === player.id &&
+                    previous.enabled === enabled
+                      ? previous
+                      : { playerId: player.id, enabled },
+                  );
+                }}
+              />
+            </>
           )}
           {tab === "market" && (
             <Market
@@ -2515,7 +3115,7 @@ export default function App() {
                   const r = await api<{ player: Player }>("/market/buy", {
                     listingId: listing.id,
                   });
-                  setPlayer(r.player);
+                  updateOwnedPlayer(r.player);
                   notify("This Aura is yours. Find it in your inventory.");
                 })
               }
@@ -2543,6 +3143,7 @@ export default function App() {
               position={position}
               fix={fix}
               arena={arena}
+              view={notesView}
               notify={notify}
               onViewChange={setNotesView}
               onBlockChange={() => {
@@ -2600,13 +3201,7 @@ export default function App() {
                 ? "CITY DEMO · CLICK TO MOVE"
                 : `DEMO · GPS ${fix ? Math.round(fix.accuracy) : "…"} m`}
             <button
-              onClick={() =>
-                arena || nativePlay
-                  ? locate()
-                  : (setArena(true),
-                    setPosition(HOME),
-                    void loadWorld(HOME, true))
-              }
+              onClick={() => (arena || nativePlay ? locate() : returnToArena())}
             >
               {arena || nativePlay ? "My surroundings" : "Back to arena"}
               <ArrowUpRight size={12} />
@@ -2698,11 +3293,12 @@ export default function App() {
               </div>
               <small>
                 {hudXp !== null && hudLevel !== null
-                  ? `${hudXp} / ${100 * hudLevel ** 2} ${nativePlay ? "confirmed" : "demo"} XP`
+                  ? `${hudXp} / ${100 * hudLevel ** 2} ${nativePlay ? "confirmed" : player.lockedXp ? "available demo" : "demo"} XP${!nativePlay && player.lockedXp ? ` · ${player.lockedXp} committed` : ""}`
                   : playAccount
                     ? "No confirmed XP available"
                     : "Link a NEAR wallet to save testnet XP"}
               </small>
+              {!nativePlay && <PickupSummary totals={pickupFeedback.totals} />}
             </div>
             <button onClick={() => setTab("inventory")} aria-label="Inventory">
               <Backpack size={23} />
@@ -2724,13 +3320,14 @@ export default function App() {
           </button>
           <div className="map-legend">
             <span>
-              <i className="green" /> Free zone
+              <GameObjectArt kind="place" size={20} /> Place
             </span>
             <span>
-              <i className="purple" /> Adventure
+              <GameObjectArt kind="discovery" state="completed" size={20} />{" "}
+              Completed
             </span>
             <span>
-              <i className="gold" /> GOLD coin
+              <GameObjectArt kind="coin" size={20} /> GOLD coin
             </span>
           </div>
         </>
@@ -2741,7 +3338,10 @@ export default function App() {
         </div>
       )}
       {toast && (
-        <div className={`toast ${toast.error ? "error" : ""}`} role="status">
+        <div
+          className={`toast ${toast.error ? "error" : ""}`}
+          role={toast.error ? "alert" : "status"}
+        >
           {toast.error ? (
             <Question size={20} />
           ) : (
@@ -2750,6 +3350,7 @@ export default function App() {
           {toast.text}
         </div>
       )}
+      <PickupAnnouncement text={pickupFeedback.announcement} />
       {!player && busy === "near" && (
         <div className="wallet-connecting" role="status">
           <Wallet size={24} />
@@ -2813,55 +3414,27 @@ export default function App() {
           }}
         />
       )}
-      {discovery && player && (
-        <Dialog label="Quest reward" onClose={() => setDiscovery(null)}>
-          <div className="discovery-result">
-            {toast?.error && (
-              <p className="inline-error" role="alert">
-                {toast.text}
-              </p>
-            )}
-            <Badge>REWARD COLLECTED</Badge>
-            <AuraArt color={discovery.item.color} slot={discovery.item.slot} />
-            <h2>{discovery.item.name}</h2>
-            <p>
-              +{discovery.xp} XP ·{" "}
-              {discovery.item.slot === "above" ? "Above" : "Below"} character ·
-              #{discovery.item.serial}
-            </p>
-            <button
-              className="primary-button"
-              disabled={!!busy}
-              onClick={() =>
-                void action("equip", async () => {
-                  const r = await api<{ player: Player }>("/equip", {
-                    itemId: discovery.item.id,
-                  });
-                  setPlayer(r.player);
-                  setDiscovery(null);
-                  setSelected(null);
-                  setFollow(true);
-                  notify("Aura equipped. Your new look is on the map.");
-                })
-              }
-            >
-              Try it on <Check />
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => {
-                setDiscovery(null);
-                setTab("inventory");
-                setSelected(null);
-              }}
-            >
-              Open inventory
-            </button>
-            <button className="text-button" onClick={() => setDiscovery(null)}>
-              Back to quest
-            </button>
-          </div>
-        </Dialog>
+      {discovery && player && !nativePlay && (
+        <AdventureResultDialog
+          results={adventureResults}
+          player={player}
+          realm={arena ? "arena" : "gps"}
+          online={online}
+          busy={!!busy}
+          actionError={toast?.error ? toast.text : undefined}
+          onInspect={inspectAdventureResult}
+          onEquip={(result) => void equipAdventureResult(result)}
+          onInventory={() => {
+            adventureResults.close();
+            setTab("inventory");
+          }}
+          onMap={() => {
+            adventureResults.close();
+            setTab("explore");
+            setSheetExpanded(false);
+            setFollow(true);
+          }}
+        />
       )}
       {showNpc && <Npc onClose={() => setShowNpc(false)} />}
       {tab === "explore" && (
@@ -2928,7 +3501,9 @@ function Welcome({
           <Sparkle className="star one" weight="fill" />
           <Sparkle className="star two" weight="fill" />
           <Ghost />
-          <span className="floating-coin">◆</span>
+          <span className="floating-coin">
+            <GameObjectArt kind="coin" size={32} />
+          </span>
           <Leaf className="welcome-leaf" weight="duotone" />
         </div>
         <h1 tabIndex={-1} autoFocus>

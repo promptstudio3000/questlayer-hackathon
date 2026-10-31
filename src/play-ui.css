@@ -1,4 +1,75 @@
 /* Player-first surfaces share the semantic palette specified in DESIGN.md. */
+.adventure-return {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 0;
+  margin-bottom: 12px;
+  background: var(--surface);
+  color: var(--action);
+  text-align: left;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.adventure-return > svg {
+  flex-shrink: 0;
+}
+.adventure-return span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.adventure-return strong,
+.adventure-return small {
+  display: block;
+}
+.adventure-return small {
+  color: var(--ink-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.adventure-notice {
+  display: flex;
+  width: 100%;
+  min-height: 100px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  text-align: left;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.adventure-notice span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.adventure-notice strong,
+.adventure-notice small {
+  display: block;
+}
+.adventure-notice small {
+  color: var(--ink-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.adventure-notice svg {
+  flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  .main-panel.explore-panel.sheet-compact:has(.adventure-notice),
+  .main-panel.explore-panel.sheet-compact:has(.native-objective) {
+    height: auto;
+    max-height: min(50dvh, calc(100dvh - 190px));
+    overflow-y: auto;
+  }
+}
 :root {
   --ink: #1a0335;
   --ink-secondary: #665577;
@@ -700,4 +771,38 @@
 /* This compact objective sits on an ink surface, unlike the light task cards. */
 .native-objective small {
   color: #e3daf4;
+}
+.native-objective strong,
+.native-objective small,
+.native-objective-recovery {
+  overflow-wrap: anywhere;
+}
+.native-objective button:focus-visible {
+  outline: 3px solid #e3daf4;
+  outline-offset: -3px;
+}
+
+/* Shared map/list object captions retain the operational text scale. */
+.main-panel .zone-rewards {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.main-panel .zone-rewards,
+.main-panel .zone-rewards > span {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-secondary, #665577);
+}
+.map-legend {
+  font-size: 12px;
+  color: var(--ink-secondary, #665577);
+  background: var(--surface, #fcfaff);
+  border: 1px solid var(--decorative-border, #d7cbe9);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.map-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }

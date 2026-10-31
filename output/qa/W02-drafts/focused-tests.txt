@@ -1,0 +1,27 @@
+✔ text draft survives a new store instance, copying only explicitly allowed strings (1.103959ms)
+✔ player, realm and form boundaries never restore another draft (0.139375ms)
+✔ corrupt, future-schema, wrong-scope and overlong draft data are not trusted (0.143834ms)
+✔ a completion for an old revision cannot erase a more recent draft (0.119083ms)
+✔ storage failure is explicit and does not falsely claim a durable save (0.138417ms)
+✔ draft fields require an explicit bounded schema and a nonempty scope (0.251125ms)
+✔ publication journal survives reload with only the operation identity and draft revision (0.268584ms)
+✔ concurrent operation identities remain recoverable instead of replacing unknown outcomes (8.980708ms)
+✔ legacy tab-only intent is recovered and cleared only for the exact operation (0.1815ms)
+✔ journal corruption cannot fabricate a receipt and blocked storage prevents a new send intent (0.290917ms)
+✔ identical reviewed terms retain the same opaque operation ID after reload, unknown outcomes and concurrent prepares (6.370084ms)
+✔ every reviewed financial/content and actor/code term binds the creation identity (0.885459ms)
+✔ unverified network/contract/policy and malformed creation terms fail before an ID can authorize review (0.525584ms)
+✔ fresh matching existing publication is recognized by exact terms, not just a local saved ID (0.468209ms)
+✔ funding and public acknowledgement context changes with actor, account, code and policy (0.121833ms)
+✔ a slower earlier world read cannot replace a newer result for the same owner (0.818666ms)
+✔ player, realm and world changes fence even the newest read before its effect cleanup (0.109291ms)
+✔ A to B to A cannot revive an old request and invalidation fences logout or unmount (0.083792ms)
+✔ tokens cannot be forged, mutated or reused across independent read streams (0.227084ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 122.141958

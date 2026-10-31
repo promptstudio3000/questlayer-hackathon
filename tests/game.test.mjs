@@ -127,7 +127,9 @@ test("a solo player can complete a free quest and mint one bounded Aura", async 
       .get(a).n,
     1,
   );
-  assert.throws(() => claimQuest(db, a, q.id, q, now), /complete/);
+  const replay = claimQuest(db, a, q.id, q, now);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.result.id, r.result.id);
   db.close();
 });
 test("tier access matures, withdrawals remove it, decreases apply immediately", () => {

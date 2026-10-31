@@ -1,0 +1,17 @@
+✔ independent acceptance records one zero-reward receipt and resolves atomically; closure releases only original commitment (14.30925ms)
+✔ independence, consent, stale revision and legacy resolver cannot bypass declared review (12.122ms)
+✔ rejection feedback is private, one pending submission, third independent rejection resolves NOT completed without losing history (13.937042ms)
+✔ accepted requirements, submission and private feedback survive newer revisions, block, hide, suspension, daily resets and reopen (32.078208ms)
+✔ old plain admissions stay legacy after structured republication and remain independently resolvable (7.14ms)
+✔ failed receipt journal rolls back review, resolution and completion receipt together (9.131625ms)
+✔ public/author/stranger APIs never expose private evidence or privileged review routes (14.165ms)
+✔ actual HTTP lost reply and concurrent duplicate submit recover one actor-bound operation and attempt (49.31225ms)
+✔ two SQLite connections admit one pending attempt and one completion under competing authenticated requests (31.488ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 340.326208
