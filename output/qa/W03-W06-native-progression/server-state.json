@@ -1,0 +1,10 @@
+{
+  "MainPID": "1019227",
+  "NRestarts": "0",
+  "MemoryCurrent": "95473664",
+  "ActiveState": "active",
+  "SubState": "running",
+  "release": "/opt/ps3000/apps/auratrail/releases/20261031T144514Z",
+  "temporaryQAActive": false,
+  "checkedAt": "2026-10-31T14:46:26.724265+00:00"
+}

@@ -27,3 +27,9 @@ Fresh NEP413 recovery revoked four other pilot sessions, retained one with a new
 Evidence: `public/native-progression-proof.json` and `output/qa/W04-W06-progression/native-progression-proof.json`. These prove protocol integration with simulated coordinates, not physical visits, mobile-wallet approval, anti-spoofing or mainnet readiness.
 
 The map follow-up passed both focused map tests; the final production build includes the public proof. Native coin tap → coin card and native zone → its checkpoint card were exercised in the actual browser. The initial local signer mismatch correctly refused the live rehearsal before visits; no signing key was exported to bypass it.
+
+## Final release confirmation
+
+Runtime source `5a84004` is deployed as `20261031T144514Z`. The service is active/running, reports zero automatic restarts and about 95 MB of memory; the temporary QA service is inactive. The public worker reports no error and no queued receipts. The public proof returns HTTP 200; an unauthenticated session-list request returns HTTP 401. Native mode persists through a browser reload. Final public screenshots show the inventory and the actual painted native checkpoint zone. Reward acknowledgements render at 16px with the semantic secondary text color; the dark compact objective uses a light readable secondary color.
+
+The latest pool observation is still epoch 5398 versus unlock epoch 5402. Realized game yield remains zero. No completed pool withdrawal/yield-cycle claim is made. See `public-verification.json`, `server-state.json`, and `deployment-final.txt`.

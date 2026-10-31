@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-10-31T14:50:02.203251+00:00",
+  "environment": "Desktop in-app browser; responsive CSS viewports, no physical phone",
+  "viewports": [
+    "360x640",
+    "390x844",
+    "844x390",
+    "1280x720"
+  ],
+  "enlargedText": "390x640 iframe with 32px text overrides; not native browser zoom",
+  "verified": [
+    "Inventory character and Above/Below slots precede setup disclosures",
+    "Demo listing failure preserves price 12.5 GOLD",
+    "Tab reaches listing action; Escape closes and returns focus to selected-item trigger",
+    "Native map coin tap opens its actual collect card; missing wallet/GPS keeps collection disabled",
+    "Selecting a different native zone replaces the selected coin with that zone checkpoint card",
+    "Native mode survives page reload on deployed site",
+    "Level fixture shows claimable/locked/sold-out states; missing XP does not display invented zero",
+    "Wallet-cancellation fixture retains claim review and acknowledgement",
+    "Session fixture revokes other session and offers renewal with one remaining",
+    "Ordinary narrow/landscape DOM checks showed no horizontal overflow",
+    "Final consent font16px and color rgb(102,85,119); compact objective secondary rgb(227,218,244)"
+  ],
+  "notVerified": [
+    "Physical iOS/Android GPS and keyboard",
+    "Human wallet-connector return/signing",
+    "True physical presence or anti-spoofing",
+    "Native automatic coin collection"
+  ]
+}

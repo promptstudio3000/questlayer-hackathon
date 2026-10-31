@@ -1,0 +1,295 @@
+{
+  "checkedAt": "2026-10-31T14:41:17.133Z",
+  "results": [
+    {
+      "path": "/api/health",
+      "status": 200,
+      "data": {
+        "status": "ok",
+        "app": "QuestLayer",
+        "version": "0.1.0",
+        "mode": "demo",
+        "worldPreparation": {
+          "cityId": "plzen",
+          "timezone": "Europe/Prague",
+          "version": 1,
+          "financialMode": "demo",
+          "days": [
+            {
+              "day": "2026-10-31",
+              "state": "ready",
+              "attempts": 1,
+              "updatedAt": 1793416757052
+            },
+            {
+              "day": "2026-11-01",
+              "state": "ready",
+              "attempts": 1,
+              "updatedAt": 1793416757246
+            }
+          ]
+        },
+        "nativeRewards": {
+          "last_success": 1793457662574,
+          "last_error": null,
+          "queued": 0
+        },
+        "now": 1793457676277
+      }
+    },
+    {
+      "path": "/api/native/economy",
+      "status": 200,
+      "data": {
+        "version": 1,
+        "network": "testnet",
+        "unit": "yoctoNEAR",
+        "goldPerNear": 1000,
+        "generatedAt": "2026-10-31T14:41:16.771Z",
+        "status": "observed",
+        "treasury": {
+          "status": "observed",
+          "observedAt": "2026-10-31T14:41:16.443Z",
+          "blockHeight": 275612747,
+          "blockHash": "DMx58MhKWKmvUTSXuM2GyFy4g8qcZr1gPfwNEbLYf3jJ",
+          "data": {
+            "policy": "50/50-v1",
+            "buckets": {
+              "coins": {
+                "available": "88001000000000000000000",
+                "reserved": "11990000000000000000000",
+                "awarded": "10000000000000000000"
+              },
+              "zones": {
+                "available": "88001000000000000000000",
+                "reserved": "12000000000000000000000",
+                "awarded": "0"
+              }
+            },
+            "funded": "200002000000000000000000",
+            "available": "176002000000000000000000",
+            "reserved": "23990000000000000000000",
+            "owed": "9000000000000000000",
+            "pending": "0",
+            "withdrawn": "1000000000000000000",
+            "rewardLiabilities": "200001000000000000000000",
+            "reconciled": true,
+            "fundingLabel": "Confirmed reward funding; sponsors and realized yield are distinct sources.",
+            "excludes": [
+              "player principal",
+              "operating top-ups",
+              "receipt storage fees"
+            ]
+          }
+        },
+        "staking": {
+          "status": "observed",
+          "observedAt": "2026-10-31T14:41:16.771Z",
+          "blockHeight": 275612747,
+          "blockHash": "DMx58MhKWKmvUTSXuM2GyFy4g8qcZr1gPfwNEbLYf3jJ",
+          "data": {
+            "complete": true,
+            "poolComplete": true,
+            "coverage": {
+              "registeredPositions": 2,
+              "observedPositions": 2,
+              "unavailablePositions": 0,
+              "observedPoolPositions": 2,
+              "staleVaultPoolObservations": 0,
+              "pendingCreationCount": 0
+            },
+            "totals": {
+              "principal": "110000000000000000000000",
+              "weightedStake": "0",
+              "ownerCredit": "0",
+              "ownerPending": "0",
+              "ownerPaid": "0",
+              "gameCredit": "0",
+              "gamePending": "0",
+              "realizedGameYieldPaid": "0"
+            },
+            "observedSubtotals": {
+              "principal": "110000000000000000000000",
+              "weightedStake": "0",
+              "ownerCredit": "0",
+              "ownerPending": "0",
+              "ownerPaid": "0",
+              "gameCredit": "0",
+              "gamePending": "0",
+              "realizedGameYieldPaid": "0"
+            },
+            "stakers": 1,
+            "contributingStakers": 1,
+            "poolBalances": {
+              "staked": "99999999999999999999998",
+              "unstaked": "10000000000000000000003"
+            },
+            "phases": {
+              "active": 1,
+              "unlocking_epochs": 1
+            },
+            "pools": [
+              {
+                "id": "aurora.pool.f863973.m0",
+                "name": "Aurora validator",
+                "status": "observed",
+                "registeredPositions": 2,
+                "observedPositions": 2,
+                "staked": "99999999999999999999998",
+                "unstaked": "10000000000000000000003",
+                "rewardFee": {
+                  "numerator": 9,
+                  "denominator": 100
+                }
+              }
+            ],
+            "unlocks": [
+              {
+                "currentEpoch": "5398",
+                "unlockEpoch": "5402",
+                "canWithdraw": false,
+                "phase": "unlocking_epochs"
+              }
+            ],
+            "tierPolicy": "conservative-mature-principal-v1",
+            "contributionPolicy": "fixed-per-vault",
+            "apy": null,
+            "outlook": {
+              "day": null,
+              "week": null,
+              "month": null,
+              "quarter": null,
+              "year": null,
+              "reason": "No attributable realized-yield history supports a forecast yet."
+            }
+          }
+        },
+        "worker": {
+          "status": "observed",
+          "lastSuccessAt": "2026-10-31T14:41:02.574Z",
+          "ageMs": 14198,
+          "running": false,
+          "needsAttention": false,
+          "queued": 0,
+          "queueCountCapped": false,
+          "retrying": 0,
+          "ready": 0,
+          "oldestQueuedAgeMs": null,
+          "vaultsDue": 0,
+          "vaultsWithErrors": 0,
+          "vaultCountCapped": false
+        }
+      }
+    },
+    {
+      "path": "/native-progression-proof.json",
+      "status": 200,
+      "data": {
+        "verifiedAt": "2026-10-31T14:35:24.324Z",
+        "network": "testnet",
+        "participant": "questlayer-pilot-20261031.testnet",
+        "participantControl": "Project-controlled developer account; no personal wallet used",
+        "evidenceMode": "Synthetic GPS API rehearsal; no physical walk, mobile wallet approval or anti-spoofing claim",
+        "sourceContractId": "questlayer-rewards-20261031.testnet",
+        "collectiblesContractId": "nfts.auratrail-dev-20261030.testnet",
+        "policy": "native-xp-level-v1",
+        "xpBefore": "82",
+        "xpAfter": "100",
+        "level": 2,
+        "nativeLevel": 2,
+        "currentOwnerVerified": true,
+        "equippedAbove": true,
+        "outfitSourceVerified": true,
+        "sessionRecoveryProof": {
+          "freshWalletProof": true,
+          "retainedCookieRotated": true,
+          "oldCookieRejected": true,
+          "otherSessionsRevoked": 4,
+          "sessionsBefore": 5,
+          "sessionsAfter": 1
+        },
+        "claimId": "earned:level:115f1a45668cf85c3282eb5e3da3fe29ba20c989137067e818c200d84b2c277d",
+        "tokenId": "aura:polar:3",
+        "originalRecipient": "questlayer-pilot-20261031.testnet",
+        "pendingXpUsed": false,
+        "demoXpUsed": false,
+        "replayMintedNoAdditionalToken": true,
+        "maximumMintDeposit": "50000000000000000000000",
+        "depositUnit": "yoctoNEAR; gas is separate; unused storage deposit refunds",
+        "receipts": [
+          {
+            "id": "native_4f4c2761-64c8-45bb-9240-b2ee919d1b55",
+            "confirmed": true,
+            "duplicateReceiptPreserved": true
+          },
+          {
+            "id": "native_ce1a292c-42f0-45ed-ab91-270d92a421e2",
+            "confirmed": true,
+            "duplicateReceiptPreserved": true
+          },
+          {
+            "id": "native_dc128d37-fa20-434d-8e26-f10d3e450f10",
+            "confirmed": true,
+            "duplicateReceiptPreserved": true
+          },
+          {
+            "id": "native_93c756ec-2dfc-42ad-a0de-87325584227a",
+            "confirmed": true,
+            "duplicateReceiptPreserved": true
+          },
+          {
+            "id": "native_0684ce36-405e-46ee-9b20-a480e38cf35c",
+            "confirmed": true,
+            "duplicateReceiptPreserved": true
+          },
+          {
+            "id": "native_d6d8b87c-4d62-42b6-8e83-37fc3d695e6d",
+            "confirmed": true,
+            "duplicateReceiptPreserved": true
+          },
+          {
+            "id": "native_75574b8f-3d5e-41a3-be87-e01104260390",
+            "confirmed": true,
+            "duplicateReceiptPreserved": true
+          },
+          {
+            "id": "native_bfc9f8e9-cceb-4570-8fc2-c794d6cf654f",
+            "confirmed": true,
+            "duplicateReceiptPreserved": true
+          },
+          {
+            "id": "native_05917cb2-c4fd-4dcf-a4e0-98f500974486",
+            "confirmed": true,
+            "duplicateReceiptPreserved": true
+          }
+        ],
+        "transactions": [
+          {
+            "label": "Redeem confirmed native level 2 Aura",
+            "transaction": "GY5LvWVyQYzJ7QquJUvHY6cp5YwbFvSj91iSetyWYrjj",
+            "attachedYoctoNEAR": "50000000000000000000000"
+          },
+          {
+            "label": "Replay same level entitlement with zero deposit",
+            "transaction": "56AEX5y3BxhBjBmqzYWGVEC9XqKWxZdw3B2KAQ1uNKZe",
+            "attachedYoctoNEAR": "0"
+          },
+          {
+            "label": "Equip earned level Aura above pilot",
+            "transaction": "4XiSJPVKiMu32UZAcXV19kJPxbG9qVzst53ETBuUVGAz",
+            "attachedYoctoNEAR": "0"
+          }
+        ],
+        "physicalWalkVerified": false
+      }
+    },
+    {
+      "path": "/api/identity/sessions",
+      "status": 401,
+      "data": {
+        "error": "Create an explorer first.",
+        "code": "INVALID_ACTION"
+      }
+    }
+  ]
+}
