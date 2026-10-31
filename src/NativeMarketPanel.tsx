@@ -1,0 +1,406 @@
+import { useEffect, useRef, useState } from "react";
+import { api } from "./api";
+import { AuraArt } from "./Ghost";
+import { formatNativeNear, parseNearPrice } from "./native-amounts";
+import type {
+  Player,
+  NativeWardrobeState,
+  NativeMarketState,
+  NativeMarketBalance,
+  NativeTradeRequest,
+} from "./types";
+export function NativeMarketPanel({
+  player,
+  wardrobe,
+  busy,
+  onConnect,
+  onTrade,
+}: {
+  player: Player;
+  wardrobe: NativeWardrobeState | null;
+  busy: string;
+  onConnect: () => Promise<void>;
+  onTrade: (request: NativeTradeRequest) => Promise<boolean>;
+}) {
+  const [data, setData] = useState<NativeMarketState | null>(null),
+    [balances, setBalances] = useState<NativeMarketBalance[]>([]),
+    [error, setError] = useState(""),
+    [message, setMessage] = useState(""),
+    [page, setPage] = useState(0),
+    [loading, setLoading] = useState(true),
+    [accountId, setAccount] = useState(
+      player.nativeAccount || player.wallets[0]?.account_id || "",
+    ),
+    [tokenId, setToken] = useState(""),
+    [price, setPrice] = useState("10"),
+    [priceError, setPriceError] = useState("");
+  const priceInput = useRef<HTMLInputElement>(null);
+  const generation = useRef(0),
+    walletKey = player.wallets.map((w) => w.account_id).join(","),
+    owned =
+      wardrobe?.accounts
+        .find((a) => a.accountId === accountId)
+        ?.items.filter((i) => i.kind === "aura") || [],
+    balance = balances.find((a) => a.accountId === accountId);
+  useEffect(() => {
+    if (!player.wallets.some((w) => w.account_id === accountId))
+      setAccount(player.wallets[0]?.account_id || "");
+  }, [walletKey]);
+  useEffect(() => {
+    if (!owned.some((i) => i.tokenId === tokenId))
+      setToken(owned[0]?.tokenId || "");
+  }, [wardrobe, accountId]);
+  async function load(fresh = false, verifyToken?: string) {
+    const request = ++generation.current;
+    try {
+      const query = new URLSearchParams({ from: String(page) });
+      if (fresh) query.set("refresh", "1");
+      if (verifyToken) query.set("token", verifyToken);
+      const state = await api<NativeMarketState>("/native/market?" + query);
+      const accounts =
+        state.status === "available" && player.wallets.length
+          ? (
+              await api<{ accounts: NativeMarketBalance[] }>(
+                "/native/market/accounts" + (fresh ? "?refresh=1" : ""),
+              )
+            ).accounts
+          : [];
+      if (request === generation.current) {
+        setData(state);
+        setBalances(accounts);
+        setError("");
+        setLoading(false);
+      }
+      return { state, accounts };
+    } catch (e) {
+      if (request === generation.current) {
+        setError(
+          e instanceof Error ? e.message : "Native market is unavailable.",
+        );
+        setLoading(false);
+      }
+      throw e;
+    }
+  }
+  useEffect(() => {
+    void load().catch(() => {});
+    const timer = setInterval(() => void load().catch(() => {}), 20000);
+    return () => {
+      clearInterval(timer);
+      generation.current++;
+    };
+  }, [page, walletKey]);
+  async function perform(request: NativeTradeRequest) {
+    setMessage("");
+    setError("");
+    try {
+      const submitted = await onTrade(request);
+      if (!submitted) {
+        await load(true, request.tokenId);
+        return;
+      }
+      let confirmed = false;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const result = await load(true, request.tokenId),
+          listing = result.state.verifiedListing;
+        confirmed =
+          request.kind === "list"
+            ? listing?.state === "active" &&
+              listing.seller === request.accountId &&
+              listing.price === request.price
+            : request.kind === "buy"
+              ? result.state.token?.ownerId === request.accountId
+              : request.kind === "cancel"
+                ? !listing && result.state.token?.ownerId === request.accountId
+                : result.accounts.some(
+                    (a) =>
+                      a.accountId === request.accountId &&
+                      a.credit === "0" &&
+                      a.withdrawing === "0",
+                  );
+        if (confirmed) break;
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+      setMessage(
+        confirmed
+          ? request.kind === "list"
+            ? "Your Aura is listed and held in market escrow."
+            : request.kind === "buy"
+              ? "Your native Aura is in your wallet."
+              : request.kind === "cancel"
+                ? "Your Aura has returned to your wallet."
+                : "Your market balance was withdrawn."
+          : "Confirmation is still pending. Refresh ownership and market balance before retrying.",
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "The native market action could not finish.",
+      );
+    }
+  }
+  const unavailable = !!busy || loading || !!error || !accountId || !wardrobe;
+  const requestBase = {
+    accountId,
+    marketId: data?.marketContract || "",
+    nftContractId: data?.nftContract || "",
+  };
+  return (
+    <section className="native-market">
+      <div className="section-label">
+        <h2>Native Aura market</h2>
+        <span className="badge purple">NEAR TESTNET</span>
+      </div>
+      <p>
+        Trade your wallet-owned Aura NFTs for NEAR. Listed NFTs stay in market
+        escrow until sold or cancelled. Sale proceeds and refunds are withdrawn
+        by your wallet.
+      </p>
+      {error && <p role="alert">{error}</p>}
+      {message && (
+        <p role="status" className="native-market-message">
+          {message}
+        </p>
+      )}
+      <button
+        className="button secondary"
+        disabled={!!busy}
+        onClick={() => void load(true).catch(() => {})}
+      >
+        Refresh native market
+      </button>
+      {loading ? (
+        <p role="status">Loading the native market…</p>
+      ) : data?.status !== "available" ? (
+        <p>The native market is not available on this deployment yet.</p>
+      ) : (
+        <>
+          {!player.wallets.length ? (
+            <button
+              className="primary-button"
+              disabled={!!busy}
+              onClick={() => void onConnect()}
+            >
+              Connect NEAR to trade
+            </button>
+          ) : (
+            <div className="native-market-wallet">
+              <label>
+                Trading wallet
+                <select
+                  value={accountId}
+                  onChange={(e) => setAccount(e.target.value)}
+                >
+                  {player.wallets.map((w) => (
+                    <option value={w.account_id} key={w.account_id}>
+                      {w.account_id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span className="native-address">{accountId}</span>
+              <p>
+                Available to withdraw:{" "}
+                <strong>
+                  {balance
+                    ? formatNativeNear(balance.credit) + " test NEAR"
+                    : "not available"}
+                </strong>
+                {balance?.withdrawing !== "0" &&
+                  balance?.withdrawing &&
+                  " · withdrawal pending"}
+              </p>
+              <button
+                className="button secondary"
+                disabled={
+                  unavailable ||
+                  !balance ||
+                  balance.credit === "0" ||
+                  balance.withdrawing !== "0"
+                }
+                onClick={() =>
+                  void perform({ ...requestBase, kind: "withdraw" })
+                }
+              >
+                Withdraw market balance
+              </button>
+            </div>
+          )}
+          {data.stats.paused && (
+            <p role="status">
+              New trades are paused. You can still cancel active listings and
+              withdraw confirmed balances.
+            </p>
+          )}
+          {!!player.wallets.length && (
+            <form
+              className="native-sell-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setPriceError("");
+                try {
+                  const amount = parseNearPrice(price);
+                  if (!tokenId) throw Error("Choose an Aura you own.");
+                  void perform({
+                    ...requestBase,
+                    kind: "list",
+                    tokenId,
+                    price: amount,
+                  });
+                } catch (e) {
+                  setPriceError(
+                    e instanceof Error ? e.message : "Choose a valid price.",
+                  );
+                  priceInput.current?.focus();
+                }
+              }}
+            >
+              <h3>List an Aura you own</h3>
+              {!owned.length ? (
+                <p>
+                  Your NEAR wallet has no available Aura NFT to list. Claim one
+                  from a park chest or cancel an existing listing.
+                </p>
+              ) : (
+                <>
+                  <label>
+                    Aura
+                    <select
+                      value={tokenId}
+                      onChange={(e) => setToken(e.target.value)}
+                    >
+                      {owned.map((item) => (
+                        <option value={item.tokenId} key={item.tokenId}>
+                          #{item.serial} · {item.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Price in test NEAR
+                    <input
+                      ref={priceInput}
+                      aria-invalid={!!priceError}
+                      aria-describedby={
+                        priceError ? "native-price-error" : undefined
+                      }
+                      value={price}
+                      onChange={(e) => {
+                        setPrice(e.target.value);
+                        setPriceError("");
+                      }}
+                      inputMode="decimal"
+                      placeholder="10"
+                      autoComplete="off"
+                    />
+                  </label>
+                  {priceError && (
+                    <p id="native-price-error" role="alert">
+                      {priceError}
+                    </p>
+                  )}
+                  <p>
+                    You can list up to three Auras. Your wallet approves the NFT
+                    transfer into escrow. Testnet market storage is sponsored by
+                    the project.
+                  </p>
+                  <button
+                    className="primary-button"
+                    disabled={unavailable || data.stats.paused || !tokenId}
+                  >
+                    List on NEAR
+                  </button>
+                </>
+              )}
+            </form>
+          )}
+          {!data.listings.length ? (
+            <p>No native Auras are listed on this page yet.</p>
+          ) : (
+            <div className="native-offers">
+              {data.listings.map((offer) => (
+                <article className="native-offer" key={offer.id}>
+                  {offer.token?.media ? (
+                    <img src={offer.token.media} alt={offer.token.title} />
+                  ) : (
+                    <AuraArt color={offer.token?.color} small />
+                  )}
+                  <div>
+                    <h3>{offer.token?.title || "Native Aura"}</h3>
+                    <span className="native-address">{offer.token_id}</span>
+                    <strong className="native-price">
+                      {formatNativeNear(offer.price)} test NEAR
+                    </strong>
+                    <span className="native-address">
+                      Seller: {offer.seller}
+                    </span>
+                    <span>
+                      {offer.state === "buying"
+                        ? "Purchase confirming"
+                        : offer.state === "returning"
+                          ? "Returning to owner"
+                          : offer.available
+                            ? "NFT held in market escrow"
+                            : "Ownership confirmation unavailable"}
+                    </span>
+                  </div>
+                  {offer.seller === accountId ? (
+                    <button
+                      className="button secondary"
+                      disabled={unavailable || offer.state !== "active"}
+                      onClick={() =>
+                        void perform({
+                          ...requestBase,
+                          kind: "cancel",
+                          tokenId: offer.token_id,
+                          listingId: offer.id,
+                        })
+                      }
+                    >
+                      Cancel listing
+                    </button>
+                  ) : (
+                    <button
+                      className="primary-button"
+                      disabled={
+                        unavailable || data.stats.paused || !offer.available
+                      }
+                      onClick={() =>
+                        void perform({
+                          ...requestBase,
+                          kind: "buy",
+                          tokenId: offer.token_id,
+                          listingId: offer.id,
+                          price: offer.price,
+                        })
+                      }
+                    >
+                      Buy Aura
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+          <div className="native-market-pages">
+            <button
+              className="button secondary"
+              disabled={!!busy || page === 0}
+              onClick={() => setPage(Math.max(0, page - 24))}
+            >
+              Previous offers
+            </button>
+            <button
+              className="button secondary"
+              disabled={!!busy || !data.truncated}
+              onClick={() => setPage(page + 24)}
+            >
+              Next offers
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}

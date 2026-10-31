@@ -95,3 +95,5 @@ See [third-party notices](THIRD-PARTY-NOTICES.md). All public product text and d
 Daily city geography is prepared ahead of time by a durable leased worker, independently of treasury allocation. See [daily preparation operations and boundaries](docs/WORLD-WORKER.md). `npm run world:preview -- YYYY-MM-DD` exports a nonfinancial CityPack preview; the public health endpoint exposes readiness without future coordinates.
 
 [Native Aura claims](docs/NATIVE-AURA-CLAIMS.md) connect an earned cosmetic to a capped NEAR NFT through a receiver-bound, expiring signature. The server attests the entitlement; the player's own wallet approves storage and minting. GOLD and staking remain a separate demo economy.
+
+The [native Aura market](docs/NATIVE-MARKET.md) uses testnet NFT escrow and exact NEAR prices. Its live owned-account proof verifies cancellation, delivery and seller withdrawal; canonical NEAR Intents remains a separate integration. Demo GOLD offers retain their separate ledger.

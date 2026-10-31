@@ -588,7 +588,7 @@
     {
       "id": "W07",
       "title": "Signed Aura market and Intents compatibility",
-      "status": "planned",
+      "status": "building",
       "size": "L",
       "dependsOn": [
         "W04",
@@ -610,30 +610,36 @@
         {
           "id": "W07.1",
           "title": "Prove pinned verifier NFT and wNEAR compatibility",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W07.2",
           "title": "Specify exact-price replay-safe orders",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W07.3",
           "title": "Implement escrow browse fill cancel and expiry",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W07.4",
           "title": "Verify atomic exchange and recoverable withdrawal",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W07.5",
           "title": "Exercise two-player runtime with honest network labels",
-          "status": "planned"
+          "status": "building"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/NATIVE-MARKET.md",
+        "public/native-market-testnet.json",
+        "public/native-market-trades-testnet.json",
+        "output/qa/W07-market/contracts.txt",
+        "output/qa/W07-market/checks.txt"
+      ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W07/"
     },

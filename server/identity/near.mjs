@@ -1,3 +1,4 @@
+import { rpcErrorText } from "../near-provider.mjs";
 import { verifyMessage } from "near-api-js/nep413";
 import { assert } from "../domain.mjs";
 
@@ -94,7 +95,7 @@ export async function verifyNearIdentity(challenge, response, provider) {
       throw error;
     const invalid =
       /signature verification|fullaccess|unknown_access_key|accesskeydoesnotexist|accountdoesnotexist|does not exist|invalid public key/i.test(
-        String(error?.message || error),
+        rpcErrorText(error),
       );
     assert(
       false,

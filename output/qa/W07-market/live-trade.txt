@@ -1,0 +1,8 @@
+{"step":"List earned Aura into actual NFT escrow","transaction":"BzPRKCKXC7bC7nMjrAqhvACdVUFtnSTvv1jmx8aTwmWK"}
+{"step":"Cancel and return escrowed NFT to its owner","transaction":"6jqPA1ZS8sDwCMmZH5JfotyBQzUqU7oj5MHdYJSuqBwC"}
+{"step":"Relist with a new protected listing identifier","transaction":"FtRRrZ7JxSUf56AjML1W3PSwJ8a2VHDLHJhABGodZ5xT"}
+{"step":"Buyer pays exact test NEAR and receives the NFT","transaction":"EjUBqxfUWEycT496b58P63hwEke5PYqzk1D2yLYuUn4G"}
+{"step":"Seller withdraws confirmed native sale proceeds","transaction":"RBru7FgQVQkcJd5Mm2zJwgbLg2p8wbcKb6kdAcJN7fp"}
+{"step":"Buyer creates a visible sample testnet offer","transaction":"6YQtrNh5cHidMHBTEZqZLUL2vx2YM8NGQSNbdxfkSsMd"}
+{"step":"Restore seller appearance using their original owned Aura","transaction":"7P7zUEsQ9bESaD3UtxjarCdBEvwAe3JErpDo7Gk3pDFb"}
+{"soldForTestNear":"0.01","sellerPaid":true,"currentSampleOffer":3,"nftInEscrow":true}

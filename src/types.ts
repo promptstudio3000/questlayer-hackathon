@@ -210,3 +210,50 @@ export type NativeAuraClaim = {
   contractId: string;
   token_id?: string;
 };
+
+export type NativeMarketOffer = {
+  id: number;
+  token_id: string;
+  seller: string;
+  price: string;
+  state: "active" | "buying" | "returning";
+  buyer: string | null;
+  available: boolean;
+  token: NativeItem | null;
+};
+export type NativeMarketState = {
+  status: string;
+  network: "testnet";
+  marketContract: string;
+  nftContract: string;
+  stats: {
+    paused: boolean;
+    listing_count: number;
+    funded: string;
+    escrow: string;
+    credits: string;
+    withdrawing: string;
+    withdrawn: string;
+  };
+  listings: NativeMarketOffer[];
+  token: NativeItem | null;
+  verifiedListing?: NativeMarketOffer | null;
+  truncated: boolean;
+  fromIndex: number;
+};
+export type NativeMarketBalance = {
+  accountId: string;
+  credit: string;
+  withdrawing: string;
+  listed: number;
+  buying: number;
+};
+export type NativeTradeRequest = {
+  kind: "list" | "buy" | "cancel" | "withdraw";
+  accountId: string;
+  marketId: string;
+  nftContractId: string;
+  tokenId?: string;
+  listingId?: number;
+  price?: string;
+};

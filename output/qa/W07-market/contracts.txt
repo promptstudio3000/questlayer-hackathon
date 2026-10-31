@@ -1,0 +1,312 @@
+
+> questlayer@0.1.0 test:contracts
+> env PATH="$HOME/.cargo/bin:$PATH" cargo test --manifest-path contracts/Cargo.toml --workspace
+
+   Compiling questlayer-market v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/market)
+warning: use of deprecated function `near_sdk::test_utils::testing_env_with_promise_results`: Use `testing_env!` macro to initialize with promise results
+   --> market/src/lib.rs:436:22
+    |
+436 |         test_utils::{testing_env_with_promise_results, VMContextBuilder},
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: trait `Nft` is never used
+  --> market/src/lib.rs:52:7
+   |
+52 | trait Nft {
+   |       ^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: trait `Callbacks` is never used
+  --> market/src/lib.rs:62:7
+   |
+62 | trait Callbacks {
+   |       ^^^^^^^^^
+
+warning: unused `PromiseOrValue` that must be used
+   --> market/src/lib.rs:469:9
+    |
+469 | /         c.nft_on_transfer(
+470 | |             a("seller.testnet"),
+471 | |             a("seller.testnet"),
+472 | |             format!("aura:polar:{}", serial),
+473 | |             format!("{{\"price\":\"{}\"}}", PRICE),
+474 | |         );
+    | |_________^
+    |
+    = note: return or detach explicitly via `.detach()`
+    = note: `#[warn(unused_must_use)]` (part of `#[warn(unused)]`) on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+469 |         let _ = c.nft_on_transfer(
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:486:9
+    |
+486 |         c.buy("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+486 |         let _ = c.buy("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:493:9
+    |
+493 |         c.withdraw();
+    |         ^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+493 |         let _ = c.withdraw();
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:505:9
+    |
+505 |         c.buy("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+505 |         let _ = c.buy("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:520:9
+    |
+520 |         c.buy("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+520 |         let _ = c.buy("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:524:9
+    |
+524 |         c.withdraw();
+    |         ^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+524 |         let _ = c.withdraw();
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:536:9
+    |
+536 |         c.cancel("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+536 |         let _ = c.cancel("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:547:9
+    |
+547 |         c.cancel("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+547 |         let _ = c.cancel("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:561:9
+    |
+561 |         c.buy("aura:polar:1".into(), 99);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+561 |         let _ = c.buy("aura:polar:1".into(), 99);
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:568:9
+    |
+568 |         c.buy("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+568 |         let _ = c.buy("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:575:9
+    |
+575 |         c.buy("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+575 |         let _ = c.buy("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:582:9
+    |
+582 |         c.buy("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+582 |         let _ = c.buy("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:584:9
+    |
+584 |         c.cancel("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+584 |         let _ = c.cancel("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: unused `PromiseOrValue` that must be used
+   --> market/src/lib.rs:591:9
+    |
+591 | /         c.nft_on_transfer(
+592 | |             a("seller.testnet"),
+593 | |             a("seller.testnet"),
+594 | |             "aura:moon:1".into(),
+595 | |             format!("{{\"price\":\"{}\"}}", PRICE),
+596 | |         );
+    | |_________^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+591 |         let _ = c.nft_on_transfer(
+    |         +++++++
+
+warning: unused `PromiseOrValue` that must be used
+   --> market/src/lib.rs:603:9
+    |
+603 | /         c.nft_on_transfer(
+604 | |             a("operator.testnet"),
+605 | |             a("seller.testnet"),
+606 | |             "aura:moon:1".into(),
+607 | |             format!("{{\"price\":\"{}\"}}", PRICE),
+608 | |         );
+    | |_________^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+603 |         let _ = c.nft_on_transfer(
+    |         +++++++
+
+warning: unused `near_sdk::Promise` that must be used
+   --> market/src/lib.rs:623:9
+    |
+623 |         c.buy("aura:polar:1".into(), 1);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: return or detach explicitly via `.detach()`
+help: use `let _ = ...` to ignore the resulting value
+    |
+623 |         let _ = c.buy("aura:polar:1".into(), 1);
+    |         +++++++
+
+warning: `questlayer-market` (lib test) generated 19 warnings (2 duplicates)
+warning: `questlayer-market` (lib) generated 2 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.44s
+     Running unittests src/lib.rs (contracts/target/debug/deps/auratrail_collectibles-08df1961d26c9ac4)
+
+running 19 tests
+test tests::deployment_account_can_migrate_atomically ... ok
+test tests::another_wallet_cannot_redeem_a_signed_award - should panic ... ok
+test tests::award_signature_cannot_change_edition - should panic ... ok
+test tests::award_signature_is_bound_to_contract - should panic ... ok
+test tests::claim_cannot_redirect_a_retried_mint - should panic ... ok
+test tests::edition_cap_is_enforced - should panic ... ok
+test tests::migration_preserves_tokens_counters_and_legacy_equipment ... ok
+test tests::independent_slots_and_moving_one_item ... ok
+test tests::public_mint_rejected - should panic ... ok
+test tests::starter_avatar_is_owned_by_its_minter ... ok
+test tests::once_only_mint_preserves_the_claim_after_transfer ... ok
+test tests::stranger_cannot_migrate - should panic ... ok
+test tests::starter_cannot_be_minted_twice - should panic ... ok
+test tests::stranger_cannot_equip - should panic ... ok
+test tests::returned_transfer_removes_receiver_equipment_storage ... ok
+test tests::unredeemed_award_expires_on_chain - should panic ... ok
+test tests::transfer_removes_old_equipment_and_changes_owner ... ok
+test tests::signed_award_redeems_once_and_survives_transfer ... ok
+test tests::v2_migration_preserves_claims_and_both_equipment_slots ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s
+
+     Running unittests src/lib.rs (contracts/target/debug/deps/auratrail_game-7f3683b669a478ed)
+
+running 6 tests
+test tests::unfunded_rewards_rejected - should panic ... ok
+test tests::odd_yield_is_conserved ... ok
+test tests::forged_oracle_rejected - should panic ... ok
+test tests::coin_cannot_pay_twice ... ok
+test tests::solo_quest_and_personal_xp ... ok
+test tests::expiration_rolls_same_money_once ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running unittests src/lib.rs (contracts/target/debug/deps/questlayer_market-b176edf5b40e9bbb)
+
+running 13 tests
+test tests::another_nft_contract_cannot_publish_an_offer - should panic ... ok
+test tests::approved_operator_cannot_choose_a_price_for_the_owner - should panic ... ok
+test tests::failed_cancellation_keeps_listing_recoverable ... ok
+test tests::cancellation_returns_nft_and_releases_sponsored_participant_state ... ok
+test tests::failed_nft_delivery_refunds_buyer_and_reopens_same_listing ... ok
+test tests::failed_withdrawal_restores_credit_without_double_payment ... ok
+test tests::per_account_storage_exposure_is_bounded - should panic ... ok
+test tests::completed_purchase_credits_seller_and_conserves_withdrawal ... ok
+test tests::public_caller_cannot_forge_a_successful_purchase_callback - should panic ... ok
+test tests::stale_listing_identifier_cannot_buy_a_repriced_offer - should panic ... ok
+test tests::underpayment_is_rejected - should panic ... ok
+test tests::seller_cannot_self_trade - should panic ... ok
+test tests::purchase_blocks_concurrent_cancellation - should panic ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+   Doc-tests auratrail_collectibles
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests auratrail_game
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests questlayer_market
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

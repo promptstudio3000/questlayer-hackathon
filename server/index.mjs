@@ -1,3 +1,4 @@
+import { NativeMarket } from "./native/market.mjs";
 import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
@@ -72,6 +73,18 @@ const nativeCollectibles = new NativeCollectibles(
 db.exec(
   `CREATE TABLE IF NOT EXISTS passkeys(id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),public_key TEXT NOT NULL,counter INTEGER NOT NULL,transports TEXT NOT NULL);`,
 );
+const marketManifestPath = [
+  resolve(APP_ROOT, "public/native-market-testnet.json"),
+  resolve(APP_ROOT, "dist/native-market-testnet.json"),
+].find((path) => existsSync(path));
+const marketContractId =
+  process.env.NEAR_MARKET_CONTRACT ||
+  (marketManifestPath
+    ? JSON.parse(readFileSync(marketManifestPath, "utf8")).marketContract
+    : null);
+const nativeMarket = marketContractId
+  ? new NativeMarket(provider, marketContractId, nativeCollectibles)
+  : null;
 const awardSigner = loadAwardSigner(
   process.env.AWARD_SIGNER_PATH ||
     resolve(
@@ -474,11 +487,39 @@ async function api(req, res, url) {
     });
     return createReadStream(file).pipe(res);
   }
+  if (path === "/api/native/market" && method === "GET") {
+    if (!nativeMarket)
+      return respond(res, { status: "not-configured", network: "testnet" });
+    return respond(
+      res,
+      await nativeMarket.snapshot({
+        fresh: url.searchParams.get("refresh") === "1",
+        fromIndex: Number(url.searchParams.get("from") || 0),
+        verifyTokenId: url.searchParams.get("token"),
+      }),
+    );
+  }
   if (path === "/api/native/claim-signer" && method === "GET")
     return respond(res, awardVouchers.publicInfo());
   if (path === "/api/native/collection" && method === "GET")
     return respond(res, await nativeCollectibles.collection());
   const player = auth(req);
+  if (path === "/api/native/market/accounts" && method === "GET") {
+    assert(nativeMarket, "The native market is not available yet.", 503);
+    const accounts = db
+      .prepare(
+        "SELECT account_id FROM wallet_links WHERE player_id=? ORDER BY verified_at DESC LIMIT 5",
+      )
+      .all(player)
+      .map((w) => w.account_id);
+    return respond(
+      res,
+      await nativeMarket.balances(
+        accounts,
+        url.searchParams.get("refresh") === "1",
+      ),
+    );
+  }
   if (path === "/api/native/claims" && method === "POST") {
     const input = await body(req),
       key = `native-claim:${player}:${Math.floor(Date.now() / 60000)}`,

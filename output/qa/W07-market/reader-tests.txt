@@ -1,0 +1,16 @@
+✔ native wardrobe verifies ownership and removes stale or duplicate equipment (2.372917ms)
+✔ native holdings retain equipped items beyond the first page and coalesce RPC calls (0.602292ms)
+✔ native asset normalization rejects foreign kinds and out-of-range editions (0.374958ms)
+✔ a confirmed refresh cannot be overwritten by an older in-flight ownership read (0.3615ms)
+✔ parallel native reads share network verification and a failed check can retry (0.584417ms)
+✔ claim expiry proof reads the timestamp of the exact finalized claim state block (0.737084ms)
+✔ native prices preserve yoctoNEAR precision and reject unsupported representations (36.548792ms)
+✔ native market enables only active offers with a currently escrowed NFT (23.617458ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 225.866875

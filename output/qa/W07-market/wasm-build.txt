@@ -1,0 +1,17 @@
+   Compiling questlayer-market v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/market)
+warning: trait `Nft` is never used
+  --> market/src/lib.rs:52:7
+   |
+52 | trait Nft {
+   |       ^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: trait `Callbacks` is never used
+  --> market/src/lib.rs:62:7
+   |
+62 | trait Callbacks {
+   |       ^^^^^^^^^
+
+warning: `questlayer-market` (lib) generated 2 warnings
+    Finished `release` profile [optimized] target(s) in 2.28s

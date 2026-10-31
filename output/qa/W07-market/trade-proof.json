@@ -1,0 +1,74 @@
+{
+  "verifiedAt": "2026-10-31T04:18:35.038Z",
+  "network": "testnet",
+  "marketContract": "questlayer-market-20261031.testnet",
+  "nftContract": "nfts.auratrail-dev-20261030.testnet",
+  "tokenId": "aura:polar:2",
+  "seller": "auratrail-dev-20261030.testnet",
+  "buyer": "explorer.auratrail-dev-20261030.testnet",
+  "participants": "Both participants are project-controlled developer testnet accounts",
+  "price": "10000000000000000000000",
+  "firstListingId": 1,
+  "currentSampleOffer": {
+    "id": 3,
+    "token_id": "aura:polar:2",
+    "seller": "explorer.auratrail-dev-20261030.testnet",
+    "price": "20000000000000000000000",
+    "state": "active",
+    "buyer": null
+  },
+  "cancellationReturnedNFT": true,
+  "listingIdentifiersChanged": true,
+  "buyerOwnershipConfirmed": true,
+  "sellerCreditConfirmed": true,
+  "sellerWithdrawalConfirmed": true,
+  "financialConservation": {
+    "version": 1,
+    "network": "testnet",
+    "nft_contract": "nfts.auratrail-dev-20261030.testnet",
+    "owner": "auratrail-dev-20261030.testnet",
+    "paused": false,
+    "listing_count": 0,
+    "participant_count": 0,
+    "funded": "10000000000000000000000",
+    "escrow": "0",
+    "credits": "0",
+    "withdrawing": "0",
+    "withdrawn": "10000000000000000000000",
+    "storage": "project-sponsored testnet storage",
+    "max_listings": 128,
+    "max_participants": 256,
+    "max_active_per_account": 3
+  },
+  "playerPrivateKeysOnServer": false,
+  "transactions": [
+    {
+      "label": "List earned Aura into actual NFT escrow",
+      "transaction": "BzPRKCKXC7bC7nMjrAqhvACdVUFtnSTvv1jmx8aTwmWK"
+    },
+    {
+      "label": "Cancel and return escrowed NFT to its owner",
+      "transaction": "6jqPA1ZS8sDwCMmZH5JfotyBQzUqU7oj5MHdYJSuqBwC"
+    },
+    {
+      "label": "Relist with a new protected listing identifier",
+      "transaction": "FtRRrZ7JxSUf56AjML1W3PSwJ8a2VHDLHJhABGodZ5xT"
+    },
+    {
+      "label": "Buyer pays exact test NEAR and receives the NFT",
+      "transaction": "EjUBqxfUWEycT496b58P63hwEke5PYqzk1D2yLYuUn4G"
+    },
+    {
+      "label": "Seller withdraws confirmed native sale proceeds",
+      "transaction": "RBru7FgQVQkcJd5Mm2zJwgbLg2p8wbcKb6kdAcJN7fp"
+    },
+    {
+      "label": "Buyer creates a visible sample testnet offer",
+      "transaction": "6YQtrNh5cHidMHBTEZqZLUL2vx2YM8NGQSNbdxfkSsMd"
+    },
+    {
+      "label": "Restore seller appearance using their original owned Aura",
+      "transaction": "7P7zUEsQ9bESaD3UtxjarCdBEvwAe3JErpDo7Gk3pDFb"
+    }
+  ]
+}

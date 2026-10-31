@@ -129,3 +129,25 @@ Application release `20261031T035422Z` / commit `20dc5bd` is live. The NFT contr
 The owned developer account then completed the full public application flow: free demo-arena chest → signed claim → native `aura:polar:2` → finalized application receipt → native above-slot equipment. The actual mint transaction is `Mq4yurjy6v2hkETktGkJzC5a3hyrG2tVyLDj8KNgknP`; retry `9VAxoGdnLLY7PhYhbV1Uy4RcFX9MdT7qC36chbw3fYKU` minted no duplicate. The demo market rejected that item both while reserved and after confirmation. Supply increased from three to four once. This is explicitly an arena/protocol proof, not physical GPS evidence. No player private key was uploaded and no server wallet access key signed a NEAR transaction. Evidence: `public/native-claims-testnet.json`, `public/earned-aura-testnet.json`, `output/qa/W06-claims/`.
 
 Remaining: actual mobile/browser wallet approval, native cash/yield settlement and reviewed mainnet operation. The live CLI proof does not replace those gates.
+
+
+Earned-Aura proof publication release `20261031T040245Z` / commit `e8fbfb5` is live.
+
+## Native market increment — application review
+
+Added a testnet-only NEP-171 escrow market with exact native NEAR prices, stale-listing protection, owner-only listing, bounded sponsored storage, asynchronous NFT delivery, pull-payment proceeds/refunds and restoration after failed transfers. The server reads state and signs no market transaction. The shared RPC reader retains coalescing/fresh-read race protection; grouped RPC errors now preserve meaningful ownership validation errors.
+
+The new market contract is live at `questlayer-market-20261031.testnet`. A full real trade proof passed using only two owned developer accounts. An earned Aura entered escrow, returned on cancellation, relisted with a different identifier, transferred to its buyer for exactly 0.01 test NEAR and paid its seller through an actual withdrawal. A 0.02 test NEAR sample offer remains visible in escrow. This is developer test activity, not external users or market volume. Proofs: `public/native-market-testnet.json`, `public/native-market-trades-testnet.json`.
+
+The application now has separate Native Aura / Demo GOLD market sections, wallet-specific balances, exact decimal input, cancellation, withdrawal and authoritative ownership checks after actions. Local browser inspection loaded the actual sample NFT and escrow state. Connected-wallet form layout is reviewed in explicitly labelled fixtures whose trade callbacks submit no transaction. Price validation rejects exponent notation and preserves the entered value; input focus/remaining phone review are being completed before app deployment. Current checks: 49 application tests, 38 Rust tests.
+
+| Before | After | Why / source |
+| --- | --- | --- |
+| Only server-settled demo offers were available (source finding). | A distinct native testnet section reads actual escrowed NFTs and quotes NEAR. | Keep asset/currency sources explicit; `src/NativeMarketPanel.tsx`, `server/native/market.mjs`. |
+| A submitted trade could be mistaken for a completed swap. | Wallet results are followed by fresh NFT ownership/listing/balance checks. | Confirm delivery before success; `src/App.tsx`, `src/NativeMarketPanel.tsx`. |
+| Generic errors could disable unrelated trading while editing a bad price. | Price validation is scoped to its input and returns focus there. | Preserve correction and keyboard flow; `src/NativeMarketPanel.tsx`. |
+
+Canonical Intents, native yield and reviewed mainnet operation remain open. Details: `docs/NATIVE-MARKET.md`.
+
+
+Market UI review completed before publication: the actual public escrow offer is visible in the app; fixture form states passed 360/390 widths, 20px text, short-height and landscape review. Price errors preserve the value, remain local to that field and return focus to it; keyboard correction kept all 24 decimal places. Missing wallet-balance data is labelled unavailable rather than zero. No fixture trade submitted a chain transaction. Actual mobile wallet approval, mainnet policy and event indexing remain open.

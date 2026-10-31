@@ -1,3 +1,5 @@
+import { NativeMarketPanel } from "./NativeMarketPanel";
+import type { NativeTradeRequest } from "./types";
 import { AuraClaims } from "./AuraClaims";
 import type { NativeAuraClaim } from "./types";
 import { NativeWardrobe, nativeAppearanceItems } from "./NativeWardrobe";
@@ -644,6 +646,71 @@ export default function App() {
           : "Your demo outfit is on the map.",
       );
     });
+  }
+  async function tradeNative(request: NativeTradeRequest): Promise<boolean> {
+    const result = await action("native-market", async () => {
+      const { wallet, accountId } = await chooseNearAccount();
+      if (
+        accountId !== request.accountId ||
+        !player?.wallets.some((w) => w.account_id === accountId)
+      )
+        throw Error("Choose the linked NEAR wallet shown for this trade.");
+      if (!wallet.manifest.features.signAndSendTransaction)
+        throw Error("Choose a wallet that supports NEAR transactions.");
+      if (
+        !request.marketId.endsWith(".testnet") ||
+        request.nftContractId !== nativeWardrobe?.contractId
+      )
+        throw Error(
+          "This native market is not configured for your testnet inventory.",
+        );
+      const listing = request.kind === "list",
+        receiverId = listing ? request.nftContractId : request.marketId;
+      const methodName = listing
+        ? "nft_transfer_call"
+        : request.kind === "buy"
+          ? "buy"
+          : request.kind === "cancel"
+            ? "cancel"
+            : "withdraw";
+      const args = listing
+        ? {
+            receiver_id: request.marketId,
+            token_id: request.tokenId,
+            approval_id: null,
+            memo: null,
+            msg: JSON.stringify({ price: request.price }),
+          }
+        : request.kind === "withdraw"
+          ? {}
+          : { token_id: request.tokenId, listing_id: request.listingId };
+      const outcome = await wallet.signAndSendTransaction({
+        network: "testnet",
+        signerId: accountId,
+        receiverId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName,
+              args,
+              gas: listing ? "200000000000000" : "150000000000000",
+              deposit: request.kind === "buy" ? request.price! : "1",
+            },
+          },
+        ],
+      });
+      if (
+        outcome.final_execution_status === "NONE" ||
+        "Failure" in outcome.status
+      )
+        throw Error(
+          "The market transaction did not confirm. Check current NFT ownership and market balance.",
+        );
+      await refreshNative(true);
+      return true;
+    });
+    return result === true;
   }
   async function mintEarnedAura(item: Item) {
     await action("native-claim", async () => {
@@ -1485,6 +1552,15 @@ export default function App() {
           {tab === "fund" && <FundPanel />}
           {tab === "market" && (
             <Market
+              nativeContent={
+                <NativeMarketPanel
+                  player={player}
+                  wardrobe={nativeWardrobe}
+                  busy={busy}
+                  onConnect={connectNear}
+                  onTrade={tradeNative}
+                />
+              }
               player={player}
               busy={busy}
               onBuy={(listing) =>
@@ -2671,12 +2747,14 @@ function FundPanel() {
 }
 function Market({
   player,
+  nativeContent,
   busy,
   onBuy,
   onCancel,
   onInventory,
 }: {
   player: Player;
+  nativeContent: ReactNode;
   busy: string;
   onBuy: (l: Listing) => void;
   onCancel: (l: Listing) => void;
@@ -2695,6 +2773,8 @@ function Market({
   }, []);
   return (
     <>
+      {nativeContent}
+      <h2 className="demo-market-heading">Demo GOLD market</h2>
       <p className="panel-subtitle">
         Find an Aura that feels like you. Or pass your discovery along.
       </p>
@@ -2755,8 +2835,8 @@ function Market({
         </div>
       )}
       <p className="fine-print">
-        The demo market uses atomic server settlement. NEAR Intents will be
-        marked live only after an on-chain trade is verified.
+        Demo offers use demo GOLD. Native NFT offers and test NEAR balances are
+        shown separately above.
       </p>
     </>
   );

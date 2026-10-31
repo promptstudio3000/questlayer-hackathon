@@ -3742,3 +3742,116 @@ select {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.native-market {
+  padding-bottom: 28px;
+  border-bottom: 1px solid #ded2e8;
+  margin-bottom: 28px;
+}
+.native-market h2 {
+  font-size: 22px;
+}
+.native-market > p,
+.native-sell-form p,
+.native-market-wallet p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.native-market button {
+  min-height: 48px;
+  font-size: 14px;
+}
+.native-market-wallet,
+.native-sell-form {
+  background: #faf7ff;
+  padding: 16px;
+  border: 1px solid #ded2e8;
+  border-radius: 16px;
+  margin-top: 20px;
+}
+.native-market label {
+  display: grid;
+  gap: 8px;
+  font-size: 16px;
+  margin: 12px 0;
+}
+.native-market input,
+.native-market select {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+  padding: 12px;
+  border: 1px solid #c7bad8;
+  border-radius: 10px;
+  background: #fffaf5;
+  color: #493860;
+  min-width: 0;
+}
+.native-sell-form h3 {
+  font-size: 18px;
+}
+.native-offers {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+.native-offer {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #ded2e8;
+  border-radius: 16px;
+  background: #faf7ff;
+  min-width: 0;
+}
+.native-offer > img {
+  width: 80px;
+  height: 94px;
+  object-fit: contain;
+}
+.native-offer > .aura-art {
+  width: 76px;
+  height: 94px;
+  margin: 0;
+}
+.native-offer h3 {
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+.native-offer > div {
+  min-width: 0;
+}
+.native-offer > button {
+  grid-column: 1/-1;
+  width: 100%;
+}
+.native-offer span {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.native-price {
+  display: block;
+  font-size: 20px;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.native-market-pages {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.native-market-pages > button {
+  flex: 1;
+}
+.native-market-message {
+  background: #e6f2e9;
+  padding: 14px;
+  border-radius: 12px;
+}
+.demo-market-heading {
+  font-size: 22px;
+  margin-top: 28px;
+}
