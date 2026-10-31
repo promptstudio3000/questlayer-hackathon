@@ -3,7 +3,7 @@ import {
   STARTER_SPRITE,
   starterMarkerMarkup,
 } from "./character-art";
-import { auraEdition } from "./aura-art-data";
+import { auraEdition } from "./aura-art-data.ts";
 import { loadCharacterModel } from "./character-model-client";
 import { moveMapMarker } from "./map-motion";
 import {

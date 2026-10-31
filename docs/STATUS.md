@@ -21,6 +21,8 @@ funded and signed in the background. The blockchain is a property of the items, 
 | Shell cleanup (E1) | done: one entry button, four tabs, no network wording in the loop, one token source | `docs/UI-AUDIT-2026-11.md`, `output/qa/2026-11-E0/ui-after/` |
 | Secure with a passkey | a playing guest attaches a passkey to the same explorer | `tests/http.test.mjs` |
 | Audit fixes | pickup radius served by the server, 3–6 zone shortfall handling, distinct visit targets | `docs/CODE-AUDIT-2026-11.md` |
+| Aura sprites | authored pixel sprites for both slots on character, inventory and map marker | `output/qa/2026-11-aura-art/` |
+| Aavegotchi research | palette, rendering, Baazaar model and rights notes for reuse on NEAR | `docs/AAVEGOTCHI-REUSE.md` |
 
 ## In progress
 

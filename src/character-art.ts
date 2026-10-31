@@ -1,4 +1,4 @@
-import { auraEdition, auraMarkup } from "./aura-art-data";
+import { auraEdition, auraMarkup } from "./aura-art-data.ts";
 // Legacy, self-authored NFT cover art. Never replace minted media with third-party art.
 export function ghostSvg(color = "#b6a1df", hat = false) {
   const safe = /^#[a-fA-F0-9]{6}$/.test(color) ? color : "#b6a1df";
