@@ -371,7 +371,22 @@ export default function App() {
   }, [player?.id, invisibleEnsure]);
   useEffect(() => {
     // The managed account appears in the player's linked accounts once ready.
-    if (invisibleStatus === "ready") void me();
+    // When the host also attests native rewards, play moves to the real
+    // ledger automatically unless the player chose a ledger in Advanced.
+    if (invisibleStatus !== "ready") return;
+    void me();
+    let chosen = false;
+    try {
+      chosen = localStorage.getItem("questlayer-play-mode-chosen") === "1";
+    } catch {}
+    if (chosen) return;
+    void fetch("/api/health", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((h) => {
+        if (h?.nativeRewards?.status && h.nativeRewards.status !== "not-configured")
+          setNativePlay(true);
+      })
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invisibleStatus]);
   const setPlayAccount = nativeAccount.select;
@@ -1180,6 +1195,12 @@ export default function App() {
   // fallback when the player chose one or the managed account is not ready.
   // Attaches a passkey to the explorer that is already playing, so the player
   // keeps everything and can return from a synced device.
+  function chooseLedger(native: boolean) {
+    setNativePlay(native);
+    try {
+      localStorage.setItem("questlayer-play-mode-chosen", "1");
+    } catch {}
+  }
   async function attachPasskey() {
     await action("passkey", async () => {
       const r = await api<{ options: any; challengeId: string }>(
@@ -2983,13 +3004,13 @@ export default function App() {
                 >
                   <button
                     aria-pressed={!nativePlay}
-                    onClick={() => setNativePlay(false)}
+                    onClick={() => chooseLedger(false)}
                   >
                     Practice ledger
                   </button>
                   <button
                     aria-pressed={nativePlay}
-                    onClick={() => setNativePlay(true)}
+                    onClick={() => chooseLedger(true)}
                   >
                     Test network
                   </button>
