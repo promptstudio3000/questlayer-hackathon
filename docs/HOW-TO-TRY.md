@@ -75,8 +75,8 @@ These scripts send real testnet transactions and need a testnet operator key in 
 | --- | --- | --- |
 | Create operator | `node scripts/bootstrap-testnet.mjs` | `.data/near-operator.json` (mode 600) and an account on testnet |
 | Deploy game + collectibles | `node scripts/deploy-testnet.mjs` | updated `public/testnet-deployment.json` with transaction hashes |
-| Player factory + relayer accounts | `node scripts/deploy-player-factory-testnet.mjs` (planned in E2) | `.data/player-factory.json`, `.data/relayer.json` |
-| Prove invisible account | `node scripts/prove-invisible-account-testnet.mjs` (planned in E2) | `public/native-invisible-account-proof.json` |
+| Player factory + relayer accounts | `node scripts/deploy-player-factory-testnet.mjs` | `.data/player-factory.json`, `.data/relayer.json` and the three env lines to add |
+| Prove invisible account | start the API with the relayer env, then `node scripts/prove-invisible-account-testnet.mjs` | `public/native-invisible-account-proof.json` with the account and transaction hashes |
 
 Run the server with `PLAYER_FACTORY_KEY_PATH`, `RELAYER_KEY_PATH` and `PLAYER_FACTORY_ACCOUNT` set to enable
 invisible accounts; see `docs/RELAYER.md`.
