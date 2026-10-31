@@ -8,6 +8,12 @@ a seed phrase or a gas prompt: the chain is a property of the items, not a scree
 Built for the [NEAR Hackathon](https://nearhackathon.com/) (1–14 November 2026), tracks **Games With Real
 Economies** and **Open Innovation**. Everything runs on NEAR **testnet**; nothing here has monetary value.
 
+**Timeline, stated honestly.** The repository history before 1 November 2026 is a pre-hackathon baseline: a
+playable alpha with testnet pilots (see the first commits and `docs/PROJECT-REVIEW-AND-HANDOFF.md`). Work in the
+competition window starts with the commits dated 1 November 2026 on the `main` history: shell cleanup, the
+invisible NEAR account with a sponsored relayer, passkey securing, the Aura sprites, the audits and the operational
+runbooks. Commit dates are real and were not rewritten.
+
 ## Try it in two minutes (do X, see Y)
 
 Requirements: Node.js 24 (`.nvmrc`), npm. No wallet, no keys.

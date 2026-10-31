@@ -55,3 +55,33 @@
   text-transform: none;
   font-size: 14px;
 }
+/* Edition card kit (border / label / surface per tier), inspired by the
+   Gotchiverse rarity kits but using our own palette and no rarity economy. */
+.inventory-item-choice {
+  --kit-border: #c9b8dd;
+  --kit-label: #f2ebff;
+  --kit-surface: #ffffff;
+  border: 2px solid var(--kit-border);
+  background: var(--kit-surface);
+  box-shadow: 2px 2px 0 var(--kit-border);
+  border-radius: 10px;
+}
+.inventory-item-choice.rarity-rare {
+  --kit-border: #8064ff;
+  --kit-label: #ece8ff;
+}
+.inventory-item-choice.rarity-epic {
+  --kit-border: #ff96ff;
+  --kit-label: #ffe8ff;
+}
+.inventory-item-choice.rarity-legendary {
+  --kit-border: #f3bd54;
+  --kit-label: #fff6d6;
+  --kit-surface: #fffdf2;
+}
+.inventory-item-choice small,
+.inventory-item-choice .rarity {
+  background: var(--kit-label);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
