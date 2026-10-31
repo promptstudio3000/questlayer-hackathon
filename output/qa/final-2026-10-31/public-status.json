@@ -1,0 +1,32 @@
+{
+  "verifiedAt": "2026-10-31T08:37:02.908Z",
+  "release": "20261031T083443Z",
+  "webCommit": "fd63c32",
+  "app": "QuestLayer",
+  "financialMode": "demo",
+  "preparedWorlds": [
+    {
+      "day": "2026-10-31",
+      "state": "ready"
+    },
+    {
+      "day": "2026-11-01",
+      "state": "ready"
+    }
+  ],
+  "market": {
+    "network": "testnet",
+    "offers": 1,
+    "escrowVerifiedOffers": 1
+  },
+  "collection": {
+    "network": "testnet",
+    "supply": "4",
+    "visibleItems": 4
+  },
+  "currentEntryPublished": true,
+  "retainedPreviousEntryDigestMatches": true,
+  "missingAssetStatus": 404,
+  "playerWalletKeysOnServer": false,
+  "mainnetOperationPerformed": false
+}

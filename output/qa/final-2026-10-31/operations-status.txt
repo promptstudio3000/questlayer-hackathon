@@ -1,0 +1,9 @@
+MemoryCurrent=92143616
+MemoryMax=536870912
+Description=QuestLayer exploration game
+ActiveState=active
+NextElapseUSecRealtime=Sun 2026-11-01 03:29:10 UTC
+ActiveState=active
+Result=success
+ExecMainStatus=0
+/opt/ps3000/apps/auratrail/releases/20261031T083443Z

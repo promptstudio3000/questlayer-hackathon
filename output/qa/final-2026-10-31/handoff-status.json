@@ -1,0 +1,85 @@
+{
+  "milestones": [
+    {
+      "id": "W00",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W01",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W02",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W03",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W04",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W05",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W06",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W07",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W08",
+      "status": "planned",
+      "completedAt": null
+    },
+    {
+      "id": "W09",
+      "status": "planned",
+      "completedAt": null
+    },
+    {
+      "id": "W10",
+      "status": "planned",
+      "completedAt": null
+    },
+    {
+      "id": "W11",
+      "status": "planned",
+      "completedAt": null
+    },
+    {
+      "id": "W12",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W13",
+      "status": "building",
+      "completedAt": null
+    },
+    {
+      "id": "W14",
+      "status": "planned",
+      "completedAt": null
+    }
+  ],
+  "completeMilestoneCount": 0,
+  "appTests": 90,
+  "contractTests": 38,
+  "nativeFinancialVaultDeployed": false,
+  "webRelease": "20261031T083443Z",
+  "webCommit": "fd63c32"
+}

@@ -1,6 +1,20 @@
 # QuestLayer overnight implementation — 31 October 2026
 
-Work in progress. This is a factual implementation log, not a declaration that V1 is complete. The requested morning report is due at 10:00 Europe/Berlin. Product content is English; the private morning summary will be Czech.
+Morning handoff. This is a factual implementation log, not a declaration that V1 is complete. Product content and source reports are English; the private morning summary is Czech. Earlier sections retain the stage-by-stage evidence and test counts.
+
+## Final validated snapshot
+
+- Public application: **https://questlayer.promptstudio3000.com/**. Latest validated web release: `20261031T083443Z`, source commit `fd63c32`. The service is active; its measured resident memory was about 92 MB under a 512 MiB limit at this check.
+- **90 application tests and the production build passed.** The recorded unchanged native contract suite has **38 passing Rust tests**. Browser checks include actual rendered streets, avatar equipment, the native escrow offer, citywide zone overview, desktop/mobile layouts, enlarged forms, failure containment and globe-to-map return.
+- Six park-derived zones are spread across the city with varied polygons and a conservative minimum 250m boundary gap. The solo loop, shared low-value coins, separate 50/50 backing and durable daily planner remain functional. Both today's and tomorrow's blueprints are ready.
+- Connected native testnet paths include NEP-413 identity, wallet-owned starter/Aura inventory, earned-item signed minting, two equipment slots, NFT market escrow/purchase/withdrawal and voluntary NEAR Social public profiles. Actual transaction receipts are linked in [the delivery record](DELIVERY-2026-10-31.md).
+- Optional selected-model 3D dressing, bounded model proxy/cache, conditional texture optimization and consent-limited verified peer appearances are implemented. Full original-asset coverage and rights acceptance remain open.
+- Startup entry bytes are about 71% smaller. Late-loaded map CSS is now prevented from collapsing its container. The final normal map and canvas measured 1280×720 locally and 512×792 in the public browser. Globe mode has a dedicated visible viewport and returns to full map geometry.
+- Private daily snapshots and an isolated restore rehearsal are active. The current app schema reopened the verified copy and projected player/inventory state without changing live state. Referenced note images have private bounded backup support; the recorded live snapshot had zero referenced images. [Recovery details](STATE-RECOVERY.md).
+- **Staking, native realized-yield harvesting and GOLD payouts are still demo/model work.** The native staking adapter and financial/exit models are foundations, not a deployed vault. Mainnet, independent financial review, physical GPS/device acceptance, native passkey recovery, canonical Intents, complete content moderation, iOS release and full milestone exits remain open.
+- No player wallet signing key was uploaded and no mainnet operation was performed. Project-local developer testnet keys remain excluded from releases. Other VPS applications were not modified.
+
+Current proof: `output/qa/final-2026-10-31/public-status.json` and `operations-status.txt`. Continue from [ROADMAP](../ROADMAP.md), [the tracker](roadmap.json) and [the honest demo runbook](HACKATHON-DEMO.md).
 
 ## Latest increment: public profiles and deployed 3D
 

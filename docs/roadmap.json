@@ -976,7 +976,9 @@
         "output/qa/W12-startup/checks.txt",
         "output/qa/W12-startup/bundle-comparison.json",
         "output/qa/W12-movement/checks.txt",
-        "output/qa/W12-startup/public-map-after-cascade-fix.png"
+        "output/qa/W12-startup/public-map-after-cascade-fix.png",
+        "docs/DELIVERY-2026-10-31.md",
+        "output/qa/final-2026-10-31/public-status.json"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W12-startup/"
@@ -1167,7 +1169,10 @@
         "docs/STATE-RECOVERY.md",
         "output/qa/W13-recovery/live-restore-rehearsal.json",
         "output/qa/W13-recovery/checks.txt",
-        "output/qa/W13-recovery/live-restore-with-media.json"
+        "output/qa/W13-recovery/live-restore-with-media.json",
+        "output/qa/W12-movement/checks.txt",
+        "docs/DELIVERY-2026-10-31.md",
+        "output/qa/final-2026-10-31/public-status.json"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W13-recovery/"
