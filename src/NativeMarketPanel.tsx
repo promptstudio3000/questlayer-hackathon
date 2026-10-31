@@ -1,3 +1,4 @@
+import { NativePicture } from "./NativeWardrobe";
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { AuraArt } from "./Ghost";
@@ -321,10 +322,10 @@ export function NativeMarketPanel({
             <div className="native-offers">
               {data.listings.map((offer) => (
                 <article className="native-offer" key={offer.id}>
-                  {offer.token?.media ? (
-                    <img src={offer.token.media} alt={offer.token.title} />
+                  {offer.token ? (
+                    <NativePicture item={offer.token} />
                   ) : (
-                    <AuraArt color={offer.token?.color} small />
+                    <AuraArt small />
                   )}
                   <div>
                     <h3>{offer.token?.title || "Native Aura"}</h3>

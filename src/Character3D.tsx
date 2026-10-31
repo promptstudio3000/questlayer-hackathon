@@ -10,15 +10,10 @@ import {
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
 import type { Item } from "./types";
-type Descriptor = {
-  available: true;
-  source: "starter" | "original";
-  src: string;
-  digest: string;
-  complete: boolean;
-  optimized?: boolean;
-  stats: { bytes: number; meshes: number };
-};
+import {
+  loadCharacterModel,
+  type CharacterModelDescriptor as Descriptor,
+} from "./character-model-client";
 type Scene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
@@ -54,31 +49,10 @@ export function Character3D({
       }
     };
     void (async () => {
-      const [response, module] = await Promise.all([
-        fetch("/api/character/model", {
-          credentials: "same-origin",
-          signal: controller.signal,
-        }),
+      const [{ descriptor: data, bytes }, module] = await Promise.all([
+        loadCharacterModel(originTokenId, controller.signal),
         import("./character-3d-scene"),
       ]);
-      const data = await response.json();
-      if (!response.ok)
-        throw Error(data.error || "This 3D look is unavailable.");
-      if (!/^\/api\/character\/assets\/[a-f0-9]{64}\.glb$/.test(data.src))
-        throw Error("This 3D look is unavailable.");
-      const model = await fetch(data.src, {
-        credentials: "same-origin",
-        signal: controller.signal,
-      });
-      if (!model.ok) throw Error("The 3D look expired. Please try again.");
-      const bytes = await model.arrayBuffer();
-      const digest = [
-        ...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
-      ]
-        .map((n) => n.toString(16).padStart(2, "0"))
-        .join("");
-      if (digest !== data.digest)
-        throw Error("The 3D look could not be verified.");
       if (!active || !host.current) return;
       setDescriptor(data);
       const view = module.createCharacterScene(host.current, bytes, {
@@ -187,8 +161,9 @@ export function Character3D({
             </p>
             {descriptor && !descriptor.complete && (
               <p className="model-coverage">
-                Some original wardrobe slots are not available in 3D. Your
-                verified 2D appearance remains the complete view.
+                {descriptor.mapCompatible && descriptor.backgroundOmitted
+                  ? "Your original background stays in 2D. Your character and equipped wearables are shown in 3D."
+                  : "Some original wardrobe slots are not available in 3D. Your verified 2D appearance remains the complete view."}
               </p>
             )}
           </>

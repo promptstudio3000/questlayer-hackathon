@@ -127,9 +127,10 @@ Long player names, translated strings and 200% text must reflow.
 
 - Keep one light direction and one shadow treatment across game objects. Preserve
   native pixel grids and deliberate integer scales for sprites where possible.
-- The fallback explorer currently uses a 48×56 SVG view box. Preserve its geometry
-  until an intentional asset replacement. Canonical appearance SVGs keep their own
-  native geometry. Do not pixelate operational text or the entire WebGL map with CSS.
+- The shared starter uses official 64×64 Aavegotchi template layers, composed in a
+  cropped 48×54 viewport with source paths and colors preserved. The historical
+  authored 48×56 artwork remains in minted cover media. Verified original SVGs keep
+  their native geometry. Do not pixelate operational text or the entire WebGL map with CSS.
 - Game objects use a shared authored family: coin, closed/open chest, Aura, discovered
   place, completed place. Utility actions keep the existing Phosphor family. Avoid
   mixing emoji, arbitrary Unicode, glossy 3D icons and line icons for equivalent roles.
@@ -284,3 +285,7 @@ A design slice passes only when it is playable, readable, truthful and visually
 coherent. The full verification checklist and implementation order are in
 `docs/UI-UX-IMPROVEMENT-PLAN.md`. Research scope, source revisions and intentionally
 rejected generic advice are in `docs/UI-UX-RESEARCH.md`.
+
+## Implemented character source update — 2026-10-31
+
+The shared starter UI now uses five official Aavegotchi template layers, with exact provenance in `public/art/aavegotchi/provenance.json`. Keep this actual source art rather than restoring the authored stand-in. The local map pawn may render the bounded upstream GLB; preserve the canonical starter/original SVG while loading or when 3D is disabled/unavailable. Keep map Auras legible in screen space and the dressing-room Auras in its 3D scene. A 3D preference is not a claim of full outfit coverage or original NFT ownership. Historical minted cover media remain independent of these presentation updates.

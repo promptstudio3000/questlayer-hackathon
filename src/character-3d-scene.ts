@@ -33,6 +33,7 @@ export function createCharacterScene(
     starter: boolean;
     above?: string;
     below?: string;
+    presentation?: "map";
     onError: () => void;
   },
 ) {
@@ -48,7 +49,7 @@ export function createCharacterScene(
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
   const canvas = renderer.domElement;
-  canvas.tabIndex = 0;
+  canvas.tabIndex = options.presentation === "map" ? -1 : 0;
   canvas.setAttribute("role", "img");
   canvas.setAttribute(
     "aria-label",
@@ -56,6 +57,7 @@ export function createCharacterScene(
   );
   host.append(canvas);
   const controls = new OrbitControls(camera, canvas);
+  controls.enabled = options.presentation !== "map";
   controls.enablePan = false;
   controls.enableDamping = false;
   controls.autoRotate = false;
@@ -68,6 +70,9 @@ export function createCharacterScene(
   const fill = new THREE.DirectionalLight(0xd5c2ff, 1.5);
   fill.position.set(-3, 1, -2);
   scene.add(fill);
+  const auras = new THREE.Group();
+  scene.add(auras);
+  let auraColors = { above: options.above, below: options.below };
   let disposed = false,
     loaded = false,
     height = 1;
@@ -98,6 +103,48 @@ export function createCharacterScene(
     controls.update();
     render();
   };
+  const setMapView = (bearing: number, pitch: number, heading = 180) => {
+    if (!loaded || disposed) return;
+    const yaw = ((bearing + 180 - heading) * Math.PI) / 180;
+    camera.position.set(
+      Math.sin(yaw) * height * 3.1,
+      height * (0.2 + Math.max(0, Math.min(60, pitch)) / 100),
+      Math.cos(yaw) * height * 3.1,
+    );
+    camera.lookAt(0, 0, 0);
+    render();
+  };
+  const setAuras = (above?: string, below?: string) => {
+    auraColors = { above, below };
+    if (!loaded || disposed) return;
+    disposeObject(auras);
+    auras.clear();
+    host.dataset.auraSlots = Object.entries(auraColors)
+      .filter(([, color]) => color && /^#[0-9a-f]{6}$/i.test(color))
+      .map(([slot]) => slot)
+      .join(",");
+    for (const [slot, color] of Object.entries(auraColors)) {
+      if (!color || !/^#[0-9a-f]{6}$/i.test(color)) continue;
+      for (const [thickness, opacity] of [
+        [0.012, 0.9],
+        [0.04, 0.13],
+      ]) {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(height * 0.39, height * thickness, 8, 48),
+          new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity,
+            depthWrite: false,
+          }),
+        );
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = height * (slot === "above" ? 0.6 : -0.53);
+        auras.add(ring);
+      }
+    }
+    render();
+  };
   const rotate = (direction: number) => {
     camera.position
       .sub(controls.target)
@@ -126,7 +173,8 @@ export function createCharacterScene(
       reset();
     }
   };
-  canvas.addEventListener("keydown", keyboard);
+  if (options.presentation !== "map")
+    canvas.addEventListener("keydown", keyboard);
   const lost = (event: Event) => {
     event.preventDefault();
     if (!disposed) options.onError();
@@ -161,36 +209,6 @@ export function createCharacterScene(
     }
     gltf.scene.position.sub(center);
     scene.add(gltf.scene);
-    for (const [slot, color] of [
-      ["above", options.above],
-      ["below", options.below],
-    ] as const) {
-      if (!color || !/^#[0-9a-f]{6}$/i.test(color)) continue;
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(height * 0.39, height * 0.012, 8, 64),
-        new THREE.MeshBasicMaterial({
-          color,
-          transparent: true,
-          opacity: 0.9,
-          depthWrite: false,
-        }),
-      );
-      ring.rotation.x = Math.PI / 2;
-      ring.position.y = height * (slot === "above" ? 0.6 : -0.53);
-      scene.add(ring);
-      const glow = new THREE.Mesh(
-        new THREE.TorusGeometry(height * 0.39, height * 0.04, 8, 64),
-        new THREE.MeshBasicMaterial({
-          color,
-          transparent: true,
-          opacity: 0.13,
-          depthWrite: false,
-        }),
-      );
-      glow.rotation.copy(ring.rotation);
-      glow.position.copy(ring.position);
-      scene.add(glow);
-    }
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(height * 0.43, 48),
       new THREE.MeshBasicMaterial({
@@ -209,6 +227,7 @@ export function createCharacterScene(
     camera.far = height * 20;
     camera.updateProjectionMatrix();
     loaded = true;
+    setAuras(auraColors.above, auraColors.below);
     resize();
     reset();
   })();
@@ -217,6 +236,8 @@ export function createCharacterScene(
     rotate,
     zoom,
     reset,
+    setMapView,
+    setAuras,
     dispose: () => {
       if (disposed) return;
       disposed = true;

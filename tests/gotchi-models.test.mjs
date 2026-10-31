@@ -53,6 +53,17 @@ test("renderer identity preserves the documented right/left ordering and fails c
   });
   assert.ok(result.hash.endsWith("-0-0-0-0-21-42-0"));
   assert.equal(result.complete, false);
+  assert.equal(result.mapCompatible, true);
+  assert.equal(result.backgroundOmitted, true);
+  const unknownSlot = deriveGotchiModel({
+    ...original,
+    equippedWearables: wearables.with(8, "100"),
+  });
+  assert.equal(
+    unknownSlot.mapCompatible,
+    false,
+    "only the documented portrait background may be omitted on a map",
+  );
   assert.throws(() =>
     deriveGotchiModel({ ...original, collateral: "unknown" }),
   );

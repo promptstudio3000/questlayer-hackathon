@@ -1,4 +1,9 @@
-import { characterMarkerMarkup } from "./character-art";
+import {
+  characterMarkerMarkup,
+  STARTER_SPRITE,
+  starterMarkerMarkup,
+} from "./character-art";
+import { loadCharacterModel } from "./character-model-client";
 import { moveMapMarker } from "./map-motion";
 import type { NearbyExplorer } from "./types";
 import { useEffect, useRef, useState } from "react";
@@ -8,7 +13,9 @@ maplibregl.setWorkerUrl(mapWorkerUrl);
 import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Point, World, Zone, Item } from "./types";
-import { ghostSvg } from "./Ghost";
+type PawnScene = ReturnType<
+  typeof import("./character-3d-scene").createCharacterScene
+>;
 export type GameMapProps = {
   sheetExpanded: boolean;
   panelMode: string;
@@ -22,6 +29,7 @@ export type GameMapProps = {
   equipped: Item[];
   others: NearbyExplorer[];
   skinUrl?: string;
+  map3D?: boolean;
   onMove: (p: Point) => void;
   onZone: (z: Zone) => void;
   follow: boolean;
@@ -33,12 +41,14 @@ function phoneLayout() {
     (window.innerWidth <= 1000 && window.innerHeight <= 500)
   );
 }
-function skinFallback(node: HTMLElement, color?: string) {
+function skinFallback(node: HTMLElement, _color?: string) {
   const image = node.querySelector("img");
   image?.addEventListener(
     "error",
     () => {
-      image.outerHTML = ghostSvg(color);
+      image.src = STARTER_SPRITE;
+      image.className = "starter-player";
+      image.alt = "Aavegotchi starter appearance";
       node.setAttribute(
         "aria-label",
         (node.getAttribute("aria-label") || "Explorer") +
@@ -53,6 +63,8 @@ export function GameMap(props: GameMapProps) {
     map = useRef<maplibregl.Map | null>(null),
     avatar = useRef<maplibregl.Marker | null>(null),
     labels = useRef<maplibregl.Marker[]>([]);
+  const pawn = useRef<PawnScene | null>(null),
+    heading = useRef(180);
   const latest = useRef(props);
   latest.current = props;
   const [ready, setReady] = useState(false),
@@ -93,7 +105,7 @@ export function GameMap(props: GameMapProps) {
     );
     const marker = document.createElement("div");
     marker.className = "player-marker";
-    marker.innerHTML = ghostSvg();
+    marker.innerHTML = starterMarkerMarkup();
     avatar.current = new maplibregl.Marker({
       element: marker,
       anchor: "bottom",
@@ -102,7 +114,7 @@ export function GameMap(props: GameMapProps) {
       .addTo(m);
     m.on("dragstart", () => latest.current.onPan());
     m.on("click", (e) => {
-      if (latest.current.arena)
+      if (latest.current.arena && !latest.current.globe)
         latest.current.onMove({ lng: e.lngLat.lng, lat: e.lngLat.lat });
     });
     m.on("error", () => {
@@ -285,7 +297,7 @@ export function GameMap(props: GameMapProps) {
       node.className = `zone-map-pin tier-${z.tier}${props.overview ? " map-overview-pin" : ""}${props.globe ? " hidden" : ""}`;
       node.title = z.name;
       node.setAttribute("aria-label", z.name);
-      node.innerHTML = ghostSvg(z.color);
+      node.innerHTML = starterMarkerMarkup();
       node.addEventListener("click", (e) => {
         e.stopPropagation();
         latest.current.onZone(z);
@@ -350,6 +362,17 @@ export function GameMap(props: GameMapProps) {
   }
   useEffect(() => {
     if (!avatar.current) return;
+    const previous = avatar.current.getLngLat(),
+      north = props.position.lat - previous.lat,
+      east =
+        (props.position.lng - previous.lng) *
+        Math.cos((props.position.lat * Math.PI) / 180),
+      travelled = Math.hypot(north, east) * 111320;
+    if (travelled >= 2 && travelled <= 80)
+      heading.current = (Math.atan2(east, north) * 180) / Math.PI;
+    const m = map.current;
+    if (m && !props.globe)
+      pawn.current?.setMapView(m.getBearing(), m.getPitch(), heading.current);
     return moveMapMarker(avatar.current, props.position, {
       reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
     });
@@ -379,15 +402,85 @@ export function GameMap(props: GameMapProps) {
     const color = props.equipped.find((i) => i.slot === "avatar")?.color;
     const top = props.equipped.find((i) => i.slot === "above"),
       bottom = props.equipped.find((i) => i.slot === "below");
-    avatar.current.getElement().innerHTML =
+    const element = avatar.current.getElement(),
+      modelHost = element.querySelector(".map-character-model");
+    element.setAttribute("role", "img");
+    element.setAttribute(
+      "aria-label",
+      `${props.skinUrl ? "Your linked Aavegotchi" : "Your Aavegotchi starter"}${top ? `; ${top.name} above` : ""}${bottom ? `; ${bottom.name} below` : ""}`,
+    );
+    element.innerHTML =
       characterMarkerMarkup({
         color,
         above: top?.color,
         below: bottom?.color,
         skinUrl: props.skinUrl,
       }) + '<span class="you-label">YOU</span>';
-    skinFallback(avatar.current.getElement(), color);
-  }, [equipmentKey, props.skinUrl]);
+    if (modelHost) element.append(modelHost);
+    skinFallback(element, color);
+  }, [equipmentKey, props.skinUrl, ready]);
+  useEffect(() => {
+    const m = map.current,
+      element = avatar.current?.getElement();
+    if (!m || !element || !ready || props.map3D === false) return;
+    const controller = new AbortController(),
+      host = document.createElement("div");
+    host.className = "map-character-model";
+    host.setAttribute("aria-hidden", "true");
+    element.append(host);
+    element.dataset.characterRenderer = props.skinUrl
+      ? "original-2d"
+      : "official-2d";
+    let active = true,
+      view: PawnScene | null = null;
+    const show2D = () => {
+      element.classList.remove("character-model-ready");
+      element.dataset.characterRenderer = props.skinUrl
+        ? "original-2d"
+        : "official-2d";
+      view?.dispose();
+      if (pawn.current === view) pawn.current = null;
+      view = null;
+    };
+    const orient = () => {
+      if (!latest.current.globe)
+        view?.setMapView(m.getBearing(), m.getPitch(), heading.current);
+    };
+    m.on("rotate", orient);
+    m.on("pitch", orient);
+    void (async () => {
+      const original = props.skinUrl?.match(/tokenId=(\d+)$/)?.[1];
+      const [{ descriptor, bytes }, module] = await Promise.all([
+        loadCharacterModel(original, controller.signal, { forMap: true }),
+        import("./character-3d-scene"),
+      ]);
+      // Omit only the portrait background; unsupported character slots keep their SVG.
+      if (!active || (!descriptor.complete && !descriptor.mapCompatible))
+        return;
+      view = module.createCharacterScene(host, bytes, {
+        starter: descriptor.source === "starter",
+        presentation: "map",
+        onError: show2D,
+      });
+      pawn.current = view;
+      const currentView = view;
+      await currentView.ready;
+      if (!active || view !== currentView) return;
+      orient();
+      element.classList.add("character-model-ready");
+      element.dataset.characterRenderer = "sdk-3d";
+    })().catch(() => {
+      if (active) show2D();
+    });
+    return () => {
+      active = false;
+      controller.abort();
+      m.off("rotate", orient);
+      m.off("pitch", orient);
+      show2D();
+      host.remove();
+    };
+  }, [props.skinUrl, props.map3D, ready]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;

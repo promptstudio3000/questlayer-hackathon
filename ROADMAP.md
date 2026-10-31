@@ -363,3 +363,8 @@ Preserve these ideas without making the present release unbounded:
 - Chain Signatures or eventual EVM deployment through explicit new scope; V1 stays native NEAR.
 
 Each extension needs a complete rule/state/funding specification and its own acceptance gate. Adding an ecosystem logo, SDK import or disconnected example does not constitute integration.
+
+
+### W04 follow-up — actual artwork in play
+
+The local map now uses the actual bounded SDK GLB and follows visual heading, with official starter SVG layers shared across the UI and a persistent 2D fallback preference. Map Auras remain screen-space for readability. Original portrait backgrounds are distinguished from unsupported character slots, preserving more accurate 3D character coverage without losing clothing. Linked original item pictures use canonical `getItemSvg` reads in a paginated, ownership-checked gallery; manual refresh clears an unverifiable selected appearance. Evidence: `docs/ASSET-CATALOG.md` and `output/qa/W04-real-assets/`. W04 remains **building**: the first-50-original limit, complete modular dressing/catalog rights and physical-device acceptance are not passed.

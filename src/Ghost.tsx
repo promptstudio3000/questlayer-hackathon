@@ -1,8 +1,6 @@
-import { ghostSvg } from "./character-art";
+import { STARTER_SPRITE } from "./character-art";
 export { ghostSvg } from "./character-art";
 export function Ghost({
-  color,
-  hat = false,
   className = "",
 }: {
   color?: string;
@@ -10,11 +8,9 @@ export function Ghost({
   className?: string;
 }) {
   return (
-    <span
-      className={`ghost-art ${className}`}
-      aria-hidden="true"
-      dangerouslySetInnerHTML={{ __html: ghostSvg(color, hat) }}
-    />
+    <span className={`ghost-art ${className}`} aria-hidden="true">
+      <img src={STARTER_SPRITE} alt="" draggable={false} />
+    </span>
   );
 }
 export function AuraArt({

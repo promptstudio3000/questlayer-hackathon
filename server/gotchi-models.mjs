@@ -133,6 +133,9 @@ export function deriveGotchiModel(gotchi) {
   return {
     hash: [collateral, shape, eyeColor, ...wearables.slice(0, 7)].join("-"),
     complete: wearables.slice(7).every((v) => v === 0),
+    // Slot 7 is the original portrait background, not a map character garment.
+    mapCompatible: wearables.slice(8).every((v) => v === 0),
+    backgroundOmitted: (wearables[7] ?? 0) !== 0,
     wearables: wearables.map(String),
   };
 }
@@ -360,6 +363,8 @@ export class GotchiModels {
       source: tokenId ? "original" : "starter",
       tokenId,
       complete: source.complete,
+      mapCompatible: source.mapCompatible ?? true,
+      backgroundOmitted: source.backgroundOmitted ?? false,
       src: `/api/character/assets/${asset.digest}.glb`,
       hash: source.hash,
       digest: asset.digest,

@@ -7,7 +7,12 @@ export const AAVEGOTCHI_ABI=parseAbi([
  'function itemBalancesOfToken(address tokenContract,uint256 tokenId) view returns ((uint256 itemId,uint256 balance)[])',
  'function equippedWearables(uint256 tokenId) view returns (uint16[16])',
  'function getAavegotchiSvg(uint256 tokenId) view returns (string)',
+ 'function getItemSvg(uint256 itemId) view returns (string)',
 ]);
+export async function readGotchiItemSvg(itemId){
+ const client=createPublicClient({chain:base,transport:http(process.env.BASE_RPC_URL||'https://mainnet.base.org',{timeout:4000,retryCount:0})});
+ return client.readContract({address:AAVEGOTCHI,abi:AAVEGOTCHI_ABI,functionName:'getItemSvg',args:[BigInt(itemId)]});
+}
 export async function readGotchis(address,{limit=50}={}){
  const abi=AAVEGOTCHI_ABI;
  const client=createPublicClient({chain:base,transport:http(process.env.BASE_RPC_URL||'https://mainnet.base.org',{timeout:12000,retryCount:1})});

@@ -43,16 +43,9 @@ export function nativeAppearanceItems(
     })) || []
   );
 }
-function NativePicture({ item }: { item: NativeItem }) {
-  const [failed, setFailed] = useState(false);
-  return item.media && !failed ? (
-    <img
-      className="native-picture"
-      src={item.media}
-      alt={item.title}
-      onError={() => setFailed(true)}
-    />
-  ) : item.kind === "aura" ? (
+export function NativePicture({ item }: { item: NativeItem }) {
+  // Game appearance preview; historical on-chain cover media is unchanged.
+  return item.kind === "aura" ? (
     <AuraArt color={item.color} small />
   ) : (
     <Ghost />

@@ -407,7 +407,7 @@
         {
           "id": "W04.4",
           "title": "Complete Base ownership wardrobe and pagination",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W04.5",
@@ -430,7 +430,8 @@
         "output/qa/W04/native-presence-api.json",
         "output/qa/W04/peer-checks.txt",
         "docs/ASSET-CATALOG.md",
-        "output/qa/W04-models/"
+        "output/qa/W04-models/",
+        "output/qa/W04-real-assets/"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W04/"
@@ -1281,6 +1282,6 @@
     }
   ],
   "runtimeChangedSincePlanningBaseline": true,
-  "lastImplementationUpdate": "2026-10-31T02:48:34.307214+00:00",
+  "lastImplementationUpdate": "2026-10-31T10:59:12.777Z",
   "implementationReport": "docs/OVERNIGHT-2026-10-31.md"
 }

@@ -4070,3 +4070,90 @@ select {
 body:has(.globe-view) .npc-button,body:has(.globe-view) .map-legend {display:none;}
 @media (max-width:760px), (max-height:500px) and (max-width:1000px) {.game-map.globe-view {left:0;top:70px;bottom:280px;}}
 @media (max-height:500px) and (max-width:1000px) {.game-map.globe-view {left:0;right:56%;top:70px;bottom:84px;}}
+
+
+/* Canonical Aavegotchi template art is the shared 2D appearance. */
+.ghost-art > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.starter-player {
+  display: block;
+  width: 78px;
+  height: 91px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.map-character-model {
+  position: absolute;
+  left: -15px;
+  top: -32px;
+  width: 108px;
+  height: 144px;
+  pointer-events: none;
+  opacity: 0;
+}
+.map-character-model canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.character-model-ready > .map-character-model {
+  opacity: 1;
+}
+.character-model-ready > .starter-player,
+.character-model-ready > .origin-player {
+  visibility: hidden;
+}
+.player-marker > .you-label {
+  z-index: 3;
+  font-size: 12px;
+  left: 50%;
+  top: 92px;
+  transform: translateX(-50%);
+}
+.zone-map-pin > .starter-player,
+.other-player-marker > .starter-player {
+  width: 100%;
+  height: 100%;
+}
+.map-appearance-help {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.native-offer > .ghost-art {
+  width: 76px;
+  height: 94px;
+}
+
+/* Auras stay legible in screen space around the actual 3D map character. */
+.player-marker > .marker-aura.top {
+  top: -16px;
+}
+.character-art-credit {
+  margin: -8px 0 20px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #62516f;
+}
+.wardrobe-preview .map-appearance-help { font-size: 14px; }
+
+.original-items { margin-top: 22px; }
+.original-items > p { font-size: 14px; line-height: 1.6; margin: 8px 0 16px; }
+.original-item-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.original-item { min-width: 0; padding: 10px; border: 1px solid #ded2e8; border-radius: 12px; background: #faf7ff; }
+.original-item-art { height: 76px; display: grid; place-items: center; margin-bottom: 10px; }
+.original-item-art img { width: 100%; height: 100%; max-height: 76px; object-fit: contain; image-rendering: pixelated; }
+.original-item-art > span { font-size: 12px; text-align: center; line-height: 1.4; }
+.original-item > strong,.original-item > span { display: block; overflow-wrap: anywhere; font-size: 14px; line-height: 1.5; }
+.original-item > span { color: #62516f; }
+.original-item-pages { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.original-item-pages > span { font-size: 14px; }
+.original-item-pages > button { min-height: 48px; font-size: 14px; }
+@media (max-width: 420px) { .original-item-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }

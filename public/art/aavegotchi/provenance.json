@@ -1,0 +1,40 @@
+{
+  "source": "Official Aavegotchi base template layers",
+  "revision": "b302ce569ac7f98a97947ce4e66f63bae85a0c66",
+  "sources": [
+    {
+      "filename": "template_body_front_optimized.svg",
+      "url": "https://raw.githubusercontent.com/aavegotchi/aavegotchi-assets/b302ce569ac7f98a97947ce4e66f63bae85a0c66/images/template/template_body_front_optimized.svg",
+      "sha256": "3bc277eee54f9dac306b24fe2a2c1544fcd2a849ffd01a983cf4b7050f523e2d",
+      "bytes": 922
+    },
+    {
+      "filename": "template_cheeks_front_optimized.svg",
+      "url": "https://raw.githubusercontent.com/aavegotchi/aavegotchi-assets/b302ce569ac7f98a97947ce4e66f63bae85a0c66/images/template/template_cheeks_front_optimized.svg",
+      "sha256": "4eeeef91952487e1b80506a903eb799531315c422d624c98c461d52a32685189",
+      "bytes": 158
+    },
+    {
+      "filename": "template_eyes_front_optimized.svg",
+      "url": "https://raw.githubusercontent.com/aavegotchi/aavegotchi-assets/b302ce569ac7f98a97947ce4e66f63bae85a0c66/images/template/template_eyes_front_optimized.svg",
+      "sha256": "28b68fda4716808e0451c5f1b0d05a296b95eb996a0195d1865d17866ff1f3d2",
+      "bytes": 198
+    },
+    {
+      "filename": "template_mouth_front_optimized.svg",
+      "url": "https://raw.githubusercontent.com/aavegotchi/aavegotchi-assets/b302ce569ac7f98a97947ce4e66f63bae85a0c66/images/template/template_mouth_front_optimized.svg",
+      "sha256": "7517ce15ac7c0393b33ada695e83324112fce43e77687f121de57d2d531a045d",
+      "bytes": 203
+    },
+    {
+      "filename": "template_hands_closed_front_optimized.svg",
+      "url": "https://raw.githubusercontent.com/aavegotchi/aavegotchi-assets/b302ce569ac7f98a97947ce4e66f63bae85a0c66/images/template/template_hands_closed_front_optimized.svg",
+      "sha256": "700cdbff1ebf0e40f83b74ff00298a5a676f78e10aa037d9515ae9472a464b24",
+      "bytes": 802
+    }
+  ],
+  "composition": "Unmodified body, cheeks, eyes, mouth and closed hands with original root fills; cropped viewport 8 4 48 54. No collateral badge or premium wearable.",
+  "rights": "Prototype visual integration; artwork rights are distinct from software MIT licenses. No original NFT is represented as owned or bridged.",
+  "starterSha256": "1278fb922f4ea310976a3f0b182c64a09d0fb84e8bc08f7cc85185fb4d36f47d",
+  "assetPath": "/assets/aavegotchi-starter-1278fb922f4e.svg"
+}

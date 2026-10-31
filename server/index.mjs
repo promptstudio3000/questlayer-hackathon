@@ -1,5 +1,10 @@
 import { updatePresence, nearbyPresence } from "./presence.mjs";
 import { GotchiModels } from "./gotchi-models.mjs";
+import {
+  GotchiItemArt,
+  linkedItemId,
+  originalInventoryView,
+} from "./gotchi-items.mjs";
 import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
 import { NativeSocialProfile } from "./native/social-profile.mjs";
@@ -103,6 +108,23 @@ const awardSigner = loadAwardSigner(
 );
 const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner);
 const gotchiModels = new GotchiModels();
+const gotchiItemArt = new GotchiItemArt();
+const originalLookups = new Map();
+async function refreshOriginals(address) {
+  if (originalLookups.has(address)) return originalLookups.get(address);
+  assert(
+    originalLookups.size < 3,
+    "Original inventory checks are busy. Please try again shortly.",
+    503,
+  );
+  const task = readGotchis(address);
+  originalLookups.set(address, task);
+  try {
+    return await task;
+  } finally {
+    originalLookups.delete(address);
+  }
+}
 const listeners = new Set(),
   rates = new Map();
 function emit(type, data) {
@@ -1028,29 +1050,51 @@ async function api(req, res, url) {
     if (!link)
       return respond(res, { linked: false, gotchis: [], wearables: [] });
     let data = JSON.parse(link.data);
-    if (link.verified_at < Date.now() - 300000) {
+    const force = url.searchParams.get("refresh") === "1";
+    if (force) {
+      const key = `original-refresh:${player}:${Math.floor(Date.now() / 60000)}`;
+      const count = (rates.get(key) || 0) + 1;
+      rates.set(key, count);
+      assert(
+        count <= 1,
+        "Please wait a minute before checking original ownership again.",
+        429,
+      );
+    }
+    if (force || link.verified_at < Date.now() - 300000) {
       try {
-        data = await readGotchis(link.address);
+        data = await refreshOriginals(link.address);
         db.prepare(
           "UPDATE external_links SET data=?,verified_at=? WHERE address=?",
         ).run(JSON.stringify(data), data.verifiedAt, link.address);
       } catch {
         return respond(res, {
           linked: true,
-          ...data,
+          ...originalInventoryView(data),
           status: "unavailable",
           error:
             "Base RPC is temporarily unavailable. Your previous inventory is preserved; linked appearances are paused until ownership is verified.",
         });
       }
     }
+    const appearance = JSON.parse(
+      db.prepare("SELECT appearance FROM players WHERE id=?").get(player)
+        .appearance,
+    );
+    const lookUnavailable =
+      appearance.address === link.address &&
+      appearance.originTokenId &&
+      !data.gotchis?.some((g) => g.tokenId === appearance.originTokenId);
+    if (lookUnavailable)
+      db.prepare("UPDATE players SET appearance=? WHERE id=?").run(
+        "{}",
+        player,
+      );
     return respond(res, {
       linked: true,
-      ...data,
-      gotchis: (data.gotchis || []).map(({ svg, ...g }) => ({
-        ...g,
-        hasImage: !!svg,
-      })),
+      ...originalInventoryView(data),
+      appearance: lookUnavailable ? {} : appearance,
+      lookUnavailable: !!lookUnavailable,
       status: "verified",
     });
   }
@@ -1152,6 +1196,30 @@ async function api(req, res, url) {
       "Content-Security-Policy":
         "default-src 'none'; style-src 'unsafe-inline'; sandbox",
       "Cache-Control": "private,max-age=5",
+    });
+    return res.end(svg);
+  }
+  if (path.startsWith("/api/aavegotchi/wearable/") && method === "GET") {
+    const id = path.match(
+      /^\/api\/aavegotchi\/wearable\/([1-9]\d{0,4})\.svg$/,
+    )?.[1];
+    const link = db
+      .prepare(
+        "SELECT * FROM external_links WHERE player_id=? ORDER BY verified_at DESC LIMIT 1",
+      )
+      .get(player);
+    linkedItemId(link, id);
+    const key = `item-art:${player}:${Math.floor(Date.now() / 60000)}`;
+    const count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(count <= 60, "Please wait before loading more original items.", 429);
+    const svg = await gotchiItemArt.get(id);
+    res.writeHead(200, {
+      "Content-Type": "image/svg+xml",
+      "Content-Length": svg.length,
+      "Content-Security-Policy":
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+      "Cache-Control": "private,max-age=60",
     });
     return res.end(svg);
   }

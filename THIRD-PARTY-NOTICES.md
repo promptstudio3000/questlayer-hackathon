@@ -10,6 +10,8 @@
 - Turf spatial utilities: MIT, https://github.com/Turfjs/turf. The versioned CityPack retains OpenStreetMap source IDs and ODbL attribution; see `server/data/README.md`.
 - Kanit font: SIL Open Font License; currently loaded through Google Fonts, https://github.com/google/fonts/tree/main/ofl/kanit.
 - Aavegotchi integration reads canonical Base contracts. Connected original appearances are their on-chain SVGs; ownership does not grant a blanket license to redistribute unrelated artwork. No Unity/GLB asset catalog has been copied into this repository.
-- QuestLayer's fallback explorer SVG, app icon and Aura effects were created for this implementation.
+- Five official Aavegotchi base-template layers from `aavegotchi/aavegotchi-assets`, revision `b302ce569ac7f98a97947ce4e66f63bae85a0c66`, now supply the starter UI and fallback. Original bytes and source hashes are recorded in `public/art/aavegotchi/provenance.json`. Geometry and colors are preserved; composition omits the ETH collateral badge and crops the viewport. Prototype use is recorded against the official developer invitation, not a blanket MIT/CC0 artwork license. Full commercial/catalog/trademark rights remain a release gate.
+- Actual Aavegotchi SDK GLBs are loaded on demand for the local map character and dressing room through a fixed-source bounded proxy; the full catalog is not mirrored. SDK attribution appears in Inventory and the dressing room. See `docs/ASSET-CATALOG.md`.
+- QuestLayer's historical native NFT cover SVGs, app icon and Aura effects were created for this implementation. Historical on-chain cover media are unchanged by the new game appearance previews.
 
 License availability and NFT ownership are distinct checks. Add source-specific permission and attribution before distributing additional external models or artwork.

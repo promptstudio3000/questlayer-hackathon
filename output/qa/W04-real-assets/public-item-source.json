@@ -1,0 +1,47 @@
+{
+  "network": "base",
+  "chainId": 8453,
+  "contract": "0xA99c4B08201F2913Db8D28e71d020c4298F29dBF",
+  "method": "getItemSvg",
+  "block": "53326551",
+  "observedAt": "2026-10-31T10:27:31.383Z",
+  "ownershipClaimed": false,
+  "items": [
+    {
+      "itemId": 85,
+      "bytes": 366,
+      "sha256": "4c693c8bcd6d43675b099e2543caecc749829c9e3d3bfeb7a9a54bdb25fb661c",
+      "ownershipClaimed": false
+    },
+    {
+      "itemId": 384,
+      "bytes": 472,
+      "sha256": "598bcb1841b301af9a2bb6c3488adaa2eb6efc4c01f54ca6f1f84725add100b8",
+      "ownershipClaimed": false
+    },
+    {
+      "itemId": 57,
+      "bytes": 258,
+      "sha256": "3d65db17cf4bf17b4af7f07ae819b6123d33c4f2c0aa6602222ef9d97fff6c34",
+      "ownershipClaimed": false
+    },
+    {
+      "itemId": 84,
+      "bytes": 155,
+      "sha256": "5373ab6a1604ea08fe1ddc75519e0eae1fec3957367b917f2b39894184a7ef48",
+      "ownershipClaimed": false
+    },
+    {
+      "itemId": 58,
+      "bytes": 241,
+      "sha256": "cd1e8ec6d1e860c0fc5942aaf8c22b6455acd35fb697c0a36f62aae4e65a5022",
+      "ownershipClaimed": false
+    },
+    {
+      "itemId": 82,
+      "bytes": 570,
+      "sha256": "f3cc9e778da59b928f9510488e8d1e044cac4eef4c6620d376646e3fe5d03ff4",
+      "ownershipClaimed": false
+    }
+  ]
+}

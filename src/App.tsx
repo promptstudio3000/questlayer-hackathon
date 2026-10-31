@@ -1,5 +1,6 @@
 import type { NearbyExplorer } from "./types";
 import { Character3D } from "./Character3D";
+import { OriginalItemGallery } from "./OriginalItemGallery";
 import { NativeMarketPanel } from "./NativeMarketPanel";
 import type { NativeTradeRequest } from "./types";
 import { AuraClaims } from "./AuraClaims";
@@ -121,6 +122,26 @@ function Badge({
 }
 
 export default function App() {
+  const [map3D, setMap3D] = useState(() => {
+    try {
+      const saved = localStorage.getItem("questlayer.mapAppearance");
+      return saved
+        ? saved === "3d"
+        : !(navigator as Navigator & { connection?: { saveData?: boolean } })
+            .connection?.saveData;
+    } catch {
+      return true;
+    }
+  });
+  const toggleMap3D = () => {
+    const next = !map3D;
+    setMap3D(next);
+    try {
+      localStorage.setItem("questlayer.mapAppearance", next ? "3d" : "2d");
+    } catch {
+      /* A private browsing session can still change the current view. */
+    }
+  };
   const [player, setPlayer] = useState<Player | null>(null),
     [loaded, setLoaded] = useState(false),
     [world, setWorld] = useState<World | null>(null),
@@ -1110,6 +1131,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <GameMap
+        map3D={!!player && map3D}
         sheetExpanded={sheetExpanded}
         panelMode={tab}
         onQuest={() => setSheetExpanded(true)}
@@ -1596,6 +1618,13 @@ export default function App() {
           )}
           {tab === "inventory" && (
             <Inventory
+              onOriginalAppearance={(appearance) =>
+                setPlayer((current) =>
+                  current ? { ...current, appearance } : current,
+                )
+              }
+              map3D={map3D}
+              onMap3D={toggleMap3D}
               characterItems={appearanceItems}
               nativeContent={
                 <>
@@ -2149,6 +2178,9 @@ function Welcome({
   );
 }
 function Inventory({
+  onOriginalAppearance,
+  map3D,
+  onMap3D,
   player,
   characterItems,
   nativeContent,
@@ -2158,6 +2190,9 @@ function Inventory({
   onEvm,
   onSkin,
 }: {
+  onOriginalAppearance: (appearance: Player["appearance"]) => void;
+  map3D: boolean;
+  onMap3D: () => void;
   player: Player;
   characterItems: Item[];
   nativeContent: ReactNode;
@@ -2168,10 +2203,33 @@ function Inventory({
   onSell: (i: Item, p: number) => Promise<boolean>;
 }) {
   const [origin, setOrigin] = useState<any>(null);
+  const [originLoading, setOriginLoading] = useState(false),
+    [originError, setOriginError] = useState("");
   const [show3D, setShow3D] = useState(false);
+  const acceptOrigin = (data: any) => {
+    setOrigin(data);
+    setOriginError("");
+    if (data.status === "verified" && data.appearance)
+      onOriginalAppearance(data.appearance);
+  };
+  const refreshOrigin = async () => {
+    setOriginLoading(true);
+    setOriginError("");
+    try {
+      acceptOrigin(await api("/aavegotchi?refresh=1"));
+    } catch (error) {
+      setOriginError(
+        error instanceof Error
+          ? error.message
+          : "Original inventory is temporarily unavailable.",
+      );
+    } finally {
+      setOriginLoading(false);
+    }
+  };
   useEffect(() => {
     void api("/aavegotchi")
-      .then(setOrigin)
+      .then(acceptOrigin)
       .catch(() => {});
   }, [busy]);
   const [selling, setSelling] = useState<Item | null>(null),
@@ -2211,8 +2269,28 @@ function Inventory({
             <Cube size={20} />
             View in 3D
           </button>
+          <button
+            className="secondary-button view-3d-button"
+            aria-pressed={map3D}
+            onClick={onMap3D}
+          >
+            3D map character: {map3D ? "On" : "Off"}
+          </button>
+          <small className="map-appearance-help">
+            Choose 2D for a lighter map. Your items stay equipped.
+          </small>
         </div>
       </div>
+      <p className="character-art-credit">
+        <a
+          href="https://www.aavegotchi.com/sdk"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Aavegotchi artwork
+        </a>{" "}
+        · QuestLayer Auras
+      </p>
       {nativeContent}
       {show3D && (
         <Character3D
@@ -2241,11 +2319,33 @@ function Inventory({
         {origin?.status === "unavailable" && (
           <p className="fine-print">{origin.error}</p>
         )}
+        {origin?.linked && (
+          <button
+            className="secondary-button"
+            disabled={originLoading || !!busy}
+            onClick={() => void refreshOrigin()}
+          >
+            {originLoading
+              ? "Checking originals…"
+              : "Refresh original inventory"}
+          </button>
+        )}
+        {originError && (
+          <p className="inline-error" role="alert">
+            {originError}
+          </p>
+        )}
+        {origin?.lookUnavailable && (
+          <p className="fine-print">
+            Your selected original could not be verified in this check. Your
+            starter appearance is active.
+          </p>
+        )}
         {origin?.linked && origin.status === "verified" && (
           <>
             <small>
               {origin.count || 0} originals · {origin.wearables?.length || 0}{" "}
-              wearable types · Base
+              original item types · Base
             </small>
             <div className="origin-grid">
               {origin.gotchis?.map((g: any) => (
@@ -2271,9 +2371,24 @@ function Inventory({
                 </button>
               ))}
             </div>
+            <OriginalItemGallery
+              key={origin.verifiedAt}
+              items={origin.wearables || []}
+            />
+            {origin.truncated && (
+              <p className="fine-print">
+                This check covers the first 50 originals. Some items may not be
+                included yet.
+              </p>
+            )}
+            {origin.warnings?.map((warning: string) => (
+              <p className="fine-print" key={warning}>
+                {warning}
+              </p>
+            ))}
             {player.appearance?.originTokenId && (
               <button className="text-button" onClick={() => void onSkin(null)}>
-                Use the original explorer
+                Use starter appearance
               </button>
             )}
           </>
