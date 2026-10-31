@@ -20,6 +20,11 @@ import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
+import { relayerConfiguration } from "./relayer/config.mjs";
+import { loadServiceAccount } from "./relayer/key-transport.mjs";
+import { ManagedAccounts } from "./relayer/accounts.mjs";
+import { Relayer, startRelayWorker } from "./relayer/relay.mjs";
+import { createRelayerRoutes } from "./relayer/routes.mjs";
 import { NativeVaults } from "./native/vaults.mjs";
 import { NativeSocialProfile } from "./native/social-profile.mjs";
 import { resolvePublicFile } from "./static-files.mjs";
@@ -144,6 +149,53 @@ const nativeRewards =
         loadAwardSigner(process.env.REWARD_ATTESTOR_PATH),
       )
     : null;
+// Invisible player accounts and sponsored gas. Without the service keys the
+// routes answer "disabled" and play continues on the practice ledger.
+const relayConfig = relayerConfiguration(process.env);
+const factoryService = relayConfig.accountsEnabled
+  ? await loadServiceAccount(provider, relayConfig.factoryKeyPath, {
+      expectAccountId: relayConfig.factoryAccount,
+    })
+  : null;
+const managedAccounts = relayConfig.factoryAccount
+  ? new ManagedAccounts(db, provider, factoryService?.account ?? null, {
+      factoryId: relayConfig.factoryAccount,
+      fundYocto: relayConfig.fundYocto,
+      topupCapYocto: relayConfig.topupCapYocto,
+    })
+  : null;
+const relayer = managedAccounts
+  ? new Relayer(
+      db,
+      provider,
+      relayConfig.enabled
+        ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
+        : null,
+      {
+        accounts: managedAccounts,
+        contracts: {
+          collectibles: nativeCollectibles.contractId,
+          market: marketContractId,
+          rewards:
+            rewardsConfig?.contractId ||
+            JSON.parse(
+              readFileSync(
+                resolve(APP_ROOT, "public/native-rewards-testnet.json"),
+                "utf8",
+              ),
+            ).contractId,
+        },
+        blockTtl: relayConfig.blockTtl,
+        maxJobsPerDay: relayConfig.maxJobsPerDay,
+        maxGas: relayConfig.maxGas,
+        maxBuyDeposit: relayConfig.maxBuyDeposit,
+      },
+    )
+  : null;
+const relayerRoutes = createRelayerRoutes({
+  relayer,
+  accounts: managedAccounts,
+});
 const nativeVaults = rewardsConfig?.factory
   ? new NativeVaults(db, provider, rewardsConfig)
   : null;
@@ -362,6 +414,7 @@ async function api(req, res, url) {
       nativeRewards: nativeRewards
         ? nativeRewards.workerStatus()
         : { status: "not-configured" },
+      relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
       now: Date.now(),
     });
   if (path === "/api/quest-templates" && method === "GET")
@@ -682,6 +735,10 @@ async function api(req, res, url) {
   if (path === "/api/native/collection" && method === "GET")
     return respond(res, await nativeCollectibles.collection());
   const player = auth(req);
+  if (
+    await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
   if (path === "/api/adventure-results" && method === "GET") {
     return respond(
       res,
@@ -1948,6 +2005,10 @@ const rewardWorker =
         keyPath: process.env.REWARD_WORKER_KEY_PATH,
       })
     : null;
+const relayWorker =
+  !backgroundWorkersDisabled && relayer
+    ? startRelayWorker(relayer, { intervalMs: 15000 })
+    : null;
 let nextMediaPrune = 0;
 const maintenance = setInterval(() => {
   if (backgroundWorkersDisabled) return;
@@ -1981,6 +2042,7 @@ async function close() {
   clearInterval(maintenance);
   await worldPlanner?.stop();
   await rewardWorker?.stop();
+  await relayWorker?.stop?.();
   for (const r of listeners) r.end();
   server.close(() => {
     db.close();
