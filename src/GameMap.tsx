@@ -270,7 +270,7 @@ export function GameMap(props: Props) {
     labels.current = [];
     for (const z of props.world.zones) {
       const node = document.createElement("button");
-      node.className = `zone-map-pin tier-${z.tier}`;
+      node.className = `zone-map-pin tier-${z.tier}${props.overview ? " map-overview-pin" : ""}${props.globe ? " hidden" : ""}`;
       node.title = z.name;
       node.setAttribute("aria-label", z.name);
       node.innerHTML = ghostSvg(z.color);
@@ -284,7 +284,7 @@ export function GameMap(props: Props) {
           .addTo(m),
       );
     }
-  }, [props.world, ready]);
+  }, [props.world, ready, props.overview, props.globe]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
@@ -382,12 +382,19 @@ export function GameMap(props: Props) {
   useEffect(() => {
     const m = map.current;
     if (!m || !ready || !props.world) return;
+    avatar.current
+      ?.getElement()
+      .classList.toggle("map-overview-player", props.overview);
     if (props.overview) {
       const b = new maplibregl.LngLatBounds();
       for (const z of props.world.zones)
         for (const p of z.geometry?.coordinates[0] || [[z.lng, z.lat]])
           b.extend(p as [number, number]);
-      if (!b.isEmpty())
+      if (!b.isEmpty()) {
+        const dx = (b.getEast() - b.getWest()) * 0.08,
+          dy = (b.getNorth() - b.getSouth()) * 0.08;
+        b.extend([b.getWest() - dx, b.getSouth() - dy]);
+        b.extend([b.getEast() + dx, b.getNorth() + dy]);
         m.fitBounds(b, {
           padding: phoneLayout()
             ? (() => {
@@ -397,25 +404,26 @@ export function GameMap(props: Props) {
                     ?.getBoundingClientRect();
                 return window.innerWidth >= 760
                   ? {
-                      top: 100,
+                      top: 180,
                       bottom: 84,
                       left: 130,
                       right: panel ? box.right - panel.left + 30 : 35,
                     }
                   : {
-                      top: 100,
+                      top: 180,
                       bottom: panel ? box.bottom - panel.top + 35 : 100,
                       left: 30,
                       right: 30,
                     };
               })()
-            : { top: 110, bottom: 100, left: 450, right: 55 },
+            : { top: 180, bottom: 100, left: 450, right: 55 },
           pitch: 0,
           bearing: 0,
           duration: matchMedia("(prefers-reduced-motion: reduce)").matches
             ? 0
             : 650,
         });
+      }
     } else if (props.focusZone && !props.follow)
       m.easeTo({
         center: [props.focusZone.lng, props.focusZone.lat],

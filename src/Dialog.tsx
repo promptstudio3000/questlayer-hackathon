@@ -1,10 +1,12 @@
 import { useEffect, useRef, type ReactNode } from "react";
 export function Dialog({
   label,
+  open = true,
   onClose,
   children,
 }: {
   label: string;
+  open?: boolean;
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -12,12 +14,16 @@ export function Dialog({
   useEffect(() => {
     const d = ref.current;
     const previous = document.activeElement as HTMLElement | null;
-    if (d && !d.open) d.showModal();
     return () => {
       d?.close();
       previous?.focus();
     };
   }, []);
+  useEffect(() => {
+    const d = ref.current;
+    if (open && !d?.open) d?.showModal();
+    else if (!open && d?.open) d.close();
+  }, [open]);
   return (
     <dialog
       ref={ref}

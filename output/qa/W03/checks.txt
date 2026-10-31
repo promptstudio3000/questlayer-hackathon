@@ -1,0 +1,65 @@
+
+> questlayer@0.1.0 check
+> npm test && npm run build
+
+
+> questlayer@0.1.0 test
+> node --test tests/*.test.mjs
+
+✔ Aavegotchi inventory decodes the canonical item ID before the quantity (1.562041ms)
+✔ 365 city manifests keep six distinct sectors and at least 250m of polygon separation (2005.384083ms)
+✔ city selection is deterministic but rotates across dates (7.951125ms)
+✔ physical mode requires the canonical polygon as well as target proximity (113.993958ms)
+✔ ordered walking checkpoints cannot be skipped replayed or completed from one place (101.093708ms)
+✔ exhausted Aura supply is visible and never mints beyond edition caps (124.31925ms)
+✔ city windows include four all-day zones one three-hour zone and one one-hour zone (90.704ms)
+✔ yield uses two conserved buckets and idempotent receipts (13.667084ms)
+✔ simultaneous activation shares a single world and one reserved coin budget (481.777625ms)
+✔ shared coin pays one player once and cannot be farmed by retries (176.852333ms)
+✔ expired coins cannot be collected and unclaimed backing rolls over once (170.60525ms)
+✔ a solo player can complete a free quest and mint one bounded Aura (127.286625ms)
+✔ tier access matures, withdrawals remove it, decreases apply immediately (1.998708ms)
+✔ a funded quest has one GOLD payout while everyone can still earn personal XP (142.727333ms)
+✔ unstaking preserves retained yield and withdrawal is redeemable once (3.60425ms)
+✔ yield allocation before contribution change cannot be reassigned retroactively (1.955625ms)
+✔ market sale is atomic, conserves balances and transfers equipment rights (172.932875ms)
+✔ cancelled listing cannot be filled or revive after relisting (127.358458ms)
+✔ invalid monetary actions do not change wallet or treasury (1.727709ms)
+✔ failed transaction rolls back all writes (2.412ms)
+✔ physical GPS validation rejects stale, inaccurate and distant evidence (0.250625ms)
+✔ local world rollover handles 23-hour and 25-hour days (212.562958ms)
+✔ city snapshots share a fixed public center and never record the first visitor GPS (163.723625ms)
+✔ forwarded addresses cannot bypass the client limit from an untrusted connection (0.73275ms)
+✔ the trusted local proxy separates clients and ignores forged address prefixes (8.855625ms)
+✔ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (1729.344125ms)
+✔ native identity validates account syntax and distinguishes RPC failures (1.959875ms)
+✔ NEAR sign-in verifies real signatures, restores one explorer, isolates purposes and prevents replay (1648.468083ms)
+✔ identity refuses a mainnet RPC even when its access-key answer would be valid (0.473292ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2956.186917
+
+> questlayer@0.1.0 build
+> tsc -b && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 5069 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.69 kB │ gzip:   0.42 kB
+dist/assets/maplibre-gl-worker-Br3j0JGE.js    518.98 kB
+dist/assets/index-qsP09H2z.css                119.49 kB │ gzip:  21.55 kB
+dist/assets/ccip-CJNGyjkp.js                    0.08 kB │ gzip:   0.08 kB
+dist/assets/utils-Bpv4vmSW.js                   2.19 kB │ gzip:   0.97 kB
+dist/assets/secp256k1-D5t3X72k.js              26.34 kB │ gzip:  10.21 kB
+dist/assets/build-Cnc03Mu0.js                  58.76 kB │ gzip:  15.02 kB
+dist/assets/_esm-RCDptXq7.js                  170.66 kB │ gzip:  49.01 kB
+dist/assets/index-SmdsFGLg.js               1,472.48 kB │ gzip: 410.61 kB
+
+✓ built in 717ms

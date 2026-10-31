@@ -138,6 +138,28 @@ export default function App() {
     xp: number;
     reward: number;
   } | null>(null);
+  const nearConnector = useRef<
+    import("@hot-labs/near-connect").NearConnector | null
+  >(null);
+  const [walletChoices, setWalletChoices] = useState<
+    { id: string; name: string; icon: string; website: string }[] | null
+  >(null);
+  const walletChoice = useRef<{
+    resolve: (id: string) => void;
+    reject: (error: Error) => void;
+  } | null>(null);
+  function chooseWallet(walletId: string | null) {
+    const pending = walletChoice.current;
+    walletChoice.current = null;
+    setWalletChoices(null);
+    if (walletId) pending?.resolve(walletId);
+    else
+      pending?.reject(
+        Object.assign(new Error("Wallet connection cancelled."), {
+          code: "WALLET_CANCELLED",
+        }),
+      );
+  }
   const nextWorldRefresh = useRef(0),
     collecting = useRef(new Set<string>()),
     gps = useRef<number | null>(null),
@@ -154,6 +176,13 @@ export default function App() {
     try {
       return await fn();
     } catch (e) {
+      if (
+        e &&
+        typeof e === "object" &&
+        "code" in e &&
+        e.code === "WALLET_CANCELLED"
+      )
+        return undefined;
       notify(e instanceof Error ? e.message : "Something went wrong.", true);
     } finally {
       setBusy("");
@@ -453,19 +482,56 @@ export default function App() {
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
     );
   }
-  async function connectNear() {
+  async function connectNear(
+    options: { signIn?: boolean; name?: string } = {},
+  ) {
+    if (options.signIn) {
+      options.name = options.name?.trim() || "Explorer";
+      if (options.name.length < 2 || options.name.length > 24) {
+        notify("Your name must be 2–24 characters.", true);
+        return;
+      }
+    }
     await action("near", async () => {
-      const { NearConnector } = await import("@hot-labs/near-connect");
-      const connector = new NearConnector({
-        network: "testnet",
-        features: { testnet: true, signMessage: true },
-        footerBranding: {
-          heading: "QuestLayer · NEAR testnet",
-          link: "https://near.org",
-          linkText: "NEAR Protocol",
-        },
+      if (options.signIn)
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+      if (!nearConnector.current) {
+        const { NearConnector } = await import("@hot-labs/near-connect");
+        nearConnector.current = new NearConnector({
+          network: "testnet",
+          autoConnect: false,
+          features: {
+            testnet: true,
+            signMessage: true,
+            signInWithoutAddKey: true,
+          },
+          footerBranding: {
+            heading: "QuestLayer · NEAR testnet",
+            link: "https://near.org",
+            linkText: "NEAR Protocol",
+          },
+        });
+      }
+      const connector = nearConnector.current;
+      await connector.whenManifestLoaded;
+      const choices = connector.availableWallets
+        .map((w) => w.manifest)
+        .filter((w) => !w.debug && !w.id.includes("cli"))
+        .map(({ id, name, icon, website }) => ({ id, name, icon, website }));
+      if (!choices.length)
+        throw Error(
+          "No supported testnet wallet is available in this browser. You can still enter the demo.",
+        );
+      const walletId = await new Promise<string>((resolve, reject) => {
+        walletChoice.current = { resolve, reject };
+        setWalletChoices(choices);
       });
-      const wallet = await connector.connect();
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+      const wallet = await connector.connect({ walletId });
       const accounts = await wallet.getAccounts();
       if (!accounts[0])
         throw new Error("The wallet did not return an account.");
@@ -474,7 +540,10 @@ export default function App() {
         nonce: string;
         message: string;
         recipient: string;
-      }>("/wallet/challenge", { accountId: accounts[0].accountId });
+      }>(options.signIn ? "/auth/near/challenge" : "/wallet/challenge", {
+        accountId: accounts[0].accountId,
+        name: options.name,
+      });
       const signed = await wallet.signMessage({
         message: c.message,
         recipient: c.recipient,
@@ -482,12 +551,21 @@ export default function App() {
         network: "testnet",
         signerId: accounts[0].accountId,
       });
-      const r = await api<{ player: Player }>("/wallet/verify", {
-        challengeId: c.challengeId,
-        ...signed,
-      });
+      const r = await api<{ player: Player; returning?: boolean }>(
+        options.signIn ? "/auth/near/verify" : "/wallet/verify",
+        {
+          challengeId: c.challengeId,
+          ...signed,
+        },
+      );
       setPlayer(r.player);
-      notify("NEAR account verified. Demo GOLD remains separate.");
+      notify(
+        options.signIn
+          ? r.returning
+            ? "Welcome back. Your NEAR wallet restored your explorer."
+            : "Your NEAR explorer is ready. Demo GOLD remains separate."
+          : "NEAR account verified. Demo GOLD remains separate.",
+      );
     });
   }
   async function connectEvm() {
@@ -1204,7 +1282,11 @@ export default function App() {
               aria-label="Globe"
               title="Globe"
               className={globe ? "active" : ""}
-              onClick={() => setGlobe((v) => !v)}
+              onClick={() => {
+                setGlobe((v) => !v);
+                setOverview(false);
+                setFollow(true);
+              }}
             >
               <GlobeHemisphereWest size={23} />
             </button>
@@ -1283,8 +1365,61 @@ export default function App() {
           {toast.text}
         </div>
       )}
+      {!player && busy === "near" && (
+        <div className="wallet-connecting" role="status">
+          <Wallet size={24} />
+          <strong>Connecting your NEAR explorer…</strong>
+          <span>Waiting for the wallet and NEAR verification.</span>
+        </div>
+      )}
+      {walletChoices && (
+        <Dialog label="Choose a NEAR wallet" onClose={() => chooseWallet(null)}>
+          <div className="wallet-select">
+            <div className="panel-heading">
+              <h2>Choose a NEAR wallet</h2>
+              <button
+                className="icon-button"
+                aria-label="Cancel wallet connection"
+                onClick={() => chooseWallet(null)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p>
+              Connect on NEAR testnet. Your wallet signs a message to create or
+              restore your explorer.
+            </p>
+            <div className="wallet-options">
+              {walletChoices.map((w) => (
+                <button key={w.id} onClick={() => chooseWallet(w.id)}>
+                  <img src={w.icon} alt="" />
+                  <span>
+                    <strong>{w.name}</strong>
+                    <small>
+                      {w.website.replace(/^https?:\/\//, "").split("/")[0]}
+                    </small>
+                  </span>
+                  <ArrowRight size={20} />
+                </button>
+              ))}
+            </div>
+            <p className="fine-print">
+              Your keys stay in your wallet. QuestLayer never asks for your
+              recovery phrase.
+            </p>
+            <button
+              className="secondary-button"
+              onClick={() => chooseWallet(null)}
+            >
+              Back
+            </button>
+          </div>
+        </Dialog>
+      )}
       {loaded && !player && (
         <Welcome
+          error={toast?.error ? toast.text : undefined}
+          onNear={(name) => connectNear({ signIn: true, name })}
           busy={busy}
           action={action}
           onPlayer={(p) => {
@@ -1296,6 +1431,11 @@ export default function App() {
       {discovery && player && (
         <Dialog label="Quest reward" onClose={() => setDiscovery(null)}>
           <div className="discovery-result">
+            {toast?.error && (
+              <p className="inline-error" role="alert">
+                {toast.text}
+              </p>
+            )}
             <Badge>REWARD COLLECTED</Badge>
             <AuraArt color={discovery.item.color} slot={discovery.item.slot} />
             <h2>{discovery.item.name}</h2>
@@ -1348,10 +1488,14 @@ export default function App() {
 
 function Welcome({
   busy,
+  error,
+  onNear,
   action,
   onPlayer,
 }: {
   busy: string;
+  error?: string;
+  onNear: (name: string) => Promise<void>;
   action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
   onPlayer: (p: Player) => void;
 }) {
@@ -1383,7 +1527,11 @@ function Welcome({
     });
   }
   return (
-    <div className="welcome-scrim">
+    <Dialog
+      label="Welcome to QuestLayer"
+      open={busy !== "near"}
+      onClose={() => {}}
+    >
       <section className="welcome-card">
         <div className="eyebrow">WELCOME TO QUESTLAYER</div>
         <div className="welcome-art">
@@ -1395,7 +1543,7 @@ function Welcome({
           <span className="floating-coin">◆</span>
           <Leaf className="welcome-leaf" weight="duotone" />
         </div>
-        <h1>
+        <h1 tabIndex={-1} autoFocus>
           Your city.
           <br />
           <em>Your next quest.</em>
@@ -1405,7 +1553,18 @@ function Welcome({
           <br />
           Find an Aura and make it yours.
         </p>
-        <form onSubmit={start}>
+        {error && (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        )}
+        <form
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onNear(name || "Explorer");
+          }}
+        >
           <label htmlFor="nickname">WHAT SHOULD WE CALL YOU?</label>
           <input
             id="nickname"
@@ -1416,7 +1575,22 @@ function Welcome({
             onChange={(e) => setName(e.target.value)}
             autoComplete="nickname"
           />
-          <button className="primary-button" disabled={!!busy} type="submit">
+          <button className="primary-button" type="submit" disabled={!!busy}>
+            <Wallet size={20} />
+            {busy === "near"
+              ? "Waiting for your wallet…"
+              : "Continue with NEAR"}
+          </button>
+          <p className="identity-note">
+            NEAR testnet · sign a message, not a payment. Returning wallets
+            restore the same explorer.
+          </p>
+          <button
+            className="secondary-button"
+            disabled={!!busy}
+            type="button"
+            onClick={() => void start()}
+          >
             {busy === "welcome"
               ? "Preparing your adventure…"
               : "Enter the demo world"}
@@ -1439,13 +1613,13 @@ function Welcome({
         <div className="welcome-note">
           <ShieldCheck size={17} />
           <span>
-            No deposit. No recovery phrase.
+            No deposit. Your wallet keeps your keys.
             <br />
             Demo GOLD is not real NEAR.
           </span>
         </div>
       </section>
-    </div>
+    </Dialog>
   );
 }
 function Inventory({

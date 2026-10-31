@@ -20,7 +20,11 @@ import {
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
 } from "@simplewebauthn/server";
-import { verifyMessage } from "near-api-js/nep413";
+import {
+  nearAccountId,
+  verifyNearIdentity,
+  assertTestnetRpc,
+} from "./identity/near.mjs";
 import { JsonRpcProvider } from "near-api-js";
 import {
   openDatabase,
@@ -99,6 +103,17 @@ function readChallenge(challengeId) {
     .get(challengeId, Date.now());
   assert(c, "The sign-in challenge has expired.", 401);
   return JSON.parse(c.nonce);
+}
+function consumeChallenge(challengeId) {
+  assert(
+    db
+      .prepare(
+        "UPDATE auth_challenges SET used=1 WHERE id=? AND used=0 AND expires_at>?",
+      )
+      .run(challengeId, Date.now()).changes === 1,
+    "This challenge has expired or already been used.",
+    401,
+  );
 }
 async function body(req) {
   let size = 0;
@@ -220,6 +235,7 @@ async function api(req, res, url) {
       zoneSplit: 50,
       chainReady: false,
       passkeyKind: "demo-identity",
+      nearWalletSignIn: true,
       contracts: {
         game: process.env.NEAR_GAME_CONTRACT || null,
         vault: process.env.NEAR_VAULT_CONTRACT || null,
@@ -300,13 +316,7 @@ async function api(req, res, url) {
         401,
       );
       player = atomic(db, () => {
-        assert(
-          db
-            .prepare("UPDATE auth_challenges SET used=1 WHERE id=? AND used=0")
-            .run(input.challengeId).changes === 1,
-          "This challenge has already been used.",
-          401,
-        );
+        consumeChallenge(input.challengeId);
         const p = createPlayer(db, c.name);
         const credential = v.registrationInfo.credential;
         db.prepare("INSERT INTO passkeys VALUES (?,?,?,?,?)").run(
@@ -338,13 +348,7 @@ async function api(req, res, url) {
       });
       assert(v.verified, "Passkey verification failed.", 401);
       atomic(db, () => {
-        assert(
-          db
-            .prepare("UPDATE auth_challenges SET used=1 WHERE id=? AND used=0")
-            .run(input.challengeId).changes === 1,
-          "This challenge has already been used.",
-          401,
-        );
+        consumeChallenge(input.challengeId);
         db.prepare("UPDATE passkeys SET counter=? WHERE id=?").run(
           v.authenticationInfo.newCounter,
           saved.id,
@@ -355,6 +359,72 @@ async function api(req, res, url) {
     return respond(res, { player: profile(player) }, 200, {
       "Set-Cookie": cookie(newSession(player)),
     });
+  }
+  if (path === "/api/auth/near/challenge" && method === "POST") {
+    const input = await body(req),
+      accountId = nearAccountId(input.accountId),
+      name = String(input.name || "Explorer").trim();
+    assert(
+      name.length >= 2 && name.length <= 24,
+      "Your name must be 2–24 characters.",
+    );
+    const address = clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      key = `near-auth:${address}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 30,
+      "Please wait before starting another wallet sign-in.",
+      429,
+    );
+    const message = `Sign in to QuestLayer as ${accountId} on NEAR testnet. Authentication only. No transaction or funds transfer.`;
+    const c = challenge("near_signin", {
+      purpose: "near-sign-in",
+      network: "testnet",
+      accountId,
+      name,
+      message,
+      recipient: origin,
+    });
+    return respond(res, {
+      challengeId: c.id,
+      nonce: c.nonce,
+      message,
+      recipient: origin,
+      network: "testnet",
+    });
+  }
+  if (path === "/api/auth/near/verify" && method === "POST") {
+    const input = await body(req),
+      c = readChallenge(input.challengeId);
+    assert(
+      c.purpose === "near-sign-in",
+      "This challenge cannot sign in an explorer.",
+      401,
+    );
+    await verifyNearIdentity(c, input, provider);
+    const result = atomic(db, () => {
+      consumeChallenge(input.challengeId);
+      const existing = db
+        .prepare("SELECT player_id FROM wallet_links WHERE account_id=?")
+        .get(c.accountId);
+      const player = existing?.player_id || createPlayer(db, c.name);
+      db.prepare(
+        "INSERT INTO wallet_links(account_id,player_id,verified_at) VALUES(?,?,?) ON CONFLICT(account_id) DO UPDATE SET verified_at=excluded.verified_at",
+      ).run(c.accountId, player, Date.now());
+      return { player, token: newSession(player), returning: !!existing };
+    });
+    return respond(
+      res,
+      {
+        player: profile(result.player),
+        returning: result.returning,
+        identity: "near-wallet",
+        network: "testnet",
+      },
+      200,
+      { "Set-Cookie": cookie(result.token) },
+    );
   }
   if (path === "/api/dashboard") return respond(res, game.dashboard(db));
   if (path === "/api/market")
@@ -583,13 +653,11 @@ async function api(req, res, url) {
   }
   if (path === "/api/wallet/challenge" && method === "POST") {
     const i = await body(req);
-    assert(
-      typeof i.accountId === "string" &&
-        /^[a-z0-9._-]{2,64}$/.test(i.accountId),
-      "Invalid NEAR account.",
-    );
+    nearAccountId(i.accountId);
     const message = `Linking a NEAR account to explorer ${player}. Network: testnet. No funds will be transferred.`;
     const c = challenge("near", {
+      purpose: "near-link",
+      network: "testnet",
       player,
       accountId: i.accountId,
       message,
@@ -610,17 +678,12 @@ async function api(req, res, url) {
       "The challenge belongs to another explorer.",
       403,
     );
-    await verifyMessage({
-      signerAccountId: c.accountId,
-      signerPublicKey: i.publicKey,
-      payload: {
-        message: c.message,
-        recipient: c.recipient,
-        nonce: new Uint8Array(Buffer.from(c.nonce, "base64")),
-      },
-      signature: new Uint8Array(Buffer.from(i.signature, "base64")),
-      provider,
-    });
+    assert(
+      c.purpose === "near-link",
+      "This challenge cannot link a wallet.",
+      401,
+    );
+    await verifyNearIdentity(c, i, provider);
     atomic(db, () => {
       const old = db
         .prepare("SELECT player_id FROM wallet_links WHERE account_id=?")
@@ -630,13 +693,7 @@ async function api(req, res, url) {
         "This account is linked to another explorer.",
         409,
       );
-      assert(
-        db
-          .prepare("UPDATE auth_challenges SET used=1 WHERE id=? AND used=0")
-          .run(i.challengeId).changes === 1,
-        "This challenge has already been used.",
-        401,
-      );
+      consumeChallenge(i.challengeId);
       db.prepare("INSERT OR REPLACE INTO wallet_links VALUES (?,?,?)").run(
         c.accountId,
         player,
@@ -646,6 +703,7 @@ async function api(req, res, url) {
     return respond(res, { player: profile(player) });
   }
   if (path === "/api/wallet/balance") {
+    await assertTestnetRpc(provider);
     const linked = db
       .prepare("SELECT account_id FROM wallet_links WHERE player_id=?")
       .get(player);
@@ -696,13 +754,7 @@ async function api(req, res, url) {
         "The address is linked to another explorer.",
         409,
       );
-      assert(
-        db
-          .prepare("UPDATE auth_challenges SET used=1 WHERE id=? AND used=0")
-          .run(i.challengeId).changes === 1,
-        "This challenge has already been used.",
-        401,
-      );
+      consumeChallenge(i.challengeId);
       db.prepare("INSERT OR IGNORE INTO external_links VALUES (?,?,?,?)").run(
         c.address,
         player,

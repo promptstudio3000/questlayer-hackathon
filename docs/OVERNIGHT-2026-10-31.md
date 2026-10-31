@@ -37,7 +37,7 @@ Work in progress. This is a factual implementation log, not a declaration that V
 
 ## Deployment
 
-The previous public release was `20261031T001105Z`. A verified replacement release and backup will be appended after deployment. Public URL: https://questlayer.promptstudio3000.com/ . Development viewport harnesses, local data and credentials are not packaged.
+City alpha deployed at release `20261031T012257Z`, source commit `4043f52`, with backup `/opt/ps3000/apps/auratrail/backups/20261031T012257Z`. Public health and browser rendering passed. The first deployment preserved all existing demo state. Public URL: https://questlayer.promptstudio3000.com/ . Development viewport harnesses, local data and credentials are not packaged.
 
 ## Remaining release gates and limits
 
@@ -48,3 +48,17 @@ The previous public release was `20261031T001105Z`. A verified replacement relea
 - The interface has not passed the full typography/contrast, offline/result-recovery or five-newcomer acceptance protocol. Some older secondary surfaces still require redesign. Actual Safari/iOS, Chrome/Android, soft-keyboard, enlarged-text and native-wallet device checks remain open.
 - Discovery receipt recovery across a crash, full native multi-slot equipment, the verified 3D catalog, creator publication XP, paid access/follows, Intents settlement and durable media/moderation remain open.
 - No complete W00–W14 milestone is labelled passed. Implementation continues from the evidence in this log and `docs/roadmap.json`.
+
+## Native identity increment
+
+- Added primary NEAR testnet sign-in using NEP-413. An existing linked wallet restores its same explorer and progress. A new valid wallet creates one explorer only after ownership verification. No game custody key or recovery phrase is requested.
+- The backend verifies the currently registered **FullAccess** public key through RPC and checks the challenge recipient, account, network, purpose, expiry and one-time consumption. Linking and signing in use distinct purposes. Expiry is rechecked after asynchronous RPC verification.
+- Added a game-styled accessible wallet picker with explicit cancellation, a native welcome dialog, visible form errors and preserved nickname on cancellation. The wallet picker does not expose developer manifest/debug forms.
+- 29 application tests pass. New cases use real cryptographic signatures with a local RPC fixture and cover recovery, no duplicate starter grant, wrong recipient/account, function-call keys, link-versus-login isolation, replay races and expiry during a delayed RPC response.
+- A separate live test used the project's existing developer testnet account against the real NEAR RPC and the local running application. The same explorer was restored twice, a real session was verified and no chain transaction was submitted. Only public identity and a signature went to the server. Evidence: `output/qa/W03/live-near-identity.json`; no credential or session token is in that file.
+- The browser exercised opening the wallet choices, cancellation, nickname retention and inline invalid-name feedback. This is not yet a signed mobile-wallet/browser round trip. Native passkey account creation, on-chain profile publication and hardware/browser interoperability remain open.
+- Refined overview camera bounds and smaller overview markers so the northern site and current character do not dominate/crop the city view. Public rollout of this increment follows its final UI checks.
+
+- The RPC reports its actual network before identity/balance verification. A mainnet endpoint or syncing node is rejected instead of being labelled testnet. Each login still reads current access-key ownership. The live test was repeated after this guard.
+- Wallet choices require message signing and sign-in without adding an application access key. Both identity SDK versions are pinned to the versions tested in this increment.
+- Phone form checks include a 20px form-text stress setting and a reduced 390×430 layout. The input and primary action remain reachable by scrolling. These are explicit browser stress cases, not a physical soft-keyboard or OS text-setting result.

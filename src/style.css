@@ -3302,3 +3302,199 @@ select {
 .quest-detail {
   scroll-margin-top: 64px;
 }
+
+.zone-map-pin.map-overview-pin {
+  width: 48px;
+  height: 48px;
+  padding: 8px;
+}
+.zone-map-pin.map-overview-pin > svg {
+  width: 32px;
+  height: 32px;
+}
+.player-marker.map-overview-player {
+  width: 32px;
+  height: 42px;
+}
+.player-marker.map-overview-player > svg,
+.player-marker.map-overview-player > .origin-player {
+  width: 32px;
+  height: 37px;
+}
+.map-overview-player .you-label {
+  display: none;
+}
+.map-overview-player .marker-aura {
+  height: 8px;
+  left: 1px;
+  right: 1px;
+}
+.map-overview-player .marker-aura.bottom {
+  bottom: 5px;
+}
+
+.welcome-card {
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}
+.welcome-card form > .primary-button,
+.welcome-card form > .secondary-button {
+  width: 100%;
+  min-height: 48px;
+}
+.identity-note {
+  font-size: 12px !important;
+  line-height: 1.5;
+  color: #665174;
+  margin: 12px 0;
+}
+.welcome-card input {
+  font-size: 16px;
+  min-height: 48px;
+}
+.welcome-card label {
+  font-size: 12px;
+}
+.welcome-card > p {
+  font-size: 16px;
+}
+.welcome-note span {
+  font-size: 12px;
+}
+
+.game-dialog:has(.welcome-card) {
+  width: min(420px, calc(100vw - 24px));
+  border-radius: 24px;
+  overflow: auto;
+}
+.game-dialog .welcome-card {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-shadow: none;
+}
+.welcome-card h1:focus {
+  outline: none;
+}
+
+.inline-error {
+  padding: 12px;
+  background: #fff0f0;
+  border: 1px solid #d78998;
+  border-radius: 12px;
+  color: #842746 !important;
+  font-size: 14px !important;
+  line-height: 1.5;
+}
+.wallet-connecting {
+  position: fixed;
+  z-index: 45;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100vw - 32px));
+  padding: 24px;
+  background: #fdfbf7;
+  border: 1px solid #d9cee6;
+  border-radius: 20px;
+  box-shadow: 0 16px 80px #441c6c33;
+  display: grid;
+  gap: 12px;
+  text-align: center;
+  color: #441c6c;
+  justify-items: center;
+}
+.wallet-connecting span {
+  font-size: 14px;
+}
+
+.wallet-select {
+  padding: 24px;
+  width: min(420px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  background: #fdfbf7;
+  color: #441c6c;
+  border-radius: 22px;
+}
+.wallet-select h2 {
+  font-size: 22px;
+  line-height: 1.2;
+}
+.wallet-select > p {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 16px 0;
+}
+.wallet-select .fine-print {
+  font-size: 12px;
+}
+.wallet-select > .secondary-button {
+  width: 100%;
+}
+.wallet-options {
+  display: grid;
+  gap: 8px;
+}
+.wallet-options > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d6c8e4;
+  background: #fff;
+  border-radius: 12px;
+  text-align: left;
+  color: #441c6c;
+}
+.wallet-options > button:hover {
+  border-color: #672eeb;
+  background: #f2ebff;
+}
+.wallet-options img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.wallet-options span {
+  flex: 1;
+}
+.wallet-options strong,
+.wallet-options small {
+  display: block;
+}
+.wallet-options strong {
+  font-size: 16px;
+}
+.wallet-options small {
+  font-size: 12px;
+  color: #665174;
+}
+.game-dialog:has(.welcome-card),
+.game-dialog:has(.wallet-select) {
+  padding: 0;
+  width: min(420px, calc(100vw - 24px));
+}
+.game-dialog .wallet-select {
+  width: 100%;
+}
+
+.game-dialog .wallet-select {
+  max-height: none;
+  overflow: visible;
+}
+
+.welcome-card form > .primary-button,
+.welcome-card form > .secondary-button,
+.welcome-card > .passkey-button,
+.wallet-select > .secondary-button {
+  font-size: 16px;
+  line-height: 1.3;
+}
+.welcome-card form > .primary-button {
+  justify-content: center;
+  gap: 12px;
+}

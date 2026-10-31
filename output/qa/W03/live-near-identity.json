@@ -1,0 +1,12 @@
+{
+  "verifiedAt": "2026-10-31T01:57:01.008Z",
+  "network": "testnet",
+  "api": "http://127.0.0.1:8787",
+  "account": "auratrail-dev-20261030.testnet",
+  "method": "NEP-413 with live RPC FullAccess verification",
+  "sameExplorerRestored": true,
+  "noDuplicateDemoGrant": true,
+  "sessionVerified": true,
+  "chainTransactionSubmitted": false,
+  "playerPrivateKeysOnServer": false
+}
