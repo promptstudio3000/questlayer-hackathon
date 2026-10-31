@@ -1,3 +1,4 @@
+import { nativeMapProjection } from "./map-projection.mjs";
 import { describeNativeQuest } from "../quest-templates.mjs";
 import { NativeContractReader } from "./reader.mjs";
 import {
@@ -382,7 +383,7 @@ export class NativeRewards extends NativeContractReader {
             }))
             .filter((p) => !claimed.has(p.index) && p.distance <= 1000)
             .sort((a, b) => a.distance - b.distance)
-            .slice(0, 20)
+            .slice(0, 128)
         : [];
     return {
       status: m ? "ready" : "preparing",
@@ -406,6 +407,8 @@ export class NativeRewards extends NativeContractReader {
             id: m.id,
             day: m.day,
             endsAt: m.endsAt,
+            startsAt: m.startsAt,
+            map: nativeMapProjection(this.db, m),
             hash: m.hash,
             coinCount: m.coins.length,
             claimsAccepted:

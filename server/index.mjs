@@ -1,3 +1,4 @@
+import { NativeProgression } from "./native/progression.mjs";
 import { updatePresence, nearbyPresence } from "./presence.mjs";
 import { GotchiModels } from "./gotchi-models.mjs";
 import {
@@ -45,6 +46,7 @@ import {
   assertTestnetRpc,
 } from "./identity/near.mjs";
 import { createNearProvider } from "./near-provider.mjs";
+import { IdentitySessions } from "./identity/sessions.mjs";
 import {
   openDatabase,
   atomic,
@@ -72,6 +74,7 @@ const port = Number(process.env.PORT || 8787),
   rpID = new URL(origin).hostname;
 const rpc = process.env.NEAR_RPC_URL || "https://test.rpc.fastnear.com";
 const provider = createNearProvider(rpc);
+const identitySessions = new IdentitySessions(db, { origin, provider });
 const deploymentManifestPath = existsSync(
   resolve(APP_ROOT, "public/testnet-deployment.json"),
 )
@@ -133,6 +136,22 @@ const nativeVaults = rewardsConfig?.factory
   : null;
 if (nativeRewards) nativeRewards.vaultRegistry = nativeVaults;
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
+const claimsManifestPath = [
+  resolve(APP_ROOT, "public/native-claims-testnet.json"),
+  resolve(APP_ROOT, "dist/native-claims-testnet.json"),
+].find((p) => existsSync(p));
+const claimsManifest = claimsManifestPath
+  ? JSON.parse(readFileSync(claimsManifestPath, "utf8"))
+  : null;
+const nativeProgression = nativeRewards
+  ? new NativeProgression(nativeRewards, nativeCollectibles, awardSigner, {
+      collectiblesWasmSha256:
+        claimsManifest?.network === "testnet" &&
+        claimsManifest?.contractId === nativeCollectibles.contractId
+          ? claimsManifest.wasmSha256
+          : undefined,
+    })
+  : null;
 const gotchiModels = new GotchiModels();
 const gotchiItemArt = new GotchiItemArt();
 const originalLookups = new Map();
@@ -160,24 +179,22 @@ function emit(type, data) {
 function cookie(token) {
   return `auratrail=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
-function auth(req) {
-  const token = req.headers.cookie?.match(
+function sessionToken(req) {
+  return req.headers.cookie?.match(
     /(?:^|; )auratrail=([a-f0-9]{64})(?:;|$)/,
   )?.[1];
-  assert(token, "Create an explorer first.", 401);
-  const s = db
-    .prepare("SELECT * FROM sessions WHERE token_hash=? AND expires_at>?")
-    .get(hash(token), Date.now());
-  assert(s, "Please sign in again.", 401);
-  return s.player_id;
 }
-function newSession(player) {
+function auth(req) {
+  return identitySessions.authenticate(sessionToken(req)).playerId;
+}
+function newSession(player, kind = "guest", accountId = null) {
   const token = randomBytes(32).toString("hex");
   db.prepare("INSERT INTO sessions VALUES (?,?,?)").run(
     hash(token),
     player,
     Date.now() + 30 * DAY,
   );
+  identitySessions.record(token, kind, accountId);
   return token;
 }
 function challenge(prefix, data) {
@@ -191,6 +208,11 @@ function challenge(prefix, data) {
   return { id: c, nonce };
 }
 function readChallenge(challengeId) {
+  assert(
+    typeof challengeId === "string" && challengeId.length <= 160,
+    "Start a new sign-in request.",
+    401,
+  );
   const c = db
     .prepare(
       "SELECT * FROM auth_challenges WHERE id=? AND expires_at>? AND used=0",
@@ -354,6 +376,7 @@ async function api(req, res, url) {
   if (path === "/api/session" && method === "POST") {
     const input = await body(req);
     const result = game.session(db, input.name);
+    identitySessions.record(result.token, "guest");
     return respond(res, { player: profile(result.player.id) }, 201, {
       "Set-Cookie": cookie(result.token),
     });
@@ -370,6 +393,10 @@ async function api(req, res, url) {
   }
   if (path === "/api/passkey/options" && method === "POST") {
     const input = await body(req);
+    assert(
+      input.action === "register" || input.action === "login",
+      "Choose passkey sign-in or registration.",
+    );
     if (input.action === "register") {
       assert(
         typeof input.name === "string" &&
@@ -389,6 +416,7 @@ async function api(req, res, url) {
         },
       });
       const c = challenge("passkey", {
+        purpose: "demo-passkey-auth",
         action: "register",
         name: input.name,
         challenge: options.challenge,
@@ -400,6 +428,7 @@ async function api(req, res, url) {
       userVerification: "required",
     });
     const c = challenge("passkey", {
+      purpose: "demo-passkey-auth",
       action: "login",
       challenge: options.challenge,
     });
@@ -408,6 +437,18 @@ async function api(req, res, url) {
   if (path === "/api/passkey/verify" && method === "POST") {
     const input = await body(req),
       c = readChallenge(input.challengeId);
+    assert(
+      c.purpose === "demo-passkey-auth",
+      "This challenge cannot sign in with a demo passkey.",
+      401,
+    );
+    assert(
+      input.response &&
+        typeof input.response.id === "string" &&
+        input.response.id.length <= 2048,
+      "The passkey response is missing.",
+      400,
+    );
     let player;
     if (c.action === "register") {
       const v = await verifyRegistrationResponse({
@@ -456,15 +497,19 @@ async function api(req, res, url) {
       assert(v.verified, "Passkey verification failed.", 401);
       atomic(db, () => {
         consumeChallenge(input.challengeId);
-        db.prepare("UPDATE passkeys SET counter=? WHERE id=?").run(
-          v.authenticationInfo.newCounter,
-          saved.id,
+        assert(
+          db
+            .prepare("UPDATE passkeys SET counter=? WHERE id=? AND counter=?")
+            .run(v.authenticationInfo.newCounter, saved.id, saved.counter)
+            .changes === 1,
+          "The passkey changed during verification. Please sign in again.",
+          401,
         );
       });
       player = saved.player_id;
     }
     return respond(res, { player: profile(player) }, 200, {
-      "Set-Cookie": cookie(newSession(player)),
+      "Set-Cookie": cookie(newSession(player, "demo-passkey")),
     });
   }
   if (path === "/api/auth/near/challenge" && method === "POST") {
@@ -505,7 +550,7 @@ async function api(req, res, url) {
     const input = await body(req),
       c = readChallenge(input.challengeId);
     assert(
-      c.purpose === "near-sign-in",
+      c.purpose === "near-sign-in" && c.recipient === origin,
       "This challenge cannot sign in an explorer.",
       401,
     );
@@ -519,7 +564,11 @@ async function api(req, res, url) {
       db.prepare(
         "INSERT INTO wallet_links(account_id,player_id,verified_at) VALUES(?,?,?) ON CONFLICT(account_id) DO UPDATE SET verified_at=excluded.verified_at",
       ).run(c.accountId, player, Date.now());
-      return { player, token: newSession(player), returning: !!existing };
+      return {
+        player,
+        token: newSession(player, "near-wallet", c.accountId),
+        returning: !!existing,
+      };
     });
     return respond(
       res,
@@ -532,6 +581,24 @@ async function api(req, res, url) {
       200,
       { "Set-Cookie": cookie(result.token) },
     );
+  }
+  if (path === "/api/identity/sessions" && method === "GET")
+    return respond(res, identitySessions.view(sessionToken(req)));
+  if (path === "/api/identity/recovery/challenge" && method === "POST") {
+    const input = await body(req);
+    return respond(
+      res,
+      identitySessions.challenge(sessionToken(req), input.accountId),
+    );
+  }
+  if (path === "/api/identity/recovery/verify" && method === "POST") {
+    const recovered = await identitySessions.recover(
+      sessionToken(req),
+      await body(req),
+    );
+    return respond(res, recovered.result, 200, {
+      "Set-Cookie": cookie(recovered.token),
+    });
   }
   if (path === "/api/dashboard") return respond(res, game.dashboard(db));
   if (path === "/api/market")
@@ -775,6 +842,38 @@ async function api(req, res, url) {
       ),
     );
   }
+  if (
+    [
+      "/api/native/progression",
+      "/api/native/progression/claim",
+      "/api/native/progression/confirm",
+    ].includes(path) &&
+    method === "POST"
+  ) {
+    assert(
+      nativeProgression,
+      "Native level rewards are not configured yet.",
+      503,
+    );
+    const key = `native-level:${player}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 18,
+      "Please wait before checking level rewards again.",
+      429,
+    );
+    const input = await body(req);
+    const result = path.endsWith("/claim")
+      ? await nativeProgression.issue(player, input.accountId, input.level)
+      : path.endsWith("/confirm")
+        ? await nativeProgression.confirm(player, input.accountId, input.level)
+        : await nativeProgression.snapshot(player, input.accountId);
+    // A session revoked during the finalized read must not receive a new voucher.
+    assert(auth(req) === player, "Please sign in again.", 401);
+    return respond(res, result);
+  }
+
   if (path === "/api/native/claims" && method === "POST") {
     const input = await body(req),
       key = `native-claim:${player}:${Math.floor(Date.now() / 60000)}`,
@@ -1042,6 +1141,7 @@ async function api(req, res, url) {
       purpose: "near-link",
       network: "testnet",
       player,
+      sessionId: identitySessions.authenticate(sessionToken(req)).sessionId,
       accountId: i.accountId,
       message,
       recipient: origin,
@@ -1062,12 +1162,19 @@ async function api(req, res, url) {
       403,
     );
     assert(
-      c.purpose === "near-link",
+      c.purpose === "near-link" && c.recipient === origin,
       "This challenge cannot link a wallet.",
       401,
     );
+    assert(
+      c.sessionId ===
+        identitySessions.authenticate(sessionToken(req)).sessionId,
+      "Finish linking in the browser where it was started.",
+      403,
+    );
     await verifyNearIdentity(c, i, provider);
     atomic(db, () => {
+      assert(auth(req) === player, "Please sign in again.", 401);
       const old = db
         .prepare("SELECT player_id FROM wallet_links WHERE account_id=?")
         .get(c.accountId);
@@ -1107,9 +1214,11 @@ async function api(req, res, url) {
   if (path === "/api/evm/challenge" && method === "POST") {
     const i = await body(req);
     assert(isAddress(i.address), "Invalid EVM address.");
-    const message = `QuestLayer: read-only linking of Base address ${i.address.toLowerCase()} to explorer ${player} na ${origin}. Nonce ${randomBytes(16).toString("hex")}. No transaction or NFT transfer approval.`;
+    const message = `QuestLayer: read-only linking of Base address ${i.address.toLowerCase()} to explorer ${player} at ${origin}. Nonce ${randomBytes(16).toString("hex")}. No transaction or NFT transfer approval.`;
     const c = challenge("evm", {
+      purpose: "appearance-link",
       player,
+      sessionId: identitySessions.authenticate(sessionToken(req)).sessionId,
       address: i.address.toLowerCase(),
       message,
     });
@@ -1120,6 +1229,17 @@ async function api(req, res, url) {
       c = readChallenge(i.challengeId);
     assert(c.player === player, "Wrong explorer.", 403);
     assert(
+      c.purpose === "appearance-link",
+      "This challenge cannot link an appearance.",
+      401,
+    );
+    assert(
+      c.sessionId ===
+        identitySessions.authenticate(sessionToken(req)).sessionId,
+      "Finish linking in the browser where it was started.",
+      403,
+    );
+    assert(
       await verifyEvmMessage({
         address: c.address,
         message: c.message,
@@ -1129,6 +1249,7 @@ async function api(req, res, url) {
       401,
     );
     atomic(db, () => {
+      assert(auth(req) === player, "Please sign in again.", 401);
       const old = db
         .prepare("SELECT player_id FROM external_links WHERE address=?")
         .get(c.address);

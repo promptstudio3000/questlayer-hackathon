@@ -20,6 +20,7 @@ export type GameMapProps = {
   sheetExpanded: boolean;
   panelMode: string;
   onQuest: (questId: string) => void;
+  onCoin?: (coinId: string) => void;
   overview: boolean;
   focusZone: Zone | null;
   nativeTarget?: (Point & { label: string }) | null;
@@ -139,6 +140,39 @@ export function GameMap(props: GameMapProps) {
       .addTo(m);
     m.on("dragstart", () => latest.current.onPan());
     m.on("click", (e) => {
+      if (
+        latest.current.onCoin &&
+        !latest.current.globe &&
+        m.getLayer("coin-icons")
+      ) {
+        const coins = m.queryRenderedFeatures(
+          [
+            [e.point.x - 24, e.point.y - 24],
+            [e.point.x + 24, e.point.y + 24],
+          ],
+          { layers: ["coin-icons"] },
+        );
+        const closest = coins
+          .filter((c) => c.geometry.type === "Point")
+          .sort((a, b) => {
+            const pa = m.project(
+                (a.geometry as { type: "Point"; coordinates: [number, number] })
+                  .coordinates as [number, number],
+              ),
+              pb = m.project(
+                (b.geometry as { type: "Point"; coordinates: [number, number] })
+                  .coordinates as [number, number],
+              );
+            return (
+              Math.hypot(pa.x - e.point.x, pa.y - e.point.y) -
+              Math.hypot(pb.x - e.point.x, pb.y - e.point.y)
+            );
+          })[0];
+        if (closest?.properties?.id) {
+          latest.current.onCoin(String(closest.properties.id));
+          return;
+        }
+      }
       if (latest.current.arena && !latest.current.globe)
         latest.current.onMove({ lng: e.lngLat.lng, lat: e.lngLat.lat });
     });

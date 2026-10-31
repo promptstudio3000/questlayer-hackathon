@@ -379,6 +379,153 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
     (await request("/auth/near/challenge", { accountId: "..invalid" })).status,
     400,
   );
+  const sessionView = await request(
+    "/identity/sessions",
+    undefined,
+    restored.cookie,
+  );
+  assert.equal(sessionView.status, 200);
+  assert.equal(sessionView.data.sessions[0].current, true);
+  assert.equal(sessionView.data.sessions[0].kind, "near-wallet");
+  assert.ok(sessionView.data.activeSessionCount >= 3);
+  assert.equal(sessionView.data.recovery.nativePasskeyAccount, false);
+  assert.deepEqual(sessionView.data.recovery.nearAccounts, ["alice.testnet"]);
+  assert.ok(
+    !JSON.stringify(sessionView.data).includes(restored.cookie.split("=")[1]),
+  );
+  const conflictingLink = await request(
+    "/wallet/challenge",
+    { accountId: "alice.testnet" },
+    guest.cookie,
+  );
+  assert.equal(
+    (
+      await request(
+        "/wallet/verify",
+        await signed(conflictingLink.data),
+        guest.cookie,
+      )
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await request(
+        "/wallet/verify",
+        await signed(conflictingLink.data),
+        bobLogin.cookie,
+      )
+    ).status,
+    403,
+    "A link approval belongs to the browser that requested it",
+  );
+  const pendingLink = await request(
+    "/wallet/challenge",
+    { accountId: "slow.testnet" },
+    login.cookie,
+  );
+  const pendingLinkProof = await signed(
+    pendingLink.data,
+    "slow.testnet",
+    aliceKey,
+  );
+  assert.equal(
+    (
+      await request(
+        "/identity/recovery/challenge",
+        { accountId: "bob.testnet" },
+        restored.cookie,
+      )
+    ).status,
+    403,
+  );
+  const recovery = await request(
+    "/identity/recovery/challenge",
+    { accountId: "alice.testnet" },
+    restored.cookie,
+  );
+  assert.equal(recovery.status, 200);
+  assert.equal(recovery.data.purpose, "revoke-other-sessions");
+  const recoveryProof = await signed(recovery.data);
+  assert.equal((await request("/auth/near/verify", recoveryProof)).status, 401);
+  assert.equal((await request("/passkey/verify", recoveryProof)).status, 401);
+  assert.equal(
+    (await request("/identity/recovery/verify", recoveryProof, login.cookie))
+      .status,
+    403,
+  );
+  assert.equal(
+    (await request("/identity/recovery/verify", recoveryProof, bobLogin.cookie))
+      .status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(
+        "/identity/recovery/verify",
+        await signed(recovery.data, "alice.testnet", aliceKey, {
+          recipient: "https://evil.invalid",
+        }),
+        restored.cookie,
+      )
+    ).status,
+    401,
+  );
+  const recovered = await request(
+    "/identity/recovery/verify",
+    recoveryProof,
+    restored.cookie,
+  );
+  assert.equal(recovered.status, 200);
+  assert.ok(recovered.data.revokedSessions >= 2);
+  assert.equal(recovered.data.activeSessionCount, 1);
+  assert.ok(recovered.cookie && recovered.cookie !== restored.cookie);
+  assert.equal(recovered.data.token, undefined);
+  assert.equal(
+    (await request("/identity/sessions", undefined, restored.cookie)).status,
+    401,
+    "Copied retained cookies are invalidated too",
+  );
+  assert.equal(
+    (await request("/identity/sessions", undefined, login.cookie)).status,
+    401,
+  );
+  assert.equal(
+    (await request("/identity/sessions", undefined, bobLogin.cookie)).status,
+    200,
+  );
+  assert.equal(
+    (await request("/wallet/verify", pendingLinkProof, recovered.cookie))
+      .status,
+    401,
+  );
+  assert.equal(
+    (
+      await request(
+        "/identity/recovery/verify",
+        recoveryProof,
+        recovered.cookie,
+      )
+    ).status,
+    401,
+  );
+  const afterRecovery = await request("/auth/near/challenge", {
+    accountId: "alice.testnet",
+  });
+  const returnAgain = await request(
+    "/auth/near/verify",
+    await signed(afterRecovery.data),
+  );
+  assert.equal(
+    returnAgain.data.player.id,
+    playerId,
+    "A fresh wallet proof restores the same explorer after cookie loss",
+  );
+  assert.equal(
+    returnAgain.data.player.gold_u,
+    restored.data.player.gold_u,
+    "Recovery cannot merge or cash out demo funds",
+  );
 });
 
 test("identity refuses a mainnet RPC even when its access-key answer would be valid", async () => {

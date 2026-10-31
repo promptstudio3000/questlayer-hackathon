@@ -1,0 +1,67 @@
+import type { Point, Zone, QuestActivity } from "./types";
+export type NativeQuest = {
+  activity?: QuestActivity;
+  prizeClaimed: boolean;
+  prizePending: boolean;
+  index: number;
+  name: string;
+  title: string;
+  prompt: string;
+  targets: Point[];
+  tier: number;
+  reward: string;
+  xp: number;
+  opensAt: number;
+  closesAt: number;
+  checkpoint: number;
+};
+export type NativeReceipt = {
+  id: string;
+  kind: string;
+  index: number;
+  state: string;
+  amount: string | null;
+  xp: number | null;
+  transaction: string | null;
+  createdAt: number;
+  error: string | null;
+};
+export type NativeGameState = {
+  status: string;
+  contractId: string;
+  enrolled: boolean;
+  access: { tier: number; weighted: string };
+  balance: {
+    credit: string;
+    pending: string;
+    withdrawn: string;
+    xp: number;
+  } | null;
+  day: {
+    id: string;
+    day: string;
+    endsAt: number;
+    startsAt: number;
+    map?: { status: string; zones: (Zone & { questIndex: number })[] };
+    coinUnit: string;
+    coinCount: number;
+    claimsAccepted: number;
+    claimsLimit: number;
+    coins: (Point & { index: number; distance: number })[];
+    quests: NativeQuest[];
+  } | null;
+  receipts: NativeReceipt[];
+  treasury: {
+    coins: { available: string; reserved: string };
+    zones: { available: string; reserved: string };
+  };
+  worker: { queued: number; last_error: string | null };
+  vaults: {
+    accountId: string;
+    beneficiary: string;
+    observation?: {
+      last_state: string | null;
+      last_error: string | null;
+    } | null;
+  }[];
+};

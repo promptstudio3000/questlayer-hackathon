@@ -15,70 +15,10 @@ import {
 import { api, meters } from "./api";
 import type { Fix, Player, Point, QuestActivity } from "./types";
 import "./play-ui.css";
-type Quest = {
-  activity?: QuestActivity;
-  prizeClaimed: boolean;
-  prizePending: boolean;
-  index: number;
-  name: string;
-  title: string;
-  prompt: string;
-  targets: Point[];
-  tier: number;
-  reward: string;
-  xp: number;
-  opensAt: number;
-  closesAt: number;
-  checkpoint: number;
-};
-type Receipt = {
-  id: string;
-  kind: string;
-  index: number;
-  state: string;
-  amount: string | null;
-  xp: number | null;
-  transaction: string | null;
-  createdAt: number;
-  error: string | null;
-};
-type State = {
-  status: string;
-  contractId: string;
-  enrolled: boolean;
-  access: { tier: number; weighted: string };
-  balance: {
-    credit: string;
-    pending: string;
-    withdrawn: string;
-    xp: number;
-  } | null;
-  day: {
-    id: string;
-    day: string;
-    endsAt: number;
-    coinUnit: string;
-    coinCount: number;
-    claimsAccepted: number;
-    claimsLimit: number;
-    coins: (Point & { index: number; distance: number })[];
-    quests: Quest[];
-  } | null;
-  receipts: Receipt[];
-  treasury: {
-    coins: { available: string; reserved: string };
-    zones: { available: string; reserved: string };
-  };
-  worker: { queued: number; last_error: string | null };
-  vaults: {
-    accountId: string;
-    beneficiary: string;
-    observation?: {
-      last_state: string | null;
-      last_error: string | null;
-    } | null;
-  }[];
-};
+import type {
+  NativeQuest as Quest,
+  NativeGameState as State,
+} from "./native-game-types";
 const nearAmount = (s: string) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: 8 }).format(
     Number(s) / 1e24,
@@ -99,6 +39,7 @@ export function NativeExpeditions({
   view = "board",
   initialIndex,
   initialCoinIndex,
+  control,
   onWallet,
 }: {
   player: Player;
@@ -113,10 +54,19 @@ export function NativeExpeditions({
   view?: "board" | "wallet";
   initialIndex?: number;
   initialCoinIndex?: number;
+  control?: {
+    account: string;
+    state: State | null;
+    error: string;
+    refresh: (fresh?: boolean) => Promise<void>;
+    onAccount: (account: string) => void;
+  };
   onWallet?: () => void;
   onWithdraw: (account: string, contract: string) => Promise<boolean>;
 }) {
-  const [account, setAccount] = useState(player.wallets[0]?.account_id || ""),
+  const [accountValue, setAccount] = useState(
+      player.wallets[0]?.account_id || "",
+    ),
     [snapshot, setSnapshot] = useState<{ account: string; data: State } | null>(
       null,
     ),
@@ -128,11 +78,49 @@ export function NativeExpeditions({
     [chosenCoin, setChosenCoin] = useState<number | null>(
       initialCoinIndex ?? null,
     );
-  const state = snapshot?.account === account ? snapshot.data : null;
+  const account = control?.account ?? accountValue;
+  const state = control
+    ? control.state
+    : snapshot?.account === account
+      ? snapshot.data
+      : null;
+  const selectionSource = useRef({
+    account,
+    dayId: state?.day?.id,
+    questIndex: initialIndex,
+    coinIndex: initialCoinIndex,
+  });
+  useEffect(() => {
+    const previous = selectionSource.current;
+    const dayId = state?.day?.id;
+    const accountChanged = previous.account !== account;
+    const dayChanged = !!previous.dayId && !!dayId && previous.dayId !== dayId;
+    const targetChanged =
+      previous.questIndex !== initialIndex ||
+      previous.coinIndex !== initialCoinIndex;
+    if (accountChanged || dayChanged) {
+      setChosen(null);
+      setChosenCoin(null);
+    } else if (targetChanged) {
+      setChosen(initialCoinIndex === undefined ? (initialIndex ?? null) : null);
+      setChosenCoin(initialCoinIndex ?? null);
+    }
+    // A temporary failed read must not turn the next refresh into a new day.
+    selectionSource.current = {
+      account,
+      dayId: dayId ?? (accountChanged ? undefined : previous.dayId),
+      questIndex: initialIndex,
+      coinIndex: initialCoinIndex,
+    };
+  }, [account, state?.day?.id, initialIndex, initialCoinIndex]);
   const latest = useRef({ position, account });
   latest.current = { position, account };
   const mounted = useRef(true);
   async function refresh(fresh = false) {
+    if (control) {
+      await control.refresh(fresh);
+      return;
+    }
     const p = latest.current;
     try {
       const s = await api<State>("/native/rewards/nearby", {
@@ -151,6 +139,10 @@ export function NativeExpeditions({
   useEffect(() => {
     mounted.current = true;
     setConsent(false);
+    if (control)
+      return () => {
+        mounted.current = false;
+      };
     void refresh();
     const t = setInterval(() => {
       if (!document.hidden) void refresh();
@@ -159,11 +151,14 @@ export function NativeExpeditions({
       mounted.current = false;
       clearInterval(t);
     };
-  }, [account]);
+  }, [account, !!control]);
   useEffect(() => {
     if (!player.wallets.some((w) => w.account_id === account))
       setAccount(player.wallets[0]?.account_id || "");
   }, [player.wallets.map((w) => w.account_id).join("|")]);
+  useEffect(() => {
+    if (control && control.account !== account) setAccount(control.account);
+  }, [control?.account]);
   async function act(fn: () => Promise<void>) {
     setBusy(true);
     setError("");
@@ -233,8 +228,9 @@ export function NativeExpeditions({
   });
   const selected = quests.find((q) => q.index === chosen) || ordered[0];
   useEffect(() => {
-    if (selected && chosen !== selected.index) setChosen(selected.index);
-  }, [selected?.index, chosen]);
+    if (chosenCoin === null && selected && chosen !== selected.index)
+      setChosen(selected.index);
+  }, [selected?.index, chosen, chosenCoin]);
   const readyReason = !account
     ? "Connect a wallet to record visits"
     : !state?.enrolled
@@ -452,9 +448,9 @@ export function NativeExpeditions({
         </button>
       </div>
       <p className="play-hint">Sponsored test tokens · no monetary value</p>
-      {error && (
+      {(error || control?.error) && (
         <p className="play-error" role="alert">
-          {error}
+          {error || control?.error}
         </p>
       )}
       {notice && (
@@ -702,7 +698,10 @@ export function NativeExpeditions({
               <select
                 value={account}
                 disabled={busy}
-                onChange={(e) => setAccount(e.target.value)}
+                onChange={(e) => {
+                  setAccount(e.target.value);
+                  control?.onAccount(e.target.value);
+                }}
               >
                 {player.wallets.map((w) => (
                   <option key={w.account_id}>{w.account_id}</option>

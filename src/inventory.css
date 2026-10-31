@@ -1,0 +1,540 @@
+/* Adopt the DESIGN.md palette within Inventory; legacy surfaces stay scoped. */
+.inventory-experience,
+.inventory-dialog {
+  --inventory-ink: #1a0335;
+  --inventory-secondary: #665577;
+  --inventory-surface: #fcfaff;
+  --inventory-raised: #ffffff;
+  --inventory-soft: #f2ebff;
+  --inventory-action: #672eeb;
+  --inventory-on-action: #ffffff;
+  --inventory-border: #c9b8dd;
+  --inventory-error: #a32947;
+  --inventory-error-surface: #fff0f3;
+  color: var(--inventory-ink);
+  font-size: 16px;
+  line-height: 1.5;
+  min-width: 0;
+}
+.inventory-experience {
+  display: grid;
+  gap: 20px;
+}
+.inventory-experience h2,
+.inventory-experience h3,
+.inventory-dialog h2,
+.inventory-dialog h3 {
+  color: var(--inventory-ink);
+}
+.inventory-experience p,
+.inventory-dialog p {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+}
+.inventory-experience button,
+.inventory-experience summary,
+.inventory-dialog button {
+  min-height: 48px;
+}
+.inventory-experience button:focus-visible,
+.inventory-experience summary:focus-visible,
+.inventory-dialog button:focus-visible,
+.inventory-dialog input:focus-visible {
+  outline: 3px solid var(--inventory-action);
+  outline-offset: 3px;
+}
+.inventory-hero {
+  display: grid;
+  grid-template-columns: minmax(120px, 40%) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+.inventory-character-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 188px;
+  padding: 16px 8px;
+  border: 1px solid var(--inventory-border);
+  border-radius: 20px;
+  background: var(--inventory-soft);
+}
+.inventory-character-stage > .character-composition {
+  width: 120px;
+  height: 145px;
+}
+.inventory-character-stage > .character-composition > img {
+  max-width: 100%;
+  max-height: 100%;
+}
+.inventory-character-stage .character-composition > small {
+  font-size: 14px;
+  line-height: 1.3;
+  background: var(--inventory-surface);
+  bottom: -18px;
+  z-index: 1;
+}
+.inventory-identity {
+  min-width: 0;
+}
+.inventory-identity h2 {
+  font-size: 24px;
+  line-height: 1.15;
+  margin: 6px 0 12px;
+  overflow-wrap: anywhere;
+}
+.inventory-identity p {
+  font-size: 14px;
+  color: var(--inventory-secondary);
+  margin-top: 8px;
+}
+.inventory-kicker {
+  color: var(--inventory-secondary);
+  font-size: 14px;
+}
+.inventory-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  color: var(--inventory-ink);
+}
+.inventory-source svg {
+  flex-shrink: 0;
+}
+.inventory-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  color: var(--inventory-ink);
+  background: var(--inventory-raised);
+  border: 1px solid var(--inventory-border);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.inventory-preview-button {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+}
+.inventory-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.inventory-slot {
+  border: 1px dashed var(--inventory-border);
+  padding: 12px;
+  border-radius: 12px;
+  min-width: 0;
+}
+.inventory-slot.occupied {
+  border-style: solid;
+  background: var(--inventory-soft);
+}
+.inventory-slot > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--inventory-secondary);
+}
+.inventory-slot > strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+  margin-top: 5px;
+}
+.inventory-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.inventory-section-heading h3 {
+  font-size: 20px;
+  margin: 0;
+}
+.inventory-collection {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.inventory-collection-switch {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--inventory-border);
+  border-radius: 12px;
+  background: var(--inventory-soft);
+}
+.inventory-collection-switch > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  font-size: 16px;
+  padding: 8px;
+  color: var(--inventory-ink);
+  background: transparent;
+  border-radius: 8px;
+}
+.inventory-collection-switch > button[aria-pressed="true"] {
+  background: var(--inventory-action);
+  color: var(--inventory-on-action);
+}
+.inventory-collection-switch span {
+  font-size: 14px;
+}
+.inventory-experience .inventory-collection-caption {
+  color: var(--inventory-secondary);
+  font-size: 14px;
+}
+.inventory-item-grid,
+.inventory-original-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.inventory-item-choice,
+.inventory-original-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  min-width: 0;
+  padding: 12px;
+  color: var(--inventory-ink);
+  background: var(--inventory-raised);
+  border: 1px solid var(--inventory-border);
+  border-radius: 12px;
+  gap: 6px;
+}
+.inventory-item-choice .aura-art {
+  align-self: center;
+  width: 100%;
+  max-width: 122px;
+  height: 108px;
+  margin: 0;
+}
+.inventory-item-choice .aura-art .ghost-art {
+  width: 66px;
+  height: 80px;
+}
+.inventory-item-choice > strong,
+.inventory-original-choice > strong {
+  font-size: 16px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+.inventory-item-choice > span,
+.inventory-original-choice > span {
+  color: var(--inventory-secondary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.inventory-item-choice > em {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--inventory-action);
+  font-size: 14px;
+  font-style: normal;
+  padding-top: 5px;
+}
+.inventory-item-choice.rarity-legendary {
+  border-color: #987515;
+  background: #fffcee;
+}
+.inventory-item-choice.rarity-rare,
+.inventory-item-choice.rarity-epic {
+  border-color: #9a73d7;
+}
+.inventory-empty {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 24px 16px;
+  background: var(--inventory-soft);
+  border-radius: 16px;
+}
+.inventory-empty h4 {
+  font-size: 20px;
+  margin: 0;
+}
+.inventory-empty p {
+  color: var(--inventory-secondary);
+}
+.inventory-action,
+.inventory-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 500;
+  min-width: 0;
+}
+.inventory-action {
+  color: var(--inventory-on-action);
+  background: var(--inventory-action);
+  border: 1px solid var(--inventory-action);
+}
+.inventory-secondary {
+  color: var(--inventory-ink);
+  background: var(--inventory-raised);
+  border: 1px solid var(--inventory-border);
+}
+.inventory-action svg,
+.inventory-secondary svg {
+  flex: none;
+}
+.inventory-experience .inventory-notice,
+.inventory-dialog .inventory-notice {
+  padding: 12px;
+  border-left: 3px solid var(--inventory-action);
+  background: var(--inventory-soft);
+  color: var(--inventory-ink);
+  font-size: 14px;
+}
+.inventory-error {
+  padding: 12px;
+  border-left: 3px solid var(--inventory-error);
+  background: var(--inventory-error-surface);
+  color: var(--inventory-error);
+}
+.inventory-disclosure {
+  border-top: 1px solid var(--inventory-border);
+  min-width: 0;
+}
+.inventory-disclosure > summary {
+  cursor: pointer;
+  padding: 14px 0;
+  color: var(--inventory-ink);
+  font-size: 16px;
+}
+.inventory-disclosure > summary svg {
+  vertical-align: middle;
+  margin-right: 7px;
+}
+.inventory-disclosure > summary small {
+  display: block;
+  color: var(--inventory-secondary);
+  font-size: 14px;
+  padding-left: 28px;
+}
+.inventory-disclosure-body {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding-bottom: 14px;
+}
+.inventory-disclosure-body > p {
+  font-size: 14px;
+}
+.inventory-original-choice.selected {
+  border: 2px solid var(--inventory-action);
+}
+.inventory-original-choice img,
+.inventory-original-choice .ghost-art {
+  width: 88px;
+  height: 100px;
+  object-fit: contain;
+  align-self: center;
+}
+.inventory-original-choice .ghost-art img {
+  width: 100%;
+  height: 100%;
+}
+.inventory-native-content {
+  min-width: 0;
+}
+.inventory-native-content .native-wardrobe {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  color: var(--inventory-ink);
+}
+.inventory-native-content .native-profile,
+.inventory-native-content .aura-claims {
+  margin: 0;
+  padding-top: 12px;
+}
+.inventory-native-content .fine-print,
+.inventory-native-content .native-address,
+.inventory-native-content .network-label {
+  font-size: 14px;
+}
+.inventory-native-content .network-label {
+  width: fit-content;
+}
+.inventory-native-content .native-wardrobe > .section-label h2 {
+  font-size: 20px;
+}
+.inventory-native-content .native-account {
+  padding: 12px;
+  margin: 12px 0;
+  background: var(--inventory-soft);
+}
+.inventory-native-content .native-account .inventory-item-choice {
+  background: var(--inventory-raised);
+}
+.inventory-native-content .native-account .native-confirmation {
+  margin: 0;
+}
+.inventory-native-content .native-gallery > summary {
+  min-height: 48px;
+  padding: 12px 0;
+}
+.inventory-native-content .native-gallery p,
+.inventory-native-content .native-gallery small {
+  font-size: 14px;
+}
+.inventory-native-content .native-gallery .text-button {
+  min-height: 48px;
+}
+.inventory-dialog {
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  background: var(--inventory-surface);
+  border: 1px solid var(--inventory-border);
+  border-radius: 20px;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.inventory-dialog > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.inventory-dialog h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.inventory-item-detail {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 7px;
+  min-width: 0;
+}
+.inventory-item-detail .aura-art {
+  width: 150px;
+  height: 132px;
+  margin: 0;
+}
+.inventory-item-detail .aura-art .ghost-art {
+  width: 80px;
+  height: 96px;
+}
+.inventory-item-detail h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.inventory-item-detail p {
+  font-size: 14px;
+  color: var(--inventory-secondary);
+}
+.inventory-item-actions,
+.inventory-sale-form {
+  display: grid;
+  gap: 12px;
+}
+.inventory-sale-form label {
+  font-size: 16px;
+  font-weight: 500;
+}
+.inventory-price-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--inventory-raised);
+  border: 1px solid var(--inventory-border);
+  border-radius: 8px;
+  padding: 0 12px;
+}
+.inventory-price-input input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  font-size: 16px;
+  background: transparent;
+  border: 0;
+  color: var(--inventory-ink);
+  padding: 10px 0;
+}
+.inventory-dialog .inventory-sale-note {
+  color: var(--inventory-secondary);
+  font-size: 14px;
+}
+@media (min-width: 720px) {
+  .inventory-character-stage {
+    min-height: 218px;
+  }
+  .inventory-character-stage > .character-composition {
+    width: 140px;
+    height: 172px;
+  }
+}
+@media (max-height: 500px) {
+  .inventory-dialog {
+    max-height: calc(100dvh - 16px);
+  }
+  .inventory-item-detail .aura-art {
+    width: 100px;
+    height: 76px;
+  }
+  .inventory-item-detail .aura-art .ghost-art {
+    width: 48px;
+    height: 60px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .inventory-experience *,
+  .inventory-dialog * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.game-dialog:has(> .inventory-dialog) {
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 0;
+  background: #fcfaff;
+  overflow: auto;
+}
+.game-dialog > .inventory-dialog {
+  width: 100%;
+  max-height: none;
+}
+.inventory-rarity {
+  text-transform: capitalize;
+}
+.inventory-dialog .native-address {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.inventory-native-content > .native-wardrobe > .inventory-secondary,
+.inventory-native-content > .native-wardrobe > .inventory-action {
+  margin-top: 12px;
+}
+.inventory-item-choice .aura-art .ghost-art,
+.inventory-item-detail .aura-art .ghost-art {
+  animation: none;
+}

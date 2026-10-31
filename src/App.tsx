@@ -1,6 +1,13 @@
+import { useNativeGame } from "./useNativeGame";
+import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
-import { Character3D } from "./Character3D";
-import { OriginalItemGallery } from "./OriginalItemGallery";
+import { Inventory } from "./Inventory";
+import { AccountSessions } from "./AccountSessions";
+import { NativeLevelRewards, type NativeMilestone } from "./NativeLevelRewards";
+import {
+  assertNativeLevelClaim,
+  type NativeLevelClaim,
+} from "./native-level-claim";
 import { NativeMarketPanel } from "./NativeMarketPanel";
 import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
@@ -21,6 +28,7 @@ import { assertProfileQuote } from "./native-profile-quote";
 import type { NativeWardrobeState, NativeItem } from "./types";
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -269,11 +277,45 @@ export default function App() {
         }),
       );
   }
+  const [nativePlay, setNativePlay] = useState(false);
+  const [playAccount, setPlayAccount] = useState("");
+  const nativeGame = useNativeGame(
+    !!player &&
+      (nativePlay ||
+        tab === "expeditions" ||
+        (tab === "wallet" && walletView === "rewards")),
+    player?.id,
+    playAccount,
+    position,
+  );
+  useEffect(() => {
+    if (!player?.wallets.some((w) => w.account_id === playAccount))
+      setPlayAccount(player?.wallets[0]?.account_id || "");
+  }, [player?.wallets, playAccount]);
+  useEffect(() => {
+    if (tab === "expeditions") setNativePlay(true);
+  }, [tab]);
+  const displayWorld = useMemo(
+    () => (nativePlay ? nativeWorldView(nativeGame.state, HOME) : world),
+    [nativePlay, nativeGame.state, world],
+  );
+  const nativeSelectionIdentity = useRef("");
+  useEffect(() => {
+    const identity = `${playAccount}:${nativeGame.state?.day?.id || ""}`;
+    if (nativeSelectionIdentity.current !== identity || nativeGame.error)
+      setNativeTarget(null);
+    nativeSelectionIdentity.current = identity;
+  }, [playAccount, nativeGame.state?.day?.id, nativeGame.error]);
+  const hudXp = nativePlay
+    ? (nativeGame.state?.balance?.xp ?? null)
+    : (player?.xp ?? null);
+  const hudLevel =
+    hudXp === null ? null : 1 + Math.floor(Math.sqrt(Number(hudXp) / 100));
   const nextWorldRefresh = useRef(0),
     collecting = useRef(new Set<string>()),
     gps = useRef<number | null>(null),
-    latest = useRef({ world, position, fix, arena, player });
-  latest.current = { world, position, fix, arena, player };
+    latest = useRef({ world, position, fix, arena, player, nativePlay });
+  latest.current = { world, position, fix, arena, player, nativePlay };
   function notify(text: string, error = false) {
     setToast({ text, error });
   }
@@ -406,7 +448,12 @@ export default function App() {
     if (!player) return;
     const collect = setInterval(async () => {
       const state = latest.current;
-      if (!state.world || !state.player || state.world.endsAt <= Date.now())
+      if (
+        state.nativePlay ||
+        !state.world ||
+        !state.player ||
+        state.world.endsAt <= Date.now()
+      )
         return;
       const nearby = state.world.coins
         .filter(
@@ -415,6 +462,11 @@ export default function App() {
         )
         .slice(0, 2);
       for (const coin of nearby) {
+        if (
+          latest.current.nativePlay ||
+          latest.current.player?.id !== state.player.id
+        )
+          break;
         collecting.current.add(coin.id);
         try {
           const result = await api<{
@@ -427,11 +479,12 @@ export default function App() {
               ? { ...state.position, accuracy: 0, timestamp: Date.now() }
               : state.fix,
           });
+          if (latest.current.player?.id !== state.player.id) return;
           setPlayer(result.player);
           setWorld((w) =>
             w ? { ...w, coins: w.coins.filter((c) => c.id !== coin.id) } : w,
           );
-          if (!result.alreadyClaimed) {
+          if (!result.alreadyClaimed && !latest.current.nativePlay) {
             setCoins((c) => c + 1);
             notify(`+${gold(result.value)} GOLD · +2 XP`);
           }
@@ -485,7 +538,7 @@ export default function App() {
     };
   }, [player?.id]);
   useEffect(() => {
-    if (!arena || !player) return;
+    if (!arena || nativePlay || !player) return;
     const key = (e: KeyboardEvent) => {
       if (
         e.defaultPrevented ||
@@ -532,7 +585,7 @@ export default function App() {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [arena, player?.id]);
+  }, [arena, nativePlay, player?.id]);
   useEffect(() => {
     if (!presence || !player) return;
     if (document.visibilityState !== "visible") {
@@ -592,11 +645,22 @@ export default function App() {
     [],
   );
   function move(p: Point) {
-    if (arena) {
+    if (arena && !nativePlay) {
       setPosition(p);
       setOverview(false);
       setFollow(true);
     }
+  }
+  function chooseNativeQuest(index: number) {
+    const q = nativeGame.state?.day?.quests.find((q) => q.index === index);
+    if (!q) return;
+    const point = q.targets[Math.min(q.checkpoint, q.targets.length - 1)];
+    setNativeTarget({ ...point, label: q.title, questIndex: q.index });
+    setSelected(null);
+    setFollow(false);
+    setGlobe(false);
+    setOverview(false);
+    setTab("expeditions");
   }
   function chooseZoneQuest(questId: string) {
     setSelectedQuestId(questId);
@@ -981,6 +1045,139 @@ export default function App() {
     });
     return result === true;
   }
+  async function revokeGameSessions(expectedAccount: string) {
+    const ok = await action("session-recovery", async () => {
+      const { wallet, accountId } = await chooseNearAccount();
+      if (
+        accountId !== expectedAccount ||
+        !player?.wallets.some((w) => w.account_id === accountId)
+      )
+        throw Error(
+          "Choose the linked NEAR wallet shown in the recovery review.",
+        );
+      const c = await api<{
+        challengeId: string;
+        nonce: string;
+        message: string;
+        recipient: string;
+        network: string;
+        purpose: string;
+      }>("/identity/recovery/challenge", { accountId });
+      if (c.network !== "testnet" || c.purpose !== "revoke-other-sessions")
+        throw Error("This recovery request could not be verified.");
+      const signed = await wallet.signMessage({
+        message: c.message,
+        recipient: c.recipient,
+        nonce: Uint8Array.from(atob(c.nonce), (x) => x.charCodeAt(0)),
+        network: "testnet",
+        signerId: accountId,
+      });
+      const result = await api<{ ok: boolean; revokedSessions: number }>(
+        "/identity/recovery/verify",
+        { challengeId: c.challengeId, ...signed },
+      );
+      if (!result.ok) throw Error("The game sessions could not be updated.");
+      notify(
+        `${result.revokedSessions} other game session(s) signed out. This browser stays signed in.`,
+      );
+      return true;
+    });
+    return ok === true;
+  }
+  async function checkNativeLevel(accountId: string, level: number) {
+    const ok = await action("native-level-check", async () => {
+      const c = await api<NativeLevelClaim>("/native/progression/confirm", {
+        accountId,
+        level,
+      });
+      if (c.state !== "minted")
+        throw Error(
+          "This level reward is not confirmed yet. Check again after your wallet transaction finishes.",
+        );
+      await refreshNative(true);
+      notify(
+        "Mint confirmed. Check your NEAR collection for its current owner.",
+      );
+      return true;
+    });
+    return ok === true;
+  }
+  async function mintNativeLevel(
+    expectedAccount: string,
+    milestone: NativeMilestone,
+  ) {
+    const ok = await action("native-level", async () => {
+      const { wallet, accountId } = await chooseNearAccount();
+      if (
+        accountId !== expectedAccount ||
+        !player?.wallets.some((w) => w.account_id === accountId)
+      )
+        throw Error(
+          "Choose the linked NEAR wallet shown for this level reward.",
+        );
+      if (!wallet.manifest.features.signAndSendTransaction)
+        throw Error("Choose a wallet that supports NEAR transactions.");
+      const claim = await api<NativeLevelClaim>("/native/progression/claim", {
+        accountId,
+        level: milestone.level,
+      });
+      assertNativeLevelClaim(
+        claim,
+        accountId,
+        milestone.level,
+        milestone.edition,
+      );
+      if (claim.claim_id !== milestone.claimId)
+        throw Error("The level reward changed. Refresh before signing.");
+      if (claim.state !== "minted") {
+        const result = await wallet.signAndSendTransaction({
+          network: "testnet",
+          signerId: accountId,
+          receiverId: claim.contractId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: "redeem_aura",
+                args: {
+                  claim_id: claim.claim_id,
+                  edition: claim.edition,
+                  receiver_id: claim.receiver_id,
+                  expires_at_ms: claim.expires_at,
+                  signature: claim.signature,
+                },
+                gas: "100000000000000",
+                deposit: (5n * 10n ** 22n).toString(),
+              },
+            },
+          ],
+        });
+        if ((result as any)?.status?.Failure)
+          throw Error("The level reward transaction failed.");
+        for (let i = 0; i < 4; i++) {
+          const checked = await api<NativeLevelClaim>(
+            "/native/progression/confirm",
+            { accountId, level: milestone.level },
+          );
+          if (checked.state === "minted") {
+            await refreshNative(true);
+            notify(
+              "Level reward claimed. Equip your Aura from the NEAR collection.",
+            );
+            return true;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+        throw Error(
+          "Your level reward is awaiting confirmation. Use Check claim before trying again.",
+        );
+      }
+      await refreshNative(true);
+      notify("This level reward was already claimed.");
+      return true;
+    });
+    return ok === true;
+  }
   async function mintEarnedAura(item: Item) {
     await action("native-claim", async () => {
       try {
@@ -1269,7 +1466,9 @@ export default function App() {
     zoneQuests[0];
   const title =
     tab === "explore"
-      ? "Nearby adventures"
+      ? nativePlay
+        ? "Testnet adventures"
+        : "Nearby adventures"
       : nav.find((n) => n.id === tab)?.label ||
         {
           messages: "Map notes",
@@ -1289,13 +1488,36 @@ export default function App() {
         map3D={!!player && map3D}
         sheetExpanded={sheetExpanded}
         panelMode={tab}
-        onQuest={chooseZoneQuest}
+        onCoin={
+          nativePlay
+            ? (id) => {
+                const coin = nativeGame.state?.day?.coins.find(
+                  (c) => `native-coin:${c.index}` === id,
+                );
+                if (!coin) return;
+                setNativeTarget({
+                  ...coin,
+                  label: "Street coin",
+                  coinIndex: coin.index,
+                });
+                setSelected(null);
+                setTab("expeditions");
+                setSheetExpanded(true);
+                setFollow(false);
+              }
+            : undefined
+        }
+        onQuest={(id) =>
+          nativePlay
+            ? chooseNativeQuest(Number(id.split(":")[1]))
+            : chooseZoneQuest(id)
+        }
         overview={overview}
         focusZone={selected}
         nativeTarget={nativeTarget}
-        world={world}
+        world={displayWorld}
         position={position}
-        arena={arena}
+        arena={arena && !nativePlay}
         globe={globe}
         equipped={equipped}
         others={others}
@@ -1305,7 +1527,11 @@ export default function App() {
             : undefined
         }
         onMove={move}
-        onZone={selectZone}
+        onZone={(z) =>
+          nativePlay
+            ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
+            : selectZone(z)
+        }
         follow={follow}
         onPan={() => setFollow(false)}
       />
@@ -1359,7 +1585,7 @@ export default function App() {
         </div>
         <div className="realm-label">
           <span className="status-dot" />
-          DEMO WORLD <span>·</span>{" "}
+          {nativePlay ? "NEAR TESTNET" : "DEMO WORLD"} <span>·</span>{" "}
           <span>{arena ? "Plzeň city demo" : "Your surroundings"}</span>
         </div>
         <div className="topbar-right">
@@ -1368,13 +1594,24 @@ export default function App() {
               <button
                 className="balance-pill"
                 onClick={() => {
-                  setWalletView("demo");
+                  setWalletView(nativePlay ? "rewards" : "demo");
                   setTab("wallet");
                 }}
               >
                 <CoinIcon />
-                <b>{gold(player.gold_u)}</b>
-                <span>GOLD</span>
+                <b>
+                  {nativePlay
+                    ? nativeGame.state?.balance
+                      ? (
+                          Number(
+                            BigInt(nativeGame.state.balance.credit) /
+                              1000000000000000n,
+                          ) / 1e6
+                        ).toLocaleString("en-US", { maximumFractionDigits: 3 })
+                      : "—"
+                    : gold(player.gold_u)}
+                </b>
+                <span>{nativePlay ? "TEST GOLD" : "GOLD"}</span>
                 <Plus size={14} />
               </button>
               <button
@@ -1392,9 +1629,15 @@ export default function App() {
                 />
                 <span>
                   <b>{player.name}</b>
-                  <small>Level {player.level}</small>
+                  <small>
+                    {nativePlay
+                      ? nativeGame.state?.balance
+                        ? `NEAR · Level ${1 + Math.floor(Math.sqrt(Number(nativeGame.state.balance.xp) / 100))}`
+                        : "NEAR · Loading"
+                      : `Demo · Level ${player.level}`}
+                  </small>
                 </span>
-                <span className="level-bubble">{player.level}</span>
+                <span className="level-bubble">{hudLevel ?? "—"}</span>
               </button>
             </>
           )}
@@ -1527,7 +1770,34 @@ export default function App() {
               </button>
             )}
           </div>
-          {tab === "explore" && !selected && (
+          {tab === "explore" && (
+            <div
+              className="play-mode-switch"
+              role="group"
+              aria-label="Adventure mode"
+            >
+              <button
+                aria-pressed={!nativePlay}
+                onClick={() => {
+                  setNativePlay(false);
+                  setNativeTarget(null);
+                  setSelected(null);
+                }}
+              >
+                Demo
+              </button>
+              <button
+                aria-pressed={nativePlay}
+                onClick={() => {
+                  setNativePlay(true);
+                  setSelected(null);
+                }}
+              >
+                NEAR testnet
+              </button>
+            </div>
+          )}
+          {tab === "explore" && !selected && !nativePlay && (
             <>
               {recommended && recommendedZone && !nativeTarget && (
                 <button
@@ -1872,6 +2142,8 @@ export default function App() {
               }
               map3D={map3D}
               onMap3D={toggleMap3D}
+              initialCollection={nativePlay ? "near" : "demo"}
+              onExplore={() => setTab("explore")}
               characterItems={appearanceItems}
               nativeContent={
                 <>
@@ -1899,6 +2171,19 @@ export default function App() {
                     }
                     onSource={useNativeOutfit}
                   />
+                  <NativeLevelRewards
+                    player={player}
+                    account={playAccount}
+                    onAccount={setPlayAccount}
+                    onConnect={connectNear}
+                    busy={busy}
+                    onMint={mintNativeLevel}
+                    onConfirm={checkNativeLevel}
+                  />
+                </>
+              }
+              nativeExtras={
+                <>
                   <AuraClaims
                     player={player}
                     enabled={!!nativeWardrobe?.claimsEnabled}
@@ -1952,7 +2237,8 @@ export default function App() {
               }}
             />
           )}
-          {(tab === "expeditions" ||
+          {((tab === "explore" && nativePlay) ||
+            tab === "expeditions" ||
             (tab === "wallet" && walletView === "rewards")) && (
             <>
               {tab === "wallet" && (
@@ -1960,6 +2246,11 @@ export default function App() {
               )}
               <NativeExpeditions
                 view={tab === "wallet" ? "wallet" : "board"}
+                control={{
+                  ...nativeGame,
+                  account: playAccount,
+                  onAccount: setPlayAccount,
+                }}
                 initialIndex={nativeTarget?.questIndex}
                 initialCoinIndex={nativeTarget?.coinIndex}
                 player={player}
@@ -1974,6 +2265,7 @@ export default function App() {
                   setTab("wallet");
                 }}
                 onFocus={(target) => {
+                  setNativePlay(true);
                   setNativeTarget(target);
                   setSelected(null);
                   setOverview(false);
@@ -2018,6 +2310,12 @@ export default function App() {
           )}
           {tab === "settings" && (
             <div className="play-menu">
+              <AccountSessions
+                player={player}
+                onConnect={connectNear}
+                onRevoke={revokeGameSessions}
+                busy={busy}
+              />
               <button className="play-entry" onClick={() => setTab("fund")}>
                 <ChartDonut size={24} />
                 <span>
@@ -2146,19 +2444,21 @@ export default function App() {
         <>
           <div className="map-top-chip">
             <span className="status-dot" />
-            {arena
-              ? "CITY DEMO · CLICK TO MOVE"
-              : `GPS · ${fix ? Math.round(fix.accuracy) : "…"} m`}
+            {nativePlay
+              ? `NEAR TESTNET · ${arena ? "GPS REQUIRED" : `GPS ${fix ? Math.round(fix.accuracy) : "…"} m`}`
+              : arena
+                ? "CITY DEMO · CLICK TO MOVE"
+                : `DEMO · GPS ${fix ? Math.round(fix.accuracy) : "…"} m`}
             <button
               onClick={() =>
-                arena
+                arena || nativePlay
                   ? locate()
                   : (setArena(true),
                     setPosition(HOME),
                     void loadWorld(HOME, true))
               }
             >
-              {arena ? "My surroundings" : "Back to arena"}
+              {arena || nativePlay ? "My surroundings" : "Back to arena"}
               <ArrowUpRight size={12} />
             </button>
           </div>
@@ -2191,7 +2491,7 @@ export default function App() {
                 setFollow(true);
                 setOverview(false);
                 setGlobe(false);
-                if (!arena) void locate();
+                if (!arena || nativePlay) void locate();
                 else setPosition((p) => ({ ...p }));
               }}
             >
@@ -2230,7 +2530,7 @@ export default function App() {
                 originTokenId={player.appearance.originTokenId}
                 compact
               />
-              <span>{player.level}</span>
+              <span>{hudLevel ?? "—"}</span>
             </div>
             <div>
               <b>
@@ -2239,13 +2539,19 @@ export default function App() {
               <div className="xp-bar">
                 <i
                   style={{
-                    width: `${Math.min(100, ((player.xp - 100 * (player.level - 1) ** 2) / (100 * (player.level ** 2 - (player.level - 1) ** 2))) * 100)}%`,
+                    width:
+                      hudXp !== null && hudLevel !== null
+                        ? `${Math.min(100, ((hudXp - 100 * (hudLevel - 1) ** 2) / (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) * 100)}%`
+                        : "0%",
                   }}
                 />
               </div>
               <small>
-                {player.xp} / {100 * player.level ** 2} XP · your next discovery
-                is closer
+                {hudXp !== null && hudLevel !== null
+                  ? `${hudXp} / ${100 * hudLevel ** 2} ${nativePlay ? "confirmed" : "demo"} XP`
+                  : playAccount
+                    ? "No confirmed XP available"
+                    : "Link a NEAR wallet to save testnet XP"}
               </small>
             </div>
             <button onClick={() => setTab("inventory")} aria-label="Inventory">
@@ -2551,322 +2857,6 @@ function Welcome({
         </div>
       </section>
     </Dialog>
-  );
-}
-function Inventory({
-  onOriginalAppearance,
-  map3D,
-  onMap3D,
-  player,
-  characterItems,
-  nativeContent,
-  busy,
-  onEquip,
-  onSell,
-  onEvm,
-  onSkin,
-}: {
-  onOriginalAppearance: (appearance: Player["appearance"]) => void;
-  map3D: boolean;
-  onMap3D: () => void;
-  player: Player;
-  characterItems: Item[];
-  nativeContent: ReactNode;
-  busy: string;
-  onEvm: () => Promise<void>;
-  onSkin: (id: string | null) => Promise<void>;
-  onEquip: (i: Item) => void;
-  onSell: (i: Item, p: number) => Promise<boolean>;
-}) {
-  const [origin, setOrigin] = useState<any>(null);
-  const [originLoading, setOriginLoading] = useState(false),
-    [originError, setOriginError] = useState("");
-  const [show3D, setShow3D] = useState(false);
-  const acceptOrigin = (data: any) => {
-    setOrigin(data);
-    setOriginError("");
-    if (data.status === "verified" && data.appearance)
-      onOriginalAppearance(data.appearance);
-  };
-  const refreshOrigin = async () => {
-    setOriginLoading(true);
-    setOriginError("");
-    try {
-      acceptOrigin(await api("/aavegotchi?refresh=1"));
-    } catch (error) {
-      setOriginError(
-        error instanceof Error
-          ? error.message
-          : "Original inventory is temporarily unavailable.",
-      );
-    } finally {
-      setOriginLoading(false);
-    }
-  };
-  useEffect(() => {
-    void api("/aavegotchi")
-      .then(acceptOrigin)
-      .catch(() => {});
-  }, [busy]);
-  const [selling, setSelling] = useState<Item | null>(null),
-    [price, setPrice] = useState("10");
-  const auras = player.inventory.filter(
-    (i) => i.kind === "aura" && i.native_claim_state !== "minted",
-  );
-  return (
-    <>
-      <div className="wardrobe-preview">
-        <Character
-          items={characterItems}
-          originTokenId={player.appearance.originTokenId}
-        />
-        <div>
-          <Badge>YOUR CHARACTER</Badge>
-          <h2>{player.name}</h2>
-          <p>
-            {player.appearance.originTokenId
-              ? "Linked Aavegotchi appearance"
-              : player.nativeOutfit
-                ? "NEAR testnet outfit"
-                : "Demo outfit"}
-          </p>
-          <small>
-            {player.appearance?.originTokenId
-              ? `Original #${player.appearance.originTokenId} from Base`
-              : "Your independent game avatar"}
-          </small>
-          <button
-            className="secondary-button view-3d-button"
-            onClick={() => setShow3D(true)}
-          >
-            <Cube size={20} />
-            View in 3D
-          </button>
-          <button
-            className="secondary-button view-3d-button"
-            aria-pressed={map3D}
-            onClick={onMap3D}
-          >
-            3D map character: {map3D ? "On" : "Off"}
-          </button>
-          <small className="map-appearance-help">
-            Choose 2D for a lighter map. Your items stay equipped.
-          </small>
-        </div>
-      </div>
-      <p className="character-art-credit">
-        <a
-          href="https://www.aavegotchi.com/sdk"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Aavegotchi artwork
-        </a>{" "}
-        · QuestLayer Auras
-      </p>
-      {nativeContent}
-      {show3D && (
-        <Character3D
-          items={characterItems}
-          originTokenId={player.appearance.originTokenId}
-          onClose={() => setShow3D(false)}
-        />
-      )}
-      <section className="origin-section">
-        <div className="section-label">
-          <h2>Your original from Base</h2>
-          <Badge>READ ONLY</Badge>
-        </div>
-        <p>
-          Connect an address, verify ownership and wear your original look. Your
-          NFTs stay in your wallet.
-        </p>
-        <button
-          className="secondary-button"
-          disabled={!!busy}
-          onClick={() => void onEvm()}
-        >
-          <Wallet size={16} />
-          {origin?.linked ? "Link another EVM address" : "Link Aavegotchi"}
-        </button>
-        {origin?.status === "unavailable" && (
-          <p className="fine-print">{origin.error}</p>
-        )}
-        {origin?.linked && (
-          <button
-            className="secondary-button"
-            disabled={originLoading || !!busy}
-            onClick={() => void refreshOrigin()}
-          >
-            {originLoading
-              ? "Checking originals…"
-              : "Refresh original inventory"}
-          </button>
-        )}
-        {originError && (
-          <p className="inline-error" role="alert">
-            {originError}
-          </p>
-        )}
-        {origin?.lookUnavailable && (
-          <p className="fine-print">
-            Your selected original could not be verified in this check. Your
-            starter appearance is active.
-          </p>
-        )}
-        {origin?.linked && origin.status === "verified" && (
-          <>
-            <small>
-              {origin.count || 0} originals · {origin.wearables?.length || 0}{" "}
-              original item types · Base
-            </small>
-            <div className="origin-grid">
-              {origin.gotchis?.map((g: any) => (
-                <button
-                  key={g.tokenId}
-                  disabled={!!busy || !g.hasImage}
-                  onClick={() => void onSkin(g.tokenId)}
-                >
-                  {g.hasImage ? (
-                    <img
-                      src={`/api/aavegotchi/skin?tokenId=${encodeURIComponent(g.tokenId)}`}
-                      alt={g.name}
-                    />
-                  ) : (
-                    <Ghost />
-                  )}
-                  <b>{g.name}</b>
-                  <span>
-                    {player.appearance?.originTokenId === g.tokenId
-                      ? "Equipped"
-                      : "Wear this look"}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <OriginalItemGallery
-              key={origin.verifiedAt}
-              items={origin.wearables || []}
-            />
-            {origin.truncated && (
-              <p className="fine-print">
-                This check covers the first 50 originals. Some items may not be
-                included yet.
-              </p>
-            )}
-            {origin.warnings?.map((warning: string) => (
-              <p className="fine-print" key={warning}>
-                {warning}
-              </p>
-            ))}
-            {player.appearance?.originTokenId && (
-              <button className="text-button" onClick={() => void onSkin(null)}>
-                Use starter appearance
-              </button>
-            )}
-          </>
-        )}
-        <p className="fine-print">
-          Original wearable customization is still in development. Some looks do
-          not yet have a 3D preview. Linked appearances cannot be sold here.
-        </p>
-      </section>
-      <div className="section-label">
-        <h2>Your demo Auras</h2>
-        <span>{auras.length} ITEMS</span>
-      </div>
-      {!auras.length && (
-        <div className="empty-state">
-          <Backpack size={35} />
-          <h3>
-            {player.inventory.some((i) => i.native_claim_state === "minted")
-              ? "More discoveries await"
-              : "Your first treasure is waiting"}
-          </h3>
-          <p>
-            Find an open free zone and its park chest. No deposit is needed.
-          </p>
-        </div>
-      )}
-      <div className="item-grid">
-        {auras.map((i) => (
-          <article className={`item-card rarity-${i.rarity}`} key={i.id}>
-            <AuraArt color={i.color} slot={i.slot} />
-            <Badge tone={i.rarity === "legendary" ? "gold" : "purple"}>
-              {rarityNames[i.rarity]}
-            </Badge>
-            <h3>{i.name}</h3>
-            <small>
-              #{i.serial} / 256 ·{" "}
-              {i.slot === "above" ? "above character" : "below character"}
-            </small>
-            {i.native_claim_state && (
-              <p className="native-item-state">
-                {i.native_claim_state === "minted"
-                  ? "Minted on NEAR · use your NEAR inventory"
-                  : "Reserved for a NEAR claim"}
-              </p>
-            )}
-            <div className="item-actions">
-              <button
-                onClick={() => onEquip(i)}
-                disabled={!!busy || i.native_claim_state === "minted"}
-                className={i.equipped ? "equipped" : ""}
-              >
-                {i.equipped ? (
-                  <>
-                    <Check />
-                    Equipped
-                  </>
-                ) : (
-                  "Equip"
-                )}
-              </button>
-              <button
-                onClick={() => setSelling(i)}
-                aria-label={`Sell ${i.name}`}
-                disabled={!!busy || !!i.native_claim_state}
-              >
-                <Storefront size={17} />
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
-      {selling && (
-        <div className="inline-form">
-          <div className="section-label">
-            <h3>Sell: {selling.name}</h3>
-            <button className="icon-button" onClick={() => setSelling(null)}>
-              <X />
-            </button>
-          </div>
-          <label>
-            Price in demo GOLD
-            <input
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              inputMode="decimal"
-            />
-          </label>
-          <button
-            className="primary-button"
-            disabled={!!busy || units(price) <= 0}
-            onClick={() =>
-              void onSell(selling, units(price)).then((ok) => {
-                if (ok) setSelling(null);
-              })
-            }
-          >
-            List for {price} GOLD <ArrowRight />
-          </button>
-          <p className="fine-print">
-            This market settles demo items on the server. On-chain NFTs and
-            Intents require a separately verified settlement flow.
-          </p>
-        </div>
-      )}
-    </>
   );
 }
 function WalletNavigation({

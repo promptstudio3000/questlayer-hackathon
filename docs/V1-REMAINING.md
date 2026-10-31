@@ -1,6 +1,6 @@
 # QuestLayer: remaining work to a complete V1
 
-Updated 31 October 2026, after the playability, reusable quest and native worker slice. This is a current gap register, not a declaration that the full product is ready. The authoritative milestones and acceptance journeys remain in [ROADMAP.md](../ROADMAP.md). Testnet tokens have no monetary value.
+Updated 31 October 2026, after the native map, level entitlement, session recovery and inventory slice. This is a current gap register, not a declaration that the full product is ready. The authoritative milestones and acceptance journeys remain in [ROADMAP.md](../ROADMAP.md). Testnet tokens have no monetary value.
 
 ## What is implemented now
 
@@ -13,7 +13,9 @@ Updated 31 October 2026, after the playability, reusable quest and native worker
 - Four reusable quest templates: proximity visit, ordered three-stop trail, four-stop return trail and cosmetic chest. New demo content begins with unprepared days from 2 November; already-prepared worlds and all native v1 manifest hashes remain unchanged. Native v1 continues to attest its original three checkpoints.
 - Route completion commits the final stop and reward together. Paused/failing reward settlement no longer prevents independent maintenance of an existing withdrawal. Tests cover rollback/retry, receipt ordering, ownership/code guards and conservation.
 
-These are connected slices, but several native systems remain a pilot beside the main demo progression. A working contract is not evidence of the entire release journey.
+Native map mode now connects published coins/checkpoints with confirmed account XP, level 2–4 Aura entitlements and native inventory. Wallet-based recovery includes fresh proof, browser-session revocation and cookie rotation. Inventories prioritize the character, equipped slots and selected-item actions.
+
+These are connected slices, but several native systems remain experimental pilots. A working contract is not evidence of the entire release journey.
 
 ## Next implementation order
 
@@ -21,7 +23,7 @@ These are connected slices, but several native systems remain a pilot beside the
 | --- | --- | --- |
 | 1 · W01/W02 | Finish playable content and interface | One objective and sensible Back behavior across map, inventory, market, notes and creator forms. Authored coin/chest/quest artwork, actual level rewards and stable/recoverable results. Observe five newcomers; correct failures. Field-check public access and real separation in Plzeň. |
 | 2 · W05/W06 | Complete the real money lifecycle on testnet | Observe pool release, receipt of unstaked cash, beneficiary withdrawal, realized yield capture and 50/50 treasury funding over several epochs. Prove failure recovery and older withdrawal protection. Current demonstrated exit still awaits epoch 5402; realized game yield observed so far is zero. |
-| 3 · W03/W04/W06 | Join native identity, rewards and progression into one game | The same explorer earns native XP/level unlocks and actual Aura rights on the primary map, resumes after reconnect and uses an independently recoverable account. No server-held player keys. Validate wallet return/recovery on two supported devices. Keep demo funds clearly separate. |
+| 3 · W03/W04/W06 | Join native identity, rewards and progression into one game | The map/XP/level 2–4 entitlement path is implemented; finish native auto-collection, full restart/wallet-return journeys and an independently recoverable native passkey account. No server-held player keys. Validate wallet return/recovery on two supported devices. Keep demo funds clearly separate. |
 | 4 · W01/W06 | Introduce richer native quest policies safely | Versioned future-day manifest migration for visit/return/chest mechanics, reviewed evidence and payout exposure. Never rewrite a published day's targets, hash, amounts or accepted rights. Native photo/geocache proof needs a separate implemented review policy. |
 | 5 · W07 | Complete signed market / Intents path | Existing fixed-price native NFT escrow is a working testnet path. Prove the selected canonical protocol's exact NFT/payment compatibility, replay protection, cancellation, matching and failed-withdrawal recovery. Do not call the current market a live NEAR Intents integration. |
 | 6 · W08–W11 | Finish creator and social rights | Native sponsored-task escrow, evidence review, deadlines/refunds/appeals; authoring/follows, XP commitments and once-only level grants; conserved donations/access/creator allocations; moderation, private media retention and bounded AI tools. Existing demo task/notes screens do not fulfill these rights. |

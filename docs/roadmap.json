@@ -289,7 +289,8 @@
       "evidence": [
         "docs/OVERNIGHT-2026-10-31.md",
         "docs/UI-AUDIT-2026-10-31.md",
-        "output/qa/W02-playability/README.md"
+        "output/qa/W02-playability/README.md",
+        "output/qa/W03-W06-native-progression/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W02/"
@@ -351,7 +352,9 @@
         "output/qa/W03/live-near-identity.json",
         "docs/NATIVE-PROFILES.md",
         "output/qa/W03-profiles/checks.txt",
-        "output/qa/W03-profiles/local-native-profile.json"
+        "output/qa/W03-profiles/local-native-profile.json",
+        "output/qa/W03-W06-native-progression/README.md",
+        "docs/IDENTITY-RECOVERY.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W03/"
@@ -434,7 +437,9 @@
         "output/qa/W04/peer-checks.txt",
         "docs/ASSET-CATALOG.md",
         "output/qa/W04-models/",
-        "output/qa/W04-real-assets/"
+        "output/qa/W04-real-assets/",
+        "output/qa/W03-W06-native-progression/README.md",
+        "docs/NATIVE-PROGRESSION.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W04/"
@@ -614,7 +619,9 @@
         "output/qa/W05-W06-native/final-public-check.json",
         "output/qa/W05-W06-native/restore-final.txt",
         "docs/NEAR-INTEGRATION-STATUS.md",
-        "docs/QUEST-TEMPLATES.md"
+        "docs/QUEST-TEMPLATES.md",
+        "output/qa/W03-W06-native-progression/README.md",
+        "docs/NATIVE-GAME-MAP.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W06/"
@@ -1307,7 +1314,7 @@
     }
   ],
   "runtimeChangedSincePlanningBaseline": true,
-  "lastImplementationUpdate": "2026-10-31T10:59:12.777Z",
-  "implementationReport": "docs/OVERNIGHT-2026-10-31.md",
+  "lastImplementationUpdate": "2026-10-31T14:24:42.730957+00:00",
+  "implementationReport": "output/qa/W03-W06-native-progression/README.md",
   "currentGapRegister": "docs/V1-REMAINING.md"
 }
