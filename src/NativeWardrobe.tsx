@@ -111,7 +111,7 @@ export function NativeWardrobe({
       } catch {
         if (current && generation === request)
           setGalleryError(
-            "The on-chain collection is temporarily unavailable. Try again later.",
+            "The public collection could not load. Try again later.",
           );
       }
     };
@@ -125,8 +125,8 @@ export function NativeWardrobe({
   return (
     <section className="native-wardrobe">
       <p className="inventory-collection-caption">
-        Owned in your NEAR wallet. Testnet NFTs stay separate from demo items
-        and GOLD.
+        Auras secured to your NEAR account. They stay separate from practice
+        Auras and GOLD.
       </p>
       {!player.wallets.length ? (
         <button
@@ -143,11 +143,11 @@ export function NativeWardrobe({
             disabled={!!busy}
             onClick={onRefresh}
           >
-            <ArrowClockwise size={18} aria-hidden="true" /> Refresh NEAR
-            inventory
+            <ArrowClockwise size={18} aria-hidden="true" /> Refresh secured
+            collection
           </button>
           {!data && !error && (
-            <p role="status">Reading your on-chain inventory…</p>
+            <p role="status">Loading your secured collection…</p>
           )}
           {error && (
             <p className="inventory-error" role="alert">
@@ -162,12 +162,13 @@ export function NativeWardrobe({
               <section
                 className="native-account"
                 key={account.accountId}
-                aria-label={`Inventory for ${account.accountId}`}
+                aria-label={`Secured collection for ${account.accountId}`}
               >
                 <strong className="native-address">{account.accountId}</strong>
                 <span>
-                  {account.supply} owned NFTs
-                  {wearing ? " · Current map outfit" : ""}
+                  {account.supply} secured{" "}
+                  {account.supply === "1" ? "item" : "items"}
+                  {wearing ? " · On the map now" : ""}
                 </span>
                 {!!account.items.length && (
                   <button
@@ -177,7 +178,9 @@ export function NativeWardrobe({
                       void onSource(wearing ? null : account.accountId)
                     }
                   >
-                    {wearing ? "Use my demo outfit" : "Wear this NEAR outfit"}
+                    {wearing
+                      ? "Wear my practice outfit"
+                      : "Wear this secured outfit"}
                     <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 )}
@@ -227,18 +230,18 @@ export function NativeWardrobe({
                 )}
                 {!auras.length && (
                   <p>
-                    No Auras in this wallet yet. Mint an eligible earned Aura
-                    using Claims & public profile below.
+                    No secured Auras yet. Secure an earned Aura under Secure
+                    Auras & public profile below.
                   </p>
                 )}
                 <details className="inventory-disclosure">
                   <summary>
-                    Explorer NFT{" "}
+                    Secured explorer{" "}
                     <span>
                       {account.starterOwned
                         ? "· Owned"
                         : account.starterMinted
-                          ? "· Already minted"
+                          ? "· Already secured"
                           : "· Create"}
                     </span>
                   </summary>
@@ -246,17 +249,16 @@ export function NativeWardrobe({
                     {!account.starterMinted ? (
                       <>
                         <p>
-                          Your wallet confirms up to{" "}
-                          <strong>0.05 test NEAR</strong> for NFT storage;
-                          unused storage deposit returns. This does not spend
-                          demo GOLD.
+                          Securing holds up to <strong>0.05 test NEAR</strong>{" "}
+                          for storage; anything unused comes back. No practice
+                          GOLD is spent.
                         </p>
                         <button
                           className="inventory-action"
                           disabled={actionBlocked}
                           onClick={() => void onMint(account.accountId)}
                         >
-                          Create my explorer NFT{" "}
+                          Secure my explorer{" "}
                           <ArrowRight size={18} aria-hidden="true" />
                         </button>
                       </>
@@ -265,10 +267,10 @@ export function NativeWardrobe({
                         {account.starterOwned ? (
                           <>
                             <Check size={16} aria-hidden="true" />
-                            Your explorer NFT is in this wallet.
+                            Your explorer is secured to this account.
                           </>
                         ) : (
-                          "Your starter NFT has already been minted."
+                          "Your explorer was already secured."
                         )}
                       </p>
                     )}
@@ -289,7 +291,7 @@ export function NativeWardrobe({
                 </details>
                 {account.truncated && (
                   <p className="fine-print">
-                    Showing the first 100 NFTs plus your equipped items.
+                    Showing the first 100 items plus what you wear.
                   </p>
                 )}
               </section>
@@ -312,8 +314,8 @@ export function NativeWardrobe({
             </header>
             {!selectedAccount || !selectedItem ? (
               <p>
-                This Aura is no longer in the loaded wallet inventory. Refresh
-                your NEAR inventory to check ownership.
+                This Aura is no longer in the loaded collection. Refresh your
+                secured collection to check.
               </p>
             ) : (
               <>
@@ -333,12 +335,12 @@ export function NativeWardrobe({
                       ? ` · #${selectedItem.serial}`
                       : ""}
                   </p>
-                  <span className="inventory-source">NEAR testnet NFT</span>
+                  <span className="inventory-source">Secured Aura</span>
                 </div>
                 {error && (
                   <p className="inventory-error" role="alert">
-                    Ownership could not be refreshed. Close this item and
-                    refresh the inventory before changing equipment.
+                    Ownership could not be checked. Close this Aura and refresh
+                    the collection before changing your outfit.
                   </p>
                 )}
                 <div className="inventory-item-actions">
@@ -360,39 +362,39 @@ export function NativeWardrobe({
                         }
                       >
                         <Icon size={20} aria-hidden="true" />
-                        {equipped ? "Remove " + slot : "Wear " + slot}
+                        {equipped ? "Take off " + slot : "Wear " + slot}
                       </button>
                     );
                   })}
                   <p className="inventory-sale-note" role="status">
                     {error
-                      ? "Last loaded outfit shown; ownership verification is unavailable."
+                      ? "Showing the last loaded outfit; ownership could not be checked."
                       : busy
-                        ? "Waiting for wallet approval and a confirmed outfit…"
+                        ? "Waiting for your approval and a confirmed outfit…"
                         : selectedAccount.equipment.above ===
                             selectedItem.tokenId
-                          ? "Confirmed on-chain: equipped above."
+                          ? "Equipped above."
                           : selectedAccount.equipment.below ===
                               selectedItem.tokenId
-                            ? "Confirmed on-chain: equipped below."
-                            : "This Aura is not equipped in either slot."}
+                            ? "Equipped below."
+                            : "Not equipped."}
                   </p>
                   {(!player.nativeOutfit ||
                     player.nativeAccount !== selectedAccount.accountId) && (
                     <p className="inventory-sale-note">
-                      The map uses another outfit. Select Wear this NEAR outfit
-                      after equipping.
+                      Your map ghost wears another outfit. Choose Wear this
+                      secured outfit after equipping.
                     </p>
                   )}
                 </div>
                 <details className="inventory-disclosure">
-                  <summary>NFT details</summary>
+                  <summary>Details</summary>
                   <div className="inventory-disclosure-body">
                     <p className="native-address">
                       Token: {selectedItem.tokenId}
                     </p>
                     <p className="native-address">
-                      Wallet: {selectedAccount.accountId}
+                      Account: {selectedAccount.accountId}
                     </p>
                   </div>
                 </details>
@@ -405,7 +407,7 @@ export function NativeWardrobe({
         className="native-gallery"
         onToggle={(e) => setShowGallery(e.currentTarget.open)}
       >
-        <summary>Explore the public testnet collection</summary>
+        <summary>Browse everyone's secured Auras</summary>
         {galleryError ? (
           <>
             <p role="alert">{galleryError}</p>
@@ -417,21 +419,21 @@ export function NativeWardrobe({
             </button>
           </>
         ) : !gallery ? (
-          <p role="status">Loading the NEAR collection…</p>
+          <p role="status">Loading the public collection…</p>
         ) : (
           <>
             {gallery.outfits?.map((outfit) => (
               <div className="native-outfit-preview" key={outfit.accountId}>
                 <Character items={nativeAppearanceItems(outfit)} />
                 <div>
-                  <strong>On-chain outfit</strong>
+                  <strong>Secured outfit</strong>
                   <small className="native-address">{outfit.accountId}</small>
-                  <span>Live NEAR testnet equipment</span>
+                  <span>What this explorer wears right now</span>
                 </div>
               </div>
             ))}
             <p>
-              {gallery.name} · {gallery.supply} on-chain NFTs
+              {gallery.name} · {gallery.supply} secured items
             </p>
             <div className="native-items">
               {gallery.items.map((item) => (
@@ -453,7 +455,7 @@ export function NativeWardrobe({
               target="_blank"
               rel="noreferrer"
             >
-              View contract
+              View on NEAR explorer
               <ArrowSquareOut size={16} />
             </a>
           </>

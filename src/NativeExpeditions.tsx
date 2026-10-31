@@ -167,7 +167,8 @@ export function NativeExpeditions({
     checkpoint?: number,
   ) {
     await act(async () => {
-      if (!state?.day) throw Error("The native day is not ready.");
+      if (!state?.day)
+        throw Error("Today's walks are not ready yet. Try again in a moment.");
       objective.select(kind, index);
       const result = await api<{
         state: string;
@@ -184,8 +185,8 @@ export function NativeExpeditions({
       });
       setNotice(
         result.state === "progress"
-          ? `Checkpoint ${result.checkpoint} of ${result.total} recorded. Continue to the next stop.`
-          : "Visit accepted. Your native receipt is waiting for chain confirmation.",
+          ? `Stop ${result.checkpoint} of ${result.total} confirmed. Walk to the next stop.`
+          : "Visit confirmed. Your reward is being secured.",
       );
     });
   }
@@ -231,17 +232,17 @@ export function NativeExpeditions({
       q.index !== selected?.index,
   );
   const readyReason = !account
-    ? "Connect a wallet to record visits"
+    ? "Link a NEAR account to confirm visits"
     : readReason
       ? readReason
       : !state?.enrolled
-        ? "Join the testnet walks below"
+        ? "Join the walks below"
         : !gpsReady
           ? arena
-            ? "Turn on GPS to record visits"
-            : "Waiting for accurate, fresh GPS"
+            ? "Turn on GPS to confirm visits"
+            : "Waiting for a fresh, accurate GPS fix"
           : state.day && state.day.claimsAccepted >= state.day.claimsLimit
-            ? "Today's pilot is full"
+            ? "Today's walks are full. Come back tomorrow"
             : "";
   function renderQuest(q: Quest) {
     const done = q.checkpoint >= q.targets.length;
@@ -251,15 +252,15 @@ export function NativeExpeditions({
     const future = Date.now() < q.opensAt;
     const locked = q.tier > (state?.access.tier || 1);
     const reason = done
-      ? "Walk recorded"
+      ? "Walk complete"
       : locked
-        ? `Requires Tier ${q.tier}`
+        ? `Opens at Tier ${q.tier}`
         : future
           ? "Opens later today"
           : closed
-            ? "Zone closed"
+            ? "Closed for today"
             : readyReason ||
-              (distance > 35 ? "Get within 35 m of the marker" : "");
+              (distance > 35 ? "Get within 35 m of the stop" : "");
     return (
       <article className="walk-card" key={q.index}>
         <div className="walk-art" aria-hidden="true">
@@ -309,7 +310,7 @@ export function NativeExpeditions({
           onClick={() => (done ? onWallet?.(true) : onFocus("quest", q.index))}
         >
           <MapPin size={20} />
-          {done ? "View reward receipts" : "Show next stop"}
+          {done ? "See my rewards" : "Show next stop"}
           <ArrowRight size={20} />
         </button>
         <button
@@ -323,14 +324,10 @@ export function NativeExpeditions({
           }
           onClick={() => void visit("quest", q.index, q.checkpoint)}
         >
-          {busy
-            ? "Checking visit…"
-            : done
-              ? "Walk recorded"
-              : "Record this stop"}
+          {busy ? "Checking visit…" : done ? "Walk complete" : "Confirm visit"}
           <CheckCircle size={20} />
         </button>
-        <ol className="walk-steps" aria-label="Checkpoint progress">
+        <ol className="walk-steps" aria-label="Stops">
           {q.targets.map((_, i) => (
             <li
               key={i}
@@ -355,7 +352,7 @@ export function NativeExpeditions({
         {!account && (
           <button className="text-button" onClick={onConnect}>
             <Wallet size={20} />
-            Connect to record visits
+            Link account to confirm visits
           </button>
         )}
         {account && state?.enrolled && !gpsReady && (
@@ -411,15 +408,14 @@ export function NativeExpeditions({
           </p>
           <p>{q.prompt}</p>
           <p>
-            Visit the marked stops in order. Observations are optional; only
-            browser GPS checkpoints are attested. Use safe public paths; these
-            locations still need field review.
+            Visit the stops in order. Only your GPS position at each stop is
+            checked. Use safe public paths; distances are straight lines, not
+            routes.
           </p>
           {q.reward !== "0" && (
             <p>
-              The first valid finish receives the shared prize. Personal XP
-              remains available. GOLD here represents test NEAR and has no
-              monetary value.
+              The GOLD prize goes to the first explorer to finish; your XP is
+              always yours. GOLD here is test NEAR with no monetary value.
             </p>
           )}
         </details>
@@ -430,23 +426,23 @@ export function NativeExpeditions({
     <section
       ref={section}
       className="play-native"
-      aria-label={view === "board" ? "Testnet walks" : "Testnet rewards"}
+      aria-label={view === "board" ? "Nearby walks" : "Secured rewards"}
     >
       <div className="play-toolbar">
         <span className="play-chip">
           <span className="status-dot" />
-          NEAR testnet
+          Test network
         </span>
         <button
           className="play-icon"
-          aria-label="Refresh testnet status"
+          aria-label="Refresh walks"
           disabled={busy}
           onClick={() => void refresh(true)}
         >
           <ArrowClockwise size={22} />
         </button>
       </div>
-      <p className="play-hint">Sponsored test tokens · no monetary value</p>
+      <p className="play-hint">Test rewards · no monetary value</p>
       {(error || control?.error) && (
         <p className="play-error" role="alert">
           {error || control?.error}
@@ -468,7 +464,7 @@ export function NativeExpeditions({
             <p>
               {objective.view.receipt.amount === null ||
               objective.view.receipt.xp === null
-                ? "Confirmed receipt · reward details unavailable"
+                ? "Confirmed · reward details unavailable"
                 : `${nativeGold(objective.view.receipt.amount)} GOLD · ${objective.view.receipt.xp} confirmed XP`}
             </p>
           )}
@@ -483,7 +479,7 @@ export function NativeExpeditions({
           )}
           {onWallet && (
             <button className="secondary-button" onClick={() => onWallet(true)}>
-              View reward receipts <ArrowRight size={20} />
+              See my rewards <ArrowRight size={20} />
             </button>
           )}
           <button className="text-button" onClick={browseWalks}>
@@ -492,7 +488,7 @@ export function NativeExpeditions({
         </article>
       )}
       {state?.status === "not-configured" && (
-        <p>The testnet walks are not available yet.</p>
+        <p>Walks are not available here yet.</p>
       )}
       {state?.contractId && (
         <>
@@ -509,15 +505,11 @@ export function NativeExpeditions({
                         <Coins size={24} />
                         Street coin
                       </div>
-                      <h2>
-                        {coin
-                          ? `${coin.distance} m away`
-                          : "Coin no longer nearby"}
-                      </h2>
+                      <h2>{coin ? `${coin.distance} m away` : "Coin gone"}</h2>
                       <p>
                         {coin
-                          ? `${nativeGold(state.day?.coinUnit || "0")} GOLD · shared street reward`
-                          : "This coin may have been collected. Choose another discovery."}
+                          ? `${nativeGold(state.day?.coinUnit || "0")} GOLD · first explorer takes it`
+                          : "Someone may have collected it. Pick another nearby."}
                       </p>
                       <button
                         className="primary-button"
@@ -532,7 +524,7 @@ export function NativeExpeditions({
                       )}
                       {coin && coin.distance > 35 && (
                         <p className="play-hint">
-                          Get within 35 m of the marker.
+                          Get within 35 m of the coin.
                         </p>
                       )}
                       <button
@@ -559,8 +551,8 @@ export function NativeExpeditions({
                       onChange={(e) => setConsent(e.target.checked)}
                     />
                     <span>
-                      I understand that public receipts may link my wallet to
-                      these places. Browser GPS is not independently verified.
+                      I understand my confirmed visits are public and link my
+                      account to these places. Browser GPS is not verified.
                     </span>
                   </label>
                   <button
@@ -573,12 +565,12 @@ export function NativeExpeditions({
                           consent: true,
                         });
                         setNotice(
-                          "You're ready. Turn on GPS and visit a marked stop.",
+                          "You're in. Turn on GPS and walk to the first stop.",
                         );
                       })
                     }
                   >
-                    Join testnet walks
+                    Join the walks
                     <ArrowRight size={20} />
                   </button>
                 </div>
@@ -634,7 +626,7 @@ export function NativeExpeditions({
                 </summary>
                 <p>
                   {state.day ? nativeGold(state.day.coinUnit) : "0"} GOLD per
-                  coin · shared · up to 100 a day.
+                  coin · first explorer takes it · up to 100 a day.
                 </p>
                 {state.day?.coins.length ? (
                   state.day.coins.slice(0, 5).map((c) => (
@@ -643,7 +635,7 @@ export function NativeExpeditions({
                       <span>{c.distance} m</span>
                       <button
                         className="play-icon"
-                        aria-label={`Show native coin ${c.index} on map`}
+                        aria-label={`Show coin ${c.index} on map`}
                         disabled={!objective.canSelect("coin", c.index)}
                         onClick={() => onFocus("coin", c.index)}
                       >
@@ -659,7 +651,7 @@ export function NativeExpeditions({
                     </div>
                   ))
                 ) : (
-                  <p>No coins within 1 km of the map position.</p>
+                  <p>No coins within 1 km of you.</p>
                 )}
                 {readyReason && <p className="play-hint">{readyReason}</p>}
               </details>
@@ -670,13 +662,13 @@ export function NativeExpeditions({
               <span className="play-object">
                 <Wallet size={30} weight="duotone" />
               </span>
-              <small>Confirmed rewards</small>
+              <small>Secured rewards</small>
               <strong>
                 {state.balance ? nativeGold(state.balance.credit) : "—"} GOLD
               </strong>
               <span>
                 {state.balance ? nearAmount(state.balance.credit) : "—"} test
-                NEAR · {state.balance?.xp ?? "—"} native XP
+                NEAR · {state.balance?.xp ?? "—"} XP
               </span>
               {state.balance && (
                 <>
@@ -691,17 +683,17 @@ export function NativeExpeditions({
                       void act(async () => {
                         if (await onWithdraw(account, state.contractId))
                           setNotice(
-                            "Withdrawal submitted. Waiting for confirmation.",
+                            "Withdrawal sent. Waiting for confirmation.",
                           );
                       })
                     }
                   >
-                    Withdraw to wallet
+                    Withdraw to my account
                     <ArrowRight size={20} />
                   </button>
                   <p className="play-hint">
-                    Network fees can exceed a small reward. Combine rewards
-                    before withdrawing.
+                    A network fee applies, so let small rewards add up before
+                    withdrawing.
                   </p>
                   {state.balance.pending !== "0" && (
                     <p role="status">
@@ -715,11 +707,11 @@ export function NativeExpeditions({
           {!account && (view === "wallet" || chosenCoin !== null) ? (
             <button className="secondary-button" onClick={onConnect}>
               <Wallet size={22} />
-              Connect NEAR wallet
+              Link NEAR account
             </button>
           ) : player.wallets.length > 1 ? (
             <label className="play-field">
-              Receiving wallet
+              Receiving account
               <select
                 value={account}
                 disabled={busy}
@@ -755,17 +747,17 @@ export function NativeExpeditions({
           <details className="play-details" data-native-receipts>
             <summary>
               <CheckCircle size={20} />
-              Receipts & pilot status
+              Receipts & status
             </summary>
             <p>
               Tier {state.access.tier} · {nativeGold(state.access.weighted)}{" "}
-              eligible GOLD. Demo deposits do not unlock testnet tiers.
+              eligible GOLD. Practice stake does not unlock these tiers.
             </p>
             {state.day && (
               <p>
-                {state.day.claimsAccepted}/{state.day.claimsLimit} daily
-                receipts used. If the storage allowance fills, demo play remains
-                available.
+                {state.day.claimsAccepted}/{state.day.claimsLimit} visits
+                confirmed today. When the limit is reached, practice play still
+                works.
               </p>
             )}
             {state.receipts.length ? (
@@ -781,7 +773,7 @@ export function NativeExpeditions({
                     {r.state === "confirmed"
                       ? `${nativeGold(r.amount || "0")} GOLD + ${r.xp} XP`
                       : r.state === "retrying"
-                        ? "Retrying confirmation; your visit is saved"
+                        ? "Confirming again; your visit is saved"
                         : "Waiting for confirmation"}
                   </span>
                   {r.transaction && (
@@ -796,10 +788,10 @@ export function NativeExpeditions({
                 </div>
               ))
             ) : (
-              <p>No recorded visits yet.</p>
+              <p>No confirmed visits yet.</p>
             )}
             {state.worker.last_error && (
-              <p>The worker is retrying. Accepted visits remain saved.</p>
+              <p>Confirmation is retrying. Your visits stay saved.</p>
             )}
           </details>
         </>

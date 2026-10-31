@@ -77,11 +77,11 @@ export function AccountSessions({
     >
       <div className="play-section-heading">
         <h2>
-          <ShieldCheck size={22} /> Sign-in & recovery
+          <ShieldCheck size={22} /> Sign-in & coming back
         </h2>
         <button
           className="icon-button"
-          aria-label="Refresh game sessions"
+          aria-label="Refresh sessions"
           disabled={loading}
           onClick={() => void refresh()}
         >
@@ -93,15 +93,15 @@ export function AccountSessions({
           {error}
         </p>
       )}
-      {!state && !error && <p role="status">Loading game sessions…</p>}
+      {!state && !error && <p role="status">Loading sessions…</p>}
       {state && (
         <>
           <p className="play-hint">
             {state.recovery.nearAccounts.length
-              ? "Sign in with the same linked account to restore this explorer."
+              ? "Your linked account brings this explorer back on any device."
               : state.recovery.demoPasskeys
-                ? "A passkey can restore this explorer on this device or any device that syncs it."
-                : "This explorer is saved in this browser. Add a passkey to come back from another device."}
+                ? "Your passkey brings this explorer back on this device or any device that syncs it."
+                : "This explorer lives in this browser. Add a passkey to come back from another device."}
           </p>
           {!state.recovery.demoPasskeys && onSecure && (
             <button
@@ -115,38 +115,38 @@ export function AccountSessions({
           {!state.recovery.nearAccounts.length && (
             <details className="native-extras">
               <summary>
-                <Key size={20} /> Link an external NEAR wallet
+                <Key size={20} /> Link a NEAR account
               </summary>
               <p className="play-hint">
-                Optional. A wallet signs a message, not a payment, and restores
-                the same explorer from any browser.
+                Optional. Your account signs a short message, pays nothing, and
+                brings the same explorer back in any browser.
               </p>
               <button
                 className="secondary-button"
                 onClick={onConnect}
                 disabled={!!busy}
               >
-                <Key size={20} /> Link NEAR wallet
+                <Key size={20} /> Link NEAR account
               </button>
             </details>
           )}
           <details className="native-extras">
             <summary>
-              <Devices size={20} /> {state.activeSessionCount} active game{" "}
-              {state.activeSessionCount === 1 ? "session" : "sessions"}
+              <Devices size={20} /> Signed in on {state.activeSessionCount}{" "}
+              {state.activeSessionCount === 1 ? "device" : "devices"}
               {state.hasMoreSessions ? " +" : ""}
             </summary>
             <ul className="session-list">
               {state.sessions.map((s) => (
                 <li key={s.id}>
                   <strong>
-                    {s.current ? "This browser" : "Other session"}
+                    {s.current ? "This browser" : "Another device"}
                   </strong>
                   <span>
                     {s.kind === "near-wallet"
-                      ? "NEAR wallet"
+                      ? "NEAR account"
                       : s.kind === "demo-passkey"
-                        ? "Demo passkey"
+                        ? "Passkey"
                         : s.kind === "legacy"
                           ? "Earlier session"
                           : "Guest"}
@@ -156,17 +156,17 @@ export function AccountSessions({
                     {s.lastSeenAt
                       ? "Last active " +
                         new Date(s.lastSeenAt).toLocaleString("en-US")
-                      : "Activity time unavailable"}
+                      : "Last activity unknown"}
                   </small>
                 </li>
               ))}
             </ul>
           </details>
           <details className="native-extras">
-            <summary>Recovery options</summary>
+            <summary>Ways back in</summary>
             <p className="play-hint">
-              Your wallet holds its keys and recovery phrase. QuestLayer cannot
-              reset a lost wallet.
+              A linked NEAR account is yours alone; QuestLayer cannot reset it
+              if you lose access.
             </p>
             {state.recovery.nearAccounts.map((a) => (
               <p className="session-account" key={a}>
@@ -176,8 +176,8 @@ export function AccountSessions({
             ))}
             <p className="play-hint">
               {state.recovery.demoPasskeys
-                ? `${state.recovery.demoPasskeys} browser passkey(s) can restore demo progress. They do not sign NEAR transactions.`
-                : "No demo passkey is saved for this explorer."}
+                ? `${state.recovery.demoPasskeys} passkey(s) can bring this explorer back. They never spend anything.`
+                : "No passkey is saved for this explorer yet."}
             </p>
           </details>
           {(state.activeSessionCount > 1 ||
@@ -190,18 +190,18 @@ export function AccountSessions({
               >
                 <SignOut size={20} />{" "}
                 {state.activeSessionCount > 1
-                  ? "Sign out other sessions"
-                  : "Renew browser sign-in"}
+                  ? "Sign out other devices"
+                  : "Renew this sign-in"}
               </button>
               {!state.recovery.canRevokeOtherSessions && (
-                <small>Link a NEAR wallet to verify this change.</small>
+                <small>Link a NEAR account to confirm this change.</small>
               )}
             </>
           )}
           {review && (
             <div className="session-review">
               <label>
-                Verify with your linked wallet
+                Confirm with your linked account
                 <select
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
@@ -212,10 +212,9 @@ export function AccountSessions({
                 </select>
               </label>
               <p>
-                This renews this browser’s sign-in and expires its previous
-                sign-in, including any copies. Other game sessions are signed
-                out. Your wallet keys and saved passkeys stay usable for signing
-                in again.
+                This browser gets a fresh sign-in and every other device is
+                signed out. Your account and passkeys still work to sign in
+                again.
               </p>
               <div className="play-task-actions">
                 <button
@@ -229,10 +228,10 @@ export function AccountSessions({
                   }}
                 >
                   {busy === "session-recovery"
-                    ? "Waiting for wallet…"
+                    ? "Waiting for your approval…"
                     : state.activeSessionCount > 1
-                      ? "Verify & sign out others"
-                      : "Verify & renew sign-in"}
+                      ? "Confirm & sign out others"
+                      : "Confirm & renew sign-in"}
                 </button>
                 <button
                   className="secondary-button"

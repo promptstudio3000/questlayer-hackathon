@@ -97,7 +97,8 @@ async function request<T>(
     const value = await response.json();
     if (!response.ok)
       throw new NoteError(
-        value.error || "The note service could not complete this request.",
+        value.error ||
+          "Notes are unavailable right now. Try again in a moment.",
         response.status,
       );
     return value as T;
@@ -121,7 +122,7 @@ function freshFix(fix: Fix | null) {
 function message(error: unknown) {
   return error instanceof Error && error.name !== "AbortError"
     ? error.message
-    : "The connection did not finish. Check the current status before trying again.";
+    : "The connection dropped. Use Check status before trying again.";
 }
 
 export function MapNotes({
@@ -346,8 +347,8 @@ export function MapNotes({
       receipt.state === "published"
         ? "Your note is on the map."
         : receipt.state === "abandoned"
-          ? "The unfinished publication was discarded."
-          : "This publication is no longer visible. It has not been posted again.";
+          ? "The unfinished note was discarded."
+          : "This note is no longer visible. It was not posted again.";
     setNotice(result);
     notify?.(result);
     await load();
@@ -378,9 +379,7 @@ export function MapNotes({
     if (existing && existing.clientId !== payload.clientId) {
       pendingRef.current = existing;
       setPending(existing);
-      throw Error(
-        "Another unfinished publication needs a status check first. Your text draft is kept.",
-      );
+      throw Error("Check your last note first. Your text is kept.");
     }
     const draftRevision =
       pendingRef.current?.clientId === payload.clientId
@@ -390,7 +389,7 @@ export function MapNotes({
       journal.remember(payload.clientId, draftRevision);
     } catch {
       throw Error(
-        "This browser could not save a publication receipt. Your note has not been sent; your draft is kept.",
+        "This browser could not save the note receipt. Nothing was sent; your text is kept.",
       );
     }
     const intent = { clientId: payload.clientId, payload, draftRevision };
@@ -409,7 +408,7 @@ export function MapNotes({
       if (!current(who) || pendingRef.current?.clientId !== payload.clientId)
         return;
       setError(
-        `${message(e)} Your publication receipt is kept. Check its status before starting another note.`,
+        `${message(e)} The receipt is kept. Use Check status before writing another note.`,
       );
       try {
         await checkPending();
@@ -422,10 +421,10 @@ export function MapNotes({
     if (pendingRef.current) return;
     if (shareGps && (arena || !freshFix(fix)))
       throw Error(
-        "Wait for a fresh GPS fix before attaching your exact location.",
+        "Wait for a fresh GPS fix before attaching your exact position.",
       );
     if (!consent || !text.trim())
-      throw Error("Write a note and confirm its public information first.");
+      throw Error("Write your note and tick the public-note box first.");
     await publish({
       clientId: crypto.randomUUID(),
       text: text.trim(),
@@ -499,7 +498,7 @@ export function MapNotes({
       await load();
       if (!current(who)) return;
       heading.current?.focus();
-      setNotice("Note removed from QuestLayer.");
+      setNotice("Note removed.");
     }
     if (selected.kind === "report")
       setNotice(
@@ -507,7 +506,7 @@ export function MapNotes({
           ? "Your previous report has already been reviewed. No new report was opened."
           : reportResult?.replayed
             ? "Your report is already in the review queue."
-            : "Report received for review. Reporting does not automatically remove a note.",
+            : "Report received. A reviewer will look at it; the note stays until then.",
       );
   }
   const locked = busy || !!pending;
@@ -523,8 +522,8 @@ export function MapNotes({
     setView("browse");
     setNotice(
       removed
-        ? "Text draft discarded. No published note was removed."
-        : "Draft cleared from this view. Browser storage could not be cleared; a saved copy may return after reload.",
+        ? "Draft discarded. Published notes are untouched."
+        : "Draft cleared here, but this browser kept a copy that may return after reload.",
     );
   }
   return (
@@ -583,9 +582,9 @@ export function MapNotes({
           <p className="map-notes-secondary" role="status">
             {draft.storageAvailable
               ? draft.restored
-                ? "Text draft restored on this device. Review the map pin, choose any photo again and confirm publication when ready."
-                : "Text draft kept on this device. Photos, map pin and location choices are not saved."
-              : "Your text remains in this tab. Browser storage is unavailable; it may be lost if you close or reload the page."}
+                ? "Your text is back. Check the pin, add a photo again and publish when ready."
+                : "Your text is kept on this device. Photo, pin and GPS choice are not."
+              : "Your text stays only in this tab; closing or reloading loses it."}
           </p>
           <button type="button" disabled={locked} onClick={discardDraft}>
             <Trash size={18} /> Discard draft
@@ -593,24 +592,23 @@ export function MapNotes({
         </div>
       )}
       {pending && (
-        <section className="map-notes-pending" aria-label="Publication status">
-          <b>Check your last publication</b>
+        <section className="map-notes-pending" aria-label="Last note status">
+          <b>Check your last note</b>
           <p>
             {pending.receipt?.state === "retryable"
-              ? "That attempt did not finish. Retry the same note, or discard this publication before writing another."
-              : "It may already be on the map. Checking again will not post a second note."}
+              ? "That attempt did not finish. Retry it or discard it before writing another."
+              : "It may already be on the map. Checking never posts it twice."}
           </p>
           {!pending.payload && (
             <p>
-              Your text draft is kept separately. The previous photo, map pin
-              and publication consent are not restored. Check or discard this
-              publication before sending again.
+              Your text is kept, but the photo, pin and consent are not. Check
+              or discard this note before sending again.
             </p>
           )}
           {pending.receipt?.state === "retryable" && retryGpsExpired && (
             <p>
-              The attached GPS fix has expired. Discard this publication, then
-              use a fresh fix in your retained draft.
+              Its GPS fix has expired. Discard this note and publish your draft
+              with a fresh fix.
             </p>
           )}
           <div className="map-notes-actions">
@@ -645,7 +643,7 @@ export function MapNotes({
                   })
                 }
               >
-                Discard publication
+                Discard note
               </button>
             }
           </div>
@@ -668,7 +666,7 @@ export function MapNotes({
             maxLength={500}
             required
             rows={4}
-            placeholder="A quiet bench, an interesting detail, a useful tip…"
+            placeholder="A quiet bench, a hidden detail, a tip for the next ghost…"
             onChange={(e) => {
               setText(e.target.value);
               setConsent(false);
@@ -739,8 +737,8 @@ export function MapNotes({
             </button>
           </div>
           <p className="map-notes-secondary">
-            The map pin, note, photo and time are public. Photos lose their
-            embedded metadata. Stored by QuestLayer; not published on-chain.
+            The pin, note, photo and time are public. Photo metadata is removed.
+            Notes are stored by QuestLayer only.
           </p>
           <label className="map-notes-check">
             <input
@@ -752,17 +750,16 @@ export function MapNotes({
                 setConsent(false);
               }}
             />
-            <span>Also attach my exact GPS, accuracy and capture time</span>
+            <span>Also attach my exact GPS position and time</span>
           </label>
           {arena ? (
             <p className="map-notes-secondary">
-              Demo movement cannot attach real GPS.
+              The city demo has no real GPS to attach.
             </p>
           ) : (
             !freshFix(fix) && (
               <p className="map-notes-secondary">
-                A fresh, accurate GPS fix is needed for this optional
-                attachment.
+                Needs a fresh, accurate GPS fix.
               </p>
             )
           )}
@@ -774,7 +771,7 @@ export function MapNotes({
               disabled={locked}
               onChange={(e) => setConsent(e.target.checked)}
             />
-            <span>I agree to publish this note and its map pin publicly.</span>
+            <span>Publish this note and its pin publicly.</span>
           </label>
           <button
             className="map-notes-primary"
@@ -794,9 +791,7 @@ export function MapNotes({
       {view === "browse" && (
         <>
           <div className="map-notes-toolbar">
-            <span className="map-notes-secondary">
-              Notes left near this map position
-            </span>
+            <span className="map-notes-secondary">Notes near you</span>
             <button
               className="map-notes-icon"
               aria-label="Refresh nearby notes"
@@ -906,7 +901,7 @@ export function MapNotes({
               <div className="map-notes-empty">
                 <ChatCircle size={36} />
                 <h3>No notes nearby yet</h3>
-                <p>Share a discovery for the next explorer.</p>
+                <p>Leave something for the next ghost passing through.</p>
               </div>
             )
           )}
@@ -928,8 +923,8 @@ export function MapNotes({
       {view === "blocked" && (
         <div className="map-notes-blocks">
           <p>
-            Blocked players’ notes and map presence are hidden from you. Your
-            notes and presence are hidden from them.
+            You and blocked players cannot see each other's notes or map
+            position.
           </p>
           {blocks.length ? (
             blocks.map((person) => (
@@ -993,14 +988,11 @@ export function MapNotes({
                   : "Report this note"}
             </h2>
             {decision.kind === "remove" ? (
-              <p>
-                It will disappear from QuestLayer. Copies other people saved may
-                remain.
-              </p>
+              <p>It disappears from the map. Copies others saved may remain.</p>
             ) : decision.kind === "block" ? (
               <p>
-                Your notes and map presence will be hidden from each other. You
-                can undo this in Blocked players.
+                You will no longer see each other's notes or position. Undo this
+                under Blocked players.
               </p>
             ) : (
               <>
@@ -1027,8 +1019,8 @@ export function MapNotes({
                   onChange={(e) => setDetail(e.target.value)}
                 />
                 <p>
-                  Reports go to the project’s review queue. They do not
-                  automatically remove content.
+                  A reviewer will look at it. Reporting alone does not remove
+                  the note.
                 </p>
               </>
             )}

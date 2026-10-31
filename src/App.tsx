@@ -292,7 +292,7 @@ export default function App() {
         setNativeError(
           error instanceof Error
             ? error.message
-            : "NEAR inventory is unavailable.",
+            : "Your secured collection could not load. Try again in a moment.",
         );
       }
       throw error;
@@ -334,9 +334,12 @@ export default function App() {
     if (walletId) pending?.resolve(walletId);
     else
       pending?.reject(
-        Object.assign(new Error("Wallet connection cancelled."), {
-          code: "WALLET_CANCELLED",
-        }),
+        Object.assign(
+          new Error("Account link cancelled. You can keep exploring."),
+          {
+            code: "WALLET_CANCELLED",
+          },
+        ),
       );
   }
   const [nativePlay, setNativePlay] = useState(() => {
@@ -384,7 +387,10 @@ export default function App() {
     void fetch("/api/health", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((h) => {
-        if (h?.nativeRewards?.status && h.nativeRewards.status !== "not-configured")
+        if (
+          h?.nativeRewards?.status &&
+          h.nativeRewards.status !== "not-configured"
+        )
           setNativePlay(true);
       })
       .catch(() => {});
@@ -651,7 +657,10 @@ export default function App() {
         e.code === "WALLET_CANCELLED"
       )
         return undefined;
-      notify(e instanceof Error ? e.message : "Something went wrong.", true);
+      notify(
+        e instanceof Error ? e.message : "Something went wrong. Try again.",
+        true,
+      );
     } finally {
       if (ownerContext() === owner && version === actionVersion.current) {
         setBusy("");
@@ -703,7 +712,9 @@ export default function App() {
     } catch (e) {
       if (worldReads.current.isCurrent(token, worldContext("replace")))
         notify(
-          e instanceof Error ? e.message : "Could not prepare the area.",
+          e instanceof Error
+            ? e.message
+            : "This area could not load. Try again in a moment.",
           true,
         );
     } finally {
@@ -1139,7 +1150,10 @@ export default function App() {
   }
   async function locate() {
     if (!navigator.geolocation) {
-      notify("This browser does not support geolocation.", true);
+      notify(
+        "This browser cannot share your location. Keep exploring in the city demo.",
+        true,
+      );
       return;
     }
     const owner = ownerContext();
@@ -1176,7 +1190,11 @@ export default function App() {
             setFix(f);
           },
           () => {
-            if (current()) notify("Waiting for a fresh GPS fix.", true);
+            if (current())
+              notify(
+                "Waiting for a fresh GPS fix. Step into the open or try again in a moment.",
+                true,
+              );
           },
           { enableHighAccuracy: true, maximumAge: 0 },
         );
@@ -1185,7 +1203,7 @@ export default function App() {
         if (!current()) return;
         setBusy("");
         notify(
-          "Allow browser location access, or continue in the arena.",
+          "Allow location access, or keep exploring in the city demo.",
           true,
         );
       },
@@ -1253,7 +1271,7 @@ export default function App() {
       .map(({ id, name, icon, website }) => ({ id, name, icon, website }));
     if (!choices.length)
       throw Error(
-        "No supported testnet wallet is available in this browser. You can still enter the demo.",
+        "No supported NEAR wallet app was found in this browser. You can still start exploring.",
       );
     const walletId = await new Promise<string>((resolve, reject) => {
       walletChoice.current = { resolve, reject };
@@ -1264,7 +1282,10 @@ export default function App() {
     );
     const wallet = await connector.connect({ walletId });
     const accounts = await wallet.getAccounts();
-    if (!accounts[0]) throw new Error("The wallet did not return an account.");
+    if (!accounts[0])
+      throw new Error(
+        "The wallet did not return an account. Try again or pick another wallet.",
+      );
     return { wallet, accountId: accounts[0].accountId };
   }
   async function connectNear(
@@ -1273,7 +1294,7 @@ export default function App() {
     if (options.signIn) {
       options.name = options.name?.trim() || "Explorer";
       if (options.name.length < 2 || options.name.length > 24) {
-        notify("Your name must be 2–24 characters.", true);
+        notify("Pick a name between 2 and 24 characters.", true);
         return;
       }
     }
@@ -1311,9 +1332,9 @@ export default function App() {
       notify(
         options.signIn
           ? r.returning
-            ? "Welcome back. Your NEAR wallet restored your explorer."
-            : "Your NEAR explorer is ready. Demo GOLD remains separate."
-          : "NEAR account verified. Demo GOLD remains separate.",
+            ? "Welcome back, explorer. Your account restored your progress."
+            : "Your explorer is ready. Practice GOLD stays separate from secured rewards."
+          : "Account linked. Practice GOLD stays separate from secured rewards.",
       );
     });
   }
@@ -1327,8 +1348,8 @@ export default function App() {
       if (account) await refreshNative(true);
       notify(
         account
-          ? "Your NEAR outfit is on the map."
-          : "Your demo outfit is on the map.",
+          ? "Your secured outfit is on the map."
+          : "Your practice outfit is on the map.",
       );
     });
   }
@@ -1339,13 +1360,13 @@ export default function App() {
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked NEAR wallet shown for this trade.");
+        throw Error("Choose the linked account shown for this trade.");
       if (
         !request.marketId.endsWith(".testnet") ||
         request.nftContractId !== nativeWardrobe?.contractId
       )
         throw Error(
-          "This native market is not configured for your testnet inventory.",
+          "This market is not set up for your secured collection yet.",
         );
       const listing = request.kind === "list",
         receiverId = listing ? request.nftContractId : request.marketId;
@@ -1401,7 +1422,7 @@ export default function App() {
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked receiving wallet.");
+        throw Error("Choose the linked account that receives this reward.");
       const configured = await api<{ contractId: string }>(
         "/native/rewards?account=" + encodeURIComponent(accountId),
       );
@@ -1409,7 +1430,7 @@ export default function App() {
         configured.contractId !== contractId ||
         !contractId.endsWith(".testnet")
       )
-        throw Error("The native reward contract changed. Refresh first.");
+        throw Error("The reward rules changed. Refresh, then try again.");
       await signer.send(
         {
           network: "testnet",
@@ -1440,7 +1461,7 @@ export default function App() {
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked wallet shown for this position.");
+        throw Error("Choose the linked account shown for this position.");
       const quote = await api<VaultQuote>("/native/vaults/prepare", request);
       assertVaultQuote(quote, request);
       await signer.send(
@@ -1473,7 +1494,7 @@ export default function App() {
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked wallet shown for this task.");
+        throw Error("Choose the linked account shown for this task.");
       const quote = await api<TaskQuote>("/native/tasks/prepare", request);
       assertTaskQuote(quote, request);
       await signer.send(
@@ -1509,7 +1530,7 @@ export default function App() {
         accountId !== account ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked NEAR wallet shown for your profile.");
+        throw Error("Choose the linked account shown for your profile.");
       const quote = await api<NativeProfileQuote>("/native/profile/prepare", {
         accountId,
         publicConsent: true,
@@ -1541,13 +1562,13 @@ export default function App() {
         );
         if (response.confirmed) {
           updateOwnedPlayer(response.player);
-          notify("Your QuestLayer profile is public on NEAR testnet.");
+          notify("Your explorer profile is now public.");
           return true;
         }
         await new Promise((resolve) => setTimeout(resolve, 800));
       }
       notify(
-        "Your transaction was sent. Refresh your public profile to check confirmation.",
+        "Profile update sent. Refresh your public profile to see it confirmed.",
       );
       return false;
     });
@@ -1560,9 +1581,7 @@ export default function App() {
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error(
-          "Choose the linked NEAR wallet shown in the recovery review.",
-        );
+        throw Error("Choose the linked account shown in the recovery review.");
       const c = await api<{
         challengeId: string;
         nonce: string;
@@ -1572,7 +1591,9 @@ export default function App() {
         purpose: string;
       }>("/identity/recovery/challenge", { accountId });
       if (c.network !== "testnet" || c.purpose !== "revoke-other-sessions")
-        throw Error("This recovery request could not be verified.");
+        throw Error(
+          "This recovery request could not be verified. Try again with the linked account.",
+        );
       const signed = await wallet.signMessage({
         message: c.message,
         recipient: c.recipient,
@@ -1584,9 +1605,9 @@ export default function App() {
         "/identity/recovery/verify",
         { challengeId: c.challengeId, ...signed },
       );
-      if (!result.ok) throw Error("The game sessions could not be updated.");
+      if (!result.ok) throw Error("Sessions could not be updated. Try again.");
       notify(
-        `${result.revokedSessions} other game session(s) signed out. This browser stays signed in.`,
+        `${result.revokedSessions} other session(s) signed out. This browser stays signed in.`,
       );
       return true;
     });
@@ -1600,12 +1621,10 @@ export default function App() {
       });
       if (c.state !== "minted")
         throw Error(
-          "This level reward is not confirmed yet. Check again after your wallet transaction finishes.",
+          "This level reward is not confirmed yet. Check again in a moment.",
         );
       await refreshNative(true);
-      notify(
-        "Mint confirmed. Check your NEAR collection for its current owner.",
-      );
+      notify("Reward secured. Find it in your Secured collection.");
       return true;
     });
     return ok === true;
@@ -1620,9 +1639,7 @@ export default function App() {
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error(
-          "Choose the linked NEAR wallet shown for this level reward.",
-        );
+        throw Error("Choose the linked account shown for this level reward.");
       const claim = await api<NativeLevelClaim>("/native/progression/claim", {
         accountId,
         level: milestone.level,
@@ -1634,7 +1651,7 @@ export default function App() {
         milestone.edition,
       );
       if (claim.claim_id !== milestone.claimId)
-        throw Error("The level reward changed. Refresh before signing.");
+        throw Error("The level reward changed. Refresh, then try again.");
       if (claim.state !== "minted") {
         await signer.send(
           {
@@ -1668,19 +1685,17 @@ export default function App() {
           );
           if (checked.state === "minted") {
             await refreshNative(true);
-            notify(
-              "Level reward claimed. Equip your Aura from the NEAR collection.",
-            );
+            notify("Reward collected. Try it on from your Secured collection.");
             return true;
           }
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
         throw Error(
-          "Your level reward is awaiting confirmation. Use Check claim before trying again.",
+          "Your level reward is still confirming. Use Check claim before trying again.",
         );
       }
       await refreshNative(true);
-      notify("This level reward was already claimed.");
+      notify("You already collected this level reward.");
       return true;
     });
     return ok === true;
@@ -1690,7 +1705,7 @@ export default function App() {
       try {
         const { signer, accountId } = await resolveSigner();
         if (!player?.wallets.some((w) => w.account_id === accountId))
-          throw Error("Select the linked NEAR wallet receiving this Aura.");
+          throw Error("Choose the linked account that receives this Aura.");
         const claim = await api<NativeAuraClaim>("/native/claims", {
           itemId: item.id,
           accountId,
@@ -1698,7 +1713,7 @@ export default function App() {
         await me();
         if (claim.state !== "minted") {
           if (!claim.contractId.endsWith(".testnet"))
-            throw Error("Aura claims are testnet-only.");
+            throw Error("Securing Auras is not available on this network.");
           await signer.send(
             {
               network: "testnet",
@@ -1740,12 +1755,10 @@ export default function App() {
         }
         if (!minted)
           throw Error(
-            "Your NFT confirmation is still pending. Use Check claim before retrying.",
+            "Your Aura is still being secured. Use Check claim before retrying.",
           );
         await refreshNative(true);
-        notify(
-          "Your Aura NFT is ready. Choose where to wear it in your NEAR inventory.",
-        );
+        notify("Your Aura is secured. Try it on from your Secured collection.");
       } finally {
         await me();
       }
@@ -1761,8 +1774,8 @@ export default function App() {
       await refreshNative(true);
       notify(
         result.claim.state === "minted"
-          ? "Your native Aura is confirmed."
-          : "No NFT mint is confirmed yet. You can finish the claim or restore it after expiry.",
+          ? "Your Aura is secured."
+          : "Not secured yet. Finish the claim, or restore the practice Aura after it expires.",
       );
     });
   }
@@ -1772,7 +1785,7 @@ export default function App() {
         itemId: item.id,
       });
       updateOwnedPlayer(result.player);
-      notify("Your Aura is available in the demo again.");
+      notify("Your Aura is back in your practice collection.");
     });
   }
   async function nativeTransaction(
@@ -1787,10 +1800,12 @@ export default function App() {
         accountId !== account ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Select the linked NEAR wallet that owns this item.");
+        throw Error("Choose the linked account that owns this Aura.");
       const contractId = nativeWardrobe?.contractId;
       if (!contractId?.endsWith(".testnet"))
-        throw Error("The NEAR testnet collection is unavailable.");
+        throw Error(
+          "Your secured collection could not load. Try again in a moment.",
+        );
       await signer.send(
         {
           network: "testnet",
@@ -1831,7 +1846,7 @@ export default function App() {
       }
       if (!confirmed)
         throw Error(
-          "Transaction submitted; confirmation is still pending. Refresh NEAR inventory before retrying.",
+          "Sent. Confirmation is still pending; refresh your Secured collection before retrying.",
         );
       const r = await api<{ player: Player }>("/native/outfit", {
         enabled: true,
@@ -1840,10 +1855,10 @@ export default function App() {
       updateOwnedPlayer(r.player);
       notify(
         method === "mint_avatar"
-          ? "Your explorer NFT is confirmed on NEAR testnet."
+          ? "Your explorer is secured."
           : method === "unequip_aura"
-            ? "Aura removed from your NEAR outfit."
-            : "Your on-chain Aura is equipped and visible on the map.",
+            ? "Aura taken off your secured outfit."
+            : "Equipped. Your secured Aura is glowing on the map.",
       );
     });
   }
@@ -1851,7 +1866,9 @@ export default function App() {
     await action("evm", async () => {
       const injected = (window as any).ethereum;
       if (!injected)
-        throw new Error("Open the game in a browser with an EVM wallet.");
+        throw new Error(
+          "Open QuestLayer in a browser with an Aavegotchi wallet to link an original.",
+        );
       const { createWalletClient, custom } = await import("viem");
       const client = createWalletClient({ transport: custom(injected) });
       const [address] = await client.requestAddresses();
@@ -1865,7 +1882,9 @@ export default function App() {
       });
       await api("/evm/verify", { challengeId: c.challengeId, signature });
       await api("/aavegotchi");
-      notify("Address verified. Original NFTs stay on Base.");
+      notify(
+        "Address linked. Your originals stay where they are; here you only wear them.",
+      );
     });
   }
   function inspectAdventureResult(id: string) {
@@ -1920,14 +1939,14 @@ export default function App() {
       );
       if (!confirmed?.equipped || response.player.nativeOutfit)
         throw new Error(
-          "Equipment is not confirmed yet. Check your inventory before retrying.",
+          "Outfit change not confirmed yet. Check your collection before retrying.",
         );
       adventureResults.close();
       setSelected(null);
       setSheetExpanded(false);
       setFollow(true);
       setTab("explore");
-      notify("Aura equipped. Your new look is on the map.");
+      notify("Equipped. Your new glow is on the map.");
     });
   }
   async function complete(qId: string) {
@@ -1968,13 +1987,13 @@ export default function App() {
         if (sameView && r.result) adventureResults.accept(r.result);
         if (sameView && r.awaiting)
           notify(
-            `Checkpoint ${r.progress?.completed}/${r.progress?.total} recorded. Head to the next marker.`,
+            `Stop ${r.progress?.completed} of ${r.progress?.total} confirmed. Walk to the next stop.`,
           );
         else if (sameView && !r.replayed)
           notify(
             r.item
-              ? `You discovered ${r.item.name}!`
-              : `Quest complete! +${r.xp} XP${r.reward ? ` and ${gold(r.reward)} demo GOLD` : ""}`,
+              ? `Reward collected: ${r.item.name} is yours. Try it on!`
+              : `Reward collected: +${r.xp} XP${r.reward ? ` and ${gold(r.reward)} practice GOLD` : ""}.`,
           );
         else if (sameView) setToast(null);
         await refreshWorld();
@@ -2049,8 +2068,8 @@ export default function App() {
   const title =
     tab === "explore"
       ? nativePlay
-        ? "Testnet adventures"
-        : "Nearby adventures"
+        ? "Nearby walks"
+        : "Nearby discoveries"
       : nav.find((n) => n.id === tab)?.label ||
         {
           messages: "Map notes",
@@ -2058,7 +2077,7 @@ export default function App() {
           community: "Community",
           settings: "Settings",
           fund: "Game economy",
-          expeditions: "Testnet walks",
+          expeditions: "Nearby walks",
           inventory: "Inventory",
           market: "Market",
           wallet: "Wallet",
@@ -2235,7 +2254,9 @@ export default function App() {
           </details>
           <button onClick={() => setPresence((x) => !x)}>
             {presence ? <EyeSlash /> : <Eye />}
-            {presence ? "Stop sharing presence" : "Share presence for 15 min"}
+            {presence
+              ? "Stop sharing my position"
+              : "Share my position for 15 min"}
           </button>
           <button
             onClick={() =>
@@ -2254,7 +2275,7 @@ export default function App() {
       )}
       {!online && (
         <div className="offline-bar">
-          You are offline. Collecting will resume when you reconnect.
+          You're offline. Coins and visits resume when you reconnect.
         </div>
       )}
       {player && (
@@ -2280,7 +2301,7 @@ export default function App() {
               onClick={() => setSheetExpanded((v) => !v)}
             >
               <span className="sheet-toggle-label">
-                {sheetExpanded ? "Show map" : "Show adventures"}
+                {sheetExpanded ? "Show map" : "Show discoveries"}
                 {!nativePlay && (
                   <PickupSummary totals={pickupFeedback.totals} />
                 )}
@@ -2331,7 +2352,7 @@ export default function App() {
               />
               <span>
                 <strong>{selected.name}</strong>
-                <small>View quests and checkpoints</small>
+                <small>See what's here</small>
               </span>
               <ArrowRight />
             </button>
@@ -2350,7 +2371,7 @@ export default function App() {
                 <ArrowRight size={18} />
               </button>
               <button
-                aria-label="Clear saved testnet adventure"
+                aria-label="Clear saved walk"
                 onClick={() => {
                   nativeObjective.clear();
                   returnToAdventure();
@@ -2400,7 +2421,9 @@ export default function App() {
                       <strong>{recommended.title}</strong>
                       <span>
                         {recommendedZone.name} ·{" "}
-                        {distanceLabel(meters(position, questPoint(recommended)))}
+                        {distanceLabel(
+                          meters(position, questPoint(recommended)),
+                        )}
                       </span>
                     </span>
                     <ArrowRight size={20} />
@@ -2423,7 +2446,7 @@ export default function App() {
               </div>
               {world?.quality && (
                 <details className="coverage-note">
-                  <summary>Map coverage & access</summary>
+                  <summary>About this map</summary>
                   <p>{world.quality.notice}</p>
                 </details>
               )}
@@ -2475,9 +2498,9 @@ export default function App() {
                             <Sparkle size={12} />
                             {q
                               ? q.completed
-                                ? "Personal activity complete"
+                                ? "Completed"
                                 : `${q.xp} XP`
-                              : "See activities"}
+                              : "See what's here"}
                           </span>
                           {q?.gold_u && !q.claimant ? (
                             <span>
@@ -2488,7 +2511,7 @@ export default function App() {
                             <span>
                               <GameObjectArt kind="discovery" size={20} />
                               {!q
-                                ? "Activity details"
+                                ? "Details"
                                 : activityArt?.state === "locked"
                                   ? activityArt.label
                                   : q.completed
@@ -2496,7 +2519,7 @@ export default function App() {
                                     : q.kind === "chest" &&
                                         q.itemAvailable === true
                                       ? "Aura chest"
-                                      : "XP discovery"}
+                                      : "XP visit"}
                             </span>
                           )}
                           <ArrowUpRight size={15} />
@@ -2517,7 +2540,7 @@ export default function App() {
           {tab === "explore" && selected && (
             <>
               <button className="back-link" onClick={() => setSelected(null)}>
-                <ArrowLeft size={15} /> All zones
+                <ArrowLeft size={15} /> All discoveries
               </button>
               <div className="zone-access">
                 <Badge tone={selected.tier === 1 ? "green" : "purple"}>
@@ -2528,15 +2551,16 @@ export default function App() {
               {selected.tier > player.tier ? (
                 <div className="locked-panel">
                   <LockKey size={25} />
-                  <h3>Unlock Tier {selected.tier}</h3>
+                  <h3>Opens at Tier {selected.tier}</h3>
                   <p>
-                    You need {selected.tier === 2 ? "50 000" : "100 000"} GOLD
-                    weighted stake. Your deposit is multiplied by the share of
-                    yield you contribute.
+                    This place needs{" "}
+                    {selected.tier === 2 ? "50 000" : "100 000"} GOLD of
+                    weighted practice stake. Free places nearby are open to
+                    everyone.
                   </p>
                   <p>
-                    You can request a withdrawal. Returns are not guaranteed.
-                    Staking does not guarantee a GOLD quest in every area.
+                    Practice stake is play money you can withdraw. It does not
+                    promise a GOLD prize in every place.
                   </p>
                   <button
                     className="primary-button"
@@ -2545,7 +2569,7 @@ export default function App() {
                       setTab("wallet");
                     }}
                   >
-                    Try demo staking <ArrowRight />
+                    Try practice staking <ArrowRight />
                   </button>
                 </div>
               ) : (
@@ -2614,12 +2638,12 @@ export default function App() {
                             size={24}
                           />
                           {q.completed
-                            ? "Activity complete"
+                            ? "Completed"
                             : q.itemAvailable === true
                               ? "Aura chest"
                               : q.itemAvailable === false
-                                ? "XP · editions exhausted"
-                                : "Item availability unconfirmed"}
+                                ? "XP only · all Auras found"
+                                : "Aura not confirmed yet"}
                         </span>
                       )}
                       {q.kind === "route" && (
@@ -2632,7 +2656,7 @@ export default function App() {
                         <span>
                           <CoinIcon />
                           {q.claimant
-                            ? "GOLD already claimed"
+                            ? "GOLD already collected"
                             : `${gold(q.gold_u)} GOLD`}
                         </span>
                       )}
@@ -2646,7 +2670,7 @@ export default function App() {
                     </div>
                     {q.completed ? (
                       <button className="primary-button" disabled>
-                        Adventure completed <Check />
+                        Reward collected <Check />
                       </button>
                     ) : arena && meters(position, questPoint(q)) > 25 ? (
                       <button
@@ -2667,29 +2691,28 @@ export default function App() {
                         onClick={() => void complete(q.id)}
                       >
                         {busy === "quest"
-                          ? "Verifying…"
+                          ? "Checking visit…"
                           : q.opens_at > now
                             ? "Not open yet"
                             : q.closes_at <= now
-                              ? "Closed"
+                              ? "Closed for today"
                               : q.kind === "route"
                                 ? (q.checkpoint || 0) >=
                                   (q.checkpointCount || 0)
                                   ? "Finish walk"
-                                  : `Record checkpoint ${(q.checkpoint || 0) + 1}`
+                                  : `Confirm stop ${(q.checkpoint || 0) + 1}`
                                 : q.kind === "chest"
                                   ? q.itemAvailable === true
-                                    ? "Open the chest"
-                                    : "Complete the activity"
-                                  : q.activity?.actionLabel ||
-                                    "Confirm your visit"}
+                                    ? "Open chest"
+                                    : "Confirm visit"
+                                  : q.activity?.actionLabel || "Confirm visit"}
                         <ArrowRight />
                       </button>
                     )}
                     {q.gold_u > 0 && (
                       <p className="fine-print">
-                        Shared GOLD pays once. Your personal XP remains
-                        available.
+                        The GOLD prize goes to the first explorer to finish.
+                        Your XP is always yours.
                       </p>
                     )}
                   </div>
@@ -2842,7 +2865,7 @@ export default function App() {
                     );
                     if (latest.current.player?.id !== player.id) return;
                     updateOwnedPlayer(r.player);
-                    notify("Your appearance has changed.");
+                    notify("New look equipped.");
                   });
                 }}
                 onEquip={(item) =>
@@ -2854,8 +2877,8 @@ export default function App() {
                     updateOwnedPlayer(r.player);
                     notify(
                       item.equipped
-                        ? "Aura unequipped."
-                        : "Your new look is equipped.",
+                        ? "Aura taken off."
+                        : "Equipped. Your new glow is on the map.",
                     );
                   })
                 }
@@ -2865,7 +2888,7 @@ export default function App() {
                     if (latest.current.player?.id !== player.id) return false;
                     await me();
                     if (latest.current.player?.id !== player.id) return false;
-                    notify("Your Aura is listed on the demo market.");
+                    notify("Your Aura is on the market.");
                     return true;
                   });
                   return result === true;
@@ -2966,7 +2989,7 @@ export default function App() {
               <ChartDonut size={22} />
               <span>
                 <b>Game economy</b>
-                <small>Funding and the 50/50 split</small>
+                <small>Where rewards come from</small>
               </span>
               <ArrowRight size={20} />
             </button>
@@ -2985,7 +3008,7 @@ export default function App() {
                 <Wallet size={24} />
                 <span>
                   <b>Rewards and balance</b>
-                  <small>Collected GOLD, withdrawals, staking pilot</small>
+                  <small>Your GOLD, receipts and practice staking</small>
                 </span>
                 <ArrowRight size={20} />
               </button>
@@ -3017,18 +3040,15 @@ export default function App() {
                   </button>
                 </div>
                 <p className="fine-print">
-                  The practice ledger uses simulated GOLD. The test network uses
-                  NEAR testnet tokens without monetary value. Receipts for both
-                  stay in Rewards and balance.
+                  Practice GOLD is play money. The test network uses NEAR
+                  testnet tokens. Neither has monetary value; receipts for both
+                  live in Rewards and balance.
                 </p>
-                <button
-                  className="play-entry"
-                  onClick={() => setTab("fund")}
-                >
+                <button className="play-entry" onClick={() => setTab("fund")}>
                   <ChartDonut size={24} />
                   <span>
                     <b>Game economy</b>
-                    <small>Funding, pools and distribution</small>
+                    <small>Where rewards come from</small>
                   </span>
                   <ArrowRight size={20} />
                 </button>
@@ -3062,7 +3082,7 @@ export default function App() {
               </button>
               <NativeEconomyPanel />
               <details className="play-details">
-                <summary>Demo economy simulation</summary>
+                <summary>Practice economy simulation</summary>
                 <FundPanel />
               </details>
             </>
@@ -3079,7 +3099,7 @@ export default function App() {
                     <ChatCircle size={26} />
                     <span>
                       <b>Map notes</b>
-                      <small>Leave a message at a place</small>
+                      <small>Leave a note at a place</small>
                     </span>
                     <ArrowRight size={20} />
                   </button>
@@ -3095,8 +3115,8 @@ export default function App() {
                     <ArrowRight size={20} />
                   </button>
                   <p className="play-hint">
-                    Notes use the selected demo or GPS location. Tasks have
-                    their own sponsor-funded rewards.
+                    Notes are pinned where you stand on the map. Tasks pay from
+                    their sponsor's reward.
                   </p>
                 </div>
               </details>
@@ -3138,14 +3158,16 @@ export default function App() {
                     listingId: listing.id,
                   });
                   updateOwnedPlayer(r.player);
-                  notify("This Aura is yours. Find it in your inventory.");
+                  notify("This Aura is yours. Find it in your collection.");
                 })
               }
               onCancel={(listing) =>
                 void action("cancel", async () => {
                   await api("/market/cancel", { listingId: listing.id });
                   await me();
-                  notify("Listing cancelled.");
+                  notify(
+                    "Listing cancelled. The Aura is back in your collection.",
+                  );
                 })
               }
               onInventory={() => setTab("inventory")}
@@ -3350,8 +3372,8 @@ export default function App() {
       {!player && busy === "near" && (
         <div className="wallet-connecting" role="status">
           <Wallet size={24} />
-          <strong>Connecting your NEAR explorer…</strong>
-          <span>Waiting for the wallet and NEAR verification.</span>
+          <strong>Connecting your explorer…</strong>
+          <span>Approve the request in your wallet app.</span>
         </div>
       )}
       {walletChoices && (
@@ -3368,8 +3390,8 @@ export default function App() {
               </button>
             </div>
             <p>
-              Connect on NEAR testnet. Your wallet signs a message to create or
-              restore your explorer.
+              Your wallet signs a short message to create or restore your
+              explorer. Nothing is paid.
             </p>
             <div className="wallet-options">
               {walletChoices.map((w) => (
@@ -3498,12 +3520,12 @@ function Welcome({
         <h1 tabIndex={-1} autoFocus>
           Your city.
           <br />
-          <em>Your next quest.</em>
+          <em>Your haunt to explore.</em>
         </h1>
         <p>
-          Explore real places. Complete quests.
+          Walk real streets and open chests.
           <br />
-          Find an Aura and make it yours.
+          Earn Auras, the glow your friendly ghost wears.
         </p>
         {error && (
           <p className="inline-error" role="alert">
@@ -3528,7 +3550,9 @@ function Welcome({
             autoComplete="nickname"
           />
           <button className="primary-button" type="submit" disabled={!!busy}>
-            {busy === "welcome" ? "Preparing your explorer…" : "Start exploring"}
+            {busy === "welcome"
+              ? "Preparing your explorer…"
+              : "Start exploring"}
             <ArrowRight size={20} />
           </button>
         </form>
@@ -3585,7 +3609,7 @@ function WalletNavigation({
   onChange: (v: "rewards" | "staking" | "demo") => void;
 }) {
   return (
-    <div className="play-switch" role="group" aria-label="Wallet section">
+    <div className="play-switch" role="group" aria-label="Rewards section">
       {(
         [
           { id: "rewards", label: "Rewards", icon: Wallet },
@@ -3629,19 +3653,19 @@ function WalletPanel({
     {
       id: "meadow",
       name: "Meadow pool",
-      detail: "Native staking simulation",
+      detail: "Practice pool",
       fee: "5% APR · simulation",
     },
     {
       id: "river",
       name: "River pool",
-      detail: "Second simulated strategy",
+      detail: "Second practice pool",
       fee: "5% APR · simulation",
     },
     {
       id: "mountain",
       name: "Mountain pool",
-      detail: "Third simulated strategy",
+      detail: "Third practice pool",
       fee: "5% APR · simulation",
     },
   ];
@@ -3650,14 +3674,13 @@ function WalletPanel({
   return (
     <>
       <div className="wallet-hero">
-        <span>AVAILABLE DEMO GOLD</span>
+        <span>PRACTICE GOLD</span>
         <div>
           <CoinIcon />
           <strong>{gold(player.gold_u)}</strong>
         </div>
         <small>
-          {near(player.gold_u)} NEAR equivalent in this simulation · no monetary
-          value
+          Play money · {near(player.gold_u)} NEAR equivalent · no monetary value
         </small>
         <div>
           <Badge tone="gold">TIER {player.tier}</Badge>
@@ -3666,7 +3689,7 @@ function WalletPanel({
       </div>
       <div className="two-stats">
         <div>
-          <small>Active simulated stake</small>
+          <small>Practice stake</small>
           <b>{gold(staked)} GOLD</b>
         </div>
         <div>
@@ -3675,13 +3698,10 @@ function WalletPanel({
         </div>
       </div>
       <section className="form-section">
-        <h2>Try demo staking</h2>
-        <p>
-          Yield helps create rewards for everyone. This simulation does not
-          transfer real funds.
-        </p>
+        <h2>Try practice staking</h2>
+        <p>Staked GOLD helps fund rewards for everyone. Nothing real moves.</p>
         <label>
-          How much demo GOLD to stake?
+          How much practice GOLD to stake?
           <div className="input-suffix">
             <input
               value={deposit}
@@ -3719,7 +3739,7 @@ function WalletPanel({
                 : "FREE"}
           </Badge>
         </div>
-        <label>Choose a simulated pool</label>
+        <label>Choose a pool</label>
         <div className="pool-list">
           {pools.map((p) => (
             <button
@@ -3752,23 +3772,20 @@ function WalletPanel({
                 pool,
               });
               onPlayer(r.player);
-              notify(
-                "Demo stake deposited. The arena tier activates in 30 seconds.",
-              );
+              notify("Stake placed. Your tier activates in 30 seconds.");
             })
           }
         >
-          Stake demo GOLD <ArrowRight />
+          Stake practice GOLD <ArrowRight />
         </button>
         <p className="fine-print">
-          The arena shortens tier activation to 30 seconds and withdrawals to 60
-          seconds. Real NEAR staking follows network timing; the planned
-          withdrawal estimate is usually 1–7 days.
+          Practice mode is fast: tiers activate in 30 seconds and withdrawals
+          unlock in 60. Real staking would take days.
         </p>
       </section>
       <section className="form-section">
-        <h2>Your positions</h2>
-        {!staked && <p>You have no active positions yet.</p>}
+        <h2>Your stake</h2>
+        {!staked && <p>You have no stake yet.</p>}
         {player.positions
           .filter((p) => p.active_u > 0)
           .map((p) => (
@@ -3813,7 +3830,7 @@ function WalletPanel({
                           );
                           onPlayer(r.player);
                           notify(
-                            "Contribution updated. Existing mature access is preserved.",
+                            "Contribution saved. Your current tier stays.",
                           );
                         })
                       }
@@ -3832,7 +3849,7 @@ function WalletPanel({
                     });
                     onPlayer(r.player);
                     notify(
-                      "Demo withdrawal queued. Funds unlock in 60 seconds.",
+                      "Withdrawal queued. Your GOLD unlocks in 60 seconds.",
                     );
                   })
                 }
@@ -3862,7 +3879,7 @@ function WalletPanel({
                       withdrawalId: w.id,
                     });
                     onPlayer(r.player);
-                    notify("Your demo funds are back in your wallet.");
+                    notify("Your practice GOLD is back in your balance.");
                   })
                 }
               >
@@ -3873,13 +3890,10 @@ function WalletPanel({
       </section>
       <section className="form-section">
         <div className="section-label">
-          <h2>NEAR wallet</h2>
-          <Badge tone="green">TESTNET</Badge>
+          <h2>NEAR account</h2>
+          <Badge tone="green">TEST NETWORK</Badge>
         </div>
-        <p>
-          Link a real testnet account by signing a message. This does not
-          transfer any funds.
-        </p>
+        <p>Link a NEAR test account by signing a message. Nothing is paid.</p>
         {player.wallets.map((w) => (
           <div className="connected-wallet" key={w.account_id}>
             <SealCheck weight="fill" />
@@ -3897,9 +3911,7 @@ function WalletPanel({
           onClick={() => void onNear()}
         >
           <Wallet size={17} />
-          {player.wallets.length
-            ? "Link another account"
-            : "Connect NEAR wallet"}
+          {player.wallets.length ? "Link another account" : "Link NEAR account"}
         </button>
         {player.wallets.length > 0 && (
           <button
@@ -3916,13 +3928,13 @@ function WalletPanel({
               })
             }
           >
-            Read on-chain balance
+            Check NEAR balance
           </button>
         )}
         <p className="fine-print">
-          Native expeditions and Aura trading use separate testnet contracts.
-          The staking vault is an experimental project pilot. Demo GOLD stays
-          separate from native rewards. Never enter a recovery phrase here.
+          Walks and Aura trading on the test network are a project pilot.
+          Practice GOLD never mixes with secured rewards. Never enter a recovery
+          phrase here.
         </p>
       </section>
       <section className="form-section">
@@ -3982,13 +3994,13 @@ function FundPanel() {
           </span>
         </div>
         <div>
-          <small>TOTAL DEMO FUND</small>
+          <small>TOTAL PRACTICE FUND</small>
           <h2>
             {gold(total)} <span>GOLD</span>
           </h2>
           <p>
-            The opening fund is an explicit demo sponsor contribution. The 5%
-            rate is a simulation.
+            The opening fund is a sponsor contribution for the demo. The 5% rate
+            is simulated.
           </p>
         </div>
       </div>
@@ -4019,7 +4031,7 @@ function FundPanel() {
           <b>{data.stakers}</b>
         </div>
         <div>
-          <small>Active simulated stake</small>
+          <small>Practice stake</small>
           <b>{gold(data.staked)} GOLD</b>
         </div>
       </div>
@@ -4047,27 +4059,26 @@ function FundPanel() {
         ))}
       </div>
       <p className="fine-print">
-        Estimated game yield after contribution splits, at a simulated 5% APR.
-        These are alternative time horizons, not separate funds or guaranteed
-        returns. Rewards require liquid backing.
+        Estimated yield at a simulated 5% APR, after contribution splits. The
+        horizons are alternatives, not separate funds or promised returns.
       </p>
       <div className="info-banner">
         <ShieldCheck />
         <span>
-          Unclaimed coins remain in the coin fund. Unclaimed zone rewards remain
-          in the zone fund. Player principal never funds rewards.
+          Unclaimed coins and prizes return to their fund. Your own stake never
+          pays for rewards.
         </span>
       </div>
       {proof && (
         <section className="native-proof">
           <div className="section-label">
             <h2>Verified on NEAR</h2>
-            <Badge tone="green">TESTNET</Badge>
+            <Badge tone="green">TEST NETWORK</Badge>
           </div>
           <p>
-            Earned Auras can become wallet-owned testnet NFTs. Native Aura
-            trading is available in Market, and public NEAR Social profiles are
-            available in Inventory. Staking and GOLD rewards remain demo.
+            Earned Auras can be secured to your NEAR account, traded in Market
+            and shown on a public profile. Staking and GOLD rewards stay
+            practice-only.
           </p>
           <a
             href={`https://testnet.nearblocks.io/address/${proof.gameContract}`}
@@ -4164,7 +4175,7 @@ function Market({
         <Storefront size={29} />
         <span>
           <b>From explorers, for explorers</b>
-          <small>Fixed prices · 0% game fee · demo items</small>
+          <small>Fixed prices · 0% fee · practice Auras</small>
         </span>
       </div>
       <div className="section-label">
@@ -4180,11 +4191,10 @@ function Market({
           <Storefront size={38} />
           <h3>The first stall could be yours</h3>
           <p>
-            Open a chest in a free zone, find an Aura and list it. Another
-            explorer can buy it.
+            Open a chest, find an Aura and list it here for another explorer.
           </p>
           <button className="secondary-button" onClick={onInventory}>
-            Open inventory
+            Open collection
           </button>
         </div>
       ) : (
@@ -4217,8 +4227,7 @@ function Market({
         </div>
       )}
       <p className="fine-print">
-        Demo offers use demo GOLD. Native NFT offers and test NEAR balances are
-        shown separately above.
+        These offers use practice GOLD. Secured Auras trade separately above.
       </p>
     </>
   );
@@ -4257,8 +4266,7 @@ function Bounties({
       <div className="info-banner">
         <ShieldCheck />
         <span>
-          Rewards are locked in demo escrow before publishing. Every tier can
-          participate.
+          The reward is set aside before a task goes live. Anyone can join.
         </span>
       </div>
       <button className="secondary-button" onClick={() => setCreate((v) => !v)}>
@@ -4279,7 +4287,7 @@ function Bounties({
               onPlayer(r.player);
               setCreate(false);
               await load();
-              notify("Task published with a fully backed reward.");
+              notify("Task published. Its reward is set aside.");
             });
           }}
         >
@@ -4302,7 +4310,7 @@ function Bounties({
             />
           </label>
           <label>
-            Reward in demo GOLD
+            Reward in practice GOLD
             <input
               value={reward}
               onChange={(e) => setReward(e.target.value)}
@@ -4313,8 +4321,8 @@ function Bounties({
             Lock reward and publish <ArrowRight />
           </button>
           <p className="fine-print">
-            Seven-day deadline. Timely pending submissions block refunds. Public
-            disputed tasks require the planned arbitration process.
+            Open for seven days. A submission sent in time keeps the reward
+            reserved until it is reviewed.
           </p>
         </form>
       )}
@@ -4363,7 +4371,7 @@ function Bounties({
                     setSubmissions([]);
                   }}
                 >
-                  Submit evidence
+                  Submit proof
                 </button>
               ))}
             {selected === b.id && b.creator !== player.id && (
@@ -4374,7 +4382,7 @@ function Bounties({
                     await api("/bounties/submit", { bountyId: b.id, evidence });
                     setSelected(null);
                     setEvidence("");
-                    notify("Your evidence is awaiting the creator’s review.");
+                    notify("Proof sent. The creator will review it.");
                   });
                 }}
               >
@@ -4387,7 +4395,7 @@ function Bounties({
                   required
                 />
                 <button className="secondary-button">
-                  Submit evidence <PaperPlane />
+                  Submit proof <PaperPlane />
                 </button>
               </form>
             )}
@@ -4408,7 +4416,7 @@ function Bounties({
                               });
                               await load();
                               setSelected(null);
-                              notify("Evidence approved and demo reward paid.");
+                              notify("Proof approved. Reward paid.");
                             })
                           }
                         >
@@ -4431,7 +4439,7 @@ function Bounties({
 function Npc({ onClose }: { onClose: () => void }) {
   const [q, setQ] = useState(""),
     [answer, setAnswer] = useState(
-      "Hello, explorer. Try a free garden, collect a few coins, then find a treasure chest. Go at your own pace — this world is ready for solo adventures.",
+      "Hello, explorer. Start with a free place nearby, pick up a few coins on the way and open a chest. Solo is fine; this haunt is yours to explore.",
     ),
     [busy, setBusy] = useState(false),
     [source, setSource] = useState("rules");
@@ -4447,7 +4455,7 @@ function Npc({ onClose }: { onClose: () => void }) {
       setQ("");
     } catch {
       setAnswer(
-        "The connection is a little windy. Your adventures and coin collecting can continue.",
+        "The guide can't hear you right now. Keep exploring; your coins and visits still count.",
       );
     } finally {
       setBusy(false);
@@ -4475,7 +4483,7 @@ function Npc({ onClose }: { onClose: () => void }) {
             onChange={(e) => setQ(e.target.value)}
             maxLength={300}
             aria-label="Question for the guide"
-            placeholder="What would you like to know?"
+            placeholder="Ask about places, chests or Auras…"
             required
           />
           <button className="primary-button" disabled={busy}>
@@ -4484,8 +4492,8 @@ function Npc({ onClose }: { onClose: () => void }) {
         </form>
         <small>
           {source === "near-ai"
-            ? "Reply powered by NEAR AI Cloud"
-            : "Rule-based guide · NEAR AI is not configured"}
+            ? "Answered by NEAR AI"
+            : "Standard answers · live guide not connected"}
         </small>
       </section>
     </Dialog>

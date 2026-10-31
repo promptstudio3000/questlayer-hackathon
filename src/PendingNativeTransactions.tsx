@@ -167,8 +167,8 @@ export function PendingNativeTransactions({
       if (!isCurrent(who)) return;
       setFeedback({
         text: clear
-          ? "The checked receipt is cleared. Review the current record before choosing another action."
-          : "Transaction confirmed. Your current balance or item record can now be refreshed.",
+          ? "Receipt cleared. Check your current balance or Aura before doing anything else."
+          : "Confirmed. Refresh your balance or collection to see the result.",
         error: false,
       });
       heading.current?.focus();
@@ -203,7 +203,7 @@ export function PendingNativeTransactions({
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 10000);
       setFeedback({
-        text: "Receipt download started. Keep the file private; it contains account addresses and transaction details.",
+        text: "Receipt download started. Keep the file private; it contains your account names and receipt details.",
         error: false,
       });
     } catch (error) {
@@ -234,8 +234,8 @@ export function PendingNativeTransactions({
       if (!isCurrent(who)) return;
       setFeedback({
         text: result.imported
-          ? `${result.imported === 1 ? "Receipt imported" : `${result.imported} receipts imported`}. Check confirmation to verify the result. Nothing was signed.`
-          : "These receipts are already saved. Check confirmation to verify their result.",
+          ? `${result.imported === 1 ? "Receipt imported" : `${result.imported} receipts imported`}. Use Check confirmation to see the result. Nothing was sent.`
+          : "These receipts are already saved. Use Check confirmation to see their result.",
         error: false,
       });
       heading.current?.focus();
@@ -257,17 +257,17 @@ export function PendingNativeTransactions({
   return (
     <section
       className={`native-pending${showHeading ? "" : " native-pending-empty"}`}
-      aria-label="NEAR transaction recovery"
+      aria-label="Receipt recovery"
     >
       {showHeading && (
         <header>
           <Clock size={23} aria-hidden="true" />
           <h3 ref={heading} tabIndex={-1}>
-            {hasPending ? "Check your transaction" : "Transaction recovery"}
+            {hasPending ? "Check your last receipt" : "Receipt recovery"}
           </h3>
         </header>
       )}
-      {hasPending && <p>Checking a receipt never sends another transaction.</p>}
+      {hasPending && <p>Checking a receipt never sends anything again.</p>}
       {current.error && (
         <p className="native-pending-error" role="alert">
           {current.error}
@@ -290,9 +290,8 @@ export function PendingNativeTransactions({
           before clearing site data or moving to another device.
         </p>
         <p>
-          The file contains account addresses and reviewed transaction details,
-          never wallet keys or a recovery phrase. It cannot restore access to
-          your wallet. Keep it private.
+          The file holds account names and receipt details, never keys or a
+          recovery phrase. Keep it private.
         </p>
         <div className="native-pending-actions">
           <button
@@ -332,12 +331,12 @@ export function PendingNativeTransactions({
           <p>No pending receipts are saved here.</p>
         )}
         {!linkedAccounts.length && (
-          <p>Reconnect the original NEAR wallet to import its receipts.</p>
+          <p>Link the original NEAR account to import its receipts.</p>
         )}
         <p>
-          Import into the same QuestLayer player with the original NEAR wallet
-          linked. Imported results need confirmation; loading a file never signs
-          a transaction.
+          Import into the same explorer with the original NEAR account linked.
+          Imported receipts still need Check confirmation; loading a file never
+          sends anything.
         </p>
       </details>
       {current.entries.map((entry) => {
@@ -346,13 +345,13 @@ export function PendingNativeTransactions({
         return (
           <article key={entry.id} className="native-pending-entry">
             <div className="native-pending-title">
-              <b>{labels[entry.quote.methodName] || "NEAR transaction"}</b>
+              <b>{labels[entry.quote.methodName] || "NEAR receipt"}</b>
               <span>
                 {entry.phase === "failed"
                   ? "Final · incomplete"
                   : entry.transactionHash
                     ? "Needs confirmation"
-                    : "Check wallet history"}
+                    : "Check your wallet app"}
               </span>
             </div>
             <p className="native-pending-account">{entry.accountId}</p>
@@ -363,11 +362,11 @@ export function PendingNativeTransactions({
               </p>
             )}
             {!linked && (
-              <p>Reconnect this NEAR wallet to check its saved receipt.</p>
+              <p>Link this NEAR account again to check its receipt.</p>
             )}
             {!entry.transactionHash && (
               <label>
-                Transaction hash from your wallet
+                Receipt ID from your wallet app
                 <input
                   value={hashes[entry.id] || ""}
                   onChange={(event) =>
@@ -383,13 +382,13 @@ export function PendingNativeTransactions({
                   disabled={!linked || !!busy}
                 />
                 <small>
-                  If the wallet gave no clear result, find the transaction in
-                  its history. Nothing will be signed again here.
+                  If your wallet app gave no clear result, find this receipt in
+                  its history. Nothing is sent again here.
                 </small>
                 {entry.afterBlock === undefined && (
                   <small>
-                    This older record has no chain checkpoint. Match the request
-                    date, amount and reviewed terms carefully.
+                    This older record has no reference point. Match the date,
+                    amount and reviewed terms carefully.
                   </small>
                 )}
               </label>
@@ -435,16 +434,15 @@ export function PendingNativeTransactions({
               </dl>
               <pre>{JSON.stringify(entry.quote.args, null, 2)}</pre>
               <p>
-                Reviewed terms are saved in this browser. Clearing its site data
-                can remove this recovery record; the on-chain receipt remains.
+                Reviewed terms are saved in this browser. Clearing site data
+                removes this record; the NEAR receipt itself remains.
               </p>
             </details>
             {entry.phase === "failed" && (
               <div className="native-pending-failure">
                 <p>
-                  A final failure can still change balances or leave a
-                  recoverable credit. Check the current wallet, staking or item
-                  record first.
+                  A failed receipt can still have changed a balance or left a
+                  credit. Check your balance, stake or Aura first.
                 </p>
                 <label>
                   <input
@@ -458,7 +456,7 @@ export function PendingNativeTransactions({
                     }
                     disabled={!!busy}
                   />
-                  I checked the current balance or item state.
+                  I checked my current balance or Aura.
                 </label>
                 <button
                   className="secondary-button"
@@ -468,8 +466,8 @@ export function PendingNativeTransactions({
                   Clear checked failure
                 </button>
                 <small>
-                  The failure is verified again before clearing. This does not
-                  send or repeat an operation.
+                  The failure is checked once more before clearing. Nothing is
+                  sent or repeated.
                 </small>
               </div>
             )}

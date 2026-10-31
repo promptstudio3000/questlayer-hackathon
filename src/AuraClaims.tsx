@@ -26,37 +26,37 @@ export function AuraClaims({
     );
   return (
     <section className="aura-claims">
-      <h2>Bring your Aura to NEAR</h2>
+      <h2>Secure your Auras</h2>
       {!linked && (
         <>
           <p>
-            Connect your NEAR wallet to mint an earned Aura as your own testnet
-            NFT.
+            Link a NEAR account to secure an Aura you earned. A secured Aura is
+            yours even outside this game.
           </p>
           <button
             className="button secondary"
             disabled={!!busy}
             onClick={() => void onConnect()}
           >
-            Connect NEAR
+            Link NEAR account
           </button>
         </>
       )}
       {linked && !enabled && (
         <p>
-          Minting is temporarily unavailable. You can still check existing
-          claims or restore expired ones.
+          Securing is paused right now. You can still check or restore an Aura
+          you already started.
         </p>
       )}
       {linked && enabled && (
         <p>
-          Your wallet approves up to <strong>0.05 test NEAR</strong> for
-          storage; unused deposit returns. Requesting a claim reserves its demo
-          item for 15 minutes. A confirmed NFT leaves the demo market.
+          Securing holds up to <strong>0.05 test NEAR</strong> for storage;
+          anything unused comes back. The Aura is reserved for 15 minutes and
+          leaves the practice market once secured.
         </p>
       )}
       {enabled && linked && !items.length && (
-        <p>Find a park chest to discover your next Aura.</p>
+        <p>Nothing to secure yet. Open a chest to find your next Aura.</p>
       )}
       {items.map((item) => (
         <article className="aura-claim" key={item.id}>
@@ -66,8 +66,8 @@ export function AuraClaims({
               <h3>{item.name}</h3>
               <span>
                 {item.native_claim_state === "issued"
-                  ? "Claim reserved"
-                  : "Earned demo Aura"}
+                  ? "Being secured"
+                  : "Earned Aura"}
               </span>
             </div>
           </div>
@@ -79,12 +79,12 @@ export function AuraClaims({
                   "en-GB",
                   { dateStyle: "medium", timeStyle: "short" },
                 )}
-                . You can retry signing. Restore the demo item after expiry if
-                no NFT minted.
+                . You can try again. If it was not secured by then, restore the
+                practice Aura.
               </p>
               {item.native_claim_receiver && (
                 <span className="native-address">
-                  Claim wallet: {item.native_claim_receiver}
+                  Account: {item.native_claim_receiver}
                 </span>
               )}
             </>
@@ -96,8 +96,8 @@ export function AuraClaims({
               onClick={() => void onMint(item)}
             >
               {item.native_claim_state === "issued"
-                ? "Finish mint"
-                : "Mint on NEAR"}
+                ? "Finish securing"
+                : "Secure this Aura"}
             </button>
             {item.native_claim_state === "issued" && (
               <>
@@ -115,7 +115,7 @@ export function AuraClaims({
                   }
                   onClick={() => void onRestore(item)}
                 >
-                  Restore demo
+                  Restore practice Aura
                 </button>
               </>
             )}

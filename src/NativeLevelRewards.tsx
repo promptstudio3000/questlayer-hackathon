@@ -88,11 +88,11 @@ export function NativeLevelRewards({
   return (
     <section
       className="play-native native-level-rewards"
-      aria-label="NEAR level rewards"
+      aria-label="Level rewards"
     >
       <div className="play-section-heading">
         <h3>
-          <Star size={22} /> NEAR level rewards
+          <Star size={22} /> Level rewards
         </h3>
         {account && (
           <button
@@ -108,18 +108,18 @@ export function NativeLevelRewards({
       {!account ? (
         <>
           <p className="play-hint">
-            Collect testnet street coins and finish walks to earn confirmed XP
-            and cosmetic rewards.
+            Collect street coins and finish walks with a linked account. Each
+            level unlocks an Aura.
           </p>
           <button className="secondary-button" onClick={onConnect}>
-            Link NEAR wallet
+            Link NEAR account
           </button>
         </>
       ) : (
         <>
           {player.wallets.length > 1 && (
             <label>
-              Reward wallet
+              Reward account
               <select
                 value={account}
                 onChange={(e) => onAccount(e.target.value)}
@@ -138,7 +138,7 @@ export function NativeLevelRewards({
           {state && state.xp === null && (
             <p className="inline-error">
               {state.reason ||
-                "Confirmed XP is currently unavailable. Refresh to retry."}
+                "Your confirmed XP could not load. Refresh to try again."}
             </p>
           )}
           {loading && !state && <p role="status">Checking confirmed XP…</p>}
@@ -165,7 +165,7 @@ export function NativeLevelRewards({
                 <p className="inline-error">
                   {state.reason ||
                     state.error ||
-                    "Reward verification is unavailable. Refresh before claiming."}
+                    "Rewards cannot be checked right now. Refresh before collecting."}
                 </p>
               )}
               <div className="native-milestones">
@@ -198,7 +198,7 @@ export function NativeLevelRewards({
                       ) : m.state === "sold_out" ? (
                         "Sold out"
                       ) : m.claimable || m.state === "issued" ? (
-                        "Claim Aura"
+                        "Collect Aura"
                       ) : (
                         <>
                           <Lock size={14} />
@@ -210,9 +210,8 @@ export function NativeLevelRewards({
                 ))}
               </div>
               <p className="play-hint">
-                Testnet XP is separate from demo progress. Limited cosmetic
-                editions share a supply; unlocking a level does not reserve an
-                item.
+                Secured XP is separate from practice progress. Level Auras are
+                limited; reaching a level does not reserve one.
               </p>
             </>
           )}
@@ -220,8 +219,8 @@ export function NativeLevelRewards({
             <div className="session-review">
               <h4>{selected.name}</h4>
               <p>
-                Mint this level reward to{" "}
-                <b className="session-account">{account}</b>.
+                Secure this Aura to <b className="session-account">{account}</b>
+                .
               </p>
               <label className="play-consent">
                 <input
@@ -229,8 +228,8 @@ export function NativeLevelRewards({
                   checked={ack}
                   onChange={(e) => setAck(e.target.checked)}
                 />{" "}
-                I understand this uses 0.05 test NEAR for NFT storage, plus a
-                small network fee.
+                I understand this holds 0.05 test NEAR for storage, plus a small
+                network fee.
               </label>
               <div className="play-task-actions">
                 <button
@@ -244,8 +243,8 @@ export function NativeLevelRewards({
                   }}
                 >
                   {busy === "native-level"
-                    ? "Waiting for wallet…"
-                    : "Claim Aura NFT"}
+                    ? "Waiting for your approval…"
+                    : "Secure this Aura"}
                 </button>
                 <button
                   className="secondary-button"

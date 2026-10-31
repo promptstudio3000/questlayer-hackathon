@@ -9,7 +9,7 @@ const account = "alice.testnet",
 const c = {
   network: "testnet",
   contractId: "nfts.questlayer-dev-20261031.testnet",
-  sourceContractId: "questlayer-rewards-20261031.testnet",
+  sourceContractId: "questlayer-rewards-20261101.testnet",
   policy: NATIVE_LEVEL_POLICY,
   level: 2,
   xp: "100",

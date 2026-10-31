@@ -13,7 +13,9 @@ import {
   positionTier,
   tierFor,
   validateFix,
-  splitYield, COIN_ARENA_RADIUS_M } from "./domain.mjs";
+  splitYield,
+  COIN_ARENA_RADIUS_M,
+} from "./domain.mjs";
 import { contains } from "./spatial/city-pack.mjs";
 import { QUEST_POLICY } from "./quest-templates.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
@@ -72,14 +74,18 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
         "SELECT c.*,w.manifest FROM coins c JOIN worlds w ON w.id=c.world_id WHERE c.id=?",
       )
       .get(coinId);
-    assert(coin, "Coin not found.", 404);
+    assert(coin, "This coin is gone. Pick another one nearby.", 404);
     const world = JSON.parse(coin.manifest);
-    assert(world.endsAt > now, "This daily world has ended.", 410);
+    assert(
+      world.endsAt > now,
+      "Today's world has ended. Refresh the map for a new one.",
+      410,
+    );
     if (coin.claimant === player)
       return { alreadyClaimed: true, value: coin.value_u };
     assert(
       !coin.claimant,
-      "Another explorer already collected this coin.",
+      "Another explorer got this coin first. Pick another one nearby.",
       409,
       "ALREADY_CLAIMED",
     );
@@ -88,7 +94,7 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       point(fix);
       assert(
         distance(fix, coin) <= COIN_ARENA_RADIUS_M,
-        "Move closer to the coin in the arena.",
+        "Get a bit closer to pick up this coin.",
       );
     }
     const updated = db
@@ -96,7 +102,11 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
         "UPDATE coins SET claimant=?,claimed_at=? WHERE id=? AND claimant IS NULL",
       )
       .run(player, now, coinId);
-    assert(updated.changes === 1, "This coin has already been collected.", 409);
+    assert(
+      updated.changes === 1,
+      "This coin was just collected. Pick another one nearby.",
+      409,
+    );
     db.prepare(
       "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
     ).run(coin.value_u, coin.value_u, "coins");
@@ -126,7 +136,11 @@ function settleQuest(db, player, questId, fix, now, results) {
       .get(q.id, player)
   )
     return replayAdventureResult(results.forQuest(player, q.id));
-  assert(now >= q.opens_at && now < q.closes_at, "The zone is closed.", 410);
+  assert(
+    now >= q.opens_at && now < q.closes_at,
+    "This place is closed for today. Find another discovery.",
+    410,
+  );
   validateQuestEvidence(db, player, q, fix, now, q);
   const meta = JSON.parse(q.metadata || "{}");
   if (q.kind === "route")
@@ -183,14 +197,18 @@ function settleQuest(db, player, questId, fix, now, results) {
   };
 }
 function validateQuestEvidence(db, player, q, fix, now, target) {
-  assert(now >= q.opens_at && now < q.closes_at, "The zone is closed.", 410);
+  assert(
+    now >= q.opens_at && now < q.closes_at,
+    "This place is closed for today. Find another discovery.",
+    410,
+  );
   const positions = db
       .prepare("SELECT * FROM positions WHERE player_id=?")
       .all(player),
     tier = tierFor(positions.reduce((sum, p) => sum + positionTier(p, now), 0));
   assert(
     tier >= q.tier,
-    `This adventure requires Tier ${q.tier}.`,
+    `This place opens at Tier ${q.tier}. Try a free place nearby.`,
     403,
     "TIER_REQUIRED",
   );
@@ -199,12 +217,15 @@ function validateQuestEvidence(db, player, q, fix, now, target) {
   if (!world.arena) validateFix(fix, target, now, 25);
   else {
     point(fix);
-    assert(distance(fix, target) <= 25, "Move to the adventure destination.");
+    assert(
+      distance(fix, target) <= 25,
+      "Get a bit closer to the destination to confirm this visit.",
+    );
   }
   if (zone?.geometry)
     assert(
       contains(zone.geometry, fix),
-      "Enter the marked zone before confirming this discovery.",
+      "Enter the marked zone first, then confirm your visit.",
       422,
       "OUTSIDE_ZONE",
     );
@@ -336,7 +357,7 @@ export function stake(db, player, value, contribution, pool, now = Date.now()) {
   );
   return atomic(db, () => {
     const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-    assert(p.gold_u >= value, "Not enough available GOLD.");
+    assert(p.gold_u >= value, "Not enough practice GOLD for this stake.");
     db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
       value,
       player,
@@ -387,7 +408,7 @@ export function contribution(db, player, positionId, value, now = Date.now()) {
     const p = db
       .prepare("SELECT * FROM positions WHERE id=? AND player_id=?")
       .get(positionId, player);
-    assert(p && p.active_u > 0, "Position is not available.");
+    assert(p && p.active_u > 0, "This stake is no longer active.");
     settlePosition(db, p, now);
     const eligible =
       p.matures_at <= now ? p.contribution : p.eligible_contribution;
@@ -414,7 +435,7 @@ export function unstake(db, player, positionId, now = Date.now()) {
     const p = db
       .prepare("SELECT * FROM positions WHERE id=? AND player_id=?")
       .get(positionId, player);
-    assert(p && p.active_u > 0, "Position is not available.");
+    assert(p && p.active_u > 0, "This stake is no longer active.");
     const earned = settlePosition(db, p, now),
       withdrawal = id("withdrawal");
     db.prepare("INSERT INTO withdrawals VALUES (?,?,?,?,?,?)").run(
@@ -442,7 +463,10 @@ export function redeem(db, player, withdrawalId, now = Date.now()) {
       .get(withdrawalId, player);
     assert(w, "Withdrawal not found.", 404);
     assert(w.state === "pending", "Withdrawal is already complete.", 409);
-    assert(w.ready_at <= now, "Funds are still unlocking.");
+    assert(
+      w.ready_at <= now,
+      "Your GOLD is still unlocking. Check back in a moment.",
+    );
     db.prepare("UPDATE withdrawals SET state='paid' WHERE id=?").run(w.id);
     db.prepare("UPDATE players SET gold_u=gold_u+? WHERE id=?").run(
       w.amount_u,
@@ -554,11 +578,22 @@ export function buyItem(db, player, listingId, now = Date.now()) {
         "SELECT l.*,i.name,i.player_id FROM listings l JOIN inventory i ON i.id=l.item_id WHERE l.id=?",
       )
       .get(listingId);
-    assert(x && x.state === "open", "The listing is no longer available.", 409);
-    assert(x.seller !== player, "You cannot buy your own listing.");
-    assert(x.player_id === x.seller, "Ownership has changed.", 409);
+    assert(
+      x && x.state === "open",
+      "This listing is no longer available. Pick another Aura.",
+      409,
+    );
+    assert(
+      x.seller !== player,
+      "That is your own listing. Cancel it to get the Aura back.",
+    );
+    assert(
+      x.player_id === x.seller,
+      "This Aura changed hands. Refresh the market.",
+      409,
+    );
     const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-    assert(p.gold_u >= x.price_u, "Not enough GOLD.");
+    assert(p.gold_u >= x.price_u, "Not enough practice GOLD for this price.");
     db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
       x.price_u,
       player,

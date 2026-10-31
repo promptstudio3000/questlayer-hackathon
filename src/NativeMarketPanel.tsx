@@ -76,7 +76,9 @@ export function NativeMarketPanel({
     } catch (e) {
       if (request === generation.current) {
         setError(
-          e instanceof Error ? e.message : "Native market is unavailable.",
+          e instanceof Error
+            ? e.message
+            : "The secured market could not load. Try again in a moment.",
         );
         setLoading(false);
       }
@@ -125,19 +127,19 @@ export function NativeMarketPanel({
       setMessage(
         confirmed
           ? request.kind === "list"
-            ? "Your Aura is listed and held in market escrow."
+            ? "Your Aura is on the market. It stays held until sold or cancelled."
             : request.kind === "buy"
-              ? "Your native Aura is in your wallet."
+              ? "The Aura is yours. Find it in your Secured collection."
               : request.kind === "cancel"
-                ? "Your Aura has returned to your wallet."
+                ? "Your Aura is back in your Secured collection."
                 : "Your market balance was withdrawn."
-          : "Confirmation is still pending. Refresh ownership and market balance before retrying.",
+          : "Still confirming. Refresh your collection and balance before retrying.",
       );
     } catch (e) {
       setError(
         e instanceof Error
           ? e.message
-          : "The native market action could not finish.",
+          : "The market action could not finish. Try again.",
       );
     }
   }
@@ -150,13 +152,12 @@ export function NativeMarketPanel({
   return (
     <section className="native-market">
       <div className="section-label">
-        <h2>Native Aura market</h2>
-        <span className="badge purple">NEAR TESTNET</span>
+        <h2>Secured Aura market</h2>
+        <span className="badge purple">TEST NETWORK</span>
       </div>
       <p>
-        Trade your wallet-owned Aura NFTs for NEAR. Listed NFTs stay in market
-        escrow until sold or cancelled. Sale proceeds and refunds are withdrawn
-        by your wallet.
+        Trade secured Auras for test NEAR. A listed Aura is held by the market
+        until it sells or you cancel. Sale proceeds land in your market balance.
       </p>
       {error && <p role="alert">{error}</p>}
       {message && (
@@ -169,12 +170,12 @@ export function NativeMarketPanel({
         disabled={!!busy}
         onClick={() => void load(true).catch(() => {})}
       >
-        Refresh native market
+        Refresh market
       </button>
       {loading ? (
-        <p role="status">Loading the native market…</p>
+        <p role="status">Loading the market…</p>
       ) : data?.status !== "available" ? (
-        <p>The native market is not available on this deployment yet.</p>
+        <p>The secured market is not available here yet.</p>
       ) : (
         <>
           {!player.wallets.length ? (
@@ -183,12 +184,12 @@ export function NativeMarketPanel({
               disabled={!!busy}
               onClick={() => void onConnect()}
             >
-              Connect NEAR to trade
+              Link a NEAR account to trade
             </button>
           ) : (
             <div className="native-market-wallet">
               <label>
-                Trading wallet
+                Trading account
                 <select
                   value={accountId}
                   onChange={(e) => setAccount(e.target.value)}
@@ -230,8 +231,8 @@ export function NativeMarketPanel({
           )}
           {data.stats.paused && (
             <p role="status">
-              New trades are paused. You can still cancel active listings and
-              withdraw confirmed balances.
+              Trading is paused. You can still cancel your listings and withdraw
+              your balance.
             </p>
           )}
           {!!player.wallets.length && (
@@ -260,8 +261,8 @@ export function NativeMarketPanel({
               <h3>List an Aura you own</h3>
               {!owned.length ? (
                 <p>
-                  Your NEAR wallet has no available Aura NFT to list. Claim one
-                  from a park chest or cancel an existing listing.
+                  You have no secured Aura to list. Secure one you earned, or
+                  cancel an existing listing.
                 </p>
               ) : (
                 <>
@@ -302,22 +303,21 @@ export function NativeMarketPanel({
                     </p>
                   )}
                   <p>
-                    You can list up to three Auras. Your wallet approves the NFT
-                    transfer into escrow. Testnet market storage is sponsored by
-                    the project.
+                    You can list up to three Auras. You approve handing the Aura
+                    to the market; storage is covered by the project.
                   </p>
                   <button
                     className="primary-button"
                     disabled={unavailable || data.stats.paused || !tokenId}
                   >
-                    List on NEAR
+                    List Aura
                   </button>
                 </>
               )}
             </form>
           )}
           {!data.listings.length ? (
-            <p>No native Auras are listed on this page yet.</p>
+            <p>No secured Auras are listed yet.</p>
           ) : (
             <div className="native-offers">
               {data.listings.map((offer) => (
@@ -338,12 +338,12 @@ export function NativeMarketPanel({
                     </span>
                     <span>
                       {offer.state === "buying"
-                        ? "Purchase confirming"
+                        ? "Sale confirming"
                         : offer.state === "returning"
                           ? "Returning to owner"
                           : offer.available
-                            ? "NFT held in market escrow"
-                            : "Ownership confirmation unavailable"}
+                            ? "Held by the market"
+                            : "Ownership not confirmed"}
                     </span>
                   </div>
                   {offer.seller === accountId ? (

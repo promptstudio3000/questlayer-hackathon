@@ -162,7 +162,7 @@ export function Inventory({
       setOriginError(
         error instanceof Error
           ? error.message
-          : "Original inventory is temporarily unavailable.",
+          : "Your originals could not load. Try again in a moment.",
       );
     } finally {
       if (
@@ -207,7 +207,9 @@ export function Inventory({
       amount < 1 ||
       amount > 1000000 * GOLD
     ) {
-      setListingError("Enter a price from 0.000001 to 1,000,000 demo GOLD.");
+      setListingError(
+        "Enter a price from 0.000001 to 1,000,000 practice GOLD.",
+      );
       return;
     }
     setListingPending(true);
@@ -228,7 +230,7 @@ export function Inventory({
         setSelling(false);
       } else {
         setListingError(
-          "The Aura was not listed. Your price is saved; you can try again.",
+          "The Aura was not listed. Your price is saved, so try again.",
         );
       }
     } catch (error) {
@@ -271,7 +273,7 @@ export function Inventory({
           </button>
         </div>
         <div className="inventory-identity">
-          <span className="inventory-kicker">Your equipped look</span>
+          <span className="inventory-kicker">Your look</span>
           <h2>{player.name}</h2>
           <span className="inventory-source">
             <Check size={16} aria-hidden="true" />
@@ -279,8 +281,8 @@ export function Inventory({
           </span>
           <p>
             {player.appearance?.originTokenId
-              ? "Base original appearance"
-              : "Starter explorer appearance"}
+              ? "Wearing an original Aavegotchi"
+              : "Starter ghost"}
           </p>
         </div>
       </header>
@@ -300,7 +302,7 @@ export function Inventory({
                 <Icon size={18} aria-hidden="true" />{" "}
                 {slot === "above" ? "Above" : "Below"}
               </span>
-              <strong>{item?.name || "No Aura equipped"}</strong>
+              <strong>{item?.name || "Empty"}</strong>
             </div>
           );
         })}
@@ -333,7 +335,8 @@ export function Inventory({
         {collection === "demo" ? (
           <>
             <p className="inventory-collection-caption">
-              Find Auras on your adventures. Equip one above and one below.
+              Auras are the glow you find in chests. Wear one above and one
+              below.
             </p>
             {!!auras.length && (
               <div className="inventory-item-grid">
@@ -361,7 +364,7 @@ export function Inventory({
                         <Check size={14} aria-hidden="true" /> Equipped
                       </em>
                     ) : item.native_claim_state === "issued" ? (
-                      <em>Claim reserved</em>
+                      <em>Being secured</em>
                     ) : (
                       <em>
                         View item <ArrowRight size={14} aria-hidden="true" />
@@ -374,10 +377,10 @@ export function Inventory({
             {!auras.length && (
               <div className="inventory-empty">
                 <Sparkle size={30} aria-hidden="true" />
-                <h4>Your next look is out there</h4>
+                <h4>No Auras yet</h4>
                 <p>
-                  Explore the map for chests and quests. Any Aura you discover
-                  will appear here.
+                  Open a chest on the map. Every Aura you find lands here, ready
+                  to try on.
                 </p>
                 {onExplore && (
                   <button className="inventory-action" onClick={onExplore}>
@@ -388,8 +391,8 @@ export function Inventory({
             )}
             {player.nativeOutfit && (
               <p className="inventory-notice">
-                Your map currently wears the NEAR outfit. Equipping a demo Aura
-                switches to the demo outfit.
+                Your map ghost wears the secured outfit. Equipping a practice
+                Aura switches to the practice outfit.
               </p>
             )}
             {adventureResults}
@@ -399,7 +402,7 @@ export function Inventory({
             {nativeContent}
             {nativeExtras && (
               <details className="inventory-disclosure">
-                <summary>Claims & public profile</summary>
+                <summary>Secure Auras & public profile</summary>
                 <div className="inventory-disclosure-body">{nativeExtras}</div>
               </details>
             )}
@@ -410,26 +413,26 @@ export function Inventory({
       {origin?.status === "unavailable" && (
         <p className="inventory-notice" role="status">
           {origin.error ||
-            "Original ownership could not be refreshed. Your current appearance is unchanged."}
+            "Your originals could not be checked. Your current look is unchanged."}
         </p>
       )}
       {origin?.lookUnavailable && (
         <p className="inventory-notice" role="status">
-          Your selected original could not be verified in this check. Your
-          starter appearance is active.
+          Your chosen original could not be confirmed this time, so your starter
+          ghost is shown.
         </p>
       )}
       <details className="inventory-disclosure inventory-originals">
         <summary>
           <LinkSimple size={20} aria-hidden="true" />
           <span>
-            Original Aavegotchi look <small>Base · read-only appearances</small>
+            Original Aavegotchi look <small>Wear one you own</small>
           </span>
         </summary>
         <div className="inventory-disclosure-body">
           <p>
-            Link an EVM wallet to wear an original you own. Originals and their
-            items stay on Base; they cannot be sold in the demo market.
+            Link your Aavegotchi wallet to wear an original you own. Originals
+            stay where they are and cannot be sold here.
           </p>
           <button
             className="inventory-secondary"
@@ -437,9 +440,7 @@ export function Inventory({
             disabled={locked}
           >
             <Wallet size={19} aria-hidden="true" />
-            {origin?.linked
-              ? "Link another EVM address"
-              : "Link Aavegotchi wallet"}
+            {origin?.linked ? "Link another address" : "Link Aavegotchi wallet"}
           </button>
           {origin?.linked && (
             <button
@@ -448,9 +449,7 @@ export function Inventory({
               disabled={locked || originLoading}
             >
               <ArrowsClockwise size={19} aria-hidden="true" />
-              {originLoading
-                ? "Checking ownership…"
-                : "Refresh original inventory"}
+              {originLoading ? "Checking ownership…" : "Check originals again"}
             </button>
           )}
           {originError && (
@@ -522,16 +521,13 @@ export function Inventory({
                 </div>
               </details>
               {origin.truncated && (
-                <p>
-                  This check covers the first 50 originals. Some items may not
-                  be included yet.
-                </p>
+                <p>Only the first 50 originals are checked for now.</p>
               )}
             </>
           )}
           <p>
-            Original wearable customization is still in development. Some looks
-            do not yet have a 3D preview.
+            Original wearables are still being added; some looks have no 3D
+            preview yet.
           </p>
           {player.appearance?.originTokenId && (
             <button
@@ -539,7 +535,7 @@ export function Inventory({
               onClick={() => void onSkin(null)}
               disabled={locked}
             >
-              Use starter appearance
+              Back to starter ghost
             </button>
           )}
         </div>
@@ -559,9 +555,7 @@ export function Inventory({
             {map3D ? "Use 2D map character" : "Try 3D map character"}
           </button>
           <p>
-            2D is the default for faster phones. Supported looks use verified 3D
-            models. Unsupported original outfits retain their complete 2D
-            appearance.
+            2D is the default on phones. Looks without a 3D model stay in 2D.
           </p>
           <p>
             Character artwork:{" "}
@@ -594,12 +588,12 @@ export function Inventory({
       )}
       {selectedId && (
         <Dialog
-          label={selling ? "List demo Aura" : "Aura details"}
+          label={selling ? "List Aura" : "Aura details"}
           onClose={closeItem}
         >
           <section className="inventory-dialog">
             <header>
-              <h2>{selling ? "List demo Aura" : "Your Aura"}</h2>
+              <h2>{selling ? "List Aura" : "Your Aura"}</h2>
               <button
                 className="inventory-icon-button"
                 aria-label="Close item details"
@@ -610,7 +604,7 @@ export function Inventory({
             </header>
             {!selected ? (
               <>
-                <p>This Aura is no longer in your demo inventory.</p>
+                <p>This Aura is no longer in your collection.</p>
                 <button
                   className="inventory-action"
                   onClick={closeItem}
@@ -630,12 +624,12 @@ export function Inventory({
                     {selected.serial != null ? ` · #${selected.serial}` : ""}
                   </p>
                   <span className="inventory-source">
-                    Demo item{selected.equipped ? " · Equipped" : ""}
+                    Practice Aura{selected.equipped ? " · Equipped" : ""}
                   </span>
                 </div>
                 {selected.native_claim_state === "issued" && (
                   <p className="inventory-notice">
-                    This Aura is being secured and cannot be listed yet. Find it in
+                    This Aura is being secured and cannot be listed. Find it in
                     the Secured collection.
                   </p>
                 )}
@@ -648,11 +642,11 @@ export function Inventory({
                     }}
                   >
                     <p>
-                      Listing moves this Aura out of your inventory. You receive
-                      demo GOLD only after another player buys it.
+                      Listing moves this Aura to the market. You get practice
+                      GOLD when another explorer buys it.
                     </p>
                     <label htmlFor="inventory-list-price">
-                      Price in demo GOLD
+                      Price in practice GOLD
                     </label>
                     <div className="inventory-price-input">
                       <Coins size={22} aria-hidden="true" />
@@ -667,14 +661,14 @@ export function Inventory({
                       />
                     </div>
                     <p className="inventory-sale-note">
-                      Practice market only. Secured Auras and Base originals are not
-                      moved by this listing.
+                      Practice market only. Secured Auras and originals stay
+                      put.
                     </p>
                     {priceDraft.hasDraft && (
                       <p className="inventory-sale-note" role="status">
                         {priceDraft.storageAvailable
-                          ? "Price draft saved in this browser. Review the amount before listing."
-                          : "This browser could not save your price draft. Keep this tab open."}
+                          ? "Price draft saved here. Check the amount before listing."
+                          : "Your price draft could not be saved. Keep this tab open."}
                       </p>
                     )}
                     {priceDraft.hasDraft && (
@@ -698,7 +692,7 @@ export function Inventory({
                       type="submit"
                     >
                       <Tag size={20} aria-hidden="true" />
-                      {locked ? "Listing…" : "List for demo GOLD"}
+                      {locked ? "Listing…" : "List for practice GOLD"}
                     </button>
                     <button
                       className="inventory-secondary"
@@ -724,8 +718,8 @@ export function Inventory({
                       {busy === "equip"
                         ? "Saving outfit…"
                         : selected.equipped
-                          ? "Unequip Aura"
-                          : "Equip Aura"}
+                          ? "Take it off"
+                          : "Try it on"}
                     </button>
                     <button
                       className="inventory-secondary"
@@ -737,10 +731,10 @@ export function Inventory({
                     </button>
                     <p className="inventory-sale-note" role="status">
                       {selected.equipped
-                        ? "Saved in your practice outfit."
-                        : "Choose Equip to save and wear this demo outfit."}
+                        ? "Equipped. It glows on your map ghost."
+                        : "Try it on to wear it on the map."}
                       {player.nativeOutfit
-                        ? " Your map currently uses the NEAR outfit."
+                        ? " Your map ghost wears the secured outfit right now."
                         : ""}
                     </p>
                   </div>
