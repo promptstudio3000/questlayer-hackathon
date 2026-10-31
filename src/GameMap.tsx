@@ -391,14 +391,25 @@ export function GameMap(props: GameMapProps) {
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
+    m.resize();
     try {
       m.setProjection({ type: props.globe ? "globe" : "mercator" });
     } catch {}
+    const globeBand = Math.min(
+      el.current?.clientWidth || 320,
+      el.current?.clientHeight || 320,
+    );
     (props.globe ? m.flyTo.bind(m) : m.easeTo.bind(m))(
       props.globe
         ? {
-            zoom: 2,
+            center: [props.position.lng, props.position.lat],
+            padding: { top: 0, bottom: 0, left: 0, right: 0 },
+            zoom: Math.max(
+              0,
+              Math.min(0.6, Math.log2(Math.max(220, globeBand) / 238)),
+            ),
             pitch: 0,
+            bearing: 0,
             duration: matchMedia("(prefers-reduced-motion: reduce)").matches
               ? 0
               : 1400,
@@ -519,7 +530,11 @@ export function GameMap(props: GameMapProps) {
     <>
       <div
         ref={el}
-        className="game-map"
+        className={
+          props.globe
+            ? "game-map maplibregl-map globe-view"
+            : "game-map maplibregl-map"
+        }
         aria-label="Real OpenStreetMap world"
       />
       {!ready && (

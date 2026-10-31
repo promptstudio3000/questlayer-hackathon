@@ -1796,9 +1796,15 @@ export default function App() {
             </button>
             <button
               aria-label="Globe"
+              aria-pressed={globe}
               title="Globe"
               className={globe ? "active" : ""}
               onClick={() => {
+                if (!globe) {
+                  setTab("explore");
+                  setSheetExpanded(false);
+                  setSelected(null);
+                }
                 setGlobe((v) => !v);
                 setOverview(false);
                 setFollow(true);
@@ -2836,8 +2842,8 @@ function FundPanel() {
           </div>
           <p>
             Earned Auras can become wallet-owned testnet NFTs. Native Aura
-            trading is available in Market, and public NEAR Social profiles
-            are available in Inventory. Staking and GOLD rewards remain demo.
+            trading is available in Market, and public NEAR Social profiles are
+            available in Inventory. Staking and GOLD rewards remain demo.
           </p>
           <a
             href={`https://testnet.nearblocks.io/address/${proof.gameContract}`}

@@ -4065,3 +4065,8 @@ select {
 .map-legend {font-size:12px;color:#574365;left:calc(50% + 43px);right:auto;transform:translateX(-50%);bottom:30px;}
 .game-map .maplibregl-ctrl-attrib {font-size:12px!important;line-height:1.4;max-width:280px;}
 @media (min-width:1001px) {.maplibregl-ctrl-bottom-right {bottom:8px!important;}}
+.game-map.globe-view {left:550px;right:0;top:87px;bottom:24px;}
+.game-map.globe-view .maplibregl-ctrl-bottom-right {bottom:0!important;right:0!important;left:auto!important;}
+body:has(.globe-view) .npc-button,body:has(.globe-view) .map-legend {display:none;}
+@media (max-width:760px), (max-height:500px) and (max-width:1000px) {.game-map.globe-view {left:0;top:70px;bottom:280px;}}
+@media (max-height:500px) and (max-width:1000px) {.game-map.globe-view {left:0;right:56%;top:70px;bottom:84px;}}

@@ -1,0 +1,38 @@
+{
+  "verifiedAt": "2026-10-31T08:33:40.848Z",
+  "regression": {
+    "afterDeferredStyles": {
+      "width": 1280,
+      "height": 0,
+      "position": "relative"
+    },
+    "cause": "Late MapLibre CSS overrode a same-specificity container rule"
+  },
+  "fixed": {
+    "selector": "game-map.maplibregl-map",
+    "desktop": {
+      "width": 1280,
+      "height": 720,
+      "canvasHeight": 720
+    },
+    "publicBrowser": {
+      "width": 512,
+      "height": 792,
+      "canvasHeight": 792
+    },
+    "visibleStreetGeometryAndAvatar": true
+  },
+  "globe": {
+    "desktopViewport": {
+      "left": 550,
+      "width": 730,
+      "height": 609
+    },
+    "returnToFullMapVerified": true,
+    "libraryClassPreserved": true
+  },
+  "limitations": [
+    "Browser viewports, not physical devices",
+    "No field or GPS authenticity acceptance"
+  ]
+}

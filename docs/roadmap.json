@@ -974,10 +974,12 @@
       "evidence": [
         "docs/RUNTIME-RELIABILITY.md",
         "output/qa/W12-startup/checks.txt",
-        "output/qa/W12-startup/bundle-comparison.json"
+        "output/qa/W12-startup/bundle-comparison.json",
+        "output/qa/W12-movement/checks.txt",
+        "output/qa/W12-startup/public-map-after-cascade-fix.png"
       ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W12/"
+      "evidenceDirectory": "output/qa/W12-startup/"
     },
     {
       "id": "W13",
@@ -1163,10 +1165,12 @@
       ],
       "evidence": [
         "docs/STATE-RECOVERY.md",
-        "output/qa/W13-recovery/live-restore-rehearsal.json"
+        "output/qa/W13-recovery/live-restore-rehearsal.json",
+        "output/qa/W13-recovery/checks.txt",
+        "output/qa/W13-recovery/live-restore-with-media.json"
       ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W13/"
+      "evidenceDirectory": "output/qa/W13-recovery/"
     },
     {
       "id": "W14",
