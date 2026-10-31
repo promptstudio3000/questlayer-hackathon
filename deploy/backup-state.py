@@ -51,6 +51,8 @@ with open(destination / ".backup.lock", "a") as lock:
             source.backup(target, pages=256, progress=progress, sleep=0.02)
             target.execute("PRAGMA journal_mode=DELETE")
             assert target.execute("PRAGMA integrity_check").fetchall() == [("ok",)], "Snapshot integrity failed"
+            tables = {row[0] for row in target.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            media_references = {row[0] for row in target.execute("SELECT image FROM messages WHERE image IS NOT NULL")} if "messages" in tables else set()
             target.commit()
         finally:
             target.close()
@@ -69,9 +71,25 @@ with open(destination / ".backup.lock", "a") as lock:
                 shutil.copyfileobj(src, dst)
                 dst.flush()
                 os.fsync(dst.fileno())
+        media = []
+        for reference in sorted(media_references):
+            match = re.fullmatch(r"/api/media/(image_[a-f0-9-]{1,80}\.jpg)", reference)
+            assert match, "Unsupported referenced media path"
+            source_media = state / ".data" / "media" / match.group(1)
+            assert source_media.is_file() and not source_media.is_symlink() and state in source_media.resolve().parents, "Referenced media is missing or outside state"
+            assert source_media.stat().st_size <= 512 * 1024, "Referenced media exceeds its bound"
+            content = source_media.read_bytes()
+            directory = pending / "media"
+            directory.mkdir(mode=0o700, exist_ok=True)
+            with open(directory / match.group(1), "xb") as file:
+                file.write(content)
+                file.flush()
+                os.fsync(file.fileno())
+            media.append({"file": match.group(1), "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()})
         metadata = {"application": "QuestLayer", "format": 1, "snapshotId": identifier,
                     "createdAt": now.isoformat(), "integrity": "ok", "databaseBytes": snapshot.stat().st_size,
                     "databaseSha256": digest.hexdigest(), "awardAttestorIncluded": included,
+                    "referencedMedia": media,
                     "playerWalletSigningKeysIncluded": False}
         with open(pending / "metadata.json", "x") as file:
             json.dump(metadata, file, indent=2)

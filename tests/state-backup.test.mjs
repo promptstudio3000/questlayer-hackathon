@@ -117,3 +117,24 @@ test("retention removes only owned expired snapshots and preserves the newest tw
   assert.ok(readdirSync(f.destination).includes("20000103T000000Z-00000003"));
   assert.ok(readdirSync(f.destination).includes("20000104T000000Z-00000004"));
 });
+test("referenced note images are privately preserved and unsafe media references fail closed", (t) => {
+  const f = fixture(t),
+    name = "image_12345678-1234-1234-1234-123456789abc.jpg",
+    media = join(f.state, ".data", "media");
+  mkdirSync(media, { recursive: true });
+  writeFileSync(join(media, name), Buffer.from([255, 216, 255, 217]));
+  f.database.exec("CREATE TABLE messages(image TEXT)");
+  f.database
+    .prepare("INSERT INTO messages(image) VALUES(?)")
+    .run(`/api/media/${name}`);
+  const report = f.run(),
+    image = join(f.destination, report.snapshotId, "media", name);
+  assert.equal(report.referencedMedia.length, 1);
+  assert.deepEqual(readFileSync(image), readFileSync(join(media, name)));
+  assert.equal(statSync(image).mode & 0o077, 0);
+  f.database.exec(
+    "UPDATE messages SET image='/api/media/../near-operator.json'",
+  );
+  assert.throws(f.run);
+  assert.ok(readdirSync(f.destination).includes(report.snapshotId));
+});

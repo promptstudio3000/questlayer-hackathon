@@ -982,7 +982,7 @@
     {
       "id": "W13",
       "title": "Complete release candidate and city pilot",
-      "status": "planned",
+      "status": "building",
       "size": "L",
       "dependsOn": [
         "W01",
@@ -1153,7 +1153,7 @@
         {
           "id": "W13.4",
           "title": "Reconcile native rights and rehearse restore",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W13.5",
@@ -1161,7 +1161,10 @@
           "status": "planned"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/STATE-RECOVERY.md",
+        "output/qa/W13-recovery/live-restore-rehearsal.json"
+      ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W13/"
     },
