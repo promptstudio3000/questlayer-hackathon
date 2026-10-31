@@ -170,3 +170,14 @@ Sharing is explicit, foreground-only and bounded to 15 minutes. GPS and demo pre
 A live local API proof used only an owned developer account and synthetic arena coordinates. It verified the on-chain green/purple outfit, reduced response and GPS isolation, then opted out. Browser review captured desktop and 360px native peer markers, 360/390 consent menus and keyboard-reachable landscape controls. No physical GPS or actual mobile wallet approval is claimed. Details: `docs/PEER-APPEARANCES.md`.
 
 All 58 application tests pass for this increment. The unchanged contracts retain their prior 38 passing Rust tests. The profile disclosure supports Escape with focus return; its scrollable short-landscape menu keeps sharing controls keyboard-reachable.
+
+
+Nearby appearance/privacy release `20261031T045233Z` / commit `1907d3b` is live. A separate public HTTPS API smoke test confirmed both actual native Aura slots, no wallet/native token identifiers in the peer response and demo/GPS isolation, then removed the synthetic share. Evidence: `output/qa/W04/public-native-presence.json` and `peer-deployment.txt`.
+
+## Native staking foundation
+
+Added finalized-block-pinned testnet pool views, strict u128 money calculations, E+2 tranche/contribution access, loss-recovery-aware unrealized quotes, a sealed asynchronous exit scheduler and a versioned receipt/bucket model. Real read-only probes verified three active pools and recorded their fees, key state, owner, code hash, epoch and delegator view. No APY was invented from total stake. No staking transaction or player deposit occurred.
+
+The executable funding simulation exercises two exit cohorts without resetting the older unlock, excludes principal/retained yield/unclassified surplus from game income, allocates each modeled receipt once and preserves awarded/expired backing. These are executable specifications, not a native vault or actual earnings. The detailed design records the open provisional-fee loss/recovery question before any real custody implementation. Details: `docs/NATIVE-STAKING-FOUNDATION.md` and `output/qa/W05/`.
+
+Staking-foundation verification: all 66 application tests and the production build pass. Tests include eight native foundation cases and bounded policy/reservation stress. Test-process concurrency is capped at four; cold-start readiness uses a 15-second bound to avoid CPU-contention false failures. Contracts are unchanged from the 38-test Rust check.

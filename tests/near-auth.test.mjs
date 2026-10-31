@@ -181,7 +181,8 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
     rmSync(dir, { recursive: true, force: true });
   });
   let ready = false;
-  for (let i = 0; i < 100; i++) {
+  const startupDeadline = Date.now() + 15000;
+  while (Date.now() < startupDeadline) {
     try {
       if ((await fetch(base + "/api/health")).ok) {
         ready = true;

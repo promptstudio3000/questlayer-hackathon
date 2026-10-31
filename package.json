@@ -12,11 +12,13 @@
     "dev:server": "node --watch server/index.mjs",
     "build": "tsc -b && vite build",
     "start": "node server/index.mjs",
-    "test": "node --test tests/*.test.mjs",
+    "test": "node --test --test-concurrency=4 tests/*.test.mjs",
     "check": "npm test && npm run build",
     "test:contracts": "env PATH=\"$HOME/.cargo/bin:$PATH\" cargo test --manifest-path contracts/Cargo.toml --workspace",
     "world:prepare": "node server/prepare-worlds.mjs --once",
-    "world:preview": "node server/prepare-worlds.mjs --preview"
+    "world:preview": "node server/prepare-worlds.mjs --preview",
+    "staking:probe": "node scripts/probe-staking-testnet.mjs",
+    "funding:simulate": "node scripts/simulate-native-funding.mjs"
   },
   "dependencies": {
     "@hot-labs/near-connect": "0.12.0",

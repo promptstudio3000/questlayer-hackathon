@@ -433,7 +433,7 @@
     {
       "id": "W05",
       "title": "Staking vault and realized game yield",
-      "status": "planned",
+      "status": "building",
       "size": "L",
       "dependsOn": [
         "W03"
@@ -467,12 +467,12 @@
         {
           "id": "W05.1",
           "title": "Specify shares balances fees yield and losses",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W05.2",
           "title": "Implement pool selection contribution and tier maturity",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W05.3",
@@ -482,12 +482,12 @@
         {
           "id": "W05.4",
           "title": "Implement independent withdrawal cohorts",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W05.5",
           "title": "Allocate liquid receipts and calibrate affordable rewards",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W05.6",
@@ -500,7 +500,12 @@
           "status": "planned"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/NATIVE-STAKING-FOUNDATION.md",
+        "output/qa/W05/staking-pools.json",
+        "output/qa/W05/native-funding-simulation.json",
+        "output/qa/W05/checks.txt"
+      ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W05/"
     },

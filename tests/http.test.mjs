@@ -123,7 +123,8 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     rmSync(dir, { recursive: true, force: true });
   });
   let ready = false;
-  for (let i = 0; i < 100; i++) {
+  const startupDeadline = Date.now() + 15000;
+  while (Date.now() < startupDeadline) {
     try {
       const r = await fetch(base + "/api/health");
       if (r.ok) {

@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-31T05:01:05.510Z",
+  "api": "https://questlayer.promptstudio3000.com",
+  "mode": "synthetic demo position; not physical GPS",
+  "nativeAboveVerified": true,
+  "nativeBelowVerified": true,
+  "walletAddressAbsentFromPeerDTO": true,
+  "nativeTokenIDsAbsentFromPeerDTO": true,
+  "physicalModeIsolation": true,
+  "playerPrivateKeyUploaded": false,
+  "appearance": {
+    "color": "#b8a1ed",
+    "above": "#9edfc5",
+    "below": "#c2a0df",
+    "skinTokenId": null,
+    "source": "native"
+  }
+}

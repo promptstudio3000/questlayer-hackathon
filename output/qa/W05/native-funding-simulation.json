@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-31T05:07:44.964Z",
+  "mode": "executable specification; synthetic integer units; NO chain transaction or real income",
+  "trace": [
+    {
+      "event": "new exits queued without resetting old unlock",
+      "epoch": 102,
+      "unlockEpoch": 105,
+      "treasury": {
+        "creator": "0",
+        "coins": "0",
+        "zones": "0"
+      }
+    },
+    {
+      "event": "modeled cash received and classified once",
+      "epoch": 105,
+      "batch": {
+        "id": "exit-1",
+        "stage": "received",
+        "submittedEpoch": 100,
+        "unlockEpoch": 105,
+        "tickets": [
+          {
+            "id": "principal-1",
+            "owner": "alice.testnet",
+            "amount": "1000",
+            "kind": "principal"
+          },
+          {
+            "id": "retained-1",
+            "owner": "alice.testnet",
+            "amount": "20",
+            "kind": "retained_yield"
+          },
+          {
+            "id": "game-1",
+            "owner": "treasury",
+            "amount": "30",
+            "kind": "game_yield"
+          }
+        ],
+        "amount": "1050",
+        "receiptId": "modeled:exit-1",
+        "received": "1051",
+        "unclassifiedSurplus": "1"
+      },
+      "gameIncome": "30",
+      "treasury": {
+        "creator": "0",
+        "coins": "15",
+        "zones": "15"
+      }
+    },
+    {
+      "event": "modeled cash received and classified once",
+      "epoch": 109,
+      "batch": {
+        "id": "exit-2",
+        "stage": "received",
+        "submittedEpoch": 105,
+        "unlockEpoch": 109,
+        "tickets": [
+          {
+            "id": "principal-2",
+            "owner": "alice.testnet",
+            "amount": "100",
+            "kind": "principal"
+          },
+          {
+            "id": "game-2",
+            "owner": "treasury",
+            "amount": "10",
+            "kind": "game_yield"
+          }
+        ],
+        "amount": "110",
+        "receiptId": "modeled:exit-2",
+        "received": "110",
+        "unclassifiedSurplus": "0"
+      },
+      "gameIncome": "10",
+      "treasury": {
+        "creator": "0",
+        "coins": "20",
+        "zones": "6"
+      }
+    }
+  ],
+  "classified": {
+    "principal": "1100",
+    "retainedYield": "20",
+    "gameIncome": "40",
+    "unclassifiedSurplus": "1",
+    "totalReceived": "1161"
+  },
+  "exits": {
+    "version": 1,
+    "next": 3,
+    "queued": [],
+    "batch": null,
+    "closed": [
+      {
+        "id": "exit-1",
+        "stage": "received",
+        "submittedEpoch": 100,
+        "unlockEpoch": 105,
+        "tickets": [
+          {
+            "id": "principal-1",
+            "owner": "alice.testnet",
+            "amount": "1000",
+            "kind": "principal"
+          },
+          {
+            "id": "retained-1",
+            "owner": "alice.testnet",
+            "amount": "20",
+            "kind": "retained_yield"
+          },
+          {
+            "id": "game-1",
+            "owner": "treasury",
+            "amount": "30",
+            "kind": "game_yield"
+          }
+        ],
+        "amount": "1050",
+        "receiptId": "modeled:exit-1",
+        "received": "1051",
+        "unclassifiedSurplus": "1"
+      },
+      {
+        "id": "exit-2",
+        "stage": "received",
+        "submittedEpoch": 105,
+        "unlockEpoch": 109,
+        "tickets": [
+          {
+            "id": "principal-2",
+            "owner": "alice.testnet",
+            "amount": "100",
+            "kind": "principal"
+          },
+          {
+            "id": "game-2",
+            "owner": "treasury",
+            "amount": "10",
+            "kind": "game_yield"
+          }
+        ],
+        "amount": "110",
+        "receiptId": "modeled:exit-2",
+        "received": "110",
+        "unclassifiedSurplus": "0"
+      }
+    ]
+  },
+  "treasury": {
+    "version": 1,
+    "policy": {
+      "version": 1,
+      "creatorBps": 0
+    },
+    "receipts": [
+      {
+        "id": "testnet:modeled:exit-1:game",
+        "amount": "30",
+        "kind": "realized_game_yield",
+        "proofHash": "b659a872e1682d53bcb3155c25cf93397b54c1d79d30dec5b0c52be2537fd3f7",
+        "policy": {
+          "version": 1,
+          "creatorBps": 0
+        },
+        "allocation": {
+          "creator": "0",
+          "coins": "15",
+          "zones": "15"
+        }
+      },
+      {
+        "id": "testnet:modeled:exit-2:game",
+        "amount": "10",
+        "kind": "realized_game_yield",
+        "proofHash": "eeafa777aebb636cf4a37755b922b73a1d8e9792db366350d2b7a156d7b2cc40",
+        "policy": {
+          "version": 1,
+          "creatorBps": 0
+        },
+        "allocation": {
+          "creator": "0",
+          "coins": "5",
+          "zones": "5"
+        }
+      }
+    ],
+    "rewards": [
+      {
+        "id": "city:street",
+        "bucket": "coins",
+        "amount": "10",
+        "state": "expired",
+        "beneficiary": null
+      },
+      {
+        "id": "city:quest",
+        "bucket": "zones",
+        "amount": "14",
+        "state": "awarded",
+        "beneficiary": "alice.testnet"
+      }
+    ],
+    "available": {
+      "creator": "0",
+      "coins": "20",
+      "zones": "6"
+    }
+  }
+}

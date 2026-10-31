@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-10-31T05:08:19.799Z",
+  "network": "testnet",
+  "mode": "read-only; no vault, staking transaction or game funding",
+  "blockHash": "3vA2CXpMZpo4e6t2JtLDVa2Vh8asQeANx1ATCHEKSbPa",
+  "blockHeight": 275553337,
+  "blockTime": "2026-10-31T05:08:16.482Z",
+  "epochId": "2NrVu6WcfGxpsVBcjczt1eZGvwcSKJFp3nJ57DGW9Z1E",
+  "epochHeight": 5397,
+  "epochStartHeight": 275528455,
+  "nominalEpochBlocks": 43200,
+  "protocolVersion": 88,
+  "pools": [
+    {
+      "accountId": "aurora.pool.f863973.m0",
+      "ownerId": "valconaur.testnet",
+      "totalStaked": "23526637541474595750115658180730",
+      "rewardFee": {
+        "numerator": 9,
+        "denominator": 100
+      },
+      "rewardFeeBps": 900,
+      "paused": false,
+      "codeHash": "J1arLz48fgXcGyCPVckFwLnewNH6j1uw79thsvwqGYTY",
+      "fingerprintMatches": null,
+      "accessKeyCount": 0,
+      "keyless": true,
+      "observer": {
+        "accountId": "auratrail-dev-20261030.testnet",
+        "staked": "0",
+        "unstaked": "0",
+        "canWithdraw": true
+      },
+      "blockHash": "3vA2CXpMZpo4e6t2JtLDVa2Vh8asQeANx1ATCHEKSbPa",
+      "blockHeight": 275553337,
+      "apy": null,
+      "apyReason": "No attributable reward history has been established.",
+      "depositsEnabled": false,
+      "reviewStatus": "read-only interface probe",
+      "available": true,
+      "activeValidator": true,
+      "currentEpochProduction": {
+        "expectedBlocks": 989,
+        "producedBlocks": 989
+      }
+    },
+    {
+      "accountId": "stakely_v2.pool.f863973.m0",
+      "ownerId": "stakely.testnet",
+      "totalStaked": "13933334045871992588869234553701",
+      "rewardFee": {
+        "numerator": 3,
+        "denominator": 100
+      },
+      "rewardFeeBps": 300,
+      "paused": false,
+      "codeHash": "J1arLz48fgXcGyCPVckFwLnewNH6j1uw79thsvwqGYTY",
+      "fingerprintMatches": null,
+      "accessKeyCount": 0,
+      "keyless": true,
+      "observer": {
+        "accountId": "auratrail-dev-20261030.testnet",
+        "staked": "0",
+        "unstaked": "0",
+        "canWithdraw": true
+      },
+      "blockHash": "3vA2CXpMZpo4e6t2JtLDVa2Vh8asQeANx1ATCHEKSbPa",
+      "blockHeight": 275553337,
+      "apy": null,
+      "apyReason": "No attributable reward history has been established.",
+      "depositsEnabled": false,
+      "reviewStatus": "read-only interface probe",
+      "available": true,
+      "activeValidator": true,
+      "currentEpochProduction": {
+        "expectedBlocks": 630,
+        "producedBlocks": 630
+      }
+    },
+    {
+      "accountId": "ts.pool.f863973.m0",
+      "ownerId": "ts-dummy.testnet",
+      "totalStaked": "4460713873731641501298314293614",
+      "rewardFee": {
+        "numerator": 5,
+        "denominator": 100
+      },
+      "rewardFeeBps": 500,
+      "paused": false,
+      "codeHash": "J1arLz48fgXcGyCPVckFwLnewNH6j1uw79thsvwqGYTY",
+      "fingerprintMatches": null,
+      "accessKeyCount": 0,
+      "keyless": true,
+      "observer": {
+        "accountId": "auratrail-dev-20261030.testnet",
+        "staked": "0",
+        "unstaked": "0",
+        "canWithdraw": true
+      },
+      "blockHash": "3vA2CXpMZpo4e6t2JtLDVa2Vh8asQeANx1ATCHEKSbPa",
+      "blockHeight": 275553337,
+      "apy": null,
+      "apyReason": "No attributable reward history has been established.",
+      "depositsEnabled": false,
+      "reviewStatus": "read-only interface probe",
+      "available": true,
+      "activeValidator": true,
+      "currentEpochProduction": {
+        "expectedBlocks": 156,
+        "producedBlocks": 156
+      }
+    }
+  ],
+  "remainingGates": [
+    "reproducible deployed-code/source review",
+    "vault share and high-water attribution",
+    "provisional fee loss/recovery policy",
+    "native asynchronous deposit/withdraw reconciliation",
+    "live full unstake cycle",
+    "independent financial review"
+  ]
+}

@@ -1,0 +1,102 @@
+
+> questlayer@0.1.0 check
+> npm test && npm run build
+
+
+> questlayer@0.1.0 test
+> node --test --test-concurrency=4 tests/*.test.mjs
+
+✔ Aavegotchi inventory decodes the canonical item ID before the quantity (5.9655ms)
+✔ peer appearance resolves both demo Aura slots without returning wallet or item identifiers (48.949166ms)
+✔ native peer looks verify current token ownership and hide the account and NFT IDs (59.13775ms)
+✔ missing native linkage or failed reads never claim a stale native Aura is equipped (31.143792ms)
+✔ an original appearance is shared only while the ownership snapshot is current (27.975208ms)
+✔ shared map markup accepts only controlled colors and same-origin original-skin URLs (1.227375ms)
+✔ earned vouchers bind contract, receiver, edition and expiry and lock the demo market (118.126584ms)
+✔ ownership, open listings, signer configuration and full editions prevent issuance (41.051959ms)
+✔ confirmed mint is recorded once even after its native NFT transfers (33.297583ms)
+✔ a claim cannot restore a demo item until a finalized post-expiry block proves no mint (44.389667ms)
+✔ claim confirmation rejects a mismatched on-chain recipient (41.398042ms)
+✔ the application attestation key persists privately without being a wallet access key (41.836292ms)
+✔ 365 city manifests keep six distinct sectors and at least 250m of polygon separation (12340.196875ms)
+✔ city selection is deterministic but rotates across dates (236.879334ms)
+✔ physical mode requires the canonical polygon as well as target proximity (773.899291ms)
+✔ ordered walking checkpoints cannot be skipped replayed or completed from one place (353.26475ms)
+✔ exhausted Aura supply is visible and never mints beyond edition caps (483.739333ms)
+✔ city windows include four all-day zones one three-hour zone and one one-hour zone (1004.005583ms)
+✔ yield uses two conserved buckets and idempotent receipts (38.663708ms)
+✔ simultaneous activation shares a single world and one reserved coin budget (974.548292ms)
+✔ shared coin pays one player once and cannot be farmed by retries (582.20725ms)
+✔ expired coins cannot be collected and unclaimed backing rolls over once (529.538792ms)
+✔ a solo player can complete a free quest and mint one bounded Aura (726.857333ms)
+✔ tier access matures, withdrawals remove it, decreases apply immediately (32.35075ms)
+✔ a funded quest has one GOLD payout while everyone can still earn personal XP (564.532917ms)
+✔ unstaking preserves retained yield and withdrawal is redeemable once (47.335875ms)
+✔ yield allocation before contribution change cannot be reassigned retroactively (13.787083ms)
+✔ market sale is atomic, conserves balances and transfers equipment rights (495.980875ms)
+✔ cancelled listing cannot be filled or revive after relisting (752.231541ms)
+✔ invalid monetary actions do not change wallet or treasury (6.255417ms)
+✔ failed transaction rolls back all writes (10.572083ms)
+✔ physical GPS validation rejects stale, inaccurate and distant evidence (1.029125ms)
+✔ local world rollover handles 23-hour and 25-hour days (952.470584ms)
+✔ city snapshots share a fixed public center and never record the first visitor GPS (469.214209ms)
+✔ forwarded addresses cannot bypass the client limit from an untrusted connection (2.0425ms)
+✔ the trusted local proxy separates clients and ignores forged address prefixes (24.87675ms)
+✔ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (11185.439541ms)
+✔ native wardrobe verifies ownership and removes stale or duplicate equipment (10.355ms)
+✔ native holdings retain equipped items beyond the first page and coalesce RPC calls (1.824ms)
+✔ native asset normalization rejects foreign kinds and out-of-range editions (0.91825ms)
+✔ a confirmed refresh cannot be overwritten by an older in-flight ownership read (0.762084ms)
+✔ parallel native reads share network verification and a failed check can retry (1.600708ms)
+✔ claim expiry proof reads the timestamp of the exact finalized claim state block (8.543292ms)
+✔ native prices preserve yoctoNEAR precision and reject unsupported representations (1.950333ms)
+✔ native market enables only active offers with a currently escrowed NFT (2.718334ms)
+✔ native identity validates account syntax and distinguishes RPC failures (23.698292ms)
+✔ NEAR sign-in verifies real signatures, restores one explorer, isolates purposes and prevents replay (11568.577708ms)
+✔ identity refuses a mainnet RPC even when its access-key answer would be valid (0.837709ms)
+✔ stale cleanup and heartbeat cannot overwrite a newer sharing session or game mode (30.403ms)
+✔ location heartbeats do not extend consent beyond its original 15 minute window (18.83775ms)
+✔ demo and GPS presence are isolated and stale positions disappear after 30 seconds (14.257666ms)
+✔ stop received before a delayed initial publication permanently revokes that session (13.611125ms)
+✔ native math rejects floating and overflowing balances and never spends unrealized profit or loss recovery (10.84ms)
+✔ E+2 tranche and contribution maturity preserves older access through top-ups and staged increases (0.813167ms)
+✔ new exits and daily game harvests cannot reset a sealed account's older unlock (11.741208ms)
+✔ failed asynchronous pool actions retain obligations and original ordering without fake receipts (8.187625ms)
+✔ restored native model state rejects changed policy allocations and duplicate cash receipts (8.214959ms)
+✔ liquid receipt policy is replay-safe, versioned and never recycles principal, rollover or awarded backing (3.043209ms)
+✔ integer treasury conservation holds across many policies, city reservations, expiries and winners (1785.850042ms)
+✔ pool adapter pins every view, exposes no invented APY and accepts legitimate non-.testnet validator IDs (58.59425ms)
+✔ local calendar boundaries preserve short and long DST days and calendar rotation (369.941583ms)
+✔ durable preparation is deterministic, idempotent and reserves no money or future loot (619.129791ms)
+✔ failed preparations back off and recover without duplicate reservations (1131.526084ms)
+✔ an expired preparation lease can be reclaimed and its stale worker cannot overwrite completion (222.919083ms)
+✔ a new local day immediately recovers uncollected backing before publishing its next world (1731.353959ms)
+✔ a restarted process resumes persisted SQLite work without touching treasury (888.710917ms)
+ℹ tests 66
+ℹ suites 0
+ℹ pass 66
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21918.70875
+
+> questlayer@0.1.0 build
+> tsc -b && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 5074 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.69 kB │ gzip:   0.42 kB
+dist/assets/maplibre-gl-worker-Br3j0JGE.js    518.98 kB
+dist/assets/index-Bse28Cnd.css                125.11 kB │ gzip:  22.53 kB
+dist/assets/ccip-BIlmRvnp.js                    0.08 kB │ gzip:   0.08 kB
+dist/assets/utils-Bpv4vmSW.js                   2.19 kB │ gzip:   0.97 kB
+dist/assets/secp256k1-r6zDmR7w.js              26.34 kB │ gzip:  10.21 kB
+dist/assets/build-BWEqb74h.js                  58.76 kB │ gzip:  15.02 kB
+dist/assets/_esm-D3mZsXNV.js                  170.66 kB │ gzip:  49.01 kB
+dist/assets/index-8HrjE3fN.js               1,500.52 kB │ gzip: 417.77 kB
+
+✓ built in 3.01s

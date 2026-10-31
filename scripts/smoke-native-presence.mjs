@@ -111,7 +111,7 @@ try {
     appearance: visible.appearance,
   };
   writeFileSync(
-    "output/qa/W04/native-presence-api.json",
+    process.env.PRESENCE_REPORT_PATH || "output/qa/W04/native-presence-api.json",
     JSON.stringify(proof, null, 2) + "\n",
   );
   console.log(
