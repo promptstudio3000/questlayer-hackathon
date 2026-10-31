@@ -221,7 +221,7 @@ if (treasury.funded === "0")
       contractId,
       methodName: "fund_rewards",
       args: { source: "sponsor", receipt_id: "initial-pilot-20261031" },
-      deposit: 2n * 10n ** 23n,
+      deposit: 2n * 10n ** 23n + BigInt(cfg.sponsor_storage_fee),
       gas: 50n * 10n ** 12n,
       waitUntil: "FINAL",
     }),

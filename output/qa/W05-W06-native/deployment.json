@@ -1,9 +1,9 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-10-31T12:22:11.802Z",
+  "verifiedAt": "2026-10-31T13:08:04.700Z",
   "contractId": "questlayer-rewards-20261031.testnet",
-  "codeHash": "B46HTwUqwweaAuswXGSpDD5Qsp6v3C46qc4sC9EqFkqV",
-  "wasmSha256": "955f961002f618b37c789fc9bf5cf9662d5a97ab9519ce1fb2466c2942bf5bd8",
+  "codeHash": "FC4cKvohogoAH26FbRXrcF17rTb1ofYxPVNmZQc8fAAo",
+  "wasmSha256": "d2d9162f863086f39bf862b0928c64b1a6512a2974ff86bd629755c197c1c87c",
   "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
   "workerPublicKey": "ed25519:D7aVXb3Y6URXZ3znnWBVRHbYY1gLrZz2UiyV2dTWUSRb",
   "factory": {
@@ -33,7 +33,7 @@
     "rewards": "questlayer-rewards-20261031.testnet",
     "contribution_bps": 5000,
     "stage": "idle",
-    "nonce": "2",
+    "nonce": "3",
     "operation": "",
     "exit_requested": false,
     "unlock_epoch": "0",
@@ -122,6 +122,14 @@
     {
       "label": "Top up separate reward storage and gas reserve",
       "transaction": "GyFQQWhmSiR6trgPMeYZvWSdEccikb1vRmrm476en2yy"
+    },
+    {
+      "label": "Upgrade reviewed compatible bytecode questlayer-rewards-20261031.testnet",
+      "transaction": "GAYkBGvAWTaEkFACxdAX8bEAtonDpr3AcHRzGCaXvvBd"
+    },
+    {
+      "label": "Allow only the isolated native vault as yield source",
+      "transaction": "3Q25vjkRB7yA6MjUcqdECAhDWx5ySPAdxz5ese3qTxe2"
     }
   ]
 }

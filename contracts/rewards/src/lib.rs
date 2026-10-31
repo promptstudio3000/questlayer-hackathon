@@ -11,6 +11,7 @@ const NEAR: u128 = 10u128.pow(24);
 const DAY_MS: u64 = 86_400_000;
 const CLAIM_LIMIT: u16 = 256;
 const CLAIM_STORAGE: u64 = 1024;
+const SPONSOR_STORAGE_FEE: u128 = 5 * 10u128.pow(21);
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Default)]
 #[borsh(crate = "near_sdk::borsh")]
 #[serde(crate = "near_sdk::serde")]
@@ -127,6 +128,7 @@ impl Rewards {
     #[payable]
     pub fn fund_rewards(&mut self, source: String, receipt_id: String) {
         valid_id(&receipt_id);
+        assert!(receipt_id.len() <= 64, "Funding identifier too long");
         assert!(
             source == "sponsor" || source == "realized_yield",
             "Invalid source"
@@ -137,17 +139,45 @@ impl Rewards {
         }
         let key = format!("{sender}:{receipt_id}");
         assert!(!self.funding.contains(&key), "Funding receipt exists");
-        let amount = env::attached_deposit().as_yoctonear();
-        assert!(amount > 0, "Empty funding");
+        let attached = env::attached_deposit().as_yoctonear();
+        let storage_fee = if source == "sponsor" {
+            SPONSOR_STORAGE_FEE
+        } else {
+            0
+        };
+        assert!(
+            attached > storage_fee,
+            "Funding must include the separate sponsor storage fee"
+        );
+        let amount = attached - storage_fee;
+        let before = env::storage_usage();
         self.funding.insert(&key);
+        if source == "sponsor" {
+            assert!(
+                (env::storage_usage() - before) as u128 * env::storage_byte_cost().as_yoctonear()
+                    <= storage_fee,
+                "Sponsor storage exceeds paid allowance"
+            );
+        }
+
         let coins = amount / 2;
         self.coins.available += coins;
         self.zones.available += amount - coins;
         self.funded += amount;
+        // No new funding record may consume already-promised reward or receipt backing.
+        let slots = storage_slots().get(&"__total".into()).unwrap_or(0);
+        let guarded = (env::storage_usage() + slots * CLAIM_STORAGE + 8192) as u128
+            * env::storage_byte_cost().as_yoctonear()
+            + (self.funded - self.withdrawn)
+            + NEAR / 2;
+        assert!(
+            env::account_balance().as_yoctonear() >= guarded,
+            "Funding needs separate operating storage; reserved rewards are protected"
+        );
         self.check();
         event(
             "funded",
-            near_sdk::serde_json::json!({"source":source,"sender":sender,"receipt_id":receipt_id,"amount":amount.to_string()}),
+            near_sdk::serde_json::json!({"source":source,"sender":sender,"receipt_id":receipt_id,"amount":amount.to_string(),"storage_fee":storage_fee.to_string()}),
         );
     }
     pub fn set_vault(&mut self, account_id: AccountId, approved: bool) {
@@ -466,7 +496,7 @@ impl Rewards {
         self.days.get(&day_id).map(|d| near_sdk::serde_json::json!({"manifest_hash":d.hash,"starts_at":d.starts.to_string(),"ends_at":d.ends.to_string(),"coin_count":d.count,"coin_unit":d.unit.to_string(),"remaining":d.remaining.to_string(),"quests":d.quests,"winners":d.winners,"closed":d.closed,"claims_accepted":storage_slots().get(&format!("count:{day_id}")).unwrap_or(0),"claims_limit":CLAIM_LIMIT,"storage_reserved":storage_slots().get(&format!("day:{day_id}")).is_some()}))
     }
     pub fn get_config(&self) -> near_sdk::serde_json::Value {
-        near_sdk::serde_json::json!({"version":1,"network":"testnet","owner":self.owner,"publisher":self.publisher,"attestor":Base64VecU8(self.signer.clone()),"paused":self.paused})
+        near_sdk::serde_json::json!({"version":1,"network":"testnet","owner":self.owner,"publisher":self.publisher,"attestor":Base64VecU8(self.signer.clone()),"paused":self.paused,"sponsor_storage_fee":SPONSOR_STORAGE_FEE.to_string()})
     }
     pub fn get_treasury(&self) -> near_sdk::serde_json::Value {
         let bucket = |b: &Bucket| near_sdk::serde_json::json!({"available":b.available.to_string(),"reserved":b.reserved.to_string(),"awarded":b.awarded.to_string()});
@@ -588,7 +618,7 @@ mod tests {
                     .to_vec(),
             ),
         );
-        context("sponsor.testnet", 1, 1001, None);
+        context("sponsor.testnet", 1, 1001 + SPONSOR_STORAGE_FEE, None);
         r.fund_rewards("sponsor".into(), "fund-1".into());
         context("publisher.testnet", 1, 0, None);
         r.publish_day(
@@ -812,5 +842,40 @@ mod tests {
                 })
                 .collect(),
         );
+    }
+    #[test]
+    #[should_panic(expected = "Funding must include the separate sponsor storage fee")]
+    fn tiny_public_sponsors_cannot_spend_promised_receipt_storage() {
+        let mut r = setup();
+        context("untrusted.testnet", 3, 1, None);
+        r.fund_rewards("sponsor".into(), "spam".into());
+    }
+    #[test]
+    fn largest_sponsor_identifier_pays_for_its_own_record_without_diluting_rewards() {
+        let mut r = setup();
+        let before = r.funded;
+        context(
+            &format!("{}.testnet", "a".repeat(56)),
+            3,
+            SPONSOR_STORAGE_FEE + 9,
+            None,
+        );
+        r.fund_rewards("sponsor".into(), "r".repeat(64));
+        assert_eq!(r.funded, before + 9);
+        r.check();
+    }
+    #[test]
+    #[should_panic(expected = "Funding needs separate operating storage")]
+    fn approved_yield_cannot_consume_prepaid_claim_slots_when_operations_are_empty() {
+        let mut r = setup();
+        context("owner.testnet", 3, 0, None);
+        r.set_vault(a("vault.testnet"), true);
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(a("rewards.testnet"))
+            .predecessor_account_id(a("vault.testnet"))
+            .attached_deposit(NearToken::from_yoctonear(5))
+            .account_balance(NearToken::from_millinear(10));
+        testing_env!(b.build());
+        r.fund_rewards("realized_yield".into(), "vault-1".into());
     }
 }

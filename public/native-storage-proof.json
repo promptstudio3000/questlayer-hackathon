@@ -1,0 +1,42 @@
+{
+  "verifiedAt": "2026-10-31T13:08:50.875Z",
+  "network": "testnet",
+  "contractId": "questlayer-rewards-20261031.testnet",
+  "codeHash": "FC4cKvohogoAH26FbRXrcF17rTb1ofYxPVNmZQc8fAAo",
+  "sponsorStorageFee": "5000000000000000000000",
+  "rewardGrant": "2000000000000000000",
+  "attached": "5002000000000000000000",
+  "underfundedPublicSponsorRejected": true,
+  "failedFundingPreservedBalances": true,
+  "reservedClaimsUnchanged": true,
+  "surchargeExcludedFromRewardIncome": true,
+  "allocation": "50/50",
+  "transactions": [
+    {
+      "label": "Reject sponsor without storage funding",
+      "transaction": "56JTdi2vJpAD47PtLPiJ7yT5BVp4zk5AoGJ8zQHwbnMB",
+      "expectedFailure": true
+    },
+    {
+      "label": "Accept separately covered sponsor record",
+      "transaction": "CFwzV8CPtAMhgEvrsoYg9PDH1zmvYixcwE7DHgFPpGzJ"
+    }
+  ],
+  "treasuryAfter": {
+    "coins": {
+      "available": "88001000000000000000000",
+      "reserved": "11999000000000000000000",
+      "awarded": "1000000000000000000"
+    },
+    "zones": {
+      "available": "88001000000000000000000",
+      "reserved": "12000000000000000000000",
+      "awarded": "0"
+    },
+    "funded": "200002000000000000000000",
+    "owed": "0",
+    "pending": "0",
+    "withdrawn": "1000000000000000000",
+    "policy": "50/50-v1"
+  }
+}
