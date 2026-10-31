@@ -10,3 +10,25 @@ export function auraSvg(color: string) {
     `<ellipse cx="24" cy="9" rx="20" ry="4" fill="none" stroke="${safe}" stroke-width="4" opacity=".2"/><ellipse cx="24" cy="9" rx="20" ry="4" fill="none" stroke="${safe}" stroke-width="1.5"/></svg>`,
   );
 }
+
+export function characterMarkerMarkup({
+  color,
+  above,
+  below,
+  skinUrl,
+}: {
+  color?: string;
+  above?: string | null;
+  below?: string | null;
+  skinUrl?: string;
+}) {
+  const safe = (value: string | undefined | null) =>
+    /^#[a-fA-F0-9]{6}$/.test(value || "") ? value : null;
+  const top = safe(above),
+    bottom = safe(below),
+    skin =
+      skinUrl && /^\/api\/aavegotchi\/skin\?tokenId=\d{1,24}$/.test(skinUrl)
+        ? skinUrl
+        : null;
+  return `${top ? `<div class="marker-aura top" style="--aura-color:${top}"></div>` : ""}${skin ? `<img class="origin-player" src="${skin}" alt="Chosen original Aavegotchi appearance"/>` : ghostSvg(safe(color) || "#b8a1ed")}${bottom ? `<div class="marker-aura bottom" style="--aura-color:${bottom}"></div>` : ""}`;
+}

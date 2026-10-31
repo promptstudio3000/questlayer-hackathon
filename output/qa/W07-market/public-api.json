@@ -1,0 +1,21 @@
+{
+  "checkedAt": "2026-10-31T04:34:51.167Z",
+  "http": 200,
+  "network": "testnet",
+  "marketContract": "questlayer-market-20261031.testnet",
+  "offers": [
+    {
+      "id": 3,
+      "tokenId": "aura:polar:2",
+      "available": true,
+      "state": "active",
+      "price": "20000000000000000000000"
+    }
+  ],
+  "financial": {
+    "funded": "10000000000000000000000",
+    "credits": "0",
+    "escrow": "0",
+    "withdrawn": "10000000000000000000000"
+  }
+}

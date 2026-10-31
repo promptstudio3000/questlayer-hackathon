@@ -1,3 +1,5 @@
+import { characterMarkerMarkup } from "./character-art";
+import type { NearbyExplorer } from "./types";
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -17,13 +19,7 @@ type Props = {
   arena: boolean;
   globe: boolean;
   equipped: Item[];
-  others: {
-    id: string;
-    name: string;
-    lat: number;
-    lng: number;
-    color: string;
-  }[];
+  others: NearbyExplorer[];
   skinUrl?: string;
   onMove: (p: Point) => void;
   onZone: (z: Zone) => void;
@@ -291,7 +287,23 @@ export function GameMap(props: Props) {
     const markers = props.others.map((p) => {
       const node = document.createElement("div");
       node.className = "other-player-marker";
-      node.innerHTML = ghostSvg(p.color);
+      const look = p.appearance;
+      node.innerHTML = characterMarkerMarkup({
+        color: look?.color || p.color,
+        above: look?.above,
+        below: look?.below,
+        skinUrl: look?.skinTokenId
+          ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(look.skinTokenId)}`
+          : undefined,
+      });
+      node.setAttribute("role", "img");
+      node.setAttribute(
+        "aria-label",
+        p.name +
+          (look?.source === "unavailable"
+            ? " · appearance temporarily unavailable"
+            : " · nearby explorer"),
+      );
       const label = document.createElement("span");
       label.textContent = p.name;
       node.append(label);
@@ -345,7 +357,13 @@ export function GameMap(props: Props) {
     const color = props.equipped.find((i) => i.slot === "avatar")?.color;
     const top = props.equipped.find((i) => i.slot === "above"),
       bottom = props.equipped.find((i) => i.slot === "below");
-    avatar.current.getElement().innerHTML = `${top ? `<div class="marker-aura top" style="--aura-color:${top.color}"></div>` : ""}${props.skinUrl ? `<img class="origin-player" src="${props.skinUrl}" alt="Linked original Aavegotchi"/>` : ghostSvg(color)}${bottom ? `<div class="marker-aura bottom" style="--aura-color:${bottom.color}"></div>` : ""}<span class="you-label">YOU</span>`;
+    avatar.current.getElement().innerHTML =
+      characterMarkerMarkup({
+        color,
+        above: top?.color,
+        below: bottom?.color,
+        skinUrl: props.skinUrl,
+      }) + '<span class="you-label">YOU</span>';
   }, [equipmentKey, props.skinUrl]);
   useEffect(() => {
     const m = map.current;

@@ -1,3 +1,5 @@
+import { updatePresence, nearbyPresence } from "./presence.mjs";
+import { publicAppearances } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
 import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
@@ -755,57 +757,28 @@ async function api(req, res, url) {
     emit("message", {});
     return respond(res, { id: msg }, 201);
   }
-  if (path === "/api/presence" && method === "POST") {
-    const i = await body(req);
-    if (!i.enabled) {
-      db.prepare("DELETE FROM presence WHERE player_id=?").run(player);
-      return respond(res, { enabled: false });
-    }
-    point(i);
-    const now = Date.now();
-    const old = db
-      .prepare("SELECT expires_at FROM presence WHERE player_id=?")
-      .get(player);
-    if (!i.renew && (!old || old.expires_at <= now)) {
-      db.prepare("DELETE FROM presence WHERE player_id=?").run(player);
-      return respond(res, { enabled: false });
-    }
-    const expiry = i.renew ? now + 15 * 60_000 : old.expires_at;
-    db.prepare("INSERT OR REPLACE INTO presence VALUES (?,?,?,?,?)").run(
-      player,
-      i.lat,
-      i.lng,
-      expiry,
-      now,
-    );
-    return respond(res, { enabled: true, expiresAt: expiry });
-  }
+  if (path === "/api/presence" && method === "POST")
+    return respond(res, updatePresence(db, player, await body(req)));
   if (path === "/api/presence" && method === "GET") {
     const lat = Number(url.searchParams.get("lat") || HOME.lat),
       lng = Number(url.searchParams.get("lng") || HOME.lng);
+    point({ lat, lng });
+    const players = nearbyPresence(
+      db,
+      player,
+      { lat, lng },
+      url.searchParams.get("arena") !== "0",
+    );
+    const looks = await publicAppearances(db, players, nativeCollectibles);
     return respond(res, {
-      players: db
-        .prepare(
-          "SELECT p.name,p.id,pr.lat,pr.lng FROM presence pr JOIN players p ON p.id=pr.player_id WHERE pr.player_id!=? AND pr.expires_at>? AND pr.updated_at>? AND pr.lat BETWEEN ? AND ? AND pr.lng BETWEEN ? AND ? LIMIT 30",
-        )
-        .all(
-          player,
-          Date.now(),
-          Date.now() - 30_000,
-          lat - 0.015,
-          lat + 0.015,
-          lng - 0.02,
-          lng + 0.02,
-        )
-        .map((p) => ({
-          ...p,
-          color:
-            db
-              .prepare(
-                "SELECT color FROM inventory WHERE player_id=? AND equipped=1 AND kind='aura' LIMIT 1",
-              )
-              .get(p.id)?.color || "#b6a1df",
-        })),
+      players: players.map((p, index) => ({
+        id: p.id,
+        name: p.name,
+        lat: p.lat,
+        lng: p.lng,
+        color: looks[index].color,
+        appearance: looks[index],
+      })),
     });
   }
   if (path === "/api/wallet/challenge" && method === "POST") {

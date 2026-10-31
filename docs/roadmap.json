@@ -422,7 +422,10 @@
         "public/native-wardrobe-testnet.json",
         "output/qa/W04/checks.txt",
         "output/qa/W04/contracts.txt",
-        "output/qa/W04/app-wardrobe-integration.json"
+        "output/qa/W04/app-wardrobe-integration.json",
+        "docs/PEER-APPEARANCES.md",
+        "output/qa/W04/native-presence-api.json",
+        "output/qa/W04/peer-checks.txt"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W04/"

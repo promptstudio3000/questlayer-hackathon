@@ -257,3 +257,16 @@ export type NativeTradeRequest = {
   listingId?: number;
   price?: string;
 };
+
+export type NearbyExplorer = Point & {
+  id: string;
+  name: string;
+  color: string;
+  appearance?: {
+    color: string;
+    above: string | null;
+    below: string | null;
+    skinTokenId: string | null;
+    source: "demo" | "native" | "unavailable";
+  };
+};

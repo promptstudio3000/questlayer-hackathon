@@ -1,0 +1,2 @@
+{"nativePeerReady":true,"appearance":{"color":"#b8a1ed","above":"#9edfc5","below":"#c2a0df","skinTokenId":null,"source":"native"},"temporaryDemoSharingSeconds":120}
+{"demoSharingStopped":true}

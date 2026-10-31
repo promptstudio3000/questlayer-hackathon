@@ -27,6 +27,8 @@ export function openDatabase(
     CREATE UNIQUE INDEX IF NOT EXISTS unique_open_listing ON listings(item_id) WHERE state='open';
     CREATE TABLE IF NOT EXISTS messages(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), text TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, image TEXT, author_fix TEXT, created_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS presence(player_id TEXT PRIMARY KEY REFERENCES players(id), lat REAL NOT NULL, lng REAL NOT NULL, expires_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS presence_revocations(player_id TEXT NOT NULL REFERENCES players(id), lease_id TEXT NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(player_id,lease_id));
+    CREATE INDEX IF NOT EXISTS presence_revocations_expiry ON presence_revocations(expires_at);
     CREATE TABLE IF NOT EXISTS geo_cache(region TEXT PRIMARY KEY, data TEXT NOT NULL, expires_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS auth_challenges(id TEXT PRIMARY KEY, nonce TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS wallet_links(account_id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), verified_at INTEGER NOT NULL);
@@ -60,6 +62,22 @@ export function openDatabase(
   )
     db.exec(
       "ALTER TABLE positions ADD COLUMN eligible_contribution INTEGER NOT NULL DEFAULT 0",
+    );
+  if (
+    !db
+      .prepare("PRAGMA table_info(presence)")
+      .all()
+      .some((c) => c.name === "arena")
+  )
+    db.exec("ALTER TABLE presence ADD COLUMN arena INTEGER NOT NULL DEFAULT 1");
+  if (
+    !db
+      .prepare("PRAGMA table_info(presence)")
+      .all()
+      .some((c) => c.name === "lease_id")
+  )
+    db.exec(
+      "ALTER TABLE presence ADD COLUMN lease_id TEXT NOT NULL DEFAULT ''",
     );
   const playerColumns = db.prepare("PRAGMA table_info(players)").all();
   if (!playerColumns.some((c) => c.name === "native_outfit"))

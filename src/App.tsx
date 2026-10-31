@@ -1,3 +1,4 @@
+import type { NearbyExplorer } from "./types";
 import { NativeMarketPanel } from "./NativeMarketPanel";
 import type { NativeTradeRequest } from "./types";
 import { AuraClaims } from "./AuraClaims";
@@ -133,9 +134,7 @@ export default function App() {
     [online, setOnline] = useState(navigator.onLine),
     [presence, setPresence] = useState(false),
     [presenceUntil, setPresenceUntil] = useState(0),
-    [others, setOthers] = useState<
-      { id: string; name: string; lat: number; lng: number; color: string }[]
-    >([]),
+    [others, setOthers] = useState<NearbyExplorer[]>([]),
     [showNpc, setShowNpc] = useState(false),
     [now, setNow] = useState(Date.now()),
     [menu, setMenu] = useState(false);
@@ -389,17 +388,43 @@ export default function App() {
     }, 600);
     return () => clearInterval(collect);
   }, [player?.id]);
+  const profileButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!menu) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) {
+        setMenu(false);
+        profileButton.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [menu]);
+  useEffect(() => {
+    setPresence(false);
+    setOthers([]);
+  }, [arena]);
   useEffect(() => {
     if (!player) return;
-    const load = () =>
-      api<{ players: typeof others }>(
-        `/presence?lat=${latest.current.position.lat.toFixed(2)}&lng=${latest.current.position.lng.toFixed(2)}`,
+    let active = true;
+    const load = () => {
+      if (document.visibilityState !== "visible") return;
+      const mode = latest.current.arena;
+      void api<{ players: NearbyExplorer[] }>(
+        `/presence?arena=${mode ? 1 : 0}&lat=${latest.current.position.lat.toFixed(2)}&lng=${latest.current.position.lng.toFixed(2)}`,
       )
-        .then((r) => setOthers(r.players))
+        .then((r) => {
+          if (active && mode === latest.current.arena) setOthers(r.players);
+        })
         .catch(() => {});
-    void load();
-    const t = setInterval(load, 8000);
-    return () => clearInterval(t);
+    };
+    load();
+    const timer = setInterval(load, 8000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      setOthers([]);
+    };
   }, [player?.id]);
   useEffect(() => {
     if (!arena || !player) return;
@@ -452,22 +477,54 @@ export default function App() {
   }, [arena, player?.id]);
   useEffect(() => {
     if (!presence || !player) return;
-    const send = (renew = false) =>
-      api<{ enabled: boolean; expiresAt?: number }>("/presence", {
+    if (document.visibilityState !== "visible") {
+      setPresence(false);
+      return;
+    }
+    const leaseId = crypto.randomUUID();
+    let active = true;
+    const send = (renew = false) => {
+      if (!active || document.visibilityState !== "visible") return;
+      return api<{ enabled: boolean; expiresAt?: number }>("/presence", {
         enabled: true,
+        leaseId,
         renew,
+        arena: latest.current.arena,
         ...latest.current.position,
       })
         .then((r) => {
+          if (!active) return;
           if (!r.enabled) setPresence(false);
           else if (r.expiresAt) setPresenceUntil(r.expiresAt);
         })
         .catch(() => {});
+    };
     void send(true);
     const t = setInterval(() => send(false), 10_000);
-    return () => {
+    const stop = () => {
+      if (!active) return;
+      active = false;
       clearInterval(t);
-      void api("/presence", { enabled: false }).catch(() => {});
+      void fetch("/api/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        keepalive: true,
+        body: JSON.stringify({ enabled: false, leaseId }),
+      }).catch(() => {});
+    };
+    const visibility = () => {
+      if (document.visibilityState !== "visible") {
+        stop();
+        setPresence(false);
+      }
+    };
+    document.addEventListener("visibilitychange", visibility);
+    window.addEventListener("pagehide", stop);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", visibility);
+      window.removeEventListener("pagehide", stop);
     };
   }, [presence, player?.id]);
   useEffect(
@@ -1068,8 +1125,11 @@ export default function App() {
                 <Plus size={14} />
               </button>
               <button
+                ref={profileButton}
                 className="profile-pill"
                 aria-label="Explorer profile"
+                aria-expanded={menu}
+                aria-controls="explorer-profile"
                 onClick={() => setMenu((v) => !v)}
               >
                 <Character
@@ -1088,7 +1148,7 @@ export default function App() {
         </div>
       </header>
       {menu && player && (
-        <div className="profile-menu">
+        <div id="explorer-profile" className="profile-menu">
           <b>{player.name}</b>
           <span>Your character and demo progress are saved.</span>
           <button
@@ -1099,6 +1159,12 @@ export default function App() {
           >
             <Wallet /> Wallet and sign-in
           </button>
+          <p className="presence-consent">
+            Sharing shows your name, chosen look and precise map position to
+            nearby explorers for up to 15 minutes while this tab is visible.
+            Switching away stops sharing. Demo presence stays separate from GPS
+            play.
+          </p>
           <button onClick={() => setPresence((x) => !x)}>
             {presence ? <EyeSlash /> : <Eye />}
             {presence ? "Stop sharing presence" : "Share presence for 15 min"}

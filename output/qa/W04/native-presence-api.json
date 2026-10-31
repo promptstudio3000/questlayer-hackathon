@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-31T04:45:07.680Z",
+  "api": "http://127.0.0.1:8787",
+  "mode": "synthetic demo position; not physical GPS",
+  "nativeAboveVerified": true,
+  "nativeBelowVerified": true,
+  "walletAddressAbsentFromPeerDTO": true,
+  "nativeTokenIDsAbsentFromPeerDTO": true,
+  "physicalModeIsolation": true,
+  "playerPrivateKeyUploaded": false,
+  "appearance": {
+    "color": "#b8a1ed",
+    "above": "#9edfc5",
+    "below": "#c2a0df",
+    "skinTokenId": null,
+    "source": "native"
+  }
+}

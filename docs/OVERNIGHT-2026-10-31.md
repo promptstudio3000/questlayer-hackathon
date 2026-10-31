@@ -151,3 +151,22 @@ Canonical Intents, native yield and reviewed mainnet operation remain open. Deta
 
 
 Market UI review completed before publication: the actual public escrow offer is visible in the app; fixture form states passed 360/390 widths, 20px text, short-height and landscape review. Price errors preserve the value, remain local to that field and return focus to it; keyboard correction kept all 24 decimal places. Missing wallet-balance data is labelled unavailable rather than zero. No fixture trade submitted a chain transaction. Actual mobile wallet approval, mainnet policy and event indexing remain open.
+
+
+Native market application release `20261031T043243Z` / commit `c70c648` is live. Public API and browser inspection confirmed sample offer 3 at 0.02 test NEAR, NFT escrow ownership and the market accounting invariant. Evidence: `output/qa/W07-market/public-api.json`, `public-native-offer.png` and `app-deployment.txt`.
+
+## Nearby native appearance and privacy increment
+
+Nearby map characters now use the shared composition renderer, including the original verified skin and independent above/below Auras. The native look is checked against actual equipment and current ownership; RPC failures omit unverified effects. Wallet accounts, native token identifiers, balances and inventory are excluded from the nearby response.
+
+Sharing is explicit, foreground-only and bounded to 15 minutes. GPS and demo presence are isolated. Heartbeats retain the original expiry; stale positions disappear after 30 seconds. Per-activation leases, asynchronous response guards and short-lived revocation tombstones prevent old cleanup, delayed initial publication and stale heartbeats from overriding the current consent. A hidden tab stops sharing and requires a fresh opt-in on return.
+
+| Before | After | Why / source |
+| --- | --- | --- |
+| Nearby explorers showed only a generic colored ghost (source finding). | The actual native above/below outfit is composed on their marker. | Make collected identity visible consistently; `server/appearance.mjs`, `src/character-art.ts`, `src/GameMap.tsx`. |
+| A late cleanup could remove a newer share; arena/GPS records shared one discovery pool. | Lease-bound updates, cancellation tombstones and explicit realms. | Preserve the latest consent and physical/demo separation; `server/presence.mjs`. |
+| Sharing could continue from a background tab. | Visibility/page lifecycle stops publication with a bounded server staleness fallback. | Publish only while intentionally present; `src/App.tsx`. |
+
+A live local API proof used only an owned developer account and synthetic arena coordinates. It verified the on-chain green/purple outfit, reduced response and GPS isolation, then opted out. Browser review captured desktop and 360px native peer markers, 360/390 consent menus and keyboard-reachable landscape controls. No physical GPS or actual mobile wallet approval is claimed. Details: `docs/PEER-APPEARANCES.md`.
+
+All 58 application tests pass for this increment. The unchanged contracts retain their prior 38 passing Rust tests. The profile disclosure supports Escape with focus return; its scrollable short-landscape menu keeps sharing controls keyboard-reachable.
