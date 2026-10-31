@@ -1,0 +1,34 @@
+{
+  "verifiedAt": "2026-10-31T08:47:54.103Z",
+  "publicUrl": "https://questlayer.promptstudio3000.com",
+  "webRelease": "20261031T083443Z",
+  "checks": {
+    "renderedMap": true,
+    "fullMapCanvas": {
+      "width": 512,
+      "height": 792
+    },
+    "citywideOverview": true,
+    "nativeMarketEscrowOfferVisible": true,
+    "globeVisible": true,
+    "globeReturnPreservesMapLibraryClass": true,
+    "nativeWalletPicker": {
+      "providers": [
+        "Meteor",
+        "Intear",
+        "Ledger",
+        "Nightly"
+      ],
+      "escapeCancels": true,
+      "focusReturnsToConnectButton": true,
+      "providerChosen": false,
+      "signatureRequested": false,
+      "transactionSubmitted": false
+    }
+  },
+  "limitations": [
+    "No physical phone or real GPS route",
+    "No personal wallet or hardware approval",
+    "Native staking and GOLD cash settlement remain demo"
+  ]
+}
