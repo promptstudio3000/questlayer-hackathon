@@ -48,7 +48,7 @@ The deploy target is **https://questlayer.promptstudio3000.com/**. Deployment is
 | Demo staking, maturity, retained yield, withdrawals | Implemented simulation; not a validator deposit |
 | Passkey registration and recovery | Implemented demo identity; not a native NEAR account |
 | Native NEAR sign-in and recovery | Real NEP-413 FullAccess verification; existing wallet restores the same player |
-| Native avatar and Aura wardrobe | Live testnet ownership, caller-minted starter NFT, independent above/below equipment and native appearance selection; earned demo Auras can use player-approved signed NFT claims after testnet activation |
+| Native avatar and Aura wardrobe | Live testnet ownership, caller-minted starter NFT, independent above/below equipment and native appearance selection; earned demo Auras can use player-approved signed NFT claims on the activated testnet contract |
 | Aavegotchi linking | EVM signature verification, read-only Base ownership, loose/nested/equipped inventory and original SVG appearances |
 | Notes with images and optional author GPS | Implemented server storage; image metadata removed |
 | Sponsored tasks | Demo escrow, evidence, creator approval; public arbitration is a later gate |

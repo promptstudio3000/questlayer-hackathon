@@ -17,4 +17,4 @@ dist/assets/build-BuhtWAlq.js                  58.76 kB │ gzip:  15.02 kB
 dist/assets/_esm-BQuIMpOV.js                  170.66 kB │ gzip:  49.01 kB
 dist/assets/index-Oolg9UcP.js               1,489.74 kB │ gzip: 415.06 kB
 
-✓ built in 747ms
+✓ built in 728ms

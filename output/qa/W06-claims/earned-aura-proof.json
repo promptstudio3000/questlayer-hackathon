@@ -1,0 +1,35 @@
+{
+  "verifiedAt": "2026-10-31T03:56:55.165Z",
+  "application": "https://questlayer.promptstudio3000.com",
+  "network": "testnet",
+  "accountId": "auratrail-dev-20261030.testnet",
+  "contractId": "nfts.auratrail-dev-20261030.testnet",
+  "questMode": "demo arena; no physical GPS presence claimed",
+  "arenaQuest": "demo:arena-city-plzen:2026-10-31:v2:quest:1:2",
+  "itemId": "aura_a0ed8d29-4503-4226-9ff4-6706050a3c1f",
+  "claimId": "earned:aura_a73348f3-395f-4aa1-a9fa-8e7b0eb8a40e",
+  "tokenId": "aura:polar:2",
+  "edition": "polar",
+  "supplyBefore": "3",
+  "supplyAfter": "4",
+  "duplicateRetryDidNotMint": true,
+  "demoTradingLocked": true,
+  "confirmedByApplication": true,
+  "nativeEquipmentVerified": true,
+  "playerPrivateKeyUploaded": false,
+  "serverWalletAccessKeysUsed": false,
+  "transactions": [
+    {
+      "label": "Redeem signed earned Aura",
+      "transaction": "Mq4yurjy6v2hkETktGkJzC5a3hyrG2tVyLDj8KNgknP"
+    },
+    {
+      "label": "Idempotent retry of the same signed claim",
+      "transaction": "9VAxoGdnLLY7PhYhbV1Uy4RcFX9MdT7qC36chbw3fYKU"
+    },
+    {
+      "label": "Wear earned native Aura above the explorer",
+      "transaction": "C1V9mBCDmaGuxaDkyqKUSyZD7FxCPiU9rgM1RYQWd3nu"
+    }
+  ]
+}

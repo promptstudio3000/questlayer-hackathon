@@ -1,0 +1,3 @@
+{"step":"Redeem signed earned Aura","transaction":"Mq4yurjy6v2hkETktGkJzC5a3hyrG2tVyLDj8KNgknP"}
+{"step":"Idempotent retry of the same signed claim","transaction":"9VAxoGdnLLY7PhYhbV1Uy4RcFX9MdT7qC36chbw3fYKU"}
+{"minted":"aura:polar:2","duplicateRetryDidNotMint":true,"nativeEquipmentVerified":true}

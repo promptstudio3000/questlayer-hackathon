@@ -120,3 +120,12 @@ Implemented an application attestor with a private persistent non-wallet signing
 | A signing outage could hide recovery actions. | Existing claims keep Check/Restore controls independently of mint availability. | Recovery must remain usable; `src/AuraClaims.tsx`. |
 
 UI evidence is explicitly labelled fixture-based: 360/390 px, 20px enlarged text, long addresses, landscape, desktop and keyboard activation. Fixtures perform no blockchain transaction and are excluded from production. Real wallet approval on physical devices remains unverified. Live contract migration and end-to-end application proof are the next activation steps. Details: `docs/NATIVE-AURA-CLAIMS.md`.
+
+
+### Live earned Aura activation
+
+Application release `20261031T035422Z` / commit `20dc5bd` is live. The NFT contract migrated V2→V3 in transaction `7Vh9zALvY8dX3R6eMhjHbxF6uUnCQrcGRUGVszqC3EmB`, preserving all three original tokens and both equipment slots. The owner configured only the server's public attestation key; its private key remained in the protected application state directory and is not a NEAR wallet access key.
+
+The owned developer account then completed the full public application flow: free demo-arena chest → signed claim → native `aura:polar:2` → finalized application receipt → native above-slot equipment. The actual mint transaction is `Mq4yurjy6v2hkETktGkJzC5a3hyrG2tVyLDj8KNgknP`; retry `9VAxoGdnLLY7PhYhbV1Uy4RcFX9MdT7qC36chbw3fYKU` minted no duplicate. The demo market rejected that item both while reserved and after confirmation. Supply increased from three to four once. This is explicitly an arena/protocol proof, not physical GPS evidence. No player private key was uploaded and no server wallet access key signed a NEAR transaction. Evidence: `public/native-claims-testnet.json`, `public/earned-aura-testnet.json`, `output/qa/W06-claims/`.
+
+Remaining: actual mobile/browser wallet approval, native cash/yield settlement and reviewed mainnet operation. The live CLI proof does not replace those gates.

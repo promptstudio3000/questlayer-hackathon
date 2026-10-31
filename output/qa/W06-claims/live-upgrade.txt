@@ -1,0 +1,3 @@
+{"step":"Atomic V2 to V3 state-preserving migration","transaction":"7Vh9zALvY8dX3R6eMhjHbxF6uUnCQrcGRUGVszqC3EmB"}
+{"step":"Configure application attestation public key, not a wallet access key","transaction":"FpMDethdtDxPnyvZorbWYLnMuNoEreLtz8Sh1MQFufvD"}
+{"version":3,"preservedTokens":"3","configured":true}

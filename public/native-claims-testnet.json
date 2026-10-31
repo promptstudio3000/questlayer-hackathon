@@ -1,0 +1,22 @@
+{
+  "verifiedAt": "2026-10-31T03:55:39.354Z",
+  "network": "testnet",
+  "contractId": "nfts.auratrail-dev-20261030.testnet",
+  "version": 3,
+  "application": "https://questlayer.promptstudio3000.com",
+  "attestationPublicKey": "q0C8Robd95EVO8v7BaR1E+ML/GdE8f5NH2lVYqiekYk=",
+  "existingTokensPreserved": true,
+  "existingEquipmentPreserved": true,
+  "supplyBefore": "3",
+  "wasmSha256": "6dc835d06740d78a4a999c1fadbc0aa9403686c6bf61ba829e59e26582f1cb95",
+  "transactions": [
+    {
+      "step": "Atomic V2 to V3 state-preserving migration",
+      "transaction": "7Vh9zALvY8dX3R6eMhjHbxF6uUnCQrcGRUGVszqC3EmB"
+    },
+    {
+      "step": "Configure application attestation public key, not a wallet access key",
+      "transaction": "FpMDethdtDxPnyvZorbWYLnMuNoEreLtz8Sh1MQFufvD"
+    }
+  ]
+}
