@@ -93,3 +93,15 @@ The former `rpc.testnet.near.org` endpoint began returning JSON-RPC `-429` with 
 Browser evidence currently includes the real native public outfit on desktop, at 360/390 CSS px and at 844 × 390 landscape. The confirmed outfit shows the original preserved polar Aura above and the newly minted moon Aura below. The guest's own character correctly stays in its separate demo outfit. Phone browser frames are layout checks, not physical iOS/Android device results. Wallet approval, soft-keyboard and OS enlarged-text checks for native transaction screens remain pending.
 
 The inventory wallet picker was exercised with Tab and Escape without selecting a wallet or signing. This caught a focus-return failure: disabling the invoking button while the SDK loaded caused the dialog to capture the document body as its previous focus. The shared action wrapper now remembers the invoking control before the busy state and restores it after cancellation when no other dialog has opened. The repeated browser check confirmed focus on “Connect a NEAR wallet”; `output/qa/W04/keyboard-wallet-cancel.png` records that state.
+
+
+Native wardrobe app release `20261031T030717Z` / commit `9d90a25` is live. The post-deployment public HTTPS smoke test restored the same NEAR player with no duplicate demo grant and confirmed the three owned NFTs, both equipment slots and active native outfit. Public browser inspection also confirmed the live native collection. Backups are recorded in `output/qa/W04/deployment.txt`.
+
+
+## Durable city-day preparation
+
+Added offline preparation for today's and tomorrow's city plan, SQLite job leases, bounded retry, stale-worker rejection and persisted process-restart recovery. Ready plans retain source/integrity hashes. Preparation never reserves money or spawns claimable objects. World creation consumes the prepared geometry only for its active local day and expires old unclaimed backing before reserving new rewards. Midnight rollover no longer waits for the 30-second maintenance interval to make that backing available. Local calendar boundary lookup now uses bounded binary search and passes both 23-hour and 25-hour DST dates.
+
+The app starts its worker automatically. Public health reports only readiness/date states; the operator CLI exports a nonfinancial GeoJSON preview. Older preparation cache entries expire after 14 days, independently of published worlds and receipts. Existing city manifests remain unchanged for their day. The generation in-flight cache is scoped to each database connection.
+
+All 40 application tests pass. Six focused worker cases cover deterministic geography, unchanged treasury during future preparation, retry, lease takeover, actual SQLite reopen after interruption and conserved rollover. The live local service reports both dates ready. Details: `docs/WORLD-WORKER.md`; evidence: `output/qa/W01-worker/`.

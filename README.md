@@ -91,3 +91,5 @@ Browser GPS can be spoofed. The location validator is explicitly trusted for phy
 See [third-party notices](THIRD-PARTY-NOTICES.md). All public product text and delivery documentation are English.
 
 `node scripts/upgrade-collectibles-testnet.mjs` upgrades the existing owned testnet collectible contract with a checked V1→V2 migration and records live equipment/transfer/idempotency proofs. `node scripts/smoke-near-identity.mjs --wardrobe` verifies signed application identity, actual NFT ownership and outfit selection without sending a blockchain transaction. The application uses current public testnet endpoints listed in [NEAR's provider documentation](https://docs.near.org/api/rpc/providers); no player signing key is stored by the server.
+
+Daily city geography is prepared ahead of time by a durable leased worker, independently of treasury allocation. See [daily preparation operations and boundaries](docs/WORLD-WORKER.md). `npm run world:preview -- YYYY-MM-DD` exports a nonfinancial CityPack preview; the public health endpoint exposes readiness without future coordinates.

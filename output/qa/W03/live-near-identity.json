@@ -1,7 +1,7 @@
 {
-  "verifiedAt": "2026-10-31T02:42:28.124Z",
+  "verifiedAt": "2026-10-31T03:08:44.341Z",
   "network": "testnet",
-  "api": "http://127.0.0.1:8787",
+  "api": "https://questlayer.promptstudio3000.com",
   "account": "auratrail-dev-20261030.testnet",
   "method": "NEP-413 with live RPC FullAccess verification",
   "sameExplorerRestored": true,

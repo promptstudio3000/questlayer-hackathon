@@ -1,0 +1,13 @@
+✔ local calendar boundaries preserve short and long DST days and calendar rotation (57.522084ms)
+✔ durable preparation is deterministic, idempotent and reserves no money or future loot (120.042542ms)
+✔ failed preparations back off and recover without duplicate reservations (62.291583ms)
+✔ an expired preparation lease can be reclaimed and its stale worker cannot overwrite completion (57.6135ms)
+✔ a new local day immediately recovers uncollected backing before publishing its next world (143.164792ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 642.777625

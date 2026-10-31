@@ -1,0 +1,14 @@
+✔ 365 city manifests keep six distinct sectors and at least 250m of polygon separation (1404.708125ms)
+✔ city selection is deterministic but rotates across dates (8.3015ms)
+✔ physical mode requires the canonical polygon as well as target proximity (107.626584ms)
+✔ ordered walking checkpoints cannot be skipped replayed or completed from one place (66.901667ms)
+✔ exhausted Aura supply is visible and never mints beyond edition caps (57.152166ms)
+✔ city windows include four all-day zones one three-hour zone and one one-hour zone (59.156875ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2050.522083

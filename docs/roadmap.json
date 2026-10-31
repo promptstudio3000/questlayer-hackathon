@@ -178,11 +178,14 @@
         {
           "id": "W01.8",
           "title": "Provide an operator generation preview",
-          "status": "planned"
+          "status": "building"
         }
       ],
       "evidence": [
-        "docs/OVERNIGHT-2026-10-31.md"
+        "docs/OVERNIGHT-2026-10-31.md",
+        "docs/WORLD-WORKER.md",
+        "output/qa/W01-worker/checks.txt",
+        "output/qa/W01-worker/operator-preview.geojson"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W01/"

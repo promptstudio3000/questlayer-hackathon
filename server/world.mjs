@@ -1,16 +1,13 @@
+import { getOrPrepareCityPlan } from "./world-planner.mjs";
+import { localDateBounds } from "./spatial/calendar.mjs";
 import tzLookup from "tz-lookup";
 import { latLngToCell, cellToLatLng, cellToBoundary } from "h3-js";
 import { COIN_VALUE, DAY, GOLD, dayKey, distance } from "./domain.mjs";
 import { atomic } from "./database.mjs";
-import {
-  PLZEN,
-  cityFor,
-  buildCityZones,
-  sampleCityPaths,
-} from "./spatial/city-pack.mjs";
+import { PLZEN, cityFor, sampleCityPaths } from "./spatial/city-pack.mjs";
 export const HOME = PLZEN.center;
 export const ZONE_NAMES = PLZEN.candidates.map((c) => c.name);
-const pending = new Map();
+const databasePending = new WeakMap();
 let citySamples;
 async function publicPaths(db, region, center) {
   const cached = db
@@ -72,31 +69,6 @@ function publicManifest(db, w) {
   return w;
 }
 
-function localMidnight(now, tz) {
-  const day = dayKey(now, tz);
-  for (let t = now + 60000; t <= now + 26 * 3600000; t += 60000)
-    if (dayKey(t, tz) !== day) return Math.floor(t / 60000) * 60000;
-  throw Error("Could not resolve the next local date.");
-}
-function localDayStart(now, tz) {
-  const day = dayKey(now, tz);
-  for (let t = now; t >= now - 26 * 3600000; t -= 60000)
-    if (dayKey(t, tz) !== day) return (Math.floor(t / 60000) + 1) * 60000;
-  throw Error("Could not resolve the start of the local date.");
-}
-function windowFor(z, startOfDay, end, timedTier2Slot) {
-  // One premium three-hour window and one top-tier one-hour window; free play remains all-day.
-  const duration =
-    z.tier === 3
-      ? 3600000
-      : z.tier === 2 && z.slot === timedTier2Slot
-        ? 3 * 3600000
-        : 0;
-  if (!duration) return { opensAt: startOfDay, closesAt: end };
-  const hour = z.tier === 3 ? 18 : 12,
-    start = end - (24 - hour) * 3600000;
-  return { opensAt: start, closesAt: Math.min(end, start + duration) };
-}
 export async function ensureWorld(
   db,
   location = HOME,
@@ -114,11 +86,17 @@ export async function ensureWorld(
     .prepare("SELECT manifest FROM worlds WHERE id=?")
     .get(worldId);
   if (found) return publicManifest(db, JSON.parse(found.manifest));
+  let pending = databasePending.get(db);
+  if (!pending) {
+    pending = new Map();
+    databasePending.set(db, pending);
+  }
   if (pending.has(worldId)) return pending.get(worldId);
   const job = (async () => {
-    const startsAt = localDayStart(now, timezone),
-      endsAt = localMidnight(now, timezone),
-      base = city ? buildCityZones(city, day) : [];
+    expireWorlds(db, now);
+    const plan = city ? getOrPrepareCityPlan(db, city, day, now) : null;
+    const { startsAt, endsAt } = plan || localDateBounds(day, timezone),
+      base = plan?.zones || [];
     const paths = city
       ? []
       : await publicPaths(db, region, cellToLatLng(region));
@@ -132,12 +110,14 @@ export async function ensureWorld(
       id: `${worldId}:zone:${z.slot}`,
       radius: 0,
       kind: z.tier === 1 ? "cache" : "expedition",
-      ...windowFor(z, startsAt, endsAt, base.find((x) => x.tier === 2)?.slot),
+      opensAt: z.opensAt,
+      closesAt: z.closesAt,
       color: z.tier === 3 ? "#c29222" : z.tier === 2 ? "#672eeb" : "#258b73",
     }));
     const manifest = {
       id: worldId,
       version: 2,
+      blueprintId: plan?.id || null,
       day,
       region,
       cityId: city?.id || null,

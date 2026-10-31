@@ -1,3 +1,4 @@
+import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
@@ -240,6 +241,7 @@ async function api(req, res, url) {
       app: "QuestLayer",
       version: "0.1.0",
       mode: "demo",
+      worldPreparation: worldPreparationStatus(db),
       now: Date.now(),
     });
   if (path === "/api/config")
@@ -1173,6 +1175,7 @@ const server = createServer(async (req, res) => {
     if (!e.status) console.error("Request failed:", e.name, e.code || "");
   }
 });
+const worldPlanner = startWorldPlanner(db);
 const maintenance = setInterval(() => {
   try {
     expireWorlds(db);
@@ -1196,8 +1199,9 @@ server.listen(port, process.env.HOST || "127.0.0.1", () =>
     `QuestLayer server: http://${process.env.HOST || "127.0.0.1"}:${port} · DEMO realm`,
   ),
 );
-function close() {
+async function close() {
   clearInterval(maintenance);
+  await worldPlanner.stop();
   for (const r of listeners) r.end();
   server.close(() => {
     db.close();

@@ -1,0 +1,76 @@
+
+> questlayer@0.1.0 check
+> npm test && npm run build
+
+
+> questlayer@0.1.0 test
+> node --test tests/*.test.mjs
+
+✔ Aavegotchi inventory decodes the canonical item ID before the quantity (9.938791ms)
+✔ 365 city manifests keep six distinct sectors and at least 250m of polygon separation (2960.782875ms)
+✔ city selection is deterministic but rotates across dates (6.65375ms)
+✔ physical mode requires the canonical polygon as well as target proximity (97.246375ms)
+✔ ordered walking checkpoints cannot be skipped replayed or completed from one place (92.390666ms)
+✔ exhausted Aura supply is visible and never mints beyond edition caps (58.920875ms)
+✔ city windows include four all-day zones one three-hour zone and one one-hour zone (58.074708ms)
+✔ yield uses two conserved buckets and idempotent receipts (3.584208ms)
+✔ simultaneous activation shares a single world and one reserved coin budget (426.824125ms)
+✔ shared coin pays one player once and cannot be farmed by retries (153.693625ms)
+✔ expired coins cannot be collected and unclaimed backing rolls over once (523.142375ms)
+✔ a solo player can complete a free quest and mint one bounded Aura (119.060166ms)
+✔ tier access matures, withdrawals remove it, decreases apply immediately (4.433833ms)
+✔ a funded quest has one GOLD payout while everyone can still earn personal XP (107.447375ms)
+✔ unstaking preserves retained yield and withdrawal is redeemable once (5.893667ms)
+✔ yield allocation before contribution change cannot be reassigned retroactively (4.156958ms)
+✔ market sale is atomic, conserves balances and transfers equipment rights (248.024833ms)
+✔ cancelled listing cannot be filled or revive after relisting (168.61425ms)
+✔ invalid monetary actions do not change wallet or treasury (1.990792ms)
+✔ failed transaction rolls back all writes (2.658ms)
+✔ physical GPS validation rejects stale, inaccurate and distant evidence (1.114542ms)
+✔ local world rollover handles 23-hour and 25-hour days (172.092167ms)
+✔ city snapshots share a fixed public center and never record the first visitor GPS (172.317667ms)
+✔ forwarded addresses cannot bypass the client limit from an untrusted connection (0.502792ms)
+✔ the trusted local proxy separates clients and ignores forged address prefixes (5.195333ms)
+✔ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (2692.647875ms)
+✔ native wardrobe verifies ownership and removes stale or duplicate equipment (1.757208ms)
+✔ native holdings retain equipped items beyond the first page and coalesce RPC calls (0.443ms)
+✔ native asset normalization rejects foreign kinds and out-of-range editions (2.912875ms)
+✔ a confirmed refresh cannot be overwritten by an older in-flight ownership read (0.246417ms)
+✔ parallel native reads share network verification and a failed check can retry (0.507834ms)
+✔ native identity validates account syntax and distinguishes RPC failures (1.432875ms)
+✔ NEAR sign-in verifies real signatures, restores one explorer, isolates purposes and prevents replay (2853.637583ms)
+✔ identity refuses a mainnet RPC even when its access-key answer would be valid (0.316416ms)
+✔ local calendar boundaries preserve short and long DST days and calendar rotation (285.227125ms)
+✔ durable preparation is deterministic, idempotent and reserves no money or future loot (376.775125ms)
+✔ failed preparations back off and recover without duplicate reservations (416.570583ms)
+✔ an expired preparation lease can be reclaimed and its stale worker cannot overwrite completion (80.530542ms)
+✔ a new local day immediately recovers uncollected backing before publishing its next world (413.471542ms)
+✔ a restarted process resumes persisted SQLite work without touching treasury (138.063375ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3895.109709
+
+> questlayer@0.1.0 build
+> tsc -b && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 5071 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.69 kB │ gzip:   0.42 kB
+dist/assets/maplibre-gl-worker-Br3j0JGE.js    518.98 kB
+dist/assets/index-DSjymJPr.css                122.43 kB │ gzip:  22.04 kB
+dist/assets/ccip-Cz6VKZ4b.js                    0.08 kB │ gzip:   0.08 kB
+dist/assets/utils-Bpv4vmSW.js                   2.19 kB │ gzip:   0.97 kB
+dist/assets/secp256k1-BPUtMIL_.js              26.34 kB │ gzip:  10.21 kB
+dist/assets/build-DxnAudDH.js                  58.76 kB │ gzip:  15.02 kB
+dist/assets/_esm-DU7qFIz6.js                  170.66 kB │ gzip:  49.01 kB
+dist/assets/index-DBszhP2R.js               1,484.93 kB │ gzip: 413.98 kB
+
+✓ built in 725ms

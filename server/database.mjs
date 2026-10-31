@@ -33,6 +33,9 @@ export function openDatabase(
     CREATE TABLE IF NOT EXISTS external_links(address TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), data TEXT NOT NULL, verified_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS bounties(id TEXT PRIMARY KEY, creator TEXT NOT NULL REFERENCES players(id), title TEXT NOT NULL, description TEXT NOT NULL, amount_u INTEGER NOT NULL CHECK(amount_u>0), lat REAL NOT NULL, lng REAL NOT NULL, deadline INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'open', winner TEXT REFERENCES players(id), created_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS bounty_submissions(id INTEGER PRIMARY KEY AUTOINCREMENT, bounty_id TEXT NOT NULL REFERENCES bounties(id), player_id TEXT NOT NULL REFERENCES players(id), evidence TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS world_blueprints(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,body TEXT NOT NULL,body_hash TEXT NOT NULL,created_at INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS world_jobs(id TEXT PRIMARY KEY,city_id TEXT NOT NULL,day TEXT NOT NULL,source_hash TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('queued','running','ready','failed')),attempts INTEGER NOT NULL DEFAULT 0,run_after INTEGER NOT NULL,lease_owner TEXT,lease_until INTEGER,last_error TEXT,updated_at INTEGER NOT NULL);
+    CREATE INDEX IF NOT EXISTS world_job_schedule ON world_jobs(state,run_after,lease_until);
     CREATE TABLE IF NOT EXISTS daily_jobs(job_key TEXT PRIMARY KEY, created_at INTEGER NOT NULL);
   `);
   db.prepare(
