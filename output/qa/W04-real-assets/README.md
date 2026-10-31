@@ -23,3 +23,7 @@ No personal EVM wallet was connected or signed in this follow-up. The positive i
 ## Repaint regression follow-up
 
 A public viewport round-trip exposed an intermittent empty WebGL character despite a ready marker. The small map canvas now preserves its drawing buffer, paints after its visible state is applied, and redraws on map movement/resize plus foreground/focus restoration. One reveal frame is bounded and cancelled on disposal; there is no idle animation loop. The follow-up build passed (`repaint-build.txt`) and an explicit 1280×720 → 390×844 round-trip retained the visible actual body and both Auras (`repaint-after-resize.png`). The previously passing 99 application tests cover unchanged application/server logic; this graphics-only change was verified by the build and browser regression.
+
+## Final public release
+
+Release `20261031T113030Z`, code `430bbb2`, is live at https://questlayer.promptstudio3000.com/. Public HTML matches the built entry, the starter SVG is byte-identical to the recorded digest, missing chunks return 404 and anonymous private-inventory artwork requests return 401. The actual public map rendered one SDK character canvas at 512×792, with the equipped Northern Lights Aura and visible body; public Inventory showed the official pixel starter and 3D preference. Final screenshots are `public-map.png` and `public-inventory.png`. The public tab is retained at its original normal viewport. No personal wallet was signed and no mainnet transaction was sent.

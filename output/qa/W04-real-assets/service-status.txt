@@ -1,5 +1,5 @@
-/opt/ps3000/apps/auratrail/releases/20261031T111722Z
-MemoryCurrent=79941632
+/opt/ps3000/apps/auratrail/releases/20261031T113030Z
+MemoryCurrent=87695360
 MemoryMax=536870912
 ActiveState=active
 SubState=running

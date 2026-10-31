@@ -14,5 +14,16 @@
   "originalSampleOwnershipClaimed": false,
   "milestone": "W04",
   "milestoneStatus": "building",
-  "milestoneExitPassed": false
+  "milestoneExitPassed": false,
+  "publicRelease": "20261031T113030Z",
+  "publicCodeCommit": "430bbb2",
+  "graphicsFollowupBuildPassed": true,
+  "publicBrowser": {
+    "width": 512,
+    "height": 792,
+    "characterRenderer": "sdk-3d",
+    "mapCharacterCanvases": 1,
+    "observedEquippedAura": "Northern Lights above",
+    "viewportOverrideReset": true
+  }
 }

@@ -1,8 +1,8 @@
 {
-  "release": "20261031T111722Z",
-  "codeCommit": "08c2646",
-  "observedAt": "2026-10-31T11:20:08.580Z",
-  "entry": "/assets/index-BLyflggX.js",
+  "release": "20261031T113030Z",
+  "codeCommit": "430bbb2",
+  "observedAt": "2026-10-31T11:32:43.981Z",
+  "entry": "/assets/index-B6rckTKa.js",
   "starterDigestMatches": true,
   "responses": [
     {
@@ -11,7 +11,7 @@
       "cache": "no-store",
       "type": "application/json; charset=utf-8",
       "bytes": 347,
-      "sha256": "cdf88ebc4377283e32e3909b2763ff6b487642c2401c793a214ab8fe0f5ce549",
+      "sha256": "3d3062939ab4b6eed0062a7d828cbe052134da5faa807aa24515a1b28552bcc0",
       "health": {
         "status": "ok",
         "app": "QuestLayer",
@@ -37,7 +37,7 @@
             }
           ]
         },
-        "now": 1793445608501
+        "now": 1793446363965
       }
     },
     {
@@ -46,7 +46,7 @@
       "cache": "no-cache",
       "type": "text/html; charset=utf-8",
       "bytes": 775,
-      "sha256": "79e1c09f1d491ac06cdbaa82e25665a1021f0c69783d27937cad1a6987e5b6cd",
+      "sha256": "2bd6ffae691bfb599e61f692adc4ac7f0112c09bbbf4d33545959978a80a1c4c",
       "entryMatches": true
     },
     {
