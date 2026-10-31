@@ -25,7 +25,7 @@ import { loadServiceAccount } from "./relayer/key-transport.mjs";
 import { ManagedAccounts } from "./relayer/accounts.mjs";
 import { Relayer, startRelayWorker } from "./relayer/relay.mjs";
 import { createRelayerRoutes } from "./relayer/routes.mjs";
-import { NativeVaults } from "./native/vaults.mjs";
+import { NativeVaults, FACTORY_ID, VAULT_POOLS } from "./native/vaults.mjs";
 import { NativeSocialProfile } from "./native/social-profile.mjs";
 import { resolvePublicFile } from "./static-files.mjs";
 import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
@@ -125,10 +125,7 @@ const awardSigner = nativeAttestationsDisabled
   ? null
   : loadAwardSigner(
       process.env.AWARD_SIGNER_PATH ||
-        resolve(
-          dirname(defaultDatabasePath()),
-          "award-attestor.pem",
-        ),
+        resolve(dirname(defaultDatabasePath()), "award-attestor.pem"),
     );
 const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner);
 const rewardsManifestPath = [
@@ -149,6 +146,9 @@ const nativeRewards =
         loadAwardSigner(process.env.REWARD_ATTESTOR_PATH),
       )
     : null;
+const nativeVaults = rewardsConfig?.factory
+  ? new NativeVaults(db, provider, rewardsConfig)
+  : null;
 // Invisible player accounts and sponsored gas. Without the service keys the
 // routes answer "disabled" and play continues on the practice ledger.
 const relayConfig = relayerConfiguration(process.env);
@@ -176,6 +176,7 @@ const relayer = managedAccounts
         contracts: {
           collectibles: nativeCollectibles.contractId,
           market: marketContractId,
+          factory: rewardsConfig?.factory?.contractId || FACTORY_ID,
           rewards:
             rewardsConfig?.contractId ||
             JSON.parse(
@@ -189,6 +190,9 @@ const relayer = managedAccounts
         maxJobsPerDay: relayConfig.maxJobsPerDay,
         maxGas: relayConfig.maxGas,
         maxBuyDeposit: relayConfig.maxBuyDeposit,
+        vaults: nativeVaults,
+        factorySetupDeposit: rewardsConfig?.factory?.setupDeposit ?? null,
+        factoryPools: VAULT_POOLS.map((p) => p.id),
       },
     )
   : null;
@@ -196,9 +200,6 @@ const relayerRoutes = createRelayerRoutes({
   relayer,
   accounts: managedAccounts,
 });
-const nativeVaults = rewardsConfig?.factory
-  ? new NativeVaults(db, provider, rewardsConfig)
-  : null;
 if (nativeRewards) nativeRewards.vaultRegistry = nativeVaults;
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 const tasksManifestPath = [
@@ -269,9 +270,12 @@ function cookie(token) {
   return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
 function sessionToken(req) {
-  return req.headers.cookie?.match(
-    /(?:^|; )questlayer-hackathon=([a-f0-9]{64})(?:;|$)/,
-  )?.[1] || req.headers.cookie?.match(/(?:^|; )auratrail=([a-f0-9]{64})(?:;|$)/)?.[1];
+  return (
+    req.headers.cookie?.match(
+      /(?:^|; )questlayer-hackathon=([a-f0-9]{64})(?:;|$)/,
+    )?.[1] ||
+    req.headers.cookie?.match(/(?:^|; )auratrail=([a-f0-9]{64})(?:;|$)/)?.[1]
+  );
 }
 function auth(req) {
   return identitySessions.authenticate(sessionToken(req)).playerId;
@@ -307,7 +311,7 @@ function readChallenge(challengeId) {
       "SELECT * FROM auth_challenges WHERE id=? AND expires_at>? AND used=0",
     )
     .get(challengeId, Date.now());
-  assert(c, "The sign-in challenge has expired.", 401);
+  assert(c, "That sign-in request expired. Try again.", 401);
   return JSON.parse(c.nonce);
 }
 function consumeChallenge(challengeId) {
@@ -326,7 +330,11 @@ async function body(req) {
   const chunks = [];
   for await (const c of req) {
     size += c.length;
-    assert(size <= 1_500_000, "The file is too large.", 413);
+    assert(
+      size <= 1_500_000,
+      "That file is too large. Choose a smaller one.",
+      413,
+    );
     chunks.push(c);
   }
   try {
@@ -456,7 +464,10 @@ async function api(req, res, url) {
       db.prepare("DELETE FROM sessions WHERE token_hash=?").run(hash(token));
     db.prepare("DELETE FROM presence WHERE player_id=?").run(player);
     return respond(res, { ok: true }, 200, {
-      "Set-Cookie": [cookie("").replace("Max-Age=2592000", "Max-Age=0"), "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"],
+      "Set-Cookie": [
+        cookie("").replace("Max-Age=2592000", "Max-Age=0"),
+        "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
+      ],
     });
   }
   if (path === "/api/passkey/options" && method === "POST") {
@@ -566,7 +577,11 @@ async function api(req, res, url) {
       const saved = db
         .prepare("SELECT * FROM passkeys WHERE id=?")
         .get(input.response.id);
-      assert(saved, "This passkey is not registered.", 401);
+      assert(
+        saved,
+        "This passkey is not known here. Start a new explorer or try another passkey.",
+        401,
+      );
       const v = await verifyAuthenticationResponse({
         response: input.response,
         expectedChallenge: c.challenge,
@@ -580,7 +595,7 @@ async function api(req, res, url) {
           transports: JSON.parse(saved.transports),
         },
       });
-      assert(v.verified, "Passkey verification failed.", 401);
+      assert(v.verified, "The passkey check failed. Try again.", 401);
       atomic(db, () => {
         consumeChallenge(input.challengeId);
         assert(
@@ -921,7 +936,11 @@ async function api(req, res, url) {
     );
   }
   if (path === "/api/native/rewards/join" && method === "POST") {
-    assert(nativeRewards, "Native expeditions are not configured yet.", 503);
+    assert(
+      nativeRewards,
+      "Walks on the test network are not available yet.",
+      503,
+    );
     const input = await body(req);
     return respond(
       res,
@@ -929,7 +948,11 @@ async function api(req, res, url) {
     );
   }
   if (path === "/api/native/rewards/visit" && method === "POST") {
-    assert(nativeRewards, "Native expeditions are not configured yet.", 503);
+    assert(
+      nativeRewards,
+      "Walks on the test network are not available yet.",
+      503,
+    );
     const key = `native-visit:${player}:${Math.floor(Date.now() / 60000)}`,
       count = (rates.get(key) || 0) + 1;
     rates.set(key, count);
@@ -1058,7 +1081,7 @@ async function api(req, res, url) {
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/native/market/accounts" && method === "GET") {
-    assert(nativeMarket, "The native market is not available yet.", 503);
+    assert(nativeMarket, "The secured market is not available yet.", 503);
     const accounts = db
       .prepare(
         "SELECT account_id FROM wallet_links WHERE player_id=? ORDER BY verified_at DESC LIMIT 5",
@@ -1223,7 +1246,7 @@ async function api(req, res, url) {
   }
   if (path === "/api/world" && method === "GET") {
     const w = worldView(db, url.searchParams.get("id"), player);
-    assert(w, "World not found.", 404);
+    assert(w, "This area could not be found. Refresh the map.", 404);
     return respond(res, w);
   }
   if (path === "/api/coins/claim" && method === "POST") {
@@ -1461,7 +1484,7 @@ async function api(req, res, url) {
     const linked = db
       .prepare("SELECT account_id FROM wallet_links WHERE player_id=?")
       .get(player);
-    assert(linked, "Connect a NEAR account first.");
+    assert(linked, "Link a NEAR account first.");
     const account = await provider.query({
       request_type: "view_account",
       account_id: linked.account_id,
@@ -1491,7 +1514,7 @@ async function api(req, res, url) {
   if (path === "/api/evm/verify" && method === "POST") {
     const i = await body(req),
       c = readChallenge(i.challengeId);
-    assert(c.player === player, "Wrong explorer.", 403);
+    assert(c.player === player, "This belongs to another explorer.", 403);
     assert(
       c.purpose === "appearance-link",
       "This challenge cannot link an appearance.",
@@ -1751,7 +1774,7 @@ async function api(req, res, url) {
       "The question is too long.",
     );
     let answer =
-      "Every adventure starts around the corner. Collect shared street coins, visit a garden and open a chest. Half of the game yield funds coins and half funds zones. This world uses demo GOLD.";
+      "Every adventure starts around the corner. Pick up street coins, visit a free place and open a chest. Half of the game yield funds coins and half funds places. GOLD here is practice GOLD.";
     let source = "rules";
     if (process.env.NEAR_AI_API_KEY && process.env.NEAR_AI_MODEL) {
       const r = await fetch("https://cloud-api.near.ai/v1/chat/completions", {

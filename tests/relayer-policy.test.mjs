@@ -451,3 +451,66 @@ test("key changes are sponsored only for registered keys on the sender itself", 
     { ...ctx(), pendingKeys: [deviceKey] },
   );
 });
+
+test("staking through the player's own factory position is relayed but never sponsored", async () => {
+  const FACTORY = "questlayer-vaults-20261101.testnet",
+    VAULT = `7.${FACTORY}`,
+    SETUP = 3_520_000_000_000_000_000_000_000n;
+  const staking = () => ({
+    ...ctx(),
+    contracts: { ...CONTRACTS, factory: FACTORY },
+    factorySetupDeposit: SETUP,
+    factoryPools: ["aurora.pool.f863973.m0"],
+    ownedVaults: [VAULT],
+  });
+  const create = validateDelegate(
+    await decoded({
+      receiverId: FACTORY,
+      action: call("create_position", { pool_id: "aurora.pool.f863973.m0", contribution_bps: 5000 }, SETUP),
+    }),
+    staking(),
+  );
+  assert.equal(create.sponsorDeposit, false);
+  assert.equal(create.deposit, SETUP.toString());
+  const stake = validateDelegate(
+    await decoded({ receiverId: VAULT, action: call("deposit_and_stake", {}, 10n ** 24n) }),
+    staking(),
+  );
+  assert.equal(stake.sponsorDeposit, false);
+  assert.equal(stake.methodName, "deposit_and_stake");
+  for (const [method, deposit] of [["request_exit", 1n], ["withdraw_owner", 1n], ["advance", 0n], ["harvest", 0n]])
+    assert.equal(
+      validateDelegate(await decoded({ receiverId: VAULT, action: call(method, {}, deposit) }), staking()).methodName,
+      method,
+    );
+  await rejects(
+    decoded({ receiverId: FACTORY, action: call("create_position", { pool_id: "aurora.pool.f863973.m0", contribution_bps: 5000 }, SETUP - 1n) }),
+    "RELAY_DEPOSIT",
+    staking(),
+  );
+  await rejects(
+    decoded({ receiverId: FACTORY, action: call("create_position", { pool_id: "evil.pool.f863973.m0", contribution_bps: 5000 }, SETUP) }),
+    "RELAY_ARGS",
+    staking(),
+  );
+  await rejects(
+    decoded({ receiverId: `8.${FACTORY}`, action: call("deposit_and_stake", {}, 10n ** 24n) }),
+    "RELAY_RECEIVER",
+    staking(),
+  );
+  await rejects(
+    decoded({ receiverId: VAULT, action: call("deposit_and_stake", {}, 10n ** 20n) }),
+    "RELAY_DEPOSIT",
+    staking(),
+  );
+  await rejects(
+    decoded({ receiverId: VAULT, action: call("flush_game", {}, 0n) }),
+    "RELAY_METHOD",
+    staking(),
+  );
+  // Without a configured factory the receiver is simply not sponsored.
+  await rejects(
+    decoded({ receiverId: FACTORY, action: call("create_position", { pool_id: "aurora.pool.f863973.m0", contribution_bps: 5000 }, SETUP) }),
+    "RELAY_RECEIVER",
+  );
+});

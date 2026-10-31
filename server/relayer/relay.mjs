@@ -71,6 +71,9 @@ export class Relayer {
       maxGas = 300000000000000n,
       maxBuyDeposit = 5n * 10n ** 24n,
       policyContext = null,
+      vaults = null,
+      factorySetupDeposit = null,
+      factoryPools = [],
     } = {},
   ) {
     assert(accounts, "Managed accounts are required by the relayer.", 503);
@@ -95,6 +98,9 @@ export class Relayer {
         : relayTransport(relayerAccount)
       : null;
     this.accounts = accounts;
+    this.vaults = vaults;
+    this.factorySetupDeposit = factorySetupDeposit;
+    this.factoryPools = factoryPools;
     this.contracts = {
       ...contracts,
       social: contracts.social || SOCIAL_CONTRACT,
@@ -213,6 +219,13 @@ export class Relayer {
       maxGas: this.maxGas,
       maxBuyDeposit: this.maxBuyDeposit,
       contracts: this.contracts,
+      factorySetupDeposit: this.factorySetupDeposit,
+      factoryPools: this.factoryPools,
+      ownedVaults: this.vaults
+        ? (await this.vaults.positions(accountId, true))
+            .filter((p) => p.beneficiary === accountId && p.state === "ready")
+            .map((p) => p.account_id)
+        : [],
     };
     return this.customContext
       ? await this.customContext(base, { playerId, publicKey: key })

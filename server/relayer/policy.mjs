@@ -70,7 +70,15 @@ function checkContext(ctx) {
       market: ctx.contracts.market,
       rewards: ctx.contracts.rewards,
       social: ctx.contracts.social || SOCIAL_CONTRACT,
+      factory:
+        typeof ctx.contracts.factory === "string" ? ctx.contracts.factory : null,
     },
+    factorySetupDeposit:
+      ctx.factorySetupDeposit === undefined || ctx.factorySetupDeposit === null
+        ? null
+        : yocto(ctx.factorySetupDeposit),
+    factoryPools: Array.isArray(ctx.factoryPools) ? ctx.factoryPools : [],
+    ownedVaults: Array.isArray(ctx.ownedVaults) ? ctx.ownedVaults : [],
   };
 }
 function parseArgs(bytes) {
@@ -303,6 +311,55 @@ export function validateDelegate(decoded, context) {
     else unsupported();
   } else if (receiverId === c.rewards) {
     if (method === "withdraw") depositIs(1n, "Reward withdrawal");
+    else unsupported();
+  } else if (c.factory && receiverId === c.factory) {
+    // Staking money is the player's own: gas is sponsored, deposits are not.
+    sponsorDeposit = false;
+    if (method === "create_position") {
+      demand(
+        ctx.factorySetupDeposit !== null && deposit === ctx.factorySetupDeposit,
+        "RELAY_DEPOSIT",
+        "Position creation requires the exact published setup deposit.",
+      );
+      demand(
+        keysOf(args, ["pool_id", "contribution_bps"]) &&
+          typeof args.pool_id === "string" &&
+          ctx.factoryPools.includes(args.pool_id) &&
+          Number.isSafeInteger(args.contribution_bps) &&
+          args.contribution_bps >= 0 &&
+          args.contribution_bps <= 10000,
+        "RELAY_ARGS",
+        "Choose a reviewed validator and a 0–100 % contribution.",
+      );
+    } else if (method === "register_position") {
+      depositIs(0n, "Position registration");
+      demand(
+        keysOf(args, ["id"]) && typeof args.id === "string" && /^\d{1,20}$/.test(args.id),
+        "RELAY_ARGS",
+        "Position registration takes one position id.",
+      );
+    } else if (method === "withdraw_refund") {
+      depositIs(1n, "Refund withdrawal");
+      demand(keysOf(args, []), "RELAY_ARGS", "Refund withdrawal takes no arguments.");
+    } else unsupported();
+  } else if (c.factory && receiverId.endsWith("." + c.factory)) {
+    sponsorDeposit = false;
+    demand(
+      ctx.ownedVaults.includes(receiverId),
+      "RELAY_RECEIVER",
+      "Only your own staking position can be operated.",
+    );
+    demand(keysOf(args, []), "RELAY_ARGS", "Vault actions take no arguments.");
+    if (method === "deposit_and_stake")
+      demand(
+        deposit >= 10n ** 21n && deposit <= 1000n * 10n ** 24n,
+        "RELAY_DEPOSIT",
+        "Stake between 0.001 and 1000 NEAR.",
+      );
+    else if (method === "request_exit" || method === "withdraw_owner")
+      depositIs(1n, "Position authorization");
+    else if (method === "refresh" || method === "advance" || method === "harvest")
+      depositIs(0n, "Position maintenance");
     else unsupported();
   } else if (receiverId === c.social) {
     demand(
