@@ -2,6 +2,11 @@ import { atomic } from "./database.mjs";
 import { dayKey, hash, id, assert } from "./domain.mjs";
 import { PLZEN, buildCityZones } from "./spatial/city-pack.mjs";
 import { shiftDate, localDateBounds } from "./spatial/calendar.mjs";
+import {
+  QUEST_POLICY,
+  QUEST_POLICY_START_DAY,
+  zoneQuestTemplates,
+} from "./quest-templates.mjs";
 export const PLAN_VERSION = 1;
 export function planDescriptor(city, day) {
   const sourceHash = hash(JSON.stringify(city));
@@ -23,11 +28,16 @@ export function buildCityPlan(city, day) {
     const opensAt = hours
       ? endsAt - (24 - (z.tier === 3 ? 18 : 12)) * 3600000
       : startsAt;
-    return {
+    const zone = {
       ...z,
       opensAt,
       closesAt: hours ? Math.min(endsAt, opensAt + hours * 3600000) : endsAt,
     };
+    // Stored plans are read before this builder and never updated in place.
+    // Native v1 publication deliberately ignores this demo content extension.
+    if (day >= QUEST_POLICY_START_DAY)
+      zone.questActivities = zoneQuestTemplates(zone, { cityId: city.id, day });
+    return zone;
   });
   assert(
     zones.length === 6,
@@ -40,6 +50,7 @@ export function buildCityPlan(city, day) {
     startsAt,
     endsAt,
     zones,
+    ...(day >= QUEST_POLICY_START_DAY ? { questPolicy: QUEST_POLICY } : {}),
   };
 }
 function readPlan(db, descriptor) {

@@ -88,7 +88,7 @@ test("ordered walking checkpoints cannot be skipped replayed or completed from o
   ).checkpoints;
   assert.throws(() => claimQuest(db, player, q.id, q, now), /checkpoints/);
   assert.throws(
-    () => advanceRoute(db, player, q.id, cps[2], 0, now),
+    () => advanceRoute(db, player, q.id, cps[1], 0, now),
     /destination/,
   );
   assert.equal(
@@ -107,7 +107,9 @@ test("ordered walking checkpoints cannot be skipped replayed or completed from o
     advanceRoute(db, player, q.id, cps[1], 1, now).progress.completed,
     2,
   );
-  const result = advanceRoute(db, player, q.id, cps[2], 2, now);
+  let result;
+  for (let i = 2; i < cps.length; i++)
+    result = advanceRoute(db, player, q.id, cps[i], i, now);
   assert.equal(result.xp, 100);
   assert.equal(result.reward, 0);
   assert.equal(
@@ -115,7 +117,7 @@ test("ordered walking checkpoints cannot be skipped replayed or completed from o
     1,
   );
   assert.throws(
-    () => advanceRoute(db, player, q.id, cps[2], 3, now),
+    () => advanceRoute(db, player, q.id, cps.at(-1), cps.length, now),
     /already completed/,
   );
   assert.equal(

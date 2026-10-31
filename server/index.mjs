@@ -7,6 +7,8 @@ import {
 } from "./gotchi-items.mjs";
 import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
+import { NativeEconomy } from "./native/economy.mjs";
+import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
 import { NativeVaults } from "./native/vaults.mjs";
@@ -130,6 +132,7 @@ const nativeVaults = rewardsConfig?.factory
   ? new NativeVaults(db, provider, rewardsConfig)
   : null;
 if (nativeRewards) nativeRewards.vaultRegistry = nativeVaults;
+const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 const gotchiModels = new GotchiModels();
 const gotchiItemArt = new GotchiItemArt();
 const originalLookups = new Map();
@@ -324,6 +327,12 @@ async function api(req, res, url) {
         : { status: "not-configured" },
       now: Date.now(),
     });
+  if (path === "/api/quest-templates" && method === "GET")
+    return respond(res, questTemplateCatalog());
+  if (path === "/api/native/economy" && method === "GET") {
+    assert(nativeEconomy, "Native economy is not configured yet.", 503);
+    return respond(res, await nativeEconomy.snapshot());
+  }
   if (path === "/api/config")
     return respond(res, {
       mode: "demo",

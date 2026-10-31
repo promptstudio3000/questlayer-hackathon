@@ -4,7 +4,7 @@ Updated 31 October 2026. This is the execution plan from the current alpha to a 
 
 The next priority is a convincing exploration game across Plzeň: six distinct zones, real walking, understandable objectives and a complete discovery/equipment loop. Native finance, social features and creator payments must connect to that same experience rather than remain separate demonstrations.
 
-The public deployment is an **alpha demonstration**. Its 20 application tests, eight contract tests and nine recorded native testnet operations establish useful foundations, not completion of the milestones below. The [delivery record](docs/DELIVERY-2026-10-31.md) describes that baseline. Implementation status is tracked in [docs/roadmap.json](docs/roadmap.json); every milestone starts as planned until its actual delivery work begins.
+The public deployment is an **alpha demonstration with native testnet pilots**. The latest playability/backend slice passes 139 application tests; the preceding contract release passed 69 Rust tests. No contract changed in this slice. These are useful evidence, not completion of the milestones below. The [delivery record](docs/DELIVERY-2026-10-31.md), [playability evidence](output/qa/W02-playability/README.md) and [current V1 gap register](docs/V1-REMAINING.md) distinguish implemented behavior from remaining gates. Implementation status is tracked in [docs/roadmap.json](docs/roadmap.json).
 
 Implementation update, 31 October: W00, W01, W02, W03, W04, W05, W06, W07, W12 and W13 are **building**. The citywide alpha and its evidence are recorded in [the overnight log](docs/OVERNIGHT-2026-10-31.md). No complete milestone exit gate has passed yet; the machine-readable tracker records partial work without converting disconnected native proofs into completed integration.
 
@@ -29,18 +29,18 @@ The web mainnet release and App Store release have separate completion gates. A 
 
 | Area | Current alpha | Required final behavior |
 | --- | --- | --- |
-| World scale | Small central arena; six zones per live H3 cell | One city/day world with six citywide slots and chunked reads |
-| Geometry | Independently sampled circular footprints | Reviewed, varied polygons with disjoint boundaries and real pedestrian separation |
-| Quest depth | One visit/chest target per zone | Several designed choices, explicit requirements and meaningful internal movement |
-| Interface | Functional panels; partial mobile and state handling | Complete discovery, result, equipment, navigation and failure states under DESIGN.md |
-| Identity | Cookie/demo passkey; verified wallet linking | Real NEAR account creation/sign-in, user-controlled recovery and delegated gameplay capabilities |
-| Ownership | Database avatar/Auras; separate deployed NFT proof | Gameplay mints, equips and transfers the actual native assets |
-| Staking | Three model pools and accelerated timing | Confirmed native pool positions, real epoch maturity and liquidity-aware exits |
-| Rewards | Demo ledger; separate native accounting proof | Live gameplay receipts settle to native balances with bounded oracle permissions |
-| Market | Atomic server demo | Signed orders plus native NFT/wNEAR settlement and retryable recovery |
+| World scale | One city/day plan, six citywide slots and chunked reads | One city/day world with six citywide slots and chunked reads |
+| Geometry | Disjoint varied polygons across six sectors; field review pending | Reviewed, varied polygons with disjoint boundaries and real pedestrian separation |
+| Quest depth | Visit/trail/chest activities; reusable return trails for new unprepared days from Nov 2; native v1 remains three stops | Several designed choices, explicit requirements and meaningful internal movement |
+| Interface | One selected activity, compact native walks, separate wallet sections and Community; deeper collection/forms/device review remains | Complete discovery, result, equipment, navigation and failure states under DESIGN.md |
+| Identity | Cookie/demo passkey and NEAR wallet message sign-in; no native passkey recovery proof | Real NEAR account creation/sign-in, user-controlled recovery and delegated gameplay capabilities |
+| Ownership | Real testnet avatar/Aura mint/equip/trade paths; demo progression still separate | Gameplay mints, equips and transfers the actual native assets |
+| Staking | Native immutable-beneficiary vault/factory pilot, validator deposits and epoch-bound full exits; no completed live yield cycle | Confirmed native pool positions, real epoch maturity and liquidity-aware exits |
+| Rewards | Real receiver-bound receipts and restricted worker; storage-backed budgets; native XP still separate from main progression | Live gameplay receipts settle to native balances with bounded oracle permissions |
+| Market | Native fixed-price NFT escrow plus demo market; canonical Intents path unresolved | Signed orders plus native NFT/wNEAR settlement and retryable recovery |
 | Creators | Demo sponsored-task subset | Full authoring, XP lifecycle, social discovery and conserved creator income |
 | Social | Server notes/images and optional presence | Storage adapters, public consent, media pinning, block/report and privacy controls |
-| Operations | One hardened VPS service and backups | Versioned migrations, multiple-worker safety, reconciliation, restore, monitoring and reviewed release process |
+| Operations | Durable workers, bounded reconciliation, private backup/replay rehearsal and native economy observations; full-host restore pending | Versioned migrations, multiple-worker safety, reconciliation, restore, monitoring and reviewed release process |
 
 Do not tune real-value rewards from the current demonstration's 120,000 GOLD welcome credit or fixed 1,000/5,000 GOLD quest examples. They are not evidence that staking yield sustains those prizes. W05 and W09 establish affordable publication policies from actual liquid income.
 
@@ -373,3 +373,9 @@ The local map now uses the actual bounded SDK GLB and follows visual heading, wi
 ### Native funding implementation, 31 October 2026
 
 W05/W06 now include deployed testnet vault, keyless vault factory and funded reward contracts, wallet-signed position actions, six location-specific three-stop walks, a separate native coin trail and a durable settlement/distribution worker. Read [Native rewards and vault](docs/NATIVE-REWARDS-AND-VAULT.md) and [verification evidence](output/qa/W05-W06-native/README.md) before extending this boundary. These work packages remain **building**: real epoch-based exit completion, observed realized yield, partial exits/contribution changes, hardened GPS and independent contract review are still gates. Mainnet and the demo ledger are not enabled for real-money settlement.
+
+### Playability and reusable quest update, 31 October 2026
+
+The UI/backend/integration work was split among three focused agents and integrated into one release. Wallet no longer stacks native expeditions, staking and demo finance. Explore selects one zone activity; native walks return to their selected checkpoint/coin; Community exposes existing notes/tasks. See [UI audit](docs/UI-AUDIT-2026-10-31.md) and [rendered evidence](output/qa/W02-playability/README.md).
+
+[Quest templates](docs/QUEST-TEMPLATES.md) specify implemented proximity/ordered/return/chest mechanics, evidence limits and future clue/photo/geocache prerequisites. Existing days and native hashes remain immutable. [Native integration status](docs/NEAR-INTEGRATION-STATUS.md) records the verified economy model and isolated maintenance path. W01/W02/W05/W06 remain building; field play, hardware, native lifecycle and full V1 integration gates are still open.

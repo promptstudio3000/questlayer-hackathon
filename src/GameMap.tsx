@@ -19,7 +19,7 @@ type PawnScene = ReturnType<
 export type GameMapProps = {
   sheetExpanded: boolean;
   panelMode: string;
-  onQuest: () => void;
+  onQuest: (questId: string) => void;
   overview: boolean;
   focusZone: Zone | null;
   nativeTarget?: (Point & { label: string }) | null;
@@ -643,7 +643,7 @@ export function GameMap(props: GameMapProps) {
             : '<svg viewBox="0 0 32 32"shape-rendering="crispEdges"><path fill="#441c6c"d="M7 3h3v26H7z"/><path fill="#672eeb"d="M10 4h16v12H10z"/><path fill="#ff1dff"d="M10 5h6v5h-6zm6 5h9v5h-9z"/></svg>';
         node.addEventListener("click", (e) => {
           e.stopPropagation();
-          latest.current.onQuest();
+          latest.current.onQuest(q.id);
           requestAnimationFrame(() =>
             document
               .getElementById("quest-" + q.id)

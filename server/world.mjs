@@ -5,6 +5,7 @@ import { latLngToCell, cellToLatLng, cellToBoundary } from "h3-js";
 import { COIN_VALUE, DAY, GOLD, dayKey, distance } from "./domain.mjs";
 import { atomic } from "./database.mjs";
 import { PLZEN, cityFor, sampleCityPaths } from "./spatial/city-pack.mjs";
+import { describeStoredQuest } from "./quest-templates.mjs";
 export const HOME = PLZEN.center;
 export const ZONE_NAMES = PLZEN.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
@@ -184,34 +185,41 @@ export async function ensureWorld(
         db.prepare(
           "UPDATE treasury SET available_u=available_u-?,reserved_u=reserved_u+? WHERE bucket='zones'",
         ).run(reward, reward);
-        const defs = [
-          {
-            kind: "visit",
-            title: "Discover the park",
-            description: "Reach the marked public path and record your visit.",
-            target: z.targets[0],
-            xp: 50,
-            reward,
-          },
-          {
-            kind: "route",
-            title: "Three-point expedition",
-            description:
-              "Visit three marked checkpoints in order. Each checkpoint is on a mapped pedestrian path.",
-            target: z.targets[2],
-            xp: 100,
-            reward: 0,
-          },
-          {
-            kind: "chest",
-            title: "Find the park chest",
-            description:
-              "Reach the chest on the marked path and discover a cosmetic Aura while edition supply remains.",
-            target: z.targets[1],
-            xp: 80,
-            reward: 0,
-          },
-        ];
+        const defs = z.questActivities
+          ? z.questActivities.map((q, index) => ({
+              ...q,
+              xp: [50, 100, 80][index],
+              reward: index === 0 ? reward : 0,
+            }))
+          : [
+              {
+                kind: "visit",
+                title: "Discover the park",
+                description:
+                  "Reach the marked public path and record your visit.",
+                target: z.targets[0],
+                xp: 50,
+                reward,
+              },
+              {
+                kind: "route",
+                title: "Three-point expedition",
+                description:
+                  "Visit three marked checkpoints in order. Each checkpoint is on a mapped pedestrian path.",
+                target: z.targets[2],
+                xp: 100,
+                reward: 0,
+              },
+              {
+                kind: "chest",
+                title: "Find the park chest",
+                description:
+                  "Reach the chest on the marked path and discover a cosmetic Aura while edition supply remains.",
+                target: z.targets[1],
+                xp: 80,
+                reward: 0,
+              },
+            ];
         for (const [qIndex, q] of defs.entries())
           db.prepare(
             "INSERT INTO quests(id,world_id,title,description,lat,lng,tier,gold_u,xp,kind,opens_at,closes_at,zone_id,metadata) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -231,7 +239,8 @@ export async function ensureWorld(
             z.id,
             JSON.stringify({
               zoneId: z.id,
-              checkpoints: q.kind === "route" ? z.targets : [],
+              checkpoints: q.kind === "route" ? q.checkpoints || z.targets : [],
+              ...(q.activity ? { activity: q.activity } : {}),
             }),
           );
       }
@@ -257,6 +266,7 @@ export function worldView(db, id, player = null) {
         metadata: undefined,
         checkpointCount: cps.length,
         nextPoint: cps[q.checkpoint] || null,
+        activity: describeStoredQuest(q, meta),
       };
     });
   const remaining =

@@ -73,7 +73,25 @@ export type Coin = Point & {
   value_u: number;
   claimant: string | null;
 };
+export type QuestActivity = {
+  templateId: string;
+  version: number;
+  icon: "visit" | "trail" | "return" | "chest";
+  objective: string;
+  actionLabel: string;
+  steps: { index: number; label: string; point: Point }[];
+  evidence: {
+    kind: string;
+    attests: string;
+    doesNotAttest: string;
+    observationRequired: boolean;
+  };
+  safety: { instruction: string; fieldReview: string };
+  distanceLowerBoundM: number;
+  durationMinutes: null;
+};
 export type Quest = Point & {
+  activity?: QuestActivity;
   id: string;
   title: string;
   description: string;

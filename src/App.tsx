@@ -3,6 +3,7 @@ import { Character3D } from "./Character3D";
 import { OriginalItemGallery } from "./OriginalItemGallery";
 import { NativeMarketPanel } from "./NativeMarketPanel";
 import { NativeExpeditions } from "./NativeExpeditions";
+import { NativeEconomyPanel } from "./NativeEconomyPanel";
 import { NativeStaking } from "./NativeStaking";
 import {
   assertVaultQuote,
@@ -62,6 +63,11 @@ import {
   SealCheck,
   Question,
   Image as ImageIcon,
+  GearSix,
+  UsersThree,
+  Footprints,
+  Path,
+  ArrowUUpLeft,
 } from "@phosphor-icons/react";
 import {
   startRegistration,
@@ -93,15 +99,25 @@ type Tab =
   | "fund"
   | "wallet"
   | "messages"
-  | "bounties";
+  | "bounties"
+  | "community"
+  | "settings"
+  | "expeditions";
 const HOME = { lat: 49.74745, lng: 13.3774 };
 const nav = [
   { id: "explore", label: "Explore", icon: Compass },
   { id: "inventory", label: "Inventory", icon: Backpack },
   { id: "market", label: "Market", icon: Storefront },
-  { id: "fund", label: "Game fund", icon: ChartDonut },
+  { id: "community", label: "Community", icon: UsersThree },
   { id: "wallet", label: "Wallet", icon: Wallet },
 ] as const;
+function navigationActive(tab: Tab, id: string) {
+  return (
+    tab === id ||
+    (id === "community" && ["messages", "bounties"].includes(tab)) ||
+    (id === "explore" && tab === "expeditions")
+  );
+}
 const rarityNames: Record<string, string> = {
   common: "Common",
   rare: "Rare",
@@ -157,9 +173,14 @@ export default function App() {
     [fix, setFix] = useState<Fix | null>(null),
     [arena, setArena] = useState(true),
     [tab, setTab] = useState<Tab>("explore"),
+    [walletView, setWalletView] = useState<"rewards" | "staking" | "demo">(
+      "rewards",
+    ),
     [selected, setSelected] = useState<Zone | null>(null),
+    [selectedQuestId, setSelectedQuestId] = useState<string | null>(null),
     [nativeTarget, setNativeTarget] = useState<
-      (Point & { label: string }) | null
+      | (Point & { label: string; questIndex?: number; coinIndex?: number })
+      | null
     >(null),
     [globe, setGlobe] = useState(false),
     [overview, setOverview] = useState(false),
@@ -577,9 +598,20 @@ export default function App() {
       setFollow(true);
     }
   }
+  function chooseZoneQuest(questId: string) {
+    setSelectedQuestId(questId);
+    setSheetExpanded(true);
+    requestAnimationFrame(() => {
+      const target = document.getElementById("quest-" + questId);
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: "nearest", behavior: "auto" });
+    });
+  }
   function selectZone(z: Zone, questId?: string) {
     setSheetExpanded(true);
     setSelected(z);
+    setSelectedQuestId(questId || null);
+    setNativeTarget(null);
     setTab("explore");
     setOverview(false);
     setFollow(false);
@@ -1155,11 +1187,18 @@ export default function App() {
         item: Item | null;
         awaiting?: boolean;
         progress?: { completed: number; total: number };
-      }>(q?.kind === "route" ? "/quests/checkpoint" : "/quests/claim", {
-        questId: qId,
-        checkpoint: q?.checkpoint || 0,
-        fix: arena ? { ...position, accuracy: 0, timestamp: Date.now() } : fix,
-      });
+      }>(
+        q?.kind === "route" && (q.checkpoint || 0) < (q.checkpointCount || 0)
+          ? "/quests/checkpoint"
+          : "/quests/claim",
+        {
+          questId: qId,
+          checkpoint: q?.checkpoint || 0,
+          fix: arena
+            ? { ...position, accuracy: 0, timestamp: Date.now() }
+            : fix,
+        },
+      );
       setPlayer(r.player);
       notify(
         r.awaiting
@@ -1217,18 +1256,40 @@ export default function App() {
   const recommendedZone = world?.zones.find(
     (z) => z.id === recommended?.zone_id,
   );
+  const zoneQuests = (world?.quests || []).filter(
+    (q) =>
+      q.zone_id === selected?.id ||
+      q.id === selected?.id.replace(":zone:", ":quest:"),
+  );
+  const zoneQuest =
+    zoneQuests.find((q) => q.id === selectedQuestId) ||
+    zoneQuests.find(
+      (q) => !q.completed && q.opens_at <= now && q.closes_at > now,
+    ) ||
+    zoneQuests[0];
   const title =
     tab === "explore"
-      ? "A world just outside"
+      ? "Nearby adventures"
       : nav.find((n) => n.id === tab)?.label ||
-        (tab === "messages" ? "Map notes" : "Community tasks");
+        {
+          messages: "Map notes",
+          bounties: "Community tasks",
+          community: "Community",
+          settings: "Settings",
+          fund: "Game economy",
+          expeditions: "Testnet walks",
+          inventory: "Inventory",
+          market: "Market",
+          wallet: "Wallet",
+        }[tab] ||
+        "QuestLayer";
   return (
     <div className="app-shell">
       <GameMap
         map3D={!!player && map3D}
         sheetExpanded={sheetExpanded}
         panelMode={tab}
-        onQuest={() => setSheetExpanded(true)}
+        onQuest={chooseZoneQuest}
         overview={overview}
         focusZone={selected}
         nativeTarget={nativeTarget}
@@ -1264,14 +1325,18 @@ export default function App() {
           {nav.map((n) => (
             <button
               key={n.id}
-              className={tab === n.id ? "active" : ""}
+              className={navigationActive(tab, n.id) ? "active" : ""}
+              aria-current={navigationActive(tab, n.id) ? "page" : undefined}
               onClick={() => {
                 setTab(n.id);
               }}
               aria-label={n.label}
               title={n.label}
             >
-              <n.icon size={25} weight={tab === n.id ? "fill" : "regular"} />
+              <n.icon
+                size={25}
+                weight={navigationActive(tab, n.id) ? "fill" : "regular"}
+              />
               <span>{n.label}</span>
             </button>
           ))}
@@ -1290,7 +1355,7 @@ export default function App() {
           <span>
             QUEST<span>LAYER</span>
           </span>
-          <small>LITTLE ADVENTURES. REAL DISCOVERIES.</small>
+          <small>WALK. DISCOVER. COLLECT.</small>
         </div>
         <div className="realm-label">
           <span className="status-dot" />
@@ -1300,7 +1365,13 @@ export default function App() {
         <div className="topbar-right">
           {player && (
             <>
-              <button className="balance-pill" onClick={() => setTab("wallet")}>
+              <button
+                className="balance-pill"
+                onClick={() => {
+                  setWalletView("demo");
+                  setTab("wallet");
+                }}
+              >
                 <CoinIcon />
                 <b>{gold(player.gold_u)}</b>
                 <span>GOLD</span>
@@ -1341,12 +1412,30 @@ export default function App() {
           >
             <Wallet /> Wallet and sign-in
           </button>
-          <p className="presence-consent">
-            Sharing shows your name, chosen look and precise map position to
-            nearby explorers for up to 15 minutes while this tab is visible.
-            Switching away stops sharing. Demo presence stays separate from GPS
-            play.
-          </p>
+          <button
+            onClick={() => {
+              setTab("settings");
+              setMenu(false);
+            }}
+          >
+            <GearSix />
+            Settings
+          </button>
+          <details className="presence-consent">
+            <summary>Location sharing</summary>
+            <p>
+              Sharing shows your name, chosen look and precise map position to
+              nearby explorers for up to 15 minutes while this tab is visible.
+              Switching away stops sharing. Demo presence stays separate from
+              GPS play.
+            </p>
+          </details>
+          {!presence && (
+            <p className="play-hint">
+              Sharing publishes your name, look and precise location to nearby
+              players for up to 15 minutes.
+            </p>
+          )}
           <button onClick={() => setPresence((x) => !x)}>
             {presence ? <EyeSlash /> : <Eye />}
             {presence ? "Stop sharing presence" : "Share presence for 15 min"}
@@ -1407,7 +1496,7 @@ export default function App() {
             <div className="native-objective">
               <button
                 className="native-objective-open"
-                onClick={() => setTab("wallet")}
+                onClick={() => setTab("expeditions")}
               >
                 <MapPin size={22} />
                 <span>
@@ -1426,11 +1515,6 @@ export default function App() {
           )}
           <div className="panel-heading">
             <div>
-              <div className="eyebrow">
-                {tab === "explore"
-                  ? "YOUR DAILY ADVENTURE"
-                  : "YOUR CORNER OF THE WORLD"}
-              </div>
               <h1>{tab === "explore" && selected ? selected.name : title}</h1>
             </div>
             {tab !== "explore" && (
@@ -1445,9 +1529,6 @@ export default function App() {
           </div>
           {tab === "explore" && !selected && (
             <>
-              <p className="panel-subtitle">
-                Step outside. Your next discovery is around the corner.
-              </p>
               {recommended && recommendedZone && !nativeTarget && (
                 <button
                   className="recommended-quest"
@@ -1477,26 +1558,17 @@ export default function App() {
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
-              <div className="daily-summary">
-                <div>
-                  <span className="tiny-icon gold">
-                    <Coins size={19} />
-                  </span>
-                  <div>
-                    <strong>{player.coinsCollected ?? coins}</strong>
-                    <small>coins collected</small>
-                  </div>
-                </div>
-                <div>
-                  <span className="tiny-icon purple">
-                    <Flag size={18} />
-                  </span>
-                  <div>
-                    <strong>{activeZones.length}</strong>
-                    <small>nearby zones</small>
-                  </div>
-                </div>
-              </div>
+              <button
+                className="play-entry"
+                onClick={() => setTab("expeditions")}
+              >
+                <Footprints size={24} />
+                <span>
+                  <b>Testnet walks</b>
+                  <small>GPS checkpoints · NEAR rewards</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
               <div className="section-label">
                 <h2>Where to today?</h2>
                 <span>
@@ -1504,7 +1576,10 @@ export default function App() {
                 </span>
               </div>
               {world?.quality && (
-                <p className="coverage-note">{world.quality.notice}</p>
+                <details className="coverage-note">
+                  <summary>Map coverage & access</summary>
+                  <p>{world.quality.notice}</p>
+                </details>
               )}
               <div className="zone-list">
                 {nearbyZones.map((z, i) => {
@@ -1544,13 +1619,6 @@ export default function App() {
                           <small>{Math.round(meters(position, z))} m</small>
                         </div>
                         <h3>{z.name}</h3>
-                        <p>
-                          {z.kind === "cache"
-                            ? "A chest with a little something extra"
-                            : z.tier === 1
-                              ? "Small discoveries. Big smiles."
-                              : "An adventure for curious explorers"}
-                        </p>
                         <div className="zone-rewards">
                           <span>
                             <Sparkle size={12} />
@@ -1568,6 +1636,7 @@ export default function App() {
                                 (x) =>
                                   x.zone_id === z.id &&
                                   x.kind === "chest" &&
+                                  !x.completed &&
                                   x.itemAvailable,
                               )
                                 ? "Aura chest"
@@ -1594,18 +1663,12 @@ export default function App() {
               <button className="back-link" onClick={() => setSelected(null)}>
                 <ArrowLeft size={15} /> All zones
               </button>
-              <div className={`zone-hero art-${selected.kind}`}>
-                <Ghost color={selected.color} />
-                <Sparkle className="hero-spark" size={30} />
+              <div className="zone-access">
                 <Badge tone={selected.tier === 1 ? "green" : "purple"}>
-                  {selected.tier === 1 ? "FREE ZONE" : `TIER ${selected.tier}`}
+                  {selected.tier === 1 ? "Free zone" : `Tier ${selected.tier}`}
                 </Badge>
+                <span>{zoneQuests.length} activities</span>
               </div>
-              <p className="panel-subtitle">
-                {selected.tier > player.tier
-                  ? "Your next level of adventure starts here."
-                  : "This adventure is waiting for you. No other players needed."}
-              </p>
               {selected.tier > player.tier ? (
                 <div className="locked-panel">
                   <LockKey size={25} />
@@ -1621,114 +1684,182 @@ export default function App() {
                   </p>
                   <button
                     className="primary-button"
-                    onClick={() => setTab("wallet")}
+                    onClick={() => {
+                      setWalletView("demo");
+                      setTab("wallet");
+                    }}
                   >
-                    How staking works <ArrowRight />
+                    Try demo staking <ArrowRight />
                   </button>
                 </div>
               ) : (
-                world?.quests
-                  .filter(
-                    (q) =>
-                      q.zone_id === selected.id ||
-                      q.id === selected.id.replace(":zone:", ":quest:"),
-                  )
-                  .map((q) => (
-                    <div
-                      className="quest-detail"
-                      key={q.id}
-                      id={"quest-" + q.id}
-                    >
-                      <div className="section-label">
-                        <h2>{q.title}</h2>
-                        <Badge tone="green">
-                          {q.completed
-                            ? "COMPLETED"
+                (zoneQuest ? [zoneQuest] : []).map((q) => (
+                  <div
+                    className="quest-detail"
+                    role="region"
+                    aria-label={q.title}
+                    tabIndex={-1}
+                    key={q.id}
+                    id={"quest-" + q.id}
+                  >
+                    <div className="section-label">
+                      <h2>{q.title}</h2>
+                      <Badge tone="green">
+                        {q.completed
+                          ? "COMPLETED"
+                          : now < q.opens_at
+                            ? "OPENS LATER"
                             : now >= q.closes_at
                               ? "CLOSED"
                               : "OPEN"}
-                        </Badge>
-                      </div>
-                      <p>{q.description}</p>
-                      <div className="quest-prizes">
+                      </Badge>
+                    </div>
+                    <p>{q.activity?.objective || q.description}</p>
+                    {q.activity && (
+                      <div className="play-facts">
                         <span>
-                          <Sparkle /> {q.xp} XP
-                        </span>
-                        {q.kind === "chest" && (
-                          <span>
-                            <Diamond />
-                            {q.itemAvailable
-                              ? "Aura chest"
-                              : "XP · editions exhausted"}
-                          </span>
-                        )}
-                        {q.kind === "route" && (
-                          <span>
-                            <Flag />
-                            {q.checkpoint || 0}/{q.checkpointCount} checkpoints
-                          </span>
-                        )}
-                        {q.gold_u > 0 && (
-                          <span>
-                            <CoinIcon />
-                            {q.claimant
-                              ? "GOLD already claimed"
-                              : `${gold(q.gold_u)} GOLD`}
-                          </span>
-                        )}
-                      </div>
-                      <div className="distance-note">
-                        <MapPin size={16} />
-                        {Math.round(meters(position, questPoint(q)))} m
-                        straight-line ·{" "}
-                        {q.opens_at > now
-                          ? `opens in ${remaining(q.opens_at)}`
-                          : `closes in ${remaining(q.closes_at)}`}
-                      </div>
-                      {q.completed ? (
-                        <button className="primary-button" disabled>
-                          Adventure completed <Check />
-                        </button>
-                      ) : arena && meters(position, questPoint(q)) > 25 ? (
-                        <button
-                          className="primary-button"
-                          onClick={() => move(questPoint(q))}
-                        >
-                          Move here in demo <NavigationArrow />
-                        </button>
-                      ) : (
-                        <button
-                          className="primary-button"
-                          disabled={
-                            !!busy ||
-                            meters(position, questPoint(q)) > 25 ||
-                            q.opens_at > now ||
-                            q.closes_at <= now
+                          {q.activity.icon === "return" ? (
+                            <ArrowUUpLeft size={20} />
+                          ) : q.activity.icon === "trail" ? (
+                            <Path size={20} />
+                          ) : q.activity.icon === "chest" ? (
+                            <Backpack size={20} />
+                          ) : (
+                            <MapPin size={20} />
+                          )}
+                          {
+                            q.activity.steps[
+                              Math.min(
+                                q.checkpoint || 0,
+                                q.activity.steps.length - 1,
+                              )
+                            ]?.label
                           }
-                          onClick={() => void complete(q.id)}
-                        >
-                          {busy === "quest"
-                            ? "Verifying…"
-                            : q.opens_at > now
-                              ? "Not open yet"
-                              : q.closes_at <= now
-                                ? "Closed"
-                                : q.kind === "route"
-                                  ? `Record checkpoint ${(q.checkpoint || 0) + 1}`
-                                  : q.kind === "chest"
-                                    ? "Open the chest"
-                                    : "Confirm your visit"}
-                          <ArrowRight />
-                        </button>
+                        </span>
+                      </div>
+                    )}
+                    <div className="quest-prizes">
+                      <span>
+                        <Sparkle /> {q.xp} XP
+                      </span>
+                      {q.kind === "chest" && (
+                        <span>
+                          <Diamond />
+                          {q.itemAvailable
+                            ? "Aura chest"
+                            : "XP · editions exhausted"}
+                        </span>
+                      )}
+                      {q.kind === "route" && (
+                        <span>
+                          <Flag />
+                          {q.checkpoint || 0}/{q.checkpointCount} checkpoints
+                        </span>
                       )}
                       {q.gold_u > 0 && (
-                        <p className="fine-print">
-                          Shared GOLD pays once. Your personal XP remains
-                          available.
-                        </p>
+                        <span>
+                          <CoinIcon />
+                          {q.claimant
+                            ? "GOLD already claimed"
+                            : `${gold(q.gold_u)} GOLD`}
+                        </span>
                       )}
                     </div>
-                  ))
+                    <div className="distance-note">
+                      <MapPin size={16} />
+                      {Math.round(meters(position, questPoint(q)))} m
+                      straight-line ·{" "}
+                      {q.opens_at > now
+                        ? `opens in ${remaining(q.opens_at)}`
+                        : `closes in ${remaining(q.closes_at)}`}
+                    </div>
+                    {q.completed ? (
+                      <button className="primary-button" disabled>
+                        Adventure completed <Check />
+                      </button>
+                    ) : arena && meters(position, questPoint(q)) > 25 ? (
+                      <button
+                        className="primary-button"
+                        onClick={() => move(questPoint(q))}
+                      >
+                        Move here in demo <NavigationArrow />
+                      </button>
+                    ) : (
+                      <button
+                        className="primary-button"
+                        disabled={
+                          !!busy ||
+                          meters(position, questPoint(q)) > 25 ||
+                          q.opens_at > now ||
+                          q.closes_at <= now
+                        }
+                        onClick={() => void complete(q.id)}
+                      >
+                        {busy === "quest"
+                          ? "Verifying…"
+                          : q.opens_at > now
+                            ? "Not open yet"
+                            : q.closes_at <= now
+                              ? "Closed"
+                              : q.kind === "route"
+                                ? (q.checkpoint || 0) >=
+                                  (q.checkpointCount || 0)
+                                  ? "Finish walk"
+                                  : `Record checkpoint ${(q.checkpoint || 0) + 1}`
+                                : q.kind === "chest"
+                                  ? "Open the chest"
+                                  : q.activity?.actionLabel ||
+                                    "Confirm your visit"}
+                        <ArrowRight />
+                      </button>
+                    )}
+                    {q.gold_u > 0 && (
+                      <p className="fine-print">
+                        Shared GOLD pays once. Your personal XP remains
+                        available.
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+              {selected.tier <= player.tier && zoneQuests.length > 1 && (
+                <details className="play-details zone-activities">
+                  <summary>
+                    <Flag size={20} />
+                    Choose another activity <span>{zoneQuests.length - 1}</span>
+                  </summary>
+                  <div className="walk-picker">
+                    {zoneQuests
+                      .filter((q) => q.id !== zoneQuest?.id)
+                      .map((q) => (
+                        <button
+                          key={q.id}
+                          onClick={() => chooseZoneQuest(q.id)}
+                        >
+                          <span className="play-object">
+                            {q.completed ? (
+                              <Check size={24} />
+                            ) : q.kind === "chest" ? (
+                              <Backpack size={24} />
+                            ) : q.kind === "route" ? (
+                              <Path size={24} />
+                            ) : (
+                              <MapPin size={24} />
+                            )}
+                          </span>
+                          <span>
+                            <b>{q.title}</b>
+                            <small>
+                              {q.completed
+                                ? "Completed"
+                                : `${q.xp} XP · ${q.kind === "route" ? `${q.checkpointCount} stops` : "1 stop"}`}
+                            </small>
+                          </span>
+                          <ArrowRight size={20} />
+                        </button>
+                      ))}
+                  </div>
+                </details>
               )}
             </>
           )}
@@ -1821,9 +1952,16 @@ export default function App() {
               }}
             />
           )}
-          {tab === "wallet" && (
+          {(tab === "expeditions" ||
+            (tab === "wallet" && walletView === "rewards")) && (
             <>
+              {tab === "wallet" && (
+                <WalletNavigation value={walletView} onChange={setWalletView} />
+              )}
               <NativeExpeditions
+                view={tab === "wallet" ? "wallet" : "board"}
+                initialIndex={nativeTarget?.questIndex}
+                initialCoinIndex={nativeTarget?.coinIndex}
                 player={player}
                 fix={fix}
                 arena={arena}
@@ -1831,6 +1969,10 @@ export default function App() {
                 onConnect={connectNear}
                 onLocate={() => void locate()}
                 onWithdraw={withdrawNativeReward}
+                onWallet={() => {
+                  setWalletView("rewards");
+                  setTab("wallet");
+                }}
                 onFocus={(target) => {
                   setNativeTarget(target);
                   setSelected(null);
@@ -1841,22 +1983,107 @@ export default function App() {
                   setTab("explore");
                 }}
               />
-              <NativeStaking
-                player={player}
-                onConnect={connectNear}
-                onTransaction={operateNativeVault}
-              />
-              <WalletPanel
-                player={player}
-                busy={busy}
-                action={action}
-                onPlayer={setPlayer}
-                onNear={connectNear}
-                notify={notify}
-              />
             </>
           )}
-          {tab === "fund" && <FundPanel />}
+          {tab === "wallet" && walletView !== "rewards" && (
+            <>
+              <WalletNavigation value={walletView} onChange={setWalletView} />
+              {walletView === "staking" ? (
+                <NativeStaking
+                  player={player}
+                  onConnect={connectNear}
+                  onTransaction={operateNativeVault}
+                />
+              ) : (
+                <WalletPanel
+                  player={player}
+                  busy={busy}
+                  action={action}
+                  onPlayer={setPlayer}
+                  onNear={connectNear}
+                  notify={notify}
+                />
+              )}
+            </>
+          )}
+          {tab === "wallet" && (
+            <button className="play-entry" onClick={() => setTab("fund")}>
+              <ChartDonut size={22} />
+              <span>
+                <b>Game economy</b>
+                <small>Funding and the 50/50 split</small>
+              </span>
+              <ArrowRight size={20} />
+            </button>
+          )}
+          {tab === "settings" && (
+            <div className="play-menu">
+              <button className="play-entry" onClick={() => setTab("fund")}>
+                <ChartDonut size={24} />
+                <span>
+                  <b>Game economy</b>
+                  <small>NEAR funding, pools and distribution</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
+              <button
+                className="play-entry"
+                aria-pressed={map3D}
+                onClick={toggleMap3D}
+              >
+                <Cube size={24} />
+                <span>
+                  <b>3D character: {map3D ? "On" : "Off"}</b>
+                  <small>Choose 2D for a lighter map</small>
+                </span>
+              </button>
+              <button className="play-entry" onClick={() => setShowNpc(true)}>
+                <Question size={24} />
+                <span>
+                  <b>Help & guide</b>
+                  <small>How to play</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
+            </div>
+          )}
+          {tab === "fund" && (
+            <>
+              <button className="back-link" onClick={() => setTab("settings")}>
+                <ArrowLeft size={20} />
+                Settings
+              </button>
+              <NativeEconomyPanel />
+              <details className="play-details">
+                <summary>Demo economy simulation</summary>
+                <FundPanel />
+              </details>
+            </>
+          )}
+          {tab === "community" && (
+            <div className="play-menu">
+              <button className="play-entry" onClick={() => setTab("messages")}>
+                <ChatCircle size={26} />
+                <span>
+                  <b>Map notes</b>
+                  <small>Leave a message at a place</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
+              <button className="play-entry" onClick={() => setTab("bounties")}>
+                <Flag size={26} />
+                <span>
+                  <b>Community tasks</b>
+                  <small>Demo requests and evidence</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
+              <p className="play-hint">
+                Notes use the selected demo or GPS location. Community task
+                rewards currently use demo GOLD.
+              </p>
+            </div>
+          )}
           {tab === "market" && (
             <Market
               nativeContent={
@@ -1888,6 +2115,12 @@ export default function App() {
               }
               onInventory={() => setTab("inventory")}
             />
+          )}
+          {["messages", "bounties"].includes(tab) && (
+            <button className="back-link" onClick={() => setTab("community")}>
+              <ArrowLeft size={20} />
+              Community
+            </button>
           )}
           {tab === "messages" && (
             <Messages
@@ -2175,9 +2408,11 @@ export default function App() {
         </Dialog>
       )}
       {showNpc && <Npc onClose={() => setShowNpc(false)} />}
-      <div className="demo-footer">
-        DEMO GOLD · NEAR TESTNET <span>✦</span> QuestLayer
-      </div>
+      {tab === "explore" && (
+        <div className="demo-footer">
+          DEMO GOLD · NEAR TESTNET <span>✦</span> QuestLayer
+        </div>
+      )}
     </div>
   );
 }
@@ -2380,9 +2615,6 @@ function Inventory({
   );
   return (
     <>
-      <p className="panel-subtitle">
-        Every item has a story. This one is yours.
-      </p>
       <div className="wardrobe-preview">
         <Character
           items={characterItems}
@@ -2637,6 +2869,34 @@ function Inventory({
     </>
   );
 }
+function WalletNavigation({
+  value,
+  onChange,
+}: {
+  value: "rewards" | "staking" | "demo";
+  onChange: (v: "rewards" | "staking" | "demo") => void;
+}) {
+  return (
+    <div className="play-switch" role="group" aria-label="Wallet section">
+      {(
+        [
+          { id: "rewards", label: "Rewards", icon: Wallet },
+          { id: "staking", label: "Staking", icon: Leaf },
+          { id: "demo", label: "Demo", icon: Compass },
+        ] as const
+      ).map((v) => (
+        <button
+          key={v.id}
+          aria-pressed={value === v.id}
+          onClick={() => onChange(v.id)}
+        >
+          <v.icon size={20} />
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 function WalletPanel({
   player,
   busy,
@@ -2707,7 +2967,7 @@ function WalletPanel({
         </div>
       </div>
       <section className="form-section">
-        <h2>Help this world grow</h2>
+        <h2>Try demo staking</h2>
         <p>
           Yield helps create rewards for everyone. This simulation does not
           transfer real funds.

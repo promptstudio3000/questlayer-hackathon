@@ -1,3 +1,4 @@
+import { describeNativeQuest } from "../quest-templates.mjs";
 import { NativeContractReader } from "./reader.mjs";
 import {
   assert,
@@ -419,6 +420,7 @@ export class NativeRewards extends NativeContractReader {
             coins,
             quests: m.quests.map((q) => ({
               ...q,
+              activity: describeNativeQuest(q),
               prizeClaimed: !!chainDay?.winners?.[q.index],
               prizePending:
                 !chainDay?.winners?.[q.index] &&

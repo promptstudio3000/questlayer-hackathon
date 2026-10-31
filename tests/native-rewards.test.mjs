@@ -110,6 +110,43 @@ function input(f, m, p = {}) {
     ...p,
   };
 }
+
+function maintenanceVault(f) {
+  const vault = {
+    accountId: "exit.factory.testnet",
+    beneficiary: f.accountId,
+    codeHash: "verified-vault-code",
+  };
+  const probe = {
+    codeHash: vault.codeHash,
+    keys: [],
+    state: {
+      beneficiary: f.accountId,
+      rewards: f.n.contractId,
+      pool: "aurora.pool.f863973.m0",
+      stage: "unlocking",
+      epoch: "106",
+      unlock_epoch: "106",
+      exit_requested: true,
+      owner_pending: "0",
+      game_pending: "0",
+    },
+  };
+  f.n.vaultList = async () => [vault];
+  f.n.provider = {
+    viewNodeStatus: async () => ({ chain_id: "testnet" }),
+    query: async (q) => {
+      assert.equal(q.account_id, vault.accountId);
+      if (q.request_type === "view_account")
+        return { code_hash: probe.codeHash };
+      if (q.request_type === "view_access_key_list")
+        return { keys: probe.keys };
+      assert.equal(q.method_name, "get_state");
+      return { result: [...Buffer.from(JSON.stringify(probe.state))] };
+    },
+  };
+  return probe;
+}
 test("native funding uses finite actual buckets, six city slots, free XP and small shared coins", () => {
   const m = nativeManifest(plan, {
     coins: { available: "6000000000000000000000" },
@@ -328,5 +365,165 @@ test("native receipt capacity includes accepted pending rights before another ex
     );
   } finally {
     f.db.close();
+  }
+});
+
+test("paused claims preserve accepted rights while verified exit maintenance continues", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    const receipt = await f.n.submit(f.player, input(f, m));
+    maintenanceVault(f);
+    const original = f.n.view;
+    f.n.view = async (method, args, fresh) => {
+      const value = await original(method, args, fresh);
+      return method === "get_config" ? { ...value, paused: true } : value;
+    };
+    f.setNow(m.endsAt + 86400001);
+    f.state.sent.length = 0;
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /claims are paused/,
+    );
+    assert.deepEqual(f.state.sent, [
+      {
+        method: "maintain_vault",
+        args: { vault_id: "exit.factory.testnet", action: "advance" },
+      },
+    ]);
+    assert.equal(
+      f.db
+        .prepare("SELECT state FROM native_reward_claims WHERE id=?")
+        .get(receipt.id).state,
+      "queued",
+    );
+    assert.equal(
+      f.db.prepare("SELECT state FROM native_days WHERE id=?").get(m.id).state,
+      "published",
+    );
+    assert.equal(f.state.days.get(m.id).closed, false);
+    assert.match(f.n.workerStatus().last_error, /paused/);
+    assert.equal(
+      f.db.prepare("SELECT last_action FROM native_vault_jobs").get()
+        .last_action,
+      "advance",
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("a failing oldest claim cannot stop exit maintenance or let a later receipt overtake it", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    const first = await f.n.submit(f.player, input(f, m));
+    f.setNow(NOW + 3600000);
+    const second = await f.n.submit(
+      f.player,
+      input(f, m, { index: 1, fix: f.fix(m.coins[1]) }),
+    );
+    maintenanceVault(f);
+    f.setNow(m.endsAt + 86400001);
+    f.state.sent.length = 0;
+    const attempted = [];
+    const send = async (method, args) => {
+      attempted.push({ method, args });
+      if (method === "claim")
+        throw Error("oldest claim is temporarily unavailable");
+      return f.send(method, args);
+    };
+    await assert.rejects(
+      runRewardWorker(f.n, send, { clock: f.clock }),
+      /oldest claim/,
+    );
+    assert.deepEqual(
+      attempted.map((x) => x.method),
+      ["claim", "maintain_vault"],
+    );
+    assert.equal(attempted[0].args.claim.receipt_id, first.id);
+    assert.equal(attempted[1].args.action, "advance");
+    assert.equal(
+      f.db
+        .prepare("SELECT state FROM native_reward_claims WHERE id=?")
+        .get(first.id).state,
+      "retrying",
+    );
+    assert.equal(
+      f.db
+        .prepare("SELECT state FROM native_reward_claims WHERE id=?")
+        .get(second.id).state,
+      "queued",
+    );
+    assert.equal(
+      f.db.prepare("SELECT state FROM native_days WHERE id=?").get(m.id).state,
+      "published",
+    );
+    assert.equal(f.state.days.get(m.id).closed, false);
+    assert.match(f.n.workerStatus().last_error, /oldest claim/);
+  } finally {
+    f.db.close();
+  }
+});
+
+test("worker identity mismatch blocks maintenance as well as settlement", async () => {
+  const f = fixture();
+  try {
+    maintenanceVault(f);
+    const original = f.n.view;
+    f.n.view = async (method, args, fresh) => {
+      const value = await original(method, args, fresh);
+      return method === "get_config" ? { ...value, attestor: "wrong" } : value;
+    };
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /identity prevents/,
+    );
+    assert.equal(f.state.sent.length, 0);
+    assert.equal(
+      f.db.prepare("SELECT COUNT(*) n FROM native_vault_jobs").get().n,
+      0,
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("maintenance rejects changed code, non-keyless children and another strategy during pause", async () => {
+  for (const alter of [
+    (p) => {
+      p.codeHash = "changed";
+    },
+    (p) => {
+      p.keys = [{}];
+    },
+    (p) => {
+      p.state.pool = "unreviewed.pool.testnet";
+    },
+    (p) => {
+      p.state.beneficiary = "another.testnet";
+    },
+  ]) {
+    const f = fixture();
+    try {
+      const probe = maintenanceVault(f);
+      alter(probe);
+      const original = f.n.view;
+      f.n.view = async (method, args, fresh) => {
+        const value = await original(method, args, fresh);
+        return method === "get_config" ? { ...value, paused: true } : value;
+      };
+      await assert.rejects(
+        runRewardWorker(f.n, f.send, { clock: f.clock }),
+        /paused/,
+      );
+      assert.equal(f.state.sent.length, 0);
+      assert.ok(
+        f.db.prepare("SELECT last_error FROM native_vault_jobs").get()
+          .last_error,
+      );
+    } finally {
+      f.db.close();
+    }
   }
 });

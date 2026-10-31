@@ -185,7 +185,8 @@
         "docs/OVERNIGHT-2026-10-31.md",
         "docs/WORLD-WORKER.md",
         "output/qa/W01-worker/checks.txt",
-        "output/qa/W01-worker/operator-preview.geojson"
+        "output/qa/W01-worker/operator-preview.geojson",
+        "docs/QUEST-TEMPLATES.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W01/"
@@ -286,7 +287,9 @@
         }
       ],
       "evidence": [
-        "docs/OVERNIGHT-2026-10-31.md"
+        "docs/OVERNIGHT-2026-10-31.md",
+        "docs/UI-AUDIT-2026-10-31.md",
+        "output/qa/W02-playability/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W02/"
@@ -517,7 +520,8 @@
         "public/native-pilot-proof.json",
         "output/qa/W05-W06-native/live-pilot.json",
         "output/qa/W05-W06-native/final-public-check.json",
-        "output/qa/W05-W06-native/restore-final.txt"
+        "output/qa/W05-W06-native/restore-final.txt",
+        "docs/NEAR-INTEGRATION-STATUS.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W05/"
@@ -608,7 +612,9 @@
         "public/native-pilot-proof.json",
         "output/qa/W05-W06-native/live-pilot.json",
         "output/qa/W05-W06-native/final-public-check.json",
-        "output/qa/W05-W06-native/restore-final.txt"
+        "output/qa/W05-W06-native/restore-final.txt",
+        "docs/NEAR-INTEGRATION-STATUS.md",
+        "docs/QUEST-TEMPLATES.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W06/"
@@ -993,7 +999,8 @@
         "output/qa/W12-movement/checks.txt",
         "output/qa/W12-startup/public-map-after-cascade-fix.png",
         "docs/DELIVERY-2026-10-31.md",
-        "output/qa/final-2026-10-31/public-status.json"
+        "output/qa/final-2026-10-31/public-status.json",
+        "output/qa/W02-playability/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W12-startup/"
@@ -1190,7 +1197,8 @@
         "output/qa/final-2026-10-31/public-status.json",
         "output/qa/W05-W06-native/restore-rehearsal.txt",
         "output/qa/W05-W06-native/final-public-check.json",
-        "output/qa/W05-W06-native/restore-final.txt"
+        "output/qa/W05-W06-native/restore-final.txt",
+        "docs/V1-REMAINING.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W13-recovery/"
@@ -1300,5 +1308,6 @@
   ],
   "runtimeChangedSincePlanningBaseline": true,
   "lastImplementationUpdate": "2026-10-31T10:59:12.777Z",
-  "implementationReport": "docs/OVERNIGHT-2026-10-31.md"
+  "implementationReport": "docs/OVERNIGHT-2026-10-31.md",
+  "currentGapRegister": "docs/V1-REMAINING.md"
 }

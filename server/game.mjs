@@ -16,6 +16,7 @@ import {
   splitYield,
 } from "./domain.mjs";
 import { contains } from "./spatial/city-pack.mjs";
+import { QUEST_POLICY } from "./quest-templates.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
 
 export function session(db, name, now = Date.now()) {
@@ -103,66 +104,62 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
   });
 }
 export function claimQuest(db, player, questId, fix, now = Date.now()) {
-  return atomic(db, () => {
-    const q = db
-      .prepare(
-        "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
-      )
-      .get(questId);
-    assert(q, "Quest not found.", 404);
-    assert(now >= q.opens_at && now < q.closes_at, "The zone is closed.", 410);
+  return atomic(db, () => settleQuest(db, player, questId, fix, now));
+}
+function settleQuest(db, player, questId, fix, now) {
+  const q = db
+    .prepare(
+      "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
+    )
+    .get(questId);
+  assert(q, "Quest not found.", 404);
+  assert(now >= q.opens_at && now < q.closes_at, "The zone is closed.", 410);
+  assert(
+    !db
+      .prepare("SELECT 1 FROM quest_claims WHERE quest_id=? AND player_id=?")
+      .get(q.id, player),
+    "You have already completed this quest.",
+    409,
+  );
+  validateQuestEvidence(db, player, q, fix, now, q);
+  const meta = JSON.parse(q.metadata || "{}");
+  if (q.kind === "route")
     assert(
-      !db
-        .prepare("SELECT 1 FROM quest_claims WHERE quest_id=? AND player_id=?")
-        .get(q.id, player),
-      "You have already completed this quest.",
+      (db
+        .prepare(
+          "SELECT checkpoint FROM quest_progress WHERE quest_id=? AND player_id=?",
+        )
+        .get(q.id, player)?.checkpoint || 0) >= (meta.checkpoints || []).length,
+      "Complete the checkpoints in order first.",
       409,
     );
-    validateQuestEvidence(db, player, q, fix, now, q);
-    const meta = JSON.parse(q.metadata || "{}");
-    if (q.kind === "route")
-      assert(
-        (db
-          .prepare(
-            "SELECT checkpoint FROM quest_progress WHERE quest_id=? AND player_id=?",
-          )
-          .get(q.id, player)?.checkpoint || 0) >=
-          (meta.checkpoints || []).length,
-        "Complete the checkpoints in order first.",
-        409,
-      );
-    // Everyone can finish the personal activity. The funded shared prize is paid once.
-    const reward = !q.claimant ? q.gold_u : 0;
-    if (!q.claimant) {
-      db.prepare("UPDATE quests SET claimant=?,claimed_at=? WHERE id=?").run(
-        player,
-        now,
-        q.id,
-      );
-      if (reward)
-        db.prepare(
-          "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
-        ).run(reward, reward, "zones");
-    }
-    db.prepare("INSERT INTO quest_claims VALUES (?,?,?)").run(
-      q.id,
+  // Everyone can finish the personal activity. The funded shared prize is paid once.
+  const reward = !q.claimant ? q.gold_u : 0;
+  if (!q.claimant) {
+    db.prepare("UPDATE quests SET claimant=?,claimed_at=? WHERE id=?").run(
       player,
       now,
+      q.id,
     );
-    db.prepare("UPDATE players SET gold_u=gold_u+?,xp=xp+? WHERE id=?").run(
-      reward,
-      q.xp,
-      player,
-    );
-    let item = null;
-    if (q.kind === "chest") item = mintAura(db, player, now);
-    history(db, player, "quest", q.title, reward, {
-      quest: q.id,
-      xp: q.xp,
-      item: item?.name,
-    });
-    return { reward, xp: q.xp, item };
+    if (reward)
+      db.prepare(
+        "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
+      ).run(reward, reward, "zones");
+  }
+  db.prepare("INSERT INTO quest_claims VALUES (?,?,?)").run(q.id, player, now);
+  db.prepare("UPDATE players SET gold_u=gold_u+?,xp=xp+? WHERE id=?").run(
+    reward,
+    q.xp,
+    player,
+  );
+  let item = null;
+  if (q.kind === "chest") item = mintAura(db, player, now);
+  history(db, player, "quest", q.title, reward, {
+    quest: q.id,
+    xp: q.xp,
+    item: item?.name,
   });
+  return { reward, xp: q.xp, item };
 }
 function validateQuestEvidence(db, player, q, fix, now, target) {
   assert(now >= q.opens_at && now < q.closes_at, "The zone is closed.", 410);
@@ -199,7 +196,7 @@ export function advanceRoute(
   expectedCheckpoint,
   now = Date.now(),
 ) {
-  const progress = atomic(db, () => {
+  return atomic(db, () => {
     const q = db
       .prepare(
         "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
@@ -213,13 +210,14 @@ export function advanceRoute(
       "You have already completed this quest.",
       409,
     );
-    const checkpoints = JSON.parse(q.metadata).checkpoints,
-      current =
-        db
-          .prepare(
-            "SELECT checkpoint FROM quest_progress WHERE quest_id=? AND player_id=?",
-          )
-          .get(q.id, player)?.checkpoint || 0;
+    const metadata = JSON.parse(q.metadata),
+      checkpoints = metadata.checkpoints,
+      saved = db
+        .prepare(
+          "SELECT checkpoint,updated_at FROM quest_progress WHERE quest_id=? AND player_id=?",
+        )
+        .get(q.id, player),
+      current = saved?.checkpoint || 0;
     assert(
       Number.isInteger(expectedCheckpoint) && expectedCheckpoint === current,
       "Your expedition changed. Refresh its checkpoint.",
@@ -232,14 +230,26 @@ export function advanceRoute(
       409,
     );
     validateQuestEvidence(db, player, q, fix, now, checkpoints[current]);
+    const requiresNewFix =
+      metadata.activity?.policy === QUEST_POLICY &&
+      !JSON.parse(q.manifest).arena;
+    // A return stop cannot reuse the original starting fix. This only rejects
+    // replayed observations; browser coordinates are not proof of physical truth.
+    if (requiresNewFix && saved)
+      assert(
+        fix.timestamp > saved.updated_at,
+        "Wait for a new GPS fix before recording the next stop.",
+        422,
+        "GPS_REPLAY",
+      );
     db.prepare(
       "INSERT INTO quest_progress VALUES (?,?,?,?) ON CONFLICT(quest_id,player_id) DO UPDATE SET checkpoint=excluded.checkpoint,updated_at=excluded.updated_at",
-    ).run(q.id, player, current + 1, now);
-    return { completed: current + 1, total: checkpoints.length };
+    ).run(q.id, player, current + 1, requiresNewFix ? fix.timestamp : now);
+    const progress = { completed: current + 1, total: checkpoints.length };
+    if (progress.completed === progress.total)
+      return { ...settleQuest(db, player, questId, fix, now), progress };
+    return { awaiting: true, progress };
   });
-  if (progress.completed === progress.total)
-    return { ...claimQuest(db, player, questId, fix, now), progress };
-  return { awaiting: true, progress };
 }
 const AURAS = [
   ["Northern Lights", "rare", "above", "#8dd8bd"],

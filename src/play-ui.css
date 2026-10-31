@@ -1,0 +1,564 @@
+/* Player-first surfaces share the semantic palette specified in DESIGN.md. */
+:root {
+  --ink: #1a0335;
+  --ink-secondary: #665577;
+  --surface: #fcfaff;
+  --surface-raised: #fff;
+  --surface-soft: #f2ebff;
+  --action: #672eeb;
+  --on-action: #fff;
+  --control-border: #806a99;
+  --decorative-border: #d7cbe9;
+  --purple: #672eeb;
+  --muted: #665577;
+  --cream: #fcfaff;
+  --dark: #1a0335;
+}
+.play-native,
+.play-economy {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.play-native p,
+.play-economy p {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 12px 0;
+}
+.play-native small,
+.play-economy small {
+  font-size: 14px;
+  color: var(--ink-secondary);
+  line-height: 1.45;
+}
+.play-native button,
+.play-menu button,
+.play-economy button,
+.play-switch button,
+.play-entry {
+  min-height: 48px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.play-native .primary-button,
+.play-native .secondary-button {
+  width: 100%;
+  margin: 8px 0;
+  gap: 8px;
+}
+.play-native .primary-button,
+.play-economy .primary-button,
+.main-panel .primary-button {
+  background: var(--action);
+  color: var(--on-action);
+}
+.play-native .secondary-button {
+  background: var(--surface-raised);
+  color: var(--ink);
+  border: 1px solid var(--control-border);
+}
+.play-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.play-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  padding: 6px 10px;
+  background: var(--surface-soft);
+  border-radius: 20px;
+}
+.play-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--decorative-border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+.play-native .play-hint,
+.play-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+  margin: 8px 0 16px;
+}
+.play-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 4px;
+  background: var(--surface-soft);
+  border-radius: 14px;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.play-switch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 4px;
+  background: transparent;
+  color: var(--ink-secondary);
+  border-radius: 10px;
+}
+.play-switch button[aria-pressed="true"] {
+  background: var(--action);
+  color: #fff;
+}
+.play-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  width: 100%;
+  background: var(--surface-raised);
+  color: var(--ink);
+  border: 1px solid var(--decorative-border);
+  border-radius: 14px;
+  text-align: left;
+  margin: 12px 0;
+}
+.play-entry > span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.play-entry small {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+.play-details {
+  border-top: 1px solid var(--decorative-border);
+  margin-top: 16px;
+  color: var(--ink);
+  font-size: 16px;
+}
+.play-details summary {
+  cursor: pointer;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  font-size: 16px;
+  list-style: none;
+}
+.play-details summary::after {
+  content: "+";
+  margin-left: auto;
+  font-size: 24px;
+}
+.play-details[open] > summary::after {
+  content: "−";
+}
+.play-details summary::-webkit-details-marker {
+  display: none;
+}
+.play-details summary span {
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.play-details p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.walk-card {
+  padding: 18px;
+  background: var(--surface-raised);
+  border: 1px solid var(--decorative-border);
+  border-radius: 20px;
+  margin: 12px 0 20px;
+}
+.walk-art {
+  height: 74px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--action);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.walk-art > span {
+  font-size: 22px;
+  font-weight: 600;
+}
+.walk-card h2 {
+  font-size: 24px;
+  line-height: 1.2;
+  margin: 8px 0 12px;
+}
+.walk-place {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.walk-place > span {
+  margin-left: auto;
+  background: var(--surface-soft);
+  padding: 2px 8px;
+  border-radius: 8px;
+  color: var(--ink);
+}
+.play-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 14px;
+}
+.play-facts > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.walk-steps {
+  display: flex;
+  padding: 0;
+  gap: 8px;
+  list-style: none;
+  margin: 18px 0;
+}
+.walk-steps li {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  position: relative;
+}
+.walk-steps li > span {
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--decorative-border);
+}
+.walk-steps .current > span {
+  background: var(--action);
+  color: #fff;
+}
+.walk-steps .done > span {
+  background: #e3f6ee;
+  color: #176553;
+}
+.walk-picker button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 0;
+  color: var(--ink);
+  background: transparent;
+  border-bottom: 1px solid var(--decorative-border);
+}
+.walk-picker button > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.play-object {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--action);
+}
+.street-pickup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.street-pickup > span {
+  flex: 1;
+}
+.play-native .street-pickup .secondary-button {
+  width: auto;
+}
+.play-account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.play-field {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+.play-field select {
+  min-height: 48px;
+  max-width: 100%;
+  min-width: 0;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+}
+.play-consent {
+  background: var(--surface-soft);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+.play-consent label {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 48px;
+  font-size: 14px;
+}
+.play-consent input {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  accent-color: var(--action);
+}
+.play-error,
+.play-notice {
+  padding: 12px;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.play-error {
+  background: #fff0f3;
+  color: #a32947;
+}
+.play-notice {
+  background: #e3f6ee;
+  color: #176553;
+}
+.reward-wallet {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface-soft);
+  margin: 16px 0;
+}
+.reward-wallet strong {
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+.reward-wallet > span {
+  font-size: 14px;
+}
+.receipt-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 12px 0;
+  font-size: 14px;
+}
+.receipt-row > span {
+  flex: 1;
+}
+.economy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.economy-grid > div {
+  display: grid;
+  gap: 6px;
+  background: var(--surface-soft);
+  padding: 16px;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.economy-grid strong {
+  font-size: 20px;
+  line-height: 1.3;
+}
+.economy-pool {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--decorative-border);
+  display: grid;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+.play-native :focus-visible,
+.play-details :focus-visible,
+.play-switch :focus-visible {
+  outline: 3px solid var(--action);
+  outline-offset: 3px;
+}
+/* Hierarchy: one action first; setup and operations are reached deliberately. */
+.main-panel {
+  background: var(--surface);
+  color: var(--ink);
+}
+.main-panel .panel-heading {
+  margin-bottom: 12px;
+}
+.main-panel .panel-heading h1 {
+  font-size: 26px;
+}
+.main-panel .zone-card {
+  min-height: 112px;
+}
+.main-panel .zone-info h3 {
+  font-size: 18px;
+  line-height: 1.25;
+}
+.main-panel .zone-info small,
+.main-panel .zone-rewards,
+.main-panel .zone-info .badge {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.main-panel .coverage-note {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.coverage-note summary {
+  min-height: 48px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.coverage-note p {
+  font-size: 14px;
+}
+.main-panel .zone-hero {
+  height: 100px;
+  margin-bottom: 16px;
+}
+.main-panel .zone-hero .ghost-art {
+  height: 88px;
+}
+.main-panel .back-link {
+  min-height: 48px;
+  font-size: 14px;
+}
+.app-shell .icon-button {
+  min-width: 48px;
+  min-height: 48px;
+}
+.main-panel .recommended-quest {
+  margin-top: 0;
+}
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  .main-panel.explore-panel.sheet-compact .play-entry,
+  .main-panel.explore-panel.sheet-compact .coverage-note {
+    display: none;
+  }
+  .walk-card {
+    padding: 16px;
+  }
+  .play-entry {
+    padding: 12px;
+  }
+}
+@media (max-width: 380px) {
+  .play-switch button {
+    font-size: 14px;
+  }
+  .play-switch button svg {
+    width: 18px;
+  }
+  .economy-grid {
+    gap: 8px;
+  }
+  .economy-grid > div {
+    padding: 12px;
+  }
+}
+/* Keep the next action above the fold; art supports the task rather than a banner. */
+.walk-art {
+  float: right;
+  width: 76px;
+  height: 40px;
+  gap: 6px;
+  padding: 8px;
+  margin: 0 0 8px 12px;
+  border-radius: 10px;
+}
+.walk-art > svg {
+  width: 22px;
+  height: 22px;
+}
+.walk-art > span {
+  font-size: 16px;
+}
+.walk-card > .play-facts {
+  margin-bottom: 12px;
+}
+.walk-card .play-hint {
+  clear: both;
+}
+.play-native .walk-card .walk-steps {
+  margin: 12px 0;
+}
+.play-native .text-button {
+  font-size: 14px;
+  min-height: 48px;
+  gap: 8px;
+  color: var(--action);
+}
+.play-native > .play-toolbar {
+  margin-top: 4px;
+}
+.main-panel .play-native .back-link {
+  margin-bottom: 0;
+}
+.zone-access {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--ink-secondary);
+  margin-bottom: 16px;
+}
+.zone-access .badge {
+  font-size: 14px;
+}
+.main-panel .quest-detail {
+  margin-top: 0;
+}
+.main-panel .quest-detail p {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.main-panel .quest-detail .play-facts {
+  font-size: 14px;
+  margin: 8px 0;
+}
+.main-panel .quest-detail .fine-print {
+  font-size: 14px;
+}
+.zone-activities .walk-picker {
+  font-size: 16px;
+}

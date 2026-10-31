@@ -6,6 +6,8 @@ import "../src/style.css";
 import "../src/styles.css";
 const account = "layout-review-wallet-with-long-name.testnet";
 const player = { wallets: [{ account_id: account }] } as Player;
+const fixturePhase =
+  new URLSearchParams(location.search).get("phase") || "idle";
 const readVaults = async (): Promise<VaultSnapshot> => {
   if (new URLSearchParams(location.search).has("failure"))
     throw Error(
@@ -33,19 +35,20 @@ const readVaults = async (): Promise<VaultSnapshot> => {
         contribution_bps: 5000,
         state: "ready",
         position: {
-          stage: "idle",
-          exit_requested: false,
+          stage: fixturePhase === "unlocking" ? "unlocking" : "idle",
+          exit_requested: fixturePhase !== "idle",
           staked: "10000000000000000000000",
           unstaked: "0",
           weighted_stake: "5000000000000000000000",
-          owner_credit: "0",
+          owner_credit:
+            fixturePhase === "credit" ? "10000000000000000000000" : "0",
           owner_pending: "0",
           principal: "10000000000000000000000",
           deposited: "10000000000000000000000",
           game_pending: "0",
           game_credit: "0",
           epoch: "5400",
-          unlock_epoch: "0",
+          unlock_epoch: fixturePhase === "unlocking" ? "5402" : "0",
         },
       },
     ],
