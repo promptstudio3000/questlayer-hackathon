@@ -160,7 +160,9 @@ export function outcomeFor(
         : method === "buy" || method === "withdraw"
           ? encode(true)
           : "");
-  const status = failure ? { Failure: failure } : { SuccessValue: value };
+  // Like the live chain: the delegate transaction itself returns an empty
+  // value; the contract's return value sits in the receiver's receipt.
+  const status = failure ? { Failure: failure } : { SuccessValue: "" };
   return {
     final_execution_status: "FINAL",
     transaction: {

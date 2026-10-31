@@ -192,7 +192,19 @@ export function verifyRelayOutcome(outcome, { relayerId, call }) {
     call.kind === "call" &&
     ["mint_avatar", "redeem_aura"].includes(call.methodName)
   ) {
-    const token = decodeJson(outcome.status.SuccessValue);
+    // A delegate transaction's own status is the empty delegate result; the
+    // contract's return value lives in the receiver's execution receipt.
+    const receiverReceipt = outcome.receipts_outcome.find(
+      (r) =>
+        r.outcome.executor_id === call.receiverId &&
+        typeof r.outcome.status?.SuccessValue === "string" &&
+        r.outcome.status.SuccessValue.length > 0,
+    );
+    const token = decodeJson(
+      receiverReceipt
+        ? receiverReceipt.outcome.status.SuccessValue
+        : outcome.status.SuccessValue,
+    );
     const valid =
       plainObject(token) &&
       token.owner_id === call.senderId &&
