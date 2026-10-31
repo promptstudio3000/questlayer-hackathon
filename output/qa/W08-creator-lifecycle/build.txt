@@ -1,0 +1,24 @@
+
+> questlayer@0.1.0 build
+> tsc -b && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 5117 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.77 kB │ gzip:   0.46 kB
+dist/assets/maplibre-gl-worker-Br3j0JGE.js    518.98 kB
+dist/assets/GameMap-qvkd0SPb.css               71.33 kB │ gzip:  10.25 kB
+dist/assets/index-DjFXwEoJ.css                110.24 kB │ gzip:  21.65 kB
+dist/assets/ccip-ByOOVLuH.js                    0.08 kB │ gzip:   0.08 kB
+dist/assets/rolldown-runtime-WkwZ5CU-.js        0.59 kB │ gzip:   0.36 kB
+dist/assets/utils-Bpv4vmSW.js                   2.19 kB │ gzip:   0.97 kB
+dist/assets/secp256k1-B55opi_d.js              26.34 kB │ gzip:  10.21 kB
+dist/assets/build-DB31hh0L.js                  58.78 kB │ gzip:  15.03 kB
+dist/assets/_esm-Bb4u-CSE.js                  170.66 kB │ gzip:  49.01 kB
+dist/assets/index-puLcuDVO.js                 645.17 kB │ gzip: 182.97 kB
+dist/assets/character-3d-scene-CN8uH972.js    656.44 kB │ gzip: 164.19 kB
+dist/assets/GameMap-BC6vOkGp.js             1,083.03 kB │ gzip: 295.35 kB
+
+✓ built in 611ms

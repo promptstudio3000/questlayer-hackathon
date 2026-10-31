@@ -668,28 +668,31 @@
         {
           "id": "W08.3",
           "title": "Add atomic earned locked and available XP",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W08.4",
           "title": "Resolve closing rights and exact XP release",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W08.5",
           "title": "Implement free follows profiles and useful feeds",
-          "status": "planned"
+          "status": "building"
         }
       ],
       "evidence": [
         "output/qa/W08-W10-native-tasks/README.md",
         "docs/NATIVE-TASKS-UI.md",
         "public/native-tasks-testnet.json",
-        "public/native-tasks-proof.json"
+        "public/native-tasks-proof.json",
+        "docs/CREATOR-COMMUNITY-HANDOFF.md",
+        "docs/CREATOR-INTEGRATION-2026-10-31.md",
+        "output/qa/W08-creator-combined/tests.txt"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W08/",
-      "implementationNote": "Community navigation and independent native sponsored publication are implemented. Stable sponsored-task operation IDs and funding review do not implement creator revisions/moderation, refundable XP commitments, profiles/follows, paid access or creator funds. Full W08 exit remains open."
+      "implementationNote": "Community navigation and independent native sponsored publication are deployed. A combined local source slice implements opt-in demo creator revisions/moderation, refundable XP commitments, admitted-revision rights, public profiles/free follows and disabled player/server adapters. 343 combined application tests and build pass. Creator UI, host activation, confirmed activity rewards, native XP commitments, paid access and creator funds remain open. No W08 exit journey has passed."
     },
     {
       "id": "W09",

@@ -206,7 +206,7 @@ Work:
 
 **W08. Owners:** Community, editor/lifecycle, progression contract/service, creator profiles and follows. **Rules:** C01–C06, D20, G13, O03. **UI package:** U10.
 
-Implemented slice: Community separates Native and Demo tasks. Native publication locks a sponsor-funded prize in a dedicated escrow, with stable operation IDs and an exact funding review. This establishes independent sponsored publication and navigation only. Creator revisions/moderation, earned/locked/available XP, once-only XP release, profiles/follows and paid rights remain unimplemented. The W08 exit scenario has not passed.
+Implemented slice: Community separates Native and Demo tasks. Native publication locks a sponsor-funded prize in a dedicated escrow, with stable operation IDs and an exact funding review. This establishes independent sponsored publication and navigation only. Creator rights remain unavailable in the deployed application. A subsequent local source slice adds opt-in demo creator revisions/moderation, earned/locked/available XP, once-only release after admitted obligations, explicit profiles, free follows and approved/private read projections, with disabled player/server adapters. The combined source passes 343 tests and builds; [the integration record](docs/CREATOR-INTEGRATION-2026-10-31.md) separates source integration from runtime activation. Community authoring UI, validated completion/reward delivery, native XP commitments, paid rights and the full W08 exit scenario remain open.
 
 Work:
 

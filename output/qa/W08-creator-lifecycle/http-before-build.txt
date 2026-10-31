@@ -1,0 +1,34 @@
+✔ HTTP notes preserve consent, replay, visibility, photo permissions and block/presence boundaries (1871.468459ms)
+✖ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (2117.3965ms)
+✔ native identity validates account syntax and distinguishes RPC failures (0.986875ms)
+✔ NEAR sign-in verifies real signatures, restores one explorer, isolates purposes and prevents replay (1971.592459ms)
+✔ identity refuses a mainnet RPC even when its access-key answer would be valid (0.3275ms)
+✔ HTTP original items preserve ownership checks around shared cache and refresh a removed appearance (1951.671292ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2641.696625
+
+✖ failing tests:
+
+test at tests/http.test.mjs:102:1
+✖ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (2117.3965ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  503 !== 200
+  
+      at TestContext.<anonymous> (file:///Users/coinmandeer/.codex/worktrees/creator-quest-lifecycle/NEAR-HACKATHON/tests/http.test.mjs:448:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
