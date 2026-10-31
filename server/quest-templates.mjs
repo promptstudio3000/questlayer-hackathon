@@ -167,7 +167,14 @@ export function instantiateQuestTemplate(templateId, zone) {
     Array.isArray(zone.targets) && zone.targets.length >= t.distinctTargets,
     "The template needs more mapped path targets.",
   );
-  const distinct = zone.targets.slice(0, t.distinctTargets).map((p) => {
+  // A single-target visit uses the second mapped path point when one exists,
+  // so it never shares the return-trail start/finish and each confirmation
+  // happens at a different place in the zone.
+  const ordered =
+    t.distinctTargets === 1 && zone.targets.length > 1
+      ? zone.targets.slice(1)
+      : zone.targets;
+  const distinct = ordered.slice(0, t.distinctTargets).map((p) => {
     point(p);
     assert(contains(zone.geometry, p), "A quest target is outside its zone.");
     return { lat: p.lat, lng: p.lng };

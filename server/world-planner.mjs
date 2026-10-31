@@ -39,13 +39,21 @@ export function buildCityPlan(city, day) {
       zone.questActivities = zoneQuestTemplates(zone, { cityId: city.id, day });
     return zone;
   });
+  // Six slots are requested. A reviewed candidate shortfall publishes fewer
+  // zones with an explicit reason instead of inventing a site or failing the day.
   assert(
-    zones.length === 6,
-    "City preparation must produce exactly six zones.",
+    zones.length >= 3 && zones.length <= 6,
+    "City preparation must produce between three and six zones.",
   );
   return {
     ...descriptor,
     version: PLAN_VERSION,
+    coverage: {
+      requestedZones: 6,
+      acceptedZones: zones.length,
+      shortfall: 6 - zones.length,
+      reason: zones.length === 6 ? null : "not-enough-safe-candidates",
+    },
     timezone: city.timezone,
     startsAt,
     endsAt,

@@ -811,10 +811,12 @@ export default function App() {
       collectionRun.current = request;
       const timeout = setTimeout(() => request.abort(), 15000);
       try {
+        const radius = (state.world.coinRadius ?? 18) - 1;
         const nearby = state.world.coins
           .filter(
             (c) =>
-              meters(state.position, c) < 17 && !collecting.current.has(c.id),
+              meters(state.position, c) < radius &&
+              !collecting.current.has(c.id),
           )
           .slice(0, 2);
         for (const coin of nearby) {

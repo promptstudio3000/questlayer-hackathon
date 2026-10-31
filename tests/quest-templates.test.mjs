@@ -108,17 +108,28 @@ test("templates refuse missing, malformed, excluded and overlapping targets", ()
       }),
     /too close/,
   );
+  // A single-target visit uses the second mapped point, so the hole is cut
+  // around that point and a one-point zone falls back to the first.
   const withHole = structuredClone(ZONE);
+  const visitTarget = ZONE.targets[1];
   withHole.geometry.coordinates.push([
-    [-0.0001, -0.0001],
-    [-0.0001, 0.0001],
-    [0.0001, 0.0001],
-    [0.0001, -0.0001],
-    [-0.0001, -0.0001],
+    [visitTarget.lng - 0.0001, visitTarget.lat - 0.0001],
+    [visitTarget.lng - 0.0001, visitTarget.lat + 0.0001],
+    [visitTarget.lng + 0.0001, visitTarget.lat + 0.0001],
+    [visitTarget.lng + 0.0001, visitTarget.lat - 0.0001],
+    [visitTarget.lng - 0.0001, visitTarget.lat - 0.0001],
   ]);
   assert.throws(
     () => instantiateQuestTemplate("path-visit", withHole),
     /outside/,
+  );
+  assert.deepEqual(
+    instantiateQuestTemplate("path-visit", ZONE).target,
+    { lat: visitTarget.lat, lng: visitTarget.lng },
+  );
+  assert.deepEqual(
+    instantiateQuestTemplate("path-visit", { ...ZONE, targets: [ZONE.targets[0]] }).target,
+    { lat: ZONE.targets[0].lat, lng: ZONE.targets[0].lng },
   );
 });
 

@@ -186,3 +186,31 @@ test("a restarted process resumes persisted SQLite work without touching treasur
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("a sector without safe candidates publishes fewer zones with an explicit shortfall instead of failing", async () => {
+  const { PLZEN } = await import("../server/spatial/city-pack.mjs");
+  const { buildCityPlan } = await import("../server/world-planner.mjs");
+  const reduced = {
+    ...PLZEN,
+    candidates: PLZEN.candidates.filter((c) => c.sector !== "west"),
+  };
+  const plan = buildCityPlan(reduced, "2026-11-03");
+  assert.equal(plan.zones.length, 5);
+  assert.deepEqual(plan.coverage, {
+    requestedZones: 6,
+    acceptedZones: 5,
+    shortfall: 1,
+    reason: "not-enough-safe-candidates",
+  });
+  const full = buildCityPlan(PLZEN, "2026-11-03");
+  assert.equal(full.zones.length, 6);
+  assert.equal(full.coverage.shortfall, 0);
+  assert.throws(
+    () =>
+      buildCityPlan(
+        { ...PLZEN, candidates: PLZEN.candidates.filter((c) => c.sector === "central") },
+        "2026-11-03",
+      ),
+    /between three and six/,
+  );
+});

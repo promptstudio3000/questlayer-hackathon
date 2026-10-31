@@ -2,7 +2,15 @@ import { getOrPrepareCityPlan } from "./world-planner.mjs";
 import { localDateBounds } from "./spatial/calendar.mjs";
 import tzLookup from "tz-lookup";
 import { latLngToCell, cellToLatLng, cellToBoundary } from "h3-js";
-import { COIN_VALUE, DAY, GOLD, dayKey, distance } from "./domain.mjs";
+import {
+  COIN_VALUE,
+  COIN_ARENA_RADIUS_M,
+  COIN_GPS_RADIUS_M,
+  DAY,
+  GOLD,
+  dayKey,
+  distance,
+} from "./domain.mjs";
 import { atomic } from "./database.mjs";
 import { PLZEN, cityFor, sampleCityPaths } from "./spatial/city-pack.mjs";
 import { describeStoredQuest } from "./quest-templates.mjs";
@@ -132,6 +140,7 @@ export async function ensureWorld(
       endsAt,
       zones,
       cityZoneCount: zones.length,
+      coinRadius: arena ? COIN_ARENA_RADIUS_M : COIN_GPS_RADIUS_M,
       coverage: city ? "city-pack" : "street-only",
       quality: {
         fieldReview: city?.fieldReview || "pending",

@@ -122,6 +122,7 @@ export type World = {
   center: Point;
   cityName?: string;
   cityZoneCount?: number;
+  coinRadius?: number;
   quality?: { notice: string; fieldReview: string };
   endsAt: number;
   zones: Zone[];

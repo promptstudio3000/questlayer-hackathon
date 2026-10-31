@@ -13,8 +13,7 @@ import {
   positionTier,
   tierFor,
   validateFix,
-  splitYield,
-} from "./domain.mjs";
+  splitYield, COIN_ARENA_RADIUS_M } from "./domain.mjs";
 import { contains } from "./spatial/city-pack.mjs";
 import { QUEST_POLICY } from "./quest-templates.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
@@ -88,7 +87,7 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     else {
       point(fix);
       assert(
-        distance(fix, coin) <= 18,
+        distance(fix, coin) <= COIN_ARENA_RADIUS_M,
         "Move closer to the coin in the arena.",
       );
     }
