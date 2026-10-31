@@ -1,0 +1,38 @@
+{
+  "fixtureViewports": [
+    [
+      360,
+      640
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      844,
+      390
+    ]
+  ],
+  "publicViewports": [
+    [
+      390,
+      844
+    ],
+    [
+      1280,
+      720
+    ]
+  ],
+  "enlargedText": "32px fixture, not OS text scaling",
+  "walletCancellationPreservedEvidence": true,
+  "escapePreservedTaskDraft": true,
+  "fundingReviewFocus": "Review funding heading",
+  "closedTaskWinnerVerified": true,
+  "guestAutoCollectionOff": true,
+  "browserErrors": [],
+  "physicalGPS": false,
+  "personalWalletSignatures": false,
+  "finalRelease": "20261031T151616Z",
+  "panelScrollResetsOnSectionChange": true,
+  "finalReceiptFollowup": "No visual change; finalized-receipt behavior has unit and read-only live testnet evidence."
+}

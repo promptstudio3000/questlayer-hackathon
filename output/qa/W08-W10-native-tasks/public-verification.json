@@ -1,0 +1,185 @@
+{
+  "/api/health": {
+    "status": 200,
+    "data": {
+      "status": "ok",
+      "app": "QuestLayer",
+      "version": "0.1.0",
+      "mode": "demo",
+      "worldPreparation": {
+        "cityId": "plzen",
+        "timezone": "Europe/Prague",
+        "version": 1,
+        "financialMode": "demo",
+        "days": [
+          {
+            "day": "2026-10-31",
+            "state": "ready",
+            "attempts": 1,
+            "updatedAt": 1793416757052
+          },
+          {
+            "day": "2026-11-01",
+            "state": "ready",
+            "attempts": 1,
+            "updatedAt": 1793416757246
+          }
+        ]
+      },
+      "nativeRewards": {
+        "last_success": 1793459095546,
+        "last_error": null,
+        "queued": 0
+      },
+      "now": 1793459108008
+    }
+  },
+  "/native-tasks-testnet.json": {
+    "status": 200,
+    "data": {
+      "schema": 1,
+      "network": "testnet",
+      "contractId": "questlayer-tasks-20261031.testnet",
+      "codeHash": "HZ2CuM9zpNP23ZbNdpwNKy5fjhAs3hxy3nxo4trXqBTv",
+      "wasmSha256": "f5eef080158fa4b7e7ccd950365421fffe5d4d911fe4827906c9bf056ccdc2c1",
+      "policy": "sponsored-tasks-testnet-v1",
+      "arbiterId": "auratrail-dev-20261030.testnet",
+      "keyless": true,
+      "verifiedAt": "2026-10-31T14:59:39.316Z",
+      "config": {
+        "policy_version": "sponsored-tasks-testnet-v1",
+        "network": "testnet",
+        "arbiter_id": "auratrail-dev-20261030.testnet",
+        "max_tasks": 128,
+        "max_submissions": 32,
+        "max_reward_yocto": "1000000000000000000000000",
+        "task_storage_yocto": "50000000000000000000000",
+        "submission_storage_yocto": "50000000000000000000000",
+        "min_due_delay_ms": 3600000,
+        "max_due_delay_ms": 1209600000,
+        "review_period_ms": 172800000,
+        "appeal_period_ms": 86400000,
+        "appeal_cutoff_ms": 259200000,
+        "resolution_cutoff_ms": 432000000
+      },
+      "transactions": [
+        {
+          "label": "Deploy and initialize dedicated testnet task escrow",
+          "transaction": "33BpDyoSVmbvHUWzMDca24h5m7ZkTtrNa5u194fkcwyS"
+        },
+        {
+          "label": "Remove deployment key from reviewed task escrow",
+          "transaction": "7Q7AAcRkMgardiREquik7G4dGvg7u7iC1d93LFb3UcSB"
+        }
+      ],
+      "scope": "Bounded sponsored testnet tasks; immutable public text evidence; trusted arbitration. No mainnet approval or private-media workflow."
+    }
+  },
+  "/native-tasks-proof.json": {
+    "status": 200,
+    "data": {
+      "schema": 1,
+      "network": "testnet",
+      "verifiedAt": "2026-10-31T15:01:28.077Z",
+      "contractId": "questlayer-tasks-20261031.testnet",
+      "codeHash": "HZ2CuM9zpNP23ZbNdpwNKy5fjhAs3hxy3nxo4trXqBTv",
+      "keyless": true,
+      "policy": "sponsored-tasks-testnet-v1",
+      "wallets": {
+        "sponsorId": "questlayer-pilot-20261031.testnet",
+        "claimantId": "explorer.auratrail-dev-20261030.testnet",
+        "arbiterId": "auratrail-dev-20261030.testnet"
+      },
+      "tasks": {
+        "approval": 1,
+        "refund": 2,
+        "appeal": 3
+      },
+      "totals": {
+        "reward_deposits_yocto": "3000000000000000000000",
+        "open_escrow_yocto": "0",
+        "credits_yocto": "0",
+        "pending_withdrawals_yocto": "0",
+        "withdrawn_yocto": "3000000000000000000000",
+        "awarded_yocto": "2000000000000000000000",
+        "refunded_yocto": "1000000000000000000000",
+        "storage_funding_yocto": "250000000000000000000000",
+        "operating_funding_yocto": "3",
+        "task_count": 3,
+        "conserved": true
+      },
+      "transactions": [
+        {
+          "label": "Create approval rehearsal",
+          "transaction": "FRoqqE7Rnsc4YNb1XTKt8K1ziTNM3EG4gfe8wkmExuJA"
+        },
+        {
+          "label": "Submit public synthetic evidence",
+          "transaction": "5UUECeL6SrCoRt89jcVno9PBiSa3Sb7togmBAxAUG2X3"
+        },
+        {
+          "label": "Sponsor approves earliest evidence",
+          "transaction": "HXH8443Ye38rTiE4BUzeTqzz3SXSMZ5jJ87HMjBQqXyZ"
+        },
+        {
+          "label": "Repeat finalization without a second award",
+          "transaction": "3fEupgoJUbQb82RyUmN3LBc2fQuzuR3Bji6o3mQrpupG"
+        },
+        {
+          "label": "Claimant withdraws approved reward",
+          "transaction": "BGBsVpX6x7SZ3nRRv1HnoWPeUK4DZzAkrh4cm92eBxLb"
+        },
+        {
+          "label": "Create refund rehearsal",
+          "transaction": "CV6ksTwKNRZHL7bQXh7TaUQrH3gBE4pAqHD2QkJRtpxq"
+        },
+        {
+          "label": "Cancel empty task and credit refund",
+          "transaction": "9EWQQ4HUCmiNoSnSVnjVcaGqiKfuzoTb2YiRJbrS5XXp"
+        },
+        {
+          "label": "Sponsor withdraws exact refund",
+          "transaction": "34YqE2296kFqxp7HZKUB4jtdiaUMYq8DPCMxi1JMX1yT"
+        },
+        {
+          "label": "Create appeal rehearsal",
+          "transaction": "DKUvP73NJWfqitivyY16iWnmP2iekvSw1BCyMskHNUyU"
+        },
+        {
+          "label": "Submit evidence for appeal rehearsal",
+          "transaction": "F9U1ytDQwHtyTDet7WDKfeTZJjGThEpzUDR7pT6Gsbss"
+        },
+        {
+          "label": "Sponsor rejects evidence with reason",
+          "transaction": "4GfizYZvXJPKeCyG1cXzsvegB7KsdU6L7ATpavM166fL"
+        },
+        {
+          "label": "Cancellation preserves timely evidence rights",
+          "transaction": "CMK4xqVjcXrcJCXdjgwyWNrnWF7UcxUCEJbyA3Z7vTYT"
+        },
+        {
+          "label": "Claimant files appeal after cancellation",
+          "transaction": "2eN7VKoWpcdehtQ26qrDCpMYchMQnhoL5dDf4MMxvzKT"
+        },
+        {
+          "label": "Named arbiter resolves appeal for claimant",
+          "transaction": "D41ChJh47zzB2WwAcG8cNqJdYZr3dxf3s8MAomBWaF6S"
+        },
+        {
+          "label": "Claimant withdraws appealed reward",
+          "transaction": "BYd9jW9ayic4wfdSdKmUWkWEg2KEtGgytYQituKuntrv"
+        }
+      ],
+      "boundaries": [
+        "Synthetic public text evidence, no physical-location proof",
+        "Project-owned programmatic wallets, no personal wallet or mobile UI signature",
+        "Rewards are test NEAR, not yield or mainnet funds",
+        "Fixed storage funding is separate and nonrefundable",
+        "Timeout and failed-transfer recovery verified by unit tests, not elapsed live deadlines"
+      ]
+    }
+  },
+  "/api/native/tasks": {
+    "status": 401
+  }
+}

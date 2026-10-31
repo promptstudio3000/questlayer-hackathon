@@ -144,8 +144,15 @@ export class NativeRewards extends NativeContractReader {
       now >= m.startsAt && now < m.endsAt,
       "This native day has ended.",
       409,
+      "NATIVE_DAY_LIMIT",
     );
-    const cfg = await this.view("get_config");
+    assert(
+      await this.collectionCodeMatches(),
+      "Native reward code changed; collection is paused.",
+      503,
+      "NATIVE_PAUSED",
+    );
+    const cfg = await this.view("get_config", {}, true);
     const chainDay = await this.view("get_day", { day_id: dayId }, true);
     assert(
       chainDay?.manifest_hash === m.hash &&
@@ -158,6 +165,7 @@ export class NativeRewards extends NativeContractReader {
       cfg.attestor === this.signer.publicKey && !cfg.paused,
       "Native attestations are currently paused or unavailable.",
       503,
+      "NATIVE_PAUSED",
     );
     let target;
     if (kind === "coin") {
@@ -192,6 +200,7 @@ export class NativeRewards extends NativeContractReader {
         chainDay.claims_accepted + pending < chainDay.claims_limit,
         "The daily native pilot capacity is full. Continue in the demo world or return tomorrow.",
         409,
+        "NATIVE_DAY_LIMIT",
       );
       const db = this.db,
         again = db
@@ -209,11 +218,13 @@ export class NativeRewards extends NativeContractReader {
           elapsed >= 3000,
           "Wait a moment before the next native checkpoint.",
           429,
+          "NATIVE_PACING",
         );
         assert(
           distance(last, fix) <= Math.max(70, (elapsed / 1000) * 8),
           "Your location changed too quickly. Wait for a reliable walking fix.",
           422,
+          "NATIVE_LOCATION_SPEED",
         );
       }
       if (kind === "coin") {
@@ -225,6 +236,7 @@ export class NativeRewards extends NativeContractReader {
             .get(dayId, index),
           "This shared native coin has already been collected.",
           409,
+          "NATIVE_ALREADY_CLAIMED",
         );
         const count = db
           .prepare(
@@ -235,6 +247,7 @@ export class NativeRewards extends NativeContractReader {
           count < 100,
           "The testnet pilot limit is 100 native street coins per account per day.",
           429,
+          "NATIVE_ACCOUNT_LIMIT",
         );
       } else {
         const p = db
@@ -328,6 +341,15 @@ export class NativeRewards extends NativeContractReader {
       error: r.last_error,
     };
   }
+  async collectionCodeMatches() {
+    if (!this.config.codeHash) return false;
+    const code = await this.provider.query({
+      request_type: "view_account",
+      account_id: this.contractId,
+      finality: "final",
+    });
+    return code.code_hash === this.config.codeHash;
+  }
   async snapshot(player, { accountId, location, fresh = false } = {}) {
     const now = this.clock(),
       day = dayKey(now),
@@ -338,14 +360,17 @@ export class NativeRewards extends NativeContractReader {
         .get(day),
       m = row ? this.day(row.id) : null;
     if (accountId) this.linked(player, accountId);
-    const [treasury, balance, access, chainDay] = await Promise.all([
-      this.view("get_treasury", {}, fresh),
-      accountId
-        ? this.view("get_account", { account_id: accountId }, fresh)
-        : null,
-      accountId ? this.tier(accountId) : { tier: 1, weighted: "0" },
-      m ? this.view("get_day", { day_id: m.id }, fresh) : null,
-    ]);
+    const [treasury, balance, access, chainDay, cfg, codeMatches] =
+      await Promise.all([
+        this.view("get_treasury", {}, fresh),
+        accountId
+          ? this.view("get_account", { account_id: accountId }, fresh)
+          : null,
+        accountId ? this.tier(accountId) : { tier: 1, weighted: "0" },
+        m ? this.view("get_day", { day_id: m.id }, fresh) : null,
+        this.view("get_config", {}, fresh),
+        this.collectionCodeMatches(),
+      ]);
     const receipts = accountId
       ? this.db
           .prepare(
@@ -385,12 +410,44 @@ export class NativeRewards extends NativeContractReader {
             .sort((a, b) => a.distance - b.distance)
             .slice(0, 128)
         : [];
+    const counts =
+      accountId && m
+        ? this.db
+            .prepare(
+              "SELECT COUNT(*) AS accepted, COALESCE(SUM(CASE WHEN state!='confirmed' THEN 1 ELSE 0 END),0) AS pending FROM native_reward_claims WHERE day_id=? AND kind='coin' AND account_id=?",
+            )
+            .get(m.id, accountId)
+        : { accepted: 0, pending: 0 };
+    const publicationReady = !!(
+      m &&
+      chainDay?.manifest_hash === m.hash &&
+      chainDay.storage_reserved === true &&
+      !chainDay.closed &&
+      now >= m.startsAt &&
+      now < m.endsAt
+    );
     return {
       status: m ? "ready" : "preparing",
+      generatedAt: this.clock(),
       network: "testnet",
       contractId: this.contractId,
       mode: "sponsored-testnet",
       accountId: accountId || null,
+      collection: {
+        available:
+          publicationReady &&
+          codeMatches &&
+          cfg?.attestor === this.signer.publicKey &&
+          cfg?.paused === false,
+        paused:
+          cfg?.paused !== false ||
+          !codeMatches ||
+          cfg?.attestor !== this.signer.publicKey,
+        coinLimit: 100,
+        coinsAcceptedToday: counts.accepted,
+        pendingCoinsToday: counts.pending,
+        minimumIntervalMs: 3000,
+      },
       enrolled: !!(
         accountId &&
         this.db

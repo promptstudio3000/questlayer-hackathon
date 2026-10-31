@@ -41,6 +41,7 @@ export function NativeExpeditions({
   initialCoinIndex,
   control,
   onWallet,
+  onBusyChange,
 }: {
   player: Player;
   fix: Fix | null;
@@ -62,6 +63,7 @@ export function NativeExpeditions({
     onAccount: (account: string) => void;
   };
   onWallet?: () => void;
+  onBusyChange?: (busy: boolean) => void;
   onWithdraw: (account: string, contract: string) => Promise<boolean>;
 }) {
   const [accountValue, setAccount] = useState(
@@ -79,6 +81,15 @@ export function NativeExpeditions({
       initialCoinIndex ?? null,
     );
   const account = control?.account ?? accountValue;
+  useEffect(() => {
+    onBusyChange?.(busy);
+  }, [busy, onBusyChange]);
+  useEffect(
+    () => () => {
+      onBusyChange?.(false);
+    },
+    [onBusyChange],
+  );
   const state = control
     ? control.state
     : snapshot?.account === account

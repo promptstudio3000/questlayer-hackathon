@@ -17,6 +17,8 @@ export type NativeQuest = {
 };
 export type NativeReceipt = {
   id: string;
+  dayId: string;
+  accountId: string;
   kind: string;
   index: number;
   state: string;
@@ -28,6 +30,17 @@ export type NativeReceipt = {
 };
 export type NativeGameState = {
   status: string;
+  network: "testnet";
+  accountId: string | null;
+  generatedAt: number;
+  collection: {
+    available: boolean;
+    paused: boolean;
+    coinLimit: number;
+    coinsAcceptedToday: number;
+    pendingCoinsToday: number;
+    minimumIntervalMs: number;
+  };
   contractId: string;
   enrolled: boolean;
   access: { tier: number; weighted: string };

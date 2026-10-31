@@ -621,10 +621,13 @@
         "docs/NEAR-INTEGRATION-STATUS.md",
         "docs/QUEST-TEMPLATES.md",
         "output/qa/W03-W06-native-progression/README.md",
-        "docs/NATIVE-GAME-MAP.md"
+        "docs/NATIVE-GAME-MAP.md",
+        "output/qa/W08-W10-native-tasks/README.md",
+        "tests/native-autocollect.test.mjs"
       ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W06/"
+      "evidenceDirectory": "output/qa/W06/",
+      "implementationNote": "Opt-in native foreground GPS coin collection is implemented, pauses during manual operations and increments its session counter only after confirmation. Controller tests do not prove physical presence or complete device/restart/wallet-return journeys; field and live yield/exit-cycle gates remain open."
     },
     {
       "id": "W07",
@@ -687,7 +690,7 @@
     {
       "id": "W08",
       "title": "Community authoring and XP commitments",
-      "status": "planned",
+      "status": "building",
       "size": "L",
       "dependsOn": [
         "W02",
@@ -715,12 +718,12 @@
         {
           "id": "W08.1",
           "title": "Build Community and move economy navigation",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W08.2",
           "title": "Implement stable authoring revisions and moderation",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W08.3",
@@ -738,9 +741,15 @@
           "status": "planned"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "output/qa/W08-W10-native-tasks/README.md",
+        "docs/NATIVE-TASKS-UI.md",
+        "public/native-tasks-testnet.json",
+        "public/native-tasks-proof.json"
+      ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W08/"
+      "evidenceDirectory": "output/qa/W08/",
+      "implementationNote": "Community navigation and independent native sponsored publication are implemented. Stable sponsored-task operation IDs and funding review do not implement creator revisions/moderation, refundable XP commitments, profiles/follows, paid access or creator funds. Full W08 exit remains open."
     },
     {
       "id": "W09",
@@ -814,7 +823,7 @@
     {
       "id": "W10",
       "title": "Social publishing evidence and moderation",
-      "status": "planned",
+      "status": "building",
       "size": "L",
       "dependsOn": [
         "W03",
@@ -850,7 +859,7 @@
         {
           "id": "W10.3",
           "title": "Complete sponsored evidence rejection appeal and refunds",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W10.4",
@@ -863,9 +872,16 @@
           "status": "planned"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "output/qa/W08-W10-native-tasks/README.md",
+        "docs/NATIVE-TASK-ESCROW.md",
+        "docs/NATIVE-TASKS-UI.md",
+        "public/native-tasks-testnet.json",
+        "public/native-tasks-proof.json"
+      ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W10/"
+      "evidenceDirectory": "output/qa/W10/",
+      "implementationNote": "Bounded immutable public-text sponsored escrow: ordered review, rejection, appeal, disclosed trusted arbiter, cancellation preserving timely rights, timeout settlement and guarded withdrawal. Three project-owned synthetic testnet flows withdrew all 0.003 test NEAR; 0.25 test NEAR storage funding and 3 yoctoNEAR operating funding are separate. Policy: 48h sponsor review, up to 24h appeal capped at deadline+72h, resolution cutoff deadline+120h; 128 lifetime tasks, 32 submissions/task, max1 test NEAR prize, non-refundable 0.05 test NEAR each creation/submission. Private/photo evidence, moderation, independent governance, physical/device journeys and live elapsed timeout/failure proofs remain open."
     },
     {
       "id": "W11",
@@ -1314,7 +1330,7 @@
     }
   ],
   "runtimeChangedSincePlanningBaseline": true,
-  "lastImplementationUpdate": "2026-10-31T14:50:02.201646+00:00",
-  "implementationReport": "output/qa/W03-W06-native-progression/README.md",
+  "lastImplementationUpdate": "2026-10-31T15:03:04.545Z",
+  "implementationReport": "output/qa/W08-W10-native-tasks/README.md",
   "currentGapRegister": "docs/V1-REMAINING.md"
 }

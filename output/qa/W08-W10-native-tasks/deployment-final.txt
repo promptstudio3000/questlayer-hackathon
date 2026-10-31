@@ -1,0 +1,26 @@
+
+added 306 packages in 13s
+{"publicAssetsCopied": 5, "expiredAssetsRemoved": 0, "assetPoolBytes": 55866329, "retentionDays": 7, "protectedRecentReleases": 5}
+curl: (7) Failed to connect to 127.0.0.1 port 7091 after 0 ms: Couldn't connect to server
+curl: (7) Failed to connect to 127.0.0.1 port 7091 after 0 ms: Couldn't connect to server
+curl: (7) Failed to connect to 127.0.0.1 port 7091 after 0 ms: Couldn't connect to server
+{"status":"ok","app":"QuestLayer","version":"0.1.0","mode":"demo","worldPreparation":{"cityId":"plzen","timezone":"Europe/Prague","version":1,"financialMode":"demo","days":[{"day":"2026-10-31","state":"ready","attempts":1,"updatedAt":1793416757052},{"day":"2026-11-01","state":"ready","attempts":1,"updatedAt":1793416757246}]},"nativeRewards":{"last_success":1793459798262,"last_error":null,"queued":0},"now":1793459798515}Domain already points to QuestLayer; preserving route.
+{"level":"info","ts":1793459798.5863621,"msg":"using provided configuration","config_file":"/etc/caddy/Caddyfile","config_adapter":""}
+{"level":"warn","ts":1793459798.6215272,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.6215749,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.6216612,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.6216657,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.6222796,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.6223016,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.622627,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.6226377,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.6252208,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.6252391,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793459798.6340454,"msg":"Caddyfile input is not formatted; run the 'caddy fmt' command to fix inconsistencies","adapter":"caddyfile","file":"/etc/caddy/Caddyfile","line":4}
+{"level":"info","ts":1793459798.6462984,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0xc0003f0230"}
+{"level":"info","ts":1793459798.6463656,"logger":"http","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+{"level":"info","ts":1793459798.6464233,"logger":"http","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+{"level":"info","ts":1793459798.6587756,"logger":"tls.cache.maintenance","msg":"stopped background certificate maintenance","cache":"0xc0003f0230"}
+{"status":"ok","app":"QuestLayer","version":"0.1.0","mode":"demo","worldPreparation":{"cityId":"plzen","timezone":"Europe/Prague","version":1,"financialMode":"demo","days":[{"day":"2026-10-31","state":"ready","attempts":1,"updatedAt":1793416757052},{"day":"2026-11-01","state":"ready","attempts":1,"updatedAt":1793416757246}]},"nativeRewards":{"last_success":1793459798262,"last_error":null,"queued":0},"now":1793459798919}
+Deployed release: /opt/ps3000/apps/auratrail/releases/20261031T151616Z
+Backup: /opt/ps3000/apps/auratrail/backups/20261031T151616Z

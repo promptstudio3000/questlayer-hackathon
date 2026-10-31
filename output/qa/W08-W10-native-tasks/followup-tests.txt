@@ -1,0 +1,21 @@
+✔ task amount parsing and GOLD display never pass through floating point (0.781791ms)
+✔ all native task quotes bind exact actor, contract, reviewed code, network, policy, method, arguments, fees and expiry (1.584125ms)
+✔ a decision cannot silently change subject, evidence, approval or the chosen content hash (0.170208ms)
+✔ task read model pins one finalized block, keyless code, policy, bounded ordered receipts and exact conservation (5.666417ms)
+✔ missing deployment never shows a fake live escrow; failed refresh is stale with no action capabilities (3.704166ms)
+✔ fresh quotes reject changed network, deployment policy, access keys, mixed anchors or malformed accounting (29.025583ms)
+✔ linked actor is checked before and after asynchronous reads, including cached snapshots (4.124083ms)
+✔ create quote attaches only exact independent reward plus fixed nonrefundable storage; stable id prevents another publication (55.996625ms)
+✔ sponsor decision follows receipt order, cannot skip or review after a candidate, and has exact no-deposit binding (24.23375ms)
+✔ appeal and arbitration use claimant, immutable arbiter, exclusive deadline and public evidence (50.820875ms)
+✔ withdraw quotes only own available credit and never an arbitrary receiver; pending withdrawal cannot duplicate (41.293584ms)
+✔ an arbiter rejection cannot reopen an already resolved appeal (8.663ms)
+✔ bounded singleflight read model shares a refresh and fails closed on an RPC deadline (8.085708ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 353.700208

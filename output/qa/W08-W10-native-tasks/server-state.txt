@@ -1,0 +1,7 @@
+MainPID=1165979
+NRestarts=0
+MemoryCurrent=93151232
+ActiveState=active
+SubState=running
+/opt/ps3000/apps/auratrail/releases/20261031T151616Z
+{"status":"ok","app":"QuestLayer","version":"0.1.0","mode":"demo","worldPreparation":{"cityId":"plzen","timezone":"Europe/Prague","version":1,"financialMode":"demo","days":[{"day":"2026-10-31","state":"ready","attempts":1,"updatedAt":1793416757052},{"day":"2026-11-01","state":"ready","attempts":1,"updatedAt":1793416757246}]},"nativeRewards":{"last_success":1793459798262,"last_error":null,"queued":0},"now":1793459825890}

@@ -1,4 +1,12 @@
 import { useNativeGame } from "./useNativeGame";
+import { useNativeAutoCollect } from "./useNativeAutoCollect";
+import { NativeCollectionControl } from "./NativeCollectionControl";
+import { NativeTasks } from "./NativeTasks";
+import {
+  assertTaskQuote,
+  type TaskRequest,
+  type TaskQuote,
+} from "./native-task-quote";
 import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
 import { Inventory } from "./Inventory";
@@ -293,6 +301,12 @@ export default function App() {
     } catch {}
   }, [nativePlay]);
   const [playAccount, setPlayAccount] = useState("");
+  const [taskRealm, setTaskRealm] = useState<"near" | "demo">("near");
+  const [nativeVisitBusy, setNativeVisitBusy] = useState(false);
+  const mainPanel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (mainPanel.current) mainPanel.current.scrollTop = 0;
+  }, [tab, player?.id]);
   const nativeGame = useNativeGame(
     !!player &&
       (nativePlay ||
@@ -302,6 +316,24 @@ export default function App() {
     playAccount,
     position,
   );
+  const nativeCollection = useNativeAutoCollect({
+    playerId: player?.id,
+    accountId: playAccount,
+    linked: !!player?.wallets.some((w) => w.account_id === playAccount),
+    nativeMode: nativePlay,
+    active:
+      tab === "explore" &&
+      !busy &&
+      !nativeVisitBusy &&
+      !menu &&
+      !walletChoices &&
+      !discovery &&
+      !showNpc,
+    arena,
+    fix,
+    state: nativeGame.state,
+    refresh: nativeGame.refresh,
+  });
   useEffect(() => {
     if (!player?.wallets.some((w) => w.account_id === playAccount))
       setPlayAccount(player?.wallets[0]?.account_id || "");
@@ -995,6 +1027,62 @@ export default function App() {
       )
         throw Error(
           "The staking operation has not confirmed. Refresh the position before retrying.",
+        );
+      return true;
+    });
+    return result === true;
+  }
+  async function operateNativeTask(request: TaskRequest): Promise<boolean> {
+    const result = await action("native-task", async () => {
+      const { wallet, accountId } = await chooseNearAccount();
+      if (
+        accountId !== request.accountId ||
+        !player?.wallets.some((w) => w.account_id === accountId)
+      )
+        throw Error("Choose the linked wallet shown for this task.");
+      if (!wallet.manifest.features.signAndSendTransaction)
+        throw Error("Choose a wallet that supports NEAR transactions.");
+      const quote = await api<TaskQuote>("/native/tasks/prepare", request);
+      assertTaskQuote(quote, request);
+      const outcome = await wallet.signAndSendTransaction({
+        network: "testnet",
+        signerId: accountId,
+        receiverId: quote.receiverId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: quote.methodName,
+              args: quote.args,
+              gas: quote.gas,
+              deposit: quote.deposit,
+            },
+          },
+        ],
+      });
+      if (
+        !outcome?.transaction?.hash ||
+        (outcome.status &&
+          typeof outcome.status === "object" &&
+          "Failure" in outcome.status)
+      )
+        throw Error(
+          "The task operation is not confirmed yet. Refresh its status before trying again.",
+        );
+      const confirmation = await api<{
+        confirmed: boolean;
+        transactionHash: string;
+      }>("/native/tasks/confirm", {
+        accountId,
+        quote,
+        transactionHash: outcome.transaction.hash,
+      });
+      if (
+        !confirmation.confirmed ||
+        confirmation.transactionHash !== outcome.transaction.hash
+      )
+        throw Error(
+          "The task operation is not confirmed yet. Refresh before retrying.",
         );
       return true;
     });
@@ -1732,6 +1820,7 @@ export default function App() {
       )}
       {player && (
         <main
+          ref={mainPanel}
           className={`main-panel ${tab === "explore" ? `explore-panel ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
           {tab === "explore" && (
@@ -2271,7 +2360,15 @@ export default function App() {
               {tab === "wallet" && (
                 <WalletNavigation value={walletView} onChange={setWalletView} />
               )}
+              {tab === "explore" && nativePlay && (
+                <NativeCollectionControl
+                  collection={nativeCollection}
+                  ready={!!playAccount && nativeGame.state?.enrolled === true}
+                  onToggle={nativeCollection.setEnabled}
+                />
+              )}
               <NativeExpeditions
+                onBusyChange={setNativeVisitBusy}
                 view={tab === "wallet" ? "wallet" : "board"}
                 control={{
                   ...nativeGame,
@@ -2399,13 +2496,13 @@ export default function App() {
                 <Flag size={26} />
                 <span>
                   <b>Community tasks</b>
-                  <small>Demo requests and evidence</small>
+                  <small>Fund a task · share proof · earn a reward</small>
                 </span>
                 <ArrowRight size={20} />
               </button>
               <p className="play-hint">
-                Notes use the selected demo or GPS location. Community task
-                rewards currently use demo GOLD.
+                Notes use the selected demo or GPS location. Tasks have their
+                own sponsor-funded rewards.
               </p>
             </div>
           )}
@@ -2457,13 +2554,41 @@ export default function App() {
             />
           )}
           {tab === "bounties" && (
-            <Bounties
-              position={position}
-              player={player}
-              action={action}
-              onPlayer={setPlayer}
-              notify={notify}
-            />
+            <>
+              <div
+                className="play-mode-switch"
+                role="group"
+                aria-label="Community task network"
+              >
+                <button
+                  aria-pressed={taskRealm === "near"}
+                  onClick={() => setTaskRealm("near")}
+                >
+                  NEAR testnet
+                </button>
+                <button
+                  aria-pressed={taskRealm === "demo"}
+                  onClick={() => setTaskRealm("demo")}
+                >
+                  Demo
+                </button>
+              </div>
+              {taskRealm === "near" ? (
+                <NativeTasks
+                  player={player}
+                  onConnect={connectNear}
+                  onTransaction={operateNativeTask}
+                />
+              ) : (
+                <Bounties
+                  position={position}
+                  player={player}
+                  action={action}
+                  onPlayer={setPlayer}
+                  notify={notify}
+                />
+              )}
+            </>
           )}
         </main>
       )}

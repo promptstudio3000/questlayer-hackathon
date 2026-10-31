@@ -1829,6 +1829,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "questlayer-tasks"
+version = "0.1.0"
+dependencies = [
+ "near-sdk",
+]
+
+[[package]]
 name = "questlayer-vault"
 version = "0.1.0"
 dependencies = [

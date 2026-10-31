@@ -1,0 +1,50 @@
+{
+  "controls": [
+    {
+      "height": 48,
+      "label": "Refresh native tasks",
+      "width": 48
+    },
+    {
+      "height": 52,
+      "label": "bridge-trail-sponsor.testnet",
+      "width": 588
+    },
+    {
+      "height": 48,
+      "label": "Back to tasks",
+      "width": 122.8046875
+    },
+    {
+      "height": 50,
+      "label": null,
+      "width": 588
+    },
+    {
+      "height": 50,
+      "label": null,
+      "width": 588
+    },
+    {
+      "height": 50,
+      "label": null,
+      "width": 588
+    },
+    {
+      "height": 52,
+      "label": "datetime-local",
+      "width": 588
+    },
+    {
+      "height": 48,
+      "label": "Review funding",
+      "width": 588
+    }
+  ],
+  "documentWidth": 844,
+  "focus": "Sponsor a task",
+  "viewport": {
+    "height": 390,
+    "width": 844
+  }
+}

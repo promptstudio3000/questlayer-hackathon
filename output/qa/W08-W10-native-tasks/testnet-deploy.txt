@@ -1,0 +1,27 @@
+AccountDoesNotExistError: Account questlayer-tasks-20261031.testnet does not exist at block height 275614631
+    at parseHandlerError (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:906:14)
+    at parseRpcError (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:881:14)
+    at JsonRpcProvider.sendJsonRpc (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3538:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async JsonRpcProvider.viewAccount (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3179:18)
+    at async FailoverRpcProvider.withBackoff (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:2013:16)
+    at async file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/scripts/deploy-tasks-testnet.mjs:36:14 {
+  accountId: 'questlayer-tasks-20261031.testnet',
+  blockHash: 'FRiyro4eReiWMTrfUbg66fUnh8RCrycMJnAWpzRxAZEN',
+  blockHeight: 275614631
+}
+AccountDoesNotExistError: Account questlayer-tasks-20261031.testnet does not exist at block height 275614633
+    at parseHandlerError (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:906:14)
+    at parseRpcError (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:881:14)
+    at JsonRpcProvider.sendJsonRpc (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3538:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async JsonRpcProvider.viewAccount (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3179:18)
+    at async FailoverRpcProvider.withBackoff (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:2013:16)
+    at async file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/scripts/deploy-tasks-testnet.mjs:36:14 {
+  accountId: 'questlayer-tasks-20261031.testnet',
+  blockHash: '4GNt7ZRbj41W53SjqfzAV6vnY34ALx5kXQwFw3pixeH1',
+  blockHeight: 275614633
+}
+{"label":"Deploy and initialize dedicated testnet task escrow","transaction":"33BpDyoSVmbvHUWzMDca24h5m7ZkTtrNa5u194fkcwyS"}
+{"label":"Remove deployment key from reviewed task escrow","transaction":"7Q7AAcRkMgardiREquik7G4dGvg7u7iC1d93LFb3UcSB"}
+{"contractId":"questlayer-tasks-20261031.testnet","codeHash":"HZ2CuM9zpNP23ZbNdpwNKy5fjhAs3hxy3nxo4trXqBTv","keyless":true}

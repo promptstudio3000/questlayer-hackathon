@@ -1,4 +1,5 @@
 import { NativeProgression } from "./native/progression.mjs";
+import { NativeTasks } from "./native/tasks.mjs";
 import { updatePresence, nearbyPresence } from "./presence.mjs";
 import { GotchiModels } from "./gotchi-models.mjs";
 import {
@@ -136,6 +137,17 @@ const nativeVaults = rewardsConfig?.factory
   : null;
 if (nativeRewards) nativeRewards.vaultRegistry = nativeVaults;
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
+const tasksManifestPath = [
+  resolve(APP_ROOT, "public/native-tasks-testnet.json"),
+  resolve(APP_ROOT, "dist/native-tasks-testnet.json"),
+].find((p) => existsSync(p));
+const nativeTasks = new NativeTasks(
+  db,
+  provider,
+  tasksManifestPath
+    ? JSON.parse(readFileSync(tasksManifestPath, "utf8"))
+    : null,
+);
 const claimsManifestPath = [
   resolve(APP_ROOT, "public/native-claims-testnet.json"),
   resolve(APP_ROOT, "dist/native-claims-testnet.json"),
@@ -660,6 +672,61 @@ async function api(req, res, url) {
         url.searchParams.get("account") || undefined,
       ),
     );
+  }
+  if (
+    [
+      "/api/native/tasks",
+      "/api/native/tasks/prepare",
+      "/api/native/tasks/confirm",
+    ].includes(path)
+  ) {
+    const key = `native-tasks:${player}:${Math.floor(Date.now() / 60000)}`;
+    const count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 30,
+      "Please wait before checking community tasks again.",
+      429,
+    );
+    if (path === "/api/native/tasks" && method === "GET") {
+      const rawId = url.searchParams.get("taskId");
+      const taskId = rawId === null ? null : Number(rawId);
+      assert(
+        taskId === null ||
+          (/^\d+$/.test(rawId) && Number.isSafeInteger(taskId) && taskId >= 0),
+        "Choose a valid task.",
+      );
+      const result = await nativeTasks.snapshot(
+        player,
+        url.searchParams.get("accountId") || "",
+        url.searchParams.get("refresh") === "1",
+        taskId,
+      );
+      assert(
+        auth(req) === player,
+        "Sign in again to view community tasks.",
+        401,
+      );
+      return respond(res, result);
+    }
+    if (path === "/api/native/tasks/prepare" && method === "POST") {
+      const quote = await nativeTasks.prepare(player, await body(req));
+      assert(
+        auth(req) === player,
+        "Sign in again before approving this task operation.",
+        401,
+      );
+      return respond(res, quote);
+    }
+    if (path === "/api/native/tasks/confirm" && method === "POST") {
+      const result = await nativeTasks.confirm(player, await body(req));
+      assert(
+        auth(req) === player,
+        "Sign in again to check the task transaction.",
+        401,
+      );
+      return respond(res, result);
+    }
   }
   if (path === "/api/native/vaults/prepare" && method === "POST") {
     assert(nativeVaults, "Native staking is not configured yet.", 503);

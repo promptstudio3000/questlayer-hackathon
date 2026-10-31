@@ -33,9 +33,15 @@ function fixture() {
         sign(null, Buffer.from(m), keys.privateKey).toString("base64"),
     };
   let now = NOW;
-  const n = new NativeRewards(db, {}, { contractId, vaults: [] }, signer, {
-    clock: () => now,
-  });
+  const n = new NativeRewards(
+    db,
+    { query: async () => ({ code_hash: "reviewed-test-code" }) },
+    { contractId, codeHash: "reviewed-test-code", vaults: [] },
+    signer,
+    {
+      clock: () => now,
+    },
+  );
   const state = { days: new Map(), receipts: new Map(), sent: [] };
   n.view = async (method, args = {}) => {
     if (method === "get_config")
@@ -526,4 +532,69 @@ test("maintenance rejects changed code, non-keyless children and another strateg
       f.db.close();
     }
   }
+});
+
+test("automatic collection metadata follows reviewed publication, actual pending rights and pause", async () => {
+  const f = fixture(),
+    m = await ready(f);
+  const snapshot = () =>
+    f.n.snapshot(f.player, {
+      accountId: f.accountId,
+      location: m.coins[0],
+      fresh: true,
+    });
+  const first = await snapshot();
+  assert.equal(first.network, "testnet");
+  assert.equal(first.accountId, f.accountId);
+  assert.equal(first.generatedAt, f.clock());
+  assert.deepEqual(first.collection, {
+    available: true,
+    paused: false,
+    coinLimit: 100,
+    coinsAcceptedToday: 0,
+    pendingCoinsToday: 0,
+    minimumIntervalMs: 3000,
+  });
+  const receipt = await f.n.submit(f.player, input(f, m));
+  assert.equal(receipt.dayId, m.id);
+  assert.equal(receipt.accountId, f.accountId);
+  const queued = await snapshot();
+  assert.equal(queued.collection.coinsAcceptedToday, 1);
+  assert.equal(queued.collection.pendingCoinsToday, 1);
+  await runRewardWorker(f.n, f.send, { clock: f.clock });
+  assert.equal((await snapshot()).collection.pendingCoinsToday, 0);
+  const view = f.n.view;
+  f.n.view = async (method, args) =>
+    method === "get_config"
+      ? { ...(await view(method, args)), paused: true }
+      : view(method, args);
+  assert.equal((await snapshot()).collection.available, false);
+  assert.equal((await snapshot()).collection.paused, true);
+  f.n.view = view;
+  f.state.days.delete(m.id);
+  assert.equal((await snapshot()).collection.available, false);
+  f.db.close();
+});
+
+test("changed reward code pauses automatic collection and blocks new capabilities but preserves old receipts", async () => {
+  const f = fixture(),
+    m = await ready(f);
+  const receipt = await f.n.submit(f.player, input(f, m));
+  f.n.provider.query = async () => ({ code_hash: "unexpected-code" });
+  const s = await f.n.snapshot(f.player, {
+    accountId: f.accountId,
+    location: m.coins[0],
+  });
+  assert.equal(s.collection.available, false);
+  assert.equal(s.collection.paused, true);
+  assert.equal((await f.n.submit(f.player, input(f, m))).id, receipt.id);
+  await assert.rejects(
+    f.n.submit(f.player, input(f, m, { index: 1, fix: f.fix(m.coins[1]) })),
+    (e) => e.code === "NATIVE_PAUSED",
+  );
+  assert.equal(
+    f.db.prepare("SELECT COUNT(*) AS n FROM native_reward_claims").get().n,
+    1,
+  );
+  f.db.close();
 });

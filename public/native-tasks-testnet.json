@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "network": "testnet",
+  "contractId": "questlayer-tasks-20261031.testnet",
+  "codeHash": "HZ2CuM9zpNP23ZbNdpwNKy5fjhAs3hxy3nxo4trXqBTv",
+  "wasmSha256": "f5eef080158fa4b7e7ccd950365421fffe5d4d911fe4827906c9bf056ccdc2c1",
+  "policy": "sponsored-tasks-testnet-v1",
+  "arbiterId": "auratrail-dev-20261030.testnet",
+  "keyless": true,
+  "verifiedAt": "2026-10-31T14:59:39.316Z",
+  "config": {
+    "policy_version": "sponsored-tasks-testnet-v1",
+    "network": "testnet",
+    "arbiter_id": "auratrail-dev-20261030.testnet",
+    "max_tasks": 128,
+    "max_submissions": 32,
+    "max_reward_yocto": "1000000000000000000000000",
+    "task_storage_yocto": "50000000000000000000000",
+    "submission_storage_yocto": "50000000000000000000000",
+    "min_due_delay_ms": 3600000,
+    "max_due_delay_ms": 1209600000,
+    "review_period_ms": 172800000,
+    "appeal_period_ms": 86400000,
+    "appeal_cutoff_ms": 259200000,
+    "resolution_cutoff_ms": 432000000
+  },
+  "transactions": [
+    {
+      "label": "Deploy and initialize dedicated testnet task escrow",
+      "transaction": "33BpDyoSVmbvHUWzMDca24h5m7ZkTtrNa5u194fkcwyS"
+    },
+    {
+      "label": "Remove deployment key from reviewed task escrow",
+      "transaction": "7Q7AAcRkMgardiREquik7G4dGvg7u7iC1d93LFb3UcSB"
+    }
+  ],
+  "scope": "Bounded sponsored testnet tasks; immutable public text evidence; trusted arbitration. No mainnet approval or private-media workflow."
+}

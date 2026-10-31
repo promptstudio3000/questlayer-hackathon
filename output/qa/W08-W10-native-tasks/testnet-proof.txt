@@ -1,0 +1,16 @@
+{"label":"Create approval rehearsal","transaction":"FRoqqE7Rnsc4YNb1XTKt8K1ziTNM3EG4gfe8wkmExuJA"}
+{"label":"Submit public synthetic evidence","transaction":"5UUECeL6SrCoRt89jcVno9PBiSa3Sb7togmBAxAUG2X3"}
+{"label":"Sponsor approves earliest evidence","transaction":"HXH8443Ye38rTiE4BUzeTqzz3SXSMZ5jJ87HMjBQqXyZ"}
+{"label":"Repeat finalization without a second award","transaction":"3fEupgoJUbQb82RyUmN3LBc2fQuzuR3Bji6o3mQrpupG"}
+{"label":"Claimant withdraws approved reward","transaction":"BGBsVpX6x7SZ3nRRv1HnoWPeUK4DZzAkrh4cm92eBxLb"}
+{"label":"Create refund rehearsal","transaction":"CV6ksTwKNRZHL7bQXh7TaUQrH3gBE4pAqHD2QkJRtpxq"}
+{"label":"Cancel empty task and credit refund","transaction":"9EWQQ4HUCmiNoSnSVnjVcaGqiKfuzoTb2YiRJbrS5XXp"}
+{"label":"Sponsor withdraws exact refund","transaction":"34YqE2296kFqxp7HZKUB4jtdiaUMYq8DPCMxi1JMX1yT"}
+{"label":"Create appeal rehearsal","transaction":"DKUvP73NJWfqitivyY16iWnmP2iekvSw1BCyMskHNUyU"}
+{"label":"Submit evidence for appeal rehearsal","transaction":"F9U1ytDQwHtyTDet7WDKfeTZJjGThEpzUDR7pT6Gsbss"}
+{"label":"Sponsor rejects evidence with reason","transaction":"4GfizYZvXJPKeCyG1cXzsvegB7KsdU6L7ATpavM166fL"}
+{"label":"Cancellation preserves timely evidence rights","transaction":"CMK4xqVjcXrcJCXdjgwyWNrnWF7UcxUCEJbyA3Z7vTYT"}
+{"label":"Claimant files appeal after cancellation","transaction":"2eN7VKoWpcdehtQ26qrDCpMYchMQnhoL5dDf4MMxvzKT"}
+{"label":"Named arbiter resolves appeal for claimant","transaction":"D41ChJh47zzB2WwAcG8cNqJdYZr3dxf3s8MAomBWaF6S"}
+{"label":"Claimant withdraws appealed reward","transaction":"BYd9jW9ayic4wfdSdKmUWkWEg2KEtGgytYQituKuntrv"}
+{"success":true,"tasks":{"approval":1,"refund":2,"appeal":3},"totals":{"reward_deposits_yocto":"3000000000000000000000","open_escrow_yocto":"0","credits_yocto":"0","pending_withdrawals_yocto":"0","withdrawn_yocto":"3000000000000000000000","awarded_yocto":"2000000000000000000000","refunded_yocto":"1000000000000000000000","storage_funding_yocto":"250000000000000000000000","operating_funding_yocto":"3","task_count":3,"conserved":true}}

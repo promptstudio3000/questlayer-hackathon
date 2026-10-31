@@ -4,9 +4,9 @@ Updated 31 October 2026. This is the execution plan from the current alpha to a 
 
 The next priority is a convincing exploration game across Plzeň: six distinct zones, real walking, understandable objectives and a complete discovery/equipment loop. Native finance, social features and creator payments must connect to that same experience rather than remain separate demonstrations.
 
-The public deployment is an **alpha demonstration with native testnet pilots**. The latest native progression/session/inventory slice passes 168 application tests; the preceding contract release passed 69 Rust tests. No contract changed in this slice. These are useful evidence, not completion of the milestones below. The [delivery record](docs/DELIVERY-2026-10-31.md), [playability evidence](output/qa/W02-playability/README.md) and [native progression evidence](output/qa/W03-W06-native-progression/README.md) and [current V1 gap register](docs/V1-REMAINING.md) distinguish implemented behavior from remaining gates. Implementation status is tracked in [docs/roadmap.json](docs/roadmap.json).
+The public deployment is an **alpha demonstration with native testnet pilots**. The latest implementation adds optional native coin collection and an independent sponsored-task escrow; 205 application tests and 100 Rust tests pass, including 31 tests for the new task contract. Three project-owned synthetic testnet task flows have settled and withdrawn a total 0.003 test NEAR. These are useful evidence, not completion of the milestones below or proof of physical gameplay. The [delivery record](docs/DELIVERY-2026-10-31.md), [playability evidence](output/qa/W02-playability/README.md), [native progression evidence](output/qa/W03-W06-native-progression/README.md), [task and collection slice evidence](output/qa/W08-W10-native-tasks/README.md) and [current V1 gap register](docs/V1-REMAINING.md) distinguish implementation, contract deployment, application deployment and remaining gates. Implementation status is tracked in [docs/roadmap.json](docs/roadmap.json).
 
-Implementation update, 31 October: W00, W01, W02, W03, W04, W05, W06, W07, W12 and W13 are **building**. The citywide alpha and its evidence are recorded in [the overnight log](docs/OVERNIGHT-2026-10-31.md). No complete milestone exit gate has passed yet; the machine-readable tracker records partial work without converting disconnected native proofs into completed integration.
+Implementation update, 31 October: W00, W01, W02, W03, W04, W05, W06, W07, W08, W10, W12 and W13 are **building**. W08 has Community navigation and independent sponsored publication, not creator XP commitments or a complete authoring platform. W10 has a bounded public-text task lifecycle, not private/photo evidence or moderation. The citywide alpha and its evidence are recorded in [the overnight log](docs/OVERNIGHT-2026-10-31.md). No complete milestone exit gate has passed yet; the machine-readable tracker records partial work without converting disconnected native proofs into completed integration.
 
 ## What complete V1 means
 
@@ -36,10 +36,10 @@ The web mainnet release and App Store release have separate completion gates. A 
 | Identity | Cookie/demo passkey and NEAR wallet message sign-in; no native passkey recovery proof | Real NEAR account creation/sign-in, user-controlled recovery and delegated gameplay capabilities |
 | Ownership | Real testnet avatar/Aura mint/equip/trade paths; demo progression still separate | Gameplay mints, equips and transfers the actual native assets |
 | Staking | Native immutable-beneficiary vault/factory pilot, validator deposits and epoch-bound full exits; no completed live yield cycle | Confirmed native pool positions, real epoch maturity and liquidity-aware exits |
-| Rewards | Real receiver-bound receipts and restricted worker; storage-backed budgets; native XP still separate from main progression | Live gameplay receipts settle to native balances with bounded oracle permissions |
+| Rewards | Receiver-bound receipts, native XP/level 2–4 entitlements and explicit opt-in foreground GPS coin collection; field and recovery gates remain | Live gameplay receipts settle to native balances with bounded oracle permissions |
 | Market | Native fixed-price NFT escrow plus demo market; canonical Intents path unresolved | Signed orders plus native NFT/wNEAR settlement and retryable recovery |
-| Creators | Demo sponsored-task subset | Full authoring, XP lifecycle, social discovery and conserved creator income |
-| Social | Server notes/images and optional presence | Storage adapters, public consent, media pinning, block/report and privacy controls |
+| Creators | Community navigation and independent native sponsored publication, with a separate Demo path; no creator XP/follows/access/fund integration | Full authoring, XP lifecycle, social discovery and conserved creator income |
+| Social | Server notes/images, optional presence and a bounded native public-text task review/appeal/refund pilot | Storage adapters, public consent, private/media evidence, block/report and privacy controls |
 | Operations | Durable workers, bounded reconciliation, private backup/replay rehearsal and native economy observations; full-host restore pending | Versioned migrations, multiple-worker safety, reconciliation, restore, monitoring and reviewed release process |
 
 Do not tune real-value rewards from the current demonstration's 120,000 GOLD welcome credit or fixed 1,000/5,000 GOLD quest examples. They are not evidence that staking yield sustains those prizes. W05 and W09 establish affordable publication policies from actual liquid income.
@@ -172,6 +172,8 @@ Work:
 
 **W06. Owners:** evidence service, native game/profile contracts, reward worker/outbox, chain indexer and client receipts. **Rules:** D05, D12, G10–G11, E09–E18, I08, O10.
 
+Implemented slice: native street-coin collection has an explicit opt-in control, runs only with eligible foreground GPS and pauses during manual operations. Its session counter changes only after confirmed claims. Automated cases cover retries, interruption and controller state; this does not establish physical presence, real-device GPS behavior or the complete W06 recovery journey. The field gate and real yield/exit-cycle proof remain open. See [slice evidence](output/qa/W08-W10-native-tasks/README.md).
+
 Work:
 
 1. Publish native-backed coin batches and quest commitments from the city allocation. Bind world, item, policy, network, claimant and receipt identity. Reject exhausted supply before the UI promises it.
@@ -204,6 +206,8 @@ Work:
 
 **W08. Owners:** Community, editor/lifecycle, progression contract/service, creator profiles and follows. **Rules:** C01–C06, D20, G13, O03. **UI package:** U10.
 
+Implemented slice: Community separates Native and Demo tasks. Native publication locks a sponsor-funded prize in a dedicated escrow, with stable operation IDs and an exact funding review. This establishes independent sponsored publication and navigation only. Creator revisions/moderation, earned/locked/available XP, once-only XP release, profiles/follows and paid rights remain unimplemented. The W08 exit scenario has not passed.
+
 Work:
 
 1. Add Nearby, Following, Creators and My creations with useful map/list views. Move economy reporting into Settings with preserved Wallet/proof links.
@@ -232,6 +236,10 @@ Work:
 ## Social publishing evidence and moderation
 
 **W10. Owners:** social/storage adapters, media pipeline, notes, sponsored evidence, presence and operator review. **Rules:** O01–O05, O10, C13–C15.
+
+Implemented W10.3 slice: a keyless, code-pinned testnet contract supports intentionally public text evidence, sponsor review in chain-receipt order, rejection, appeal, a named trusted arbiter, cancellation preserving earlier rights, bounded timeout settlement and retryable credit withdrawal. The policy allows sponsor review until 48 hours after the submission deadline; rejected evidence has up to 24 hours to appeal, capped at deadline +72 hours; unresolved arbitration ends at deadline +120 hours. The immutable pilot has 128 lifetime task slots, 32 submissions per task and a maximum 1 test NEAR prize. Creation and submission each require a separate non-refundable 0.05 test NEAR storage payment. The arbiter and public permanence are disclosed before the relevant actions.
+
+The [manifest](public/native-tasks-testnet.json) and [live proof](public/native-tasks-proof.json) record three project-owned, programmatic-wallet rehearsals: approval and claimant withdrawal; empty-task cancellation and sponsor refund withdrawal; and rejection, cancellation, appeal, arbiter approval and claimant withdrawal. All 0.003 test NEAR of prize funding was withdrawn; 0.25 test NEAR of storage funding and 3 yoctoNEAR of operating funding remain separately attributed. These synthetic records prove neither physical completion nor independent arbitration. Elapsed timeout and failed-transfer recovery are unit-tested, not demonstrated across live deadlines. Public photos, exact/private GPS evidence, protected submissions, content moderation and real-device wallet journeys remain open. See [implementation and QA evidence](output/qa/W08-W10-native-tasks/README.md); W10 stays **building**.
 
 Work:
 
