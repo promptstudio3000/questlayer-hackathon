@@ -1,0 +1,11 @@
+✔ short walking updates interpolate and stop at the exact target without idle frames (2.972833ms)
+✔ reduced motion, long jumps and tiny fixes do not schedule an animation (0.40025ms)
+✔ cancelled movement cannot overwrite a newer location even if a queued callback arrives late (0.583958ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 270.259584

@@ -1,4 +1,5 @@
 import { characterMarkerMarkup } from "./character-art";
+import { moveMapMarker } from "./map-motion";
 import type { NearbyExplorer } from "./types";
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
@@ -348,8 +349,13 @@ export function GameMap(props: GameMapProps) {
     return [0, (top + bottom) / 2 - box.top - box.height / 2 + 35];
   }
   useEffect(() => {
+    if (!avatar.current) return;
+    return moveMapMarker(avatar.current, props.position, {
+      reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+    });
+  }, [props.position, ready]);
+  useEffect(() => {
     if (!map.current) return;
-    avatar.current?.setLngLat([props.position.lng, props.position.lat]);
     if (props.follow && !props.globe && !props.overview)
       map.current.easeTo({
         center: [props.position.lng, props.position.lat],

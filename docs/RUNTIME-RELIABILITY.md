@@ -4,6 +4,8 @@
 
 The React application shell and its wallet/inventory controls now start independently of MapLibre. `DeferredGameMap` loads the actual map module with a readable loading state. A map import or React-rendered map failure is contained in a local error boundary. The user can still use the other panels and explicitly reload the game. No automatic reload discards a draft or interrupts a wallet request.
 
+Short marker updates between 0.4 and 80 metres interpolate for 450 ms. Tiny fixes, long moves and reduced-motion mode snap directly. Animations stop at their exact target, have no idle frame loop, and cancel on replacement or unmount so a delayed frame cannot overwrite a newer location. This affects only the visual marker; server validation continues to use the actual location fix. It does not establish GPS accuracy or fraud resistance.
+
 The entry JavaScript changed from approximately 1.52 MB / 423 KB gzip to 441 KB / 129 KB gzip, a roughly 71% reduction in uncompressed entry bytes. The first CSS file changed from 129 KB to 58 KB. The complete map still downloads a separate approximately 1.08 MB engine chunk, 71 KB stylesheet and 519 KB worker. The 3D wardrobe remains a separate optional chunk. These are measured build sizes, not claims about physical-device load time, battery use or frame rate.
 
 Evidence is in `output/qa/W12-startup/`, including the actual previous public entry's byte count and digest. A development-only intentional map-failure fixture confirms a readable failure, a reachable keyboard-focused reload button and another working control at 360×640 and 844×390 with enlarged text. It does not simulate an actual hardware GPU or network failure.

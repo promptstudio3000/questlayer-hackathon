@@ -1,0 +1,12 @@
+{
+  "verifiedAt": "2026-10-31T07:26:37.815Z",
+  "release": "20261031T072356Z",
+  "commit": "55b239c",
+  "newEntryPublished": true,
+  "previousEntryDigestMatches": true,
+  "previousEntryBytes": 1520146,
+  "oldWalletModuleStillAvailable": true,
+  "hashedCacheControl": "public,max-age=31536000,immutable",
+  "missingScriptStatus": 404,
+  "htmlCacheControl": "no-cache"
+}
