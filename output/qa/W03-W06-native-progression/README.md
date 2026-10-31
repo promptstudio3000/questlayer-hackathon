@@ -16,4 +16,14 @@ Rendered checks use the in-app desktop browser at 360×640, 390×844, 844×390 a
 
 Screenshots include the actual application inventory, item listing failure, short-landscape keyboard focus and enlarged-text fixture. Physical Safari/iOS, Chrome/Android, real GPS, anti-spoofing and newcomer field play remain unverified. Native auto-collection, richer native quest policy, passkey-native signing, complete yield/withdrawal lifecycle, canonical Intents and creator/community rights remain in `docs/V1-REMAINING.md`.
 
-Deployment and live synthetic-GPS proof results are appended after verification; source implementation alone does not establish either result.
+## Live testnet proof and deployment
+
+Source commit `6e5d669` was deployed as release `20261031T142510Z`, with a private pre-deployment backup and healthy worker. A follow-up corrects native zone paint colors, guest labels and reload mode continuity; its final release is recorded in `deployment-final.txt`.
+
+The project pilot completed nine confirmed synthetic-GPS street coin receipts, moving native XP from 82 to 100. It minted level-2 Aura `aura:polar:3`, proved zero-deposit replay creates no second NFT, equipped the owned token Above and selected its native outfit through the actual application API. One 0.05-test-NEAR mint deposit was attached, plus normal gas; equipment and replay attached zero. No personal wallet or demo XP was used.
+
+Fresh NEP413 recovery revoked four other pilot sessions, retained one with a new cookie and rejected the copied prior cookie (HTTP 401). The proof ran through a temporary loopback-only QA service on the VPS and an SSH tunnel. Signing attestors stayed on the VPS and the project wallet key stayed local. The regular public worker processed the shared accepted-receipt ledger; there is no isolated ledger to lose or merge. The QA service and tunnel were stopped after the proof.
+
+Evidence: `public/native-progression-proof.json` and `output/qa/W04-W06-progression/native-progression-proof.json`. These prove protocol integration with simulated coordinates, not physical visits, mobile-wallet approval, anti-spoofing or mainnet readiness.
+
+The map follow-up passed both focused map tests; the final production build includes the public proof. Native coin tap → coin card and native zone → its checkpoint card were exercised in the actual browser. The initial local signer mismatch correctly refused the live rehearsal before visits; no signing key was exported to bypass it.

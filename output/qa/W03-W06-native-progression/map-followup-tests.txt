@@ -1,0 +1,10 @@
+✔ native display geometry matches only the exact immutable published checkpoints (51.033167ms)
+✔ native map never reuses demo geometry or spendable display units during loading and errors (24.792958ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 316.257625

@@ -444,6 +444,100 @@ if (!replayVerified && journal.voucher) {
 const final = await snapshot();
 assert.equal(final.milestones[0].state, "minted");
 assert.equal(final.milestones[0].tokenId, receipt.token_id);
+const ownedToken = await view(collectibles.contractId, "nft_token", {
+  token_id: receipt.token_id,
+});
+assert.equal(
+  ownedToken.owner_id,
+  participant,
+  "The earned token must still belong to this fixed pilot.",
+);
+let equipment = await view(collectibles.contractId, "get_equipment", {
+  account_id: participant,
+});
+let outfitSourceVerified = false;
+if (process.argv.includes("--equip")) {
+  if (equipment.above !== receipt.token_id) {
+    await verifyDeployment();
+    const equipped = await wallet.callFunctionRaw({
+      contractId: collectibles.contractId,
+      methodName: "equip_aura",
+      args: { token_id: receipt.token_id, slot: "above" },
+      deposit: 0n,
+      gas: 50n * 10n ** 12n,
+      waitUntil: "FINAL",
+    });
+    assert(!equipped.status?.Failure, "Equipping the earned Aura failed.");
+    journal.transactions.push({
+      label: "Equip earned level Aura above pilot",
+      transaction:
+        equipped.transaction?.hash || equipped.transaction_outcome?.id,
+      attachedYoctoNEAR: "0",
+    });
+    save();
+  }
+  equipment = await view(collectibles.contractId, "get_equipment", {
+    account_id: participant,
+  });
+  assert.equal(equipment.above, receipt.token_id);
+  const wardrobe = await api("/native/wardrobe?refresh=1");
+  const own = wardrobe.accounts.find((a) => a.accountId === participant);
+  assert(own?.items.some((item) => item.tokenId === receipt.token_id));
+  assert.equal(own.equipment.above, receipt.token_id);
+  const outfit = await api("/native/outfit", {
+    enabled: true,
+    accountId: participant,
+  });
+  assert.equal(outfit.player.nativeOutfit, true);
+  assert.equal(outfit.player.nativeAccount, participant);
+  outfitSourceVerified = true;
+}
+let sessionRecoveryProof = null;
+if (process.argv.includes("--recover-session")) {
+  const before = await api("/identity/sessions");
+  const oldCookie = cookie;
+  const recovery = await api("/identity/recovery/challenge", {
+    accountId: participant,
+  });
+  assert.equal(recovery.network, "testnet");
+  assert.equal(recovery.purpose, "revoke-other-sessions");
+  assert.equal(recovery.recipient, origin);
+  const signed = await signMessage({
+    signerAccount: wallet,
+    payload: {
+      message: recovery.message,
+      recipient: recovery.recipient,
+      nonce: new Uint8Array(Buffer.from(recovery.nonce, "base64")),
+    },
+  });
+  const restored = await api("/identity/recovery/verify", {
+    challengeId: recovery.challengeId,
+    accountId: participant,
+    publicKey: signed.publicKey.toString(),
+    signature: Buffer.from(signed.signature).toString("base64"),
+  });
+  assert.equal(restored.ok, true);
+  assert.notEqual(cookie, oldCookie);
+  assert.equal(restored.activeSessionCount, 1);
+  const old = await fetch(base + "/api/session", {
+    headers: { Cookie: oldCookie },
+    signal: AbortSignal.timeout(15000),
+  });
+  assert.equal(
+    old.status,
+    401,
+    "A copied previous browser cookie must no longer authenticate.",
+  );
+  assert.equal((await snapshot()).accountId, participant);
+  sessionRecoveryProof = {
+    freshWalletProof: true,
+    retainedCookieRotated: true,
+    oldCookieRejected: true,
+    otherSessionsRevoked: restored.revokedSessions,
+    sessionsBefore: before.activeSessionCount,
+    sessionsAfter: restored.activeSessionCount,
+  };
+}
 const result = {
   verifiedAt: new Date().toISOString(),
   network: "testnet",
@@ -459,6 +553,10 @@ const result = {
   xpAfter: final.xp,
   level: final.level,
   nativeLevel: 2,
+  currentOwnerVerified: ownedToken.owner_id === participant,
+  equippedAbove: equipment.above === receipt.token_id,
+  outfitSourceVerified,
+  sessionRecoveryProof,
   claimId,
   tokenId: receipt.token_id,
   originalRecipient: receipt.receiver_id,

@@ -19,6 +19,11 @@ test("native display geometry matches only the exact immutable published checkpo
   const { db, m } = fixture();
   const before = JSON.stringify(m);
   assert.equal(nativeMapProjection(db, m).zones.length, 6);
+  assert(
+    nativeMapProjection(db, m).zones.every(
+      (z) => /^#[0-9a-f]{6}$/.test(z.color) && z.geometry.type === "Polygon",
+    ),
+  );
   assert.equal(nativeMapProjection(db, m).status, "verified");
   const changed = structuredClone(m);
   changed.quests[0].targets[0].lat += 0.001;

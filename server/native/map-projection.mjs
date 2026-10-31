@@ -41,11 +41,11 @@ export function nativeMapProjection(db, manifest) {
         tier: z.tier,
         lat: z.lat,
         lng: z.lng,
-        radius: z.radius,
+        radius: 0, // The verified polygon is authoritative; no circular fallback.
         geometry: z.geometry,
         sector: z.sector,
         kind: z.kind || "garden",
-        color: z.color,
+        color: z.tier === 3 ? "#c29222" : z.tier === 2 ? "#672eeb" : "#258b73",
         opensAt: z.opensAt,
         closesAt: z.closesAt,
       };

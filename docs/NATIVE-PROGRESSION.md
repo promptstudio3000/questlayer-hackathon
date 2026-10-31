@@ -140,17 +140,15 @@ regressions; edition caps and attestor authorization; tampered/disappearing rece
 unlink during RPC; and the deployment fingerprint encoding.
 
 The focused native progression, existing Aura voucher and collectible tests pass
-25/25. No contract code or deployed state was changed by this server implementation.
-It creates no on-chain profile field and merges no demo progression. Actual UI
-integration, an ordinary player end-to-end testnet mint, physical GPS evidence,
+25/25. No contract bytecode was changed by this server implementation.
+It creates no on-chain profile field and merges no demo progression. Ordinary player wallet approval, physical GPS evidence,
 real-device UX and the later native creator XP-lock model remain separate acceptance
 work. Any synthetic GPS pilot must be labelled as such and cannot establish a real
 walk or anti-spoofing effectiveness.
 
-## Prepared live testnet rehearsal
+## Verified live testnet rehearsal
 
-`scripts/prove-native-progression.mjs` is prepared, syntax-checked, and has not been
-executed as part of this module's validation. It requires an explicit
+`scripts/prove-native-progression.mjs` was executed against the fixed project pilot on 31 October 2026, through a temporary loopback-only QA service on the VPS and an SSH tunnel. The production attestor remained on the VPS; the project wallet key remained local. The QA service shared the actual native receipt ledger so the regular worker settled the nine receipts without losing accepted rights. It requires an explicit
 `--synthetic-gps` flag, localhost QA API, the fixed project-owned
 `questlayer-pilot-20261031.testnet` account and the existing private project key.
 It will not create an account, acquire faucet funds, open a vault or sign for a
@@ -174,3 +172,5 @@ contains receipt/transaction identifiers and confirmed XP, with explicit synthet
 GPS provenance; it omits raw coordinates, sessions, signed vouchers and private keys.
 The script can recover an already-minted entitlement, but only claims a verified
 on-chain replay if a signed voucher is available and the replay actually succeeds.
+
+The final proof records 82 → 100 confirmed XP, level 2, `aura:polar:3`, current ownership, actual Above-slot equipment and the native outfit selected in the application. A zero-deposit replay preserved the same receipt and total NFT supply. Optional `--equip` adds the zero-deposit equipment transaction; `--recover-session` verifies fresh NEP413 session recovery, retained-cookie rotation and rejection of a copied old cookie. Four other pilot sessions were revoked, leaving one. See `public/native-progression-proof.json`; no private key, browser cookie or raw GPS trace is published. The temporary QA service and tunnel were stopped afterward.

@@ -98,3 +98,7 @@ Reviewed 2026-10-31:
 - [NEAR Connect upstream README](https://github.com/azbang/near-connect): supplies wallet connection and signed-message integration. The connector is an integration layer, not evidence that QuestLayer has implemented independent wallet/passkey recovery. The repository currently pins `@hot-labs/near-connect` 0.12.0; upstream examples do not by themselves prove compatibility with this application's pinned version or every wallet.
 
 No new embedded-wallet dependency or native passkey-account contract was adopted in this slice. The native-passkey acceptance gap remains explicit in API, UI requirements and roadmap status.
+
+## Live project-pilot verification
+
+On 31 October 2026 the integrated server-side QA exercised recovery with a real project-owned NEAR testnet key. A fresh purpose-bound NEP413 proof revoked four older pilot game sessions, retained one with a rotated cookie, and made the copied old cookie return HTTP 401. The linked account and native progression remained accessible. The public proof is `public/native-progression-proof.json`. This was an API/script rehearsal, not a physical-device wallet-connector acceptance test.

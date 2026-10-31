@@ -277,7 +277,21 @@ export default function App() {
         }),
       );
   }
-  const [nativePlay, setNativePlay] = useState(false);
+  const [nativePlay, setNativePlay] = useState(() => {
+    try {
+      return localStorage.getItem("questlayer-play-mode") === "near";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "questlayer-play-mode",
+        nativePlay ? "near" : "demo",
+      );
+    } catch {}
+  }, [nativePlay]);
   const [playAccount, setPlayAccount] = useState("");
   const nativeGame = useNativeGame(
     !!player &&
@@ -813,6 +827,7 @@ export default function App() {
         },
       );
       setPlayer(r.player);
+      if (options.signIn) setNativePlay(true);
       notify(
         options.signIn
           ? r.returning
@@ -1586,7 +1601,13 @@ export default function App() {
         <div className="realm-label">
           <span className="status-dot" />
           {nativePlay ? "NEAR TESTNET" : "DEMO WORLD"} <span>·</span>{" "}
-          <span>{arena ? "Plzeň city demo" : "Your surroundings"}</span>
+          <span>
+            {nativePlay
+              ? "Plzeň"
+              : arena
+                ? "Plzeň city demo"
+                : "Your surroundings"}
+          </span>
         </div>
         <div className="topbar-right">
           {player && (
@@ -1633,7 +1654,13 @@ export default function App() {
                     {nativePlay
                       ? nativeGame.state?.balance
                         ? `NEAR · Level ${1 + Math.floor(Math.sqrt(Number(nativeGame.state.balance.xp) / 100))}`
-                        : "NEAR · Loading"
+                        : !playAccount
+                          ? "NEAR · Guest"
+                          : nativeGame.error
+                            ? "NEAR · Unavailable"
+                            : nativeGame.state
+                              ? "NEAR · New explorer"
+                              : "NEAR · Loading"
                       : `Demo · Level ${player.level}`}
                   </small>
                 </span>

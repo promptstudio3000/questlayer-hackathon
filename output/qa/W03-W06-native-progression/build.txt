@@ -11,14 +11,14 @@ dist/index.html                                 0.77 kB │ gzip:   0.46 kB
 dist/assets/maplibre-gl-worker-Br3j0JGE.js    518.98 kB
 dist/assets/GameMap-qvkd0SPb.css               71.33 kB │ gzip:  10.25 kB
 dist/assets/index-CDP5IFBN.css                 94.57 kB │ gzip:  19.21 kB
-dist/assets/ccip-C1sC8AHF.js                    0.08 kB │ gzip:   0.08 kB
+dist/assets/ccip-Cyxk-3KW.js                    0.08 kB │ gzip:   0.08 kB
 dist/assets/rolldown-runtime-WkwZ5CU-.js        0.59 kB │ gzip:   0.36 kB
 dist/assets/utils-Bpv4vmSW.js                   2.19 kB │ gzip:   0.97 kB
-dist/assets/secp256k1-DpKTdkac.js              26.34 kB │ gzip:  10.21 kB
+dist/assets/secp256k1-CuIwXIiQ.js              26.34 kB │ gzip:  10.21 kB
 dist/assets/build-DB31hh0L.js                  58.78 kB │ gzip:  15.03 kB
-dist/assets/_esm-J488xN13.js                  170.66 kB │ gzip:  49.01 kB
-dist/assets/index-DBFL9Nwo.js                 571.76 kB │ gzip: 163.02 kB
+dist/assets/_esm-DKPUE_dm.js                  170.66 kB │ gzip:  49.01 kB
+dist/assets/index-UDaYiXIc.js                 572.06 kB │ gzip: 163.09 kB
 dist/assets/character-3d-scene-CN8uH972.js    656.44 kB │ gzip: 164.19 kB
-dist/assets/GameMap-oTN4gtlG.js             1,083.03 kB │ gzip: 295.32 kB
+dist/assets/GameMap-DbnqcOcL.js             1,083.03 kB │ gzip: 295.32 kB
 
-✓ built in 709ms
+✓ built in 624ms
