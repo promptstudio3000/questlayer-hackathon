@@ -1,0 +1,188 @@
+{
+  "checkedAt": "2026-10-31T13:46:05.824Z",
+  "runtimeCommit": "baa025f",
+  "release": "20261031T134436Z",
+  "exactBuild": true,
+  "health": {
+    "status": "ok",
+    "app": "QuestLayer",
+    "version": "0.1.0",
+    "mode": "demo",
+    "worldPreparation": {
+      "cityId": "plzen",
+      "timezone": "Europe/Prague",
+      "version": 1,
+      "financialMode": "demo",
+      "days": [
+        {
+          "day": "2026-10-31",
+          "state": "ready",
+          "attempts": 1,
+          "updatedAt": 1793416757052
+        },
+        {
+          "day": "2026-11-01",
+          "state": "ready",
+          "attempts": 1,
+          "updatedAt": 1793416757246
+        }
+      ]
+    },
+    "nativeRewards": {
+      "last_success": 1793454338362,
+      "last_error": null,
+      "queued": 0
+    },
+    "now": 1793454365337
+  },
+  "catalog": {
+    "policy": "zone-quests-v1",
+    "activationDay": "2026-11-02",
+    "templates": [
+      "path-visit",
+      "ordered-trail",
+      "return-trail",
+      "cosmetic-chest"
+    ]
+  },
+  "economy": {
+    "version": 1,
+    "network": "testnet",
+    "unit": "yoctoNEAR",
+    "goldPerNear": 1000,
+    "generatedAt": "2026-10-31T13:46:05.789Z",
+    "status": "observed",
+    "treasury": {
+      "status": "observed",
+      "observedAt": "2026-10-31T13:46:05.501Z",
+      "blockHeight": 275606982,
+      "blockHash": "GWXD9vSjh3vpsUkaQMhvny8GU62rJinDrueLt2DktXzd",
+      "data": {
+        "policy": "50/50-v1",
+        "buckets": {
+          "coins": {
+            "available": "88001000000000000000000",
+            "reserved": "11999000000000000000000",
+            "awarded": "1000000000000000000"
+          },
+          "zones": {
+            "available": "88001000000000000000000",
+            "reserved": "12000000000000000000000",
+            "awarded": "0"
+          }
+        },
+        "funded": "200002000000000000000000",
+        "available": "176002000000000000000000",
+        "reserved": "23999000000000000000000",
+        "owed": "0",
+        "pending": "0",
+        "withdrawn": "1000000000000000000",
+        "rewardLiabilities": "200001000000000000000000",
+        "reconciled": true,
+        "fundingLabel": "Confirmed reward funding; sponsors and realized yield are distinct sources.",
+        "excludes": [
+          "player principal",
+          "operating top-ups",
+          "receipt storage fees"
+        ]
+      }
+    },
+    "staking": {
+      "status": "observed",
+      "observedAt": "2026-10-31T13:46:05.789Z",
+      "blockHeight": 275606982,
+      "blockHash": "GWXD9vSjh3vpsUkaQMhvny8GU62rJinDrueLt2DktXzd",
+      "data": {
+        "complete": true,
+        "poolComplete": true,
+        "coverage": {
+          "registeredPositions": 2,
+          "observedPositions": 2,
+          "unavailablePositions": 0,
+          "observedPoolPositions": 2,
+          "staleVaultPoolObservations": 0,
+          "pendingCreationCount": 0
+        },
+        "totals": {
+          "principal": "110000000000000000000000",
+          "weightedStake": "0",
+          "ownerCredit": "0",
+          "ownerPending": "0",
+          "ownerPaid": "0",
+          "gameCredit": "0",
+          "gamePending": "0",
+          "realizedGameYieldPaid": "0"
+        },
+        "observedSubtotals": {
+          "principal": "110000000000000000000000",
+          "weightedStake": "0",
+          "ownerCredit": "0",
+          "ownerPending": "0",
+          "ownerPaid": "0",
+          "gameCredit": "0",
+          "gamePending": "0",
+          "realizedGameYieldPaid": "0"
+        },
+        "stakers": 1,
+        "contributingStakers": 1,
+        "poolBalances": {
+          "staked": "99999999999999999999998",
+          "unstaked": "10000000000000000000003"
+        },
+        "phases": {
+          "active": 1,
+          "unlocking_epochs": 1
+        },
+        "pools": [
+          {
+            "id": "aurora.pool.f863973.m0",
+            "name": "Aurora validator",
+            "status": "observed",
+            "registeredPositions": 2,
+            "observedPositions": 2,
+            "staked": "99999999999999999999998",
+            "unstaked": "10000000000000000000003",
+            "rewardFee": {
+              "numerator": 9,
+              "denominator": 100
+            }
+          }
+        ],
+        "unlocks": [
+          {
+            "currentEpoch": "5398",
+            "unlockEpoch": "5402",
+            "canWithdraw": false,
+            "phase": "unlocking_epochs"
+          }
+        ],
+        "tierPolicy": "conservative-mature-principal-v1",
+        "contributionPolicy": "fixed-per-vault",
+        "apy": null,
+        "outlook": {
+          "day": null,
+          "week": null,
+          "month": null,
+          "quarter": null,
+          "year": null,
+          "reason": "No attributable realized-yield history supports a forecast yet."
+        }
+      }
+    },
+    "worker": {
+      "status": "observed",
+      "lastSuccessAt": "2026-10-31T13:45:38.362Z",
+      "ageMs": 27427,
+      "running": false,
+      "needsAttention": false,
+      "queued": 0,
+      "queueCountCapped": false,
+      "retrying": 0,
+      "ready": 0,
+      "oldestQueuedAgeMs": null,
+      "vaultsDue": 0,
+      "vaultsWithErrors": 0,
+      "vaultCountCapped": false
+    }
+  }
+}

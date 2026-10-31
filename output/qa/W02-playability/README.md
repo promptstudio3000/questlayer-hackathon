@@ -43,3 +43,9 @@ Screenshots record named states. Development fixture values are clearly labeled 
 ## Remaining limits
 
 This release does not close W02 or the full native lifecycle. Required follow-up includes physical Safari/iOS and Chrome/Android, actual assistive-technology checks, newcomer playtests, real public-path access, native XP/level integration, wardrobe/market/form consistency, full realized-yield/withdrawal proof and independent security review. See `docs/V1-REMAINING.md` for the implementation order.
+
+## Published release verification
+
+Runtime source `baa025f`; VPS release `20261031T134436Z`. `public-verification.json` records exact built-index identity, healthy service/API, four-template catalog and a conserved observed native treasury. Service inspection found active/running, zero automatic restarts, approximately97MB memory. Public browser console inspection returned no errors.
+
+The published site retained its existing explorer and equipped Aura. Public desktop/390px screenshots show the same reduced hierarchy. The native street-coin map target returns to that specific coin, with collection disabled until wallet/GPS prerequisites pass. No live receipt or wallet transfer was created by this browser verification.
