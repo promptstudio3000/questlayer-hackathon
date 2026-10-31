@@ -1,0 +1,21 @@
+✔ native funding uses finite actual buckets, six city slots, free XP and small shared coins (11.492792ms)
+✔ arena, absent consent, unlinked wallet and wrong GPS cannot issue native rewards (91.459375ms)
+✔ GPS coin acceptance is durable; retry after send-before-ack reads the original on-chain receipt (68.555375ms)
+✔ a second linked player cannot consume the same native street coin (70.225583ms)
+✔ three ordered solo checkpoints produce one XP receipt; demo staking cannot unlock native tiers (74.220584ms)
+✔ worker lease excludes overlap; unavailable chain leaves accepted rights reserved (60.875375ms)
+✔ native receipt capacity includes accepted pending rights before another explorer can join the queue (62.729583ms)
+✔ paused claims preserve accepted rights while verified exit maintenance continues (59.219208ms)
+✔ a failing oldest claim cannot stop exit maintenance or let a later receipt overtake it (59.843459ms)
+✔ worker identity mismatch blocks maintenance as well as settlement (2.393709ms)
+✔ maintenance rejects changed code, non-keyless children and another strategy during pause (9.375ms)
+✔ automatic collection metadata follows reviewed publication, actual pending rights and pause (87.286959ms)
+✔ changed reward code pauses automatic collection and blocks new capabilities but preserves old receipts (67.768208ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1054.314042

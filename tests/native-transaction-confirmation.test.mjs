@@ -502,3 +502,156 @@ test("SocialDB set returns a publication height, not boolean success; private or
   await assert.rejects(f.confirm());
   f.db.close();
 });
+
+test("pre-sign anchors require a linked wallet and a fresh synchronized testnet block", async () => {
+  const f = fixture();
+  try {
+    assert.deepEqual(await f.service.anchor(f.player, ACCOUNT), {
+      network: "testnet",
+      accountId: ACCOUNT,
+      afterBlock: 1000,
+    });
+    await assert.rejects(
+      () => f.service.anchor(f.player, "other.testnet"),
+      /Link/,
+    );
+    f.provider.viewNodeStatus = async () => ({ chain_id: "mainnet" });
+    await assert.rejects(() => f.service.anchor(f.player, ACCOUNT), /testnet/);
+  } finally {
+    f.db.close();
+  }
+});
+test("pre-sign anchor rejects stale blocks and rechecks ownership after waiting", async () => {
+  const f = fixture(),
+    original = f.provider.viewBlock;
+  try {
+    f.provider.viewBlock = async () => ({
+      header: { hash: BLOCK, height: 1000, timestamp_nanosec: "1" },
+    });
+    await assert.rejects(() => f.service.anchor(f.player, ACCOUNT), /stale/);
+    f.provider.viewBlock = async () => {
+      f.db.prepare("DELETE FROM wallet_links").run();
+      return original();
+    };
+    await assert.rejects(() => f.service.anchor(f.player, ACCOUNT), /Link/);
+  } finally {
+    f.db.close();
+  }
+});
+test("an identical older receipt cannot resolve a newer request or clear its pending failure", async () => {
+  const f = fixture();
+  try {
+    for (const height of [1000, 1001])
+      await assert.rejects(
+        () => f.confirm({ afterBlock: height }),
+        (e) => e.code === "NATIVE_RECEIPT_BEFORE_REQUEST",
+      );
+    f.result.status = { Failure: { ActionError: "old failed withdrawal" } };
+    await assert.rejects(
+      () => f.confirm({ afterBlock: 1000 }),
+      (e) => e.code === "NATIVE_RECEIPT_BEFORE_REQUEST",
+    );
+    for (const height of [null, 0, -1, "999", Number.MAX_SAFE_INTEGER + 1])
+      await assert.rejects(() => f.confirm({ afterBlock: height }), /anchor/);
+  } finally {
+    f.db.close();
+  }
+});
+test("newer inclusion block verifies with the SDK blockId parameter and exact returned hash", async () => {
+  const f = fixture(),
+    original = f.provider.viewBlock,
+    requests = [];
+  try {
+    f.provider.viewBlock = async (input) => {
+      requests.push(input);
+      const block = await original();
+      if (input.blockId) block.header.height = 1001;
+      return block;
+    };
+    assert.equal((await f.confirm({ afterBlock: 1000 })).confirmed, true);
+    assert(requests.some((x) => x.blockId === BLOCK));
+    f.provider.viewBlock = async (input) => {
+      const block = await original();
+      if (input.blockId) block.header.hash = EXECUTED;
+      return block;
+    };
+    await assert.rejects(
+      () => f.confirm({ afterBlock: 999 }),
+      /inclusion block/,
+    );
+  } finally {
+    f.db.close();
+  }
+});
+test("unknown final statuses and incomplete receipt status cannot become clearable failures", async () => {
+  const f = fixture();
+  try {
+    for (const status of [
+      undefined,
+      {},
+      { Unknown: "" },
+      { SuccessValue: "", Failure: {} },
+    ]) {
+      f.result.status = status;
+      await assert.rejects(
+        () => f.confirm(),
+        (e) => e.code !== "NATIVE_TRANSACTION_FAILED",
+      );
+    }
+    f.result.status = { SuccessValue: encode(true) };
+    f.result.receipts_outcome[0].outcome.status = {};
+    await assert.rejects(
+      () => f.confirm(),
+      (e) => e.code !== "NATIVE_TRANSACTION_FAILED",
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("missing failure data and nonboolean callbacks never authorize clearing an uncertain receipt", async () => {
+  const f = fixture();
+  try {
+    for (const value of [null, false, {}, []]) {
+      f.result.status = { Failure: value };
+      await assert.rejects(
+        () => f.confirm(),
+        (e) => !e.code?.startsWith("NATIVE_"),
+      );
+    }
+    for (const value of [null, "true", 0, {}]) {
+      f.result.status = { SuccessValue: encode(value) };
+      await assert.rejects(
+        () => f.confirm(),
+        (e) => !e.code?.startsWith("NATIVE_"),
+      );
+    }
+    f.result.status = { SuccessValue: encode(true) };
+    f.result.receipts_outcome[0].outcome.status = { Unknown: "" };
+    await assert.rejects(
+      () => f.confirm(),
+      (e) => !e.code?.startsWith("NATIVE_"),
+    );
+  } finally {
+    f.db.close();
+  }
+});
+test("link revoked during executed-code lookup cannot expose a terminal failure result", async () => {
+  const f = fixture(),
+    query = f.provider.query;
+  try {
+    f.result.status = { Failure: { ActionError: "failed" } };
+    f.provider.query = async (input) => {
+      const result = await query(input);
+      if (input.block_id === EXECUTED)
+        f.db.prepare("DELETE FROM wallet_links").run();
+      return result;
+    };
+    await assert.rejects(
+      () => f.confirm(),
+      (e) => e.status === 403 && !e.code?.startsWith("NATIVE_"),
+    );
+  } finally {
+    f.db.close();
+  }
+});

@@ -145,6 +145,6 @@ production policy; hiding content is not deletion.
 
 ## Integrated operator and media path
 
-The deployed service uses `NoteMedia` for metadata-free, bounded JPEG output and current-visibility media reads. Owner deletion removes the image; hourly bounded cleanup retries unreferenced files after a 24-hour grace period. A referenced hidden image is retained for restoration. This does not erase previously downloaded copies.
+The deployed service uses `NoteMedia` for metadata-free, bounded JPEG output and current-visibility media reads. Owner deletion immediately revokes reads and atomically records the image retirement. Hourly bounded cleanup removes the unreferenced file only after both its creation and retirement are more than 24 hours old. This lets a private backup that already captured the previous reference finish copying it. Cleanup delays do not restore access. A referenced hidden image is retained for restoration. This does not erase previously downloaded copies or older private snapshots. The current backup policy normally expires snapshots after 14 days while preserving its newest two; full incident recovery must reconcile later deletions and moderation before exposure.
 
 An operator with OS access to the protected database can run `node server/cli/moderate-notes.mjs list --database /absolute/existing.sqlite --operator NAME`. A decision uses `hide`, `restore` or `dismiss` with `--note ID --reason TEXT --apply`; decisions are audited. The HTTP service does not grant operator capabilities.

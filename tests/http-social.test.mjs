@@ -103,6 +103,18 @@ test("HTTP notes preserve consent, replay, visibility, photo permissions and blo
     ).status,
     403,
   );
+  for (const cookie of [undefined, alice.cookie]) {
+    assert.equal(
+      (
+        await request("/native/transactions/anchor", {
+          method: "POST",
+          data: { accountId: "unlinked.testnet" },
+          cookie,
+        })
+      ).status,
+      cookie ? 403 : 401,
+    );
+  }
   const image = await sharp({
     create: { width: 20, height: 20, channels: 3, background: "#672eeb" },
   })

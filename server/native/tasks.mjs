@@ -1,3 +1,7 @@
+import {
+  requireTransactionAfter,
+  validReceiptStatus,
+} from "./transaction-anchor.mjs";
 import { assert } from "../domain.mjs";
 import { nearAccountId } from "../identity/near.mjs";
 import { isDeepStrictEqual } from "node:util";
@@ -710,7 +714,10 @@ export class NativeTasks {
       throw error;
     }
   }
-  async confirm(player, { accountId, quote, transactionHash } = {}) {
+  async confirm(
+    player,
+    { accountId, quote, transactionHash, afterBlock } = {},
+  ) {
     this.linked(player, accountId);
     const manifest = this.configuration();
     const methods = new Set([
@@ -750,13 +757,14 @@ export class NativeTasks {
     // action is not prepared again, and its original quote may now have expired.
     await this.observe(accountId, null);
     this.linked(player, accountId);
+    const confirmationDeadline = Date.now() + this.timeoutMs;
     const result = await this.bounded(
       this.provider.viewTransactionStatus({
         txHash: transactionHash,
         accountId,
         waitUntil: "FINAL",
       }),
-      Date.now() + this.timeoutMs,
+      confirmationDeadline,
     );
     this.linked(player, accountId);
     assert(
@@ -816,11 +824,22 @@ export class NativeTasks {
       "The confirmed task arguments differ from the reviewed action.",
       409,
     );
+    await requireTransactionAfter(this.provider, result, afterBlock, (value) =>
+      this.bounded(value, confirmationDeadline),
+    );
+    this.linked(player, accountId);
     assert(
-      result.status &&
-        typeof result.status === "object" &&
-        !Array.isArray(result.status) &&
-        Object.keys(result.status).length === 1,
+      Array.isArray(result.receipts_outcome) &&
+        result.receipts_outcome.length > 0 &&
+        result.receipts_outcome.length <= 128 &&
+        result.transaction_outcome,
+      "The task receipt chain is incomplete. Keep its reference.",
+      503,
+    );
+    const outcomes = [result.transaction_outcome, ...result.receipts_outcome];
+    assert(
+      validReceiptStatus(result.status) &&
+        outcomes.every((r) => validReceiptStatus(r?.outcome?.status)),
       "The task receipt has an invalid final status. Keep its reference for another check.",
       409,
     );
@@ -835,26 +854,26 @@ export class NativeTasks {
       "The task receipt has no final outcome. Keep its reference for another check.",
       409,
     );
-    const outcomes = [
-      ...(result.transaction_outcome ? [result.transaction_outcome] : []),
-      ...(Array.isArray(result.receipts_outcome)
-        ? result.receipts_outcome
-        : []),
-    ];
-    assert(outcomes.length <= 128, "Too many task receipts to verify.", 409);
     assert(
-      outcomes.every((receipt) => !receipt?.outcome?.status?.Failure),
+      outcomes.every((r) => !Object.hasOwn(r.outcome.status, "Failure")),
       "A task transaction receipt failed. Refresh its current record before retrying.",
       409,
       "TASK_TRANSACTION_FAILED",
     );
-    if (quote.methodName === "withdraw")
+    if (quote.methodName === "withdraw") {
+      const completed = decodeJson(result.status.SuccessValue);
       assert(
-        decodeJson(result.status.SuccessValue) === true,
+        typeof completed === "boolean",
+        "The withdrawal callback result is invalid. Keep its receipt.",
+        503,
+      );
+      assert(
+        completed === true,
         "The withdrawal did not complete. Its credit was restored; refresh before retrying.",
         409,
         "TASK_WITHDRAWAL_FAILED",
       );
+    }
     this.linked(player, accountId);
     // Do not let an older in-flight observation repopulate a confirmed-action cache.
     this.cacheGeneration++;

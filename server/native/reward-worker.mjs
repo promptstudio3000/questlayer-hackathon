@@ -109,9 +109,24 @@ export async function runRewardWorker(
       503,
     );
   };
+  const writeOwned = (sql, ...parameters) =>
+    atomic(db, () => {
+      renew();
+      return db.prepare(sql).run(...parameters);
+    });
+  // RPC completion does not prove this process still owns the durable work.
+  // Fence both sides of a send; a lost response is reconciled by the next owner
+  // from the contract receipt/state, never by a stale worker rewriting its result.
+  const sendOwned = async (method, args) => {
+    renew();
+    const result = await send(method, args);
+    renew();
+    return result;
+  };
   let completed = 0;
   try {
     const configuration = await native.view("get_config", {}, true);
+    renew();
     assert(
       configuration.attestor === native.signer.publicKey &&
         configuration.publisher === native.contractId,
@@ -144,10 +159,12 @@ export async function runRewardWorker(
           tx = row.transaction_hash;
         try {
           if (!receipt) {
-            tx = await send("claim", { claim, signature: row.signature });
-            db.prepare(
+            tx = await sendOwned("claim", { claim, signature: row.signature });
+            writeOwned(
               "UPDATE native_reward_claims SET transaction_hash=? WHERE id=?",
-            ).run(tx, row.id);
+              tx,
+              row.id,
+            );
             receipt = await native.view(
               "get_receipt",
               { receipt_id: row.id },
@@ -161,15 +178,18 @@ export async function runRewardWorker(
             "Native receipt does not match accepted evidence.",
             503,
           );
-          renew();
-          db.prepare(
+          writeOwned(
             "UPDATE native_reward_claims SET state='confirmed',amount=?,xp=?,confirmed_at=?,transaction_hash=?,last_error=NULL WHERE id=?",
-          ).run(receipt.amount, receipt.xp, clock(), tx, row.id);
+            receipt.amount,
+            receipt.xp,
+            clock(),
+            tx,
+            row.id,
+          );
           completed++;
         } catch (error) {
-          db.prepare(
+          writeOwned(
             "UPDATE native_reward_claims SET state='retrying',attempts=attempts+1,run_after=?,last_error=? WHERE id=?",
-          ).run(
             clock() + Math.min(300000, 5000 * 2 ** Math.min(row.attempts, 6)),
             String(error.message).slice(0, 200),
             row.id,
@@ -195,12 +215,14 @@ export async function runRewardWorker(
           continue;
         renew();
         let day = await native.view("get_day", { day_id: row.id }, true);
-        if (!day?.closed) await send("close_day", { day_id: row.id });
+        if (!day?.closed) await sendOwned("close_day", { day_id: row.id });
         day = await native.view("get_day", { day_id: row.id }, true);
         assert(day?.closed, "Day closure has not confirmed.", 503);
-        db.prepare(
+        writeOwned(
           "UPDATE native_days SET state='closed',updated_at=? WHERE id=?",
-        ).run(clock(), row.id);
+          clock(),
+          row.id,
+        );
       }
       for (const day of [dayKey(clock()), shiftDate(dayKey(clock()))]) {
         renew();
@@ -211,9 +233,14 @@ export async function runRewardWorker(
             treasury = await native.view("get_treasury", {}, true),
             m = nativeManifest(plan, treasury);
           if (!m) continue;
-          db.prepare(
+          writeOwned(
             "INSERT OR IGNORE INTO native_days(id,day,body,hash,updated_at) VALUES(?,?,?,?,?)",
-          ).run(m.id, m.day, JSON.stringify(m), m.hash, clock());
+            m.id,
+            m.day,
+            JSON.stringify(m),
+            m.hash,
+            clock(),
+          );
           row = db.prepare("SELECT * FROM native_days WHERE id=?").get(dayId);
         }
         if (row.state !== "prepared") continue;
@@ -221,10 +248,12 @@ export async function runRewardWorker(
         let confirmed = await native.view("get_day", { day_id: m.id }, true),
           tx = row.transaction_hash;
         if (!confirmed) {
-          tx = await send("publish_day", publicationArgs(m));
-          db.prepare(
+          tx = await sendOwned("publish_day", publicationArgs(m));
+          writeOwned(
             "UPDATE native_days SET transaction_hash=? WHERE id=?",
-          ).run(tx, m.id);
+            tx,
+            m.id,
+          );
           confirmed = await native.view("get_day", { day_id: m.id }, true);
         }
         assert(
@@ -232,10 +261,12 @@ export async function runRewardWorker(
           "Native day differs from the durable manifest.",
           503,
         );
-        renew();
-        db.prepare(
+        writeOwned(
           "UPDATE native_days SET state='published',updated_at=?,transaction_hash=? WHERE id=?",
-        ).run(clock(), tx, m.id);
+          clock(),
+          tx,
+          m.id,
+        );
       }
     } catch (error) {
       settlementError = error;
@@ -310,22 +341,22 @@ export async function runRewardWorker(
                   : "refresh";
           }
           if (action) {
-            renew();
-            await send("maintain_vault", { vault_id: v.accountId, action });
+            await sendOwned("maintain_vault", {
+              vault_id: v.accountId,
+              action,
+            });
             state = await reader.view("get_state", {}, true);
           }
-          db.prepare(
+          writeOwned(
             "INSERT INTO native_vault_jobs VALUES(?,?,?,?,NULL) ON CONFLICT(account_id) DO UPDATE SET next_check=excluded.next_check,last_action=excluded.last_action,last_state=excluded.last_state,last_error=NULL",
-          ).run(
             v.accountId,
             clock() + (state.stage === "awaiting_cash" ? 30000 : 30 * 60000),
             action,
             JSON.stringify(state),
           );
         } catch (error) {
-          db.prepare(
+          writeOwned(
             "INSERT INTO native_vault_jobs(account_id,next_check,last_error) VALUES(?,?,?) ON CONFLICT(account_id) DO UPDATE SET next_check=excluded.next_check,last_error=excluded.last_error",
-          ).run(
             v.accountId,
             clock() + 300000,
             String(error.message).slice(0, 200),
@@ -335,13 +366,16 @@ export async function runRewardWorker(
     } catch (error) {
       settlementError ||= error;
     }
-    db.prepare("DELETE FROM native_locations WHERE received_at<?").run(
+    writeOwned(
+      "DELETE FROM native_locations WHERE received_at<?",
       clock() - 86400000,
     );
     if (settlementError) throw settlementError;
-    db.prepare(
+    writeOwned(
       "UPDATE native_worker_lease SET last_success=?,last_error=NULL WHERE id=1 AND owner=?",
-    ).run(clock(), owner);
+      clock(),
+      owner,
+    );
     return { completed };
   } catch (error) {
     db.prepare(
@@ -364,7 +398,9 @@ export function startRewardWorker(
     timer;
   async function tick() {
     if (stopped || running) return;
+    const startedAt = Date.now();
     running = (async () => {
+      let enteredWorker = false;
       try {
         send ||= await rewardTransport(
           native.provider,
@@ -372,15 +408,21 @@ export function startRewardWorker(
           keyPath,
           native.config.codeHash,
         );
+        enteredWorker = true;
         await runRewardWorker(native, send);
       } catch (error) {
         console.error(
           "Native reward worker:",
           String(error.message).slice(0, 200),
         );
-        native.db
-          .prepare("UPDATE native_worker_lease SET last_error=? WHERE id=1")
-          .run(String(error.message).slice(0, 200));
+        // runRewardWorker records errors only under its own lease. An older
+        // process must not overwrite the health of a successor after a late RPC.
+        if (!enteredWorker)
+          native.db
+            .prepare(
+              "UPDATE native_worker_lease SET last_error=? WHERE id=1 AND until_ms<=? AND (last_success IS NULL OR last_success<?)",
+            )
+            .run(String(error.message).slice(0, 200), Date.now(), startedAt);
       }
     })();
     await running;

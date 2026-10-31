@@ -598,3 +598,195 @@ test("changed reward code pauses automatic collection and blocks new capabilitie
   );
   f.db.close();
 });
+
+function replaceWorker(f) {
+  f.db
+    .prepare(
+      "UPDATE native_worker_lease SET owner=?,until_ms=?,last_success=?,last_error=? WHERE id=1",
+    )
+    .run("successor-worker", f.clock() + 120000, f.clock(), "successor-status");
+}
+function assertSuccessorUntouched(f) {
+  const lease = f.db
+    .prepare("SELECT * FROM native_worker_lease WHERE id=1")
+    .get();
+  assert.equal(lease.owner, "successor-worker");
+  assert.equal(lease.last_error, "successor-status");
+  assert.equal(lease.until_ms, f.clock() + 120000);
+}
+
+test("an expired worker cannot submit a claim after its receipt read or change retry state", async () => {
+  for (const takeover of [false, true]) {
+    const f = fixture();
+    try {
+      const m = await ready(f),
+        accepted = await f.n.submit(f.player, input(f, m));
+      const before = f.db
+        .prepare("SELECT * FROM native_reward_claims WHERE id=?")
+        .get(accepted.id);
+      const view = f.n.view;
+      f.n.view = async (method, args, fresh) => {
+        const value = await view(method, args, fresh);
+        if (method === "get_receipt") {
+          f.setNow(f.clock() + 120001);
+          if (takeover) replaceWorker(f);
+        }
+        return value;
+      };
+      f.state.sent.length = 0;
+      await assert.rejects(
+        runRewardWorker(f.n, f.send, { clock: f.clock }),
+        /lease expired/,
+      );
+      assert.equal(f.state.sent.length, 0);
+      assert.deepEqual(
+        f.db
+          .prepare("SELECT * FROM native_reward_claims WHERE id=?")
+          .get(accepted.id),
+        before,
+      );
+      if (takeover) assertSuccessorUntouched(f);
+    } finally {
+      f.db.close();
+    }
+  }
+});
+
+test("a transaction completed after takeover cannot overwrite a successor's confirmed receipt", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f),
+      accepted = await f.n.submit(f.player, input(f, m));
+    f.state.sent.length = 0;
+    const send = async (method, args) => {
+      const result = await f.send(method, args);
+      replaceWorker(f);
+      f.db
+        .prepare(
+          "UPDATE native_reward_claims SET state='confirmed',transaction_hash='successor-transaction',attempts=0,last_error=NULL WHERE id=?",
+        )
+        .run(accepted.id);
+      return result;
+    };
+    await assert.rejects(
+      runRewardWorker(f.n, send, { clock: f.clock }),
+      /lease expired/,
+    );
+    assert.equal(f.state.sent.length, 1);
+    const row = f.db
+      .prepare("SELECT * FROM native_reward_claims WHERE id=?")
+      .get(accepted.id);
+    assert.equal(row.state, "confirmed");
+    assert.equal(row.transaction_hash, "successor-transaction");
+    assert.equal(row.last_error, null);
+    assert.equal(row.attempts, 0);
+    assertSuccessorUntouched(f);
+  } finally {
+    f.db.close();
+  }
+});
+
+test("publication fences a late chain lookup before any new transaction", async () => {
+  const f = fixture();
+  try {
+    const view = f.n.view;
+    f.n.view = async (method, args, fresh) => {
+      const value = await view(method, args, fresh);
+      if (method === "get_day") replaceWorker(f);
+      return value;
+    };
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /lease expired/,
+    );
+    assert.equal(f.state.sent.length, 0);
+    assert.equal(
+      f.db.prepare("SELECT state FROM native_days").get().state,
+      "prepared",
+    );
+    assertSuccessorUntouched(f);
+  } finally {
+    f.db.close();
+  }
+});
+
+test("closure cannot send or replace a successor's day reconciliation after a late read", async () => {
+  for (const alreadyClosed of [false, true]) {
+    const f = fixture();
+    try {
+      const m = await ready(f);
+      f.setNow(m.endsAt + 86400001);
+      const view = f.n.view;
+      f.n.view = async (method, args, fresh) => {
+        const value = await view(method, args, fresh);
+        if (method === "get_day") {
+          replaceWorker(f);
+          f.db
+            .prepare("UPDATE native_days SET updated_at=7 WHERE id=?")
+            .run(m.id);
+          return { ...value, closed: alreadyClosed };
+        }
+        return value;
+      };
+      f.state.sent.length = 0;
+      await assert.rejects(
+        runRewardWorker(f.n, f.send, { clock: f.clock }),
+        /lease expired/,
+      );
+      assert.equal(f.state.sent.length, 0);
+      const row = f.db
+        .prepare("SELECT state,updated_at FROM native_days WHERE id=?")
+        .get(m.id);
+      assert.equal(row.state, "published");
+      assert.equal(row.updated_at, 7);
+      assertSuccessorUntouched(f);
+    } finally {
+      f.db.close();
+    }
+  }
+});
+
+test("a late vault observation cannot replace another keeper's state or failure", async () => {
+  for (const fail of [false, true]) {
+    const f = fixture();
+    try {
+      maintenanceVault(f);
+      const original = f.n.view;
+      f.n.view = async (method, args, fresh) => {
+        const value = await original(method, args, fresh);
+        return method === "get_config" ? { ...value, paused: true } : value;
+      };
+      const query = f.n.provider.query;
+      f.n.provider.query = async (request) => {
+        const value = await query(request);
+        if (request.method_name === "get_state") {
+          replaceWorker(f);
+          f.db
+            .prepare("INSERT INTO native_vault_jobs VALUES(?,?,?,?,?)")
+            .run(
+              "exit.factory.testnet",
+              987654321,
+              "successor-action",
+              "successor-state",
+              "successor-error",
+            );
+          if (fail) throw Error("old RPC failed after takeover");
+        }
+        return value;
+      };
+      await assert.rejects(
+        runRewardWorker(f.n, f.send, { clock: f.clock }),
+        /lease expired/,
+      );
+      assert.equal(f.state.sent.length, 0);
+      const job = f.db.prepare("SELECT * FROM native_vault_jobs").get();
+      assert.equal(job.next_check, 987654321);
+      assert.equal(job.last_state, "successor-state");
+      assert.equal(job.last_action, "successor-action");
+      assert.equal(job.last_error, "successor-error");
+      assertSuccessorUntouched(f);
+    } finally {
+      f.db.close();
+    }
+  }
+});

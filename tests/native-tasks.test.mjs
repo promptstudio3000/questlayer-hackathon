@@ -643,7 +643,7 @@ test("withdrawal confirmation requires a final true callback result; restored cr
     );
     await assert.rejects(
       () => f.native.confirm(f.player, f.input),
-      /credit was restored/,
+      value === false ? /credit was restored/ : /callback result is invalid/,
     );
   }
   const f = confirmationFixture();
@@ -746,4 +746,62 @@ test("shared recovery rejects a restored task withdrawal and checks ownership fi
     () => f.native.confirmTransaction("other-player", f.input),
     /Link/,
   );
+});
+
+test("task recovery also rejects an older identical receipt before handling terminal failure", async () => {
+  const f = confirmationFixture(),
+    original = f.provider.viewBlock;
+  try {
+    const hash = "B".repeat(44);
+    f.receipt.transaction_outcome.block_hash = hash;
+    f.provider.viewBlock = async (q) =>
+      q.blockId ? { header: { hash, height: 1001 } } : original(q);
+    f.input.afterBlock = 1000;
+    assert.equal(
+      (await f.native.confirmTransaction(f.player, f.input)).confirmed,
+      true,
+    );
+    f.input.afterBlock = 1001;
+    await assert.rejects(
+      () => f.native.confirmTransaction(f.player, f.input),
+      (e) => e.code === "NATIVE_RECEIPT_BEFORE_REQUEST",
+    );
+    f.receipt.status = { Failure: { ActionError: "old" } };
+    await assert.rejects(
+      () => f.native.confirmTransaction(f.player, f.input),
+      (e) => e.code === "NATIVE_RECEIPT_BEFORE_REQUEST",
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("malformed task outcomes cannot be cleared as known failure", async () => {
+  const f = confirmationFixture();
+  try {
+    for (const value of [null, false, {}, []]) {
+      f.receipt.status = { Failure: value };
+      await assert.rejects(
+        () => f.native.confirmTransaction(f.player, f.input),
+        (e) => !e.code?.startsWith("NATIVE_"),
+      );
+    }
+    for (const value of [null, "true", 0, {}]) {
+      f.receipt.status = {
+        SuccessValue: Buffer.from(JSON.stringify(value)).toString("base64"),
+      };
+      await assert.rejects(
+        () => f.native.confirmTransaction(f.player, f.input),
+        (e) => !e.code?.startsWith("NATIVE_"),
+      );
+    }
+    f.receipt.status = { SuccessValue: Buffer.from("true").toString("base64") };
+    f.receipt.receipts_outcome = [];
+    await assert.rejects(
+      () => f.native.confirmTransaction(f.player, f.input),
+      (e) => !e.code?.startsWith("NATIVE_"),
+    );
+  } finally {
+    f.db.close();
+  }
 });

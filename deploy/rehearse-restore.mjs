@@ -88,9 +88,38 @@ try {
     "native_progress",
     "native_enrollments",
     "native_vault_jobs",
+    "social_note_meta",
+    "social_note_operations",
+    "social_media_retirements",
+    "social_blocks",
+    "social_reports",
+    "social_audit",
   ]) {
     if (names.has(table))
       counts[table] = db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n;
+  }
+  let socialRecovery = null;
+  if (names.has("social_note_meta")) {
+    const deleted = db
+      .prepare("SELECT COUNT(*) n FROM social_note_meta WHERE state='deleted'")
+      .get().n;
+    assert.equal(
+      db
+        .prepare(
+          `SELECT COUNT(*) n FROM messages m JOIN social_note_meta s ON s.note_id=m.id
+      WHERE s.state='deleted' AND (m.text!='' OR m.lat!=0 OR m.lng!=0 OR m.image IS NOT NULL OR m.author_fix IS NOT NULL)`,
+        )
+        .get().n,
+      0,
+      "Deleted note content reappeared in the restored snapshot",
+    );
+    socialRecovery = {
+      deletedTombstonesVerified: deleted,
+      blockRecordsPreserved: counts.social_blocks || 0,
+      reportRecordsPreserved: counts.social_reports || 0,
+      mediaRetirementsPreserved: counts.social_media_retirements || 0,
+      lateDeletionsReplayed: false,
+    };
   }
   const first = db.prepare("SELECT id FROM players LIMIT 1").get();
   let projectionVerified = false;
@@ -195,6 +224,7 @@ try {
       liveApplicationStateChanged: false,
       chainReconciliationPerformed: !!nativeRecovery,
       nativeRecovery,
+      socialRecovery,
       offsiteCopyCreated: false,
     }),
   );

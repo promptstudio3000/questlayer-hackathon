@@ -1,0 +1,67 @@
+{
+  "screenshots": [
+    {
+      "file": "backup-390.jpg",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "enlarged-390.jpg",
+      "pixels": [
+        390,
+        844
+      ]
+    },
+    {
+      "file": "missing-360.jpg",
+      "pixels": [
+        360,
+        640
+      ]
+    },
+    {
+      "file": "missing-desktop.jpg",
+      "pixels": [
+        1280,
+        720
+      ]
+    },
+    {
+      "file": "missing-landscape.jpg",
+      "pixels": [
+        844,
+        390
+      ]
+    },
+    {
+      "file": "pending-390.jpg",
+      "pixels": [
+        390,
+        844
+      ]
+    }
+  ],
+  "observed": [
+    "Receipt survived previous temporary tab closure and was visible in a newly opened fixture",
+    "Two concurrent fixture tabs displayed the same pending receipt",
+    "Confirmation in the second tab removed the pending entry from the first without reload",
+    "Responsive viewport measurements at360x640,390x844,844x390 and1280x720",
+    "Enlarged text32px at390px without horizontal overflow",
+    "Request date and Reviewed terms, legacy warning for missing checkpoint",
+    "Wrong-player import rejected; existing receipt preserved (subagent observed)",
+    "Public deployed Wallet loads as guest and does not show unlinked recovery controls",
+    "Temporary tabs closed and viewport reset"
+  ],
+  "downloadFileIndependentlyVerified": false,
+  "downloadBoundary": "Subagent saw Receipt download started, but the IAB download event stalled. Export content and import safety were unit tested.",
+  "notVerified": [
+    "Physical keyboard",
+    "Physical Safari/iOS or Chrome/Android",
+    "Personal wallet return",
+    "Actual exported-download/import roundtrip through browser file system"
+  ],
+  "newWalletSignatures": 0,
+  "productionContentWrites": false
+}

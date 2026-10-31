@@ -718,16 +718,34 @@ async function api(req, res, url) {
       return respond(res, result);
     }
   }
-  if (path === "/api/native/transactions/confirm" && method === "POST") {
+  if (
+    [
+      "/api/native/transactions/confirm",
+      "/api/native/transactions/anchor",
+    ].includes(path) &&
+    method === "POST"
+  ) {
     const key = `native-confirm:${player}:${Math.floor(Date.now() / 60000)}`;
     const count = (rates.get(key) || 0) + 1;
     rates.set(key, count);
     assert(count <= 30, "Please wait before checking more transactions.", 429);
     const input = await body(req);
-    const result =
-      input?.quote?.receiverId === TASK_CONTRACT
-        ? await nativeTasks.confirmTransaction(player, input)
-        : await nativeTransactionConfirmation.confirm(player, input);
+    let result;
+    try {
+      result = path.endsWith("/anchor")
+        ? await nativeTransactionConfirmation.anchor(player, input?.accountId)
+        : input?.quote?.receiverId === TASK_CONTRACT
+          ? await nativeTasks.confirmTransaction(player, input)
+          : await nativeTransactionConfirmation.confirm(player, input);
+    } catch (error) {
+      // Revoked sessions must not receive a terminal code that clears a journal.
+      assert(
+        auth(req) === player,
+        "Sign in again to check this transaction.",
+        401,
+      );
+      throw error;
+    }
     assert(
       auth(req) === player,
       "Sign in again to check this transaction.",
@@ -1188,13 +1206,8 @@ async function api(req, res, url) {
     await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
     const result = socialContent.remove(player, noteAction[1]);
-    if (result.removedImage) {
-      try {
-        noteMedia.remove(result.removedImage);
-      } catch {
-        /* Hourly orphan cleanup retries. */
-      }
-    }
+    // The deletion transaction removes public access and records media retirement.
+    // Physical cleanup waits for its grace period so in-flight backups stay whole.
     emit("message", {});
     return respond(res, { id: result.id, state: result.state });
   }

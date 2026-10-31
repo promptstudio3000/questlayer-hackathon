@@ -98,47 +98,15 @@ contract review or a complete native passkey/recovery journey. The full staking
 cycle remains open until real pool cash, owner payout and realized game yield have
 actually been observed and reconciled.
 
-## Reload-safe pending receipts
+## Durable browser recovery
 
-`sendConfirmedNative(wallet, transaction, { playerId })` snapshots the reviewed
-terms and reserves a bounded session-storage record before opening the wallet. The
-wallet's hash is saved before any confirmation request. An exact retry checks the
-same hash without another signature. Another unresolved operation for that
-player/account blocks new signatures until it is reconciled. Eight records maximum
-are retained; reaching the bound does not evict an unresolved operation.
+All eight wallet flows use the browser journal described in [Durable native recovery](DURABLE-NATIVE-RECOVERY.md). Updated clients use localStorage and short Web Locks; old session records migrate without silent loss. The Wallet panel supports bounded private receipt export/import. Imports are comparison context, never signing authority or a trusted success/failure status.
 
-Wallet's explicit rejection codes clear only their unsubmitted reservation. A
-missing hash or ambiguous wallet/network error keeps the record. The Wallet recovery
-panel can check the receipt or accept a manually copied hash from wallet history;
-that candidate must match the original terms and account on the server. A wrong
-manual hash does not replace the missing-hash marker. The panel never signs.
+Before opening a wallet, `POST /api/native/transactions/anchor` reads a fresh finalized testnet block for the linked account. Its height is persisted as `afterBlock`. Confirmation checks the transaction's actual inclusion block strictly after that boundary before returning any clearable terminal result. Older records without a checkpoint remain explicitly legacy; no historical checkpoint is invented. The anchor is a public comparison bound, not a global spending lock.
 
-A definitive final failure can still have partial effects or leave credit waiting.
-The user must review the current balance/item state and acknowledge that review;
-clearing then verifies the final failure again. Unavailable confirmation, changed
-code, incomplete receipts or unrelated hashes cannot be discarded through this
-flow. A failure is not presented as proof that no money moved.
+Final statuses must have valid structure. Only an explicit boolean false callback becomes a compensated-operation failure; null, unknown or incomplete results retain uncertainty. Historical code checks and linked-wallet/session checks precede terminal response classification. A malformed response or revoked session cannot clear an unresolved receipt. No endpoint signs or transfers funds.
 
-The journal contains public broadcast transaction terms, account IDs and hashes,
-not wallet credentials, seeds or GPS. It is isolated by authenticated player and
-account. A late response edits only its matching record. Corrupt or inaccessible
-storage fails before signing, preserves the existing bytes and does not silently
-reset the journal. If storage fails after broadcasting, the error includes the
-actual returned hash for recovery from the still-reserved marker.
-
-This is recovery within the current tab/session, including reloads. It is not a
-cross-tab, cross-device or global spending lock. Closing/clearing the browser session
-can remove local records; chain receipts remain in wallet history. An ambiguous
-provider error with no discoverable hash requires wallet/provider investigation;
-there is intentionally no blind “forget and sign again” action.
-
-`PendingNativeTransactions` accepts `playerId`, `linkedAccounts` and optional
-`onConfirmed`; it shows only pending/error/recent-result content, not an empty
-operational dashboard. `dev/native-pending.html` provides button-created synthetic
-submitted, failed and missing-hash states plus confirmed/failed/offline responses.
-The fixture performs no wallet or chain operation. Browser/device inspection is
-owned by the integration pass; unit tests alone do not establish physical-phone
-acceptance.
+The live read-only anchor proof uses an existing project receipt and a reconstructed earlier boundary; it also proves rejection at the same block and after a freshly observed boundary. It does not claim that a new wallet request was signed or that physical wallet return was tested.
 
 ## Sponsored tasks and shared recovery
 

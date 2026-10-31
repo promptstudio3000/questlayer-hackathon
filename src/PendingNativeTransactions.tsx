@@ -3,10 +3,17 @@ import {
   ArrowClockwise,
   ArrowSquareOut,
   Clock,
+  DownloadSimple,
+  UploadSimple,
   WarningCircle,
 } from "@phosphor-icons/react";
 import {
   NATIVE_PENDING_EVENT,
+  NATIVE_PENDING_STORAGE_PREFIX,
+  NATIVE_RECOVERY_MAX_BYTES,
+  initializePendingNativeTransactions,
+  exportPendingNativeTransactions,
+  importPendingNativeTransactions,
   readPendingNativeTransactions,
   checkPendingNativeTransaction,
   clearFailedNativeTransaction,
@@ -57,21 +64,27 @@ export function PendingNativeTransactions({
     playerId: string;
     entries: PendingNativeTransaction[];
     error: string;
-  }>({ playerId: "", entries: [], error: "" });
+    ready: boolean;
+  }>({ playerId: "", entries: [], error: "", ready: false });
   const [busy, setBusy] = useState(""),
-    [message, setMessage] = useState(""),
+    [feedback, setFeedback] = useState({ text: "", error: false }),
     [hashes, setHashes] = useState<Record<string, string>>({}),
     [acknowledged, setAcknowledged] = useState<Record<string, boolean>>({});
   const identity = `${playerId}:${[...linkedAccounts].sort().join(",")}`;
   const latest = useRef(identity);
   latest.current = identity;
-  const mounted = useRef(true);
-  const heading = useRef<HTMLHeadingElement>(null);
+  const mounted = useRef(true),
+    flight = useRef<symbol | null>(null),
+    heading = useRef<HTMLHeadingElement>(null),
+    recoveryFile = useRef<HTMLInputElement>(null);
+  const isCurrent = (who: string) => mounted.current && latest.current === who;
   useEffect(() => {
     setBusy("");
-    setMessage("");
+    flight.current = null;
+    setFeedback({ text: "", error: false });
     setHashes({});
     setAcknowledged({});
+    if (recoveryFile.current) recoveryFile.current.value = "";
   }, [identity]);
   useEffect(() => {
     mounted.current = true;
@@ -80,31 +93,64 @@ export function PendingNativeTransactions({
     };
   }, []);
   useEffect(() => {
-    setBusy("");
-    setMessage("");
-    setHashes({});
-    setAcknowledged({});
+    let active = true,
+      initialized = false;
+    setSnapshot({ playerId, entries: [], error: "", ready: false });
     const refresh = () => {
-      setMessage("");
+      if (!active || !initialized) return;
       try {
         setSnapshot({
           playerId,
           entries: readPendingNativeTransactions(playerId),
           error: "",
+          ready: true,
         });
       } catch (error) {
-        setSnapshot({ playerId, entries: [], error: (error as Error).message });
+        setSnapshot({
+          playerId,
+          entries: [],
+          error: (error as Error).message,
+          ready: false,
+        });
       }
     };
-    refresh();
+    const changedElsewhere = (event: StorageEvent) => {
+      if (
+        event.key === null ||
+        event.key === `${NATIVE_PENDING_STORAGE_PREFIX}${playerId}`
+      )
+        refresh();
+    };
     window.addEventListener(NATIVE_PENDING_EVENT, refresh);
-    return () => window.removeEventListener(NATIVE_PENDING_EVENT, refresh);
+    window.addEventListener("storage", changedElsewhere);
+    void initializePendingNativeTransactions({ playerId })
+      .then(() => {
+        if (!active) return;
+        initialized = true;
+        refresh();
+      })
+      .catch((error: Error) => {
+        if (active)
+          setSnapshot({
+            playerId,
+            entries: [],
+            error: error.message,
+            ready: false,
+          });
+      });
+    return () => {
+      active = false;
+      window.removeEventListener(NATIVE_PENDING_EVENT, refresh);
+      window.removeEventListener("storage", changedElsewhere);
+    };
   }, [playerId]);
   async function check(entry: PendingNativeTransaction, clear = false) {
-    if (busy || !linkedAccounts.includes(entry.accountId)) return;
-    const who = identity;
+    if (flight.current || !linkedAccounts.includes(entry.accountId)) return;
+    const who = identity,
+      token = Symbol("receipt-check");
+    flight.current = token;
     setBusy(entry.id);
-    setMessage("");
+    setFeedback({ text: "", error: false });
     try {
       if (clear)
         await clearFailedNativeTransaction(
@@ -118,43 +164,182 @@ export function PendingNativeTransactions({
           entry.id,
           hashes[entry.id],
         );
-      if (!mounted.current || latest.current !== who) return;
-      setMessage(
-        clear
+      if (!isCurrent(who)) return;
+      setFeedback({
+        text: clear
           ? "The checked receipt is cleared. Review the current record before choosing another action."
           : "Transaction confirmed. Your current balance or item record can now be refreshed.",
-      );
+        error: false,
+      });
       heading.current?.focus();
       await onConfirmed?.();
     } catch (error) {
-      if (mounted.current && latest.current === who)
-        setMessage((error as Error).message);
+      if (isCurrent(who))
+        setFeedback({ text: (error as Error).message, error: true });
     } finally {
-      if (mounted.current && latest.current === who) setBusy("");
+      if (flight.current === token) flight.current = null;
+      if (isCurrent(who)) setBusy("");
+    }
+  }
+  async function downloadReceipts() {
+    if (flight.current) return;
+    const who = identity,
+      token = Symbol("receipt-export");
+    flight.current = token;
+    setBusy("export");
+    setFeedback({ text: "", error: false });
+    try {
+      const content = await exportPendingNativeTransactions({ playerId });
+      if (!isCurrent(who)) return;
+      const url = URL.createObjectURL(
+        new Blob([content], { type: "application/json" }),
+      );
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `questlayer-receipts-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.hidden = true;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+      setFeedback({
+        text: "Receipt download started. Keep the file private; it contains account addresses and transaction details.",
+        error: false,
+      });
+    } catch (error) {
+      if (isCurrent(who))
+        setFeedback({ text: (error as Error).message, error: true });
+    } finally {
+      if (flight.current === token) flight.current = null;
+      if (isCurrent(who)) setBusy("");
+    }
+  }
+  async function importFile(file: File) {
+    if (flight.current || !linkedAccounts.length) return;
+    const who = identity,
+      token = Symbol("receipt-import");
+    flight.current = token;
+    setBusy("import");
+    setFeedback({ text: "", error: false });
+    try {
+      if (file.size > NATIVE_RECOVERY_MAX_BYTES)
+        throw Error("Choose a receipt file smaller than 100 KB.");
+      const content = await file.text();
+      if (!isCurrent(who)) return;
+      const result = await importPendingNativeTransactions(
+        { playerId },
+        content,
+        linkedAccounts,
+      );
+      if (!isCurrent(who)) return;
+      setFeedback({
+        text: result.imported
+          ? `${result.imported === 1 ? "Receipt imported" : `${result.imported} receipts imported`}. Check confirmation to verify the result. Nothing was signed.`
+          : "These receipts are already saved. Check confirmation to verify their result.",
+        error: false,
+      });
+      heading.current?.focus();
+    } catch (error) {
+      if (isCurrent(who))
+        setFeedback({ text: (error as Error).message, error: true });
+    } finally {
+      if (flight.current === token) flight.current = null;
+      if (isCurrent(who)) setBusy("");
     }
   }
   const current =
-    snapshot.playerId === playerId ? snapshot : { entries: [], error: "" };
-  if (!current.entries.length && !current.error && !message) return null;
+    snapshot.playerId === playerId
+      ? snapshot
+      : { entries: [], error: "", ready: false };
+  const hasPending = current.entries.length > 0;
+  const showHeading = hasPending || !!current.error || !!feedback.text;
+  if (!showHeading && !linkedAccounts.length) return null;
   return (
-    <section className="native-pending" aria-label="Pending NEAR transactions">
-      <header>
-        <Clock size={23} aria-hidden="true" />
-        <h3 ref={heading} tabIndex={-1}>
-          Check your transaction
-        </h3>
-      </header>
-      <p>Checking a receipt never sends another transaction.</p>
+    <section
+      className={`native-pending${showHeading ? "" : " native-pending-empty"}`}
+      aria-label="NEAR transaction recovery"
+    >
+      {showHeading && (
+        <header>
+          <Clock size={23} aria-hidden="true" />
+          <h3 ref={heading} tabIndex={-1}>
+            {hasPending ? "Check your transaction" : "Transaction recovery"}
+          </h3>
+        </header>
+      )}
+      {hasPending && <p>Checking a receipt never sends another transaction.</p>}
       {current.error && (
         <p className="native-pending-error" role="alert">
           {current.error}
         </p>
       )}
-      {message && (
-        <p className="native-pending-message" role="status">
-          {message}
+      {feedback.text && (
+        <p
+          className={
+            feedback.error ? "native-pending-error" : "native-pending-message"
+          }
+          role={feedback.error ? "alert" : "status"}
+        >
+          {feedback.text}
         </p>
       )}
+      <details className="native-recovery-file">
+        <summary>Receipt backup and recovery</summary>
+        <p>
+          Saved receipts stay in this browser after it closes. Keep a backup
+          before clearing site data or moving to another device.
+        </p>
+        <p>
+          The file contains account addresses and reviewed transaction details,
+          never wallet keys or a recovery phrase. It cannot restore access to
+          your wallet. Keep it private.
+        </p>
+        <div className="native-pending-actions">
+          <button
+            className="secondary-button"
+            disabled={!!busy || !current.ready || !hasPending}
+            onClick={() => void downloadReceipts()}
+          >
+            <DownloadSimple size={19} aria-hidden="true" />
+            {busy === "export" ? "Preparing…" : "Download receipts"}
+          </button>
+          <button
+            className="secondary-button"
+            disabled={!!busy || !current.ready || !linkedAccounts.length}
+            onClick={() => recoveryFile.current?.click()}
+          >
+            <UploadSimple size={19} aria-hidden="true" />
+            {busy === "import" ? "Importing…" : "Import receipts"}
+          </button>
+          <input
+            ref={recoveryFile}
+            className="native-recovery-file-input"
+            type="file"
+            accept="application/json,.json"
+            tabIndex={-1}
+            aria-label="Choose a receipt backup"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) void importFile(file);
+            }}
+          />
+        </div>
+        {!current.ready && !current.error && (
+          <p role="status">Checking saved receipts…</p>
+        )}
+        {!hasPending && current.ready && (
+          <p>No pending receipts are saved here.</p>
+        )}
+        {!linkedAccounts.length && (
+          <p>Reconnect the original NEAR wallet to import its receipts.</p>
+        )}
+        <p>
+          Import into the same QuestLayer player with the original NEAR wallet
+          linked. Imported results need confirmation; loading a file never signs
+          a transaction.
+        </p>
+      </details>
       {current.entries.map((entry) => {
         const linked = linkedAccounts.includes(entry.accountId),
           checking = busy === entry.id;
@@ -201,6 +386,12 @@ export function PendingNativeTransactions({
                   If the wallet gave no clear result, find the transaction in
                   its history. Nothing will be signed again here.
                 </small>
+                {entry.afterBlock === undefined && (
+                  <small>
+                    This older record has no chain checkpoint. Match the request
+                    date, amount and reviewed terms carefully.
+                  </small>
+                )}
               </label>
             )}
             <div className="native-pending-actions">
@@ -227,8 +418,10 @@ export function PendingNativeTransactions({
               )}
             </div>
             <details>
-              <summary>Signed terms</summary>
+              <summary>Reviewed terms</summary>
               <dl>
+                <dt>Requested</dt>
+                <dd>{new Date(entry.createdAt).toLocaleString()}</dd>
                 <dt>Network</dt>
                 <dd>NEAR testnet</dd>
                 <dt>Contract</dt>
@@ -242,9 +435,8 @@ export function PendingNativeTransactions({
               </dl>
               <pre>{JSON.stringify(entry.quote.args, null, 2)}</pre>
               <p>
-                These public transaction terms are saved only in this tab’s
-                session. Closing the browser can remove this recovery record;
-                the on-chain receipt remains.
+                Reviewed terms are saved in this browser. Clearing its site data
+                can remove this recovery record; the on-chain receipt remains.
               </p>
             </details>
             {entry.phase === "failed" && (

@@ -36,6 +36,19 @@ export class NoteMedia {
     let checked = 0,
       removed = 0;
     const linked = db.prepare("SELECT 1 FROM messages WHERE image=? LIMIT 1");
+    const hasRetirements = db
+      .prepare(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='social_media_retirements'",
+      )
+      .get();
+    const retirement = hasRetirements
+      ? db.prepare(
+          "SELECT retired_at FROM social_media_retirements WHERE image=?",
+        )
+      : null;
+    const forget = hasRetirements
+      ? db.prepare("DELETE FROM social_media_retirements WHERE image=?")
+      : null;
     const count = Math.min(limit, files.length);
     for (let i = 0; i < count; i++) {
       const name = files[(this.pruneCursor + i) % files.length],
@@ -44,12 +57,20 @@ export class NoteMedia {
       try {
         const stat = lstatSync(path);
         checked++;
-        if (stat.isFile() && stat.mtimeMs < now - graceMs && !linked.get(url)) {
+        const retiredAt = retirement?.get(url)?.retired_at;
+        if (
+          stat.isFile() &&
+          stat.mtimeMs < now - graceMs &&
+          (retiredAt === undefined || retiredAt < now - graceMs) &&
+          !linked.get(url)
+        ) {
           rmSync(path);
+          forget?.run(url);
           removed++;
         }
       } catch (error) {
         if (error.code !== "ENOENT") throw error;
+        forget?.run(url);
       }
     }
     this.pruneCursor = files.length

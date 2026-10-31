@@ -1,0 +1,62 @@
+{
+  "checkedAt": "2026-10-31T16:17:47.912Z",
+  "release": "20261031T161600Z",
+  "indexStatus": 200,
+  "exactBuiltHtml": true,
+  "htmlSha256": "b0d2d18132cc9c224bc2afae9729b8bb0ed948c1555c42d96454d2b9fc56e172",
+  "bundle": "/assets/index-C4wmYYs6.js",
+  "unauthenticated": [
+    {
+      "path": "/api/social/blocks",
+      "status": 401
+    },
+    {
+      "path": "/api/messages",
+      "status": 401
+    },
+    {
+      "path": "/api/media/image_00000000-0000-4000-8000-000000000001.jpg",
+      "status": 401
+    },
+    {
+      "path": "/api/native/transactions/confirm",
+      "status": 401
+    },
+    {
+      "path": "/api/native/transactions/anchor",
+      "status": 401
+    }
+  ],
+  "health": {
+    "status": "ok",
+    "app": "QuestLayer",
+    "version": "0.1.0",
+    "mode": "demo",
+    "worldPreparation": {
+      "cityId": "plzen",
+      "timezone": "Europe/Prague",
+      "version": 1,
+      "financialMode": "demo",
+      "days": [
+        {
+          "day": "2026-10-31",
+          "state": "ready",
+          "attempts": 1,
+          "updatedAt": 1793416757052
+        },
+        {
+          "day": "2026-11-01",
+          "state": "ready",
+          "attempts": 1,
+          "updatedAt": 1793416757246
+        }
+      ]
+    },
+    "nativeRewards": {
+      "last_success": 1793463444847,
+      "last_error": null,
+      "queued": 0
+    },
+    "now": 1793463467959
+  }
+}

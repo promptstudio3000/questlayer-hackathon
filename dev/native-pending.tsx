@@ -11,7 +11,10 @@ const playerId = "fixture_native_pending",
   key = `questlayer:native-pending:v1:${playerId}`;
 const hash = "H".repeat(44);
 function Fixture() {
-  const [response, setResponse] = useState("confirmed");
+  const [response, setResponse] = useState("confirmed"),
+    [linked, setLinked] = useState(true);
+  const largeText =
+    new URLSearchParams(location.search).get("text") === "large";
   useEffect(() => {
     const original = window.fetch;
     window.fetch = async (input, init) => {
@@ -65,7 +68,8 @@ function Fixture() {
           }
         : {}),
     };
-    sessionStorage.setItem(
+    sessionStorage.removeItem(key);
+    localStorage.setItem(
       key,
       JSON.stringify({ version: 1, playerId, entries: [entry] }),
     );
@@ -84,55 +88,83 @@ function Fixture() {
       <p>
         Synthetic browser states. No wallet, signature or network transaction.
       </p>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {(["submitted", "failed", "awaiting_wallet"] as const).map((phase) => (
+      {largeText && (
+        <style>{`#root .native-pending :is(p,small,span,b,summary,label,input,button,a,dt,dd,pre) { font-size: 32px !important; } #root .native-pending h3 { font-size: 40px !important; }`}</style>
+      )}
+      <details>
+        <summary style={{ minHeight: 48, fontSize: 16, cursor: "pointer" }}>
+          Review controls
+        </summary>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {(["submitted", "failed", "awaiting_wallet"] as const).map(
+            (phase) => (
+              <button
+                key={phase}
+                className="secondary-button"
+                style={{ minHeight: 48, fontSize: 16 }}
+                onClick={() => seed(phase)}
+              >
+                {phase === "submitted"
+                  ? "Add pending receipt"
+                  : phase === "failed"
+                    ? "Add final failure"
+                    : "Add missing receipt"}
+              </button>
+            ),
+          )}
           <button
-            key={phase}
             className="secondary-button"
             style={{ minHeight: 48, fontSize: 16 }}
-            onClick={() => seed(phase)}
+            onClick={() => {
+              sessionStorage.removeItem(key);
+              localStorage.removeItem(key);
+              window.dispatchEvent(new Event(NATIVE_PENDING_EVENT));
+            }}
           >
-            {phase === "submitted"
-              ? "Add pending receipt"
-              : phase === "failed"
-                ? "Add final failure"
-                : "Add missing receipt"}
+            Clear fixture
           </button>
-        ))}
-        <button
-          className="secondary-button"
-          style={{ minHeight: 48, fontSize: 16 }}
-          onClick={() => {
-            sessionStorage.removeItem(key);
-            window.dispatchEvent(new Event(NATIVE_PENDING_EVENT));
+        </div>
+        <label
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            marginTop: 16,
+            fontSize: 16,
           }}
         >
-          Clear fixture
-        </button>
-      </div>
-      <label
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          marginTop: 16,
-          fontSize: 16,
-        }}
-      >
-        Fixture confirmation response
-        <select
-          value={response}
-          onChange={(e) => setResponse(e.target.value)}
-          style={{ minHeight: 48, fontSize: 16 }}
+          Fixture confirmation response
+          <select
+            value={response}
+            onChange={(e) => setResponse(e.target.value)}
+            style={{ minHeight: 48, fontSize: 16 }}
+          >
+            <option value="confirmed">Final confirmation</option>
+            <option value="failed">Final failure</option>
+            <option value="offline">Unavailable connection</option>
+          </select>
+        </label>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            minHeight: 48,
+            gap: 12,
+            fontSize: 16,
+          }}
         >
-          <option value="confirmed">Final confirmation</option>
-          <option value="failed">Final failure</option>
-          <option value="offline">Unavailable connection</option>
-        </select>
-      </label>
+          <input
+            type="checkbox"
+            checked={linked}
+            onChange={(e) => setLinked(e.target.checked)}
+            style={{ width: 24, height: 24 }}
+          />
+          Original NEAR wallet linked
+        </label>
+      </details>
       <PendingNativeTransactions
         playerId={playerId}
-        linkedAccounts={[accountId]}
+        linkedAccounts={linked ? [accountId] : []}
       />
     </main>
   );

@@ -7,10 +7,14 @@ import {
   readdirSync,
   statSync,
   utimesSync,
+  existsSync,
+  copyFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
+import { backup, DatabaseSync } from "node:sqlite";
+import { SocialContent } from "../server/social-content.mjs";
 import { NoteMedia } from "../server/note-media.mjs";
 import { openDatabase, createPlayer } from "../server/database.mjs";
 
@@ -115,4 +119,104 @@ test("orphan cleanup preserves referenced and recent images across bounded passe
   assert.equal(removed, 1);
   assert(readFileSync(media.file(retained)).length);
   assert(readFileSync(media.file(recent)).length);
+});
+
+test("deletion revokes access immediately but lets an earlier database snapshot finish copying media", async (t) => {
+  const { media, dir } = fixture(t),
+    db = openDatabase(":memory:");
+  t.after(() => db.close());
+  const player = createPlayer(db, "Restore test"),
+    viewer = createPlayer(db, "Reader");
+  let now = Date.now();
+  const social = new SocialContent(db, { clock: () => now });
+  const image = await sharp({
+    create: { width: 2, height: 2, channels: 3, background: "white" },
+  })
+    .png()
+    .toBuffer();
+  const source = "data:image/png;base64," + image.toString("base64");
+  const note = await social.create(
+    player,
+    {
+      clientId: "backup-race",
+      text: "A public place",
+      lat: 49,
+      lng: 13,
+      arena: true,
+      publicConsent: true,
+      shareGps: false,
+      image: source,
+    },
+    { storeImage: (data) => media.store(data) },
+  );
+  const url = db
+    .prepare("SELECT image FROM messages WHERE id=?")
+    .get(note.id).image;
+  const old = new Date(now - 7 * 86400000);
+  utimesSync(media.file(url), old, old);
+  const snapshot = join(dir, "snapshot.sqlite");
+  await backup(db, snapshot);
+  social.remove(player, note.id);
+  assert.equal(social.mediaAllowed(player, url), false);
+  assert.equal(social.mediaAllowed(viewer, url), false);
+  assert.equal(media.prune(db, { now }).removed, 0);
+  assert.equal(
+    db
+      .prepare("SELECT retired_at FROM social_media_retirements WHERE image=?")
+      .get(url).retired_at,
+    now,
+  );
+  const earlier = new DatabaseSync(snapshot, { readOnly: true });
+  assert.equal(
+    earlier.prepare("SELECT image FROM messages WHERE id=?").get(note.id).image,
+    url,
+  );
+  copyFileSync(media.file(url), join(dir, "snapshot-photo.jpg"));
+  earlier.close();
+  now += 86400001;
+  social.remove(player, note.id);
+  assert.equal(media.prune(db, { now }).removed, 1);
+  assert.equal(existsSync(media.file(url)), false);
+  assert.equal(
+    db.prepare("SELECT COUNT(*) n FROM social_media_retirements").get().n,
+    0,
+  );
+  assert(
+    existsSync(join(dir, "snapshot-photo.jpg")),
+    "an older private backup has its independent copy",
+  );
+});
+
+test("media retirement and content removal roll back together", async (t) => {
+  const db = openDatabase(":memory:");
+  t.after(() => db.close());
+  const player = createPlayer(db, "Owner"),
+    social = new SocialContent(db);
+  const url = "/api/media/image_11111111-1111-4111-8111-111111111111.jpg";
+  const note = await social.create(
+    player,
+    {
+      clientId: "rollback",
+      text: "Keep on failure",
+      lat: 49,
+      lng: 13,
+      arena: true,
+      publicConsent: true,
+      shareGps: false,
+      image: "data:image/png;base64,YQ==",
+    },
+    { storeImage: async () => url },
+  );
+  db.exec(
+    "CREATE TRIGGER stop_delete BEFORE UPDATE ON messages BEGIN SELECT RAISE(ABORT,'disk failure'); END;",
+  );
+  assert.throws(() => social.remove(player, note.id), /disk failure/);
+  assert.equal(
+    db.prepare("SELECT COUNT(*) n FROM social_media_retirements").get().n,
+    0,
+  );
+  assert.equal(
+    db.prepare("SELECT image FROM messages WHERE id=?").get(note.id).image,
+    url,
+  );
 });

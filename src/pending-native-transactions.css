@@ -163,3 +163,35 @@
   font-size: 14px;
   line-height: 1.5;
 }
+.native-pending-empty {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.native-recovery-file {
+  margin-top: 12px;
+}
+.native-pending-empty .native-recovery-file {
+  margin-top: 0;
+}
+.native-recovery-file > summary {
+  font-size: 16px;
+}
+.native-pending .native-recovery-file-input {
+  display: none;
+}
+.native-recovery-file .native-pending-actions {
+  align-items: stretch;
+}
+.native-pending button:disabled {
+  cursor: not-allowed;
+}
+.native-pending p {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.native-pending .native-pending-account,
+.native-pending details p {
+  font-size: 14px;
+  line-height: 1.5;
+}

@@ -32,6 +32,8 @@ export function initSocialContent(db) {
   db.exec(`CREATE TABLE IF NOT EXISTS social_note_meta (
     note_id TEXT PRIMARY KEY REFERENCES messages(id), arena INTEGER NOT NULL CHECK(arena IN(0,1)),
     state TEXT NOT NULL CHECK(state IN('published','hidden','deleted')), updated_at INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS social_media_retirements (
+      image TEXT PRIMARY KEY, retired_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS social_note_operations (
       player_id TEXT NOT NULL REFERENCES players(id), client_id TEXT NOT NULL, request_hash TEXT NOT NULL,
       state TEXT NOT NULL CHECK(state IN('processing','failed','complete','abandoned')), lease_id TEXT,
@@ -447,6 +449,14 @@ export class SocialContent {
       );
       const removedImage = note.image;
       if (note.state !== "deleted") {
+        // Revoke access immediately; leave a durable cleanup grace for a backup
+        // that already captured the old reference. Do not reset this on retries.
+        if (removedImage)
+          this.db
+            .prepare(
+              "INSERT OR IGNORE INTO social_media_retirements VALUES(?,?)",
+            )
+            .run(removedImage, this.clock());
         this.db
           .prepare(
             "UPDATE messages SET text='',lat=0,lng=0,image=NULL,author_fix=NULL WHERE id=?",

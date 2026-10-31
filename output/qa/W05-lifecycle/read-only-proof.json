@@ -1,0 +1,171 @@
+{
+  "verifiedAt": "2026-10-31T16:00:43.839Z",
+  "network": "testnet",
+  "mode": "read-only; no signer, transaction, epoch bypass or account mutation",
+  "newTransactions": 0,
+  "blockHash": "JDjcBH4yfY1PqVhC7XNGSiyCEZxTzxdTEayQ6EPhwSEk",
+  "blockHeight": 275621063,
+  "blockTime": "2026-10-31T16:00:40.735Z",
+  "treasury": {
+    "policy": "50/50-v1",
+    "buckets": {
+      "coins": {
+        "available": "88001000000000000000000",
+        "reserved": "11990000000000000000000",
+        "awarded": "10000000000000000000"
+      },
+      "zones": {
+        "available": "88001000000000000000000",
+        "reserved": "12000000000000000000000",
+        "awarded": "0"
+      }
+    },
+    "funded": "200002000000000000000000",
+    "available": "176002000000000000000000",
+    "reserved": "23990000000000000000000",
+    "owed": "9000000000000000000",
+    "pending": "0",
+    "withdrawn": "1000000000000000000",
+    "rewardLiabilities": "200001000000000000000000",
+    "reconciled": true,
+    "fundingLabel": "Confirmed reward funding; sponsors and realized yield are distinct sources.",
+    "excludes": [
+      "player principal",
+      "operating top-ups",
+      "receipt storage fees"
+    ]
+  },
+  "staking": {
+    "complete": true,
+    "poolComplete": true,
+    "coverage": {
+      "registeredPositions": 2,
+      "observedPositions": 2,
+      "unavailablePositions": 0,
+      "observedPoolPositions": 2,
+      "staleVaultPoolObservations": 0,
+      "pendingCreationCount": 0
+    },
+    "totals": {
+      "principal": "110000000000000000000000",
+      "weightedStake": "0",
+      "ownerCredit": "0",
+      "ownerPending": "0",
+      "ownerPaid": "0",
+      "gameCredit": "0",
+      "gamePending": "0",
+      "realizedGameYieldPaid": "0"
+    },
+    "observedSubtotals": {
+      "principal": "110000000000000000000000",
+      "weightedStake": "0",
+      "ownerCredit": "0",
+      "ownerPending": "0",
+      "ownerPaid": "0",
+      "gameCredit": "0",
+      "gamePending": "0",
+      "realizedGameYieldPaid": "0"
+    },
+    "stakers": 1,
+    "contributingStakers": 1,
+    "poolBalances": {
+      "staked": "100003530090523171774437",
+      "unstaked": "10003530090523171774444"
+    },
+    "phases": {
+      "unlocking_epochs": 2
+    },
+    "pools": [
+      {
+        "id": "aurora.pool.f863973.m0",
+        "name": "Aurora validator",
+        "status": "observed",
+        "registeredPositions": 2,
+        "observedPositions": 2,
+        "staked": "100003530090523171774437",
+        "unstaked": "10003530090523171774444",
+        "rewardFee": {
+          "numerator": 9,
+          "denominator": 100
+        }
+      }
+    ],
+    "unlocks": [
+      {
+        "currentEpoch": "5399",
+        "unlockEpoch": "5403",
+        "canWithdraw": false,
+        "phase": "unlocking_epochs"
+      },
+      {
+        "currentEpoch": "5399",
+        "unlockEpoch": "5402",
+        "canWithdraw": false,
+        "phase": "unlocking_epochs"
+      }
+    ],
+    "tierPolicy": "conservative-mature-principal-v1",
+    "contributionPolicy": "fixed-per-vault",
+    "apy": null,
+    "outlook": {
+      "day": null,
+      "week": null,
+      "month": null,
+      "quarter": null,
+      "year": null,
+      "reason": "No attributable realized-yield history supports a forecast yet."
+    }
+  },
+  "pilot": {
+    "accountId": "v0.questlayer-vaults-20261031.testnet",
+    "state": {
+      "version": 1,
+      "network": "testnet",
+      "beneficiary": "questlayer-pilot-20261031.testnet",
+      "pool": "aurora.pool.f863973.m0",
+      "rewards": "questlayer-rewards-20261031.testnet",
+      "contribution_bps": 5000,
+      "stage": "unlocking",
+      "nonce": "3",
+      "operation": "exit",
+      "exit_requested": true,
+      "unlock_epoch": "5402",
+      "epoch": "5399",
+      "observed_epoch": "5398",
+      "principal": "10000000000000000000000",
+      "high_water_basis": "10000000000000000000000",
+      "staked": "9999999999999999999994",
+      "unstaked": "6",
+      "pending_pool_cash": "0",
+      "owner_credit": "0",
+      "owner_pending": "0",
+      "game_credit": "0",
+      "game_pending": "0",
+      "deposited": "10000000000000000000000",
+      "owner_paid": "0",
+      "game_paid": "0",
+      "weighted_stake": "0",
+      "tier": 1,
+      "contribution_policy": "fixed-per-vault",
+      "tier_policy": "conservative-mature-principal-v1"
+    },
+    "pool": {
+      "staked": "0",
+      "unstaked": "10000000000000000000001",
+      "canWithdraw": false
+    },
+    "beneficiary": "questlayer-pilot-20261031.testnet",
+    "cachedPoolObservationStale": false,
+    "phase": "unlocking_epochs"
+  },
+  "exitEpochReached": false,
+  "fullExitCycleComplete": false,
+  "gameYieldReceived": false,
+  "boundaries": [
+    "All contract, pool and treasury reads use the same finalized block and reviewed code fingerprints",
+    "Pool unstaked balance is not beneficiary cash; epoch maturity alone does not establish pool release",
+    "Only game_paid establishes a vault's realized yield transfer; sponsor-funded treasury balances are not yield",
+    "An aggregate 50/50 treasury reconciliation does not independently establish each historical funding receipt",
+    "This observation does not exercise a physical wallet or multi-epoch live failure recovery"
+  ]
+}

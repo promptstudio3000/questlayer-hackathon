@@ -1,3 +1,8 @@
+import {
+  readTransactionAnchor,
+  requireTransactionAfter,
+  validReceiptStatus,
+} from "./transaction-anchor.mjs";
 import { isDeepStrictEqual } from "node:util";
 import { assert } from "../domain.mjs";
 import { nearAccountId } from "../identity/near.mjs";
@@ -407,6 +412,17 @@ export class NativeTransactionConfirmation {
       );
     return { pinned, result };
   }
+  async anchor(player, accountId) {
+    this.linked(player, accountId);
+    const deadline = Date.now() + this.timeoutMs;
+    const afterBlock = await readTransactionAnchor(
+      this.provider,
+      (value) => this.bounded(value, deadline),
+      this.clock,
+    );
+    this.linked(player, accountId);
+    return { network: "testnet", accountId, afterBlock };
+  }
   async confirm(player, input) {
     assert(input && typeof input === "object", "Choose a native transaction.");
     const { accountId, transactionHash, quote } = input;
@@ -568,12 +584,11 @@ export class NativeTransactionConfirmation {
       "The native receipt differs from the reviewed transaction.",
       409,
     );
-    assert(
-      keys(outcome.status, ["SuccessValue"]) &&
-        typeof outcome.status.SuccessValue === "string",
-      "The native operation failed. Refresh its current state before retrying.",
-      409,
-      "NATIVE_TRANSACTION_FAILED",
+    await requireTransactionAfter(
+      this.provider,
+      outcome,
+      input.afterBlock,
+      (value) => this.bounded(value, deadline),
     );
     assert(
       Array.isArray(outcome.receipts_outcome) &&
@@ -585,10 +600,9 @@ export class NativeTransactionConfirmation {
     );
     const receipts = [outcome.transaction_outcome, ...outcome.receipts_outcome];
     assert(
-      receipts.every((r) => r?.outcome?.status && !r.outcome.status.Failure),
-      "A native receipt failed. Refresh the current state before retrying.",
-      409,
-      "NATIVE_TRANSACTION_FAILED",
+      receipts.every((r) => validReceiptStatus(r?.outcome?.status)),
+      "The finalized receipt chain is incomplete.",
+      503,
     );
     // Pin the executed receiver code as well as its current deployment. A mutable
     // testnet account's present code alone cannot establish historical execution.
@@ -612,13 +626,44 @@ export class NativeTransactionConfirmation {
         pin(quote.receiverId, policy.pinned.get(quote.receiverId), hash),
       ),
     );
-    if (policy.result === "true")
+    this.linked(player, accountId);
+    assert(
+      validReceiptStatus(outcome.status),
+      "The final transaction outcome is unavailable. Keep its receipt.",
+      503,
+    );
+    assert(
+      !Object.hasOwn(outcome.status, "Failure"),
+      "The native operation failed. Refresh its current state before retrying.",
+      409,
+      "NATIVE_TRANSACTION_FAILED",
+    );
+    assert(
+      keys(outcome.status, ["SuccessValue"]) &&
+        typeof outcome.status.SuccessValue === "string",
+      "The final transaction outcome is unavailable. Keep its receipt.",
+      503,
+    );
+    assert(
+      receipts.every((r) => !Object.hasOwn(r.outcome.status, "Failure")),
+      "A native receipt failed. Refresh the current state before retrying.",
+      409,
+      "NATIVE_TRANSACTION_FAILED",
+    );
+    if (policy.result === "true") {
+      const completed = decodeJson(outcome.status.SuccessValue);
       assert(
-        decodeJson(outcome.status.SuccessValue) === true,
+        typeof completed === "boolean",
+        "The native callback result is invalid. Keep its receipt.",
+        503,
+      );
+      assert(
+        completed === true,
         "The transaction finished, but the requested operation did not complete. Refresh its current balance or position before retrying.",
         409,
         "NATIVE_OPERATION_NOT_COMPLETED",
       );
+    }
     if (policy.result === "unit")
       assert(
         outcome.status.SuccessValue === "",

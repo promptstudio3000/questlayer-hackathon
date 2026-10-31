@@ -44,9 +44,11 @@ with open(destination / ".backup.lock", "a") as lock:
         source = sqlite3.connect("file:" + quote(str(database)) + "?mode=ro", uri=True, timeout=10)
         target = sqlite3.connect(pending / "database.sqlite")
         deadline = time.monotonic() + 90
-        def progress(_status, _remaining, _total):
+        def check_deadline():
             if time.monotonic() > deadline:
                 raise TimeoutError("Snapshot deadline exceeded")
+        def progress(_status, _remaining, _total):
+            check_deadline()
         try:
             source.backup(target, pages=256, progress=progress, sleep=0.02)
             target.execute("PRAGMA journal_mode=DELETE")
@@ -85,6 +87,7 @@ with open(destination / ".backup.lock", "a") as lock:
                 native_keys.append(name)
         media = []
         for reference in sorted(media_references):
+            check_deadline()
             match = re.fullmatch(r"/api/media/(image_[a-f0-9-]{1,80}\.jpg)", reference)
             assert match, "Unsupported referenced media path"
             source_media = state / ".data" / "media" / match.group(1)
@@ -98,6 +101,7 @@ with open(destination / ".backup.lock", "a") as lock:
                 file.flush()
                 os.fsync(file.fileno())
             media.append({"file": match.group(1), "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()})
+        check_deadline()
         metadata = {"application": "QuestLayer", "format": 1, "snapshotId": identifier,
                     "createdAt": now.isoformat(), "integrity": "ok", "databaseBytes": snapshot.stat().st_size,
                     "databaseSha256": digest.hexdigest(), "awardAttestorIncluded": included,
