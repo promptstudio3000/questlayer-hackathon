@@ -3,6 +3,7 @@ import { GotchiModels } from "./gotchi-models.mjs";
 import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
 import { NativeSocialProfile } from "./native/social-profile.mjs";
+import { resolvePublicFile } from "./static-files.mjs";
 import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
@@ -1384,9 +1385,15 @@ const types = {
   ".css": "text/css",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
   ".webmanifest": "application/manifest+json",
   ".woff2": "font/woff2",
+  ".woff": "font/woff",
   ".glb": "model/gltf-binary",
+  ".json": "application/json; charset=utf-8",
 };
 const server = createServer(async (req, res) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -1398,22 +1405,19 @@ const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, "http://localhost");
     if (url.pathname.startsWith("/api/")) return await api(req, res, url);
-    const root = resolve(APP_ROOT, "dist"),
-      file = resolve(root, `.${decodeURIComponent(url.pathname)}`);
-    assert(
-      file === root || file.startsWith(root + "/"),
-      "Path is not allowed.",
-      403,
+    const target = resolvePublicFile(
+      resolve(APP_ROOT, "dist"),
+      url.pathname,
+      process.env.STATIC_ASSET_DIR,
     );
-    const target =
-      existsSync(file) && extname(file) ? file : resolve(root, "index.html");
-    assert(existsSync(target), "Build the application first.", 503);
     res.writeHead(200, {
-      "Content-Type": types[extname(target)] || "application/octet-stream",
-      "Cache-Control":
-        extname(target) === ".html" ? "no-cache" : "public,max-age=3600",
+      "Content-Type": types[extname(target.file)] || "application/octet-stream",
+      "Cache-Control": target.cacheControl,
     });
-    createReadStream(target).pipe(res);
+    if (req.method === "HEAD") return res.end();
+    const stream = createReadStream(target.file);
+    stream.on("error", () => res.destroy());
+    stream.pipe(res);
   } catch (e) {
     if (!res.headersSent)
       respond(

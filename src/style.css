@@ -107,6 +107,11 @@ svg {
   position: absolute;
   inset: 0;
 }
+.map-loading.map-failure {display:grid;gap:12px;width:320px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 160px);overflow:auto;pointer-events:auto;white-space:normal;color:#441c6c;top:50%;}
+.map-loading[role="status"] {font-size:16px;line-height:1.5;color:#634979;white-space:normal;}
+.map-failure strong,.map-failure p,.map-failure button {font-size:16px;line-height:1.5;}
+.map-failure p {margin:0;}
+.map-failure button {min-height:48px;color:#441c6c;border-color:#b9a2d2;}
 .map-vignette {
   position: absolute;
   inset: 0;

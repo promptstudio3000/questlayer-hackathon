@@ -61,7 +61,7 @@ import {
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
-import { GameMap } from "./GameMap";
+import { DeferredGameMap as GameMap } from "./DeferredGameMap";
 import { Ghost, AuraArt } from "./Ghost";
 import type {
   Player,

@@ -901,7 +901,7 @@
     {
       "id": "W12",
       "title": "Device quality and distribution builds",
-      "status": "planned",
+      "status": "building",
       "size": "L",
       "dependsOn": [
         "W02",
@@ -943,7 +943,7 @@
         {
           "id": "W12.1",
           "title": "Complete viewport keyboard accessibility and motion matrix",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W12.2",
@@ -953,7 +953,7 @@
         {
           "id": "W12.3",
           "title": "Deliver PWA cache update and quality fallbacks",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W12.4",
@@ -968,10 +968,14 @@
         {
           "id": "W12.6",
           "title": "Finish purposeful optional effects and visual review",
-          "status": "planned"
+          "status": "building"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/RUNTIME-RELIABILITY.md",
+        "output/qa/W12-startup/checks.txt",
+        "output/qa/W12-startup/bundle-comparison.json"
+      ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W12/"
     },

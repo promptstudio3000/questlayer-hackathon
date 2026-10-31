@@ -5,7 +5,7 @@ HOST_TARGET="${DEPLOY_HOST:-root@72.61.188.39}"
 RELEASE_TAG="$(date -u +%Y%m%dT%H%M%SZ)"
 ARCHIVE_PATH="/tmp/auratrail-${RELEASE_TAG}.tgz"
 if [[ "${AURATRAIL_CHECKS_PASSED:-0}" != 1 ]]; then npm run check; fi
-COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE_PATH" dist server package.json package-lock.json deploy/auratrail.service
+COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE_PATH" dist server package.json package-lock.json deploy/auratrail.service deploy/retain-static-assets.py
 scp -o BatchMode=yes -o ConnectTimeout=15 "$ARCHIVE_PATH" "${HOST_TARGET}:/tmp/auratrail-${RELEASE_TAG}.tgz"
 ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST_TARGET" bash -s -- "$RELEASE_TAG" <<'REMOTE'
 set -Eeuo pipefail
@@ -51,6 +51,7 @@ trap rollback ERR
 tar -xzf "/tmp/auratrail-${RELEASE_TAG}.tgz" -C "$RELEASE_DIR"
 cd "$RELEASE_DIR"
 npm ci --omit=dev --no-audit --no-fund
+python3 deploy/retain-static-assets.py --app-root "$APP_DIR" --release "$RELEASE_DIR"
 ln -sfn "$RELEASE_DIR" "$APP_DIR/current"
 RELEASE_ACTIVATED=1
 install -m 644 deploy/auratrail.service /etc/systemd/system/auratrail.service

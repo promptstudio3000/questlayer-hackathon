@@ -135,6 +135,9 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     await new Promise((r) => setTimeout(r, 100));
   }
   assert.ok(ready, output);
+  const missingChunk = await fetch(base + "/assets/missing-abcdefgh.js");
+  assert.equal(missingChunk.status, 404);
+  assert.match(missingChunk.headers.get("content-type"), /application\/json/);
   async function request(path, data, cookie, requestOrigin = origin) {
     const r = await fetch(base + "/api" + path, {
       method: data === undefined ? "GET" : "POST",

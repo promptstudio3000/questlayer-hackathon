@@ -6,7 +6,7 @@ The next priority is a convincing exploration game across Plzeň: six distinct z
 
 The public deployment is an **alpha demonstration**. Its 20 application tests, eight contract tests and nine recorded native testnet operations establish useful foundations, not completion of the milestones below. The [delivery record](docs/DELIVERY-2026-10-31.md) describes that baseline. Implementation status is tracked in [docs/roadmap.json](docs/roadmap.json); every milestone starts as planned until its actual delivery work begins.
 
-Implementation update, 31 October: W00, W01, W02, W03, W04, W05, W06 and W07 are **building**. The citywide alpha and its evidence are recorded in [the overnight log](docs/OVERNIGHT-2026-10-31.md). No complete milestone exit gate has passed yet; the machine-readable tracker records partial work without converting disconnected native proofs into completed integration.
+Implementation update, 31 October: W00, W01, W02, W03, W04, W05, W06, W07 and W12 are **building**. The citywide alpha and its evidence are recorded in [the overnight log](docs/OVERNIGHT-2026-10-31.md). No complete milestone exit gate has passed yet; the machine-readable tracker records partial work without converting disconnected native proofs into completed integration.
 
 ## What complete V1 means
 

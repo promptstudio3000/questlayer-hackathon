@@ -1,0 +1,14 @@
+{
+  "verifiedAt": "2026-10-31T07:18:32.433Z",
+  "oldPublicEntry": {
+    "path": "/assets/index-YvoOqIlT.js",
+    "bytes": 1520146,
+    "sha256": "446191b7c2346001db7581aa889c928de7a9b1df744ab46bd046ccc714c39ba9"
+  },
+  "newBuiltEntry": {
+    "path": "/assets/index-Bp8j9PyZ.js",
+    "bytes": 440953
+  },
+  "entryBytesReductionPercent": 70.99,
+  "note": "Entry bundle bytes only. The full map still downloads its separate engine and worker; no physical-device load-time or FPS claim."
+}

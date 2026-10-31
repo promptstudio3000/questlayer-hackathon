@@ -8,7 +8,7 @@ import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Point, World, Zone, Item } from "./types";
 import { ghostSvg } from "./Ghost";
-type Props = {
+export type GameMapProps = {
   sheetExpanded: boolean;
   panelMode: string;
   onQuest: () => void;
@@ -47,7 +47,7 @@ function skinFallback(node: HTMLElement, color?: string) {
     { once: true },
   );
 }
-export function GameMap(props: Props) {
+export function GameMap(props: GameMapProps) {
   const el = useRef<HTMLDivElement>(null),
     map = useRef<maplibregl.Map | null>(null),
     avatar = useRef<maplibregl.Marker | null>(null),
@@ -517,7 +517,7 @@ export function GameMap(props: Props) {
         aria-label="Real OpenStreetMap world"
       />
       {!ready && (
-        <div className="map-loading">
+        <div className="map-loading" role="status">
           {error
             ? "Map loading is taking longer. Your game panels are still available."
             : "Preparing your corner of the world…"}

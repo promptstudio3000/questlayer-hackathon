@@ -1,5 +1,5 @@
 [Unit]
-Description=AuraTrail exploration game
+Description=QuestLayer exploration game
 After=network-online.target
 Wants=network-online.target
 
@@ -16,6 +16,7 @@ Environment=TRUST_PROXY=loopback
 Environment=PORT=7091
 Environment=APP_ORIGIN=https://questlayer.promptstudio3000.com
 Environment=DATABASE_PATH=/var/lib/auratrail/auratrail.sqlite
+Environment=STATIC_ASSET_DIR=/opt/ps3000/apps/auratrail/assets
 Environment=NEAR_NETWORK=testnet
 Environment=NEAR_RPC_URL=https://test.rpc.fastnear.com
 EnvironmentFile=-/opt/ps3000/apps/auratrail/runtime.env

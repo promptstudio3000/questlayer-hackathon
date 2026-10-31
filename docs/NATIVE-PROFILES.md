@@ -41,6 +41,8 @@ Reads distinguish unpublished, recognized and unsupported schema states. NFT ref
 
 Initial transaction: `8MxWn5jpnSptfKntufo58F4e7PpHWWQ9P6RU6eQj39wy`. The 0.05 test NEAR attachment left 0.02593 test NEAR available storage credit after publication. The owned native starter reference was verified. Evidence: `output/qa/W03-profiles/local-native-profile.json` and `public/native-profile-testnet.json`.
 
+The deployed application was independently exercised through its public API in release `20261031T065854Z` / `4319622`. Transaction `3hjKzEjkv2HszKBGxH5oovgQGBCE7mf3WcDz6oHU87LT` attached one yoctoNEAR, reused the existing storage credit and confirmed the owned avatar and single history entry. Evidence: `output/qa/W03-profiles/public-native-profile.json`. The public Inventory card was also observed in the browser; that observation did not approve a player-wallet transaction.
+
 The development-only layout fixture has explicit mock accounts, mock storage and a simulated cancellation. It never invokes a wallet or chain transaction and is excluded from release artifacts. It exists to exercise consent, wallet changes, small screens and enlarged text; it is not evidence of a browser-wallet approval.
 
 Application checks: 78 tests passed, including adversarial quote scopes, changed aliases/assets, unknown fields, unlinked access and missing consent. Browser layout checks cover 360×640, 390×640 with 20px text, and 844×390. They confirm default-off consent, preserved choice after simulated cancellation and reset on changing wallets. Essential text and controls were increased where the review found inherited small styles.

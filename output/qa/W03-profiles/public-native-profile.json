@@ -1,0 +1,32 @@
+{
+  "verifiedAt": "2026-10-31T07:01:14.871Z",
+  "network": "testnet",
+  "api": "https://questlayer.promptstudio3000.com",
+  "contractId": "v1.social08.testnet",
+  "accountId": "auratrail-dev-20261030.testnet",
+  "transaction": "3hjKzEjkv2HszKBGxH5oovgQGBCE7mf3WcDz6oHU87LT",
+  "attachment": "1",
+  "previousStorage": {
+    "total": "50000000000000000000000",
+    "available": "25930000000000000000000"
+  },
+  "profile": {
+    "name": "Native proof explorer",
+    "mutationId": "profile_0ee7ec2b-367a-4377-ad53-b89adaf9514a",
+    "updatedAt": "1793430069644",
+    "avatar": {
+      "contractId": "nfts.auratrail-dev-20261030.testnet",
+      "tokenId": "avatar:auratrail-dev-20261030.testnet"
+    }
+  },
+  "storage": {
+    "total": "50000000000000000000001",
+    "available": "25930000000000000000001"
+  },
+  "avatarVerified": true,
+  "duplicateHistoryPrevented": true,
+  "demoBalanceUnchanged": true,
+  "playerPrivateKeysOnServer": false,
+  "signer": "Own local project developer key; not a browser or hardware-wallet approval",
+  "scope": "Only account/questlayer/profile; no location, inventory, balance or original EVM link"
+}
