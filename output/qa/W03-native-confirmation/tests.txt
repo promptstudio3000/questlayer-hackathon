@@ -1,0 +1,34 @@
+✔ optimistic execution only clears after exact final confirmation; wallet mutation cannot alter stored review (15.084875ms)
+✔ reload and exact retry verify the saved hash without another wallet signature (0.628625ms)
+✔ a different pending operation blocks new signing for the same account (0.23725ms)
+✔ concurrent submissions reserve before opening the wallet (0.743208ms)
+✔ definite wallet cancellation clears only its reservation; unknown wallet errors retain it (0.2735ms)
+✔ missing wallet hash can be recovered by exact receipt verification without another signature (0.274084ms)
+✔ incorrect manually supplied hash does not replace the recoverable missing-hash marker (0.3065ms)
+✔ false, substituted and unavailable confirmations retain one receipt rather than re-signing (0.901667ms)
+✔ corrupt, inaccessible and non-writing storage fail before signing and preserve existing bytes (0.230542ms)
+✔ a storage failure after broadcast leaves an ambiguous marker and exposes the actual receipt reference (0.178709ms)
+✔ pending records are isolated by player and wallet; a late old account response cannot clear a newer account (3.471334ms)
+✔ final failure is retained until acknowledged and freshly reverified; unknown/code-change cannot be discarded (0.470041ms)
+✔ full journals reject new signatures without evicting unresolved receipts (0.706875ms)
+✔ final native withdrawal matches exact actor/action and both current and executed code (5.180709ms)
+✔ receipt identity, sole FunctionCall, amounts, gas and arguments cannot be substituted (16.547667ms)
+✔ optimistic, malformed, failed and false-callback results never establish payment (13.204792ms)
+✔ network, synchronization, stale anchors and changed current or historical code fail closed (9.338792ms)
+✔ only a linked wallet may confirm, including after asynchronous receipt and code reads (5.731209ms)
+✔ all read-only native RPC work is bounded (6.55ms)
+✔ unknown contracts, methods, network or malformed comparison contexts are rejected (12.401333ms)
+✔ factory creation, owned registration and refund use reviewed terms and true callbacks (7.792667ms)
+✔ vault confirmation requires a real owned ready factory position and keyless pinned state (8.216375ms)
+✔ deposit, exit, refresh and advance callback false is final but not completed (7.9535ms)
+✔ market buy/cancel/withdraw and NFT escrow listing distinguish successful callback from compensation (8.246667ms)
+✔ collectible mint/redeem validates returned identity and equipment expects a void result (8.359333ms)
+✔ SocialDB set returns a publication height, not boolean success; private or foreign paths cannot be confirmed (2.023542ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 205.072792

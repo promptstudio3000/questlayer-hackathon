@@ -1,0 +1,28 @@
+{
+  "release": "20261031T155058Z",
+  "fixtureChecks": [
+    "one note after a saved response was lost",
+    "bilateral block visibility",
+    "pending transaction survives reload",
+    "receipt confirmation without another signature",
+    "failed receipt needs acknowledgement and fresh check",
+    "360/390px controls and labels",
+    "844x390 landscape",
+    "390px enlarged text; textarea 32px; no horizontal overflow"
+  ],
+  "publicChecks": [
+    "notes list and empty compose",
+    "390px scroll reaches consent and publish control",
+    "16px textarea; 390px document width",
+    "compose removes redundant Community return; Back restores list navigation",
+    "desktop screenshot",
+    "returned to Explore; restored viewport; closed temporary QA tabs"
+  ],
+  "productionContentWrites": false,
+  "walletSignatures": false,
+  "notVerified": [
+    "physical keyboard and GPS",
+    "Safari/iOS and Chrome/Android devices",
+    "personal wallet return"
+  ]
+}

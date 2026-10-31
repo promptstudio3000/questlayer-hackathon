@@ -1,0 +1,15 @@
+✔ HTTP notes preserve consent, replay, visibility, photo permissions and block/presence boundaries (1033.332792ms)
+✔ a block acknowledged during appearance work removes coordinates in both directions (8.196875ms)
+✔ stopped, expired and mode-changed presence cannot escape a late appearance response (9.032083ms)
+✔ clock advancement during appearance lookup removes stale rows even without a cleanup worker (2.327583ms)
+✔ browser session revocation during appearance lookup rejects the entire response (2.784417ms)
+✔ fresh coordinates and names are paired by ID when row order changes; new arrivals need their own appearance read (2.650709ms)
+✔ missing auth and a mismatched appearance result fail closed (2.493541ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1132.290125

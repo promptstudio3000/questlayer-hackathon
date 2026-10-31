@@ -1,0 +1,46 @@
+{
+  "buttons": [
+    {
+      "height": 48,
+      "text": "",
+      "width": 48
+    },
+    {
+      "height": 48,
+      "text": "Use current pin",
+      "width": 320
+    },
+    {
+      "height": 48,
+      "text": "Publish note",
+      "width": 320
+    }
+  ],
+  "documentWidth": 360,
+  "labels": [
+    {
+      "font": "16px",
+      "height": 24,
+      "text": "What did you discover?"
+    },
+    {
+      "font": "16px",
+      "height": 48,
+      "text": "Add photo"
+    },
+    {
+      "font": "16px",
+      "height": 72,
+      "text": "Also attach my exact GPS, accuracy and capture time"
+    },
+    {
+      "font": "16px",
+      "height": 72,
+      "text": "I agree to publish this note and its map pin publicly."
+    }
+  ],
+  "viewport": [
+    360,
+    640
+  ]
+}

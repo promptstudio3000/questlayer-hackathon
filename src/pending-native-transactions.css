@@ -1,0 +1,165 @@
+.native-pending {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--line, #ded5e8);
+  border-radius: 12px;
+  background: var(--surface, #fcfaff);
+  color: var(--ink, #1a0335);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.native-pending header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.native-pending h3 {
+  margin: 0;
+  font-size: 20px;
+}
+.native-pending p {
+  margin: 8px 0;
+}
+.native-pending-entry {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line, #ded5e8);
+}
+.native-pending-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.native-pending-title span,
+.native-pending small,
+.native-pending-account,
+.native-pending details {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.native-pending-title span {
+  color: var(--secondary-ink, #665577);
+}
+.native-pending label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+.native-pending input:not([type="checkbox"]) {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #867393;
+  border-radius: 8px;
+  background: white;
+  color: #1a0335;
+  font: inherit;
+  box-sizing: border-box;
+}
+.native-pending-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.native-pending button,
+.native-pending-actions a,
+.native-pending summary {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 16px;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+.native-pending-actions a {
+  color: #5421bb;
+  text-decoration: underline;
+}
+.native-pending summary {
+  display: list-item;
+  cursor: pointer;
+  padding-left: 0;
+}
+.native-pending dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 8px;
+}
+.native-pending dd {
+  margin: 0;
+}
+.native-pending pre {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f2ebff;
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.native-pending-error {
+  color: #8c2341;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.native-pending-error svg {
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+.native-pending-message {
+  padding: 12px;
+  background: #f2ebff;
+  border-radius: 8px;
+}
+.native-pending-failure label {
+  min-height: 48px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.native-pending-failure input {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  accent-color: #672eeb;
+}
+.native-pending-failure small {
+  display: block;
+  margin-top: 8px;
+}
+.native-pending :focus-visible {
+  outline: 3px solid #672eeb;
+  outline-offset: 3px;
+}
+@media (max-width: 420px) {
+  .native-pending-actions > * {
+    width: 100%;
+  }
+  .native-pending dl {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .native-pending dd {
+    margin-bottom: 8px;
+  }
+}
+/* Override legacy global label/control sizing inside the recovery surface. */
+.native-pending label,
+.native-pending input:not([type="checkbox"]) {
+  font-size: 16px;
+  line-height: 1.5;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.native-pending label small,
+.native-pending details p {
+  font-size: 14px;
+  line-height: 1.5;
+}

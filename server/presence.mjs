@@ -1,4 +1,5 @@
 import { point, assert } from "./domain.mjs";
+import { initSocialBlocks } from "./social-content.mjs";
 export function updatePresence(db, player, input, now = Date.now()) {
   const lease = typeof input.leaseId === "string" ? input.leaseId : "legacy";
   assert(/^[a-zA-Z0-9_-]{1,80}$/.test(lease), "Invalid sharing session.");
@@ -55,9 +56,10 @@ export function nearbyPresence(
   now = Date.now(),
 ) {
   const { lat, lng } = point(location);
+  initSocialBlocks(db);
   return db
     .prepare(
-      "SELECT p.name,p.id,p.appearance,p.native_outfit,p.native_account,pr.lat,pr.lng FROM presence pr JOIN players p ON p.id=pr.player_id WHERE pr.player_id!=? AND pr.expires_at>? AND pr.updated_at>? AND pr.arena=? AND pr.lat BETWEEN ? AND ? AND pr.lng BETWEEN ? AND ? LIMIT 30",
+      "SELECT p.name,p.id,p.appearance,p.native_outfit,p.native_account,pr.lat,pr.lng FROM presence pr JOIN players p ON p.id=pr.player_id WHERE pr.player_id!=? AND pr.expires_at>? AND pr.updated_at>? AND pr.arena=? AND pr.lat BETWEEN ? AND ? AND pr.lng BETWEEN ? AND ? AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE (b.actor_id=? AND b.target_id=p.id) OR (b.target_id=? AND b.actor_id=p.id)) LIMIT 30",
     )
     .all(
       player,
@@ -68,5 +70,53 @@ export function nearbyPresence(
       lat + 0.015,
       lng - 0.02,
       lng + 0.02,
+      player,
+      player,
     );
+}
+
+// Appearance RPC can outlive a block, stopped lease or browser session. Only a
+// second authoritative presence read may supply coordinates for the response.
+export async function readNearbyPresence(
+  db,
+  player,
+  location,
+  arena,
+  { appearanceReader, assertSession, clock = Date.now },
+) {
+  assert(
+    typeof appearanceReader === "function" &&
+      typeof assertSession === "function",
+    "Presence lookup is unavailable.",
+    503,
+  );
+  assertSession();
+  const initial = nearbyPresence(db, player, location, arena, clock());
+  const looks = await appearanceReader(initial);
+  assertSession();
+  assert(
+    Array.isArray(looks) && looks.length === initial.length,
+    "The shared appearances could not be matched to their explorers.",
+    503,
+  );
+  const byId = new Map(
+    initial.map((person, index) => [person.id, looks[index]]),
+  );
+  const current = nearbyPresence(db, player, location, arena, clock());
+  return {
+    players: current.flatMap((person) => {
+      const appearance = byId.get(person.id);
+      if (!appearance || typeof appearance.color !== "string") return [];
+      return [
+        {
+          id: person.id,
+          name: person.name,
+          lat: person.lat,
+          lng: person.lng,
+          color: appearance.color,
+          appearance,
+        },
+      ];
+    }),
+  };
 }

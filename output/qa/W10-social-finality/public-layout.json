@@ -1,0 +1,16 @@
+{
+  "communityButtons": 1,
+  "documentWidth": 390,
+  "panels": [
+    {
+      "height": 674,
+      "overflow": "auto",
+      "scrollHeight": 864
+    }
+  ],
+  "textareaFont": "16px",
+  "viewport": [
+    390,
+    844
+  ]
+}

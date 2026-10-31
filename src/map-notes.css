@@ -1,0 +1,402 @@
+.map-notes {
+  color: var(--ink, #1a0335);
+  font-size: 16px;
+  line-height: 1.5;
+  min-width: 0;
+}
+.map-notes *,
+.map-notes-dialog * {
+  box-sizing: border-box;
+}
+.map-notes h2,
+.map-notes-dialog h2 {
+  margin: 4px 0 0;
+  font-size: 24px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.map-notes h2:focus {
+  outline: none;
+}
+.map-notes p,
+.map-notes-dialog p {
+  margin: 12px 0;
+}
+.map-notes button,
+.map-notes-dialog button,
+.map-notes select,
+.map-notes-dialog select {
+  min-height: 48px;
+  font: inherit;
+  border: 1px solid #dcd1eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #441c6c;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: normal;
+}
+.map-notes button:disabled,
+.map-notes-dialog button:disabled {
+  cursor: default;
+  opacity: 0.56;
+}
+.map-notes :focus-visible,
+.map-notes-dialog :focus-visible {
+  outline: 3px solid #672eeb;
+  outline-offset: 3px;
+}
+.map-notes button.map-notes-primary,
+.map-notes-dialog button.map-notes-primary {
+  background: #672eeb;
+  border-color: #672eeb;
+  color: #fff;
+  font-weight: 500;
+}
+.map-notes button.map-notes-icon {
+  width: 48px;
+  min-width: 48px;
+  padding: 10px;
+}
+.map-notes-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.map-notes-heading > div {
+  min-width: 0;
+}
+.map-notes-mode {
+  display: inline-block;
+  color: #665577;
+  font-size: 14px;
+}
+.map-notes-secondary,
+.map-notes p.map-notes-secondary {
+  color: #665577;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.map-notes-toolbar,
+.map-notes-photo-row,
+.map-notes-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.map-notes-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.map-notes-notice,
+.map-notes-error,
+.map-notes-pending {
+  padding: 12px 16px;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.map-notes-notice {
+  background: #e3f6ee;
+  color: #176553;
+}
+.map-notes-error {
+  background: #fff0f3;
+  color: #a32947;
+}
+.map-notes-pending {
+  background: #f2ebff;
+  border: 1px solid #dcd1eb;
+  margin: 16px 0;
+}
+.map-notes-compose,
+.map-notes-dialog {
+  display: grid;
+  gap: 12px;
+}
+.map-notes-compose > label,
+.map-notes-dialog > label {
+  font-weight: 500;
+}
+.map-notes textarea,
+.map-notes-dialog textarea,
+.map-notes-dialog select {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid #b4a3c7;
+  border-radius: 8px;
+  color: #1a0335;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.map-notes textarea,
+.map-notes-dialog textarea {
+  resize: vertical;
+}
+.map-notes textarea::placeholder {
+  color: #665577;
+}
+.map-notes-photo-button {
+  position: relative;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dcd1eb;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fff;
+  overflow: hidden;
+}
+.map-notes-photo-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.map-notes-photo-button:focus-within {
+  outline: 3px solid #672eeb;
+  outline-offset: 3px;
+}
+.map-notes-photo-button.is-disabled {
+  opacity: 0.56;
+  cursor: default;
+}
+.map-notes-preview {
+  position: relative;
+  max-width: 100%;
+}
+.map-notes-preview img {
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  background: #f2ebff;
+  border-radius: 12px;
+}
+.map-notes-preview > button {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
+.map-notes-anchor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid #e8e0ef;
+  border-bottom: 1px solid #e8e0ef;
+  flex-wrap: wrap;
+}
+.map-notes-anchor > span {
+  flex: 1;
+}
+.map-notes-anchor > button {
+  font-size: 14px;
+}
+.map-notes label.map-notes-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  min-height: 48px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.map-notes-check input {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: #672eeb;
+}
+.map-notes-list {
+  margin-top: 12px;
+}
+.map-note {
+  padding: 20px 0;
+  border-bottom: 1px solid #e1d7eb;
+}
+.map-note > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.map-note .map-note-ghost {
+  width: 40px;
+  height: 46px;
+  flex: 0 0 40px;
+}
+.map-note-author {
+  min-width: 0;
+  flex: 1;
+}
+.map-note-author b {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+.map-note-author time {
+  display: block;
+  color: #665577;
+  font-size: 14px;
+}
+.map-note > p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.map-note-image {
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f2ebff;
+}
+.map-note-menu {
+  position: relative;
+  align-self: flex-start;
+}
+.map-note-menu > summary {
+  list-style: none;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid #dcd1eb;
+  border-radius: 8px;
+  background: #fff;
+}
+.map-note-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.map-note-menu > div {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  min-width: 190px;
+  z-index: 2;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #dcd1eb;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px #1a03351a;
+  display: grid;
+  gap: 4px;
+}
+.map-note-menu > div button {
+  justify-content: flex-start;
+  border-color: transparent;
+}
+.map-note-location {
+  color: #665577;
+  font-size: 14px;
+  margin-top: 8px;
+}
+.map-note-location > summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.map-note-location p {
+  overflow-wrap: anywhere;
+}
+.map-notes-empty {
+  text-align: center;
+  padding: 32px 12px;
+  color: #665577;
+}
+.map-notes-empty svg {
+  color: #672eeb;
+}
+.map-notes-empty h3 {
+  color: #1a0335;
+  font-size: 20px;
+  margin: 12px 0 0;
+}
+.map-notes button.map-notes-secondary-action {
+  margin-top: 24px;
+  background: transparent;
+}
+.map-notes-block {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid #e1d7eb;
+}
+.map-notes-block b {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.map-notes-dialog {
+  width: min(100%, 480px);
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1a0335;
+  padding: 8px;
+}
+.map-notes-dialog .map-notes-actions {
+  justify-content: flex-end;
+}
+@media (max-width: 380px) {
+  .map-notes-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .map-notes-anchor button {
+    flex-basis: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-notes *,
+  .map-notes-dialog * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Legacy application form labels use a compact scale. Notes keep their own
+   readable form baseline, including labels inside the shared native dialog. */
+.map-notes .map-notes-compose > label,
+.map-notes .map-notes-photo-button,
+.map-notes .map-notes-photo-button > span,
+.map-notes .map-notes-check,
+.map-notes .map-notes-check > span,
+.game-dialog .map-notes-dialog > label,
+.game-dialog .map-notes-dialog select,
+.game-dialog .map-notes-dialog textarea {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.map-notes .map-note > p,
+.map-notes .map-notes-pending > p,
+.map-notes .map-notes-blocks > p,
+.map-notes .map-notes-block b,
+.game-dialog .map-notes-dialog > p {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.map-notes .map-notes-secondary,
+.map-notes .map-notes-mode,
+.map-notes .map-note-author time,
+.map-notes .map-note-location,
+.map-notes .map-note-location > p {
+  font-size: 14px;
+  line-height: 1.45;
+}

@@ -1,0 +1,13 @@
+✔ HTTP notes preserve consent, replay, visibility, photo permissions and block/presence boundaries (1238.490792ms)
+✔ note photos are bounded, re-encoded and stripped of source metadata (35.322583ms)
+✔ invalid, oversized and mislabeled media never creates a file (4.918708ms)
+✔ media cleanup cannot address unrelated paths and processing capacity is bounded (2.394291ms)
+✔ orphan cleanup preserves referenced and recent images across bounded passes (8.116875ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1339.632083

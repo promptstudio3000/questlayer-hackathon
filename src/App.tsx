@@ -1,3 +1,6 @@
+import { PendingNativeTransactions } from "./PendingNativeTransactions";
+import { sendConfirmedNative } from "./confirmed-native-transaction";
+import { MapNotes } from "./MapNotes";
 import { useNativeGame } from "./useNativeGame";
 import { useNativeAutoCollect } from "./useNativeAutoCollect";
 import { NativeCollectionControl } from "./NativeCollectionControl";
@@ -78,7 +81,6 @@ import {
   Lightning,
   SealCheck,
   Question,
-  Image as ImageIcon,
   GearSix,
   UsersThree,
   Footprints,
@@ -103,7 +105,6 @@ import type {
   Item,
   Listing,
   Dashboard,
-  Message,
   Bounty,
   Quest,
 } from "./types";
@@ -545,6 +546,9 @@ export default function App() {
     }, 600);
     return () => clearInterval(collect);
   }, [player?.id]);
+  const [notesView, setNotesView] = useState<"browse" | "compose" | "blocked">(
+    "browse",
+  );
   const profileButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!menu) return;
@@ -564,22 +568,31 @@ export default function App() {
   useEffect(() => {
     if (!player) return;
     let active = true;
+    let requestVersion = 0;
     const load = () => {
       if (document.visibilityState !== "visible") return;
       const mode = latest.current.arena;
+      const version = ++requestVersion;
       void api<{ players: NearbyExplorer[] }>(
         `/presence?arena=${mode ? 1 : 0}&lat=${latest.current.position.lat.toFixed(2)}&lng=${latest.current.position.lng.toFixed(2)}`,
       )
         .then((r) => {
-          if (active && mode === latest.current.arena) setOthers(r.players);
+          if (
+            active &&
+            version === requestVersion &&
+            mode === latest.current.arena
+          )
+            setOthers(r.players);
         })
         .catch(() => {});
     };
     load();
+    window.addEventListener("questlayer:social-blocks", load);
     const timer = setInterval(load, 8000);
     return () => {
       active = false;
       clearInterval(timer);
+      window.removeEventListener("questlayer:social-blocks", load);
       setOthers([]);
     };
   }, [player?.id]);
@@ -921,29 +934,26 @@ export default function App() {
         : request.kind === "withdraw"
           ? {}
           : { token_id: request.tokenId, listing_id: request.listingId };
-      const outcome = await wallet.signAndSendTransaction({
-        network: "testnet",
-        signerId: accountId,
-        receiverId,
-        actions: [
-          {
-            type: "FunctionCall",
-            params: {
-              methodName,
-              args,
-              gas: listing ? "200000000000000" : "150000000000000",
-              deposit: request.kind === "buy" ? request.price! : "1",
+      await sendConfirmedNative(
+        wallet,
+        {
+          network: "testnet",
+          signerId: accountId,
+          receiverId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName,
+                args,
+                gas: listing ? "200000000000000" : "150000000000000",
+                deposit: request.kind === "buy" ? request.price! : "1",
+              },
             },
-          },
-        ],
-      });
-      if (
-        outcome.final_execution_status === "NONE" ||
-        "Failure" in outcome.status
-      )
-        throw Error(
-          "The market transaction did not confirm. Check current NFT ownership and market balance.",
-        );
+          ],
+        },
+        { playerId: player!.id },
+      );
       await refreshNative(true);
       return true;
     });
@@ -968,29 +978,26 @@ export default function App() {
         !contractId.endsWith(".testnet")
       )
         throw Error("The native reward contract changed. Refresh first.");
-      const outcome = await wallet.signAndSendTransaction({
-        network: "testnet",
-        signerId: accountId,
-        receiverId: contractId,
-        actions: [
-          {
-            type: "FunctionCall",
-            params: {
-              methodName: "withdraw",
-              args: {},
-              gas: "100000000000000",
-              deposit: "1",
+      await sendConfirmedNative(
+        wallet,
+        {
+          network: "testnet",
+          signerId: accountId,
+          receiverId: contractId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: "withdraw",
+                args: {},
+                gas: "100000000000000",
+                deposit: "1",
+              },
             },
-          },
-        ],
-      });
-      if (
-        outcome.final_execution_status === "NONE" ||
-        "Failure" in outcome.status
-      )
-        throw Error(
-          "Withdrawal has not confirmed. Your pending or available balance remains on NEAR.",
-        );
+          ],
+        },
+        { playerId: player!.id },
+      );
       return true;
     });
     return result === true;
@@ -1005,29 +1012,26 @@ export default function App() {
         throw Error("Choose the linked wallet shown for this position.");
       const quote = await api<VaultQuote>("/native/vaults/prepare", request);
       assertVaultQuote(quote, request);
-      const outcome = await wallet.signAndSendTransaction({
-        network: "testnet",
-        signerId: accountId,
-        receiverId: quote.receiverId,
-        actions: [
-          {
-            type: "FunctionCall",
-            params: {
-              methodName: quote.methodName,
-              args: quote.args,
-              gas: quote.gas,
-              deposit: quote.deposit,
+      await sendConfirmedNative(
+        wallet,
+        {
+          network: "testnet",
+          signerId: accountId,
+          receiverId: quote.receiverId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: quote.methodName,
+                args: quote.args,
+                gas: quote.gas,
+                deposit: quote.deposit,
+              },
             },
-          },
-        ],
-      });
-      if (
-        outcome.final_execution_status === "NONE" ||
-        "Failure" in outcome.status
-      )
-        throw Error(
-          "The staking operation has not confirmed. Refresh the position before retrying.",
-        );
+          ],
+        },
+        { playerId: player!.id },
+      );
       return true;
     });
     return result === true;
@@ -1044,46 +1048,26 @@ export default function App() {
         throw Error("Choose a wallet that supports NEAR transactions.");
       const quote = await api<TaskQuote>("/native/tasks/prepare", request);
       assertTaskQuote(quote, request);
-      const outcome = await wallet.signAndSendTransaction({
-        network: "testnet",
-        signerId: accountId,
-        receiverId: quote.receiverId,
-        actions: [
-          {
-            type: "FunctionCall",
-            params: {
-              methodName: quote.methodName,
-              args: quote.args,
-              gas: quote.gas,
-              deposit: quote.deposit,
+      await sendConfirmedNative(
+        wallet,
+        {
+          network: "testnet",
+          signerId: accountId,
+          receiverId: quote.receiverId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: quote.methodName,
+                args: quote.args,
+                gas: quote.gas,
+                deposit: quote.deposit,
+              },
             },
-          },
-        ],
-      });
-      if (
-        !outcome?.transaction?.hash ||
-        (outcome.status &&
-          typeof outcome.status === "object" &&
-          "Failure" in outcome.status)
-      )
-        throw Error(
-          "The task operation is not confirmed yet. Refresh its status before trying again.",
-        );
-      const confirmation = await api<{
-        confirmed: boolean;
-        transactionHash: string;
-      }>("/native/tasks/confirm", {
-        accountId,
-        quote,
-        transactionHash: outcome.transaction.hash,
-      });
-      if (
-        !confirmation.confirmed ||
-        confirmation.transactionHash !== outcome.transaction.hash
-      )
-        throw Error(
-          "The task operation is not confirmed yet. Refresh before retrying.",
-        );
+          ],
+        },
+        { playerId: player!.id },
+      );
       return true;
     });
     return result === true;
@@ -1106,29 +1090,26 @@ export default function App() {
         publicConsent: true,
       });
       assertProfileQuote(quote, { accountId, name: player.name, avatar });
-      const outcome = await wallet.signAndSendTransaction({
-        network: "testnet",
-        signerId: accountId,
-        receiverId: SOCIAL_TESTNET,
-        actions: [
-          {
-            type: "FunctionCall",
-            params: {
-              methodName: "set",
-              args: quote.args,
-              gas: "80000000000000",
-              deposit: quote.deposit,
+      await sendConfirmedNative(
+        wallet,
+        {
+          network: "testnet",
+          signerId: accountId,
+          receiverId: SOCIAL_TESTNET,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: "set",
+                args: quote.args,
+                gas: "80000000000000",
+                deposit: quote.deposit,
+              },
             },
-          },
-        ],
-      });
-      if (
-        outcome.final_execution_status === "NONE" ||
-        "Failure" in outcome.status
-      )
-        throw Error(
-          "The profile transaction did not confirm. Refresh your public profile before trying again.",
-        );
+          ],
+        },
+        { playerId: player!.id },
+      );
       for (let attempt = 0; attempt < 5; attempt++) {
         const response = await api<{ confirmed: boolean; player: Player }>(
           "/native/profile/confirm",
@@ -1233,30 +1214,32 @@ export default function App() {
       if (claim.claim_id !== milestone.claimId)
         throw Error("The level reward changed. Refresh before signing.");
       if (claim.state !== "minted") {
-        const result = await wallet.signAndSendTransaction({
-          network: "testnet",
-          signerId: accountId,
-          receiverId: claim.contractId,
-          actions: [
-            {
-              type: "FunctionCall",
-              params: {
-                methodName: "redeem_aura",
-                args: {
-                  claim_id: claim.claim_id,
-                  edition: claim.edition,
-                  receiver_id: claim.receiver_id,
-                  expires_at_ms: claim.expires_at,
-                  signature: claim.signature,
+        await sendConfirmedNative(
+          wallet,
+          {
+            network: "testnet",
+            signerId: accountId,
+            receiverId: claim.contractId,
+            actions: [
+              {
+                type: "FunctionCall",
+                params: {
+                  methodName: "redeem_aura",
+                  args: {
+                    claim_id: claim.claim_id,
+                    edition: claim.edition,
+                    receiver_id: claim.receiver_id,
+                    expires_at_ms: claim.expires_at,
+                    signature: claim.signature,
+                  },
+                  gas: "100000000000000",
+                  deposit: (5n * 10n ** 22n).toString(),
                 },
-                gas: "100000000000000",
-                deposit: (5n * 10n ** 22n).toString(),
               },
-            },
-          ],
-        });
-        if ((result as any)?.status?.Failure)
-          throw Error("The level reward transaction failed.");
+            ],
+          },
+          { playerId: player!.id },
+        );
         for (let i = 0; i < 4; i++) {
           const checked = await api<NativeLevelClaim>(
             "/native/progression/confirm",
@@ -1299,35 +1282,32 @@ export default function App() {
             throw Error("Aura claims are testnet-only.");
           if (!wallet.manifest.features.signAndSendTransaction)
             throw Error("Choose a wallet that supports NEAR transactions.");
-          const result = await wallet.signAndSendTransaction({
-            network: "testnet",
-            signerId: accountId,
-            receiverId: claim.contractId,
-            actions: [
-              {
-                type: "FunctionCall",
-                params: {
-                  methodName: "redeem_aura",
-                  args: {
-                    claim_id: claim.claim_id,
-                    edition: claim.edition,
-                    receiver_id: claim.receiver_id,
-                    expires_at_ms: claim.expires_at,
-                    signature: claim.signature,
+          await sendConfirmedNative(
+            wallet,
+            {
+              network: "testnet",
+              signerId: accountId,
+              receiverId: claim.contractId,
+              actions: [
+                {
+                  type: "FunctionCall",
+                  params: {
+                    methodName: "redeem_aura",
+                    args: {
+                      claim_id: claim.claim_id,
+                      edition: claim.edition,
+                      receiver_id: claim.receiver_id,
+                      expires_at_ms: claim.expires_at,
+                      signature: claim.signature,
+                    },
+                    gas: "100000000000000",
+                    deposit: (5n * 10n ** 22n).toString(),
                   },
-                  gas: "100000000000000",
-                  deposit: (5n * 10n ** 22n).toString(),
                 },
-              },
-            ],
-          });
-          if (
-            result.final_execution_status === "NONE" ||
-            "Failure" in result.status
-          )
-            throw Error(
-              "The NFT transaction was not confirmed. Your claim remains available.",
-            );
+              ],
+            },
+            { playerId: player!.id },
+          );
         }
         let minted = false;
         for (let attempt = 0; attempt < 5; attempt++) {
@@ -1397,34 +1377,32 @@ export default function App() {
       const contractId = nativeWardrobe?.contractId;
       if (!contractId?.endsWith(".testnet"))
         throw Error("The NEAR testnet collection is unavailable.");
-      const result = await wallet.signAndSendTransaction({
-        network: "testnet",
-        signerId: accountId,
-        receiverId: contractId,
-        actions: [
-          {
-            type: "FunctionCall",
-            params: {
-              methodName: method,
-              args:
-                method === "mint_avatar"
-                  ? {}
-                  : method === "unequip_aura"
-                    ? { slot }
-                    : { token_id: item!.tokenId, slot },
-              gas: "100000000000000",
-              deposit:
-                method === "mint_avatar" ? (5n * 10n ** 22n).toString() : "0",
+      await sendConfirmedNative(
+        wallet,
+        {
+          network: "testnet",
+          signerId: accountId,
+          receiverId: contractId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: method,
+                args:
+                  method === "mint_avatar"
+                    ? {}
+                    : method === "unequip_aura"
+                      ? { slot }
+                      : { token_id: item!.tokenId, slot },
+                gas: "100000000000000",
+                deposit:
+                  method === "mint_avatar" ? (5n * 10n ** 22n).toString() : "0",
+              },
             },
-          },
-        ],
-      });
-      if (
-        typeof result.status === "object" &&
-        result.status &&
-        "Failure" in result.status
-      )
-        throw Error("The NEAR transaction did not succeed.");
+          ],
+        },
+        { playerId: player!.id },
+      );
       let confirmed = false;
       for (let attempt = 0; attempt < 5; attempt++) {
         const data = await refreshNative(true),
@@ -2249,6 +2227,19 @@ export default function App() {
               )}
             </>
           )}
+          {tab === "wallet" && (
+            <PendingNativeTransactions
+              key={player.id}
+              playerId={player.id}
+              linkedAccounts={player.wallets.map((wallet) => wallet.account_id)}
+              onConfirmed={async () => {
+                await Promise.allSettled([
+                  refreshNative(true),
+                  nativeGame.refresh(),
+                ]);
+              }}
+            />
+          )}
           {tab === "inventory" && (
             <Inventory
               onOriginalAppearance={(appearance) =>
@@ -2538,19 +2529,26 @@ export default function App() {
               onInventory={() => setTab("inventory")}
             />
           )}
-          {["messages", "bounties"].includes(tab) && (
+          {(tab === "bounties" ||
+            (tab === "messages" && notesView === "browse")) && (
             <button className="back-link" onClick={() => setTab("community")}>
               <ArrowLeft size={20} />
               Community
             </button>
           )}
           {tab === "messages" && (
-            <Messages
+            <MapNotes
+              key={player.id}
+              playerId={player.id}
               position={position}
               fix={fix}
-              busy={busy}
-              action={action}
+              arena={arena}
               notify={notify}
+              onViewChange={setNotesView}
+              onBlockChange={() => {
+                setOthers([]);
+                window.dispatchEvent(new Event("questlayer:social-blocks"));
+              }}
             />
           )}
           {tab === "bounties" && (
@@ -3655,139 +3653,6 @@ function Market({
         Demo offers use demo GOLD. Native NFT offers and test NEAR balances are
         shown separately above.
       </p>
-    </>
-  );
-}
-function Messages({
-  position,
-  fix,
-  busy,
-  action,
-  notify,
-}: {
-  position: Point;
-  fix: Fix | null;
-  busy: string;
-  action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
-  notify: (s: string, e?: boolean) => void;
-}) {
-  const [messages, setMessages] = useState<Message[]>([]),
-    [text, setText] = useState(""),
-    [share, setShare] = useState(false),
-    [image, setImage] = useState<string | null>(null);
-  const load = () =>
-    api<{ messages: Message[] }>(
-      `/messages?lat=${position.lat.toFixed(2)}&lng=${position.lng.toFixed(2)}`,
-    ).then((r) => setMessages(r.messages));
-  useEffect(() => {
-    void load();
-  }, []);
-  return (
-    <>
-      <p className="panel-subtitle">
-        Leave a little story for the next person passing by.
-      </p>
-      <form
-        className="message-compose"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void action("message", async () => {
-            await api("/messages", {
-              text,
-              ...position,
-              image,
-              shareGps: share,
-              fix,
-            });
-            setText("");
-            setImage(null);
-            await load();
-            notify("Your note is on the map.");
-          });
-        }}
-      >
-        <textarea
-          placeholder="What did you discover here?"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          maxLength={500}
-          required
-        />
-        <div className="compose-footer">
-          <label className="upload-button">
-            <ImageIcon size={20} />
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (!f) return;
-                if (f.size > 1_000_000) {
-                  notify("Use an image smaller than 1 MB.", true);
-                  return;
-                }
-                const r = new FileReader();
-                r.onload = () => setImage(String(r.result));
-                r.readAsDataURL(f);
-              }}
-            />
-          </label>
-          <small>{text.length}/500</small>
-          <button className="primary-button" disabled={!!busy || !text.trim()}>
-            Leave a note <PaperPlane size={16} />
-          </button>
-        </div>
-        {image && (
-          <img className="image-preview" src={image} alt="Image preview" />
-        )}
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={share}
-            disabled={!fix}
-            onChange={(e) => setShare(e.target.checked)}
-          />{" "}
-          Also publish the author’s exact GPS
-        </label>
-        <small>
-          Text, map anchor and time will be public. Image metadata is removed.
-          Demo posts are stored on the server; on-chain publishing is not
-          active.
-        </small>
-      </form>
-      <div className="messages-list">
-        {messages.length ? (
-          messages.map((m) => (
-            <article key={m.id}>
-              <div>
-                <span className="message-avatar">
-                  <Ghost />
-                </span>
-                <span>
-                  <b>{m.author}</b>
-                  <small>
-                    {new Date(m.created_at).toLocaleString("en-US", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </small>
-                </span>
-                <MapPin size={16} />
-              </div>
-              <p>{m.text}</p>
-              {m.image && <img src={m.image} alt="Post image" loading="lazy" />}
-            </article>
-          ))
-        ) : (
-          <div className="empty-state">
-            <ChatCircle size={32} />
-            <h3>Only the wind has been here</h3>
-            <p>Be the first to leave a note.</p>
-          </div>
-        )}
-      </div>
     </>
   );
 }

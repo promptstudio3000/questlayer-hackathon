@@ -1,6 +1,9 @@
+import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
+import { NoteMedia } from "./note-media.mjs";
+import { SocialContent, isSocialBlocked } from "./social-content.mjs";
 import { NativeProgression } from "./native/progression.mjs";
-import { NativeTasks } from "./native/tasks.mjs";
-import { updatePresence, nearbyPresence } from "./presence.mjs";
+import { NativeTasks, TASK_CONTRACT } from "./native/tasks.mjs";
+import { updatePresence, readNearbyPresence } from "./presence.mjs";
 import { GotchiModels } from "./gotchi-models.mjs";
 import {
   GotchiItemArt,
@@ -23,18 +26,11 @@ import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
 import { clientAddress } from "./http-security.mjs";
-import {
-  readFileSync,
-  existsSync,
-  createReadStream,
-  mkdirSync,
-  writeFileSync,
-} from "node:fs";
+import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 import { randomBytes } from "node:crypto";
-import sharp from "sharp";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -70,6 +66,8 @@ import {
 
 if (existsSync(".env")) process.loadEnvFile(".env");
 const db = openDatabase();
+const socialContent = new SocialContent(db);
+const noteMedia = new NoteMedia();
 const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
@@ -164,6 +162,18 @@ const nativeProgression = nativeRewards
           : undefined,
     })
   : null;
+const nativeTransactionConfirmation = new NativeTransactionConfirmation(
+  db,
+  provider,
+  {
+    rewardsConfig,
+    marketManifest: marketManifestPath
+      ? JSON.parse(readFileSync(marketManifestPath, "utf8"))
+      : null,
+    claimsManifest,
+    vaults: nativeVaults,
+  },
+);
 const gotchiModels = new GotchiModels();
 const gotchiItemArt = new GotchiItemArt();
 const originalLookups = new Map();
@@ -292,30 +302,6 @@ function profile(player) {
     tier: tierFor(p.positions.reduce((s, x) => s + positionTier(x), 0)),
     weighted_u: p.positions.reduce((s, x) => s + positionTier(x), 0),
   };
-}
-async function imageFile(data) {
-  if (!data) return null;
-  assert(
-    typeof data === "string" &&
-      /^data:image\/(jpeg|png|webp);base64,/.test(data),
-    "Use a JPG, PNG or WebP image.",
-  );
-  const buffer = Buffer.from(data.split(",")[1], "base64");
-  const clean = await sharp(buffer, { limitInputPixels: 16_000_000 })
-    .rotate()
-    .resize({
-      width: 1024,
-      height: 1024,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .jpeg({ quality: 78 })
-    .toBuffer();
-  assert(clean.length < 400_000, "The image is too large.");
-  mkdirSync(".data/media", { recursive: true });
-  const name = `${id("image")}.jpg`;
-  writeFileSync(`.data/media/${name}`, clean);
-  return `/api/media/${name}`;
 }
 
 async function api(req, res, url) {
@@ -622,14 +608,18 @@ async function api(req, res, url) {
         .all(),
     });
   if (path.startsWith("/api/media/") && method === "GET") {
-    const name = path.split("/").pop();
-    assert(/^image_[a-f0-9-]+\.jpg$/.test(name), "Image not found.", 404);
-    const file = resolve(".data/media", name);
-    assert(existsSync(file), "Image not found.", 404);
+    const viewer = auth(req);
+    const file = noteMedia.file(path);
+    assert(
+      file && socialContent.mediaAllowed(viewer, path) && existsSync(file),
+      "Image not found.",
+      404,
+    );
     res.writeHead(200, {
       "Content-Type": "image/jpeg",
-      "Cache-Control": "public,max-age=86400",
+      "Cache-Control": "private,no-store",
       "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
     });
     return createReadStream(file).pipe(res);
   }
@@ -727,6 +717,23 @@ async function api(req, res, url) {
       );
       return respond(res, result);
     }
+  }
+  if (path === "/api/native/transactions/confirm" && method === "POST") {
+    const key = `native-confirm:${player}:${Math.floor(Date.now() / 60000)}`;
+    const count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(count <= 30, "Please wait before checking more transactions.", 429);
+    const input = await body(req);
+    const result =
+      input?.quote?.receiverId === TASK_CONTRACT
+        ? await nativeTasks.confirmTransaction(player, input)
+        : await nativeTransactionConfirmation.confirm(player, input);
+    assert(
+      auth(req) === player,
+      "Sign in again to check this transaction.",
+      401,
+    );
+    return respond(res, result);
   }
   if (path === "/api/native/vaults/prepare" && method === "POST") {
     assert(nativeVaults, "Native staking is not configured yet.", 503);
@@ -1130,75 +1137,106 @@ async function api(req, res, url) {
     emit("market", {});
     return respond(res, r);
   }
-  if (path === "/api/messages" && method === "GET") {
-    const lat = Number(url.searchParams.get("lat") || HOME.lat),
-      lng = Number(url.searchParams.get("lng") || HOME.lng);
-    return respond(res, {
-      messages: db
-        .prepare(
-          "SELECT m.*,p.name AS author FROM messages m JOIN players p ON p.id=m.player_id WHERE m.lat BETWEEN ? AND ? AND m.lng BETWEEN ? AND ? ORDER BY m.created_at DESC LIMIT 50",
-        )
-        .all(lat - 0.025, lat + 0.025, lng - 0.04, lng + 0.04),
-    });
-  }
-  if (path === "/api/messages" && method === "POST") {
-    const i = await body(req);
-    point(i);
+  if (path.startsWith("/api/messages") || path.startsWith("/api/social/")) {
+    const key = `social:${player}:${Math.floor(Date.now() / 60000)}`;
+    const count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
     assert(
-      typeof i.text === "string" &&
-        i.text.trim().length > 0 &&
-        i.text.length <= 500,
-      "A note must contain 1–500 characters.",
+      count <= 90,
+      "Please wait before checking community notes again.",
+      429,
     );
-    const image = await imageFile(i.image);
-    const msg = id("message");
-    let fix = null;
-    if (i.shareGps) {
-      point(i.fix);
-      assert(Number.isFinite(i.fix.accuracy), "Location accuracy is missing.");
-      fix = JSON.stringify({
-        lat: i.fix.lat,
-        lng: i.fix.lng,
-        accuracy: i.fix.accuracy,
-        timestamp: i.fix.timestamp,
-      });
-    }
-    db.prepare("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?)").run(
-      msg,
-      player,
-      i.text.trim(),
-      i.lat,
-      i.lng,
-      image,
-      fix,
-      Date.now(),
-    );
-    emit("message", {});
-    return respond(res, { id: msg }, 201);
   }
-  if (path === "/api/presence" && method === "POST")
-    return respond(res, updatePresence(db, player, await body(req)));
+  if (path === "/api/messages/operation" && method === "GET")
+    return respond(
+      res,
+      socialContent.operation(player, url.searchParams.get("clientId")),
+    );
+  if (path === "/api/messages/operation/abandon" && method === "POST") {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    return respond(res, socialContent.abandonOperation(player, input.clientId));
+  }
+  if (path === "/api/messages" && method === "GET")
+    return respond(
+      res,
+      socialContent.list(player, {
+        lat: Number(url.searchParams.get("lat") ?? HOME.lat),
+        lng: Number(url.searchParams.get("lng") ?? HOME.lng),
+        arena: url.searchParams.get("arena") !== "0",
+      }),
+    );
+  if (path === "/api/messages" && method === "POST") {
+    const input = await body(req);
+    const result = await socialContent.create(player, input, {
+      storeImage: (data) => noteMedia.store(data),
+      removeImage: (url) => noteMedia.remove(url),
+      assertSession: () =>
+        assert(
+          auth(req) === player,
+          "Please sign in again before publishing.",
+          401,
+        ),
+    });
+    emit("message", {});
+    return respond(res, result, result.replayed ? 200 : 201);
+  }
+  const noteAction = path.match(
+    /^\/api\/messages\/(message_[a-f0-9-]{36})(?:\/(report))?$/,
+  );
+  if (noteAction && method === "DELETE" && !noteAction[2]) {
+    await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const result = socialContent.remove(player, noteAction[1]);
+    if (result.removedImage) {
+      try {
+        noteMedia.remove(result.removedImage);
+      } catch {
+        /* Hourly orphan cleanup retries. */
+      }
+    }
+    emit("message", {});
+    return respond(res, { id: result.id, state: result.state });
+  }
+  if (noteAction?.[2] === "report" && method === "POST") {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    return respond(res, socialContent.report(player, noteAction[1], input));
+  }
+  if (path === "/api/social/blocks" && method === "GET")
+    return respond(res, socialContent.blocks(player));
+  if (path === "/api/social/blocks" && ["POST", "DELETE"].includes(method)) {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    return respond(
+      res,
+      socialContent.setBlock(player, input.targetPlayerId, method === "POST"),
+    );
+  }
+  if (path === "/api/presence" && method === "POST") {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    return respond(res, updatePresence(db, player, input));
+  }
   if (path === "/api/presence" && method === "GET") {
     const lat = Number(url.searchParams.get("lat") || HOME.lat),
       lng = Number(url.searchParams.get("lng") || HOME.lng);
     point({ lat, lng });
-    const players = nearbyPresence(
-      db,
-      player,
-      { lat, lng },
-      url.searchParams.get("arena") !== "0",
+    return respond(
+      res,
+      await readNearbyPresence(
+        db,
+        player,
+        { lat, lng },
+        url.searchParams.get("arena") !== "0",
+        {
+          appearanceReader: (players) =>
+            publicAppearances(db, players, nativeCollectibles),
+          assertSession: () =>
+            assert(auth(req) === player, "Please sign in again.", 401),
+        },
+      ),
     );
-    const looks = await publicAppearances(db, players, nativeCollectibles);
-    return respond(res, {
-      players: players.map((p, index) => ({
-        id: p.id,
-        name: p.name,
-        lat: p.lat,
-        lng: p.lng,
-        color: looks[index].color,
-        appearance: looks[index],
-      })),
-    });
   }
   if (path === "/api/wallet/challenge" && method === "POST") {
     const i = await body(req);
@@ -1483,13 +1521,18 @@ async function api(req, res, url) {
       explorer && /^player_[a-f0-9-]{36}$/.test(explorer),
       "Invalid explorer.",
     );
+    assert(
+      !isSocialBlocked(db, player, explorer),
+      "This shared appearance is no longer available.",
+      404,
+    );
     const svg = sharedOriginalSvg(db, explorer);
     assert(svg, "This shared appearance is no longer available.", 404);
     res.writeHead(200, {
       "Content-Type": "image/svg+xml",
       "Content-Security-Policy":
         "default-src 'none'; style-src 'unsafe-inline'; sandbox",
-      "Cache-Control": "private,max-age=5",
+      "Cache-Control": "private,no-store",
     });
     return res.end(svg);
   }
@@ -1801,6 +1844,7 @@ const rewardWorker =
         keyPath: process.env.REWARD_WORKER_KEY_PATH,
       })
     : null;
+let nextMediaPrune = 0;
 const maintenance = setInterval(() => {
   try {
     expireWorlds(db);
@@ -1814,6 +1858,10 @@ const maintenance = setInterval(() => {
     );
     db.prepare("DELETE FROM sessions WHERE expires_at<?").run(Date.now());
     if (rates.size > 1000) rates.clear();
+    if (Date.now() >= nextMediaPrune) {
+      noteMedia.prune(db);
+      nextMediaPrune = Date.now() + 3600000;
+    }
   } catch (e) {
     console.error("Maintenance failed", e.name);
   }

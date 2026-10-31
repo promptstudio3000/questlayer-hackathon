@@ -354,7 +354,8 @@
         "output/qa/W03-profiles/checks.txt",
         "output/qa/W03-profiles/local-native-profile.json",
         "output/qa/W03-W06-native-progression/README.md",
-        "docs/IDENTITY-RECOVERY.md"
+        "docs/IDENTITY-RECOVERY.md",
+        "output/qa/W10-social-finality/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W03/"
@@ -526,7 +527,8 @@
         "output/qa/W05-W06-native/live-pilot.json",
         "output/qa/W05-W06-native/final-public-check.json",
         "output/qa/W05-W06-native/restore-final.txt",
-        "docs/NEAR-INTEGRATION-STATUS.md"
+        "docs/NEAR-INTEGRATION-STATUS.md",
+        "output/qa/W10-social-finality/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W05/"
@@ -623,7 +625,8 @@
         "output/qa/W03-W06-native-progression/README.md",
         "docs/NATIVE-GAME-MAP.md",
         "output/qa/W08-W10-native-tasks/README.md",
-        "tests/native-autocollect.test.mjs"
+        "tests/native-autocollect.test.mjs",
+        "output/qa/W10-social-finality/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W06/",
@@ -682,7 +685,8 @@
         "public/native-market-testnet.json",
         "public/native-market-trades-testnet.json",
         "output/qa/W07-market/contracts.txt",
-        "output/qa/W07-market/checks.txt"
+        "output/qa/W07-market/checks.txt",
+        "output/qa/W10-social-finality/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W07/"
@@ -849,7 +853,7 @@
         {
           "id": "W10.1",
           "title": "Publish public records and pin sanitized media",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W10.2",
@@ -864,12 +868,12 @@
         {
           "id": "W10.4",
           "title": "Implement reports blocks closures and operator audit",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W10.5",
           "title": "Finish bounded private-by-default presence",
-          "status": "planned"
+          "status": "building"
         }
       ],
       "evidence": [
@@ -877,7 +881,8 @@
         "docs/NATIVE-TASK-ESCROW.md",
         "docs/NATIVE-TASKS-UI.md",
         "public/native-tasks-testnet.json",
-        "public/native-tasks-proof.json"
+        "public/native-tasks-proof.json",
+        "output/qa/W10-social-finality/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W10/",
@@ -1023,7 +1028,8 @@
         "output/qa/W12-startup/public-map-after-cascade-fix.png",
         "docs/DELIVERY-2026-10-31.md",
         "output/qa/final-2026-10-31/public-status.json",
-        "output/qa/W02-playability/README.md"
+        "output/qa/W02-playability/README.md",
+        "output/qa/W10-social-finality/README.md"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W12-startup/"
@@ -1330,7 +1336,7 @@
     }
   ],
   "runtimeChangedSincePlanningBaseline": true,
-  "lastImplementationUpdate": "2026-10-31T15:03:04.545Z",
-  "implementationReport": "output/qa/W08-W10-native-tasks/README.md",
+  "lastImplementationUpdate": "2026-10-31T15:43:22.811195+00:00",
+  "implementationReport": "output/qa/W10-social-finality/README.md",
   "currentGapRegister": "docs/V1-REMAINING.md"
 }

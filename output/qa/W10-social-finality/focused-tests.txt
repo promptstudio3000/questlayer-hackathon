@@ -1,0 +1,39 @@
+✔ final native withdrawal matches exact actor/action and both current and executed code (4.920042ms)
+✔ receipt identity, sole FunctionCall, amounts, gas and arguments cannot be substituted (17.211ms)
+✔ optimistic, malformed, failed and false-callback results never establish payment (14.085792ms)
+✔ network, synchronization, stale anchors and changed current or historical code fail closed (8.692875ms)
+✔ only a linked wallet may confirm, including after asynchronous receipt and code reads (6.8385ms)
+✔ all read-only native RPC work is bounded (7.380833ms)
+✔ unknown contracts, methods, network or malformed comparison contexts are rejected (12.382459ms)
+✔ factory creation, owned registration and refund use reviewed terms and true callbacks (7.201084ms)
+✔ vault confirmation requires a real owned ready factory position and keyless pinned state (8.523875ms)
+✔ deposit, exit, refresh and advance callback false is final but not completed (8.379ms)
+✔ market buy/cancel/withdraw and NFT escrow listing distinguish successful callback from compensation (7.417917ms)
+✔ collectible mint/redeem validates returned identity and equipment expects a void result (8.524125ms)
+✔ SocialDB set returns a publication height, not boolean success; private or foreign paths cannot be confirmed (2.051708ms)
+✔ note photos are bounded, re-encoded and stripped of source metadata (31.448083ms)
+✔ invalid, oversized and mislabeled media never creates a file (4.565334ms)
+✔ media cleanup cannot address unrelated paths and processing capacity is bounded (1.561875ms)
+✔ notes require explicit public consent, keep optional GPS absent and isolate arena from real map (5.582167ms)
+✔ GPS requires a fresh accurate real fix and stores only the expressly selected fields (2.756125ms)
+✔ exact retries return the original receipt without another image write and changed payloads conflict (2.526209ms)
+✔ concurrent same-ID image submissions serialize before image work (2.880667ms)
+✔ expired image attempt cannot commit over its replacement and its orphan is cleaned (2.854584ms)
+✔ revoked browser session during media preparation cannot publish and retry keeps the same content (2.296ms)
+✔ abandon records an absent ID and prevents a delayed post; completed notes survive abandon (2.456917ms)
+✔ abandon during image work invalidates the lease and cleans the late image (2.329ms)
+✔ owner removal strips public content and media, preserves an idempotent tombstone and cannot be restored (2.782834ms)
+✔ reports are private, deduplicated and never hide content solely by their count (2.761583ms)
+✔ moderation is default denied, hides images and text, and requires explicit restoration (2.685959ms)
+✔ blocks filter both directions from notes, image access and presence, with explicit unblock (3.093833ms)
+✔ legacy notes migrate once into arena without changing the messages table and orphan media fails closed (2.351083ms)
+✔ bounded publication rates reject new IDs but preserve receipt lookup and exact retries (3.275125ms)
+✔ a fresh process retains hidden receipts, permanent abandonment and bilateral blocks (18.024625ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 209.182166

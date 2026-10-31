@@ -699,3 +699,51 @@ test("confirmation still pins current finalized network/code/keyless policy and 
   f.provider.viewTransactionStatus = () => new Promise(() => {});
   await assert.rejects(() => f.native.confirm(f.player, f.input), /timeout/);
 });
+
+test("shared recovery confirms task terms and rejects changed receipt arguments", async () => {
+  const f = confirmationFixture();
+  delete f.input.quote.contractId;
+  delete f.input.quote.codeHash;
+  delete f.input.quote.policy;
+  assert.equal(
+    (await f.native.confirmTransaction(f.player, f.input)).confirmed,
+    true,
+  );
+  f.input.quote.args = { changed: true };
+  await assert.rejects(
+    () => f.native.confirmTransaction(f.player, f.input),
+    /arguments differ/,
+  );
+});
+test("shared recovery only marks explicit final failures as clearable", async () => {
+  const f = confirmationFixture();
+  f.receipt.status = { Failure: { ActionError: "failed" } };
+  await assert.rejects(
+    () => f.native.confirmTransaction(f.player, f.input),
+    (e) => e.code === "NATIVE_TRANSACTION_FAILED",
+  );
+  for (const status of [
+    null,
+    {},
+    { Unknown: "" },
+    { SuccessValue: "", Failure: {} },
+  ]) {
+    f.receipt.status = status;
+    await assert.rejects(
+      () => f.native.confirmTransaction(f.player, f.input),
+      (e) => !e.code?.startsWith("NATIVE_"),
+    );
+  }
+});
+test("shared recovery rejects a restored task withdrawal and checks ownership first", async () => {
+  const f = confirmationFixture();
+  f.receipt.status = { SuccessValue: Buffer.from("false").toString("base64") };
+  await assert.rejects(
+    () => f.native.confirmTransaction(f.player, f.input),
+    (e) => e.code === "NATIVE_OPERATION_NOT_COMPLETED",
+  );
+  await assert.rejects(
+    () => f.native.confirmTransaction("other-player", f.input),
+    /Link/,
+  );
+});

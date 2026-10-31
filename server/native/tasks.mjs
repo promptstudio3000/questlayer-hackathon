@@ -689,6 +689,27 @@ export class NativeTasks {
       blockHeight: state.blockHeight,
     };
   }
+  async confirmTransaction(player, input = {}) {
+    this.linked(player, input.accountId);
+    const policy = this.configuration();
+    try {
+      return await this.confirm(player, {
+        ...input,
+        quote: {
+          ...input.quote,
+          contractId: policy.contractId,
+          codeHash: policy.codeHash,
+          policy: policy.policy,
+        },
+      });
+    } catch (error) {
+      if (error.code === "TASK_TRANSACTION_FAILED")
+        error.code = "NATIVE_TRANSACTION_FAILED";
+      if (error.code === "TASK_WITHDRAWAL_FAILED")
+        error.code = "NATIVE_OPERATION_NOT_COMPLETED";
+      throw error;
+    }
+  }
   async confirm(player, { accountId, quote, transactionHash } = {}) {
     this.linked(player, accountId);
     const manifest = this.configuration();
@@ -798,11 +819,21 @@ export class NativeTasks {
     assert(
       result.status &&
         typeof result.status === "object" &&
-        Object.keys(result.status).length === 1 &&
-        typeof result.status.SuccessValue === "string",
+        !Array.isArray(result.status) &&
+        Object.keys(result.status).length === 1,
+      "The task receipt has an invalid final status. Keep its reference for another check.",
+      409,
+    );
+    assert(
+      !Object.hasOwn(result.status, "Failure"),
       "The task transaction failed. Refresh the task record before retrying.",
       409,
       "TASK_TRANSACTION_FAILED",
+    );
+    assert(
+      typeof result.status.SuccessValue === "string",
+      "The task receipt has no final outcome. Keep its reference for another check.",
+      409,
     );
     const outcomes = [
       ...(result.transaction_outcome ? [result.transaction_outcome] : []),
@@ -810,9 +841,9 @@ export class NativeTasks {
         ? result.receipts_outcome
         : []),
     ];
+    assert(outcomes.length <= 128, "Too many task receipts to verify.", 409);
     assert(
-      outcomes.length <= 128 &&
-        outcomes.every((receipt) => !receipt?.outcome?.status?.Failure),
+      outcomes.every((receipt) => !receipt?.outcome?.status?.Failure),
       "A task transaction receipt failed. Refresh its current record before retrying.",
       409,
       "TASK_TRANSACTION_FAILED",

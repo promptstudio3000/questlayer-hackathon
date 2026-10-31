@@ -1,0 +1,88 @@
+{
+  "verifiedAt": "2026-10-31T15:27:55.705Z",
+  "network": "testnet",
+  "mode": "read-only",
+  "newTransactions": 0,
+  "receipts": [
+    {
+      "label": "List earned Aura into actual NFT escrow",
+      "transaction": "BzPRKCKXC7bC7nMjrAqhvACdVUFtnSTvv1jmx8aTwmWK",
+      "accountId": "auratrail-dev-20261030.testnet",
+      "method": "nft_transfer_call",
+      "confirmed": true,
+      "alteredGasRejected": true
+    },
+    {
+      "label": "Cancel and return escrowed NFT to its owner",
+      "transaction": "6jqPA1ZS8sDwCMmZH5JfotyBQzUqU7oj5MHdYJSuqBwC",
+      "accountId": "auratrail-dev-20261030.testnet",
+      "method": "cancel",
+      "confirmed": true,
+      "alteredGasRejected": true
+    },
+    {
+      "label": "Buyer pays exact test NEAR and receives the NFT",
+      "transaction": "EjUBqxfUWEycT496b58P63hwEke5PYqzk1D2yLYuUn4G",
+      "accountId": "explorer.auratrail-dev-20261030.testnet",
+      "method": "buy",
+      "confirmed": true,
+      "alteredGasRejected": true
+    },
+    {
+      "label": "Seller withdraws confirmed native sale proceeds",
+      "transaction": "RBru7FgQVQkcJd5Mm2zJwgbLg2p8wbcKb6kdAcJN7fp",
+      "accountId": "auratrail-dev-20261030.testnet",
+      "method": "withdraw",
+      "confirmed": true,
+      "alteredGasRejected": true
+    },
+    {
+      "label": "Public SocialDB profile",
+      "transaction": "8MxWn5jpnSptfKntufo58F4e7PpHWWQ9P6RU6eQj39wy",
+      "accountId": "auratrail-dev-20261030.testnet",
+      "method": "set",
+      "confirmed": true,
+      "alteredGasRejected": true
+    },
+    {
+      "label": "Redeem signed earned Aura",
+      "transaction": "Mq4yurjy6v2hkETktGkJzC5a3hyrG2tVyLDj8KNgknP",
+      "accountId": "auratrail-dev-20261030.testnet",
+      "method": "redeem_aura",
+      "confirmed": true,
+      "alteredGasRejected": true
+    },
+    {
+      "label": "Prepared create",
+      "transaction": "E8wP34zUiww5YiGRLeWwQE2eGfRe9XJ5Rtx5ZnMzuF2R",
+      "accountId": "questlayer-pilot-20261031.testnet",
+      "method": "create_position",
+      "confirmed": true,
+      "alteredGasRejected": true
+    },
+    {
+      "label": "Withdraw actual native exploration reward",
+      "transaction": "9m1ygLM4Fv9LW2eZRxNoHiwQkgKZmtNbH6XHqUxL37yD",
+      "accountId": "questlayer-pilot-20261031.testnet",
+      "confirmed": false,
+      "reason": "The native contract code differs from the reviewed version."
+    }
+  ],
+  "exit": {
+    "accountId": "v0.questlayer-vaults-20261031.testnet",
+    "beneficiary": "questlayer-pilot-20261031.testnet",
+    "epoch": "5399",
+    "unlockEpoch": "5402",
+    "stage": "unlocking",
+    "canWithdraw": false,
+    "ownerCredit": "0",
+    "ownerPending": "0",
+    "ownerPaid": "0",
+    "realizedGameYieldPaid": "0"
+  },
+  "boundaries": [
+    "Quotes reconstructed from existing project transactions, not a new wallet UI approval",
+    "Historical code different from the current reviewed manifest is deliberately rejected",
+    "No epoch bypass, withdrawal, deposit or signature performed"
+  ]
+}
