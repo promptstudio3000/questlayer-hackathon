@@ -1,17 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&display=swap");
+@import "./tokens.css";
 :root {
-  font-family: "Kanit", system-ui, sans-serif;
-  color: #423b53;
+  font-family: var(--font-body);
+  color: var(--ink);
   background: #e7e7d7;
   font-synthesis: none;
   font-weight: 400;
-  --purple: #77639d;
-  --dark: #3e345c;
-  --muted: #92899b;
-  --border: #ede8e3;
-  --cream: #fbf9f4;
-  --gold: #d8a849;
-  --green: #6d9e87;
 }
 * {
   box-sizing: border-box;
@@ -2786,15 +2780,6 @@ input[type="range"] {
 }
 
 /* QuestLayer's operational palette and readable interaction baseline. */
-:root {
-  --ink: #1a0335;
-  --muted: #665577;
-  --purple: #672eeb;
-  --cream: #fcfaff;
-  --surface: #fff;
-  --border: #d7cbe9;
-  --font-body: Kanit, system-ui, sans-serif;
-}
 body {
   font-family: var(--font-body);
   font-size: 16px;

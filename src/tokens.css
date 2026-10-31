@@ -1,0 +1,47 @@
+/* QuestLayer design tokens. Single source of truth, adopted from docs/design-tokens.json
+   (Aavegotchi brand-guide adaptation). Legacy aliases map older selectors onto the same roles. */
+:root {
+  --ink: #1a0335;
+  --ink-secondary: #665577;
+  --surface: #fcfaff;
+  --surface-raised: #ffffff;
+  --surface-soft: #f2ebff;
+  --action: #672eeb;
+  --on-action: #ffffff;
+  --discovery: #ff1dff;
+  --on-discovery: #1a0335;
+  --coin: #fef87d;
+  --on-coin: #1a0335;
+  --success: #176553;
+  --success-surface: #e3f6ee;
+  --error: #a32947;
+  --error-surface: #fff0f3;
+  --decorative-border: #d7cbe9;
+  --control-border: #806a99;
+  --focus: #672eeb;
+  --shell: #1a0335;
+  --font-body: "Kanit", system-ui, sans-serif;
+  --radius-control: 8px;
+  --radius-item: 12px;
+  --radius-sheet: 20px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --motion-press: 100ms;
+  --motion-feedback: 160ms;
+  --motion-sheet: 240ms;
+  /* Legacy aliases used by older rules. */
+  --purple: var(--action);
+  --dark: var(--ink);
+  --muted: var(--ink-secondary);
+  --border: var(--decorative-border);
+  --cream: var(--surface);
+  --paper: var(--surface);
+  --gold: #d8a849;
+  --green: var(--success);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-press: 0ms;
+    --motion-feedback: 0ms;
+    --motion-sheet: 0ms;
+  }
+}

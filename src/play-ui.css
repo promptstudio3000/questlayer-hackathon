@@ -70,21 +70,7 @@
     overflow-y: auto;
   }
 }
-:root {
-  --ink: #1a0335;
-  --ink-secondary: #665577;
-  --surface: #fcfaff;
-  --surface-raised: #fff;
-  --surface-soft: #f2ebff;
-  --action: #672eeb;
-  --on-action: #fff;
-  --control-border: #806a99;
-  --decorative-border: #d7cbe9;
-  --purple: #672eeb;
-  --muted: #665577;
-  --cream: #fcfaff;
-  --dark: #1a0335;
-}
+/* Tokens are defined once in src/tokens.css. */
 .play-native,
 .play-economy {
   color: var(--ink);
