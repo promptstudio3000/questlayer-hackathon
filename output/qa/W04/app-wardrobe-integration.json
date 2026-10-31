@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-31T02:42:38.135Z",
+  "api": "http://127.0.0.1:8787",
+  "network": "testnet",
+  "contractId": "nfts.auratrail-dev-20261030.testnet",
+  "accountId": "auratrail-dev-20261030.testnet",
+  "ownedTokenIds": [
+    "aura:polar:1",
+    "avatar:auratrail-dev-20261030.testnet",
+    "aura:moon:1"
+  ],
+  "equipment": {
+    "above": "aura:polar:1",
+    "below": "aura:moon:1"
+  },
+  "nativeOutfitActive": true,
+  "playerPrivateKeyUploaded": false
+}

@@ -21,7 +21,7 @@ assert.ok(
 );
 const account = new Account(
   operator.accountId,
-  "https://rpc.testnet.near.org",
+  "https://test.rpc.fastnear.com",
   operator.secretKey,
 );
 async function request(path, data, cookie) {
@@ -94,3 +94,45 @@ writeFileSync(
   JSON.stringify(result, null, 2) + "\n",
 );
 console.log(JSON.stringify(result));
+
+if (process.argv.includes("--wardrobe")) {
+  const wardrobe = (
+    await request("/native/wardrobe?refresh=1", undefined, again.cookie)
+  ).data;
+  const owned = wardrobe.accounts.find(
+    (a) => a.accountId === operator.accountId,
+  );
+  assert.ok(
+    owned?.starterOwned,
+    "Native starter NFT must be owned by the signed-in wallet",
+  );
+  assert.ok(
+    owned.equipment.above && owned.equipment.below,
+    "Both independent native slots must be present",
+  );
+  const activated = (
+    await request(
+      "/native/outfit",
+      { enabled: true, accountId: operator.accountId },
+      again.cookie,
+    )
+  ).data;
+  assert.equal(activated.player.nativeOutfit, true);
+  assert.equal(activated.player.nativeAccount, operator.accountId);
+  const proof = {
+    verifiedAt: new Date().toISOString(),
+    api: base,
+    network: "testnet",
+    contractId: wardrobe.contractId,
+    accountId: operator.accountId,
+    ownedTokenIds: owned.items.map((i) => i.tokenId),
+    equipment: owned.equipment,
+    nativeOutfitActive: true,
+    playerPrivateKeyUploaded: false,
+  };
+  writeFileSync(
+    "output/qa/W04/app-wardrobe-integration.json",
+    JSON.stringify(proof, null, 2) + "\n",
+  );
+  console.log(JSON.stringify(proof));
+}

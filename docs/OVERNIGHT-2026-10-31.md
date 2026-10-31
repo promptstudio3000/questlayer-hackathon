@@ -62,3 +62,34 @@ City alpha deployed at release `20261031T012257Z`, source commit `4043f52`, with
 - The RPC reports its actual network before identity/balance verification. A mainnet endpoint or syncing node is rejected instead of being labelled testnet. Each login still reads current access-key ownership. The live test was repeated after this guard.
 - Wallet choices require message signing and sign-in without adding an application access key. Both identity SDK versions are pinned to the versions tested in this increment.
 - Phone form checks include a 20px form-text stress setting and a reduced 390×430 layout. The input and primary action remain reachable by scrolling. These are explicit browser stress cases, not a physical soft-keyboard or OS text-setting result.
+
+## Native wardrobe increment
+
+Native identity release `20261031T020502Z` / commit `1e1e4a7` was deployed and verified through the public HTTPS API with the live NEAR testnet account. The public city overview also received its corrected bounds and smaller overview markers.
+
+- Upgraded the existing owned testnet NFT contract atomically to schema V2. The original NFT and original supply were checked before/after migration. Collection display metadata now says QuestLayer; historical account addresses and old token metadata were preserved.
+- Added caller-owned starter explorer NFTs, independent above/below Aura slots, owner checks, transfer cleanup, and cleanup of transient receiver equipment after a returned `nft_transfer_call`. The original single-slot view remains compatible.
+- Added an oracle-only `mint_aura_once` claim ID. A retry returns the same token even after it has transferred, cannot redirect its original recipient and cannot exceed edition caps. Compound mint storage is charged before unused deposits are refunded through the standard NFT utility.
+- The explorer art is generated from the same canonical SVG function used by the game. The NFT embeds its SVG, so its 2D image requires no separate asset host. This does not constitute a 3D model catalog.
+- Nine real testnet transactions verified migration, caller minting, independent equipment, transfer cleanup, replay without reminting, return and restored equipment. Evidence: `public/native-wardrobe-testnet.json` and `output/qa/W04/live-wardrobe.json`.
+- Read-only native inventory verifies each owner and each equipped token. It supports limited pagination, removes stale ownership, coalesces normal reads and prevents an older in-flight request overwriting a confirmed refresh.
+- Added a public collection/outfit preview and wallet-owned NFT sections. Wallet transactions create/equip/remove NFTs; the server stores no player signing key. A confirmed native outfit can be used on the map; equipping a demo item selects the demo outfit again.
+- Header, inventory, map and public outfit preview share the character art/composition. Demo listing failures now keep the entered price and selling form open.
+- 34 application tests and 19 Rust tests pass. The live local application test proved signed identity → owned NFTs → both native equipment slots → native outfit selection in the same profile. No player key was uploaded.
+
+Important boundary: quest chest drops and GOLD settlement still use the demo game ledger. Native Aura issuance is currently an owned testnet proof through the idempotent oracle method; a durable gameplay-to-native reward outbox remains W06 work. The native wallet transaction path still needs a real mobile/browser wallet round trip and physical-device checks. Native market/Intents sales, real staking/yield and the complete 3D wardrobe remain open.
+
+### RPC correction discovered in browser review
+
+The former `rpc.testnet.near.org` endpoint began returning JSON-RPC `-429` with an explicit deprecation warning during the native collection phone check. This was an observed infrastructure failure, not an ownership failure. Updated default configuration, the service unit and operator scripts to FASTNEAR's current testnet endpoint. The application uses the SDK failover provider with Intear's testnet RPC as backup; explicitly supplied custom RPCs remain isolated for configuration and test determinism. Network status checks are coalesced, failures do not poison subsequent retries, and the public collection has an explicit retry action. A real read through the new provider returned the three owned NFTs and both equipment slots in 1.47 seconds in that check; this is one observation, not a performance guarantee. Endpoint source: [official NEAR RPC providers](https://docs.near.org/api/rpc/providers).
+
+| Before | After | Why / source |
+| --- | --- | --- |
+| Inventory showed demo items alongside a disconnected testnet proof. | A separately labelled NEAR inventory and a public live outfit preview read actual ownership and equipment. | Keep source and asset custody understandable; `src/NativeWardrobe.tsx`, `server/native/collectibles.mjs`. |
+| Header, map and item previews had separate ghost/Aura paths. | Shared composition and canonical SVG source cover header, map, inventory and public outfit previews. | An equipped appearance should have one visual identity; `src/App.tsx`, `src/character-art.ts`. |
+| The NFT contract exposed one legacy equipment slot. | Above/below equipment survives safe migration and clears on transfers/failed transfer-call returns. | Ownership is authoritative; `contracts/collectibles/src/lib.rs`. |
+| A deprecated RPC made an otherwise valid owned outfit unavailable. | Updated providers, a backup transport, coalesced network checks and visible retry. | Availability errors must not be presented as asset loss; `server/near-provider.mjs`, `server/identity/near.mjs`. |
+
+Browser evidence currently includes the real native public outfit on desktop, at 360/390 CSS px and at 844 × 390 landscape. The confirmed outfit shows the original preserved polar Aura above and the newly minted moon Aura below. The guest's own character correctly stays in its separate demo outfit. Phone browser frames are layout checks, not physical iOS/Android device results. Wallet approval, soft-keyboard and OS enlarged-text checks for native transaction screens remain pending.
+
+The inventory wallet picker was exercised with Tab and Escape without selecting a wallet or signing. This caught a focus-return failure: disabling the invoking button while the SDK loaded caused the dialog to capture the document body as its previous focus. The shared action wrapper now remembers the invoking control before the busy state and restores it after cancellation when no other dialog has opened. The repeated browser check confirmed focus on “Connect a NEAR wallet”; `output/qa/W04/keyboard-wallet-cancel.png` records that state.

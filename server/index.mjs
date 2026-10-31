@@ -1,6 +1,7 @@
 import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
+import { NativeCollectibles } from "./native/collectibles.mjs";
 import { clientAddress } from "./http-security.mjs";
 import {
   readFileSync,
@@ -25,7 +26,7 @@ import {
   verifyNearIdentity,
   assertTestnetRpc,
 } from "./identity/near.mjs";
-import { JsonRpcProvider } from "near-api-js";
+import { createNearProvider } from "./near-provider.mjs";
 import {
   openDatabase,
   atomic,
@@ -51,8 +52,21 @@ const db = openDatabase();
 const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
-const rpc = process.env.NEAR_RPC_URL || "https://rpc.testnet.near.org";
-const provider = new JsonRpcProvider({ url: rpc });
+const rpc = process.env.NEAR_RPC_URL || "https://test.rpc.fastnear.com";
+const provider = createNearProvider(rpc);
+const deploymentManifestPath = existsSync(
+  resolve(APP_ROOT, "public/testnet-deployment.json"),
+)
+  ? resolve(APP_ROOT, "public/testnet-deployment.json")
+  : resolve(APP_ROOT, "dist/testnet-deployment.json");
+const testnetManifest = JSON.parse(
+  readFileSync(deploymentManifestPath, "utf8"),
+);
+const nativeCollectibles = new NativeCollectibles(
+  provider,
+  process.env.NEAR_COLLECTIBLES_CONTRACT ||
+    testnetManifest.collectiblesContract,
+);
 db.exec(
   `CREATE TABLE IF NOT EXISTS passkeys(id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),public_key TEXT NOT NULL,counter INTEGER NOT NULL,transports TEXT NOT NULL);`,
 );
@@ -154,6 +168,8 @@ function profile(player) {
   }
   return {
     ...p,
+    nativeOutfit: !!p.native_outfit,
+    nativeAccount: p.native_account || p.wallets[0]?.account_id || null,
     coinsCollected: db
       .prepare("SELECT COUNT(*) AS n FROM coins WHERE claimant=?")
       .get(player).n,
@@ -239,7 +255,7 @@ async function api(req, res, url) {
       contracts: {
         game: process.env.NEAR_GAME_CONTRACT || null,
         vault: process.env.NEAR_VAULT_CONTRACT || null,
-        collectibles: process.env.NEAR_COLLECTIBLES_CONTRACT || null,
+        collectibles: nativeCollectibles.contractId,
         intents: process.env.NEAR_INTENTS_CONTRACT || null,
       },
       nearAI: !!process.env.NEAR_AI_API_KEY,
@@ -447,7 +463,58 @@ async function api(req, res, url) {
     });
     return createReadStream(file).pipe(res);
   }
+  if (path === "/api/native/collection" && method === "GET")
+    return respond(res, await nativeCollectibles.collection());
   const player = auth(req);
+  if (path === "/api/native/wardrobe" && method === "GET") {
+    const ids = db
+        .prepare(
+          "SELECT account_id FROM wallet_links WHERE player_id=? ORDER BY verified_at DESC LIMIT 5",
+        )
+        .all(player)
+        .map((w) => w.account_id),
+      fresh = url.searchParams.get("refresh") === "1";
+    if (fresh) {
+      const key = `native-refresh:${player}:${Math.floor(Date.now() / 60000)}`,
+        count = (rates.get(key) || 0) + 1;
+      rates.set(key, count);
+      assert(
+        count <= 12,
+        "Please wait before refreshing the native inventory again.",
+        429,
+      );
+    }
+    return respond(res, await nativeCollectibles.wardrobe(ids, fresh));
+  }
+  if (path === "/api/native/outfit" && method === "POST") {
+    const input = await body(req);
+    assert(typeof input.enabled === "boolean", "Choose an outfit source.");
+    if (input.enabled) {
+      nearAccountId(input.accountId);
+      assert(
+        db
+          .prepare(
+            "SELECT 1 FROM wallet_links WHERE player_id=? AND account_id=?",
+          )
+          .get(player, input.accountId),
+        "Link this NEAR wallet before using its outfit.",
+        403,
+      );
+      const state = await nativeCollectibles.wardrobe([input.accountId], true);
+      assert(
+        state.accounts[0].items.length > 0,
+        "This wallet has no QuestLayer NFTs yet.",
+      );
+    }
+    db.prepare(
+      "UPDATE players SET native_outfit=?,native_account=COALESCE(?,native_account) WHERE id=?",
+    ).run(
+      input.enabled ? 1 : 0,
+      input.enabled ? input.accountId : null,
+      player,
+    );
+    return respond(res, { player: profile(player) });
+  }
   if (path === "/api/me") return respond(res, { player: profile(player) });
   if (path === "/api/events") {
     res.writeHead(200, {

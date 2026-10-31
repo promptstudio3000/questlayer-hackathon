@@ -1,0 +1,7 @@
+{
+  "name": "QuestLayer Explorer",
+  "version": 1,
+  "sha256": "3712cd349ca154737baf3521c6027b4db6fd03fa6289be90428e11f549b2c9ab",
+  "source": "src/character-art.ts",
+  "media": "data:image/svg+xml;base64"
+}

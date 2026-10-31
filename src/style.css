@@ -3498,3 +3498,195 @@ select {
   justify-content: center;
   gap: 12px;
 }
+.native-wardrobe {
+  padding: 20px 0;
+  border-top: 1px solid #ded2e8;
+  border-bottom: 1px solid #ded2e8;
+  margin: 24px 0;
+  color: #441c6c;
+}
+.native-wardrobe > p,
+.native-account > p {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 12px 0;
+}
+.network-label {
+  font-size: 12px;
+  background: #eae0ff;
+  color: #441c6c;
+  border: 1px solid #c8b2ef;
+  padding: 5px 8px;
+  border-radius: 7px;
+}
+.native-account {
+  padding: 16px;
+  background: #f5effb;
+  border: 1px solid #dbcee9;
+  border-radius: 16px;
+  margin: 16px 0;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.native-address {
+  overflow-wrap: anywhere;
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.native-account > strong {
+  font-size: 14px;
+}
+.native-account > span {
+  font-size: 14px;
+}
+.native-account .fine-print {
+  font-size: 12px;
+}
+.native-confirmation {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px !important;
+}
+.native-items {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+}
+.native-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #ded2e8;
+  border-radius: 14px;
+  min-width: 0;
+}
+.native-item > div:last-child {
+  min-width: 0;
+  flex: 1;
+}
+.native-item h3 {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+.native-item > .ghost-art,
+.native-picture {
+  width: 58px;
+  height: 70px;
+  object-fit: contain;
+  flex: none;
+}
+.native-item > .aura-art {
+  width: 64px;
+  height: 76px;
+  flex: none;
+}
+.native-item > .aura-art .ghost-art {
+  width: 45px;
+  height: 54px;
+}
+.native-equip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.native-equip-actions > button {
+  font-size: 14px;
+  min-height: 48px;
+  flex: 1;
+  padding: 8px;
+}
+.native-gallery {
+  margin-top: 20px;
+}
+.native-gallery > summary {
+  min-height: 48px;
+  padding: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  border: 1px solid #ded2e8;
+  border-radius: 10px;
+}
+.native-gallery > p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 16px 0;
+}
+.character-composition.compact {
+  width: 40px;
+  height: 48px;
+  flex: none;
+}
+.character-composition.compact > .ghost-art,
+.character-composition.compact > img {
+  width: 38px;
+  height: 44px;
+}
+.character-composition.compact .character-aura {
+  height: 8px;
+  left: 1px;
+  right: 1px;
+}
+.character-composition.compact .character-aura.below {
+  bottom: 4px;
+}
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  .maplibregl-ctrl-bottom-right {
+    bottom: 280px !important;
+    right: 12px !important;
+  }
+  body:has(.sheet-expanded) .maplibregl-ctrl-bottom-right {
+    bottom: calc(min(58dvh, calc(100dvh - 250px)) + 92px) !important;
+  }
+  .native-account {
+    padding: 12px;
+  }
+  .native-item {
+    padding: 12px;
+    gap: 10px;
+  }
+}
+@media (max-height: 500px) and (max-width: 1000px) {
+  .maplibregl-ctrl-bottom-right,
+  body:has(.sheet-expanded) .maplibregl-ctrl-bottom-right {
+    bottom: 84px !important;
+    right: auto !important;
+    left: 12px;
+  }
+}
+.native-outfit-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #c8b2ef;
+  background: #f0e8ff;
+  border-radius: 16px;
+  margin: 16px 0;
+  min-width: 0;
+}
+.native-outfit-preview .character-composition {
+  width: 90px;
+  height: 110px;
+  flex: none;
+}
+.native-outfit-preview .character-composition > .ghost-art {
+  width: 80px;
+  height: 94px;
+}
+.native-outfit-preview > div:last-child {
+  min-width: 0;
+}
+.native-outfit-preview strong {
+  font-size: 16px;
+}
+.native-outfit-preview span {
+  display: block;
+  font-size: 12px;
+  margin-top: 8px;
+}

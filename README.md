@@ -47,12 +47,13 @@ The deploy target is **https://questlayer.promptstudio3000.com/**. Deployment is
 | Persistent inventory, Aura equipment and peer market | Implemented, server-settled demo items |
 | Demo staking, maturity, retained yield, withdrawals | Implemented simulation; not a validator deposit |
 | Passkey registration and recovery | Implemented demo identity; not a native NEAR account |
-| NEAR wallet linking | Real NEP-413 verification and on-chain balance reads |
+| Native NEAR sign-in and recovery | Real NEP-413 FullAccess verification; existing wallet restores the same player |
+| Native avatar and Aura wardrobe | Live testnet ownership, caller-minted starter NFT, independent above/below equipment and native appearance selection; gameplay drops still use the demo ledger |
 | Aavegotchi linking | EVM signature verification, read-only Base ownership, loose/nested/equipped inventory and original SVG appearances |
 | Notes with images and optional author GPS | Implemented server storage; image metadata removed |
 | Sponsored tasks | Demo escrow, evidence, creator approval; public arbitration is a later gate |
 | Native game and NEP-171 contracts | Rust implementations with tests and reproducible build commands |
-| Native deployment proofs | `public/testnet-deployment.json`, present only after verified real testnet operations |
+| Native deployment proofs | `public/testnet-deployment.json` and `public/native-wardrobe-testnet.json`; verified real testnet operations |
 | Intents market, native staking vault, native passkey wallet | Not connected to gameplay yet |
 | SocialDB/IPFS publishing | Not connected yet |
 | NEAR AI | Optional Cloud-backed guide when configured; otherwise a clearly identified rules-based guide |
@@ -88,3 +89,5 @@ The VPS deployment script runs tests/builds, backs up the existing route and dat
 Browser GPS can be spoofed. The location validator is explicitly trusted for physical evidence; contracts enforce backing and exactly-once claims rather than physical truth. Testnet contract operation is not a mainnet audit. Native wallet recovery, the financial vault, Intents integration, external asset rights and real-device performance remain explicit release gates.
 
 See [third-party notices](THIRD-PARTY-NOTICES.md). All public product text and delivery documentation are English.
+
+`node scripts/upgrade-collectibles-testnet.mjs` upgrades the existing owned testnet collectible contract with a checked V1→V2 migration and records live equipment/transfer/idempotency proofs. `node scripts/smoke-near-identity.mjs --wardrobe` verifies signed application identity, actual NFT ownership and outfit selection without sending a blockchain transaction. The application uses current public testnet endpoints listed in [NEAR's provider documentation](https://docs.near.org/api/rpc/providers); no player signing key is stored by the server.

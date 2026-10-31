@@ -1,0 +1,70 @@
+
+> questlayer@0.1.0 check
+> npm test && npm run build
+
+
+> questlayer@0.1.0 test
+> node --test tests/*.test.mjs
+
+✔ Aavegotchi inventory decodes the canonical item ID before the quantity (1.587833ms)
+✔ 365 city manifests keep six distinct sectors and at least 250m of polygon separation (1981.445208ms)
+✔ city selection is deterministic but rotates across dates (7.621666ms)
+✔ physical mode requires the canonical polygon as well as target proximity (112.988667ms)
+✔ ordered walking checkpoints cannot be skipped replayed or completed from one place (97.648208ms)
+✔ exhausted Aura supply is visible and never mints beyond edition caps (91.939458ms)
+✔ city windows include four all-day zones one three-hour zone and one one-hour zone (91.744708ms)
+✔ yield uses two conserved buckets and idempotent receipts (6.532833ms)
+✔ simultaneous activation shares a single world and one reserved coin budget (412.72525ms)
+✔ shared coin pays one player once and cannot be farmed by retries (142.389208ms)
+✔ expired coins cannot be collected and unclaimed backing rolls over once (131.422625ms)
+✔ a solo player can complete a free quest and mint one bounded Aura (203.789458ms)
+✔ tier access matures, withdrawals remove it, decreases apply immediately (2.461875ms)
+✔ a funded quest has one GOLD payout while everyone can still earn personal XP (130.907541ms)
+✔ unstaking preserves retained yield and withdrawal is redeemable once (2.142417ms)
+✔ yield allocation before contribution change cannot be reassigned retroactively (5.881792ms)
+✔ market sale is atomic, conserves balances and transfers equipment rights (129.312ms)
+✔ cancelled listing cannot be filled or revive after relisting (155.113208ms)
+✔ invalid monetary actions do not change wallet or treasury (1.750417ms)
+✔ failed transaction rolls back all writes (2.894958ms)
+✔ physical GPS validation rejects stale, inaccurate and distant evidence (0.221334ms)
+✔ local world rollover handles 23-hour and 25-hour days (291.85875ms)
+✔ city snapshots share a fixed public center and never record the first visitor GPS (104.835375ms)
+✔ forwarded addresses cannot bypass the client limit from an untrusted connection (0.563ms)
+✔ the trusted local proxy separates clients and ignores forged address prefixes (4.576625ms)
+✔ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (1626.013167ms)
+✔ native wardrobe verifies ownership and removes stale or duplicate equipment (1.821417ms)
+✔ native holdings retain equipped items beyond the first page and coalesce RPC calls (0.406083ms)
+✔ native asset normalization rejects foreign kinds and out-of-range editions (2.359667ms)
+✔ a confirmed refresh cannot be overwritten by an older in-flight ownership read (0.250125ms)
+✔ parallel native reads share network verification and a failed check can retry (1.137625ms)
+✔ native identity validates account syntax and distinguishes RPC failures (1.882041ms)
+✔ NEAR sign-in verifies real signatures, restores one explorer, isolates purposes and prevents replay (1618.462ms)
+✔ identity refuses a mainnet RPC even when its access-key answer would be valid (1.090458ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2924.739375
+
+> questlayer@0.1.0 build
+> tsc -b && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 5071 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.69 kB │ gzip:   0.42 kB
+dist/assets/maplibre-gl-worker-Br3j0JGE.js    518.98 kB
+dist/assets/index-DSjymJPr.css                122.43 kB │ gzip:  22.04 kB
+dist/assets/ccip-DTHsoRcW.js                    0.08 kB │ gzip:   0.08 kB
+dist/assets/utils-Bpv4vmSW.js                   2.19 kB │ gzip:   0.97 kB
+dist/assets/secp256k1-ek3THPka.js              26.34 kB │ gzip:  10.21 kB
+dist/assets/build-fgtz3_yj.js                  58.76 kB │ gzip:  15.02 kB
+dist/assets/_esm-C4o-RCz0.js                  170.66 kB │ gzip:  49.01 kB
+dist/assets/index-C4jZ009M.js               1,484.77 kB │ gzip: 413.94 kB
+
+✓ built in 816ms

@@ -433,6 +433,7 @@ export function equip(db, player, itemId) {
       item.equipped ? 0 : 1,
       item.id,
     );
+    db.prepare("UPDATE players SET native_outfit=0 WHERE id=?").run(player);
     return { equipped: !item.equipped };
   });
 }

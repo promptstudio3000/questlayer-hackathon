@@ -57,6 +57,13 @@ export function openDatabase(
     db.exec(
       "ALTER TABLE positions ADD COLUMN eligible_contribution INTEGER NOT NULL DEFAULT 0",
     );
+  const playerColumns = db.prepare("PRAGMA table_info(players)").all();
+  if (!playerColumns.some((c) => c.name === "native_outfit"))
+    db.exec(
+      "ALTER TABLE players ADD COLUMN native_outfit INTEGER NOT NULL DEFAULT 0",
+    );
+  if (!playerColumns.some((c) => c.name === "native_account"))
+    db.exec("ALTER TABLE players ADD COLUMN native_account TEXT");
   const questColumns = db.prepare("PRAGMA table_info(quests)").all();
   if (!questColumns.some((c) => c.name === "zone_id"))
     db.exec("ALTER TABLE quests ADD COLUMN zone_id TEXT");

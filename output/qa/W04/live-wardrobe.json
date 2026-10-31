@@ -1,0 +1,56 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-10-31T02:33:53.167Z",
+  "contractId": "nfts.auratrail-dev-20261030.testnet",
+  "schemaVersion": 2,
+  "codeHash": "2w5deTqFeQWJAu8KdUfazywNnoFmWEAMuRfedh2d9tKh",
+  "wasmSha256": "1cb649afccc9ccfb7ef2a99e29bf346e312b94915feb17fdd1c4fdfb8bf07488",
+  "originalTokenPreserved": true,
+  "originalSupplyPreservedDuringMigration": true,
+  "avatarTokenId": "avatar:auratrail-dev-20261030.testnet",
+  "auraTokenId": "aura:moon:1",
+  "proofOwner": "auratrail-dev-20261030.testnet",
+  "equipment": {
+    "above": "aura:polar:1",
+    "below": "aura:moon:1"
+  },
+  "claimReplayMintedNoAdditionalToken": true,
+  "transactions": [
+    {
+      "label": "atomic deploy and state-preserving V1 migration",
+      "transaction": "55mc6FM75ChjMzBtSXkpPjofmtE7Je8Jsr3earwUyzEG"
+    },
+    {
+      "label": "mint caller-owned native explorer avatar",
+      "transaction": "FmYrXCeL21rp6P75FBkcqewksVww3gn5K8J8xNtz6VX3"
+    },
+    {
+      "label": "mint an idempotent native Aura claim",
+      "transaction": "5z5aMJAxLSvvg1CEH7BFH9Q8moZH1S5KDJAKoA9UByjg"
+    },
+    {
+      "label": "equip original Aura above the explorer",
+      "transaction": "DUt7oHigXfhsLNR7S8ymKNkLBJxAPDhKZp7FbuDGFFTG"
+    },
+    {
+      "label": "equip Moonwake independently below",
+      "transaction": "DdjfGecwnaiVdQfijCb5rRiCSi7r4iLWGiUkWBwDJCZb"
+    },
+    {
+      "label": "transfer equipped Aura and clear only its slot",
+      "transaction": "99DcUppPLinX8SK6oSh5vKZNgjBRF48zR79Ctq7x7LEH"
+    },
+    {
+      "label": "replay the mint claim after ownership changed",
+      "transaction": "E6iBFvHfNxcyT4JPVFLDdo5rTHA8SoTVJKLzvE7j8Ayy"
+    },
+    {
+      "label": "return the test Aura to its development owner",
+      "transaction": "3LdxxK9VWYCkM8nNAPqZSnHjTQmhdYFKt4qmFXG1pTMf"
+    },
+    {
+      "label": "restore the below slot",
+      "transaction": "4pYk9yioSrHHqLmDK2JyoNkZGf9WxpBkFzBYQZGimQSF"
+    }
+  ]
+}

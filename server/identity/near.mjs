@@ -12,33 +12,43 @@ export function nearAccountId(value) {
   return value;
 }
 
-const verifiedNetworks = new WeakMap();
+const verifiedNetworks = new WeakMap(),
+  networkChecks = new WeakMap();
 export async function assertTestnetRpc(provider) {
   if ((verifiedNetworks.get(provider) || 0) > Date.now()) return;
-  let status;
-  try {
-    status = await provider.viewNodeStatus();
-  } catch {
+  if (networkChecks.has(provider)) return networkChecks.get(provider);
+  const task = (async () => {
+    let status;
+    try {
+      status = await provider.viewNodeStatus();
+    } catch {
+      assert(
+        false,
+        "The NEAR testnet verification service is unavailable.",
+        503,
+        "RPC_UNAVAILABLE",
+      );
+    }
     assert(
-      false,
-      "The NEAR testnet verification service is unavailable.",
+      status.chain_id === "testnet",
+      "The verification service is not connected to NEAR testnet.",
+      503,
+      "WRONG_NETWORK",
+    );
+    assert(
+      !status.sync_info?.syncing,
+      "The NEAR testnet node is still synchronizing.",
       503,
       "RPC_UNAVAILABLE",
     );
+    verifiedNetworks.set(provider, Date.now() + 60000);
+  })();
+  networkChecks.set(provider, task);
+  try {
+    await task;
+  } finally {
+    if (networkChecks.get(provider) === task) networkChecks.delete(provider);
   }
-  assert(
-    status.chain_id === "testnet",
-    "The verification service is not connected to NEAR testnet.",
-    503,
-    "WRONG_NETWORK",
-  );
-  assert(
-    !status.sync_info?.syncing,
-    "The NEAR testnet node is still synchronizing.",
-    503,
-    "RPC_UNAVAILABLE",
-  );
-  verifiedNetworks.set(provider, Date.now() + 60000);
 }
 
 // NEP-413 proves current FullAccess-key ownership; no transaction or player key is stored.

@@ -75,6 +75,47 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
       );
       return;
     }
+    if (q.params?.request_type === "call_function") {
+      const args = JSON.parse(Buffer.from(q.params.args_base64, "base64"));
+      const avatar = {
+          token_id: "avatar:alice.testnet",
+          owner_id: "alice.testnet",
+          metadata: { title: "QuestLayer Explorer" },
+        },
+        aura = {
+          token_id: "aura:polar:1",
+          owner_id: "alice.testnet",
+          metadata: { title: "Northern Lights" },
+        };
+      const fixtures = {
+        nft_metadata: { name: "QuestLayer Collectibles" },
+        nft_total_supply: "2",
+        nft_tokens: [avatar, aura],
+        get_version: 2,
+        nft_tokens_for_owner:
+          args.account_id === "alice.testnet" ? [avatar, aura] : [],
+        get_equipment: {
+          above: args.account_id === "alice.testnet" ? "aura:polar:1" : null,
+          below: null,
+        },
+        nft_supply_for_owner: args.account_id === "alice.testnet" ? "2" : "0",
+        nft_token: args.token_id === "avatar:alice.testnet" ? avatar : null,
+      };
+      res.setHeader("content-type", "application/json");
+      res.end(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: q.id,
+          result: {
+            result: Array.from(
+              Buffer.from(JSON.stringify(fixtures[q.params.method_name])),
+            ),
+            block_height: 1000,
+          },
+        }),
+      );
+      return;
+    }
     const known = keys.get(q.params.account_id) === q.params.public_key;
     if (q.params.account_id === "slow.testnet") {
       startedRpc();
@@ -217,6 +258,40 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
   assert.equal(restored.data.player.id, playerId);
   assert.equal(restored.data.player.name, "Native Alice");
   assert.equal(restored.data.player.gold_u, login.data.player.gold_u);
+  const wardrobe = await request(
+    "/native/wardrobe",
+    undefined,
+    restored.cookie,
+  );
+  assert.equal(wardrobe.status, 200);
+  assert.equal(wardrobe.data.accounts[0].items.length, 2);
+  assert.equal(
+    (
+      await request(
+        "/native/outfit",
+        { enabled: true, accountId: "bob.testnet" },
+        restored.cookie,
+      )
+    ).status,
+    403,
+  );
+  const worn = await request(
+    "/native/outfit",
+    { enabled: true, accountId: "alice.testnet" },
+    restored.cookie,
+  );
+  assert.equal(worn.status, 200);
+  assert.equal(worn.data.player.nativeOutfit, true);
+  const demoEquip = await request(
+    "/equip",
+    { itemId: restored.data.player.inventory[0].id },
+    restored.cookie,
+  );
+  assert.equal(demoEquip.status, 200);
+  assert.equal(demoEquip.data.player.nativeOutfit, false);
+  const collection = await request("/native/collection");
+  assert.equal(collection.status, 200);
+  assert.equal(collection.data.items.length, 2);
   const wrong = await request("/auth/near/challenge", {
     accountId: "alice.testnet",
   });

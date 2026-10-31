@@ -17,7 +17,7 @@ Environment=PORT=7091
 Environment=APP_ORIGIN=https://questlayer.promptstudio3000.com
 Environment=DATABASE_PATH=/var/lib/auratrail/auratrail.sqlite
 Environment=NEAR_NETWORK=testnet
-Environment=NEAR_RPC_URL=https://rpc.testnet.near.org
+Environment=NEAR_RPC_URL=https://test.rpc.fastnear.com
 EnvironmentFile=-/opt/ps3000/apps/auratrail/runtime.env
 Restart=on-failure
 RestartSec=3

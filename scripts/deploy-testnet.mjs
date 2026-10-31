@@ -2,7 +2,7 @@ import{readFileSync,writeFileSync,existsSync}from'node:fs';
 import{Account,KeyPairSigner,JsonRpcProvider,actions}from'near-api-js';
 const operator=JSON.parse(readFileSync('.data/near-operator.json','utf8'));
 if(operator.network!=='testnet'||!operator.accountId.endsWith('.testnet'))throw new Error('Testnet only.');
-const provider=new JsonRpcProvider({url:'https://rpc.testnet.near.org'}),signer=KeyPairSigner.fromSecretKey(operator.secretKey),root=new Account(operator.accountId,provider,signer);
+const provider=new JsonRpcProvider({url:'https://test.rpc.fastnear.com'}),signer=KeyPairSigner.fromSecretKey(operator.secretKey),root=new Account(operator.accountId,provider,signer);
 const game=`game.${operator.accountId}`,nfts=`nfts.${operator.accountId}`,explorer=`explorer.${operator.accountId}`;
 const journal='.data/testnet-operations.json';const records=existsSync(journal)?JSON.parse(readFileSync(journal,'utf8')):[];const NEAR=10n**24n;
 async function record(label,fn){const r=await fn();const tx=r.transaction_outcome?.id||r.transaction?.hash;records.push({label,transaction:tx});writeFileSync(journal,JSON.stringify(records,null,2));console.log(JSON.stringify({step:label,transaction:tx}));return r;}
@@ -23,7 +23,7 @@ await record('replay coin without duplicate credit',()=>call(game,'settle_coin_c
 await record('publish funded solo quest',()=>call(game,'publish_quest',{quest_id:quest,reward:(10n**20n).toString(),xp:50,opens_at:timestamp.toString(),closes_at:(timestamp+600n*10n**9n).toString(),manifest_hash:'3'.repeat(64)}));
 await record('complete a quest without another player',()=>call(game,'complete_quest',{quest_id:quest,account_id:explorer,received_at:timestamp.toString(),evidence_hash:'4'.repeat(64)}));
 await record('withdraw actual testnet reward',()=>new Account(explorer,provider,signer).callFunctionRaw({contractId:game,methodName:'withdraw_reward',args:{},deposit:1n,gas:100n*10n**12n,waitUntil:'FINAL'}));
-const metadata={title:'Northern Lights',description:'Original AuraTrail cosmetic. Testnet proof.',copies:256,extra:JSON.stringify({slot:'above',rarity:'rare',origin:'auratrail-original'}),media:null,media_hash:null,reference:null,reference_hash:null};
+const metadata={title:'Northern Lights',description:'QuestLayer cosmetic. Testnet proof.',copies:256,extra:JSON.stringify({slot:'above',rarity:'rare',origin:'questlayer-original'}),media:null,media_hash:null,reference:null,reference_hash:null};
 await record('mint a real NEP-171 Aura',()=>call(nfts,'mint_aura',{edition:'polar',receiver_id:explorer,metadata},NEAR/10n));
 const view=async(contractId,methodName,args)=>{const r=await provider.query({request_type:'call_function',account_id:contractId,method_name:methodName,args_base64:Buffer.from(JSON.stringify(args)).toString('base64'),finality:'final'});return JSON.parse(Buffer.from(r.result).toString());};
 const tokens=await view(nfts,'nft_tokens_for_owner',{account_id:explorer,from_index:'0',limit:50});const token=tokens.at(-1);

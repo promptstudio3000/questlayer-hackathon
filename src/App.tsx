@@ -1,3 +1,5 @@
+import { NativeWardrobe, nativeAppearanceItems } from "./NativeWardrobe";
+import type { NativeWardrobeState, NativeItem } from "./types";
 import {
   useEffect,
   useRef,
@@ -138,6 +140,52 @@ export default function App() {
     xp: number;
     reward: number;
   } | null>(null);
+  const [nativeWardrobe, setNativeWardrobe] =
+      useState<NativeWardrobeState | null>(null),
+    [nativeError, setNativeError] = useState("");
+  const nativeRequest = useRef(0);
+  async function refreshNative(fresh = false) {
+    const generation = ++nativeRequest.current;
+    try {
+      const data = await api<NativeWardrobeState>(
+        "/native/wardrobe" + (fresh ? "?refresh=1" : ""),
+      );
+      if (generation === nativeRequest.current) {
+        setNativeWardrobe(data);
+        setNativeError("");
+      }
+      return data;
+    } catch (error) {
+      if (generation === nativeRequest.current) {
+        setNativeWardrobe(null);
+        setNativeError(
+          error instanceof Error
+            ? error.message
+            : "NEAR inventory is unavailable.",
+        );
+      }
+      throw error;
+    }
+  }
+  const nativeWalletIds =
+    player?.wallets.map((w) => w.account_id).join("|") || "";
+  useEffect(() => {
+    if (!player?.id || !nativeWalletIds) {
+      nativeRequest.current++;
+      setNativeWardrobe(null);
+      setNativeError("");
+      return;
+    }
+    void refreshNative().catch(() => {});
+    const timer = setInterval(
+      () => void refreshNative().catch(() => {}),
+      20000,
+    );
+    return () => {
+      clearInterval(timer);
+      nativeRequest.current++;
+    };
+  }, [player?.id, nativeWalletIds]);
   const nearConnector = useRef<
     import("@hot-labs/near-connect").NearConnector | null
   >(null);
@@ -172,6 +220,7 @@ export default function App() {
     name: string,
     fn: () => Promise<T>,
   ): Promise<T | undefined> {
+    const focusBeforeAction = document.activeElement as HTMLElement | null;
     setBusy(name);
     try {
       return await fn();
@@ -186,6 +235,14 @@ export default function App() {
       notify(e instanceof Error ? e.message : "Something went wrong.", true);
     } finally {
       setBusy("");
+      requestAnimationFrame(() => {
+        if (
+          document.activeElement === document.body &&
+          !document.querySelector("dialog[open]") &&
+          focusBeforeAction?.isConnected
+        )
+          focusBeforeAction.focus();
+      });
     }
   }
   async function me() {
@@ -482,6 +539,46 @@ export default function App() {
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
     );
   }
+  async function chooseNearAccount() {
+    if (!nearConnector.current) {
+      const { NearConnector } = await import("@hot-labs/near-connect");
+      nearConnector.current = new NearConnector({
+        network: "testnet",
+        autoConnect: false,
+        features: {
+          testnet: true,
+          signMessage: true,
+          signInWithoutAddKey: true,
+        },
+        footerBranding: {
+          heading: "QuestLayer · NEAR testnet",
+          link: "https://near.org",
+          linkText: "NEAR Protocol",
+        },
+      });
+    }
+    const connector = nearConnector.current;
+    await connector.whenManifestLoaded;
+    const choices = connector.availableWallets
+      .map((w) => w.manifest)
+      .filter((w) => !w.debug && !w.id.includes("cli"))
+      .map(({ id, name, icon, website }) => ({ id, name, icon, website }));
+    if (!choices.length)
+      throw Error(
+        "No supported testnet wallet is available in this browser. You can still enter the demo.",
+      );
+    const walletId = await new Promise<string>((resolve, reject) => {
+      walletChoice.current = { resolve, reject };
+      setWalletChoices(choices);
+    });
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    const wallet = await connector.connect({ walletId });
+    const accounts = await wallet.getAccounts();
+    if (!accounts[0]) throw new Error("The wallet did not return an account.");
+    return { wallet, accountId: accounts[0].accountId };
+  }
   async function connectNear(
     options: { signIn?: boolean; name?: string } = {},
   ) {
@@ -497,51 +594,14 @@ export default function App() {
         await new Promise<void>((resolve) =>
           requestAnimationFrame(() => resolve()),
         );
-      if (!nearConnector.current) {
-        const { NearConnector } = await import("@hot-labs/near-connect");
-        nearConnector.current = new NearConnector({
-          network: "testnet",
-          autoConnect: false,
-          features: {
-            testnet: true,
-            signMessage: true,
-            signInWithoutAddKey: true,
-          },
-          footerBranding: {
-            heading: "QuestLayer · NEAR testnet",
-            link: "https://near.org",
-            linkText: "NEAR Protocol",
-          },
-        });
-      }
-      const connector = nearConnector.current;
-      await connector.whenManifestLoaded;
-      const choices = connector.availableWallets
-        .map((w) => w.manifest)
-        .filter((w) => !w.debug && !w.id.includes("cli"))
-        .map(({ id, name, icon, website }) => ({ id, name, icon, website }));
-      if (!choices.length)
-        throw Error(
-          "No supported testnet wallet is available in this browser. You can still enter the demo.",
-        );
-      const walletId = await new Promise<string>((resolve, reject) => {
-        walletChoice.current = { resolve, reject };
-        setWalletChoices(choices);
-      });
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => resolve()),
-      );
-      const wallet = await connector.connect({ walletId });
-      const accounts = await wallet.getAccounts();
-      if (!accounts[0])
-        throw new Error("The wallet did not return an account.");
+      const { wallet, accountId } = await chooseNearAccount();
       const c = await api<{
         challengeId: string;
         nonce: string;
         message: string;
         recipient: string;
       }>(options.signIn ? "/auth/near/challenge" : "/wallet/challenge", {
-        accountId: accounts[0].accountId,
+        accountId: accountId,
         name: options.name,
       });
       const signed = await wallet.signMessage({
@@ -549,7 +609,7 @@ export default function App() {
         recipient: c.recipient,
         nonce: Uint8Array.from(atob(c.nonce), (x) => x.charCodeAt(0)),
         network: "testnet",
-        signerId: accounts[0].accountId,
+        signerId: accountId,
       });
       const r = await api<{ player: Player; returning?: boolean }>(
         options.signIn ? "/auth/near/verify" : "/wallet/verify",
@@ -565,6 +625,98 @@ export default function App() {
             ? "Welcome back. Your NEAR wallet restored your explorer."
             : "Your NEAR explorer is ready. Demo GOLD remains separate."
           : "NEAR account verified. Demo GOLD remains separate.",
+      );
+    });
+  }
+  async function useNativeOutfit(account: string | null) {
+    await action("native-outfit", async () => {
+      const r = await api<{ player: Player }>("/native/outfit", {
+        enabled: !!account,
+        accountId: account,
+      });
+      setPlayer(r.player);
+      if (account) await refreshNative(true);
+      notify(
+        account
+          ? "Your NEAR outfit is on the map."
+          : "Your demo outfit is on the map.",
+      );
+    });
+  }
+  async function nativeTransaction(
+    method: "mint_avatar" | "equip_aura" | "unequip_aura",
+    account: string,
+    item?: NativeItem,
+    slot?: "above" | "below",
+  ) {
+    await action("native-transaction", async () => {
+      const { wallet, accountId } = await chooseNearAccount();
+      if (
+        accountId !== account ||
+        !player?.wallets.some((w) => w.account_id === accountId)
+      )
+        throw Error("Select the linked NEAR wallet that owns this item.");
+      if (!wallet.manifest.features.signAndSendTransaction)
+        throw Error("Choose a wallet that supports NEAR transactions.");
+      const contractId = nativeWardrobe?.contractId;
+      if (!contractId?.endsWith(".testnet"))
+        throw Error("The NEAR testnet collection is unavailable.");
+      const result = await wallet.signAndSendTransaction({
+        network: "testnet",
+        signerId: accountId,
+        receiverId: contractId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: method,
+              args:
+                method === "mint_avatar"
+                  ? {}
+                  : method === "unequip_aura"
+                    ? { slot }
+                    : { token_id: item!.tokenId, slot },
+              gas: "100000000000000",
+              deposit:
+                method === "mint_avatar" ? (5n * 10n ** 22n).toString() : "0",
+            },
+          },
+        ],
+      });
+      if (
+        typeof result.status === "object" &&
+        result.status &&
+        "Failure" in result.status
+      )
+        throw Error("The NEAR transaction did not succeed.");
+      let confirmed = false;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const data = await refreshNative(true),
+          state = data.accounts.find((a) => a.accountId === accountId);
+        confirmed =
+          method === "mint_avatar"
+            ? !!state?.starterOwned
+            : method === "unequip_aura"
+              ? state?.equipment[slot!] === null
+              : state?.equipment[slot!] === item!.tokenId;
+        if (confirmed) break;
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+      if (!confirmed)
+        throw Error(
+          "Transaction submitted; confirmation is still pending. Refresh NEAR inventory before retrying.",
+        );
+      const r = await api<{ player: Player }>("/native/outfit", {
+        enabled: true,
+        accountId,
+      });
+      setPlayer(r.player);
+      notify(
+        method === "mint_avatar"
+          ? "Your explorer NFT is confirmed on NEAR testnet."
+          : method === "unequip_aura"
+            ? "Aura removed from your NEAR outfit."
+            : "Your on-chain Aura is equipped and visible on the map.",
       );
     });
   }
@@ -621,7 +773,14 @@ export default function App() {
     });
   }
 
-  const equipped = player?.inventory.filter((x) => !!x.equipped) || [];
+  const activeNative = nativeWardrobe?.accounts.find(
+    (a) => a.accountId === player?.nativeAccount,
+  );
+  const nativeAppearance = nativeAppearanceItems(activeNative);
+  const appearanceItems = player?.nativeOutfit
+    ? nativeAppearance
+    : player?.inventory || [];
+  const equipped = appearanceItems.filter((x) => !!x.equipped);
   const activeZones = world?.zones.filter((z) => z.closesAt > now) || [];
   const nearbyZones = [...activeZones].sort(
     (a, b) =>
@@ -746,7 +905,11 @@ export default function App() {
                 aria-label="Explorer profile"
                 onClick={() => setMenu((v) => !v)}
               >
-                <Ghost />
+                <Character
+                  items={appearanceItems}
+                  originTokenId={player.appearance.originTokenId}
+                  compact
+                />
                 <span>
                   <b>{player.name}</b>
                   <small>Level {player.level}</small>
@@ -1135,6 +1298,33 @@ export default function App() {
           )}
           {tab === "inventory" && (
             <Inventory
+              characterItems={appearanceItems}
+              nativeContent={
+                <NativeWardrobe
+                  player={player}
+                  data={nativeWardrobe}
+                  error={nativeError}
+                  busy={busy}
+                  onConnect={connectNear}
+                  onRefresh={() => void refreshNative(true).catch(() => {})}
+                  onMint={(account) =>
+                    nativeTransaction("mint_avatar", account)
+                  }
+                  onEquip={(account, item, slot) =>
+                    nativeTransaction(
+                      nativeWardrobe?.accounts.find(
+                        (a) => a.accountId === account,
+                      )?.equipment[slot] === item.tokenId
+                        ? "unequip_aura"
+                        : "equip_aura",
+                      account,
+                      item,
+                      slot,
+                    )
+                  }
+                  onSource={useNativeOutfit}
+                />
+              }
               player={player}
               busy={busy}
               onEvm={connectEvm}
@@ -1161,11 +1351,13 @@ export default function App() {
                 })
               }
               onSell={async (item, price) => {
-                await action("listing", async () => {
+                const result = await action("listing", async () => {
                   await api("/market/list", { itemId: item.id, price });
                   await me();
                   notify("Your Aura is listed on the demo market.");
+                  return true;
                 });
+                return result === true;
               }}
             />
           )}
@@ -1300,7 +1492,11 @@ export default function App() {
           </div>
           <div className="player-bottom">
             <div className="mini-avatar">
-              <Ghost color={equipped.find((i) => i.slot === "above")?.color} />
+              <Character
+                items={appearanceItems}
+                originTokenId={player.appearance.originTokenId}
+                compact
+              />
               <span>{player.level}</span>
             </div>
             <div>
@@ -1624,6 +1820,8 @@ function Welcome({
 }
 function Inventory({
   player,
+  characterItems,
+  nativeContent,
   busy,
   onEquip,
   onSell,
@@ -1631,11 +1829,13 @@ function Inventory({
   onSkin,
 }: {
   player: Player;
+  characterItems: Item[];
+  nativeContent: ReactNode;
   busy: string;
   onEvm: () => Promise<void>;
   onSkin: (id: string | null) => Promise<void>;
   onEquip: (i: Item) => void;
-  onSell: (i: Item, p: number) => Promise<void>;
+  onSell: (i: Item, p: number) => Promise<boolean>;
 }) {
   const [origin, setOrigin] = useState<any>(null);
   useEffect(() => {
@@ -1653,13 +1853,19 @@ function Inventory({
       </p>
       <div className="wardrobe-preview">
         <Character
-          items={player.inventory}
+          items={characterItems}
           originTokenId={player.appearance.originTokenId}
         />
         <div>
           <Badge>YOUR CHARACTER</Badge>
           <h2>{player.name}</h2>
-          <p>Original QuestLayer explorer</p>
+          <p>
+            {player.appearance.originTokenId
+              ? "Linked Aavegotchi appearance"
+              : player.nativeOutfit
+                ? "NEAR testnet outfit"
+                : "Demo outfit"}
+          </p>
           <small>
             {player.appearance?.originTokenId
               ? `Original #${player.appearance.originTokenId} from Base`
@@ -1667,6 +1873,7 @@ function Inventory({
           </small>
         </div>
       </div>
+      {nativeContent}
       <section className="origin-section">
         <div className="section-label">
           <h2>Your original from Base</h2>
@@ -1799,7 +2006,9 @@ function Inventory({
             className="primary-button"
             disabled={!!busy || units(price) <= 0}
             onClick={() =>
-              void onSell(selling, units(price)).then(() => setSelling(null))
+              void onSell(selling, units(price)).then((ok) => {
+                if (ok) setSelling(null);
+              })
             }
           >
             List for {price} GOLD <ArrowRight />

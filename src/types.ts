@@ -25,6 +25,8 @@ export type Withdrawal = {
   state: string;
 };
 export type Player = {
+  nativeOutfit?: boolean;
+  nativeAccount?: string | null;
   coinsCollected?: number;
   appearance: { originTokenId?: string };
   id: string;
@@ -152,4 +154,42 @@ export type Bounty = Point & {
   amount_u: number;
   deadline: number;
   state: string;
+};
+
+export type NativeItem = {
+  tokenId: string;
+  ownerId: string;
+  kind: "avatar" | "aura";
+  edition: string | null;
+  title: string;
+  media: string | null;
+  color: string;
+  rarity: string;
+  serial: number | null;
+};
+export type NativeAccount = {
+  accountId: string;
+  items: NativeItem[];
+  equipment: { above: string | null; below: string | null };
+  starterMinted: boolean;
+  starterOwned: boolean;
+  supply: string;
+  truncated: boolean;
+};
+export type NativeWardrobeState = {
+  status: string;
+  network: "testnet";
+  contractId: string;
+  accounts: NativeAccount[];
+};
+export type NativeCollectionState = {
+  outfits?: NativeAccount[];
+  status: string;
+  network: "testnet";
+  contractId: string;
+  name: string;
+  version: number;
+  supply: string;
+  items: NativeItem[];
+  truncated: boolean;
 };
