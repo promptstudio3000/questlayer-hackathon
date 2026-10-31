@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Ghost } from "./Ghost";
+import { AuraSprite, auraEdition } from "./aura-art";
 import type { Item } from "./types";
 export function Character({
   items,
@@ -30,7 +31,14 @@ export function Character({
         <i
           className="character-aura below"
           style={{ "--aura-color": bottom.color } as React.CSSProperties}
-        />
+        >
+          <AuraSprite
+            edition={auraEdition(bottom)}
+            slot="below"
+            color={bottom.color}
+            size={compact ? 1 : 2}
+          />
+        </i>
       )}
       {originTokenId && !failed ? (
         <img
@@ -45,7 +53,14 @@ export function Character({
         <i
           className="character-aura above"
           style={{ "--aura-color": top.color } as React.CSSProperties}
-        />
+        >
+          <AuraSprite
+            edition={auraEdition(top)}
+            slot="above"
+            color={top.color}
+            size={compact ? 1 : 2}
+          />
+        </i>
       )}
       {failed && !compact && <small>Original appearance unavailable</small>}
     </div>

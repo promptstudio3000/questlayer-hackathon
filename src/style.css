@@ -946,23 +946,23 @@ svg {
   padding: 3px 6px;
   border-radius: 5px;
 }
+/* Authored pixel Aura sprites (src/aura-art-data.ts); --aura-color only tints
+   the soft glow behind the sprite so an item's colour still reads. */
 .marker-aura {
   position: absolute;
-  left: 4px;
-  right: 4px;
-  height: 21px;
-  border: 3px solid var(--aura-color);
-  box-shadow:
-    0 0 20px var(--aura-color),
-    inset 0 0 15px var(--aura-color);
-  border-radius: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+  line-height: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px var(--aura-color));
   z-index: 2;
 }
 .marker-aura.top {
-  top: 2px;
+  top: -14px;
 }
 .marker-aura.bottom {
-  bottom: 10px;
+  bottom: 2px;
+  z-index: -1;
 }
 .zone-map-pin {
   background: none;
@@ -2928,19 +2928,18 @@ select {
 }
 .character-aura {
   position: absolute;
-  border: 3px solid var(--aura-color);
-  box-shadow: 0 0 14px var(--aura-color);
-  width: 90px;
-  height: 24px;
-  border-radius: 50%;
-  transform: rotate(-10deg);
+  left: 50%;
+  transform: translateX(-50%);
+  line-height: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px var(--aura-color));
 }
 .character-aura.above {
-  top: 12px;
+  top: -6px;
   z-index: 2;
 }
 .character-aura.below {
-  bottom: 13px;
+  bottom: 0;
   z-index: 0;
 }
 .character-composition > small {
@@ -3160,13 +3159,13 @@ select {
 .map-overview-player .you-label {
   display: none;
 }
+/* The overview container is 32x42 but the starter image keeps its 78x91 box,
+   so the Auras follow that image rather than the container. */
 .map-overview-player .marker-aura {
-  height: 8px;
-  left: 1px;
-  right: 1px;
+  left: 39px;
 }
 .map-overview-player .marker-aura.bottom {
-  bottom: 5px;
+  bottom: -56px;
 }
 
 .welcome-card {
@@ -3600,13 +3599,11 @@ select {
   width: 38px;
   height: 44px;
 }
-.character-composition.compact .character-aura {
-  height: 8px;
-  left: 1px;
-  right: 1px;
+.character-composition.compact .character-aura.above {
+  top: -4px;
 }
 .character-composition.compact .character-aura.below {
-  bottom: 4px;
+  bottom: -1px;
 }
 @media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
   .maplibregl-ctrl-bottom-right {
@@ -3828,14 +3825,11 @@ select {
   font-size: 22px;
   margin-top: 28px;
 }
-.other-player-marker .marker-aura {
-  height: 9px;
-  border-width: 2px;
-  left: 1px;
-  right: 1px;
+.other-player-marker .marker-aura.top {
+  top: -6px;
 }
 .other-player-marker .marker-aura.bottom {
-  bottom: 14px;
+  bottom: 6px;
 }
 .other-player-marker > .origin-player {
   width: 44px;
@@ -3876,9 +3870,7 @@ select {
 .model-attribution { margin:16px 0 0; font-size:12px; line-height:1.5; color:#62516f; }
 .character-room .inline-error { margin-top:14px; }
 @media (max-width:380px) { .model-controls { gap:6px; } .character-room h2 {font-size:22px;} }
-.character-composition.compact .character-aura { width:40px; height:9px; border-width:1.5px; box-shadow:0 0 6px var(--aura-color); }
-.character-composition.compact .character-aura.above { top:-3px; }
-.character-composition.compact .character-aura.below { bottom:-2px; }
+.character-composition.compact .character-aura { filter:drop-shadow(0 0 2px var(--aura-color)); }
 @media (min-width:760px) and (max-height:500px) {
   .game-dialog:has(.character-room) { width:min(760px,calc(100vw - 32px)); padding:16px; }
   .character-room { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,1fr); gap:10px 16px; }
@@ -3958,8 +3950,8 @@ select {
 }
 
 /* Auras stay legible in screen space around the actual 3D map character. */
-.player-marker > .marker-aura.top {
-  top: -16px;
+.character-model-ready > .marker-aura.top {
+  top: -18px;
 }
 .character-art-credit {
   margin: -8px 0 20px;

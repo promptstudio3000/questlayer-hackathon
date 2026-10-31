@@ -1,0 +1,66 @@
+/* Aura sprites: integer pixel scales, two sparkle frames, subtle idle motion. */
+.aura-sprite {
+  display: block;
+  flex: none;
+  image-rendering: pixelated;
+  overflow: visible;
+}
+.aura-sprite .aura-frame-b {
+  opacity: 0;
+}
+.aura-sprite.animated .aura-frame-a {
+  animation: aura-twinkle-a 1.6s steps(1, end) infinite;
+}
+.aura-sprite.animated .aura-frame-b {
+  animation: aura-twinkle-b 1.6s steps(1, end) infinite;
+}
+.aura-sprite-above.animated {
+  animation: aura-bob 1.6s ease-in-out infinite;
+}
+.aura-sprite-below.animated {
+  animation: aura-pulse 2.4s ease-in-out infinite;
+}
+@keyframes aura-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes aura-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scaleX(1.03);
+  }
+}
+@keyframes aura-twinkle-a {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes aura-twinkle-b {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aura-sprite,
+  .aura-sprite .aura-frame {
+    animation: none;
+  }
+}

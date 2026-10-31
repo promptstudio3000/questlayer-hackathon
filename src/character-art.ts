@@ -1,3 +1,4 @@
+import { auraEdition, auraMarkup } from "./aura-art-data";
 // Legacy, self-authored NFT cover art. Never replace minted media with third-party art.
 export function ghostSvg(color = "#b6a1df", hat = false) {
   const safe = /^#[a-fA-F0-9]{6}$/.test(color) ? color : "#b6a1df";
@@ -19,11 +20,19 @@ export const starterMarkerMarkup = () =>
 export function characterMarkerMarkup({
   above,
   below,
+  aboveEdition,
+  belowEdition,
+  scale = 1,
   skinUrl,
 }: {
   color?: string;
   above?: string | null;
   below?: string | null;
+  /** Authored edition; known edition colors resolve on their own. */
+  aboveEdition?: string | null;
+  belowEdition?: string | null;
+  /** Integer pixel scale of the Aura sprites (1 for small markers). */
+  scale?: number;
   skinUrl?: string;
 }) {
   const safe = (value: string | undefined | null) =>
@@ -36,5 +45,7 @@ export function characterMarkerMarkup({
         /^\/api\/presence\/skin\?playerId=player_[a-f0-9-]{36}$/.test(skinUrl))
         ? skinUrl
         : null;
-  return `${top ? `<div class="marker-aura top" style="--aura-color:${top}"></div>` : ""}${skin ? `<img class="origin-player" src="${skin}" alt="Chosen original Aavegotchi appearance"/>` : starterMarkerMarkup()}${bottom ? `<div class="marker-aura bottom" style="--aura-color:${bottom}"></div>` : ""}`;
+  const sprite = (slot: "above" | "below", color: string, edition?: string | null) =>
+    `<div class="marker-aura ${slot === "above" ? "top" : "bottom"}" style="--aura-color:${color}">${auraMarkup(auraEdition({ edition, color }), slot, color, scale)}</div>`;
+  return `${top ? sprite("above", top, aboveEdition) : ""}${skin ? `<img class="origin-player" src="${skin}" alt="Chosen original Aavegotchi appearance"/>` : starterMarkerMarkup()}${bottom ? sprite("below", bottom, belowEdition) : ""}`;
 }

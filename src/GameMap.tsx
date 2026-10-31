@@ -3,6 +3,7 @@ import {
   STARTER_SPRITE,
   starterMarkerMarkup,
 } from "./character-art";
+import { auraEdition } from "./aura-art-data";
 import { loadCharacterModel } from "./character-model-client";
 import { moveMapMarker } from "./map-motion";
 import {
@@ -505,6 +506,9 @@ export function GameMap(props: GameMapProps) {
         color,
         above: top?.color,
         below: bottom?.color,
+        aboveEdition: top && auraEdition(top),
+        belowEdition: bottom && auraEdition(bottom),
+        scale: 2,
         skinUrl: props.skinUrl,
       }) + '<span class="you-label">YOU</span>';
     if (modelHost) element.append(modelHost);
