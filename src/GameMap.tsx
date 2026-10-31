@@ -432,7 +432,8 @@ export function GameMap(props: GameMapProps) {
       ? "original-2d"
       : "official-2d";
     let active = true,
-      view: PawnScene | null = null;
+      view: PawnScene | null = null,
+      paintFrame = 0;
     const show2D = () => {
       element.classList.remove("character-model-ready");
       element.dataset.characterRenderer = props.skinUrl
@@ -446,8 +447,13 @@ export function GameMap(props: GameMapProps) {
       if (!latest.current.globe)
         view?.setMapView(m.getBearing(), m.getPitch(), heading.current);
     };
-    m.on("rotate", orient);
-    m.on("pitch", orient);
+    const reveal = () => {
+      if (document.visibilityState === "visible") orient();
+    };
+    m.on("move", orient);
+    m.on("resize", orient);
+    window.addEventListener("focus", reveal);
+    document.addEventListener("visibilitychange", reveal);
     void (async () => {
       const original = props.skinUrl?.match(/tokenId=(\d+)$/)?.[1];
       const [{ descriptor, bytes }, module] = await Promise.all([
@@ -466,17 +472,23 @@ export function GameMap(props: GameMapProps) {
       const currentView = view;
       await currentView.ready;
       if (!active || view !== currentView) return;
-      orient();
       element.classList.add("character-model-ready");
       element.dataset.characterRenderer = "sdk-3d";
+      orient();
+      paintFrame = requestAnimationFrame(() => {
+        if (active) orient();
+      });
     })().catch(() => {
       if (active) show2D();
     });
     return () => {
       active = false;
       controller.abort();
-      m.off("rotate", orient);
-      m.off("pitch", orient);
+      cancelAnimationFrame(paintFrame);
+      m.off("move", orient);
+      m.off("resize", orient);
+      window.removeEventListener("focus", reveal);
+      document.removeEventListener("visibilitychange", reveal);
       show2D();
       host.remove();
     };

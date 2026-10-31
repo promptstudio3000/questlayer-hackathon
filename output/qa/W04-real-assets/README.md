@@ -19,3 +19,7 @@ The tests exercise digest/URL binding, wrong-original substitution, corrupted by
 ## Scope limits
 
 No personal EVM wallet was connected or signed in this follow-up. The positive item-owner HTTP scenario uses isolated fixtures; the real on-chain read is explicitly a public non-owned reference. Physical iOS/Android performance, all wardrobe/model combinations, full commercial/catalog/trademark rights, more-than-50-original ownership pagination, complete metadata names/categories and modular dressing remain open. Historical minted NFT cover media are unchanged. Native staking/yield/GOLD funding remain demonstrative. No mainnet transaction was sent.
+
+## Repaint regression follow-up
+
+A public viewport round-trip exposed an intermittent empty WebGL character despite a ready marker. The small map canvas now preserves its drawing buffer, paints after its visible state is applied, and redraws on map movement/resize plus foreground/focus restoration. One reveal frame is bounded and cancelled on disposal; there is no idle animation loop. The follow-up build passed (`repaint-build.txt`) and an explicit 1280×720 → 390×844 round-trip retained the visible actual body and both Auras (`repaint-after-resize.png`). The previously passing 99 application tests cover unchanged application/server logic; this graphics-only change was verified by the build and browser regression.

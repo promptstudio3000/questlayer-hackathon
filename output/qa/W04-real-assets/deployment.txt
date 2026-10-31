@@ -1,0 +1,26 @@
+
+added 306 packages in 27s
+{"publicAssetsCopied": 8, "expiredAssetsRemoved": 0, "assetPoolBytes": 34411381, "retentionDays": 7, "protectedRecentReleases": 5}
+curl: (7) Failed to connect to 127.0.0.1 port 7091 after 0 ms: Couldn't connect to server
+curl: (7) Failed to connect to 127.0.0.1 port 7091 after 0 ms: Couldn't connect to server
+curl: (7) Failed to connect to 127.0.0.1 port 7091 after 0 ms: Couldn't connect to server
+{"status":"ok","app":"QuestLayer","version":"0.1.0","mode":"demo","worldPreparation":{"cityId":"plzen","timezone":"Europe/Prague","version":1,"financialMode":"demo","days":[{"day":"2026-10-31","state":"ready","attempts":1,"updatedAt":1793416757052},{"day":"2026-11-01","state":"ready","attempts":1,"updatedAt":1793416757246}]},"now":1793445479331}Domain already points to QuestLayer; preserving route.
+{"level":"info","ts":1793445479.650755,"msg":"using provided configuration","config_file":"/etc/caddy/Caddyfile","config_adapter":""}
+{"level":"warn","ts":1793445479.6929402,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.6929917,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.693062,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.6930664,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.6934927,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.6935022,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.6937704,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.6937788,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.6961722,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Host: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.6961877,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1793445479.7111716,"msg":"Caddyfile input is not formatted; run the 'caddy fmt' command to fix inconsistencies","adapter":"caddyfile","file":"/etc/caddy/Caddyfile","line":4}
+{"level":"info","ts":1793445479.7248058,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0xc0001523f0"}
+{"level":"info","ts":1793445479.7254813,"logger":"http","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+{"level":"info","ts":1793445479.7259712,"logger":"http","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+{"level":"info","ts":1793445479.7766821,"logger":"tls.cache.maintenance","msg":"stopped background certificate maintenance","cache":"0xc0001523f0"}
+{"status":"ok","app":"QuestLayer","version":"0.1.0","mode":"demo","worldPreparation":{"cityId":"plzen","timezone":"Europe/Prague","version":1,"financialMode":"demo","days":[{"day":"2026-10-31","state":"ready","attempts":1,"updatedAt":1793416757052},{"day":"2026-11-01","state":"ready","attempts":1,"updatedAt":1793416757246}]},"now":1793445480190}
+Deployed release: /opt/ps3000/apps/auratrail/releases/20261031T111722Z
+Backup: /opt/ps3000/apps/auratrail/backups/20261031T111722Z

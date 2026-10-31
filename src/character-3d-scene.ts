@@ -43,6 +43,8 @@ export function createCharacterScene(
     alpha: true,
     antialias: true,
     powerPreference: "low-power",
+    // The small map canvas is static between events and may be composited offscreen.
+    preserveDrawingBuffer: options.presentation === "map",
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;

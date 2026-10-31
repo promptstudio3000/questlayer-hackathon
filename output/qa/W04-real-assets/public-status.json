@@ -1,0 +1,77 @@
+{
+  "release": "20261031T111722Z",
+  "codeCommit": "08c2646",
+  "observedAt": "2026-10-31T11:20:08.580Z",
+  "entry": "/assets/index-BLyflggX.js",
+  "starterDigestMatches": true,
+  "responses": [
+    {
+      "path": "/api/health",
+      "status": 200,
+      "cache": "no-store",
+      "type": "application/json; charset=utf-8",
+      "bytes": 347,
+      "sha256": "cdf88ebc4377283e32e3909b2763ff6b487642c2401c793a214ab8fe0f5ce549",
+      "health": {
+        "status": "ok",
+        "app": "QuestLayer",
+        "version": "0.1.0",
+        "mode": "demo",
+        "worldPreparation": {
+          "cityId": "plzen",
+          "timezone": "Europe/Prague",
+          "version": 1,
+          "financialMode": "demo",
+          "days": [
+            {
+              "day": "2026-10-31",
+              "state": "ready",
+              "attempts": 1,
+              "updatedAt": 1793416757052
+            },
+            {
+              "day": "2026-11-01",
+              "state": "ready",
+              "attempts": 1,
+              "updatedAt": 1793416757246
+            }
+          ]
+        },
+        "now": 1793445608501
+      }
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "cache": "no-cache",
+      "type": "text/html; charset=utf-8",
+      "bytes": 775,
+      "sha256": "79e1c09f1d491ac06cdbaa82e25665a1021f0c69783d27937cad1a6987e5b6cd",
+      "entryMatches": true
+    },
+    {
+      "path": "/assets/aavegotchi-starter-1278fb922f4e.svg",
+      "status": 200,
+      "cache": "public,max-age=31536000,immutable",
+      "type": "image/svg+xml",
+      "bytes": 1966,
+      "sha256": "1278fb922f4ea310976a3f0b182c64a09d0fb84e8bc08f7cc85185fb4d36f47d"
+    },
+    {
+      "path": "/assets/not-present-12345678.js",
+      "status": 404,
+      "cache": "no-store",
+      "type": "application/json; charset=utf-8",
+      "bytes": 68,
+      "sha256": "010b15947dd6d3d0a24be57ab3f11fb54e051b6c10fdede62d8c76ae3fc60155"
+    },
+    {
+      "path": "/api/aavegotchi/wearable/85.svg",
+      "status": 401,
+      "cache": "no-store",
+      "type": "application/json; charset=utf-8",
+      "bytes": 61,
+      "sha256": "f74ea64964d5509711df54c6fe2c0ffafa2f21f4da9dacf1ad7270ed707d28e2"
+    }
+  ]
+}
