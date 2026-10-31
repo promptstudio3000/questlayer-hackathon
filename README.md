@@ -13,7 +13,7 @@ runtime; these documents do not indicate a deployed redesign.
 
 ## Development direction
 
-Follow the [implementation roadmap](ROADMAP.md), [consolidated game rules](docs/GAME-RULES.md) and [city-world specification](docs/WORLD-GENERATION.md). The next world implementation uses six varied, non-overlapping zones across Plzeň; the current public alpha still has its compact circular-zone arena. Milestone status is in [the tracker](docs/roadmap.json).
+Follow the [implementation roadmap](ROADMAP.md), [consolidated game rules](docs/GAME-RULES.md) and [city-world specification](docs/WORLD-GENERATION.md). The public alpha now uses six varied, non-overlapping park-derived zones across Plzeň. The [current delivery](docs/DELIVERY-2026-10-31.md) distinguishes connected native testnet features from the demo economy. Milestone status is in [the tracker](docs/roadmap.json); complete exit gates remain open.
 
 ## Run locally
 
@@ -32,7 +32,7 @@ The deploy target is **https://questlayer.promptstudio3000.com/**. Deployment is
 
 1. Enter an explorer name and choose **Enter the demo world**, or create a demo passkey.
 2. In the clearly labelled Pilsen arena, click the map or use arrow keys to move. Nearby shared coins are collected automatically. Each pays 0.01 demo GOLD and disappears for every player.
-3. Open a free zone and confirm a visit. Find **Firefly Trail**, open its chest and discover an Aura. No second player is required.
+3. Open a free park zone and choose its visit, chest or ordered three-point expedition. Discover an Aura without needing a second player.
 4. Open **Inventory**, equip the Aura or list it on the demo market. A second independent browser session can buy it; the old owner loses equipment rights.
 5. Open **Wallet**, stake demo GOLD and choose a 0–100% contribution. Arena tier activation takes 30 seconds. A withdrawal unlocks in 60 seconds. These are explicitly simulated timings.
 6. Open **Game fund** to inspect available/reserved/paid balances in the separate 50% street-coin and 50% zone buckets.
@@ -50,16 +50,21 @@ The deploy target is **https://questlayer.promptstudio3000.com/**. Deployment is
 | Native NEAR sign-in and recovery | Real NEP-413 FullAccess verification; existing wallet restores the same player |
 | Native avatar and Aura wardrobe | Live testnet ownership, caller-minted starter NFT, independent above/below equipment and native appearance selection; earned demo Auras can use player-approved signed NFT claims on the activated testnet contract |
 | Aavegotchi linking | EVM signature verification, read-only Base ownership, loose/nested/equipped inventory and original SVG appearances |
+| Optional 3D dressing room | Selected-model download, integrity verification, bounded cache and mobile texture budget; no full-catalog mirror |
+| Native Aura market | Actual testnet NFT escrow, exact-price native NEAR purchase, cancellation and seller-credit withdrawal |
+| Public NEAR Social profile | Explicitly consented alias and owned starter reference, signed by the player's linked testnet wallet; no GPS or private inventory |
 | Notes with images and optional author GPS | Implemented server storage; image metadata removed |
 | Sponsored tasks | Demo escrow, evidence, creator approval; public arbitration is a later gate |
 | Native game and NEP-171 contracts | Rust implementations with tests and reproducible build commands |
 | Native deployment proofs | `public/testnet-deployment.json` and `public/native-wardrobe-testnet.json`; verified real testnet operations |
 | Intents market, native staking vault, native passkey wallet | Not connected to gameplay yet |
-| SocialDB/IPFS publishing | Not connected yet |
+| Public notes/media on SocialDB/IPFS | Not connected; current note content stays in the app's off-chain storage |
 | NEAR AI | Optional Cloud-backed guide when configured; otherwise a clearly identified rules-based guide |
 | Mainnet / App Store release | Not deployed |
 
 **Demo GOLD has no monetary value.** It is never added to a connected account's real NEAR balance. The intended denomination is 1 NEAR = 1,000 GOLD. There is no standalone GOLD fungible token.
+
+The map loads independently of the application shell and has an isolated failure state. Hashed public assets remain available across releases. Private daily snapshots cover SQLite, the bounded award attestor and referenced note images; an isolated restore was rehearsed through the current app schema. See [runtime reliability](docs/RUNTIME-RELIABILITY.md) and [state recovery](docs/STATE-RECOVERY.md).
 
 ## Verify
 

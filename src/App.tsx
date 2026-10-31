@@ -2835,16 +2835,16 @@ function FundPanel() {
             <Badge tone="green">TESTNET</Badge>
           </div>
           <p>
-            Standalone native contracts: shared coin settlement, an actual
-            reward withdrawal and a real NEP-171 NFT transfer. The game’s demo
-            ledger remains separate.
+            Earned Auras can become wallet-owned testnet NFTs. Native Aura
+            trading is available in Market, and public NEAR Social profiles
+            are available in Inventory. Staking and GOLD rewards remain demo.
           </p>
           <a
             href={`https://testnet.nearblocks.io/address/${proof.gameContract}`}
             target="_blank"
             rel="noreferrer"
           >
-            Game contract <ArrowUpRight size={14} />
+            Standalone settlement proof <ArrowUpRight size={14} />
             <small>{proof.gameContract}</small>
           </a>
           <a
