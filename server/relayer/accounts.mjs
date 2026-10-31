@@ -132,7 +132,7 @@ export class ManagedAccounts {
   keys(accountId, states = ["active"]) {
     return this.db
       .prepare(
-        `SELECT public_key FROM managed_account_keys WHERE account_id=? AND state IN (${states.map(() => "?").join(",")}) ORDER BY created_at`,
+        `SELECT public_key FROM managed_account_keys WHERE account_id=? AND state IN (${states.map(() => "?").join(",")}) ORDER BY created_at, rowid`,
       )
       .all(accountId, ...states)
       .map((k) => k.public_key);
@@ -512,7 +512,7 @@ export class ManagedAccounts {
       };
     const keys = this.db
       .prepare(
-        "SELECT public_key,kind,state,label,created_at FROM managed_account_keys WHERE account_id=? ORDER BY created_at",
+        "SELECT public_key,kind,state,label,created_at FROM managed_account_keys WHERE account_id=? ORDER BY created_at, rowid",
       )
       .all(row.account_id)
       .map((k) => ({
