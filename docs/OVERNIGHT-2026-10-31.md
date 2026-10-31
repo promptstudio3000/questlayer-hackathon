@@ -181,3 +181,24 @@ Added finalized-block-pinned testnet pool views, strict u128 money calculations,
 The executable funding simulation exercises two exit cohorts without resetting the older unlock, excludes principal/retained yield/unclassified surplus from game income, allocates each modeled receipt once and preserves awarded/expired backing. These are executable specifications, not a native vault or actual earnings. The detailed design records the open provisional-fee loss/recovery question before any real custody implementation. Details: `docs/NATIVE-STAKING-FOUNDATION.md` and `output/qa/W05/`.
 
 Staking-foundation verification: all 66 application tests and the production build pass. Tests include eight native foundation cases and bounded policy/reservation stress. Test-process concurrency is capped at four; cold-start readiness uses a 15-second bound to avoid CPU-contention false failures. Contracts are unchanged from the 38-test Rust check.
+
+
+## Optional upstream 3D dressing room
+
+Added an on-demand real GLB preview with both equipped QuestLayer Aura effects, button/keyboard rotation and zoom, reset, native-dialog Escape/focus return and canonical 2D fallback. The modest upstream starter body is 664,092 bytes / 5,275 vertices / nine meshes; it loads without a preprocessing pipeline. The renderer is a separate lazy chunk (about 164 KiB gzip at this build), rather than part of ordinary map loading. The cache fetches individual fixed-source models and never mirrors the whole catalog or starts upstream render jobs. Original model requests must match the verified Base equipment snapshot and report unsupported slots honestly.
+
+| Before | After | Why / owning source |
+| --- | --- | --- |
+| Character inspection only used 2D art. | A deliberate optional 3D dressing room with the actual upstream body and both equipped Auras. | Inspect collectible identity without loading 3D during ordinary play; `src/Character3D.tsx`, `src/character-3d-scene.ts`. |
+| A portrait-style dialog needed scrolling on short landscape (observed screenshot). | Two-column model/controls composition. | Keep the character, controls and context visible; `src/style.css`. |
+| Compact header effects used full-size Aura dimensions (observed). | Scaled effects fit the compact avatar. | Preserve name/control readability; `src/style.css`. |
+| Peer original images used the viewer's ownership route (source finding). | A separate shared-skin route checks the publisher's current consent and ownership snapshot. | Other explorers need not own the same NFT to see a voluntarily shared look; `server/appearance.mjs`, `server/index.mjs`. |
+
+The real local browser flow earned two demo-chest Auras in separate free zones, equipped both and inspected them in 3D. This does not claim physical movement or a native-wallet transaction. Permission evidence, adoption scope and unresolved full-catalog rights/device gates are recorded in `docs/ASSET-CATALOG.md`.
+
+
+The complex public reference #6741 exposed a genuine texture cost: 6,133,316 source bytes and 21 images despite only 13,052 vertices. Added serialized, bounded, on-demand texture LOD, preserving geometry, skinning and UVs. The measured result is 1,986,172 bytes / about 21 MiB decoded textures. A labelled local reference fixture rendered the actual clothing; no ownership or wallet transaction is claimed. Base equipment was compared before deriving its renderer identity. The user-facing original preview reports the extra background slot as incomplete. The basic starter asset still loads directly without optimization.
+
+Actual browser layouts now cover 360/390 widths, 20px enlarged text, desktop and short landscape. Buttons, keyboard/Home and Escape/focus return were exercised; two demo-chest discoveries supplied the displayed Aura slots. Real mobile hardware and signed original-owner/browser flows remain open.
+
+3D/appearance verification: all 72 application tests and the production build pass. The reference optimization unit case preserves geometry and UVs while reducing texture memory. The unchanged native contracts retain their prior 38 passing Rust tests. Actual mobile hardware remains a release gate.

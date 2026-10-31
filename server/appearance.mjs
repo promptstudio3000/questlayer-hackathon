@@ -91,3 +91,28 @@ export async function publicAppearances(db, players, native, options) {
   );
   return results;
 }
+
+// A viewer must not need to own another consenting explorer's original skin.
+export function sharedOriginalSvg(db, playerId, now = Date.now()) {
+  const player = db
+    .prepare(
+      "SELECT p.appearance FROM players p JOIN presence pr ON pr.player_id=p.id WHERE p.id=? AND pr.expires_at>? AND pr.updated_at>?",
+    )
+    .get(playerId, now, now - 30000);
+  if (!player) return null;
+  const appearance = JSON.parse(player.appearance || "{}");
+  if (!/^\d{1,24}$/.test(appearance.originTokenId || "")) return null;
+  const link = db
+    .prepare(
+      "SELECT data FROM external_links WHERE player_id=? AND address=? AND verified_at>=?",
+    )
+    .get(playerId, appearance.address, now - 300000);
+  const gotchi =
+    link &&
+    JSON.parse(link.data).gotchis?.find(
+      (g) => g.tokenId === appearance.originTokenId,
+    );
+  return typeof gotchi?.svg === "string" && gotchi.svg.length <= 200000
+    ? gotchi.svg
+    : null;
+}

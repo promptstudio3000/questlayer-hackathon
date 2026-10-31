@@ -1,0 +1,15 @@
+{
+  "tokenId": "6741",
+  "mode": "public reference; no ownership claim",
+  "hash": "Eth-ETH-Mythical_High-85-384-57-84-58-82-0",
+  "bytes": 6133316,
+  "nodes": 76,
+  "meshes": 15,
+  "materials": 10,
+  "images": 21,
+  "skins": 13,
+  "vertices": 13052,
+  "extensions": [
+    "KHR_texture_transform"
+  ]
+}

@@ -32,6 +32,21 @@ function phoneLayout() {
     (window.innerWidth <= 1000 && window.innerHeight <= 500)
   );
 }
+function skinFallback(node: HTMLElement, color?: string) {
+  const image = node.querySelector("img");
+  image?.addEventListener(
+    "error",
+    () => {
+      image.outerHTML = ghostSvg(color);
+      node.setAttribute(
+        "aria-label",
+        (node.getAttribute("aria-label") || "Explorer") +
+          " · original appearance unavailable",
+      );
+    },
+    { once: true },
+  );
+}
 export function GameMap(props: Props) {
   const el = useRef<HTMLDivElement>(null),
     map = useRef<maplibregl.Map | null>(null),
@@ -293,7 +308,7 @@ export function GameMap(props: Props) {
         above: look?.above,
         below: look?.below,
         skinUrl: look?.skinTokenId
-          ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(look.skinTokenId)}`
+          ? `/api/presence/skin?playerId=${encodeURIComponent(p.id)}`
           : undefined,
       });
       node.setAttribute("role", "img");
@@ -307,6 +322,7 @@ export function GameMap(props: Props) {
       const label = document.createElement("span");
       label.textContent = p.name;
       node.append(label);
+      skinFallback(node, look?.color || p.color);
       return new maplibregl.Marker({ element: node, anchor: "bottom" })
         .setLngLat([p.lng, p.lat])
         .addTo(m);
@@ -364,6 +380,7 @@ export function GameMap(props: Props) {
         below: bottom?.color,
         skinUrl: props.skinUrl,
       }) + '<span class="you-label">YOU</span>';
+    skinFallback(avatar.current.getElement(), color);
   }, [equipmentKey, props.skinUrl]);
   useEffect(() => {
     const m = map.current;

@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { openDatabase, createPlayer } from "../server/database.mjs";
-import { publicAppearance } from "../server/appearance.mjs";
+import { publicAppearance, sharedOriginalSvg } from "../server/appearance.mjs";
+import { updatePresence } from "../server/presence.mjs";
 import { characterMarkerMarkup } from "../src/character-art.ts";
 const now = Date.parse("2026-10-31T04:00:00Z");
 function setup() {
@@ -132,4 +133,46 @@ test("shared map markup accepts only controlled colors and same-origin original-
   assert.ok(!unsafe.includes("<script>"));
   assert.ok(!unsafe.includes("evil"));
   assert.ok(!unsafe.includes("tracker"));
+});
+test("a shared original skin is served from its consenting owner's snapshot and expires with presence", () => {
+  const s = setup();
+  try {
+    s.db
+      .prepare("UPDATE players SET appearance=? WHERE id=?")
+      .run(JSON.stringify({ originTokenId: "1", address: "0x123" }), s.id);
+    s.db
+      .prepare("INSERT INTO external_links VALUES(?,?,?,?)")
+      .run(
+        "0x123",
+        s.id,
+        JSON.stringify({
+          gotchis: [
+            { tokenId: "1", svg: '<svg xmlns="http://www.w3.org/2000/svg"/>' },
+          ],
+        }),
+        now,
+      );
+    assert.equal(sharedOriginalSvg(s.db, s.id, now), null);
+    updatePresence(
+      s.db,
+      s.id,
+      { enabled: true, renew: true, leaseId: "shared", lat: 49.7, lng: 13.3 },
+      now,
+    );
+    assert.ok(sharedOriginalSvg(s.db, s.id, now).startsWith("<svg"));
+    assert.equal(sharedOriginalSvg(s.db, s.id, now + 30001), null);
+    updatePresence(s.db, s.id, { enabled: false, leaseId: "shared" }, now + 1);
+    assert.equal(sharedOriginalSvg(s.db, s.id, now + 1), null);
+    const markup = characterMarkerMarkup({
+      skinUrl: `/api/presence/skin?playerId=${s.id}`,
+    });
+    assert.ok(markup.includes("origin-player"));
+    assert.ok(
+      !characterMarkerMarkup({
+        skinUrl: `/api/presence/skin?playerId=${s.id}&url=https://evil`,
+      }).includes("origin-player"),
+    );
+  } finally {
+    s.db.close();
+  }
 });

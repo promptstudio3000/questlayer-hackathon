@@ -3883,3 +3883,36 @@ select {
   max-height: calc(100dvh - 120px);
   overflow-y: auto;
 }
+
+/* The dressing room loads its renderer and a bounded model only on request. */
+.view-3d-button { margin-top:12px; min-height:48px; font-size:16px; }
+.character-room > header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.character-room h2 { margin:2px 0 16px; font-size:24px; }
+.character-room .icon-button { flex-shrink:0; min-width:48px; min-height:48px; }
+.model-stage { position:relative; width:100%; height:clamp(160px,38dvh,340px); overflow:hidden; border-radius:16px; background:radial-gradient(ellipse at 50% 45%,#fffaf0 10%,#eee4fb 75%); }
+.model-stage canvas { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+.model-stage canvas:focus-visible { outline:3px solid #6035ac; outline-offset:-4px; }
+.model-fallback { position:absolute; inset:0; z-index:1; display:flex; flex-direction:column; justify-content:center; align-items:center; pointer-events:none; }
+.model-fallback .character-composition { width:110px; height:140px; }
+.model-fallback p { margin:12px 10px 0; font-size:16px; text-align:center; }
+.model-controls { display:flex; justify-content:center; gap:8px; margin-top:14px; }
+.model-controls button { display:grid; place-items:center; width:48px; height:48px; flex-shrink:0; border:1px solid #d6c6ea; border-radius:12px; color:#441c6c; background:#f1eaf9; }
+.model-controls svg { width:23px; height:23px; }
+.model-instructions { margin:12px 0; text-align:center; font-size:14px; }
+.model-coverage { padding:12px; background:#f3ebdf; border-radius:12px; font-size:14px; }
+.model-attribution { margin:16px 0 0; font-size:12px; line-height:1.5; color:#62516f; }
+.character-room .inline-error { margin-top:14px; }
+@media (max-width:380px) { .model-controls { gap:6px; } .character-room h2 {font-size:22px;} }
+.character-composition.compact .character-aura { width:40px; height:9px; border-width:1.5px; box-shadow:0 0 6px var(--aura-color); }
+.character-composition.compact .character-aura.above { top:-3px; }
+.character-composition.compact .character-aura.below { bottom:-2px; }
+@media (min-width:760px) and (max-height:500px) {
+  .game-dialog:has(.character-room) { width:min(760px,calc(100vw - 32px)); padding:16px; }
+  .character-room { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,1fr); gap:10px 16px; }
+  .character-room > header { grid-column:1/-1; }
+  .character-room h2 { margin-bottom:0; }
+  .character-room .model-stage { grid-column:1; grid-row:2/5; height:190px; }
+  .character-room .model-controls,.character-room > p,.character-room > .secondary-button { grid-column:2; margin-top:0; margin-bottom:0; }
+  .character-room .model-controls { justify-content:flex-start; }
+  .character-room .model-instructions { text-align:left; }
+}

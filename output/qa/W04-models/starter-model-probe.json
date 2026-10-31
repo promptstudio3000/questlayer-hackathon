@@ -1,0 +1,46 @@
+{
+  "verifiedAt": "2026-10-31T05:40:10.572Z",
+  "mode": "actual upstream asset; read-only model probe; no NFT mint or wallet transaction",
+  "descriptor": {
+    "available": true,
+    "source": "starter",
+    "tokenId": null,
+    "complete": true,
+    "src": "/api/character/assets/19ddddacbb2045b6ecbae5d14f96f017063d8e1de9c06ae23c928ece9d960d7d.glb",
+    "hash": "Eth-Common2-Common-0-0-0-0-0-0-0",
+    "digest": "19ddddacbb2045b6ecbae5d14f96f017063d8e1de9c06ae23c928ece9d960d7d",
+    "stats": {
+      "bytes": 664092,
+      "vertices": 5275,
+      "meshes": 9,
+      "nodes": 64,
+      "materials": 4,
+      "textures": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "animations": 0,
+      "embedded": true,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    "upstream": "https://www.aavegotchi.com/sdk"
+  },
+  "source": "https://www.aavegotchi.com/sdk",
+  "renderer": "https://github.com/aavegotchi/aavegotchi-3d-render-skill",
+  "hosting": "bounded on-demand memory cache; not a full catalog mirror"
+}

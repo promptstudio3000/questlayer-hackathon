@@ -1,0 +1,18 @@
+✔ peer appearance resolves both demo Aura slots without returning wallet or item identifiers (24.15975ms)
+✔ native peer looks verify current token ownership and hide the account and NFT IDs (18.274208ms)
+✔ missing native linkage or failed reads never claim a stale native Aura is equipped (10.300375ms)
+✔ an original appearance is shared only while the ownership snapshot is current (8.935625ms)
+✔ shared map markup accepts only controlled colors and same-origin original-skin URLs (1.018875ms)
+✔ a shared original skin is served from its consenting owner's snapshot and expires with presence (9.160167ms)
+✔ renderer identity preserves the documented right/left ordering and fails closed on unknown traits (5.299833ms)
+✔ mobile GLB validation rejects remote dependencies, unsupported decoders, excessive geometry and damaged containers (99.103875ms)
+✔ on-demand assets coalesce, remain bounded, use only the fixed CDN and never request a forced render (38.7115ms)
+✔ an original uses verified wardrobe expectations and cannot silently fall back to a generic model (1.784958ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 611.350625

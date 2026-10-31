@@ -27,7 +27,9 @@ export function characterMarkerMarkup({
   const top = safe(above),
     bottom = safe(below),
     skin =
-      skinUrl && /^\/api\/aavegotchi\/skin\?tokenId=\d{1,24}$/.test(skinUrl)
+      skinUrl &&
+      (/^\/api\/aavegotchi\/skin\?tokenId=\d{1,24}$/.test(skinUrl) ||
+        /^\/api\/presence\/skin\?playerId=player_[a-f0-9-]{36}$/.test(skinUrl))
         ? skinUrl
         : null;
   return `${top ? `<div class="marker-aura top" style="--aura-color:${top}"></div>` : ""}${skin ? `<img class="origin-player" src="${skin}" alt="Chosen original Aavegotchi appearance"/>` : ghostSvg(safe(color) || "#b8a1ed")}${bottom ? `<div class="marker-aura bottom" style="--aura-color:${bottom}"></div>` : ""}`;

@@ -1,4 +1,5 @@
 import type { NearbyExplorer } from "./types";
+import { Character3D } from "./Character3D";
 import { NativeMarketPanel } from "./NativeMarketPanel";
 import type { NativeTradeRequest } from "./types";
 import { AuraClaims } from "./AuraClaims";
@@ -14,6 +15,7 @@ import {
 } from "react";
 import {
   Compass,
+  Cube,
   Backpack,
   Storefront,
   ChartDonut,
@@ -2091,6 +2093,7 @@ function Inventory({
   onSell: (i: Item, p: number) => Promise<boolean>;
 }) {
   const [origin, setOrigin] = useState<any>(null);
+  const [show3D, setShow3D] = useState(false);
   useEffect(() => {
     void api("/aavegotchi")
       .then(setOrigin)
@@ -2126,9 +2129,23 @@ function Inventory({
               ? `Original #${player.appearance.originTokenId} from Base`
               : "Your independent game avatar"}
           </small>
+          <button
+            className="secondary-button view-3d-button"
+            onClick={() => setShow3D(true)}
+          >
+            <Cube size={20} />
+            View in 3D
+          </button>
         </div>
       </div>
       {nativeContent}
+      {show3D && (
+        <Character3D
+          items={characterItems}
+          originTokenId={player.appearance.originTokenId}
+          onClose={() => setShow3D(false)}
+        />
+      )}
       <section className="origin-section">
         <div className="section-label">
           <h2>Your original from Base</h2>
@@ -2187,8 +2204,8 @@ function Inventory({
           </>
         )}
         <p className="fine-print">
-          Original wearable customization and the 3D GLB catalog are in
-          development. Linked appearances cannot be sold on this market.
+          Original wearable customization is still in development. Some looks do
+          not yet have a 3D preview. Linked appearances cannot be sold here.
         </p>
       </section>
       <div className="section-label">

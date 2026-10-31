@@ -14,3 +14,6 @@ playwright-report/
 *.pem
 *.key
 .near-credentials/
+
+# Temporary upstream artwork used only by the local reference preview.
+dev/reference-6741.glb

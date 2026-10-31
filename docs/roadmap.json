@@ -409,12 +409,12 @@
         {
           "id": "W04.5",
           "title": "Record approved asset catalog rights and origins",
-          "status": "planned"
+          "status": "building"
         },
         {
           "id": "W04.6",
           "title": "Verify modular GLB coverage and device fallbacks",
-          "status": "planned"
+          "status": "building"
         }
       ],
       "evidence": [
@@ -425,7 +425,9 @@
         "output/qa/W04/app-wardrobe-integration.json",
         "docs/PEER-APPEARANCES.md",
         "output/qa/W04/native-presence-api.json",
-        "output/qa/W04/peer-checks.txt"
+        "output/qa/W04/peer-checks.txt",
+        "docs/ASSET-CATALOG.md",
+        "output/qa/W04-models/"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W04/"

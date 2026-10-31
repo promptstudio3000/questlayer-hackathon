@@ -1,0 +1,338 @@
+{
+  "verifiedAt": "2026-10-31T06:19:02.136Z",
+  "mode": "public artwork reference probes; no ownership claim, wallet key or transaction",
+  "starter": {
+    "available": true,
+    "source": "starter",
+    "tokenId": null,
+    "complete": true,
+    "src": "/api/character/assets/19ddddacbb2045b6ecbae5d14f96f017063d8e1de9c06ae23c928ece9d960d7d.glb",
+    "hash": "Eth-Common2-Common-0-0-0-0-0-0-0",
+    "digest": "19ddddacbb2045b6ecbae5d14f96f017063d8e1de9c06ae23c928ece9d960d7d",
+    "stats": {
+      "bytes": 664092,
+      "vertices": 5275,
+      "meshes": 9,
+      "nodes": 64,
+      "materials": 4,
+      "skins": 9,
+      "textures": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "decodedTextureBytes": 12582912,
+      "animations": 0,
+      "embedded": true,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    "optimized": false,
+    "sourceStats": {
+      "bytes": 664092,
+      "vertices": 5275,
+      "meshes": 9,
+      "nodes": 64,
+      "materials": 4,
+      "skins": 9,
+      "textures": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "decodedTextureBytes": 12582912,
+      "animations": 0,
+      "embedded": true,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    "sourceDigest": "19ddddacbb2045b6ecbae5d14f96f017063d8e1de9c06ae23c928ece9d960d7d",
+    "upstream": "https://www.aavegotchi.com/sdk"
+  },
+  "original": {
+    "available": true,
+    "source": "original",
+    "tokenId": "6741",
+    "complete": false,
+    "src": "/api/character/assets/5c2bb803b0e73dd9fe5adad3ba9b57bc9767070948d9f14642616eb8fb7fd3c4.glb",
+    "hash": "Eth-ETH-Mythical_High-85-384-57-84-58-82-0",
+    "digest": "5c2bb803b0e73dd9fe5adad3ba9b57bc9767070948d9f14642616eb8fb7fd3c4",
+    "stats": {
+      "bytes": 1986172,
+      "vertices": 13052,
+      "meshes": 15,
+      "nodes": 76,
+      "materials": 10,
+      "skins": 13,
+      "textures": [
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/png"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "decodedTextureBytes": 22020096,
+      "animations": 0,
+      "embedded": true,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    "optimized": true,
+    "sourceStats": {
+      "bytes": 6133316,
+      "vertices": 13052,
+      "meshes": 15,
+      "nodes": 76,
+      "materials": 10,
+      "skins": 13,
+      "textures": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 2048,
+          "height": 2048,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 2048,
+          "height": 2048,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 2048,
+          "height": 2048,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/png"
+        },
+        {
+          "width": 512,
+          "height": 512,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 2048,
+          "height": 2048,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 2048,
+          "height": 2048,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 2048,
+          "height": 2048,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 2048,
+          "height": 2048,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 2048,
+          "height": 2048,
+          "mimeType": "image/jpeg"
+        },
+        {
+          "width": 2048,
+          "height": 2048,
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "decodedTextureBytes": 182452224,
+      "animations": 0,
+      "embedded": true,
+      "extensions": [
+        "KHR_texture_transform"
+      ]
+    },
+    "sourceDigest": "2348173a2eb986ddb8a293b3d17b91e19c88dae68a2414d6f7579352bc99058a",
+    "upstream": "https://www.aavegotchi.com/sdk",
+    "wardrobeComparedToBaseRpc": true,
+    "ownershipClaimed": false
+  },
+  "permissionBasis": "Published SDK invitation to build Gotchi experiences; see the asset catalog for scope and remaining rights review.",
+  "source": "https://www.aavegotchi.com/sdk",
+  "renderer": "https://github.com/aavegotchi/aavegotchi-3d-render-skill",
+  "hosting": "bounded on-demand memory cache; not a full catalog mirror"
+}

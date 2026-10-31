@@ -1,0 +1,13 @@
+✔ renderer identity preserves the documented right/left ordering and fails closed on unknown traits (9.835542ms)
+✔ mobile GLB validation rejects remote dependencies, unsupported decoders, excessive geometry and damaged containers (69.779833ms)
+✔ on-demand assets coalesce, remain bounded, use only the fixed CDN and never request a forced render (36.163833ms)
+✔ an original uses verified wardrobe expectations and cannot silently fall back to a generic model (5.867792ms)
+✔ serial texture optimization reduces mobile memory while preserving geometry and texture coordinates (160.975375ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 764.042166

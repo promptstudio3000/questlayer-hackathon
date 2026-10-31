@@ -1,0 +1,109 @@
+
+> questlayer@0.1.0 check
+> npm test && npm run build
+
+
+> questlayer@0.1.0 test
+> node --test --test-concurrency=4 tests/*.test.mjs
+
+✔ Aavegotchi inventory decodes the canonical item ID before the quantity (9.979375ms)
+✔ peer appearance resolves both demo Aura slots without returning wallet or item identifiers (22.624875ms)
+✔ native peer looks verify current token ownership and hide the account and NFT IDs (19.170084ms)
+✔ missing native linkage or failed reads never claim a stale native Aura is equipped (6.7935ms)
+✔ an original appearance is shared only while the ownership snapshot is current (12.42175ms)
+✔ shared map markup accepts only controlled colors and same-origin original-skin URLs (0.87275ms)
+✔ a shared original skin is served from its consenting owner's snapshot and expires with presence (14.87475ms)
+✔ earned vouchers bind contract, receiver, edition and expiry and lock the demo market (80.150541ms)
+✔ ownership, open listings, signer configuration and full editions prevent issuance (17.509917ms)
+✔ confirmed mint is recorded once even after its native NFT transfers (26.102917ms)
+✔ a claim cannot restore a demo item until a finalized post-expiry block proves no mint (21.178375ms)
+✔ claim confirmation rejects a mismatched on-chain recipient (24.207458ms)
+✔ the application attestation key persists privately without being a wallet access key (32.649541ms)
+✔ 365 city manifests keep six distinct sectors and at least 250m of polygon separation (9221.334166ms)
+✔ city selection is deterministic but rotates across dates (119.009334ms)
+✔ physical mode requires the canonical polygon as well as target proximity (1060.428625ms)
+✔ ordered walking checkpoints cannot be skipped replayed or completed from one place (927.737167ms)
+✔ exhausted Aura supply is visible and never mints beyond edition caps (774.820666ms)
+✔ city windows include four all-day zones one three-hour zone and one one-hour zone (683.287417ms)
+✔ yield uses two conserved buckets and idempotent receipts (27.860125ms)
+✔ simultaneous activation shares a single world and one reserved coin budget (652.006792ms)
+✔ shared coin pays one player once and cannot be farmed by retries (661.827792ms)
+✔ expired coins cannot be collected and unclaimed backing rolls over once (514.785ms)
+✔ a solo player can complete a free quest and mint one bounded Aura (344.669292ms)
+✔ tier access matures, withdrawals remove it, decreases apply immediately (17.192792ms)
+✔ a funded quest has one GOLD payout while everyone can still earn personal XP (306.749792ms)
+✔ unstaking preserves retained yield and withdrawal is redeemable once (15.434791ms)
+✔ yield allocation before contribution change cannot be reassigned retroactively (20.90525ms)
+✔ market sale is atomic, conserves balances and transfers equipment rights (313.326125ms)
+✔ cancelled listing cannot be filled or revive after relisting (618.12ms)
+✔ invalid monetary actions do not change wallet or treasury (7.827125ms)
+✔ failed transaction rolls back all writes (24.584041ms)
+✔ physical GPS validation rejects stale, inaccurate and distant evidence (0.687833ms)
+✔ local world rollover handles 23-hour and 25-hour days (576.868292ms)
+✔ city snapshots share a fixed public center and never record the first visitor GPS (316.976375ms)
+✔ renderer identity preserves the documented right/left ordering and fails closed on unknown traits (2.980667ms)
+✔ mobile GLB validation rejects remote dependencies, unsupported decoders, excessive geometry and damaged containers (100.553542ms)
+✔ on-demand assets coalesce, remain bounded, use only the fixed CDN and never request a forced render (44.056709ms)
+✔ an original uses verified wardrobe expectations and cannot silently fall back to a generic model (10.791875ms)
+✔ serial texture optimization reduces mobile memory while preserving geometry and texture coordinates (581.599125ms)
+✔ forwarded addresses cannot bypass the client limit from an untrusted connection (2.225292ms)
+✔ the trusted local proxy separates clients and ignores forged address prefixes (23.667292ms)
+✔ HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery (11133.86225ms)
+✔ native wardrobe verifies ownership and removes stale or duplicate equipment (6.349833ms)
+✔ native holdings retain equipped items beyond the first page and coalesce RPC calls (1.844542ms)
+✔ native asset normalization rejects foreign kinds and out-of-range editions (3.719292ms)
+✔ a confirmed refresh cannot be overwritten by an older in-flight ownership read (0.819333ms)
+✔ parallel native reads share network verification and a failed check can retry (1.441667ms)
+✔ claim expiry proof reads the timestamp of the exact finalized claim state block (0.59625ms)
+✔ native prices preserve yoctoNEAR precision and reject unsupported representations (3.101375ms)
+✔ native market enables only active offers with a currently escrowed NFT (5.854417ms)
+✔ native identity validates account syntax and distinguishes RPC failures (8.284416ms)
+✔ NEAR sign-in verifies real signatures, restores one explorer, isolates purposes and prevents replay (10945.936625ms)
+✔ identity refuses a mainnet RPC even when its access-key answer would be valid (0.861333ms)
+✔ stale cleanup and heartbeat cannot overwrite a newer sharing session or game mode (24.201083ms)
+✔ location heartbeats do not extend consent beyond its original 15 minute window (19.622333ms)
+✔ demo and GPS presence are isolated and stale positions disappear after 30 seconds (20.178ms)
+✔ stop received before a delayed initial publication permanently revokes that session (9.902291ms)
+✔ native math rejects floating and overflowing balances and never spends unrealized profit or loss recovery (4.014292ms)
+✔ E+2 tranche and contribution maturity preserves older access through top-ups and staged increases (1.845959ms)
+✔ new exits and daily game harvests cannot reset a sealed account's older unlock (6.149458ms)
+✔ failed asynchronous pool actions retain obligations and original ordering without fake receipts (1.10075ms)
+✔ restored native model state rejects changed policy allocations and duplicate cash receipts (2.593ms)
+✔ liquid receipt policy is replay-safe, versioned and never recycles principal, rollover or awarded backing (10.396333ms)
+✔ integer treasury conservation holds across many policies, city reservations, expiries and winners (794.599375ms)
+✔ pool adapter pins every view, exposes no invented APY and accepts legitimate non-.testnet validator IDs (4.214916ms)
+✔ local calendar boundaries preserve short and long DST days and calendar rotation (714.952417ms)
+✔ durable preparation is deterministic, idempotent and reserves no money or future loot (1236.016875ms)
+✔ failed preparations back off and recover without duplicate reservations (613.762667ms)
+✔ an expired preparation lease can be reclaimed and its stale worker cannot overwrite completion (269.401208ms)
+✔ a new local day immediately recovers uncollected backing before publishing its next world (1795.459916ms)
+✔ a restarted process resumes persisted SQLite work without touching treasury (591.389375ms)
+ℹ tests 72
+ℹ suites 0
+ℹ pass 72
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17227.879375
+
+> questlayer@0.1.0 build
+> tsc -b && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 5082 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.69 kB │ gzip:   0.42 kB
+dist/assets/maplibre-gl-worker-Br3j0JGE.js    518.98 kB
+dist/assets/index-DNkB60zK.css                127.45 kB │ gzip:  23.00 kB
+dist/assets/ccip-DqePay7T.js                    0.08 kB │ gzip:   0.08 kB
+dist/assets/utils-Bpv4vmSW.js                   2.19 kB │ gzip:   0.97 kB
+dist/assets/secp256k1-CEjb8uaz.js              26.34 kB │ gzip:  10.21 kB
+dist/assets/build-ESSKI4ft.js                  58.76 kB │ gzip:  15.02 kB
+dist/assets/_esm-5j9OcaLw.js                  170.66 kB │ gzip:  49.01 kB
+dist/assets/character-3d-scene-Bkaa_cNv.js    656.04 kB │ gzip: 163.94 kB
+dist/assets/index-CDJBeCOc.js               1,513.80 kB │ gzip: 421.05 kB
+
+✓ built in 2.32s

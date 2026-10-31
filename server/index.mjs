@@ -1,5 +1,6 @@
 import { updatePresence, nearbyPresence } from "./presence.mjs";
-import { publicAppearances } from "./appearance.mjs";
+import { GotchiModels } from "./gotchi-models.mjs";
+import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
 import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
@@ -95,6 +96,7 @@ const awardSigner = loadAwardSigner(
     ),
 );
 const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner);
+const gotchiModels = new GotchiModels();
 const listeners = new Set(),
   rates = new Map();
 function emit(type, data) {
@@ -961,6 +963,74 @@ async function api(req, res, url) {
       player,
     );
     return respond(res, { player: profile(player) });
+  }
+  if (path === "/api/character/model" && method === "GET") {
+    const key = `model:${player}:${Math.floor(Date.now() / 60000)}`;
+    const count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(count <= 12, "Please wait before reopening the dressing room.", 429);
+    const appearance = JSON.parse(
+      db.prepare("SELECT appearance FROM players WHERE id=?").get(player)
+        .appearance,
+    );
+    if (appearance.originTokenId) {
+      const link = db
+        .prepare(
+          "SELECT data FROM external_links WHERE player_id=? AND address=? AND verified_at>?",
+        )
+        .get(player, appearance.address, Date.now() - 300000);
+      const gotchi =
+        link &&
+        JSON.parse(link.data).gotchis?.find(
+          (g) => g.tokenId === appearance.originTokenId,
+        );
+      assert(
+        gotchi,
+        "Refresh original ownership before opening its 3D look.",
+        403,
+      );
+      return respond(
+        res,
+        await gotchiModels.describe({
+          tokenId: appearance.originTokenId,
+          expectedWearables: gotchi.equipped,
+        }),
+      );
+    }
+    return respond(res, await gotchiModels.describe());
+  }
+  if (path.startsWith("/api/character/assets/") && method === "GET") {
+    const digest = path.match(
+      /^\/api\/character\/assets\/([a-f0-9]{64})\.glb$/,
+    )?.[1];
+    const asset = digest && gotchiModels.asset(digest);
+    assert(
+      asset,
+      "This 3D look expired. Please reopen the dressing room.",
+      404,
+    );
+    res.writeHead(200, {
+      "Content-Type": "model/gltf-binary",
+      "Content-Length": asset.bytes.length,
+      "Cache-Control": "private,max-age=86400,immutable",
+    });
+    return res.end(asset.bytes);
+  }
+  if (path === "/api/presence/skin" && method === "GET") {
+    const explorer = url.searchParams.get("playerId");
+    assert(
+      explorer && /^player_[a-f0-9-]{36}$/.test(explorer),
+      "Invalid explorer.",
+    );
+    const svg = sharedOriginalSvg(db, explorer);
+    assert(svg, "This shared appearance is no longer available.", 404);
+    res.writeHead(200, {
+      "Content-Type": "image/svg+xml",
+      "Content-Security-Policy":
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+      "Cache-Control": "private,max-age=5",
+    });
+    return res.end(svg);
   }
   if (path === "/api/aavegotchi/skin" && method === "GET") {
     const token = url.searchParams.get("tokenId");
