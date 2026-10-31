@@ -2743,7 +2743,8 @@ export default function App() {
       {showNpc && <Npc onClose={() => setShowNpc(false)} />}
       {tab === "explore" && (
         <div className="demo-footer">
-          DEMO GOLD · NEAR TESTNET <span>✦</span> QuestLayer
+          {nativePlay ? "NEAR TESTNET" : "DEMO GOLD · NEAR TESTNET"}{" "}
+          <span>✦</span> QuestLayer
         </div>
       )}
     </div>

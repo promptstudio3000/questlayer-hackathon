@@ -697,3 +697,7 @@
 .play-native label.play-consent input {
   margin-top: 2px;
 }
+/* This compact objective sits on an ink surface, unlike the light task cards. */
+.native-objective small {
+  color: #e3daf4;
+}
