@@ -7,13 +7,11 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
-import type { PlayerKeyRecord } from "./player-key";
+import type { OrderSigner } from "./order-signers";
 import {
   ORDER_STATUS_TEXT,
   ORDER_TTL_CHOICES,
   orderTerms,
-  signOrder,
-  statusFromCheck,
   type OrderStatus,
   type OrderTerms,
   type SignedOrder,
@@ -70,24 +68,21 @@ function expiresIn(deadline: string) {
 
 export function SignedOrdersPanel({
   data,
-  accountId,
-  deviceKey,
+  signer,
   owned,
   balance,
   busy,
-  onCall,
   onChanged,
 }: {
   data: NativeMarketState;
-  accountId: string | null;
-  deviceKey: PlayerKeyRecord | null;
+  signer: OrderSigner | null;
   owned: NativeItem[];
   balance: NativeMarketBalance | undefined;
   busy: string;
-  onCall: (call: MarketCall) => Promise<boolean>;
   onChanged: () => Promise<NativeMarketState>;
 }) {
-  const [signer, setSigner] = useState<{ keys: string[]; epoch: number } | null>(null),
+  const accountId = signer?.accountId ?? null;
+  const [registry, setRegistry] = useState<{ keys: string[]; epoch: number } | null>(null),
     [book, setBook] = useState<RelayedOrder[]>([]),
     [mine, setMine] = useState<MyOrder[]>([]),
     [step, setStep] = useState(""),
@@ -102,9 +97,10 @@ export function SignedOrdersPanel({
   const priceInput = useRef<HTMLInputElement>(null),
     offerInput = useRef<HTMLInputElement>(null);
   const v2 = data.stats.version === 2;
-  const ready =
-    v2 && !!deviceKey && !!accountId && deviceKey.accountId === accountId;
-  const enabled = ready && !!signer?.keys.includes(deviceKey!.publicKey);
+  const ready = v2 && !!signer;
+  const knownKey = signer?.knownPublicKey() ?? null;
+  const enabled = ready && !!knownKey && !!registry?.keys.includes(knownKey);
+  const wallet = signer?.kind === "wallet";
   const escrowedByMe = data.listings.filter(
     (l) => l.state === "deposited" && l.seller === accountId,
   );
@@ -125,16 +121,21 @@ export function SignedOrdersPanel({
         : Promise.resolve(null),
     ]);
     setBook(orders.orders);
-    setSigner(me);
+    setRegistry(me);
     if (accountId) {
       const history = loadHistory(accountId);
       const live = history.filter((o) => o.status === "open" || o.status === "pending");
       if (live.length) {
-        const { statuses } = await api<{ statuses: { valid: boolean; reason: string | null }[] }>(
+        const { statuses } = await api<{ statuses: { state: OrderStatus }[] }>(
           "/native/market/orders/status",
           { orders: live.map((o) => o.order) },
         );
-        live.forEach((o, i) => (o.status = statusFromCheck(statuses[i], o.cancelled)));
+        live.forEach((o, i) => {
+          const state = statuses[i]?.state;
+          // The index knows cancellations from chain events; a local cancel
+          // still wins while its event is being recorded.
+          if (state) o.status = state === "filled" && o.cancelled ? "cancelled" : state;
+        });
         saveHistory(accountId, history);
       }
       setMine(history);
@@ -163,8 +164,13 @@ export function SignedOrdersPanel({
     }
   }
   async function call(c: Omit<MarketCall, "gas"> & { gas?: string }) {
-    if (!(await onCall({ gas: GAS, ...c })))
-      throw Error("The action was not sent. Nothing changed.");
+    const hash = await signer!.call({ gas: GAS, ...c });
+    // Feed the durable order index; it reads the final receipt itself.
+    if (hash)
+      void api("/native/market/orders/events", {
+        transactionHash: hash,
+        accountId,
+      }).catch(() => {});
   }
   async function waitFor(check: (s: NativeMarketState) => boolean) {
     for (let i = 0; i < 8; i++) {
@@ -187,7 +193,7 @@ export function SignedOrdersPanel({
       deadlineMs: Date.now() + ttl,
       epoch: fresh.epoch,
     });
-    const order = await signOrder(deviceKey!, terms);
+    const order = await signer!.sign(terms);
     const history = [{ order, terms, status: "pending" as OrderStatus }, ...loadHistory(accountId!)];
     saveHistory(accountId!, history);
     setMine(history);
@@ -198,13 +204,17 @@ export function SignedOrdersPanel({
 
   const enable = () =>
     run("Turning on signed offers…", async () => {
-      await call({
-        receiverId: data.marketContract,
-        methodName: "add_signing_key",
-        args: { public_key: deviceKey!.publicKey },
-        deposit: "1",
-      });
-      return "Signed offers are on. This device signs them for you, with no popup.";
+      const publicKey = await signer!.publicKey(data.marketContract);
+      if (!registry?.keys.includes(publicKey))
+        await call({
+          receiverId: data.marketContract,
+          methodName: "add_signing_key",
+          args: { public_key: publicKey },
+          deposit: "1",
+        });
+      return wallet
+        ? "Signed offers are on. Your wallet asks you to approve each order you sign."
+        : "Signed offers are on. This device signs them for you, with no popup.";
     });
   const sell = (price: string) =>
     run("Signing your sell order…", async () => {
@@ -295,9 +305,12 @@ export function SignedOrdersPanel({
     <section className="signed-orders" aria-labelledby="signed-orders-title">
       <h3 id="signed-orders-title">Signed offers</h3>
       <p>
-        Name an exact price and how long it stays open. Your explorer signs the
-        order on this device, with no popup. Only an Aura held by the market can
-        be traded, and the market checks every signature before anything moves.
+        Name an exact price and how long it stays open.{" "}
+        {wallet
+          ? "Your wallet signs each order; approving it publishes the order but moves nothing."
+          : "Your explorer signs the order on this device, with no popup."}{" "}
+        Only an Aura held by the market can be traded, and the market checks
+        every signature before anything moves.
       </p>
       {error && <p role="alert">{error}</p>}
       {step && <p role="status">{step}</p>}
@@ -308,10 +321,9 @@ export function SignedOrdersPanel({
       )}
       {!ready ? (
         <p>
-          Signed offers are signed by your QuestLayer explorer's device key.
-          Wallet-linked accounts can still use fixed-price listings above.
+          Link a NEAR account or start your QuestLayer explorer to sign offers.
         </p>
-      ) : !signer ? (
+      ) : !registry ? (
         <p role="status">Checking your signing key…</p>
       ) : !enabled ? (
         <button className="primary-button" disabled={working} onClick={() => void enable()}>

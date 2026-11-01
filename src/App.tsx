@@ -62,6 +62,13 @@ import {
 } from "./native-level-claim";
 import { NativeMarketPanel } from "./NativeMarketPanel";
 import type { MarketCall } from "./SignedOrdersPanel";
+import type { ReviewedNativeTransaction } from "./confirmed-native-transaction";
+import {
+  deviceOrderSigner,
+  walletOrderSigner,
+  type MessageWallet,
+  type OrderSigner,
+} from "./order-signers";
 import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
 import { RewardFundingPage, TodaysPot } from "./RewardFunding";
@@ -1520,39 +1527,88 @@ export default function App() {
     });
     return result === true;
   }
-  // Signed-order market calls always use the explorer's own device key: free
-  // actions are relayed, money moves in self-paid transactions (no popup).
-  async function marketCall(call: MarketCall): Promise<boolean> {
-    const result = await action("native-market", async () => {
-      const managed = invisible.signer;
-      if (!managed)
-        throw Error("Signed offers need your QuestLayer explorer account.");
-      if (!onNearNetwork(call.receiverId))
-        throw Error("This market is not on the game network.");
-      await managed.send(
+  // Signed-order market calls. The explorer's device key signs silently: free
+  // calls are relayed and money moves in self-paid transactions. A linked
+  // external wallet signs orders with signMessage and sends calls through the
+  // reviewed wallet flow, which confirms them on the server.
+  function marketTransaction(
+    signerId: string,
+    call: MarketCall,
+  ): ReviewedNativeTransaction {
+    if (!onNearNetwork(call.receiverId))
+      throw Error("This market is not on the game network.");
+    return {
+      network: NEAR_NETWORK,
+      signerId,
+      receiverId: call.receiverId,
+      actions: [
         {
-          network: NEAR_NETWORK,
-          signerId: managed.accountId,
-          receiverId: call.receiverId,
-          actions: [
-            {
-              type: "FunctionCall",
-              params: {
-                methodName: call.methodName,
-                args: call.args,
-                gas: call.gas,
-                deposit: call.deposit,
-              },
-            },
-          ],
+          type: "FunctionCall",
+          params: {
+            methodName: call.methodName,
+            args: call.args,
+            gas: call.gas,
+            deposit: call.deposit,
+          },
         },
-        { playerId: player!.id },
-      );
+      ],
+    };
+  }
+  async function marketCall(
+    send: (signerId: string) => Promise<string | null | void>,
+    signerId: string,
+  ): Promise<string | null> {
+    let hash: string | null = null;
+    const result = await action("native-market", async () => {
+      hash = (await send(signerId)) || null;
       await refreshNative(true);
       return true;
     });
-    return result === true;
+    if (result !== true) throw Error("The action was not sent. Nothing changed.");
+    return hash;
   }
+  const walletForOrders = useRef<{
+    accountId: string;
+    wallet: Awaited<ReturnType<typeof chooseNearAccount>>["wallet"];
+  } | null>(null);
+  async function orderWallet(accountId: string) {
+    if (walletForOrders.current?.accountId !== accountId) {
+      const chosen = await chooseNearAccount();
+      if (chosen.accountId !== accountId)
+        throw Error(`Choose the wallet for ${accountId} to sign this order.`);
+      walletForOrders.current = chosen;
+    }
+    return walletForOrders.current!.wallet;
+  }
+  const orderSigner: OrderSigner | null =
+    invisible.signer && invisible.deviceKey?.accountId
+      ? deviceOrderSigner(invisible.deviceKey, (call) =>
+          marketCall(
+            (id) =>
+              invisible.signer!.send(marketTransaction(id, call), {
+                playerId: player!.id,
+              }),
+            invisible.signer!.accountId,
+          ),
+        )
+      : player?.wallets[0]
+        ? walletOrderSigner(
+            player.wallets[0].account_id,
+            async () =>
+              (await orderWallet(
+                player.wallets[0].account_id,
+              )) as unknown as MessageWallet,
+            (call) =>
+              marketCall(async (id) => {
+                const wallet = await orderWallet(id);
+                await walletSigner(wallet, id).send(
+                  marketTransaction(id, call),
+                  { playerId: player!.id },
+                );
+                return null;
+              }, player!.wallets[0].account_id),
+          )
+        : null;
   async function withdrawNativeReward(
     expectedAccount: string,
     contractId: string,
@@ -3512,8 +3568,7 @@ export default function App() {
                   busy={busy}
                   onConnect={connectNear}
                   onTrade={tradeNative}
-                  deviceKey={invisible.deviceKey}
-                  onMarketCall={invisible.signer ? marketCall : undefined}
+                  orderSigner={orderSigner}
                 />
               }
               player={player}

@@ -19,6 +19,10 @@ import {
 } from "./gotchi-items.mjs";
 import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
+import {
+  SignedOrderIndex,
+  startOrderIndexWorker,
+} from "./native/order-index.mjs";
 import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
@@ -231,13 +235,15 @@ const managedAccounts = relayConfig.factoryAccount
       topupCapYocto: relayConfig.topupCapYocto,
     })
   : null;
+const relayerService =
+  managedAccounts && relayConfig.enabled
+    ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
+    : null;
 const relayer = managedAccounts
   ? new Relayer(
       db,
       provider,
-      relayConfig.enabled
-        ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
-        : null,
+      relayerService,
       {
         accounts: managedAccounts,
         contracts: {
@@ -277,6 +283,11 @@ const relayer = managedAccounts
         factoryPools: VAULT_POOLS.map((p) => p.id),
       },
     )
+  : null;
+const signedOrderIndex = nativeMarket
+  ? new SignedOrderIndex(db, nativeMarket, {
+      relaySenderId: relayerService?.accountId ?? null,
+    })
   : null;
 const relayerRoutes = createRelayerRoutes({
   relayer,
@@ -879,13 +890,15 @@ async function api(req, res, url) {
   }
   if (path === "/api/native/market/orders" && method === "GET") {
     assert(nativeMarket, "The secured market is not available yet.", 503);
-    return respond(
-      res,
-      await nativeMarket.signedOrders({
+    assert(signedOrderIndex, "Signed orders are not available yet.", 503);
+    return respond(res, {
+      network: NETWORK,
+      marketContract: nativeMarket.contractId,
+      index: "durable; every order re-verified by the market contract",
+      orders: await signedOrderIndex.list({
         tokenId: url.searchParams.get("token"),
-        fresh: url.searchParams.get("refresh") === "1",
       }),
-    );
+    });
   }
   if (path === "/api/native/claim-signer" && method === "GET") {
     assert(
@@ -1206,6 +1219,16 @@ async function api(req, res, url) {
       "Sign in again to check this transaction.",
       401,
     );
+    // Wallet-signed market calls feed the signed-order index from the same
+    // final receipt. The index is advisory, so a failure here never blocks.
+    if (
+      signedOrderIndex &&
+      result?.confirmed &&
+      input?.quote?.receiverId === nativeMarket?.contractId
+    )
+      await signedOrderIndex
+        .recordTransaction(input.transactionHash, input.accountId)
+        .catch(() => {});
     return respond(res, result);
   }
   if (path === "/api/native/vaults/prepare" && method === "POST") {
@@ -1386,14 +1409,28 @@ async function api(req, res, url) {
     return respond(res, await nativeMarket.signer(url.searchParams.get("account")));
   }
   if (path === "/api/native/market/orders/status" && method === "POST") {
-    assert(nativeMarket, "The secured market is not available yet.", 503);
+    assert(signedOrderIndex, "Signed orders are not available yet.", 503);
     const input = await body(req);
-    return respond(res, { statuses: await nativeMarket.orderStatuses(input.orders) });
+    return respond(res, {
+      statuses: await signedOrderIndex.statuses(input.orders),
+    });
   }
   if (path === "/api/native/market/orders" && method === "POST") {
     assert(nativeMarket, "The secured market is not available yet.", 503);
     const input = await body(req);
-    return respond(res, await nativeMarket.submitOrder(input.order));
+    assert(signedOrderIndex, "Signed orders are not available yet.", 503);
+    return respond(res, await signedOrderIndex.submit(input.order));
+  }
+  if (path === "/api/native/market/orders/events" && method === "POST") {
+    assert(signedOrderIndex, "Signed orders are not available yet.", 503);
+    const input = await body(req);
+    return respond(
+      res,
+      await signedOrderIndex.recordTransaction(
+        input.transactionHash,
+        input.accountId,
+      ),
+    );
   }
   if (path === "/api/native/market/accounts" && method === "GET") {
     assert(nativeMarket, "The secured market is not available yet.", 503);
@@ -2361,6 +2398,10 @@ const pinWorker =
   socialRecords.pinAdapter
     ? startPinWorker(socialRecords, { intervalMs: 60000 })
     : null;
+const orderIndexWorker =
+  !backgroundWorkersDisabled && signedOrderIndex
+    ? startOrderIndexWorker(signedOrderIndex, { intervalMs: 30000 })
+    : null;
 const creatorMoneyWorker =
   !backgroundWorkersDisabled && creatorMoney?.enabled
     ? startCreatorMoneyWorker(creatorMoney, { intervalMs: 30000 })
@@ -2401,6 +2442,7 @@ async function close() {
   await rewardWorker?.stop();
   await relayWorker?.stop?.();
   await creatorMoneyWorker?.stop?.();
+  orderIndexWorker?.stop();
   await pinWorker?.stop?.();
   for (const r of listeners) r.end();
   server.close(() => {

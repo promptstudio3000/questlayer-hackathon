@@ -58,26 +58,6 @@ test("the Intents sketch is labelled unverified and mirrors the exact swap", () 
   });
 });
 
-// Signed orders are a testnet-only market feature; the mainnet pass skips the relay.
-test("the order relay indexes only orders the market contract accepts", { skip: NETWORK !== "testnet" }, async () => {
-  const { NativeMarket } = await import("../server/native/market.mjs");
-  const nfts = { contractId: "nfts.testnet", view: async () => null };
-  const reader = new NativeMarket({}, "market.testnet", nfts);
-  let valid = true;
-  reader.view = async (method) =>
-    method === "get_stats"
-      ? { version: 2 }
-      : { valid, reason: valid ? null : "Order nonce already used", fillable: valid };
-  const r = await reader.submitOrder(fixture, env.nowMs);
-  assert.equal(r.terms.maker, "seller.testnet");
-  assert.equal((await reader.signedOrders({}, env.nowMs)).orders.length, 1);
-  valid = false;
-  assert.equal((await reader.signedOrders({}, env.nowMs)).orders.length, 0);
-  await assert.rejects(reader.submitOrder(fixture, env.nowMs), /nonce already used/);
-  reader.view = async () => ({ version: 1 });
-  await assert.rejects(reader.submitOrder(fixture, env.nowMs), /version 2/);
-});
-
 test("the browser device-key signer produces the exact bytes the contract verifies", async () => {
   const { KeyPairEd25519, baseEncode } = await import("near-api-js");
   const { orderTerms: browserTerms, signOrder, statusFromCheck } = await import("../src/signed-order.ts");

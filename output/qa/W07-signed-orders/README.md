@@ -12,6 +12,7 @@ The fixture is `dev/signed-orders.html?state=on|off|empty`. It renders the real 
 | `390-price-error.png` | `1e2` is rejected, the entered value is kept, and focus returns to the price input. |
 | `390-make-offer.png` | The offer is higher than the market balance, so `deposit_near` is recorded first (self-paid), then the order is signed. |
 | `390-empty.png` | No orders and no Auras held by the market |
+| `390-wallet-off.png` → `390-wallet-signed-sell.png` | An external wallet signs with `signMessage`, using the same NEP-413 bytes. The first approval reveals the wallet key, and `add_signing_key` is recorded for the reviewed wallet flow. Each order then needs one wallet approval. In this fixture a local key stands in for the wallet. |
 
 **Results:** no horizontal overflow at any size, and no console or page errors.
 

@@ -297,13 +297,84 @@ export class NativeTransactionConfirmation {
     } else if (receiverId === MARKET_ID) {
       pinned.set(MARKET_ID, { code: this.marketConfiguration() });
       pinned.set(NFT_ID, { code: this.nftConfiguration() });
+      // Version 2 signed orders: the contract re-verifies every signature,
+      // nonce, epoch and deadline; this check pins shape, target and amounts.
+      const signedOrder = (o) =>
+        keys(o, [
+          "message",
+          "nonce",
+          "recipient",
+          "callback_url",
+          "public_key",
+          "signature",
+        ]) &&
+        o.recipient === MARKET_ID &&
+        o.callback_url === null &&
+        typeof o.message === "string" &&
+        o.message.length <= 1024 &&
+        typeof o.nonce === "string" &&
+        typeof o.signature === "string" &&
+        typeof o.public_key === "string" &&
+        o.public_key.startsWith("ed25519:");
+      const orderTerms = (o) => {
+        try {
+          return JSON.parse(o.message);
+        } catch {
+          return null;
+        }
+      };
       if (method === "withdraw")
         assert(
           keys(args, []) && deposit === "1",
           "Invalid market withdrawal.",
           409,
         );
-      else {
+      else if (method === "add_signing_key" || method === "remove_signing_key") {
+        result = "unit";
+        assert(
+          keys(args, ["public_key"]) &&
+            /^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(args.public_key)) &&
+            deposit === "1",
+          "Invalid order signing key change.",
+          409,
+        );
+      } else if (method === "cancel_all_orders") {
+        result = "any";
+        assert(
+          keys(args, []) && deposit === "1",
+          "Invalid order cancellation.",
+          409,
+        );
+      } else if (method === "deposit_near") {
+        result = "any";
+        assert(
+          keys(args, []) && amount(deposit) && BigInt(deposit) >= 10n ** 21n,
+          "Invalid market deposit.",
+          409,
+        );
+      } else if (
+        method === "cancel_order" ||
+        method === "fill_buy_order" ||
+        method === "fill_sell_order"
+      ) {
+        const terms =
+          keys(args, ["order"]) && signedOrder(args.order)
+            ? orderTerms(args.order)
+            : null;
+        assert(
+          terms &&
+            terms.market === MARKET_ID &&
+            aura(terms.token_id) &&
+            amount(terms.price) &&
+            (method === "fill_sell_order"
+              ? terms.kind === "sell" && deposit === terms.price
+              : deposit === "1") &&
+            (method !== "fill_buy_order" || terms.kind === "buy"),
+          "Invalid signed market order.",
+          409,
+        );
+        if (method === "cancel_order") result = "unit";
+      } else {
         assert(
           ["buy", "cancel"].includes(method) &&
             keys(args, ["token_id", "listing_id"]) &&
@@ -348,9 +419,10 @@ export class NativeTransactionConfirmation {
           assert(false, "Invalid Aura listing terms.", 409);
         }
         assert(
-          keys(message, ["price"]) &&
-            amount(message.price) &&
-            BigInt(message.price) > 0n,
+          (keys(message, ["deposit"]) && message.deposit === true) ||
+            (keys(message, ["price"]) &&
+              amount(message.price) &&
+              BigInt(message.price) > 0n),
           "Invalid Aura listing price.",
           409,
         );
@@ -582,7 +654,7 @@ export class NativeTransactionConfirmation {
       }
       assert(
         stats.network === NETWORK &&
-          stats.version === 1 &&
+          (stats.version === 1 || stats.version === 2) &&
           stats.nft_contract === NFT_ID,
         "The market collection configuration changed.",
         503,

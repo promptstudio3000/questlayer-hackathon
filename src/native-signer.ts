@@ -15,10 +15,11 @@ type Wallet = Parameters<typeof sendConfirmedNative>[0] & {
 export type NativeSigner = {
   kind: "wallet" | "managed";
   accountId: string;
+  // Resolves with the transaction hash when the signer knows it.
   send(
     transaction: ReviewedNativeTransaction,
     context: NativeConfirmationContext,
-  ): Promise<void>;
+  ): Promise<string | null | void>;
 };
 export function walletSigner(wallet: Wallet, accountId: string): NativeSigner {
   return {
@@ -42,8 +43,9 @@ export function managedSigner(
     kind: "managed",
     accountId,
     async send(transaction) {
-      if (isRelayedDeposit(transaction)) await sendRelayed(key, transaction);
-      else await sendSelfPaid(key, transaction);
+      if (isRelayedDeposit(transaction))
+        return (await sendRelayed(key, transaction)).transactionHash;
+      return (await sendSelfPaid(key, transaction)).transactionHash;
     },
   };
 }
