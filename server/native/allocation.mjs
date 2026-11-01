@@ -160,7 +160,8 @@ export function realizedYieldBacking({ vaultStates, yieldDays, rewardsId }) {
  * Reads the publisher's allocation settings from the environment:
  * NATIVE_FUNDED_CITIES="plzen:1,brno:1" (weights default to 1),
  * NATIVE_DAILY_SHARE_BPS (1..10000, default 10000),
- * NATIVE_YIELD_BACKED_DAYS=1 (publish only what realized yield covers).
+ * NATIVE_YIELD_BACKED_DAYS=1 (publish only what realized yield covers),
+ * NATIVE_MANIFEST_V2_FROM=YYYY-MM-DD|off (first new date prepared as v2).
  */
 export function allocationSettings(env = process.env) {
   const settings = {};
@@ -185,5 +186,14 @@ export function allocationSettings(env = process.env) {
     settings.dailyShareBps = bps;
   }
   settings.yieldBackedDays = env.NATIVE_YIELD_BACKED_DAYS === "1";
+  if (env.NATIVE_MANIFEST_V2_FROM) {
+    const from = env.NATIVE_MANIFEST_V2_FROM.trim();
+    assert(
+      from === "off" || /^\d{4}-\d{2}-\d{2}$/.test(from),
+      "NATIVE_MANIFEST_V2_FROM must be YYYY-MM-DD or off.",
+      503,
+    );
+    settings.manifestV2From = from;
+  }
   return settings;
 }

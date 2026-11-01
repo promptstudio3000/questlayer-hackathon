@@ -11,6 +11,10 @@ import {
   LockKey,
   Footprints,
   Sparkle,
+  TreasureChest,
+  ArrowUUpLeft,
+  Path,
+  Star,
 } from "@phosphor-icons/react";
 import { api, meters } from "./api";
 import type { Fix, Player, Point, QuestActivity } from "./types";
@@ -245,6 +249,25 @@ export function NativeExpeditions({
           : state.day && state.day.claimsAccepted >= state.day.claimsLimit
             ? "Today's walks are full. Come back tomorrow"
             : "";
+  // v2 days publish a template per walk; v1 walks are three ordered stops.
+  function questArt(q: Quest, size: number) {
+    const icon = q.activity?.icon;
+    if (icon === "chest") return <TreasureChest size={size} weight="duotone" />;
+    if (icon === "return") return <ArrowUUpLeft size={size} weight="duotone" />;
+    if (icon === "visit") return <MapPin size={size} weight="duotone" />;
+    if (q.template === "ordered-trail")
+      return <Path size={size} weight="duotone" />;
+    return <Footprints size={size} weight="duotone" />;
+  }
+  function questHint(q: Quest) {
+    const n = q.targets.length;
+    if (q.activity?.icon === "chest")
+      return "1 chest · first opener takes any prize";
+    if (q.activity?.icon === "visit") return "1 stop · quick visit";
+    if (q.activity?.icon === "return")
+      return `${n} stops · return to your start`;
+    return `${n} stops · solo walk`;
+  }
   function renderQuest(q: Quest) {
     const done = q.checkpoint >= q.targets.length;
     const target = q.targets[Math.min(q.checkpoint, q.targets.length - 1)];
@@ -265,7 +288,7 @@ export function NativeExpeditions({
     return (
       <article className="walk-card" key={q.index}>
         <div className="walk-art" aria-hidden="true">
-          <Footprints size={36} weight="duotone" />
+          {questArt(q, 36)}
           <span>
             {done ? (
               <CheckCircle size={28} />
@@ -280,7 +303,8 @@ export function NativeExpeditions({
           <span>{q.tier === 1 ? "Free" : `Tier ${q.tier}`}</span>
         </div>
         <h2 tabIndex={-1}>{q.title}</h2>
-        <p className="play-hint">{q.targets.length} stops · solo walk</p>
+        {q.activity?.objective && <p>{q.activity.objective}</p>}
+        <p className="play-hint">{questHint(q)}</p>
         <div className="play-facts">
           <span>
             <Sparkle size={18} />
@@ -325,7 +349,11 @@ export function NativeExpeditions({
           }
           onClick={() => void visit("quest", q.index, q.checkpoint)}
         >
-          {busy ? "Checking visit…" : done ? "Walk complete" : "Confirm visit"}
+          {busy
+            ? "Checking visit…"
+            : done
+              ? "Walk complete"
+              : q.activity?.actionLabel || "Confirm visit"}
           <CheckCircle size={20} />
         </button>
         <ol className="walk-steps" aria-label="Stops">
@@ -596,7 +624,7 @@ export function NativeExpeditions({
                         ) : q.tier > state.access.tier ? (
                           <LockKey size={24} />
                         ) : (
-                          <Footprints size={24} />
+                          questArt(q, 24)
                         )}
                       </span>
                       <span>
@@ -628,12 +656,25 @@ export function NativeExpeditions({
                 <p>
                   {state.day ? nativeGold(state.day.coinUnit) : "0"} GOLD per
                   coin · first explorer takes it · up to 100 a day.
+                  {state.day?.findCount
+                    ? ` Starred street finds mark spots worth a detour; they pay the same as any coin.`
+                    : ""}
                 </p>
                 {state.day?.coins.length ? (
                   state.day.coins.slice(0, 5).map((c) => (
                     <div className="street-pickup" key={c.index}>
-                      <Coins size={22} />
-                      <span>{c.distance} m</span>
+                      {c.find ? (
+                        <Star
+                          size={22}
+                          weight="fill"
+                          aria-label="Street find"
+                        />
+                      ) : (
+                        <Coins size={22} />
+                      )}
+                      <span>
+                        {c.distance} m{c.find ? " · street find" : ""}
+                      </span>
                       <button
                         className="play-icon"
                         aria-label={`Show coin ${c.index} on map`}

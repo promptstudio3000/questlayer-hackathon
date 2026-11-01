@@ -13,7 +13,7 @@ import {
 import { atomic } from "../database.mjs";
 import {
   rewardMessage,
-  nativeDayId,
+  nativeDayRow,
   nativePublicationMatches,
   storedNativeManifest,
 } from "./reward-manifest.mjs";
@@ -368,9 +368,7 @@ export class NativeRewards extends NativeContractReader {
   async snapshot(player, { accountId, location, fresh = false } = {}) {
     const now = this.clock(),
       day = dayKey(now, this.city.timezone),
-      row = this.db
-        .prepare("SELECT * FROM native_days WHERE id=? AND state='published'")
-        .get(nativeDayId(this.city.id, day)),
+      row = nativeDayRow(this.db, this.city.id, day, { published: true }),
       m = row ? this.day(row.id) : null;
     if (accountId) this.linked(player, accountId);
     const [treasury, balance, access, chainDay, cfg, codeMatches] =
@@ -423,6 +421,7 @@ export class NativeRewards extends NativeContractReader {
         throw error;
       }
     };
+    const finds = new Set(m?.finds || []);
     const coins =
       m && location
         ? m.coins
@@ -430,6 +429,7 @@ export class NativeRewards extends NativeContractReader {
               ...p,
               index,
               distance: Math.round(distance(location, p)),
+              ...(finds.has(index) ? { find: true } : {}),
             }))
             .filter(
               (p) =>
@@ -496,6 +496,8 @@ export class NativeRewards extends NativeContractReader {
             map: nativeMapProjection(this.db, m),
             hash: m.hash,
             coinCount: m.coins.length,
+            version: m.version,
+            findCount: finds.size,
             claimsAccepted:
               (chainDay?.claims_accepted || 0) +
               this.db
