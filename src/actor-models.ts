@@ -19,8 +19,38 @@ export const ACTOR_MODELS = [
   "rune-warden",
   "pocket-wisp",
   "storm-golem",
+  // Official Gotchiverse models (Lickquidators and props), loaded at runtime through the pinned, digest-checked
+  // server route /api/upstream-models/<key>.fbx (server/upstream-models.mjs). Never committed to this repository.
+  "lick-soldier",
+  "lick-brute",
+  "lick-speedy",
+  "lick-turret",
+  "lick-boss",
+  "great-portal",
+  "golden-altar",
 ] as const;
 export type ActorModel = (typeof ACTOR_MODELS)[number];
+type UpstreamModel = Extract<ActorModel, `lick-${string}` | "great-portal" | "golden-altar">;
+const UPSTREAM: Record<UpstreamModel, { file: string; height: number; fallback: ActorModel; recolor?: Record<string, number>; spin?: boolean }> = {
+  "lick-soldier": { file: "lick-soldier", height: 1.1, fallback: "glitch-moth" },
+  "lick-brute": { file: "lick-brute", height: 1.15, fallback: "rune-warden" },
+  "lick-speedy": { file: "lick-speedy", height: 0.95, fallback: "glitch-moth", spin: true },
+  "lick-turret": { file: "lick-turret", height: 0.8, fallback: "rune-warden" },
+  "lick-boss": {
+    file: "lick-soldier",
+    height: 2.0,
+    fallback: "storm-golem",
+    recolor: { lick_body: 0x3d0981, lick_dark: 0x230e4f, lick_visor: 0xffd01f, lick_brain: 0xfa34f3, surface_glass: 0x37f4f1 },
+  },
+  "great-portal": { file: "great-portal", height: 1.6, fallback: "keeper" },
+  "golden-altar": { file: "golden-altar", height: 1.6, fallback: "keeper" },
+};
+export const isUpstreamModel = (m: string): m is UpstreamModel => Object.hasOwn(UPSTREAM, m);
+let upstreamBase = "/api/upstream-models/";
+/** Dev/test hook: where the pinned upstream FBX files are served from. */
+export function setUpstreamModelBase(base: string) {
+  upstreamBase = base;
+}
 export const isActorModel = (m: string): m is ActorModel =>
   (ACTOR_MODELS as readonly string[]).includes(m);
 
@@ -38,6 +68,13 @@ export const ACTOR_MODEL_INFO: Record<
   "rune-warden": { label: "Rune Warden", role: "Guardian monster", color: "#37f4f1" },
   "pocket-wisp": { label: "Pocket Wisp", role: "Lurker monster", color: "#7bd88f" },
   "storm-golem": { label: "Storm Golem", role: "Weekly boss", color: "#fffa65" },
+  "lick-soldier": { label: "Lickquidator", role: "Roamer monster (Gotchiverse)", color: "#16a78f" },
+  "lick-brute": { label: "Lickquidator Brute", role: "Guardian monster (Gotchiverse)", color: "#8345ff" },
+  "lick-speedy": { label: "Dire Tire", role: "Fast roamer (Gotchiverse)", color: "#cebcf1" },
+  "lick-turret": { label: "Laser Beamer", role: "Zone guardian turret (Gotchiverse)", color: "#ffb800" },
+  "lick-boss": { label: "Lickquidator Boss", role: "Weekly boss (Gotchiverse)", color: "#fa34f3" },
+  "great-portal": { label: "Great Portal", role: "Boss arena / landmark prop (Gotchiverse)", color: "#dfabff" },
+  "golden-altar": { label: "Golden Altar", role: "Keeper station prop (Gotchiverse)", color: "#ffd01f" },
 };
 
 // Palette (docs/AAVEGOTCHI-REUSE.md §2/§5).
@@ -451,7 +488,7 @@ function stormGolem(): Built {
   };
 }
 
-const BUILDERS: Record<ActorModel, () => Built> = {
+const BUILDERS: Record<Exclude<ActorModel, UpstreamModel>, () => Built> = {
   chronicler,
   merchant,
   keeper,
@@ -463,11 +500,75 @@ const BUILDERS: Record<ActorModel, () => Built> = {
   "storm-golem": stormGolem,
 };
 
-/** Builds the model at its idle pose (t = 0.6 s). The caller owns disposal (see disposeActorModel). */
+const upstreamCache = new Map<string, Promise<THREE.Group>>();
+async function loadUpstream(model: UpstreamModel): Promise<Built> {
+  const spec = UPSTREAM[model];
+  let source = upstreamCache.get(spec.file);
+  if (!source) {
+    source = import("three/addons/loaders/FBXLoader.js").then(({ FBXLoader }) =>
+      new FBXLoader().loadAsync(`${upstreamBase}${spec.file}.fbx`),
+    );
+    source.catch(() => upstreamCache.delete(spec.file));
+    upstreamCache.set(spec.file, source);
+  }
+  const object = (await source).clone(true);
+  // Unify lighting with the original models: flat-shaded standard materials in the upstream colours.
+  object.traverse((node) => {
+    if (!(node instanceof THREE.Mesh)) return;
+    const swap = (m: THREE.Material) => {
+      const old = m as THREE.MeshPhongMaterial;
+      let color = spec.recolor?.[old.name] ?? (old.color ? old.color.getHex() : 0xcccccc);
+      // The portal surface relies on a texture we don't load; show it as a glowing portal instead.
+      if (old.name === "port_pink_on") return mat(0xfa34f3, { emissive: 0xc82ac2, emissiveIntensity: 1.2, name: old.name, side: THREE.DoubleSide });
+      // Near-black upstream materials disappear on the dark map; lift them into the purple shell range.
+      const c = new THREE.Color(color);
+      if (Math.max(c.r, c.g, c.b) < 0.12) color = 0x2a2440;
+      if (/glass/i.test(old.name))
+        return mat(color, { transparent: true, opacity: 0.38, roughness: 0.1, depthWrite: false, name: old.name });
+      const glowing = /visor|brain|crystal|accent|bolts/i.test(old.name);
+      return mat(color, glowing ? { emissive: color, emissiveIntensity: 0.35, name: old.name } : { name: old.name });
+    };
+    node.material = Array.isArray(node.material) ? node.material.map(swap) : swap(node.material);
+  });
+  const box = new THREE.Box3().setFromObject(object);
+  const size = box.getSize(new THREE.Vector3());
+  const scale = spec.height / Math.max(size.y, 1e-6);
+  object.scale.multiplyScalar(scale);
+  const fitted = new THREE.Box3().setFromObject(object);
+  const centre = fitted.getCenter(new THREE.Vector3());
+  object.position.sub(new THREE.Vector3(centre.x, fitted.min.y, centre.z));
+  const root = new THREE.Group(), body = new THREE.Group();
+  body.add(object);
+  root.add(body);
+  const prop = model === "great-portal" || model === "golden-altar";
+  return {
+    root,
+    height: spec.height,
+    update: (t) => {
+      if (prop) return;
+      body.position.y = Math.abs(Math.sin(t * (spec.spin ? 6 : 2.2))) * 0.04;
+      body.rotation.y = Math.sin(t * 0.8) * (spec.spin ? 0.5 : 0.18);
+    },
+  };
+}
+
+/** Builds an original model at its idle pose (t = 0.6 s). The caller owns disposal (see disposeActorModel). */
 export function buildActorModel(model: ActorModel): Built {
-  const built = BUILDERS[model]();
+  const built = isUpstreamModel(model) ? BUILDERS[UPSTREAM[model].fallback as Exclude<ActorModel, UpstreamModel>]() : BUILDERS[model]();
   built.update(0.6);
   return built;
+}
+
+/** Like buildActorModel, but resolves official upstream models; falls back to the original stand-in on failure. */
+export async function loadActorModel(model: ActorModel): Promise<Built> {
+  if (!isUpstreamModel(model)) return buildActorModel(model);
+  try {
+    const built = await loadUpstream(model);
+    built.update(0.6);
+    return built;
+  } catch {
+    return buildActorModel(model);
+  }
 }
 
 export function disposeActorModel(object: THREE.Object3D) {
@@ -511,8 +612,9 @@ export function actorSprite(model: string, size = 96): Promise<string> {
   const key = `${model}:${size}`;
   const cached = spriteCache.get(key);
   if (cached) return cached;
-  const job = Promise.resolve().then(() => {
+  const job = Promise.resolve().then(async () => {
     if (!isActorModel(model)) return actorFallbackSprite(model);
+    const built = await loadActorModel(model);
     try {
       if (!shared) {
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true, powerPreference: "low-power" });
@@ -526,7 +628,6 @@ export function actorSprite(model: string, size = 96): Promise<string> {
       const { renderer, scene, camera } = shared;
       renderer.setPixelRatio(1);
       renderer.setSize(size, size, false);
-      const built = buildActorModel(model);
       scene.add(built.root);
       frame(camera, built.height);
       renderer.render(scene, camera);
@@ -565,8 +666,17 @@ export function createActorScene(host: HTMLElement, model: string, options: { la
   const scene = new THREE.Scene();
   lights(scene);
   const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 50);
-  const built = buildActorModel(model);
+  let built = buildActorModel(model);
   scene.add(built.root);
+  if (isUpstreamModel(model))
+    void loadActorModel(model).then((loaded) => {
+      if (disposed) return disposeActorModel(loaded.root);
+      scene.remove(built.root);
+      disposeActorModel(built.root);
+      built = loaded;
+      scene.add(built.root);
+      draw();
+    });
   const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   let yaw = 0.45, dragging = false, lastX = 0, raf = 0, disposed = false;
   const start = performance.now();
