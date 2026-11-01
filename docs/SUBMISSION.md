@@ -14,14 +14,9 @@ Draft (≤ 280 characters, attach the demo video):
 
 Optional tags: @NearLegion @NearBuilders. End with a question, e.g. "Which city should we map next?"
 
-## Demo video script (90 seconds)
+## Demo video script
 
-1. 0–10 s: first-run page, type a name, Start exploring. The 3D map of Plzeň with the ghost explorer.
-2. 10–30 s: tap to walk, coins collected quietly, the objective card "Find the park chest", Walk there, Open chest.
-3. 30–50 s: result sheet with XP and the Aura; Try it on; the same Aura on the map character.
-4. 50–70 s: Profile → Secure with a passkey (one tap); Inventory → Secured: the Aura becomes the player's own
-   on-chain item through the sponsored relayer, no popup. Show the receipt link.
-5. 70–90 s: Profile → Advanced: the account, the relayer budget, the economy page; closing line.
+The 3-minute script with shot list, voice-over and fallbacks is [HACKATHON-DEMO.md](HACKATHON-DEMO.md).
 
 ## Submission payload (fill in, then the owner runs the curl from HACKATHON.md)
 
