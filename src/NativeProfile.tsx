@@ -14,8 +14,10 @@ export function NativeProfilePanel({
   onConnect,
   onPublish,
   readProfile = loadProfile,
+  managedAccountId = "",
 }: {
   player: Player;
+  managedAccountId?: string;
   busy: string;
   onConnect: () => Promise<void>;
   onPublish: (
@@ -33,7 +35,12 @@ export function NativeProfilePanel({
     [error, setError] = useState(""),
     [consent, setConsent] = useState(false),
     [revision, setRevision] = useState(0);
-  const accountId = accounts.includes(selected) ? selected : accounts[0] || "",
+  const fallback =
+      managedAccountId && accounts.includes(managedAccountId)
+        ? managedAccountId
+        : accounts[0] || "",
+    accountId = accounts.includes(selected) ? selected : fallback,
+    managed = !!managedAccountId && accountId === managedAccountId,
     snapshot = data?.accountId === accountId ? data : null;
   useEffect(() => {
     setConsent(false);
@@ -100,7 +107,9 @@ export function NativeProfilePanel({
                 disabled={!!busy}
               >
                 {accounts.map((a) => (
-                  <option key={a}>{a}</option>
+                  <option key={a} value={a}>
+                    {a === managedAccountId ? `${a} (explorer account)` : a}
+                  </option>
                 ))}
               </select>
             </label>
@@ -146,18 +155,28 @@ export function NativeProfilePanel({
                   QuestLayer’s profile fields.
                 </p>
               )}
-              <p className="profile-storage">
-                Wallet attachment:{" "}
-                <strong>
+              {managed ? (
+                <p className="profile-storage">
+                  No popup and no fee. QuestLayer covers the{" "}
                   {snapshot.deposit === "1"
-                    ? "1 yoctoNEAR"
-                    : `${formatNativeNear(snapshot.deposit)} test NEAR`}
-                </strong>
-                {snapshot.deposit !== "1" &&
-                  " as storage credit, plus the network fee. Unused credit stays in your NEAR Social storage balance."}
-                {snapshot.deposit === "1" &&
-                  " plus the network fee. Your existing NEAR Social storage credit covers the profile."}
-              </p>
+                    ? "network fee"
+                    : `${formatNativeNear(snapshot.deposit)} test NEAR storage credit`}{" "}
+                  for your explorer account.
+                </p>
+              ) : (
+                <p className="profile-storage">
+                  Wallet attachment:{" "}
+                  <strong>
+                    {snapshot.deposit === "1"
+                      ? "1 yoctoNEAR"
+                      : `${formatNativeNear(snapshot.deposit)} test NEAR`}
+                  </strong>
+                  {snapshot.deposit !== "1" &&
+                    " as storage credit, plus the network fee. Unused credit stays in your NEAR Social storage balance."}
+                  {snapshot.deposit === "1" &&
+                    " plus the network fee. Your existing NEAR Social storage credit covers the profile."}
+                </p>
+              )}
               <label className="profile-consent">
                 <input
                   type="checkbox"
@@ -181,7 +200,9 @@ export function NativeProfilePanel({
                 onClick={() => void publish()}
               >
                 {busy === "native-profile"
-                  ? "Confirm in your wallet…"
+                  ? managed
+                    ? "Publishing…"
+                    : "Confirm in your wallet…"
                   : "Publish QuestLayer profile"}
               </button>
             </>
