@@ -17,7 +17,8 @@ export type AppTab =
   | "bounties"
   | "community"
   | "settings"
-  | "expeditions";
+  | "expeditions"
+  | "fuel";
 export type DemoNavigationTarget = {
   worldId: string;
   zoneId: string;
@@ -65,6 +66,7 @@ export function parseAppNavigation(
       "community",
       "settings",
       "expeditions",
+      "fuel",
     ].includes(v.tab) ||
     typeof v.walletView !== "string" ||
     !["rewards", "staking", "demo"].includes(v.walletView) ||

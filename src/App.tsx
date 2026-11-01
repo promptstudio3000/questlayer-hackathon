@@ -53,6 +53,7 @@ import { NativeEconomyPanel } from "./NativeEconomyPanel";
 import { RewardsFundedGuide, TodaysPotCard } from "./TodaysPot";
 import { InstallCard, UpdateToast } from "./PwaPrompts";
 import { SecureAndShare } from "./SecureAndShare";
+import { FuelTheCity } from "./FuelTheCity";
 import { NativeStaking } from "./NativeStaking";
 import {
   assertVaultQuote,
@@ -120,6 +121,7 @@ import {
   ArrowUUpLeft,
   ArrowClockwise,
   WifiSlash,
+  Flame,
 } from "@phosphor-icons/react";
 import {
   startRegistration,
@@ -153,7 +155,8 @@ type Tab =
   | "bounties"
   | "community"
   | "settings"
-  | "expeditions";
+  | "expeditions"
+  | "fuel";
 const HOME = { lat: 49.74745, lng: 13.3774 };
 const nav = [
   { id: "explore", label: "Explore", icon: Compass },
@@ -167,7 +170,7 @@ function navigationActive(tab: Tab, id: string) {
     (id === "community" && ["messages", "bounties"].includes(tab)) ||
     (id === "explore" && tab === "expeditions") ||
     (id === "inventory" && tab === "market") ||
-    (id === "settings" && ["wallet", "fund"].includes(tab))
+    (id === "settings" && ["wallet", "fund", "fuel"].includes(tab))
   );
 }
 const rarityNames: Record<string, string> = {
@@ -2101,6 +2104,7 @@ export default function App() {
           community: "Community",
           settings: "Settings",
           fund: "How rewards are funded",
+          fuel: "Fuel the city",
           expeditions: "Nearby walks",
           inventory: "Inventory",
           market: "Market",
@@ -3046,6 +3050,14 @@ export default function App() {
                 </span>
                 <ArrowRight size={20} />
               </button>
+              <button className="play-entry" onClick={() => setTab("fuel")}>
+                <Flame size={24} />
+                <span>
+                  <b>Fuel the city</b>
+                  <small>Stake to grow the pot and open Tier 2 places</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
               <button className="play-entry" onClick={() => setTab("wallet")}>
                 <Wallet size={24} />
                 <span>
@@ -3118,6 +3130,29 @@ export default function App() {
                 <ArrowRight size={20} />
               </button>
             </div>
+          )}
+          {tab === "fuel" && (
+            <>
+              <button
+                className="back-link"
+                onClick={() => setTab("settings")}
+              >
+                <ArrowLeft size={20} />
+                Settings
+              </button>
+              <FuelTheCity
+                player={player}
+                account={
+                  invisible.status === "ready" && invisible.accountId
+                    ? invisible.accountId
+                    : player.wallets[0]?.account_id || ""
+                }
+                managed={invisible.status === "ready" && !!invisible.accountId}
+                cityName={world?.cityName}
+                onConnect={connectNear}
+                onTransaction={operateNativeVault}
+              />
+            </>
           )}
           {tab === "fund" && (
             <>
