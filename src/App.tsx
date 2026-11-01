@@ -52,6 +52,7 @@ import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
 import { RewardsFundedGuide, TodaysPotCard } from "./TodaysPot";
 import { InstallCard, UpdateToast } from "./PwaPrompts";
+import { SecureAndShare } from "./SecureAndShare";
 import { NativeStaking } from "./NativeStaking";
 import {
   assertVaultQuote,
@@ -1721,8 +1722,8 @@ export default function App() {
     });
     return ok === true;
   }
-  async function mintEarnedAura(item: Item) {
-    await action("native-claim", async () => {
+  async function mintEarnedAura(item: Item): Promise<boolean> {
+    const done = await action("native-claim", async () => {
       try {
         const { signer, accountId } = await resolveSigner();
         if (!player?.wallets.some((w) => w.account_id === accountId))
@@ -1780,10 +1781,12 @@ export default function App() {
           );
         await refreshNative(true);
         notify("Your Aura is secured. Try it on from your Secured collection.");
+        return true;
       } finally {
         await me();
       }
     });
+    return done === true;
   }
   async function checkAuraClaim(item: Item) {
     await action("native-claim-check", async () => {
@@ -3516,6 +3519,26 @@ export default function App() {
           busy={!!busy}
           actionError={toast?.error ? toast.text : undefined}
           onInspect={inspectAdventureResult}
+          itemActions={(item) =>
+            item.kind === "aura" && (
+              <SecureAndShare
+                item={item}
+                player={player}
+                busy={!!busy}
+                place={world?.cityName}
+                availability={
+                  invisible.status === "ready" && nativeWardrobe?.claimsEnabled
+                    ? "ready"
+                    : invisible.status === "creating" ||
+                        (invisible.status === "ready" && !nativeWardrobe)
+                      ? "preparing"
+                      : "off"
+                }
+                onSecure={mintEarnedAura}
+                onPasskey={attachPasskey}
+              />
+            )
+          }
           onEquip={(result) => void equipAdventureResult(result)}
           onInventory={() => {
             adventureResults.close();

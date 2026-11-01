@@ -4,7 +4,7 @@ import {
   ClockCounterClockwise,
   X,
 } from "@phosphor-icons/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
 import { AuraArt } from "./Ghost";
@@ -16,7 +16,7 @@ import {
   type AdventureResult,
 } from "./adventure-results";
 import type { useAdventureResults } from "./useAdventureResults";
-import type { Player } from "./types";
+import type { Item, Player } from "./types";
 import "./adventure-results.css";
 
 type Results = ReturnType<typeof useAdventureResults>;
@@ -76,7 +76,10 @@ export function AdventureResultDialog({
   onInventory,
   onMap,
   onInspect,
+  itemActions,
 }: {
+  /** Secure and share controls for the Aura in this result (slice 3). */
+  itemActions?: (item: Item) => ReactNode;
   results: Results;
   player: Player;
   realm: AdventureRealm;
@@ -289,6 +292,7 @@ export function AdventureResultDialog({
                         Try it on <Check size={20} />
                       </button>
                     )}
+                    {item && liveItem && selection.fresh && itemActions?.(liveItem)}
                   </>
                 )}
                 {!equipItem && selection.fresh && (

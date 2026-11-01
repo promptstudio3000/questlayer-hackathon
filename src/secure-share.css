@@ -1,0 +1,82 @@
+.secure-share {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.secure-share .primary-button,
+.secure-share .secondary-button {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+}
+.secure-share .share-button {
+  display: flex;
+  gap: 8px;
+  color: var(--ink);
+}
+.secure-hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+.secure-done,
+.secure-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.secure-done {
+  color: var(--success);
+  background: var(--success-surface);
+}
+.secure-error {
+  color: var(--error);
+  background: var(--error-surface);
+}
+.secure-done svg,
+.secure-error svg {
+  flex: none;
+  margin-top: 1px;
+}
+.passkey-nudge {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 14px 44px 14px 14px;
+  border: 1px solid var(--decorative-border);
+  border-radius: var(--radius-item);
+  background: var(--surface-soft);
+  color: var(--ink);
+  text-align: left;
+}
+.passkey-nudge > svg {
+  flex: none;
+  color: var(--action);
+}
+.passkey-nudge b {
+  font-size: 16px;
+}
+.passkey-nudge p {
+  margin: 4px 0 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+.passkey-nudge-close {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-secondary);
+}
