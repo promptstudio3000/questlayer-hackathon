@@ -17,6 +17,7 @@
 import { readFileSync } from "node:fs";
 import { registerModuleSchema, ensureModuleVersion } from "../schema-compatibility.mjs";
 import { dayKey, id } from "../domain.mjs";
+import { createPatronRank, rankSettings } from "./patron-rank.mjs";
 
 export const KEEPER_VAULT_SCHEMA = registerModuleSchema({
   name: "keeper-vault",
@@ -114,6 +115,7 @@ export function keeperVaultSettings(env = process.env) {
     ceremonies: env.KEEPER_CEREMONIES !== "0",
     chapters,
     timezone: env.KEEPER_TIMEZONE || "Europe/Prague",
+    rank: rankSettings(env),
   };
 }
 
@@ -180,6 +182,8 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
     ready = true;
   };
   const q = (sql) => db.prepare(sql);
+  // Patron rank 1–5 (GAME-LOOPS P1-2), its own schema module.
+  const patronRank = settings.rank?.enabled ? createPatronRank(db, { clock, settings: settings.rank }) : null;
 
   function remember(player, accountId, vault, s, maturity) {
     const now = clock(),
@@ -304,6 +308,15 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
       "SELECT id,account_id accountId,kind,tier,amount,epoch,created_at createdAt,seen_at seenAt FROM keeper_ceremonies WHERE player_id=? ORDER BY created_at DESC LIMIT 20",
     ).all(player);
     const patronSince = q("SELECT MIN(created_at) t FROM keeper_ceremonies WHERE player_id=? AND kind='tier'").get(player)?.t ?? null;
+    let rank = null;
+    if (patronRank) {
+      const patrons = accounts.filter((a) => a.tier >= patronRank.settings.minTier);
+      rank = patronRank.observe(player, {
+        epoch: Number.isInteger(epoch) ? epoch : null,
+        tier,
+        weighted: patrons.reduce((t, a) => t + big(a.weighted), 0n).toString(),
+      });
+    }
     const missing = [];
     if (tier < settings.innerTier) missing.push(`Tier ${settings.innerTier} (matured stake)`);
     if (level < settings.innerLevel) missing.push(`Level ${settings.innerLevel}`);
@@ -320,6 +333,7 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
       coins,
       ceremonies: ceremonies.filter((c) => !c.seenAt),
       patron: patronSince ? { title: settings.patronTitle, since: patronSince } : null,
+      rank,
       inner: {
         open,
         gate: { tier: settings.innerTier, level: settings.innerLevel },
@@ -336,5 +350,8 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
     return { seen: r.changes > 0 };
   }
 
-  return { view, seen, settings };
+  const rankSeen = (player, rank) => patronRank?.seen(player, rank) ?? { seen: false };
+  const badge = (player) => patronRank?.badge(player) ?? null;
+
+  return { view, seen, rankSeen, badge, settings };
 }

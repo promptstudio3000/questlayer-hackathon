@@ -12,6 +12,7 @@ for (const relative of [
   "./native/creator-money.mjs",
   "./native/social-records.mjs",
   "./npc/keeper-vault.mjs",
+  "./npc/patron-rank.mjs",
   "./spatial/place-safety.mjs",
 ]) {
   const url = new URL(relative, import.meta.url);

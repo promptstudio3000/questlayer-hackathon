@@ -186,7 +186,7 @@ P0 should land before the submission (14 Nov), P1 if time allows, P2 after.
 | P0-4 | Redeem roll tickets | Closes a dead end that already has a contract | No |
 | P0-5 | Daily board of three goals | Gives every session a target | Yes (D29 check) |
 | P1-1 | Patron quest lines + patron edition | The core staker reward | Patron edition supply |
-| P1-2 | Patron rank by matured stake age | Kinship-like retention for stakers | Yes (new track) |
+| P1-2 | Patron rank by matured stake age (done: `server/npc/patron-rank.mjs`, see KEEPER-VAULT.md) | Kinship-like retention for stakers | Yes (new track) |
 | P1-3 | Hackathon season with cosmetic leaderboard and season pot meter | Week rhythm, demo story for judges | Yes |
 | P1-4 | More altar recipes | Shard and common-Aura sinks | No |
 | P1-5 | Patron trader rates | Better deals without breaking the float rule | Trader parameters |
