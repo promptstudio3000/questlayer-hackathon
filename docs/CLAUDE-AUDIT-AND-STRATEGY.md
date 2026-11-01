@@ -83,6 +83,9 @@ Progress, 1 November (evening): creator money publisher and routes live (first r
 NEAR Social public note records with content addresses, pinning adapter and a live proof from an invisible account;
 the vault's yield cycle is automated in the reward worker (`maintain_vault`: harvest, advance, `flush_game`) and
 waits for the first epochs to pass; the mainnet path is planned in `docs/MAINNET-PLAN.md` with a 9 November gate.
+Critical finding the same evening: a NEP-366 relayer pays every attached deposit (3.52 NEAR left the relayer in a
+relayed `create_position`); money actions are now self-paid by the device key and the relayer carries only
+storage-class deposits (`docs/RELAYER.md`, "Who pays what"; `docs/CODE-AUDIT-2026-11.md` addendum).
 
 This is aggressive. The items most likely to slip are W10 media pinning and the mainnet path; both can be cut to
 "documented, flagged off" without hurting the core story. The items that must not slip are the live yield cycle,
