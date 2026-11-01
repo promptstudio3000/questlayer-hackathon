@@ -367,6 +367,24 @@
       }
     },
     {
+      "name": "managed-accounts",
+      "version": 2,
+      "source": "server/relayer/schema.mjs",
+      "tables": {
+        "managed_account_funding": "CREATE TABLE managed_account_funding(\n id TEXT PRIMARY KEY,\n account_id TEXT NOT NULL REFERENCES managed_accounts(account_id),\n kind TEXT NOT NULL CHECK(kind IN ('initial','topup')),\n amount_yocto TEXT NOT NULL CHECK(amount_yocto GLOB '[0-9]*'),\n job_id TEXT,\n transaction_hash TEXT,\n created_at INTEGER NOT NULL\n)",
+        "managed_account_keys": "CREATE TABLE managed_account_keys(\n account_id TEXT NOT NULL REFERENCES managed_accounts(account_id),\n public_key TEXT NOT NULL,\n kind TEXT NOT NULL CHECK(kind IN ('device','recovery')),\n state TEXT NOT NULL CHECK(state IN ('pending','active','removing','removed')),\n label TEXT,\n created_at INTEGER NOT NULL,\n updated_at INTEGER NOT NULL,\n PRIMARY KEY(account_id,public_key)\n)",
+        "managed_accounts": "CREATE TABLE managed_accounts(\n account_id TEXT PRIMARY KEY,\n player_id TEXT NOT NULL UNIQUE REFERENCES players(id),\n slug TEXT NOT NULL UNIQUE,\n factory_id TEXT NOT NULL,\n network TEXT NOT NULL CHECK(network IN ('testnet','mainnet')),\n state TEXT NOT NULL CHECK(state IN ('creating','ready','failed')),\n funded_yocto TEXT NOT NULL DEFAULT '0' CHECK(funded_yocto GLOB '[0-9]*'),\n transaction_hash TEXT,\n error_code TEXT,\n last_error TEXT,\n created_at INTEGER NOT NULL,\n ready_at INTEGER,\n updated_at INTEGER NOT NULL\n)",
+        "relay_budget": "CREATE TABLE relay_budget(\n account_id TEXT NOT NULL REFERENCES managed_accounts(account_id),\n day TEXT NOT NULL,\n jobs INTEGER NOT NULL DEFAULT 0 CHECK(jobs>=0),\n topup_yocto TEXT NOT NULL DEFAULT '0' CHECK(topup_yocto GLOB '[0-9]*'),\n PRIMARY KEY(account_id,day)\n)",
+        "relay_jobs": "CREATE TABLE relay_jobs(\n seq INTEGER PRIMARY KEY AUTOINCREMENT,\n id TEXT NOT NULL UNIQUE,\n player_id TEXT NOT NULL REFERENCES players(id),\n account_id TEXT NOT NULL REFERENCES managed_accounts(account_id),\n kind TEXT NOT NULL CHECK(kind IN ('create-account','relay')),\n state TEXT NOT NULL CHECK(state IN ('queued','retrying','sent','confirmed','failed')),\n delegate_hash TEXT,\n delegate TEXT,\n call TEXT NOT NULL CHECK(json_valid(call)),\n receiver_id TEXT NOT NULL,\n method_name TEXT,\n attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts>=0),\n run_after INTEGER NOT NULL,\n transaction_hash TEXT,\n result TEXT CHECK(result IS NULL OR json_valid(result)),\n error_code TEXT,\n last_error TEXT,\n created_at INTEGER NOT NULL,\n updated_at INTEGER NOT NULL,\n confirmed_at INTEGER\n)",
+        "relay_worker_lease": "CREATE TABLE relay_worker_lease(\n id INTEGER PRIMARY KEY CHECK(id=1),\n owner TEXT,\n until_ms INTEGER NOT NULL DEFAULT 0,\n last_success INTEGER,\n last_error TEXT\n)"
+      },
+      "indexes": {
+        "relay_jobs_delegate_live": "CREATE UNIQUE INDEX IF NOT EXISTS relay_jobs_delegate_live ON relay_jobs(delegate_hash) WHERE state!='failed'",
+        "relay_jobs_account_order": "CREATE INDEX IF NOT EXISTS relay_jobs_account_order ON relay_jobs(account_id,state,seq)",
+        "relay_jobs_player_time": "CREATE INDEX IF NOT EXISTS relay_jobs_player_time ON relay_jobs(player_id,created_at DESC)"
+      }
+    },
+    {
       "name": "creator-money",
       "version": 1,
       "source": "server/native/creator-money.mjs",

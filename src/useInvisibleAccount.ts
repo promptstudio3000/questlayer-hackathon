@@ -11,9 +11,10 @@ import {
   type PlayerKeyRecord,
 } from "./player-key";
 import { managedSigner, type NativeSigner } from "./native-signer";
+import type { NearNetwork } from "./near-network.ts";
 
 export type ManagedAccountView = {
-  network: "testnet";
+  network: NearNetwork;
   enabled: boolean;
   factoryId?: string;
   account: {
@@ -25,12 +26,7 @@ export type ManagedAccountView = {
   } | null;
 };
 export type InvisibleAccountStatus =
-  | "idle"
-  | "unavailable"
-  | "creating"
-  | "ready"
-  | "needs-recovery"
-  | "error";
+  "idle" | "unavailable" | "creating" | "ready" | "needs-recovery" | "error";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -58,7 +54,9 @@ export function useInvisibleAccount(
         }
         let key = await loadDeviceKey(store);
         if (view.account) {
-          const known = view.account.keys.some((k) => k.publicKey === key?.publicKey && k.state !== "revoked");
+          const known = view.account.keys.some(
+            (k) => k.publicKey === key?.publicKey && k.state !== "revoked",
+          );
           if (key && !known) {
             // This browser holds a key for another explorer, or this explorer was
             // created elsewhere. Do not overwrite silently.
@@ -70,16 +68,24 @@ export function useInvisibleAccount(
         if (!key) key = await createDeviceKey(store);
         let account = view.account;
         if (!account) {
-          const created = await api<{ account: ManagedAccountView["account"] } | ManagedAccountView["account"]>(
-            "/account/create",
-            { publicKey: key.publicKey },
-          );
-          account = (created && "account" in (created as object) ? (created as { account: ManagedAccountView["account"] }).account : (created as ManagedAccountView["account"]));
+          const created = await api<
+            | { account: ManagedAccountView["account"] }
+            | ManagedAccountView["account"]
+          >("/account/create", { publicKey: key.publicKey });
+          account =
+            created && "account" in (created as object)
+              ? (created as { account: ManagedAccountView["account"] }).account
+              : (created as ManagedAccountView["account"]);
         }
-        if (!account) throw Error("The explorer account could not be prepared.");
+        if (!account)
+          throw Error("The explorer account could not be prepared.");
         setAccountId(account.accountId);
         setStatus(account.state === "ready" ? "ready" : "creating");
-        for (let attempt = 0; account.state === "creating" && attempt < 60; attempt++) {
+        for (
+          let attempt = 0;
+          account.state === "creating" && attempt < 60;
+          attempt++
+        ) {
           await sleep(attempt < 10 ? 1000 : 3000);
           if (owner.current !== playerId) return;
           const next = await api<ManagedAccountView>("/account");
@@ -87,7 +93,9 @@ export function useInvisibleAccount(
           account = next.account;
         }
         if (account.state === "failed") {
-          setError(account.error || "The explorer account could not be prepared.");
+          setError(
+            account.error || "The explorer account could not be prepared.",
+          );
           setStatus("error");
           return;
         }
@@ -122,5 +130,12 @@ export function useInvisibleAccount(
     status === "ready" && keyRef.current && accountId
       ? managedSigner(keyRef.current, accountId)
       : null;
-  return { status, accountId, error, ensure, signer, publicKey: keyRef.current?.publicKey ?? null };
+  return {
+    status,
+    accountId,
+    error,
+    ensure,
+    signer,
+    publicKey: keyRef.current?.publicKey ?? null,
+  };
 }

@@ -31,6 +31,7 @@ import {
   type TaskRequest,
 } from "./native-task-quote";
 import "./native-tasks.css";
+import { NEAR_NETWORK } from "./near-network.ts";
 
 export type NativeTask = {
   task_id: number;
@@ -230,7 +231,7 @@ export function NativeTasks({
   const fresh =
     data?.status === "available" &&
     player.wallets.some((w) => w.account_id === account) &&
-    data.network === "testnet" &&
+    data.network === NEAR_NETWORK &&
     data.contractId === NATIVE_TASK_CONTRACT &&
     !!data.codeHash &&
     data.policy === TASK_POLICY;
@@ -258,7 +259,7 @@ export function NativeTasks({
     }),
     [player.id, account],
   );
-  const draftRealm = `testnet:${NATIVE_TASK_CONTRACT}:${account || "guest"}`;
+  const draftRealm = `${NEAR_NETWORK}:${NATIVE_TASK_CONTRACT}:${account || "guest"}`;
   const createDraft = useFormDraft({
     playerId: player.id,
     form: "native-task-create",

@@ -21,6 +21,7 @@ import type {
   NativeQuest as Quest,
   NativeGameState as State,
 } from "./native-game-types";
+import { EXPLORER_BASE } from "./near-network.ts";
 const nearAmount = (s: string) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: 8 }).format(
     Number(s) / 1e24,
@@ -778,7 +779,7 @@ export function NativeExpeditions({
                   </span>
                   {r.transaction && (
                     <a
-                      href={`https://testnet.nearblocks.io/txns/${r.transaction}`}
+                      href={`${EXPLORER_BASE}/txns/${r.transaction}`}
                       target="_blank"
                       rel="noreferrer"
                     >

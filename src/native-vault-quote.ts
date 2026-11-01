@@ -1,4 +1,5 @@
 import rewardsManifest from "../public/native-rewards-testnet.json" with { type: "json" };
+import { NEAR_NETWORK } from "./near-network.ts";
 // The factory of the current deployment generation, pinned by the public manifest.
 export const NATIVE_VAULT_FACTORY: string = rewardsManifest.factory.contractId;
 export type VaultRequest = {
@@ -66,7 +67,7 @@ export function assertVaultQuote(q: VaultQuote, r: VaultRequest) {
         ? { id: r.positionId }
         : {};
   if (
-    q.network !== "testnet" ||
+    q.network !== NEAR_NETWORK ||
     q.signerId !== r.accountId ||
     q.factoryId !== NATIVE_VAULT_FACTORY ||
     q.receiverId !== receiver ||

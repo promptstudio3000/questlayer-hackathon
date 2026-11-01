@@ -10,6 +10,7 @@ import {
 import { openDatabase, createPlayer } from "../server/database.mjs";
 import { ManagedAccounts } from "../server/relayer/accounts.mjs";
 import { Relayer } from "../server/relayer/relay.mjs";
+import { NETWORK } from "../server/native/network.mjs";
 
 export const NOW = Date.parse("2026-11-01T09:00:00Z");
 export const FACTORY = "players.questlayer.testnet",
@@ -297,12 +298,13 @@ export function fixture({
         publicKey = device.getPublicKey().toString(),
         accountId = `${slug}.${FACTORY}`;
       db.prepare(
-        "INSERT INTO managed_accounts(account_id,player_id,slug,factory_id,network,state,funded_yocto,created_at,ready_at,updated_at) VALUES(?,?,?,?,'testnet','ready',?,?,?,?)",
+        "INSERT INTO managed_accounts(account_id,player_id,slug,factory_id,network,state,funded_yocto,created_at,ready_at,updated_at) VALUES(?,?,?,?,?,'ready',?,?,?,?)",
       ).run(
         accountId,
         playerId,
         slug,
         FACTORY,
+        NETWORK,
         fundYocto.toString(),
         NOW,
         NOW,

@@ -1,5 +1,6 @@
 import type { Fix } from "./types";
 import type { NativeGameState, NativeReceipt } from "./native-game-types";
+import { NEAR_NETWORK } from "./near-network.ts";
 
 export type NativeAutoStatus =
   | "off"
@@ -168,7 +169,7 @@ export function createNativeAutoCollector(options: {
   const createSession = (i: NativeAutoInput, dayId: string) => {
     const contractId = i.state?.contractId || "";
     const s: Session = {
-      key: `questlayer:native-autocollect:v1:${JSON.stringify([i.playerId, "testnet", contractId, i.accountId, dayId])}`,
+      key: `questlayer:native-autocollect:v1:${JSON.stringify([i.playerId, NEAR_NETWORK, contractId, i.accountId, dayId])}`,
       accountId: i.accountId,
       dayId,
       contractId,
@@ -311,7 +312,7 @@ export function createNativeAutoCollector(options: {
     if (
       !state ||
       state.accountId !== s.accountId ||
-      state.network !== "testnet" ||
+      state.network !== NEAR_NETWORK ||
       state.contractId !== s.contractId ||
       !day ||
       day.id !== s.dayId

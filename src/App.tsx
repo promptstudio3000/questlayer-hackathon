@@ -66,7 +66,7 @@ import type { NativeTradeRequest } from "./types";
 import { AuraClaims } from "./AuraClaims";
 import type { NativeAuraClaim } from "./types";
 import { NativeWardrobe, nativeAppearanceItems } from "./NativeWardrobe";
-import { NativeProfilePanel, SOCIAL_TESTNET } from "./NativeProfile";
+import { NativeProfilePanel } from "./NativeProfile";
 import type { NativeProfileQuote } from "./types";
 import { assertProfileQuote } from "./native-profile-quote";
 import type { NativeWardrobeState, NativeItem } from "./types";
@@ -144,6 +144,13 @@ import type {
   Bounty,
   Quest,
 } from "./types";
+import {
+  EXPLORER_BASE,
+  NEAR_NETWORK,
+  NETWORK_LABEL,
+  SOCIAL_CONTRACT_ID,
+  onNearNetwork,
+} from "./near-network.ts";
 
 type Tab =
   | "explore"
@@ -1266,15 +1273,15 @@ export default function App() {
     if (!nearConnector.current) {
       const { NearConnector } = await import("@hot-labs/near-connect");
       nearConnector.current = new NearConnector({
-        network: "testnet",
+        network: NEAR_NETWORK,
         autoConnect: false,
         features: {
-          testnet: true,
+          testnet: NEAR_NETWORK === "testnet",
           signMessage: true,
           signInWithoutAddKey: true,
         },
         footerBranding: {
-          heading: "QuestLayer · NEAR testnet",
+          heading: `QuestLayer · ${NETWORK_LABEL}`,
           link: "https://near.org",
           linkText: "NEAR Protocol",
         },
@@ -1334,7 +1341,7 @@ export default function App() {
         message: c.message,
         recipient: c.recipient,
         nonce: Uint8Array.from(atob(c.nonce), (x) => x.charCodeAt(0)),
-        network: "testnet",
+        network: NEAR_NETWORK,
         signerId: accountId,
       });
       const r = await api<{ player: Player; returning?: boolean }>(
@@ -1379,7 +1386,7 @@ export default function App() {
       )
         throw Error("Choose the linked account shown for this trade.");
       if (
-        !request.marketId.endsWith(".testnet") ||
+        !onNearNetwork(request.marketId) ||
         request.nftContractId !== nativeWardrobe?.contractId
       )
         throw Error(
@@ -1407,7 +1414,7 @@ export default function App() {
           : { token_id: request.tokenId, listing_id: request.listingId };
       await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId,
           actions: [
@@ -1443,14 +1450,11 @@ export default function App() {
       const configured = await api<{ contractId: string }>(
         "/native/rewards?account=" + encodeURIComponent(accountId),
       );
-      if (
-        configured.contractId !== contractId ||
-        !contractId.endsWith(".testnet")
-      )
+      if (configured.contractId !== contractId || !onNearNetwork(contractId))
         throw Error("The reward rules changed. Refresh, then try again.");
       await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId: contractId,
           actions: [
@@ -1483,7 +1487,7 @@ export default function App() {
       assertVaultQuote(quote, request);
       await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId: quote.receiverId,
           actions: [
@@ -1516,7 +1520,7 @@ export default function App() {
       assertTaskQuote(quote, request);
       await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId: quote.receiverId,
           actions: [
@@ -1555,9 +1559,9 @@ export default function App() {
       assertProfileQuote(quote, { accountId, name: player.name, avatar });
       await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
-          receiverId: SOCIAL_TESTNET,
+          receiverId: SOCIAL_CONTRACT_ID,
           actions: [
             {
               type: "FunctionCall",
@@ -1607,7 +1611,7 @@ export default function App() {
         network: string;
         purpose: string;
       }>("/identity/recovery/challenge", { accountId });
-      if (c.network !== "testnet" || c.purpose !== "revoke-other-sessions")
+      if (c.network !== NEAR_NETWORK || c.purpose !== "revoke-other-sessions")
         throw Error(
           "This recovery request could not be verified. Try again with the linked account.",
         );
@@ -1615,7 +1619,7 @@ export default function App() {
         message: c.message,
         recipient: c.recipient,
         nonce: Uint8Array.from(atob(c.nonce), (x) => x.charCodeAt(0)),
-        network: "testnet",
+        network: NEAR_NETWORK,
         signerId: accountId,
       });
       const result = await api<{ ok: boolean; revokedSessions: number }>(
@@ -1672,7 +1676,7 @@ export default function App() {
       if (claim.state !== "minted") {
         await signer.send(
           {
-            network: "testnet",
+            network: NEAR_NETWORK,
             signerId: accountId,
             receiverId: claim.contractId,
             actions: [
@@ -1729,11 +1733,11 @@ export default function App() {
         });
         await me();
         if (claim.state !== "minted") {
-          if (!claim.contractId.endsWith(".testnet"))
+          if (!onNearNetwork(claim.contractId))
             throw Error("Securing Auras is not available on this network.");
           await signer.send(
             {
-              network: "testnet",
+              network: NEAR_NETWORK,
               signerId: accountId,
               receiverId: claim.contractId,
               actions: [
@@ -1821,13 +1825,13 @@ export default function App() {
       )
         throw Error("Choose the linked account that owns this Aura.");
       const contractId = nativeWardrobe?.contractId;
-      if (!contractId?.endsWith(".testnet"))
+      if (!onNearNetwork(contractId))
         throw Error(
           "Your secured collection could not load. Try again in a moment.",
         );
       await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId: contractId,
           actions: [
@@ -4180,7 +4184,7 @@ function FundPanel() {
             practice-only.
           </p>
           <a
-            href={`https://testnet.nearblocks.io/address/${proof.gameContract}`}
+            href={`${EXPLORER_BASE}/address/${proof.gameContract}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -4188,7 +4192,7 @@ function FundPanel() {
             <small>{proof.gameContract}</small>
           </a>
           <a
-            href={`https://testnet.nearblocks.io/address/${proof.collectiblesContract}`}
+            href={`${EXPLORER_BASE}/address/${proof.collectiblesContract}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -4204,7 +4208,7 @@ function FundPanel() {
             .map((x: any) => (
               <a
                 key={x.transaction}
-                href={`https://testnet.nearblocks.io/txns/${x.transaction}`}
+                href={`${EXPLORER_BASE}/txns/${x.transaction}`}
                 target="_blank"
                 rel="noreferrer"
               >

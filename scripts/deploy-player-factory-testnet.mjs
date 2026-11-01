@@ -1,17 +1,18 @@
-// Creates the player-account factory and the gas relayer accounts on testnet as
+// Creates the player-account factory and the gas relayer accounts as
 // sub-accounts of the developer operator, funded from the operator balance.
 // Writes private key files the server reads through PLAYER_FACTORY_KEY_PATH and
-// RELAYER_KEY_PATH. Testnet only; never run with mainnet funds.
+// RELAYER_KEY_PATH. Testnet by default. Mainnet is part of the minimal slice in
+// docs/MAINNET-PLAN.md and needs `--network mainnet`, NEAR_NETWORK=mainnet,
+// NEAR_MAINNET_CONFIRM=<operator account> and explicit funding amounts.
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { Account, KeyPair, KeyPairSigner, JsonRpcProvider } from "near-api-js";
+import { scriptNetwork, assertChain } from "./lib/network-guard.mjs";
 
 const operatorPath = process.env.NEAR_OPERATOR_PATH || ".data/near-operator.json";
 const operator = JSON.parse(readFileSync(operatorPath, "utf8"));
-if (operator.network !== "testnet" || !operator.accountId.endsWith(".testnet"))
-  throw new Error("Testnet only.");
-const provider = new JsonRpcProvider({
-  url: process.env.NEAR_RPC_URL || "https://test.rpc.fastnear.com",
-});
+const { network, rpcUrl } = scriptNetwork({ operator, allowMainnet: true });
+const provider = new JsonRpcProvider({ url: rpcUrl });
+await assertChain(provider, network);
 const root = new Account(
   operator.accountId,
   provider,
@@ -19,17 +20,27 @@ const root = new Account(
 );
 const NEAR = 10n ** 24n;
 const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+// Testnet keeps its generous defaults; mainnet amounts are always written down.
+function fundNear(name, testnetDefault) {
+  const raw = process.env[name];
+  if (raw === undefined && network === "testnet") return BigInt(testnetDefault) * NEAR;
+  if (!/^[1-9][0-9]{0,3}$/.test(raw || ""))
+    throw new Error(`${name} must be set to a whole NEAR amount (1-9999) on ${network}.`);
+  return BigInt(raw) * NEAR;
+}
+const keyFile = (name) =>
+  network === "testnet" ? `.data/${name}.json` : `.data/${name}-${network}.json`;
 const plan = [
   {
-    file: ".data/player-factory.json",
+    file: keyFile("player-factory"),
     accountId: process.env.PLAYER_FACTORY_ACCOUNT || `play-${stamp}.${operator.accountId}`,
-    fund: BigInt(process.env.PLAYER_FACTORY_FUND_NEAR || 20) * NEAR,
+    fund: fundNear("PLAYER_FACTORY_FUND_NEAR", 20),
     role: "player factory (creates and funds player sub-accounts)",
   },
   {
-    file: ".data/relayer.json",
+    file: keyFile("relayer"),
     accountId: process.env.RELAYER_ACCOUNT || `relay-${stamp}.${operator.accountId}`,
-    fund: BigInt(process.env.RELAYER_FUND_NEAR || 5) * NEAR,
+    fund: fundNear("RELAYER_FUND_NEAR", 5),
     role: "relayer (pays gas for allowlisted delegate actions)",
   },
 ];
@@ -48,12 +59,14 @@ for (const entry of plan) {
   let record;
   if (existsSync(entry.file)) {
     record = JSON.parse(readFileSync(entry.file, "utf8"));
+    if (record.network !== network)
+      throw new Error(`${entry.file} is a ${record.network} key file, not ${network}.`);
     if (record.accountId !== entry.accountId)
       throw new Error(`${entry.file} belongs to ${record.accountId}; set the matching account env or move the file.`);
   } else {
     const key = KeyPair.fromRandom("ed25519");
     record = {
-      network: "testnet",
+      network,
       accountId: entry.accountId,
       publicKey: key.getPublicKey().toString(),
       secretKey: key.toString(),
@@ -70,5 +83,5 @@ for (const entry of plan) {
     summary.push({ accountId: entry.accountId, created: true, transaction: outcome.transaction_outcome?.id || outcome.transaction?.hash });
   } else summary.push({ accountId: entry.accountId, created: false });
 }
-console.log(JSON.stringify({ status: "ready", accounts: summary }, null, 2));
+console.log(JSON.stringify({ status: "ready", network, accounts: summary }, null, 2));
 console.log(`\nAdd to runtime configuration:\nPLAYER_FACTORY_ACCOUNT=${plan[0].accountId}\nPLAYER_FACTORY_KEY_PATH=${plan[0].file}\nRELAYER_KEY_PATH=${plan[1].file}`);

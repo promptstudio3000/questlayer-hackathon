@@ -8,8 +8,9 @@ import {
 } from "@phosphor-icons/react";
 import { api } from "./api";
 import type { Player } from "./types";
+import type { NearNetwork } from "./near-network.ts";
 export type SessionView = {
-  network: "testnet";
+  network: NearNetwork;
   activeSessionCount: number;
   hasMoreSessions: boolean;
   sessions: {

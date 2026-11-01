@@ -4,10 +4,12 @@ import type {
   NativeReceipt,
 } from "./native-game-types";
 import type { Point } from "./types";
+import { NEAR_NETWORK } from "./near-network.ts";
+import type { NearNetwork } from "./near-network.ts";
 
 export type NativeObjective = {
   version: 1;
-  network: "testnet";
+  network: NearNetwork;
   playerId: string;
   accountId: string | null;
   contractId: string;
@@ -63,7 +65,7 @@ export function parseNativeObjective(
     if (
       !v ||
       v.version !== 1 ||
-      v.network !== "testnet" ||
+      v.network !== NEAR_NETWORK ||
       v.playerId !== playerId ||
       v.accountId !== accountId ||
       !identifier(v.playerId) ||
@@ -77,7 +79,7 @@ export function parseNativeObjective(
       return null;
     return {
       version: 1,
-      network: "testnet",
+      network: NEAR_NETWORK,
       playerId,
       accountId,
       contractId: v.contractId,
@@ -110,7 +112,7 @@ export function nativeVisitReadReason(
 ): string {
   if (!nativeSnapshotFresh(state, now) || !state)
     return "Refresh the current testnet state before recording visits";
-  if (state.network !== "testnet" || state.accountId !== accountId)
+  if (state.network !== NEAR_NETWORK || state.accountId !== accountId)
     return "Refresh the selected testnet account before recording visits";
   if (
     state.status !== "ready" ||
@@ -136,7 +138,7 @@ export function makeNativeObjective(
   if (
     !playerId ||
     !state ||
-    state.network !== "testnet" ||
+    state.network !== NEAR_NETWORK ||
     state.accountId !== accountId ||
     !nativeSnapshotFresh(state, now) ||
     state.status !== "ready" ||
@@ -154,7 +156,7 @@ export function makeNativeObjective(
     return null;
   return {
     version: 1,
-    network: "testnet",
+    network: NEAR_NETWORK,
     playerId,
     accountId,
     contractId: state.contractId,
@@ -183,7 +185,7 @@ export function resolveNativeObjective(
   if (
     reference.playerId !== playerId ||
     reference.accountId !== accountId ||
-    reference.network !== "testnet"
+    reference.network !== NEAR_NETWORK
   )
     return view(
       "unavailable",
@@ -202,7 +204,7 @@ export function resolveNativeObjective(
       "Testnet adventures are not configured. Your selection is saved.",
     );
   if (
-    state.network !== "testnet" ||
+    state.network !== NEAR_NETWORK ||
     state.accountId !== accountId ||
     state.contractId !== reference.contractId
   )
