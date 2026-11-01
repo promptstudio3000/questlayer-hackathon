@@ -168,6 +168,7 @@ import {
 } from "@simplewebauthn/browser";
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
+import { DailyBoard } from "./DailyBoard";
 import { Character } from "./Character";
 import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
@@ -2668,6 +2669,11 @@ export default function App() {
         <div className="topbar-right">
           {player && (
             <>
+              <DailyBoard
+                worldId={world?.id}
+                refreshKey={`${player.xp}:${player.history?.[0]?.id ?? ""}`}
+                onClaimed={() => void me()}
+              />
               <button
                 className="balance-pill"
                 onClick={() => {

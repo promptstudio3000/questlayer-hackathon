@@ -22,6 +22,14 @@ export const SEED_PLAYERS = Object.freeze([
 
 // The explorer who buys what real players list on the practice market.
 export const SEED_BUYER = "seed-p-marek";
+// Seed explorers who finish the daily board every world day, each this many
+// hours after the day starts, so "explorers finished today" grows during the
+// day (docs/DAILY-BOARD.md). They get no XP for it.
+export const SEED_BOARD_FINISHERS = Object.freeze([
+  { id: "seed-p-vera", afterHours: 7 },
+  { id: "seed-p-tomas", afterHours: 11 },
+  { id: "seed-p-jana", afterHours: 16 },
+]);
 export const BUYER_MAX_PRICE_U = 60_000 * GOLD;
 export const BUYER_DELAY_MS = 45_000;
 // How long a seed author "takes" to approve a task or creator completion.
