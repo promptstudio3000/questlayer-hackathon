@@ -20,7 +20,8 @@
     "world:preview": "node server/prepare-worlds.mjs --preview",
     "world:pilot": "node scripts/run-world-pilot.mjs",
     "staking:probe": "node scripts/probe-staking-testnet.mjs",
-    "funding:simulate": "node scripts/simulate-native-funding.mjs"
+    "funding:simulate": "node scripts/simulate-native-funding.mjs",
+    "pilot:city": "node scripts/rehearse-city-pilot.mjs"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.1",

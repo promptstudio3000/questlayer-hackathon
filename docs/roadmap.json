@@ -1293,11 +1293,13 @@
         "output/qa/W08-runtime/restore/README.md",
         "output/qa/W02-W08-parallel/README.md",
         "output/qa/W02-W08-parallel/tests-final.txt",
-        "output/qa/W02-W08-parallel/build-final.txt"
+        "output/qa/W02-W08-parallel/build-final.txt",
+        "docs/RELEASE-CANDIDATE-CHECKLIST.md",
+        "output/qa/W13-city-pilot/report.json"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W13-recovery/",
-      "implementationNote": "Existing private SQLite backup tooling was exercised against a live-WAL creator fixture and reopened through actual database/runtime factories. Schema/all rows, public/private profiles, follows, admitted revisions, closing obligations, XP locks and historical receipts match exactly. Premature release fails; independent resolution permits one exact release; a second restore/retry preserves remaining rights and unchanged inventory/treasury. Six focused backup/recovery tests pass. Full-host/offsite restoration, native-chain reconciliation, physical devices, live financial cycles and multi-day city pilot remain open. No deployment."
+      "implementationNote": "Existing private SQLite backup tooling was exercised against a live-WAL creator fixture and reopened through actual database/runtime factories. Schema/all rows, public/private profiles, follows, admitted revisions, closing obligations, XP locks and historical receipts match exactly. Premature release fails; independent resolution permits one exact release; a second restore/retry preserves remaining rights and unchanged inventory/treasury. Six focused backup/recovery tests pass. Full-host/offsite restoration, native-chain reconciliation, physical devices, live financial cycles and multi-day city pilot remain open. No deployment. 1 Nov: npm run pilot:city rehearses three local days with backup, restore, post-restore native reconciliation (NATIVE_RECONCILING freeze) and worker lease takeover against a contract double; no testnet transaction."
     },
     {
       "id": "W14",
