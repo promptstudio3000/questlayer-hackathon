@@ -3020,11 +3020,13 @@ select {
   font-size: 12px;
 }
 
-/* MapLibre owns absolute anchor positioning; relative layout displaces geographic markers. */
-.player-marker.maplibregl-marker,
-.zone-map-pin.maplibregl-marker,
-.quest-map-pin.maplibregl-marker,
-.other-player-marker.maplibregl-marker {
+/* MapLibre owns absolute anchor positioning for every map marker (player,
+   zones, quests, NPCs, monsters, arenas). A marker class that sets
+   position: relative puts the marker back into normal flow, so markers stack
+   on each other by a fixed pixel offset: they drift on zoom, jump when another
+   marker appears and leave their route. Two classes outrank any single
+   marker class, whichever stylesheet loads later. */
+.maplibregl-map .maplibregl-marker {
   position: absolute;
   top: 0;
   left: 0;
