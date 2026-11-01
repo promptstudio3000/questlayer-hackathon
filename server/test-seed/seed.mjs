@@ -315,8 +315,23 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return atomic(db, () => {
       if (db.prepare("SELECT 1 FROM history WHERE id=?").get(kitId)) return false;
       if (!db.prepare("SELECT 1 FROM players WHERE id=?").get(player)) return false;
-      for (const name of STARTER_KIT.auras)
-        insertAura(`${kitId}-${auraRow(name).key}`, player, name, false, now);
+      // The first copy keeps the original `${kitId}-${key}` id; duplicates get
+      // a numeric suffix. Every id still starts with SEED_PREFIX for purge.
+      const copies = new Map();
+      const worn = new Set(
+        db
+          .prepare("SELECT slot FROM inventory WHERE player_id=? AND kind='aura' AND equipped=1")
+          .all(player)
+          .map((row) => row.slot),
+      );
+      for (const name of STARTER_KIT.auras) {
+        const { key, slot } = auraRow(name);
+        const copy = (copies.get(key) || 0) + 1;
+        copies.set(key, copy);
+        const equip = copy === 1 && STARTER_KIT.equip.includes(name) && !worn.has(slot);
+        if (equip) worn.add(slot);
+        insertAura(copy === 1 ? `${kitId}-${key}` : `${kitId}-${key}-${copy}`, player, name, equip, now);
+      }
       db.prepare("UPDATE players SET xp=xp+? WHERE id=?").run(STARTER_KIT.xp, player);
       const shards = tableExists(db, "actor_shards") ? STARTER_KIT.shards : {};
       for (const [element, count] of Object.entries(shards))
