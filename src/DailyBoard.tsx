@@ -72,16 +72,18 @@ export function DailyBoard({
     <>
       <button
         className={`daily-board-chip${board.complete ? " is-complete" : ""}${board.complete && !board.claimed ? " is-ready" : ""}`}
-        aria-label={`Today's board: ${board.done}/${board.total} goals done`}
         onClick={() => {
           setOpen(true);
           void load();
         }}
       >
         <Target size={18} weight={board.complete ? "fill" : "regular"} aria-hidden="true" />
+        {/* Visible text stays part of the accessible name (label-content-name-mismatch). */}
+        <span className="daily-board-sr">Today's board: </span>
         <b>
           {board.done}/{board.total}
         </b>
+        <span className="daily-board-sr"> goals done</span>
       </button>
       {open && (
         <Dialog label="Today's board" onClose={() => setOpen(false)}>
