@@ -41,7 +41,22 @@ right here yet" and "everything open for you today is done".
 
 ## Journey test
 
-`npm run build && npm run e2e:first-session` starts a throwaway server and plays the whole first session at
-390 × 844 with reduced motion, asserting each step, haptic cues, no chain words in the sheet and the saved
-settings. Screenshots: `output/qa/2026-11-first-session/`. CI runs it in the `first-session` job and uploads the
-screenshots as an artifact. Real-device checks (iOS Safari, Android Chrome vibration/sound) are still open.
+`npm run build && npm run e2e:first-session -- --device=<name>` starts a throwaway server (creator community
+on) and plays the whole loop with reduced motion: name, nearest find, first coin, first chest, Aura,
+secure/share, the feedback settings, then equip/unequip from the collection, a practice market order that a
+second explorer buys, and the creator feed. It asserts each step, haptic cues, no chain words in the sheet and
+the saved settings.
+
+Devices: `phone-390` (Chromium 390 × 844, the default), `iphone` (WebKit, Playwright's iPhone 15 profile),
+`pixel` (Chromium, Pixel 7 profile), or `all`. WebKit needs `npx playwright install --with-deps webkit`.
+
+Every key screen (welcome, map coach, chest reward, secure/share, settings, inventory, listing form, market,
+creator feed) gets an axe-core scan against WCAG 2.0/2.1/2.2 A and AA; serious or critical violations fail the
+run. The first load is held to a budget: welcome-screen JS (220 KB gzip, 700 KB raw; baseline
+174/577 KB after the start screen was split off the map), 30 requests, first contentful paint 4 s, name field ready 6 s, CLS 0.1. Override with
+`E2E_PERF_SCRIPT_GZIP_KB`, `E2E_PERF_SCRIPT_RAW_KB`, `E2E_PERF_REQUESTS`, `E2E_PERF_FCP_MS`,
+`E2E_PERF_READY_MS`, `E2E_PERF_CLS`.
+
+Screenshots and `report.json` (axe findings including moderate/minor, performance numbers) land in
+`output/qa/2026-11-first-session/<device>/`. CI runs one `first-session` job per device and uploads each
+folder as an artifact. Real-device checks (iOS Safari, Android Chrome vibration/sound) are still open.

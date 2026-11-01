@@ -31,6 +31,7 @@ export function Character({
         set ? ({ "--aura-set-glow": set.glow } as React.CSSProperties) : undefined
       }
       data-aura-set={set?.id}
+      role="img"
       aria-label={
         preview
           ? "Preview of explorer appearance"
