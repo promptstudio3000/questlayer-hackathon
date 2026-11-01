@@ -2276,11 +2276,6 @@ export default function App() {
           </button>
         </div>
       )}
-      {!online && (
-        <div className="offline-bar">
-          You're offline. Coins and visits resume when you reconnect.
-        </div>
-      )}
       {player && (
         <main
           ref={mainPanel}

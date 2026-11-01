@@ -1,0 +1,14 @@
+[360] install offer before 45 s of play: hidden
+[390] install offer before 45 s of play: hidden
+[844x390] install offer before 45 s of play: hidden
+[1280] install offer before 45 s of play: hidden
+[360] install offer targets Add to home screen=182x48, Not now=96x48
+[360] Add to home screen -> prompt() calls=1, stored=dismissed, offer=false
+[390] install offer targets Add to home screen=182x48, Not now=96x48
+[390] keyboard: Tab reached "Not now", Escape -> stored=dismissed, offer=false, focus=main-panel explore-panel sheet-compact
+[844x390] iOS guidance targets Got it=76x48
+[390] iOS guidance targets Got it=76x48
+[844x390] install offer targets Add to home screen=182x48, Not now=96x48
+[360] iOS guidance targets Got it=76x48
+[1280] install offer targets Install=82x48, Not now=96x48
+[390] after dismissal + reload + 50 s play: offer not shown

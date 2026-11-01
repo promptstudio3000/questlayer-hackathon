@@ -1,0 +1,41 @@
+[390] install offer before 45 s of play: hidden
+[360] install offer before 45 s of play: hidden
+[1280] install offer before 45 s of play: hidden
+[844x390] install offer before 45 s of play: hidden
+[390] install offer targets Add to home screen=210x48, Not now=96x48
+[390] keyboard: Tab reached "Not now", Escape -> stored=dismissed, offer=false, focus=main-panel explore-panel sheet-compact
+[360] install offer targets Add to home screen=210x48, Not now=96x48
+[360] Add to home screen -> prompt() calls=1, stored=dismissed, offer=false
+[844x390] iOS guidance targets Got it=76x48
+[390] iOS guidance targets Got it=76x48
+[360] iOS guidance targets Got it=76x48
+[1280] install offer targets Install=110x48, Not now=96x48
+[844x390] install offer targets Add to home screen=210x48, Not now=96x48
+[390] after dismissal + reload + 50 s play: offer not shown
+[360] first visit (worker just installed): notice hidden
+[360] update notice shown; registration.waiting=true
+[360] update targets Reload=116x48, Later=74x48
+[390] first visit (worker just installed): notice hidden
+[390] update notice shown; registration.waiting=true
+[390] update targets Reload=116x48, Later=74x48
+[390] live region: "New version ready. Reload to get the latest QuestLayer."
+[390] Reload -> page reloaded via controllerchange; waiting=false, notice=false
+[844x390] first visit (worker just installed): notice hidden
+[844x390] update notice shown; registration.waiting=true
+[844x390] update targets Reload=116x48, Later=74x48
+[1280] first visit (worker just installed): notice hidden
+[1280] update notice shown; registration.waiting=true
+[1280] update targets Reload=116x48, Later=74x48
+[390] newer published shell -> update notice shown
+[360] offline while playing: notice shown, app strip display=none
+[360] offline reload: shell=true, notice in top layer=true, welcome dialog=true
+[390] offline while playing: notice shown, app strip display=none
+[390] offline reload: shell=true, notice in top layer=true, welcome dialog=true
+[390] uncached offline open: "You're offline"
+[844x390] offline while playing: notice shown, app strip display=none
+[844x390] offline reload: shell=true, notice in top layer=true, welcome dialog=true
+[1280] offline while playing: notice shown, app strip display=none
+[1280] offline reload: shell=true, notice in top layer=true, welcome dialog=true
+[360 reduced motion] offline notice animation: none 0s
+[360 200% text] offline notice box 16..344 of 360, scroll=false
+[844x390 200% text] offline notice box 12..352 of 844, scroll=true
