@@ -17,10 +17,22 @@ jobs:
       - run: npm ci
       - run: npm run check
   first-session:
-    # Phone-width (390 px) Playwright journey: name, nearest find, first coin,
-    # first chest, Aura, secure/share, then the feedback settings.
+    # Phone journey: name, nearest find, first coin, first chest, Aura,
+    # secure/share, feedback settings, equip, a practice market order filled
+    # by a second explorer, and the creator feed, with axe a11y scans and a
+    # first-load performance budget. One job per device profile.
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: phone-390
+            browser: chromium
+          - device: iphone
+            browser: webkit
+          - device: pixel
+            browser: chromium
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,15 +40,15 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npm run build
-      - run: npm run e2e:first-session
+      - run: npm run e2e:first-session -- --device=${{ matrix.device }}
         env:
           E2E_SHOTS: ${{ runner.temp }}/first-session
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: first-session-screenshots
+          name: first-session-${{ matrix.device }}
           path: ${{ runner.temp }}/first-session
   contracts:
     runs-on: ubuntu-latest
