@@ -3,7 +3,8 @@
 // creator payments, staking): in a NEP-366 meta-transaction the relayer's
 // transaction would carry the attached deposit, so the relayer refuses them
 // and the player pays both the deposit and the small gas fee here.
-import { Account, JsonRpcProvider, actions as nearActions } from "near-api-js";
+import type { Account } from "near-api-js";
+import { loadNearApi } from "./near-api.ts";
 import { api } from "./api.ts";
 import { signerFor, type PlayerKeyRecord } from "./player-key.ts";
 import type { ReviewedNativeTransaction } from "./confirmed-native-transaction.ts";
@@ -69,8 +70,17 @@ export async function sendSelfPaid(
       "SELF_PAID_ACCOUNT",
     );
   const call = transaction.actions[0].params;
+  const {
+    Account,
+    JsonRpcProvider,
+    actions: nearActions,
+  } = await loadNearApi();
   const provider = new JsonRpcProvider({ url: await resolveRpcUrl() });
-  const account = new Account(transaction.signerId, provider, signerFor(key));
+  const account = new Account(
+    transaction.signerId,
+    provider,
+    await signerFor(key),
+  );
   let outcome: Awaited<ReturnType<Account["signAndSendTransaction"]>>;
   try {
     outcome = await account.signAndSendTransaction({

@@ -9,15 +9,7 @@
 //   1. proves ownership with a NEP-413 message (the existing wallet sign-in), and
 //   2. signs a sponsored AddKey for a fresh key generated on the new device.
 // The recovery key itself is never written to storage.
-import {
-  KeyPairEd25519,
-  KeyPairSigner,
-  PublicKey,
-  actions,
-  baseEncode,
-  buildDelegateAction,
-  encodeSignedDelegate,
-} from "near-api-js";
+import { loadNearApi } from "./near-api.ts";
 import {
   DEVICE_KEY,
   signerFor,
@@ -75,17 +67,18 @@ const randomBytes = (n: number) => crypto.getRandomValues(new Uint8Array(n));
 
 // The same PRF output always yields the same key; different passkeys (or a
 // different salt) yield unrelated keys.
-export function recoveryKeyFromPrf(
+export async function recoveryKeyFromPrf(
   output: ArrayBuffer | ArrayBufferView,
   accountId: string | null,
   now = Date.now(),
-): PlayerKeyRecord {
+): Promise<PlayerKeyRecord> {
   const seed = bytes(output);
   if (seed.length < 32)
     throw new RecoveryError(
       "This passkey did not return a usable recovery secret.",
       "RECOVERY_PRF",
     );
+  const { KeyPairEd25519, baseEncode } = await loadNearApi();
   const key = new KeyPairEd25519(baseEncode(seed.slice(0, 32)));
   return {
     publicKey: key.getPublicKey().toString(),
@@ -236,7 +229,10 @@ export async function readRecoveryPasskey({
     );
   const { first } = prfOutput(credential);
   if (!first) throw unsupported();
-  return { accountId, recovery: recoveryKeyFromPrf(first, accountId, now) };
+  return {
+    accountId,
+    recovery: await recoveryKeyFromPrf(first, accountId, now),
+  };
 }
 
 // NEP-413 proof in the shape the wallet sign-in and session recovery expect.
@@ -251,7 +247,9 @@ export async function nep413Proof(
       "The sign-in request could not be verified. Try again.",
       "RECOVERY_CHALLENGE",
     );
-  const signed = await signerFor(record).signNep413Message(accountId, {
+  const signed = await (
+    await signerFor(record)
+  ).signNep413Message(accountId, {
     message: challenge.message,
     recipient: challenge.recipient,
     nonce,
@@ -304,6 +302,13 @@ export async function relayKeyChange(
     "/relay/prepare",
     { accountId, receiverId: accountId, publicKey: signer.publicKey },
   );
+  const {
+    KeyPairSigner,
+    PublicKey,
+    actions,
+    buildDelegateAction,
+    encodeSignedDelegate,
+  } = await loadNearApi();
   const target = PublicKey.from(publicKey);
   const delegateAction = buildDelegateAction({
     senderId: accountId,
@@ -364,7 +369,8 @@ export async function replaceDeviceKey(
   await store.put(DEVICE_KEY, record);
 }
 
-export function freshDeviceKey(accountId: string, now = Date.now()) {
+export async function freshDeviceKey(accountId: string, now = Date.now()) {
+  const { KeyPairEd25519 } = await loadNearApi();
   const key = KeyPairEd25519.fromRandom();
   return {
     publicKey: key.getPublicKey().toString(),
@@ -392,7 +398,7 @@ export async function setupPasskeyRecovery({
   intervalMs?: number;
 }) {
   const { prf } = await createRecoveryPasskey({ accountId, credentials, rpId });
-  const recovery = recoveryKeyFromPrf(prf, accountId);
+  const recovery = await recoveryKeyFromPrf(prf, accountId);
   await api("/account/keys", {
     publicKey: recovery.publicKey,
     kind: "recovery",
@@ -438,7 +444,7 @@ export async function restoreWithPasskey<P>({
     challengeId: challenge.challengeId,
     ...proof,
   });
-  const device = freshDeviceKey(accountId);
+  const device = await freshDeviceKey(accountId);
   await api("/account/keys", {
     publicKey: device.publicKey,
     kind: "device",

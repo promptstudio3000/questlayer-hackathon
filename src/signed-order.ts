@@ -84,7 +84,7 @@ export async function signOrder(
   if (!record.accountId || record.accountId !== terms.maker)
     throw Error("This device key cannot sign for that account.");
   const message = JSON.stringify(terms);
-  const signed = await signerFor(record).signNep413Message(terms.maker, {
+  const signed = await (await signerFor(record)).signNep413Message(terms.maker, {
     message,
     recipient: terms.market,
     nonce,
