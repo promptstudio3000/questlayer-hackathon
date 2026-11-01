@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>QuestLayer operator console</title>
+    <link rel="stylesheet" href="/console.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div>
+        <strong>QuestLayer operator</strong>
+        <span id="who" class="muted"></span>
+      </div>
+      <nav role="tablist" aria-label="Console sections">
+        <button role="tab" data-tab="health" aria-selected="true">Health</button>
+        <button role="tab" data-tab="moderation">Moderation</button>
+        <button role="tab" data-tab="world">World controls</button>
+        <button role="tab" data-tab="audit">Audit</button>
+      </nav>
+      <button id="refresh" class="ghost">Refresh</button>
+    </header>
+    <p id="flash" role="status" aria-live="polite" hidden></p>
+    <main>
+      <section id="tab-health" role="tabpanel"></section>
+      <section id="tab-moderation" role="tabpanel" hidden>
+        <div class="row">
+          <label>Queue
+            <select id="mod-state">
+              <option value="open">Open reports</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </label>
+        </div>
+        <div id="mod-list"></div>
+      </section>
+      <section id="tab-world" role="tabpanel" hidden>
+        <div class="row">
+          <label>City <select id="w-city"></select></label>
+          <label>Day <input id="w-day" type="date" /></label>
+        </div>
+        <div id="w-state" class="muted"></div>
+        <div class="cards">
+          <form id="f-pause" class="card">
+            <h3>Pause or resume</h3>
+            <label>Scope
+              <select name="zone">
+                <option value="">Whole day</option>
+                <option value="0">Zone 0 (central)</option>
+                <option value="1">Zone 1 (north)</option>
+                <option value="2">Zone 2 (east)</option>
+                <option value="3">Zone 3 (southeast)</option>
+                <option value="4">Zone 4 (southwest)</option>
+                <option value="5">Zone 5 (west)</option>
+              </select>
+            </label>
+            <label>Reason <input name="reason" required minlength="3" maxlength="300" /></label>
+            <div class="row">
+              <button name="do" value="pause">Pause</button>
+              <button name="do" value="resume" class="ghost">Resume</button>
+            </div>
+          </form>
+          <form id="f-place" class="card">
+            <h3>Close or reopen a place</h3>
+            <label>Place <select name="candidateId"></select></label>
+            <label>Reason <input name="reason" required minlength="3" maxlength="300" /></label>
+            <div class="row">
+              <button name="do" value="close-place">Close</button>
+              <button name="do" value="reopen-place" class="ghost">Reopen</button>
+            </div>
+          </form>
+          <form id="f-adjust" class="card">
+            <h3>Adjust a future day</h3>
+            <p class="muted">Leave places out of an unpublished day. The planner picks other reviewed places for those slots.</p>
+            <label>Leave out <select name="exclude" multiple size="6"></select></label>
+            <label>Reason <input name="reason" required minlength="3" maxlength="300" /></label>
+            <div class="row">
+              <button name="do" value="preview" class="ghost">Preview</button>
+              <button name="do" value="adjust">Apply</button>
+              <button name="do" value="clear-adjustment" class="ghost">Clear</button>
+            </div>
+            <ol id="adjust-preview"></ol>
+          </form>
+        </div>
+      </section>
+      <section id="tab-audit" role="tabpanel" hidden></section>
+    </main>
+    <script src="/console.js"></script>
+  </body>
+</html>

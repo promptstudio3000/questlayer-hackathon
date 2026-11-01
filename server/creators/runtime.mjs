@@ -1,5 +1,6 @@
 import { createCreatorServices } from "./services.mjs";
 import { createNodeCreatorHandler } from "./node-handler.mjs";
+import { createQuestDrafter } from "../ai/quest-drafts.mjs";
 import { creatorAssert as fail, creatorKey } from "./operations.mjs";
 
 export function creatorConfiguration(env = process.env) {
@@ -55,7 +56,7 @@ export function creatorConfiguration(env = process.env) {
 // mounts only player operations; trusted operator actions use the local CLI.
 export function createCreatorRuntime(
   db,
-  { env = process.env, origin, authenticate, clock = Date.now },
+  { env = process.env, origin, authenticate, clock = Date.now, drafts = true },
 ) {
   const config = creatorConfiguration(env);
   const services = config.enabled
@@ -67,6 +68,10 @@ export function createCreatorRuntime(
           config.completionAuthorities.includes(actor),
       })
     : null;
+  // AI drafting rides on the creator flow: its output is only ever a suggestion
+  // the author saves and submits through normal review.
+  const drafter =
+    config.enabled && drafts ? createQuestDrafter(db, { env, clock }) : null;
   const status = {
     enabled: config.enabled,
     domain: "demo",
@@ -75,9 +80,13 @@ export function createCreatorRuntime(
     native: false,
     reviewConfigured: config.moderators.length > 0,
     completionConfigured: config.completionAuthorities.length > 0,
+    aiDrafts: drafter
+      ? { enabled: drafter.enabled, policy: drafter.policy, provider: drafter.provider }
+      : { enabled: false },
   };
   const playerHandler = createNodeCreatorHandler({
     ...services,
+    drafter,
     enabled: config.enabled,
     origin,
     authenticate,
@@ -113,5 +122,5 @@ export function createCreatorRuntime(
     res.end(JSON.stringify(status));
     return true;
   }
-  return { config, status, services, handle };
+  return { config, status, services, drafter, handle };
 }

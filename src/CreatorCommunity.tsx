@@ -32,6 +32,7 @@ import { parseAccessPrice, nearText } from "./creator-money-quote";
 import { formatNativeNear } from "./native-amounts";
 import { Dialog } from "./Dialog";
 import { useFormDraft } from "./useFormDraft";
+import { AiQuestDraft } from "./AiQuestDraft";
 import {
   createCreatorClient,
   creatorDraftIdentity,
@@ -2356,6 +2357,24 @@ function QuestEditor({
         </details>
       )}
       <form className="creator-form" onSubmit={save}>
+        {editable && (
+          <AiQuestDraft
+            template={template}
+            disabled={busy}
+            onSuggestion={(suggestion) => {
+              draft.setField("title", suggestion.draft.title.slice(0, 100));
+              draft.setField(
+                "description",
+                suggestion.draft.description.slice(0, 4000),
+              );
+              setTemplate(suggestion.draft.place.template);
+              setPoints(suggestion.draft.place.points);
+              setPlaceError("");
+              setQuote(null);
+              setAccepted(false);
+            }}
+          />
+        )}
         <fieldset className="creator-templates" disabled={!editable || busy}>
           <legend>Template</legend>
           {(Object.keys(PLACE_TEMPLATES) as CreatorPlaceTemplate[]).map(
