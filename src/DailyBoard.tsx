@@ -72,7 +72,7 @@ export function DailyBoard({
     <>
       <button
         className={`daily-board-chip${board.complete ? " is-complete" : ""}${board.complete && !board.claimed ? " is-ready" : ""}`}
-        aria-label={`Today's board: ${board.done} of ${board.total} goals done`}
+        aria-label={`${board.done}/${board.total} goals done on today's board`}
         onClick={() => {
           setOpen(true);
           void load();
