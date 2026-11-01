@@ -216,6 +216,9 @@ export function BossFight({
                 .join(" · ")}{" "}
               · roll tickets {pouch.rollTickets}
             </p>
+            {pouch.rollTickets > 0 && (
+              <p className="monster-sub">Spend roll tickets at the wisp: Inventory, Secured tab.</p>
+            )}
             {crafted ? (
               <p className="monster-rewards">The Golden Altar gave you {crafted}.</p>
             ) : pouch.craft.ready ? (

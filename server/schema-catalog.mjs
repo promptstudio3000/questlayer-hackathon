@@ -14,6 +14,7 @@ for (const relative of [
   "./native/creator-money.mjs",
   "./native/order-index.mjs",
   "./native/social-records.mjs",
+  "./npc/rolls-schema.mjs",
   "./npc/keeper-vault.mjs",
   "./npc/trader-ledger.mjs",
   "./operator/world-controls.mjs",
