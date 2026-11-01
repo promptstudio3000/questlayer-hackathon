@@ -1,4 +1,5 @@
 import { defaultDatabasePath } from "./state-path.mjs";
+import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
 import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
@@ -679,6 +680,8 @@ async function api(req, res, url) {
       testSeed: testSeedActive ? testSeed.status() : { status: "off" },
       now: Date.now(),
     });
+  if (path === "/api/levels" && method === "GET")
+    return respond(res, publicLevelTable());
   if (path === "/api/quest-templates" && method === "GET")
     return respond(res, questTemplateCatalog());
   if (path === "/api/native/distribution" && method === "GET") {

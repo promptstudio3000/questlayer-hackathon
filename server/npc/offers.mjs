@@ -10,6 +10,7 @@
 // chosen by the chest entitlement rules; the player secures it on NEAR through
 // the existing award-signed `redeem_aura` claim.
 import { hash } from "../domain.mjs";
+import { extraQuestLines } from "../levels.mjs";
 
 export const NPC_OFFER_POLICY = "npc-offers-v1";
 export const LINE_XP_PER_STEP = 20;
@@ -69,7 +70,7 @@ const stepView = (q, zones) => ({
  * already accepted from this NPC today; `chapters` is the player's finished
  * chapter count with this storyteller (for the story Aura at the set's end).
  */
-export function buildMenu({ actor, persona, world, now = Date.now(), done = new Set(), linesToday = 0, chapters = 0 }) {
+export function buildMenu({ actor, persona, world, now = Date.now(), done = new Set(), linesToday = 0, chapters = 0, level = 1 }) {
   const archetype = actor?.archetype || persona?.archetype;
   if (!world || !actor) return [];
   const zones = new Map((world.zones || []).map((z) => [z.id, z]));
@@ -82,7 +83,8 @@ export function buildMenu({ actor, persona, world, now = Date.now(), done = new 
   );
   const offers = [];
   if (archetype === "quest_giver") {
-    if (linesToday >= MAX_LINES_PER_DAY) return [];
+    // L7 unlock (server/data/level-table.json): one more line per NPC and day.
+    if (linesToday >= MAX_LINES_PER_DAY + extraQuestLines(level)) return [];
     const used = new Set();
     for (const first of steps) {
       if (offers.length >= 3) break;
