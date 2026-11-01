@@ -13,6 +13,7 @@ import { NativeProgression } from "./native/progression.mjs";
 import { NativeTasks, TASK_CONTRACT } from "./native/tasks.mjs";
 import { updatePresence, readNearbyPresence } from "./presence.mjs";
 import { GotchiModels } from "./gotchi-models.mjs";
+import { UpstreamModels } from "./upstream-models.mjs";
 import {
   GotchiItemArt,
   linkedItemId,
@@ -408,6 +409,7 @@ const nativeTransactionConfirmation = new NativeTransactionConfirmation(
   },
 );
 const gotchiModels = new GotchiModels();
+const upstreamModels = new UpstreamModels();
 const gotchiItemArt = new GotchiItemArt();
 const originalLookups = new Map();
 recordSchemaVersions(db);
@@ -2141,6 +2143,31 @@ async function api(req, res, url) {
       "Cache-Control": "private,no-store",
     });
     return res.end(svg);
+  }
+  if (path.startsWith("/api/upstream-models/") && method === "GET") {
+    // Official Gotchiverse models for monsters and stations, fetched from one pinned source and digest-checked
+    // (server/upstream-models.mjs). Immutable per key, so browsers cache them.
+    const key = path.match(/^\/api\/upstream-models\/([a-z-]{3,32})\.fbx$/)?.[1];
+    assert(key && UpstreamModels.has(key), "Unknown model.", 404);
+    const rateKey = `upstream-model:${player}:${Math.floor(Date.now() / 60000)}`;
+    const count = (rates.get(rateKey) || 0) + 1;
+    rates.set(rateKey, count);
+    assert(count <= 30, "Please wait before loading more models.", 429);
+    let model;
+    try {
+      model = await upstreamModels.get(key);
+    } catch (error) {
+      assert(false, error.message, error.status || 502);
+    }
+    res.writeHead(200, {
+      "Content-Type": "application/octet-stream",
+      "Content-Length": model.bytes.length,
+      "Content-Security-Policy": "default-src 'none'; sandbox",
+      "X-Content-Type-Options": "nosniff",
+      ETag: `"${model.sha256}"`,
+      "Cache-Control": "private,max-age=86400,immutable",
+    });
+    return res.end(model.bytes);
   }
   if (path.startsWith("/api/aavegotchi/wearable/") && method === "GET") {
     const id = path.match(
