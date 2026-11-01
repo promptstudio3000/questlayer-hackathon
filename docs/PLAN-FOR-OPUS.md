@@ -27,7 +27,10 @@ Read first: `docs/STATUS.md`, `docs/CLAUDE-AUDIT-AND-STRATEGY.md`, `DESIGN.md`, 
 | Staking position | `/api/native/vaults*` (quotes) via `NativeSigner.send`: `create_position`/`deposit_and_stake` are self-paid by the device key (no popup, player pays gas), `request_exit`/`withdraw_owner`/`refresh` relayed | the relayer refuses money deposits (`RELAY_SELF_PAID`); show "paid from your balance" |
 | Creator money | `GET /api/native/creators` (pot, policy, open round, my credit), `GET /api/native/creators/quest?quest=`, `POST /api/native/creators/prepare {kind: buy|donate|withdraw, questId, amount}` → reviewed tx for `NativeSigner.send`, `POST /api/native/creators/like {questId}` | quotes carry exact price and the 80/20 split; `buy`/`donate` are self-paid by the device key (relayer refuses money), `withdraw` is relayed; likes count once per player |
 | Public note record | `GET /api/native/records?note=`, `POST /api/native/records/prepare {noteId, kind: note|tombstone, publicConsent, permanenceAcknowledged}` → `set` quote for `NativeSigner.send`, `POST /api/native/records/confirm {noteId, mutationId}` | disclose permanence before the write; media shows `ipfs://` address and pin state |
-| Economy facts | `docs/ECONOMY-RULES.md`, `/api/native/economy` | "Today's pot" source |
+| Economy facts | `docs/ECONOMY-RULES.md`, `/api/native/economy`, `/api/native/distribution` (status verified/drift/unavailable, open days) | "Today's pot" source; show "books checked" only when verified |
+
+Schedule and owners for all lanes: `docs/CONTINUATION-PLAN.md`. Slices are run one per Opus 5.5 subagent, client
+files only. Status 1 November: slice 2 and slice 7 in progress.
 
 ## Slices in order
 

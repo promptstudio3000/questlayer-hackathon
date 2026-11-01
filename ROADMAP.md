@@ -359,6 +359,8 @@ Keep evidence under a versioned `output/qa/<build-or-milestone>/` location. Incl
 | Experimental verifier and canonical mainnet path | W07/W14 | Pinned source compatibility plus separately authorized canonical proof |
 | XP commitment schedule and creator weights/caps | W08/W09 | Published configuration; no silent confiscation or unlimited promises |
 | Creator starting percentage and routing limits | W09 | Conserved future-receipt policy; 10% remains tunable |
+| Pay now with future staking yield (pledged realized owner yield, principal locked until paid, ≤ 10 years, ≤ 50 % of principal) | W05/W09 | Proposal in `docs/YIELD-CREDIT-PROPOSAL.md`; vault v2 + creators v2 review, credit/legal review before mainnet; never backs prizes |
+| Additional native cities | W01/W05 | A second field-reviewed CityPack plus a published daily allocation across cities that the contract can verify (`docs/CONTINUATION-PLAN.md`) |
 | Review/appeal/refund deadlines and arbitration owner | W09/W10 | Finite user rights and tested closure paths |
 | SocialDB/IPFS services and public/private retention | W10 | Available storage, pinning and disclosure/recovery design |
 | Physical device baseline and store-specific product path | W12/W14 | Actual device evidence and a viable reviewed distribution build |

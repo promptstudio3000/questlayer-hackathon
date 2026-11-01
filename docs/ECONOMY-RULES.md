@@ -71,6 +71,12 @@ instead of the source; developers change the value here and in the pointed file 
 Sponsored: account creation funding, gas for allowlisted calls, storage deposits for securing an Aura and the
 public profile, within daily caps. Not sponsored: market purchases, transfers of NEAR, anything outside the allowlist.
 
+## Proposals (not implemented)
+
+- **Pay now with future yield**: open a paid creator quest before earning the GOLD by pledging the realized yield of
+  your own staking position; principal stays locked until paid, at most about 10 years and 50 % of principal.
+  Prizes stay backed only by received money. See `docs/YIELD-CREDIT-PROPOSAL.md`.
+
 ## Fast-forward for judges
 
 `npm run funding:simulate` runs the treasury/exit model over several epochs and writes a trace under `output/`. A
