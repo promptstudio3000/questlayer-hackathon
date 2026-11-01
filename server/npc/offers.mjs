@@ -131,8 +131,8 @@ export function buildMenu({ actor, persona, world, now = Date.now(), done = new 
       });
     }
   }
-  // Trader, keeper and wandering rare offers arrive with N3/N4; until then
-  // they only talk.
+  // Trader offers come from server/npc/trader.mjs (registered as the
+  // "trader" menu builder); keepers only explain; wandering rares arrive in N4.
   return offers;
 }
 
@@ -142,7 +142,23 @@ export const menuHash = (menu) =>
 // One short grounded fact per offer, so the model can describe it and every
 // number it uses is checkable.
 export function offerFacts(menu) {
-  return menu.map((o, index) => ({
+  return menu.map((o, index) =>
+    o.kind.startsWith("trade_") ? tradeFact(o, index) : questFact(o, index),
+  );
+}
+
+// Trader offers (N3, server/npc/trader.mjs): every number is already in the label.
+const TRADE_TEXT = {
+  trade_buy: "the player sells this Aura to you; they fill your signed buy order on the market",
+  trade_sell: "you sell this Aura from your stock; the player fills your signed sell order on the market",
+  trade_up: "the player hands you three common Auras and receives one rare Aura",
+};
+function tradeFact(o, index) {
+  return { id: `offer-${index}`, text: `Offer ${index}: ${o.label}. Trade: ${TRADE_TEXT[o.kind]}.` };
+}
+
+function questFact(o, index) {
+  return ({
     id: `offer-${index}`,
     text: `Offer ${index}: ${o.label}. Reward: ${o.terms.xp} XP${
       o.terms.aura
@@ -151,5 +167,5 @@ export function offerFacts(menu) {
           : " and one Aura you are entitled to"
         : ""
     }.${o.kind === "chapter" ? ` This is chapter ${o.terms.chapter} of ${STORY_SET_SIZE}.` : ""}`,
-  }));
+  });
 }
