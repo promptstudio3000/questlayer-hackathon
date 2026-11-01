@@ -1,0 +1,66 @@
+# Testnet test world (TEST_SEED)
+
+A switchable, removable test world on the testnet server so the whole game can be
+tried end to end without waiting for other people. Testnet only; remove it before
+the real release.
+
+## Switch
+
+| Setting | Effect at server start |
+| --- | --- |
+| `TEST_SEED=1` (testnet) | Builds the test world (idempotent) and runs its bots. |
+| anything else, or unset | Removes everything an earlier run seeded, in one transaction. |
+| `TEST_SEED=1` on mainnet | The server refuses to start. |
+
+The testnet unit `deploy/questlayer-hackathon.service` sets `TEST_SEED=1`.
+To remove the world, delete that line and deploy, or put `TEST_SEED=0` in
+`runtime.env` (it overrides the unit). `/api/health` reports `testSeed` with counts
+while it is on and `{"status":"off"}` otherwise.
+
+Command line (local or on the VPS, same database rules as the server):
+
+```
+npm run seed:test -- status   [--db path]
+npm run seed:test -- apply    [--db path]   # testnet only
+npm run seed:test -- remove   [--db path]
+```
+
+## What it contains (`server/test-seed/content.mjs`)
+
+- **Six explorers.** Five walk real Plzeň pedestrian paths near náměstí Republiky
+  in the practice map (arena). Ondra stays about 30 m from the most recently active
+  real explorer, in the same map mode, so shared presence shows up wherever you are.
+- **Map notes** at six places, in both the practice and the GPS map.
+- **Practice market.** Four Auras from seed explorers are always on sale; a sold
+  one is restocked within 30 s. Marek buys anything a real explorer lists for up to
+  60,000 practice GOLD once it has been listed for 45 s, so selling can be tried.
+- **Tasks.** Three practice-GOLD tasks. The seed author approves the first
+  submitted evidence after 30 s and the task is posted again.
+- **Creator quests.** Two public creator profiles and five approved quests (visit,
+  trail, chest, a free story) with observation requirements. A completion submitted
+  on a seed quest is accepted after 30 s by the configured completion authority.
+  Needs `CREATOR_COMMUNITY_ENABLED=1`; otherwise this part is skipped.
+- **NPCs and monsters.** `TEST_SEED=1` turns the roaming actors on, as
+  `ACTORS_ENABLED=1` does.
+- **Starter kit for every real explorer**, once, on sign-up or the next app load:
+  Northern Lights (can be secured as a NEAR Aura and sold on the signed-order
+  market), Ember Wisp (practice market or the monster altar), 300 XP (enough to
+  publish an own creator quest) and 10 monster shards. It appears in history as
+  "Test kit".
+
+Nothing in the seed signs a NEAR transaction. Seed authors have no NEAR account, so
+seed quests are not mirrored to the creators contract; likes and paid access on them
+stay local.
+
+## Removal
+
+Every row the seed writes has an id starting with `seed-`. Removal deletes every row
+whose id or reference column (player, author, seller, buyer, item, quest, note, task,
+submission, operation…) starts with `seed-`, then every row left pointing at a
+removed row through a foreign key, and queued creator-money jobs for seed quests.
+Starter kits are reverted: the kit Auras disappear, kit XP is subtracted (never below
+the XP an explorer has locked in their own quests) and kit shards are subtracted.
+Practice GOLD earned by selling to the seed buyer or from seed tasks stays. An Aura
+already secured on NEAR stays in that wallet on testnet; only the local record goes.
+
+Covered by `tests/test-seed.test.mjs`.
