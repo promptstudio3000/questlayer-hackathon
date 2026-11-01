@@ -10,7 +10,7 @@ import { levelFor } from "./domain.mjs";
 const DEFAULT_TABLE = JSON.parse(
   readFileSync(new URL("./data/level-table.json", import.meta.url), "utf8"),
 );
-const KINDS = new Set(["start", "aura", "patron", "craft", "quest-slot", "rare", "title", "ring"]);
+const KINDS = new Set(["start", "aura", "patron", "craft", "quest-slot", "rare", "story", "title", "ring"]);
 const STATUSES = new Set(["live", "coming"]);
 
 export const requiredXpFor = (level) => 100 * (level - 1) ** 2;
@@ -102,6 +102,10 @@ export const altarOfferingsPerDay = (level, base, table = current) =>
 /** Extra quest lines per NPC and day at this level (L7 default: +1). */
 export const extraQuestLines = (level, table = current) =>
   Math.max(0, Number(unlockValue(level, "extra-quest-line", 0, table)) || 0);
+
+/** Extra storyteller chapters on offer at this level (L8 default: +1). */
+export const extraStoryChapters = (level, table = current) =>
+  Math.max(0, Number(unlockValue(level, "extra-story-chapter", 0, table)) || 0);
 
 /** Cosmetic title earned by level, or null (L9 default: "Pathfinder"). */
 export const levelTitle = (level, table = current) => {
