@@ -34,6 +34,7 @@ import {
   pointClosed,
   placeClosed,
 } from "./spatial/place-safety.mjs";
+import { pauseState, pauseFor } from "./operator/world-controls.mjs";
 export const HOME = DEFAULT_CITY.center;
 export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
@@ -359,7 +360,8 @@ export function worldView(db, id, player = null, options = {}) {
   const query = worldQuery(options),
     now = options.now ?? Date.now(),
     manifest = publicManifest(db, JSON.parse(row.manifest)),
-    closed = closedPlaces(db, manifest.cityId);
+    closed = closedPlaces(db, manifest.cityId),
+    paused = pauseState(db, manifest.cityId, manifest.day);
   const quests = db
     .prepare(
       "SELECT q.*,EXISTS(SELECT 1 FROM quest_claims c WHERE c.quest_id=q.id AND c.player_id=?) AS completed,COALESCE((SELECT checkpoint FROM quest_progress p WHERE p.quest_id=q.id AND p.player_id=?),0) AS checkpoint FROM quests q WHERE q.world_id=? ORDER BY q.tier,q.id",
@@ -379,10 +381,16 @@ export function worldView(db, id, player = null, options = {}) {
   const remaining =
     3 * 256 -
     db.prepare("SELECT COALESCE(SUM(minted),0) AS n FROM editions").get().n;
-  const zones = manifest.zones.map((z) => ({
-      ...z,
-      placeStatus: placeClosed(closed, z.sourceId, z) ? "closed" : "open",
-    })),
+  // An operator pause reads as a closed place to players; operatorPause says why.
+  const zones = manifest.zones.map((z) => {
+      const pause = pauseFor(paused, z.slot);
+      return {
+        ...z,
+        placeStatus:
+          pause || placeClosed(closed, z.sourceId, z) ? "closed" : "open",
+        ...(pause ? { operatorPause: { reason: pause.reason } } : {}),
+      };
+    }),
     visibleZones = zones.filter((z) => zoneInBounds(z, query.bounds)),
     visibleIds = new Set(visibleZones.map((z) => z.id)),
     zoneById = new Map(zones.map((z) => [z.id, z]));
@@ -436,7 +444,8 @@ export function worldView(db, id, player = null, options = {}) {
     visibleZoneCount: visibleZones.length,
     openEligibleCount: eligible.size,
     playerTier: tier,
-    coins: page
+    ...(paused.day ? { operatorPause: { reason: paused.day.reason } } : {}),
+    coins: (paused.day ? [] : page)
       .filter((p) => !pointClosed(closed, p))
       .map((c) => (finds.has(c.id) ? { ...c, find: true } : c)),
     streetFindXp: STREET_FIND_XP,

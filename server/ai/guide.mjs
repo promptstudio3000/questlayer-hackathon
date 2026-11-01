@@ -48,11 +48,13 @@ export function guideFacts({ world = null, native = null, location = null, now =
       "mode",
       `This is ${world.cityName || world.cityId || "the city"} in demo mode; GOLD here is practice GOLD, not money.`,
     );
-    const zones = world.zones || [];
+    if (world.operatorPause)
+      add("paused", "The operator has paused today's discoveries and coins in this city; check back later.");
+    const zones = world.operatorPause ? [] : world.zones || [];
     const open = zones.filter((z) => z.placeStatus !== "closed").length;
     add("zones", `${open} of ${world.cityZoneCount ?? zones.length} zones are open today.`);
     const zoneName = new Map(zones.map((z) => [z.id, z.name]));
-    const quests = world.quests || [];
+    const quests = world.operatorPause ? [] : world.quests || [];
     const done = quests.filter((q) => q.completed).length;
     add("progress", `You have completed ${done} of ${quests.length} discoveries today.`);
     const tier = Number.isInteger(world.playerTier) ? world.playerTier : 1;

@@ -72,6 +72,8 @@ export type Zone = {
   closesAt: number;
   color: string;
   placeStatus?: "open" | "closed";
+  /** Set while an operator has paused this zone or the whole day. */
+  operatorPause?: { reason: string };
 };
 export type Coin = Point & {
   id: string;
