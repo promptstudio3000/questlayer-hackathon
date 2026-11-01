@@ -9,7 +9,8 @@ import { RelayJobError, retryLater, terminal } from "./errors.mjs";
 import { classifyFailure, relayFailure } from "./outcome.mjs";
 import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
 
-const MAX_SLUG = 32;
+const MAX_SLUG = 32,
+  MAX_KEYS = 10;
 const yoctoText = (value) => {
   const n = BigInt(value);
   assert(n >= 0n && n < 2n ** 128n, "Invalid yoctoNEAR amount.", 503);
@@ -248,6 +249,22 @@ export class ManagedAccounts {
       label === null || (typeof label === "string" && label.length <= 40),
       "Key label is too long.",
     );
+    const known = this.db
+      .prepare(
+        "SELECT state FROM managed_account_keys WHERE account_id=? AND public_key=?",
+      )
+      .get(row.account_id, key);
+    assert(
+      known ||
+        this.db
+          .prepare(
+            "SELECT COUNT(*) AS n FROM managed_account_keys WHERE account_id=? AND state!='removed'",
+          )
+          .get(row.account_id).n < MAX_KEYS,
+      `An explorer can keep at most ${MAX_KEYS} devices. Remove one first.`,
+      409,
+      "ACCOUNT_KEY_LIMIT",
+    );
     const now = this.clock();
     this.db
       .prepare(
@@ -265,21 +282,35 @@ export class ManagedAccounts {
       "ACCOUNT_NOT_READY",
     );
     const key = devicePublicKey(publicKey);
+    const current = this.db
+      .prepare(
+        "SELECT state FROM managed_account_keys WHERE account_id=? AND public_key=?",
+      )
+      .get(row.account_id, key)?.state;
+    if (current === "pending") {
+      // Never added on chain by this explorer's request yet: forget it.
+      this.db
+        .prepare(
+          "UPDATE managed_account_keys SET state='removed',updated_at=? WHERE account_id=? AND public_key=? AND state='pending'",
+        )
+        .run(this.clock(), row.account_id, key);
+      return this.view(player);
+    }
+    // A repeated request for a key already being removed is idempotent, so a
+    // failed deleteKey can simply be signed again.
+    if (current === "removing") return this.view(player);
+    assert(current === "active", "This key is not active.", 409);
     assert(
-      this.keys(row.account_id).length > 1,
+      this.keys(row.account_id).filter((k) => k !== key).length > 0,
       "Keep at least one active key.",
       409,
       "ACCOUNT_LAST_KEY",
     );
-    assert(
-      this.db
-        .prepare(
-          "UPDATE managed_account_keys SET state='removing',updated_at=? WHERE account_id=? AND public_key=? AND state='active'",
-        )
-        .run(this.clock(), row.account_id, key).changes === 1,
-      "This key is not active.",
-      409,
-    );
+    this.db
+      .prepare(
+        "UPDATE managed_account_keys SET state='removing',updated_at=? WHERE account_id=? AND public_key=? AND state='active'",
+      )
+      .run(this.clock(), row.account_id, key);
     return this.view(player);
   }
   // Called by the relay worker under its lease. Idempotent: a lost response is

@@ -42,6 +42,8 @@ function checkContext(ctx) {
     typeof ctx.accountId === "string" &&
     Array.isArray(ctx.keys) &&
     Array.isArray(ctx.pendingKeys ?? []) &&
+    Array.isArray(ctx.addKeys ?? []) &&
+    Array.isArray(ctx.removeKeys ?? []) &&
     Array.isArray(ctx.linkedWallets ?? []) &&
     integer(ctx.blockHeight) &&
     Number.isSafeInteger(ctx.blockTtl) &&
@@ -66,6 +68,10 @@ function checkContext(ctx) {
     accountId: ctx.accountId,
     keys: ctx.keys,
     pendingKeys: ctx.pendingKeys ?? [],
+    // When the relayer separates them, a registered addition can only be
+    // added and a registered removal only removed.
+    addKeys: ctx.addKeys ?? ctx.pendingKeys ?? [],
+    removeKeys: ctx.removeKeys ?? ctx.pendingKeys ?? [],
     linkedWallets: ctx.linkedWallets ?? [],
     nonce: yocto(ctx.nonce),
     blockHeight: BigInt(ctx.blockHeight),
@@ -221,7 +227,7 @@ export function validateDelegate(decoded, context) {
     );
     const target = keyActionPublicKey(action[kind].publicKey);
     demand(
-      ctx.pendingKeys.includes(target),
+      (kind === "addKey" ? ctx.addKeys : ctx.removeKeys).includes(target),
       "RELAY_KEY_TARGET",
       "Register the key change before signing it.",
     );

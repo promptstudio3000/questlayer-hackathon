@@ -191,8 +191,10 @@ export class Relayer {
       409,
       "ACCOUNT_NOT_READY",
     );
-    const keys = this.accounts.keys(accountId);
-    const key = publicKey ?? keys[0];
+    // A key whose removal is requested still holds full access on chain
+    // until its deleteKey lands, so it can keep signing until then.
+    const keys = this.accounts.keys(accountId, ["active", "removing"]);
+    const key = publicKey ?? this.accounts.keys(accountId)[0] ?? keys[0];
     assert(
       keys.includes(key),
       "The signing key is not an active key of this account.",
@@ -207,6 +209,8 @@ export class Relayer {
       accountId,
       keys,
       pendingKeys: this.accounts.keys(accountId, ["pending", "removing"]),
+      addKeys: this.accounts.keys(accountId, ["pending"]),
+      removeKeys: this.accounts.keys(accountId, ["removing"]),
       linkedWallets: this.db
         .prepare(
           "SELECT account_id FROM wallet_links WHERE player_id=? AND account_id!=?",
@@ -252,7 +256,7 @@ export class Relayer {
       network: NETWORK,
       relayer: this.relayerId,
       accountId,
-      publicKey: publicKey ?? ctx.keys[0],
+      publicKey: publicKey ?? this.accounts.keys(accountId)[0] ?? ctx.keys[0],
       nonce: (ctx.nonce + 1n).toString(),
       blockHeight: ctx.blockHeight,
       maxBlockHeight: String(ctx.blockHeight + ctx.blockTtl),
