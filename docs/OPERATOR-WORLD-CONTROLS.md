@@ -58,3 +58,26 @@ Example pause of zone 2 today:
   places, native day states, the demo treasury buckets and funding, optionally
   the native rewards treasury and paused flag (`--chain`, read through RPC), the
   last 20 audit entries, and a `warnings` list with `status` ok/attention.
+
+## Web console
+
+`scripts/operator-console.mjs` serves a small console with four tabs: Health
+(the report above), Moderation (the queue from `server/moderation.mjs` with
+hide, restore, dismiss and tombstone), World controls (pause or resume, close
+or reopen a place, preview or apply a day adjustment) and Audit (world
+operations plus the hash-chained moderation log and its verification).
+
+```sh
+node scripts/operator-console.mjs --database $DB --operator lubos [--chain] [--port 8790]
+# on the VPS, from your machine:
+ssh -L 8790:127.0.0.1:8790 user@host   # then open the printed link
+```
+
+The authority model does not change: the game server still has no operator
+route. The console runs as its own process, listens on 127.0.0.1 only, acts as
+the operator named at start (a request body cannot choose another actor) and
+prints a one-time random token in the link. API calls need that token in an
+`Authorization` header and a loopback `Host`, which blocks cross-site requests
+and DNS rebinding. Every action goes through the same audited functions as
+the CLIs, with optimistic versions, so a stale screen gets a 409 instead of
+overwriting a newer change. Stop the process when you are done.

@@ -456,6 +456,40 @@ export function changePlace(db, city, input, options = {}) {
 
 // ----------------------------------------------------------------- report
 
+/** Current versions to send as expectedVersion, for one city day. */
+export function controlVersions(db, cityId, day) {
+  assert(typeof cityId === "string" && isDay(day), "Select a city and day.");
+  const versions = { pauses: {}, adjustment: null, places: {} };
+  if (present(db)) {
+    for (const r of db
+      .prepare(
+        "SELECT scope,state,version FROM world_pauses WHERE city_id=? AND day=?",
+      )
+      .all(cityId, day))
+      versions.pauses[r.scope] = { state: r.state, version: r.version };
+    const adj = db
+      .prepare(
+        "SELECT state,version,body FROM world_day_adjustments WHERE city_id=? AND day=?",
+      )
+      .get(cityId, day);
+    if (adj)
+      versions.adjustment = {
+        state: adj.state,
+        version: adj.version,
+        ...JSON.parse(adj.body),
+      };
+  }
+  if (tableExists(db, "system_place_closures"))
+    for (const r of db
+      .prepare(
+        "SELECT candidate_id,state,version FROM system_place_closures WHERE city_id=?",
+      )
+      .all(cityId))
+      versions.places[r.candidate_id] = { state: r.state, version: r.version };
+  versions.publishedAs = dayPublication(db, cityId, day);
+  return versions;
+}
+
 export function operatorAudit(db, { limit = 50 } = {}) {
   assert(
     Number.isSafeInteger(limit) && limit > 0 && limit <= 200,
