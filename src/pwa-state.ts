@@ -177,18 +177,34 @@ export function applyUpdate(): void {
   } else window.location.reload();
 }
 
+/**
+ * A worker is a waiting update only when an older version already ran this
+ * page when the new one was found, and the new one is still parked in
+ * "installed". A first install activates and claims the page straight away,
+ * and on a fast device that can happen before its "installed" statechange is
+ * delivered, so checking the controller at that point would wrongly offer
+ * the first install as an update.
+ */
+export function isWaitingUpdate(
+  hadController: boolean,
+  state: string | undefined,
+): boolean {
+  return hadController && state === "installed";
+}
+
 function trackWaiting(registration: ServiceWorkerRegistration) {
-  const offer = (worker: ServiceWorker | null) => {
-    // Only an update to an existing controller waits; a first install does not.
-    if (!worker || !navigator.serviceWorker.controller) return;
+  const offer = (worker: ServiceWorker | null, hadController: boolean) => {
+    if (!worker || !isWaitingUpdate(hadController, worker.state)) return;
     waitingWorker = worker;
     set({ updateReady: true });
   };
-  offer(registration.waiting);
+  offer(registration.waiting, !!navigator.serviceWorker.controller);
   registration.addEventListener("updatefound", () => {
     const worker = registration.installing;
+    const hadController = !!navigator.serviceWorker.controller;
     worker?.addEventListener("statechange", () => {
-      if (worker.state === "installed") offer(registration.waiting || worker);
+      if (worker.state === "installed")
+        offer(registration.waiting || worker, hadController);
     });
   });
 }

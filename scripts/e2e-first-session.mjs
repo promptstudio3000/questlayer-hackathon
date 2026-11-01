@@ -185,12 +185,13 @@ async function newExplorerContext(browser, profile) {
 }
 
 // The home-screen offer (after 45 s of play; on iPhone the Share → Add to
-// Home Screen card) and the "New version ready" notice sit over the top bar.
-// Dismiss them whenever they get in the way, as a player would.
+// Home Screen card) sits over the top bar. Dismiss it whenever it gets in
+// the way, as a player would. A "New version ready" notice is not
+// dismissed: a fresh server never has a newer version, so one is a bug.
 async function dismissInstallOffer(page) {
-  await page.addLocatorHandler(page.locator(".pwa-install, .pwa-update"), async (card) => {
-    console.log("  dismissed a home-screen/update card");
-    await card.getByRole("button", { name: /Got it|Not now|Later/ }).click();
+  await page.addLocatorHandler(page.locator(".pwa-install"), async (card) => {
+    console.log("  dismissing the home-screen offer");
+    await card.getByRole("button", { name: /Got it|Not now/ }).click();
   });
 }
 
@@ -304,6 +305,8 @@ async function runDevice(name, server) {
   const report = { device: name, browser: engine.name(), profile, a11y: {} };
   const blocking = [];
   const scan = async (page, screen) => {
+    // A fresh server has no newer version; this notice would be a false alarm.
+    assert.equal(await page.locator(".pwa-update").count(), 0, `false "New version ready" on ${screen}`);
     for (const v of await a11y(page, screen, report)) blocking.push({ screen, ...v });
   };
   const explorer = `Mira ${name}`;
