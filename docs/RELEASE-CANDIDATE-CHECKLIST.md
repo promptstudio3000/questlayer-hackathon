@@ -82,6 +82,9 @@ native claims until it ends; play continues on the next day.
 
 ## 4. Before calling it a release candidate
 
+- [ ] Test world removed: delete `Environment=TEST_SEED=1` from
+  `deploy/questlayer-hackathon.service`, deploy, and `/api/health` shows
+  `testSeed: {"status":"off"}` (see `docs/TEST-SEED.md`). Mainnet never runs it.
 - [ ] No open release-blocking defect (W13.5).
 - [ ] README judge path works on `questlayer.promptstudio3000.com` in a fresh
       browser profile.

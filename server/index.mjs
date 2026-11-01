@@ -110,6 +110,8 @@ import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
 import { createActorRoutes } from "./actors/routes.mjs";
 import { actorsEnabled, createActorService } from "./actors/service.mjs";
+import { testSeedMode as readTestSeedMode } from "./test-seed/config.mjs";
+import { createTestSeed } from "./test-seed/seed.mjs";
 import "./npc/menu-builder.mjs";
 import { createNpcService } from "./npc/service.mjs";
 import { createNpcRoutes } from "./npc/routes.mjs";
@@ -139,6 +141,8 @@ const nativeAttestationsDisabled =
 const backgroundWorkersDisabled =
   process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
+// Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
+const testSeedMode = readTestSeedMode(process.env, NETWORK);
 const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
 const noteMedia = new NoteMedia();
@@ -347,7 +351,9 @@ const creatorBonusVote =
     : null;
 const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
 // Roaming NPCs and monsters (docs/NPC-PLAN.md §14): off unless ACTORS_ENABLED=1.
-const actorService = actorsEnabled() ? createActorService(db) : null;
+// The testnet test world turns them on too.
+const actorService =
+  actorsEnabled() || testSeedMode === "apply" ? createActorService(db) : null;
 const actorRoutes = createActorRoutes(actorService);
 // NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
 // Ollama setup; the key stays in the runtime environment only.
@@ -391,6 +397,28 @@ const monsterHunt = createMonsterHunt(db, actorService, {
   bossHp: Number(process.env.BOSS_HP) || undefined,
 });
 const huntRoutes = createHuntRoutes(monsterHunt, actorService, db);
+const testSeed = createTestSeed(db, {
+  creators: creatorRuntime.services
+    ? {
+        services: creatorRuntime.services,
+        moderator: creatorRuntime.config.moderators[0],
+        completionAuthority: creatorRuntime.config.completionAuthorities[0],
+        policyVersion: creatorRuntime.config.policy.version,
+      }
+    : null,
+  log: (message) => console.log(message),
+});
+try {
+  if (testSeedMode === "apply")
+    console.log("Test seed applied:", JSON.stringify(testSeed.apply()));
+  else {
+    const purged = testSeed.purge();
+    if (purged.removed) console.log("Test seed removed:", JSON.stringify(purged));
+  }
+} catch (error) {
+  console.error("Test seed failed:", error?.code || error?.message || error);
+}
+const testSeedActive = testSeedMode === "apply";
 const challengeRoutes = createChallengeRoutes(
   createMonsterChallenges(db, actorService, {
     levelOf: (player) => demoProgression(db, player).level,
@@ -648,6 +676,7 @@ async function api(req, res, url) {
       socialRecords: featureEnabled("social")
         ? socialRecords.workerStatus()
         : { status: "not-configured" },
+      testSeed: testSeedActive ? testSeed.status() : { status: "off" },
       now: Date.now(),
     });
   if (path === "/api/quest-templates" && method === "GET")
@@ -689,6 +718,7 @@ async function api(req, res, url) {
     const input = await body(req);
     const result = game.session(db, input.name);
     identitySessions.record(result.token, "guest");
+    if (testSeedActive) testSeed.grantKit(result.player.id);
     return respond(res, { player: profile(result.player.id) }, 201, {
       "Set-Cookie": cookie(result.token),
     });
@@ -1681,7 +1711,10 @@ async function api(req, res, url) {
     );
     return respond(res, { player: profile(player) });
   }
-  if (path === "/api/me") return respond(res, { player: profile(player) });
+  if (path === "/api/me") {
+    if (testSeedActive) testSeed.grantKit(player);
+    return respond(res, { player: profile(player) });
+  }
   if (path === "/api/events") {
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -2568,6 +2601,21 @@ const creatorMoneyWorker =
   !backgroundWorkersDisabled && creatorMoney?.enabled
     ? startCreatorMoneyWorker(creatorMoney, { intervalMs: 30000 })
     : null;
+// Test world explorers walk every 10 s (presence counts only if updated in
+// the last 30 s); the buyer, reviewers and restocking run every 30 s.
+let testSeedTicks = 0;
+const testSeedWorker =
+  !backgroundWorkersDisabled && testSeedActive
+    ? setInterval(() => {
+        try {
+          testSeed.tickPresence();
+          if (testSeedTicks++ % 3 === 0) testSeed.tickEconomy();
+        } catch (e) {
+          console.error("Test seed tick failed", e?.message || e);
+        }
+      }, 10_000)
+    : null;
+testSeedWorker?.unref();
 let nextMediaPrune = 0;
 const maintenance = setInterval(() => {
   if (backgroundWorkersDisabled) return;
@@ -2600,6 +2648,7 @@ server.listen(port, process.env.HOST || "127.0.0.1", () =>
 );
 async function close() {
   clearInterval(maintenance);
+  if (testSeedWorker) clearInterval(testSeedWorker);
   await worldPlanner?.stop();
   await rewardWorker?.stop();
   await relayWorker?.stop?.();

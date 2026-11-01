@@ -28,7 +28,8 @@
     "e2e:bonus-vote": "node scripts/e2e-bonus-vote.mjs",
     "pilot:city": "node scripts/rehearse-city-pilot.mjs",
     "market:upgrade": "node scripts/upgrade-market-v2-testnet.mjs",
-    "market:fixture": "node scripts/lib/signed-order-fixture.mjs"
+    "market:fixture": "node scripts/lib/signed-order-fixture.mjs",
+    "seed:test": "node scripts/test-seed.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",
