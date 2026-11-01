@@ -8,12 +8,12 @@
   "existingTokensPreserved": true,
   "existingEquipmentPreserved": true,
   "supplyBefore": "1",
-  "wasmSha256": "b2684b58ce5a3920091f377fc6a364de96ded0dd65af3add744c9105a73c36f7",
+  "wasmSha256": "176f1b0777c52e0eb592e50f365fe6a0663b3bec29c4c1b7431649bc4428dee9",
   "transactions": [
     {
       "step": "Configure application attestation public key, not a wallet access key",
       "transaction": "6rnhdjRKA8oD1Htc7VpLmptwYy6qPvpNwefHRKDwDojY"
     }
   ],
-  "codeUpgrade": "Code-only Aura catalog upgrade (PR #32); award signer, tokens and equipment unchanged. See public/native-editions-testnet.json."
+  "codeUpgrade": "Code-only NPC/monster Aura editions upgrade (N5); award signer, tokens and equipment unchanged. See public/native-editions-testnet.json."
 }
