@@ -9,6 +9,12 @@ import {
 } from "../server/native/staking-pool.mjs";
 import { ExitScheduler } from "../server/native/exit-scheduler.mjs";
 import { TreasuryModel } from "../server/native/treasury-model.mjs";
+import {
+  NETWORK,
+  ACCOUNT_SUFFIX as SUFFIX,
+  NETWORK_LABEL,
+} from "../server/native/network.mjs";
+const OTHER_NETWORK = NETWORK === "mainnet" ? "testnet" : "mainnet";
 
 test("native math rejects floating and overflowing balances and never spends unrealized profit or loss recovery", () => {
   for (const input of [1, -1n, "01", "1e24", "1.1", 2n ** 128n])
@@ -87,7 +93,7 @@ test("E+2 tranche and contribution maturity preserves older access through top-u
 
 const ticket = (id, kind = "principal", amount = "100") => ({
   id,
-  owner: "alice.testnet",
+  owner: `alice${SUFFIX}`,
   kind,
   amount,
 });
@@ -238,14 +244,14 @@ test("liquid receipt policy is replay-safe, versioned and never recycles princip
     "operating",
   ])
     assert.throws(() => treasury.receive({ ...receipt(kind, "10"), kind }));
-  treasury.award("quest", "alice.testnet");
-  treasury.award("quest", "alice.testnet");
-  assert.throws(() => treasury.award("quest", "bob.testnet"));
+  treasury.award("quest", `alice${SUFFIX}`);
+  treasury.award("quest", `alice${SUFFIX}`);
+  assert.throws(() => treasury.award("quest", `bob${SUFFIX}`));
   assert.throws(() => treasury.expire("quest"));
   treasury.expire("street");
   treasury.expire("street");
   assert.equal(treasury.snapshot().available.coins, "500");
-  assert.throws(() => treasury.award("street", "alice.testnet"));
+  assert.throws(() => treasury.award("street", `alice${SUFFIX}`));
   assert.throws(() =>
     treasury.reserve({ id: "overfund", bucket: "coins", amount: "501" }),
   );
@@ -270,7 +276,7 @@ test("integer treasury conservation holds across many policies, city reservation
         amount: ((available + 1n) / 2n).toString(),
       });
       if (i % 3 === 0) treasury.expire(id);
-      else if (i % 3 === 1) treasury.award(id, "alice.testnet");
+      else if (i % 3 === 1) treasury.award(id, `alice${SUFFIX}`);
     }
   }
   const state = treasury.snapshot();
@@ -294,7 +300,7 @@ test("pool adapter pins every view, exposes no invented APY and accepts legitima
     calls = [];
   const provider = {
     async viewNodeStatus() {
-      return { chain_id: "testnet", sync_info: { syncing: false } };
+      return { chain_id: NETWORK, sync_info: { syncing: false } };
     },
     async query(request) {
       calls.push(request);
@@ -303,9 +309,9 @@ test("pool adapter pins every view, exposes no invented APY and accepts legitima
         get_total_staked_balance: "100000000000000000000000001",
         get_reward_fee_fraction: { numerator: 3, denominator: 100 },
         is_staking_paused: false,
-        get_owner_id: "owner.testnet",
+        get_owner_id: `owner${SUFFIX}`,
         get_account: {
-          account_id: "alice.testnet",
+          account_id: `alice${SUFFIX}`,
           staked_balance: "10",
           unstaked_balance: "3",
           can_withdraw: false,
@@ -328,7 +334,7 @@ test("pool adapter pins every view, exposes no invented APY and accepts legitima
     provider,
     {
       accountId: "example.pool.f863973.m0",
-      observerId: "alice.testnet",
+      observerId: `alice${SUFFIX}`,
       expectedCodeHash: "code-hash",
     },
     block,
@@ -345,15 +351,18 @@ test("pool adapter pins every view, exposes no invented APY and accepts legitima
     query: async (r) => ({ ...(await provider.query(r)), block_hash: "other" }),
   };
   await assert.rejects(
-    readStakingPool(wrongAnchor, { accountId: "example.testnet" }, block),
+    readStakingPool(wrongAnchor, { accountId: `example${SUFFIX}` }, block),
     /anchor/,
   );
   await assert.rejects(
     readStakingPool(
-      { ...provider, viewNodeStatus: async () => ({ chain_id: "mainnet" }) },
-      { accountId: "example.testnet" },
+      {
+        ...provider,
+        viewNodeStatus: async () => ({ chain_id: OTHER_NETWORK }),
+      },
+      { accountId: `example${SUFFIX}` },
       block,
     ),
-    /testnet/,
+    new RegExp(`not connected to ${NETWORK_LABEL}\\.`),
   );
 });

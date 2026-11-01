@@ -16,9 +16,14 @@ import {
   SOCIAL_RECORDS_SCHEMA,
 } from "../server/native/social-records.mjs";
 import { SOCIAL_CODE_HASH } from "../server/native/social-profile.mjs";
+import {
+  NETWORK,
+  ACCOUNT_SUFFIX as SUFFIX,
+  SOCIAL_CONTRACT_ID,
+} from "../server/native/network.mjs";
 
 const NOW = 1793500000000;
-const ACCOUNT = "alice.players.questlayer.testnet";
+const ACCOUNT = `alice.players.questlayer${SUFFIX}`;
 const PHOTO = Buffer.from("not really a jpeg but stable bytes for the address");
 
 function fakeSocial({ balance = null, codeHash = SOCIAL_CODE_HASH } = {}) {
@@ -27,7 +32,7 @@ function fakeSocial({ balance = null, codeHash = SOCIAL_CODE_HASH } = {}) {
     data,
     provider: {
       async viewNodeStatus() {
-        return { chain_id: "testnet", sync_info: { syncing: false } };
+        return { chain_id: NETWORK, sync_info: { syncing: false } };
       },
       async query(q) {
         if (q.request_type === "view_account") return { code_hash: codeHash };
@@ -148,7 +153,7 @@ test("a public note becomes a record under the author's namespace only, with the
     publicConsent: true,
     permanenceAcknowledged: true,
   });
-  assert.equal(quote.receiverId, "v1.social08.testnet");
+  assert.equal(quote.receiverId, SOCIAL_CONTRACT_ID);
   assert.equal(quote.methodName, "set");
   assert.equal(quote.deposit, "50000000000000000000000");
   assert.deepEqual(Object.keys(quote.args.data), [ACCOUNT]);
