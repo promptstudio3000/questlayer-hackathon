@@ -10,6 +10,12 @@ import { AURA_CATALOG, AURA_SUPPLY } from "../../aura-catalog.mjs";
 import { atomic, history } from "../../database.mjs";
 import { ensureModuleVersion } from "../../schema-compatibility.mjs";
 import { HUNT_SCHEMA } from "./schema.mjs";
+import { awardEditionOnce, ensureEarnedEditions } from "../../earned-editions.mjs";
+
+// First win per player against these archetypes pays an NPC/monster-only
+// edition once (server/earned-editions.mjs). Pocket Wisps are the
+// will-o'-wisp mini-game.
+export const FIRST_WIN_EDITION = Object.freeze({ guardian: "wardbreaker", lurker: "wisp" });
 
 export const WIN_XP = Object.freeze({ roamer: 20, guardian: 40, lurker: 25 });
 export const WIN_SHARDS = Object.freeze({ roamer: 1, guardian: 2, lurker: 1 });
@@ -40,6 +46,7 @@ export function grantEdition(db, player, editionId, now) {
 
 export function createHuntRewards(db, { now = () => Date.now() } = {}) {
   ensureModuleVersion(db, HUNT_SCHEMA);
+  ensureEarnedEditions(db);
   const insert = db.prepare(
     "INSERT OR IGNORE INTO monster_rewards(player_id,source,kind,amount,day_id,data,created_at) VALUES(?,?,?,?,?,?,?)",
   );
@@ -70,7 +77,7 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
       source = `win:${actorId}:${dayId}`;
     if (!db.prepare("SELECT 1 FROM players WHERE id=?").get(player)) return null;
     return atomic(db, () => {
-      const out = { xp: 0, shards: null, rollTicket: false, unlocks: null };
+      const out = { xp: 0, shards: null, rollTicket: false, unlocks: null, edition: null };
       out.xp = addXp(player, source, WIN_XP[archetype], dayId, `Beat ${result.name || "a monster"}`, at, { archetype });
       const element = ELEMENTS.includes(result.element) ? result.element : "void";
       const room = Math.max(0, DAILY_SHARD_CAP - shardsToday.get(player, dayId).n),
@@ -81,6 +88,14 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
       }
       if (archetype === "lurker") out.rollTicket = grant(player, source, "roll", 1, dayId, {}, at);
       if (archetype === "guardian" && result.guards?.zoneId) out.unlocks = { zoneId: result.guards.zoneId };
+      const editionId = FIRST_WIN_EDITION[archetype];
+      if (editionId) {
+        const item = awardEditionOnce(db, player, editionId, `monster:${source}`, at);
+        if (item) {
+          grant(player, source, "edition", 1, dayId, { edition: editionId, item: item.id }, at);
+          out.edition = { id: item.id, name: item.name, rarity: item.rarity, edition: editionId };
+        }
+      }
       return out;
     });
   }
