@@ -40,6 +40,7 @@ import { NativeRewards } from "../native/rewards.mjs";
 import { runRewardWorker } from "../native/reward-worker.mjs";
 import { auditDistribution } from "../native/distribution.mjs";
 import { rewardsChainDouble } from "./rewards-chain-double.mjs";
+import { ACCOUNT_SUFFIX } from "../native/network.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const BACKUP_SCRIPT = join(ROOT, "deploy", "backup-state.py");
@@ -56,9 +57,12 @@ export async function runCityPilot({
   chmodSync(directory, 0o700);
   const live = join(directory, "state"),
     snapshots = join(directory, "snapshots"),
-    contractId = "qa-rewards.testnet",
+    contractId = `qa-rewards${ACCOUNT_SUFFIX}`,
     codeHash = "qa-reviewed-code",
-    accounts = { alice: "alice.pilot.testnet", bob: "bob.pilot.testnet" },
+    accounts = {
+      alice: `alice.pilot${ACCOUNT_SUFFIX}`,
+      bob: `bob.pilot${ACCOUNT_SUFFIX}`,
+    },
     events = [],
     hosts = [];
   const at = (index, localHour) =>

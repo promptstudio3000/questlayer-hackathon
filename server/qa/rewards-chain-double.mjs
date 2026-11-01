@@ -8,6 +8,7 @@
 import { createPublicKey, verify } from "node:crypto";
 import { hash } from "../domain.mjs";
 import { rewardMessage } from "../native/reward-manifest.mjs";
+import { NETWORK } from "../native/network.mjs";
 
 const NEAR = 10n ** 24n,
   DAY_MS = 86400000,
@@ -95,7 +96,7 @@ export function rewardsChainDouble({
     if (method === "get_config")
       return {
         version: 2,
-        network: "testnet",
+        network: NETWORK,
         attestor: attestorPublicKey,
         publisher: contractId,
         paused: false,
@@ -137,7 +138,7 @@ export function rewardsChainDouble({
     throw Error(`Unexpected rehearsal view ${method}`);
   };
   const provider = {
-    viewNodeStatus: async () => ({ chain_id: "testnet" }),
+    viewNodeStatus: async () => ({ chain_id: NETWORK }),
     query: async (q) => {
       if (q.request_type === "view_account")
         return {
