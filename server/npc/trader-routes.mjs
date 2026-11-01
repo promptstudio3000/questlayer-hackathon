@@ -7,6 +7,7 @@
 //   GET  /api/keeper/stake                       "your stake today" card (Profile → Stake)
 //   POST /api/keeper/ceremonies/:id/seen         closes an E+2 / tier ceremony
 import { formatNear } from "./trader-pricing.mjs";
+import { patronPathView } from "./patron-path.mjs";
 
 const TRADE = /^\/api\/actors\/([a-z0-9-]{3,44})\/offers\/((?:trade_buy|trade_sell|trade_up):[0-9a-f]{16})\/(accept|complete)$/;
 const KEEPER = /^\/api\/actors\/([a-z0-9-]{3,44})\/keeper$/;
@@ -75,7 +76,7 @@ export async function keeperView({ db, player, market, vaults, keeperVault = nul
     out.accounts.push(entry);
   }
   out.lines.push("I never move your funds: every deposit, exit or change is signed by you on the usual confirmation screen.");
-  if (keeperVault?.settings.enabled) out.stake = keeperVault.view({ player, level, positions });
+  if (keeperVault?.settings.enabled) out.stake = keeperVault.view({ player, level, positions, patronPath: patronPathView(db, player) });
   return out;
 }
 
@@ -94,7 +95,7 @@ export async function stakeCard({ db, player, vaults, keeperVault, level = 1 }) 
       unreadable++;
     }
   }
-  return { ...keeperVault.view({ player, level, positions }), linked: positions.length + unreadable, unreadable };
+  return { ...keeperVault.view({ player, level, positions, patronPath: patronPathView(db, player) }), linked: positions.length + unreadable, unreadable };
 }
 
 export function createTraderRoutes({ traders, actors, db, market, vaults, keeperVault = null, levelOf = () => 1 }) {

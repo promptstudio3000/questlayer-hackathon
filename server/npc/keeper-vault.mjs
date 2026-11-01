@@ -228,7 +228,7 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
    * Stake card for one player. `positions` are the vault snapshot rows of
    * each linked account: [{accountId, vaults: [{vault, pool, state, s}]}].
    */
-  function view({ player, level, positions }) {
+  function view({ player, level, positions, patronPath = null }) {
     init();
     const accounts = [];
     let weighted = 0n,
@@ -326,6 +326,9 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
         have: { tier, level },
         missing,
         chapters: open ? settings.chapters : settings.chapters.map((c) => ({ title: c.title, locked: true })),
+        // Patron's Path (P1-1, server/npc/patron-path.mjs): progress through
+        // the patron quest lines. Shown to everyone; walking it needs the tier.
+        ...(patronPath ? { path: patronPath } : {}),
       },
     };
   }

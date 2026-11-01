@@ -11,6 +11,7 @@
 // the existing award-signed `redeem_aura` claim.
 import { hash } from "../domain.mjs";
 import { extraQuestLines, extraStoryChapters } from "../levels.mjs";
+import { MAX_PATRON_LINES_PER_DAY, PATRON_PATH_LINES, PATRON_TIER, patronEditionLive } from "./patron-path.mjs";
 
 export const NPC_OFFER_POLICY = "npc-offers-v1";
 export const LINE_XP_PER_STEP = 20;
@@ -111,7 +112,18 @@ const stepView = (q, zones) => ({
  * already accepted from this NPC today; `chapters` is the player's finished
  * chapter count with this storyteller (for the story Aura at the set's end).
  */
-export function buildMenu({ actor, persona, world, now = Date.now(), done = new Set(), linesToday = 0, chapters = 0, level = 1 }) {
+export function buildMenu({
+  actor,
+  persona,
+  world,
+  now = Date.now(),
+  done = new Set(),
+  linesToday = 0,
+  chapters = 0,
+  level = 1,
+  patronToday = 0,
+  patronDone = 0,
+}) {
   const archetype = actor?.archetype || persona?.archetype;
   if (!world || !actor) return [];
   const zones = new Map((world.zones || []).map((z) => [z.id, z]));
@@ -123,12 +135,45 @@ export function buildMenu({ actor, persona, world, now = Date.now(), done = new 
       order(seed, a.id) - order(seed, b.id),
   );
   const offers = [];
+  const patronOpen = playerTierOf(world) >= PATRON_TIER && patronToday < MAX_PATRON_LINES_PER_DAY;
   if (archetype === "quest_giver") {
-    // L7 unlock (server/data/level-table.json): one more line per NPC and day.
-    if (linesToday >= MAX_LINES_PER_DAY + extraQuestLines(level)) return [];
     const used = new Set();
+    // Patron line (P1-1): a walk that ends in a Tier 2+ zone, Tier 2 stakers
+    // only. Same XP formula as any line; the lure is the walk, the patron
+    // story chapter and, at the path's end, the patron edition.
+    const target = patronOpen && steps.find((q) => q.tier >= PATRON_TIER && (zones.get(q.zone_id)?.tier || 1) >= PATRON_TIER);
+    if (target) {
+      const lead =
+        steps.find((q) => q.id !== target.id && q.zone_id !== target.zone_id && q.tier >= PATRON_TIER) ||
+        steps.find((q) => q.id !== target.id && q.zone_id !== target.zone_id);
+      const line = lead ? [lead, target] : [target];
+      const offerId = `patron:${hash(`${seed}|${line.map((q) => q.id).join(",")}`).slice(0, 16)}`;
+      line.forEach((q) => used.add(q.id));
+      if (!done.has(offerId)) {
+        const where = line.map((q) => `${q.title}${zones.get(q.zone_id) ? ` in ${zones.get(q.zone_id).name}` : ""}`);
+        const pathLine = Math.min(patronDone + 1, PATRON_PATH_LINES);
+        offers.push({
+          id: offerId,
+          kind: "quest",
+          label: `Patron walk: ${where.join(", then ")}`.slice(0, 120),
+          terms: {
+            steps: line.map((q) => stepView(q, zones)),
+            xp: LINE_XP_PER_STEP * line.length + LINE_BONUS_XP,
+            aura: true,
+            zoneTier: Math.max(...line.map((q) => zones.get(q.zone_id)?.tier || 1)),
+            patron: true,
+            pathLine,
+            pathOf: PATRON_PATH_LINES,
+            pathEnds: patronDone + 1 === PATRON_PATH_LINES && patronEditionLive(),
+          },
+          expiresAt,
+        });
+      }
+    }
+    // L7 unlock (server/data/level-table.json): one more line per NPC and day.
+    if (linesToday >= MAX_LINES_PER_DAY + extraQuestLines(level)) return offers;
     for (const first of steps) {
-      if (offers.length >= 3) break;
+      if (offers.filter((o) => !o.terms.patron).length >= 3) break;
       if (used.has(first.id)) continue;
       // Second stop in another zone when possible, so a line is a real walk.
       const second =
@@ -154,9 +199,33 @@ export function buildMenu({ actor, persona, world, now = Date.now(), done = new 
       });
     }
   } else if (archetype === "storyteller") {
+    // Patron chapter (P1-1): a chapter set in a Tier 2+ zone, for Tier 2
+    // stakers. It is a step on the Patron's Path, outside the story sets.
+    const scene = patronOpen && steps.find((q) => q.tier >= PATRON_TIER && (zones.get(q.zone_id)?.tier || 1) >= PATRON_TIER);
+    if (scene) {
+      const offerId = `patron-chapter:${hash(`${seed}|${scene.id}`).slice(0, 16)}`;
+      if (!done.has(offerId))
+        offers.push({
+          id: offerId,
+          kind: "chapter",
+          label: `Patron chapter: ${scene.title}${zones.get(scene.zone_id) ? ` in ${zones.get(scene.zone_id).name}` : ""}`.slice(0, 120),
+          terms: {
+            steps: [stepView(scene, zones)],
+            xp: CHAPTER_XP,
+            aura: false,
+            zoneTier: zones.get(scene.zone_id)?.tier || 1,
+            patron: true,
+            pathLine: Math.min(patronDone + 1, PATRON_PATH_LINES),
+            pathOf: PATRON_PATH_LINES,
+            pathEnds: patronDone + 1 === PATRON_PATH_LINES && patronEditionLive(),
+          },
+          expiresAt,
+        });
+    }
     for (const q of steps) {
       // L8 unlock (server/data/level-table.json): one more chapter on offer.
-      if (offers.length >= 2 + extraStoryChapters(level)) break;
+      if (offers.filter((o) => !o.terms.patron).length >= 2 + extraStoryChapters(level)) break;
+      if (scene && q.id === scene.id) continue;
       const offerId = `chapter:${hash(`${seed}|${q.id}`).slice(0, 16)}`;
       if (done.has(offerId)) continue;
       const finishesSet = (chapters + 1) % STORY_SET_SIZE === 0;
@@ -202,6 +271,15 @@ function tradeFact(o, index) {
 }
 
 function questFact(o, index) {
+  if (o.terms.patron)
+    return {
+      id: `offer-${index}`,
+      text: `Offer ${index}: ${o.label}. A patron ${o.kind === "chapter" ? "chapter" : "walk"} for Tier ${PATRON_TIER} stakers: ${o.terms.xp} XP${
+        o.terms.aura ? " and one Aura you are entitled to" : ""
+      }, and step ${o.terms.pathLine} of ${o.terms.pathOf} on the Patron's Path, which reveals a patron story chapter${
+        o.terms.pathEnds ? " and finishes the path with the patron edition Aura" : ""
+      }. It does not change any luck or payout.`,
+    };
   return ({
     id: `offer-${index}`,
     text: `Offer ${index}: ${o.label}. Reward: ${o.terms.xp} XP${

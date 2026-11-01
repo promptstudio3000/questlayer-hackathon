@@ -40,3 +40,20 @@ state; it never signs, moves funds or changes a chance. Code: `server/npc/keeper
 
 Tables (`keeper-vault` schema module) appear on the first Keeper visit: `keeper_vault_watch`,
 `keeper_stake_days`, `keeper_ceremonies`.
+
+## Patron quest lines (GAME-LOOPS P1-1)
+
+Code: `server/npc/patron-path.mjs`, `server/npc/offers.mjs`; tests: `tests/patron-path.test.mjs`.
+
+- A player whose matured stake reaches **Tier 2** (tier only, no level gate) gets one **patron walk** per day from each
+  quest giver: two stops that end in a Tier 2+ zone. Each storyteller offers one **patron chapter** per day, set in a
+  Tier 2+ zone. Both sit outside the regular daily caps and outside the storyteller's chapter sets.
+- They pay the same XP as any line (20 per stop + 10, chapters 15), the walk's Aura from the ordinary chest
+  entitlement, and the stops pay their zone's ordinary prize. No bonus XP, odds or payouts.
+- Each turned-in patron line is a step on the **Patron's Path** (3 steps, counted across all NPCs). Each step reveals
+  the next chapter of the patron story; the third earns the NPC-only **patron edition** Aura once per player.
+- The edition joins the catalog with the next shared collectibles upgrade. Until then the path still counts, and a
+  player who already finished it gets the Aura on their next patron line after the upgrade.
+- The Keeper's inner vault shows the path (`inner.path`: done/of, revealed story, edition) to everyone, locked or not.
+  Progress and the edition stay after a withdrawal (D29).
+- Free players keep seeing the greyed "Patron walk" / "Patron chapter" chips (P0-2).
