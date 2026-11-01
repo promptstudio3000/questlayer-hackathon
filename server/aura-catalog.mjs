@@ -34,3 +34,25 @@ export function chestAuraAvailable(db, zoneTier, level) {
         ?.minted || 0) < AURA_SUPPLY,
   );
 }
+/** Editions the collectibles contract can mint (catalog `native` flag). */
+export const NATIVE_EDITIONS = Object.freeze(
+  AURA_CATALOG.filter((e) => e.native).map((e) => e.id),
+);
+/** Editions every deployed collectibles version mints, before `supported_editions`. */
+export const LEGACY_NATIVE_EDITIONS = Object.freeze(["polar", "moon", "gold"]);
+const NATIVE_TOKEN = new RegExp(`^aura:(${NATIVE_EDITIONS.join("|")}):([1-9]\\d{0,2})$`);
+/** Parse `aura:<edition>:<serial>` for a native edition; null otherwise. */
+export function nativeAuraToken(tokenId) {
+  const m = typeof tokenId === "string" ? NATIVE_TOKEN.exec(tokenId) : null;
+  if (!m || Number(m[2]) > AURA_SUPPLY) return null;
+  return { edition: m[1], serial: Number(m[2]) };
+}
+export const isNativeAuraTokenId = (value) => !!nativeAuraToken(value);
+export function isNativeEdition(edition) {
+  return NATIVE_EDITIONS.includes(edition);
+}
+/** Native edition for a demo inventory name (either catalog name), or null. */
+export function nativeEditionForName(name) {
+  const edition = editionForDemoName(name);
+  return edition?.native ? edition.id : null;
+}

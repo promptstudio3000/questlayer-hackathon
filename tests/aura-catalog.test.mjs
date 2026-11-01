@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import * as server from "../server/aura-catalog.mjs";
 import {
   AURA_CATALOG,
@@ -36,11 +37,26 @@ test("client and server read the same catalog; every edition has authored art", 
         AURA_CATALOG.some((e) => e.rarity === rarity && e.slot === slot),
         `${rarity} ${slot}`,
       );
-  // Only editions the reviewed contract mints are marked native.
+  // Native editions are exactly the contract's AURA_EDITIONS table, with the
+  // same titles, in catalog-independent order.
+  const rust = readFileSync(
+      new URL("../contracts/collectibles/src/lib.rs", import.meta.url),
+      "utf8",
+    ),
+    table = rust.slice(
+      rust.indexOf("const AURA_EDITIONS"),
+      rust.indexOf("];", rust.indexOf("const AURA_EDITIONS")),
+    ),
+    rows = [...table.matchAll(/\("([a-z]+)", "([^"]+)", include_str!\("\.\.\/assets\/aura-([a-z]+)-uri\.txt"\)\)/g)];
   assert.deepEqual(
+    rows.map((r) => r[1]).sort(),
     AURA_CATALOG.filter((e) => e.native).map((e) => e.id).sort(),
-    ["gold", "moon", "polar"],
   );
+  for (const [, id, title, asset] of rows) {
+    assert.equal(asset, id);
+    assert.equal(AURA_CATALOG.find((e) => e.id === id).name, title);
+  }
+  assert.deepEqual(server.LEGACY_NATIVE_EDITIONS, ["polar", "moon", "gold"]);
 });
 test("rarity follows zone tier and level entitlements on client and server", () => {
   const byId = Object.fromEntries(AURA_CATALOG.map((e) => [e.id, e]));
@@ -109,4 +125,13 @@ test("wardrobe filters by slot, rarity and set; catalog progress counts editions
   assert.equal(progress.total, AURA_CATALOG.length);
   assert.equal(progress.entries.find((e) => e.edition.id === "gold").owned, 2);
   assert.equal(catalogEditionFor({ name: "Golden Dust" }).id, "gold");
+});
+test("native token ids accept every catalog edition within the 256 cap", () => {
+  assert.deepEqual(server.nativeAuraToken("aura:nova:256"), { edition: "nova", serial: 256 });
+  assert.deepEqual(server.nativeAuraToken("aura:polar:1"), { edition: "polar", serial: 1 });
+  for (const bad of ["aura:nova:0", "aura:nova:257", "aura:festival:1", "aura:polar:01", "avatar:x", null])
+    assert.equal(server.nativeAuraToken(bad), null, String(bad));
+  assert.equal(server.nativeEditionForName("Golden Dust"), "gold");
+  assert.equal(server.nativeEditionForName("Ember Wisp"), "ember");
+  assert.equal(server.nativeEditionForName("Mosslight"), null);
 });
