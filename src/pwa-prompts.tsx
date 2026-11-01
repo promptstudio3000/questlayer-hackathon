@@ -42,7 +42,7 @@ const playing = () => !!document.querySelector(".main-panel");
 /** No dialog, expanded sheet, toast or text entry competes for attention. */
 function calmMoment(): boolean {
   if (document.visibilityState !== "visible" || !navigator.onLine) return false;
-  if (document.querySelector("dialog[open], [aria-modal='true']")) return false;
+  if (modalOpen()) return false;
   if (document.querySelector(".sheet-expanded, .app-shell > .toast"))
     return false;
   const active = document.activeElement as HTMLElement | null;
@@ -131,6 +131,23 @@ function useOnline() {
   return online;
 }
 
+const modalOpen = () =>
+  !!document.querySelector("dialog[open], [aria-modal='true']");
+
+/**
+ * True while a modal dialog (the welcome screen, a reward) is open. A modal
+ * sits in the top layer and makes the page behind it inert, so a notice
+ * shown then would be covered and could not be dismissed; it waits instead.
+ */
+function useModalOpen() {
+  const [open, setOpen] = useState(modalOpen);
+  useEffect(() => {
+    const id = window.setInterval(() => setOpen(modalOpen()), 500);
+    return () => window.clearInterval(id);
+  }, []);
+  return open;
+}
+
 /** Waits for enough visible play time and a calm moment, once per visit. */
 function useInstallMoment(eligible: boolean) {
   const [ready, setReady] = useState(false);
@@ -176,7 +193,8 @@ export function PwaPrompts() {
       });
   const moment = useInstallMoment(!!offer);
   const showOffer = !!offer && moment && online;
-  const showUpdate = state.updateReady && !laterUpdate && online;
+  const modal = useModalOpen();
+  const showUpdate = state.updateReady && !laterUpdate && online && !modal;
   const anchor = useBarAnchors(
     showOffer || showUpdate || !online || backOnline,
   );

@@ -6,6 +6,7 @@ import {
   isIosDevice,
   isNewerRelease,
   isPhoneLike,
+  isWaitingUpdate,
   readInstallChoice,
   releaseSignature,
   rememberInstallChoice,
@@ -101,4 +102,16 @@ test("a release is newer only when the served shell references other assets", ()
   );
   assert.equal(isNewerRelease(signature, null), false);
   assert.equal(isNewerRelease(null, signature), false);
+});
+
+test("a first service worker install is never offered as an update", () => {
+  // No controller when the worker was found: first install, whatever state
+  // it reached by the time its statechange arrived.
+  assert.equal(isWaitingUpdate(false, "installed"), false);
+  assert.equal(isWaitingUpdate(false, "activated"), false);
+  // An older version ran the page and the new one waits: an update.
+  assert.equal(isWaitingUpdate(true, "installed"), true);
+  // Already activated (another tab took it): controllerchange handles it.
+  assert.equal(isWaitingUpdate(true, "activating"), false);
+  assert.equal(isWaitingUpdate(true, undefined), false);
 });

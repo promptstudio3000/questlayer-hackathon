@@ -57,7 +57,7 @@ run. The first load is held to a budget: welcome-screen JS (220 KB gzip, 700 KB 
 `E2E_PERF_SCRIPT_GZIP_KB`, `E2E_PERF_SCRIPT_RAW_KB`, `E2E_PERF_REQUESTS`, `E2E_PERF_FCP_MS`,
 `E2E_PERF_READY_MS`, `E2E_PERF_CLS`.
 
-Home-screen and update cards: whenever one shows during the journey, it must not overlap the top bar, the
+The home-screen card: whenever it shows during the journey, it must not overlap the top bar, the
 open explorer profile menu, the tab bar or the Profile screen's Market entry (bounding boxes); the journey then
 dismisses it. A last step plays a fresh explorer on a fake clock so the Add to Home Screen card always shows on
 `iphone` and its placement is checked on the map, with the profile menu open and on the Profile screen. On phones

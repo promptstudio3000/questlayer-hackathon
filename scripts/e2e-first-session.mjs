@@ -185,11 +185,13 @@ async function newExplorerContext(browser, profile) {
 }
 
 // The home-screen offer (after 45 s of play; on iPhone the Share → Add to
-// Home Screen card) and the "New version ready" notice. Each time one shows
-// up the journey first checks it stays clear of the top bar, the explorer
-// profile menu (opened for the check), the tab bar and the Market entry,
-// then dismisses it as a player would.
-const CARD = ".pwa-install, .pwa-update";
+// Home Screen card). Each time it shows up the journey first checks it stays
+// clear of the top bar, the explorer profile menu (opened for the check), the
+// tab bar and the Market entry, then dismisses it as a player would. A "New
+// version ready" notice is not dismissed: a fresh server never has a newer
+// version, so one is a bug (scan() asserts there is none). It shares the
+// install card's placement.
+const CARD = ".pwa-install";
 async function cardOverlaps(page, where) {
   return page.evaluate(
     ({ card, where }) => {
@@ -234,8 +236,8 @@ async function dismissInstallOffer(page, layout) {
       await page.locator(".profile-menu").waitFor({ state: "detached" });
     }
     layout.checks += 1;
-    console.log(`  checked a home-screen/update card clears the bars (${shown.hits.length ? "OVERLAP" : "clear"}), dismissed it`);
-    await card.getByRole("button", { name: /Got it|Not now|Later/ }).click();
+    console.log(`  checked a home-screen card clears the bars (${shown.hits.length ? "OVERLAP" : "clear"}), dismissed it`);
+    await card.getByRole("button", { name: /Got it|Not now/ }).click();
   });
 }
 
@@ -351,6 +353,8 @@ async function runDevice(name, server) {
   const layout = { checks: 0, problems: [] };
   report.cardLayout = layout;
   const scan = async (page, screen) => {
+    // A fresh server has no newer version; this notice would be a false alarm.
+    assert.equal(await page.locator(".pwa-update").count(), 0, `false "New version ready" on ${screen}`);
     for (const v of await a11y(page, screen, report)) blocking.push({ screen, ...v });
   };
   const explorer = `Mira ${name}`;
