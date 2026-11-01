@@ -1,0 +1,83 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-01T22:28:00.562Z",
+  "contractId": "questlayer-npc-games-20261101.testnet",
+  "codeHash": "BT7rA3P2aYxKPmmsREkMb6aBtRdPPK3Rm7vJFcisBbUn",
+  "wasmSha256": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
+  "ticketSignerPublicKey": "1tiAB1ioQRduaHmtK9XkaKHDk7o9oMr3p82t4Nb72wQ=",
+  "timeoutBlocks": 600,
+  "minRevealDelayBlocks": 3,
+  "tables": {
+    "wisp-v1": {
+      "tiers": [
+        {
+          "prize": "trader-voucher",
+          "weight": 60,
+          "daily_cap": null
+        },
+        {
+          "prize": "aura-rare",
+          "weight": 30,
+          "daily_cap": null
+        },
+        {
+          "prize": "aura-epic",
+          "weight": 9,
+          "daily_cap": 20
+        },
+        {
+          "prize": "aura-legendary-wisp",
+          "weight": 1,
+          "daily_cap": 2
+        }
+      ],
+      "minimum": 0,
+      "total_weight": 100,
+      "active": true,
+      "published_at_ms": "1793572066662"
+    }
+  },
+  "wagering": false,
+  "capabilities": [
+    "earned-tickets-only",
+    "commit-reveal",
+    "random-seed",
+    "timeout-minimum",
+    "daily-caps"
+  ],
+  "smoke": {
+    "rollId": "smoke-mvyei21r",
+    "roll": {
+      "account_id": "questlayer-dev-20261101.testnet",
+      "table_id": "wisp-v1",
+      "commit": "6d70b3b3eb3a575fd9ce91d5dd1fb594d7ae016d93bc880376f8e6dd357e06db",
+      "start_height": "275811236",
+      "start_ms": "1793572070334",
+      "status": "Resolved",
+      "tier": 1,
+      "prize": "aura-rare",
+      "capped": false,
+      "secret": "45dd0a3ea94d2db57513338165ba742ba2c33e3902b2f941b8889c4973511757",
+      "random": "f2dffc6520bbf0f7e02f12b02a81396a96056a222df6698df7bfdc4d63b76381",
+      "finished_height": "275811248"
+    }
+  },
+  "transactions": [
+    {
+      "label": "Deploy and initialize questlayer-npc-games-20261101.testnet",
+      "transaction": "EdLmhn8GpuevFXdNGfXDuMS782tVfEsAAzXm1esw9mMY"
+    },
+    {
+      "label": "Publish prize table wisp-v1",
+      "transaction": "6LRokyCzpA5vtGJp4SXuqsrSLUZmN7K9f1F8ceucZKAZ"
+    },
+    {
+      "label": "Start an earned roll with a server ticket",
+      "transaction": "BQ63SbCqU9G41rB1BX6Z9d54pEUc65Gv49SSCxCmMPiU"
+    },
+    {
+      "label": "Reveal the secret and resolve the roll",
+      "transaction": "F4PQtZZScXLDNGaJxuRs8MFCpoSSBNbXLNdsL3bv3mYF"
+    }
+  ]
+}
