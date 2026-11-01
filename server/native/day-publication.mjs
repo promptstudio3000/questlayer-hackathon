@@ -14,6 +14,41 @@ import {
   publicationArgs,
   storedNativeManifest,
 } from "./reward-manifest.mjs";
+import { allocateDailyBudget, realizedYieldBacking } from "./allocation.mjs";
+import { NativeContractReader } from "./reader.mjs";
+
+/** Stored manifests that claim realized-yield funding, oldest first. */
+export function yieldBackedManifests(db) {
+  return db
+    .prepare("SELECT * FROM native_days ORDER BY day,id")
+    .all()
+    .map(storedNativeManifest)
+    .filter((m) => m.funding === "realized_yield");
+}
+/** Realized yield paid by this contract's vaults versus yield-backed days. */
+export async function readYieldBacking(native) {
+  const vaultStates = [];
+  for (const v of await native.vaultList()) {
+    const state = await new NativeContractReader(
+      native.provider,
+      v.accountId,
+    ).view("get_state", {}, true);
+    // Vaults of an older rewards generation pay a different treasury.
+    if (state?.rewards === native.contractId)
+      vaultStates.push({ ...state, accountId: v.accountId });
+  }
+  return {
+    vaults: vaultStates.map((s) => ({
+      accountId: s.accountId,
+      gamePaid: s.game_paid,
+    })),
+    ...realizedYieldBacking({
+      vaultStates,
+      yieldDays: yieldBackedManifests(native.db),
+      rewardsId: native.contractId,
+    }),
+  };
+}
 
 // One explicitly selected CityPack per publisher. This is not permission to
 // multiply the treasury budget by discovering cities or activating H3 cells.
@@ -50,12 +85,41 @@ export async function publishNativeDays(
       const treasury = await native.view("get_treasury", {}, true);
       renew();
       const activeCity = effectiveCityPack(native.db, city);
+      // This publisher's share of the day across all funded cities. With the
+      // default (this city alone, full share) the budget equals v1's.
+      let limit = null,
+        funding = null;
+      if (native.yieldBackedDays) {
+        const backing = await readYieldBacking(native);
+        renew();
+        limit = backing.limit;
+        funding = {
+          source: "realized_yield",
+          evidence: {
+            vaults: backing.vaults,
+            paid: backing.paid,
+            committedBefore: backing.committed,
+          },
+        };
+      }
+      const allocation = allocateDailyBudget({
+        available: {
+          coins: treasury.coins.available,
+          zones: treasury.zones.available,
+        },
+        cities: native.fundedCities || [{ id: city.id }],
+        shareBps: native.dailyShareBps ?? 10000,
+        limit,
+      });
+      const share = allocation.cities.find((c) => c.id === city.id);
+      assert(share, "This city is not enabled for funded days.", 503);
       const manifest = nativeManifest(
         plan,
         treasury,
         sampleCityPaths(activeCity).filter(
           (p) => !pointClosed(activeCity.exclusions || [], p),
         ),
+        { budget: { coins: share.coins, zones: share.zones }, funding },
       );
       if (!manifest) continue;
       writeOwned(

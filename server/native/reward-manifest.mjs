@@ -47,6 +47,7 @@ export function nativeManifest(
   plan,
   treasury,
   coinPoints = plan.cityId === PLZEN.id ? sampleCityPaths(PLZEN) : null,
+  { budget = null, funding = null } = {},
 ) {
   const dayId = nativeDayId(plan.cityId, plan.day);
   assert(
@@ -63,8 +64,24 @@ export function nativeManifest(
   coinPoints.forEach(point);
   const cap = 6n * 10n ** 21n;
   const available = (bucket) => nativeInteger(treasury[bucket].available);
-  const coinBudget = available("coins") < cap ? available("coins") : cap;
-  const zoneBudget = available("zones") < cap ? available("zones") : cap;
+  // An explicit budget comes from the allocation (server/native/allocation.mjs);
+  // without one a single city takes the capped available funds, as in v1.
+  const capped = (bucket) =>
+    budget
+      ? nativeInteger(budget[bucket])
+      : available(bucket) < cap
+        ? available(bucket)
+        : cap;
+  const coinBudget = capped("coins");
+  const zoneBudget = capped("zones");
+  assert(
+    coinBudget <= cap &&
+      zoneBudget <= cap &&
+      coinBudget <= available("coins") &&
+      zoneBudget <= available("zones"),
+    "Allocated day budget exceeds the cap or the available treasury.",
+    503,
+  );
   const unit = coinBudget / BigInt(coinPoints.length);
   if (unit === 0n) return null;
   const weights = plan.zones.reduce(
@@ -104,6 +121,11 @@ export function nativeManifest(
     quests,
     fieldReview: "pending",
     evidence: "browser GPS attestation; spoofing resistance not established",
+    // Only yield-backed days carry the field, so sponsor-funded manifests and
+    // their hashes stay byte-for-byte what v1 published.
+    ...(funding
+      ? { funding: funding.source, fundingEvidence: funding.evidence }
+      : {}),
   };
   return { ...body, hash: hash(JSON.stringify(body)) };
 }

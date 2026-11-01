@@ -67,6 +67,14 @@ player copy that names the pilot ("testnet expedition", "testnet vault pilot"), 
 scripts. `NEAR_NETWORK=mainnet` therefore starts the server against mainnet RPC and `*-mainnet.json` manifests
 but is not yet a supported configuration.
 
+Progress, 1 November (step 7): `MAINNET_FEATURES` is parsed in `server/native/network.mjs` (`featureEnabled`,
+`ENABLED_FEATURES`). Testnet keeps every slice on. On mainnet the server refuses to start without `collectibles`
+(the core reader and the minimal slice), `vaults` requires `rewards`, and market, rewards, vaults, relayer, social,
+creators and tasks answer "not configured" unless listed; `/api/health` and `/api/config` publish `features`.
+`npm run test:mainnet` runs the suite again with `NEAR_NETWORK=mainnet` (63 files, 422 tests); 21 files still use
+`.testnet` fixtures and are listed in `scripts/test-mainnet.mjs` until their fixtures read the network module.
+`npm run check` runs both passes.
+
 ## 4. Owner prerequisites (not Claude's to do)
 
 - A mainnet operator account with a hardware or well-kept key; separate `questlayer.near`-style factory and
