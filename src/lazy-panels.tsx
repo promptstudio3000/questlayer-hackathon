@@ -124,3 +124,7 @@ export const NativeProfilePanel = lazyNamed(
   () => import("./NativeProfile"),
   "NativeProfilePanel",
 );
+export const MonsterChallenge = lazyNamed(
+  () => import("./MonsterChallenge"),
+  "MonsterChallenge",
+);

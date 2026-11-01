@@ -29,6 +29,7 @@ const DEFERRED = [
   /Inventory/,
   /NativeTasks/,
   /MapNotes/,
+  /MonsterChallenge/,
 ];
 // Code that must stay out of the first load, by a string only it contains.
 const DEFERRED_CODE = [
