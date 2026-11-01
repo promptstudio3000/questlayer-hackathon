@@ -4,9 +4,9 @@
 // transaction would carry the attached deposit, so the relayer refuses them
 // and the player pays both the deposit and the small gas fee here.
 import { Account, JsonRpcProvider, actions as nearActions } from "near-api-js";
-import { api } from "./api";
-import { signerFor, type PlayerKeyRecord } from "./player-key";
-import type { ReviewedNativeTransaction } from "./confirmed-native-transaction";
+import { api } from "./api.ts";
+import { signerFor, type PlayerKeyRecord } from "./player-key.ts";
+import type { ReviewedNativeTransaction } from "./confirmed-native-transaction.ts";
 
 export const RELAYED_DEPOSITS = ["0", "1", "50000000000000000000000"];
 export class SelfPaidError extends Error {
