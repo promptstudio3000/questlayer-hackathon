@@ -32,12 +32,31 @@ type Pouch = {
   rollTickets: number;
   guardianWins: number;
   craft: { edition: string; shards: number; ready: boolean; needs: string[]; perDay?: number };
+  altar?: { perDay: number; craftedToday: number; recipes: Recipe[] };
+};
+type Recipe = {
+  id: string;
+  edition: string;
+  name: string;
+  rarity: string;
+  element: string | null;
+  shards: number;
+  commons: number;
+  guardian: boolean;
+  ready: boolean;
+  needs: string[];
 };
 
+function recipeCost(r: Recipe) {
+  const shards = `${r.shards} ${r.element ? `${r.element} ` : ""}shards`;
+  const commons = r.commons > 1 ? `${r.commons} common Auras` : "a common Aura";
+  return `${shards} + ${commons}${r.guardian ? " · guardian win" : ""}`;
+}
+
 const NEEDS: Record<string, string> = {
-  shards: "more monster shards",
+  shards: "more shards of that kind",
   guardian: "a guardian win",
-  "common-aura": "a common Aura you are not wearing",
+  "common-aura": "common Auras you are not wearing",
   daily: "tomorrow (daily offerings used)",
 };
 
@@ -107,11 +126,11 @@ export function BossFight({
     }
   }
 
-  async function craft() {
+  async function craft(recipe?: string) {
     setBusy(true);
     setError(null);
     try {
-      const r = await api<Pouch & { crafted: { item: { name: string } } }>("/hunt/craft", { worldId });
+      const r = await api<Pouch & { crafted: { item: { name: string } } }>("/hunt/craft", { worldId, ...(recipe ? { recipe } : {}) });
       setPouch(r);
       setCrafted(r.crafted.item.name);
     } catch (e) {
@@ -216,8 +235,31 @@ export function BossFight({
                 .join(" · ")}{" "}
               · roll tickets {pouch.rollTickets}
             </p>
-            {crafted ? (
-              <p className="monster-rewards">The Golden Altar gave you {crafted}.</p>
+            {crafted && <p className="monster-rewards">The Golden Altar gave you {crafted}.</p>}
+            {pouch.altar ? (
+              <>
+                <p className="monster-sub">
+                  Golden Altar · offerings today {pouch.altar.craftedToday}/{pouch.altar.perDay}
+                </p>
+                <ul className="altar-recipes">
+                  {pouch.altar.recipes.map((r) => (
+                    <li key={r.id} className={`altar-recipe rarity-${r.rarity}`}>
+                      <div>
+                        <strong>{r.name}</strong> <span className="monster-sub">({r.rarity})</span>
+                        <p className="monster-sub">{recipeCost(r)}</p>
+                        {!r.ready && (
+                          <p className="monster-sub">Still missing: {r.needs.map((n) => NEEDS[n] || n).join(", ")}.</p>
+                        )}
+                      </div>
+                      {r.ready && (
+                        <button type="button" className="monster-primary" disabled={busy} onClick={() => void craft(r.id)}>
+                          Offer
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : pouch.craft.ready ? (
               <button type="button" className="monster-primary" disabled={busy} onClick={() => void craft()}>
                 Offer {pouch.craft.shards} shards and a common Aura for Wardbreaker Horns

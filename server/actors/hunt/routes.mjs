@@ -1,6 +1,6 @@
 // HTTP routes for the monster hunt (slices M3 + M4):
 //   GET  /api/hunt?worldId=                 shards, roll tickets, craft status, this week's boss
-//   POST /api/hunt/craft                    {worldId, itemId?} -> Wardbreaker Horns
+//   POST /api/hunt/craft                    {worldId, recipe?, itemId?} -> an altar recipe edition
 //   GET  /api/hunt/boss?worldId=            event page: HP, schedule, arena, leaderboard
 //   POST /api/actors/:id/boss               {encounter} -> a seeded boss-hit mini-game
 //   POST /api/actors/:id/boss/:hitId        {taps | samples} -> damage and shared HP
@@ -56,7 +56,7 @@ export function createHuntRoutes(hunt, actorService, db) {
       if (path === "/api/hunt/craft" && method === "POST") {
         const input = await body(req);
         const manifest = world(String(input.worldId || ""), assert);
-        const crafted = hunt.rewards.craft(player, { itemId: input.itemId ? String(input.itemId) : undefined, dayId: manifest.day });
+        const crafted = hunt.rewards.craft(player, { itemId: input.itemId ? String(input.itemId) : undefined, recipe: input.recipe ? String(input.recipe).slice(0, 40) : undefined, dayId: manifest.day });
         respond(res, { crafted, ...hunt.rewards.summary(player, manifest.day) });
         return true;
       }
