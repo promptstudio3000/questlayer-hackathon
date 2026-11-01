@@ -36,10 +36,19 @@ funded and signed in the background. The blockchain is a property of the items, 
   `auratrail-dev-*` contracts are history only. Rewards/vault/tasks pilots still run under their 2026-10-31 accounts.
 - **VPS migration** from the former installation name: `docs/VPS-MIGRATION.md`, `scripts/migrate-vps-legacy.sh`.
 
+## Economy motor on testnet (1 November 2026, evening)
+
+- Rewards treasury generation 2026-11-01 publishes today and tomorrow from funded buckets; the vault holds 5 test
+  NEAR at the Aurora pool with a 50 % contribution. The worker harvests gain and flushes realized yield to the
+  treasury as epochs pass (observe `questlayer-vault-20261101.testnet` `get_state`).
+- Creator money (`questlayer-creators-20261101.testnet`) is live and proven: paid access 80/20, donations,
+  support rounds, withdrawals, treasury flush. The server publisher service and the UI are the next steps.
+- The relayer allowlists staking positions (money never sponsored) and creator payments from the invisible account.
+
 ## Not in scope before the hackathon deadline
 
-Staking yield cycle completion (W05), NEAR Intents market (W07), creator payments (W09), SocialDB/IPFS notes
-(W10), AI authoring (W11), iOS store distribution (W12/W14), mainnet. The roadmap (`ROADMAP.md`) keeps their gates.
+NEAR Intents market (W07), AI authoring (W11), iOS store distribution (W12/W14). Mainnet is planned as a minimal
+flagged path (collectibles, relayer, market) at the end of the window. The roadmap (`ROADMAP.md`) keeps the gates.
 
 ## Known limitations
 

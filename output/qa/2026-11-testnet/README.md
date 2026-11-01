@@ -9,6 +9,8 @@ its key stays in `.data/` and is not in the repository.
 | Award signer registered on the new collectibles contract (claims manifest v3) | same | `claims-upgrade-proof.json`, `public/native-claims-testnet.json` |
 | Market redeployed against the new collectibles contract | `questlayer-market-20261101.testnet` | `market-deployment-proof.json`, `public/native-market-testnet.json` |
 | Player factory and relayer accounts | `play-20261031.questlayer-dev-20261031.testnet`, `relay-20261031.questlayer-dev-20261031.testnet` | `scripts/deploy-player-factory-testnet.mjs` output |
+| Rewards treasury, vault (5 test NEAR staked at Aurora, 50 % contribution) and factory, generation 2026-11-01; two days published (6,000 coins + 6 quests each) | `questlayer-rewards-20261101.testnet`, `questlayer-vault-20261101.testnet`, `questlayer-vaults-20261101.testnet` | `funding-deployment.json`, `public/native-rewards-testnet.json` |
+| Creator money: 1 NEAR fund, paid quest 80/20, free repeat, donation, support round (completion 3 / like 1), creator withdrawal, treasury flush to rewards; conservation checked after every step | `questlayer-creators-20261101.testnet` | `native-creators-proof.json`, `public/native-creators-testnet.json` |
 | Invisible account: guest → sponsored sub-account → relayed `mint_avatar` without a wallet | `proof-mvx1gsxi.play-20261031.questlayer-dev-20261031.testnet` | `native-invisible-account-proof.json` |
 
 The first proof attempt failed in outcome verification because a delegate transaction's own status is empty and
