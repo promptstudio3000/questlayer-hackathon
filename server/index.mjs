@@ -874,6 +874,16 @@ async function api(req, res, url) {
       }),
     );
   }
+  if (path === "/api/native/market/orders" && method === "GET") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    return respond(
+      res,
+      await nativeMarket.signedOrders({
+        tokenId: url.searchParams.get("token"),
+        fresh: url.searchParams.get("refresh") === "1",
+      }),
+    );
+  }
   if (path === "/api/native/claim-signer" && method === "GET") {
     assert(
       awardSigner,
@@ -1367,6 +1377,11 @@ async function api(req, res, url) {
         Date.now(),
       );
     return respond(res, { ...result, player: profile(player) });
+  }
+  if (path === "/api/native/market/orders" && method === "POST") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    const input = await body(req);
+    return respond(res, await nativeMarket.submitOrder(input.order));
   }
   if (path === "/api/native/market/accounts" && method === "GET") {
     assert(nativeMarket, "The secured market is not available yet.", 503);

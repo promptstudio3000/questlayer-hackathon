@@ -103,7 +103,7 @@ const stats = await view("get_stats");
 assert.equal(stats.network, "testnet");
 assert.equal(stats.nft_contract, nftContractId);
 assert.equal(stats.owner, operator.accountId);
-assert.equal(stats.version, 1);
+assert.equal(stats.version, 2);
 const proof = {
   verifiedAt: new Date().toISOString(),
   network: "testnet",

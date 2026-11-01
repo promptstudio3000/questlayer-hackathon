@@ -21,7 +21,9 @@
     "world:pilot": "node scripts/run-world-pilot.mjs",
     "staking:probe": "node scripts/probe-staking-testnet.mjs",
     "funding:simulate": "node scripts/simulate-native-funding.mjs",
-    "pilot:city": "node scripts/rehearse-city-pilot.mjs"
+    "pilot:city": "node scripts/rehearse-city-pilot.mjs",
+    "market:upgrade": "node scripts/upgrade-market-v2-testnet.mjs",
+    "market:fixture": "node scripts/lib/signed-order-fixture.mjs"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.1",
