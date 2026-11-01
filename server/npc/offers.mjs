@@ -21,6 +21,12 @@ export const MAX_AURAS_PER_NPC_DAY = 40; // every player together
 export const OFFER_TTL_MS = 15 * 60_000;
 const MIN_TIME_LEFT_MS = 30 * 60_000;
 
+// Locked staker chips (docs/GAME-LOOPS.md §5, P0-2): content in Tier 2/3
+// zones is shown to every player, greyed with its tier, and becomes usable when
+// the player's stake matures into that tier (owner decision 1 Nov: tier only,
+// no level gate). Lures are things to do or wear; a gate never changes odds.
+export const MAX_LOCKED_CHIPS = 2;
+
 // Shape families each persona "likes" map onto (persona.likes are prose).
 const LIKE_FAMILIES = [
   [/park|garden|sady|meadow/i, ["garden", "park"]],
@@ -39,19 +45,54 @@ function liked(persona, zone) {
 // same menu on every encounter of that day (no re-roll farming).
 const order = (seed, key) => parseInt(hash(`${seed}|${key}`).slice(0, 8), 16);
 
-export function openSteps(world, now) {
+const playerTierOf = (world) => (Number.isInteger(world?.playerTier) ? world.playerTier : 1);
+
+function liveSteps(world, now) {
   if (!world || world.operatorPause) return [];
-  const tier = Number.isInteger(world.playerTier) ? world.playerTier : 1;
   const zones = new Map((world.zones || []).map((z) => [z.id, z]));
   return (world.quests || []).filter(
     (q) =>
       !q.completed &&
       q.placeStatus !== "closed" &&
       zones.has(q.zone_id) &&
-      q.tier <= tier &&
       q.opens_at <= now &&
       q.closes_at > now + MIN_TIME_LEFT_MS,
   );
+}
+
+export function openSteps(world, now) {
+  const tier = playerTierOf(world);
+  return liveSteps(world, now).filter((q) => q.tier <= tier);
+}
+
+/**
+ * Locked chips: quest lines and chapters in zones above the player's tier,
+ * one per tier, shown greyed with `locked: {tier}`. They are NOT offers: they
+ * never enter the menu, its hash, the model's facts or accept.
+ */
+export function lockedOffers({ actor, persona, world, now = Date.now() }) {
+  const archetype = actor?.archetype || persona?.archetype;
+  if (!world || !actor || (archetype !== "quest_giver" && archetype !== "storyteller")) return [];
+  const tier = playerTierOf(world);
+  const zones = new Map((world.zones || []).map((z) => [z.id, z]));
+  const seed = `${actor.id}|${world.id}`;
+  const byTier = new Map();
+  for (const q of liveSteps(world, now).sort((a, b) => order(seed, a.id) - order(seed, b.id)))
+    if (q.tier > tier && !byTier.has(q.tier)) byTier.set(q.tier, q);
+  return [...byTier.values()]
+    .sort((a, b) => a.tier - b.tier)
+    .slice(0, MAX_LOCKED_CHIPS)
+    .map((q) => {
+      const zone = zones.get(q.zone_id)?.name;
+      const quest = archetype === "quest_giver";
+      return {
+        id: `locked:${hash(`${seed}|${q.id}`).slice(0, 16)}`,
+        kind: quest ? "patron_quest" : "patron_chapter",
+        label: `${quest ? "Patron walk" : "Patron chapter"}: ${q.title}${zone ? ` in ${zone}` : ""}`.slice(0, 120),
+        perk: quest ? "A walk into a patron zone, XP and an Aura" : "A patron chapter in a patron zone, with XP",
+        locked: { tier: q.tier },
+      };
+    });
 }
 
 const stepView = (q, zones) => ({
@@ -69,7 +110,15 @@ const stepView = (q, zones) => ({
  * already accepted from this NPC today; `chapters` is the player's finished
  * chapter count with this storyteller (for the story Aura at the set's end).
  */
-export function buildMenu({ actor, persona, world, now = Date.now(), done = new Set(), linesToday = 0, chapters = 0 }) {
+export function buildMenu({
+  actor,
+  persona,
+  world,
+  now = Date.now(),
+  done = new Set(),
+  linesToday = 0,
+  chapters = 0,
+}) {
   const archetype = actor?.archetype || persona?.archetype;
   if (!world || !actor) return [];
   const zones = new Map((world.zones || []).map((z) => [z.id, z]));

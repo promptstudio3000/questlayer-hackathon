@@ -10,11 +10,20 @@ export interface NpcReply {
   emote: "wave" | "think" | "laugh" | "shrug" | "none";
   offer?: ActorOffer | null;
   menu: ActorOffer[];
+  /** Stakers-only content this player cannot take yet (never acceptable). */
+  locked?: NpcLockedOffer[];
   active: NpcActiveLine[];
   source: string;
   attested?: boolean;
   note?: string;
   npc?: { id: string; name: string; title: string | null; archetype: string };
+}
+export interface NpcLockedOffer {
+  id: string;
+  kind: string;
+  label: string;
+  perk?: string;
+  locked: { tier: number };
 }
 export interface NpcTurnIn {
   offerId: string;
