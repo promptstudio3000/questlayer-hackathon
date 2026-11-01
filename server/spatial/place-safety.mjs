@@ -27,6 +27,15 @@ const present = (db) =>
     )
     .get();
 const origins = new WeakMap();
+/** The registry pack a derived (effective or per-day) pack was built from. */
+export function baseCityPack(city) {
+  return origins.get(city) || city;
+}
+/** Record that a derived pack came from base, so later derivations start clean. */
+export function rememberCityOrigin(derived, base) {
+  origins.set(derived, baseCityPack(base));
+  return derived;
+}
 export function closedPlaces(db, cityId) {
   if (!present(db) || !cityId) return [];
   return db
