@@ -15,7 +15,7 @@ import { ensureModuleVersion } from "../server/schema-compatibility.mjs";
 test("the Plzeň actor file validates and uses the shared model keys", () => {
   const city = loadCityActors("plzen");
   const models = new Set(city.actors.map((a) => a.model));
-  for (const m of ["chronicler", "merchant", "keeper", "pilgrim", "wisp", "glitch-moth", "rune-warden", "pocket-wisp", "storm-golem"])
+  for (const m of ["chronicler", "merchant", "keeper", "pilgrim", "wisp", "lick-soldier", "lick-speedy", "lick-brute", "lick-turret", "pocket-wisp", "lick-boss"])
     assert.ok(models.has(m), m);
   assert.equal(loadCityActors("nowhere"), null);
 });
