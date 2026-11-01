@@ -1,4 +1,6 @@
-import { XpBar } from "./XpBar";
+import { EmptyState } from "./EmptyState";
+import { XpBar, useLevelTable } from "./XpBar";
+import { levelProgress } from "./levels";
 import {
   AdventureResultDialog,
   AdventureResultResume,
@@ -102,6 +104,7 @@ import {
 } from "./native-vault-quote";
 import "./styles.css";
 import "./theme-accents.css";
+import { HudXpRing, levelSummary } from "./HudXpRing";
 import type { NativeTradeRequest } from "./types";
 import type { NativeAuraClaim } from "./types";
 import { nativeAppearanceItems } from "./native-appearance";
@@ -687,6 +690,9 @@ export default function App() {
     : (player?.availableXp ?? player?.xp ?? null);
   const hudLevel =
     hudXp === null ? null : 1 + Math.floor(Math.sqrt(Number(hudXp) / 100));
+  const levelTable = useLevelTable();
+  const hudProgress =
+    hudXp === null ? null : levelProgress(Number(hudXp), levelTable);
   const nextWorldRefresh = useRef(0),
     collecting = useRef(new Set<string>()),
     collectionRun = useRef<AbortController | null>(null),
@@ -2693,23 +2699,42 @@ export default function App() {
               <button
                 ref={profileButton}
                 className="profile-pill"
-                aria-label="Explorer profile"
+                aria-label={
+                  hudProgress
+                    ? `Explorer profile · ${levelSummary(hudProgress)}`
+                    : "Explorer profile"
+                }
                 aria-expanded={menu}
                 aria-controls="explorer-profile"
                 onClick={() => setMenu((v) => !v)}
               >
-                <Character
-                  items={appearanceItems}
-                  originTokenId={player.appearance.originTokenId}
-                  compact
-                />
-                <span>
-                  <b>{player.name}</b>
-                  <small>
-                    {hudLevel !== null ? `Level ${hudLevel}` : "Explorer"}
-                  </small>
-                </span>
-                <span className="level-bubble">{hudLevel ?? "—"}</span>
+                {hudProgress ? (
+                  <HudXpRing
+                    level={hudProgress.level}
+                    xp={hudProgress.xp}
+                    levelStartXp={hudProgress.levelStartXp}
+                    nextLevelXp={hudProgress.nextLevelXp}
+                    ring={hudProgress.ring}
+                  >
+                    <Character
+                      items={appearanceItems}
+                      originTokenId={player.appearance.originTokenId}
+                      compact
+                    />
+                  </HudXpRing>
+                ) : (
+                  <>
+                    <Character
+                      items={appearanceItems}
+                      originTokenId={player.appearance.originTokenId}
+                      compact
+                    />
+                    <span>
+                      <b>{player.name}</b>
+                      <small>Explorer</small>
+                    </span>
+                  </>
+                )}
               </button>
             </>
           )}
@@ -2891,22 +2916,20 @@ export default function App() {
           {tab === "explore" && !selected && !nativePlay && (
             <>
               {!world?.zones.length && !recommendation && world && (
-                <div className="explore-empty" role="status">
-                  <strong>Nothing open right here yet</strong>
-                  <p>
-                    Today's discoveries are still being placed. Pull the map to
-                    look around, or check back in a few minutes.
-                  </p>
-                </div>
+                <EmptyState art="place" title="Nothing open right here yet" status>
+                  Today's discoveries are still being placed. Pull the map to
+                  look around, or check back in a few minutes.
+                </EmptyState>
               )}
               {world && world.zones.length > 0 && !recommendation && (
-                <div className="explore-empty" role="status">
-                  <strong>You've done everything open for you today</strong>
-                  <p>
-                    New discoveries open with the next day. Coins on the streets
-                    still count while you walk.
-                  </p>
-                </div>
+                <EmptyState
+                  art="ghost"
+                  title="You've done everything open for you today"
+                  status
+                >
+                  New discoveries open with the next day. Coins on the streets
+                  still count while you walk.
+                </EmptyState>
               )}
               {!coachStep &&
                 recommendedFind &&
@@ -3938,20 +3961,34 @@ export default function App() {
       )}
       {player && (
         <>
-          <div className="map-top-chip">
+          <div className="map-top-chip map-status-chip">
             <span className="status-dot" />
-            {nativePlay
-              ? arena
-                ? "Turn on location to play"
-                : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
-              : arena
-                ? "City demo · tap to walk"
-                : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`}
+            <span className="map-status-text">
+              {nativePlay
+                ? arena
+                  ? "Turn on location"
+                  : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
+                : arena
+                  ? "City demo · tap to walk"
+                  : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`}
+            </span>
             <button
+              aria-label={
+                arena || nativePlay ? "Use my location" : "Back to city demo"
+              }
               onClick={() => (arena || nativePlay ? locate() : returnToArena())}
             >
-              {arena || nativePlay ? "Use my location" : "Back to city demo"}
-              <ArrowUpRight size={12} />
+              {arena || nativePlay ? (
+                <>
+                  <NavigationArrow size={14} weight="fill" />
+                  Use GPS
+                </>
+              ) : (
+                <>
+                  <ArrowUpRight size={14} />
+                  Demo
+                </>
+              )}
             </button>
           </div>
           {presence && (
@@ -3966,7 +4003,7 @@ export default function App() {
               <X size={12} />
             </button>
           )}
-          <div className="map-controls">
+          <div className="map-controls map-toolbar" role="toolbar" aria-label="Map tools" aria-orientation="vertical">
             <button
               aria-label="City overview"
               title="City overview"
@@ -3977,7 +4014,7 @@ export default function App() {
                 setSelected(null);
               }}
             >
-              <Compass size={23} />
+              <Compass size={20} />
             </button>
             <button
               aria-label="My location"
@@ -3990,7 +4027,7 @@ export default function App() {
                 else setPosition((p) => ({ ...p }));
               }}
             >
-              <Crosshair size={23} />
+              <Crosshair size={20} />
             </button>
             <button
               aria-label="Globe"
@@ -4008,14 +4045,14 @@ export default function App() {
                 setFollow(true);
               }}
             >
-              <GlobeHemisphereWest size={23} />
+              <GlobeHemisphereWest size={20} />
             </button>
             <button
               aria-label="Map notes"
               title="Map notes"
               onClick={() => setTab("messages")}
             >
-              <ChatCircle size={23} />
+              <ChatCircle size={20} />
             </button>
           </div>
           <div className="player-bottom">
