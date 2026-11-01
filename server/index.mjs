@@ -1378,6 +1378,15 @@ async function api(req, res, url) {
       );
     return respond(res, { ...result, player: profile(player) });
   }
+  if (path === "/api/native/market/signer" && method === "GET") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    return respond(res, await nativeMarket.signer(url.searchParams.get("account")));
+  }
+  if (path === "/api/native/market/orders/status" && method === "POST") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    const input = await body(req);
+    return respond(res, { statuses: await nativeMarket.orderStatuses(input.orders) });
+  }
   if (path === "/api/native/market/orders" && method === "POST") {
     assert(nativeMarket, "The secured market is not available yet.", 503);
     const input = await body(req);

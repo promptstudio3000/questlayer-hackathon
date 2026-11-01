@@ -8,7 +8,7 @@ import {
   RELAYED_DEPOSITS,
 } from "../src/self-paid-native-transaction.ts";
 
-const quote = (deposit, extra = {}) => ({
+const quote = (deposit, extra = {}, methodName = "buy") => ({
   network: "testnet",
   signerId: "alice.players.questlayer.testnet",
   receiverId: "questlayer-market-20261101.testnet",
@@ -16,7 +16,7 @@ const quote = (deposit, extra = {}) => ({
     {
       type: "FunctionCall",
       params: {
-        methodName: "buy",
+        methodName,
         args: { listing_id: 1 },
         gas: "100000000000000",
         deposit,
@@ -36,14 +36,14 @@ const key = {
 test("only 0, 1 yocto and 0.05 NEAR deposits are routed to the relayer", () => {
   assert.deepEqual(RELAYED_DEPOSITS, ["0", "1", "50000000000000000000000"]);
   for (const d of RELAYED_DEPOSITS)
-    assert.equal(isRelayedDeposit(quote(d)), true, d);
+    assert.equal(isRelayedDeposit(quote(d, {}, "withdraw")), true, d);
   for (const d of [
     "2",
     "1000000000000000000000",
     "3520000000000000000000000",
     "1000000000000000000000000",
   ])
-    assert.equal(isRelayedDeposit(quote(d)), false, d);
+    assert.equal(isRelayedDeposit(quote(d, {}, "withdraw")), false, d);
   assert.equal(
     isRelayedDeposit(
       quote("0", { actions: [{ type: "Transfer", params: { deposit: "0" } }] }),
@@ -72,4 +72,11 @@ test("self-paid sending validates shape and account before touching any RPC", as
     sendSelfPaid({ ...key, accountId: undefined }, quote("1000")),
     (e) => e.code === "SELF_PAID_ACCOUNT",
   );
+});
+
+test("market calls that move money are self-paid even with a 1 yocto deposit", () => {
+  for (const m of ["buy", "fill_sell_order", "fill_buy_order", "deposit_near"])
+    assert.equal(isRelayedDeposit(quote("1", {}, m)), false, m);
+  for (const m of ["cancel_order", "cancel_all_orders", "add_signing_key", "cancel"])
+    assert.equal(isRelayedDeposit(quote("1", {}, m)), true, m);
 });

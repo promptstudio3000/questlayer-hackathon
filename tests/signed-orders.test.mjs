@@ -77,3 +77,28 @@ test("the order relay indexes only orders the market contract accepts", { skip: 
   reader.view = async () => ({ version: 1 });
   await assert.rejects(reader.submitOrder(fixture, env.nowMs), /version 2/);
 });
+
+test("the browser device-key signer produces the exact bytes the contract verifies", async () => {
+  const { KeyPairEd25519, baseEncode } = await import("near-api-js");
+  const { orderTerms: browserTerms, signOrder, statusFromCheck } = await import("../src/signed-order.ts");
+  const seed = new Uint8Array(32).fill(1);
+  const { createPrivateKey, createPublicKey } = await import("node:crypto");
+  const pub = createPublicKey(
+    createPrivateKey({ key: Buffer.concat([Buffer.from("302e020100300506032b657004220420", "hex"), seed]), format: "der", type: "pkcs8" }),
+  ).export({ type: "spki", format: "der" }).subarray(-32);
+  const secretKey = `ed25519:${baseEncode(Buffer.concat([seed, pub]))}`;
+  assert.equal(new KeyPairEd25519(baseEncode(Buffer.concat([seed, pub]))).getPublicKey().toString(), fixture.public_key);
+  const terms = browserTerms({
+    kind: "sell", market: "market.testnet", nftContract: "nfts.testnet", maker: "seller.testnet",
+    tokenId: "aura:polar:1", price: "10000000000000000000000000", deadlineMs: 1_793_003_600_000, epoch: 0,
+  });
+  const order = await signOrder(
+    { publicKey: fixture.public_key, secretKey, accountId: "seller.testnet", origin: "device", createdAt: 0 },
+    terms,
+    new Uint8Array(32).fill(7),
+  );
+  assert.deepEqual(order, fixture);
+  assert.equal(statusFromCheck({ valid: false, reason: "Order nonce already used" }, true), "cancelled");
+  assert.equal(statusFromCheck({ valid: false, reason: "Order expired" }), "expired");
+  assert.equal(statusFromCheck({ valid: true }), "open");
+});

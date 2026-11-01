@@ -627,3 +627,24 @@ test("creator payments are self-paid and creators withdraw with one yocto", asyn
     "RELAY_RECEIVER",
   );
 });
+
+test("signed-order market calls: key and cancellation changes are relayed, fills are self-paid", async () => {
+  const market = (method, args, deposit) =>
+    decoded({ receiverId: CONTRACTS.market, action: call(method, args, deposit) });
+  for (const [method, args, deposit] of [
+    ["fill_sell_order", { order: {} }, 10n ** 22n],
+    ["fill_buy_order", { order: {} }, 1n],
+    ["deposit_near", {}, 10n ** 22n],
+  ])
+    await rejects(market(method, args, deposit), "RELAY_SELF_PAID");
+  for (const [method, args] of [
+    ["add_signing_key", { public_key: deviceKey }],
+    ["remove_signing_key", { public_key: deviceKey }],
+    ["cancel_order", { order: { message: "{}" } }],
+    ["cancel_all_orders", {}],
+  ])
+    assert.equal(validateDelegate(await market(method, args, 1n), ctx()).methodName, method);
+  await rejects(market("add_signing_key", { public_key: "secp256k1:abc" }, 1n), "RELAY_ARGS");
+  await rejects(market("cancel_order", { order: "x" }, 1n), "RELAY_ARGS");
+  await rejects(market("add_signing_key", { public_key: deviceKey }, 0n), "RELAY_DEPOSIT");
+});

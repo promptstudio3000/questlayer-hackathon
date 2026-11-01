@@ -330,10 +330,38 @@ export function validateDelegate(decoded, context) {
       );
     } else unsupported();
   } else if (receiverId === c.market) {
-    if (method === "buy") selfPaid("A purchase");
-    else if (method === "cancel" || method === "withdraw")
+    // Anything that moves money (a purchase, filling a signed order, funding
+    // offers) is self-paid. Fills stay self-paid even when only 1 yocto is
+    // attached, because accepting an offer releases the buyer's escrowed NEAR.
+    if (
+      method === "buy" ||
+      method === "fill_sell_order" ||
+      method === "fill_buy_order" ||
+      method === "deposit_near"
+    )
+      selfPaid("A purchase");
+    else if (
+      method === "cancel" ||
+      method === "withdraw" ||
+      method === "cancel_all_orders"
+    )
       depositIs(1n, "Market action");
-    else unsupported();
+    else if (method === "add_signing_key" || method === "remove_signing_key") {
+      depositIs(1n, "Order signing key");
+      demand(
+        keysOf(args, ["public_key"]) &&
+          /^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(args.public_key)),
+        "RELAY_ARGS",
+        "A signing key change takes one ed25519 public key.",
+      );
+    } else if (method === "cancel_order") {
+      depositIs(1n, "Order cancellation");
+      demand(
+        keysOf(args, ["order"]) && plainObject(args.order),
+        "RELAY_ARGS",
+        "An order cancellation takes the signed order.",
+      );
+    } else unsupported();
   } else if (receiverId === c.rewards) {
     if (method === "withdraw") depositIs(1n, "Reward withdrawal");
     else unsupported();

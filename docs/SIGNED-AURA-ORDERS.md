@@ -104,11 +104,26 @@ Sources: [Verifier introduction](https://docs.near-intents.org/integration/verif
 
 **Conclusion.** QuestLayer orders use the Intents **signing standard and key model**. They are not executable NEAR Intents, and no Intents verifier, testnet or mainnet, has executed any of them. The canonical NFT/wNEAR exchange through `intents.near` is still the separate W14 mainnet gate (rule I10), and it needs explicit approval. A self-deployed Verifier on testnet would only be an experimental compatibility test.
 
+## Player UI
+
+`src/SignedOrdersPanel.tsx` sits inside the secured market screen. The explorer's device key signs orders silently with NEP-413 (`src/signed-order.ts`), so there is no wallet popup.
+
+A test shows the bytes are identical along the whole path: near-api-js `signNep413Message`, then the Node helper, then the Rust contract.
+
+Who pays follows [RELAYER.md](RELAYER.md):
+
+- **Relayed (free to the player):** registering the key, escrowing an Aura, cancelling one order or all of them, returning an escrowed Aura, and withdrawing.
+- **Self-paid (the player pays the price or deposit, plus gas):** buying through a sell order, accepting an offer, and funding an offer.
+
+The order view lists open orders from other explorers, offers on Auras the player holds in escrow, and a make-offer form for Auras that others hold in escrow. It also shows the player's own orders with these states: pending, open, filled, cancelled, expired and rejected. Those states come from `check_order`, and this device keeps the history.
+
+Accounts linked only through an external wallet keep the fixed-price flow. UI evidence is in `output/qa/W07-signed-orders/`.
+
 ## Not done yet
 
-- Player-facing signer UI: wallet `signMessage`, key registration, escrow, deposit and order list screens.
-- Physical-device wallet approval.
-- A persistent order index.
-- Indexing of on-chain events.
-- Royalties.
-- A reviewed mainnet storage and key policy.
+- External-wallet `signMessage` for signed orders
+- Physical-device testing
+- A persistent order index
+- Indexing of on-chain events
+- Royalties
+- A reviewed mainnet storage and key policy

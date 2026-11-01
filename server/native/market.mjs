@@ -125,4 +125,17 @@ export class NativeMarket extends NativeContractReader {
       orders: checked.filter((o) => o.valid),
     };
   }
+  async signer(accountId) {
+    assert(typeof accountId === "string" && accountId.length <= 64, "Choose an account.");
+    return this.view("get_signer", { account_id: accountId }, true);
+  }
+  async orderStatuses(orders) {
+    assert(Array.isArray(orders) && orders.length <= 12, "Check at most 12 orders.");
+    return Promise.all(
+      orders.map(async (order) => {
+        const check = await this.view("check_order", { order }, true);
+        return { valid: check.valid, reason: check.reason, fillable: check.fillable };
+      }),
+    );
+  }
 }
