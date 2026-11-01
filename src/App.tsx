@@ -50,6 +50,7 @@ import {
 import { NativeMarketPanel } from "./NativeMarketPanel";
 import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
+import { RewardFundingPage, TodaysPot } from "./RewardFunding";
 import { NativeStaking } from "./NativeStaking";
 import {
   assertVaultQuote,
@@ -143,6 +144,7 @@ type Tab =
   | "inventory"
   | "market"
   | "fund"
+  | "funding"
   | "wallet"
   | "messages"
   | "bounties"
@@ -160,7 +162,7 @@ function navigationActive(tab: Tab, id: string) {
   return (
     tab === id ||
     (id === "community" && ["messages", "bounties"].includes(tab)) ||
-    (id === "explore" && tab === "expeditions") ||
+    (id === "explore" && ["expeditions", "funding"].includes(tab)) ||
     (id === "inventory" && tab === "market") ||
     (id === "settings" && ["wallet", "fund"].includes(tab))
   );
@@ -2077,6 +2079,7 @@ export default function App() {
           community: "Community",
           settings: "Settings",
           fund: "Game economy",
+          funding: "How rewards are funded",
           expeditions: "Nearby walks",
           inventory: "Inventory",
           market: "Market",
@@ -2438,6 +2441,7 @@ export default function App() {
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
+              <TodaysPot practice onOpen={() => setTab("funding")} />
               <div className="section-label">
                 <h2>Nearby discoveries</h2>
                 <span>
@@ -2910,6 +2914,12 @@ export default function App() {
                   onToggle={nativeCollection.setEnabled}
                 />
               )}
+              {tab === "explore" && nativePlay && (
+                <TodaysPot
+                  practice={false}
+                  onOpen={() => setTab("funding")}
+                />
+              )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}
                 view={tab === "wallet" ? "wallet" : "board"}
@@ -3073,6 +3083,13 @@ export default function App() {
                 <ArrowRight size={20} />
               </button>
             </div>
+          )}
+          {tab === "funding" && (
+            <RewardFundingPage
+              practice={!nativePlay}
+              onExplore={() => setTab("explore")}
+              onLedger={() => setTab("fund")}
+            />
           )}
           {tab === "fund" && (
             <>

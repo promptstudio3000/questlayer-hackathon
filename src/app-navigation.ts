@@ -12,6 +12,7 @@ export type AppTab =
   | "inventory"
   | "market"
   | "fund"
+  | "funding"
   | "wallet"
   | "messages"
   | "bounties"
@@ -59,6 +60,7 @@ export function parseAppNavigation(
       "inventory",
       "market",
       "fund",
+      "funding",
       "wallet",
       "messages",
       "bounties",
