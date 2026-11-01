@@ -1083,8 +1083,9 @@ svg {
   background: #f2d9b9;
   color: #75542c;
   text-align: center;
-  padding: 8px;
-  font-size: 11px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.4;
 }
 .welcome-scrim,
 .modal-scrim {

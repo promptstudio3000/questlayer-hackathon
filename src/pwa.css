@@ -1,0 +1,135 @@
+.update-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(520px, calc(100vw - 32px));
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--radius-item);
+  background: var(--shell);
+  color: #fff;
+  box-shadow: 0 8px 24px #1a033540;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.update-toast > span {
+  flex: 1;
+}
+.update-reload {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--coin);
+  color: var(--on-coin);
+  font: inherit;
+  font-weight: 600;
+}
+.update-later {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+}
+@media (min-width: 1001px) {
+  .update-toast {
+    bottom: 24px;
+  }
+}
+.install-card {
+  position: relative;
+  margin: 0 0 12px;
+  border: 1px solid var(--decorative-border);
+  border-radius: var(--radius-item);
+  background: var(--surface-soft);
+}
+.install-open {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 52px 12px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+}
+.install-menu .install-open {
+  padding-right: 14px;
+}
+.install-open > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+.install-open b {
+  font-size: 16px;
+}
+.install-open small {
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+.install-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--action);
+}
+.install-dismiss {
+  position: absolute;
+  top: 10px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-secondary);
+}
+.install-ios {
+  margin: 0 14px 12px 66px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.install-ios svg {
+  vertical-align: -3px;
+}
+.offline-gate {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  color: var(--ink);
+}
+.offline-gate > svg {
+  color: var(--ink-secondary);
+}
+.offline-gate h2 {
+  margin: 0;
+  font-size: 24px;
+}
+.offline-gate p {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--ink-secondary);
+  line-height: 1.5;
+}
+.offline-gate .primary-button {
+  min-height: 48px;
+  font-size: 16px;
+}

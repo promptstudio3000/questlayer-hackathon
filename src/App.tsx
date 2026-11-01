@@ -51,6 +51,7 @@ import { NativeMarketPanel } from "./NativeMarketPanel";
 import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
 import { RewardsFundedGuide, TodaysPotCard } from "./TodaysPot";
+import { InstallCard, UpdateToast } from "./PwaPrompts";
 import { NativeStaking } from "./NativeStaking";
 import {
   assertVaultQuote,
@@ -116,6 +117,8 @@ import {
   UserCircle,
   Path,
   ArrowUUpLeft,
+  ArrowClockwise,
+  WifiSlash,
 } from "@phosphor-icons/react";
 import {
   startRegistration,
@@ -222,6 +225,7 @@ export default function App() {
   const worldOwner = useRef<string | undefined>(undefined);
   const [player, setPlayer] = useState<Player | null>(null),
     [loaded, setLoaded] = useState(false),
+    [meUnreachable, setMeUnreachable] = useState(false),
     [worldData, setWorld] = useState<World | null>(null),
     [position, setPosition] = useState<Point>(HOME),
     [fix, setFix] = useState<Fix | null>(null),
@@ -683,15 +687,19 @@ export default function App() {
     const token = playerReads.current.begin(ownerContext());
     try {
       const r = await api<{ player: Player }>("/me");
-      if (playerReads.current.isCurrent(token, ownerContext()))
+      if (playerReads.current.isCurrent(token, ownerContext())) {
         setPlayer(r.player);
+        setMeUnreachable(false);
+      }
     } catch (e) {
-      if (
-        playerReads.current.isCurrent(token, ownerContext()) &&
-        e instanceof ApiError &&
-        e.status === 401
-      )
+      if (!playerReads.current.isCurrent(token, ownerContext())) return;
+      if (e instanceof ApiError && e.status === 401) {
         setPlayer(null);
+        setMeUnreachable(false);
+      } else if (!(e instanceof ApiError) || e.status >= 500)
+        // No answer at all (offline, server restarting): don't show the
+        // first-run page to someone who already has an explorer.
+        setMeUnreachable(true);
     } finally {
       if (playerReads.current.isCurrent(token, ownerContext())) setLoaded(true);
     }
@@ -779,7 +787,10 @@ export default function App() {
   }, [player?.id]);
   useEffect(() => {
     void me();
-    const a = () => setOnline(navigator.onLine);
+    const a = () => {
+      setOnline(navigator.onLine);
+      if (navigator.onLine && !latest.current.player) void me();
+    };
     window.addEventListener("online", a);
     window.addEventListener("offline", a);
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -2285,7 +2296,8 @@ export default function App() {
       )}
       {!online && (
         <div className="offline-bar">
-          You're offline. Coins and visits resume when you reconnect.
+          You're offline. Your progress is safe on this device; coins and
+          walks resume when you reconnect.
         </div>
       )}
       {player && (
@@ -2453,6 +2465,7 @@ export default function App() {
                 timeZone={world?.timezone}
                 onOpen={() => openFunding("explore")}
               />
+              <InstallCard variant="nudge" />
               <div className="section-label">
                 <h2>Nearby discoveries</h2>
                 <span>
@@ -3021,6 +3034,7 @@ export default function App() {
           )}
           {tab === "settings" && (
             <div className="play-menu">
+              <InstallCard variant="menu" />
               <button className="play-entry" onClick={() => setTab("market")}>
                 <Storefront size={24} />
                 <span>
@@ -3397,6 +3411,7 @@ export default function App() {
           <span className="spinner" /> Finding trails and today’s treasures…
         </div>
       )}
+      <UpdateToast />
       {toast && (
         <div
           className={`toast ${toast.error ? "error" : ""}`}
@@ -3462,7 +3477,25 @@ export default function App() {
           </div>
         </Dialog>
       )}
-      {loaded && !player && (
+      {loaded && !player && meUnreachable && (
+        <Dialog label="Can't reach QuestLayer" open onClose={() => {}}>
+          <section className="welcome-card offline-gate">
+            <WifiSlash size={40} aria-hidden="true" />
+            <h2>{online ? "Can't reach QuestLayer" : "You're offline"}</h2>
+            <p>
+              Your explorer and progress are saved. They'll be right here as
+              soon as you're back online.
+            </p>
+            <button
+              className="primary-button"
+              onClick={() => void me()}
+            >
+              Try again <ArrowClockwise size={18} />
+            </button>
+          </section>
+        </Dialog>
+      )}
+      {loaded && !player && !meUnreachable && (
         <Welcome
           error={toast?.error ? toast.text : undefined}
           onNear={(name) => connectNear({ signIn: true, name })}

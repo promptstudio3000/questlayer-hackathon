@@ -1,7 +1,7 @@
 /* QuestLayer service worker: keeps the app shell and hashed assets available
    offline and refreshes them in the background. API responses, map tiles and
    anything personal are never cached here. */
-const VERSION = "questlayer-shell-v1";
+const VERSION = "questlayer-shell-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 self.addEventListener("install", (event) => {
   event.waitUntil(
