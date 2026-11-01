@@ -154,6 +154,13 @@ export function createTraderLedger(db, { clock = Date.now } = {}) {
         "INSERT OR IGNORE INTO npc_trader_lots(id,trader,token_id,cost,source,trade_id,state,acquired_at) VALUES(?,?,?,?,?,?,'held',?)",
       ).run(id("npclot"), trader, tokenId, String(cost), source, tradeId, clock()).changes;
     },
+    /** Stock Auras the keeper minted for this trader on one UTC day (claim ids carry the day). */
+    stockMintsToday(trader, dayKey) {
+      return q("SELECT count(*) n FROM npc_trader_lots WHERE trader=? AND source='seed' AND trade_id LIKE ?").get(
+        trader,
+        `earned:npc-stock:%:${dayKey}:%`,
+      ).n;
+    },
     sellLot(trader, tokenId, price) {
       return q("UPDATE npc_trader_lots SET state='sold',sold_price=?,sold_at=? WHERE trader=? AND token_id=? AND state='held'").run(
         String(price),

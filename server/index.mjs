@@ -2586,7 +2586,7 @@ const orderIndexWorker =
   !backgroundWorkersDisabled && signedOrderIndex
     ? startOrderIndexWorker(signedOrderIndex, { intervalMs: 30000 })
     : null;
-// Trader keeper: settles orders, escrows stock, sweeps profit above the float
+// Trader keeper: settles orders, mints and escrows stock, sweeps profit above the float
 // into rewards fund_rewards("sponsor") and restores the float. It signs only
 // when the traders file carries the trader's own account key.
 const traderKeeper =
@@ -2596,6 +2596,9 @@ const traderKeeper =
           service: npcTraders,
           provider,
           rewardsId: rewardsConfig.contractId,
+          // Starting stock: award-signed redeem_aura to the trader's own account.
+          awardSigner,
+          stock: process.env.NPC_TRADER_STOCK !== "0",
           log: (entry) => entry.reports.some((r) => r.actions?.length || r.error) && console.log(JSON.stringify(entry)),
         }),
       )
