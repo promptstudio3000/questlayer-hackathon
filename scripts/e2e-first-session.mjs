@@ -185,11 +185,56 @@ async function newExplorerContext(browser, profile) {
 }
 
 // The home-screen offer (after 45 s of play; on iPhone the Share → Add to
-// Home Screen card) and the "New version ready" notice sit over the top bar.
-// Dismiss them whenever they get in the way, as a player would.
-async function dismissInstallOffer(page) {
-  await page.addLocatorHandler(page.locator(".pwa-install, .pwa-update"), async (card) => {
-    console.log("  dismissed a home-screen/update card");
+// Home Screen card) and the "New version ready" notice. Each time one shows
+// up the journey first checks it stays clear of the top bar, the explorer
+// profile menu (opened for the check), the tab bar and the Market entry,
+// then dismisses it as a player would.
+const CARD = ".pwa-install, .pwa-update";
+async function cardOverlaps(page, where) {
+  return page.evaluate(
+    ({ card, where }) => {
+      const visible = (el) => {
+        const b = el.getBoundingClientRect();
+        return b.width && b.height && getComputedStyle(el).visibility !== "hidden" ? b : null;
+      };
+      const cards = [...document.querySelectorAll(card)].map(visible).filter(Boolean);
+      const targets = {
+        "top bar": document.querySelectorAll(".topbar"),
+        "profile menu": document.querySelectorAll(".profile-menu"),
+        "tab bar": document.querySelectorAll(".nav-rail"),
+        "Market entry": [...document.querySelectorAll(".play-entry")].filter((e) =>
+          /^Market/.test(e.textContent.trim()),
+        ),
+      };
+      const hits = [];
+      for (const c of cards)
+        for (const [name, list] of Object.entries(targets))
+          for (const el of list) {
+            const t = visible(el);
+            if (t && c.left < t.right - 1 && c.right > t.left + 1 && c.top < t.bottom - 1 && c.bottom > t.top + 1)
+              hits.push(`${where}: card [${Math.round(c.top)}-${Math.round(c.bottom)}] covers ${name} [${Math.round(t.top)}-${Math.round(t.bottom)}]`);
+          }
+      return { cards: cards.length, hits };
+    },
+    { card: CARD, where },
+  );
+}
+async function dismissInstallOffer(page, layout) {
+  await page.addLocatorHandler(page.locator(CARD), async (card) => {
+    const shown = await cardOverlaps(page, "card");
+    layout.problems.push(...shown.hits);
+    const profile = page.getByRole("button", { name: "Explorer profile" });
+    const modal = await page.locator("dialog[open], [aria-modal='true']").count();
+    if (!modal && (await profile.isVisible().catch(() => false))) {
+      const open = (await profile.getAttribute("aria-expanded")) === "true";
+      if (!open) await profile.click();
+      await page.locator(".profile-menu").waitFor();
+      layout.problems.push(...(await cardOverlaps(page, "profile menu open")).hits);
+      if (!open) await profile.click();
+      await page.locator(".profile-menu").waitFor({ state: "detached" });
+    }
+    layout.checks += 1;
+    console.log(`  checked a home-screen/update card clears the bars (${shown.hits.length ? "OVERLAP" : "clear"}), dismissed it`);
     await card.getByRole("button", { name: /Got it|Not now|Later/ }).click();
   });
 }
@@ -303,6 +348,8 @@ async function runDevice(name, server) {
   };
   const report = { device: name, browser: engine.name(), profile, a11y: {} };
   const blocking = [];
+  const layout = { checks: 0, problems: [] };
+  report.cardLayout = layout;
   const scan = async (page, screen) => {
     for (const v of await a11y(page, screen, report)) blocking.push({ screen, ...v });
   };
@@ -313,7 +360,7 @@ async function runDevice(name, server) {
     const context = await newExplorerContext(browser, profile);
     const page = await context.newPage();
     page.on("pageerror", (e) => console.error("page error:", e.message));
-    await dismissInstallOffer(page);
+    await dismissInstallOffer(page, layout);
 
     console.log("1. Name");
     await firstLoad(page, server.url, report);
@@ -462,7 +509,7 @@ async function runDevice(name, server) {
     // A second explorer, on the same device, fills the order.
     const buyerContext = await newExplorerContext(browser, profile);
     const buyer = await buyerContext.newPage();
-    await dismissInstallOffer(buyer);
+    await dismissInstallOffer(buyer, layout);
     buyer.on("pageerror", (e) => console.error("buyer page error:", e.message));
     await buyer.goto(server.url);
     await buyer.getByPlaceholder("Your explorer name").fill(`Buyer ${name}`);
@@ -513,6 +560,43 @@ async function runDevice(name, server) {
     assert.equal(await feed.locator("[role=alert]").count(), 0, "creator section loads");
     await capture(page, "creator-section");
     await assertNoChainWords(page, "creator feed");
+
+    console.log("11. Home-screen card placement");
+    // A fresh explorer on a fake clock, so the 45 s play time before the
+    // offer passes at once. Only iPhone (Share → Add to Home Screen) shows the
+    // card without a real install prompt; elsewhere this step is skipped.
+    const cardContext = await newExplorerContext(browser, profile);
+    const cardPage = await cardContext.newPage();
+    await cardPage.clock.install();
+    await cardPage.goto(server.url);
+    await cardPage.getByPlaceholder("Your explorer name").fill(`Card ${name}`);
+    await cardPage.getByRole("button", { name: "Start exploring" }).click();
+    await cardPage.getByRole("button", { name: "Hide first steps" }).click();
+    await cardPage.clock.runFor(50_000);
+    const card = cardPage.locator(".pwa-install");
+    if (await card.isVisible()) {
+      const check = async (where) => {
+        const r = await cardOverlaps(cardPage, where);
+        layout.problems.push(...r.hits);
+        layout.checks += 1;
+        console.log(`  ${where}: ${r.cards ? (r.hits.length ? "OVERLAP" : "clear") : "card hidden"}`);
+      };
+      await check("map");
+      await capture(cardPage, "home-screen-card-map");
+      const profileButton = cardPage.getByRole("button", { name: "Explorer profile" });
+      await profileButton.click();
+      await cardPage.locator(".profile-menu").waitFor();
+      await check("profile menu open");
+      await capture(cardPage, "home-screen-card-profile-menu");
+      await profileButton.click();
+      await cardPage.getByRole("button", { name: "Profile", exact: true }).first().click();
+      await cardPage.locator(".play-entry").filter({ hasText: /^Market/ }).waitFor();
+      await check("Profile screen");
+      await capture(cardPage, "home-screen-card-profile-screen");
+      await card.getByRole("button", { name: /Got it|Not now/ }).click();
+      await card.waitFor({ state: "detached" });
+    } else console.log("  no home-screen card on this device");
+    await cardContext.close();
   } finally {
     await browser.close();
     writeFileSync(join(shots, "report.json"), JSON.stringify(report, null, 2));
@@ -521,6 +605,12 @@ async function runDevice(name, server) {
   for (const v of blocking)
     problems.push(`a11y ${v.screen}: ${v.id} (${v.impact}) ${v.help} → ${v.nodes.join(" | ")}`);
   for (const o of report.performance?.over || []) problems.push(`perf: ${o}`);
+  for (const o of layout.problems) problems.push(`layout: ${o}`);
+  // On iPhone the Add to Home Screen card always shows after 45 s of play,
+  // so the overlap check must have run there.
+  if (name === "iphone" && layout.checks === 0)
+    problems.push("layout: the iPhone home-screen card never showed, so its placement went unchecked");
+
   return problems;
 }
 

@@ -57,6 +57,13 @@ run. The first load is held to a budget: welcome-screen JS (220 KB gzip, 700 KB 
 `E2E_PERF_SCRIPT_GZIP_KB`, `E2E_PERF_SCRIPT_RAW_KB`, `E2E_PERF_REQUESTS`, `E2E_PERF_FCP_MS`,
 `E2E_PERF_READY_MS`, `E2E_PERF_CLS`.
 
+Home-screen and update cards: whenever one shows during the journey, it must not overlap the top bar, the
+open explorer profile menu, the tab bar or the Profile screen's Market entry (bounding boxes); the journey then
+dismisses it. A last step plays a fresh explorer on a fake clock so the Add to Home Screen card always shows on
+`iphone` and its placement is checked on the map, with the profile menu open and on the Profile screen. On phones
+the cards dock just above the tab bar; on wider screens they sit under the top bar; any card hides while the
+profile menu is open.
+
 Screenshots and `report.json` (axe findings including moderate/minor, performance numbers) land in
 `output/qa/2026-11-first-session/<device>/`. CI runs one `first-session` job per device and uploads each
 folder as an artifact. Real-device checks (iOS Safari, Android Chrome vibration/sound) are still open.
