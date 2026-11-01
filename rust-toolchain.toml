@@ -1,0 +1,6 @@
+# Pinned so the contract WASM (and its sha256) is reproducible on any machine.
+# scripts/build-contracts.sh also strips local paths; see docs/COLLECTIBLES-REVIEW.md.
+[toolchain]
+channel = "1.97.0"
+targets = ["wasm32-unknown-unknown"]
+profile = "minimal"

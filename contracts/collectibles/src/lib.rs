@@ -16,6 +16,17 @@ use near_sdk::{
 };
 const EXPLORER_MEDIA: &str = include_str!("../assets/explorer-uri.txt");
 
+/// The chain this deployment lives on, from its own account suffix. A voucher
+/// signed for one network can never verify on the other, and only `.testnet`
+/// deployments label their tokens as testnet collectibles.
+fn network() -> &'static str {
+    if env::current_account_id().as_str().ends_with(".testnet") {
+        "testnet"
+    } else {
+        "mainnet"
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(crate = "near_sdk::serde", rename_all = "snake_case")]
 pub enum AuraSlot {
@@ -176,6 +187,18 @@ impl Collectibles {
                 .expect("An Ed25519 public key has 32 bytes"),
         );
     }
+    /// Emergency stop for earned claims (for example a leaked voucher key).
+    /// Already redeemed claims keep their tokens; `set_award_signer` re-enables.
+    #[payable]
+    pub fn clear_award_signer(&mut self) {
+        near_sdk::assert_one_yocto();
+        assert_eq!(
+            env::predecessor_account_id(),
+            self.tokens.owner_id,
+            "Owner only"
+        );
+        self.award_signer = None;
+    }
     pub fn get_award_signer(&self) -> Option<Base64VecU8> {
         self.award_signer.map(|key| Base64VecU8(key.to_vec()))
     }
@@ -186,7 +209,7 @@ impl Collectibles {
         receiver_id: AccountId,
         expires_at_ms: u64,
     ) -> String {
-        format!("QuestLayer Aura claim v1\nContract: {}\nNetwork: testnet\nClaim: {}\nReceiver: {}\nEdition: {}\nExpires: {}",env::current_account_id(),claim_id,receiver_id,edition,expires_at_ms)
+        format!("QuestLayer Aura claim v1\nContract: {}\nNetwork: {}\nClaim: {}\nReceiver: {}\nEdition: {}\nExpires: {}",env::current_account_id(),network(),claim_id,receiver_id,edition,expires_at_ms)
     }
     #[payable]
     pub fn redeem_aura(
@@ -197,17 +220,15 @@ impl Collectibles {
         expires_at_ms: u64,
         signature: Base64VecU8,
     ) -> Token {
-        assert!(
-            env::current_account_id().as_str().ends_with(".testnet"),
-            "Claims are testnet-only"
-        );
         assert_eq!(
             env::predecessor_account_id(),
             receiver_id,
             "Claim belongs to a different wallet"
         );
         assert!(
-            claim_id.starts_with("earned:") && claim_id.len() <= 160,
+            claim_id.starts_with("earned:")
+                && claim_id.len() <= 160
+                && claim_id.bytes().all(|b| b.is_ascii_graphic()),
             "Invalid earned claim"
         );
         let key = self.award_signer.expect("Earned claims are not enabled");
@@ -246,9 +267,11 @@ impl Collectibles {
             receiver_id,
             TokenMetadata {
                 title: Some(name.into()),
-                description: Some(
-                    "Earned through a QuestLayer adventure. Testnet collectible.".into(),
-                ),
+                description: Some(if network() == "testnet" {
+                    "Earned through a QuestLayer adventure. Testnet collectible.".into()
+                } else {
+                    "Earned through a QuestLayer adventure.".into()
+                }),
                 media: Some(media.trim().into()),
                 copies: Some(256),
                 ..Default::default()
@@ -987,5 +1010,132 @@ mod tests {
             Some(token.token_id)
         );
         assert!(migrated.get_award_signer().is_none());
+    }
+    // Mainnet review (docs/COLLECTIBLES-REVIEW.md): the same code must work on a
+    // `.near` deployment, and a voucher must never cross networks.
+    fn on(contract: &str, who: &str, deposit: NearToken) {
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(a(contract))
+            .predecessor_account_id(a(who))
+            .signer_account_id(a(who))
+            .account_balance(NearToken::from_near(100))
+            .attached_deposit(deposit);
+        testing_env!(b.build());
+    }
+    fn mainnet() -> (Collectibles, ed25519_dalek::SigningKey) {
+        on("nfts.questlayer.near", "owner.near", NearToken::from_near(0));
+        let mut c = Collectibles::new(a("owner.near"), a("owner.near"));
+        let key = ed25519_dalek::SigningKey::from_bytes(&[9u8; 32]);
+        on("nfts.questlayer.near", "owner.near", NearToken::from_yoctonear(1));
+        c.set_award_signer(Base64VecU8(key.verifying_key().to_bytes().to_vec()));
+        (c, key)
+    }
+    #[test]
+    fn mainnet_deployment_redeems_with_a_mainnet_voucher() {
+        let (mut c, key) = mainnet();
+        let message = c.award_message("earned:m1".into(), "gold".into(), a("bob.near"), 1000);
+        assert!(message.contains("\nNetwork: mainnet\n"), "{message}");
+        let signature = award_signature(&c, &key, "earned:m1", "gold", "bob.near", 1000);
+        on("nfts.questlayer.near", "bob.near", NearToken::from_millinear(50));
+        let token = c.redeem_aura(
+            "earned:m1".into(),
+            "gold".into(),
+            a("bob.near"),
+            1000,
+            signature,
+        );
+        assert_eq!(token.owner_id, a("bob.near"));
+        let description = token.metadata.unwrap().description.unwrap();
+        assert!(!description.contains("Testnet"), "{description}");
+    }
+    #[test]
+    #[should_panic(expected = "Invalid award signature")]
+    fn testnet_voucher_cannot_redeem_on_mainnet() {
+        use ed25519_dalek::Signer;
+        let (mut c, key) = mainnet();
+        let message = c
+            .award_message("earned:m2".into(), "gold".into(), a("bob.near"), 1000)
+            .replace("Network: mainnet", "Network: testnet");
+        let signature = Base64VecU8(key.sign(message.as_bytes()).to_bytes().to_vec());
+        on("nfts.questlayer.near", "bob.near", NearToken::from_near(1));
+        c.redeem_aura("earned:m2".into(), "gold".into(), a("bob.near"), 1000, signature);
+    }
+    #[test]
+    fn testnet_message_and_description_are_unchanged() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        assert_eq!(
+            c.award_message("earned:t".into(), "moon".into(), a("alice.testnet"), 7),
+            "QuestLayer Aura claim v1\nContract: nfts.testnet\nNetwork: testnet\nClaim: earned:t\nReceiver: alice.testnet\nEdition: moon\nExpires: 7"
+        );
+        let signature = award_signature(&c, &key, "earned:t", "moon", "alice.testnet", 7);
+        context("alice.testnet", NearToken::from_near(1));
+        let token = c.redeem_aura("earned:t".into(), "moon".into(), a("alice.testnet"), 7, signature);
+        assert_eq!(
+            token.metadata.unwrap().description.as_deref(),
+            Some("Earned through a QuestLayer adventure. Testnet collectible.")
+        );
+    }
+    #[test]
+    #[should_panic(expected = "Invalid earned claim")]
+    fn claim_id_cannot_carry_line_breaks() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let claim = "earned:x\nReceiver: mallory.testnet";
+        let signature = award_signature(&c, &key, claim, "polar", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura(claim.into(), "polar".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "Earned claims are not enabled")]
+    fn cleared_award_signer_stops_new_claims() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:9", "polar", "alice.testnet", 1000);
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.clear_award_signer();
+        assert!(c.get_award_signer().is_none());
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:9".into(), "polar".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "Owner only")]
+    fn stranger_cannot_clear_award_signer() {
+        let mut c = fresh();
+        award_key(&mut c);
+        context("oracle.testnet", NearToken::from_yoctonear(1));
+        c.clear_award_signer();
+    }
+    #[test]
+    #[should_panic(expected = "Owner only")]
+    fn oracle_cannot_replace_award_signer() {
+        let mut c = fresh();
+        context("oracle.testnet", NearToken::from_yoctonear(1));
+        c.set_award_signer(Base64VecU8(vec![1u8; 32]));
+    }
+    #[test]
+    #[should_panic(expected = "Must attach")]
+    fn mint_without_storage_deposit_is_rejected() {
+        let mut c = fresh();
+        context("alice.testnet", NearToken::from_yoctonear(0));
+        c.mint_avatar();
+    }
+    #[test]
+    fn retried_redeem_after_expiry_returns_the_same_token() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:r", "gold", "alice.testnet", 1);
+        context("alice.testnet", NearToken::from_near(1));
+        let first = c.redeem_aura("earned:r".into(), "gold".into(), a("alice.testnet"), 1, signature.clone());
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(a("nfts.testnet"))
+            .predecessor_account_id(a("alice.testnet"))
+            .account_balance(NearToken::from_near(100))
+            .attached_deposit(NearToken::from_near(1))
+            .block_timestamp(2_000_000_000);
+        testing_env!(b.build());
+        let again = c.redeem_aura("earned:r".into(), "gold".into(), a("alice.testnet"), 1, signature);
+        assert_eq!(first.token_id, again.token_id);
+        assert_eq!(c.edition_minted("gold".into()), 1);
     }
 }
