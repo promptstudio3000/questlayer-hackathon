@@ -24,7 +24,7 @@ Staker lures are gated by tier only (owner decision 1 Nov, PR #64), so they are 
 
 - `LEVEL_TABLE_FILE=/path/table.json` replaces the bundled table (same shape; validated at start, the server
   refuses a table off the XP curve, with gaps or unknown unlock kinds). Use it to change titles, values or status.
-- `LEVEL_ITEM_EDITIONS=1` turns on the level item editions (approved by the owner 1 Nov): L5 Silver Stride,
+- `LEVEL_ITEM_EDITIONS=1` (set in the testnet unit `deploy/questlayer-hackathon.service`, never in the mainnet unit) turns on the level item editions (approved by the owner 1 Nov): L5 Silver Stride,
   L6 Altar Kindle, L7 Wayfarer's Compass, L8 Storyteller's Quill, L9 Pathfinder Laurel, L10 Summit Crown. Each is a
   level-only Aura (`earned:level:` claim, `CLAIM_ONLY_EDITIONS`), claimed like the L2–L4 Auras. Order: collectibles
   upgrade (`scripts/upgrade-collectibles-editions-testnet.mjs`), then the flag. Until the deployed contract lists an
