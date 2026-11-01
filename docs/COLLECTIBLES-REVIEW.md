@@ -116,6 +116,18 @@ Reviewer did not write PR #52. Scope: `git diff b3d983b 5858c82 -- contracts/col
 
 Reproduced on Linux x86_64 with native rustup Rust 1.97.0 and `bash scripts/build-contracts.sh` (path remapping): `questlayer_collectibles.wasm` 367,066 bytes, reviewed sha256 **`176f1b0777c52e0eb592e50f365fe6a0663b3bec29c4c1b7431649bc4428dee9`**, matching `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. All 36 collectibles contract tests pass, and `tests/aura-catalog` and `award-vouchers` pass (14/14).
 
+## Level editions L5–L10 (2026-11-01) — awaiting independent re-review
+
+The contract changed after the N5 review. Diff: `git diff 26550b1 <this PR head> -- contracts/collectibles` (source plus six new asset files and `WASM_SHA256`). Owner approval: Lubos approved the level item editions on 1 Nov ("Ano, podle návrhu").
+
+- Six editions added to `AURA_EDITIONS` (`stride`, `kindle`, `compass`, `quill`, `laurel`, `summit`); the table grows from 15 to 21 rows. Existing rows, titles and media files are unchanged.
+- The same six are added to `CLAIM_ONLY_EDITIONS` with prefix `earned:level:` and the description "Earned by reaching QuestLayer level N." (5–10). The server already issues level claims as `earned:level:<sha256>` (`nativeLevelClaimId` in `server/native/progression.mjs`); the L2–L4 chest editions stay ungated, so existing level claims and their replays behave as before.
+- The claim-only panic text is now "This Aura is only earned from NPCs, monsters or levels" (was "…from NPCs and monsters").
+- No state or schema change (still V3, no migration); the voucher message, `network()`, the 256 cap and the token id format are unchanged.
+- New and extended tests: the claim-prefix redeem test covers the six level editions, `level_edition_rejects_an_npc_claim`, `oracle_cannot_mint_level_editions_without_a_claim`; `supported_editions` lists 21.
+
+Build (Docker `rust:1.97.0`, linux/amd64, `scripts/build-contracts-docker.sh`; every other contract reproduced its pinned hash byte for byte): `questlayer_collectibles.wasm` 374,130 bytes, sha256 `0edba150…59b9`, recorded in `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. Code storage rises by about 0.07 NEAR. Until the testnet upgrade runs, `public/native-claims-testnet.json` and `public/native-editions-testnet.json` still describe the deployed `176f1b07…` build and are listed under `testnetDeploymentsNotFromThisBuild`; the upgrade script removes them. CI stays red on this document until the reviewer records the full hash below.
+
 ## Reproducible builds in CI
 
 The `reproducible-contracts` CI job builds every contract with `scripts/build-contracts-docker.sh` (Docker `rust:1.97.0`, `linux/amd64`), uploads the WASM files and `SHA256SUMS` as the `contract-wasm-linux-amd64` artifact, and runs `scripts/check-wasm-hashes.mjs`. It fails when any WASM differs from `contracts/wasm-sha256.json`, when the collectibles WASM differs from `contracts/collectibles/WASM_SHA256` or the last reviewed hash above, or when a `wasmSha256` in `public/native-*-testnet.json` is neither a current build nor listed with its exact hash under `testnetDeploymentsNotFromThisBuild` (older testnet deployments built before path remapping). A `codeHash` next to it must be the base58 of the same sha256. On macOS run `npm run contracts:docker`; after an intended contract change, `npm run contracts:docker -- --write` (or copy the hashes from the CI job summary). Deploy only the Docker or CI artifact.

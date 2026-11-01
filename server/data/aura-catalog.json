@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. `source` says where an edition comes from: chest editions drop from zone chests by entitlement; npc and monster editions never drop from chests and the contract only mints them for award claims whose id starts with earned:npc: or earned:monster: (CLAIM_ONLY_EDITIONS). Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
+  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. `source` says where an edition comes from: chest editions drop from zone chests by entitlement; npc, monster and level editions never drop from chests and the contract only mints them for award claims whose id starts with earned:npc:, earned:monster: or earned:level: (CLAIM_ONLY_EDITIONS). Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
   "supplyPerEdition": 256,
   "rarities": [
     "common",
@@ -215,6 +215,84 @@
       "source": "monster",
       "motif": "Ring of monster fangs around a glowing rift",
       "how": "Land three hits on the weekly boss"
+    },
+    {
+      "id": "stride",
+      "name": "Silver Stride",
+      "demoName": "Silver Stride",
+      "rarity": "rare",
+      "slot": "below",
+      "color": "#c9d3e0",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "Silver footprints circling the feet",
+      "how": "Reach level 5"
+    },
+    {
+      "id": "kindle",
+      "name": "Altar Kindle",
+      "demoName": "Altar Kindle",
+      "rarity": "rare",
+      "slot": "above",
+      "color": "#ff9f43",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "Three altar flames on a small brass ring",
+      "how": "Reach level 6"
+    },
+    {
+      "id": "compass",
+      "name": "Wayfarer's Compass",
+      "demoName": "Wayfarer's Compass",
+      "rarity": "epic",
+      "slot": "below",
+      "color": "#5fd3a8",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "A compass rose ring with four bright points",
+      "how": "Reach level 7"
+    },
+    {
+      "id": "quill",
+      "name": "Storyteller's Quill",
+      "demoName": "Storyteller's Quill",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#8fa8ff",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "A floating quill writing a ring of ink stars",
+      "how": "Reach level 8"
+    },
+    {
+      "id": "laurel",
+      "name": "Pathfinder Laurel",
+      "demoName": "Pathfinder Laurel",
+      "rarity": "legendary",
+      "slot": "below",
+      "color": "#9be36b",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "A laurel wreath of leaves around the feet",
+      "how": "Reach level 9"
+    },
+    {
+      "id": "summit",
+      "name": "Summit Crown",
+      "demoName": "Summit Crown",
+      "rarity": "legendary",
+      "slot": "above",
+      "color": "#ffe08a",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "A crown of three snowy peaks with a summit star",
+      "how": "Reach level 10"
     }
   ],
   "sets": [
@@ -253,6 +331,12 @@
       "name": "Night Hunt",
       "glow": "#7cf0b0",
       "bonus": "Ghostly green afterglow"
+    },
+    {
+      "id": "level-path",
+      "name": "Level Path",
+      "glow": "#ffe08a",
+      "bonus": "Silver trail sparkle with a warm summit glow"
     }
   ]
 }

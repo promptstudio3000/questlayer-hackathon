@@ -105,4 +105,17 @@ The Aura wardrobe grew from three to nine editions. `server/data/aura-catalog.js
 
 The contract enforces this: `CLAIM_ONLY_EDITIONS` mints these editions only for a claim whose id starts with the prefix (signed `redeem_aura` claims or the oracle's `mint_aura_once`), and the claim-less oracle `mint_aura` refuses them. The `claim_only_editions` view lists them, and `get_claim` shows where each token came from. The server's award vouchers use the matching prefix (`awardClaimPrefix` in `server/aura-catalog.mjs`). Their tokens say "Earned from a QuestLayer NPC." or "Earned by beating a QuestLayer monster." Supply stays 256 per edition. The sprites are original project creatures and props (storybook, coins, waystone, ghost-fire lantern, guardian horns, a fang ring around a rift), drawn by the painters in `src/aura-art-data.ts` with the same style rules; no Aavegotchi artwork or lore is used. Rendered sheet: `output/qa/N5-npc-editions/npc-edition-sprites.png`. Set bonuses stay cosmetic.
 
+**Level editions (L5–L10, 2026-11-01).** Six editions are earned only by reaching a level (`server/data/level-table.json`, `docs/LEVELS.md`), never from chests, NPCs or monsters. Owner-approved on 1 Nov. Catalog `source: "level"`, set Level Path (cosmetic bonus only), claim prefix `earned:level:` enforced by `CLAIM_ONLY_EDITIONS`.
+
+| Level | Edition | Rarity | Slot |
+| --- | --- | --- | --- |
+| 5 | Silver Stride (`stride`) | rare | below |
+| 6 | Altar Kindle (`kindle`) | rare | above |
+| 7 | Wayfarer's Compass (`compass`) | epic | below |
+| 8 | Storyteller's Quill (`quill`) | epic | above |
+| 9 | Pathfinder Laurel (`laurel`) | legendary | below |
+| 10 | Summit Crown (`summit`) | legendary | above |
+
+Sprites are original project motifs (silver footprints, altar flames, compass rose, quill, laurel wreath, three snowy peaks) in `src/aura-art-data.ts`; covers come from `scripts/generate-explorer-assets.mjs`. Rendered sheet: `output/qa/level-editions/level-edition-sprites.png`. They become claimable only with `LEVEL_ITEM_EDITIONS=1` and only once the deployed contract lists them.
+
 **Wardrobe.** The practice collection can be filtered by slot, rarity and set, is sorted rarest first, and has an Aura catalog listing every edition with where it can be found and how many the player holds. Controls are native buttons and selects with 48px targets.
