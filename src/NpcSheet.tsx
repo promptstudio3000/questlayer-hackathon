@@ -18,6 +18,7 @@ import {
   type NpcReply,
   type NpcTrade,
 } from "./npc-client";
+import { InnerVault, StakeTodayCard, seenCeremony } from "./StakeToday";
 import "./npc-sheet.css";
 
 const EMOTE: Record<string, string> = { wave: "👋", think: "🤔", laugh: "😄", shrug: "🤷", none: "" };
@@ -203,6 +204,19 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
               />
             ))}
           </section>
+        )}
+        {vault?.stake && (
+          <>
+            <StakeTodayCard
+              card={vault.stake}
+              onSeen={(id) =>
+                void seenCeremony(id).finally(() =>
+                  setVault((v) => (v?.stake ? { ...v, stake: { ...v.stake, ceremonies: v.stake.ceremonies.filter((c) => c.id !== id) } } : v)),
+                )
+              }
+            />
+            <InnerVault card={vault.stake} />
+          </>
         )}
         {vault && (
           <section aria-label="Your vault and balance">

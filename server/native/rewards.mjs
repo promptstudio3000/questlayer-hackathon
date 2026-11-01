@@ -90,6 +90,18 @@ export class NativeRewards extends NativeContractReader {
     assert(row, "This native day is not confirmed on NEAR yet.", 409);
     return storedNativeManifest(row);
   }
+  /** Today's published coin value and count (for the Keeper's stake card). */
+  todayCoins() {
+    const row = nativeDayRow(this.db, this.city.id, dayKey(this.clock(), this.city.timezone), { published: true });
+    if (!row) return null;
+    const m = this.day(row.id);
+    return {
+      dayId: m.id,
+      coinUnit: m.coinUnit,
+      coinCount: m.coins.length,
+      funding: m.funding === "realized_yield" ? "realized_yield" : "sponsor",
+    };
+  }
   async tier(account) {
     let weighted = 0n;
     for (const v of await this.vaultList(account)) {

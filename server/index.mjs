@@ -120,6 +120,7 @@ import { registerMenuBuilder } from "./actors/menu.mjs";
 import { loadTraders, traderKeysPath } from "./npc/trader-keys.mjs";
 import { createTraderService } from "./npc/trader.mjs";
 import { createTraderRoutes } from "./npc/trader-routes.mjs";
+import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
@@ -388,7 +389,31 @@ if (npcTraders)
       return [];
     }
   });
-const traderRoutes = createTraderRoutes({ traders: npcTraders, actors: actorService, db, market: nativeMarket, vaults: nativeVaults });
+// Keeper's inner vault (GAME-LOOPS P0-3): stake card, E+2 countdown and
+// ceremonies. Read-only; KEEPER_* variables override every default.
+const keeperVaultConfig = keeperVaultSettings(process.env);
+const keeperVault =
+  nativeVaults && keeperVaultConfig.enabled
+    ? createKeeperVault(db, {
+        settings: keeperVaultConfig,
+        today: () => {
+          try {
+            return nativeRewards?.todayCoins() ?? null;
+          } catch {
+            return null;
+          }
+        },
+      })
+    : null;
+const traderRoutes = createTraderRoutes({
+  traders: npcTraders,
+  actors: actorService,
+  db,
+  market: nativeMarket,
+  vaults: nativeVaults,
+  keeperVault,
+  levelOf: (player) => demoProgression(db, player).level,
+});
 // Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
 // account level (spendable XP) plus skill, never Auras or items.
 // Monster hunt (NPC-PLAN §13, M3+M4): win rewards, guardian-locked chests and
