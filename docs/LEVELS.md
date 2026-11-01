@@ -10,18 +10,15 @@ Every level unlocks one thing to do or wear. Nothing in the table changes odds, 
 | 2 | 100 | Northern Lights Aura | live (native claim) |
 | 3 | 400 | Moonwake Aura | live (native claim) |
 | 4 | 900 | Sunlit Aura | live (native claim) |
-| 5 | 1,600 | "Wayfarer" title on the profile (`value`) | live |
+| 5 | 1,600 | Silver level ring (`value`: silver) | live |
 | 6 | 2,500 | Second altar offering per day (`value`: 2) | live |
 | 7 | 3,600 | One more quest line per NPC and day (`value`: +1) | live |
-| 8 | 4,900 | Another quest line per NPC and day (`value`: +1, adds to L7) | live |
+| 8 | 4,900 | One more storyteller chapter on offer (`value`: +1) | live |
 | 9 | 6,400 | "Pathfinder" title on the profile (`value`) | live |
-| 10 | 8,100 | Golden level ring | live |
+| 10 | 8,100 | Golden level ring (`value`: gold) | live |
 
-Staker content at NPCs is gated by stake tier only, never by level (owner decision 1 Nov 2026); see the
-locked chips in `server/npc/offers.mjs`. Quest-slot values add up across levels; the profile shows the highest title
-earned.
-
-`coming` entries are shown as previews and do nothing until their feature ships (then flip `status` to `live`).
+Staker lures are gated by tier only (owner decision 1 Nov, PR #64), so they are not level unlocks.
+`coming` entries (none by default) are shown as previews and do nothing until their feature ships (then flip `status` to `live`).
 
 ## Configuration
 

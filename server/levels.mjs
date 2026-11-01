@@ -10,7 +10,7 @@ import { levelFor } from "./domain.mjs";
 const DEFAULT_TABLE = JSON.parse(
   readFileSync(new URL("./data/level-table.json", import.meta.url), "utf8"),
 );
-const KINDS = new Set(["start", "aura", "craft", "quest-slot", "title", "ring"]);
+const KINDS = new Set(["start", "aura", "patron", "craft", "quest-slot", "rare", "story", "title", "ring"]);
 const STATUSES = new Set(["live", "coming"]);
 
 export const requiredXpFor = (level) => 100 * (level - 1) ** 2;
@@ -99,16 +99,17 @@ export function unlockValue(level, id, fallback, table = current) {
 export const altarOfferingsPerDay = (level, base, table = current) =>
   Math.max(base, Number(unlockValue(level, "altar-second-offering", base, table)) || base);
 
-const liveUnlocks = (level, kind, table) =>
-  table.levels.filter((e) => e.unlock.kind === kind && e.unlock.status === "live" && e.level <= level);
-
-/** Extra quest lines per NPC and day at this level: every live quest-slot unlock adds up (L7 +1, L8 +1). */
+/** Extra quest lines per NPC and day at this level (L7 default: +1). */
 export const extraQuestLines = (level, table = current) =>
-  liveUnlocks(level, "quest-slot", table).reduce((n, e) => n + Math.max(0, Number(e.unlock.value) || 0), 0);
+  Math.max(0, Number(unlockValue(level, "extra-quest-line", 0, table)) || 0);
 
-/** Highest cosmetic title earned by level, or null (L5 "Wayfarer", L9 "Pathfinder"). */
+/** Extra storyteller chapters on offer at this level (L8 default: +1). */
+export const extraStoryChapters = (level, table = current) =>
+  Math.max(0, Number(unlockValue(level, "extra-story-chapter", 0, table)) || 0);
+
+/** Cosmetic title earned by level, or null (L9 default: "Pathfinder"). */
 export const levelTitle = (level, table = current) => {
-  const value = liveUnlocks(level, "title", table).at(-1)?.unlock.value;
+  const value = unlockValue(level, "title-pathfinder", null, table);
   return typeof value === "string" && value ? value : null;
 };
 

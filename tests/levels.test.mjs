@@ -9,6 +9,7 @@ import {
   altarOfferingsPerDay,
   extraQuestLines,
   levelTitle,
+  extraStoryChapters,
   levelItemMilestones,
   publicLevelTable,
   setLevelTable,
@@ -68,17 +69,17 @@ test("unlock values follow level and the table", () => {
   assert.equal(altarOfferingsPerDay(6, 1), 2);
   assert.equal(extraQuestLines(6), 0);
   assert.equal(extraQuestLines(7), 1);
-  assert.equal(extraQuestLines(8), 2, "L7 and L8 quest-slot unlocks add up");
-  assert.equal(levelTitle(4), null);
-  assert.equal(levelTitle(5), "Wayfarer");
-  assert.equal(levelTitle(8), "Wayfarer");
+  assert.equal(extraStoryChapters(7), 0);
+  assert.equal(extraStoryChapters(8), 1);
+  // Staker lures are tier-gated only (owner decision 1 Nov), never in the level table.
+  assert.ok(loadLevelTable({}).levels.every((e) => !/tier|stake|patron/i.test(e.unlock.title)));
+  assert.equal(levelTitle(8), null);
   assert.equal(levelTitle(9), "Pathfinder");
   const custom = structuredClone(RAW);
   custom.levels[6].unlock.value = 2;
   custom.levels[8].unlock.value = "Wayfinder";
   const t = normalizeLevelTable(custom);
   assert.equal(extraQuestLines(7, t), 2);
-  assert.equal(extraQuestLines(8, t), 3);
   assert.equal(levelTitle(10, t), "Wayfinder");
   const coming = structuredClone(RAW);
   coming.levels[5].unlock.status = "coming";
@@ -124,4 +125,9 @@ test("L7 adds one quest line per NPC and day", async (t) => {
   const args = { actor: RADA, persona: personaFor(RADA), world: worldView(db, world.id, player, { now: NOW }), now: NOW, linesToday: MAX_LINES_PER_DAY };
   assert.equal(buildMenu({ ...args, level: 6 }).length, 0);
   assert.ok(buildMenu({ ...args, level: 7 }).length >= 1);
+  const BELA = { id: "bela", kind: "npc", archetype: "storyteller", name: "Kronikářka Běla", persona: "kronikarka-bela" };
+  const story = { ...args, actor: BELA, persona: personaFor(BELA), linesToday: 0 };
+  assert.ok(buildMenu({ ...story, level: 7 }).length <= 2);
+  assert.ok(buildMenu({ ...story, level: 8 }).length <= 3);
+  assert.ok(buildMenu({ ...story, level: 8 }).length >= buildMenu({ ...story, level: 7 }).length);
 });

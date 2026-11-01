@@ -32,6 +32,8 @@ export type LevelProgress = Readonly<{
   maxed: boolean;
   next: LevelEntry | null;
   title: string | null;
+  /** Highest reached ring unlock ("silver" from L5, "gold" from L10), for the avatar ring. */
+  ring: string | null;
 }>;
 
 /** Bundled table, items hidden (the server decides LEVEL_ITEM_EDITIONS). */
@@ -54,14 +56,22 @@ export function levelProgress(
   const level = levelForXp(xp);
   const levelStartXp = requiredXpFor(level),
     nextLevelXp = requiredXpFor(level + 1);
-  // Highest title earned (L5 Wayfarer, then L9 Pathfinder).
-  const titleEntry = [...levels.levels].reverse().find(
+  const titleEntry = levels.levels.find(
     (e) =>
       e.unlock.kind === "title" &&
       e.unlock.status === "live" &&
       e.level <= level &&
       typeof e.unlock.value === "string",
   );
+  const ringEntry = [...levels.levels]
+    .reverse()
+    .find(
+      (e) =>
+        e.unlock.kind === "ring" &&
+        e.unlock.status === "live" &&
+        e.level <= level &&
+        typeof e.unlock.value === "string",
+    );
   return {
     xp,
     level,
@@ -74,6 +84,7 @@ export function levelProgress(
     maxed: level >= levels.maxLevel,
     next: levels.levels.find((e) => e.level > level) ?? null,
     title: (titleEntry?.unlock.value as string | undefined) ?? null,
+    ring: (ringEntry?.unlock.value as string | undefined) ?? null,
   };
 }
 
