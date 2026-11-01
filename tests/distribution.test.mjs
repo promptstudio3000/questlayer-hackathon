@@ -27,6 +27,7 @@ function chain({ funded = NEAR / 5n } = {}) {
     pending: 0n,
     withdrawn: 0n,
     days: new Map(),
+    dateTotals: new Map(),
     balance: funded + 3n * NEAR, // liquidity plus storage stake
     storageUsage: 200000, // bytes → 2 NEAR locked for storage
   };
@@ -38,6 +39,12 @@ function chain({ funded = NEAR / 5n } = {}) {
     c.coins.reserved += coinCost;
     c.zones.available -= zoneCost;
     c.zones.reserved += zoneCost;
+    const date = args.day_id.match(/(\d{4}-\d{2}-\d{2})-v\d+$/)[1];
+    const total = c.dateTotals.get(date) ?? { coins: 0n, zones: 0n };
+    c.dateTotals.set(date, {
+      coins: total.coins + coinCost,
+      zones: total.zones + zoneCost,
+    });
     c.days.set(args.day_id, {
       manifest_hash: args.manifest_hash,
       starts_at: args.starts_at,
@@ -70,6 +77,15 @@ function chain({ funded = NEAR / 5n } = {}) {
         policy: "50/50-v1",
       };
     if (method === "get_day") return c.days.get(args.day_id) ?? null;
+    if (method === "get_date_totals") {
+      const t = c.dateTotals.get(args.date) ?? { coins: 0n, zones: 0n };
+      return {
+        date: args.date,
+        coins: t.coins.toString(),
+        zones: t.zones.toString(),
+        cap: (NEAR / 10n).toString(),
+      };
+    }
     throw Error(method);
   };
   c.provider = {
@@ -200,4 +216,18 @@ test("unreadable or malformed chain data is unavailable, never verified", async 
   const a = await auditDistribution(g.native);
   assert.equal(a.status, "unavailable");
   assert.match(a.reason, /fetch failed/);
+});
+
+test("a commitment on a date that this server did not publish is drift", async () => {
+  const f = fixture();
+  await f.publish("2026-11-01");
+  const date = "2026-11-01";
+  const total = f.c.dateTotals.get(date);
+  f.c.dateTotals.set(date, { coins: total.coins + 5n, zones: total.zones });
+  const a = await auditDistribution(f.native);
+  assert.deepEqual(a.failed, ["date-totals-match-publications"]);
+  const row = a.checks.find((c) => c.name === "date-totals-match-publications")
+    .dates[0];
+  assert.equal(row.date, date);
+  assert.equal(BigInt(row.chainCoins) - BigInt(row.ourCoins), 5n);
 });

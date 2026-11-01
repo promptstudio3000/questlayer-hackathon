@@ -284,6 +284,10 @@ impl Rewards {
             coin_cost <= self.coins.available && zone_cost <= self.zones.available,
             "Insufficient liquid funding"
         );
+        // Every city publishes under `<city>-YYYY-MM-DD-v<n>`. The cap above is per
+        // publication; this one is per local date across all cities, so adding a
+        // city can never multiply what the treasury commits in one day.
+        self.add_to_date_total(&day_id, coin_cost, zone_cost);
         self.coins.available -= coin_cost;
         self.coins.reserved += coin_cost;
         self.zones.available -= zone_cost;
@@ -510,6 +514,33 @@ impl Rewards {
         let bucket = |b: &Bucket| near_sdk::serde_json::json!({"available":b.available.to_string(),"reserved":b.reserved.to_string(),"awarded":b.awarded.to_string()});
         near_sdk::serde_json::json!({"coins":bucket(&self.coins),"zones":bucket(&self.zones),"funded":self.funded.to_string(),"owed":self.owed.to_string(),"pending":self.pending.to_string(),"withdrawn":self.withdrawn.to_string(),"policy":"50/50-v1"})
     }
+    /// Records an already-published day (before date totals existed) in its
+    /// date's total exactly once. Owner only; it changes no balances.
+    pub fn record_existing_day(&mut self, day_id: String) {
+        self.owner();
+        let d = self.days.get(&day_id).expect("Unknown day");
+        let zone_cost: u128 = d.quests.iter().map(|q| q.reward.0).sum();
+        let coin_cost = d.unit.checked_mul(d.count as u128).expect("Overflow");
+        self.add_to_date_total(&day_id, coin_cost, zone_cost);
+    }
+    pub fn get_date_totals(&self, date: String) -> near_sdk::serde_json::Value {
+        let (coins, zones) = date_totals().get(&date).unwrap_or((0, 0));
+        near_sdk::serde_json::json!({"date":date,"coins":coins.to_string(),"zones":zones.to_string(),"cap":(NEAR / 10).to_string()})
+    }
+    fn add_to_date_total(&self, day_id: &str, coin_cost: u128, zone_cost: u128) {
+        let date = day_date(day_id);
+        let mut seen = date_seen();
+        assert!(seen.get(&day_id.to_string()).is_none(), "Day already counted");
+        let mut totals = date_totals();
+        let (coins, zones) = totals.get(&date).unwrap_or((0, 0));
+        let (coins, zones) = (coins + coin_cost, zones + zone_cost);
+        assert!(
+            coins <= NEAR / 10 && zones <= NEAR / 10,
+            "Daily cap across cities"
+        );
+        totals.insert(&date, &(coins, zones));
+        seen.insert(&day_id.to_string(), &true);
+    }
     fn publisher(&self) {
         assert_eq!(
             env::predecessor_account_id(),
@@ -557,6 +588,30 @@ impl Rewards {
     }
 }
 // New namespaced storage preserves the already deployed V1 state layout.
+fn date_totals() -> LookupMap<String, (u128, u128)> {
+    LookupMap::new(b"native-date-total-v1".to_vec())
+}
+fn date_seen() -> LookupMap<String, bool> {
+    LookupMap::new(b"native-date-seen-v1".to_vec())
+}
+/// `<city>-YYYY-MM-DD-v<n>` → `YYYY-MM-DD`; anything else is rejected.
+fn day_date(day_id: &str) -> String {
+    let parts: Vec<&str> = day_id.split('-').collect();
+    let n = parts.len();
+    let digits = |p: &str, len: usize| p.len() == len && p.bytes().all(|b| b.is_ascii_digit());
+    assert!(
+        n >= 5
+            && parts[..n - 4].iter().all(|p| !p.is_empty())
+            && digits(parts[n - 4], 4)
+            && digits(parts[n - 3], 2)
+            && digits(parts[n - 2], 2)
+            && parts[n - 1].len() >= 2
+            && parts[n - 1].starts_with('v')
+            && parts[n - 1][1..].bytes().all(|b| b.is_ascii_digit()),
+        "Day id must be <city>-YYYY-MM-DD-v<n>"
+    );
+    format!("{}-{}-{}", parts[n - 4], parts[n - 3], parts[n - 2])
+}
 fn storage_slots() -> LookupMap<String, u64> {
     LookupMap::new(b"native-storage-v1".to_vec())
 }
@@ -630,7 +685,7 @@ mod tests {
         r.fund_rewards("sponsor".into(), "fund-1".into());
         context("publisher.testnet", 1, 0, None);
         r.publish_day(
-            "day-1".into(),
+            "plzen-2026-11-01-v1".into(),
             U64(1),
             U64(1000),
             "a".repeat(64),
@@ -651,7 +706,7 @@ mod tests {
     fn claim(kind: &str, index: u16, receiver: &str, id: &str) -> Claim {
         Claim {
             receipt_id: id.into(),
-            day_id: "day-1".into(),
+            day_id: "plzen-2026-11-01-v1".into(),
             kind: kind.into(),
             index,
             receiver_id: a(receiver),
@@ -711,8 +766,8 @@ mod tests {
         let s = signed(&r, &c);
         r.claim(c, s);
         context("publisher.testnet", 1000 + DAY_MS, 0, None);
-        r.close_day("day-1".into());
-        r.close_day("day-1".into());
+        r.close_day("plzen-2026-11-01-v1".into());
+        r.close_day("plzen-2026-11-01-v1".into());
         assert_eq!(r.coins.available, 490);
         assert_eq!(r.zones.available, 501);
         assert_eq!(r.funded, 1001);
@@ -782,7 +837,7 @@ mod tests {
     #[test]
     fn maximum_pilot_receipt_fits_its_sponsored_storage() {
         let mut r = setup();
-        let day = "d".repeat(40);
+        let day = format!("{}-2026-11-01-v12", "a".repeat(25));
         context("publisher.testnet", 1, 0, None);
         r.publish_day(
             day.clone(),
@@ -818,7 +873,7 @@ mod tests {
     #[should_panic(expected = "Daily native receipt capacity reached")]
     fn exhausted_storage_capacity_cannot_promise_another_receipt() {
         let mut r = setup();
-        storage_slots().insert(&"day:day-1".into(), &0);
+        storage_slots().insert(&"day:plzen-2026-11-01-v1".into(), &0);
         context("relayer.testnet", 3, 0, None);
         let c = claim("coin", 0, "alice.testnet", "a");
         let signature = signed(&r, &c);
@@ -834,7 +889,7 @@ mod tests {
             .account_balance(NearToken::from_millinear(100));
         testing_env!(b.build());
         r.publish_day(
-            "new-day".into(),
+            "plzen-2026-11-02-v1".into(),
             U64(1),
             U64(1000),
             "c".repeat(64),
@@ -885,5 +940,90 @@ mod tests {
             .account_balance(NearToken::from_millinear(10));
         testing_env!(b.build());
         r.fund_rewards("realized_yield".into(), "vault-1".into());
+    }
+
+    fn publish(r: &mut Rewards, day: &str, unit: u128, reward: u128) {
+        context("publisher.testnet", 1, 0, None);
+        r.publish_day(
+            day.into(),
+            U64(1),
+            U64(1000),
+            "e".repeat(64),
+            10,
+            U128(unit),
+            (0..6)
+                .map(|i| QuestSpec {
+                    reward: U128(if i < 3 { 0 } else { reward }),
+                    xp: 50,
+                    opens_at: U64(1),
+                    closes_at: U64(1000),
+                    tier: if i < 3 { 1 } else { 2 },
+                })
+                .collect(),
+        );
+    }
+    fn big_funding() -> Rewards {
+        let mut r = setup();
+        context("sponsor.testnet", 1, NEAR + SPONSOR_STORAGE_FEE, None);
+        r.fund_rewards("sponsor".into(), "fund-big".into());
+        r
+    }
+    #[test]
+    fn date_totals_add_up_across_cities_and_report_the_cap() {
+        let mut r = big_funding();
+        publish(&mut r, "brno-2026-11-01-v1", NEAR / 1000, 0);
+        let t = r.get_date_totals("2026-11-01".into());
+        // setup() already published plzen-2026-11-01-v1: 10 coins × 10 and 3 × 100.
+        assert_eq!(t["coins"], (100 + 10 * (NEAR / 1000)).to_string());
+        assert_eq!(t["zones"], "300");
+        assert_eq!(t["cap"], (NEAR / 10).to_string());
+        assert_eq!(r.get_date_totals("2026-11-02".into())["coins"], "0");
+        r.check();
+    }
+    #[test]
+    #[should_panic(expected = "Daily cap across cities")]
+    fn a_second_city_cannot_exceed_the_shared_daily_cap() {
+        let mut r = big_funding();
+        // Each publication alone is within the 0.1 NEAR cap; together they are not.
+        publish(&mut r, "brno-2026-11-01-v1", NEAR / 200, 0);
+        publish(&mut r, "ostrava-2026-11-01-v1", NEAR / 200, 0);
+    }
+    #[test]
+    fn other_dates_have_their_own_cap() {
+        let mut r = big_funding();
+        publish(&mut r, "brno-2026-11-02-v1", NEAR / 100, 0);
+        publish(&mut r, "brno-2026-11-03-v1", NEAR / 100, 0);
+        assert_eq!(r.get_date_totals("2026-11-03".into())["coins"], (NEAR / 10).to_string());
+    }
+    #[test]
+    #[should_panic(expected = "Day id must be <city>-YYYY-MM-DD-v<n>")]
+    fn day_ids_must_name_a_city_and_date() {
+        let mut r = big_funding();
+        publish(&mut r, "day-2", 1, 0);
+    }
+    #[test]
+    fn existing_days_are_backfilled_once_by_the_owner() {
+        let mut r = setup();
+        // Simulate a day published before totals existed.
+        date_totals().remove(&"2026-11-01".to_string());
+        date_seen().remove(&"plzen-2026-11-01-v1".to_string());
+        context("owner.testnet", 2, 0, None);
+        r.record_existing_day("plzen-2026-11-01-v1".into());
+        assert_eq!(r.get_date_totals("2026-11-01".into())["coins"], "100");
+        assert_eq!(r.get_date_totals("2026-11-01".into())["zones"], "300");
+    }
+    #[test]
+    #[should_panic(expected = "Day already counted")]
+    fn a_day_is_never_counted_twice() {
+        let mut r = setup();
+        context("owner.testnet", 2, 0, None);
+        r.record_existing_day("plzen-2026-11-01-v1".into());
+    }
+    #[test]
+    #[should_panic(expected = "Owner only")]
+    fn only_the_owner_backfills() {
+        let mut r = setup();
+        context("publisher.testnet", 2, 0, None);
+        r.record_existing_day("plzen-2026-11-01-v1".into());
     }
 }

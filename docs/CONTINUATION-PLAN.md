@@ -31,7 +31,7 @@ this file says who does what, in which order, and what "done" means. Update it w
 | --- | --- | --- | --- | --- |
 | 1–2 Nov | Distribution audit (done), yield-credit proposal (done), observe first harvest | Today's pot, PWA polish | Deploy branch to VPS with relayer + publisher keys | Check the hosted build on a phone |
 | 3–4 Nov | Realized-yield proof: harvest → flush → treasury funded by yield; publish a day backed by it | Result → Secure → Share card; Stake as a game decision | Plzeň entries/topology review; health monitoring | Decide multi-city and yield-credit scope |
-| 5–6 Nov | Multi-city allocation function + tests; rewards contract v2 design (global daily cap per date) | Creator feed and earnings (buy/donate self-paid, withdraw relayed) | Second CityPack draft and field check if chosen | Real-device run (iOS Safari, Android Chrome) |
+| 5–6 Nov | Multi-city allocation function + tests (contract per-date cap already live) | Creator feed and earnings (buy/donate self-paid, withdraw relayed) | Second CityPack draft and field check if chosen | Real-device run (iOS Safari, Android Chrome) |
 | 7–8 Nov | Mainnet refactor steps 4–7 (schema, client network, scripts, flags) | Notes and public records UI; profile without popups | Backup/restore rehearsal on VPS | Mainnet account and funding if go |
 | 9 Nov | **Mainnet go/no-go** (`docs/MAINNET-PLAN.md` §5) | Polish from device findings | Release checklist | Decision |
 | 10–12 Nov | Mainnet minimal slice or final testnet proofs; economy page data | Demo-path polish, copy pass | Fresh-clone verification, regression | Record video |
@@ -46,11 +46,10 @@ this file says who does what, in which order, and what "done" means. Update it w
 - **Allocation across cities (to build).** Each day's budget is the smaller of the cap and a fixed share of
   available funds. It is split between enabled cities by published weights, equal by default. The audit already proves that every
   reservation belongs to a published day; it will also list days per city and check the per-date total.
-- **Verifiable on chain (rewards v2).** `publish_day` takes the city and local date; the contract keeps a per-date
-  total and rejects a publication that would exceed the daily cap across all cities. Then the limit is enforced
-  by the contract, not only by our server.
-- **Gate to enable a second city:** reviewed CityPack, allocation tests, rewards v2 deployed or the server cap in
-  force with the audit green for a week.
+- **Verifiable on chain (done 1 November).** The rewards contract reads the city and local date from the day id
+  (`<city>-YYYY-MM-DD-v<n>`), keeps a per-date total and rejects a publication that would exceed the daily cap
+  across all cities. The audit checks that each date's total equals what this server published.
+- **Gate to enable a second city:** reviewed CityPack, allocation tests and the audit green for a week.
 
 ## Decisions needed from the owner
 

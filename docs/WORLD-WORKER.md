@@ -45,7 +45,11 @@ All publication writes/sends retain the existing lease fences. Accepted claims s
 set of final reads: ledger conservation, coin reservations equal to the open days' unclaimed coin budget, zone
 reservations equal to their unwon prizes, every open day matching its durable manifest, the contract account's
 balance minus its storage stake covering all liabilities, and local confirmations never exceeding the chain's
-accepted claims. The reward worker runs it after settling claims and closing days and before publishing; `drift`
+accepted claims, and each date's on-chain total across cities equals what this server published for that date. The
+rewards contract (v1.1, upgraded in place on 1 November with state preserved) keeps that per-date total and rejects
+any publication that would push one local date above the 0.1 NEAR cap across all cities, so adding cities cannot
+multiply a day's commitment; `get_date_totals(date)` exposes it and `scripts/upgrade-rewards-testnet.mjs` records
+the upgrade and the backfill of earlier days. The reward worker runs it after settling claims and closing days and before publishing; `drift`
 stops new publication (claims, closures and vault maintenance continue) and is recorded as the worker error. An
 unreadable chain reports `unavailable`, never `verified`. `GET /api/native/distribution` returns the last audit
 (`?refresh=1` re-reads), `/api/health` carries its summary. Live result: `public/native-distribution-proof.json`.

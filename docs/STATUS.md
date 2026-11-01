@@ -64,7 +64,8 @@ Local continuation, 1 November: the zone/map worker now rejects malformed candid
 chain; see `public/native-public-record-proof.json`. The UI is the next step.
 - Treasury distribution audit (1 November): every reserved coin and prize on `questlayer-rewards-20261101.testnet`
   is explained by the two open Plzeň days, the ledger is conserved and the account holds about 47 times its
-  liabilities; the worker refuses to publish on drift (`public/native-distribution-proof.json`,
+  liabilities; the rewards contract now caps each local date across all cities on chain (in-place upgrade, state
+  preserved, earlier days backfilled); the worker refuses to publish on drift (`public/native-distribution-proof.json`,
   `docs/WORLD-WORKER.md`). CI now builds the vault WASM before the factory; 111 contract tests pass.
 - Network configuration: `server/native/network.mjs` is the single source for the NEAR network (`NEAR_NETWORK`,
   testnet by default); server modules no longer spell "testnet". Mainnet stays unsupported until the remaining

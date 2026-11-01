@@ -10,12 +10,15 @@
 //   4. every open chain day matches its durable manifest exactly
 //   5. account liquidity: balance minus storage stake covers all liabilities
 //   6. local confirmed receipts never exceed the chain's accepted claims
+//   7. each date's on-chain total across cities equals what this server
+//      published for that date and stays within the contract's daily cap
 //
 // The reward worker runs it after settling claims and closing days and before
 // publishing new ones; any drift stops new publication (claims and closures
 // keep running) and is reported in /api/health and /api/native/distribution.
 import {
   nativePublicationMatches,
+  publicationArgs,
   storedNativeManifest,
 } from "./reward-manifest.mjs";
 import { NETWORK } from "./network.mjs";
@@ -159,6 +162,47 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
     });
     check("open-days-match-manifests", manifestsOk, {});
     check("receipts-within-chain-claims", receiptsOk, {});
+    // Per-date totals across cities (rewards contract v1.1). Every publication
+    // with a date in view must be ours: unknown commitments are drift.
+    const dates = [
+      ...new Set(
+        days
+          .filter((d) => d.chain === "open")
+          .map((d) => d.id.match(/(\d{4}-\d{2}-\d{2})-v\d+$/)?.[1])
+          .filter(Boolean),
+      ),
+    ];
+    const dateRows = [];
+    let datesOk = true;
+    for (const date of dates) {
+      const chainTotal = await native.view("get_date_totals", { date }, true);
+      let coinsOurs = 0n,
+        zonesOurs = 0n;
+      for (const row of native.db
+        .prepare("SELECT * FROM native_days WHERE id LIKE ?")
+        .all(`%-${date}-v%`)) {
+        if (!(await native.view("get_day", { day_id: row.id }, true))) continue;
+        const args = publicationArgs(storedNativeManifest(row));
+        coinsOurs += big(args.coin_unit) * BigInt(args.coin_count);
+        zonesOurs += sum(args.quests.map((q) => big(String(q.reward))));
+      }
+      const ok =
+        big(chainTotal.coins) === coinsOurs &&
+        big(chainTotal.zones) === zonesOurs &&
+        big(chainTotal.coins) <= big(chainTotal.cap) &&
+        big(chainTotal.zones) <= big(chainTotal.cap);
+      datesOk &&= ok;
+      dateRows.push({
+        date,
+        ok,
+        chainCoins: chainTotal.coins,
+        chainZones: chainTotal.zones,
+        ourCoins: coinsOurs.toString(),
+        ourZones: zonesOurs.toString(),
+        cap: chainTotal.cap,
+      });
+    }
+    check("date-totals-match-publications", datesOk, { dates: dateRows });
     const balance = big(String(account.amount));
     const storageStake =
       BigInt(account.storage_usage ?? 0) * STORAGE_PRICE_PER_BYTE;

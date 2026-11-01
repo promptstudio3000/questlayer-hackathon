@@ -2,7 +2,7 @@
   "status": "verified",
   "network": "testnet",
   "contractId": "questlayer-rewards-20261101.testnet",
-  "observedAt": 1793523452567,
+  "observedAt": 1793524016831,
   "failed": [],
   "checks": [
     {
@@ -32,11 +32,35 @@
       "ok": true
     },
     {
+      "name": "date-totals-match-publications",
+      "ok": true,
+      "dates": [
+        {
+          "date": "2026-11-01",
+          "ok": true,
+          "chainCoins": "6000000000000000000000",
+          "chainZones": "6000000000000000000000",
+          "ourCoins": "6000000000000000000000",
+          "ourZones": "6000000000000000000000",
+          "cap": "100000000000000000000000"
+        },
+        {
+          "date": "2026-11-02",
+          "ok": true,
+          "chainCoins": "6000000000000000000000",
+          "chainZones": "6000000000000000000000",
+          "ourCoins": "6000000000000000000000",
+          "ourZones": "6000000000000000000000",
+          "cap": "100000000000000000000000"
+        }
+      ]
+    },
+    {
       "name": "account-covers-liabilities",
       "ok": true,
-      "liquid": "9464537990940827400000000",
+      "liquid": "9354884872918415900000000",
       "liabilities": "200000000000000000000000",
-      "headroom": "9264537990940827400000000"
+      "headroom": "9154884872918415900000000"
     }
   ],
   "totals": {
@@ -68,5 +92,5 @@
     }
   ],
   "scope": "Reward treasury and published city days. Player principal in staking vaults and creator money are separate contracts with their own invariants.",
-  "proofNote": "Read from questlayer-rewards-20261101.testnet at final finality by GET /api/native/distribution?refresh=1 on 1 November 2026; recompute with the same endpoint against a local API (docs/HOW-TO-TRY.md)."
+  "proofNote": "Read from questlayer-rewards-20261101.testnet (v1.1, per-date cap across cities) at final finality by GET /api/native/distribution?refresh=1 on 1 November 2026; recompute with the same endpoint against a local API (docs/HOW-TO-TRY.md)."
 }

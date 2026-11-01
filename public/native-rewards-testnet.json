@@ -1,9 +1,9 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-10-31T23:47:40.076Z",
+  "verifiedAt": "2026-11-01T09:05:42.331Z",
   "contractId": "questlayer-rewards-20261101.testnet",
-  "codeHash": "F6g2rDdk61fWLCjCAChkRT9Mt6Js3DgiFbZVxq3RUnZs",
-  "wasmSha256": "d177a78cd75bb5302e7498d9d5a3ebbd0ae849a338def07e154473716142ef3e",
+  "codeHash": "5xvoLVpWkPzKMjtjZpRNG2uUDvmVLkuLfBJ1n3h7MQQA",
+  "wasmSha256": "49c285d71fca74493560cb0ecb815a1cbfe3247041420d06e06ea7f5663ad4fb",
   "attestor": "oG4sZ5xicVWRG62fvb9VMdykHVpp/Uu3epAvhgU14QM=",
   "workerPublicKey": "ed25519:8JiuMcnC4oR1vf7ZALzSpVrb5uxWFmXVTF8m54fem84e",
   "factory": {
@@ -114,6 +114,33 @@
     {
       "label": "Top up separate reward storage and gas reserve",
       "transaction": "FTv693G7jNPioupzDHKRtKMdJYE454e2vmQqNQJ5APa3"
+    },
+    {
+      "label": "Upgrade: per-date cap across cities",
+      "transaction": "DDb6WpctbJuuNuDzuy5QTGcP5UfMVYFa28WdWiyjLG6B"
+    },
+    {
+      "label": "Backfill date total plzen-2026-11-01-v1",
+      "transaction": "GwdYuDyk7UosuXLKcB4RW1VjLdCSPTngfxJRrayMs15n"
+    },
+    {
+      "label": "Backfill date total plzen-2026-11-02-v1",
+      "transaction": "55RJvbJwngJs7Xd9gwYWU1N171bnf5mChUUTF5BnHubS"
     }
-  ]
+  ],
+  "dailyCapAcrossCities": {
+    "since": "2026-11-01T09:05:42.331Z",
+    "cap": "100000000000000000000000",
+    "view": "get_date_totals(date)",
+    "backfill": [
+      {
+        "dayId": "plzen-2026-11-01-v1",
+        "transactionHash": "GwdYuDyk7UosuXLKcB4RW1VjLdCSPTngfxJRrayMs15n"
+      },
+      {
+        "dayId": "plzen-2026-11-02-v1",
+        "transactionHash": "55RJvbJwngJs7Xd9gwYWU1N171bnf5mChUUTF5BnHubS"
+      }
+    ]
+  }
 }
