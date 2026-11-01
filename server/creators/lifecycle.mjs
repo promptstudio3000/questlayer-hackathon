@@ -1,7 +1,7 @@
 import { atomic } from "../database.mjs";
 import { levelFor } from "../domain.mjs";
 import { observationRequirement } from "./completion-policy.mjs";
-import { creatorPlace } from "./place-policy.mjs";
+import { creatorPlace, creatorPrice } from "./place-policy.mjs";
 import {
   creatorAssert as fail,
   creatorKey as key,
@@ -10,15 +10,18 @@ import {
   createCreatorOperations,
 } from "./operations.mjs";
 
+const OPTIONAL_CONTENT = ["place", "price", "requirement"];
 const content = (value) => {
+  const keys = value && typeof value === "object" ? Object.keys(value) : [];
   fail(
     value &&
-      [
-        "description,title",
-        "description,requirement,title",
-        "description,place,title",
-        "description,place,requirement,title",
-      ].includes(Object.keys(value).sort().join()),
+      !Array.isArray(value) &&
+      keys.includes("title") &&
+      keys.includes("description") &&
+      keys.every(
+        (k) =>
+          k === "title" || k === "description" || OPTIONAL_CONTENT.includes(k),
+      ),
     "Use free quest title, description and an optional supported requirement.",
     "CREATOR_INPUT",
     400,
@@ -31,6 +34,9 @@ const content = (value) => {
       : {}),
     ...(Object.hasOwn(value, "place")
       ? { place: creatorPlace(value.place) }
+      : {}),
+    ...(Object.hasOwn(value, "price")
+      ? { price: creatorPrice(value.price) }
       : {}),
   };
 };

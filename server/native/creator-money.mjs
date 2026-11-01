@@ -74,6 +74,13 @@ const TGAS = 10n ** 12n;
 const QUEST_ID = /^[a-z0-9:_-]{1,64}$/i;
 const backoff = (attempts) =>
   Math.min(300000, 5000 * 2 ** Math.min(attempts, 6));
+const MAX_PRICE = 10n * 10n ** 24n;
+const validPrice = (value) =>
+  typeof value === "string" &&
+  /^(0|[1-9]\d{0,30})$/.test(value) &&
+  BigInt(value) <= MAX_PRICE
+    ? value
+    : "0";
 const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
 
 export function loadCreatorsManifest(
@@ -343,7 +350,11 @@ export class CreatorMoney {
     if (!this.hasLifecycle()) return enqueued;
     const published = this.db
       .prepare(
-        "SELECT q.id, q.author FROM creator_quests q LEFT JOIN creator_money_quests m ON m.quest_id=q.id WHERE q.state IN ('published','closing') AND m.quest_id IS NULL",
+        `SELECT q.id, q.author, json_extract(r.content,'$.price') AS price
+        FROM creator_quests q
+        LEFT JOIN creator_money_quests m ON m.quest_id=q.id
+        LEFT JOIN creator_revisions r ON r.quest_id=q.id AND r.revision=q.published_revision
+        WHERE q.state IN ('published','closing') AND m.quest_id IS NULL`,
       )
       .all();
     for (const q of published) {
@@ -357,10 +368,30 @@ export class CreatorMoney {
       enqueued.push(
         this.enqueue(
           "register_quest",
-          { quest_id: q.id, author_id: account, price: "0" },
+          { quest_id: q.id, author_id: account, price: validPrice(q.price) },
           now,
         ),
       );
+    }
+    // A newly approved revision may change the access price; mirror it once.
+    // The last job for the quest (any state) is the price already asked for,
+    // so a terminal failure is not retried until the author changes it again.
+    const priced = this.db
+      .prepare(
+        `SELECT q.id, json_extract(r.content,'$.price') AS price,
+          (SELECT json_extract(j.args,'$.price') FROM creator_money_jobs j
+            WHERE j.kind IN ('register_quest','set_price') AND json_extract(j.args,'$.quest_id')=q.id
+            ORDER BY j.seq DESC LIMIT 1) AS asked
+        FROM creator_quests q
+        JOIN creator_money_quests m ON m.quest_id=q.id AND m.registered_at IS NOT NULL
+        JOIN creator_revisions r ON r.quest_id=q.id AND r.revision=q.published_revision
+        WHERE q.state='published'`,
+      )
+      .all();
+    for (const q of priced) {
+      const price = validPrice(q.price);
+      if (q.asked === null || q.asked === price) continue;
+      enqueued.push(this.enqueue("set_price", { quest_id: q.id, price }, now));
     }
     const completions = this.db
       .prepare(

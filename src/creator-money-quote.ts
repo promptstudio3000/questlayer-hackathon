@@ -117,3 +117,16 @@ export function nearText(yocto: string | undefined | null, digits = 3) {
   if (value > 0n && rounded === 0n) return "<0." + "0".repeat(digits - 1) + "1";
   return whole.toString() + (fraction ? "." + fraction : "");
 }
+
+/** Author access price: "" or "0" is free, else 0.01 to 10 NEAR → yocto string. */
+export function parseAccessPrice(text: string): string {
+  const t = text.trim();
+  if (!t || /^0+(\.0*)?$/.test(t)) return "0";
+  if (!/^(0|[1-9]\d?)(\.\d{1,24})?$/.test(t))
+    throw Error("Enter a price like 0.5.");
+  const [whole, fraction = ""] = t.split(".");
+  const amount = BigInt(whole) * 10n ** 24n + BigInt(fraction.padEnd(24, "0"));
+  if (amount < 10n ** 22n || amount > 10n * 10n ** 24n)
+    throw Error("Choose a price between 0.01 and 10 NEAR.");
+  return amount.toString();
+}

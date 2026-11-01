@@ -137,6 +137,7 @@ import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
 import { DeferredGameMap as GameMap } from "./DeferredGameMap";
+import { useCreatorPlaces } from "./useCreatorPlaces";
 import { Ghost, AuraArt } from "./Ghost";
 import type {
   Player,
@@ -279,6 +280,7 @@ export default function App() {
   const creatorsEnabled =
     creatorCapability?.playerId === player?.id &&
     creatorCapability?.enabled === true;
+  const creatorPlaces = useCreatorPlaces(player?.id ?? null);
   const { tab, walletView, sheetExpanded, taskRealm, notesView, creatorView } =
     navigation;
   const navigationContext = useRef({ signature: "", revision: 0 });
@@ -2297,6 +2299,13 @@ export default function App() {
         }
         follow={follow}
         onPan={() => setFollow(false)}
+        creatorPlaces={creatorPlaces}
+        onCreatorPlace={(questId) => {
+          setTab("community");
+          setCreatorView({ page: "quest", questId });
+          setSheetExpanded(true);
+          setFollow(false);
+        }}
       />
       <div className="map-vignette" />
       <aside className="nav-rail">

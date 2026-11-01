@@ -46,6 +46,26 @@ export type GameMapProps = {
   onZone: (z: Zone) => void;
   follow: boolean;
   onPan: () => void;
+  /** Places creators pinned (visit, trail start, chest); tap opens the quest. */
+  creatorPlaces?: CreatorMapPlace[];
+  onCreatorPlace?: (questId: string) => void;
+};
+export type CreatorMapPlace = {
+  questId: string;
+  title: string;
+  template: "visit" | "trail" | "chest";
+  lat: number;
+  lng: number;
+};
+const CREATOR_PIN_KIND = {
+  visit: "place",
+  trail: "route",
+  chest: "chest",
+} as const;
+const CREATOR_PIN_NAME = {
+  visit: "Creator place",
+  trail: "Creator trail",
+  chest: "Creator chest",
 };
 function phoneLayout() {
   return (
@@ -702,6 +722,30 @@ export function GameMap(props: GameMapProps) {
     props.panelMode,
     viewportRevision,
   ]);
+  const creatorPlaceKey = JSON.stringify(props.creatorPlaces || []);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || props.globe || !props.creatorPlaces?.length) return;
+    const markers = props.creatorPlaces.map((place) => {
+      const node = document.createElement("button");
+      const label = `${place.title} · ${CREATOR_PIN_NAME[place.template]}`;
+      node.className = "quest-map-pin game-object-map-pin creator-map-pin";
+      node.setAttribute("aria-label", label);
+      node.title = label;
+      node.innerHTML = gameObjectMarkup({
+        kind: CREATOR_PIN_KIND[place.template],
+        state: "ready",
+      });
+      node.addEventListener("click", (e) => {
+        e.stopPropagation();
+        latest.current.onCreatorPlace?.(place.questId);
+      });
+      return new maplibregl.Marker({ element: node, anchor: "bottom" })
+        .setLngLat([place.lng, place.lat])
+        .addTo(m);
+    });
+    return () => markers.forEach((x) => x.remove());
+  }, [ready, props.globe, creatorPlaceKey]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready || !props.world || !props.focusZone) return;

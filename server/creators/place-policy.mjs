@@ -64,3 +64,27 @@ export function creatorPlace(value) {
   );
   return { template: value.template, points };
 }
+
+// Paid access price in yoctoNEAR, reviewed with the revision and registered on
+// the creators contract by the publisher. "0" means free.
+export const CREATOR_PRICE_BOUNDS = Object.freeze({
+  min: 10n ** 22n, // 0.01 NEAR
+  max: 10n * 10n ** 24n, // 10 NEAR
+});
+export function creatorPrice(value) {
+  fail(
+    typeof value === "string" && /^(0|[1-9]\d{0,30})$/.test(value),
+    "Enter the access price as a whole yoctoNEAR amount.",
+    "CREATOR_INPUT",
+    400,
+  );
+  const price = BigInt(value);
+  fail(
+    price === 0n ||
+      (price >= CREATOR_PRICE_BOUNDS.min && price <= CREATOR_PRICE_BOUNDS.max),
+    "Choose a price between 0.01 and 10 NEAR, or keep it free.",
+    "CREATOR_INPUT",
+    400,
+  );
+  return price.toString();
+}

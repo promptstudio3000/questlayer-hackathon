@@ -28,6 +28,8 @@ import {
   type CreatorMoneyBridge,
 } from "./CreatorMoney";
 import { meters } from "./api";
+import { parseAccessPrice, nearText } from "./creator-money-quote";
+import { formatNativeNear } from "./native-amounts";
 import { Dialog } from "./Dialog";
 import { useFormDraft } from "./useFormDraft";
 import {
@@ -1149,7 +1151,8 @@ function QuestRow({
         onClick={() => navigate({ page: "quest", questId: quest.id })}
       >
         <span className="creator-state">
-          {template ? template.badge : "Free"}
+          {template ? template.badge : "Quest"}
+          {quest.price ? ` · ${nearText(quest.price)} NEAR` : " · Free"}
           {distance !== null ? ` · ${distanceText(distance)}` : ""}
         </span>
         <h4>{quest.title}</h4>
@@ -1312,9 +1315,12 @@ function QuestDetail({
           <>
             <p className="creator-instructions">{quest.description}</p>
             <p className="creator-hint">
-              Free demo quest · reviewed revision {quest.revision}. No XP, item
-              or GOLD reward is configured. Starting saves these instructions;
-              it does not prove a physical visit.
+              {quest.price
+                ? `Paid unlock ${nearText(quest.price)} NEAR, supports the creator`
+                : "Free quest"}{" "}
+              · reviewed revision {quest.revision}. No XP, item or GOLD reward
+              is configured. Starting saves these instructions; it does not
+              prove a physical visit.
             </p>
             {quest.requirement && (
               <div className="creator-quote">
@@ -1350,7 +1356,8 @@ function QuestDetail({
                   )
                 }
               >
-                Start free quest <ArrowRight size={20} />
+                {quest.price ? "Start quest" : "Start free quest"}{" "}
+                <ArrowRight size={20} />
               </button>
             )}
           </>
@@ -2158,6 +2165,22 @@ function QuestEditor({
   );
   const [points, setPoints] = useState<Point[]>(savedPlace?.points ?? []);
   const [placeError, setPlaceError] = useState("");
+  const savedPrice =
+    quest?.draft.price && quest.draft.price !== "0" ? quest.draft.price : "";
+  const [paid, setPaid] = useState(!!savedPrice);
+  const [priceText, setPriceText] = useState(
+    savedPrice ? formatNativeNear(savedPrice) : "",
+  );
+  let priceValue = "0",
+    priceProblem = "";
+  try {
+    priceValue = paid ? parseAccessPrice(priceText) : "0";
+    if (paid && priceValue === "0")
+      priceProblem = "Enter a price, or keep it free.";
+  } catch (error) {
+    priceProblem = (error as Error).message;
+  }
+  const priceChanged = priceValue !== (savedPrice || "0");
   const placeChanged =
     JSON.stringify(template ? { template, points } : null) !==
     JSON.stringify(savedPlace ?? null);
@@ -2185,6 +2208,7 @@ function QuestEditor({
     draft.hasDraft ||
     requirementDraft.hasDraft ||
     placeChanged ||
+    priceChanged ||
     observation !== !!quest?.draft.requirement;
   const newIdentity = useMemo(
     () => (quest ? null : creatorDraftIdentity(playerId)),
@@ -2248,6 +2272,7 @@ function QuestEditor({
       }
     }
     setPlaceError("");
+    if (priceProblem) return;
     const revision = draft.revision;
     const requirementRevision = requirementDraft.revision;
     const questId = quest?.id || newIdentity!.id;
@@ -2264,6 +2289,7 @@ function QuestEditor({
           }
         : {}),
       ...(template ? { place: { template, points } } : {}),
+      ...(priceValue !== "0" ? { price: priceValue } : {}),
     };
     const saved = await act(
       quest ? `/quests/${idPath(quest.id)}/revisions` : "/quests",
@@ -2423,6 +2449,60 @@ function QuestEditor({
             {placeError && <p role="alert">{placeError}</p>}
           </div>
         )}
+        <fieldset className="creator-templates" disabled={!editable || busy}>
+          <legend>Access</legend>
+          <label className="creator-template">
+            <input
+              type="radio"
+              name="creator-access"
+              checked={!paid}
+              onChange={() => setPaid(false)}
+            />
+            <span>
+              <strong>Free</strong>
+              <small>
+                Anyone can start it. Explorers can still send gifts.
+              </small>
+            </span>
+          </label>
+          <label className="creator-template">
+            <input
+              type="radio"
+              name="creator-access"
+              checked={paid}
+              onChange={() => setPaid(true)}
+            />
+            <span>
+              <strong>Paid unlock</strong>
+              <small>
+                Explorers pay once to unlock: 80% to you, 20% to the city reward
+                pot.
+              </small>
+            </span>
+          </label>
+          {paid && (
+            <label htmlFor="creator-quest-price">
+              Price in NEAR (0.01 to 10)
+              <input
+                id="creator-quest-price"
+                inputMode="decimal"
+                placeholder="0.5"
+                value={priceText}
+                onChange={(e) => setPriceText(e.target.value)}
+                aria-invalid={!!priceProblem}
+              />
+            </label>
+          )}
+          {paid && priceProblem && priceText && (
+            <p role="alert">{priceProblem}</p>
+          )}
+          {paid && !priceProblem && (
+            <p className="creator-hint">
+              {nearText(priceValue)} NEAR. The price goes live after review;
+              people who already unlocked keep access.
+            </p>
+          )}
+        </fieldset>
         <label htmlFor="creator-quest-title">
           Quest title
           <input
@@ -2531,6 +2611,8 @@ function QuestEditor({
               setTemplate(savedPlace?.template ?? (quest ? null : "visit"));
               setPoints(savedPlace?.points ?? []);
               setPlaceError("");
+              setPaid(!!savedPrice);
+              setPriceText(savedPrice ? formatNativeNear(savedPrice) : "");
               setQuote(null);
               setAccepted(false);
             }}
