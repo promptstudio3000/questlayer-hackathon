@@ -90,13 +90,14 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
     title: row.title,
     description: row.description,
     ...(row.requirement ? { requirement: JSON.parse(row.requirement) } : {}),
+    ...(row.place ? { place: JSON.parse(row.place) } : {}),
     creator: { id: row.author, displayName: row.display_name },
     access: "free",
     rewardStatus: "not-configured",
     domain: "demo",
   });
   const approvedColumns = `q.id,q.author,q.published_revision,p.display_name,
-    json_extract(r.content,'$.title') AS title,json_extract(r.content,'$.description') AS description,json_extract(r.content,'$.requirement') AS requirement`;
+    json_extract(r.content,'$.title') AS title,json_extract(r.content,'$.description') AS description,json_extract(r.content,'$.requirement') AS requirement,json_extract(r.content,'$.place') AS place`;
   const approvedJoins = `FROM creator_quests q
     JOIN creator_profiles p ON p.player_id=q.author AND p.public=1
     JOIN creator_revisions r ON r.quest_id=q.id AND r.revision=q.published_revision AND r.state='approved'`;

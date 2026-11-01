@@ -22,6 +22,12 @@ import {
   ShieldSlash,
 } from "@phosphor-icons/react";
 import { Ghost } from "./Ghost";
+import {
+  CreatorEarningsPanel,
+  CreatorSupport,
+  type CreatorMoneyBridge,
+} from "./CreatorMoney";
+import { meters } from "./api";
 import { Dialog } from "./Dialog";
 import { useFormDraft } from "./useFormDraft";
 import {
@@ -43,6 +49,8 @@ import {
   type CreatorMe,
   type CreatorPage,
   type CreatorParticipation,
+  type CreatorPlace,
+  type CreatorPlaceTemplate,
   type CreatorProfile,
   type CreatorPublicationQuote,
   type OwnedCreatorQuest,
@@ -60,10 +68,15 @@ type Props = {
   onPlayerChange?: () => void | Promise<void>;
   onCapabilityChange?: (enabled: boolean) => void;
   client?: CreatorClient;
+  /** Where the explorer stands now, for "Near you". Never sent to the server. */
+  position?: { lat: number; lng: number };
+  money?: CreatorMoneyBridge;
 };
+type Point = { lat: number; lng: number };
 type Loaded = {
   me: CreatorMe;
   quests?: CreatorPage<PublicCreatorQuest>;
+  following?: CreatorPage<PublicCreatorQuest>;
   creators?: CreatorPage<CreatorProfile>;
   mine?: CreatorPage<OwnedCreatorQuest>;
   participations?: CreatorPage<CreatorParticipation>;
@@ -108,6 +121,60 @@ const statusName = (state: string) =>
     resolved: "Review complete",
   })[state] || state;
 
+export const PLACE_TEMPLATES: Record<
+  CreatorPlaceTemplate,
+  { name: string; badge: string; hint: string; max: number; min: number }
+> = {
+  visit: {
+    name: "Visit a place",
+    badge: "Visit",
+    hint: "Pin one spot. Explorers go there and tell what they found.",
+    min: 1,
+    max: 1,
+  },
+  trail: {
+    name: "Walk a trail",
+    badge: "Trail",
+    hint: "Pin 2 to 6 stops in walking order, under 5 km in total.",
+    min: 2,
+    max: 6,
+  },
+  chest: {
+    name: "Hide a chest",
+    badge: "Chest",
+    hint: "Pin where your chest waits. Explorers open it on the spot.",
+    min: 1,
+    max: 1,
+  },
+};
+const NEARBY_METERS = 5000;
+export const distanceText = (m: number) =>
+  m < 950
+    ? `${Math.max(10, Math.round(m / 10) * 10)} m`
+    : `${(m / 1000).toFixed(m < 9950 ? 1 : 0)} km`;
+const placeDistance = (place: CreatorPlace | undefined, from?: Point) =>
+  place && from && place.points[0] ? meters(from, place.points[0]) : null;
+function trailLength(points: Point[]) {
+  let total = 0;
+  for (let i = 1; i < points.length; i++)
+    total += meters(points[i - 1], points[i]);
+  return total;
+}
+/** Quests with a pinned place within 5 km, nearest first. */
+export function nearbyQuests(
+  quests: PublicCreatorQuest[],
+  from?: Point,
+): Array<{ quest: PublicCreatorQuest; distance: number }> {
+  if (!from) return [];
+  return quests
+    .map((quest) => ({ quest, distance: placeDistance(quest.place, from) }))
+    .filter(
+      (x): x is { quest: PublicCreatorQuest; distance: number } =>
+        x.distance !== null && x.distance <= NEARBY_METERS,
+    )
+    .sort((a, b) => a.distance - b.distance);
+}
+
 async function maybeRead<T>(
   client: CreatorClient,
   path: string,
@@ -132,8 +199,19 @@ async function load(
       "The current creator session could not be verified. Refresh before continuing.",
     );
   switch (view.page) {
-    case "community":
-      return { me, quests: await client.read("/quests?limit=20", signal) };
+    case "community": {
+      const [quests, following] = await Promise.all([
+        client.read<CreatorPage<PublicCreatorQuest>>(
+          "/quests?limit=50",
+          signal,
+        ),
+        client.read<CreatorPage<PublicCreatorQuest>>(
+          "/quests?following=true&limit=5",
+          signal,
+        ),
+      ]);
+      return { me, quests, following };
+    }
     case "following":
       return {
         me,
@@ -231,6 +309,8 @@ function CreatorCommunitySession({
   onPlayerChange,
   onCapabilityChange,
   client: injected,
+  position,
+  money,
 }: Props) {
   const client = useMemo(
     () => injected || createCreatorClient({ playerId: player.id }),
@@ -566,15 +646,23 @@ function CreatorCommunitySession({
       ) : (
         data && (
           <>
+            {view.page === "community" && (
+              <CommunityHome
+                data={data}
+                position={position}
+                navigate={navigate}
+              />
+            )}
             {(view.page === "community" || view.page === "following") && (
               <>
                 <h3>
                   {view.page === "following"
                     ? "From creators you follow"
-                    : "Free creator quests"}
+                    : "All creator quests"}
                 </h3>
                 <QuestList
                   page={data.quests}
+                  from={position}
                   navigate={navigate}
                   empty={
                     view.page === "following"
@@ -686,6 +774,7 @@ function CreatorCommunitySession({
                 )}
                 <QuestList
                   page={data.quests}
+                  from={position}
                   navigate={navigate}
                   empty="This creator has no published free quests at the moment."
                 />
@@ -753,6 +842,8 @@ function CreatorCommunitySession({
                 act={act}
                 navigate={navigate}
                 onSafety={setSafety}
+                money={money}
+                position={position}
               />
             )}
             {view.page === "mine" && (
@@ -766,6 +857,7 @@ function CreatorCommunitySession({
                     <Plus size={20} /> New quest
                   </button>
                 </div>
+                {money && <CreatorEarningsPanel money={money} />}
                 <Progression me={data.me} />
                 <button
                   className="creator-profile-entry"
@@ -903,6 +995,7 @@ function CreatorCommunitySession({
                 me={data.me}
                 capability={state.capability}
                 client={client}
+                position={position}
                 busy={busy}
                 act={act}
                 navigate={navigate}
@@ -973,12 +1066,107 @@ function More({ busy, onClick }: { busy: boolean; onClick: () => void }) {
     </button>
   );
 }
+function CommunityHome({
+  data,
+  position,
+  navigate,
+}: {
+  data: Loaded;
+  position?: Point;
+  navigate: (view: CreatorCommunityView) => void;
+}) {
+  const near = nearbyQuests(data.quests?.items || [], position).slice(0, 5);
+  const followed = data.following?.items.slice(0, 3) || [];
+  return (
+    <>
+      <h3>Near you</h3>
+      {!position ? (
+        <Empty>Turn on location on the map to see creator places nearby.</Empty>
+      ) : !near.length ? (
+        <Empty>
+          No creator places within 5 km yet. Pin the first one in My creations.
+        </Empty>
+      ) : (
+        <div className="creator-nearby">
+          {near.map(({ quest, distance }) => (
+            <QuestRow
+              key={quest.id}
+              quest={quest}
+              distance={distance}
+              navigate={navigate}
+            />
+          ))}
+        </div>
+      )}
+      <div className="creator-heading">
+        <h3>Creators you follow</h3>
+        {followed.length > 0 && (
+          <button
+            className="text-button"
+            onClick={() => navigate({ page: "following" })}
+          >
+            See all <ArrowRight size={18} />
+          </button>
+        )}
+      </div>
+      {!followed.length ? (
+        <Empty>
+          Follow a creator to see their new places here.{" "}
+          <button
+            className="text-button"
+            onClick={() => navigate({ page: "creators" })}
+          >
+            Meet the creators <ArrowRight size={18} />
+          </button>
+        </Empty>
+      ) : (
+        followed.map((quest) => (
+          <QuestRow
+            key={quest.id}
+            quest={quest}
+            distance={placeDistance(quest.place, position)}
+            navigate={navigate}
+          />
+        ))
+      )}
+    </>
+  );
+}
+function QuestRow({
+  quest,
+  distance,
+  navigate,
+}: {
+  quest: PublicCreatorQuest;
+  distance: number | null;
+  navigate: (view: CreatorCommunityView) => void;
+}) {
+  const template = quest.place ? PLACE_TEMPLATES[quest.place.template] : null;
+  return (
+    <article className="creator-quest-row">
+      <button
+        className="creator-quest-open"
+        onClick={() => navigate({ page: "quest", questId: quest.id })}
+      >
+        <span className="creator-state">
+          {template ? template.badge : "Free"}
+          {distance !== null ? ` · ${distanceText(distance)}` : ""}
+        </span>
+        <h4>{quest.title}</h4>
+        <small>By {quest.creator.displayName}</small>
+        <ArrowRight size={22} />
+      </button>
+    </article>
+  );
+}
 function QuestList({
   page,
+  from,
   navigate,
   empty,
 }: {
   page?: CreatorPage<PublicCreatorQuest>;
+  from?: Point;
   navigate: (view: CreatorCommunityView) => void;
   empty: string;
 }) {
@@ -986,27 +1174,35 @@ function QuestList({
     <Empty>{empty}</Empty>
   ) : (
     <div>
-      {page.items.map((quest) => (
-        <article className="creator-quest-row" key={quest.id}>
-          <button
-            className="creator-quest-open"
-            onClick={() => navigate({ page: "quest", questId: quest.id })}
-          >
-            <span className="creator-state">Free · demo</span>
-            <h4>{quest.title}</h4>
-            <p>
-              {quest.description.length > 180
-                ? quest.description.slice(0, 180) + "…"
-                : quest.description}
-            </p>
-            <small>
-              By {quest.creator.displayName} · reviewed revision{" "}
-              {quest.revision}
-            </small>
-            <ArrowRight size={22} />
-          </button>
-        </article>
-      ))}
+      {page.items.map((quest) => {
+        const distance = placeDistance(quest.place, from);
+        return (
+          <article className="creator-quest-row" key={quest.id}>
+            <button
+              className="creator-quest-open"
+              onClick={() => navigate({ page: "quest", questId: quest.id })}
+            >
+              <span className="creator-state">
+                {quest.place
+                  ? PLACE_TEMPLATES[quest.place.template].badge
+                  : "Free"}
+                {distance !== null ? ` · ${distanceText(distance)}` : ""}
+              </span>
+              <h4>{quest.title}</h4>
+              <p>
+                {quest.description.length > 180
+                  ? quest.description.slice(0, 180) + "…"
+                  : quest.description}
+              </p>
+              <small>
+                By {quest.creator.displayName} · reviewed revision{" "}
+                {quest.revision}
+              </small>
+              <ArrowRight size={22} />
+            </button>
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -1046,6 +1242,8 @@ function QuestDetail({
   act,
   navigate,
   onSafety,
+  money,
+  position,
 }: {
   playerId: string;
   data: Loaded;
@@ -1053,9 +1251,12 @@ function QuestDetail({
   act: Action;
   navigate: (view: CreatorCommunityView) => void;
   onSafety: (action: SafetyAction) => void;
+  money?: CreatorMoneyBridge;
+  position?: Point;
 }) {
   const quest = data.quest,
     part = data.participation;
+  const place = part?.content.place || quest?.place;
   const title = part?.content.title || quest?.title || "Your quest";
   const reportTarget = creatorReportTarget(quest, part);
   const creator = part?.creator || quest?.creator;
@@ -1080,6 +1281,7 @@ function QuestDetail({
           <ArrowRight size={20} />
         </button>
       )}
+      {place && <PlaceSummary place={place} from={position} />}
       {part ? (
         <article className="creator-accepted">
           <span className="creator-state">{statusName(part.state)}</span>
@@ -1154,6 +1356,13 @@ function QuestDetail({
           </>
         )
       )}
+      {money && quest && (
+        <CreatorSupport
+          questId={quest.id}
+          ownQuest={quest.creator.id === playerId}
+          money={money}
+        />
+      )}
       {reportTarget && (
         <details className="creator-safety-tools">
           <summary>Quest safety</summary>
@@ -1200,6 +1409,32 @@ function QuestDetail({
   );
 }
 
+function PlaceSummary({ place, from }: { place: CreatorPlace; from?: Point }) {
+  const template = PLACE_TEMPLATES[place.template];
+  const first = place.points[0];
+  const distance = placeDistance(place, from);
+  return (
+    <div className="creator-place">
+      <strong>{template.name}</strong>
+      <span>
+        {place.template === "trail"
+          ? `${place.points.length} stops · ${distanceText(trailLength(place.points))} walk`
+          : "One pinned spot"}
+        {distance !== null ? ` · start ${distanceText(distance)} away` : ""}
+      </span>
+      {first && (
+        <a
+          className="text-button"
+          href={`https://www.openstreetmap.org/?mlat=${first.lat}&mlon=${first.lng}#map=18/${first.lat}/${first.lng}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open the start on a map <ArrowRight size={18} />
+        </a>
+      )}
+    </div>
+  );
+}
 function CreatorSafetyDialog({
   action,
   playerId,
@@ -1905,6 +2140,7 @@ function QuestEditor({
   busy,
   act,
   navigate,
+  position,
 }: {
   playerId: string;
   quest?: OwnedCreatorQuest;
@@ -1914,7 +2150,17 @@ function QuestEditor({
   busy: boolean;
   act: Action;
   navigate: (view: CreatorCommunityView) => void;
+  position?: Point;
 }) {
+  const savedPlace = quest?.draft.place;
+  const [template, setTemplate] = useState<CreatorPlaceTemplate | null>(
+    savedPlace?.template ?? (quest ? null : "visit"),
+  );
+  const [points, setPoints] = useState<Point[]>(savedPlace?.points ?? []);
+  const [placeError, setPlaceError] = useState("");
+  const placeChanged =
+    JSON.stringify(template ? { template, points } : null) !==
+    JSON.stringify(savedPlace ?? null);
   const draft = useFormDraft({
     playerId,
     form: "creator-quest",
@@ -1938,6 +2184,7 @@ function QuestEditor({
   const hasChanges =
     draft.hasDraft ||
     requirementDraft.hasDraft ||
+    placeChanged ||
     observation !== !!quest?.draft.requirement;
   const newIdentity = useMemo(
     () => (quest ? null : creatorDraftIdentity(playerId)),
@@ -1985,6 +2232,22 @@ function QuestEditor({
   }
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (template) {
+      const rule = PLACE_TEMPLATES[template];
+      if (points.length < rule.min || points.length > rule.max) {
+        setPlaceError(
+          template === "trail"
+            ? "Pin at least 2 stops for a trail."
+            : "Pin the place first.",
+        );
+        return;
+      }
+      if (trailLength(points) > 5000) {
+        setPlaceError("Keep a trail under 5 km.");
+        return;
+      }
+    }
+    setPlaceError("");
     const revision = draft.revision;
     const requirementRevision = requirementDraft.revision;
     const questId = quest?.id || newIdentity!.id;
@@ -2000,6 +2263,7 @@ function QuestEditor({
             },
           }
         : {}),
+      ...(template ? { place: { template, points } } : {}),
     };
     const saved = await act(
       quest ? `/quests/${idPath(quest.id)}/revisions` : "/quests",
@@ -2050,8 +2314,9 @@ function QuestEditor({
         )}
       </div>
       <p className="creator-hint">
-        Use a clear title and safe, complete instructions. No location, walking
-        route, reward or access price is invented from this text.
+        Pick a template, pin it where you stand, then write clear and safe
+        instructions. Only places you pin are shown; your live location is never
+        shared.
       </p>
       {quest && hasChanges && !editable && (
         <details className="creator-saved-version">
@@ -2065,6 +2330,99 @@ function QuestEditor({
         </details>
       )}
       <form className="creator-form" onSubmit={save}>
+        <fieldset className="creator-templates" disabled={!editable || busy}>
+          <legend>Template</legend>
+          {(Object.keys(PLACE_TEMPLATES) as CreatorPlaceTemplate[]).map(
+            (key) => (
+              <label key={key} className="creator-template">
+                <input
+                  type="radio"
+                  name="creator-template"
+                  checked={template === key}
+                  onChange={() => {
+                    setTemplate(key);
+                    setPoints((old) => old.slice(0, PLACE_TEMPLATES[key].max));
+                    setPlaceError("");
+                    setQuote(null);
+                    setAccepted(false);
+                  }}
+                />
+                <span>
+                  <strong>{PLACE_TEMPLATES[key].name}</strong>
+                  <small>{PLACE_TEMPLATES[key].hint}</small>
+                </span>
+              </label>
+            ),
+          )}
+        </fieldset>
+        {template && (
+          <div className="creator-pins">
+            {points.length > 0 && (
+              <ol>
+                {points.map((p, i) => (
+                  <li key={`${p.lat},${p.lng},${i}`}>
+                    {template === "trail" ? `Stop ${i + 1}` : "Pinned spot"}
+                    {position
+                      ? ` · ${distanceText(meters(position, p))} from you`
+                      : ""}
+                    {editable && (
+                      <button
+                        type="button"
+                        className="text-button"
+                        disabled={busy}
+                        onClick={() => {
+                          setPoints((old) => old.filter((_, j) => j !== i));
+                          setQuote(null);
+                          setAccepted(false);
+                        }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            )}
+            {template === "trail" && points.length > 1 && (
+              <p className="creator-hint">
+                Trail length {distanceText(trailLength(points))}.
+              </p>
+            )}
+            {editable && points.length < PLACE_TEMPLATES[template].max && (
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy || !position}
+                onClick={() => {
+                  if (!position) return;
+                  const next = {
+                    lat: Math.round(position.lat * 1e5) / 1e5,
+                    lng: Math.round(position.lng * 1e5) / 1e5,
+                  };
+                  setPoints((old) =>
+                    PLACE_TEMPLATES[template].max === 1
+                      ? [next]
+                      : [...old, next],
+                  );
+                  setPlaceError("");
+                  setQuote(null);
+                  setAccepted(false);
+                }}
+              >
+                <Plus size={20} />
+                {template === "trail"
+                  ? `Pin stop ${points.length + 1} where I stand`
+                  : "Pin it where I stand"}
+              </button>
+            )}
+            {!position && (
+              <p className="creator-hint">
+                Turn on location on the map to pin a place.
+              </p>
+            )}
+            {placeError && <p role="alert">{placeError}</p>}
+          </div>
+        )}
         <label htmlFor="creator-quest-title">
           Quest title
           <input
@@ -2170,6 +2528,9 @@ function QuestEditor({
               draft.discard();
               requirementDraft.discard();
               setObservation(!!quest?.draft.requirement);
+              setTemplate(savedPlace?.template ?? (quest ? null : "visit"));
+              setPoints(savedPlace?.points ?? []);
+              setPlaceError("");
               setQuote(null);
               setAccepted(false);
             }}
