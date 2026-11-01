@@ -1,5 +1,5 @@
 import { assert, dayKey } from "../domain.mjs";
-import { PLZEN, sampleCityPaths } from "../spatial/city-pack.mjs";
+import { DEFAULT_CITY, sampleCityPaths } from "../spatial/city-pack.mjs";
 import { shiftDate } from "../spatial/calendar.mjs";
 import { getOrPrepareCityPlan } from "../world-planner.mjs";
 import {
@@ -56,7 +56,7 @@ export async function publishNativeDays(
   native,
   {
     clock = Date.now,
-    city = native.city || PLZEN,
+    city = native.city || DEFAULT_CITY,
     renew,
     writeOwned,
     sendOwned,

@@ -17,7 +17,7 @@ import {
   nativePublicationMatches,
   storedNativeManifest,
 } from "./reward-manifest.mjs";
-import { PLZEN } from "../spatial/city-pack.mjs";
+import { DEFAULT_CITY } from "../spatial/city-pack.mjs";
 import { NETWORK } from "./network.mjs";
 import {
   assertNativePlaceOpen,
@@ -29,7 +29,7 @@ export class NativeRewards extends NativeContractReader {
     provider,
     config,
     signer,
-    { clock = Date.now, city = PLZEN } = {},
+    { clock = Date.now, city = DEFAULT_CITY } = {},
   ) {
     super(provider, config.contractId);
     this.db = db;

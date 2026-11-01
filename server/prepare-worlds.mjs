@@ -1,4 +1,4 @@
-import { PLZEN } from "./spatial/city-pack.mjs";
+import { DEFAULT_CITY, LIVE_CITIES } from "./spatial/city-pack.mjs";
 import {
   buildCityPlan,
   enqueueCityPlans,
@@ -12,7 +12,7 @@ if (process.argv.includes("--preview")) {
     day = process.argv[index + 1];
   if (!day) throw Error("Supply a local date: --preview YYYY-MM-DD");
   const packIndex = process.argv.indexOf("--pack");
-  let pack = PLZEN;
+  let pack = DEFAULT_CITY;
   if (packIndex !== -1) {
     const file = process.argv[packIndex + 1];
     if (!file || statSync(file).size > 16 * 1024 * 1024)
@@ -64,7 +64,17 @@ if (process.argv.includes("--preview")) {
   try {
     enqueueCityPlans(db);
     await runWorldJobs(db);
-    console.log(JSON.stringify(worldPreparationStatus(db), null, 2));
+    console.log(
+      JSON.stringify(
+        LIVE_CITIES.length === 1
+          ? worldPreparationStatus(db, Date.now(), LIVE_CITIES[0])
+          : LIVE_CITIES.map((city) =>
+              worldPreparationStatus(db, Date.now(), city),
+            ),
+        null,
+        2,
+      ),
+    );
   } finally {
     db.close();
   }
