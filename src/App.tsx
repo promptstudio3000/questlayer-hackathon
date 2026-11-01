@@ -4,6 +4,7 @@ import {
   AdventureResultHistoryButton,
   PendingNativeTransactions,
   CreatorCommunity,
+  CommunityBonusVote,
   MapNotes,
   NativeCollectionControl,
   NativeTasks,
@@ -29,6 +30,7 @@ import {
 import "./adventure-results.css";
 import "./pending-native-transactions.css";
 import "./creator-community.css";
+import "./community-bonus-vote.css";
 import { useAdventureResults } from "./useAdventureResults";
 import {
   adventureItemForEquip,
@@ -3795,6 +3797,11 @@ export default function App() {
                   </p>
                 </div>
               </details>
+              <CommunityBonusVote
+                key={`bonus-${player.id}`}
+                playerId={player.id}
+                notify={notify}
+              />
               <CreatorCommunity
                 key={player.id}
                 player={player}

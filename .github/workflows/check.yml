@@ -45,6 +45,9 @@ jobs:
       - run: npm run e2e:first-session -- --device=${{ matrix.device }}
         env:
           E2E_SHOTS: ${{ runner.temp }}/first-session
+      - run: npm run e2e:bonus-vote
+        env:
+          E2E_SHOTS: ${{ runner.temp }}/first-session/bonus-vote
       - uses: actions/upload-artifact@v4
         if: always()
         with:
