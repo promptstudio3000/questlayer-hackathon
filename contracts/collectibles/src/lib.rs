@@ -19,7 +19,7 @@ const EXPLORER_MEDIA: &str = include_str!("../assets/explorer-uri.txt");
 /// Mirrors the `native` entries of server/data/aura-catalog.json (a Node test
 /// keeps them equal). Code-only: adding an edition needs no state migration,
 /// and token ids stay `aura:<edition>:<serial>` with a 256 cap per edition.
-const AURA_EDITIONS: [(&str, &str, &str); 9] = [
+const AURA_EDITIONS: [(&str, &str, &str); 15] = [
     ("polar", "Northern Lights", include_str!("../assets/aura-polar-uri.txt")),
     ("moon", "Moonwake Aura", include_str!("../assets/aura-moon-uri.txt")),
     ("gold", "Sunlit Aura", include_str!("../assets/aura-gold-uri.txt")),
@@ -29,7 +29,33 @@ const AURA_EDITIONS: [(&str, &str, &str); 9] = [
     ("storm", "Stormcrown", include_str!("../assets/aura-storm-uri.txt")),
     ("comet", "Comet Trail", include_str!("../assets/aura-comet-uri.txt")),
     ("nova", "Nova Bloom", include_str!("../assets/aura-nova-uri.txt")),
+    ("pilgrim", "Pilgrim's Path", include_str!("../assets/aura-pilgrim-uri.txt")),
+    ("chronicle", "Chronicle Crown", include_str!("../assets/aura-chronicle-uri.txt")),
+    ("ledger", "Merchant's Ledger", include_str!("../assets/aura-ledger-uri.txt")),
+    ("wardbreaker", "Wardbreaker Horns", include_str!("../assets/aura-wardbreaker-uri.txt")),
+    ("wisp", "Will-o'-Wisp Halo", include_str!("../assets/aura-wisp-uri.txt")),
+    ("bossbane", "Bossbane Fangring", include_str!("../assets/aura-bossbane-uri.txt")),
 ];
+/// NPC- and monster-only editions: (edition id, required claim id prefix,
+/// token description). They are minted only through a claim whose id carries
+/// the prefix (signed award claims via `redeem_aura`, or the oracle's
+/// `mint_aura_once`), never by the claim-less oracle `mint_aura`. Anyone can
+/// audit where every such token came from with `get_claim`. Mirrors the
+/// `source` field of server/data/aura-catalog.json (a Node test keeps them equal).
+const CLAIM_ONLY_EDITIONS: [(&str, &str, &str); 6] = [
+    ("pilgrim", "earned:npc:", "Earned from a QuestLayer NPC."),
+    ("chronicle", "earned:npc:", "Earned from a QuestLayer NPC."),
+    ("ledger", "earned:npc:", "Earned from a QuestLayer NPC."),
+    ("wisp", "earned:npc:", "Earned from a QuestLayer NPC."),
+    ("wardbreaker", "earned:monster:", "Earned by beating a QuestLayer monster."),
+    ("bossbane", "earned:monster:", "Earned by beating a QuestLayer monster."),
+];
+fn claim_only(edition: &str) -> Option<(&'static str, &'static str)> {
+    CLAIM_ONLY_EDITIONS
+        .iter()
+        .find(|(id, _, _)| *id == edition)
+        .map(|(_, prefix, description)| (*prefix, *description))
+}
 fn aura_edition(edition: &str) -> Option<(&'static str, &'static str)> {
     AURA_EDITIONS
         .iter()
@@ -275,6 +301,9 @@ impl Collectibles {
         }
         let (name, media) =
             aura_edition(&edition).unwrap_or_else(|| env::panic_str("Unknown edition"));
+        let description = claim_only(&edition)
+            .map(|(_, d)| d)
+            .unwrap_or("Earned through a QuestLayer adventure.");
         self.mint_claim(
             claim_id,
             edition,
@@ -282,9 +311,9 @@ impl Collectibles {
             TokenMetadata {
                 title: Some(name.into()),
                 description: Some(if network() == "testnet" {
-                    "Earned through a QuestLayer adventure. Testnet collectible.".into()
+                    format!("{description} Testnet collectible.")
                 } else {
-                    "Earned through a QuestLayer adventure.".into()
+                    description.into()
                 }),
                 media: Some(media.trim().into()),
                 copies: Some(256),
@@ -325,6 +354,10 @@ impl Collectibles {
         metadata: TokenMetadata,
     ) -> Token {
         self.assert_oracle();
+        assert!(
+            claim_only(&edition).is_none(),
+            "This Aura is only earned from NPCs and monsters"
+        );
         let initial = env::storage_usage();
         let token_id = self.next_aura(&edition);
         self.finish_mint(token_id, receiver_id, metadata, initial)
@@ -351,6 +384,12 @@ impl Collectibles {
             !claim_id.is_empty() && claim_id.len() <= 160,
             "Invalid claim ID"
         );
+        if let Some((prefix, _)) = claim_only(&edition) {
+            assert!(
+                claim_id.starts_with(prefix),
+                "This Aura is only earned from NPCs and monsters"
+            );
+        }
         if let Some(old) = self.claims.get(&claim_id) {
             assert!(
                 old.receiver_id == receiver_id && old.edition == edition,
@@ -383,6 +422,13 @@ impl Collectibles {
     /// Edition ids this deployment can mint, in catalog order.
     pub fn supported_editions(&self) -> Vec<String> {
         AURA_EDITIONS.iter().map(|(id, _, _)| id.to_string()).collect()
+    }
+    /// NPC- and monster-only editions and the claim id prefix each requires.
+    pub fn claim_only_editions(&self) -> Vec<(String, String)> {
+        CLAIM_ONLY_EDITIONS
+            .iter()
+            .map(|(id, prefix, _)| (id.to_string(), prefix.to_string()))
+            .collect()
     }
     pub fn edition_minted(&self, edition: String) -> u32 {
         self.minted.get(&edition).unwrap_or(0)
@@ -926,7 +972,10 @@ mod tests {
         let key = award_key(&mut c);
         assert_eq!(
             c.supported_editions(),
-            ["polar", "moon", "gold", "ember", "dew", "bloom", "storm", "comet", "nova"]
+            [
+                "polar", "moon", "gold", "ember", "dew", "bloom", "storm", "comet", "nova",
+                "pilgrim", "chronicle", "ledger", "wardbreaker", "wisp", "bossbane"
+            ]
         );
         let mut covers = std::collections::HashSet::new();
         for (i, (edition, title)) in [
@@ -961,6 +1010,106 @@ mod tests {
         }
         // Existing editions keep their own counters.
         assert_eq!(c.edition_minted("polar".into()), 0);
+    }
+    #[test]
+    fn npc_and_monster_editions_redeem_only_with_their_claim_prefix() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let mut covers = std::collections::HashSet::new();
+        for (i, (edition, title, prefix, description)) in [
+            ("pilgrim", "Pilgrim's Path", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
+            ("chronicle", "Chronicle Crown", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
+            ("ledger", "Merchant's Ledger", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
+            ("wisp", "Will-o'-Wisp Halo", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
+            ("wardbreaker", "Wardbreaker Horns", "earned:monster:", "Earned by beating a QuestLayer monster. Testnet collectible."),
+            ("bossbane", "Bossbane Fangring", "earned:monster:", "Earned by beating a QuestLayer monster. Testnet collectible."),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let claim = format!("{prefix}plzen:x{i}");
+            let signature = award_signature(&c, &key, &claim, edition, "alice.testnet", 1000);
+            context("alice.testnet", NearToken::from_near(1));
+            let token = c.redeem_aura(
+                claim.clone(),
+                edition.into(),
+                a("alice.testnet"),
+                1000,
+                signature.clone(),
+            );
+            assert_eq!(token.token_id, format!("aura:{edition}:1"));
+            let meta = token.metadata.unwrap();
+            assert_eq!(meta.title.as_deref(), Some(title));
+            assert_eq!(meta.description.as_deref(), Some(description));
+            assert!(covers.insert(meta.media.unwrap()));
+            // Replays return the same token.
+            context("alice.testnet", NearToken::from_near(1));
+            let again = c.redeem_aura(claim, edition.into(), a("alice.testnet"), 1000, signature);
+            assert_eq!(again.token_id, token.token_id);
+            assert_eq!(c.edition_minted(edition.into()), 1);
+        }
+        assert_eq!(c.claim_only_editions().len(), 6);
+        assert!(c
+            .claim_only_editions()
+            .iter()
+            .all(|(id, _)| c.supported_editions().contains(id)));
+        // Chest editions keep their plain description.
+        let signature = award_signature(&c, &key, "earned:chest1", "ember", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        let ember = c.redeem_aura("earned:chest1".into(), "ember".into(), a("alice.testnet"), 1000, signature);
+        assert_eq!(
+            ember.metadata.unwrap().description.as_deref(),
+            Some("Earned through a QuestLayer adventure. Testnet collectible.")
+        );
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs and monsters")]
+    fn npc_edition_rejects_a_plain_earned_claim() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:chest9", "wisp", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:chest9".into(), "wisp".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs and monsters")]
+    fn monster_edition_rejects_an_npc_claim() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature =
+            award_signature(&c, &key, "earned:npc:plzen:1", "bossbane", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:npc:plzen:1".into(), "bossbane".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs and monsters")]
+    fn oracle_cannot_mint_npc_editions_without_a_claim() {
+        let mut c = fresh();
+        mint(&mut c, "wardbreaker");
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs and monsters")]
+    fn oracle_claim_mint_needs_the_prefix_too() {
+        let mut c = fresh();
+        context("oracle.testnet", NearToken::from_near(1));
+        c.mint_aura_once(
+            "chest:1".into(),
+            "ledger".into(),
+            a("alice.testnet"),
+            TokenMetadata::default(),
+        );
+    }
+    #[test]
+    fn oracle_claim_mint_with_the_prefix_works() {
+        let mut c = fresh();
+        context("oracle.testnet", NearToken::from_near(1));
+        let t = c.mint_aura_once(
+            "earned:npc:trader:1".into(),
+            "ledger".into(),
+            a("alice.testnet"),
+            TokenMetadata::default(),
+        );
+        assert_eq!(t.token_id, "aura:ledger:1");
     }
     #[test]
     #[should_panic(expected = "Unknown edition")]

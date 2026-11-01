@@ -89,6 +89,33 @@ Reviewer did not write PR #19 or PR #32. Scope: `git diff ebadcd7 177fae7 -- con
 
 Reproduced on Linux x86_64 with `bash scripts/build-contracts.sh --test` (Rust 1.97.0, path remapping): 358,413 bytes, sha256 `b2684b58…36f7`, matching `contracts/collectibles/WASM_SHA256`; all contract tests pass, and `tests/aura-catalog`, `award-vouchers`, `aura-art` pass (18/18). Known issue: builds on macOS aarch64 produce a different hash from the same source, so verify the reviewed hash on Linux x86_64 (as CI does) before a mainnet deploy.
 
+## NPC and monster editions (N5, 2026-11-01) — re-reviewed
+
+The contract changed after the catalog v2 review. Diff: `git diff b3d983b <this PR head> -- contracts/collectibles` (source plus six new asset files and `WASM_SHA256`).
+
+- Six editions added to `AURA_EDITIONS` (`pilgrim`, `chronicle`, `ledger`, `wardbreaker`, `wisp`, `bossbane`); the table grows from 9 to 15 rows. Existing rows, titles and media files are unchanged.
+- New `CLAIM_ONLY_EDITIONS` table (edition, required claim id prefix, description). `mint_claim` (shared by `redeem_aura` and the oracle's `mint_aura_once`) asserts the prefix before the replay check, and the claim-less oracle `mint_aura` refuses these editions ("This Aura is only earned from NPCs and monsters"). The prefixes are `earned:npc:` and `earned:monster:`; `redeem_aura` still also requires `earned:`.
+- `redeem_aura` uses the edition's own description for claim-only editions ("Earned from a QuestLayer NPC." / "Earned by beating a QuestLayer monster.", plus " Testnet collectible." on testnet). Chest editions keep the old description byte for byte (`testnet_message_and_description_are_unchanged` still passes).
+- New view `claim_only_editions` (pure, no state read).
+- No state or schema change (still V3, no migration); the voucher message, `network()` and the 256 cap are unchanged.
+- New tests: `npc_and_monster_editions_redeem_only_with_their_claim_prefix`, `npc_edition_rejects_a_plain_earned_claim`, `monster_edition_rejects_an_npc_claim`, `oracle_cannot_mint_npc_editions_without_a_claim`, `oracle_claim_mint_needs_the_prefix_too`, `oracle_claim_mint_with_the_prefix_works`.
+
+Build (Linux x86_64, Rust 1.97.0, `bash scripts/build-contracts.sh`, same toolchain that reproduces `b2684b58…`): 367,066 bytes, sha256 `176f1b07…dee9`, recorded in `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. Code storage rises by about 0.09 NEAR.
+
+### Independent re-review (2026-11-01)
+
+Reviewer did not write PR #52. Scope: `git diff b3d983b 5858c82 -- contracts/collectibles` (source, six new asset files, `WASM_SHA256`). Result: **confirmed, no changes needed.**
+
+- **No free mint.** Every Aura still goes through `next_aura`, called from only two places: the oracle-only `mint_aura` and `mint_claim`. `mint_claim` is reached only from `redeem_aura` (Ed25519 award signature over contract, network, claim, receiver, edition, expiry, checked before any minting) and the oracle-only `mint_aura_once`. `mint_avatar` mints the explorer, not an Aura. No new public method can mint.
+- **Claim-only gate.** `claim_only` is an exact match over a fixed `const` table, the same ids as the new `AURA_EDITIONS` rows. `mint_aura` refuses all six; `mint_claim` checks the prefix before the replay branch, so neither a fresh claim nor a replayed one can mint a claim-only edition without `earned:npc:` / `earned:monster:`. The monster prefix is not a prefix of the NPC one (or the reverse), so an NPC claim can't mint a monster edition (`monster_edition_rejects_an_npc_claim`). Ordinary editions are not gated, so old claims and their replays behave as before.
+- **What the gate does and doesn't prove.** The prefix is part of the signed message, so a player can't change it, but the server chooses it (`awardClaimPrefix` in `server/aura-catalog.mjs`, from the catalog `source`). On-chain it therefore guarantees "the award signer or the oracle labelled this claim as NPC/monster", not that an NPC was actually met; a leaked award key or the oracle can still mint these editions (up to the 256 cap each). That is the same trust model as before, and `clear_award_signer` is still the kill switch. Informational, not a defect.
+- **Oracle metadata.** `mint_aura_once` still takes the oracle's own `TokenMetadata`, so an oracle-minted NPC Aura gets whatever title/description the oracle sends rather than the fixed NPC text. Oracle-only, unchanged trust model; informational.
+- **Existing tokens, equipment, signer.** No storage layout or schema change (`Collectibles` fields identical, still V3, no migration; `migrate`/`migrate_v3` untouched). `award_message`, `network()`, the 256 cap, the token id format, `set_award_signer`/`clear_award_signer`, equip/unequip and transfer code are unchanged. The nine existing rows, titles and media files are unchanged; chest editions keep their description byte for byte. New edition ids are distinct, lowercase and colon-free, so token ids can't collide.
+- **Media.** The six new covers are distinct 1,067-byte `data:image/svg+xml;base64` URIs; decoded, they have no `<script>`, event handlers, `href`, `foreignObject` or `url(` references.
+- **`claim_only_editions`.** Pure view over the const table; returns JSON pairs `[edition, prefix]`.
+
+Reproduced on Linux x86_64 with native rustup Rust 1.97.0 and `bash scripts/build-contracts.sh` (path remapping): `questlayer_collectibles.wasm` 367,066 bytes, reviewed sha256 **`176f1b0777c52e0eb592e50f365fe6a0663b3bec29c4c1b7431649bc4428dee9`**, matching `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. All 36 collectibles contract tests pass, and `tests/aura-catalog` and `award-vouchers` pass (14/14).
+
 ## Reproducible builds in CI
 
 The `reproducible-contracts` CI job builds every contract with `scripts/build-contracts-docker.sh` (Docker `rust:1.97.0`, `linux/amd64`), uploads the WASM files and `SHA256SUMS` as the `contract-wasm-linux-amd64` artifact, and runs `scripts/check-wasm-hashes.mjs`. It fails when any WASM differs from `contracts/wasm-sha256.json`, when the collectibles WASM differs from `contracts/collectibles/WASM_SHA256` or the last reviewed hash above, or when a `wasmSha256` in `public/native-*-testnet.json` is neither a current build nor listed with its exact hash under `testnetDeploymentsNotFromThisBuild` (older testnet deployments built before path remapping). A `codeHash` next to it must be the base58 of the same sha256. On macOS run `npm run contracts:docker`; after an intended contract change, `npm run contracts:docker -- --write` (or copy the hashes from the CI job summary). Deploy only the Docker or CI artifact.

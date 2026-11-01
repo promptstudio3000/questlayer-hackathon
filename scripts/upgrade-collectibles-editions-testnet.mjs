@@ -1,20 +1,35 @@
-// Code-only testnet upgrade that makes the catalog v2 Aura editions mintable.
-// No state migration: schema stays 3, every token, claim, equipment slot and
-// the award signer are compared before and after. Only the project's own
-// testnet operator key in .data/near-operator.json signs.
+// Code-only testnet upgrade of the collectibles Aura editions: catalog v2
+// (PR #32) and the NPC/monster-only editions (N5), whose CLAIM_ONLY_EDITIONS
+// mint only for earned:npc: / earned:monster: claims.
+// No state migration: schema stays 3, every token, minted counter, equipment
+// slot and the award signer are compared before and after. Only the project's
+// own testnet operator key in .data/near-operator.json signs.
 //
-// Run on the Mac, one command at a time:
-//   bash scripts/build-contracts.sh
+// Deploy only the reviewed linux/amd64 build: macOS aarch64 builds hash
+// differently. Run on the Mac, one command at a time:
+//   npm run contracts:docker
 //   node scripts/upgrade-collectibles-editions-testnet.mjs            (plan, read-only)
 //   node scripts/upgrade-collectibles-editions-testnet.mjs --execute  (deploys)
+// `--wasm <path>` deploys a downloaded CI artifact (contract-wasm-linux-amd64)
+// instead of contracts/target. On success it rewrites the native-editions and
+// native-claims manifests and drops their "deployed before this build" entries
+// from contracts/wasm-sha256.json.
 import { readFileSync, writeFileSync, mkdirSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { Account, KeyPairSigner, actions } from "near-api-js";
 import { createNearProvider } from "../server/near-provider.mjs";
-import { NATIVE_EDITIONS } from "../server/aura-catalog.mjs";
+import { AURA_CATALOG, NATIVE_EDITIONS, awardClaimPrefix } from "../server/aura-catalog.mjs";
 
-const execute = process.argv.includes("--execute");
+const execute = process.argv.includes("--execute"),
+  wasmArg = process.argv.indexOf("--wasm"),
+  wasmPath =
+    wasmArg > 0
+      ? process.argv[wasmArg + 1]
+      : "contracts/target/wasm32-unknown-unknown/release/questlayer_collectibles.wasm",
+  CLAIM_ONLY = AURA_CATALOG.filter((e) => e.source !== "chest")
+    .map((e) => [e.id, awardClaimPrefix(e.id)])
+    .sort();
 const operator = JSON.parse(readFileSync(".data/near-operator.json"));
 assert.equal(operator.network, "testnet");
 assert.ok(operator.accountId.endsWith(".testnet"));
@@ -32,16 +47,18 @@ assert.ok(
   "Only a sub-account of the operator can be upgraded here.",
 );
 
-const wasm = readFileSync(
-    "contracts/target/wasm32-unknown-unknown/release/questlayer_collectibles.wasm",
-  ),
+const wasm = readFileSync(wasmPath),
   wasmSha256 = createHash("sha256").update(wasm).digest("hex"),
-  reviewed = readFileSync("contracts/collectibles/WASM_SHA256", "utf8").trim();
+  reviewed = readFileSync("contracts/collectibles/WASM_SHA256", "utf8").trim(),
+  hashes = JSON.parse(readFileSync("contracts/wasm-sha256.json", "utf8")),
+  reviewDoc = readFileSync("docs/COLLECTIBLES-REVIEW.md", "utf8").match(/\b[0-9a-f]{64}\b/g) || [];
 assert.equal(
   wasmSha256,
   reviewed,
-  "Build with `bash scripts/build-contracts.sh` first; the WASM must match contracts/collectibles/WASM_SHA256.",
+  "Build with `npm run contracts:docker` first (macOS builds hash differently); the WASM must match contracts/collectibles/WASM_SHA256.",
 );
+assert.equal(wasmSha256, hashes.contracts.questlayer_collectibles, "Not the reproducible linux/amd64 build.");
+assert.equal(reviewDoc.at(-1), wasmSha256, "This build has no recorded review in docs/COLLECTIBLES-REVIEW.md yet.");
 
 const view = async (method, args = {}) => {
   const r = await provider.query({
@@ -63,7 +80,7 @@ const snapshot = async () => {
     awardSigner: await view("get_award_signer"),
     minted: Object.fromEntries(
       await Promise.all(
-        ["polar", "moon", "gold"].map(async (e) => [
+        NATIVE_EDITIONS.map(async (e) => [
           e,
           await view("edition_minted", { edition: e }),
         ]),
@@ -129,6 +146,8 @@ const plan = {
   alreadyDeployed,
   supportedBefore,
   editionsAfter: NATIVE_EDITIONS,
+  claimOnlyEditionsAfter: Object.fromEntries(CLAIM_ONLY),
+  wasmPath,
   storageBytesAfter: storageAfter.toString(),
   balanceYocto: balance.toString(),
   topUpYocto: topUp.toString(),
@@ -160,7 +179,7 @@ if (topUp > 0n)
     }),
   );
 if (!alreadyDeployed)
-  await record("deploy catalog v2 collectibles code (no state migration)", () =>
+  await record("deploy NPC/monster editions collectibles code (no state migration)", () =>
     contract.signAndSendTransaction({
       receiverId: contractId,
       actions: [actions.deployContract(wasm)],
@@ -181,6 +200,10 @@ assert.deepEqual(
   [...(await view("supported_editions"))].sort(),
   [...NATIVE_EDITIONS].sort(),
 );
+assert.deepEqual(
+  (await view("claim_only_editions")).map(([id, prefix]) => [id, prefix]).sort(),
+  CLAIM_ONLY,
+);
 
 const proof = {
   verifiedAt: new Date().toISOString(),
@@ -190,18 +213,30 @@ const proof = {
   codeHash: afterCode.hash,
   wasmSha256,
   supportedEditions: NATIVE_EDITIONS,
+  claimOnlyEditions: Object.fromEntries(CLAIM_ONLY),
   tokensPreserved: Number(before.supply),
   equipmentPreserved: Object.keys(before.equipment).length,
   awardSignerPreserved: before.awardSigner === after.awardSigner,
   transactions,
 };
-mkdirSync("output/qa/W04-aura-catalog", { recursive: true });
+mkdirSync("output/qa/N5-npc-editions", { recursive: true });
 writeFileSync(
   "public/native-editions-testnet.json",
   JSON.stringify(proof, null, 2) + "\n",
 );
 writeFileSync(
-  "output/qa/W04-aura-catalog/testnet-upgrade-proof.json",
+  "output/qa/N5-npc-editions/testnet-upgrade-proof.json",
   JSON.stringify(proof, null, 2) + "\n",
 );
+// The claims manifest carries the code fingerprint the server verifies.
+const claims = JSON.parse(readFileSync("public/native-claims-testnet.json", "utf8"));
+assert.equal(claims.contractId, contractId);
+claims.wasmSha256 = wasmSha256;
+claims.codeUpgrade =
+  "Code-only NPC/monster Aura editions upgrade (N5); award signer, tokens and equipment unchanged. See public/native-editions-testnet.json.";
+writeFileSync("public/native-claims-testnet.json", JSON.stringify(claims, null, 2) + "\n");
+// Both records now match the reproducible build, so they leave the allowlist.
+for (const file of ["native-claims-testnet.json", "native-editions-testnet.json"])
+  delete hashes.testnetDeploymentsNotFromThisBuild?.[`public/${file}:wasmSha256`];
+writeFileSync("contracts/wasm-sha256.json", JSON.stringify(hashes, null, 2) + "\n");
 console.log(JSON.stringify({ status: "verified", contractId, transactions: transactions.length }));

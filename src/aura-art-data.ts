@@ -21,6 +21,12 @@ export const AURA_EDITIONS = [
   "comet",
   "gold",
   "nova",
+  "pilgrim",
+  "chronicle",
+  "ledger",
+  "wardbreaker",
+  "wisp",
+  "bossbane",
 ] as const;
 export type AuraEdition = (typeof AURA_EDITIONS)[number];
 export const AURA_GRIDS = Object.freeze({
@@ -166,6 +172,54 @@ const PALETTES: Readonly<Record<AuraEdition, Palette>> = Object.freeze({
     fringe: "#8A2A9E",
     spark: "#FFFFFF",
     spark2: "#FFC2E0",
+  },
+  pilgrim: {
+    hi: "#EEFAD9",
+    body: "#9BD17A", // moss
+    deep: "#5E9A4B",
+    fringe: "#8A6B45", // trodden path
+    spark: "#FFFFFF",
+    spark2: "#F4E7A1",
+  },
+  chronicle: {
+    hi: "#FFF6E0", // parchment
+    body: "#B48CFF", // violet cover
+    deep: "#6E4BC2",
+    fringe: "#3E2A80",
+    spark: "#FFFFFF",
+    spark2: "#FFD86B", // gold runes
+  },
+  ledger: {
+    hi: "#FFF3C4",
+    body: "#E0A94A", // coin gold
+    deep: "#A8692A",
+    fringe: "#B8433A", // ledger ribbon
+    spark: "#FFFFFF",
+    spark2: "#FFE07A",
+  },
+  wardbreaker: {
+    hi: "#F4FFF8",
+    body: "#CFE9DA", // bone horn
+    deep: "#7FA592",
+    fringe: "#2F6B55",
+    spark: "#FFFFFF",
+    spark2: "#7CF0B0", // ghost-green ward
+  },
+  wisp: {
+    hi: "#F2FFFF",
+    body: "#9FF6FF", // ghost fire
+    deep: "#3FB8D0",
+    fringe: "#2A5E8C", // lantern iron
+    spark: "#FFFFFF",
+    spark2: "#D6FFF4",
+  },
+  bossbane: {
+    hi: "#FFE1D6", // fang bone
+    body: "#FF6B6B",
+    deep: "#B3263E",
+    fringe: "#4A1035", // rift
+    spark: "#FFFFFF",
+    spark2: "#FFB15C", // ember glow
   },
 });
 
@@ -956,6 +1010,359 @@ function paintNovaBelow(c: Canvas) {
   c.put(28, 3, "spark", "b");
 }
 
+// ---- NPC and monster editions --------------------------------------------
+// Earned only from NPCs (pilgrim, chronicle, ledger, wisp) and monsters
+// (wardbreaker, bossbane). Original creature motifs in the same pixel rules:
+// upper-left light, the shared ink outline on the base layer, two sparkle frames.
+
+/** A small footprint (heel, sole and toe), pointing up when `flip` is false. */
+function footprint(c: Canvas, x: number, y: number, flip = false, layer: Layer = "base") {
+  const d = flip ? -1 : 1;
+  c.put(x, y, "hi", layer);
+  c.put(x + 1, y, "body", layer);
+  c.put(x, y + d, "body", layer);
+  c.put(x + 1, y + d, "deep", layer);
+  c.put(x, y + 3 * d, "body", layer);
+  c.put(x + 1, y + 3 * d, "deep", layer);
+}
+function paintPilgrimAbove(c: Canvas) {
+  // A worn trail ring with footprints walking round it toward a waystone.
+  ellipseRing(c, 24, 16, 17, 4.5, 3, (_dx, _dy, light) =>
+    light > 0.2 ? "deep" : "fringe",
+  );
+  // Waystone: a rounded standing stone with a moss cap, right of centre.
+  for (let y = 5; y <= 14; y++)
+    for (let x = 32; x <= 36; x++) {
+      if ((y === 5 && (x === 32 || x === 36)) || (y === 6 && x === 36)) continue;
+      c.put(x, y, y <= 6 ? "body" : x === 32 ? "hi" : x === 36 ? "deep" : "fringe");
+    }
+  c.put(33, 9, "hi");
+  c.put(34, 10, "hi");
+  c.put(33, 11, "hi");
+  for (const [x, y] of [
+    [9, 9],
+    [14, 6],
+    [20, 4],
+    [26, 4],
+  ] as [number, number][])
+    footprint(c, x, y);
+  c.outline();
+  footprint(c, 6, 13, false, "a");
+  footprint(c, 40, 13, true, "b");
+  c.star(28, 1, "spark2", "spark", "a");
+  c.star(43, 4, "spark2", "spark", "b");
+  c.put(4, 6, "spark2", "b");
+}
+function paintPilgrimBelow(c: Canvas) {
+  groundRing(c, (light) => (light > 0.3 ? "body" : light > -0.4 ? "deep" : "fringe"));
+  for (const [x, y, flip] of [
+    [8, 14, false],
+    [14, 16, false],
+    [21, 17, false],
+    [33, 17, true],
+    [40, 16, true],
+    [46, 14, true],
+  ] as [number, number, boolean][])
+    footprint(c, x, flip ? y + 1 : y - 2, flip);
+  c.outline();
+  // A trail of fresh prints appears ahead of the walker in turn.
+  footprint(c, 12, 3, false, "a");
+  footprint(c, 42, 3, false, "b");
+  c.star(28, 2, "spark2", "spark", "a");
+  c.put(4, 4, "spark2", "b");
+  c.put(52, 5, "spark2", "a");
+}
+function paintChronicleAbove(c: Canvas) {
+  // An open storybook floating as a crown, pages bowing up from the spine.
+  for (let x = 9; x <= 39; x++) {
+    const d = Math.abs(x - 24),
+      bow = Math.sin((Math.min(d, 15) / 15) * Math.PI),
+      top = Math.round(12 - 3.2 * bow),
+      bottom = Math.round(18 - 1.4 * bow);
+    for (let y = top; y <= bottom; y++) {
+      let key = "hi";
+      if (x === 24) key = "deep";
+      else if (y === bottom) key = "fringe";
+      else if (y === bottom - 1) key = x < 24 ? "body" : "deep";
+      else if (d >= 3 && d <= 12 && (y - top) % 2 === 0 && y > top && x % 3 !== 0)
+        key = "body"; // lines of text
+      c.put(x, y, key);
+    }
+  }
+  c.outline();
+  // Rune glyphs lift off the pages and swap between frames.
+  const rune = (x: number, y: number, layer: Layer) => {
+    c.put(x, y, "spark2", layer);
+    c.put(x, y + 1, "spark2", layer);
+    c.put(x + 1, y + 1, "spark2", layer);
+    c.put(x, y + 2, "spark2", layer);
+  };
+  rune(14, 4, "a");
+  rune(30, 2, "a");
+  rune(19, 1, "b");
+  rune(35, 5, "b");
+  c.star(24, 3, "spark2", "spark", "a");
+  c.put(24, 4, "spark", "b");
+  c.star(5, 9, "spark2", "spark", "b");
+  c.put(43, 10, "spark2", "a");
+}
+function paintChronicleBelow(c: Canvas) {
+  groundRing(c, (light) =>
+    light > 0.55 ? "hi" : light > 0 ? "body" : light > -0.5 ? "deep" : "fringe",
+  );
+  // A bookmark ribbon hangs from the front of the ring.
+  for (let y = 17; y <= 19; y++) {
+    c.put(27, y, "spark2");
+    c.put(28, y, "spark2");
+  }
+  c.outline();
+  // Runes circle the ring, alternating between frames.
+  for (let k = 0; k < 10; k++) {
+    const angle = (k * Math.PI) / 5,
+      x = 28 + Math.cos(angle) * 21,
+      y = 12.5 + Math.sin(angle) * 4.2 - 5;
+    c.put(x, y, "spark2", k % 2 ? "a" : "b");
+    c.put(x, y - 1, "hi", k % 2 ? "a" : "b");
+  }
+  c.star(52, 3, "spark2", "spark", "a");
+  c.star(4, 3, "spark2", "spark", "b");
+}
+/** A gold coin seen edge-on: a shaded oval with a bright rim on the lit side. */
+function coin(c: Canvas, x: number, y: number) {
+  for (let dx = -2; dx <= 2; dx++) {
+    c.put(x + dx, y, dx < 0 ? "hi" : "body");
+    if (Math.abs(dx) < 2) c.put(x + dx, y + 1, dx < 1 ? "body" : "deep");
+  }
+}
+function paintLedgerAbove(c: Canvas) {
+  // A halo of floating coins tied with the ledger's red ribbon.
+  ellipseRing(c, 24, 15.5, 17, 4.5, 2.6, () => "fringe");
+  const coins: [number, number][] = [
+    [8, 13],
+    [13, 10],
+    [19, 9],
+    [29, 9],
+    [35, 10],
+    [40, 13],
+  ];
+  for (const [x, y] of coins) {
+    coin(c, x, y);
+    coin(c, x, y - 2);
+  }
+  // Ledger: a closed book at the top centre.
+  for (let y = 4; y <= 10; y++)
+    for (let x = 22; x <= 26; x++)
+      c.put(x, y, x === 22 ? "hi" : y === 10 ? "deep" : x === 26 ? "deep" : "fringe");
+  for (let y = 5; y <= 9; y++) c.put(25, y, "hi");
+  c.outline();
+  c.star(13, 5, "spark2", "spark", "a");
+  c.put(35, 5, "spark2", "a");
+  c.star(35, 5, "spark2", "spark", "b");
+  c.put(13, 5, "spark2", "b");
+  c.put(24, 1, "spark", "a");
+  c.put(4, 18, "spark2", "b");
+}
+function paintLedgerBelow(c: Canvas) {
+  groundRing(c, (light) => (light > 0.45 ? "hi" : light > -0.3 ? "body" : "deep"));
+  // Coin stacks of different heights on the back half of the ring.
+  const stacks: [number, number, number][] = [
+    [9, 8, 2],
+    [17, 6, 3],
+    [28, 5, 4],
+    [39, 6, 3],
+    [47, 8, 2],
+  ];
+  for (const [x, y, n] of stacks) for (let i = 0; i < n; i++) coin(c, x, y - i * 2);
+  // Ribbon tail across the front.
+  for (let x = 22; x <= 34; x++) c.put(x, 18 + (x % 4 === 0 ? 1 : 0), "fringe");
+  c.outline();
+  // A coin flips over the top stack.
+  c.put(28, 1, "spark2", "a");
+  c.put(27, 1, "hi", "a");
+  c.put(29, 1, "hi", "a");
+  c.put(28, 0, "spark", "b");
+  c.star(4, 4, "spark2", "spark", "a");
+  c.star(52, 4, "spark2", "spark", "b");
+}
+/** One curved horn: it sweeps out from its base, then turns up to a pale tip. */
+function horn(c: Canvas, baseX: number, baseY: number, side: -1 | 1) {
+  for (let i = 0; i <= 40; i++) {
+    const t = i / 40,
+      x = baseX + side * 11 * Math.sin((t * Math.PI) / 2) ** 0.7,
+      y = baseY - 2 * t - 13 * t * t,
+      half = 2.4 * (1 - t) + 0.5;
+    for (let w = -half; w <= half; w += 0.5) {
+      const key = t > 0.85 ? "hi" : w < -half * 0.3 ? "hi" : w > half * 0.4 ? "deep" : "body";
+      c.put(x, y + w, key);
+    }
+    // Growth rings near the base.
+    if (i % 7 === 3 && t < 0.6) c.put(x, y, "deep");
+  }
+}
+function paintWardbreakerAbove(c: Canvas) {
+  // Guardian horns flank a ward rune that has been cracked in two.
+  horn(c, 15, 19, -1);
+  horn(c, 33, 19, 1);
+  const cx = 24,
+    cy = 12;
+  for (let k = 0; k <= 5; k++) {
+    // Diamond ward, split by a gap on the crack line.
+    for (const [sx, sy] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ]) {
+      const x = cx + sx * k + (sx < 0 ? -1 : 1),
+        y = cy + sy * (5 - k);
+      c.put(x, y, sx < 0 ? "fringe" : "spark2");
+    }
+  }
+  c.put(cx - 1, cy - 1, "spark2");
+  c.put(cx + 1, cy + 1, "fringe");
+  c.outline();
+  // Ward shards fly off and green ghost-light flickers between frames.
+  c.put(19, 4, "spark2", "a");
+  c.put(30, 20, "spark2", "a");
+  c.put(29, 3, "spark2", "b");
+  c.put(18, 20, "spark2", "b");
+  c.star(cx, cy, "spark2", "spark", "a");
+  c.put(cx, cy, "spark", "b");
+  c.star(44, 3, "spark2", "spark", "b");
+  c.star(4, 3, "spark2", "spark", "a");
+}
+function paintWardbreakerBelow(c: Canvas) {
+  // A ward circle broken in three places; its shards hover above the gaps.
+  const gaps = [Math.PI * 0.1, Math.PI * 0.8, Math.PI * 1.45];
+  groundRing(c, (light, angle) => {
+    const a = (angle + 2 * Math.PI) % (2 * Math.PI);
+    if (gaps.some((g) => Math.abs(a - g) < 0.16)) return null;
+    return light > 0.3 ? "spark2" : light > -0.3 ? "deep" : "fringe";
+  });
+  c.outline();
+  gaps.forEach((g, k) => {
+    const x = 28 + Math.cos(g) * 25,
+      y = 12.5 + Math.sin(g) * 6.5 - 3;
+    for (const layer of ["a", "b"] as const) {
+      const lift = (layer === "a") === (k % 2 === 0) ? 0 : 1;
+      c.put(x, y - lift, "spark2", layer);
+      c.put(x + 1, y - lift - 1, "body", layer);
+    }
+  });
+  c.star(28, 2, "spark2", "spark", "a");
+  c.put(28, 2, "spark", "b");
+  c.star(8, 3, "spark2", "spark", "b");
+  c.star(48, 3, "spark2", "spark", "a");
+}
+/** A small ghost-fire soul flame. */
+function soulFlame(c: Canvas, x: number, y: number, layer: Layer = "base") {
+  c.put(x, y, "hi", layer);
+  c.put(x, y + 1, "body", layer);
+  c.put(x - 1, y + 2, "body", layer);
+  c.put(x, y + 2, "hi", layer);
+  c.put(x + 1, y + 2, "deep", layer);
+  c.put(x - 1, y + 3, "deep", layer);
+  c.put(x, y + 3, "body", layer);
+  c.put(x + 1, y + 3, "deep", layer);
+}
+function paintWispAbove(c: Canvas) {
+  // A ghost-fire lantern hangs over the head; three soul flames orbit it.
+  for (let x = 21; x <= 27; x++) c.put(x, 7, "fringe"); // cap
+  c.put(23, 6, "fringe");
+  c.put(24, 5, "fringe");
+  c.put(25, 6, "fringe");
+  for (let y = 8; y <= 16; y++)
+    for (let x = 21; x <= 27; x++)
+      c.put(
+        x,
+        y,
+        x === 21 || x === 27 || y === 16 ? "fringe" : x === 22 ? "hi" : x === 26 ? "deep" : "body",
+      );
+  flame(c, 24, 9, 15, 1.6);
+  for (let x = 22; x <= 26; x++) c.put(x, 17, "deep"); // base
+  soulFlame(c, 10, 10);
+  soulFlame(c, 38, 10);
+  soulFlame(c, 24, 18);
+  c.outline();
+  // The souls drift round the lantern between frames.
+  soulFlame(c, 14, 4, "a");
+  soulFlame(c, 34, 15, "a");
+  soulFlame(c, 34, 3, "b");
+  soulFlame(c, 13, 15, "b");
+  c.star(44, 3, "spark2", "spark", "a");
+  c.star(4, 4, "spark2", "spark", "b");
+  c.put(24, 12, "spark", "a");
+}
+function paintWispBelow(c: Canvas) {
+  // A pale will-o'-wisp ring; soul flames stand on it and motes rise.
+  ellipseRing(c, 28, 12.5, 25, 6.5, 2, (_dx, _dy, light) =>
+    light > 0.45 ? "hi" : light > -0.2 ? "body" : light > -0.6 ? "deep" : "fringe",
+  );
+  soulFlame(c, 8, 8);
+  soulFlame(c, 28, 2);
+  soulFlame(c, 48, 8);
+  c.outline();
+  for (const [x, y, layer] of [
+    [16, 3, "a"],
+    [40, 2, "a"],
+    [20, 1, "b"],
+    [36, 4, "b"],
+  ] as [number, number, Layer][])
+    c.star(x, y, "spark2", "spark", layer);
+  c.put(3, 4, "spark2", "a");
+  c.put(53, 4, "spark2", "b");
+}
+/** A monster fang: wide at its root, tapering to a pale tip. */
+function fang(c: Canvas, x: number, rootY: number, length: number, dir: -1 | 1) {
+  for (let i = 0; i < length; i++) {
+    const y = rootY + dir * i,
+      half = Math.round((1 - i / length) * 1.6);
+    for (let dx = -half; dx <= half; dx++)
+      c.put(x + dx, y, i >= length - 2 ? "hi" : dx < 0 ? "hi" : "body");
+  }
+}
+function paintBossbaneAbove(c: Canvas) {
+  // A crown of fangs on a dark band, with a rift-glow eye in the middle.
+  ellipseRing(c, 24, 16.5, 16, 4.5, 2.2, (_dx, _dy, light) =>
+    light > 0.3 ? "deep" : "fringe",
+  );
+  for (const [x, len] of [
+    [10, 4],
+    [16, 6],
+    [24, 9],
+    [32, 6],
+    [38, 4],
+  ] as [number, number][])
+    fang(c, x, 12 - (x === 24 ? 0 : x === 16 || x === 32 ? 1 : 0), len, -1);
+  c.outline();
+  // Glowing eyes open in the band and blink between frames.
+  c.put(20, 16, "spark2", "a");
+  c.put(28, 16, "spark2", "a");
+  c.put(20, 16, "deep", "b");
+  c.put(28, 16, "deep", "b");
+  c.star(24, 1, "spark2", "spark", "a");
+  c.star(5, 8, "spark2", "spark", "b");
+  c.star(43, 8, "spark2", "spark", "a");
+  c.put(24, 1, "spark", "b");
+}
+function paintBossbaneBelow(c: Canvas) {
+  // A rift glows inside a ring of fangs: back fangs hang down, front ones rise.
+  groundRing(c, (light) => (light > 0.45 ? "body" : light > -0.3 ? "deep" : "fringe"));
+  ellipseRing(c, 28, 12.5, 9, 2.2, 1.2, (_dx, _dy, light) =>
+    light > 0 ? "spark2" : "body",
+  );
+  for (const x of [12, 20, 28, 36, 44]) fang(c, x, 7 + Math.round(Math.abs(x - 28) / 8), 3, 1);
+  for (const x of [16, 28, 40]) fang(c, x, 18 - Math.round(Math.abs(x - 28) / 9), 3, -1);
+  c.outline();
+  // Embers spill out of the rift.
+  c.put(24, 10, "spark2", "a");
+  c.put(31, 9, "spark", "a");
+  c.put(27, 8, "spark2", "b");
+  c.put(33, 11, "spark", "b");
+  c.star(4, 4, "spark2", "spark", "a");
+  c.star(52, 4, "spark2", "spark", "b");
+}
+
 const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => void>> = {
   above: {
     polar: paintPolarAbove,
@@ -967,6 +1374,12 @@ const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => 
     storm: paintStormAbove,
     comet: paintCometAbove,
     nova: paintNovaAbove,
+    pilgrim: paintPilgrimAbove,
+    chronicle: paintChronicleAbove,
+    ledger: paintLedgerAbove,
+    wardbreaker: paintWardbreakerAbove,
+    wisp: paintWispAbove,
+    bossbane: paintBossbaneAbove,
     generic: paintGenericAbove,
   },
   below: {
@@ -979,6 +1392,12 @@ const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => 
     storm: paintStormBelow,
     comet: paintCometBelow,
     nova: paintNovaBelow,
+    pilgrim: paintPilgrimBelow,
+    chronicle: paintChronicleBelow,
+    ledger: paintLedgerBelow,
+    wardbreaker: paintWardbreakerBelow,
+    wisp: paintWispBelow,
+    bossbane: paintBossbaneBelow,
     generic: paintGenericBelow,
   },
 };

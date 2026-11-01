@@ -20,8 +20,11 @@ export function auraEntitled(edition, zoneTier, level) {
   const rule = AURA_ENTITLEMENTS[edition.rarity] || AURA_ENTITLEMENTS.legendary;
   return zoneTier >= rule.minZoneTier && level >= rule.minLevel;
 }
+/** Chest editions a chest of this tier can hold. NPC and monster editions never drop from chests. */
 export function entitledEditions(zoneTier, level) {
-  return AURA_CATALOG.filter((e) => auraEntitled(e, zoneTier, level));
+  return AURA_CATALOG.filter(
+    (e) => e.source === "chest" && auraEntitled(e, zoneTier, level),
+  );
 }
 export function editionForDemoName(name) {
   return AURA_CATALOG.find((e) => e.demoName === name || e.name === name) || null;
@@ -55,4 +58,14 @@ export function isNativeEdition(edition) {
 export function nativeEditionForName(name) {
   const edition = editionForDemoName(name);
   return edition?.native ? edition.id : null;
+}
+/** Claim-id prefix the collectibles contract requires (CLAIM_ONLY_EDITIONS). */
+export const AWARD_CLAIM_PREFIX = Object.freeze({
+  chest: "earned:",
+  npc: "earned:npc:",
+  monster: "earned:monster:",
+});
+export function awardClaimPrefix(edition) {
+  const source = AURA_CATALOG.find((e) => e.id === edition)?.source || "chest";
+  return AWARD_CLAIM_PREFIX[source] || AWARD_CLAIM_PREFIX.chest;
 }

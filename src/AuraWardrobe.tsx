@@ -6,7 +6,7 @@ import {
   activeAuraSet,
   catalogEditionFor,
   auraSet,
-  entitlementLabel,
+  editionSourceLabel,
   setMembers,
 } from "./aura-catalog.ts";
 import {
@@ -165,7 +165,7 @@ export function AuraCatalog({ items }: { items: Item[] }) {
                 {auraSet(edition.set)?.name} set
               </span>
               <small>
-                {entitlementLabel(edition.rarity)}
+                {editionSourceLabel(edition)}
                 {edition.native ? " · Can be secured on NEAR" : ""}
               </small>
             </div>
