@@ -35,6 +35,20 @@ The observed testnet minimum registration balance is 0.02 test NEAR. A new or lo
 
 Reads distinguish unpublished, recognized and unsupported schema states. NFT reference verification is refreshed independently of the published record: transferring an NFT does not leave a permanent claim of current ownership. In-flight results for a previous wallet cannot replace the selected wallet's card.
 
+## Explorer account (no popup), 1 November 2026
+
+When the invisible explorer account is ready, the profile card selects it by default and publishes through the
+relayer: no wallet popup and no fee for the player (the relayer policy allows `set` on the SocialDB contract with a
+1 yocto or 0.05 NEAR storage deposit, only into the signer's own namespace). Any other linked wallet still asks its
+wallet app. The same path keeps map notes as public records: the author opens a note's menu, chooses "Public record",
+sees its state (not published, pending, published, changed since, marked removed), the photo's `ipfs://` address and
+pin state, ticks both the public and the permanence boxes, and publishes or marks the record removed (tombstone).
+Client checks live in `src/note-record.ts` (exact namespace, fields, deposit and kind) with tests in
+`tests/note-record.test.mjs`; the dialog is `src/NoteRecordDialog.tsx`.
+
+Presence states: the map chip shows "Going visible…" until the server confirms the lease, a failed first lease
+turns sharing off with a message, and a server-side stop says so. Blocked players never see each other's position.
+
 ## Recorded proof
 
 `scripts/prove-native-profile-testnet.mjs` uses only the project's own locally stored developer testnet key. It signs NEP-413 to the app, prepares the profile through the actual app API, submits a real SocialDB transaction, confirms finalized state through the API, repeats confirmation and checks history and unchanged demo balance. No wallet secret is uploaded.

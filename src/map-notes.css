@@ -421,3 +421,34 @@
   font-size: 14px;
   line-height: 1.45;
 }
+/* Public record dialog (NEAR Social). */
+.game-dialog .note-record .note-record-state {
+  font-weight: 600;
+  color: var(--ink, #2a1840);
+}
+.game-dialog .note-record .note-record-media {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+.game-dialog .note-record .note-record-media code {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.game-dialog .note-record .note-record-media small,
+.game-dialog .note-record .profile-consent small {
+  display: block;
+  color: var(--ink-secondary, #665577);
+  font-size: 13px;
+}
+.game-dialog .note-record .note-record-fee {
+  font-size: 14px;
+  color: var(--ink-secondary, #665577);
+}
+.game-dialog .note-record .note-record-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  min-height: 44px;
+}

@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Camera,
   ChatCircle,
+  Cube,
   DotsThree,
   Flag,
   MapPin,
@@ -19,6 +20,8 @@ import { useFormDraft } from "./useFormDraft";
 import { browserDraftStorage } from "./form-draft";
 import { createReadEpoch } from "./read-epoch";
 import { createNotePublicationJournal } from "./note-publication-journal";
+import { NoteRecordDialog } from "./NoteRecordDialog";
+import type { NoteRecordKind } from "./note-record";
 import "./map-notes.css";
 
 export type MapNote = Point & {
@@ -134,6 +137,8 @@ export function MapNotes({
   onBlockChange,
   onViewChange,
   view: requestedView,
+  recordAccount,
+  onRecord,
 }: {
   playerId: string;
   position: Point;
@@ -143,7 +148,10 @@ export function MapNotes({
   onBlockChange?: () => void;
   onViewChange?: (view: MapNotesView) => void;
   view?: MapNotesView;
+  recordAccount?: { accountId: string; managed: boolean } | null;
+  onRecord?: (noteId: string, kind: NoteRecordKind) => Promise<boolean>;
 }) {
+  const [recordNote, setRecordNote] = useState<MapNote | null>(null);
   const identity = `${playerId}:${arena ? "arena" : "physical"}`;
   const latest = useRef(identity);
   const operations = useRef(createReadEpoch());
@@ -826,16 +834,27 @@ export function MapNotes({
                       </summary>
                       <div>
                         {note.own ? (
-                          <button
-                            disabled={busy}
-                            onClick={() => {
-                              setError("");
-                              setDecision({ kind: "remove", note });
-                            }}
-                          >
-                            <Trash size={19} />
-                            Remove note
-                          </button>
+                          <>
+                            {onRecord && (
+                              <button
+                                disabled={busy}
+                                onClick={() => setRecordNote(note)}
+                              >
+                                <Cube size={19} />
+                                Public record
+                              </button>
+                            )}
+                            <button
+                              disabled={busy}
+                              onClick={() => {
+                                setError("");
+                                setDecision({ kind: "remove", note });
+                              }}
+                            >
+                              <Trash size={19} />
+                              Remove note
+                            </button>
+                          </>
                         ) : (
                           <>
                             <button
@@ -957,6 +976,15 @@ export function MapNotes({
           )}
         </div>
       )}
+      {recordNote && onRecord && (
+        <NoteRecordDialog
+          noteId={recordNote.id}
+          noteText={recordNote.text}
+          account={recordAccount || null}
+          onRecord={onRecord}
+          onClose={() => setRecordNote(null)}
+        />
+      )}
       {decision && (
         <Dialog
           label={
@@ -988,7 +1016,11 @@ export function MapNotes({
                   : "Report this note"}
             </h2>
             {decision.kind === "remove" ? (
-              <p>It disappears from the map. Copies others saved may remain.</p>
+              <p>
+                It disappears from the map. Copies others saved may remain.
+                {onRecord &&
+                  " If you kept it as a public record, mark that record removed first under Public record."}
+              </p>
             ) : decision.kind === "block" ? (
               <p>
                 You will no longer see each other's notes or position. Undo this

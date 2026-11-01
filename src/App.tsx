@@ -67,6 +67,7 @@ import { AuraClaims } from "./AuraClaims";
 import type { NativeAuraClaim } from "./types";
 import { NativeWardrobe, nativeAppearanceItems } from "./NativeWardrobe";
 import { NativeProfilePanel } from "./NativeProfile";
+import { publishNoteRecord, type NoteRecordKind } from "./note-record";
 import type { NativeProfileQuote } from "./types";
 import { assertProfileQuote } from "./native-profile-quote";
 import type { NativeWardrobeState, NativeItem } from "./types";
@@ -384,6 +385,12 @@ export default function App() {
   const nativeAccount = useNativePlayAccount(player);
   const playAccount = nativeAccount.account;
   const invisible = useInvisibleAccount(player?.id);
+  const recordAccount =
+    invisible.status === "ready" && invisible.accountId
+      ? { accountId: invisible.accountId, managed: true }
+      : player?.wallets[0]?.account_id
+        ? { accountId: player.wallets[0].account_id, managed: false }
+        : null;
   const invisibleEnsure = invisible.ensure,
     invisibleStatus = invisible.status;
   useEffect(() => {
@@ -1051,6 +1058,7 @@ export default function App() {
       return;
     }
     const leaseId = crypto.randomUUID();
+    setPresenceUntil(0);
     let active = true;
     const send = (renew = false) => {
       if (!active || document.visibilityState !== "visible") return;
@@ -1063,10 +1071,21 @@ export default function App() {
       })
         .then((r) => {
           if (!active) return;
-          if (!r.enabled) setPresence(false);
-          else if (r.expiresAt) setPresenceUntil(r.expiresAt);
+          if (!r.enabled) {
+            setPresence(false);
+            notify("Position sharing ended. Share again to stay visible.");
+          } else if (r.expiresAt) setPresenceUntil(r.expiresAt);
         })
-        .catch(() => {});
+        .catch(() => {
+          // The first lease decides whether sharing started at all; a missed
+          // renewal is retried on the next tick.
+          if (!active || !renew) return;
+          setPresence(false);
+          notify(
+            "Your position could not be shared. Check your connection and try again.",
+            true,
+          );
+        });
     };
     void send(true);
     const t = setInterval(() => send(false), 10_000);
@@ -1266,6 +1285,16 @@ export default function App() {
     const managed = invisible.signer;
     if (managed && (!playAccount || playAccount === managed.accountId))
       return { signer: managed, accountId: managed.accountId };
+    const { wallet, accountId } = await chooseNearAccount();
+    return { signer: walletSigner(wallet, accountId), accountId };
+  }
+  // Public profile and note records name their account up front: the
+  // explorer account signs without a popup, any other linked one uses a wallet.
+  async function signerForAccount(account: string) {
+    const managed = invisible.signer;
+    if (managed && managed.accountId === account)
+      return { signer: managed, accountId: managed.accountId };
+    if (!managed && !playAccount) return resolveSigner();
     const { wallet, accountId } = await chooseNearAccount();
     return { signer: walletSigner(wallet, accountId), accountId };
   }
@@ -1546,7 +1575,7 @@ export default function App() {
     avatar: { contractId: string; tokenId: string } | null,
   ): Promise<boolean> {
     const result = await action("native-profile", async () => {
-      const { signer, accountId } = await resolveSigner();
+      const { signer, accountId } = await signerForAccount(account);
       if (
         accountId !== account ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -1592,6 +1621,35 @@ export default function App() {
         "Profile update sent. Refresh your public profile to see it confirmed.",
       );
       return false;
+    });
+    return result === true;
+  }
+  async function recordNote(
+    noteId: string,
+    kind: NoteRecordKind,
+  ): Promise<boolean> {
+    const account = recordAccount?.accountId;
+    const result = await action("note-record", async () => {
+      if (!account || !player) throw Error("Your explorer account is not ready yet.");
+      const { signer, accountId } = await signerForAccount(account);
+      if (accountId !== account)
+        throw Error("Choose the linked account shown for this record.");
+      const { confirmed } = await publishNoteRecord({
+        call: api,
+        signer,
+        accountId,
+        playerId: player.id,
+        noteId,
+        kind,
+      });
+      notify(
+        confirmed
+          ? kind === "note"
+            ? "Your note is now a public record."
+            : "Your public record is marked removed."
+          : "Record sent. Refresh in a moment to see it confirmed.",
+      );
+      return confirmed;
     });
     return result === true;
   }
@@ -2274,7 +2332,8 @@ export default function App() {
             <summary>Location sharing</summary>
             <p>
               Sharing shows your name, look and map position to nearby explorers
-              for up to 15 minutes while this tab is open.
+              for up to 15 minutes while this tab is open. Players you blocked
+              never see you, and you never see them.
             </p>
           </details>
           <button onClick={() => setPresence((x) => !x)}>
@@ -2870,6 +2929,11 @@ export default function App() {
                       busy={busy}
                       onConnect={connectNear}
                       onPublish={publishNativeProfile}
+                      managedAccountId={
+                        invisible.status === "ready"
+                          ? invisible.accountId || ""
+                          : ""
+                      }
                     />
                   </>
                 }
@@ -3255,6 +3319,8 @@ export default function App() {
               view={notesView}
               notify={notify}
               onViewChange={setNotesView}
+              recordAccount={recordAccount}
+              onRecord={recordNote}
               onBlockChange={() => {
                 setOthers([]);
                 window.dispatchEvent(new Event("questlayer:social-blocks"));
@@ -3323,7 +3389,10 @@ export default function App() {
               className="presence-chip"
               onClick={() => setPresence(false)}
             >
-              <Eye size={14} /> Visible · {remaining(presenceUntil)}{" "}
+              <Eye size={14} />{" "}
+              {presenceUntil > Date.now()
+                ? `Visible · ${remaining(presenceUntil)}`
+                : "Going visible…"}{" "}
               <X size={12} />
             </button>
           )}
