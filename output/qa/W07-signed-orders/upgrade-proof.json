@@ -1,0 +1,81 @@
+{
+  "before": {
+    "version": 1,
+    "network": "testnet",
+    "nft_contract": "nfts.questlayer-dev-20261101.testnet",
+    "owner": "questlayer-dev-20261101.testnet",
+    "paused": false,
+    "listing_count": 0,
+    "participant_count": 0,
+    "funded": "0",
+    "escrow": "0",
+    "credits": "0",
+    "withdrawing": "0",
+    "withdrawn": "0",
+    "storage": "project-sponsored testnet storage",
+    "max_listings": 128,
+    "max_participants": 256,
+    "max_active_per_account": 3
+  },
+  "after": {
+    "version": 2,
+    "network": "testnet",
+    "nft_contract": "nfts.questlayer-dev-20261101.testnet",
+    "owner": "questlayer-dev-20261101.testnet",
+    "paused": false,
+    "listing_count": 0,
+    "participant_count": 0,
+    "funded": "0",
+    "escrow": "0",
+    "credits": "0",
+    "withdrawing": "0",
+    "withdrawn": "0",
+    "storage": "project-sponsored testnet storage",
+    "max_listings": 128,
+    "max_participants": 256,
+    "max_active_per_account": 3,
+    "signed_orders": {
+      "standard": "questlayer_aura_order",
+      "version": 1,
+      "signature": "NEP-413 ed25519",
+      "signer_count": 0,
+      "nonce_count": 0,
+      "filled": 0,
+      "max_signers": 256,
+      "max_keys_per_signer": 4,
+      "max_nonces": 1024,
+      "max_ttl_ms": 2592000000
+    }
+  },
+  "deployment": {
+    "verifiedAt": "2026-11-01T13:09:46.039Z",
+    "network": "testnet",
+    "marketContract": "questlayer-market-20261101b.testnet",
+    "nftContract": "nfts.questlayer-dev-20261101.testnet",
+    "owner": "questlayer-dev-20261101.testnet",
+    "adminModel": "Project-controlled testnet upgrade/account keys; not audited for mainnet",
+    "storage": "Project-sponsored, bounded testnet storage",
+    "wasmSha256": "bd1f74d2858e468b354c2bb174ca95d921e933898adb9738fced8b817a0439ee",
+    "transactions": [
+      {
+        "label": "Deploy testnet-only bounded NFT escrow market",
+        "transaction": "6W2LU7t8VH73i2KUTt2vwQCPToYMdLuTdWU5EFUnf79w"
+      },
+      {
+        "label": "Upgrade market to version 2 (deploy + migrate, atomic)",
+        "transaction": "84k2TBW2kYLRSrfZiPFhkaMPBafNobYCsoWk2EJLivAd"
+      }
+    ],
+    "limits": {
+      "listings": 128,
+      "participants": 256,
+      "perAccount": 3
+    },
+    "version": 2,
+    "signedOrders": {
+      "standard": "questlayer_aura_order",
+      "signature": "NEP-413 ed25519",
+      "intents": "NEP-413 envelope compatible; not executed by any NEAR Intents verifier (see docs/SIGNED-AURA-ORDERS.md)"
+    }
+  }
+}

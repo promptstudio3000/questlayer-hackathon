@@ -1,0 +1,23 @@
+{
+  "takenAt": "2026-11-01T13:08:51.311Z",
+  "marketId": "questlayer-market-20261101b.testnet",
+  "stats": {
+    "version": 1,
+    "network": "testnet",
+    "nft_contract": "nfts.questlayer-dev-20261101.testnet",
+    "owner": "questlayer-dev-20261101.testnet",
+    "paused": false,
+    "listing_count": 0,
+    "participant_count": 0,
+    "funded": "0",
+    "escrow": "0",
+    "credits": "0",
+    "withdrawing": "0",
+    "withdrawn": "0",
+    "storage": "project-sponsored testnet storage",
+    "max_listings": 128,
+    "max_participants": 256,
+    "max_active_per_account": 3
+  },
+  "listings": []
+}
