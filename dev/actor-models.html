@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>QuestLayer NPCs and monsters</title>
+    <style>
+      body { margin: 0; background: #200543; color: #f2f2f2; font: 15px/1.4 Kanit, system-ui, sans-serif; }
+      main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+      h1 { font-size: 22px; margin: 8px 0 4px; } p { margin: 0 0 16px; color: #e3c8ff; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+      .card { background: #2a1655; border: 2px solid #c82ac2; border-radius: 6px; padding: 8px; }
+      .stage { height: 220px; } .stage canvas, .stage img { width: 100%; height: 100%; display: block; }
+      .card b { display: block; } .card span { color: #a065ff; font-size: 13px; }
+      .sprites { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; align-items: end; }
+      .sprites figure { margin: 0; text-align: center; font-size: 12px; color: #e3c8ff; }
+    </style>
+  </head>
+  <body>
+    <main id="root"></main>
+    <script type="module" src="/dev/actor-models.tsx"></script>
+  </body>
+</html>
