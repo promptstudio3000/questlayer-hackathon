@@ -282,7 +282,7 @@ export type NativeMarketOffer = {
   token_id: string;
   seller: string;
   price: string;
-  state: "active" | "buying" | "returning";
+  state: "active" | "buying" | "returning" | "deposited" | "filling";
   buyer: string | null;
   available: boolean;
   token: NativeItem | null;
@@ -293,6 +293,7 @@ export type NativeMarketState = {
   marketContract: string;
   nftContract: string;
   stats: {
+    version?: number;
     paused: boolean;
     listing_count: number;
     funded: string;

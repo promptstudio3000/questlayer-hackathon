@@ -1,0 +1,526 @@
+// Signed Aura offers (market version 2). The explorer's device key signs order
+// terms silently with NEP-413; nothing moves until someone fills the order on
+// chain. Free actions (turning offers on, escrowing an Aura, cancelling) go
+// through the relayer; anything that moves money (buying, accepting an offer,
+// funding an offer) is paid from the explorer's own account, still without a
+// wallet popup.
+import { useEffect, useRef, useState } from "react";
+import { api } from "./api";
+import { formatNativeNear, parseNearPrice } from "./native-amounts";
+import type { PlayerKeyRecord } from "./player-key";
+import {
+  ORDER_STATUS_TEXT,
+  ORDER_TTL_CHOICES,
+  orderTerms,
+  signOrder,
+  statusFromCheck,
+  type OrderStatus,
+  type OrderTerms,
+  type SignedOrder,
+} from "./signed-order";
+import type { NativeItem, NativeMarketBalance, NativeMarketState } from "./types";
+
+export type MarketCall = {
+  receiverId: string;
+  methodName: string;
+  args: Record<string, unknown>;
+  deposit: string;
+  gas: string;
+};
+type RelayedOrder = {
+  id: string;
+  terms: OrderTerms;
+  order: SignedOrder;
+  fillable: boolean;
+};
+type MyOrder = {
+  order: SignedOrder;
+  terms: OrderTerms;
+  status: OrderStatus;
+  cancelled?: boolean;
+};
+const GAS = "150000000000000";
+const historyKey = (account: string) => `questlayer-signed-orders:${account}`;
+function loadHistory(account: string): MyOrder[] {
+  try {
+    const raw = localStorage.getItem(historyKey(account));
+    return raw ? (JSON.parse(raw) as MyOrder[]).slice(0, 20) : [];
+  } catch {
+    return [];
+  }
+}
+function saveHistory(account: string, orders: MyOrder[]) {
+  try {
+    localStorage.setItem(historyKey(account), JSON.stringify(orders.slice(0, 20)));
+  } catch {
+    /* History is a convenience; the contract stays the authority. */
+  }
+}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+function expiresIn(deadline: string) {
+  const ms = Number(deadline) - Date.now();
+  if (ms <= 0) return "expired";
+  const h = Math.floor(ms / 3600000);
+  return h >= 24
+    ? `expires in ${Math.floor(h / 24)} d`
+    : h >= 1
+      ? `expires in ${h} h`
+      : `expires in ${Math.max(1, Math.floor(ms / 60000))} min`;
+}
+
+export function SignedOrdersPanel({
+  data,
+  accountId,
+  deviceKey,
+  owned,
+  balance,
+  busy,
+  onCall,
+  onChanged,
+}: {
+  data: NativeMarketState;
+  accountId: string | null;
+  deviceKey: PlayerKeyRecord | null;
+  owned: NativeItem[];
+  balance: NativeMarketBalance | undefined;
+  busy: string;
+  onCall: (call: MarketCall) => Promise<boolean>;
+  onChanged: () => Promise<NativeMarketState>;
+}) {
+  const [signer, setSigner] = useState<{ keys: string[]; epoch: number } | null>(null),
+    [book, setBook] = useState<RelayedOrder[]>([]),
+    [mine, setMine] = useState<MyOrder[]>([]),
+    [step, setStep] = useState(""),
+    [error, setError] = useState(""),
+    [message, setMessage] = useState(""),
+    [sellToken, setSellToken] = useState(""),
+    [sellPrice, setSellPrice] = useState("10"),
+    [ttl, setTtl] = useState<number>(ORDER_TTL_CHOICES[1].ms),
+    [offerFor, setOfferFor] = useState(""),
+    [offerPrice, setOfferPrice] = useState("1"),
+    [priceError, setPriceError] = useState("");
+  const priceInput = useRef<HTMLInputElement>(null),
+    offerInput = useRef<HTMLInputElement>(null);
+  const v2 = data.stats.version === 2;
+  const ready =
+    v2 && !!deviceKey && !!accountId && deviceKey.accountId === accountId;
+  const enabled = ready && !!signer?.keys.includes(deviceKey!.publicKey);
+  const escrowedByMe = data.listings.filter(
+    (l) => l.state === "deposited" && l.seller === accountId,
+  );
+  const sellable = [
+    ...escrowedByMe.map((l) => ({ tokenId: l.token_id, title: l.token?.title || l.token_id, escrowed: true })),
+    ...owned.map((i) => ({ tokenId: i.tokenId, title: `#${i.serial} · ${i.title}`, escrowed: false })),
+  ];
+  const working = !!busy || !!step;
+
+  async function refresh() {
+    if (!v2) return;
+    const [orders, me] = await Promise.all([
+      api<{ orders: RelayedOrder[] }>("/native/market/orders"),
+      accountId
+        ? api<{ keys: string[]; epoch: number }>(
+            "/native/market/signer?account=" + encodeURIComponent(accountId),
+          )
+        : Promise.resolve(null),
+    ]);
+    setBook(orders.orders);
+    setSigner(me);
+    if (accountId) {
+      const history = loadHistory(accountId);
+      const live = history.filter((o) => o.status === "open" || o.status === "pending");
+      if (live.length) {
+        const { statuses } = await api<{ statuses: { valid: boolean; reason: string | null }[] }>(
+          "/native/market/orders/status",
+          { orders: live.map((o) => o.order) },
+        );
+        live.forEach((o, i) => (o.status = statusFromCheck(statuses[i], o.cancelled)));
+        saveHistory(accountId, history);
+      }
+      setMine(history);
+    }
+  }
+  useEffect(() => {
+    void refresh().catch(() => {});
+    const timer = setInterval(() => void refresh().catch(() => {}), 20000);
+    return () => clearInterval(timer);
+  }, [v2, accountId, data.listings.length]);
+  useEffect(() => {
+    if (!sellable.some((s) => s.tokenId === sellToken)) setSellToken(sellable[0]?.tokenId || "");
+  }, [sellable.map((s) => s.tokenId).join(",")]);
+
+  async function run(label: string, work: () => Promise<string>) {
+    setError("");
+    setMessage("");
+    setStep(label);
+    try {
+      setMessage(await work());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The signed offer could not finish. Try again.");
+    } finally {
+      setStep("");
+      void refresh().catch(() => {});
+    }
+  }
+  async function call(c: Omit<MarketCall, "gas"> & { gas?: string }) {
+    if (!(await onCall({ gas: GAS, ...c })))
+      throw Error("The action was not sent. Nothing changed.");
+  }
+  async function waitFor(check: (s: NativeMarketState) => boolean) {
+    for (let i = 0; i < 8; i++) {
+      if (check(await onChanged())) return true;
+      await sleep(1000);
+    }
+    return false;
+  }
+  async function publish(kind: "sell" | "buy", tokenId: string, price: string) {
+    const fresh = await api<{ keys: string[]; epoch: number }>(
+      "/native/market/signer?account=" + encodeURIComponent(accountId!),
+    );
+    const terms = orderTerms({
+      kind,
+      market: data.marketContract,
+      nftContract: data.nftContract,
+      maker: accountId!,
+      tokenId,
+      price,
+      deadlineMs: Date.now() + ttl,
+      epoch: fresh.epoch,
+    });
+    const order = await signOrder(deviceKey!, terms);
+    const history = [{ order, terms, status: "pending" as OrderStatus }, ...loadHistory(accountId!)];
+    saveHistory(accountId!, history);
+    setMine(history);
+    await api("/native/market/orders", { order });
+    history[0].status = "open";
+    saveHistory(accountId!, history);
+  }
+
+  const enable = () =>
+    run("Turning on signed offers…", async () => {
+      await call({
+        receiverId: data.marketContract,
+        methodName: "add_signing_key",
+        args: { public_key: deviceKey!.publicKey },
+        deposit: "1",
+      });
+      return "Signed offers are on. This device signs them for you, with no popup.";
+    });
+  const sell = (price: string) =>
+    run("Signing your sell order…", async () => {
+      const item = sellable.find((s) => s.tokenId === sellToken);
+      if (!item) throw Error("Choose an Aura you own.");
+      if (!item.escrowed) {
+        setStep("Handing the Aura to the market…");
+        await call({
+          receiverId: data.nftContract,
+          methodName: "nft_transfer_call",
+          args: { receiver_id: data.marketContract, token_id: item.tokenId, approval_id: null, memo: null, msg: JSON.stringify({ deposit: true }) },
+          deposit: "1",
+          gas: "200000000000000",
+        });
+        const held = await waitFor((s) =>
+          s.listings.some((l) => l.token_id === item.tokenId && l.state === "deposited" && l.seller === accountId),
+        );
+        if (!held) throw Error("The market has not confirmed the Aura yet. Refresh, then sign again.");
+        setStep("Signing your sell order…");
+      }
+      await publish("sell", item.tokenId, price);
+      return `Your sell order for ${formatNativeNear(price)} test NEAR is open. The Aura stays held by the market until someone buys it or you cancel.`;
+    });
+  const offer = (tokenId: string, price: string) =>
+    run("Signing your offer…", async () => {
+      const credit = BigInt(balance?.credit || "0"),
+        need = BigInt(price);
+      if (credit < need) {
+        setStep("Adding test NEAR to your market balance…");
+        const top = need - credit < 10n ** 21n ? 10n ** 21n : need - credit;
+        await call({ receiverId: data.marketContract, methodName: "deposit_near", args: {}, deposit: top.toString() });
+      }
+      setStep("Signing your offer…");
+      await publish("buy", tokenId, price);
+      setOfferFor("");
+      return `Your offer of ${formatNativeNear(price)} test NEAR is open. Your market balance pays only if the owner accepts.`;
+    });
+  const fill = (o: RelayedOrder) =>
+    run(o.terms.kind === "sell" ? "Buying the Aura…" : "Accepting the offer…", async () => {
+      const sellOrder = o.terms.kind === "sell";
+      await call({
+        receiverId: data.marketContract,
+        methodName: sellOrder ? "fill_sell_order" : "fill_buy_order",
+        args: { order: o.order },
+        deposit: sellOrder ? o.terms.price : "1",
+        gas: "200000000000000",
+      });
+      const done = await waitFor((s) => !s.listings.some((l) => l.token_id === o.terms.token_id));
+      return done
+        ? sellOrder
+          ? "The Aura is yours. Find it in your Secured collection."
+          : "Offer accepted. The test NEAR is in your market balance."
+        : "Still settling. Refresh your collection and balance before retrying.";
+    });
+  const cancelOrder = (m: MyOrder) =>
+    run("Cancelling the order on chain…", async () => {
+      await call({ receiverId: data.marketContract, methodName: "cancel_order", args: { order: m.order }, deposit: "1" });
+      const history = loadHistory(accountId!).map((h) =>
+        h.order.nonce === m.order.nonce ? { ...h, cancelled: true, status: "cancelled" as OrderStatus } : h,
+      );
+      saveHistory(accountId!, history);
+      return "Order cancelled on chain. Nobody can accept it any more.";
+    });
+  const cancelAll = () =>
+    run("Cancelling all your orders…", async () => {
+      await call({ receiverId: data.marketContract, methodName: "cancel_all_orders", args: {}, deposit: "1" });
+      const history = loadHistory(accountId!).map((h) =>
+        h.status === "open" || h.status === "pending" ? { ...h, cancelled: true, status: "cancelled" as OrderStatus } : h,
+      );
+      saveHistory(accountId!, history);
+      return "Every order you signed before now is cancelled on chain.";
+    });
+  const priceFrom = (value: string, input = priceInput) => {
+    try {
+      setPriceError("");
+      return parseNearPrice(value);
+    } catch (e) {
+      setPriceError(e instanceof Error ? e.message : "Choose a valid price.");
+      input.current?.focus();
+      return null;
+    }
+  };
+
+  if (!v2) return null;
+  const others = book.filter((o) => o.terms.maker !== accountId);
+  const openMine = mine.filter((m) => m.status === "open" || m.status === "pending");
+  return (
+    <section className="signed-orders" aria-labelledby="signed-orders-title">
+      <h3 id="signed-orders-title">Signed offers</h3>
+      <p>
+        Name an exact price and how long it stays open. Your explorer signs the
+        order on this device, with no popup. Only an Aura held by the market can
+        be traded, and the market checks every signature before anything moves.
+      </p>
+      {error && <p role="alert">{error}</p>}
+      {step && <p role="status">{step}</p>}
+      {message && !step && (
+        <p role="status" className="native-market-message">
+          {message}
+        </p>
+      )}
+      {!ready ? (
+        <p>
+          Signed offers are signed by your QuestLayer explorer's device key.
+          Wallet-linked accounts can still use fixed-price listings above.
+        </p>
+      ) : !signer ? (
+        <p role="status">Checking your signing key…</p>
+      ) : !enabled ? (
+        <button className="primary-button" disabled={working} onClick={() => void enable()}>
+          Turn on signed offers
+        </button>
+      ) : (
+        <>
+          <form
+            className="native-sell-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const p = priceFrom(sellPrice);
+              if (p) void sell(p);
+            }}
+          >
+            <h4>Sell with a signed order</h4>
+            {!sellable.length ? (
+              <p>You have no secured Aura to sell.</p>
+            ) : (
+              <>
+                <label>
+                  Aura
+                  <select value={sellToken} onChange={(e) => setSellToken(e.target.value)}>
+                    {sellable.map((s) => (
+                      <option key={s.tokenId} value={s.tokenId}>
+                        {s.title}
+                        {s.escrowed ? " (held by the market)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Sell price in test NEAR
+                  <input
+                    ref={priceInput}
+                    value={sellPrice}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    aria-invalid={!!priceError}
+                    aria-describedby={priceError ? "signed-price-error" : undefined}
+                    onChange={(e) => {
+                      setSellPrice(e.target.value);
+                      setPriceError("");
+                    }}
+                  />
+                </label>
+                {priceError && (
+                  <p id="signed-price-error" role="alert">
+                    {priceError}
+                  </p>
+                )}
+                <label>
+                  Open for
+                  <select value={ttl} onChange={(e) => setTtl(Number(e.target.value))}>
+                    {ORDER_TTL_CHOICES.map((c) => (
+                      <option key={c.ms} value={c.ms}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p>
+                  If the Aura is in your collection, the market holds it first.
+                  That step is free. A buyer pays exactly your price.
+                </p>
+                <button className="primary-button" disabled={working || data.stats.paused}>
+                  Sign sell order
+                </button>
+              </>
+            )}
+          </form>
+          <h4>Open orders</h4>
+          {!others.length ? (
+            <p>No signed orders from other explorers right now.</p>
+          ) : (
+            <div className="native-offers">
+              {others.map((o) => {
+                const sellOrder = o.terms.kind === "sell",
+                  heldByMe = escrowedByMe.some((l) => l.token_id === o.terms.token_id),
+                  canAct = sellOrder ? o.fillable : o.fillable && heldByMe;
+                return (
+                  <article className="native-offer signed-order" key={o.id}>
+                    <div>
+                      <h3>{sellOrder ? "For sale" : "Offer to buy"}</h3>
+                      <span className="native-address">{o.terms.token_id}</span>
+                      <strong className="native-price">{formatNativeNear(o.terms.price)} test NEAR</strong>
+                      <span className="native-address">
+                        {sellOrder ? "Seller" : "Buyer"}: {o.terms.maker}
+                      </span>
+                      <span>{expiresIn(o.terms.deadline_ms)}</span>
+                      {!canAct && (
+                        <span>
+                          {sellOrder
+                            ? "Not available: the Aura is not held by the market for this seller."
+                            : heldByMe
+                              ? "The buyer's market balance no longer covers this offer."
+                              : "Only the Aura's owner can accept, after the market holds it."}
+                        </span>
+                      )}
+                      {canAct && (
+                        <span>
+                          {sellOrder
+                            ? "Paid from your account: the exact price plus a small network fee."
+                            : "You receive the price in your market balance. Your account pays a small network fee."}
+                        </span>
+                      )}
+                    </div>
+                    {(sellOrder || heldByMe) && (
+                      <button
+                        className="primary-button"
+                        disabled={working || data.stats.paused || !canAct}
+                        onClick={() => void fill(o)}
+                      >
+                        {sellOrder ? `Buy for ${formatNativeNear(o.terms.price)} test NEAR` : "Accept offer"}
+                      </button>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+          {data.listings.some((l) => l.state === "deposited" && l.seller !== accountId) && (
+            <>
+              <h4>Make an offer</h4>
+              <div className="native-offers">
+                {data.listings
+                  .filter((l) => l.state === "deposited" && l.seller !== accountId)
+                  .map((l) => (
+                    <article className="native-offer signed-order" key={l.id}>
+                      <div>
+                        <h3>{l.token?.title || "Native Aura"}</h3>
+                        <span className="native-address">{l.token_id}</span>
+                        <span className="native-address">Owner: {l.seller}</span>
+                        <span>Held by the market for signed offers</span>
+                      </div>
+                      {offerFor === l.token_id ? (
+                        <form
+                          className="signed-offer-form"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const p = priceFrom(offerPrice, offerInput);
+                            if (p) void offer(l.token_id, p);
+                          }}
+                        >
+                          <label>
+                            Your offer in test NEAR
+                            <input
+                              ref={offerInput}
+                              value={offerPrice}
+                              aria-invalid={!!priceError}
+                              inputMode="decimal"
+                              autoComplete="off"
+                              onChange={(e) => {
+                                setOfferPrice(e.target.value);
+                                setPriceError("");
+                              }}
+                            />
+                          </label>
+                          {priceError && <p role="alert">{priceError}</p>}
+                          <p>
+                            Market balance: {formatNativeNear(balance?.credit || "0")} test NEAR.
+                            Anything missing is added from your account first.
+                          </p>
+                          <button className="primary-button" disabled={working || data.stats.paused}>
+                            Sign offer
+                          </button>
+                          <button type="button" className="button secondary" onClick={() => setOfferFor("")}>
+                            Not now
+                          </button>
+                        </form>
+                      ) : (
+                        <button className="button secondary" disabled={working} onClick={() => setOfferFor(l.token_id)}>
+                          Make an offer
+                        </button>
+                      )}
+                    </article>
+                  ))}
+              </div>
+            </>
+          )}
+          <h4>Your signed orders</h4>
+          {!mine.length ? (
+            <p>You have not signed any orders on this device.</p>
+          ) : (
+            <ul className="signed-order-history">
+              {mine.map((m) => (
+                <li key={m.order.nonce} data-status={m.status}>
+                  <span>
+                    {m.terms.kind === "sell" ? "Sell" : "Offer"} · {m.terms.token_id} ·{" "}
+                    {formatNativeNear(m.terms.price)} test NEAR
+                  </span>
+                  <span>{ORDER_STATUS_TEXT[m.status]}</span>
+                  {m.status === "open" && <span>{expiresIn(m.terms.deadline_ms)}</span>}
+                  {m.status === "open" && (
+                    <button className="button secondary" disabled={working} onClick={() => void cancelOrder(m)}>
+                      Cancel order
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {!!openMine.length && (
+            <button className="button secondary" disabled={working} onClick={() => void cancelAll()}>
+              Cancel all my orders
+            </button>
+          )}
+        </>
+      )}
+    </section>
+  );
+}

@@ -61,6 +61,7 @@ import {
   type NativeLevelClaim,
 } from "./native-level-claim";
 import { NativeMarketPanel } from "./NativeMarketPanel";
+import type { MarketCall } from "./SignedOrdersPanel";
 import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
 import { RewardFundingPage, TodaysPot } from "./RewardFunding";
@@ -1508,6 +1509,39 @@ export default function App() {
                 args,
                 gas: listing ? "200000000000000" : "150000000000000",
                 deposit: request.kind === "buy" ? request.price! : "1",
+              },
+            },
+          ],
+        },
+        { playerId: player!.id },
+      );
+      await refreshNative(true);
+      return true;
+    });
+    return result === true;
+  }
+  // Signed-order market calls always use the explorer's own device key: free
+  // actions are relayed, money moves in self-paid transactions (no popup).
+  async function marketCall(call: MarketCall): Promise<boolean> {
+    const result = await action("native-market", async () => {
+      const managed = invisible.signer;
+      if (!managed)
+        throw Error("Signed offers need your QuestLayer explorer account.");
+      if (!onNearNetwork(call.receiverId))
+        throw Error("This market is not on the game network.");
+      await managed.send(
+        {
+          network: NEAR_NETWORK,
+          signerId: managed.accountId,
+          receiverId: call.receiverId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: call.methodName,
+                args: call.args,
+                gas: call.gas,
+                deposit: call.deposit,
               },
             },
           ],
@@ -3478,6 +3512,8 @@ export default function App() {
                   busy={busy}
                   onConnect={connectNear}
                   onTrade={tradeNative}
+                  deviceKey={invisible.deviceKey}
+                  onMarketCall={invisible.signer ? marketCall : undefined}
                 />
               }
               player={player}

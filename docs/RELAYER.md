@@ -44,7 +44,9 @@ Gas for every relayed action and the storage-class deposit it carries:
 - collectibles: `mint_avatar` (0.05 NEAR), `redeem_aura` (0.05 NEAR, `receiver_id` = sender),
   `equip_aura`/`unequip_aura` (0), `nft_transfer_call` (1 yocto, to the market only),
   `nft_transfer` (1 yocto, only to a wallet linked to the same explorer)
-- market: `cancel` (1), `withdraw` (1); purchases are self-paid
+- market: `cancel` (1), `withdraw` (1), and for signed orders `add_signing_key`/`remove_signing_key`
+  (1, one ed25519 key), `cancel_order` (1), `cancel_all_orders` (1). Purchases and everything else
+  that moves money (`buy`, `fill_sell_order`, `fill_buy_order` even at 1 yocto, `deposit_near`) are self-paid
 - rewards: `withdraw` (1); SocialDB `v1.social08.testnet` `set` (1 or 0.05 NEAR, own namespace only)
 - staking: `register_position` (0), `withdraw_refund` (1), own vault `request_exit`/`withdraw_owner`
   (1), `refresh`/`advance`/`harvest` (0); setup deposit and stake are self-paid
