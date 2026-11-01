@@ -5,6 +5,7 @@ import { AuraArt } from "./Ghost";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
 import type { OrderSigner } from "./order-signers";
 import { SignedOrdersPanel } from "./SignedOrdersPanel";
+import { Details } from "./ScreenTabs";
 import type {
   Player,
   NativeWardrobeState,
@@ -19,6 +20,7 @@ export function NativeMarketPanel({
   onConnect,
   onTrade,
   orderSigner = null,
+  section = "all",
 }: {
   player: Player;
   wardrobe: NativeWardrobeState | null;
@@ -26,7 +28,11 @@ export function NativeMarketPanel({
   onConnect: () => Promise<void>;
   onTrade: (request: NativeTradeRequest) => Promise<boolean>;
   orderSigner?: OrderSigner | null;
+  /** Market screen tab: fixed-price listings, signed offers, or both. */
+  section?: "all" | "secured" | "offers";
 }) {
+  const showListings = section !== "offers",
+    showOffers = section !== "secured";
   const [data, setData] = useState<NativeMarketState | null>(null),
     [balances, setBalances] = useState<NativeMarketBalance[]>([]),
     [error, setError] = useState(""),
@@ -156,13 +162,22 @@ export function NativeMarketPanel({
   return (
     <section className="native-market">
       <div className="section-label">
-        <h2>Secured Aura market</h2>
+        <h2>
+          Secured Aura market
+        </h2>
         <span className="badge purple">TEST NETWORK</span>
       </div>
-      <p>
-        Trade secured Auras for test NEAR. A listed Aura is held by the market
-        until it sells or you cancel. Sale proceeds land in your market balance.
+      <p className="native-market-lead">
+        Secured Auras trade for test NEAR, which has no monetary value.
       </p>
+      {showListings && (
+        <Details>
+          <p>
+            A listed Aura is held by the market until it sells or you cancel.
+            Sale proceeds land in your market balance.
+          </p>
+        </Details>
+      )}
       {error && <p role="alert">{error}</p>}
       {message && (
         <p role="status" className="native-market-message">
@@ -182,6 +197,11 @@ export function NativeMarketPanel({
         <p>The secured market is not available here yet.</p>
       ) : (
         <>
+          {showOffers && data.stats.version !== 2 && section === "offers" && (
+            <p>Signed offers are not available on this market yet.</p>
+          )}
+          {showListings && (
+            <>
           {!player.wallets.length ? (
             <button
               className="primary-button"
@@ -306,10 +326,12 @@ export function NativeMarketPanel({
                       {priceError}
                     </p>
                   )}
-                  <p>
-                    You can list up to three Auras. You approve handing the Aura
-                    to the market; storage is covered by the project.
-                  </p>
+                  <Details>
+                    <p>
+                      You can list up to three Auras. You approve handing the
+                      Aura to the market; storage is covered by the project.
+                    </p>
+                  </Details>
                   <button
                     className="primary-button"
                     disabled={unavailable || data.stats.paused || !tokenId}
@@ -401,6 +423,9 @@ export function NativeMarketPanel({
               ))}
             </div>
           )}
+            </>
+          )}
+          {showOffers && (
           <SignedOrdersPanel
             data={data}
             signer={orderSigner}
@@ -415,6 +440,8 @@ export function NativeMarketPanel({
             busy={busy}
             onChanged={async () => (await load(true)).state}
           />
+          )}
+          {showListings && (
           <div className="native-market-pages">
             <button
               className="button secondary"
@@ -431,6 +458,7 @@ export function NativeMarketPanel({
               Next offers
             </button>
           </div>
+          )}
         </>
       )}
     </section>

@@ -204,7 +204,7 @@ async function cardOverlaps(page, where) {
         "top bar": document.querySelectorAll(".topbar"),
         "profile menu": document.querySelectorAll(".profile-menu"),
         "tab bar": document.querySelectorAll(".nav-rail"),
-        "Market entry": [...document.querySelectorAll(".play-entry")].filter((e) =>
+        "Market entry": [...document.querySelectorAll(".profile-tiles button")].filter((e) =>
           /^Market/.test(e.textContent.trim()),
         ),
       };
@@ -468,15 +468,16 @@ async function runDevice(name, server) {
     console.log("7. Sound, vibration and motion settings");
     await page.getByRole("button", { name: "Explorer profile" }).click();
     await page.getByRole("button", { name: "Profile and settings" }).click();
-    const settings = page.locator(".feedback-settings");
+    await page.getByRole("tab", { name: "Settings" }).click();
+    const settings = page.getByRole("tabpanel");
     await settings.scrollIntoViewIfNeeded();
-    await settings.getByRole("button", { name: "Sound on" }).click();
-    await settings.getByRole("button", { name: "Off" }).first().click();
-    await settings.getByRole("button", { name: "Reduce motion" }).click();
-    assert.equal(
-      await settings.getByRole("button", { name: "Reduce motion" }).getAttribute("aria-pressed"),
-      "true",
-    );
+    const sound = settings.getByRole("switch", { name: /Sound/ });
+    if ((await sound.getAttribute("aria-checked")) !== "true") await sound.click();
+    const vibration = settings.getByRole("switch", { name: /Vibration/ });
+    if ((await vibration.getAttribute("aria-checked")) === "true") await vibration.click();
+    const motion = settings.getByRole("switch", { name: /Reduce motion/ });
+    await motion.click();
+    assert.equal(await motion.getAttribute("aria-checked"), "true");
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("questlayer-feedback-v1")));
     assert.deepEqual(saved, { haptics: false, sound: true, motion: "reduce" });
     await capture(page, "settings-feedback");
@@ -594,7 +595,8 @@ async function runDevice(name, server) {
       await capture(cardPage, "home-screen-card-profile-menu");
       await profileButton.click();
       await cardPage.getByRole("button", { name: "Profile", exact: true }).first().click();
-      await cardPage.locator(".play-entry").filter({ hasText: /^Market/ }).waitFor();
+      await cardPage.getByRole("tab", { name: "Character" }).click();
+      await cardPage.locator(".profile-tiles button").filter({ hasText: /^Market/ }).waitFor();
       await check("Profile screen");
       await capture(cardPage, "home-screen-card-profile-screen");
       await card.getByRole("button", { name: /Got it|Not now/ }).click();
