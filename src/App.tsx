@@ -1,3 +1,4 @@
+import { XpBar } from "./XpBar";
 import {
   AdventureResultDialog,
   AdventureResultResume,
@@ -4034,23 +4035,19 @@ export default function App() {
             </div>
             <div>
               <b>{player.name}</b>
-              <div className="xp-bar">
-                <i
-                  style={{
-                    width:
-                      hudXp !== null && hudLevel !== null
-                        ? `${Math.min(100, ((hudXp - 100 * (hudLevel - 1) ** 2) / (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) * 100)}%`
-                        : "0%",
-                  }}
-                />
-              </div>
-              <small>
-                {hudXp !== null && hudLevel !== null
-                  ? `${hudXp} / ${100 * hudLevel ** 2} XP${!nativePlay && player.lockedXp ? ` · ${player.lockedXp} committed` : ""}`
-                  : playAccount
+              <XpBar
+                xp={hudXp}
+                note={
+                  !nativePlay && player.lockedXp
+                    ? `${player.lockedXp} committed`
+                    : undefined
+                }
+                placeholder={
+                  playAccount
                     ? "Loading your progress…"
-                    : "Secure your explorer to keep progress"}
-              </small>
+                    : "Secure your explorer to keep progress"
+                }
+              />
               {!nativePlay && <PickupSummary totals={pickupFeedback.totals} />}
             </div>
             <button onClick={() => setTab("inventory")} aria-label="Inventory">

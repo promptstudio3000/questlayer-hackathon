@@ -84,6 +84,7 @@ export function createNpcService(
       done: new Set(today.map((r) => r.terms.offerId)),
       linesToday: today.filter((r) => r.kind === "quest").length,
       chapters: rows.filter((r) => r.kind === "chapter" && r.state === "completed").length,
+      level,
     });
     // Locked chips are recomputed every time (never bound to the encounter):
     // they are presentation only and can never be accepted.
