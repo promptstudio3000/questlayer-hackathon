@@ -43,9 +43,15 @@ this file says who does what, in which order, and what "done" means. Update it w
   This is how the game is "global" today and should stay unlimited.
 - **Funded days only in reviewed cities.** A city earns native rewards only with a field-reviewed CityPack.
   Plzeň is the only one. The contract still checks one day at a time, with a 0.1 NEAR cap on each publication.
-- **Allocation across cities (to build).** Each day's budget is the smaller of the cap and a fixed share of
-  available funds. It is split between enabled cities by published weights, equal by default. The audit already proves that every
-  reservation belongs to a published day; it will also list days per city and check the per-date total.
+- **Allocation across cities (built 1 November).** `server/native/allocation.mjs`: each day's budget is the smaller
+  of the cap and `NATIVE_DAILY_SHARE_BPS` of available funds, split between `NATIVE_FUNDED_CITIES` (`plzen:2,brno:1`,
+  equal by default) and rounded down. Defaults reproduce v1 byte-for-byte (same manifest hash). Tests:
+  `tests/allocation.test.mjs`.
+- **Days paid from realized yield (built 1 November).** With `NATIVE_YIELD_BACKED_DAYS=1` the publisher spends no
+  more than the vaults' on-chain `game_paid` minus earlier yield-backed days; the manifest records
+  `funding: "realized_yield"` and the vault payouts it relied on, and the audit adds `yield-backed-days-covered`.
+  Without realized yield nothing is published. Timeline of the cycle: `node scripts/observe-yield-cycle.mjs --out
+  public/native-yield-cycle.json` (read-only).
 - **Verifiable on chain (done 1 November).** The rewards contract reads the city and local date from the day id
   (`<city>-YYYY-MM-DD-v<n>`), keeps a per-date total and rejects a publication that would exceed the daily cap
   across all cities. The audit checks that each date's total equals what this server published.

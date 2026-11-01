@@ -20,6 +20,7 @@ import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
+import { allocationSettings } from "./native/allocation.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
 import { ManagedAccounts } from "./relayer/accounts.mjs";
@@ -55,6 +56,8 @@ import { fileURLToPath } from "node:url";
 import {
   NETWORK,
   NETWORK_LABEL,
+  ENABLED_FEATURES,
+  featureEnabled,
   DEFAULT_RPC,
   manifestName,
 } from "./native/network.mjs";
@@ -142,7 +145,9 @@ const socialRecords = new NativeSocialRecords(db, provider, {
     token: process.env.IPFS_ADD_TOKEN || "",
   }),
 });
-const socialRecordRoutes = createSocialRecordRoutes(socialRecords);
+const socialRecordRoutes = createSocialRecordRoutes(
+  featureEnabled("social") ? socialRecords : null,
+);
 const linkedAccount = (player, accountId) =>
   accountId
     ? (db
@@ -162,11 +167,12 @@ const marketManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-market")}`),
   resolve(APP_ROOT, `dist/${manifestName("native-market")}`),
 ].find((path) => existsSync(path));
-const marketContractId =
-  process.env.NEAR_MARKET_CONTRACT ||
-  (marketManifestPath
-    ? JSON.parse(readFileSync(marketManifestPath, "utf8")).marketContract
-    : null);
+const marketContractId = !featureEnabled("market")
+  ? null
+  : process.env.NEAR_MARKET_CONTRACT ||
+    (marketManifestPath
+      ? JSON.parse(readFileSync(marketManifestPath, "utf8")).marketContract
+      : null);
 const nativeMarket = marketContractId
   ? new NativeMarket(provider, marketContractId, nativeCollectibles)
   : null;
@@ -181,9 +187,10 @@ const rewardsManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-rewards")}`),
   resolve(APP_ROOT, `dist/${manifestName("native-rewards")}`),
 ].find((p) => existsSync(p));
-const rewardsConfig = rewardsManifestPath
-  ? JSON.parse(readFileSync(rewardsManifestPath, "utf8"))
-  : null;
+const rewardsConfig =
+  rewardsManifestPath && featureEnabled("rewards")
+    ? JSON.parse(readFileSync(rewardsManifestPath, "utf8"))
+    : null;
 const nativeRewards =
   !nativeAttestationsDisabled &&
   rewardsConfig &&
@@ -195,12 +202,15 @@ const nativeRewards =
         loadAwardSigner(process.env.REWARD_ATTESTOR_PATH),
       )
     : null;
-const nativeVaults = rewardsConfig?.factory
-  ? new NativeVaults(db, provider, rewardsConfig)
-  : null;
+const nativeVaults =
+  rewardsConfig?.factory && featureEnabled("vaults")
+    ? new NativeVaults(db, provider, rewardsConfig)
+    : null;
 // Invisible player accounts and sponsored gas. Without the service keys the
 // routes answer "disabled" and play continues on the practice ledger.
-const relayConfig = relayerConfiguration(process.env);
+const relayConfig = relayerConfiguration(
+  featureEnabled("relayer") ? process.env : { DISABLE_RELAYER: "1" },
+);
 const factoryService = relayConfig.accountsEnabled
   ? await loadServiceAccount(provider, relayConfig.factoryKeyPath, {
       expectAccountId: relayConfig.factoryAccount,
@@ -226,27 +236,30 @@ const relayer = managedAccounts
           collectibles: nativeCollectibles.contractId,
           market: marketContractId,
           factory: rewardsConfig?.factory?.contractId || FACTORY_ID,
-          creators: existsSync(
-            resolve(APP_ROOT, `public/${manifestName("native-creators")}`),
-          )
-            ? JSON.parse(
-                readFileSync(
-                  resolve(
-                    APP_ROOT,
-                    `public/${manifestName("native-creators")}`,
+          creators:
+            featureEnabled("creators") &&
+            existsSync(
+              resolve(APP_ROOT, `public/${manifestName("native-creators")}`),
+            )
+              ? JSON.parse(
+                  readFileSync(
+                    resolve(
+                      APP_ROOT,
+                      `public/${manifestName("native-creators")}`,
+                    ),
+                    "utf8",
                   ),
+                ).contractId
+              : undefined,
+          rewards: !featureEnabled("rewards")
+            ? undefined
+            : rewardsConfig?.contractId ||
+              JSON.parse(
+                readFileSync(
+                  resolve(APP_ROOT, `public/${manifestName("native-rewards")}`),
                   "utf8",
                 ),
-              ).contractId
-            : undefined,
-          rewards:
-            rewardsConfig?.contractId ||
-            JSON.parse(
-              readFileSync(
-                resolve(APP_ROOT, `public/${manifestName("native-rewards")}`),
-                "utf8",
-              ),
-            ).contractId,
+              ).contractId,
         },
         blockTtl: relayConfig.blockTtl,
         maxJobsPerDay: relayConfig.maxJobsPerDay,
@@ -261,7 +274,10 @@ const relayerRoutes = createRelayerRoutes({
   relayer,
   accounts: managedAccounts,
 });
-if (nativeRewards) nativeRewards.vaultRegistry = nativeVaults;
+if (nativeRewards) {
+  nativeRewards.vaultRegistry = nativeVaults;
+  Object.assign(nativeRewards, allocationSettings(process.env));
+}
 // Creator money (W09): reads and quotes work from the manifest alone; the
 // publisher outbox mirrors published quests, completions, likes and daily
 // rounds on chain only when the publisher key is configured.
@@ -272,6 +288,7 @@ const creatorsManifestPath = resolve(
 // Hosts with neither the publisher key nor the creator community keep their
 // schema free of creator tables; the routes then answer "not configured".
 const creatorsManifest =
+  featureEnabled("creators") &&
   existsSync(creatorsManifestPath) &&
   (process.env.CREATORS_PUBLISHER_KEY_PATH ||
     process.env.CREATOR_COMMUNITY_ENABLED === "1")
@@ -300,7 +317,7 @@ const tasksManifestPath = [
 const nativeTasks = new NativeTasks(
   db,
   provider,
-  tasksManifestPath
+  tasksManifestPath && featureEnabled("tasks")
     ? JSON.parse(readFileSync(tasksManifestPath, "utf8"))
     : null,
 );
@@ -508,6 +525,7 @@ async function api(req, res, url) {
       app: "QuestLayer",
       version: "0.1.0",
       network: NETWORK,
+      features: ENABLED_FEATURES,
       ...schemaStatus(db, { buildId: process.env.QUESTLAYER_BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
@@ -521,7 +539,9 @@ async function api(req, res, url) {
       creatorMoney: creatorMoney
         ? creatorMoney.workerStatus()
         : { status: "not-configured" },
-      socialRecords: socialRecords.workerStatus(),
+      socialRecords: featureEnabled("social")
+        ? socialRecords.workerStatus()
+        : { status: "not-configured" },
       now: Date.now(),
     });
   if (path === "/api/quest-templates" && method === "GET")
@@ -542,6 +562,7 @@ async function api(req, res, url) {
     return respond(res, {
       mode: "demo",
       network: NETWORK,
+      features: ENABLED_FEATURES,
       rpcUrl: rpc,
       coinValue: 0.01,
       coinSplit: 50,
@@ -2177,7 +2198,9 @@ const relayWorker =
     ? startRelayWorker(relayer, { intervalMs: 15000 })
     : null;
 const pinWorker =
-  !backgroundWorkersDisabled && socialRecords.pinAdapter
+  !backgroundWorkersDisabled &&
+  featureEnabled("social") &&
+  socialRecords.pinAdapter
     ? startPinWorker(socialRecords, { intervalMs: 60000 })
     : null;
 const creatorMoneyWorker =

@@ -12,6 +12,8 @@
 //   6. local confirmed receipts never exceed the chain's accepted claims
 //   7. each date's on-chain total across cities equals what this server
 //      published for that date and stays within the contract's daily cap
+//   8. days marked as paid from realized yield cost no more than the yield
+//      that vaults have paid into this treasury (vault `game_paid`)
 //
 // The reward worker runs it after settling claims and closing days and before
 // publishing new ones; any drift stops new publication (claims and closures
@@ -22,6 +24,7 @@ import {
   storedNativeManifest,
 } from "./reward-manifest.mjs";
 import { NETWORK } from "./network.mjs";
+import { readYieldBacking, yieldBackedManifests } from "./day-publication.mjs";
 
 // NEAR protocol storage price: 10^19 yoctoNEAR per byte (1 NEAR per 100 kB).
 export const STORAGE_PRICE_PER_BYTE = 10n ** 19n;
@@ -203,6 +206,15 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
       });
     }
     check("date-totals-match-publications", datesOk, { dates: dateRows });
+    // Only hosts that published yield-backed days run this check.
+    if (yieldBackedManifests(native.db).length) {
+      const backing = await readYieldBacking(native);
+      check("yield-backed-days-covered", backing.covered, {
+        paid: backing.paid,
+        committed: backing.committed,
+        free: backing.free,
+      });
+    }
     const balance = big(String(account.amount));
     const storageStake =
       BigInt(account.storage_usage ?? 0) * STORAGE_PRICE_PER_BYTE;
