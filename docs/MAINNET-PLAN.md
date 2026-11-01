@@ -1,0 +1,77 @@
+# Minimal mainnet path
+
+Status: plan, 1 November 2026. Nothing in this repository runs on mainnet yet. The hackathon rules allow a
+mainnet deployment (Q-010) but do not require one; the judges score the game loop, with a bonus when players
+never notice the chain. This plan describes the smallest honest mainnet slice, what blocks it today and the gate
+that decides whether it ships before 14 November or stays "documented, flagged off".
+
+## 1. What "minimal" means
+
+| In the slice | Out of the slice (stays testnet or off) |
+| --- | --- |
+| Collectibles contract (avatar mint, Aura redeem with a server voucher, equip) | Rewards treasury, vault and vault factory (money from strangers needs an external review first) |
+| Player factory + relayer: sponsored sub-accounts and gas, capped per day | Market (needs the reviewed collectibles first; add in a second step if time allows) |
+| NEAR Social profile and public note records from the player's own account | Creator money (contract review pending; keep on testnet) |
+| Read-only explorer links on mainnet (nearblocks) | Sponsored tasks escrow (W10.3) |
+
+Amounts: factory funds each account with 0.02 NEAR; relayer top-ups capped at 0.05 NEAR per account per day;
+total sponsor float 10 NEAR with an alert at 3 NEAR. All are env values, not code.
+
+## 2. Testnet assumptions that must become configuration
+
+The code currently treats "testnet" as a safety invariant, which is correct until mainnet is a deliberate
+decision. Counted on 1 November (`grep -c testnet`):
+
+| Area | Sites | Examples |
+| --- | --- | --- |
+| Server RPC and identity | `server/identity/near.mjs` 5, `server/identity/sessions.mjs` 5 | `assertTestnetRpc` checks `chain_id === "testnet"`; NEP-413 messages say "on NEAR testnet"; challenges carry `network: "testnet"` |
+| Server contract readers | `server/native/reader.mjs` (".testnet" suffix), `transaction-confirmation.mjs` 13, `tasks.mjs` 11, `progression.mjs` 9, `rewards.mjs` 5, `award-vouchers.mjs` 5, `vaults.mjs` 4, `market.mjs` 3, `social-profile.mjs` 3, `creator-money.mjs` 4 | every quote returns `network: "testnet"`; manifests are `public/*-testnet.json`; `v1.social08.testnet` |
+| Relayer | `accounts.mjs` 6, `key-transport.mjs` 3, `relay.mjs` 2 | `managed_accounts.network CHECK(network='testnet')`; key files require `network: "testnet"` |
+| Server routes | `server/index.mjs` 30 | `/api/config` says `network: "testnet"`; manifest paths; sign-in texts |
+| Client validators | `src/confirmed-native-transaction.ts` 10, `src/native-objective.ts` 17, `src/types.ts` 5, `src/App.tsx` 24, `NativeStaking.tsx` 5, `NativeTasks.tsx` 4, quotes 6 | types are `network: "testnet"` literals; `.endsWith(".testnet")` checks; explorer URLs |
+| Scripts | `scripts/deploy-*.mjs`, `prove-*.mjs` | `Testnet only.` guards; `https://test.rpc.fastnear.com` |
+| Tests | most native and relayer tests | assert `"testnet"` in responses and messages |
+
+## 3. Design: one network value, everywhere
+
+1. `server/native/network.mjs` exports the resolved network from `NEAR_NETWORK` (`testnet` default, `mainnet`
+   only when explicitly set), the account suffix (`.testnet` / `.near`), the default RPC, the SocialDB contract
+   (`v1.social08.testnet` / `social.near`) and the explorer base URL. Every module imports it; no literal network
+   strings remain in server code except in this module and in tests.
+2. `assertTestnetRpc` becomes `assertNetworkRpc(provider)`: the node's `chain_id` must equal the configured
+   network. Error texts name the configured network.
+3. Manifests move to `public/<name>-<network>.json`; the loader picks the configured network and refuses to start
+   when a required manifest for that network is missing or carries another network.
+4. Key files carry `network`; `loadServiceAccount` requires it to equal the configured network. Managed accounts
+   store the network; the `CHECK` constraint becomes `network IN ('testnet','mainnet')` through a schema
+   module version bump with a recorded `schema-known.json` entry.
+5. `/api/config` and `/api/health` publish `network`. The client reads it once and validates quotes against that
+   value instead of the literal; explorer links and "testnet" copy come from the same value. Player copy never
+   says "testnet" or "mainnet" in the loop; Advanced shows the network name.
+6. Scripts take `--network mainnet` and refuse unless `NEAR_MAINNET_CONFIRM=<account>` matches the operator
+   account in the key file. Journals and manifests are written per network.
+7. Feature flags: `MAINNET_FEATURES=collectibles,relayer,social` enables slices individually. Anything not listed
+   answers "not configured" on mainnet even when a manifest exists.
+
+The refactor is mechanical but wide. Order: server network module and RPC check; readers and quotes; relayer and
+key files; routes and manifests; client validators and copy; scripts; tests updated to run the suite twice
+(testnet default, mainnet with fake providers). Each step keeps the testnet behaviour byte-for-byte.
+
+## 4. Owner prerequisites (not Claude's to do)
+
+- A mainnet operator account with a hardware or well-kept key; separate `questlayer.near`-style factory and
+  relayer sub-accounts; function-call keys for the services, never full-access keys on the VPS.
+- Funding: about 15 NEAR (contract storage, sponsor float, reserve). Keep a written limit.
+- Disclosures: the in-app Advanced page states that mainnet Auras are real tokens with no promised value; the
+  README states which contracts are mainnet and which are testnet; the X post does not claim mainnet features that
+  are flagged off.
+- A pause switch: `DISABLE_RELAYER=1` plus removing the service keys stops all sponsored actions within one worker
+  interval; document the drill in `docs/OWNER-RUNBOOK.md`.
+
+## 5. Go / no-go gate (decide on 9 November)
+
+Go only if all hold: the testnet slice has one week of clean relayer and reward worker health; the collectibles
+contract passed a second read-through by someone who did not write it; the VPS runs the migrated release; the
+owner has the mainnet accounts and funding ready; the refactor in section 3 is merged with the suite green on
+both networks. Otherwise the submission says "mainnet-ready configuration, deployed on testnet", which is honest
+and costs nothing in the games track.

@@ -79,6 +79,11 @@ game/product lane. Codex owns the verification/operations lane. Merge daily into
 | 11–12 | Reconciliation and economy page: aggregate stake, pot funding sources, outlooks; final proofs. | Demo video storyboard and recording support; README "do X, see Y" verified on a fresh clone. | Full regression, fresh-clone verification, device matrix report. |
 | 13 | Freeze, fix, and submit. | | |
 
+Progress, 1 November (evening): creator money publisher and routes live (first round opened from the API process);
+NEAR Social public note records with content addresses, pinning adapter and a live proof from an invisible account;
+the vault's yield cycle is automated in the reward worker (`maintain_vault`: harvest, advance, `flush_game`) and
+waits for the first epochs to pass; the mainnet path is planned in `docs/MAINNET-PLAN.md` with a 9 November gate.
+
 This is aggressive. The items most likely to slip are W10 media pinning and the mainnet path; both can be cut to
 "documented, flagged off" without hurting the core story. The items that must not slip are the live yield cycle,
 the hosted demo, and the end-to-end invisible-account journey on a phone.

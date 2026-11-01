@@ -58,7 +58,8 @@ chain; see `public/native-public-record-proof.json`. The UI is the next step.
 ## Not in scope before the hackathon deadline
 
 NEAR Intents market (W07), AI authoring (W11), iOS store distribution (W12/W14). Mainnet is planned as a minimal
-flagged path (collectibles, relayer, market) at the end of the window. The roadmap (`ROADMAP.md`) keeps the gates.
+flagged path (collectibles, relayer, social) with a 9 November go/no-go gate; see `docs/MAINNET-PLAN.md`. The
+roadmap (`ROADMAP.md`) keeps the gates.
 
 ## Known limitations
 
