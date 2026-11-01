@@ -128,3 +128,7 @@ export const MonsterChallenge = lazyNamed(
   () => import("./MonsterChallenge"),
   "MonsterChallenge",
 );
+export const ActorSheet = lazyNamed(
+  () => import("./ActorSheet"),
+  "ActorSheet",
+);

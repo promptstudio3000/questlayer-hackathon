@@ -13,6 +13,8 @@ import {
   zoneObjectPresentation,
 } from "./game-object-art";
 import type { NearbyExplorer } from "./types";
+import type { ActorView } from "./actor-types";
+import type { ActorsLayer } from "./actors-layer";
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -50,6 +52,9 @@ export type GameMapProps = {
   /** Places creators pinned (visit, trail start, chest); tap opens the quest. */
   creatorPlaces?: CreatorMapPlace[];
   onCreatorPlace?: (questId: string) => void;
+  /** Today's demo world for roaming NPCs and monsters; null hides them. */
+  actorsWorldId?: string | null;
+  onActor?: (actor: ActorView) => void;
 };
 export type CreatorMapPlace = {
   questId: string;
@@ -461,6 +466,40 @@ export function GameMap(props: GameMapProps) {
     });
     return () => markers.forEach((m) => m.remove());
   }, [props.others, ready]);
+  // Roaming NPCs and monsters: a separate chunk, loaded once the map is up.
+  const actorsLayer = useRef<ActorsLayer | null>(null);
+  const actorsEnabled = !!props.onActor && !!props.actorsWorldId;
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !actorsEnabled) return;
+    let gone = false;
+    import("./actors-layer")
+      .then(({ attachActorsLayer }) => {
+        if (gone) return;
+        actorsLayer.current = attachActorsLayer(m, {
+          onSelect: (a) => latest.current.onActor?.(a),
+        });
+        const p = latest.current;
+        actorsLayer.current.update({
+          worldId: p.actorsWorldId || null,
+          position: p.position,
+          visible: !p.globe,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+      actorsLayer.current?.destroy();
+      actorsLayer.current = null;
+    };
+  }, [ready, actorsEnabled]);
+  useEffect(() => {
+    actorsLayer.current?.update({
+      worldId: props.actorsWorldId || null,
+      position: props.position,
+      visible: !props.globe,
+    });
+  }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe]);
   function cameraOffset(): [number, number] {
     if (!phoneLayout()) return [155, 35];
     const box = el.current?.getBoundingClientRect(),

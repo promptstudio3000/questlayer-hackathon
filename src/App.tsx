@@ -24,6 +24,7 @@ import {
   NativeWardrobe,
   NativeProfilePanel,
   preloadPanels,
+  ActorSheet,
 } from "./lazy-panels";
 // Styles of the split-off screens stay in the main stylesheet, in their old
 // order, so nothing shifts while a screen's script is still loading.
@@ -71,6 +72,7 @@ import {
 } from "./native-task-quote";
 import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
+import type { ActorView } from "./actor-types";
 import "./inventory.css";
 import { indexedDbKeyStore } from "./player-key";
 import type { NativeMilestone } from "./NativeLevelRewards";
@@ -307,6 +309,7 @@ export default function App() {
     [presenceUntil, setPresenceUntil] = useState(0),
     [others, setOthers] = useState<NearbyExplorer[]>([]),
     [showNpc, setShowNpc] = useState(false),
+    [actorOpen, setActorOpen] = useState<ActorView | null>(null),
     [now, setNow] = useState(Date.now()),
     [menu, setMenu] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackPreferences>(() =>
@@ -2607,6 +2610,8 @@ export default function App() {
             setSheetExpanded(true);
             setFollow(false);
           }}
+          actorsWorldId={world?.id || null}
+          onActor={setActorOpen}
         />
       ) : (
         // MapLibre and the map style load only after the name step, so the
@@ -4187,6 +4192,18 @@ export default function App() {
             setSheetExpanded(false);
             setFollow(true);
           }}
+        />
+      )}
+      {actorOpen && world && (
+        <ActorSheet
+          actor={actorOpen}
+          worldId={world.id}
+          location={
+            world.arena
+              ? { ...position, accuracy: 0, timestamp: Date.now() }
+              : fix
+          }
+          onClose={() => setActorOpen(null)}
         />
       )}
       {showNpc && (
