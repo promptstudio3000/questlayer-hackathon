@@ -412,6 +412,36 @@
       }
     },
     {
+      "name": "moderation",
+      "version": 1,
+      "source": "server/moderation.mjs",
+      "tables": {
+        "moderation_audit": "CREATE TABLE moderation_audit(\n seq INTEGER PRIMARY KEY,\n id TEXT NOT NULL UNIQUE,\n operator TEXT NOT NULL,\n kind TEXT NOT NULL,\n target_id TEXT NOT NULL,\n action TEXT NOT NULL,\n reason TEXT NOT NULL,\n before_state TEXT NOT NULL,\n after_state TEXT NOT NULL,\n reports TEXT NOT NULL CHECK(json_valid(reports)),\n created_at INTEGER NOT NULL,\n prev_hash TEXT NOT NULL,\n hash TEXT NOT NULL\n)",
+        "moderation_reports": "CREATE TABLE moderation_reports(\n id TEXT PRIMARY KEY,\n kind TEXT NOT NULL CHECK(kind IN ('record','evidence')),\n target_id TEXT NOT NULL,\n reporter_id TEXT NOT NULL,\n reason TEXT NOT NULL,\n detail TEXT NOT NULL,\n state TEXT NOT NULL CHECK(state IN ('open','resolved')),\n created_at INTEGER NOT NULL,\n resolved_at INTEGER,\n UNIQUE(kind,target_id,reporter_id)\n)",
+        "moderation_suppressions": "CREATE TABLE moderation_suppressions(\n kind TEXT NOT NULL CHECK(kind IN ('note','record','quest','evidence')),\n target_id TEXT NOT NULL,\n state TEXT NOT NULL CHECK(state IN ('hidden','tombstoned')),\n reason TEXT NOT NULL,\n operator TEXT NOT NULL,\n updated_at INTEGER NOT NULL,\n PRIMARY KEY(kind,target_id)\n)"
+      },
+      "indexes": {
+        "moderation_reports_queue": "CREATE INDEX IF NOT EXISTS moderation_reports_queue ON moderation_reports(state,created_at,id)",
+        "moderation_reports_rate": "CREATE INDEX IF NOT EXISTS moderation_reports_rate ON moderation_reports(reporter_id,created_at)",
+        "moderation_audit_target": "CREATE INDEX IF NOT EXISTS moderation_audit_target ON moderation_audit(kind,target_id,seq)"
+      }
+    },
+    {
+      "name": "task-evidence",
+      "version": 1,
+      "source": "server/task-evidence.mjs",
+      "tables": {
+        "task_evidence_photos": "CREATE TABLE task_evidence_photos(\n id TEXT PRIMARY KEY,\n player_id TEXT NOT NULL,\n account_id TEXT NOT NULL,\n task_id INTEGER NOT NULL CHECK(task_id>0),\n sha256 TEXT NOT NULL,\n bytes INTEGER NOT NULL CHECK(bytes>0),\n state TEXT NOT NULL CHECK(state IN ('staged','committed','withheld','deleted','expired','erased')),\n submission_id INTEGER,\n created_at INTEGER NOT NULL,\n committed_at INTEGER,\n expires_at INTEGER NOT NULL,\n closed_at INTEGER,\n close_reason TEXT\n)",
+        "task_evidence_views": "CREATE TABLE task_evidence_views(\n photo_id TEXT NOT NULL REFERENCES task_evidence_photos(id),\n viewer_player TEXT NOT NULL,\n viewer_account TEXT NOT NULL,\n role TEXT NOT NULL,\n viewed_at INTEGER NOT NULL\n)"
+      },
+      "indexes": {
+        "task_evidence_photos_rate": "CREATE INDEX IF NOT EXISTS task_evidence_photos_rate ON task_evidence_photos(player_id,created_at)",
+        "task_evidence_photos_task": "CREATE INDEX IF NOT EXISTS task_evidence_photos_task ON task_evidence_photos(task_id,account_id,state)",
+        "task_evidence_photos_expiry": "CREATE INDEX IF NOT EXISTS task_evidence_photos_expiry ON task_evidence_photos(state,expires_at)",
+        "task_evidence_views_photo": "CREATE INDEX IF NOT EXISTS task_evidence_views_photo ON task_evidence_views(photo_id,viewed_at)"
+      }
+    },
+    {
       "name": "world-operator-controls",
       "version": 1,
       "source": "server/operator/world-controls.mjs",

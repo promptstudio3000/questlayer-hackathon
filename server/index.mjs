@@ -4,6 +4,8 @@ import { createCreatorRuntime } from "./creators/runtime.mjs";
 import { createAdventureResults } from "./adventure-results.mjs";
 import { recordSchemaVersions, schemaStatus } from "./schema-compatibility.mjs";
 import { NoteMedia } from "./note-media.mjs";
+import { TaskEvidence, evidenceTaskView } from "./task-evidence.mjs";
+import { Moderation } from "./moderation.mjs";
 import { SocialContent, isSocialBlocked } from "./social-content.mjs";
 import { NativeProgression } from "./native/progression.mjs";
 import { NativeTasks, TASK_CONTRACT } from "./native/tasks.mjs";
@@ -112,6 +114,10 @@ const db = openDatabase();
 const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
 const noteMedia = new NoteMedia();
+// Private sponsored-task photos and the shared report intake. Operator
+// decisions are made only through server/cli/moderate.mjs.
+const taskEvidence = new TaskEvidence(db);
+const moderation = new Moderation(db, { evidence: taskEvidence });
 const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
@@ -1021,6 +1027,138 @@ async function api(req, res, url) {
       );
       return respond(res, result);
     }
+  }
+  if (path.startsWith("/api/native/tasks/evidence")) {
+    const key = `task-evidence:${player}:${Math.floor(Date.now() / 60000)}`;
+    const count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(count <= 60, "Please wait before loading more photo evidence.", 429);
+    const evidenceTask = async (rawAccount, rawTaskId, fresh = false) => {
+      const accountId = nearAccountId(rawAccount);
+      assert(
+        linkedAccount(player, accountId),
+        "Link this wallet before using photo evidence.",
+        403,
+      );
+      const taskId = Number(rawTaskId);
+      assert(
+        Number.isSafeInteger(taskId) && taskId >= 1 && taskId <= 128,
+        "Choose a valid task.",
+      );
+      const snapshot = await nativeTasks.snapshot(
+        player,
+        accountId,
+        fresh,
+        taskId,
+      );
+      return {
+        accountId,
+        task: evidenceTaskView(
+          snapshot,
+          taskId,
+          nativeTasks.configuration().arbiterId,
+        ),
+      };
+    };
+    if (path === "/api/native/tasks/evidence" && method === "POST") {
+      const input = await body(req);
+      const { accountId, task } = await evidenceTask(
+        input.accountId,
+        input.taskId,
+        true,
+      );
+      const photo = await taskEvidence.upload(
+        player,
+        accountId,
+        task,
+        input.image,
+      );
+      assert(auth(req) === player, "Please sign in again.", 401);
+      return respond(res, photo, 201);
+    }
+    if (path === "/api/native/tasks/evidence" && method === "GET") {
+      const { accountId, task } = await evidenceTask(
+        url.searchParams.get("accountId"),
+        url.searchParams.get("taskId"),
+      );
+      return respond(res, taskEvidence.list(player, accountId, task));
+    }
+    const photoAction = path.match(
+      /^\/api\/native\/tasks\/evidence\/(evidence_[a-f0-9-]{36})(?:\/(report))?$/,
+    );
+    assert(photoAction, "Not found", 404);
+    const photoId = photoAction[1];
+    if (!photoAction[2] && method === "DELETE") {
+      await body(req);
+      assert(auth(req) === player, "Please sign in again.", 401);
+      return respond(res, taskEvidence.remove(player, photoId));
+    }
+    if (!photoAction[2] && method === "GET") {
+      const owned = taskEvidence.row(photoId).player_id === player;
+      const context = owned
+        ? { accountId: "", task: null }
+        : await evidenceTask(
+            url.searchParams.get("accountId"),
+            url.searchParams.get("taskId"),
+          );
+      const opened = taskEvidence.open(
+        player,
+        context.accountId,
+        photoId,
+        context.task,
+      );
+      res.writeHead(200, {
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "private,no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "no-referrer",
+        "Content-Disposition": "inline",
+        "Cross-Origin-Resource-Policy": "same-origin",
+      });
+      return createReadStream(opened.path).pipe(res);
+    }
+    if (photoAction[2] === "report" && method === "POST") {
+      const input = await body(req);
+      const { accountId, task } = await evidenceTask(
+        input.accountId,
+        input.taskId,
+      );
+      assert(auth(req) === player, "Please sign in again.", 401);
+      return respond(
+        res,
+        moderation.report(
+          player,
+          {
+            kind: "evidence",
+            targetId: photoId,
+            reason: input.reason,
+            detail: input.detail,
+          },
+          {
+            canSee: () => {
+              const row = taskEvidence.row(photoId);
+              const role = taskEvidence.role(player, accountId, row, task);
+              return role === "sponsor" || role === "arbiter";
+            },
+          },
+        ),
+      );
+    }
+    assert(false, "Not found", 404);
+  }
+  if (path === "/api/moderation/reports" && method === "POST") {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    assert(input.kind === "record", "Report notes from the note itself.");
+    return respond(
+      res,
+      moderation.report(player, {
+        kind: "record",
+        targetId: input.targetId,
+        reason: input.reason,
+        detail: input.detail,
+      }),
+    );
   }
   if (
     [
@@ -2225,6 +2363,7 @@ const maintenance = setInterval(() => {
     if (rates.size > 1000) rates.clear();
     if (Date.now() >= nextMediaPrune) {
       noteMedia.prune(db);
+      taskEvidence.prune();
       nextMediaPrune = Date.now() + 3600000;
     }
   } catch (e) {

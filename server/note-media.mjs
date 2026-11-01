@@ -80,65 +80,75 @@ export class NoteMedia {
   }
   async store(data) {
     if (data === null || data === undefined) return null;
+    const clean = await sanitizeImage(data, this, {
+      busy: "Image processing is busy. Please retry this note shortly.",
+    });
+    mkdirSync(this.directory, { recursive: true, mode: 0o700 });
+    const url = `/api/media/${id("image")}.jpg`;
+    writeFileSync(this.file(url), clean, { mode: 0o600, flag: "wx" });
+    return url;
+  }
+}
+
+// Shared decoder for every user-supplied photo (public notes and private task
+// evidence): bounded input, still images only, re-encoded JPEG without the
+// original EXIF/GPS metadata. `gate.active` caps concurrent decodes per owner.
+export async function sanitizeImage(data, gate, { busy } = {}) {
+  assert(
+    typeof data === "string" && data.length <= 1_333_370,
+    "Use an image smaller than 1 MB.",
+    413,
+  );
+  const match = data.match(
+    /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/,
+  );
+  assert(match && match[2].length % 4 === 0, "Use a JPG, PNG or WebP image.");
+  const bytes = Buffer.from(match[2], "base64");
+  assert(
+    bytes.length > 0 && bytes.length <= 1_000_000,
+    "Use an image smaller than 1 MB.",
+    413,
+  );
+  assert(
+    bytes.toString("base64") === match[2],
+    "The image encoding is invalid.",
+  );
+  assert(
+    gate.active < 2,
+    busy || "Image processing is busy. Please retry shortly.",
+    503,
+  );
+  gate.active++;
+  try {
+    const pipeline = sharp(bytes, {
+      limitInputPixels: 16_000_000,
+      failOn: "warning",
+    });
+    const meta = await pipeline.metadata();
     assert(
-      typeof data === "string" && data.length <= 1_333_370,
-      "Use an image smaller than 1 MB.",
-      413,
+      meta.format === match[1] && (meta.pages ?? 1) === 1,
+      "Use a still JPG, PNG or WebP image.",
     );
-    const match = data.match(
-      /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/,
-    );
-    assert(match && match[2].length % 4 === 0, "Use a JPG, PNG or WebP image.");
-    const bytes = Buffer.from(match[2], "base64");
+    // Sharp strips EXIF/GPS and other original metadata unless explicitly retained.
+    const clean = await pipeline
+      .rotate()
+      .resize({
+        width: 1024,
+        height: 1024,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: 78 })
+      .toBuffer();
+    assert(clean.length < 400_000, "The processed image is too large.", 413);
+    return clean;
+  } catch (error) {
+    if (error.status) throw error;
     assert(
-      bytes.length > 0 && bytes.length <= 1_000_000,
-      "Use an image smaller than 1 MB.",
-      413,
+      false,
+      "This image could not be read. Choose another JPG, PNG or WebP image.",
     );
-    assert(
-      bytes.toString("base64") === match[2],
-      "The image encoding is invalid.",
-    );
-    assert(
-      this.active < 2,
-      "Image processing is busy. Please retry this note shortly.",
-      503,
-    );
-    this.active++;
-    try {
-      const pipeline = sharp(bytes, {
-        limitInputPixels: 16_000_000,
-        failOn: "warning",
-      });
-      const meta = await pipeline.metadata();
-      assert(
-        meta.format === match[1] && (meta.pages ?? 1) === 1,
-        "Use a still JPG, PNG or WebP image.",
-      );
-      // Sharp strips EXIF/GPS and other original metadata unless explicitly retained.
-      const clean = await pipeline
-        .rotate()
-        .resize({
-          width: 1024,
-          height: 1024,
-          fit: "inside",
-          withoutEnlargement: true,
-        })
-        .jpeg({ quality: 78 })
-        .toBuffer();
-      assert(clean.length < 400_000, "The processed image is too large.", 413);
-      mkdirSync(this.directory, { recursive: true, mode: 0o700 });
-      const url = `/api/media/${id("image")}.jpg`;
-      writeFileSync(this.file(url), clean, { mode: 0o600, flag: "wx" });
-      return url;
-    } catch (error) {
-      if (error.status) throw error;
-      assert(
-        false,
-        "This image could not be read. Choose another JPG, PNG or WebP image.",
-      );
-    } finally {
-      this.active--;
-    }
+  } finally {
+    gate.active--;
   }
 }
