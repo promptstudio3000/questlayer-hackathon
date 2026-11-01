@@ -410,6 +410,17 @@
       "indexes": {
         "social_record_publications_note": "CREATE INDEX IF NOT EXISTS social_record_publications_note ON social_record_publications(note_id,state,prepared_at)"
       }
+    },
+    {
+      "name": "world-operator-controls",
+      "version": 1,
+      "source": "server/operator/world-controls.mjs",
+      "tables": {
+        "world_day_adjustments": "CREATE TABLE world_day_adjustments(city_id TEXT NOT NULL,day TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('active','cleared')),version INTEGER NOT NULL CHECK(version>0),body TEXT NOT NULL CHECK(json_valid(body)),reason TEXT NOT NULL,actor TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(city_id,day))",
+        "world_operator_audit": "CREATE TABLE world_operator_audit(seq INTEGER PRIMARY KEY,actor TEXT NOT NULL,operation_id TEXT NOT NULL,kind TEXT NOT NULL,digest TEXT NOT NULL,receipt TEXT NOT NULL CHECK(json_valid(receipt)),created_at INTEGER NOT NULL,UNIQUE(actor,operation_id))",
+        "world_pauses": "CREATE TABLE world_pauses(city_id TEXT NOT NULL,day TEXT NOT NULL,scope TEXT NOT NULL CHECK(scope='day' OR scope GLOB 'zone:[0-9]'),state TEXT NOT NULL CHECK(state IN('paused','active')),version INTEGER NOT NULL CHECK(version>0),reason TEXT NOT NULL,actor TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(city_id,day,scope))"
+      },
+      "indexes": {}
     }
   ]
 }

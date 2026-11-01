@@ -23,6 +23,11 @@ import {
   assertNativePlaceOpen,
   closedPlaces,
 } from "../spatial/place-safety.mjs";
+import {
+  assertWorldActive,
+  pauseFor,
+  pauseState,
+} from "../operator/world-controls.mjs";
 export class NativeRewards extends NativeContractReader {
   constructor(
     db,
@@ -205,6 +210,13 @@ export class NativeRewards extends NativeContractReader {
         m,
         kind === "quest" ? index : null,
         target,
+      );
+      // Native days always carry six zones in slot order, so index is the slot.
+      assertWorldActive(
+        this.db,
+        m.cityId,
+        m.day,
+        kind === "quest" ? index : null,
       );
       const pending = this.db
         .prepare(
@@ -410,7 +422,9 @@ export class NativeRewards extends NativeContractReader {
         : [];
     if (location) point(location);
     const safety = m ? closedPlaces(this.db, m.cityId) : [];
+    const paused = m ? pauseState(this.db, m.cityId, m.day) : null;
     const discoveryOpen = (index, p) => {
+      if (paused && pauseFor(paused, index)) return false;
       if (!safety.length) return true;
       try {
         assertNativePlaceOpen(this.db, m, index, p);
