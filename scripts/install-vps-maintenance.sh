@@ -4,7 +4,7 @@ cd "$(dirname "$0")/.."
 HOST_TARGET="${DEPLOY_HOST:-root@72.61.188.39}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 ARCHIVE="/tmp/questlayer-maintenance-$STAMP.tgz"
-COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE" deploy/backup-state.py deploy/questlayer-state-backup.service deploy/questlayer-state-backup.timer
+COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE" deploy/backup-state.py deploy/questlayer-state-backup.service deploy/questlayer-state-backup.timer deploy/questlayer-mainnet-state-backup.service deploy/questlayer-mainnet-state-backup.timer
 scp -o BatchMode=yes -o ConnectTimeout=15 "$ARCHIVE" "$HOST_TARGET:/tmp/questlayer-maintenance-$STAMP.tgz"
 ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST_TARGET" bash -s -- "$STAMP" <<'REMOTE'
 set -Eeuo pipefail
@@ -15,7 +15,7 @@ BACKUP="$APP/backups/maintenance-$STAMP"
 mkdir -p "$OPERATIONS" "$BACKUP" "$APP/state-backups"
 chmod 755 "$OPERATIONS"
 chmod 700 "$BACKUP" "$APP/state-backups"
-for unit in questlayer-state-backup.service questlayer-state-backup.timer; do
+for unit in questlayer-state-backup.service questlayer-state-backup.timer questlayer-mainnet-state-backup.service questlayer-mainnet-state-backup.timer; do
  if [[ -f "/etc/systemd/system/$unit" ]]; then
   grep -q 'Description=QuestLayer' "/etc/systemd/system/$unit"
   cp -a "/etc/systemd/system/$unit" "$BACKUP/$unit"
@@ -32,5 +32,19 @@ systemctl start questlayer-state-backup.service
 systemctl enable --now questlayer-state-backup.timer
 systemctl show questlayer-state-backup.service --property=Result --property=ExecMainStatus
 systemctl list-timers questlayer-state-backup.timer --no-pager
+# Mainnet slice snapshots (docs/OWNER-RUNBOOK.md §7): installed always, enabled
+# once the mainnet service has created its database. Re-run after its first deploy.
+install -m 644 "$BACKUP/deploy/questlayer-mainnet-state-backup.service" /etc/systemd/system/questlayer-mainnet-state-backup.service
+install -m 644 "$BACKUP/deploy/questlayer-mainnet-state-backup.timer" /etc/systemd/system/questlayer-mainnet-state-backup.timer
+systemd-analyze verify /etc/systemd/system/questlayer-mainnet-state-backup.service /etc/systemd/system/questlayer-mainnet-state-backup.timer
+systemctl daemon-reload
+if [[ -f /var/lib/questlayer-mainnet/questlayer-mainnet.sqlite ]]; then
+ install -d -m 700 /opt/ps3000/apps/questlayer-mainnet/state-backups
+ systemctl start questlayer-mainnet-state-backup.service
+ systemctl enable --now questlayer-mainnet-state-backup.timer
+ systemctl list-timers questlayer-mainnet-state-backup.timer --no-pager
+else
+ echo "Mainnet database not present yet; mainnet snapshot timer installed but not enabled."
+fi
 REMOTE
 rm -f "$ARCHIVE"

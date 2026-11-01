@@ -6,8 +6,7 @@
 //     NEAR_NETWORK=mainnet NEAR_MAINNET_CONFIRM=<operator>.near \
 //       NEAR_OPERATOR_PATH=.data/near-operator-mainnet.json \
 //       AWARD_SIGNER_PATH=.data/award-attestor-mainnet.pem \
-//       COLLECTIBLES_WASM_SHA256=<reviewed sha256> \
-//       COLLECTIBLES_FUND_NEAR=3 PLAYER_FACTORY_FUND_NEAR=5 RELAYER_FUND_NEAR=5 \
+//       COLLECTIBLES_FUND_NEAR=4.5 PLAYER_FACTORY_FUND_NEAR=5 RELAYER_FUND_NEAR=5 \
 //       node scripts/deploy-mainnet-slice.mjs --network mainnet
 //   Execute: the same command with --execute. Re-running is safe: finished steps
 //   are checked and skipped, and a mismatch stops the run.
@@ -121,10 +120,22 @@ if (!existsSync(wasmPath))
     `${wasmPath} is missing; run bash scripts/build-contracts.sh first.`,
   );
 const wasm = readFileSync(wasmPath);
+// The reviewed build's fingerprint is recorded in the repository
+// (contracts/collectibles/WASM_SHA256, docs/COLLECTIBLES-REVIEW.md); the env
+// value, when given, must agree with it.
+const recordedPath = "contracts/collectibles/WASM_SHA256";
+const recorded = existsSync(recordedPath)
+  ? readFileSync(recordedPath, "utf8").trim().split(/\s+/)[0]
+  : undefined;
+const reviewedEnv = process.env.COLLECTIBLES_WASM_SHA256;
+if (recorded && reviewedEnv && reviewedEnv.toLowerCase() !== recorded)
+  throw new Error(
+    `COLLECTIBLES_WASM_SHA256 differs from ${recordedPath} (${recorded}).`,
+  );
 const plan = slicePlan({
   network,
   operatorId: operator.accountId,
-  env: process.env,
+  env: { ...process.env, COLLECTIBLES_WASM_SHA256: reviewedEnv || recorded },
   wasm,
   awardPublicKey: awardPublicKey(),
   stamp: new Date().toISOString().slice(0, 10).replaceAll("-", ""),

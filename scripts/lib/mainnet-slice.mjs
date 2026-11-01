@@ -81,6 +81,11 @@ const TESTNET_FUNDS = {
   PLAYER_FACTORY_FUND_NEAR: "20",
   RELAYER_FUND_NEAR: "5",
 };
+// NEAR storage staking: 1e19 yocto per byte. The contract account must hold its
+// code plus initial state, so its funding has to cover the WASM size and a
+// margin, or create+deploy+init fails with LackBalanceForState.
+export const STORAGE_YOCTO_PER_BYTE = 10n ** 19n;
+export const COLLECTIBLES_STATE_MARGIN = NEAR / 2n;
 // Spare balance the operator must keep after the run (gas, later upgrades).
 const OPERATOR_RESERVE = NEAR;
 
@@ -115,6 +120,13 @@ export function slicePlan({
     refuse(
       `The collectibles WASM sha256 is ${wasmSha256}, not the reviewed ${reviewed}.`,
     );
+  const minimumFund =
+    BigInt(wasm.length) * STORAGE_YOCTO_PER_BYTE + COLLECTIBLES_STATE_MARGIN;
+  const collectiblesFund = fund("COLLECTIBLES_FUND_NEAR");
+  if (collectiblesFund < minimumFund)
+    refuse(
+      `COLLECTIBLES_FUND_NEAR must be at least ${formatNear(minimumFund)} NEAR for ${wasm.length} bytes of code plus state.`,
+    );
   const suffix = `.${operatorId}`;
   const named = (key, fallback) => {
     const id = env[key] || fallback;
@@ -127,7 +139,7 @@ export function slicePlan({
     operator: operatorId,
     collectibles: {
       accountId: named("COLLECTIBLES_ACCOUNT", `nfts${suffix}`),
-      fund: fund("COLLECTIBLES_FUND_NEAR"),
+      fund: collectiblesFund,
       codeHash: codeHash(wasm),
       wasmSha256,
       wasmBytes: wasm.length,

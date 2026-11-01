@@ -160,3 +160,43 @@ test("native attestor and scoped worker key are included privately without becom
   for (const name of metadata.nativeServiceKeysIncluded)
     assert.equal(statSync(join(f.destination, folder, name)).mode & 0o077, 0);
 });
+
+test("the mainnet slice database is snapshotted by name and other names are refused", (t) => {
+  const directory = mkdtempSync(join(tmpdir(), "questlayer-backup-mainnet-")),
+    state = join(directory, "state"),
+    destination = join(directory, "snapshots");
+  mkdirSync(state);
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const database = new DatabaseSync(join(state, "questlayer-mainnet.sqlite"));
+  database.exec(
+    "CREATE TABLE sample(id INTEGER PRIMARY KEY);INSERT INTO sample VALUES(1);",
+  );
+  database.close();
+  const run = (name) =>
+    execFileSync(
+      "python3",
+      [
+        script,
+        "--state",
+        state,
+        "--database-name",
+        name,
+        "--destination",
+        destination,
+      ],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+  const report = JSON.parse(run("questlayer-mainnet.sqlite"));
+  assert.equal(report.integrity, "ok");
+  const copy = new DatabaseSync(
+    join(destination, report.snapshotId, "database.sqlite"),
+  );
+  assert.equal(copy.prepare("SELECT COUNT(*) AS n FROM sample").get().n, 1);
+  copy.close();
+  assert.throws(() => run("../elsewhere.sqlite"), /Unknown state database/);
+  // Without the name the testnet default is expected and absent here.
+  assert.throws(
+    () => run("questlayer-hackathon.sqlite"),
+    /regular state database/,
+  );
+});
