@@ -711,3 +711,42 @@ test("vault v2 partial exit and contribution change confirm only on a v2 positio
     f.db.close();
   }
 });
+
+test("signed-order market calls confirm with exact terms and each method's own result", async () => {
+  const market = marketManifest.marketContract;
+  const order = (kind, price = "1000000000000000000000") => ({
+    message: JSON.stringify({ standard: "questlayer_aura_order", version: 1, kind, network: "testnet", market, nft_contract: claimsManifest.contractId, maker: "bob.testnet", token_id: "aura:polar:1", price, deadline_ms: "1", epoch: 0 }),
+    nonce: "A".repeat(44),
+    recipient: market,
+    callback_url: null,
+    public_key: "ed25519:" + "1".repeat(43),
+    signature: "S".repeat(88),
+  });
+  const cases = [
+    [{ methodName: "add_signing_key", args: { public_key: "ed25519:" + "2".repeat(43) }, deposit: "1" }, ""],
+    [{ methodName: "cancel_order", args: { order: order("sell") }, deposit: "1" }, ""],
+    [{ methodName: "cancel_all_orders", args: {}, deposit: "1" }, encode(3)],
+    [{ methodName: "deposit_near", args: {}, deposit: "2000000000000000000000" }, encode("2000000000000000000000")],
+    [{ methodName: "fill_sell_order", args: { order: order("sell") }, deposit: "1000000000000000000000" }, encode(true)],
+    [{ methodName: "fill_buy_order", args: { order: order("buy") }, deposit: "1" }, encode(true)],
+  ];
+  for (const [input, value] of cases) {
+    const f = fixture({ receiverId: market, gas: "150000000000000", ...input });
+    f.result.status.SuccessValue = value;
+    assert.equal((await f.confirm()).confirmed, true, input.methodName);
+    f.db.close();
+  }
+  for (const input of [
+    { methodName: "fill_sell_order", args: { order: order("sell") }, deposit: "999" },
+    { methodName: "fill_buy_order", args: { order: order("sell") }, deposit: "1" },
+    { methodName: "cancel_order", args: { order: { ...order("sell"), recipient: "intents.near" } }, deposit: "1" },
+    { methodName: "deposit_near", args: {}, deposit: "1" },
+  ]) {
+    const f = fixture({ receiverId: market, gas: "150000000000000", ...input });
+    await assert.rejects(f.confirm(), /Invalid/, input.methodName);
+    f.db.close();
+  }
+  const f = fixture({ receiverId: market, gas: "150000000000000", methodName: "fill_sell_order", args: { order: order("sell") }, deposit: "1000000000000000000000" });
+  f.result.status.SuccessValue = encode(false);
+  await assert.rejects(f.confirm(), /did not complete/);
+});

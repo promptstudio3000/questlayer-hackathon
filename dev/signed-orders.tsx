@@ -1,12 +1,13 @@
 // Browser fixture for the signed-offer UI inside the real NativeMarketPanel.
 // Requests are answered in memory and market calls never sign or send a
 // transaction; orders are signed with a throwaway in-memory key.
-// ?state=off | on | empty
+// ?state=off | on | empty | wallet
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { KeyPair } from "near-api-js";
 import { NativeMarketPanel } from "../src/NativeMarketPanel";
 import { orderTerms, signOrder } from "../src/signed-order";
+import { deviceOrderSigner, walletOrderSigner } from "../src/order-signers";
 import type { PlayerKeyRecord } from "../src/player-key";
 import type { NativeWardrobeState, Player } from "../src/types";
 import "../src/style.css";
@@ -31,11 +32,12 @@ const relayed = scenario === "empty" ? [] : [
   { id: "b", terms: orderTerms({ kind: "buy", market, nftContract: nfts, maker: other, tokenId: "aura:polar:4", price: "1200000000000000000000000", deadlineMs: Date.now() + 50 * 60000, epoch: 0 }), fillable: true },
 ];
 const orders = await Promise.all(relayed.map(async (o) => ({ ...o, order: await signOrder(otherKey, o.terms) })));
-let registered = scenario !== "off";
+let registered = scenario !== "off" && scenario !== "wallet";
 const json = (body: unknown) => new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" } });
 window.fetch = async (input: RequestInfo | URL) => {
   const url = String(input);
-  if (url.startsWith("/api/native/market/orders/status")) return json({ statuses: [{ valid: true }, { valid: false, reason: "Order expired" }] });
+  if (url.startsWith("/api/native/market/orders/status")) return json({ statuses: [{ state: "open" }, { state: "expired" }] });
+  if (url.startsWith("/api/native/market/orders/events")) return json({ events: 1, applied: 1 });
   if (url.startsWith("/api/native/market/orders")) return json({ orders });
   if (url.startsWith("/api/native/market/signer")) return json({ keys: registered ? [key.publicKey] : [], epoch: 0 });
   if (url.startsWith("/api/native/market/accounts")) return json({ accounts: [{ accountId: me, credit: "500000000000000000000000", withdrawing: "0", listed: 1, buying: 0 }] });
@@ -43,6 +45,7 @@ window.fetch = async (input: RequestInfo | URL) => {
     return json({ status: "available", network: "testnet", marketContract: market, nftContract: nfts, stats: { version: 2, paused: false, listing_count: listings.length, funded: "0", escrow: "0", credits: "0", withdrawing: "0", withdrawn: "0" }, listings, token: null, truncated: false, fromIndex: 0 });
   return json({});
 };
+try { localStorage.removeItem(`questlayer-order-key:${me}`); } catch {}
 if (scenario === "on") {
   const mine = await signOrder(key, orderTerms({ kind: "sell", market, nftContract: nfts, maker: me, tokenId: "aura:polar:4", price: "3000000000000000000000000", deadlineMs: later, epoch: 0 }));
   const old = await signOrder(key, orderTerms({ kind: "buy", market, nftContract: nfts, maker: me, tokenId: "aura:moon:12", price: "900000000000000000000000", deadlineMs: Date.now() + 60000, epoch: 0 }));
@@ -54,6 +57,26 @@ if (scenario === "on") {
 
 function Review() {
   const [log, setLog] = useState("Fixture: market calls are recorded here and never sent.");
+  const record = async (c: { methodName: string; deposit: string }) => {
+    setLog(`Recorded ${c.methodName} (deposit ${c.deposit} yocto). Not sent.`);
+    if (c.methodName === "add_signing_key") registered = true;
+    return "1".repeat(44);
+  };
+  // The wallet scenario stands in for a NEAR wallet's signMessage with the
+  // same NEP-413 bytes; a real wallet shows its own approval screen.
+  const fakeWallet = {
+    signMessage: async (p: { message: string; recipient: string; nonce: Uint8Array }) => {
+      setLog("Wallet approval requested for a signed message (fixture approves).");
+      const signed = pair;
+      const { KeyPairSigner } = await import("near-api-js");
+      const out = await new KeyPairSigner(signed).signNep413Message(me, p);
+      let b = ""; for (const x of out.signature) b += String.fromCharCode(x);
+      return { accountId: me, publicKey: out.publicKey.toString(), signature: btoa(b) };
+    },
+  };
+  const signer = scenario === "wallet"
+    ? walletOrderSigner(me, async () => fakeWallet, record)
+    : deviceOrderSigner(key, record);
   const player = { wallets: [{ account_id: me }], nativeAccount: me } as Player;
   const wardrobe = { contractId: nfts, accounts: [{ accountId: me, items: [{ ...token("aura:gold:2", "Gilded Ember Aura"), ownerId: me }] }] } as NativeWardrobeState;
   return (
@@ -66,12 +89,7 @@ function Review() {
         busy=""
         onConnect={async () => {}}
         onTrade={async () => false}
-        deviceKey={key}
-        onMarketCall={async (c) => {
-          setLog(`Recorded ${c.methodName} (deposit ${c.deposit} yocto). Not sent.`);
-          if (c.methodName === "add_signing_key") registered = true;
-          return true;
-        }}
+        orderSigner={signer}
       />
     </main>
   );

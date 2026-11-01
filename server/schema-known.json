@@ -451,6 +451,21 @@
         "world_pauses": "CREATE TABLE world_pauses(city_id TEXT NOT NULL,day TEXT NOT NULL,scope TEXT NOT NULL CHECK(scope='day' OR scope GLOB 'zone:[0-9]'),state TEXT NOT NULL CHECK(state IN('paused','active')),version INTEGER NOT NULL CHECK(version>0),reason TEXT NOT NULL,actor TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(city_id,day,scope))"
       },
       "indexes": {}
+    },
+    {
+      "name": "signed-market-orders",
+      "version": 1,
+      "source": "server/native/order-index.mjs",
+      "tables": {
+        "signed_market_order_cursor": "CREATE TABLE signed_market_order_cursor(\n market TEXT PRIMARY KEY,\n relay_seq INTEGER NOT NULL DEFAULT 0\n)",
+        "signed_market_order_events": "CREATE TABLE signed_market_order_events(\n tx_hash TEXT NOT NULL,\n seq INTEGER NOT NULL,\n market TEXT NOT NULL,\n event TEXT NOT NULL,\n data TEXT NOT NULL CHECK(json_valid(data)),\n recorded_at INTEGER NOT NULL,\n PRIMARY KEY(tx_hash,seq)\n)",
+        "signed_market_orders": "CREATE TABLE signed_market_orders(\n id TEXT PRIMARY KEY,\n market TEXT NOT NULL,\n maker TEXT NOT NULL,\n nonce TEXT NOT NULL,\n kind TEXT NOT NULL CHECK(kind IN ('sell','buy')),\n token_id TEXT NOT NULL,\n price TEXT NOT NULL CHECK(price GLOB '[0-9]*'),\n deadline_ms INTEGER NOT NULL,\n epoch INTEGER NOT NULL,\n signed_order TEXT NOT NULL CHECK(json_valid(signed_order)),\n state TEXT NOT NULL CHECK(state IN ('open','filled','cancelled','expired','rejected')),\n reason TEXT,\n fillable INTEGER NOT NULL DEFAULT 0 CHECK(fillable IN (0,1)),\n settlement_tx TEXT,\n received_at INTEGER NOT NULL,\n checked_at INTEGER NOT NULL,\n closed_at INTEGER\n)"
+      },
+      "indexes": {
+        "signed_market_orders_open": "CREATE INDEX IF NOT EXISTS signed_market_orders_open ON signed_market_orders(market,state,token_id)",
+        "signed_market_orders_maker": "CREATE INDEX IF NOT EXISTS signed_market_orders_maker ON signed_market_orders(maker,received_at DESC)",
+        "signed_market_orders_checked": "CREATE INDEX IF NOT EXISTS signed_market_orders_checked ON signed_market_orders(state,checked_at)"
+      }
     }
   ]
 }

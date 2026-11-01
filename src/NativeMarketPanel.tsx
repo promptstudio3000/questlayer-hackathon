@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { AuraArt } from "./Ghost";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
-import type { PlayerKeyRecord } from "./player-key";
-import { SignedOrdersPanel, type MarketCall } from "./SignedOrdersPanel";
+import type { OrderSigner } from "./order-signers";
+import { SignedOrdersPanel } from "./SignedOrdersPanel";
 import type {
   Player,
   NativeWardrobeState,
@@ -18,16 +18,14 @@ export function NativeMarketPanel({
   busy,
   onConnect,
   onTrade,
-  deviceKey = null,
-  onMarketCall,
+  orderSigner = null,
 }: {
   player: Player;
   wardrobe: NativeWardrobeState | null;
   busy: string;
   onConnect: () => Promise<void>;
   onTrade: (request: NativeTradeRequest) => Promise<boolean>;
-  deviceKey?: PlayerKeyRecord | null;
-  onMarketCall?: (call: MarketCall) => Promise<boolean>;
+  orderSigner?: OrderSigner | null;
 }) {
   const [data, setData] = useState<NativeMarketState | null>(null),
     [balances, setBalances] = useState<NativeMarketBalance[]>([]),
@@ -403,24 +401,20 @@ export function NativeMarketPanel({
               ))}
             </div>
           )}
-          {onMarketCall && (
-            <SignedOrdersPanel
-              data={data}
-              accountId={deviceKey?.accountId ?? null}
-              deviceKey={deviceKey}
-              owned={
-                wardrobe?.accounts
-                  .find((a) => a.accountId === deviceKey?.accountId)
-                  ?.items.filter((i) => i.kind === "aura") || []
-              }
-              balance={balances.find(
-                (a) => a.accountId === deviceKey?.accountId,
-              )}
-              busy={busy}
-              onCall={onMarketCall}
-              onChanged={async () => (await load(true)).state}
-            />
-          )}
+          <SignedOrdersPanel
+            data={data}
+            signer={orderSigner}
+            owned={
+              wardrobe?.accounts
+                .find((a) => a.accountId === orderSigner?.accountId)
+                ?.items.filter((i) => i.kind === "aura") || []
+            }
+            balance={balances.find(
+              (a) => a.accountId === orderSigner?.accountId,
+            )}
+            busy={busy}
+            onChanged={async () => (await load(true)).state}
+          />
           <div className="native-market-pages">
             <button
               className="button secondary"

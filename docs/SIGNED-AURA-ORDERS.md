@@ -56,11 +56,49 @@ The conservation invariant `funded = escrow + credits + withdrawing + withdrawn`
 
 Anyone can call `prune_nonces(limit)` to remove nonces whose order deadline has passed. An expired order can never verify again, so pruning cannot enable a replay.
 
-## Order relay
+## Order index (durable)
 
-`GET /api/native/market/orders` and `POST /api/native/market/orders` (with body `{order}`) run a small off-chain index. The server first verifies the order locally (`server/native/signed-orders.mjs`), then calls the contract's `check_order` view. It keeps only orders the contract accepts, and re-checks them each time they are listed.
+`server/native/order-index.mjs` stores signed orders in the game database (module `signed-market-orders`, version 1). The routes are:
 
-The index lives in memory, is bounded, and is lost when the server restarts. It is a convenience: the contract is the authority. The server holds no player key and signs nothing.
+- `GET /api/native/market/orders`
+- `POST /api/native/market/orders` with `{order}`
+- `POST /api/native/market/orders/status` with `{orders}`
+- `POST /api/native/market/orders/events` with `{transactionHash, accountId}`
+
+**Why the index is the durable copy.** An open order exists only off chain until someone fills it, so the chain cannot rebuild it. The index therefore lives in the database: it survives restarts and travels with database backups. The market contract remains the authority for every order:
+
+- Each order is verified locally and with `check_order` before it is stored. It is verified again before it is listed, and every 30 s by a worker.
+- On startup the worker re-verifies **every** open order. A restored older backup can therefore never show a filled or cancelled order as open.
+
+**How orders close.** The index applies the market's own `EVENT_JSON` events: `order_match`, `order_cancel`, `orders_cancel_all` and `signing_key_remove`. It reads them only from final receipts that the market account itself executed, and it fetches those receipts from RPC by transaction hash, so a client cannot invent an event. The hashes come from three places:
+
+- relayed jobs in this database (cancellations)
+- self-paid device transactions, which the client reports
+- confirmations from the reviewed wallet flow
+
+Stored events can be replayed (`replayEvents`) after a restore. When the contract reports a used nonce and there is no cancel event, the index records the order as filled. A later cancel event corrects that.
+
+**Limits:**
+
+- 512 open orders in total
+- 24 open orders for each maker
+
+The server holds no player key and signs nothing.
+
+## External wallets
+
+A player who uses a linked NEAR wallet instead of the invisible explorer signs the same NEP-413 terms with the wallet's `signMessage`. Each order needs one approval. The first approval also reveals which wallet key signs messages, and the player registers that key with a reviewed `add_signing_key` wallet transaction (1 yocto).
+
+Market calls go through the existing reviewed wallet flow. `server/native/transaction-confirmation.mjs` now accepts these v2 methods:
+
+| Method | What the flow checks |
+|---|---|
+| `fill_sell_order` | The deposit equals the signed price. |
+| `fill_buy_order` | 1 yocto, and the order must be a buy order. |
+| `deposit_near` | At least 0.001 NEAR. |
+| `cancel_order`, `cancel_all_orders`, signing-key changes | The exact argument shape. |
+
+It also accepts escrow deposits sent with `{"deposit":true}`. Every signed order sent through this flow must name this market as its recipient.
 
 ## Upgrade (testnet, on the operator's Mac)
 
@@ -117,13 +155,11 @@ Who pays follows [RELAYER.md](RELAYER.md):
 
 The order view lists open orders from other explorers, offers on Auras the player holds in escrow, and a make-offer form for Auras that others hold in escrow. It also shows the player's own orders with these states: pending, open, filled, cancelled, expired and rejected. Those states come from `check_order`, and this device keeps the history.
 
-Accounts linked only through an external wallet keep the fixed-price flow. UI evidence is in `output/qa/W07-signed-orders/`.
+Accounts linked only through an external wallet sign the same orders with `signMessage` (see External wallets). UI evidence is in `output/qa/W07-signed-orders/`.
 
 ## Not done yet
 
-- External-wallet `signMessage` for signed orders
 - Physical-device testing
-- A persistent order index
-- Indexing of on-chain events
+- A general chain-wide indexer (the order index reads events only from receipts it is given)
 - Royalties
 - A reviewed mainnet storage and key policy
