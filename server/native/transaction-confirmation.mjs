@@ -10,13 +10,16 @@ import { FACTORY_ID, VAULT_POOLS } from "./vaults.mjs";
 import { SOCIAL_TESTNET, SOCIAL_CODE_HASH } from "./social-profile.mjs";
 
 import { readFileSync } from "node:fs";
+import { NETWORK, NETWORK_LABEL } from "./network.mjs";
 // Contract identities are pinned by the reviewed public manifests, so a redeploy
 // under a new account only changes the manifests and their recorded code hashes.
 const manifest = (name) =>
-  JSON.parse(readFileSync(new URL(`../../public/${name}.json`, import.meta.url), "utf8"));
-const MARKET_ID = manifest("native-market-testnet").marketContract;
-const NFT_ID = manifest("native-claims-testnet").contractId;
-const REWARDS_ID = manifest("native-rewards-testnet").contractId;
+  JSON.parse(
+    readFileSync(new URL(`../../public/${name}.json`, import.meta.url), "utf8"),
+  );
+const MARKET_ID = manifest(`native-market-${NETWORK}`).marketContract;
+const NFT_ID = manifest(`native-claims-${NETWORK}`).contractId;
+const REWARDS_ID = manifest(`native-rewards-${NETWORK}`).contractId;
 const integer = (value) => Number.isSafeInteger(value) && value >= 0;
 const amount = (value) =>
   typeof value === "string" &&
@@ -134,7 +137,7 @@ export class NativeTransactionConfirmation {
   }
   rewardConfiguration() {
     assert(
-      this.rewards?.network === "testnet" &&
+      this.rewards?.network === NETWORK &&
         this.rewards.contractId === REWARDS_ID &&
         typeof this.rewards.codeHash === "string",
       "The reviewed reward configuration is unavailable.",
@@ -144,7 +147,7 @@ export class NativeTransactionConfirmation {
   }
   nftConfiguration() {
     assert(
-      this.claims?.network === "testnet" && this.claims.contractId === NFT_ID,
+      this.claims?.network === NETWORK && this.claims.contractId === NFT_ID,
       "The reviewed collection configuration is unavailable.",
       503,
     );
@@ -152,7 +155,7 @@ export class NativeTransactionConfirmation {
   }
   marketConfiguration() {
     assert(
-      this.market?.network === "testnet" &&
+      this.market?.network === NETWORK &&
         this.market.marketContract === MARKET_ID &&
         this.market.nftContract === NFT_ID,
       "The reviewed market configuration is unavailable.",
@@ -426,7 +429,7 @@ export class NativeTransactionConfirmation {
       this.clock,
     );
     this.linked(player, accountId);
-    return { network: "testnet", accountId, afterBlock };
+    return { network: NETWORK, accountId, afterBlock };
   }
   async confirm(player, input) {
     assert(input && typeof input === "object", "Choose a native transaction.");
@@ -439,7 +442,7 @@ export class NativeTransactionConfirmation {
     );
     assert(
       quote &&
-        quote.network === "testnet" &&
+        quote.network === NETWORK &&
         quote.signerId === accountId &&
         typeof quote.receiverId === "string" &&
         typeof quote.methodName === "string" &&
@@ -459,8 +462,8 @@ export class NativeTransactionConfirmation {
     const deadline = Date.now() + this.timeoutMs;
     const status = await this.bounded(this.provider.viewNodeStatus(), deadline);
     assert(
-      status.chain_id === "testnet" && !status.sync_info?.syncing,
-      "NEAR testnet confirmation is unavailable.",
+      status.chain_id === NETWORK && !status.sync_info?.syncing,
+      `${NETWORK_LABEL} confirmation is unavailable.`,
       503,
     );
     const block = await this.bounded(
@@ -546,7 +549,7 @@ export class NativeTransactionConfirmation {
         assert(false, "Invalid market configuration.", 503);
       }
       assert(
-        stats.network === "testnet" &&
+        stats.network === NETWORK &&
           stats.version === 1 &&
           stats.nft_contract === NFT_ID,
         "The market collection configuration changed.",
@@ -700,7 +703,7 @@ export class NativeTransactionConfirmation {
     this.linked(player, accountId);
     return {
       confirmed: true,
-      network: "testnet",
+      network: NETWORK,
       accountId,
       transactionHash,
       contractId: quote.receiverId,

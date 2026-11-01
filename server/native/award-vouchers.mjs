@@ -15,13 +15,14 @@ import { dirname } from "node:path";
 import { assert, id } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
 import { nearAccountId } from "../identity/near.mjs";
+import { NETWORK } from "./network.mjs";
 const EDITIONS = {
   "Northern Lights": "polar",
   "Moonwake Aura": "moon",
   "Sunlit Aura": "gold",
 };
 export function awardMessage(contractId, claim) {
-  return `QuestLayer Aura claim v1\nContract: ${contractId}\nNetwork: testnet\nClaim: ${claim.claim_id}\nReceiver: ${claim.receiver_id}\nEdition: ${claim.edition}\nExpires: ${claim.expires_at}`;
+  return `QuestLayer Aura claim v1\nContract: ${contractId}\nNetwork: ${NETWORK}\nClaim: ${claim.claim_id}\nReceiver: ${claim.receiver_id}\nEdition: ${claim.edition}\nExpires: ${claim.expires_at}`;
 }
 export function loadAwardSigner(path) {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
@@ -67,7 +68,7 @@ export class AwardVouchers {
   }
   publicInfo() {
     return {
-      network: "testnet",
+      network: NETWORK,
       contractId: this.native.contractId,
       publicKey: this.signer.publicKey,
       purpose:
@@ -113,7 +114,7 @@ export class AwardVouchers {
       .prepare("SELECT * FROM native_awards WHERE item_id=?")
       .get(itemId);
     if (old?.state === "minted")
-      return { ...old, network: "testnet", contractId: this.native.contractId };
+      return { ...old, network: NETWORK, contractId: this.native.contractId };
     if (!old) {
       const minted = await this.native.view(
         "edition_minted",
@@ -172,7 +173,7 @@ export class AwardVouchers {
     const message = awardMessage(this.native.contractId, claim);
     return {
       ...claim,
-      network: "testnet",
+      network: NETWORK,
       contractId: this.native.contractId,
       message,
       signature: this.signer.sign(message),
@@ -213,7 +214,7 @@ export class AwardVouchers {
       ).run(snapshot.tokenId, this.clock(), itemId);
       db.prepare("UPDATE inventory SET equipped=0 WHERE id=?").run(itemId);
       history(db, player, "native-aura", "Aura claimed on NEAR", 0, {
-        network: "testnet",
+        network: NETWORK,
         tokenId: snapshot.tokenId,
         receiver: claim.receiver_id,
       });

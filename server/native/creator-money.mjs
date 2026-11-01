@@ -17,6 +17,7 @@ import {
   loadServiceAccount,
   relayTransport,
 } from "../relayer/key-transport.mjs";
+import { NETWORK, manifestName } from "./network.mjs";
 
 export const CREATOR_MONEY_SCHEMA = registerModuleSchema({
   name: "creator-money",
@@ -76,11 +77,14 @@ const backoff = (attempts) =>
 const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
 
 export function loadCreatorsManifest(
-  url = new URL("../../public/native-creators-testnet.json", import.meta.url),
+  url = new URL(
+    `../../public/${manifestName("native-creators")}`,
+    import.meta.url,
+  ),
 ) {
   const manifest = JSON.parse(readFileSync(url, "utf8"));
   assert(
-    manifest.network === "testnet" && typeof manifest.contractId === "string",
+    manifest.network === NETWORK && typeof manifest.contractId === "string",
     "Invalid creators manifest.",
     503,
   );
@@ -135,7 +139,7 @@ export class CreatorMoney {
       ? quests.filter((q) => q.author_account === accountId)
       : [];
     return {
-      network: "testnet",
+      network: NETWORK,
       contractId: this.contractId,
       publisher: this.enabled ? "configured" : "not-configured",
       policy: config.policy,
@@ -169,7 +173,7 @@ export class CreatorMoney {
   async prepare(accountId, { kind, questId, amount } = {}) {
     nearAccountId(accountId);
     const base = {
-      network: "testnet",
+      network: NETWORK,
       signerId: accountId,
       receiverId: this.contractId,
     };

@@ -7,6 +7,7 @@ import { rpcErrorText } from "../near-provider.mjs";
 import { initializeManagedAccounts } from "./schema.mjs";
 import { RelayJobError, retryLater, terminal } from "./errors.mjs";
 import { classifyFailure, relayFailure } from "./outcome.mjs";
+import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
 
 const MAX_SLUG = 32;
 const yoctoText = (value) => {
@@ -85,7 +86,7 @@ export class ManagedAccounts {
       if (missing(error)) return false;
       assert(
         false,
-        "NEAR testnet is unavailable. Try again shortly.",
+        `${NETWORK_LABEL} is unavailable. Try again shortly.`,
         503,
         "RPC_UNAVAILABLE",
       );
@@ -101,7 +102,7 @@ export class ManagedAccounts {
       });
     } catch (error) {
       if (missing(error)) return null;
-      throw retryLater("RPC_UNAVAILABLE", "NEAR testnet is unavailable.");
+      throw retryLater("RPC_UNAVAILABLE", `${NETWORK_LABEL} is unavailable.`);
     }
   }
   row(playerId) {
@@ -435,7 +436,7 @@ export class ManagedAccounts {
           "ACCOUNT_MISSING",
           "The managed account no longer exists.",
         );
-      throw retryLater("RPC_UNAVAILABLE", "NEAR testnet is unavailable.");
+      throw retryLater("RPC_UNAVAILABLE", `${NETWORK_LABEL} is unavailable.`);
     }
   }
   // Tops the account up to neededYocto within the daily cap. Deposits the game
@@ -505,7 +506,7 @@ export class ManagedAccounts {
     const row = this.row(playerId);
     if (!row)
       return {
-        network: "testnet",
+        network: NETWORK,
         factoryId: this.factoryId,
         enabled: !!this.factory,
         account: null,
@@ -528,7 +529,7 @@ export class ManagedAccounts {
       )
       .get(row.account_id);
     return {
-      network: "testnet",
+      network: NETWORK,
       factoryId: this.factoryId,
       enabled: !!this.factory,
       account: {

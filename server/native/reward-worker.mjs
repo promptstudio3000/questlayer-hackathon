@@ -13,6 +13,7 @@ import {
 import { assertTestnetRpc } from "../identity/near.mjs";
 import { NativeContractReader } from "./reader.mjs";
 import { VAULT_POOLS } from "./vaults.mjs";
+import { NETWORK } from "./network.mjs";
 const METHODS = ["publish_day", "close_day", "claim", "maintain_vault"];
 export async function rewardTransport(
   provider,
@@ -27,7 +28,7 @@ export async function rewardTransport(
   );
   const config = JSON.parse(readFileSync(keyPath));
   assert(
-    config.network === "testnet" && config.accountId === contractId,
+    config.network === NETWORK && config.accountId === contractId,
     "Wrong worker identity.",
     503,
   );

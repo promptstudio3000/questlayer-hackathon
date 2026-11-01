@@ -1,8 +1,9 @@
 import { isDeepStrictEqual } from "node:util";
 import { GameError } from "../domain.mjs";
 import { publicKeyString } from "./delegate.mjs";
+import { SOCIAL_CONTRACT_ID } from "../native/network.mjs";
 
-export const SOCIAL_CONTRACT = "v1.social08.testnet";
+export const SOCIAL_CONTRACT = SOCIAL_CONTRACT_ID;
 export const STORAGE_DEPOSIT = 50000000000000000000000n; // 0.05 NEAR
 export const MAX_ARGS_BYTES = 8192;
 export const MAX_METHOD_NAME = 64;

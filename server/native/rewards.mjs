@@ -12,6 +12,7 @@ import {
 } from "../domain.mjs";
 import { atomic } from "../database.mjs";
 import { rewardMessage } from "./reward-manifest.mjs";
+import { NETWORK } from "./network.mjs";
 export class NativeRewards extends NativeContractReader {
   constructor(db, provider, config, signer, { clock = Date.now } = {}) {
     super(provider, config.contractId);
@@ -429,7 +430,7 @@ export class NativeRewards extends NativeContractReader {
     return {
       status: m ? "ready" : "preparing",
       generatedAt: this.clock(),
-      network: "testnet",
+      network: NETWORK,
       contractId: this.contractId,
       mode: "sponsored-testnet",
       accountId: accountId || null,

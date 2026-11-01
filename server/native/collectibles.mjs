@@ -1,6 +1,7 @@
 import { NativeContractReader } from "./reader.mjs";
 import { assert } from "../domain.mjs";
 import { nearAccountId, assertTestnetRpc } from "../identity/near.mjs";
+import { NETWORK } from "./network.mjs";
 const EDITIONS = {
   polar: { name: "Northern Lights", color: "#9edfc5", rarity: "rare" },
   moon: { name: "Moonwake Aura", color: "#c2a0df", rarity: "epic" },
@@ -97,7 +98,7 @@ export class NativeCollectibles extends NativeContractReader {
     );
     return {
       status: "available",
-      network: "testnet",
+      network: NETWORK,
       contractId: this.contractId,
       version,
       name: metadata.name,
@@ -156,7 +157,7 @@ export class NativeCollectibles extends NativeContractReader {
     );
     return {
       status: "available",
-      network: "testnet",
+      network: NETWORK,
       contractId: this.contractId,
       accounts,
     };

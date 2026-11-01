@@ -1,12 +1,10 @@
 import { assert } from "../domain.mjs";
 import { nearAccountId, assertTestnetRpc } from "../identity/near.mjs";
+import { NETWORK, onNetwork } from "./network.mjs";
 export class NativeContractReader {
   constructor(provider, contractId) {
     nearAccountId(contractId);
-    assert(
-      contractId.endsWith(".testnet"),
-      "Native contracts are testnet-only.",
-    );
+    assert(onNetwork(contractId), `Native contracts are ${NETWORK}-only.`);
     this.provider = provider;
     this.contractId = contractId;
     this.cache = new Map();

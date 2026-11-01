@@ -8,6 +8,7 @@ import {
 } from "near-api-js";
 import { assert } from "../domain.mjs";
 import { assertTestnetRpc, nearAccountId } from "../identity/near.mjs";
+import { NETWORK } from "../native/network.mjs";
 
 // Loads a service key file {network:"testnet", accountId, secretKey, publicKey?}.
 // Mirrors the reward worker: private file mode, testnet RPC and an on-chain key check.
@@ -33,7 +34,7 @@ export async function loadServiceAccount(
     assert(false, "The service key file is unreadable.", 503);
   }
   assert(
-    config?.network === "testnet" &&
+    config?.network === NETWORK &&
       typeof config.accountId === "string" &&
       typeof config.secretKey === "string",
     "Wrong service identity.",

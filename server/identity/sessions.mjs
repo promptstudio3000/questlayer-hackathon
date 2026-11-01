@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { assert, hash, id } from "../domain.mjs";
 import { atomic } from "../database.mjs";
 import { nearAccountId, verifyNearIdentity } from "./near.mjs";
+import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
 
 const RECOVERY_PURPOSE = "revoke-other-sessions";
 const CHALLENGE_TTL = 300_000;
@@ -139,7 +140,7 @@ export class IdentitySessions {
       )
       .get();
     return {
-      network: "testnet",
+      network: NETWORK,
       currentSessionId: current.sessionId,
       activeSessionCount,
       hasMoreSessions: activeSessionCount > sessions.length,
@@ -186,10 +187,10 @@ export class IdentitySessions {
     );
     const challengeId = id("near_recovery"),
       nonce = randomBytes(32).toString("base64");
-    const message = `Sign out other QuestLayer game sessions for explorer ${current.playerId} using ${accountId} on NEAR testnet. Keep session ${current.sessionId}. Wallet keys, passkeys and funds will not change. This is not a transaction.`;
+    const message = `Sign out other QuestLayer game sessions for explorer ${current.playerId} using ${accountId} on ${NETWORK_LABEL}. Keep session ${current.sessionId}. Wallet keys, passkeys and funds will not change. This is not a transaction.`;
     const data = {
       purpose: RECOVERY_PURPOSE,
-      network: "testnet",
+      network: NETWORK,
       player: current.playerId,
       sessionId: current.sessionId,
       accountId,
@@ -205,7 +206,7 @@ export class IdentitySessions {
       nonce,
       message,
       recipient: this.origin,
-      network: "testnet",
+      network: NETWORK,
       purpose: RECOVERY_PURPOSE,
     };
   }
@@ -225,7 +226,7 @@ export class IdentitySessions {
     const data = JSON.parse(row.nonce);
     assert(
       data.purpose === RECOVERY_PURPOSE &&
-        data.network === "testnet" &&
+        data.network === NETWORK &&
         data.recipient === this.origin,
       "This challenge cannot sign out game sessions.",
       401,

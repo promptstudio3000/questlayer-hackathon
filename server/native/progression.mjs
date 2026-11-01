@@ -3,6 +3,7 @@ import { assert } from "../domain.mjs";
 import { atomic } from "../database.mjs";
 import { nearAccountId } from "../identity/near.mjs";
 import { awardMessage } from "./award-vouchers.mjs";
+import { NETWORK, NETWORK_LABEL, onNetwork } from "./network.mjs";
 
 export const NATIVE_LEVEL_POLICY = "native-xp-level-v1";
 export const NATIVE_LEVEL_MILESTONES = Object.freeze([
@@ -86,7 +87,7 @@ export function nativeLevelClaimId(
       .update(
         JSON.stringify([
           NATIVE_LEVEL_POLICY,
-          "testnet",
+          NETWORK,
           sourceContractId,
           contractId,
           accountId,
@@ -125,10 +126,7 @@ export class NativeProgression {
       collectiblesCodeHash || fingerprint(collectiblesWasmSha256);
     for (const account of [this.contractId, this.sourceContractId]) {
       nearAccountId(account);
-      assert(
-        account.endsWith(".testnet"),
-        "Native progression is testnet-only.",
-      );
+      assert(onNetwork(account), `Native progression is ${NETWORK}-only.`);
     }
     assert(
       Number.isSafeInteger(ttlMs) && ttlMs > 0 && ttlMs <= 15 * 60000,
@@ -153,7 +151,7 @@ export class NativeProgression {
   }
   identity(accountId) {
     return {
-      network: "testnet",
+      network: NETWORK,
       accountId,
       sourceContractId: this.sourceContractId,
       contractId: this.contractId,
@@ -243,8 +241,8 @@ export class NativeProgression {
   async observe(accountId) {
     const network = await this.bounded(this.provider.viewNodeStatus());
     assert(
-      network.chain_id === "testnet" && network.sync_info?.syncing === false,
-      "A synchronized NEAR testnet observation is required.",
+      network.chain_id === NETWORK && network.sync_info?.syncing === false,
+      `A synchronized ${NETWORK_LABEL} observation is required.`,
       503,
     );
     const block = (
@@ -269,7 +267,7 @@ export class NativeProgression {
       }),
     ]);
     assert(
-      config.network === "testnet" && config.version === 1,
+      config.network === NETWORK && config.version === 1,
       "Unsupported native progression source.",
       503,
     );
@@ -333,7 +331,7 @@ export class NativeProgression {
         )
         .run(
           claimId,
-          "testnet",
+          NETWORK,
           this.sourceContractId,
           this.contractId,
           progress.accountId,
@@ -521,7 +519,7 @@ export class NativeProgression {
         )
         .run(
           milestone.claimId,
-          "testnet",
+          NETWORK,
           this.sourceContractId,
           this.contractId,
           accountId,

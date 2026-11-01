@@ -2,10 +2,14 @@ import { NativeContractReader } from "./reader.mjs";
 import { assert } from "../domain.mjs";
 import { nativeInteger, readStakingPool } from "./staking-pool.mjs";
 import { readFileSync } from "node:fs";
+import { NETWORK, manifestName } from "./network.mjs";
 // The factory of the current deployment generation is pinned by the public
 // rewards manifest; the server never accepts a caller-supplied factory.
 export const FACTORY_ID = JSON.parse(
-  readFileSync(new URL("../../public/native-rewards-testnet.json", import.meta.url), "utf8"),
+  readFileSync(
+    new URL(`../../public/${manifestName("native-rewards")}`, import.meta.url),
+    "utf8",
+  ),
 ).factory.contractId;
 export const VAULT_POOLS = [
   { id: "aurora.pool.f863973.m0", name: "Aurora validator" },
@@ -111,7 +115,7 @@ export class NativeVaults extends NativeContractReader {
     const config = await this.validate(),
       positions = account ? await this.positions(account, true) : [];
     return {
-      network: "testnet",
+      network: NETWORK,
       factoryId: this.contractId,
       config,
       pools: VAULT_POOLS,
@@ -223,7 +227,7 @@ export class NativeVaults extends NativeContractReader {
       }
     }
     return {
-      network: "testnet",
+      network: NETWORK,
       signerId: accountId,
       receiverId,
       methodName,

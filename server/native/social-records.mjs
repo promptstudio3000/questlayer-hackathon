@@ -16,6 +16,7 @@ import {
   registerModuleSchema,
   ensureModuleVersion,
 } from "../schema-compatibility.mjs";
+import { NETWORK } from "./network.mjs";
 
 export const SOCIAL_RECORDS_SCHEMA = registerModuleSchema({
   name: "social-records",
@@ -310,7 +311,7 @@ export class NativeSocialRecords {
     ]);
     const media = note.image ? this.mediaRecord(note.image) : null;
     return {
-      network: "testnet",
+      network: NETWORK,
       contractId: this.contractId,
       accountId,
       noteId,
@@ -419,7 +420,7 @@ export class NativeSocialRecords {
         this.clock(),
       );
     return {
-      network: "testnet",
+      network: NETWORK,
       receiverId: this.contractId,
       accountId,
       methodName: "set",

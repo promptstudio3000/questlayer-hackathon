@@ -1,4 +1,5 @@
 import { nearAccountId } from "../identity/near.mjs";
+import { NETWORK } from "../native/network.mjs";
 
 // Player-facing routes. The parent server authenticates the player, parses the
 // body and owns the response helpers; this handler only dispatches.
@@ -14,7 +15,7 @@ export function createRelayerRoutes({ relayer = null, accounts = null } = {}) {
         res,
         accounts
           ? accounts.view(player)
-          : { network: "testnet", enabled: false, account: null },
+          : { network: NETWORK, enabled: false, account: null },
       );
       return true;
     }

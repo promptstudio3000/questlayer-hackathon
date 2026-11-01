@@ -2,7 +2,8 @@ import { assert, id } from "../domain.mjs";
 import { nearAccountId, assertTestnetRpc } from "../identity/near.mjs";
 import { NativeContractReader } from "./reader.mjs";
 import { nativeInteger } from "./staking-pool.mjs";
-export const SOCIAL_TESTNET = "v1.social08.testnet";
+import { NETWORK, SOCIAL_CONTRACT_ID } from "./network.mjs";
+export const SOCIAL_TESTNET = SOCIAL_CONTRACT_ID;
 export const SOCIAL_CODE_HASH = "B5Yf5EquM36fGu3JNAD2K83fT6L4dpzcx8mYLnkjJJbS";
 const leaf = (value) =>
   typeof value === "string"
@@ -103,7 +104,7 @@ export class NativeSocialProfile extends NativeContractReader {
         token?.owner_id === accountId && token.token_id?.startsWith("avatar:");
     }
     return {
-      network: "testnet",
+      network: NETWORK,
       contractId: this.contractId,
       accountId,
       ...parsed,
@@ -150,7 +151,7 @@ export class NativeSocialProfile extends NativeContractReader {
       mutation_id: id("profile"),
     };
     return {
-      network: "testnet",
+      network: NETWORK,
       receiverId: this.contractId,
       accountId,
       methodName: "set",

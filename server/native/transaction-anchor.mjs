@@ -1,4 +1,5 @@
 import { assert } from "../domain.mjs";
+import { NETWORK, NETWORK_LABEL } from "./network.mjs";
 const integer = (value) => Number.isSafeInteger(value) && value > 0;
 const hash = (value) =>
   typeof value === "string" && /^[1-9A-HJ-NP-Za-km-z]{32,64}$/.test(value);
@@ -10,8 +11,8 @@ export async function readTransactionAnchor(provider, run, clock = Date.now) {
     run(provider.viewBlock({ finality: "final" })),
   ]);
   assert(
-    status?.chain_id === "testnet" && !status.sync_info?.syncing,
-    "NEAR testnet is unavailable. No wallet request was opened.",
+    status?.chain_id === NETWORK && !status.sync_info?.syncing,
+    `${NETWORK_LABEL} is unavailable. No wallet request was opened.`,
     503,
   );
   const h = block?.header,

@@ -59,6 +59,14 @@ The refactor is mechanical but wide. Order: server network module and RPC check;
 key files; routes and manifests; client validators and copy; scripts; tests updated to run the suite twice
 (testnet default, mainnet with fake providers). Each step keeps the testnet behaviour byte-for-byte.
 
+Progress, 1 November (evening): `server/native/network.mjs` exists and every server module reads `NETWORK`,
+`NETWORK_LABEL`, `DEFAULT_RPC`, `SOCIAL_CONTRACT_ID`, `manifestName` and `onNetwork` from it; quotes, RPC checks,
+key-file checks, manifest paths and sign-in texts no longer spell "testnet". Still literal on purpose: the
+`managed_accounts.network` CHECK (schema module version bump, step 4), the testnet-only tasks pilot contract id,
+player copy that names the pilot ("testnet expedition", "testnet vault pilot"), all client validators and the
+scripts. `NEAR_NETWORK=mainnet` therefore starts the server against mainnet RPC and `*-mainnet.json` manifests
+but is not yet a supported configuration.
+
 ## 4. Owner prerequisites (not Claude's to do)
 
 - A mainnet operator account with a hardware or well-kept key; separate `questlayer.near`-style factory and

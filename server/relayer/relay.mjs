@@ -17,6 +17,7 @@ import {
 } from "./policy.mjs";
 import { initializeManagedAccounts } from "./schema.mjs";
 import { relayTransport } from "./key-transport.mjs";
+import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
 
 const OPEN = "('queued','retrying','sent')";
 const LEASE_MS = 120000;
@@ -133,7 +134,7 @@ export class Relayer {
     } catch {
       assert(
         false,
-        "NEAR testnet is unavailable. Try again shortly.",
+        `${NETWORK_LABEL} is unavailable. Try again shortly.`,
         503,
         "RPC_UNAVAILABLE",
       );
@@ -247,7 +248,7 @@ export class Relayer {
     const ctx = await this.context(playerId, accountId, publicKey);
     const budget = this.budget(accountId);
     return {
-      network: "testnet",
+      network: NETWORK,
       relayer: this.relayerId,
       accountId,
       publicKey: publicKey ?? ctx.keys[0],

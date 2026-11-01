@@ -51,6 +51,12 @@ import { clientAddress } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  NETWORK,
+  NETWORK_LABEL,
+  DEFAULT_RPC,
+  manifestName,
+} from "./native/network.mjs";
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 import { randomBytes } from "node:crypto";
 import {
@@ -99,21 +105,21 @@ const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
 const creatorRuntime = createCreatorRuntime(db, { origin, authenticate: auth });
-const rpc = process.env.NEAR_RPC_URL || "https://test.rpc.fastnear.com";
+const rpc = process.env.NEAR_RPC_URL || DEFAULT_RPC;
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
 const deploymentManifestPath = existsSync(
-  resolve(APP_ROOT, "public/testnet-deployment.json"),
+  resolve(APP_ROOT, `public/${NETWORK}-deployment.json`),
 )
-  ? resolve(APP_ROOT, "public/testnet-deployment.json")
-  : resolve(APP_ROOT, "dist/testnet-deployment.json");
-const testnetManifest = JSON.parse(
+  ? resolve(APP_ROOT, `public/${NETWORK}-deployment.json`)
+  : resolve(APP_ROOT, `dist/${NETWORK}-deployment.json`);
+const deploymentManifest = JSON.parse(
   readFileSync(deploymentManifestPath, "utf8"),
 );
 const nativeCollectibles = new NativeCollectibles(
   provider,
   process.env.NEAR_COLLECTIBLES_CONTRACT ||
-    testnetManifest.collectiblesContract,
+    deploymentManifest.collectiblesContract,
 );
 const nativeSocialProfile = new NativeSocialProfile(
   provider,
@@ -145,8 +151,8 @@ db.exec(
   `CREATE TABLE IF NOT EXISTS passkeys(id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),public_key TEXT NOT NULL,counter INTEGER NOT NULL,transports TEXT NOT NULL);`,
 );
 const marketManifestPath = [
-  resolve(APP_ROOT, "public/native-market-testnet.json"),
-  resolve(APP_ROOT, "dist/native-market-testnet.json"),
+  resolve(APP_ROOT, `public/${manifestName("native-market")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-market")}`),
 ].find((path) => existsSync(path));
 const marketContractId =
   process.env.NEAR_MARKET_CONTRACT ||
@@ -164,8 +170,8 @@ const awardSigner = nativeAttestationsDisabled
     );
 const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner);
 const rewardsManifestPath = [
-  resolve(APP_ROOT, "public/native-rewards-testnet.json"),
-  resolve(APP_ROOT, "dist/native-rewards-testnet.json"),
+  resolve(APP_ROOT, `public/${manifestName("native-rewards")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-rewards")}`),
 ].find((p) => existsSync(p));
 const rewardsConfig = rewardsManifestPath
   ? JSON.parse(readFileSync(rewardsManifestPath, "utf8"))
@@ -213,11 +219,14 @@ const relayer = managedAccounts
           market: marketContractId,
           factory: rewardsConfig?.factory?.contractId || FACTORY_ID,
           creators: existsSync(
-            resolve(APP_ROOT, "public/native-creators-testnet.json"),
+            resolve(APP_ROOT, `public/${manifestName("native-creators")}`),
           )
             ? JSON.parse(
                 readFileSync(
-                  resolve(APP_ROOT, "public/native-creators-testnet.json"),
+                  resolve(
+                    APP_ROOT,
+                    `public/${manifestName("native-creators")}`,
+                  ),
                   "utf8",
                 ),
               ).contractId
@@ -226,7 +235,7 @@ const relayer = managedAccounts
             rewardsConfig?.contractId ||
             JSON.parse(
               readFileSync(
-                resolve(APP_ROOT, "public/native-rewards-testnet.json"),
+                resolve(APP_ROOT, `public/${manifestName("native-rewards")}`),
                 "utf8",
               ),
             ).contractId,
@@ -250,7 +259,7 @@ if (nativeRewards) nativeRewards.vaultRegistry = nativeVaults;
 // rounds on chain only when the publisher key is configured.
 const creatorsManifestPath = resolve(
   APP_ROOT,
-  "public/native-creators-testnet.json",
+  `public/${manifestName("native-creators")}`,
 );
 // Hosts with neither the publisher key nor the creator community keep their
 // schema free of creator tables; the routes then answer "not configured".
@@ -277,8 +286,8 @@ const creatorMoney = creatorsManifest
 const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 const tasksManifestPath = [
-  resolve(APP_ROOT, "public/native-tasks-testnet.json"),
-  resolve(APP_ROOT, "dist/native-tasks-testnet.json"),
+  resolve(APP_ROOT, `public/${manifestName("native-tasks")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-tasks")}`),
 ].find((p) => existsSync(p));
 const nativeTasks = new NativeTasks(
   db,
@@ -288,8 +297,8 @@ const nativeTasks = new NativeTasks(
     : null,
 );
 const claimsManifestPath = [
-  resolve(APP_ROOT, "public/native-claims-testnet.json"),
-  resolve(APP_ROOT, "dist/native-claims-testnet.json"),
+  resolve(APP_ROOT, `public/${manifestName("native-claims")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-claims")}`),
 ].find((p) => existsSync(p));
 const claimsManifest = claimsManifestPath
   ? JSON.parse(readFileSync(claimsManifestPath, "utf8"))
@@ -297,7 +306,7 @@ const claimsManifest = claimsManifestPath
 const nativeProgression = nativeRewards
   ? new NativeProgression(nativeRewards, nativeCollectibles, awardSigner, {
       collectiblesWasmSha256:
-        claimsManifest?.network === "testnet" &&
+        claimsManifest?.network === NETWORK &&
         claimsManifest?.contractId === nativeCollectibles.contractId
           ? claimsManifest.wasmSha256
           : undefined,
@@ -490,6 +499,7 @@ async function api(req, res, url) {
       status: "ok",
       app: "QuestLayer",
       version: "0.1.0",
+      network: NETWORK,
       ...schemaStatus(db, { buildId: process.env.QUESTLAYER_BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
@@ -512,7 +522,7 @@ async function api(req, res, url) {
   if (path === "/api/config")
     return respond(res, {
       mode: "demo",
-      network: "testnet",
+      network: NETWORK,
       rpcUrl: rpc,
       coinValue: 0.01,
       coinSplit: 50,
@@ -709,10 +719,10 @@ async function api(req, res, url) {
       "Please wait before starting another wallet sign-in.",
       429,
     );
-    const message = `Sign in to QuestLayer as ${accountId} on NEAR testnet. Authentication only. No transaction or funds transfer.`;
+    const message = `Sign in to QuestLayer as ${accountId} on ${NETWORK_LABEL}. Authentication only. No transaction or funds transfer.`;
     const c = challenge("near_signin", {
       purpose: "near-sign-in",
-      network: "testnet",
+      network: NETWORK,
       accountId,
       name,
       message,
@@ -723,7 +733,7 @@ async function api(req, res, url) {
       nonce: c.nonce,
       message,
       recipient: origin,
-      network: "testnet",
+      network: NETWORK,
     });
   }
   if (path === "/api/auth/near/verify" && method === "POST") {
@@ -756,7 +766,7 @@ async function api(req, res, url) {
         player: profile(result.player),
         returning: result.returning,
         identity: "near-wallet",
-        network: "testnet",
+        network: NETWORK,
       },
       200,
       { "Set-Cookie": cookie(result.token) },
@@ -807,7 +817,7 @@ async function api(req, res, url) {
   }
   if (path === "/api/native/market" && method === "GET") {
     if (!nativeMarket)
-      return respond(res, { status: "not-configured", network: "testnet" });
+      return respond(res, { status: "not-configured", network: NETWORK });
     return respond(
       res,
       await nativeMarket.snapshot({
@@ -1012,7 +1022,7 @@ async function api(req, res, url) {
   }
   if (path === "/api/native/rewards" && method === "GET") {
     if (!nativeRewards)
-      return respond(res, { status: "not-configured", network: "testnet" });
+      return respond(res, { status: "not-configured", network: NETWORK });
     return respond(
       res,
       await nativeRewards.snapshot(player, {
@@ -1023,7 +1033,7 @@ async function api(req, res, url) {
   }
   if (path === "/api/native/rewards/nearby" && method === "POST") {
     if (!nativeRewards)
-      return respond(res, { status: "not-configured", network: "testnet" });
+      return respond(res, { status: "not-configured", network: NETWORK });
     const input = await body(req);
     return respond(
       res,
@@ -1170,7 +1180,7 @@ async function api(req, res, url) {
         "native_profile",
         "QuestLayer profile published on NEAR",
         JSON.stringify({
-          network: "testnet",
+          network: NETWORK,
           contractId: result.snapshot.contractId,
           accountId,
           mutationId: input.mutationId,
@@ -1522,10 +1532,10 @@ async function api(req, res, url) {
   if (path === "/api/wallet/challenge" && method === "POST") {
     const i = await body(req);
     nearAccountId(i.accountId);
-    const message = `Linking a NEAR account to explorer ${player}. Network: testnet. No funds will be transferred.`;
+    const message = `Linking a NEAR account to explorer ${player}. Network: ${NETWORK}. No funds will be transferred.`;
     const c = challenge("near", {
       purpose: "near-link",
-      network: "testnet",
+      network: NETWORK,
       player,
       sessionId: identitySessions.authenticate(sessionToken(req)).sessionId,
       accountId: i.accountId,
@@ -1592,7 +1602,7 @@ async function api(req, res, url) {
     return respond(res, {
       accountId: linked.account_id,
       amount: account.amount,
-      network: "testnet",
+      network: NETWORK,
       realChain: true,
     });
   }

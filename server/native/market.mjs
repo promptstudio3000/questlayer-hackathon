@@ -1,6 +1,7 @@
 import { NativeContractReader } from "./reader.mjs";
 import { nativeItem } from "./collectibles.mjs";
 import { assert } from "../domain.mjs";
+import { NETWORK } from "./network.mjs";
 export class NativeMarket extends NativeContractReader {
   constructor(provider, contractId, nfts) {
     super(provider, contractId);
@@ -17,7 +18,7 @@ export class NativeMarket extends NativeContractReader {
     ]);
     assert(
       stats.version === 1 &&
-        stats.network === "testnet" &&
+        stats.network === NETWORK &&
         stats.nft_contract === this.nfts.contractId,
       "This market does not match the QuestLayer collection.",
       503,
@@ -57,7 +58,7 @@ export class NativeMarket extends NativeContractReader {
     }
     return {
       status: "available",
-      network: "testnet",
+      network: NETWORK,
       marketContract: this.contractId,
       nftContract: this.nfts.contractId,
       stats,
@@ -70,7 +71,7 @@ export class NativeMarket extends NativeContractReader {
   }
   async balances(accountIds, fresh = false) {
     return {
-      network: "testnet",
+      network: NETWORK,
       marketContract: this.contractId,
       accounts: await Promise.all(
         accountIds.slice(0, 5).map(async (accountId) => ({

@@ -1,5 +1,6 @@
 import { hash } from "../domain.mjs";
 import { PLZEN, sampleCityPaths } from "../spatial/city-pack.mjs";
+import { NETWORK } from "./network.mjs";
 export const NATIVE_POLICY = "native-city-v1";
 const THEMES = [
   [
@@ -96,5 +97,5 @@ export function publicationArgs(m) {
   };
 }
 export function rewardMessage(contractId, c) {
-  return `QuestLayer native reward v1\nNetwork: testnet\nContract: ${contractId}\nReceipt: ${c.receipt_id}\nDay: ${c.day_id}\nKind: ${c.kind}\nIndex: ${c.index}\nReceiver: ${c.receiver_id}\nReceived: ${c.received_at}\nEvidence: ${c.evidence_hash}`;
+  return `QuestLayer native reward v1\nNetwork: ${NETWORK}\nContract: ${contractId}\nReceipt: ${c.receipt_id}\nDay: ${c.day_id}\nKind: ${c.kind}\nIndex: ${c.index}\nReceiver: ${c.receiver_id}\nReceived: ${c.received_at}\nEvidence: ${c.evidence_hash}`;
 }

@@ -2,6 +2,7 @@ import { assert } from "../domain.mjs";
 import { assertTestnetRpc, nearAccountId } from "../identity/near.mjs";
 import { nativeInteger } from "./staking-pool.mjs";
 import { VAULT_POOLS } from "./vaults.mjs";
+import { NETWORK } from "./network.mjs";
 
 const POOL_HASH = "J1arLz48fgXcGyCPVckFwLnewNH6j1uw79thsvwqGYTY";
 const MAX_POSITIONS = 33;
@@ -279,7 +280,7 @@ export class NativeEconomy {
     await this.verifyCode(block, p.accountId, p.codeHash, p.keyless);
     const state = await this.view(block, p.accountId, "get_state");
     assert(
-      state.network === "testnet" &&
+      state.network === NETWORK &&
         state.beneficiary === p.beneficiary &&
         state.pool === p.pool &&
         state.rewards === this.config.contractId,
@@ -540,7 +541,7 @@ export class NativeEconomy {
             : "stale";
     return {
       version: 1,
-      network: "testnet",
+      network: NETWORK,
       unit: "yoctoNEAR",
       goldPerNear: 1000,
       generatedAt: iso(this.clock()),
