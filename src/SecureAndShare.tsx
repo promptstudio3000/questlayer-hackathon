@@ -34,6 +34,7 @@ export function SecureAndShare({
   place,
   onSecure,
   onPasskey,
+  onDone,
 }: {
   item: Item;
   player: Player;
@@ -42,6 +43,8 @@ export function SecureAndShare({
   place?: string | null;
   onSecure: (item: Item) => Promise<boolean>;
   onPasskey: () => Promise<void>;
+  /** Called once the explorer secured or shared this Aura. */
+  onDone?: () => void;
 }) {
   const [state, setState] = useState<"idle" | "pending" | "failed">("idle");
   const [error, setError] = useState("");
@@ -84,6 +87,7 @@ export function SecureAndShare({
     setError("");
     const ok = await onSecure(item);
     setState(ok ? "idle" : "failed");
+    if (ok) onDone?.();
     if (!ok) setError("Securing didn't finish. Your Aura is safe; try again.");
   }
 
@@ -101,6 +105,7 @@ export function SecureAndShare({
         secured,
       });
       if (outcome === "downloaded") setShareNote("Card saved to your downloads.");
+      if (outcome !== "cancelled") onDone?.();
     } catch (e) {
       setShareNote((e as Error).message);
     } finally {

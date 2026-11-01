@@ -20,6 +20,7 @@ maplibregl.setWorkerUrl(mapWorkerUrl);
 import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Point, World, Zone, Item } from "./types";
+import { prefersReducedMotion } from "./feedback";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
@@ -151,7 +152,7 @@ export function GameMap(props: GameMapProps) {
         zoom: 17,
         pitch: 43,
         offset: cameraOffset(),
-        duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+        duration: prefersReducedMotion()
           ? 0
           : 400,
       });
@@ -492,7 +493,7 @@ export function GameMap(props: GameMapProps) {
     if (m && !props.globe)
       pawn.current?.setMapView(m.getBearing(), m.getPitch(), heading.current);
     return moveMapMarker(avatar.current, props.position, {
-      reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+      reducedMotion: prefersReducedMotion(),
     });
   }, [props.position, ready]);
   useEffect(() => {
@@ -502,7 +503,7 @@ export function GameMap(props: GameMapProps) {
         center: [props.position.lng, props.position.lat],
         offset: cameraOffset(),
         padding: { top: 0, bottom: 0, left: 0, right: 0 },
-        duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+        duration: prefersReducedMotion()
           ? 0
           : 450,
       });
@@ -636,7 +637,7 @@ export function GameMap(props: GameMapProps) {
             ),
             pitch: 0,
             bearing: 0,
-            duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+            duration: prefersReducedMotion()
               ? 0
               : 1400,
           }
@@ -647,7 +648,7 @@ export function GameMap(props: GameMapProps) {
             zoom: 16.9,
             pitch: 43,
             bearing: -14,
-            duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+            duration: prefersReducedMotion()
               ? 0
               : 1400,
           },
@@ -697,7 +698,7 @@ export function GameMap(props: GameMapProps) {
             : { top: 180, bottom: 100, left: 450, right: 55 },
           pitch: 0,
           bearing: 0,
-          duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+          duration: prefersReducedMotion()
             ? 0
             : 650,
         });
@@ -709,7 +710,7 @@ export function GameMap(props: GameMapProps) {
         padding: { top: 0, bottom: 0, left: 0, right: 0 },
         zoom: 16.8,
         pitch: 43,
-        duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+        duration: prefersReducedMotion()
           ? 0
           : 450,
       });

@@ -3073,8 +3073,21 @@ select {
     z-index: 3;
   }
   .sheet-compact
-    > :not(.sheet-toggle):not(.recommended-quest):not(.compact-selection):not(.native-objective):not(.adventure-notice) {
+    > :not(.sheet-toggle):not(.recommended-quest):not(.compact-selection):not(.native-objective):not(.adventure-notice):not(.first-session) {
     display: none !important;
+  }
+  .main-panel.explore-panel.sheet-compact:has(.first-session) {
+    height: auto;
+    max-height: min(56dvh, 380px);
+    overflow-y: auto;
+  }
+  .sheet-compact .first-session {
+    margin: 0;
+    gap: 6px;
+    padding: 10px 12px 12px;
+  }
+  .sheet-compact .first-session-hint {
+    font-size: 14px;
   }
   .sheet-compact .recommended-quest {
     margin: 0;

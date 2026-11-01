@@ -151,6 +151,73 @@ export function guideFacts({ world = null, native = null, location = null, now =
   return facts;
 }
 
+// First-session hints (one sentence per step) built from the same live data
+// as guideFacts. No model is involved, so hints are free and always grounded;
+// every number comes from the world the player is looking at. Steps without
+// a world-dependent answer (aura, secure) return null and the client keeps its
+// own short instruction. Hints never mention the test network.
+export const FIRST_SESSION_STEPS = ["find", "coin", "chest", "aura", "secure"];
+export function guideHint(step, { world = null, location = null, now = Date.now() } = {}) {
+  if (!FIRST_SESSION_STEPS.includes(step)) return null;
+  if (!world || step === "aura" || step === "secure") return null;
+  if (world.operatorPause)
+    return {
+      hint: "Discoveries in this city are paused for now. Check back a little later.",
+      factIds: ["paused"],
+    };
+  const metersTo = (target) =>
+    location ? Math.round(distance(location, target)) : null;
+  const coins = (world.coins || []).filter((c) => !c.claimant);
+  if (step === "find" || step === "coin") {
+    const pool = step === "find" ? coins.filter((c) => c.find) : coins.filter((c) => !c.find);
+    const list = pool.length ? pool : coins;
+    if (!list.length)
+      return {
+        hint: "Every coin in view is collected. New ones appear with the next day.",
+        factIds: ["coins"],
+      };
+    const nearest = location ? Math.min(...list.map(metersTo)) : null;
+    const what = step === "find" && pool.length ? "street find" : "coin";
+    return {
+      hint:
+        nearest === null
+          ? `${list.length} ${what === "coin" ? "coins are" : "street finds are"} waiting in view. Walk over one to pick it up.`
+          : `The nearest ${what} is ${nearest} m away in a straight line. Walk over it to pick it up.`,
+      factIds: ["coins"],
+    };
+  }
+  const tier = Number.isInteger(world.playerTier) ? world.playerTier : 1;
+  const zones = new Map((world.zones || []).map((z) => [z.id, z]));
+  const chests = (world.quests || [])
+    .filter(
+      (q) =>
+        q.kind === "chest" &&
+        !q.completed &&
+        q.placeStatus !== "closed" &&
+        q.tier <= tier &&
+        q.opens_at <= now &&
+        q.closes_at > now,
+    )
+    .map((q) => ({ q, d: metersTo(q.nextPoint || q) }))
+    .sort((a, b) => (a.d ?? 0) - (b.d ?? 0));
+  if (!chests.length)
+    return {
+      hint: "No chest is open for you right now. New chests open with the next day.",
+      factIds: ["next"],
+    };
+  const { q, d } = chests[0];
+  const zone = zones.get(q.zone_id);
+  const where = zone?.name ? ` in ${zone.name}` : "";
+  const aura = q.itemAvailable ? "It still holds an Aura." : "Its Auras are all found, but the XP still counts.";
+  return {
+    hint:
+      d === null
+        ? `The nearest open chest is${where}. ${aura}`
+        : `The nearest open chest is${where}, ${d} m away in a straight line. ${aura}`,
+    factIds: ["discovery-1"],
+  };
+}
+
 const numbers = (text) => text.match(/\d+(?:[.:]\d+)*/g) || [];
 
 // Thousands separators and decimal commas are normalised so "1 670 m" or

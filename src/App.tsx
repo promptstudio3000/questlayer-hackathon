@@ -175,6 +175,17 @@ import {
   onNearNetwork,
 } from "./near-network.ts";
 import { nearestDiscovery } from "./nearest-discovery.ts";
+import { FirstSessionCoach, useFirstSession } from "./FirstSession";
+import type { FirstStepId } from "./first-session";
+import {
+  cue,
+    loadFeedbackPreferences,
+  prefersReducedMotion,
+  previewSound,
+  setFeedbackPreferences,
+  subscribeFeedback,
+  type FeedbackPreferences,
+} from "./feedback";
 import {
   WALK_CAP_M,
   WALK_STEP_MS,
@@ -284,6 +295,11 @@ export default function App() {
     [showNpc, setShowNpc] = useState(false),
     [now, setNow] = useState(Date.now()),
     [menu, setMenu] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackPreferences>(() =>
+    loadFeedbackPreferences(),
+  );
+  useEffect(() => subscribeFeedback(setFeedback), []);
+  const firstSession = useFirstSession(player);
   const world =
     worldOwner.current === player?.id && worldData?.arena === arena
       ? worldData
@@ -711,6 +727,7 @@ export default function App() {
         (e.code === "WALLET_CANCELLED" || e.code === "CANCELLED")
       )
         return undefined;
+      cue("error");
       notify(
         e instanceof Error ? e.message : "Something went wrong. Try again.",
         true,
@@ -958,6 +975,7 @@ export default function App() {
               w ? { ...w, coins: w.coins.filter((c) => c.id !== coin.id) } : w,
             );
             if (!result.alreadyClaimed && !latest.current.nativePlay) {
+              cue("coin");
               pickupFeedback.confirm(
                 demoPickupScope(state.player.id, state.world.id, state.arena),
                 {
@@ -1172,6 +1190,89 @@ export default function App() {
       setOverview(false);
     }
   }
+  // First-session coach: every step points at an existing game action.
+  function nearestCoin(find: boolean) {
+    const coins = (world?.coins || []).filter(
+      (c) => !c.claimant && !!c.find === find,
+    );
+    let best: (typeof coins)[number] | null = null;
+    for (const c of coins)
+      if (!best || meters(position, c) < meters(position, best)) best = c;
+    return best;
+  }
+  function nearestChest() {
+    if (!world || !player) return null;
+    const zones = new Map(world.zones.map((z) => [z.id, z]));
+    let best: { quest: Quest; zone: Zone; d: number } | null = null;
+    for (const q of world.quests) {
+      const zone = q.zone_id ? zones.get(q.zone_id) : undefined;
+      if (
+        !zone ||
+        q.kind !== "chest" ||
+        q.completed ||
+        q.placeStatus === "closed" ||
+        zone.placeStatus === "closed" ||
+        q.tier > player.tier ||
+        q.opens_at > now ||
+        q.closes_at <= now
+      )
+        continue;
+      const d = meters(position, questPoint(q));
+      if (!best || d < best.d) best = { quest: q, zone, d };
+    }
+    return best;
+  }
+  function runFirstStep(step: FirstStepId) {
+    if (!player) return;
+    if (nativePlay) chooseLedger(false);
+    setTab("explore");
+    if (step !== "chest") setSelected(null);
+    if (step === "find" || step === "coin") {
+      const coin = nearestCoin(step === "find") || nearestCoin(step !== "find");
+      if (!coin) {
+        setSheetExpanded(true);
+        return;
+      }
+      setSheetExpanded(false);
+      if (coin.find) goToStreetFind(coin);
+      else if (arena) move(coin);
+      else setFollow(false);
+      return;
+    }
+    if (step === "chest") {
+      const chest = nearestChest();
+      if (chest) selectZone(chest.zone, chest.quest.id);
+      else setSheetExpanded(true);
+      return;
+    }
+    if (step === "aura") {
+      const aura = [...player.inventory]
+        .reverse()
+        .find((i) => i.kind === "aura" && !i.equipped && !i.native_claim_state);
+      if (!aura) {
+        setTab("inventory");
+        return;
+      }
+      void action("equip", async () => {
+        const r = await api<{ player: Player }>("/equip", {
+          itemId: aura.id,
+          desiredEquipped: true,
+        });
+        updateOwnedPlayer(r.player);
+        setSheetExpanded(false);
+        setFollow(true);
+        notify(`Equipped ${aura.name}. Your new glow is on the map.`);
+      });
+      return;
+    }
+    if (step === "secure") {
+      const reward = adventureResults.results.find(
+        (r) => r.reward?.item?.kind === "aura",
+      );
+      if (reward) inspectAdventureResult(reward.id);
+      else setTab("inventory");
+    }
+  }
   function move(p: Point) {
     if (!arena || nativePlay) return;
     stopWalk();
@@ -1179,7 +1280,7 @@ export default function App() {
     setFollow(true);
     const from = latest.current.position,
       { point } = cappedWalkTarget(from, p),
-      steps = matchMedia("(prefers-reduced-motion: reduce)").matches
+      steps = prefersReducedMotion()
         ? [point]
         : walkSteps(from, point);
     setPosition(steps.shift()!);
@@ -2294,6 +2395,7 @@ export default function App() {
           adventureResults.isCurrentInspection(inspection) &&
           navigationContext.current.revision === navigationRevision;
         if (sameView && r.result) adventureResults.accept(r.result);
+        if (!r.replayed && !r.awaiting) cue(r.item ? "reward" : "step");
         if (sameView && r.awaiting)
           notify(
             `Stop ${r.progress?.completed} of ${r.progress?.total} confirmed. Walk to the next stop.`,
@@ -2359,6 +2461,19 @@ export default function App() {
     !nativePlay && streetFindTarget
       ? world?.coins.find((c) => c.id === streetFindTarget && c.find) || null
       : null;
+  const coachActive = firstSession.visible && !nativePlay;
+  const coachStep = coachActive ? firstSession.progress.current?.id : undefined;
+  const coachChest = coachStep === "chest" ? nearestChest() : null;
+  const coachLabel =
+    coachStep === "chest"
+      ? coachChest
+        ? coachChest.d > 25
+          ? "Walk to the chest"
+          : "Open the chest"
+        : "See what's open"
+      : coachStep === "find" && !nearestCoin(true)
+        ? "Walk to a coin"
+        : null;
   const zoneQuests = (world?.quests || []).filter(
     (q) =>
       q.zone_id === selected?.id ||
@@ -2661,6 +2776,18 @@ export default function App() {
               <ArrowRight size={20} aria-hidden="true" />
             </button>
           )}
+          {tab === "explore" &&
+            coachActive &&
+            !(selected && coachStep === "chest") && (
+              <FirstSessionCoach
+                session={firstSession}
+                worldId={world?.id}
+                position={position}
+                busy={!!busy}
+                onAction={runFirstStep}
+                actionLabel={coachLabel}
+              />
+            )}
           {tab === "explore" && selected && (
             <button
               className="compact-selection"
@@ -2722,7 +2849,25 @@ export default function App() {
           </div>
           {tab === "explore" && !selected && !nativePlay && (
             <>
-              {recommendedFind && !nativeTarget && !adventureNotice && (
+              {!world?.zones.length && !recommendation && world && (
+                <div className="explore-empty" role="status">
+                  <strong>Nothing open right here yet</strong>
+                  <p>
+                    Today's discoveries are still being placed. Pull the map
+                    to look around, or check back in a few minutes.
+                  </p>
+                </div>
+              )}
+              {world && world.zones.length > 0 && !recommendation && (
+                <div className="explore-empty" role="status">
+                  <strong>You've done everything open for you today</strong>
+                  <p>
+                    New discoveries open with the next day. Coins on the
+                    streets still count while you walk.
+                  </p>
+                </div>
+              )}
+              {!coachStep && recommendedFind && !nativeTarget && !adventureNotice && (
                 <button
                   className="recommended-quest"
                   onClick={() => goToStreetFind(recommendedFind.coin)}
@@ -2746,7 +2891,8 @@ export default function App() {
                   <ArrowRight size={20} />
                 </button>
               )}
-              {recommended &&
+              {!coachStep &&
+                recommended &&
                 recommendedZone &&
                 !nativeTarget &&
                 !adventureNotice && (
@@ -2997,7 +3143,7 @@ export default function App() {
                       {q.kind === "route" && (
                         <span>
                           <Flag />
-                          {q.checkpoint || 0}/{q.checkpointCount} checkpoints
+                          {q.checkpoint || 0}/{q.checkpointCount} stops
                         </span>
                       )}
                       {q.gold_u > 0 && (
@@ -3444,6 +3590,85 @@ export default function App() {
                   <small>Choose 2D for a lighter map</small>
                 </span>
               </button>
+              <section
+                className="feedback-settings"
+                aria-labelledby="feedback-settings-title"
+              >
+                <h2 id="feedback-settings-title">Sound, vibration and motion</h2>
+                <div
+                  className="play-mode-switch"
+                  role="group"
+                  aria-label="Vibration"
+                >
+                  <button
+                    aria-pressed={feedback.haptics}
+                    onClick={() => {
+                      setFeedbackPreferences({ haptics: true });
+                      cue("step");
+                    }}
+                  >
+                    Vibration on
+                  </button>
+                  <button
+                    aria-pressed={!feedback.haptics}
+                    onClick={() => setFeedbackPreferences({ haptics: false })}
+                  >
+                    Off
+                  </button>
+                </div>
+                <div className="play-mode-switch" role="group" aria-label="Sound">
+                  <button
+                    aria-pressed={feedback.sound}
+                    onClick={() => {
+                      setFeedbackPreferences({ sound: true });
+                      previewSound();
+                    }}
+                  >
+                    Sound on
+                  </button>
+                  <button
+                    aria-pressed={!feedback.sound}
+                    onClick={() => setFeedbackPreferences({ sound: false })}
+                  >
+                    Off
+                  </button>
+                </div>
+                <div className="play-mode-switch" role="group" aria-label="Motion">
+                  <button
+                    aria-pressed={feedback.motion === "system"}
+                    onClick={() => setFeedbackPreferences({ motion: "system" })}
+                  >
+                    Motion like my device
+                  </button>
+                  <button
+                    aria-pressed={feedback.motion === "reduce"}
+                    onClick={() => setFeedbackPreferences({ motion: "reduce" })}
+                  >
+                    Reduce motion
+                  </button>
+                </div>
+                <p className="fine-print">
+                  Reduce motion stops map flights, walking animation and
+                  sparkles. Vibration works on phones that support it.
+                </p>
+                {!firstSession.visible && (
+                  <button
+                    className="play-entry"
+                    onClick={() => {
+                      firstSession.show();
+                      setTab("explore");
+                      setSheetExpanded(false);
+                    }}
+                  >
+                    <Compass size={24} />
+                    <span>
+                      <b>Show first steps again</b>
+                      <small>The short guide for new explorers</small>
+                    </span>
+                    <ArrowRight size={20} />
+                  </button>
+                )}
+              </section>
               <button className="play-entry" onClick={() => setShowNpc(true)}>
                 <Question size={24} />
                 <span>
@@ -3903,6 +4128,7 @@ export default function App() {
                 }
                 onSecure={mintEarnedAura}
                 onPasskey={attachPasskey}
+                onDone={() => firstSession.mark("secure")}
               />
             )
           }
@@ -4985,7 +5211,7 @@ function Npc({
         </form>
         <small>
           {source === "near-ai"
-            ? "Answered by NEAR AI from live game data"
+            ? "Answered by the AI guide from live game data"
             : source === "anthropic"
               ? "Answered by Claude from live game data"
               : "Answered from live game data"}

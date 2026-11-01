@@ -151,7 +151,7 @@ export function currentAdventureItem(db, player, item) {
   if (row.kind !== "aura")
     return unavailable(
       "missing",
-      "The awarded Aura is unavailable in the demo inventory.",
+      "This Aura is no longer in your collection.",
     );
   const current = {
     id: row.id,
@@ -170,7 +170,7 @@ export function currentAdventureItem(db, player, item) {
     return {
       ...unavailable(
         "minted",
-        "This Aura is claimed on NEAR. Check your native inventory.",
+        "This Aura is secured. Find it in your Secured collection.",
       ),
       item: current,
     };
@@ -180,7 +180,7 @@ export function currentAdventureItem(db, player, item) {
     return {
       ...unavailable(
         "reserved",
-        "This Aura is reserved for NEAR. Check the claim or restore it after verified expiry.",
+        "This Aura is being secured. Check your Secured collection; it returns here if securing expires.",
       ),
       item: current,
     };
@@ -192,7 +192,7 @@ export function currentAdventureItem(db, player, item) {
     return {
       ...unavailable(
         "listed",
-        "Cancel the demo listing before equipping this Aura.",
+        "Cancel the market listing before trying this Aura on.",
       ),
       item: current,
     };
@@ -206,7 +206,7 @@ export function currentAdventureItem(db, player, item) {
     equipped,
     reason: equipped
       ? "This Aura is already equipped."
-      : "This Aura can be equipped in your demo inventory.",
+      : "Ready to try on. Your ghost wears it on the map.",
     item: current,
   };
 }

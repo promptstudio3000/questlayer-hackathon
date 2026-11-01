@@ -141,7 +141,7 @@ test("earned vouchers bind contract, receiver, edition and expiry and lock the d
     );
     assert.throws(
       () => listItem(s.db, s.player, "aura-test", 100),
-      /reserved for NEAR/,
+      /being secured, so it cannot be listed/,
     );
     s.db
       .prepare("INSERT INTO wallet_links VALUES(?,?,?)")

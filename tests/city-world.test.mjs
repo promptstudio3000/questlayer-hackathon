@@ -72,7 +72,7 @@ test("physical mode requires the canonical polygon as well as target proximity",
   assert.throws(
     () =>
       claimQuest(db, player, q.id, { ...q, accuracy: 5, timestamp: now }, now),
-    /Enter the marked zone/,
+    /Step inside the place first/,
   );
   db.close();
 });
@@ -87,7 +87,7 @@ test("ordered walking checkpoints cannot be skipped replayed or completed from o
     q.metadata ||
       db.prepare("SELECT metadata FROM quests WHERE id=?").get(q.id).metadata,
   ).checkpoints;
-  assert.throws(() => claimQuest(db, player, q.id, q, now), /checkpoints/);
+  assert.throws(() => claimQuest(db, player, q.id, q, now), /stops in order/);
   assert.throws(
     () => advanceRoute(db, player, q.id, cps[1], 0, now),
     /destination/,
