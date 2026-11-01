@@ -265,6 +265,25 @@
   font-weight: 400;
   color: var(--ink-secondary);
 }
+/* Phones: one row of four quick-action tiles at the top of the Character tab,
+   so the screen's first entries stay clear of the home-screen offer docked
+   above the tab bar. */
+@media (max-width: 760px) {
+  .profile-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .profile-tiles button {
+    justify-items: center;
+    min-height: 64px;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 14px;
+  }
+  .profile-tiles button small {
+    display: none;
+  }
+}
 /* Settings: grouped compact rows. */
 .settings-group {
   margin: 0 0 12px;

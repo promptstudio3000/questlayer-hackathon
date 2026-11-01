@@ -3656,6 +3656,32 @@ export default function App() {
           )}
           {tab === "settings" && profileView === "character" && (
             <ScreenTabPanel idBase="profile" value="character">
+              <div className="profile-tiles">
+                <ProfileTile
+                  icon={Backpack}
+                  label="Wardrobe"
+                  hint="Items and Auras"
+                  onClick={() => setTab("inventory")}
+                />
+                <ProfileTile
+                  icon={Storefront}
+                  label="Market"
+                  hint="Trade Auras"
+                  onClick={() => setTab("market")}
+                />
+                <ProfileTile
+                  icon={Flame}
+                  label="Stake"
+                  hint="Grow the pot · open Tier 2"
+                  onClick={() => setTab("fuel")}
+                />
+                <ProfileTile
+                  icon={Wallet}
+                  label="Rewards"
+                  hint="GOLD and receipts"
+                  onClick={() => setTab("wallet")}
+                />
+              </div>
               <ProfileHero
                 avatar={
                   <Character
@@ -3685,32 +3711,6 @@ export default function App() {
                     : "Secure your explorer to keep progress"
                 }
               />
-              <div className="profile-tiles">
-                <ProfileTile
-                  icon={Backpack}
-                  label="Wardrobe"
-                  hint="Items and Auras"
-                  onClick={() => setTab("inventory")}
-                />
-                <ProfileTile
-                  icon={Storefront}
-                  label="Market"
-                  hint="Trade Auras"
-                  onClick={() => setTab("market")}
-                />
-                <ProfileTile
-                  icon={Flame}
-                  label="Stake"
-                  hint="Grow the pot · open Tier 2"
-                  onClick={() => setTab("fuel")}
-                />
-                <ProfileTile
-                  icon={Wallet}
-                  label="Rewards"
-                  hint="GOLD and receipts"
-                  onClick={() => setTab("wallet")}
-                />
-              </div>
               <p className="fine-print">
                 {nativePlay
                   ? "You are playing on the test network. Test NEAR has no monetary value."
