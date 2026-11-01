@@ -65,6 +65,10 @@ export const CreatorCommunity = lazyNamed(
   () => import("./CreatorCommunity"),
   "CreatorCommunity",
 );
+export const CommunityBonusVote = lazyNamed(
+  () => import("./CommunityBonusVote"),
+  "CommunityBonusVote",
+);
 export const MapNotes = lazyNamed(() => import("./MapNotes"), "MapNotes");
 export const NativeCollectionControl = lazyNamed(
   () => import("./NativeCollectionControl"),

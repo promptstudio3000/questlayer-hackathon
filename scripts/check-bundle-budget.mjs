@@ -22,6 +22,7 @@ const DEFERRED = [
   /GameMap/,
   /character-3d-scene/,
   /CreatorCommunity/,
+  /CommunityBonusVote/,
   /NativeMarketPanel/,
   /NativeWardrobe/,
   /SignedOrdersPanel/,

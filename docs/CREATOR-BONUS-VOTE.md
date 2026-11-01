@@ -41,4 +41,4 @@ yesterday's round while it is still being finalized.
 Server-side policy only: the creators contract cannot verify the tally, so this
 is an operator-trusted testnet pilot. Mainnet hosts never mount it
 (constructor refuses `mainnet`). `CREATOR_BONUS_VOTE=0` turns it off on
-testnet. No player UI yet.
+testnet. Player UI: Community tab → "Tomorrow's creator bonus" (`src/CommunityBonusVote.tsx`, lazy chunk), checked by `npm run e2e:bonus-vote`.

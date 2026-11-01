@@ -263,7 +263,7 @@ svg {
 }
 .balance-pill > span:not(.gold-icon) {
   font-size: 8px;
-  color: #a28d61;
+  color: #6f5f3f;
   letter-spacing: 0.8px;
 }
 .balance-pill > svg {
@@ -407,7 +407,7 @@ svg {
   letter-spacing: 0.7px;
   font-weight: 700;
   background: #eee7f5;
-  color: #927bab;
+  color: #654f80;
   border: 1px solid #e8def0;
   border-radius: 5px;
   white-space: nowrap;
@@ -628,7 +628,7 @@ svg {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #9b86b0;
+  color: #6c5785;
   font-size: 11px;
   background: none;
   padding: 10px 0;
@@ -769,7 +769,7 @@ svg {
 }
 .fine-print {
   font-size: 10px !important;
-  color: #a497aa !important;
+  color: #6c6072 !important;
   line-height: 1.7 !important;
   margin: 12px 0 !important;
 }
@@ -1179,7 +1179,7 @@ svg {
 }
 .welcome-card > p {
   font-size: 12px;
-  color: #a08e9e;
+  color: #6e5d6c;
   line-height: 1.7;
   margin-bottom: 23px;
 }
@@ -1189,7 +1189,7 @@ svg {
 .welcome-card label {
   font-size: 8px;
   letter-spacing: 1.5px;
-  color: #a28eaa;
+  color: #6f5a79;
   font-weight: 600;
 }
 .welcome-card input {
@@ -1201,7 +1201,7 @@ svg {
   justify-content: center;
   gap: 9px;
   margin-top: 13px;
-  color: #a495a4;
+  color: #6e616e;
   font-size: 9px;
   line-height: 1.6;
 }
@@ -1887,13 +1887,13 @@ input[type="range"] {
   display: flex;
   gap: 14px;
   align-items: center;
-  color: #ad94ba;
+  color: #6c5785;
   margin: 15px 0;
 }
 .market-banner b {
   display: block;
   font-size: 12px;
-  color: #9b82aa;
+  color: #654f80;
 }
 .market-banner small {
   display: block;
