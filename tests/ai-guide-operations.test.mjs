@@ -71,7 +71,7 @@ test("model answers must cite known facts, add no numbers and pass the text poli
     [{ answer: "Climb the fence behind the park to get there faster.", factIds: ["zones"] }, "unsafe-instruction"],
     [{ answer: "See https://example.com for more tips on the park.", factIds: ["zones"] }, "link-or-contact"],
     [{ answer: "Zones are open across the city today.", factIds: ["invented"] }, "unknown-fact"],
-    [{ answer: "Zones are open.", factIds: ["zones"], extra: 1 }, "schema"],
+    [{ reply: "Zones are open." }, "schema-missing-answer"],
   ];
   for (const [output, reason] of bad) assert.equal(validateGuideOutput(output, facts).reason, reason);
 });
@@ -179,4 +179,52 @@ test("operator CLI requires an existing database and explicit apply for decision
   assert.equal(out.published, false);
   assert.throws(() => run("decide", "--database", path, "--operator", "qa", "--proposal", "x", "--action", "approve", "--reason", "ok"));
   assert.deepEqual(JSON.parse(run("verify", "--database", path, "--operator", "qa")), { broken: null });
+});
+
+test("lenient Ollama parsing: fences, prose, missing fact ids, number formats and one retry", async (t) => {
+  const { extractJsonObject } = await import("../server/ai/ollama.mjs");
+  assert.deepEqual(extractJsonObject('```json\n{"answer":"a"}\n```'), { answer: "a" });
+  assert.deepEqual(extractJsonObject('Sure! {"answer":"x {y}","factIds":[]} hope it helps'), { answer: "x {y}", factIds: [] });
+  assert.throws(() => extractJsonObject(""), (e) => e.reason === "empty-content");
+  assert.throws(() => extractJsonObject("no json here"), (e) => e.reason === "unparseable-json");
+
+  const { view } = await worldFixture(t);
+  const facts = guideFacts({ world: view, location: HOME, now: NOW });
+  const d = facts.find((f) => f.id === "discovery-1").text.match(/(\d+) m in/)[1];
+  const spaced = d.length > 3 ? d.replace(/(\d)(?=\d{3}$)/, "$1 ") : d;
+  const ok = validateGuideOutput({ answer: `The nearest open discovery is ${spaced} m away in a straight line.` }, facts);
+  assert.ok(ok.value, JSON.stringify(ok));
+  assert.ok(ok.value.factIds.length > 1, "missing ids cite every fact; numbers stay checked");
+
+  const calls = [];
+  const replies = [
+    { ok: false, status: 400, json: async () => ({}) },
+    { ok: true, json: async () => ({ message: { content: "I think the answer is nice." } }) },
+    { ok: true, json: async () => ({ message: { content: '```json\n{"answer":"ok answer","factIds":["zones"]}\n```' } }) },
+  ];
+  const fetcher = async (url, init) => {
+    calls.push(JSON.parse(init.body));
+    return replies.shift();
+  };
+  const out = await ollamaJson({ ...ollamaConfiguration({ OLLAMA_API_KEY: "k" }), fetcher }, { system: "s", user: "u", schema: { type: "object" } });
+  assert.deepEqual(out, { answer: "ok answer", factIds: ["zones"] });
+  assert.equal(calls[0].think, false);
+  assert.equal("think" in calls[1], false, "repeated without think after a 400");
+  assert.equal(calls[2].format, "json");
+  assert.match(calls[2].messages[0].content, /JSON schema/);
+});
+
+test("rejected-output debug log is opt-in, redacted and truncated", async (t) => {
+  const { debugRejected } = await import("../server/ai/text-policy.mjs");
+  const lines = [];
+  t.mock.method(console, "warn", (line) => lines.push(line));
+  const fakeToken = "fake0000token1111fake2222token3333";
+  debugRejected({}, "guide", "schema", { answer: "x" });
+  assert.equal(lines.length, 0);
+  debugRejected({ AI_DEBUG_REJECTED: "1" }, "guide", "schema", `token ${fakeToken} mail a@b.cz ${"y ".repeat(500)}`);
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /\[ai-rejected\] guide reason=schema/);
+  assert.ok(!lines[0].includes(fakeToken));
+  assert.ok(!lines[0].includes("a@b.cz"));
+  assert.ok(lines[0].length < 480);
 });
