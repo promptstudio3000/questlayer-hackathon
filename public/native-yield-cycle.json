@@ -2,26 +2,26 @@
   "network": "testnet",
   "description": "Timeline of the realized-yield cycle (harvest → unlock → flush_game → rewards treasury), from read-only views.",
   "latest": {
-    "observedAt": "2026-11-01T10:59:02.955Z",
+    "observedAt": "2026-11-01T12:45:49.225Z",
     "source": "read-only RPC views at finality=final via rpc.testnet.near.org; no transaction was sent",
     "chain": {
-      "epochHeight": 5401,
-      "epochStartHeight": 275701255,
-      "blockHeight": 275739544
+      "epochHeight": 5402,
+      "epochStartHeight": 275744455,
+      "blockHeight": 275750413
     },
-    "phase": "accruing",
+    "phase": "harvested-unlocking",
     "vault": {
       "accountId": "questlayer-vault-20261101b.testnet",
       "rewards": "questlayer-rewards-20261101b.testnet",
-      "stage": "idle",
-      "operation": "",
-      "unlockEpoch": "0",
-      "epoch": "5401",
+      "stage": "unlocking",
+      "operation": "harvest",
+      "unlockEpoch": "5406",
+      "epoch": "5402",
       "principal": "100000000000000000000000",
       "highWaterBasis": "100000000000000000000000",
-      "staked": "99999999999999999999997",
+      "staked": "100007107834198213350628",
       "unstaked": "3",
-      "unharvestedGain": "0",
+      "unharvestedGain": "7107834198213350631",
       "contributionBps": 5000,
       "gamePending": "0",
       "gameCredit": "0",
@@ -32,7 +32,7 @@
       "funded": "200000000000000000000000",
       "coinsAvailable": "88000000000000000000000",
       "zonesAvailable": "88000000000000000000000",
-      "accountBalance": "12219989840739535100000000"
+      "accountBalance": "12214323241859130700000000"
     }
   },
   "history": [
@@ -102,6 +102,40 @@
         "coinsAvailable": "88000000000000000000000",
         "zonesAvailable": "88000000000000000000000",
         "accountBalance": "12219989840739535100000000"
+      }
+    },
+    {
+      "observedAt": "2026-11-01T12:45:49.225Z",
+      "source": "read-only RPC views at finality=final via rpc.testnet.near.org; no transaction was sent",
+      "chain": {
+        "epochHeight": 5402,
+        "epochStartHeight": 275744455,
+        "blockHeight": 275750413
+      },
+      "phase": "harvested-unlocking",
+      "vault": {
+        "accountId": "questlayer-vault-20261101b.testnet",
+        "rewards": "questlayer-rewards-20261101b.testnet",
+        "stage": "unlocking",
+        "operation": "harvest",
+        "unlockEpoch": "5406",
+        "epoch": "5402",
+        "principal": "100000000000000000000000",
+        "highWaterBasis": "100000000000000000000000",
+        "staked": "100007107834198213350628",
+        "unstaked": "3",
+        "unharvestedGain": "7107834198213350631",
+        "contributionBps": 5000,
+        "gamePending": "0",
+        "gameCredit": "0",
+        "gamePaid": "0"
+      },
+      "treasury": {
+        "accountId": "questlayer-rewards-20261101b.testnet",
+        "funded": "200000000000000000000000",
+        "coinsAvailable": "88000000000000000000000",
+        "zonesAvailable": "88000000000000000000000",
+        "accountBalance": "12214323241859130700000000"
       }
     }
   ]
