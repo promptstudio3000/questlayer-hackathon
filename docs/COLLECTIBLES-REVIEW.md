@@ -71,3 +71,7 @@ sha256sum contracts/target/wasm32-unknown-unknown/release/questlayer_collectible
 ```
 
 If the contract changes, it needs a new review, then `node scripts/collectibles-wasm-sha256.mjs --write`.
+
+## Catalog v2 editions (2026-11-01) — awaiting re-review
+
+The contract changed after this review: `AURA_EDITIONS` replaces the hard-coded `polar`/`moon`/`gold` match in `redeem_aura` and `next_aura`, six editions were added (`ember`, `dew`, `bloom`, `storm`, `comet`, `nova`), and a `supported_editions` view was added. There is no state or schema change (still V3, no migration), the voucher message and `network()` handling are unchanged, and the PR #19 fixes (`.near` redeem, `clear_award_signer`) are intact. New build: `questlayer_collectibles.wasm`, 358,413 bytes, **sha256 `b2684b58ce5a3920091f377fc6a364de96ded0dd65af3add744c9105a73c36f7`**, recorded in `contracts/collectibles/WASM_SHA256`; the same toolchain reproduced the earlier `491183e3…` from the previous source. The mainnet gate needs a fresh independent read-through of this diff before deployment. Code storage rises by about 0.08 NEAR; 4 NEAR still covers it.

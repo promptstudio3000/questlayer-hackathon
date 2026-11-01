@@ -15,6 +15,27 @@ use near_sdk::{
     near_bindgen, AccountId, PanicOnDefault, Promise, PromiseOrValue,
 };
 const EXPLORER_MEDIA: &str = include_str!("../assets/explorer-uri.txt");
+/// Aura editions this contract can mint: (edition id, title, cover media).
+/// Mirrors the `native` entries of server/data/aura-catalog.json (a Node test
+/// keeps them equal). Code-only: adding an edition needs no state migration,
+/// and token ids stay `aura:<edition>:<serial>` with a 256 cap per edition.
+const AURA_EDITIONS: [(&str, &str, &str); 9] = [
+    ("polar", "Northern Lights", include_str!("../assets/aura-polar-uri.txt")),
+    ("moon", "Moonwake Aura", include_str!("../assets/aura-moon-uri.txt")),
+    ("gold", "Sunlit Aura", include_str!("../assets/aura-gold-uri.txt")),
+    ("ember", "Ember Wisp", include_str!("../assets/aura-ember-uri.txt")),
+    ("dew", "Dewfall Ring", include_str!("../assets/aura-dew-uri.txt")),
+    ("bloom", "Meadow Bloom", include_str!("../assets/aura-bloom-uri.txt")),
+    ("storm", "Stormcrown", include_str!("../assets/aura-storm-uri.txt")),
+    ("comet", "Comet Trail", include_str!("../assets/aura-comet-uri.txt")),
+    ("nova", "Nova Bloom", include_str!("../assets/aura-nova-uri.txt")),
+];
+fn aura_edition(edition: &str) -> Option<(&'static str, &'static str)> {
+    AURA_EDITIONS
+        .iter()
+        .find(|(id, _, _)| *id == edition)
+        .map(|(_, name, media)| (*name, *media))
+}
 
 /// The chain this deployment lives on, from its own account suffix. A voucher
 /// signed for one network can never verify on the other, and only `.testnet`
@@ -252,15 +273,8 @@ impl Collectibles {
                 "Award claim expired"
             );
         }
-        let (name, media) = match edition.as_str() {
-            "polar" => (
-                "Northern Lights",
-                include_str!("../assets/aura-polar-uri.txt"),
-            ),
-            "moon" => ("Moonwake Aura", include_str!("../assets/aura-moon-uri.txt")),
-            "gold" => ("Sunlit Aura", include_str!("../assets/aura-gold-uri.txt")),
-            _ => env::panic_str("Unknown edition"),
-        };
+        let (name, media) =
+            aura_edition(&edition).unwrap_or_else(|| env::panic_str("Unknown edition"));
         self.mint_claim(
             claim_id,
             edition,
@@ -366,6 +380,10 @@ impl Collectibles {
     pub fn get_claim_token(&self, claim_id: String) -> Option<TokenId> {
         self.claims.get(&claim_id).map(|c| c.token_id)
     }
+    /// Edition ids this deployment can mint, in catalog order.
+    pub fn supported_editions(&self) -> Vec<String> {
+        AURA_EDITIONS.iter().map(|(id, _, _)| id.to_string()).collect()
+    }
     pub fn edition_minted(&self, edition: String) -> u32 {
         self.minted.get(&edition).unwrap_or(0)
     }
@@ -406,10 +424,7 @@ impl Collectibles {
         assert_eq!(env::predecessor_account_id(), self.oracle, "Oracle only");
     }
     fn next_aura(&mut self, edition: &String) -> TokenId {
-        assert!(
-            ["polar", "moon", "gold"].contains(&edition.as_str()),
-            "Unknown edition"
-        );
+        assert!(aura_edition(edition).is_some(), "Unknown edition");
         let n = self.minted.get(edition).unwrap_or(0);
         assert!(n < 256, "Edition exhausted");
         self.minted.insert(edition, &(n + 1));
@@ -904,6 +919,54 @@ mod tests {
         );
         assert_eq!(replay.owner_id, a("bob.testnet"));
         assert_eq!(c.edition_minted("polar".into()), 1);
+    }
+    #[test]
+    fn catalog_editions_redeem_with_their_own_title_and_media() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        assert_eq!(
+            c.supported_editions(),
+            ["polar", "moon", "gold", "ember", "dew", "bloom", "storm", "comet", "nova"]
+        );
+        let mut covers = std::collections::HashSet::new();
+        for (i, (edition, title)) in [
+            ("ember", "Ember Wisp"),
+            ("dew", "Dewfall Ring"),
+            ("bloom", "Meadow Bloom"),
+            ("storm", "Stormcrown"),
+            ("comet", "Comet Trail"),
+            ("nova", "Nova Bloom"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let claim = format!("earned:new{i}");
+            let signature =
+                award_signature(&c, &key, &claim, edition, "alice.testnet", 1000);
+            context("alice.testnet", NearToken::from_near(1));
+            let token = c.redeem_aura(
+                claim,
+                edition.into(),
+                a("alice.testnet"),
+                1000,
+                signature,
+            );
+            assert_eq!(token.token_id, format!("aura:{edition}:1"));
+            let meta = token.metadata.unwrap();
+            assert_eq!(meta.title.as_deref(), Some(title));
+            let media = meta.media.unwrap();
+            assert!(media.starts_with("data:image/svg+xml;base64,"));
+            assert!(covers.insert(media));
+            assert_eq!(c.edition_minted(edition.into()), 1);
+        }
+        // Existing editions keep their own counters.
+        assert_eq!(c.edition_minted("polar".into()), 0);
+    }
+    #[test]
+    #[should_panic(expected = "Unknown edition")]
+    fn unknown_edition_is_still_rejected() {
+        let mut c = fresh();
+        mint(&mut c, "festival");
     }
     #[test]
     #[should_panic(expected = "Invalid award signature")]

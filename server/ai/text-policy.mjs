@@ -74,3 +74,17 @@ export function screenText(text, rules) {
     if (rules.includes(reason) && pattern.test(text)) return reason;
   return null;
 }
+
+// Opt-in operator diagnostics (AI_DEBUG_REJECTED=1): logs a redacted, truncated
+// sample of model output that failed the checks. Off by default; never logs
+// the prompt, the player or anything resembling a credential.
+export function debugRejected(env, feature, reason, output) {
+  if (env?.AI_DEBUG_REJECTED !== "1" || output === undefined || output === null) return;
+  let text = typeof output === "string" ? output : JSON.stringify(output);
+  text = String(text)
+    .replace(/[A-Za-z0-9_\-+/=.]{24,}/g, "[redacted]")
+    .replace(/[\w.+-]+@[\w-]+\.\w+/g, "[email]")
+    .replace(/\s+/g, " ")
+    .slice(0, 400);
+  console.warn(`[ai-rejected] ${feature} reason=${reason} sample=${text}`);
+}

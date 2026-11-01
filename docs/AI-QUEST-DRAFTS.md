@@ -56,10 +56,16 @@ The suggestion's `draft` field has exactly the shape `POST /quests` accepts.
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `OLLAMA_API_KEY` | – | Ollama Cloud key; only in the VPS `runtime.env`, never in the repository |
-| `OLLAMA_MODEL` | `deepseek-v4.1-flash` | Cloud model; `glm-5.3-flash` or `mistral-large-4` are alternatives |
+| `OLLAMA_MODEL` | `deepseek-v4.1-flash` | Cloud model; `gpt-oss:120b` or `kimi-k2.6` are alternatives |
 | `OLLAMA_BASE_URL` | `https://ollama.com` | https, or a localhost Ollama |
 
 Without a key both features stay on their deterministic answers.
+
+The Ollama path asks for structured output with thinking off, accepts JSON in
+code fences or surrounded by prose, and retries once in plain JSON mode with
+the schema in the prompt. Extra keys are ignored; content checks are unchanged.
+`AI_DEBUG_REJECTED=1` logs a redacted, truncated sample of rejected output
+(reason and up to 400 characters) to the service log for diagnosis.
 
 # Grounded guide
 

@@ -11,6 +11,7 @@ import { SOCIAL_TESTNET, SOCIAL_CODE_HASH } from "./social-profile.mjs";
 
 import { existsSync, readFileSync } from "node:fs";
 import { NETWORK, NETWORK_LABEL } from "./network.mjs";
+import { isNativeAuraTokenId, isNativeEdition } from "../aura-catalog.mjs";
 // Contract identities are pinned by the reviewed public manifests, so a redeploy
 // under a new account only changes the manifests and their recorded code hashes.
 // A network may lack a slice (mainnet ships without market and rewards, see
@@ -30,7 +31,7 @@ const amount = (value) =>
   BigInt(value) < 2n ** 128n;
 const aura = (value) =>
   typeof value === "string" &&
-  /^aura:(polar|moon|gold):[1-9]\d{0,2}$/.test(value);
+  isNativeAuraTokenId(value);
 const keys = (value, expected) =>
   value &&
   typeof value === "object" &&
@@ -448,7 +449,7 @@ export class NativeTransactionConfirmation {
               typeof args.claim_id === "string" &&
               args.claim_id.startsWith("earned:") &&
               args.claim_id.length <= 160 &&
-              ["polar", "moon", "gold"].includes(args.edition) &&
+              isNativeEdition(args.edition) &&
               integer(args.expires_at_ms) &&
               typeof args.signature === "string" &&
               args.signature.length === 88 &&

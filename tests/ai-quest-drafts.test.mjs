@@ -125,7 +125,7 @@ test("unsafe, reward-promising or malformed model output falls back to the templ
     ["stop-index", { stopOrder: [0, 0, 1] }],
     ["stop-index", { stopOrder: [0, 1, 99] }],
     ["stop-count", { stopHints: ["one"] }],
-    ["schema", { extra: "field" }],
+    ["schema", { title: 42 }],
     ["title-length", { title: "Hi" }],
   ];
   for (const [reason, patch] of cases) {
@@ -163,11 +163,13 @@ test("provider failures and invented coordinates never reach the draft", async (
   });
   assert.equal(r.provenance.source, "template");
   assert.match(r.warnings[0], /provider-unavailable/);
+  // A model-supplied "points" field is ignored: coordinates always come from
+  // the offered stops chosen by index.
   const extra = validateDraftOutput(
     { ...goodOutput({ stops: [{ index: 0 }], stopCount: 1 }), points: [{ lat: 1, lng: 1 }] },
     { stops: [{ index: 0, lat: 49.7, lng: 13.3 }], stopCount: 1 },
   );
-  assert.equal(extra.reason, "schema");
+  assert.deepEqual(extra.value.points, [{ lat: 49.7, lng: 13.3 }]);
 });
 
 test("closed or unknown places and bad inputs are rejected", async (t) => {

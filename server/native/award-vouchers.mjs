@@ -16,11 +16,10 @@ import { assert, id } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
 import { nearAccountId } from "../identity/near.mjs";
 import { NETWORK } from "./network.mjs";
-const EDITIONS = {
-  "Northern Lights": "polar",
-  "Moonwake Aura": "moon",
-  "Sunlit Aura": "gold",
-};
+import {
+  LEGACY_NATIVE_EDITIONS,
+  nativeEditionForName,
+} from "../aura-catalog.mjs";
 export function awardMessage(contractId, claim) {
   return `QuestLayer Aura claim v1\nContract: ${contractId}\nNetwork: ${NETWORK}\nClaim: ${claim.claim_id}\nReceiver: ${claim.receiver_id}\nEdition: ${claim.edition}\nExpires: ${claim.expires_at}`;
 }
@@ -108,13 +107,28 @@ export class AwardVouchers {
       )
       .get(itemId, player);
     assert(item, "Only your own earned Aura can be claimed.", 403);
-    const edition = EDITIONS[item.name];
+    const edition = nativeEditionForName(item.name);
     assert(edition, "This item cannot become a native Aura.");
     const old = db
       .prepare("SELECT * FROM native_awards WHERE item_id=?")
       .get(itemId);
     if (old?.state === "minted")
       return { ...old, network: NETWORK, contractId: this.native.contractId };
+    if (!old && !LEGACY_NATIVE_EDITIONS.includes(edition)) {
+      // Catalog v2 editions need the upgraded contract; never sign a voucher
+      // an older deployment would reject.
+      let supported = [];
+      try {
+        supported = await this.native.view("supported_editions", {}, true);
+      } catch {
+        supported = [];
+      }
+      assert(
+        Array.isArray(supported) && supported.includes(edition),
+        "This Aura edition can be secured on NEAR after the next contract upgrade. Keep your demo Aura for now.",
+        503,
+      );
+    }
     if (!old) {
       const minted = await this.native.view(
         "edition_minted",

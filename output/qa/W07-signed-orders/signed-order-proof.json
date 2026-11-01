@@ -1,0 +1,104 @@
+{
+  "verifiedAt": "2026-11-01T13:09:46.037Z",
+  "network": "testnet",
+  "marketContract": "questlayer-market-20261101b.testnet",
+  "nftContract": "nfts.questlayer-dev-20261101.testnet",
+  "tokenId": "aura:polar:1",
+  "seller": "questlayer-dev-20261101.testnet",
+  "buyer": "explorer.questlayer-dev-20261101.testnet",
+  "participants": "Both are project-controlled developer testnet accounts sharing the operator key",
+  "signerKind": "developer CLI NEP-413 signer (not a browser wallet signMessage)",
+  "price": "10000000000000000000000",
+  "sellOrderFilled": true,
+  "replayRejected": true,
+  "cancelledOrderRejected": true,
+  "buyOfferFilled": true,
+  "proceedsWithdrawn": true,
+  "intents": "Not executed by a NEAR Intents verifier",
+  "financialConservation": {
+    "version": 2,
+    "network": "testnet",
+    "nft_contract": "nfts.questlayer-dev-20261101.testnet",
+    "owner": "questlayer-dev-20261101.testnet",
+    "paused": false,
+    "listing_count": 0,
+    "participant_count": 0,
+    "funded": "20000000000000000000000",
+    "escrow": "0",
+    "credits": "0",
+    "withdrawing": "0",
+    "withdrawn": "20000000000000000000000",
+    "storage": "project-sponsored testnet storage",
+    "max_listings": 128,
+    "max_participants": 256,
+    "max_active_per_account": 3,
+    "signed_orders": {
+      "standard": "questlayer_aura_order",
+      "version": 1,
+      "signature": "NEP-413 ed25519",
+      "signer_count": 2,
+      "nonce_count": 3,
+      "filled": 2,
+      "max_signers": 256,
+      "max_keys_per_signer": 4,
+      "max_nonces": 1024,
+      "max_ttl_ms": 2592000000
+    }
+  },
+  "transactions": [
+    {
+      "label": "Upgrade market to version 2 (deploy + migrate, atomic)",
+      "transaction": "84k2TBW2kYLRSrfZiPFhkaMPBafNobYCsoWk2EJLivAd"
+    },
+    {
+      "label": "Register NEP-413 signing key for questlayer-dev-20261101.testnet",
+      "transaction": "3TorcM7pRSisMqTHmpmRNpEcL3Bj2xLjVsb3JC1Mi2Ra"
+    },
+    {
+      "label": "Register NEP-413 signing key for explorer.questlayer-dev-20261101.testnet",
+      "transaction": "6VQzvkqf58KBuwjY4a1jKaiDfDnuFeWnUyUtZejP5h2s"
+    },
+    {
+      "label": "Escrow aura:polar:1 for signed orders",
+      "transaction": "FuUcHyug1Hck9BRffREv5e31Esovesii6kYSCesbpF9m"
+    },
+    {
+      "label": "Buyer fills signed sell order with the exact price",
+      "transaction": "9aL9dDw8NEyspkmwkCkr7PwPdsq7C36Fckz9tTMFqvBs"
+    },
+    {
+      "label": "Replay of the filled order is rejected",
+      "rejectedAsExpected": true,
+      "error": "WebAssembly trap: An `unreachable` opcode was executed."
+    },
+    {
+      "label": "Escrow aura:polar:1 for signed orders",
+      "transaction": "AjJUGWbwhLbxgSheRjd4sUVrcqhEJ52QWC2KRfJiV2qK"
+    },
+    {
+      "label": "Maker cancels a signed order on chain",
+      "transaction": "7RPwywLP1UCmv65CDrZvRNFuY54aEkLVWxwdcsQsZs7j"
+    },
+    {
+      "label": "Fill of the cancelled order is rejected",
+      "rejectedAsExpected": true,
+      "error": "WebAssembly trap: An `unreachable` opcode was executed."
+    },
+    {
+      "label": "Original seller deposits NEAR for an offer",
+      "transaction": "GhY2CKNPh6Y4VuA27V3bjyKWCEdt1RZZFRHkC7dZrwbk"
+    },
+    {
+      "label": "Escrowed owner accepts the signed buy offer",
+      "transaction": "EFZqzPokBGRQdNjrnGjz4pXTZaqrCbkmsr7En5XWo8pk"
+    },
+    {
+      "label": "Withdraw market credit for questlayer-dev-20261101.testnet",
+      "transaction": "88TJ7GnZnp65TfQXXUG6cJDrkQyEpJFK6n1k9Z44jsa4"
+    },
+    {
+      "label": "Withdraw market credit for explorer.questlayer-dev-20261101.testnet",
+      "transaction": "3LrTR6d1CC2TzXc692nqRn4TqUxM14nj5qoqL7MaRx5S"
+    }
+  ]
+}

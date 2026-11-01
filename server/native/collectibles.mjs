@@ -2,11 +2,13 @@ import { NativeContractReader } from "./reader.mjs";
 import { assert } from "../domain.mjs";
 import { nearAccountId, assertTestnetRpc } from "../identity/near.mjs";
 import { NETWORK } from "./network.mjs";
-const EDITIONS = {
-  polar: { name: "Northern Lights", color: "#9edfc5", rarity: "rare" },
-  moon: { name: "Moonwake Aura", color: "#c2a0df", rarity: "epic" },
-  gold: { name: "Sunlit Aura", color: "#e7c35f", rarity: "legendary" },
-};
+import { AURA_CATALOG, nativeAuraToken } from "../aura-catalog.mjs";
+const EDITIONS = Object.fromEntries(
+  AURA_CATALOG.filter((e) => e.native).map((e) => [
+    e.id,
+    { name: e.name, color: e.color, rarity: e.rarity },
+  ]),
+);
 export function nativeItem(token) {
   if (
     !token ||
@@ -14,11 +16,10 @@ export function nativeItem(token) {
     typeof token.owner_id !== "string"
   )
     return null;
-  const aura = /^aura:(polar|moon|gold):(\d{1,3})$/.exec(token.token_id),
+  const aura = nativeAuraToken(token.token_id),
     avatar = token.token_id.startsWith("avatar:");
   if (!aura && !avatar) return null;
-  if (aura && (Number(aura[2]) < 1 || Number(aura[2]) > 256)) return null;
-  const edition = aura ? EDITIONS[aura[1]] : null,
+  const edition = aura ? EDITIONS[aura.edition] : null,
     meta = token.metadata || {},
     media =
       typeof meta.media === "string" &&
@@ -30,7 +31,7 @@ export function nativeItem(token) {
     tokenId: token.token_id,
     ownerId: token.owner_id,
     kind: avatar ? "avatar" : "aura",
-    edition: aura?.[1] || null,
+    edition: aura?.edition || null,
     title: String(meta.title || edition?.name || "QuestLayer Explorer").slice(
       0,
       120,
@@ -38,7 +39,7 @@ export function nativeItem(token) {
     media,
     color: edition?.color || "#b8a1ed",
     rarity: edition?.rarity || "common",
-    serial: aura ? Number(aura[2]) : null,
+    serial: aura ? aura.serial : null,
   };
 }
 export class NativeCollectibles extends NativeContractReader {

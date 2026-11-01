@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native also exist in the collectibles contract; the others are game wardrobe editions until a reviewed contract upgrade adds them. Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
+  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
   "supplyPerEdition": 256,
   "rarities": ["common", "rare", "epic", "legendary"],
   "entitlements": {
@@ -18,7 +18,7 @@
       "slot": "above",
       "color": "#ff8a4c",
       "set": "first-light",
-      "native": false,
+      "native": true,
       "motif": "Three drifting flame wisps"
     },
     {
@@ -29,7 +29,7 @@
       "slot": "below",
       "color": "#8fd3ff",
       "set": "first-light",
-      "native": false,
+      "native": true,
       "motif": "Water ripples with falling drops"
     },
     {
@@ -52,7 +52,7 @@
       "slot": "below",
       "color": "#ff9fc8",
       "set": "first-light",
-      "native": false,
+      "native": true,
       "motif": "Ring of leaves and five-petal flowers"
     },
     {
@@ -63,7 +63,7 @@
       "slot": "above",
       "color": "#8fa6ff",
       "set": "tempest",
-      "native": false,
+      "native": true,
       "motif": "Cloud crown with crackling bolts"
     },
     {
@@ -86,7 +86,7 @@
       "slot": "below",
       "color": "#e6ecff",
       "set": "tempest",
-      "native": false,
+      "native": true,
       "motif": "Orbiting comet with a rose tail"
     },
     {
@@ -109,7 +109,7 @@
       "slot": "below",
       "color": "#ff5fa8",
       "set": "solar-crown",
-      "native": false,
+      "native": true,
       "motif": "Starburst ring with radiant spikes"
     }
   ],
