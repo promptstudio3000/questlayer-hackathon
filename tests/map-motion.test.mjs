@@ -80,3 +80,20 @@ test("cancelled movement cannot overwrite a newer location even if a queued call
   assert.deepEqual(f.position, target);
   assert.equal(f.frames.size, 0);
 });
+
+test("walk there is capped and stepped", async () => {
+  const { cappedWalkTarget, walkSteps, WALK_CAP_M } = await import(
+    "../src/map-motion.ts"
+  );
+  const from = { lat: 49.74, lng: 13.37 },
+    far = { lat: 49.75, lng: 13.37 }; // ~1.1 km
+  const capped = cappedWalkTarget(from, far);
+  assert.equal(capped.capped, true);
+  assert.equal(capped.distance, WALK_CAP_M);
+  assert.ok(capped.point.lat > from.lat && capped.point.lat < far.lat);
+  const near = { lat: 49.7405, lng: 13.37 };
+  assert.deepEqual(cappedWalkTarget(from, near).point, near);
+  const steps = walkSteps(from, capped.point);
+  assert.ok(steps.length >= 40);
+  assert.deepEqual(steps.at(-1), capped.point);
+});

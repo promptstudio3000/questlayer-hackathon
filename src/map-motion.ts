@@ -57,3 +57,46 @@ export function moveMapMarker(
     cancelFrame(frame);
   };
 }
+
+// City-demo "Walk there" moves the explorer at most this far per tap, so the
+// arena still asks players to cross the map instead of teleporting to a prize.
+export const WALK_CAP_M = 250;
+export const WALK_STEP_M = 6;
+export const WALK_STEP_MS = 80;
+function span(a: Point, b: Point) {
+  const dy = ((b.lat - a.lat) * Math.PI) / 180,
+    dx =
+      (((b.lng - a.lng) * Math.PI) / 180) *
+      Math.cos(((a.lat + b.lat) * Math.PI) / 360);
+  return Math.hypot(dx, dy) * 6371000;
+}
+export function cappedWalkTarget(from: Point, to: Point, cap = WALK_CAP_M) {
+  const distance = span(from, to);
+  if (!Number.isFinite(distance) || distance <= cap)
+    return { point: { lat: to.lat, lng: to.lng }, distance, capped: false };
+  const f = cap / distance;
+  return {
+    point: {
+      lat: from.lat + (to.lat - from.lat) * f,
+      lng: from.lng + (to.lng - from.lng) * f,
+    },
+    distance: cap,
+    capped: true,
+  };
+}
+// Intermediate positions (ending exactly at `to`) for an animated walk.
+export function walkSteps(from: Point, to: Point, step = WALK_STEP_M) {
+  const distance = span(from, to);
+  if (!Number.isFinite(distance) || distance <= step)
+    return [{ lat: to.lat, lng: to.lng }];
+  const n = Math.ceil(distance / step);
+  return Array.from({ length: n }, (_, i) => {
+    const f = (i + 1) / n;
+    return i === n - 1
+      ? { lat: to.lat, lng: to.lng }
+      : {
+          lat: from.lat + (to.lat - from.lat) * f,
+          lng: from.lng + (to.lng - from.lng) * f,
+        };
+  });
+}

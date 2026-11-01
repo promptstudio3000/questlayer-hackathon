@@ -283,6 +283,7 @@ export function GameMap(props: GameMapProps) {
           },
         });
       m.addImage("gold-coin", rasterizeGameObject({ kind: "coin" }));
+      m.addImage("street-find", rasterizeGameObject({ kind: "discovery" }));
       m.addSource("zones", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -313,7 +314,12 @@ export function GameMap(props: GameMapProps) {
         source: "coins",
         minzoom: 14,
         layout: {
-          "icon-image": "gold-coin",
+          "icon-image": [
+            "case",
+            ["==", ["get", "find"], true],
+            "street-find",
+            "gold-coin",
+          ],
           "icon-size": [
             "interpolate",
             ["linear"],
@@ -347,7 +353,7 @@ export function GameMap(props: GameMapProps) {
       type: "FeatureCollection",
       features: props.world.coins.map((c) => ({
         type: "Feature",
-        properties: { id: c.id },
+        properties: { id: c.id, find: !!c.find },
         geometry: { type: "Point", coordinates: [c.lng, c.lat] },
       })),
     });

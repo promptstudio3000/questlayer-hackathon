@@ -71,11 +71,14 @@ export type Zone = {
   opensAt: number;
   closesAt: number;
   color: string;
+  placeStatus?: "open" | "closed";
 };
 export type Coin = Point & {
   id: string;
   value_u: number;
   claimant: string | null;
+  // A street find is a coin seed that also pays extra XP (server-chosen).
+  find?: boolean;
 };
 export type QuestActivity = {
   templateId: string;
@@ -109,6 +112,7 @@ export type Quest = Point & {
   checkpointCount?: number;
   nextPoint?: Point | null;
   itemAvailable?: boolean;
+  placeStatus?: "open" | "closed";
   opens_at: number;
   closes_at: number;
   claimant: string | null;
@@ -124,6 +128,7 @@ export type World = {
   cityName?: string;
   cityZoneCount?: number;
   coinRadius?: number;
+  streetFindXp?: number;
   quality?: { notice: string; fieldReview: string };
   endsAt: number;
   zones: Zone[];
