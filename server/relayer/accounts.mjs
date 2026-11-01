@@ -205,9 +205,9 @@ export class ManagedAccounts {
       }
       this.db
         .prepare(
-          "INSERT INTO managed_accounts(account_id,player_id,slug,factory_id,network,state,created_at,updated_at) VALUES(?,?,?,?,'testnet','creating',?,?)",
+          "INSERT INTO managed_accounts(account_id,player_id,slug,factory_id,network,state,created_at,updated_at) VALUES(?,?,?,?,?,'creating',?,?)",
         )
-        .run(accountId, player, slug, this.factoryId, now, now);
+        .run(accountId, player, slug, this.factoryId, NETWORK, now, now);
       this.db
         .prepare(
           "INSERT INTO managed_account_keys VALUES(?,?,'device','pending',?,?,?)",

@@ -52,11 +52,20 @@ const tableRows = (db) =>
     .all();
 const latest = known.core.at(-1),
   coreNames = new Set(known.core.flatMap((x) => Object.keys(x.tables)));
-const modules = () => [
-  ...new Map(
-    [...known.optional, ...registry.values()].map((m) => [m.name, m]),
-  ).values(),
-];
+// schema-known.json may record several versions of one module; the newest is
+// current and older ones stay recognizable so backups and not-yet-upgraded
+// databases still pass preflight.
+const newest = (list) => {
+  const out = new Map();
+  for (const m of list)
+    if (!out.has(m.name) || out.get(m.name).version < m.version)
+      out.set(m.name, m);
+  return out;
+};
+const knownCurrent = newest(known.optional);
+const olderVersions = (name, version) =>
+  known.optional.filter((m) => m.name === name && m.version < version);
+const modules = () => [...new Map([...knownCurrent, ...registry]).values()];
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 let savepoint = 0;
 function transaction(db, work) {
@@ -71,7 +80,58 @@ function transaction(db, work) {
     throw error;
   }
 }
-export function registerModuleSchema({ name, version, sql }) {
+// An upgrade step may only rewrite constraint text inside a module's own
+// CREATE TABLE statements (for example widening a CHECK). Each step is proven
+// at registration, without IO: applying its replacements to the recorded older
+// shape must yield exactly the current shape, and indexes may not change.
+// Steps run through SQLite's documented writable_schema procedure, which is
+// only valid for edits that leave every stored row and the on-disk format
+// untouched; table rebuilds and data rewrites stay separate reviewed work.
+function checkUpgrades(name, version, tables, indexes, upgrades) {
+  if (!Array.isArray(upgrades) || upgrades.length > 8)
+    fail("Invalid module upgrade list.");
+  return upgrades.map(({ from, loosen }) => {
+    const old = known.optional.find(
+      (x) => x.name === name && x.version === from,
+    );
+    if (!old || !(from < version) || !loosen || typeof loosen !== "object")
+      fail("Module upgrade must start from a recorded older version.");
+    if (!same(Object.keys(old.tables).sort(), Object.keys(tables).sort()))
+      fail("Module upgrade cannot add or remove tables.");
+    if (!same(shape(old.indexes || {}), shape(indexes)))
+      fail("Module upgrade cannot change indexes.");
+    const edits = {};
+    for (const [table, sql] of Object.entries(old.tables)) {
+      let next = sql;
+      const pairs = loosen[table] || [];
+      for (const pair of pairs) {
+        if (
+          !Array.isArray(pair) ||
+          pair.length !== 2 ||
+          typeof pair[0] !== "string" ||
+          typeof pair[1] !== "string" ||
+          !/^CHECK\(/.test(pair[0]) ||
+          !/^CHECK\(/.test(pair[1]) ||
+          next.split(pair[0]).length !== 2
+        )
+          fail("Module upgrade edits must replace one CHECK clause each.");
+        next = next.replace(pair[0], pair[1]);
+      }
+      if (normalize(next) !== normalize(tables[table]))
+        fail("Module upgrade does not produce the declared shape.");
+      if (pairs.length) edits[table] = pairs.map((p) => [...p]);
+    }
+    if (Object.keys(loosen).some((t) => !Object.hasOwn(old.tables, t)))
+      fail("Module upgrade names a table the module does not own.");
+    return Object.freeze({
+      from,
+      old: old.tables,
+      fingerprint: digest(shape(old.tables)),
+      edits,
+    });
+  });
+}
+export function registerModuleSchema({ name, version, sql, upgrades = [] }) {
   if (
     name === "core" ||
     !/^[a-z][a-z0-9-]{0,63}$/.test(name) ||
@@ -115,6 +175,9 @@ export function registerModuleSchema({ name, version, sql }) {
         s,
       ]),
   );
+  const recorded = known.optional.filter((x) => x.name === name);
+  if (recorded.length && !recorded.some((x) => x.version === version))
+    fail("Module schema version is not recorded in schema-known.json.");
   const definition = Object.freeze({
     name,
     version,
@@ -122,9 +185,12 @@ export function registerModuleSchema({ name, version, sql }) {
     tables: Object.freeze(tables),
     indexes: Object.freeze(indexes),
     fingerprint: digest(shape(tables)),
+    upgrades: Object.freeze(
+      checkUpgrades(name, version, tables, indexes, upgrades),
+    ),
   });
   const existing =
-    registry.get(name) || known.optional.find((x) => x.name === name);
+    registry.get(name) || recorded.find((x) => x.version === version);
   if (
     existing &&
     (existing.version !== version ||
@@ -149,16 +215,17 @@ function moduleStates(actual) {
     const names = Object.keys(definition.tables),
       present = names.filter((n) => Object.hasOwn(actual, n));
     if (!present.length) continue;
-    if (
-      present.length !== names.length ||
-      present.some(
-        (n) => normalize(actual[n]) !== normalize(definition.tables[n]),
-      )
-    )
-      fail(`Unsupported ${definition.name} table shape.`);
+    const matches = (tables) =>
+      present.length === names.length &&
+      present.every((n) => normalize(actual[n]) === normalize(tables[n]));
+    const match = [
+      definition,
+      ...olderVersions(definition.name, definition.version).reverse(),
+    ].find((candidate) => matches(candidate.tables));
+    if (!match) fail(`Unsupported ${definition.name} table shape.`);
     found.push({
-      ...definition,
-      fingerprint: definition.fingerprint || digest(shape(definition.tables)),
+      ...match,
+      fingerprint: match.fingerprint || digest(shape(match.tables)),
     });
   }
   return found;
@@ -339,6 +406,34 @@ export function recordSchemaVersions(db) {
       db.exec(`PRAGMA user_version=${CORE_SCHEMA_VERSION}`);
   });
 }
+function applyUpgrade(db, step) {
+  const version = db.prepare("PRAGMA schema_version").get().schema_version;
+  db.exec("PRAGMA writable_schema=ON");
+  try {
+    const update = db.prepare(
+      "UPDATE sqlite_master SET sql=? WHERE type='table' AND name=? AND sql=?",
+    );
+    for (const [table, pairs] of Object.entries(step.edits)) {
+      const current = db
+        .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?")
+        .get(table).sql;
+      let next = current;
+      for (const [from, to] of pairs) {
+        if (next.split(from).length !== 2)
+          fail("Stored table text does not match the upgrade step.");
+        next = next.replace(from, to);
+      }
+      if (update.run(next, table, current).changes !== 1)
+        fail("Module upgrade could not rewrite its table definition.");
+    }
+    db.exec(`PRAGMA schema_version=${version + 1}`);
+  } finally {
+    db.exec("PRAGMA writable_schema=OFF");
+  }
+  const integrity = db.prepare("PRAGMA integrity_check(1)").get();
+  if (Object.values(integrity)[0] !== "ok")
+    fail("SQLite integrity check failed after module upgrade.");
+}
 export function ensureModuleVersion(db, definition) {
   if (registry.get(definition.name) !== definition)
     fail("Register the module schema before initialization.");
@@ -350,6 +445,43 @@ export function ensureModuleVersion(db, definition) {
     present = names.filter((n) => Object.hasOwn(actual, n));
   if (present.length && present.length !== names.length)
     fail("Incomplete existing module.");
+  const step =
+    present.length &&
+    definition.upgrades.find((u) =>
+      names.every((n) => normalize(actual[n]) === normalize(u.old[n])),
+    );
+  if (step) {
+    if (
+      row &&
+      (row.version !== step.from || row.fingerprint !== step.fingerprint)
+    )
+      fail("Unknown future or altered module version.");
+    return transaction(db, () => {
+      inspectDatabaseSchema(db);
+      applyUpgrade(db, step);
+      if (row)
+        db.prepare(
+          `UPDATE ${LEDGER} SET version=?,fingerprint=? WHERE name=? AND version=?`,
+        ).run(
+          definition.version,
+          definition.fingerprint,
+          definition.name,
+          step.from,
+        );
+      const after = Object.fromEntries(
+        tableRows(db).map((r) => [r.name, r.sql]),
+      );
+      if (
+        names.some(
+          (n) => normalize(after[n]) !== normalize(definition.tables[n]),
+        )
+      )
+        fail("Module upgrade did not reach its declared version.");
+      recordSchemaVersions(db);
+      inspectDatabaseSchema(db);
+      return definition.version;
+    });
+  }
   if (
     present.some(
       (n) => normalize(actual[n]) !== normalize(definition.tables[n]),
