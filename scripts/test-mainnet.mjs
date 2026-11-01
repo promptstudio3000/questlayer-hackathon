@@ -3,7 +3,18 @@
 // still build `.testnet` fixture accounts and assert testnet literals; they
 // stay testnet-only until their fixtures take the network from
 // server/native/network.mjs. Every other test file, including new ones, must
-// pass on both networks.
+// pass on both networks. What keeps the rest here (1 November):
+// - they boot the full server from the repository, which on mainnet needs
+//   public/mainnet-deployment.json (written only by a real slice deploy;
+//   tests/mainnet-slice.test.mjs boots a copy instead): http, http-social,
+//   near-auth, creator-runtime, original-art-http, world-pilot;
+// - they need rewards, market, tasks or creators manifests, which are outside
+//   the mainnet slice: creator-money, native-economy, native-market,
+//   native-progression, native-rewards, native-tasks,
+//   native-transaction-confirmation, native-vaults;
+// - they compare with the client network module, fixed at build time to
+//   testnet under node: near-network-client, native-profile;
+// - schema-module-upgrade proves the version 1 testnet-only CHECK.
 import { readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
@@ -12,8 +23,6 @@ export const TESTNET_FIXTURE_FILES = [
   "creator-runtime",
   "http-social",
   "http",
-  "identity-sessions",
-  "native-collectibles",
   "native-economy",
   "native-market",
   "native-profile",
@@ -26,8 +35,6 @@ export const TESTNET_FIXTURE_FILES = [
   "near-network-client",
   "original-art-http",
   "schema-module-upgrade",
-  "social-records",
-  "staking-foundation",
   "world-pilot",
 ].map((name) => `${name}.test.mjs`);
 
