@@ -167,7 +167,10 @@ export class NativeTransactionConfirmation {
     const { receiverId, methodName: method, args, deposit, gas } = quote;
     const pinned = new Map();
     let result = "true";
-    if (receiverId === FACTORY_ID || receiverId.endsWith("." + FACTORY_ID)) {
+    if (
+      FACTORY_ID &&
+      (receiverId === FACTORY_ID || receiverId.endsWith("." + FACTORY_ID))
+    ) {
       const cfg = this.rewardConfiguration();
       assert(
         cfg.factory?.contractId === FACTORY_ID &&

@@ -14,9 +14,10 @@ import {
 } from "../server/native/distribution.mjs";
 import { buildCityPlan } from "../server/world-planner.mjs";
 import { PLZEN } from "../server/spatial/city-pack.mjs";
+import { ACCOUNT_SUFFIX } from "../server/native/network.mjs";
 
 const NEAR = 10n ** 24n;
-const CONTRACT = "rewards.testnet";
+const CONTRACT = `rewards${ACCOUNT_SUFFIX}`;
 // A minimal rewards contract: buckets, open days and their reservations.
 function chain({ funded = NEAR / 5n } = {}) {
   const c = {
@@ -198,9 +199,9 @@ test("more local confirmations than chain-accepted claims is drift", async () =>
   const m = await f.publish("2026-11-01");
   f.db
     .prepare(
-      "INSERT INTO native_reward_claims(id,day_id,kind,item_index,account_id,player_id,body,signature,state,run_after,created_at) VALUES('r1',?,'coin',0,'a.testnet','p','{}','s','confirmed',0,0)",
+      "INSERT INTO native_reward_claims(id,day_id,kind,item_index,account_id,player_id,body,signature,state,run_after,created_at) VALUES('r1',?,'coin',0,'a'||?,'p','{}','s','confirmed',0,0)",
     )
-    .run(m.id);
+    .run(m.id, ACCOUNT_SUFFIX);
   const a = await auditDistribution(f.native);
   assert.deepEqual(a.failed, ["receipts-within-chain-claims"]);
 });

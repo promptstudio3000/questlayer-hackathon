@@ -10,7 +10,6 @@ import { spawnSync } from "node:child_process";
 export const TESTNET_FIXTURE_FILES = [
   "creator-money",
   "creator-runtime",
-  "distribution",
   "http-social",
   "http",
   "identity-sessions",
@@ -23,7 +22,6 @@ export const TESTNET_FIXTURE_FILES = [
   "native-tasks",
   "native-transaction-confirmation",
   "native-vaults",
-  "native-yield-days",
   "near-auth",
   "near-network-client",
   "original-art-http",
