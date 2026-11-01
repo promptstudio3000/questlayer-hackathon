@@ -1887,13 +1887,13 @@ input[type="range"] {
   display: flex;
   gap: 14px;
   align-items: center;
-  color: #ad94ba;
+  color: #6c5785;
   margin: 15px 0;
 }
 .market-banner b {
   display: block;
   font-size: 12px;
-  color: #9b82aa;
+  color: #654f80;
 }
 .market-banner small {
   display: block;
