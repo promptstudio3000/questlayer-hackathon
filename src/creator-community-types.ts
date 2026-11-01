@@ -122,6 +122,8 @@ export type CreatorMe = {
 export type PublicCreatorQuest = {
   requirement?: CreatorObservationRequirement;
   place?: CreatorPlace;
+  /** Paid access price in yoctoNEAR; absent means free. */
+  price?: string;
   id: string;
   revision: number;
   title: string;
@@ -150,6 +152,7 @@ export type OwnedCreatorQuest = {
     description: string;
     requirement?: CreatorObservationRequirement;
     place?: CreatorPlace;
+    price?: string;
   };
   lockedXp: number;
   openParticipations: number;

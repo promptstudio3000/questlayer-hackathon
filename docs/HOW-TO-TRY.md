@@ -100,6 +100,9 @@ In the app, Community → **Near you** lists pinned creator places within 5 km a
 **My creations → New quest** offers only the Visit, Trail and Chest templates and pins them where you stand. A
 published quest shows **Support the creator** (gifts and, when priced, unlock; paid from your balance) and My
 creations shows **Your earnings** with a relayed withdraw.
+An author can choose **Paid unlock** (0.01 to 10 NEAR); after review the publisher registers that price on the
+creators contract (`register_quest`, or `set_price` when a later revision changes it), and the quest shows
+**Unlock for … NEAR**. Pinned creator places also appear on the map; tapping one opens the quest.
 Public note records need no extra key: `POST /api/native/records/prepare {noteId, publicConsent, permanenceAcknowledged}`
 returns the exact NEAR Social `set` call for the player's own account and `GET /api/native/records?note=` shows the
 chain record once it is confirmed.

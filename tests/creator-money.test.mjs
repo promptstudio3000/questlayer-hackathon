@@ -436,3 +436,51 @@ test("without the creator community module the publisher still runs rounds and r
     /not enabled/,
   );
 });
+
+test("the approved revision's access price is registered, then mirrored once with set_price when it changes", async () => {
+  const f = fixture();
+  f.publish("q-paid");
+  const price = (10n ** 23n).toString();
+  f.db
+    .prepare("UPDATE creator_revisions SET content=? WHERE quest_id='q-paid'")
+    .run(JSON.stringify({ price }));
+  await f.money.run();
+  const register = f.chain.state.calls.find(
+    (c) => c.method === "register_quest",
+  );
+  assert.equal(register.args.price, price);
+  // Unchanged price: nothing more.
+  await f.money.run();
+  assert.equal(
+    f.chain.state.calls.filter((c) => c.method === "set_price").length,
+    0,
+  );
+  // A newly approved revision with another price is mirrored exactly once.
+  f.db
+    .prepare(
+      "INSERT INTO creator_revisions(quest_id,revision,content,state) VALUES('q-paid',2,?,'approved')",
+    )
+    .run(JSON.stringify({ price: "0" }));
+  f.db
+    .prepare("UPDATE creator_quests SET published_revision=2 WHERE id='q-paid'")
+    .run();
+  await f.money.run();
+  await f.money.run();
+  const sets = f.chain.state.calls.filter((c) => c.method === "set_price");
+  assert.deepEqual(
+    sets.map((c) => c.args),
+    [{ quest_id: "q-paid", price: "0" }],
+  );
+  // An out-of-bounds stored price never reaches the chain.
+  f.publish("q-wild");
+  f.db
+    .prepare("UPDATE creator_revisions SET content=? WHERE quest_id='q-wild'")
+    .run(JSON.stringify({ price: (10n ** 30n).toString() }));
+  await f.money.run();
+  assert.equal(
+    f.chain.state.calls.find(
+      (c) => c.method === "register_quest" && c.args.quest_id === "q-wild",
+    ).args.price,
+    "0",
+  );
+});
