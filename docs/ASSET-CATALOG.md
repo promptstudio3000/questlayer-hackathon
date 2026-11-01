@@ -99,8 +99,8 @@ The Aura wardrobe grew from three to nine editions. `server/data/aura-catalog.js
 | Pilgrim's Path | rare | below | Wayfarers | NPC (quest giver, 5 lines) | `earned:npc:` |
 | Chronicle Crown | epic | above | Wayfarers | NPC (storyteller chapter set) | `earned:npc:` |
 | Merchant's Ledger | epic | below | Wayfarers | NPC (trader loyalty, 10 trades) | `earned:npc:` |
-| Wardbreaker Horns | epic | above | Night Hunt | Monster (zone guardian) | `earned:monster:` |
-| Will-o'-Wisp Halo | legendary | above | Night Hunt | NPC (wandering rare item game) | `earned:npc:` |
+| Wardbreaker Horns | epic | above | Night Hunt | Monster (first zone guardian win) | `earned:monster:` |
+| Will-o'-Wisp Halo | legendary | above | Night Hunt | NPC (first Pocket Wisp mini-game win) | `earned:npc:` |
 | Bossbane Fangring | legendary | below | Night Hunt | Monster (weekly boss, 3+ hits) | `earned:monster:` |
 
 The contract enforces this: `CLAIM_ONLY_EDITIONS` mints these editions only for a claim whose id starts with the prefix (signed `redeem_aura` claims or the oracle's `mint_aura_once`), and the claim-less oracle `mint_aura` refuses them. The `claim_only_editions` view lists them, and `get_claim` shows where each token came from. The server's award vouchers use the matching prefix (`awardClaimPrefix` in `server/aura-catalog.mjs`). Their tokens say "Earned from a QuestLayer NPC." or "Earned by beating a QuestLayer monster." Supply stays 256 per edition. The sprites are original project creatures and props (storybook, coins, waystone, ghost-fire lantern, guardian horns, a fang ring around a rift), drawn by the painters in `src/aura-art-data.ts` with the same style rules; no Aavegotchi artwork or lore is used. Rendered sheet: `output/qa/N5-npc-editions/npc-edition-sprites.png`. Set bonuses stay cosmetic.

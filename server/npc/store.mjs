@@ -67,6 +67,10 @@ export function createNpcStore(db, { clock = Date.now } = {}) {
         "UPDATE actor_offers SET state='completed',completed_at=? WHERE id=? AND player_id=? AND state='accepted'",
       ).run(clock(), offerId, player).changes;
     },
+    /** Quest-giver lines this player turned in, with any NPC. */
+    completedQuestLines(player) {
+      return q("SELECT count(*) n FROM actor_offers WHERE player_id=? AND kind='quest' AND state='completed'").get(player).n;
+    },
     aurasGrantedToday(actor) {
       return q(
         "SELECT count(*) n FROM actor_offers WHERE actor_id=? AND state='completed' AND completed_at>? AND json_extract(terms,'$.aura')=1",

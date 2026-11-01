@@ -106,7 +106,8 @@ test("crafting turns 10 shards and a common Aura into Wardbreaker Horns", () => 
   assert.equal(out.offered.id, common);
   assert.equal(db.prepare("SELECT player_id FROM inventory WHERE id=?").get(common).player_id, ALTAR_ACCOUNT);
   assert.equal(rewards.summary(p, DAY).shardTotal, 0);
-  assert.equal(db.prepare("SELECT minted FROM editions WHERE name='Wardbreaker Horns'").get().minted, 1);
+  // One from the first guardian win (once per player), one from the altar.
+  assert.equal(db.prepare("SELECT minted FROM editions WHERE name='Wardbreaker Horns'").get().minted, 2);
 });
 
 test("a guardian on duty locks its zone chest until you beat it", () => {
