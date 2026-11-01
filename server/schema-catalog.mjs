@@ -6,6 +6,7 @@ for (const relative of [
   "./creators/completion.mjs",
   "./relayer/schema.mjs",
   "./native/creator-money.mjs",
+  "./native/social-records.mjs",
 ]) {
   const url = new URL(relative, import.meta.url);
   if (existsSync(url)) await import(url.href);

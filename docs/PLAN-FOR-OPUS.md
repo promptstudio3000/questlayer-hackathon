@@ -26,6 +26,7 @@ Read first: `docs/STATUS.md`, `docs/CLAUDE-AUDIT-AND-STRATEGY.md`, `DESIGN.md`, 
 | Aura securing | `/api/native/claims*` + `mintEarnedAura` | copy: "Secure this Aura" |
 | Staking position | `/api/native/vaults*` (quotes) + relayed `create_position`/`deposit_and_stake`/`request_exit`/`withdraw_owner` | money never sponsored |
 | Creator money | `GET /api/native/creators` (pot, policy, open round, my credit), `GET /api/native/creators/quest?quest=`, `POST /api/native/creators/prepare {kind: buy|donate|withdraw, questId, amount}` → reviewed tx for `NativeSigner.send`, `POST /api/native/creators/like {questId}` | quotes carry exact price and the 80/20 split; likes count once per player |
+| Public note record | `GET /api/native/records?note=`, `POST /api/native/records/prepare {noteId, kind: note|tombstone, publicConsent, permanenceAcknowledged}` → `set` quote for `NativeSigner.send`, `POST /api/native/records/confirm {noteId, mutationId}` | disclose permanence before the write; media shows `ipfs://` address and pin state |
 | Economy facts | `docs/ECONOMY-RULES.md`, `/api/native/economy` | "Today's pot" source |
 
 ## Slices in order

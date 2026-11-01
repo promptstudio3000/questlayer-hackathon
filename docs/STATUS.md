@@ -47,6 +47,11 @@ funded and signed in the background. The blockchain is a property of the items, 
   live round (2026-11-01, 0.01 NEAR) is transaction `3aBKSkm3N4rhoxriFG5vZosSiFeWrqAKo49V5u47HZSc`. Player
   payments are quoted by `/api/native/creators/prepare`; the UI is the next step (`docs/PLAN-FOR-OPUS.md`).
 - The relayer allowlists staking positions (money never sponsored) and creator payments from the invisible account.
+- Public records (W10.1, `server/native/social-records.mjs`): a note that is already public in the app can be
+  written under the player's own NEAR Social namespace from their own account (`/api/native/records*`), with the
+  photo's IPFS content address, rounded anchors, optional author fix, confirm-by-readback and tombstones for
+  removals. Pinning runs through an optional add endpoint (`IPFS_ADD_URL`); without it the record carries the
+  address and pinning reports "unavailable". No live record has been written yet; the UI is the next step.
 
 ## Not in scope before the hackathon deadline
 

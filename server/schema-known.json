@@ -380,6 +380,18 @@
       "indexes": {
         "creator_money_jobs_due": "CREATE INDEX IF NOT EXISTS creator_money_jobs_due ON creator_money_jobs(state,run_after,seq)"
       }
+    },
+    {
+      "name": "social-records",
+      "version": 1,
+      "source": "server/native/social-records.mjs",
+      "tables": {
+        "social_record_media": "CREATE TABLE social_record_media(\n image TEXT PRIMARY KEY,\n sha256 TEXT NOT NULL,\n cid TEXT NOT NULL,\n bytes INTEGER NOT NULL CHECK(bytes>0),\n state TEXT NOT NULL CHECK(state IN ('computed','pinning','pinned','mismatch','unavailable')),\n attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts>=0),\n run_after INTEGER NOT NULL DEFAULT 0,\n last_error TEXT,\n pinned_at INTEGER,\n updated_at INTEGER NOT NULL\n)",
+        "social_record_publications": "CREATE TABLE social_record_publications(\n note_id TEXT NOT NULL REFERENCES messages(id),\n mutation_id TEXT NOT NULL,\n account_id TEXT NOT NULL,\n kind TEXT NOT NULL CHECK(kind IN ('note','tombstone')),\n record TEXT NOT NULL CHECK(json_valid(record)),\n state TEXT NOT NULL CHECK(state IN ('prepared','confirmed')),\n prepared_at INTEGER NOT NULL,\n confirmed_at INTEGER,\n PRIMARY KEY(note_id,mutation_id)\n)"
+      },
+      "indexes": {
+        "social_record_publications_note": "CREATE INDEX IF NOT EXISTS social_record_publications_note ON social_record_publications(note_id,state,prepared_at)"
+      }
     }
   ]
 }

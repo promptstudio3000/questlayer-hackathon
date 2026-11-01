@@ -82,6 +82,9 @@ Run the server with `PLAYER_FACTORY_KEY_PATH`, `RELAYER_KEY_PATH` and `PLAYER_FA
 invisible accounts; see `docs/RELAYER.md`. Add `CREATORS_PUBLISHER_KEY_PATH` (from
 `node scripts/deploy-creators-testnet.mjs`) to run the creator money publisher: `GET /api/health` then shows
 `creatorMoney.jobs.confirmed` growing and `GET /api/native/creators` shows `openRound` set to today's UTC date.
+Public note records need no extra key: `POST /api/native/records/prepare {noteId, publicConsent, permanenceAcknowledged}`
+returns the exact NEAR Social `set` call for the player's own account and `GET /api/native/records?note=` shows the
+chain record once it is confirmed.
 
 ## 6. On a phone
 

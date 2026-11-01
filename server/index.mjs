@@ -32,6 +32,12 @@ import {
   loadCreatorsPublisher,
   startCreatorMoneyWorker,
 } from "./native/creator-money.mjs";
+import {
+  NativeSocialRecords,
+  createSocialRecordRoutes,
+  httpPinAdapter,
+  startPinWorker,
+} from "./native/social-records.mjs";
 import { NativeVaults, FACTORY_ID, VAULT_POOLS } from "./native/vaults.mjs";
 import { NativeSocialProfile } from "./native/social-profile.mjs";
 import { resolvePublicFile } from "./static-files.mjs";
@@ -113,6 +119,28 @@ const nativeSocialProfile = new NativeSocialProfile(
   provider,
   nativeCollectibles,
 );
+// Public note records on NEAR Social from the player's own account; photo
+// pinning runs only when an IPFS add endpoint is configured.
+const socialRecords = new NativeSocialRecords(db, provider, {
+  media: noteMedia,
+  pinAdapter: httpPinAdapter({
+    url: process.env.IPFS_ADD_URL || "",
+    token: process.env.IPFS_ADD_TOKEN || "",
+  }),
+});
+const socialRecordRoutes = createSocialRecordRoutes(socialRecords);
+const linkedAccount = (player, accountId) =>
+  accountId
+    ? (db
+        .prepare(
+          "SELECT account_id FROM wallet_links WHERE player_id=? AND account_id=?",
+        )
+        .get(player, accountId)?.account_id ?? null)
+    : (db
+        .prepare(
+          "SELECT account_id FROM wallet_links WHERE player_id=? ORDER BY verified_at LIMIT 1",
+        )
+        .get(player)?.account_id ?? null);
 db.exec(
   `CREATE TABLE IF NOT EXISTS passkeys(id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),public_key TEXT NOT NULL,counter INTEGER NOT NULL,transports TEXT NOT NULL);`,
 );
@@ -473,6 +501,7 @@ async function api(req, res, url) {
       creatorMoney: creatorMoney
         ? creatorMoney.workerStatus()
         : { status: "not-configured" },
+      socialRecords: socialRecords.workerStatus(),
       now: Date.now(),
     });
   if (path === "/api/quest-templates" && method === "GET")
@@ -811,6 +840,16 @@ async function api(req, res, url) {
       respond,
       assert,
       accountFor: (id) => creatorMoney?.accountFor(id) ?? null,
+    })
+  )
+    return;
+  if (
+    await socialRecordRoutes.handle(req, res, url, {
+      player,
+      body,
+      respond,
+      assert,
+      linkedAccount,
     })
   )
     return;
@@ -2092,6 +2131,10 @@ const relayWorker =
   !backgroundWorkersDisabled && relayer
     ? startRelayWorker(relayer, { intervalMs: 15000 })
     : null;
+const pinWorker =
+  !backgroundWorkersDisabled && socialRecords.pinAdapter
+    ? startPinWorker(socialRecords, { intervalMs: 60000 })
+    : null;
 const creatorMoneyWorker =
   !backgroundWorkersDisabled && creatorMoney?.enabled
     ? startCreatorMoneyWorker(creatorMoney, { intervalMs: 30000 })
@@ -2131,6 +2174,7 @@ async function close() {
   await rewardWorker?.stop();
   await relayWorker?.stop?.();
   await creatorMoneyWorker?.stop?.();
+  await pinWorker?.stop?.();
   for (const r of listeners) r.end();
   server.close(() => {
     db.close();

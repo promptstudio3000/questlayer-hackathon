@@ -90,11 +90,18 @@ and signed by the player (relayed from the invisible account, never sponsored).
 | Variable                      | Meaning                                                       | Default            |
 | ----------------------------- | ------------------------------------------------------------- | ------------------ |
 | `CREATORS_PUBLISHER_KEY_PATH` | Publisher function-call key of the creators contract account  | unset = read only  |
+| `CREATOR_ROUND_BUDGET_YOCTO`  | Daily round budget; capped by policy and the funded pot       | `1e22` (0.01 NEAR) |
 
 The module and its tables load only when this key or `CREATOR_COMMUNITY_ENABLED=1` is set, so hosts without
 creator features keep their schema unchanged. `scripts/install-relayer-keys-vps.sh` installs the key next to the
 relayer keys when `.data/creators-publisher.json` exists.
-| `CREATOR_ROUND_BUDGET_YOCTO`  | Daily round budget; capped by policy and the funded pot       | `1e22` (0.01 NEAR) |
+
+### Public records (`server/native/social-records.mjs`)
+
+Notes already public in the app can be written as records under `<account>/questlayer/notes/<id>` on NEAR Social
+from the player's own account; the existing `set` allowlist (own namespace, 1 yocto or 0.05 NEAR) covers it.
+`IPFS_ADD_URL` / `IPFS_ADD_TOKEN` enable photo pinning through a Kubo-compatible add endpoint with retries; the
+record's `ipfs://` address is computed locally either way (CIDv1, raw leaf, sha2-256).
 
 ## Wiring in `server/index.mjs`
 
