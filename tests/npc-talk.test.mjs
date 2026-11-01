@@ -4,7 +4,7 @@ import { openDatabase, createPlayer } from "../server/database.mjs";
 import { ensureWorld, HOME, worldView } from "../server/world.mjs";
 import { claimQuest } from "../server/game.mjs";
 import { loadPersonas, personaFor, validatePersona } from "../server/npc/personas.mjs";
-import { buildMenu, menuHash, offerFacts, MAX_LINES_PER_DAY } from "../server/npc/offers.mjs";
+import { buildMenu, lockedOffers, menuHash, offerFacts, MAX_LINES_PER_DAY } from "../server/npc/offers.mjs";
 import {
   npcConfiguration,
   templateReply,
@@ -290,4 +290,34 @@ test("the NPC menu plugs into the encounter hook and routes need a live encounte
   assert.equal(db.prepare("SELECT encounter_id FROM actor_offers").get().encounter_id, "enc_ok");
   const disabled = createNpcRoutes(null, null, db);
   await assert.rejects(disabled.handle(req, {}, url("/api/actors/rada/talk"), ctx({})), /not enabled/);
+});
+
+test("locked staker chips: Tier 2/3 lines show to free players, never as offers", async (t) => {
+  const { view, service, player, world } = await fixture(t);
+  const w = view();
+  assert.equal(w.playerTier, 1);
+  for (const npc of [RADA, BELA]) {
+    const persona = personaFor(npc);
+    const locked = lockedOffers({ actor: npc, persona, world: w, now: NOW });
+    const liveTiers = [...new Set(w.quests.filter((q) => q.tier > 1 && !q.completed && q.opens_at <= NOW && q.closes_at > NOW + 30 * 60_000).map((q) => q.tier))].sort();
+    assert.ok(liveTiers.includes(2));
+    assert.deepEqual(locked.map((c) => c.locked), liveTiers.map((tier) => ({ tier })), "one chip per higher tier, gated by tier only");
+    const lockedQuest = new Set(w.quests.filter((q) => q.tier > 1).map((q) => q.id));
+    for (const o of buildMenu({ actor: npc, persona, world: w, now: NOW }))
+      assert.ok(o.terms.steps.every((s) => !lockedQuest.has(s.questId)), "menu holds only Tier 1 steps");
+    for (const c of locked) {
+      assert.match(c.id, /^locked:/);
+      assert.doesNotMatch(`${c.label} ${c.perk}`, /odds|chance|multiplier|%/i, "lures are things to do, never odds");
+    }
+    const reply = service.greet({ player, actor: npc, world: w });
+    assert.deepEqual(reply.locked, locked);
+    assert.ok(!reply.menu.some((o) => o.id.startsWith("locked:")));
+    assert.throws(() => service.accept({ player, actor: npc, world: w, offerId: locked[0].id }), /no longer available/);
+  }
+  // A Tier 2 staker gets Tier 2 lines as real offers and only the Tier 3 chip.
+  const t2 = { ...w, playerTier: 2 };
+  assert.ok(lockedOffers({ actor: RADA, persona: personaFor(RADA), world: t2, now: NOW }).every((c) => c.locked.tier === 3));
+  assert.equal(lockedOffers({ actor: RADA, persona: personaFor(RADA), world: { ...w, playerTier: 3 }, now: NOW }).length, 0);
+  assert.equal(lockedOffers({ actor: VOJTECH, persona: personaFor(VOJTECH), world: w, now: NOW }).length, 0);
+  assert.ok(world.id);
 });
