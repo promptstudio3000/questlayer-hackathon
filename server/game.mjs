@@ -351,7 +351,7 @@ export function chooseChestAura(db, player, zoneTier, level) {
     );
   return rotated.find((e) => !owned.has(e.demoName)) || rotated[0] || null;
 }
-function mintAura(db, player, now, zoneTier = 1, level = 1) {
+export function mintAura(db, player, now, zoneTier = 1, level = 1) {
   const chosen = chooseChestAura(db, player, zoneTier, level);
   if (!chosen) return null;
   const { demoName: name, rarity, slot } = chosen,

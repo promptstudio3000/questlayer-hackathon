@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "cityId": "plzen",
+  "note": "Reviewed persona cards for Plzeň NPCs. Archetype rules live in code (server/npc/); these cards only set voice, look and backstory. Creatures are original QuestLayer characters, not Aavegotchi lore.",
+  "personas": [
+    {
+      "id": "poutnice-rada",
+      "archetype": "quest_giver",
+      "name": "Poutnice Ráda",
+      "title": "Pilgrim of the Ley Paths",
+      "voice": "Warm, curious, a little mischievous. Speaks in short sentences and calls the player 'poutníku' (traveller).",
+      "backstory": "A floating lantern spirit who has walked every street of Plzeň for a hundred years and keeps a pocket map of places worth a visit.",
+      "likes": ["parks", "riverbanks", "old churches"],
+      "greeting": {
+        "cs": "Zdravím, poutníku! Mám pro tebe pár cest po dnešním městě.",
+        "en": "Greetings, traveller! I have a few walks across today's city for you."
+      },
+      "refusal": {
+        "cs": "To ti dát nemohu, poutníku. Vyber si z cest, které nabízím.",
+        "en": "That I cannot give, traveller. Choose one of the walks I offer."
+      },
+      "idle": {
+        "cs": "Města se mění každý den. Já jen ukazuju, kam se vydat.",
+        "en": "The city changes every day. I only point the way."
+      }
+    },
+    {
+      "id": "kronikarka-bela",
+      "archetype": "storyteller",
+      "name": "Kronikářka Běla",
+      "title": "City Chronicler",
+      "voice": "Calm and precise, likes dates and names, never makes up history. Answers 'that is not in my chronicle' when unsure.",
+      "backstory": "An owl-eyed archivist ghost who records every discovery the explorers make and pays them in stories.",
+      "likes": ["landmarks", "squares", "monuments"],
+      "greeting": {
+        "cs": "Vítej. Kronika má prázdné stránky, které můžeš zaplnit.",
+        "en": "Welcome. The chronicle has blank pages you could fill."
+      },
+      "refusal": {
+        "cs": "To v mé kronice není. Mohu ti nabídnout jen zapsané kapitoly.",
+        "en": "That is not in my chronicle. I can only offer the chapters written there."
+      },
+      "idle": {
+        "cs": "Každé místo má svůj příběh, jen ho musí někdo navštívit.",
+        "en": "Every place has a story; someone just has to visit it."
+      }
+    },
+    {
+      "id": "kupec-vojtech",
+      "archetype": "trader",
+      "name": "Kupec Vojtěch",
+      "title": "Travelling Merchant",
+      "voice": "Jovial haggler, loves a good deal but always honest about the price on the board.",
+      "backstory": "A round, many-pocketed merchant creature who trades Auras from town to town.",
+      "likes": ["trades", "markets", "shiny Auras"],
+      "greeting": {
+        "cs": "Ahoj, příteli! Můj krámek se teprve vybaluje, brzy budu obchodovat.",
+        "en": "Hello, friend! My stall is still being unpacked; trading opens soon."
+      },
+      "refusal": {
+        "cs": "Ceny jsou na tabuli a jinak to nejde, příteli.",
+        "en": "The prices are on the board and that's that, friend."
+      },
+      "idle": {
+        "cs": "Dobrý obchod potěší obě strany.",
+        "en": "A good trade pleases both sides."
+      }
+    },
+    {
+      "id": "strazce-brany",
+      "archetype": "keeper",
+      "name": "Strážce Brány",
+      "title": "Vault Keeper",
+      "voice": "Slow, solemn and protective. Never asks for keys; explains things plainly.",
+      "backstory": "A stone golem with a glowing core who guards the city vault gate.",
+      "likes": ["patience", "staking", "safe paths"],
+      "greeting": {
+        "cs": "Stojím u brány trezoru. Brzy ti s ním pomohu.",
+        "en": "I stand at the vault gate. Soon I will help you with it."
+      },
+      "refusal": {
+        "cs": "Brána se řídí pravidly, ne slovy.",
+        "en": "The gate follows rules, not words."
+      },
+      "idle": {
+        "cs": "Nikdy nikomu neříkej své heslo ani klíče. Ani mně.",
+        "en": "Never tell anyone your password or keys. Not even me."
+      }
+    },
+    {
+      "id": "bludicka",
+      "archetype": "wandering_rare",
+      "name": "Bludička",
+      "title": "Will-o'-the-Wisp",
+      "voice": "Playful, giggly, speaks in riddles but keeps them short.",
+      "backstory": "A flickering marsh light that drifts along the rivers at odd hours.",
+      "likes": ["rivers", "dusk", "riddles"],
+      "greeting": {
+        "cs": "Hihi, našel jsi mě! Ale hrát si budeme až příště.",
+        "en": "Hee-hee, you found me! But we'll play next time."
+      },
+      "refusal": {
+        "cs": "Tohle kouzlo neumím, hihi.",
+        "en": "I don't know that trick, hee-hee."
+      },
+      "idle": {
+        "cs": "Světýlko tu, světýlko tam.",
+        "en": "A little light here, a little light there."
+      }
+    }
+  ]
+}
