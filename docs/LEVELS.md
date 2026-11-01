@@ -10,14 +10,15 @@ Every level unlocks one thing to do or wear. Nothing in the table changes odds, 
 | 2 | 100 | Northern Lights Aura | live (native claim) |
 | 3 | 400 | Moonwake Aura | live (native claim) |
 | 4 | 900 | Sunlit Aura | live (native claim) |
-| 5 | 1,600 | Patron offers at NPCs (with Tier 2) | coming (P0-2 locked staker chips) |
+| 5 | 1,600 | Silver level ring (`value`: silver) | live |
 | 6 | 2,500 | Second altar offering per day (`value`: 2) | live |
 | 7 | 3,600 | One more quest line per NPC and day (`value`: +1) | live |
-| 8 | 4,900 | Wandering rare's patron option (with Tier 3) | coming |
+| 8 | 4,900 | One more storyteller chapter on offer (`value`: +1) | live |
 | 9 | 6,400 | "Pathfinder" title on the profile (`value`) | live |
-| 10 | 8,100 | Golden level ring | live |
+| 10 | 8,100 | Golden level ring (`value`: gold) | live |
 
-`coming` entries are shown as previews and do nothing until their feature ships (then flip `status` to `live`).
+Staker lures are gated by tier only (owner decision 1 Nov, PR #64), so they are not level unlocks.
+`coming` entries (none by default) are shown as previews and do nothing until their feature ships (then flip `status` to `live`).
 
 ## Configuration
 
