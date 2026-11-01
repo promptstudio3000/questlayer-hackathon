@@ -47,6 +47,14 @@ import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
 import { Inventory } from "./Inventory";
 import { AccountSessions } from "./AccountSessions";
+import { DeviceKeys } from "./DeviceKeys";
+import {
+  restoreWithPasskey,
+  revokeAccountKey,
+  setupPasskeyRecovery,
+  signOutOtherSessions,
+} from "./account-recovery";
+import { indexedDbKeyStore } from "./player-key";
 import { NativeLevelRewards, type NativeMilestone } from "./NativeLevelRewards";
 import {
   assertNativeLevelClaim,
@@ -692,7 +700,7 @@ export default function App() {
         e &&
         typeof e === "object" &&
         "code" in e &&
-        e.code === "WALLET_CANCELLED"
+        (e.code === "WALLET_CANCELLED" || e.code === "CANCELLED")
       )
         return undefined;
       notify(
@@ -1724,6 +1732,64 @@ export default function App() {
       return confirmed;
     });
     return result === true;
+  }
+  // Invisible-account devices: recovery passkey, revoke, restore here.
+  async function setupRecoveryPasskey() {
+    const ok = await action("recovery-setup", async () => {
+      const deviceKey = invisible.deviceKey,
+        accountId = invisible.accountId;
+      if (!deviceKey || !accountId)
+        throw Error("Your explorer account is still being prepared.");
+      await setupPasskeyRecovery({
+        deviceKey,
+        accountId,
+        credentials: navigator.credentials,
+        rpId: location.hostname,
+        api,
+      });
+      await invisible.refresh();
+      notify("Recovery passkey saved. Use it to restore on a new device.");
+      return true;
+    });
+    return ok === true;
+  }
+  async function revokeDevice(publicKey: string, signOutOthers: boolean) {
+    const ok = await action("device-revoke", async () => {
+      const deviceKey = invisible.deviceKey,
+        accountId = invisible.accountId;
+      if (!deviceKey || !accountId)
+        throw Error("Your explorer account is still being prepared.");
+      try {
+        await revokeAccountKey({ deviceKey, accountId, publicKey, api });
+      } finally {
+        await invisible.refresh().catch(() => undefined);
+      }
+      let signedOut = "";
+      if (signOutOthers) {
+        const r = await signOutOtherSessions({ deviceKey, accountId, api });
+        signedOut = ` ${r.revokedSessions} other session(s) signed out.`;
+      }
+      notify(`Device revoked.${signedOut}`);
+      return true;
+    });
+    return ok === true;
+  }
+  async function restoreThisDevice() {
+    const ok = await action("recovery-restore", async () => {
+      const restored = await restoreWithPasskey<Player>({
+        store: indexedDbKeyStore(),
+        credentials: navigator.credentials,
+        rpId: location.hostname,
+        api,
+        userAgent: navigator.userAgent,
+      });
+      setPlayer(restored.player);
+      setLoaded(true);
+      await invisible.ensure();
+      notify("This device can now play with your explorer.");
+      return true;
+    });
+    return ok === true;
   }
   async function revokeGameSessions(expectedAccount: string) {
     const ok = await action("session-recovery", async () => {
@@ -3233,6 +3299,16 @@ export default function App() {
                 onRevoke={revokeGameSessions}
                 busy={busy}
               />
+              <DeviceKeys
+                status={invisible.status}
+                accountId={invisible.accountId}
+                keys={invisible.keys}
+                localPublicKey={invisible.publicKey}
+                busy={busy}
+                onSetupRecovery={setupRecoveryPasskey}
+                onRevoke={revokeDevice}
+                onRestore={restoreThisDevice}
+              />
               <details className="advanced-settings">
                 <summary>Advanced</summary>
                 <div
@@ -3707,6 +3783,7 @@ export default function App() {
             setPlayer(p);
             setLoaded(true);
           }}
+          onRestore={restoreThisDevice}
         />
       )}
       {discovery && player && !nativePlay && (
@@ -3762,9 +3839,11 @@ function Welcome({
   onNear,
   action,
   onPlayer,
+  onRestore,
 }: {
   busy: string;
   error?: string;
+  onRestore: () => Promise<boolean>;
   onNear: (name: string) => Promise<void>;
   action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
   onPlayer: (p: Player) => void;
@@ -3862,6 +3941,16 @@ function Welcome({
           }}
         >
           <Key size={16} /> I already have an explorer
+        </button>
+        <button
+          className="text-button"
+          disabled={!!busy}
+          onClick={() => void onRestore()}
+        >
+          <Key size={16} />
+          {busy === "recovery-restore"
+            ? "Restoring your explorer…"
+            : "Restore with a recovery passkey"}
         </button>
         <details className="welcome-advanced">
           <summary>Advanced</summary>

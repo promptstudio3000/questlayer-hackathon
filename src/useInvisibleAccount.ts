@@ -22,7 +22,13 @@ export type ManagedAccountView = {
     state: "creating" | "ready" | "failed";
     errorCode: string | null;
     error: string | null;
-    keys: { publicKey: string; kind: string; state: string }[];
+    keys: {
+      publicKey: string;
+      kind: string;
+      state: string;
+      label?: string | null;
+      createdAt?: number;
+    }[];
   } | null;
 };
 export type InvisibleAccountStatus =
@@ -37,6 +43,9 @@ export function useInvisibleAccount(
   const [status, setStatus] = useState<InvisibleAccountStatus>("idle");
   const [accountId, setAccountId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [keys, setKeys] = useState<
+    NonNullable<ManagedAccountView["account"]>["keys"]
+  >([]);
   const keyRef = useRef<PlayerKeyRecord | null>(null);
   const running = useRef<Promise<void> | null>(null);
   const owner = useRef<string | null>(null);
@@ -53,13 +62,20 @@ export function useInvisibleAccount(
           return;
         }
         let key = await loadDeviceKey(store);
-        if (view.account) {
+        setKeys(view.account?.keys ?? []);
+        if (view.account && view.account.state !== "failed") {
           const known = view.account.keys.some(
-            (k) => k.publicKey === key?.publicKey && k.state !== "revoked",
+            (k) =>
+              k.publicKey === key?.publicKey &&
+              (k.state === "active" ||
+                (view.account!.state === "creating" && k.state === "pending")),
           );
-          if (key && !known) {
-            // This browser holds a key for another explorer, or this explorer was
-            // created elsewhere. Do not overwrite silently.
+          if (!known) {
+            // This browser holds no key of this explorer (a new device), or a
+            // key of another explorer. Never invent or overwrite one silently:
+            // the player restores this device with a recovery passkey or from
+            // another device.
+            keyRef.current = null;
             setStatus("needs-recovery");
             setAccountId(view.account.accountId);
             return;
@@ -91,6 +107,7 @@ export function useInvisibleAccount(
           const next = await api<ManagedAccountView>("/account");
           if (!next.account) break;
           account = next.account;
+          setKeys(next.account.keys);
         }
         if (account.state === "failed") {
           setError(
@@ -126,6 +143,13 @@ export function useInvisibleAccount(
     }
   }, [playerId]);
 
+  // Re-reads the device list without re-running account creation.
+  const refresh = useCallback(async () => {
+    const view = await api<ManagedAccountView>("/account");
+    setKeys(view.account?.keys ?? []);
+    return view;
+  }, []);
+
   const signer: NativeSigner | null =
     status === "ready" && keyRef.current && accountId
       ? managedSigner(keyRef.current, accountId)
@@ -137,5 +161,8 @@ export function useInvisibleAccount(
     ensure,
     signer,
     publicKey: keyRef.current?.publicKey ?? null,
+    deviceKey: status === "ready" ? keyRef.current : null,
+    keys,
+    refresh,
   };
 }

@@ -89,6 +89,18 @@ These tests do not establish a real wallet's recovery UX or synchronized passkey
 5. Finish guest-to-native progression/migration policy and once-only accounting separately. Do not translate demo balances into real claims.
 6. Establish expiry/retention policies for recovery audit records and review all long-running authenticated mutations for behavior during session revocation. This slice hardens wallet/appearance-link completion; it does not cancel already broadcast blockchain transactions or every request already executing elsewhere.
 
+## Invisible-account devices and recovery passkey (W03, 1 November 2026)
+
+Implementation: `src/account-recovery.ts`, `src/DeviceKeys.tsx` (Profile), `src/useInvisibleAccount.ts`, key rules in `server/relayer/accounts.mjs`, `policy.mjs` and `relay.mjs`. Tests: `tests/account-recovery.test.mjs`.
+
+- **Recovery passkey.** On a device with an active key, Profile → Devices → "Create a recovery passkey" creates a discoverable WebAuthn passkey whose user handle is the managed account ID. Its PRF output (salt `questlayer:recovery-key:v1`) is the seed of one ed25519 key. The device registers that public key as kind `recovery` and signs a sponsored `AddKey` (full access) for it. The derived secret is never stored anywhere; the server only sees the public key.
+- **New device.** "Restore with a recovery passkey" (welcome screen, or Profile when this browser holds no active key) re-derives the same key, signs the existing NEP-413 sign-in with it (the managed account is already in `wallet_links`, so the same explorer returns), generates a fresh device key in this browser, registers it, and signs its sponsored `AddKey` with the recovery key. A key this browser held for another explorer is archived in IndexedDB, not overwritten.
+- **Device list and revoke.** Profile lists active, pending and being-revoked keys with this device first. Revoking registers the removal and signs a sponsored `DeleteKey` from this device; a key never added on chain is simply forgotten. A device cannot revoke itself, and the last active key cannot be removed.
+- **Lost device.** From any remaining device (or a device just restored with the passkey) revoke the lost one; optionally the same flow signs out every other game session using the existing purpose-bound session recovery, signed by this device's key.
+- **Server rules.** A registered addition can only be added and a registered removal only deleted (`addKeys`/`removeKeys` in the relay context). A key whose removal is pending can still sign until its `DeleteKey` lands, so a stolen device's game session cannot freeze the owner's key by requesting its removal. At most 10 non-removed keys per explorer. A browser without an active key of an existing account is now shown as needing recovery instead of silently generating an unusable key.
+
+Limits: every key is a NEAR full-access key, so a device that is still in a thief's hands can race the owner until it is revoked; the recovery passkey is only as available as the player's passkey provider makes it; PRF needs a recent Chrome, Safari or Edge with a PRF-capable provider (otherwise setup is refused with a clear message). Not yet verified on physical devices.
+
 ## Primary-source review
 
 Reviewed 2026-10-31:
