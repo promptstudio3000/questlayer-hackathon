@@ -52,3 +52,46 @@ jobs:
       # The vault factory embeds the compiled vault WASM, so the vault must be
       # built before the workspace; the script owns that order.
       - run: bash scripts/build-contracts.sh --test
+  reproducible-contracts:
+    # Reference build: Docker rust:1.97.0 on linux/amd64. Fails when any WASM
+    # differs from contracts/wasm-sha256.json, the reviewed collectibles hash
+    # (contracts/collectibles/WASM_SHA256, docs/COLLECTIBLES-REVIEW.md) or a
+    # wasmSha256 recorded in public/native-*-testnet.json.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: bash scripts/build-contracts-docker.sh
+      - name: Hash summary
+        if: always()
+        run: |
+          {
+            echo '### Contract WASM sha256 (Docker rust:1.97.0, linux/amd64)'
+            echo '```'
+            cat contracts/target/wasm32-unknown-unknown/release/SHA256SUMS || echo "(no build)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-wasm-linux-amd64
+          path: |
+            contracts/target/wasm32-unknown-unknown/release/*.wasm
+            contracts/target/wasm32-unknown-unknown/release/SHA256SUMS
+          if-no-files-found: warn
+  clean-clone:
+    # Fresh clone, no npm cache: npm ci && npm run check must pass from scratch
+    # and must not leave tracked or unignored files behind.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: bash scripts/clean-clone-check.sh
