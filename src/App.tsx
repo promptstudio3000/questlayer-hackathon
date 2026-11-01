@@ -50,9 +50,9 @@ import {
 import { NativeMarketPanel } from "./NativeMarketPanel";
 import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
-import { RewardsFundedGuide, TodaysPotCard } from "./TodaysPot";
-import { InstallCard, UpdateToast } from "./PwaPrompts";
+import { RewardFundingPage, TodaysPot } from "./RewardFunding";
 import { SecureAndShare } from "./SecureAndShare";
+import "./offline-gate.css";
 import { FuelTheCity } from "./FuelTheCity";
 import { NativeStaking } from "./NativeStaking";
 import {
@@ -150,6 +150,7 @@ type Tab =
   | "inventory"
   | "market"
   | "fund"
+  | "funding"
   | "wallet"
   | "messages"
   | "bounties"
@@ -168,7 +169,7 @@ function navigationActive(tab: Tab, id: string) {
   return (
     tab === id ||
     (id === "community" && ["messages", "bounties"].includes(tab)) ||
-    (id === "explore" && tab === "expeditions") ||
+    (id === "explore" && ["expeditions", "funding"].includes(tab)) ||
     (id === "inventory" && tab === "market") ||
     (id === "settings" && ["wallet", "fund", "fuel"].includes(tab))
   );
@@ -351,9 +352,6 @@ export default function App() {
         ),
       );
   }
-  const [fundReturn, setFundReturn] = useState<
-    "explore" | "wallet" | "settings"
-  >("settings");
   const [nativePlay, setNativePlay] = useState(() => {
     try {
       return localStorage.getItem("questlayer-play-mode") === "near";
@@ -1233,12 +1231,6 @@ export default function App() {
   // fallback when the player chose one or the managed account is not ready.
   // Attaches a passkey to the explorer that is already playing, so the player
   // keeps everything and can return from a synced device.
-  // "How rewards are funded" opens from the map, Rewards and Settings; its back
-  // link returns to wherever the player came from.
-  function openFunding(from: "explore" | "wallet" | "settings") {
-    setFundReturn(from);
-    setTab("fund");
-  }
   function chooseLedger(native: boolean) {
     setNativePlay(native);
     try {
@@ -2103,7 +2095,8 @@ export default function App() {
           bounties: "Community tasks",
           community: "Community",
           settings: "Settings",
-          fund: "How rewards are funded",
+          fund: "Game economy",
+          funding: "How rewards are funded",
           fuel: "Fuel the city",
           expeditions: "Nearby walks",
           inventory: "Inventory",
@@ -2301,12 +2294,6 @@ export default function App() {
           </button>
         </div>
       )}
-      {!online && (
-        <div className="offline-bar">
-          You're offline. Your progress is safe on this device; coins and
-          walks resume when you reconnect.
-        </div>
-      )}
       {player && (
         <main
           ref={mainPanel}
@@ -2467,12 +2454,7 @@ export default function App() {
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
-              <TodaysPotCard
-                ledger="practice"
-                timeZone={world?.timezone}
-                onOpen={() => openFunding("explore")}
-              />
-              <InstallCard variant="nudge" />
+              <TodaysPot practice onOpen={() => setTab("funding")} />
               <div className="section-label">
                 <h2>Nearby discoveries</h2>
                 <span>
@@ -2939,17 +2921,16 @@ export default function App() {
                 <WalletNavigation value={walletView} onChange={setWalletView} />
               )}
               {tab === "explore" && nativePlay && (
-                <TodaysPotCard
-                  ledger="test-network"
-                  timeZone={world?.timezone}
-                  onOpen={() => openFunding("explore")}
-                />
-              )}
-              {tab === "explore" && nativePlay && (
                 <NativeCollectionControl
                   collection={nativeCollection}
                   ready={!!playAccount && nativeGame.state?.enrolled === true}
                   onToggle={nativeCollection.setEnabled}
+                />
+              )}
+              {tab === "explore" && nativePlay && (
+                <TodaysPot
+                  practice={false}
+                  onOpen={() => setTab("funding")}
                 />
               )}
               <NativeExpeditions
@@ -3027,10 +3008,7 @@ export default function App() {
             </>
           )}
           {tab === "wallet" && (
-            <button
-              className="play-entry"
-              onClick={() => openFunding("wallet")}
-            >
+            <button className="play-entry" onClick={() => setTab("fund")}>
               <ChartDonut size={22} />
               <span>
                 <b>Game economy</b>
@@ -3041,7 +3019,6 @@ export default function App() {
           )}
           {tab === "settings" && (
             <div className="play-menu">
-              <InstallCard variant="menu" />
               <button className="play-entry" onClick={() => setTab("market")}>
                 <Storefront size={24} />
                 <span>
@@ -3098,10 +3075,7 @@ export default function App() {
                   testnet tokens. Neither has monetary value; receipts for both
                   live in Rewards and balance.
                 </p>
-                <button
-                  className="play-entry"
-                  onClick={() => openFunding("settings")}
-                >
+                <button className="play-entry" onClick={() => setTab("fund")}>
                   <ChartDonut size={24} />
                   <span>
                     <b>Game economy</b>
@@ -3131,6 +3105,13 @@ export default function App() {
               </button>
             </div>
           )}
+          {tab === "funding" && (
+            <RewardFundingPage
+              practice={!nativePlay}
+              onExplore={() => setTab("explore")}
+              onLedger={() => setTab("fund")}
+            />
+          )}
           {tab === "fuel" && (
             <>
               <button
@@ -3156,25 +3137,11 @@ export default function App() {
           )}
           {tab === "fund" && (
             <>
-              <button
-                className="back-link"
-                onClick={() => setTab(fundReturn)}
-              >
+              <button className="back-link" onClick={() => setTab("settings")}>
                 <ArrowLeft size={20} />
-                {fundReturn === "explore"
-                  ? "Back to the map"
-                  : fundReturn === "wallet"
-                    ? "Rewards and balance"
-                    : "Settings"}
+                Settings
               </button>
-              <RewardsFundedGuide
-                ledger={nativePlay ? "test-network" : "practice"}
-                timeZone={world?.timezone}
-              />
-              <details className="play-details">
-                <summary>Live treasury on the test network</summary>
-                <NativeEconomyPanel />
-              </details>
+              <NativeEconomyPanel />
               <details className="play-details">
                 <summary>Practice economy simulation</summary>
                 <FundPanel />
@@ -3449,7 +3416,6 @@ export default function App() {
           <span className="spinner" /> Finding trails and today’s treasures…
         </div>
       )}
-      <UpdateToast />
       {toast && (
         <div
           className={`toast ${toast.error ? "error" : ""}`}

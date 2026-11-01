@@ -30,7 +30,10 @@ Read first: `docs/STATUS.md`, `docs/CLAUDE-AUDIT-AND-STRATEGY.md`, `DESIGN.md`, 
 | Economy facts | `docs/ECONOMY-RULES.md`, `/api/native/economy`, `/api/native/distribution` (status verified/drift/unavailable, open days) | "Today's pot" source; show "books checked" only when verified |
 
 Schedule and owners for all lanes: `docs/CONTINUATION-PLAN.md`. Slices are run one per Opus 5.5 subagent, client
-files only. Status 1 November: slice 2 and slice 7 in progress.
+files only. Status 1 November: slice 2 "Today's pot" and slice 7 "PWA polish" are done
+(`output/qa/2026-11-todays-pot/`, `output/qa/2026-11-pwa/`); real-device installs remain to check. Known follow-up:
+reloading while offline lands on the welcome card because the explorer cannot load; it should say so instead
+(`src/App.tsx`, welcome/loading state). Next slices: 3, 4, 5, 6.
 
 ## Slices in order
 

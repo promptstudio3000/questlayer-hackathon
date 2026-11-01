@@ -1,0 +1,320 @@
+/* Today's pot (Explore sheet) and "How rewards are funded" page.
+   Semantic tokens only (src/tokens.css); 16px body, 14px secondary, 48px targets. */
+.todays-pot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  border: 1px solid var(--decorative-border);
+  border-radius: var(--radius-item);
+  text-align: left;
+  font-size: 16px;
+  line-height: 1.4;
+  container-type: inline-size;
+  transition: transform var(--motion-press) var(--ease-out);
+}
+.todays-pot:active:not(:disabled) {
+  transform: scale(0.98);
+}
+@media (hover: hover) {
+  .todays-pot:hover {
+    border-color: var(--control-border);
+  }
+}
+.todays-pot:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.todays-pot-art {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+}
+.todays-pot-body {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.todays-pot-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+.todays-pot-title strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.todays-pot-go {
+  flex: none;
+  color: var(--ink-secondary);
+}
+.pot-line {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.pot-values {
+  display: grid;
+  gap: 2px;
+}
+.pot-values > span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+.pot-values .pot-label {
+  min-width: 52px;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.pot-facts dd small {
+  display: block;
+  text-align: right;
+}
+.pot-facts dd {
+  text-align: right;
+}
+.pot-note {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+.pot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+.pot-chip-ok {
+  background: var(--success-surface);
+  color: var(--success);
+}
+.pot-chip-alert {
+  background: var(--error-surface);
+  color: var(--error);
+}
+
+/* Funding page */
+.reward-funding {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-bottom: 16px;
+}
+.reward-funding p {
+  margin: 8px 0 12px;
+  font-size: 16px;
+}
+.reward-funding section {
+  padding: 16px 0;
+  border-top: 1px solid var(--decorative-border);
+}
+.reward-funding h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.reward-funding h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.reward-funding small {
+  display: block;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+.reward-funding ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.reward-funding .reward-funding-lead {
+  margin-top: 0;
+}
+.pot-callout {
+  padding: 12px;
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+}
+.pot-callout-alert {
+  background: var(--error-surface);
+  color: var(--error);
+}
+.reward-funding .pot-meta {
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.pot-amount,
+.pot-days span:last-child {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.pot-unavailable {
+  color: var(--ink-secondary);
+}
+.pot-facts,
+.pot-bucket dl {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.pot-facts > div,
+.pot-bucket dl > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+}
+.pot-facts dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pot-facts dd,
+.pot-bucket dd {
+  margin: 0;
+}
+.pot-bucket dl > div {
+  background: var(--surface-raised);
+  border: 1px solid var(--decorative-border);
+}
+.pot-bucket dt {
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.pot-buckets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+}
+.pot-days li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--decorative-border);
+}
+.pot-days li span:last-child {
+  font-size: 14px;
+}
+.pot-sources {
+  display: grid;
+  gap: 12px;
+}
+.pot-sources li,
+.pot-excludes li,
+.pot-checks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pot-sources li > svg {
+  flex: none;
+  color: var(--action);
+  margin-top: 2px;
+}
+.pot-excludes,
+.pot-checks {
+  display: grid;
+  gap: 8px;
+}
+.pot-excludes li > svg {
+  flex: none;
+  color: var(--ink-secondary);
+  margin-top: 2px;
+}
+.pot-checks li > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--success);
+}
+.pot-checks li[data-ok="false"] > svg {
+  color: var(--error);
+}
+.pot-rules {
+  display: grid;
+  gap: 8px;
+}
+.reward-funding .pot-books-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+.pot-button {
+  display: inline-flex;
+  flex: 1 1 180px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 16px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--control-border);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 500;
+}
+.pot-button-primary {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--on-action);
+}
+.pot-button:focus-visible,
+.reward-funding .play-entry:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.reward-funding .play-entry small {
+  color: var(--ink-secondary);
+}
+/* Narrow phones keep the row icons; very narrow containers (200 % zoom on a
+   phone) also drop the arrow so the amounts keep their width. */
+@container (max-width: 300px) {
+  .todays-pot-art {
+    display: none;
+  }
+}
+@container (max-width: 240px) {
+  .todays-pot-go {
+    display: none;
+  }
+}

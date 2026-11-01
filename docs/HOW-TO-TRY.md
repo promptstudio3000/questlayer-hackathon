@@ -33,14 +33,16 @@ What to check:
    on desktop the card downloads. With a relayer configured (section 5) the sheet also shows **Secure this Aura**
    (no popup); after the first secured Aura it offers a passkey once.
 5. Reload the page: name, XP, item and equipment are still there.
-5a. Show discoveries → **Today's pot** shows what is left to find today and its source; tap it for
-   "How rewards are funded". Practice mode says "practice GOLD"; the test network shows "Books checked" only when
-   the treasury audit is verified.
-5b. Profile → **Fuel the city** shows the city fuel meter, your share and your tier, then one choice (Light /
+5a. Profile → **Fuel the city** shows the city fuel meter, your share and your tier, then one choice (Light /
    Balanced / All in) and **Set up my stake** or **Add fuel**. Deposits are paid from your balance; with an
    invisible account there is no popup, otherwise your NEAR wallet asks. Without a vault server it says fueling isn't open.
 6. Profile → **Secure with a passkey**: the same explorer now opens from any device that syncs the passkey
    (Welcome → "I already have an explorer").
+7. On Explore, open the sheet (**Show discoveries** on a phone) and find **Today's pot** under the objective.
+   Without the native ledger it reads **Practice** ("Practice GOLD is play money with no value") and shows no
+   amounts. With it, it shows the coins and zone prizes left today (of the amount funded today, when the server
+   reports per-date totals), the source (sponsors / realized yield) and a **Books checked** chip from
+   `/api/native/distribution`. Tap it for **How rewards are funded**; **Back to exploring** returns focus to the card.
 
 ## 2. Run the cloud/Codespace variant
 
@@ -87,7 +89,7 @@ These scripts send real testnet transactions and need a testnet operator key in 
 | Player factory + relayer accounts | `node scripts/deploy-player-factory-testnet.mjs` | `.data/player-factory.json`, `.data/relayer.json` and the three env lines to add |
 | Prove invisible account | start the API with the relayer env, then `node scripts/prove-invisible-account-testnet.mjs` | `public/native-invisible-account-proof.json` with the account and transaction hashes |
 | Prove a public note record | same API, then `node scripts/prove-public-record-testnet.mjs` | `public/native-public-record-proof.json`; the record is readable under `<account>/questlayer/notes/<note>` on `v1.social08.testnet` |
-| Audit the reward treasury | same API, then `curl 'http://127.0.0.1:8787/api/native/distribution?refresh=1'` | `status: verified` with six passing checks; compare with `public/native-distribution-proof.json` |
+| Audit the reward treasury | same API, then `curl 'http://127.0.0.1:8787/api/native/distribution?refresh=1'` | `status: verified` with every check passing; compare with `public/native-distribution-proof.json`. Explore → **Today's pot** then shows **Books checked** |
 | Prove staking without a wallet | same API plus `.data/near-operator.json` (funds the test account with 5.5 test NEAR), then `node scripts/prove-sponsored-stake-testnet.mjs` | `public/native-sponsored-stake-proof.json`: relayer refuses the deposit, the device key pays it, maintenance is relayed |
 
 Run the server with `PLAYER_FACTORY_KEY_PATH`, `RELAYER_KEY_PATH` and `PLAYER_FACTORY_ACCOUNT` set to enable
@@ -107,10 +109,8 @@ forwarding or a tunnel), because geolocation and passkeys require a secure origi
 1. Allow location when asked, choose **Use my location**.
 2. Walk; coins within reach are collected automatically while the app is in the foreground.
 3. Report: device, OS, browser, whether GPS accuracy showed, and anything that felt confusing.
-4. Home screen: Android Chrome shows **Add QuestLayer to your home screen** on the map sheet (once) and in
-   Profile; iOS Safari shows Share → Add to Home Screen steps. The icon should have no black or white corners.
-5. After a new deploy, reopen the app: a **A new version of QuestLayer is ready · Reload** toast appears; nothing
-   reloads until you tap it. Turn on flight mode and reload: the app says you're offline instead of the first-run page.
+4. Turn on flight mode and reload: a returning explorer sees "You're offline" with **Try again** instead of the
+   first-run page.
 
 ## 7. What is not yet verified
 
