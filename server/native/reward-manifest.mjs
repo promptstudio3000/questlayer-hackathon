@@ -264,8 +264,9 @@ function manifestV2(plan, dayId, unit, coinPoints, reward, funding) {
       closesAt: z.closesAt,
     };
   });
-  // Street finds are highlighted coins: same index, same coin unit and the
-  // contract's fixed coin XP. They add no new GOLD or XP right.
+  // Street finds are highlighted coins: same index and same coin unit. Rewards
+  // v2 records them at publication and pays find XP instead of coin XP; they
+  // add no new GOLD.
   const finds = [
     ...pickStreetFinds(
       coinPoints.map((p, i) => ({ id: `${dayId}:coin:${i}`, ...p })),
@@ -310,6 +311,8 @@ export function publicationArgs(m) {
       closes_at: String(q.closesAt),
       tier: q.tier,
     })),
+    // Ignored by the v1 contract (unknown argument); rewards v2 stores it.
+    ...(m.finds?.length ? { finds: m.finds } : {}),
   };
 }
 // The durable body is the publication intent. A retry must never re-price it
@@ -357,6 +360,15 @@ export function nativePublicationMatches(
         (key) => String(day.quests[index]?.[key]) !== String(q[key]),
       ),
     )
+  )
+    return false;
+  // A v2 contract reports the finds it holds. None means a v1 contract or a
+  // day published before the upgrade (backfilled by record_day_finds);
+  // finds it does hold must be exactly the manifest's.
+  if (
+    Array.isArray(day.finds) &&
+    day.finds.length &&
+    JSON.stringify(day.finds) !== JSON.stringify(manifest.finds || [])
   )
     return false;
   return (

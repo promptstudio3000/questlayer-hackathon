@@ -74,3 +74,26 @@ Snapshot `20261031T125419Z-0ff09c92` contains the two native receipts and both r
 Public sponsors must attach their intended reward grant **plus 0.005 test NEAR** for the bounded funding record. `get_config.sponsor_storage_fee` exposes that amount. The fee is excluded from `funded` and the 50/50 game buckets; its event field is explicit. A 64-byte receipt-ID limit and a measured storage-growth assertion keep the record within its paid allowance. Tiny donations without that fee are rejected atomically, so public callers cannot fill storage using funds reserved for existing players.
 
 All funding, including approved realized-yield deposits, also checks actual storage, outstanding reward liabilities, all reserved native receipt slots and the operating guard before committing. Insufficient operating capacity rejects the incoming funding rather than spending promised backing. A rejected vault flush restores the vault's game credit through its existing callback and can be retried after an operating top-up. Existing principal, claims and balances are unchanged by this compatible code upgrade. The additional live probe contributes only 0.000002 test NEAR of reward income; its separate 0.005 test NEAR storage fee is never called yield.
+
+## v2 upgrade (1 November 2026): street-find XP, partial exit, adjustable contribution
+
+- **Rewards v2.** `publish_day` takes an optional `finds` list (≤ 60 unique coin indexes,
+  from manifest v2). Collecting a find pays the same coin unit and **15 XP** instead of 2;
+  it adds no GOLD and no reservation. `get_day` returns `finds`, `find_xp` and `coin_xp`.
+  `record_day_finds` (publisher, once per day) backfills a v2 day published before the
+  upgrade, only for coins nobody has collected, so no receipt is re-priced.
+- **Vault v2.** `request_partial_exit(amount)` (beneficiary, 1 yocto) unstakes `amount`
+  of principal plus the game's share of the gain so far; the remaining position keeps at
+  least 0.001 test NEAR. The fee settles at the current rate exactly as in a harvest, and
+  principal is taken from the oldest tranches first. `set_contribution(bps)` (beneficiary,
+  1 yocto) never re-prices earned gain: if that gain carries a fee at the old rate, a
+  harvest settles it first and the new rate applies when its cash arrives; otherwise it
+  applies at once from today's value. `get_state` reports `partial_exit` and
+  `pending_contribution_bps`.
+- **Migration.** Both contracts keep their deployed state layouts byte for byte (tests
+  `v1_state_reads_without_migration` and `v1_state_mid_cycle_reads_without_migration`);
+  new data lives under new storage keys, so the upgrade is a plain code deploy.
+- **Upgrade.** `node scripts/upgrade-rewards-v2-testnet.mjs --upgrade-reviewed` on the
+  machine with the operator key. Existing keyless factory positions stay v1; the factory
+  is upgraded only while it has created none. The app does not yet offer partial exit or
+  contribution changes; that is UI work on top of these methods.

@@ -117,6 +117,9 @@ test("a v2 day carries every template within the contract's bounds", () => {
     "tier",
     "xp",
   ]);
+  // Rewards v2 stores the finds at publication; v1 ignores the argument.
+  assert.deepEqual(args.finds, v2.finds);
+  assert.equal(publicationArgs(v1).finds, undefined);
   // Deterministic: the same inputs give the same hash.
   assert.equal(
     nativeManifest(plan, treasury, points, { version: 2 }).hash,

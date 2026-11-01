@@ -72,13 +72,17 @@ quests remains optional. No reward requires an unimplemented observation check.
   day carries all four. Stops are always the zone's own published targets; a zone that
   cannot carry its template keeps the v1 three-stop walk.
 - Attestation is unchanged: the attestor accepts the checkpoints in order and signs the
-  same reward message; the contract is unchanged (six quests, XP at most 500 each).
+  same reward message; the on-chain quest rules are unchanged (six quests, XP at most 500 each).
 - Payout exposure is identical to v1 for the same budget: the same coins, coin unit and
   tier-weighted zone prizes, still bounded by the city allocation, the per-publication cap
   and the contract's per-date total. A native chest grants no item; the first opener takes
   any funded zone prize.
 - `finds` lists up to 60 coin indexes spaced about 150 m apart. A street find is a
-  highlighted coin: same unit, the contract's fixed 2 XP, no new right.
+  highlighted coin: same unit and reservation, no new GOLD. Rewards contract v2
+  stores the list at `publish_day` (optional `finds` argument) and pays 15 XP for a
+  find instead of the coin's 2 XP; on the v1 contract the argument is ignored and a
+  find pays 2 XP. Days published before the upgrade are backfilled once with
+  `record_day_finds`, only for coins nobody has collected yet.
 - v1 days, their hashes and golden tests are untouched. Tests: `tests/native-manifest-v2.test.mjs`.
 
 Do not rewrite this policy's semantics in place after publication. A future mechanic
