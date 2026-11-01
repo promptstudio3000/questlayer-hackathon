@@ -1,0 +1,349 @@
+{
+  "type": "FeatureCollection",
+  "properties": {
+    "day": "2026-11-02",
+    "timezone": "Europe/Prague",
+    "sourceHash": "b0a3ac13b7a7015cede331c29bc66ab79a94d5f50cb1a6b554a109086a601d01",
+    "cityId": "dryrun",
+    "coverage": {
+      "requestedZones": 6,
+      "acceptedZones": 6,
+      "shortfall": 0,
+      "reason": null
+    },
+    "diagnostics": {
+      "candidateCount": 6,
+      "rejected": [],
+      "routing": "not-verified",
+      "fieldReview": "pending"
+    },
+    "financialAllocation": "none",
+    "fieldReview": "pending"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              16.6046006,
+              49.1936627
+            ],
+            [
+              16.6089994,
+              49.1936627
+            ],
+            [
+              16.6089994,
+              49.1965373
+            ],
+            [
+              16.6046006,
+              49.1965373
+            ],
+            [
+              16.6046006,
+              49.1936627
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Central Gardens",
+        "slot": 0,
+        "sector": "central",
+        "sourceId": "osm-way-1000",
+        "shapeFamily": "park",
+        "tier": 3,
+        "opensAt": 1793638800000,
+        "closesAt": 1793642400000,
+        "targets": [
+          {
+            "lng": 16.6051504,
+            "lat": 49.1945251
+          },
+          {
+            "lng": 16.6076248,
+            "lat": 49.1956749
+          },
+          {
+            "lng": 16.6062501,
+            "lat": 49.1951
+          }
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              16.6073499,
+              49.2170188
+            ],
+            [
+              16.6117487,
+              49.2170188
+            ],
+            [
+              16.6117487,
+              49.2198934
+            ],
+            [
+              16.6073499,
+              49.2198934
+            ],
+            [
+              16.6073499,
+              49.2170188
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "North Hill Park",
+        "slot": 1,
+        "sector": "north",
+        "sourceId": "osm-way-1001",
+        "shapeFamily": "park",
+        "tier": 1,
+        "opensAt": 1793574000000,
+        "closesAt": 1793660400000,
+        "targets": [
+          {
+            "lng": 16.6117487,
+            "lat": 49.2178812
+          },
+          {
+            "lng": 16.6076248,
+            "lat": 49.2184561
+          },
+          {
+            "lng": 16.6114738,
+            "lat": 49.219031
+          }
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              16.6403414,
+              49.1963576
+            ],
+            [
+              16.6447402,
+              49.1963576
+            ],
+            [
+              16.6447402,
+              49.1992322
+            ],
+            [
+              16.6403414,
+              49.1992322
+            ],
+            [
+              16.6403414,
+              49.1963576
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "East Meadow",
+        "slot": 2,
+        "sector": "east",
+        "sourceId": "osm-way-1002",
+        "shapeFamily": "park",
+        "tier": 2,
+        "opensAt": 1793617200000,
+        "closesAt": 1793628000000,
+        "targets": [
+          {
+            "lng": 16.6433656,
+            "lat": 49.19722
+          },
+          {
+            "lng": 16.6425408,
+            "lat": 49.1983699
+          },
+          {
+            "lng": 16.6430907,
+            "lat": 49.1966451
+          }
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              16.6238456,
+              49.1756965
+            ],
+            [
+              16.6282445,
+              49.1756965
+            ],
+            [
+              16.6282445,
+              49.1785711
+            ],
+            [
+              16.6238456,
+              49.1785711
+            ],
+            [
+              16.6238456,
+              49.1756965
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Southeast Orchard",
+        "slot": 3,
+        "sector": "southeast",
+        "sourceId": "osm-way-1003",
+        "shapeFamily": "park",
+        "tier": 1,
+        "opensAt": 1793574000000,
+        "closesAt": 1793660400000,
+        "targets": [
+          {
+            "lng": 16.62632,
+            "lat": 49.1771338
+          },
+          {
+            "lng": 16.6279696,
+            "lat": 49.1765589
+          },
+          {
+            "lng": 16.6243955,
+            "lat": 49.1777087
+          }
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              16.5853555,
+              49.1756965
+            ],
+            [
+              16.5897544,
+              49.1756965
+            ],
+            [
+              16.5897544,
+              49.1785711
+            ],
+            [
+              16.5853555,
+              49.1785711
+            ],
+            [
+              16.5853555,
+              49.1756965
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Southwest Lake Park",
+        "slot": 4,
+        "sector": "southwest",
+        "sourceId": "osm-way-1004",
+        "shapeFamily": "park",
+        "tier": 1,
+        "opensAt": 1793574000000,
+        "closesAt": 1793660400000,
+        "targets": [
+          {
+            "lng": 16.5883797,
+            "lat": 49.1782836
+          },
+          {
+            "lng": 16.5864552,
+            "lat": 49.1759839
+          },
+          {
+            "lng": 16.5856304,
+            "lat": 49.1771338
+          }
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              16.5688598,
+              49.1954593
+            ],
+            [
+              16.5732586,
+              49.1954593
+            ],
+            [
+              16.5732586,
+              49.1983339
+            ],
+            [
+              16.5688598,
+              49.1983339
+            ],
+            [
+              16.5688598,
+              49.1954593
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "West Woods",
+        "slot": 5,
+        "sector": "west",
+        "sourceId": "osm-way-1005",
+        "shapeFamily": "park",
+        "tier": 2,
+        "opensAt": 1793574000000,
+        "closesAt": 1793660400000,
+        "targets": [
+          {
+            "lng": 16.5716091,
+            "lat": 49.1974715
+          },
+          {
+            "lng": 16.5710592,
+            "lat": 49.1963217
+          },
+          {
+            "lng": 16.571884,
+            "lat": 49.1968966
+          }
+        ]
+      }
+    }
+  ]
+}

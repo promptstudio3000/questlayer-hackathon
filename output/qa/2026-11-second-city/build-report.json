@@ -1,0 +1,70 @@
+{
+  "file": ".data/city-packs/dryrun-2026-11-01.1.json",
+  "candidates": 6,
+  "paths": 30,
+  "bySector": {
+    "central": 1,
+    "north": 1,
+    "east": 1,
+    "southeast": 1,
+    "southwest": 1,
+    "west": 1
+  },
+  "emptySectors": [],
+  "skipped": [
+    {
+      "id": "osm-way-2001",
+      "reason": "closed-access"
+    },
+    {
+      "id": "osm-way-2002",
+      "reason": "open-ring"
+    },
+    {
+      "id": "osm-way-2003",
+      "reason": "outside-coverage"
+    }
+  ],
+  "preview": {
+    "day": "2026-11-02",
+    "zones": [
+      {
+        "sector": "central",
+        "name": "Central Gardens",
+        "tier": 3,
+        "shape": "park"
+      },
+      {
+        "sector": "north",
+        "name": "North Hill Park",
+        "tier": 1,
+        "shape": "park"
+      },
+      {
+        "sector": "east",
+        "name": "East Meadow",
+        "tier": 2,
+        "shape": "park"
+      },
+      {
+        "sector": "southeast",
+        "name": "Southeast Orchard",
+        "tier": 1,
+        "shape": "park"
+      },
+      {
+        "sector": "southwest",
+        "name": "Southwest Lake Park",
+        "tier": 1,
+        "shape": "park"
+      },
+      {
+        "sector": "west",
+        "name": "West Woods",
+        "tier": 2,
+        "shape": "park"
+      }
+    ],
+    "rejected": []
+  }
+}
