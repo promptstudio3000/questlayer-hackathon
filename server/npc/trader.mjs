@@ -504,6 +504,7 @@ export function createTraderService({
     nftId,
     marketView: (method, args, fresh) => market.view(method, args, fresh),
     nftsView: (method, args, fresh) => nfts.view(method, args, fresh),
+    listings,
     isTrader: (actorId) => traders.has(actorId),
     menu,
     accept,
