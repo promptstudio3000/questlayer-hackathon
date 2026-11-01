@@ -539,3 +539,152 @@
 .inventory-item-detail .aura-art .ghost-art {
   animation: none;
 }
+
+/* Aura wardrobe: filters, cosmetic set status and the edition catalog. */
+.aura-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--inventory-border);
+  border-radius: 12px;
+  background: var(--inventory-raised);
+  min-width: 0;
+}
+.aura-filters legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.aura-filter-slots {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--inventory-soft);
+}
+.aura-filter-slots > button {
+  flex: 1;
+  min-height: 48px;
+  font-size: 16px;
+  color: var(--inventory-ink);
+  background: transparent;
+  border-radius: 8px;
+}
+.aura-filter-slots > button[aria-pressed="true"] {
+  background: var(--inventory-action);
+  color: var(--inventory-on-action);
+}
+.aura-filters label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--inventory-secondary);
+  min-width: 0;
+}
+.aura-filters select {
+  min-height: 48px;
+  font-size: 16px;
+  color: var(--inventory-ink);
+  background: var(--inventory-surface);
+  border: 1px solid var(--inventory-border);
+  border-radius: 8px;
+  padding: 0 8px;
+  min-width: 0;
+}
+.inventory-experience .aura-filter-count {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--inventory-secondary);
+}
+.aura-filter-reset {
+  min-height: 48px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--inventory-action);
+  background: transparent;
+  text-decoration: underline;
+}
+.inventory-experience .aura-set-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 12px;
+  color: var(--inventory-ink);
+  background: var(--inventory-soft);
+}
+.inventory-experience .aura-set-status.active {
+  background: color-mix(in srgb, var(--aura-set-glow) 22%, var(--inventory-raised));
+  border: 1px solid color-mix(in srgb, var(--aura-set-glow) 60%, var(--inventory-border));
+}
+.aura-set-status svg {
+  flex: none;
+  margin-top: 2px;
+}
+.aura-catalog {
+  border: 1px solid var(--inventory-border);
+  border-radius: 12px;
+  background: var(--inventory-raised);
+}
+.aura-catalog > summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.aura-catalog ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 12px 12px;
+  display: grid;
+  gap: 8px;
+}
+.aura-catalog li {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--inventory-surface);
+}
+.aura-catalog li.missing .aura-sprite {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.aura-catalog li > div {
+  display: grid;
+  min-width: 0;
+}
+.aura-catalog li span {
+  font-size: 14px;
+  color: var(--inventory-secondary);
+}
+.aura-catalog li small {
+  font-size: 12px;
+  color: var(--inventory-secondary);
+}
+.aura-catalog li em {
+  font-style: normal;
+  font-size: 14px;
+  color: var(--inventory-secondary);
+}
+.aura-catalog .aura-sprite {
+  max-width: 60px;
+  height: auto;
+}

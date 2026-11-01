@@ -9,18 +9,28 @@
 
 export const AURA_SLOTS = ["above", "below"] as const;
 export type AuraSlot = (typeof AURA_SLOTS)[number];
-export const AURA_EDITIONS = ["polar", "moon", "gold"] as const;
+import { AURA_CATALOG, catalogEditionFor } from "./aura-catalog.ts";
+
+export const AURA_EDITIONS = [
+  "ember",
+  "dew",
+  "polar",
+  "bloom",
+  "storm",
+  "moon",
+  "comet",
+  "gold",
+  "nova",
+] as const;
 export type AuraEdition = (typeof AURA_EDITIONS)[number];
 export const AURA_GRIDS = Object.freeze({
   above: Object.freeze({ width: 48, height: 24 }),
   below: Object.freeze({ width: 56, height: 20 }),
 });
 export const AURA_OUTLINE = Object.freeze({ color: "#1A0335", opacity: 0.4 });
-export const AURA_EDITION_NAMES = Object.freeze({
-  polar: "Northern Lights",
-  moon: "Moonwake Aura",
-  gold: "Sunlit Aura",
-});
+export const AURA_EDITION_NAMES = Object.freeze(
+  Object.fromEntries(AURA_CATALOG.map((e) => [e.id, e.name])),
+) as Readonly<Record<AuraEdition, string>>;
 // Verified edition colors from server/native/collectibles.mjs and the demo
 // AURAS table in server/game.mjs. Presence markers only carry a color, so a
 // known color still gets its authored design.
@@ -34,6 +44,11 @@ const EDITION_COLORS: Readonly<Record<string, AuraEdition>> = Object.freeze({
   "#e7c35f": "gold",
   "#f2c869": "gold",
   "#ffd667": "gold",
+  ...Object.fromEntries(
+    AURA_CATALOG.flatMap((e) =>
+      [e.color, e.demoColor].filter(Boolean).map((c) => [c, e.id]),
+    ),
+  ),
 });
 
 export type AuraPixelRect = Readonly<{
@@ -68,6 +83,8 @@ export function auraEdition(item: {
   color?: string | null;
 }): AuraEdition | null {
   if (isAuraEdition(item.edition)) return item.edition;
+  const listed = catalogEditionFor(item);
+  if (listed && isAuraEdition(listed.id)) return listed.id;
   const name = item.name || "";
   if (/northern|polar/i.test(name)) return "polar";
   if (/moon/i.test(name)) return "moon";
@@ -101,6 +118,54 @@ const PALETTES: Readonly<Record<AuraEdition, Palette>> = Object.freeze({
     fringe: "#CF8A2B",
     spark: "#FFFFFF",
     spark2: "#FEF87D",
+  },
+  ember: {
+    hi: "#FFF1C2", // white-hot core
+    body: "#FF9A4D", // flame orange
+    deep: "#E5532E", // ember red
+    fringe: "#9E2A3A", // smoky crimson
+    spark: "#FFFFFF",
+    spark2: "#FFD36B",
+  },
+  dew: {
+    hi: "#F2FBFF",
+    body: "#8FD3FF", // clear water
+    deep: "#4A9BE0",
+    fringe: "#3566B8",
+    spark: "#FFFFFF",
+    spark2: "#CDEEFF",
+  },
+  bloom: {
+    hi: "#FFF0F6",
+    body: "#FF9FC8", // petals
+    deep: "#5FBF6A", // leaves
+    fringe: "#2F8A55", // stems
+    spark: "#FFFFFF",
+    spark2: "#FFE58A", // pollen
+  },
+  storm: {
+    hi: "#F4F7FF", // cloud tops
+    body: "#8FA6FF",
+    deep: "#4E5BD6",
+    fringe: "#2E2A8C",
+    spark: "#FFFFFF",
+    spark2: "#FFF27A", // lightning
+  },
+  comet: {
+    hi: "#FFFFFF",
+    body: "#E6ECFF", // icy head
+    deep: "#9AA8E0",
+    fringe: "#E07AB8", // rose tail
+    spark: "#FFFFFF",
+    spark2: "#FFD1EA",
+  },
+  nova: {
+    hi: "#FFF4FB",
+    body: "#FF5FA8", // magenta burst
+    deep: "#D23F8E",
+    fringe: "#8A2A9E",
+    spark: "#FFFFFF",
+    spark2: "#FFC2E0",
   },
 });
 
@@ -503,17 +568,417 @@ function paintGenericBelow(c: Canvas) {
   c.star(45, 4, "spark2", "spark", "b");
 }
 
+
+// ---- Catalog v2 editions -------------------------------------------------
+// Same rules as the originals: light from the upper left, a shared 1px ink
+// outline on the base layer and two alternating sparkle frames.
+
+/** Bresenham-style line on one layer. */
+function line(
+  c: Canvas,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  key: string,
+  layer: Layer = "base",
+) {
+  const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+  for (let i = 0; i <= steps; i++)
+    c.put(x0 + ((x1 - x0) * i) / steps, y0 + ((y1 - y0) * i) / steps, key, layer);
+}
+/** Filled disc shaded from the upper left. */
+function disc(c: Canvas, cx: number, cy: number, r: number, layer: Layer = "base") {
+  for (let y = Math.floor(cy - r); y <= Math.ceil(cy + r); y++)
+    for (let x = Math.floor(cx - r); x <= Math.ceil(cx + r); x++) {
+      const dx = x + 0.5 - cx,
+        dy = y + 0.5 - cy;
+      if (dx * dx + dy * dy > r * r) continue;
+      const light = lit(dx, dy),
+        edge = Math.hypot(dx, dy) > r - 1.3;
+      c.put(
+        x,
+        y,
+        edge && light > 0.25 ? "hi" : edge && light < -0.35 ? "deep" : "body",
+        layer,
+      );
+    }
+}
+/** Teardrop flame: tip at (x, top), rounded base on row `base`. */
+function flame(c: Canvas, x: number, top: number, base: number, width: number) {
+  const height = base - top;
+  for (let y = top; y <= base; y++) {
+    const t = (y - top) / height,
+      half = width * Math.sqrt(t) * (t > 0.78 ? 1 - ((t - 0.78) / 0.22) * 0.55 : 1),
+      lean = Math.sin(t * Math.PI) * 0.8,
+      left = Math.round(x - lean - half),
+      right = Math.round(x - lean + half);
+    for (let px = left; px <= right; px++) {
+      const inner = Math.abs(px - (x - lean)) < half * 0.45 && t > 0.4;
+      let key = inner ? "hi" : px < x - lean ? "body" : "deep";
+      if (y === base || (t > 0.9 && !inner)) key = "deep";
+      c.put(px, y, key);
+    }
+  }
+}
+function paintEmberAbove(c: Canvas) {
+  flame(c, 13, 9, 19, 3);
+  flame(c, 24, 3, 20, 4.2);
+  flame(c, 35, 9, 19, 3);
+  c.outline();
+  // Embers drift up and swap sides between frames.
+  c.put(8, 6, "spark2", "a");
+  c.star(18, 2, "spark2", "spark", "a");
+  c.put(30, 4, "spark2", "a");
+  c.put(41, 7, "fringe", "a");
+  c.put(9, 4, "fringe", "b");
+  c.put(19, 4, "spark2", "b");
+  c.star(30, 2, "spark2", "spark", "b");
+  c.put(40, 5, "spark2", "b");
+}
+function paintEmberBelow(c: Canvas) {
+  groundRing(c, (light) =>
+    light > 0.55 ? "hi" : light > 0 ? "body" : light > -0.5 ? "deep" : "fringe",
+  );
+  c.outline();
+  // Flame tongues lick up from the back edge and flicker between frames.
+  const tongues: [number, number, number][] = [
+    [10, 7, 3],
+    [17, 5, 4],
+    [24, 4, 3],
+    [31, 4, 5],
+    [38, 5, 3],
+    [45, 7, 4],
+  ];
+  tongues.forEach(([x, top, length], i) => {
+    for (const layer of ["a", "b"] as const) {
+      const n = (layer === "a") === (i % 2 === 0) ? length : Math.max(1, length - 2);
+      for (let j = 0; j < n; j++)
+        c.put(x, top - j, j === n - 1 ? "spark2" : j === 0 ? "deep" : "body", layer);
+    }
+  });
+  c.put(4, 4, "spark2", "a");
+  c.put(52, 2, "spark2", "b");
+}
+/** Small falling drop: point on top, round shaded belly. */
+function drop(c: Canvas, x: number, y: number, layer: Layer = "base") {
+  c.put(x, y, "body", layer);
+  c.put(x, y + 1, "body", layer);
+  c.put(x - 1, y + 2, "hi", layer);
+  c.put(x, y + 2, "body", layer);
+  c.put(x + 1, y + 2, "deep", layer);
+  c.put(x - 1, y + 3, "body", layer);
+  c.put(x, y + 3, "deep", layer);
+  c.put(x + 1, y + 3, "deep", layer);
+  c.put(x, y + 4, "fringe", layer);
+}
+function paintDewAbove(c: Canvas) {
+  // A thin water halo strung with drops.
+  ellipseRing(c, 24, 13, 18, 5, 1.2, (_dx, _dy, light) =>
+    light > 0.3 ? "hi" : light < -0.3 ? "deep" : "body",
+  );
+  for (const [x, y] of [
+    [7, 11],
+    [14, 6],
+    [24, 4],
+    [34, 6],
+    [41, 11],
+    [17, 15],
+    [31, 15],
+  ] as [number, number][])
+    drop(c, x, y);
+  c.outline();
+  drop(c, 10, 18, "a");
+  drop(c, 38, 18, "b");
+  c.star(24, 1, "spark2", "spark", "a");
+  c.put(24, 1, "spark", "b");
+  c.star(44, 3, "spark2", "spark", "b");
+}
+function paintDewBelow(c: Canvas) {
+  // Two ripples spreading from where the drop lands.
+  ellipseRing(c, 28, 12.5, 25, 6.5, 1.6, (_dx, _dy, light) =>
+    light > 0.45 ? "hi" : light > -0.2 ? "body" : "deep",
+  );
+  ellipseRing(c, 28, 12, 13, 3.6, 1.8, (_dx, _dy, light) =>
+    light > 0.3 ? "hi" : light < -0.4 ? "fringe" : "deep",
+  );
+  c.outline();
+  drop(c, 28, 2, "a");
+  c.put(27, 11, "spark2", "b");
+  c.put(29, 11, "spark2", "b");
+  c.put(28, 10, "spark", "b");
+  c.star(8, 3, "spark2", "spark", "a");
+  c.star(48, 3, "spark2", "spark", "b");
+}
+/** Five-petal diamond flower with a pollen centre. */
+function flower(c: Canvas, x: number, y: number) {
+  for (let dy = -2; dy <= 2; dy++)
+    for (let dx = -2; dx <= 2; dx++) {
+      const d = Math.abs(dx) + Math.abs(dy);
+      if (d > 2) continue;
+      c.put(x + dx, y + dy, d === 0 ? "spark2" : dx + dy < 0 ? "hi" : "body");
+    }
+}
+function paintBloomAbove(c: Canvas) {
+  // A leafy crown with flowers on top.
+  ellipseRing(c, 24, 15, 18, 5.5, 2, (_dx, _dy, light) =>
+    light > 0.2 ? "deep" : "fringe",
+  );
+  for (const [x, y] of [
+    [8, 12],
+    [16, 9],
+    [24, 8],
+    [32, 9],
+    [40, 12],
+  ] as [number, number][])
+    flower(c, x, y);
+  c.outline();
+  // Drifting petals.
+  c.put(4, 6, "body", "a");
+  c.put(20, 3, "hi", "a");
+  c.put(44, 5, "body", "a");
+  c.put(5, 8, "body", "b");
+  c.put(29, 3, "hi", "b");
+  c.put(43, 7, "body", "b");
+  c.star(28, 2, "spark2", "spark", "a");
+}
+function paintBloomBelow(c: Canvas) {
+  groundRing(c, (light) => (light > 0.1 ? "deep" : "fringe"));
+  for (const [x, y] of [
+    [6, 11],
+    [14, 16],
+    [28, 18],
+    [42, 16],
+    [50, 11],
+    [20, 7],
+    [36, 7],
+  ] as [number, number][])
+    flower(c, x, y);
+  c.outline();
+  c.put(10, 3, "body", "a");
+  c.put(28, 2, "hi", "a");
+  c.put(47, 4, "body", "a");
+  c.put(11, 5, "body", "b");
+  c.put(29, 4, "hi", "b");
+  c.put(46, 2, "body", "b");
+  c.star(52, 5, "spark2", "spark", "b");
+}
+function paintStormAbove(c: Canvas) {
+  // Puffy cloud crown; bolts strike from its underside in alternate frames.
+  disc(c, 11, 10, 4.5);
+  disc(c, 19, 7.5, 5.5);
+  disc(c, 29, 7.5, 5.5);
+  disc(c, 37, 10, 4.5);
+  for (let x = 8; x <= 40; x++) {
+    c.put(x, 13, "deep");
+    if (x > 10 && x < 38) c.put(x, 14, "fringe");
+  }
+  c.outline();
+  const bolt = (points: [number, number][], layer: Layer) => {
+    for (let i = 1; i < points.length; i++)
+      line(c, ...points[i - 1], ...points[i], "spark2", layer);
+  };
+  bolt(
+    [
+      [15, 15],
+      [13, 18],
+      [16, 18],
+      [13, 22],
+    ],
+    "a",
+  );
+  bolt(
+    [
+      [33, 15],
+      [31, 18],
+      [34, 18],
+      [32, 21],
+    ],
+    "b",
+  );
+  c.put(24, 16, "body", "a");
+  c.put(25, 18, "body", "b");
+  c.star(44, 3, "spark2", "spark", "a");
+  c.star(4, 4, "spark2", "spark", "b");
+}
+function paintStormBelow(c: Canvas) {
+  groundRing(c, (light) =>
+    light > 0.55 ? "hi" : light > 0 ? "body" : light > -0.5 ? "deep" : "fringe",
+  );
+  c.outline();
+  // Arcs crackle across the ring, jumping between frames.
+  const arc = (points: [number, number][], layer: Layer) => {
+    for (let i = 1; i < points.length; i++)
+      line(c, ...points[i - 1], ...points[i], "spark2", layer);
+  };
+  arc(
+    [
+      [6, 9],
+      [9, 6],
+      [12, 8],
+      [15, 4],
+    ],
+    "a",
+  );
+  arc(
+    [
+      [37, 4],
+      [40, 7],
+      [43, 5],
+      [46, 8],
+    ],
+    "a",
+  );
+  arc(
+    [
+      [20, 3],
+      [23, 1],
+      [25, 4],
+      [28, 1],
+    ],
+    "b",
+  );
+  arc(
+    [
+      [49, 9],
+      [51, 6],
+      [53, 9],
+    ],
+    "b",
+  );
+  c.put(2, 13, "spark", "b");
+}
+function paintCometAbove(c: Canvas) {
+  // Tail first, tapering toward the lower left, then the bright head.
+  for (let x = 3; x <= 34; x++) {
+    const t = (x - 3) / 31,
+      cy = 20 - t * 11,
+      half = 0.5 + t * 2.6;
+    for (let y = Math.round(cy - half); y <= Math.round(cy + half); y++) {
+      const top = y <= cy - half * 0.4;
+      c.put(x, y, t < 0.35 ? "fringe" : t < 0.7 ? (top ? "body" : "deep") : top ? "hi" : "body");
+    }
+  }
+  disc(c, 37, 8, 4.6);
+  c.outline();
+  c.star(35, 6, "spark2", "spark", "a");
+  c.put(12, 13, "spark2", "a");
+  c.put(22, 19, "spark2", "a");
+  c.star(44, 2, "spark2", "spark", "a");
+  c.put(35, 6, "spark", "b");
+  c.star(9, 13, "spark2", "spark", "b");
+  c.put(26, 18, "spark2", "b");
+  c.put(45, 15, "spark2", "b");
+}
+function paintCometBelow(c: Canvas) {
+  // An orbit: the comet head on the lit front left, its tail trailing round.
+  const head = Math.atan2(0.72, -0.7);
+  ellipseRing(c, 28, 12.5, 25, 6.5, 2, (dx, _dy, _light, angle) => {
+    const behind = (((head - angle) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    if (behind < 0.7) return "hi";
+    if (behind < 1.5) return "body";
+    if (behind < 2.4) return "deep";
+    if (behind < 3.2) return "fringe";
+    return null;
+  });
+  disc(c, 10.5, 16, 3.2);
+  c.outline();
+  // The rest of the orbit is a faint dotted path that shimmers.
+  for (let i = 0; i < 14; i++) {
+    const angle = head + 3.4 + i * 0.2,
+      x = 28 + Math.cos(angle) * 24,
+      y = 12.5 + Math.sin(angle) * 5.8;
+    if (i % 2 === 0) c.put(x, y, "deep", i % 4 === 0 ? "a" : "b");
+  }
+  c.star(10, 15, "spark2", "spark", "a");
+  c.put(30, 2, "spark2", "a");
+  c.star(48, 4, "spark2", "spark", "a");
+  c.put(10, 15, "spark", "b");
+  c.star(30, 2, "spark2", "spark", "b");
+  c.put(4, 5, "spark2", "b");
+}
+function paintNovaAbove(c: Canvas) {
+  // A starburst: shaded core, long cardinal rays, shorter diagonals.
+  const cx = 24,
+    cy = 11;
+  line(c, cx - 15, cy, cx + 15, cy, "body");
+  line(c, cx, cy - 10, cx, cy + 10, "body");
+  for (const [sx, sy] of [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ])
+    line(c, cx + sx * 2, cy + sy * 2, cx + sx * 7, cy + sy * 6, "deep");
+  disc(c, cx + 0.5, cy + 0.5, 4);
+  c.put(cx - 15, cy, "hi");
+  c.put(cx, cy - 10, "hi");
+  c.outline();
+  // Rays extend and flare alternately.
+  c.put(cx - 17, cy, "spark2", "a");
+  c.put(cx + 17, cy, "spark2", "a");
+  c.star(cx - 9, cy - 8, "spark2", "spark", "a");
+  c.star(cx + 10, cy + 8, "spark2", "spark", "a");
+  c.put(cx, cy - 12, "spark2", "b");
+  c.put(cx, cy + 12, "spark2", "b");
+  c.star(cx + 9, cy - 8, "spark2", "spark", "b");
+  c.star(cx - 10, cy + 8, "spark2", "spark", "b");
+  c.put(cx - 1, cy - 1, "spark", "b");
+}
+function paintNovaBelow(c: Canvas) {
+  groundRing(c, (light) =>
+    light > 0.55 ? "hi" : light < -0.45 ? "deep" : "body",
+  );
+  // Radiant spikes push outward from the ring.
+  const spikes: number[] = [];
+  for (let k = 0; k < 12; k++) {
+    const angle = (k * Math.PI) / 6 + Math.PI / 12;
+    if (Math.sin(angle) > 0.6) continue; // keep the front edge clear
+    spikes.push(angle);
+  }
+  const spike = (angle: number, from: number, to: number, layer: Layer) => {
+    const ux = Math.cos(angle),
+      uy = Math.sin(angle);
+    for (let i = from; i <= to; i++)
+      c.put(
+        28 + ux * (24.5 + i),
+        12.5 + uy * (6 + i * 0.6),
+        i >= to ? "fringe" : lit(ux, uy) > 0 ? "hi" : "deep",
+        layer,
+      );
+  };
+  spikes.forEach((angle) => spike(angle, 1, 2, "base"));
+  c.outline();
+  spikes.forEach((angle, k) => spike(angle, 3, 3, k % 2 ? "a" : "b"));
+  c.star(28, 3, "spark2", "spark", "a");
+  c.star(10, 2, "spark2", "spark", "b");
+  c.star(46, 2, "spark2", "spark", "b");
+  c.put(28, 3, "spark", "b");
+}
+
 const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => void>> = {
   above: {
     polar: paintPolarAbove,
     moon: paintMoonAbove,
     gold: paintGoldAbove,
+    ember: paintEmberAbove,
+    dew: paintDewAbove,
+    bloom: paintBloomAbove,
+    storm: paintStormAbove,
+    comet: paintCometAbove,
+    nova: paintNovaAbove,
     generic: paintGenericAbove,
   },
   below: {
     polar: paintPolarBelow,
     moon: paintMoonBelow,
     gold: paintGoldBelow,
+    ember: paintEmberBelow,
+    dew: paintDewBelow,
+    bloom: paintBloomBelow,
+    storm: paintStormBelow,
+    comet: paintCometBelow,
+    nova: paintNovaBelow,
     generic: paintGenericBelow,
   },
 };

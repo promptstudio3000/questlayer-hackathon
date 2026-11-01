@@ -1,3 +1,4 @@
+import { DEMO_AURA_NAMES } from "../server/aura-catalog.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { booleanValid, feature } from "@turf/turf";
@@ -128,7 +129,7 @@ test("ordered walking checkpoints cannot be skipped replayed or completed from o
 test("exhausted Aura supply is visible and never mints beyond edition caps", async () => {
   const db = openDatabase(":memory:"),
     player = createPlayer(db, "Collector");
-  for (const name of ["Northern Lights", "Moon Ring", "Golden Dust"])
+  for (const name of DEMO_AURA_NAMES)
     db.prepare("INSERT INTO editions VALUES (?,256,256)").run(name);
   const w = await ensureWorld(db, HOME, true, now),
     q = worldView(db, w.id, player).quests.find(

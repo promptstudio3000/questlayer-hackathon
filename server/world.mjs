@@ -11,7 +11,9 @@ import {
   dayKey,
   positionTier,
   tierFor,
+  levelFor,
 } from "./domain.mjs";
+import { chestAuraAvailable } from "./aura-catalog.mjs";
 import { atomic } from "./database.mjs";
 import {
   DEFAULT_CITY,
@@ -376,9 +378,14 @@ export function worldView(db, id, player = null, options = {}) {
         activity: describeStoredQuest(q, meta),
       };
     });
-  const remaining =
-    3 * 256 -
-    db.prepare("SELECT COALESCE(SUM(minted),0) AS n FROM editions").get().n;
+  const level = levelFor(
+      (player &&
+        db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp) ||
+        0,
+    ),
+    chestStock = new Map(
+      [1, 2, 3].map((t) => [t, chestAuraAvailable(db, t, level)]),
+    );
   const zones = manifest.zones.map((z) => ({
       ...z,
       placeStatus: placeClosed(closed, z.sourceId, z) ? "closed" : "open",
@@ -453,7 +460,8 @@ export function worldView(db, id, player = null, options = {}) {
       .map((q) => ({
         ...q,
         placeStatus: zoneById.get(q.zone_id)?.placeStatus || "open",
-        itemAvailable: q.kind === "chest" && remaining > 0,
+        itemAvailable:
+          q.kind === "chest" && (chestStock.get(q.tier) ?? false),
       })),
   };
 }

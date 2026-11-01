@@ -1,0 +1,142 @@
+{
+  "version": 2,
+  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native also exist in the collectibles contract; the others are game wardrobe editions until a reviewed contract upgrade adds them. Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
+  "supplyPerEdition": 256,
+  "rarities": ["common", "rare", "epic", "legendary"],
+  "entitlements": {
+    "common": { "minZoneTier": 1, "minLevel": 1 },
+    "rare": { "minZoneTier": 1, "minLevel": 2 },
+    "epic": { "minZoneTier": 2, "minLevel": 3 },
+    "legendary": { "minZoneTier": 3, "minLevel": 4 }
+  },
+  "editions": [
+    {
+      "id": "ember",
+      "name": "Ember Wisp",
+      "demoName": "Ember Wisp",
+      "rarity": "common",
+      "slot": "above",
+      "color": "#ff8a4c",
+      "set": "first-light",
+      "native": false,
+      "motif": "Three drifting flame wisps"
+    },
+    {
+      "id": "dew",
+      "name": "Dewfall Ring",
+      "demoName": "Dewfall Ring",
+      "rarity": "common",
+      "slot": "below",
+      "color": "#8fd3ff",
+      "set": "first-light",
+      "native": false,
+      "motif": "Water ripples with falling drops"
+    },
+    {
+      "id": "polar",
+      "name": "Northern Lights",
+      "demoName": "Northern Lights",
+      "rarity": "rare",
+      "slot": "above",
+      "color": "#9edfc5",
+      "demoColor": "#8dd8bd",
+      "set": "night-sky",
+      "native": true,
+      "motif": "Aurora ribbon with hanging curtains"
+    },
+    {
+      "id": "bloom",
+      "name": "Meadow Bloom",
+      "demoName": "Meadow Bloom",
+      "rarity": "rare",
+      "slot": "below",
+      "color": "#ff9fc8",
+      "set": "first-light",
+      "native": false,
+      "motif": "Ring of leaves and five-petal flowers"
+    },
+    {
+      "id": "storm",
+      "name": "Stormcrown",
+      "demoName": "Stormcrown",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#8fa6ff",
+      "set": "tempest",
+      "native": false,
+      "motif": "Cloud crown with crackling bolts"
+    },
+    {
+      "id": "moon",
+      "name": "Moonwake Aura",
+      "demoName": "Moon Ring",
+      "rarity": "epic",
+      "slot": "below",
+      "color": "#c2a0df",
+      "demoColor": "#b49beb",
+      "set": "night-sky",
+      "native": true,
+      "motif": "Crescent with a star-dust wake"
+    },
+    {
+      "id": "comet",
+      "name": "Comet Trail",
+      "demoName": "Comet Trail",
+      "rarity": "epic",
+      "slot": "below",
+      "color": "#e6ecff",
+      "set": "tempest",
+      "native": false,
+      "motif": "Orbiting comet with a rose tail"
+    },
+    {
+      "id": "gold",
+      "name": "Sunlit Aura",
+      "demoName": "Golden Dust",
+      "rarity": "legendary",
+      "slot": "above",
+      "color": "#e7c35f",
+      "demoColor": "#f2c869",
+      "set": "solar-crown",
+      "native": true,
+      "motif": "Sun halo with rays"
+    },
+    {
+      "id": "nova",
+      "name": "Nova Bloom",
+      "demoName": "Nova Bloom",
+      "rarity": "legendary",
+      "slot": "below",
+      "color": "#ff5fa8",
+      "set": "solar-crown",
+      "native": false,
+      "motif": "Starburst ring with radiant spikes"
+    }
+  ],
+  "sets": [
+    {
+      "id": "first-light",
+      "name": "First Light",
+      "glow": "#ffb36b",
+      "bonus": "Warm dawn glow around the explorer"
+    },
+    {
+      "id": "night-sky",
+      "name": "Night Sky",
+      "glow": "#9d7bf0",
+      "bonus": "Slow violet starlight shimmer"
+    },
+    {
+      "id": "tempest",
+      "name": "Tempest",
+      "glow": "#8fa6ff",
+      "bonus": "Electric blue flicker"
+    },
+    {
+      "id": "solar-crown",
+      "name": "Solar Crown",
+      "glow": "#ffd667",
+      "bonus": "Radiant golden pulse"
+    }
+  ]
+}

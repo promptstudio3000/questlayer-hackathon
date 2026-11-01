@@ -61,7 +61,7 @@ export function AuraClaims({
       {items.map((item) => (
         <article className="aura-claim" key={item.id}>
           <div className="aura-claim-heading">
-            <AuraArt color={item.color} slot={item.slot} />
+            <AuraArt color={item.color} slot={item.slot} name={item.name} />
             <div>
               <h3>{item.name}</h3>
               <span>
