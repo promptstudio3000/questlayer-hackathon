@@ -4023,3 +4023,58 @@ select {
   justify-content: center;
   gap: 8px;
 }
+.signed-orders {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #ded2e8;
+}
+.signed-orders h3 {
+  font-size: 20px;
+}
+.signed-orders h4 {
+  font-size: 18px;
+  margin: 24px 0 8px;
+}
+.signed-orders > p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.signed-offer-form {
+  grid-column: 1/-1;
+  display: grid;
+  gap: 10px;
+}
+.signed-offer-form p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.signed-order-history {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.signed-order-history li {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #ded2e8;
+  border-radius: 12px;
+  background: #faf7ff;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.signed-order-history li[data-status="open"] {
+  border-color: #7b4bb3;
+}
+.signed-order-history li[data-status="filled"] {
+  background: #e6f2e9;
+}
+.signed-orders > button {
+  width: 100%;
+  margin-top: 12px;
+}
+.native-offer.signed-order {
+  grid-template-columns: minmax(0, 1fr);
+}

@@ -450,6 +450,7 @@ export function worldView(db, id, player = null, options = {}) {
     cityZoneCount: zones.length,
     visibleZoneCount: visibleZones.length,
     openEligibleCount: eligible.size,
+    playerTier: tier,
     ...(paused.day ? { operatorPause: { reason: paused.day.reason } } : {}),
     coins: (paused.day ? [] : page)
       .filter((p) => !pointClosed(closed, p))

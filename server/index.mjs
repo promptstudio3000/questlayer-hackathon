@@ -1,6 +1,7 @@
 import { defaultDatabasePath } from "./state-path.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
+import { createGuide, guideFacts } from "./ai/guide.mjs";
 import { createAdventureResults } from "./adventure-results.mjs";
 import { recordSchemaVersions, schemaStatus } from "./schema-compatibility.mjs";
 import { NoteMedia } from "./note-media.mjs";
@@ -122,6 +123,7 @@ const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
 const creatorRuntime = createCreatorRuntime(db, { origin, authenticate: auth });
+const guide = createGuide(db);
 const rpc = process.env.NEAR_RPC_URL || DEFAULT_RPC;
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
@@ -584,6 +586,7 @@ async function api(req, res, url) {
         intents: process.env.NEAR_INTENTS_CONTRACT || null,
       },
       nearAI: !!process.env.NEAR_AI_API_KEY,
+      guide: guide.provider,
     });
   if (path === "/api/session" && method === "POST") {
     const input = await body(req);
@@ -871,6 +874,16 @@ async function api(req, res, url) {
         fresh: url.searchParams.get("refresh") === "1",
         fromIndex: Number(url.searchParams.get("from") || 0),
         verifyTokenId: url.searchParams.get("token"),
+      }),
+    );
+  }
+  if (path === "/api/native/market/orders" && method === "GET") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    return respond(
+      res,
+      await nativeMarket.signedOrders({
+        tokenId: url.searchParams.get("token"),
+        fresh: url.searchParams.get("refresh") === "1",
       }),
     );
   }
@@ -1367,6 +1380,20 @@ async function api(req, res, url) {
         Date.now(),
       );
     return respond(res, { ...result, player: profile(player) });
+  }
+  if (path === "/api/native/market/signer" && method === "GET") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    return respond(res, await nativeMarket.signer(url.searchParams.get("account")));
+  }
+  if (path === "/api/native/market/orders/status" && method === "POST") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    const input = await body(req);
+    return respond(res, { statuses: await nativeMarket.orderStatuses(input.orders) });
+  }
+  if (path === "/api/native/market/orders" && method === "POST") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    const input = await body(req);
+    return respond(res, await nativeMarket.submitOrder(input.order));
   }
   if (path === "/api/native/market/accounts" && method === "GET") {
     assert(nativeMarket, "The secured market is not available yet.", 503);
@@ -2070,42 +2097,34 @@ async function api(req, res, url) {
     return res.end(gotchi.svg);
   }
   if (path === "/api/npc" && method === "POST") {
+    // Grounded guide: answers only from this player's live world and today's
+    // testnet day; a model may rephrase those facts, never add to them.
     const i = await body(req);
     assert(
       typeof i.question === "string" && i.question.length <= 300,
       "The question is too long.",
     );
-    let answer =
-      "Every adventure starts around the corner. Pick up street coins, visit a free place and open a chest. Half of the game yield funds coins and half funds places. GOLD here is practice GOLD.";
-    let source = "rules";
-    if (process.env.NEAR_AI_API_KEY && process.env.NEAR_AI_MODEL) {
-      const r = await fetch("https://cloud-api.near.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.NEAR_AI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.NEAR_AI_MODEL,
-          max_tokens: 250,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are the English-speaking QuestLayer guide. Give concise exploration advice in English. 1 NEAR=1000 GOLD. This is a demo; never transfer funds. Game yield is split 50% street coins and 50% zones. Never invent locations or rewards, request keys or claim spending authority.",
-            },
-            { role: "user", content: i.question },
-          ],
-        }),
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (r.ok) {
-        const j = await r.json();
-        answer = j.choices?.[0]?.message?.content || answer;
-        source = "near-ai";
-      }
-    }
-    return respond(res, { answer, source });
+    const location = i.location ? point(i.location) : null;
+    const world =
+      typeof i.worldId === "string" && i.worldId.length <= 200
+        ? worldView(db, i.worldId, player)
+        : null;
+    let native = null;
+    if (nativeRewards)
+      native = await Promise.race([
+        nativeRewards
+          .snapshot(player, location ? { location } : {})
+          .catch(() => null),
+        new Promise((done) => setTimeout(() => done(null), 3000)),
+      ]);
+    return respond(
+      res,
+      await guide.ask({
+        actor: player,
+        question: i.question,
+        facts: guideFacts({ world, native, location }),
+      }),
+    );
   }
   if (path === "/api/bounties" && method === "GET")
     return respond(res, {

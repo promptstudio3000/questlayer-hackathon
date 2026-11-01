@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { AuraArt } from "./Ghost";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
+import type { PlayerKeyRecord } from "./player-key";
+import { SignedOrdersPanel, type MarketCall } from "./SignedOrdersPanel";
 import type {
   Player,
   NativeWardrobeState,
@@ -16,12 +18,16 @@ export function NativeMarketPanel({
   busy,
   onConnect,
   onTrade,
+  deviceKey = null,
+  onMarketCall,
 }: {
   player: Player;
   wardrobe: NativeWardrobeState | null;
   busy: string;
   onConnect: () => Promise<void>;
   onTrade: (request: NativeTradeRequest) => Promise<boolean>;
+  deviceKey?: PlayerKeyRecord | null;
+  onMarketCall?: (call: MarketCall) => Promise<boolean>;
 }) {
   const [data, setData] = useState<NativeMarketState | null>(null),
     [balances, setBalances] = useState<NativeMarketBalance[]>([]),
@@ -330,15 +336,23 @@ export function NativeMarketPanel({
                   <div>
                     <h3>{offer.token?.title || "Native Aura"}</h3>
                     <span className="native-address">{offer.token_id}</span>
-                    <strong className="native-price">
-                      {formatNativeNear(offer.price)} test NEAR
-                    </strong>
+                    {offer.state === "deposited" ? (
+                      <strong className="native-price">
+                        Signed offers only
+                      </strong>
+                    ) : (
+                      <strong className="native-price">
+                        {formatNativeNear(offer.price)} test NEAR
+                      </strong>
+                    )}
                     <span className="native-address">
                       Seller: {offer.seller}
                     </span>
                     <span>
-                      {offer.state === "buying"
+                      {offer.state === "buying" || offer.state === "filling"
                         ? "Sale confirming"
+                        : offer.state === "deposited"
+                          ? "Held by the market for signed offers"
                         : offer.state === "returning"
                           ? "Returning to owner"
                           : offer.available
@@ -349,7 +363,10 @@ export function NativeMarketPanel({
                   {offer.seller === accountId ? (
                     <button
                       className="button secondary"
-                      disabled={unavailable || offer.state !== "active"}
+                      disabled={
+                        unavailable ||
+                        (offer.state !== "active" && offer.state !== "deposited")
+                      }
                       onClick={() =>
                         void perform({
                           ...requestBase,
@@ -359,9 +376,11 @@ export function NativeMarketPanel({
                         })
                       }
                     >
-                      Cancel listing
+                      {offer.state === "deposited"
+                        ? "Return to collection"
+                        : "Cancel listing"}
                     </button>
-                  ) : (
+                  ) : offer.state === "deposited" ? null : (
                     <button
                       className="primary-button"
                       disabled={
@@ -383,6 +402,24 @@ export function NativeMarketPanel({
                 </article>
               ))}
             </div>
+          )}
+          {onMarketCall && (
+            <SignedOrdersPanel
+              data={data}
+              accountId={deviceKey?.accountId ?? null}
+              deviceKey={deviceKey}
+              owned={
+                wardrobe?.accounts
+                  .find((a) => a.accountId === deviceKey?.accountId)
+                  ?.items.filter((i) => i.kind === "aura") || []
+              }
+              balance={balances.find(
+                (a) => a.accountId === deviceKey?.accountId,
+              )}
+              busy={busy}
+              onCall={onMarketCall}
+              onChanged={async () => (await load(true)).state}
+            />
           )}
           <div className="native-market-pages">
             <button

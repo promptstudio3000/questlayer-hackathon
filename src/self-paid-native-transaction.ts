@@ -17,11 +17,20 @@ export class SelfPaidError extends Error {
     this.code = code;
   }
 }
+// Calls that move money even with a storage-class deposit: filling a signed
+// buy offer attaches 1 yocto but releases the buyer's escrowed NEAR.
+export const SELF_PAID_METHODS = [
+  "buy",
+  "fill_sell_order",
+  "fill_buy_order",
+  "deposit_near",
+];
 export function isRelayedDeposit(transaction: ReviewedNativeTransaction) {
   const action = transaction.actions[0];
   return (
     action?.type === "FunctionCall" &&
-    RELAYED_DEPOSITS.includes(String(action.params.deposit))
+    RELAYED_DEPOSITS.includes(String(action.params.deposit)) &&
+    !SELF_PAID_METHODS.includes(action.params.methodName)
   );
 }
 let rpcUrl: Promise<string> | null = null;

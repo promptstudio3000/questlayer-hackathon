@@ -61,6 +61,7 @@ import {
   type NativeLevelClaim,
 } from "./native-level-claim";
 import { NativeMarketPanel } from "./NativeMarketPanel";
+import type { MarketCall } from "./SignedOrdersPanel";
 import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
 import { RewardFundingPage, TodaysPot } from "./RewardFunding";
@@ -1508,6 +1509,39 @@ export default function App() {
                 args,
                 gas: listing ? "200000000000000" : "150000000000000",
                 deposit: request.kind === "buy" ? request.price! : "1",
+              },
+            },
+          ],
+        },
+        { playerId: player!.id },
+      );
+      await refreshNative(true);
+      return true;
+    });
+    return result === true;
+  }
+  // Signed-order market calls always use the explorer's own device key: free
+  // actions are relayed, money moves in self-paid transactions (no popup).
+  async function marketCall(call: MarketCall): Promise<boolean> {
+    const result = await action("native-market", async () => {
+      const managed = invisible.signer;
+      if (!managed)
+        throw Error("Signed offers need your QuestLayer explorer account.");
+      if (!onNearNetwork(call.receiverId))
+        throw Error("This market is not on the game network.");
+      await managed.send(
+        {
+          network: NEAR_NETWORK,
+          signerId: managed.accountId,
+          receiverId: call.receiverId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: call.methodName,
+                args: call.args,
+                gas: call.gas,
+                deposit: call.deposit,
               },
             },
           ],
@@ -3478,6 +3512,8 @@ export default function App() {
                   busy={busy}
                   onConnect={connectNear}
                   onTrade={tradeNative}
+                  deviceKey={invisible.deviceKey}
+                  onMarketCall={invisible.signer ? marketCall : undefined}
                 />
               }
               player={player}
@@ -3828,7 +3864,13 @@ export default function App() {
           }}
         />
       )}
-      {showNpc && <Npc onClose={() => setShowNpc(false)} />}
+      {showNpc && (
+        <Npc
+          worldId={world?.id}
+          position={position}
+          onClose={() => setShowNpc(false)}
+        />
+      )}
     </div>
   );
 }
@@ -4822,7 +4864,15 @@ function Bounties({
     </>
   );
 }
-function Npc({ onClose }: { onClose: () => void }) {
+function Npc({
+  onClose,
+  worldId,
+  position,
+}: {
+  onClose: () => void;
+  worldId?: string;
+  position?: Point;
+}) {
   const [q, setQ] = useState(""),
     [answer, setAnswer] = useState(
       "Hello, explorer. Start with a free place nearby, pick up a few coins on the way and open a chest. Solo is fine; this haunt is yours to explore.",
@@ -4835,6 +4885,8 @@ function Npc({ onClose }: { onClose: () => void }) {
     try {
       const r = await api<{ answer: string; source: string }>("/npc", {
         question: q,
+        ...(worldId ? { worldId } : {}),
+        ...(position ? { location: position } : {}),
       });
       setAnswer(r.answer);
       setSource(r.source);
@@ -4878,8 +4930,10 @@ function Npc({ onClose }: { onClose: () => void }) {
         </form>
         <small>
           {source === "near-ai"
-            ? "Answered by NEAR AI"
-            : "Standard answers · live guide not connected"}
+            ? "Answered by NEAR AI from live game data"
+            : source === "anthropic"
+              ? "Answered by Claude from live game data"
+              : "Answered from live game data"}
         </small>
       </section>
     </Dialog>
