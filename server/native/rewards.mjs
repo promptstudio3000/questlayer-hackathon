@@ -498,6 +498,12 @@ export class NativeRewards extends NativeContractReader {
             coinCount: m.coins.length,
             version: m.version,
             findCount: finds.size,
+            // Bonus XP only once the contract holds this day's finds (rewards
+            // v2); before that a find is a highlighted coin with coin XP.
+            findXp:
+              Array.isArray(chainDay?.finds) && chainDay.finds.length
+                ? chainDay.find_xp
+                : null,
             claimsAccepted:
               (chainDay?.claims_accepted || 0) +
               this.db

@@ -334,6 +334,10 @@ test("publication checks exact chain windows, prices, XP, tiers and receipt stor
       (d) => {
         d.claims_accepted = d.claims_limit + 1;
       },
+      (d) => {
+        // A v2 contract holding street finds the manifest does not list.
+        d.finds = [0];
+      },
     ];
     for (const change of changes) {
       f.db

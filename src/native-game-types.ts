@@ -67,6 +67,8 @@ export type NativeGameState = {
     /** Manifest version: 2 adds quest templates and street finds. */
     version?: number;
     findCount?: number;
+    /** XP a street find pays on chain; null until the contract holds the finds. */
+    findXp?: number | null;
     coins: (Point & { index: number; distance: number; find?: boolean })[];
     quests: NativeQuest[];
     /** "realized_yield": paid from staking yield already in the treasury. */

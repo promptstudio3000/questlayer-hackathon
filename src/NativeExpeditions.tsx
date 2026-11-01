@@ -657,7 +657,9 @@ export function NativeExpeditions({
                   {state.day ? nativeGold(state.day.coinUnit) : "0"} GOLD per
                   coin · first explorer takes it · up to 100 a day.
                   {state.day?.findCount
-                    ? ` Starred street finds mark spots worth a detour; they pay the same as any coin.`
+                    ? state.day.findXp
+                      ? ` Starred street finds pay the same GOLD and ${state.day.findXp} XP instead of 2.`
+                      : ` Starred street finds mark spots worth a detour; they pay the same as any coin.`
                     : ""}
                 </p>
                 {state.day?.coins.length ? (
