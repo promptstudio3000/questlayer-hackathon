@@ -17,6 +17,7 @@ import {
   COIN_ARENA_RADIUS_M,
 } from "./domain.mjs";
 import { contains } from "./spatial/city-pack.mjs";
+import { closedPlaces, assertPlaceOpen } from "./spatial/place-safety.mjs";
 import { QUEST_POLICY } from "./quest-templates.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
 import {
@@ -89,6 +90,7 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       409,
       "ALREADY_CLAIMED",
     );
+    assertPlaceOpen(closedPlaces(db, world.cityId), null, coin);
     if (!world.arena) validateFix(fix, coin, now);
     else {
       point(fix);
@@ -214,6 +216,7 @@ function validateQuestEvidence(db, player, q, fix, now, target) {
   );
   const world = JSON.parse(q.manifest),
     zone = world.zones.find((z) => z.id === q.zone_id);
+  assertPlaceOpen(closedPlaces(db, world.cityId), zone?.sourceId, target);
   if (!world.arena) validateFix(fix, target, now, 25);
   else {
     point(fix);

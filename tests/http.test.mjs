@@ -221,6 +221,47 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     a.cookie,
   );
   assert.equal(w.status, 200);
+  const page = await request(
+    "/world?id=" + encodeURIComponent(w.data.id) + "&limit=7",
+    undefined,
+    a.cookie,
+  );
+  assert.equal(page.status, 200);
+  assert.equal(page.data.coins.length, 7);
+  assert.equal(page.data.cityZoneCount, 6);
+  assert.ok(page.data.page.nextCursor);
+  const nextPage = await request(
+    "/world?id=" +
+      encodeURIComponent(w.data.id) +
+      "&limit=7&cursor=" +
+      encodeURIComponent(page.data.page.nextCursor),
+    undefined,
+    a.cookie,
+  );
+  assert.equal(nextPage.status, 200);
+  assert.ok(
+    nextPage.data.coins.every(
+      (c) => !page.data.coins.some((p) => p.id === c.id),
+    ),
+  );
+  const badViewport = await request(
+    "/world",
+    {
+      location: { lat: 50.08, lng: 14.42 },
+      arena: false,
+      bounds: [1, 1, 0, 0],
+    },
+    a.cookie,
+  );
+  assert.equal(badViewport.status, 400);
+  const emptyViewport = await request(
+    "/world?id=" + encodeURIComponent(w.data.id) + "&bbox=0,0,0.1,0.1",
+    undefined,
+    a.cookie,
+  );
+  assert.equal(emptyViewport.status, 200);
+  assert.equal(emptyViewport.data.visibleZoneCount, 0);
+  assert.equal(emptyViewport.data.cityZoneCount, 6);
   const coin = w.data.coins[0];
   const race = await Promise.all([
     request("/coins/claim", { coinId: coin.id, fix: coin }, a.cookie),
@@ -462,7 +503,10 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
   const attachKey2 = credential(attachOptions2.data.options.challenge);
   const attached = await request(
     "/passkey/verify",
-    { challengeId: attachOptions2.data.challengeId, response: attachKey2.registration },
+    {
+      challengeId: attachOptions2.data.challengeId,
+      response: attachKey2.registration,
+    },
     guest.cookie,
   );
   assert.equal(attached.status, 200, JSON.stringify(attached.data));

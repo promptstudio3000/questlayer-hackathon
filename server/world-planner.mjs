@@ -2,6 +2,7 @@ import { atomic } from "./database.mjs";
 import { dayKey, hash, id, assert } from "./domain.mjs";
 import { PLZEN, buildCityZones } from "./spatial/city-pack.mjs";
 import { shiftDate, localDateBounds } from "./spatial/calendar.mjs";
+import { effectiveCityPack } from "./spatial/place-safety.mjs";
 import {
   QUEST_POLICY,
   QUEST_POLICY_START_DAY,
@@ -65,7 +66,7 @@ export function buildCityPlan(city, day) {
     diagnostics: {
       candidateCount: city.candidates.length,
       rejected,
-      routing: "not-verified",
+      routing: city.pedestrianGraph ? "mapped-connectivity" : "not-verified",
       fieldReview: city.fieldReview || "pending",
     },
     timezone: city.timezone,
@@ -123,6 +124,7 @@ function storePlan(db, descriptor, plan, now) {
 }
 // Preparing geography never reserves coins, mints rewards or modifies treasury.
 export function getOrPrepareCityPlan(db, city, day, now = Date.now()) {
+  city = effectiveCityPack(db, city);
   const descriptor = planDescriptor(city, day),
     existing = readPlan(db, descriptor);
   if (existing) return existing;
@@ -131,6 +133,7 @@ export function getOrPrepareCityPlan(db, city, day, now = Date.now()) {
 }
 export function enqueueCityPlans(db, now = Date.now(), cities = [PLZEN]) {
   validateCities(cities);
+  cities = cities.map((city) => effectiveCityPack(db, city));
   return atomic(db, () => {
     for (const city of cities) {
       const today = dayKey(now, city.timezone);
@@ -167,7 +170,8 @@ export async function runWorldJobs(
   for (let n = 0; n < maxJobs; n++) {
     const now = clock(),
       lease = id("world-lease"),
-      activeIds = cities.flatMap((city) => {
+      activeIds = cities.flatMap((base) => {
+        const city = effectiveCityPack(db, base);
         const today = dayKey(now, city.timezone);
         return [today, shiftDate(today)].map(
           (day) => planDescriptor(city, day).id,
@@ -187,7 +191,8 @@ export async function runWorldJobs(
     });
     if (!job) break;
     try {
-      const city = cities.find((c) => c.id === job.city_id);
+      const base = cities.find((c) => c.id === job.city_id),
+        city = base && effectiveCityPack(db, base);
       assert(city, "City pack is unavailable.");
       const descriptor = planDescriptor(city, job.day);
       assert(
@@ -203,6 +208,11 @@ export async function runWorldJobs(
           )
           .get(job.id, lease, finished);
         assert(owned, "City preparation lease expired.");
+        assert(
+          planDescriptor(effectiveCityPack(db, base), job.day).id ===
+            descriptor.id,
+          "Place safety changed during preparation; retry its new version.",
+        );
         storePlan(db, descriptor, plan, finished);
         db.prepare(
           `UPDATE world_jobs SET state='ready',lease_owner=NULL,lease_until=NULL,last_error=NULL,updated_at=? WHERE id=? AND lease_owner=?`,
@@ -225,6 +235,7 @@ export async function runWorldJobs(
   return completed;
 }
 export function worldPreparationStatus(db, now = Date.now(), city = PLZEN) {
+  city = effectiveCityPack(db, city);
   const today = dayKey(now, city.timezone);
   return {
     cityId: city.id,
@@ -262,7 +273,13 @@ export function worldPreparationStatus(db, now = Date.now(), city = PLZEN) {
 }
 export function startWorldPlanner(
   db,
-  { intervalMs = 60000, clock = Date.now, cities = [PLZEN], maxJobs = 2 } = {},
+  {
+    intervalMs = 60000,
+    clock = Date.now,
+    cities = [PLZEN],
+    maxJobs = 2,
+    afterPreparation = async () => {},
+  } = {},
 ) {
   let running = null,
     stopped = false;
@@ -271,6 +288,7 @@ export function startWorldPlanner(
     running = (async () => {
       enqueueCityPlans(db, clock(), cities);
       await runWorldJobs(db, { clock, cities, maxJobs });
+      await afterPreparation();
       // A local-day cutoff belongs to its own pack. Another city's timezone
       // must not retire this city's preparations early.
       atomic(db, () => {

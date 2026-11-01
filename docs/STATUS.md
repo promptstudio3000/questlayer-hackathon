@@ -14,8 +14,8 @@ funded and signed in the background. The blockchain is a property of the items, 
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| Solo demo loop (name → map → coin → zone chest → receipt → equip) | works locally, server-authoritative | `output/qa/2026-11-E0/`; latest local `npm run check` 545/545, `output/qa/2026-11-world-worker/` |
-| Shared daily city world, six Plzeň slots, coins | works; safe 0–6 map shortfalls with diagnostics, native v1 still requires six; no pedestrian graph yet | `tests/city-world.test.mjs`, `docs/WORLD-WORKER.md` |
+| Solo demo loop (name → map → coin → zone chest → receipt → equip) | works locally, server-authoritative | `output/qa/2026-11-E0/`; latest local `npm run check` 566/566, `output/qa/2026-11-map-backend/` |
+| Shared daily city world, six Plzeň slots, coins | safe 0–6 map shortfalls; resilient street data, closures and optional viewport reads; graph support for configured packs, active Plzeň routing still unverified | `tests/city-world.test.mjs`, `docs/MAP-BACKEND-CONTINUATION-2026-11-01.md` |
 | Native rewards (`questlayer-rewards-20261031.testnet`), worker relaying claims | works on testnet with a service key; gasless for the player | `public/native-rewards-testnet.json` |
 | Aura NFTs (`nfts.questlayer-dev-20261031.testnet`), market escrow (`questlayer-market-20261101.testnet`), staking pilot, tasks, NEAR Social profile | work on testnet; Auras and the market now also accept the invisible account through the relayer | `public/*-testnet.json` proofs |
 | Shell cleanup (E1) | done: one entry button, four tabs, no network wording in the loop, one token source | `docs/UI-AUDIT-2026-11.md`, `output/qa/2026-11-E0/ui-after/` |
@@ -25,6 +25,8 @@ funded and signed in the background. The blockchain is a property of the items, 
 | Aavegotchi research | palette, rendering, Baazaar model and rights notes for reuse on NEAR | `docs/AAVEGOTCHI-REUSE.md` |
 
 ## In progress
+
+Latest local map/backend delivery: all five follow-up capabilities are implemented—resilient cached street data/background recovery, original-node pedestrian graph import/routing and configured-pack validation, audited operator place closures, compatible viewport/page reads, and a repeatable three-day integration pilot. [Claude handoff and interfaces](MAP-BACKEND-CONTINUATION-2026-11-01.md) · [566-test evidence](../output/qa/2026-11-map-backend/README.md). No UI or contract changes, additional city activation or deployment occurred. Reviewed Plzeň topology/entries and physical access remain open; optional viewport fields have not been adopted by the unchanged frontend.
 
 Local continuation, 1 November: the zone/map worker now rejects malformed candidates independently, keeps obsolete jobs from starving current dates, verifies stored readiness and retains published geometry. Native publication uses one explicit CityPack, recovers its original durable intent and verifies exact chain terms/storage before enabling collection or closing a day. Default Plzeň geometry/native commitments are preserved. UI, contracts, relayer policy and deployed configuration are unchanged. Start with the [brief Claude handoff](CLAUDE-WORKER-HANDOFF-2026-11-01.md); see [worker boundaries](WORLD-WORKER.md) and [local evidence](../output/qa/2026-11-world-worker/README.md). This does not complete W01/W06 field/release gates or the separate treasury-liquidity audit.
 

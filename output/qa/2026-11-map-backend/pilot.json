@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "status": "passed",
+  "mode": "isolated-synthetic-integration",
+  "dates": [
+    "2026-10-24",
+    "2026-10-25",
+    "2026-10-26"
+  ],
+  "localDayHours": [
+    24,
+    25,
+    24
+  ],
+  "events": [
+    "map-outage-recovered-with-one-world",
+    "expired-preparation-lease-reclaimed",
+    "closure-replay-and-reopen-preserved-rights",
+    "day:2026-10-24:six-zones-one-shared-coin-one-durable-aura",
+    "consistent-backup-restart-recovered-lost-chain-reply",
+    "day:2026-10-25:six-zones-one-shared-coin-one-durable-aura",
+    "day:2026-10-26:six-zones-one-shared-coin-one-durable-aura"
+  ],
+  "native": {
+    "confirmedReceipts": 6,
+    "claimSends": 6,
+    "closedDays": 1,
+    "xp": 246,
+    "credit": "3000000000000000000",
+    "conservation": true
+  },
+  "demo": {
+    "conservation": true,
+    "worlds": 4,
+    "closureOperations": 2
+  },
+  "limits": [
+    "fake RPC and in-memory QA keys",
+    "no contract or financial audit",
+    "no physical GPS/device proof",
+    "no deployment"
+  ]
+}

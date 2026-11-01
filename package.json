@@ -17,6 +17,7 @@
     "test:contracts": "bash scripts/build-contracts.sh --test",
     "world:prepare": "node server/prepare-worlds.mjs --once",
     "world:preview": "node server/prepare-worlds.mjs --preview",
+    "world:pilot": "node scripts/run-world-pilot.mjs",
     "staking:probe": "node scripts/probe-staking-testnet.mjs",
     "funding:simulate": "node scripts/simulate-native-funding.mjs"
   },

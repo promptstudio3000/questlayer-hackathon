@@ -3,6 +3,11 @@ import { PLZEN, sampleCityPaths } from "../spatial/city-pack.mjs";
 import { shiftDate } from "../spatial/calendar.mjs";
 import { getOrPrepareCityPlan } from "../world-planner.mjs";
 import {
+  assertNativePlaceOpen,
+  effectiveCityPack,
+  pointClosed,
+} from "../spatial/place-safety.mjs";
+import {
   nativeDayId,
   nativeManifest,
   nativePublicationMatches,
@@ -44,7 +49,14 @@ export async function publishNativeDays(
       const plan = getOrPrepareCityPlan(native.db, city, day, clock());
       const treasury = await native.view("get_treasury", {}, true);
       renew();
-      const manifest = nativeManifest(plan, treasury, sampleCityPaths(city));
+      const activeCity = effectiveCityPack(native.db, city);
+      const manifest = nativeManifest(
+        plan,
+        treasury,
+        sampleCityPaths(activeCity).filter(
+          (p) => !pointClosed(activeCity.exclusions || [], p),
+        ),
+      );
       if (!manifest) continue;
       writeOwned(
         "INSERT OR IGNORE INTO native_days(id,day,body,hash,updated_at) VALUES(?,?,?,?,?)",
@@ -86,6 +98,13 @@ export async function publishNativeDays(
       continue;
     }
     if (!confirmed) {
+      for (const quest of manifest.quests)
+        assertNativePlaceOpen(
+          native.db,
+          manifest,
+          quest.index,
+          quest.targets[0],
+        );
       tx = await sendOwned("publish_day", publicationArgs(manifest));
       writeOwned(
         "UPDATE native_days SET transaction_hash=? WHERE id=?",

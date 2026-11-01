@@ -19,6 +19,10 @@ import {
 } from "./reward-manifest.mjs";
 import { PLZEN } from "../spatial/city-pack.mjs";
 import { NETWORK } from "./network.mjs";
+import {
+  assertNativePlaceOpen,
+  closedPlaces,
+} from "../spatial/place-safety.mjs";
 export class NativeRewards extends NativeContractReader {
   constructor(
     db,
@@ -196,6 +200,12 @@ export class NativeRewards extends NativeContractReader {
     }
     validateFix(fix, target, now, 35);
     return atomic(this.db, () => {
+      assertNativePlaceOpen(
+        this.db,
+        m,
+        kind === "quest" ? index : null,
+        target,
+      );
       const pending = this.db
         .prepare(
           "SELECT COUNT(*) n FROM native_reward_claims WHERE day_id=? AND state!='confirmed'",
@@ -401,6 +411,18 @@ export class NativeRewards extends NativeContractReader {
             .all(m.id, accountId)
         : [];
     if (location) point(location);
+    const safety = m ? closedPlaces(this.db, m.cityId) : [];
+    const discoveryOpen = (index, p) => {
+      if (!safety.length) return true;
+      try {
+        assertNativePlaceOpen(this.db, m, index, p);
+        return true;
+      } catch (error) {
+        if (["PLACE_CLOSED", "PLACE_UNVERIFIED"].includes(error.code))
+          return false;
+        throw error;
+      }
+    };
     const coins =
       m && location
         ? m.coins
@@ -409,7 +431,12 @@ export class NativeRewards extends NativeContractReader {
               index,
               distance: Math.round(distance(location, p)),
             }))
-            .filter((p) => !claimed.has(p.index) && p.distance <= 1000)
+            .filter(
+              (p) =>
+                !claimed.has(p.index) &&
+                p.distance <= 1000 &&
+                discoveryOpen(null, p),
+            )
             .sort((a, b) => a.distance - b.distance)
             .slice(0, 128)
         : [];
@@ -481,6 +508,9 @@ export class NativeRewards extends NativeContractReader {
             coins,
             quests: m.quests.map((q) => ({
               ...q,
+              placeStatus: discoveryOpen(q.index, q.targets[0])
+                ? "open"
+                : "closed",
               activity: describeNativeQuest(q),
               prizeClaimed: !!chainDay?.winners?.[q.index],
               prizePending:

@@ -12,6 +12,7 @@ import {
 import { runRewardWorker } from "../server/native/reward-worker.mjs";
 import { buildCityPlan } from "../server/world-planner.mjs";
 import { PLZEN } from "../server/spatial/city-pack.mjs";
+import { changeSystemPlace } from "../server/spatial/place-safety.mjs";
 const NOW = Date.parse("2026-10-31T10:00:00Z"),
   plan = buildCityPlan(PLZEN, "2026-10-31");
 function fixture({ city = PLZEN } = {}) {
@@ -107,6 +108,92 @@ async function ready(f) {
   f.n.enroll(f.player, f.accountId, true);
   return f.n.day("plzen-2026-10-31-v1");
 }
+test("operator closure blocks new native visits but accepted receipts still settle and remain recoverable", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f),
+      q = m.quests.find((q) => q.tier === 1);
+    let accepted;
+    for (let checkpoint = 0; checkpoint < 3; checkpoint++) {
+      f.setNow(f.clock() + 90000);
+      accepted = await f.n.submit(f.player, {
+        accountId: f.accountId,
+        dayId: m.id,
+        kind: "quest",
+        index: q.index,
+        checkpoint,
+        mode: "gps",
+        fix: f.fix(q.targets[checkpoint]),
+      });
+    }
+    const blueprint = JSON.parse(
+      f.db
+        .prepare(
+          "SELECT body FROM world_blueprints WHERE city_id=? AND day=? AND source_hash=?",
+        )
+        .get(m.cityId, m.day, m.sourceHash).body,
+    );
+    changeSystemPlace(
+      f.db,
+      PLZEN,
+      {
+        actor: "qa-operator",
+        operationId: "close-native-place",
+        candidateId: blueprint.zones[q.index].sourceId,
+        action: "close",
+        reason: "Temporary public access closure",
+        expectedVersion: 0,
+      },
+      { isOperator: () => true, clock: f.clock },
+    );
+    const bob = createPlayer(f.db, "Another native explorer", f.clock());
+    f.db
+      .prepare("INSERT INTO wallet_links VALUES(?,?,?)")
+      .run("bob.testnet", bob, f.clock());
+    f.n.enroll(bob, "bob.testnet", true);
+    await assert.rejects(
+      f.n.submit(bob, {
+        accountId: "bob.testnet",
+        dayId: m.id,
+        kind: "quest",
+        index: q.index,
+        checkpoint: 0,
+        mode: "gps",
+        fix: f.fix(q.targets[0]),
+      }),
+      (e) => e.code === "PLACE_CLOSED",
+    );
+    assert.equal(
+      (await f.n.snapshot(f.player, { accountId: f.accountId })).day.quests[
+        q.index
+      ].placeStatus,
+      "closed",
+    );
+    assert.equal(
+      (
+        await f.n.submit(f.player, {
+          accountId: f.accountId,
+          dayId: m.id,
+          kind: "quest",
+          index: q.index,
+          checkpoint: 2,
+          mode: "gps",
+          fix: f.fix(q.targets[2]),
+        })
+      ).id,
+      accepted.id,
+    );
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(
+      f.db
+        .prepare("SELECT state FROM native_reward_claims WHERE id=?")
+        .get(accepted.id).state,
+      "confirmed",
+    );
+  } finally {
+    f.db.close();
+  }
+});
 function input(f, m, p = {}) {
   return {
     accountId: f.accountId,

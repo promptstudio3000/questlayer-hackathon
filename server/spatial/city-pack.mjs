@@ -17,6 +17,10 @@ import {
   simplify,
 } from "@turf/turf";
 import { seeded, distance } from "../domain.mjs";
+import {
+  createPedestrianRouter,
+  validateExclusions,
+} from "./pedestrian-graph.mjs";
 export const PLZEN = JSON.parse(
   readFileSync(new URL("../data/plzen-v1.json", import.meta.url), "utf8"),
 );
@@ -85,6 +89,12 @@ function chooseTargets(shape, entries, rng) {
   return [];
 }
 export function buildCityZones(pack, day, { onRejected = () => {} } = {}) {
+  const exclusions = validateExclusions(pack.exclusions || []);
+  const router = pack.pedestrianGraph
+    ? createPedestrianRouter(pack.pedestrianGraph, { exclusions })
+    : null;
+  if (router && router.cityId !== pack.id)
+    throw Error("Pedestrian graph belongs to another city.");
   const rng = seeded(`${pack.id}:${day}:polygons-v2`),
     sectors = ["central", "north", "east", "southeast", "southwest", "west"];
   const tiers = [1, 1, 1, 2, 2, 3];
@@ -114,6 +124,10 @@ export function buildCityZones(pack, day, { onRejected = () => {} } = {}) {
     for (const { c } of candidates) {
       try {
         let f = feature(c.geometry);
+        if (exclusions.some((e) => booleanIntersects(f, feature(e.geometry)))) {
+          reject(c, "excluded-area");
+          continue;
+        }
         if (area(f) > 120000) {
           const centers = c.targets.filter((_, i) => i % 13 === 0);
           const center = centers[Math.floor(rng() * centers.length)]?.point;
@@ -144,6 +158,49 @@ export function buildCityZones(pack, day, { onRejected = () => {} } = {}) {
           reject(c, "insufficient-separated-targets");
           continue;
         }
+        let walking = null;
+        if (router) {
+          const rawEntry = c.entry || c.entries?.[0];
+          if (!rawEntry) {
+            reject(c, "missing-reviewed-entry");
+            continue;
+          }
+          const entry = rawEntry.point
+            ? {
+                lng: rawEntry.point[0],
+                lat: rawEntry.point[1],
+                pathId: rawEntry.pathId,
+              }
+            : rawEntry;
+          const routes = targets.map((p) => {
+            const target = c.targets.find(
+              (t) => t.point[0] === p[0] && t.point[1] === p[1],
+            );
+            return router.route(entry, {
+              lng: p[0],
+              lat: p[1],
+              pathId: target?.pathId,
+            });
+          });
+          if (routes.some((r) => r.status !== "reachable")) {
+            reject(c, "unreachable-objective");
+            continue;
+          }
+          const transfer = zones.length
+            ? router.route(zones[0].walking.entry, entry)
+            : null;
+          if (transfer && transfer.status !== "reachable") {
+            reject(c, "disconnected-city-transfer");
+            continue;
+          }
+          walking = {
+            entry,
+            routes,
+            transfer,
+            graphHash: router.hash,
+            fieldReview: "pending",
+          };
+        }
         const box = bbox(f),
           ratio =
             Math.max((box[2] - box[0]) * 0.65, box[3] - box[1]) /
@@ -165,6 +222,7 @@ export function buildCityZones(pack, day, { onRejected = () => {} } = {}) {
           sourceId: c.id,
           areaM2: Math.round(area(f)),
           fieldReview: "pending",
+          ...(walking ? { walking } : {}),
         });
         break;
       } catch {

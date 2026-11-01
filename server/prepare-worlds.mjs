@@ -6,11 +6,20 @@ import {
   worldPreparationStatus,
 } from "./world-planner.mjs";
 import { openDatabase } from "./database.mjs";
+import { readFileSync, statSync } from "node:fs";
 if (process.argv.includes("--preview")) {
   const index = process.argv.indexOf("--preview"),
     day = process.argv[index + 1];
   if (!day) throw Error("Supply a local date: --preview YYYY-MM-DD");
-  const plan = buildCityPlan(PLZEN, day);
+  const packIndex = process.argv.indexOf("--pack");
+  let pack = PLZEN;
+  if (packIndex !== -1) {
+    const file = process.argv[packIndex + 1];
+    if (!file || statSync(file).size > 16 * 1024 * 1024)
+      throw Error("Supply a bounded CityPack JSON file.");
+    pack = JSON.parse(readFileSync(file, "utf8"));
+  }
+  const plan = buildCityPlan(pack, day);
   console.log(
     JSON.stringify(
       {
@@ -23,7 +32,7 @@ if (process.argv.includes("--preview")) {
           coverage: plan.coverage,
           diagnostics: plan.diagnostics,
           financialAllocation: "none",
-          fieldReview: PLZEN.fieldReview,
+          fieldReview: pack.fieldReview,
         },
         features: plan.zones.map((z) => ({
           type: "Feature",
@@ -38,6 +47,7 @@ if (process.argv.includes("--preview")) {
             opensAt: z.opensAt,
             closesAt: z.closesAt,
             targets: z.targets,
+            ...(z.walking ? { walking: z.walking } : {}),
           },
         })),
       },
@@ -46,6 +56,10 @@ if (process.argv.includes("--preview")) {
     ),
   );
 } else if (process.argv.includes("--once")) {
+  if (process.argv.includes("--pack"))
+    throw Error(
+      "Custom packs are preview-only; no city activation is implied.",
+    );
   const db = openDatabase();
   try {
     enqueueCityPlans(db);

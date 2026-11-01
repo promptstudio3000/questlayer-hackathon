@@ -1,5 +1,7 @@
 # Daily city preparation
 
+Latest continuation: [five map/backend tasks](MAP-BACKEND-CONTINUATION-2026-11-01.md) adds street-data recovery, configured pedestrian graph validation, audited closures, optional viewport reads and a repeatable pilot. Its [566-test report](../output/qa/2026-11-map-backend/README.md) supersedes the suite count in the earlier delivery evidence below; it does not close field or release gates.
+
 QuestLayer prepares today's and tomorrow's Plzeň geography in Europe/Prague time. Preparation is separate from financial world activation. It creates no coins, quests, staking positions, payouts or treasury reservations.
 
 ## Lifecycle
@@ -47,4 +49,4 @@ The [1 November local evidence](../output/qa/2026-11-world-worker/README.md) rec
 
 Selected normal-day Plzeň zone geometry and complete native manifests/publication arguments were compared with cloud checkpoint `cb8ddcd` and remain byte compatible. No UI source, contracts, relayer, deployments or production state were changed; no live RPC/signing operation was used for these checks.
 
-This remains a bounded OSM preview: field review, a complete pedestrian routing graph, access/exclusion masks, additional polygon families, signed operator publication and a visual operator console remain open. The once/GeoJSON tools do not complete those gates. Native realized-yield budgeting remains W05/W06 work; this worker does not turn demo backing into real yield.
+This remains a bounded OSM preview. Graph import/routing, configured-pack reachability/exclusion checks and trusted place-closure operations are now implemented in the continuation above. Adoption of a complete reviewed Plzeň topology/entries, field review, additional polygon families, signed operator publication and a visual operator console remain open. The once/GeoJSON tools do not complete those gates. Native realized-yield budgeting remains W05/W06 work; this worker does not turn demo backing into real yield.

@@ -79,7 +79,14 @@ import {
   history,
   createPlayer,
 } from "./database.mjs";
-import { HOME, ensureWorld, worldView, expireWorlds } from "./world.mjs";
+import {
+  HOME,
+  ensureWorld,
+  worldView,
+  expireWorlds,
+  retryStreetWorlds,
+} from "./world.mjs";
+import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
 import {
   GOLD,
@@ -1348,13 +1355,27 @@ async function api(req, res, url) {
   }
   if (path === "/api/world" && method === "POST") {
     const input = await body(req),
-      location = point(input.location || HOME);
+      location = point(input.location || HOME),
+      query = worldQuery({
+        bounds: input.bounds,
+        limit: input.limit,
+        cursor: input.cursor,
+      });
     expireWorlds(db);
     const world = await ensureWorld(db, location, input.arena !== false);
-    return respond(res, worldView(db, world.id, player));
+    return respond(res, worldView(db, world.id, player, query));
   }
   if (path === "/api/world" && method === "GET") {
-    const w = worldView(db, url.searchParams.get("id"), player);
+    const w = worldView(
+      db,
+      url.searchParams.get("id"),
+      player,
+      worldQuery({
+        bounds: url.searchParams.get("bbox") ?? undefined,
+        limit: url.searchParams.get("limit") ?? undefined,
+        cursor: url.searchParams.get("cursor") ?? undefined,
+      }),
+    );
     assert(w, "This area could not be found. Refresh the map.", 404);
     return respond(res, w);
   }
@@ -2128,7 +2149,9 @@ const server = createServer(async (req, res) => {
     if (!e.status) console.error("Request failed:", e.name, e.code || "");
   }
 });
-const worldPlanner = backgroundWorkersDisabled ? null : startWorldPlanner(db);
+const worldPlanner = backgroundWorkersDisabled
+  ? null
+  : startWorldPlanner(db, { afterPreparation: () => retryStreetWorlds(db) });
 const rewardWorker =
   !backgroundWorkersDisabled &&
   nativeRewards &&
