@@ -210,6 +210,8 @@ export class NativeVaults extends NativeContractReader {
           withdraw: "withdraw_owner",
           refresh: "refresh",
           advance: "advance",
+          partial: "request_partial_exit",
+          contribution: "set_contribution",
         };
         methodName = methods[action];
         assert(methodName, "Unsupported vault action.");
@@ -225,6 +227,44 @@ export class NativeVaults extends NativeContractReader {
             "Wait for the current operation or exit.",
             409,
           );
+        }
+        if (action === "partial" || action === "contribution") {
+          // Factory positions created before the v2 upgrade stay v1 and
+          // have neither method; only a live v2 state is offered them.
+          assert(
+            s.version === 2,
+            "This stake predates partial withdrawals and share changes.",
+            409,
+          );
+          assert(
+            s.stage === "idle" &&
+              !s.exit_requested &&
+              String(s.partial_exit ?? "0") === "0",
+            "Wait for the current operation or exit.",
+            409,
+          );
+          deposit = "1";
+        }
+        if (action === "partial") {
+          const amount = nativeInteger(input.amount);
+          assert(
+            amount >= 10n ** 21n && amount + 10n ** 21n <= BigInt(s.principal),
+            "Leave at least 0.001 test NEAR staked, or use a full exit.",
+          );
+          args = { amount: amount.toString() };
+        }
+        if (action === "contribution") {
+          const bps = input.contributionBps;
+          assert(
+            Number.isInteger(bps) && bps >= 0 && bps <= 10000,
+            "Choose a 0–100% contribution.",
+          );
+          assert(
+            bps !== s.contribution_bps || s.pending_contribution_bps != null,
+            "This is already your share.",
+            409,
+          );
+          args = { contribution_bps: bps };
         }
         if (action === "exit" || action === "withdraw") deposit = "1";
         if (action === "withdraw")

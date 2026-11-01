@@ -728,6 +728,12 @@ test("native receipt capacity includes accepted pending rights before another ex
   try {
     const m = await ready(f);
     f.state.days.get(m.id).claims_accepted = 255;
+    // The chain only counts claims this server attested, so mirror them locally.
+    const settled = f.db.prepare(
+      "INSERT INTO native_reward_claims(id,day_id,kind,item_index,account_id,player_id,body,signature,state,run_after,created_at) VALUES(?,?,'quest',0,?,?,'{}','','confirmed',0,0)",
+    );
+    for (let i = 0; i < 255; i++)
+      settled.run(`settled-${i}`, m.id, `explorer${i}.testnet`, f.player);
     await f.n.submit(f.player, input(f, m));
     f.setNow(NOW + 5000);
     await assert.rejects(
@@ -736,7 +742,7 @@ test("native receipt capacity includes accepted pending rights before another ex
     );
     assert.equal(
       f.db.prepare("SELECT COUNT(*) n FROM native_reward_claims").get().n,
-      1,
+      256,
     );
   } finally {
     f.db.close();

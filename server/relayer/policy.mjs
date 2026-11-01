@@ -371,6 +371,29 @@ export function validateDelegate(decoded, context) {
       "RELAY_RECEIVER",
       "Only your own staking position can be operated.",
     );
+    if (method === "request_partial_exit") {
+      // Vault v2: the principal to take out, as a u128 decimal string.
+      demand(
+        keysOf(args, ["amount"]) &&
+          typeof args.amount === "string" &&
+          /^[1-9]\d{0,38}$/.test(args.amount) &&
+          BigInt(args.amount) >= 10n ** 21n &&
+          BigInt(args.amount) < 2n ** 128n,
+        "RELAY_ARGS",
+        "A partial exit takes one amount of at least 0.001 NEAR.",
+      );
+      depositIs(1n, "Position authorization");
+    } else if (method === "set_contribution") {
+      demand(
+        keysOf(args, ["contribution_bps"]) &&
+          Number.isInteger(args.contribution_bps) &&
+          args.contribution_bps >= 0 &&
+          args.contribution_bps <= 10000,
+        "RELAY_ARGS",
+        "A contribution change takes one 0–10000 basis-point value.",
+      );
+      depositIs(1n, "Position authorization");
+    } else {
     demand(keysOf(args, []), "RELAY_ARGS", "Vault actions take no arguments.");
     if (method === "deposit_and_stake") selfPaid("A stake deposit");
     else if (method === "request_exit" || method === "withdraw_owner")
@@ -382,6 +405,7 @@ export function validateDelegate(decoded, context) {
     )
       depositIs(0n, "Position maintenance");
     else unsupported();
+    }
   } else if (receiverId === c.social) {
     demand(
       method === "set",

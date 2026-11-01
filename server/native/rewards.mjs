@@ -28,6 +28,12 @@ import {
   pauseFor,
   pauseState,
 } from "../operator/world-controls.mjs";
+/** Local claim rows of a day in any state (the chain's accepted count can never exceed it unless rows were lost). */
+export function knownNativeClaims(db, dayId) {
+  return db
+    .prepare("SELECT COUNT(*) n FROM native_reward_claims WHERE day_id=?")
+    .get(dayId).n;
+}
 export class NativeRewards extends NativeContractReader {
   constructor(
     db,
@@ -180,6 +186,15 @@ export class NativeRewards extends NativeContractReader {
       "Native attestations are currently paused or unavailable.",
       503,
       "NATIVE_PAUSED",
+    );
+    // Every chain acceptance starts as a local row, so the chain can only be
+    // ahead after a restore lost rows. Those coins and zones may already be
+    // paid; a new attestation for them would be refused and jam the queue.
+    assert(
+      chainDay.claims_accepted <= knownNativeClaims(this.db, dayId),
+      "This native day is being reconciled after a server restore. Finds already paid on NEAR are safe; new native finds open with the next day.",
+      503,
+      "NATIVE_RECONCILING",
     );
     let target;
     if (kind === "coin") {

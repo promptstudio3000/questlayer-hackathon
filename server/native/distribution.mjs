@@ -24,6 +24,7 @@ import {
   storedNativeManifest,
 } from "./reward-manifest.mjs";
 import { NETWORK } from "./network.mjs";
+import { knownNativeClaims } from "./rewards.mjs";
 import { readYieldBacking, yieldBackedManifests } from "./day-publication.mjs";
 
 // NEAR protocol storage price: 10^19 yoctoNEAR per byte (1 NEAR per 100 kB).
@@ -116,6 +117,9 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
       zoneOwed = 0n,
       manifestsOk = true,
       receiptsOk = true;
+    // Days whose chain acceptances outnumber local rows (a restore lost them).
+    // Not drift: the chain ledger is intact. Such days refuse new claims.
+    const reconciling = [];
     for (const row of rows) {
       const chain = await native.view("get_day", { day_id: row.id }, true);
       if (!chain || chain.closed) {
@@ -144,6 +148,12 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
         .get(row.id).n;
       const dayReceiptsOk = localConfirmed <= chain.claims_accepted;
       receiptsOk &&= dayReceiptsOk;
+      const unknownChainClaims = Math.max(
+        0,
+        chain.claims_accepted - knownNativeClaims(native.db, row.id),
+      );
+      if (unknownChainClaims)
+        reconciling.push({ id: row.id, unknownChainClaims });
       days.push({
         id: row.id,
         localState: row.state,
@@ -232,6 +242,7 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
       observedAt,
       failed,
       checks,
+      reconciling,
       totals: {
         funded: funded.toString(),
         liabilities: liabilities.toString(),
@@ -252,6 +263,7 @@ export function auditSummary(audit) {
     status: audit.status,
     observedAt: audit.observedAt,
     failed: audit.failed ?? [],
+    reconciling: (audit.reconciling ?? []).map((d) => d.id),
     reason: audit.reason,
   };
 }

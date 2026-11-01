@@ -553,7 +553,8 @@ export function createNativeAutoCollector(options: {
         if (
           !previous &&
           ((e?.status && e.status >= 400 && e.status < 500) ||
-            code === "NATIVE_PAUSED")
+            code === "NATIVE_PAUSED" ||
+            code === "NATIVE_RECONCILING")
         )
           s.entries.delete(coin.index);
         if (code === "NATIVE_ALREADY_CLAIMED") {
@@ -567,7 +568,9 @@ export function createNativeAutoCollector(options: {
           });
         } else if (code === "NATIVE_ACCOUNT_LIMIT") s.blocked = "account_limit";
         else if (code === "NATIVE_DAY_LIMIT") s.blocked = "day_limit";
-        else if (code === "NATIVE_PAUSED") s.blocked = "paused";
+        // A restored server freezes the day until it ends; nothing to retry.
+        else if (code === "NATIVE_PAUSED" || code === "NATIVE_RECONCILING")
+          s.blocked = "paused";
         else if (
           [
             "GPS_ACCURACY",

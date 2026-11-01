@@ -84,3 +84,43 @@ test("wallet quote binds receiver, selected contribution, method and exact depos
     ),
   );
 });
+test("v2 partial exit and contribution quotes bind the exact amount, share and 1 yocto", () => {
+  const vaultId = "v0." + factory;
+  const q = {
+    network: "testnet",
+    signerId: "alice.testnet",
+    receiverId: vaultId,
+    factoryId: factory,
+    gas: "280000000000000",
+    deposit: "1",
+  };
+  const partial = {
+    accountId: "alice.testnet",
+    action: "partial",
+    vaultId,
+    amount: parseTestNear("0.5"),
+  };
+  const pq = { ...q, methodName: "request_partial_exit", args: { amount: partial.amount } };
+  assert.doesNotThrow(() => assertVaultQuote(pq, partial));
+  for (const patch of [
+    { args: { amount: parseTestNear("5") } },
+    { deposit: "0" },
+    { methodName: "request_exit", args: {} },
+    { receiverId: "v1." + factory },
+  ])
+    assert.throws(() => assertVaultQuote({ ...pq, ...patch }, partial));
+  const share = {
+    accountId: "alice.testnet",
+    action: "contribution",
+    vaultId,
+    contributionBps: 2500,
+  };
+  const sq = { ...q, methodName: "set_contribution", args: { contribution_bps: 2500 } };
+  assert.doesNotThrow(() => assertVaultQuote(sq, share));
+  for (const patch of [
+    { args: { contribution_bps: 10000 } },
+    { deposit: "0" },
+    { methodName: "request_partial_exit" },
+  ])
+    assert.throws(() => assertVaultQuote({ ...sq, ...patch }, share));
+});

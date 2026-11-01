@@ -143,8 +143,19 @@ test("two published days fully explain the reservations and the account covers e
     status: "verified",
     observedAt: 1,
     failed: [],
+    reconciling: [],
     reason: undefined,
   });
+});
+
+test("chain acceptances missing locally after a restore are reconciling, not drift", async () => {
+  const f = fixture();
+  const m = await f.publish("2026-11-01");
+  f.c.days.get(m.id).claims_accepted = 2;
+  const a = await auditDistribution(f.native, { clock: () => 1 });
+  assert.equal(a.status, "verified", JSON.stringify(a.failed));
+  assert.deepEqual(a.reconciling, [{ id: m.id, unknownChainClaims: 2 }]);
+  assert.deepEqual(auditSummary(a).reconciling, [m.id]);
 });
 
 test("a reservation no known day explains is drift", async () => {
