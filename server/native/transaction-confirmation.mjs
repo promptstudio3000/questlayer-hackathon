@@ -9,17 +9,20 @@ import { nearAccountId } from "../identity/near.mjs";
 import { FACTORY_ID, VAULT_POOLS } from "./vaults.mjs";
 import { SOCIAL_TESTNET, SOCIAL_CODE_HASH } from "./social-profile.mjs";
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { NETWORK, NETWORK_LABEL } from "./network.mjs";
 // Contract identities are pinned by the reviewed public manifests, so a redeploy
 // under a new account only changes the manifests and their recorded code hashes.
-const manifest = (name) =>
-  JSON.parse(
-    readFileSync(new URL(`../../public/${name}.json`, import.meta.url), "utf8"),
-  );
-const MARKET_ID = manifest(`native-market-${NETWORK}`).marketContract;
-const NFT_ID = manifest(`native-claims-${NETWORK}`).contractId;
-const REWARDS_ID = manifest(`native-rewards-${NETWORK}`).contractId;
+// A network may lack a slice (mainnet ships without market and rewards, see
+// docs/MAINNET-PLAN.md §1): its id is then null, no receiver matches it and
+// any action that would need it answers "configuration unavailable".
+const manifest = (name) => {
+  const url = new URL(`../../public/${name}.json`, import.meta.url);
+  return existsSync(url) ? JSON.parse(readFileSync(url, "utf8")) : {};
+};
+const MARKET_ID = manifest(`native-market-${NETWORK}`).marketContract ?? null;
+const NFT_ID = manifest(`native-claims-${NETWORK}`).contractId ?? null;
+const REWARDS_ID = manifest(`native-rewards-${NETWORK}`).contractId ?? null;
 const integer = (value) => Number.isSafeInteger(value) && value >= 0;
 const amount = (value) =>
   typeof value === "string" &&
