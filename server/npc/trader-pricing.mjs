@@ -55,6 +55,28 @@ export const editionOf = (tokenId) => /^aura:([a-z0-9-]{1,24}):\d{1,6}$/.exec(St
 export const rarityOf = (edition) => AURA_CATALOG.find((e) => e.id === edition)?.rarity || null;
 export const referenceValue = (edition) => REFERENCE[rarityOf(edition)] ?? null;
 
+/**
+ * Editions the keeper mints as starting stock: rare and epic chest editions,
+ * because a common's reference (0.02) leaves no 10 % margin over the
+ * ~0.02 NEAR it costs to mint and escrow one. The margin floor still applies
+ * at sale time with the real measured cost.
+ */
+export const STOCK_EDITIONS = Object.freeze(TRADABLE.filter((e) => ["rare", "epic"].includes(rarityOf(e))));
+export const STOCK_TARGET = 3; // market v2 allows 3 active listings/deposits per account
+export const STOCK_MINTS_PER_DAY = 3;
+export const STOCK_DEPOSIT = 50n * MILLI; // attached to redeem_aura; the unused part is refunded
+export const STOCK_COST_ESTIMATE = 25n * MILLI; // mint storage + gas + escrow gas, checked before minting
+export const STOCK_RESERVE = YOCTO / 10n; // liquid NEAR a sweep leaves behind for restocking
+export const STOCK_EDITION_HEADROOM = 200; // never take an edition past 200 of its 256 on-chain copies
+
+/** Least-stocked stock edition; ties rotate with the day's mint count. */
+export function pickStockEdition(heldEditions, n = 0, editions = STOCK_EDITIONS) {
+  const count = (e) => heldEditions.filter((x) => x === e).length;
+  const order = editions.map((e, i) => ({ e, c: count(e), r: (i - n + editions.length * 8) % editions.length }));
+  order.sort((a, b) => a.c - b.c || a.r - b.r);
+  return order.find((o) => discountSellPrice(o.e, STOCK_COST_ESTIMATE))?.e || null;
+}
+
 /** 1–2 "wanted" editions per trader and day, derived from the day seed. */
 export function wantedEditions(traderId, dayId, editions = TRADABLE) {
   return [...editions]

@@ -11,6 +11,7 @@ for (const relative of [
   "./relayer/schema.mjs",
   "./native/creator-money.mjs",
   "./native/social-records.mjs",
+  "./npc/keeper-vault.mjs",
   "./spatial/place-safety.mjs",
 ]) {
   const url = new URL(relative, import.meta.url);

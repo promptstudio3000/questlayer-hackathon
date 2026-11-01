@@ -1,4 +1,5 @@
 import { defaultDatabasePath } from "./state-path.mjs";
+import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
 import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
@@ -119,6 +120,7 @@ import { registerMenuBuilder } from "./actors/menu.mjs";
 import { loadTraders, traderKeysPath } from "./npc/trader-keys.mjs";
 import { createTraderService } from "./npc/trader.mjs";
 import { createTraderRoutes } from "./npc/trader-routes.mjs";
+import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
@@ -390,7 +392,31 @@ if (npcTraders)
       return [];
     }
   });
-const traderRoutes = createTraderRoutes({ traders: npcTraders, actors: actorService, db, market: nativeMarket, vaults: nativeVaults });
+// Keeper's inner vault (GAME-LOOPS P0-3): stake card, E+2 countdown and
+// ceremonies. Read-only; KEEPER_* variables override every default.
+const keeperVaultConfig = keeperVaultSettings(process.env);
+const keeperVault =
+  nativeVaults && keeperVaultConfig.enabled
+    ? createKeeperVault(db, {
+        settings: keeperVaultConfig,
+        today: () => {
+          try {
+            return nativeRewards?.todayCoins() ?? null;
+          } catch {
+            return null;
+          }
+        },
+      })
+    : null;
+const traderRoutes = createTraderRoutes({
+  traders: npcTraders,
+  actors: actorService,
+  db,
+  market: nativeMarket,
+  vaults: nativeVaults,
+  keeperVault,
+  levelOf: (player) => demoProgression(db, player).level,
+});
 // Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
 // account level (spendable XP) plus skill, never Auras or items.
 // Monster hunt (NPC-PLAN §13, M3+M4): win rewards, guardian-locked chests and
@@ -690,6 +716,8 @@ async function api(req, res, url) {
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
       now: Date.now(),
     });
+  if (path === "/api/levels" && method === "GET")
+    return respond(res, publicLevelTable());
   if (path === "/api/quest-templates" && method === "GET")
     return respond(res, questTemplateCatalog());
   if (path === "/api/native/distribution" && method === "GET") {
@@ -2596,7 +2624,7 @@ const orderIndexWorker =
   !backgroundWorkersDisabled && signedOrderIndex
     ? startOrderIndexWorker(signedOrderIndex, { intervalMs: 30000 })
     : null;
-// Trader keeper: settles orders, escrows stock, sweeps profit above the float
+// Trader keeper: settles orders, mints and escrows stock, sweeps profit above the float
 // into rewards fund_rewards("sponsor") and restores the float. It signs only
 // when the traders file carries the trader's own account key.
 const traderKeeper =
@@ -2606,6 +2634,9 @@ const traderKeeper =
           service: npcTraders,
           provider,
           rewardsId: rewardsConfig.contractId,
+          // Starting stock: award-signed redeem_aura to the trader's own account.
+          awardSigner,
+          stock: process.env.NPC_TRADER_STOCK !== "0",
           log: (entry) => entry.reports.some((r) => r.actions?.length || r.error) && console.log(JSON.stringify(entry)),
         }),
       )
