@@ -8,11 +8,12 @@ import { storedNativeManifest } from "../server/native/reward-manifest.mjs";
 import { runRewardWorker } from "../server/native/reward-worker.mjs";
 import { manifestCost } from "../server/native/allocation.mjs";
 import { PLZEN } from "../server/spatial/city-pack.mjs";
+import { ACCOUNT_SUFFIX, NETWORK } from "../server/native/network.mjs";
 
 const NOW = Date.parse("2026-11-04T10:00:00Z");
 function fixture({ gamePaid }) {
   const db = openDatabase(":memory:"),
-    contractId = "rewards.testnet";
+    contractId = `rewards${ACCOUNT_SUFFIX}`;
   const keys = generateKeyPairSync("ed25519"),
     signer = {
       publicKey: keys.publicKey
@@ -23,8 +24,8 @@ function fixture({ gamePaid }) {
         sign(null, Buffer.from(m), keys.privateKey).toString("base64"),
     };
   const vault = {
-    accountId: "treasury-vault.testnet",
-    beneficiary: "operator.testnet",
+    accountId: `treasury-vault${ACCOUNT_SUFFIX}`,
+    beneficiary: `operator${ACCOUNT_SUFFIX}`,
     codeHash: "vault-code",
   };
   const vaultState = {
@@ -40,7 +41,7 @@ function fixture({ gamePaid }) {
     game_paid: gamePaid,
   };
   const provider = {
-    viewNodeStatus: async () => ({ chain_id: "testnet" }),
+    viewNodeStatus: async () => ({ chain_id: NETWORK }),
     query: async (q) => {
       if (q.request_type === "view_account")
         return {
@@ -106,12 +107,19 @@ test("yield-backed days spend no more than realized yield, across both days", as
     assert.equal(m.funding, "realized_yield");
     assert.equal(m.fundingEvidence.paid, paid.toString());
     assert.deepEqual(m.fundingEvidence.vaults, [
-      { accountId: "treasury-vault.testnet", gamePaid: paid.toString() },
+      {
+        accountId: `treasury-vault${ACCOUNT_SUFFIX}`,
+        gamePaid: paid.toString(),
+      },
     ]);
     spent += manifestCost(m).total;
   }
   assert.ok(spent > 0n && spent <= paid);
   assert.equal(days[0].day, "2026-11-04");
+  // Players see where today's rewards come from.
+  const shown = (await f.n.snapshot(null)).day;
+  assert.equal(shown.funding, "realized_yield");
+  assert.equal(shown.fundingEvidence.paid, paid.toString());
   assert.equal(days[0].fundingEvidence.committedBefore, "0");
   // A later harvest frees new yield; the next day sees only what is uncommitted.
   f.vaultState.game_paid = (paid * 2n).toString();
@@ -127,4 +135,11 @@ test("without realized yield nothing is published in yield-backed mode", async (
   const f = fixture({ gamePaid: "0" });
   await runRewardWorker(f.n, f.send, { clock: () => NOW });
   assert.equal(published(f.db).length, 0);
+  // Switching the mode off publishes the ordinary sponsor-funded days again.
+  f.n.yieldBackedDays = false;
+  await runRewardWorker(f.n, f.send, { clock: () => NOW });
+  assert.equal(published(f.db).length, 2);
+  const shown = (await f.n.snapshot(null)).day;
+  assert.equal(shown.funding, "sponsor");
+  assert.equal(shown.fundingEvidence, undefined);
 });

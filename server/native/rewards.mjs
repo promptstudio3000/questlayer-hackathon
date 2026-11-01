@@ -525,6 +525,13 @@ export class NativeRewards extends NativeContractReader {
                 0,
             })),
             fieldReview: m.fieldReview,
+            // Where this day's rewards come from: the sponsor treasury, or
+            // staking yield that vaults have already paid in (with the payouts).
+            funding:
+              m.funding === "realized_yield" ? "realized_yield" : "sponsor",
+            ...(m.funding === "realized_yield"
+              ? { fundingEvidence: m.fundingEvidence }
+              : {}),
           }
         : null,
       receipts,

@@ -64,6 +64,13 @@ export type NativeGameState = {
     claimsLimit: number;
     coins: (Point & { index: number; distance: number })[];
     quests: NativeQuest[];
+    /** "realized_yield": paid from staking yield already in the treasury. */
+    funding?: "sponsor" | "realized_yield";
+    fundingEvidence?: {
+      vaults: { accountId: string; gamePaid: string }[];
+      paid: string;
+      committedBefore: string;
+    };
   } | null;
   receipts: NativeReceipt[];
   treasury: {

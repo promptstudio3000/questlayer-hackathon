@@ -1,25 +1,34 @@
 import { NativeContractReader } from "./reader.mjs";
 import { assert } from "../domain.mjs";
 import { nativeInteger, readStakingPool } from "./staking-pool.mjs";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { NETWORK, manifestName } from "./network.mjs";
 // The factory of the current deployment generation is pinned by the public
-// rewards manifest; the server never accepts a caller-supplied factory.
-export const FACTORY_ID = JSON.parse(
-  readFileSync(
-    new URL(`../../public/${manifestName("native-rewards")}`, import.meta.url),
-    "utf8",
-  ),
-).factory.contractId;
-export const VAULT_POOLS = [
-  { id: "aurora.pool.f863973.m0", name: "Aurora validator" },
-  { id: "stakely_v2.pool.f863973.m0", name: "Stakely validator" },
-  { id: "ts.pool.f863973.m0", name: "TS validator" },
-];
+// rewards manifest; the server never accepts a caller-supplied factory. A
+// network without a rewards manifest (mainnet before its slice ships) has no
+// factory, so staking stays "not configured" instead of crashing the import.
+const rewardsManifestUrl = new URL(
+  `../../public/${manifestName("native-rewards")}`,
+  import.meta.url,
+);
+export const FACTORY_ID = existsSync(rewardsManifestUrl)
+  ? (JSON.parse(readFileSync(rewardsManifestUrl, "utf8")).factory?.contractId ??
+    null)
+  : null;
+// Reviewed validators per network. Mainnet pools are chosen at the go/no-go
+// review; until then no mainnet pool is accepted.
+export const VAULT_POOLS =
+  NETWORK === "testnet"
+    ? [
+        { id: "aurora.pool.f863973.m0", name: "Aurora validator" },
+        { id: "stakely_v2.pool.f863973.m0", name: "Stakely validator" },
+        { id: "ts.pool.f863973.m0", name: "TS validator" },
+      ]
+    : [];
 export class NativeVaults extends NativeContractReader {
   constructor(db, provider, configuration) {
     super(provider, configuration.factory.contractId);
-    assert(this.contractId === FACTORY_ID, "Unexpected factory.");
+    assert(FACTORY_ID && this.contractId === FACTORY_ID, "Unexpected factory.");
     this.db = db;
     this.configuration = configuration;
   }
