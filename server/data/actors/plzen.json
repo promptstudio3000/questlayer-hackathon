@@ -200,8 +200,7 @@
         0,
         0
       ],
-      "windows": 2,
-      "enabled": false
+      "enabled": true
     }
   ]
 }

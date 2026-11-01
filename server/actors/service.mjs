@@ -18,6 +18,7 @@ import { buildActorMenu, menuHash } from "./menu.mjs";
 import { ACTORS_SCHEMA } from "./schema.mjs";
 import { planDay, positionAt } from "./schedule.mjs";
 import { planSpawns } from "./spawns.mjs";
+import { streetFindIds } from "../street-finds.mjs";
 
 export const ENCOUNTER_TTL_MS = 5 * 60_000;
 export const ENCOUNTER_RADIUS_M = 35;
@@ -27,6 +28,24 @@ export const MAX_FIX_AGE_MS = 15_000;
 export const MAX_SPEED_MPS = 15;
 export const SEGMENT_HORIZON_MS = 2 * 3600_000;
 export const ENCOUNTERS_PER_HOUR = 60;
+
+// Slices can add fields to an ActorView (the hunt slice adds boss HP and the
+// boss arena). A decorator gets (view, {instance, player, dayId, cityId, now})
+// and returns extra fields or nothing.
+const decorators = [];
+export function registerActorDecorator(fn) {
+  if (typeof fn === "function" && !decorators.includes(fn)) decorators.push(fn);
+}
+function decorate(view, ctx) {
+  for (const d of decorators) {
+    try {
+      Object.assign(view, d(view, ctx) || {});
+    } catch {
+      // A broken decorator must not hide the actor.
+    }
+  }
+  return view;
+}
 
 export function actorsEnabled(env = process.env) {
   return env.ACTORS_ENABLED === "1";
@@ -69,7 +88,8 @@ export function createActorService(db, options = {}) {
         ...z,
         placeStatus: placeClosed(closed, z.sourceId, z) ? "closed" : "open",
       }));
-    const instances = planSpawns(city, pack, seed, manifest.day, { zones, closed }).map((s) => {
+    const finds = streetFinds(manifest.id);
+    const instances = planSpawns(city, pack, seed, manifest.day, { zones, closed, finds }).map((s) => {
       const def = { ...s.def, instanceId: s.id };
       return {
         ...s,
@@ -85,6 +105,20 @@ export function createActorService(db, options = {}) {
     if (plans.size > 32) plans.clear();
     plans.set(key, plan);
     return plan;
+  }
+
+  // Today's street finds (lurkers hide next to them). Worlds without coins
+  // (or tests without the table) fall back to seeded path points.
+  function streetFinds(worldId) {
+    try {
+      const ids = streetFindIds(db, worldId);
+      return db
+        .prepare("SELECT id,lat,lng FROM coins WHERE world_id=?")
+        .all(worldId)
+        .filter((c) => ids.has(c.id));
+    } catch {
+      return [];
+    }
   }
 
   function progressFor(player, dayId) {
@@ -149,7 +183,7 @@ export function createActorService(db, options = {}) {
       // Hidden actors are sent only to a player already within reveal range,
       // so the list can't be used to hunt them from afar.
       if (reveal && (!here || !pos || distance(here, pos) > reveal)) continue;
-      actors.push(view(instance, now, progress));
+      actors.push(decorate(view(instance, now, progress), { instance, player, dayId: manifest.day, cityId: manifest.cityId, now }));
     }
     return { ...empty, actors };
   }
@@ -208,7 +242,7 @@ export function createActorService(db, options = {}) {
       radius = pos.dwell ? STATION_RADIUS_M : ENCOUNTER_RADIUS_M;
     assert(meters <= radius, `Get closer to ${instance.def.name}, then try again.`, 422, "OUT_OF_RANGE");
     const progress = progressFor(player, manifest.day),
-      actor = view(instance, now, progress),
+      actor = decorate(view(instance, now, progress), { instance, player, dayId: manifest.day, cityId: manifest.cityId, now }),
       expiresAt = now + ENCOUNTER_TTL_MS;
     assert(actor.state !== "cooldown", `${instance.def.name} needs a moment. Try again later.`, 429, "ACTOR_COOLDOWN");
     const menu = await buildActorMenu({
@@ -257,9 +291,10 @@ export function createActorService(db, options = {}) {
     assert(instance, "This character is not on today's map.", 404, "ACTOR_NOT_FOUND");
     return {
       encounterId: row.id,
-      actor: view(instance, now, progressFor(player, row.day_id)),
+      actor: decorate(view(instance, now, progressFor(player, row.day_id)), { instance, player, dayId: row.day_id, cityId: manifest.cityId, now }),
       def: instance.def,
       worldId: row.world_id,
+      cityId: manifest.cityId,
       dayId: row.day_id,
       seed: sha(`${plan.seed}|${row.id}`),
       menu: JSON.parse(row.data).menu || [],

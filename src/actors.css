@@ -165,3 +165,7 @@
   font-size: 14px;
   color: var(--ink-secondary);
 }
+
+/* Static arena prop under the weekly boss (Great Portal). */
+.actor-arena { pointer-events: none; width: 88px; height: 88px; opacity: 0.9; }
+.actor-arena .actor-sprite { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(223, 171, 255, 0.7)); }
