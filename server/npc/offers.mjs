@@ -147,7 +147,7 @@ export function buildMenu({
         steps.find((q) => q.id !== target.id && q.zone_id !== target.zone_id && q.tier >= PATRON_TIER) ||
         steps.find((q) => q.id !== target.id && q.zone_id !== target.zone_id);
       const line = lead ? [lead, target] : [target];
-      const offerId = `patron:${hash(`${seed}|${line.map((q) => q.id).join(",")}`).slice(0, 16)}`;
+      const offerId = `quest:${hash(`${seed}|patron|${line.map((q) => q.id).join(",")}`).slice(0, 16)}`;
       line.forEach((q) => used.add(q.id));
       if (!done.has(offerId)) {
         const where = line.map((q) => `${q.title}${zones.get(q.zone_id) ? ` in ${zones.get(q.zone_id).name}` : ""}`);
@@ -203,7 +203,7 @@ export function buildMenu({
     // stakers. It is a step on the Patron's Path, outside the story sets.
     const scene = patronOpen && steps.find((q) => q.tier >= PATRON_TIER && (zones.get(q.zone_id)?.tier || 1) >= PATRON_TIER);
     if (scene) {
-      const offerId = `patron-chapter:${hash(`${seed}|${scene.id}`).slice(0, 16)}`;
+      const offerId = `chapter:${hash(`${seed}|patron|${scene.id}`).slice(0, 16)}`;
       if (!done.has(offerId))
         offers.push({
           id: offerId,

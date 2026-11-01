@@ -52,6 +52,7 @@ test("patron lines: Tier 2 only, end in a patron zone, same XP as any line", asy
     const last = p.terms.steps.at(-1);
     assert.ok(last.tier >= 2 && zones.get(last.zone).tier >= 2, "the line leads into a patron zone");
     assert.equal(p.terms.pathLine, 1);
+    assert.match(p.id, /^(?:quest|chapter):[0-9a-f]{16}$/, "the id fits the accept/complete route");
     assert.equal(p.terms.pathOf, PATRON_PATH_LINES);
     if (npc === RADA) {
       assert.equal(p.kind, "quest");
