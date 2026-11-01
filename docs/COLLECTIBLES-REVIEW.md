@@ -116,7 +116,7 @@ Reviewer did not write PR #52. Scope: `git diff b3d983b 5858c82 -- contracts/col
 
 Reproduced on Linux x86_64 with native rustup Rust 1.97.0 and `bash scripts/build-contracts.sh` (path remapping): `questlayer_collectibles.wasm` 367,066 bytes, reviewed sha256 **`176f1b0777c52e0eb592e50f365fe6a0663b3bec29c4c1b7431649bc4428dee9`**, matching `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. All 36 collectibles contract tests pass, and `tests/aura-catalog` and `award-vouchers` pass (14/14).
 
-## Level editions L5–L10 (2026-11-01) — awaiting independent re-review
+## Level editions L5–L10 (2026-11-01)
 
 The contract changed after the N5 review. Diff: `git diff 26550b1 <this PR head> -- contracts/collectibles` (source plus six new asset files and `WASM_SHA256`). Owner approval: Lubos approved the level item editions on 1 Nov ("Ano, podle návrhu").
 
@@ -126,7 +126,20 @@ The contract changed after the N5 review. Diff: `git diff 26550b1 <this PR head>
 - No state or schema change (still V3, no migration); the voucher message, `network()`, the 256 cap and the token id format are unchanged.
 - New and extended tests: the claim-prefix redeem test covers the six level editions, `level_edition_rejects_an_npc_claim`, `oracle_cannot_mint_level_editions_without_a_claim`; `supported_editions` lists 21.
 
-Build (Docker `rust:1.97.0`, linux/amd64, `scripts/build-contracts-docker.sh`; every other contract reproduced its pinned hash byte for byte): `questlayer_collectibles.wasm` 374,130 bytes, sha256 `0edba150…59b9`, recorded in `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. Code storage rises by about 0.07 NEAR. Until the testnet upgrade runs, `public/native-claims-testnet.json` and `public/native-editions-testnet.json` still describe the deployed `176f1b07…` build and are listed under `testnetDeploymentsNotFromThisBuild`; the upgrade script removes them. CI stays red on this document until the reviewer records the full hash below.
+Build (Docker `rust:1.97.0`, linux/amd64, `scripts/build-contracts-docker.sh`; every other contract reproduced its pinned hash byte for byte): `questlayer_collectibles.wasm` 374,130 bytes, sha256 `0edba150…59b9`, recorded in `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. Code storage rises by about 0.07 NEAR. Until the testnet upgrade runs, `public/native-claims-testnet.json` and `public/native-editions-testnet.json` still describe the deployed `176f1b07…` build and are listed under `testnetDeploymentsNotFromThisBuild`; the upgrade script removes them.
+
+### Independent re-review (2026-11-01)
+
+Reviewer did not write this change. Scope: `git diff 26550b1 1d6ac40 -- contracts/collectibles` (source, six new asset files, `WASM_SHA256`). Result: **confirmed, no changes needed.**
+
+- **No free mint.** The diff touches only the two `const` tables, the panic text and tests. Every Aura still goes through `next_aura`, reached only from the oracle-only `mint_aura` and `mint_claim`; `mint_claim` is reached only from `redeem_aura` (Ed25519 award signature over contract, network, claim, receiver, edition, expiry, checked before minting) and the oracle-only `mint_aura_once`. No new public method.
+- **Claim-only gate.** `claim_only` is still an exact match over the fixed table; the six new ids match the new `AURA_EDITIONS` rows. `mint_aura` refuses all six, and `mint_claim` checks `earned:level:` before the replay branch, so neither a fresh nor a replayed claim can mint a level edition without it (`level_edition_rejects_an_npc_claim`, `oracle_cannot_mint_level_editions_without_a_claim`). The signature binds the edition, so a signed L2–L4 `earned:level:` claim for `polar`/`moon`/`gold` can't be redeemed as `summit`.
+- **Server claim ids can't satisfy `earned:level:` by accident.** Chest vouchers are `earned:` + `aura_<uuid>`, NPC `earned:npc:…`, monster `earned:monster:…`, trader stock `earned:npc-stock:…` (`server/npc/trader-keeper.mjs` `stockClaimId`); none starts with `earned:level:`. Only `nativeLevelClaimId` (`earned:level:` + sha256 over policy, network, source contract, contract, account, level) and `awardClaimPrefix` for catalog `source: "level"` produce it. No server path creates a demo inventory item of a level edition (chests use `source: "chest"` editions only, trader stock and trade-ups use `TRADABLE` chest editions, hunt grants use fixed monster editions), so `award-vouchers.mjs` never signs a level-prefixed voucher in practice. Same trust model as N5: the gate proves the award signer or oracle labelled the claim as a level claim, not that the level was reached; `clear_award_signer` stays the kill switch. Informational.
+- **Existing level claims.** `polar`, `moon` and `gold` are not in `CLAIM_ONLY_EDITIONS`, so L2–L4 `earned:level:<sha>` claims and their replays behave as before.
+- **Existing tokens, schema, signer.** No storage layout or schema change (`Collectibles` fields identical, still V3; `migrate`/`migrate_v3` untouched). `award_message`, `network()`, the 256 cap, the token id format and the 15 existing rows, titles, descriptions and media files are unchanged. New ids are distinct, lowercase and colon-free.
+- **Media.** The six new covers are distinct 1,066-byte `data:image/svg+xml;base64` URIs in the existing halo template (only the accent colour differs); decoded, they contain only `svg`, `path` and `ellipse` with geometry and paint attributes: no `<script>`, event handlers, `href`, `foreignObject` or `url(` references.
+
+Reproduced on Linux x86_64 in Docker `rust:1.97.0` (`linux/amd64`) with `bash scripts/build-contracts.sh --no-check`: `questlayer_collectibles.wasm` 374,130 bytes, matching `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. All 38 collectibles contract tests pass, and `tests/aura-catalog`, `award-vouchers`, `native-progression` and `levels` pass (35/35). Reviewed sha256 **`0edba1506f14de0afde3601bd52f6131c1e7753cbd550767c522460ca8c559b9`**.
 
 ## Reproducible builds in CI
 
