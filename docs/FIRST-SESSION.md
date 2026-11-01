@@ -52,8 +52,8 @@ Devices: `phone-390` (Chromium 390 × 844, the default), `iphone` (WebKit, Playw
 
 Every key screen (welcome, map coach, chest reward, secure/share, settings, inventory, listing form, market,
 creator feed) gets an axe-core scan against WCAG 2.0/2.1/2.2 A and AA; serious or critical violations fail the
-run. The first load is held to a budget: welcome-screen JS (840 KB gzip, 3000 KB raw, about 10 % over the
-November baseline), 60 requests, first contentful paint 4 s, name field ready 6 s, CLS 0.1. Override with
+run. The first load is held to a budget: welcome-screen JS (220 KB gzip, 700 KB raw; baseline
+174/577 KB after the start screen was split off the map), 30 requests, first contentful paint 4 s, name field ready 6 s, CLS 0.1. Override with
 `E2E_PERF_SCRIPT_GZIP_KB`, `E2E_PERF_SCRIPT_RAW_KB`, `E2E_PERF_REQUESTS`, `E2E_PERF_FCP_MS`,
 `E2E_PERF_READY_MS`, `E2E_PERF_CLS`.
 

@@ -58,14 +58,14 @@ function strip({ defaultBrowserType, ...profile }) {
 }
 
 // First-load budget. The JS limits are on the scripts the welcome screen
-// actually loads (gzip as served by a static host). They sit about 10 %
-// over the November 2026 baseline (762 KB gzip / 2724 KB raw on Chromium,
-// map engine included) so growth fails CI; lower them as the bundle is
-// split. Times are generous for shared CI runners. E2E_PERF_* overrides.
+// actually loads (gzip as served by a static host). They sit a little over
+// the baseline after the start screen was split off the map (174 KB gzip /
+// 577 KB raw, 13-15 requests, November 2026) so growth fails CI. Times are
+// generous for shared CI runners. E2E_PERF_* overrides.
 const BUDGET = {
-  scriptGzipKb: Number(process.env.E2E_PERF_SCRIPT_GZIP_KB || 840),
-  scriptRawKb: Number(process.env.E2E_PERF_SCRIPT_RAW_KB || 3000),
-  requests: Number(process.env.E2E_PERF_REQUESTS || 60),
+  scriptGzipKb: Number(process.env.E2E_PERF_SCRIPT_GZIP_KB || 220),
+  scriptRawKb: Number(process.env.E2E_PERF_SCRIPT_RAW_KB || 700),
+  requests: Number(process.env.E2E_PERF_REQUESTS || 30),
   firstContentfulPaintMs: Number(process.env.E2E_PERF_FCP_MS || 4000),
   nameFieldReadyMs: Number(process.env.E2E_PERF_READY_MS || 6000),
   layoutShift: Number(process.env.E2E_PERF_CLS || 0.1),
