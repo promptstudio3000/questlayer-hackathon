@@ -435,6 +435,7 @@ export function worldView(db, id, player = null, options = {}) {
     cityZoneCount: zones.length,
     visibleZoneCount: visibleZones.length,
     openEligibleCount: eligible.size,
+    playerTier: tier,
     coins: page
       .filter((p) => !pointClosed(closed, p))
       .map((c) => (finds.has(c.id) ? { ...c, find: true } : c)),
