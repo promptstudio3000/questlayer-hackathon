@@ -3,6 +3,7 @@ import { Account, KeyPairSigner } from "near-api-js";
 import { atomic } from "../database.mjs";
 import { assert, id, hash } from "../domain.mjs";
 import { publishNativeDays } from "./day-publication.mjs";
+import { auditDistribution } from "./distribution.mjs";
 import {
   nativePublicationMatches,
   storedNativeManifest,
@@ -232,6 +233,16 @@ export async function runRewardWorker(
           row.id,
         );
       }
+      // Settled claims and closures first; then prove the treasury still adds
+      // up before reserving anything new. Drift stops publication only.
+      const audit = await auditDistribution(native, { clock });
+      native.lastAudit = audit;
+      renew();
+      assert(
+        audit.status !== "drift",
+        `Distribution audit found drift (${(audit.failed || []).join(", ")}); new days are not published.`,
+        503,
+      );
       await publishNativeDays(native, { clock, renew, writeOwned, sendOwned });
     } catch (error) {
       settlementError = error;

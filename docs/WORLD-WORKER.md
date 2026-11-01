@@ -39,6 +39,17 @@ Publication confirmation compares the hash **and** exact windows, coin count/uni
 
 All publication writes/sends retain the existing lease fences. Accepted claims still settle in their original order and existing vault maintenance remains independent of settlement failure. No account, signing key, contract manifest or financial settlement rule was changed by this continuation.
 
+## Treasury distribution audit
+
+`server/native/distribution.mjs` complements the per-day publication checks with a whole-treasury audit from one
+set of final reads: ledger conservation, coin reservations equal to the open days' unclaimed coin budget, zone
+reservations equal to their unwon prizes, every open day matching its durable manifest, the contract account's
+balance minus its storage stake covering all liabilities, and local confirmations never exceeding the chain's
+accepted claims. The reward worker runs it after settling claims and closing days and before publishing; `drift`
+stops new publication (claims, closures and vault maintenance continue) and is recorded as the worker error. An
+unreadable chain reports `unavailable`, never `verified`. `GET /api/native/distribution` returns the last audit
+(`?refresh=1` re-reads), `/api/health` carries its summary. Live result: `public/native-distribution-proof.json`.
+
 ## Deferred cloud funding idea
 
 The cloud discussion proposed paying ahead against future staking yield. This is recorded as a future funding design only. Current publication uses already received reward-bucket liquidity. Estimated/unrealized yield, player principal and retained player yield do not back prizes. Any later advance would need explicit separately funded backing, attribution, repayment/loss policy and contract review owned by the financial lane; no advance, credit balance, new income allocation or automatic repayment is implemented here.

@@ -481,7 +481,9 @@ test("crossing midnight during preparation keeps expired intent and publishes on
     let advanced = false;
     f.n.view = async (method, args, fresh) => {
       const result = await view(method, args, fresh);
-      if (method === "get_treasury" && !advanced) {
+      // The distribution audit reads the treasury first; advance on the read
+      // made while preparing publication, after the audit has completed.
+      if (method === "get_treasury" && f.n.lastAudit && !advanced) {
         advanced = true;
         f.setNow(plan.endsAt + 1);
       }
@@ -1148,5 +1150,44 @@ test("a late vault observation cannot replace another keeper's state or failure"
     } finally {
       f.db.close();
     }
+  }
+});
+
+test("distribution drift stops new day publication and is recorded for health", async () => {
+  const f = fixture();
+  try {
+    const view = f.n.view;
+    // Readable, conserved treasury whose reservation no known day explains.
+    f.n.view = async (method, args, fresh) =>
+      method === "get_treasury"
+        ? {
+            coins: { available: "90000", reserved: "10000", awarded: "0" },
+            zones: { available: "100000", reserved: "0", awarded: "0" },
+            funded: "200000",
+            owed: "0",
+            pending: "0",
+            withdrawn: "0",
+            policy: "50/50-v1",
+          }
+        : view(method, args, fresh);
+    f.n.provider = {
+      query: async () => ({
+        code_hash: "reviewed-test-code",
+        amount: "1000000000000000000000000",
+        storage_usage: 0,
+      }),
+    };
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /Distribution audit found drift \(coin-reservations-explained\)/,
+    );
+    assert.equal(
+      f.state.sent.filter((s) => s.method === "publish_day").length,
+      0,
+    );
+    assert.equal(f.n.lastAudit.status, "drift");
+    assert.match(f.n.workerStatus().last_error, /drift/);
+  } finally {
+    f.db.close();
   }
 });

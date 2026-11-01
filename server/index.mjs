@@ -32,6 +32,7 @@ import {
   loadCreatorsPublisher,
   startCreatorMoneyWorker,
 } from "./native/creator-money.mjs";
+import { auditDistribution, auditSummary } from "./native/distribution.mjs";
 import {
   NativeSocialRecords,
   createSocialRecordRoutes,
@@ -513,6 +514,9 @@ async function api(req, res, url) {
       nativeRewards: nativeRewards
         ? nativeRewards.workerStatus()
         : { status: "not-configured" },
+      distribution: nativeRewards
+        ? auditSummary(nativeRewards.lastAudit)
+        : { status: "not-configured" },
       relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
       creatorMoney: creatorMoney
         ? creatorMoney.workerStatus()
@@ -522,6 +526,14 @@ async function api(req, res, url) {
     });
   if (path === "/api/quest-templates" && method === "GET")
     return respond(res, questTemplateCatalog());
+  if (path === "/api/native/distribution" && method === "GET") {
+    assert(nativeRewards, "Native rewards are not configured yet.", 503);
+    // Public chain facts only; fresh on request, cached result otherwise.
+    const fresh =
+      url.searchParams.get("refresh") === "1" || !nativeRewards.lastAudit;
+    if (fresh) nativeRewards.lastAudit = await auditDistribution(nativeRewards);
+    return respond(res, nativeRewards.lastAudit);
+  }
   if (path === "/api/native/economy" && method === "GET") {
     assert(nativeEconomy, "Native economy is not configured yet.", 503);
     return respond(res, await nativeEconomy.snapshot());
