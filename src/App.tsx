@@ -50,6 +50,7 @@ import {
 import { NativeMarketPanel } from "./NativeMarketPanel";
 import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
+import { RewardsFundedGuide, TodaysPotCard } from "./TodaysPot";
 import { NativeStaking } from "./NativeStaking";
 import {
   assertVaultQuote,
@@ -342,6 +343,9 @@ export default function App() {
         ),
       );
   }
+  const [fundReturn, setFundReturn] = useState<
+    "explore" | "wallet" | "settings"
+  >("settings");
   const [nativePlay, setNativePlay] = useState(() => {
     try {
       return localStorage.getItem("questlayer-play-mode") === "near";
@@ -1214,6 +1218,12 @@ export default function App() {
   // fallback when the player chose one or the managed account is not ready.
   // Attaches a passkey to the explorer that is already playing, so the player
   // keeps everything and can return from a synced device.
+  // "How rewards are funded" opens from the map, Rewards and Settings; its back
+  // link returns to wherever the player came from.
+  function openFunding(from: "explore" | "wallet" | "settings") {
+    setFundReturn(from);
+    setTab("fund");
+  }
   function chooseLedger(native: boolean) {
     setNativePlay(native);
     try {
@@ -2076,7 +2086,7 @@ export default function App() {
           bounties: "Community tasks",
           community: "Community",
           settings: "Settings",
-          fund: "Game economy",
+          fund: "How rewards are funded",
           expeditions: "Nearby walks",
           inventory: "Inventory",
           market: "Market",
@@ -2438,6 +2448,11 @@ export default function App() {
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
+              <TodaysPotCard
+                ledger="practice"
+                timeZone={world?.timezone}
+                onOpen={() => openFunding("explore")}
+              />
               <div className="section-label">
                 <h2>Nearby discoveries</h2>
                 <span>
@@ -2904,6 +2919,13 @@ export default function App() {
                 <WalletNavigation value={walletView} onChange={setWalletView} />
               )}
               {tab === "explore" && nativePlay && (
+                <TodaysPotCard
+                  ledger="test-network"
+                  timeZone={world?.timezone}
+                  onOpen={() => openFunding("explore")}
+                />
+              )}
+              {tab === "explore" && nativePlay && (
                 <NativeCollectionControl
                   collection={nativeCollection}
                   ready={!!playAccount && nativeGame.state?.enrolled === true}
@@ -2985,7 +3007,10 @@ export default function App() {
             </>
           )}
           {tab === "wallet" && (
-            <button className="play-entry" onClick={() => setTab("fund")}>
+            <button
+              className="play-entry"
+              onClick={() => openFunding("wallet")}
+            >
               <ChartDonut size={22} />
               <span>
                 <b>Game economy</b>
@@ -3044,7 +3069,10 @@ export default function App() {
                   testnet tokens. Neither has monetary value; receipts for both
                   live in Rewards and balance.
                 </p>
-                <button className="play-entry" onClick={() => setTab("fund")}>
+                <button
+                  className="play-entry"
+                  onClick={() => openFunding("settings")}
+                >
                   <ChartDonut size={24} />
                   <span>
                     <b>Game economy</b>
@@ -3076,11 +3104,25 @@ export default function App() {
           )}
           {tab === "fund" && (
             <>
-              <button className="back-link" onClick={() => setTab("settings")}>
+              <button
+                className="back-link"
+                onClick={() => setTab(fundReturn)}
+              >
                 <ArrowLeft size={20} />
-                Settings
+                {fundReturn === "explore"
+                  ? "Back to the map"
+                  : fundReturn === "wallet"
+                    ? "Rewards and balance"
+                    : "Settings"}
               </button>
-              <NativeEconomyPanel />
+              <RewardsFundedGuide
+                ledger={nativePlay ? "test-network" : "practice"}
+                timeZone={world?.timezone}
+              />
+              <details className="play-details">
+                <summary>Live treasury on the test network</summary>
+                <NativeEconomyPanel />
+              </details>
               <details className="play-details">
                 <summary>Practice economy simulation</summary>
                 <FundPanel />
