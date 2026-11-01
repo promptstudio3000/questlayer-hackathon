@@ -95,5 +95,13 @@ All funding, including approved realized-yield deposits, also checks actual stor
   new data lives under new storage keys, so the upgrade is a plain code deploy.
 - **Upgrade.** `node scripts/upgrade-rewards-v2-testnet.mjs --upgrade-reviewed` on the
   machine with the operator key. Existing keyless factory positions stay v1; the factory
-  is upgraded only while it has created none. The app does not yet offer partial exit or
-  contribution changes; that is UI work on top of these methods.
+  is upgraded only while it has created none.
+- **App.** Profile → Fuel the city shows "Change your stake" only when a position's live
+  `get_state.version` is 2: "Take some out" (quote: principal back, city's settled share
+  of earned gain, what stays staked, fuel and tier after) and "City share of your yield"
+  (quote: applies now, or after earned gain settles at the old rate). `/native/vaults/prepare`
+  accepts `partial` and `contribution` only for an idle v2 position; the relayer and the
+  transaction confirmation allowlist `request_partial_exit({amount})` and
+  `set_contribution({contribution_bps})` with exactly those arguments and 1 yocto, and the
+  confirmation also requires live state version 2. A returned `false` is shown as not
+  completed (for example, a change that waits on a fee that cannot be unstaked yet).

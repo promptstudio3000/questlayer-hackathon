@@ -222,14 +222,27 @@ export class NativeTransactionConfirmation {
             409,
           );
       } else {
+        const v2 = ["request_partial_exit", "set_contribution"].includes(method);
         assert(
-          [
+          ([
             "deposit_and_stake",
             "request_exit",
             "withdraw_owner",
             "refresh",
             "advance",
-          ].includes(method) && keys(args, []),
+          ].includes(method) &&
+            keys(args, [])) ||
+            (method === "request_partial_exit" &&
+              keys(args, ["amount"]) &&
+              typeof args.amount === "string" &&
+              /^[1-9]\d{0,38}$/.test(args.amount) &&
+              BigInt(args.amount) >= 10n ** 21n &&
+              BigInt(args.amount) < 2n ** 128n) ||
+            (method === "set_contribution" &&
+              keys(args, ["contribution_bps"]) &&
+              Number.isInteger(args.contribution_bps) &&
+              args.contribution_bps >= 0 &&
+              args.contribution_bps <= 10000),
           "Unsupported vault confirmation.",
           409,
         );
@@ -248,7 +261,12 @@ export class NativeTransactionConfirmation {
           "Only your own registered factory position can be confirmed.",
           403,
         );
-        await this.bounded(this.vaults.state(position), deadline);
+        const state = await this.bounded(this.vaults.state(position), deadline);
+        assert(
+          !v2 || state?.version === 2,
+          "This position has no partial exit or contribution change.",
+          409,
+        );
         pinned.set(receiverId, {
           code: cfg.factory.vaultCodeHash,
           keyless: true,
@@ -263,7 +281,14 @@ export class NativeTransactionConfirmation {
         else
           assert(
             deposit ===
-              (["request_exit", "withdraw_owner"].includes(method) ? "1" : "0"),
+              ([
+                "request_exit",
+                "withdraw_owner",
+                "request_partial_exit",
+                "set_contribution",
+              ].includes(method)
+                ? "1"
+                : "0"),
             "Invalid staking authorization deposit.",
             409,
           );

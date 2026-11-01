@@ -524,6 +524,48 @@ test("staking maintenance is relayed; setup deposit and stake are self-paid", as
     "RELAY_METHOD",
     staking(),
   );
+  // Vault v2: partial exit and contribution change, 1 yocto, exact arguments.
+  for (const [method, args] of [
+    ["request_partial_exit", { amount: "1000000000000000000000" }],
+    ["set_contribution", { contribution_bps: 0 }],
+    ["set_contribution", { contribution_bps: 10000 }],
+  ])
+    assert.deepEqual(
+      validateDelegate(
+        await decoded({ receiverId: VAULT, action: call(method, args, 1n) }),
+        staking(),
+      ).args,
+      args,
+    );
+  for (const [method, args, deposit, code] of [
+    ["request_partial_exit", { amount: "999" }, 1n, "RELAY_ARGS"],
+    ["request_partial_exit", { amount: "01000000000000000000000" }, 1n, "RELAY_ARGS"],
+    ["request_partial_exit", {}, 1n, "RELAY_ARGS"],
+    [
+      "request_partial_exit",
+      { amount: "1000000000000000000000", receiver: "mallory.testnet" },
+      1n,
+      "RELAY_ARGS",
+    ],
+    ["request_partial_exit", { amount: "1000000000000000000000" }, 0n, "RELAY_DEPOSIT"],
+    ["set_contribution", { contribution_bps: 10001 }, 1n, "RELAY_ARGS"],
+    ["set_contribution", { contribution_bps: 1.5 }, 1n, "RELAY_ARGS"],
+    ["set_contribution", { contribution_bps: "5000" }, 1n, "RELAY_ARGS"],
+    ["set_contribution", { contribution_bps: 5000 }, 2n, "RELAY_DEPOSIT"],
+  ])
+    await rejects(
+      decoded({ receiverId: VAULT, action: call(method, args, deposit) }),
+      code,
+      staking(),
+    );
+  await rejects(
+    decoded({
+      receiverId: `8.${FACTORY}`,
+      action: call("set_contribution", { contribution_bps: 0 }, 1n),
+    }),
+    "RELAY_RECEIVER",
+    staking(),
+  );
   // Without a configured factory the receiver is simply not sponsored.
   await rejects(
     decoded({
