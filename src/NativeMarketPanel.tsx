@@ -1,3 +1,4 @@
+import { EmptyState } from "./EmptyState";
 import { NativePicture } from "./NativeWardrobe";
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
@@ -321,7 +322,9 @@ export function NativeMarketPanel({
             </form>
           )}
           {!data.listings.length ? (
-            <p>No secured Auras are listed yet.</p>
+            <EmptyState art="chest" title="No Auras on the market yet">
+              Secure an Aura from a chest and list it for other explorers.
+            </EmptyState>
           ) : (
             <div className="native-offers">
               {data.listings.map((offer) => (

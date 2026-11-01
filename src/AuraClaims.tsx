@@ -1,3 +1,4 @@
+import { EmptyState } from "./EmptyState";
 import type { Item, Player } from "./types";
 import { AuraArt } from "./Ghost";
 export function AuraClaims({
@@ -56,7 +57,9 @@ export function AuraClaims({
         </p>
       )}
       {enabled && linked && !items.length && (
-        <p>Nothing to secure yet. Open a chest to find your next Aura.</p>
+        <EmptyState art="chest" title="Nothing to secure yet">
+          Open a chest to find your next Aura.
+        </EmptyState>
       )}
       {items.map((item) => (
         <article className="aura-claim" key={item.id}>

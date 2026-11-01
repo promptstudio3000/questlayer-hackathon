@@ -1,3 +1,4 @@
+import { EmptyState } from "./EmptyState";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
@@ -832,7 +833,9 @@ export function NativeExpeditions({
                 </div>
               ))
             ) : (
-              <p>No confirmed visits yet.</p>
+              <EmptyState art="discovery" title="No confirmed visits yet">
+                Walk to an open place to record your first visit.
+              </EmptyState>
             )}
             {state.worker.last_error && (
               <p>Confirmation is retrying. Your visits stay saved.</p>

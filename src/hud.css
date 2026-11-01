@@ -1,0 +1,284 @@
+/* Game HUD: topbar XP ring, the grouped map toolbar and the compact
+   location chip. Loaded after style.css; selectors carry one extra class
+   so they win without !important. */
+
+/* ---------- XP ring around the topbar avatar ---------- */
+.hud-xp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hud-xp-ring {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+.hud-xp-ring > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+.hud-xp-track,
+.hud-xp-fill {
+  fill: none;
+  stroke-width: 4;
+}
+.hud-xp-track {
+  stroke: var(--decorative-border, #d7cbe9);
+}
+.hud-xp-fill {
+  stroke: var(--action, #672eeb);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 300ms ease-out;
+}
+.hud-xp.ring-gold .hud-xp-track {
+  stroke: #f3dfa0;
+}
+.hud-xp.ring-gold .hud-xp-fill {
+  stroke: #d99a1e;
+}
+.hud-xp.ring-gold .hud-xp-level {
+  background: #e4b348;
+  color: var(--ink, #1a0335);
+}
+.hud-xp.ring-gold .hud-xp-avatar {
+  box-shadow: 0 0 0 2px #ffe399;
+}
+.hud-xp.ring-silver .hud-xp-track {
+  stroke: #e3e6ee;
+}
+.hud-xp.ring-silver .hud-xp-fill {
+  stroke: #8a93a8;
+}
+.hud-xp.ring-silver .hud-xp-level {
+  background: #c9cfdc;
+  color: var(--ink, #1a0335);
+}
+.hud-xp-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #ece5f1;
+  display: grid;
+  place-items: center;
+}
+.profile-pill .hud-xp-avatar .character-composition.compact {
+  width: 34px;
+  height: 38px;
+}
+.profile-pill .hud-xp-avatar .character-composition.compact .ghost-art,
+.profile-pill .hud-xp-avatar .character-composition.compact > img {
+  width: 30px;
+  height: 34px;
+  margin-top: 4px;
+}
+.hud-xp-level {
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--action, #672eeb);
+  color: #fff;
+  border: 2px solid var(--ink, #1a0335);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+.hud-xp-text {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  white-space: nowrap;
+}
+.profile-pill .hud-xp-text b {
+  font-size: 14px;
+  line-height: 1.1;
+  color: var(--ink, #1a0335);
+}
+.profile-pill .hud-xp-text small {
+  font-size: 12px;
+  margin: 0;
+  line-height: 1.1;
+  color: #6f5f86;
+  font-variant-numeric: tabular-nums;
+}
+.topbar .profile-pill:has(.hud-xp) {
+  padding: 0 4px 0 0;
+  min-height: 48px;
+}
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  /* style.css hides the pill text on phones; the XP readout stays. */
+  .topbar .profile-pill > span.hud-xp {
+    display: inline-flex;
+  }
+  .topbar .wordmark > span {
+    font-size: 18px;
+  }
+}
+@media (max-width: 359px) {
+  .topbar .profile-pill > .hud-xp > .hud-xp-text {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-xp-fill {
+    transition: none;
+  }
+}
+
+/* ---------- Grouped map toolbar ---------- */
+.map-controls.map-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 2px;
+  border-radius: 24px;
+  background: #fbf9f2f2;
+  border: 2px solid var(--ink, #1a0335);
+  box-shadow: 3px 3px 0 #1a033540;
+}
+.map-controls.map-toolbar > button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink, #1a0335);
+}
+.map-controls.map-toolbar > button + button {
+  position: relative;
+}
+.map-controls.map-toolbar > button + button::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 0;
+  border-top: 1px solid var(--decorative-border, #d7cbe9);
+}
+.map-controls.map-toolbar > button:hover {
+  background: #ede5f6;
+}
+.map-controls.map-toolbar > button.active,
+.map-controls.map-toolbar > button[aria-pressed="true"] {
+  background: var(--action, #672eeb);
+  color: #fff;
+}
+.map-controls.map-toolbar > button:focus-visible {
+  outline: 3px solid var(--discovery, #ff1dff);
+  outline-offset: -3px;
+}
+.map-controls.map-toolbar svg {
+  width: 20px;
+  height: 20px;
+}
+@media (max-width: 760px) {
+  .map-controls.map-toolbar {
+    top: 84px;
+    right: 12px;
+  }
+}
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  /* With the sheet open style.css lays the tools out in a row. */
+  body:has(.sheet-expanded) .map-controls.map-toolbar > button + button::before {
+    left: 0;
+    right: auto;
+    top: 10px;
+    bottom: 10px;
+    border-top: 0;
+    border-left: 1px solid var(--decorative-border, #d7cbe9);
+  }
+}
+
+/* ---------- Compact location chip ---------- */
+.map-top-chip.map-status-chip {
+  padding: 0 0 0 12px;
+  height: 40px;
+  border-radius: 20px;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: #5a4b6e;
+  background: #fbf9f2f2;
+  border: 1px solid var(--decorative-border, #d7cbe9);
+  box-shadow: 0 3px 12px #3425470f;
+  white-space: nowrap;
+}
+.map-top-chip.map-status-chip > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  margin: 0 2px 0 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 18px;
+  background: #ede5f6;
+  color: var(--action, #672eeb);
+  font-size: 13px;
+  font-weight: 700;
+}
+.map-top-chip.map-status-chip > button:hover {
+  background: #e2d6f2;
+}
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  .map-top-chip.map-status-chip {
+    font-size: 12px;
+    padding: 0 0 0 12px;
+  }
+  .map-top-chip.map-status-chip > button {
+    display: inline-flex;
+    font-size: 13px;
+    padding: 0 12px;
+    margin-left: 0;
+  }
+}
+
+/* ---------- NPC sheet portrait frame ---------- */
+/* A collectible-card frame around the 3D portrait: ink outline, hard shadow,
+   a thin gold inner rim and pixel corner studs. */
+.npc-head .npc-portrait {
+  position: relative;
+  border: 3px solid var(--ink, #1a0335);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 2px #e4b348,
+    4px 4px 0 #1a033566;
+  background:
+    radial-gradient(circle at 50% 85%, #ff1dff33 0 30%, transparent 31%),
+    radial-gradient(circle at 50% 40%, #4a12a0, #200543);
+}
+.npc-head .npc-portrait::before,
+.npc-head .npc-portrait::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #e4b348;
+  box-shadow: 0 0 0 1px var(--ink, #1a0335);
+  z-index: 1;
+  pointer-events: none;
+}
+.npc-head .npc-portrait::before {
+  top: 4px;
+  left: 4px;
+}
+.npc-head .npc-portrait::after {
+  right: 4px;
+  bottom: 4px;
+}

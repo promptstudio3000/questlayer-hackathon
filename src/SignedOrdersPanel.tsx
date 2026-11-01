@@ -4,6 +4,7 @@
 // through the relayer; anything that moves money (buying, accepting an offer,
 // funding an offer) is paid from the explorer's own account, still without a
 // wallet popup.
+import { EmptyState } from "./EmptyState";
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
@@ -414,7 +415,9 @@ export function SignedOrdersPanel({
           </form>
           <h4>Open orders</h4>
           {!others.length ? (
-            <p>No signed orders from other explorers right now.</p>
+            <EmptyState art="coin" title="No open orders right now">
+              Signed orders from other explorers and traders show up here.
+            </EmptyState>
           ) : (
             <div className="native-offers">
               {others.map((o) => {
