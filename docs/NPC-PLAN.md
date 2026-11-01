@@ -608,6 +608,14 @@ builds **original procedural low-poly three.js models** in the Aavegotchi-compat
 `docs/AAVEGOTCHI-REUSE.md`). Like the existing SDK GLB proxy, it may *load on demand* official models only once the
 owner confirms that the developer invitation covers them.
 
+**Update (1 Nov 2026, owner decision):** the owner confirmed that the developer invitation covers the Gotchiverse
+characters. `src/actor-models.ts` now also offers official models `lick-soldier`, `lick-brute`, `lick-speedy`,
+`lick-turret`, `lick-boss` (recoloured soldier), `great-portal` and `golden-altar`. They load at runtime from a pinned,
+digest-checked source (`server/upstream-models.mjs`, route `/api/upstream-models/<key>.fbx`) and are never committed.
+If the source is unavailable, the original stand-in renders. Suggested casting: Lickquidators are the monsters
+(roamer `lick-soldier`/`lick-speedy`, guardian `lick-brute` or `lick-turret`, boss `lick-boss`). NPCs stay
+original ghosts. The Golden Altar marks the keeper's post, and the Great Portal is the boss arena.
+
 ## Sources
 - NEAR AI Cloud private inference: https://docs.near.ai/cloud/private-inference
 - NEAR AI gateway verification / attestation: https://docs.near.ai/cloud/verification/gateway
