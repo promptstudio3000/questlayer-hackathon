@@ -3,6 +3,7 @@ import { ArrowClockwise, Star, Check, Lock } from "@phosphor-icons/react";
 import { api } from "./api";
 import { AuraArt } from "./Ghost";
 import type { Player } from "./types";
+import type { NearNetwork } from "./near-network.ts";
 export type NativeMilestone = {
   level: number;
   edition: string;
@@ -16,7 +17,7 @@ export type NativeMilestone = {
 };
 export type Progress = {
   status: string;
-  network: "testnet";
+  network: NearNetwork;
   accountId: string;
   sourceContractId: string;
   policy: string;

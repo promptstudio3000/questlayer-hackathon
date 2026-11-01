@@ -2,19 +2,20 @@ import {
   registerModuleSchema,
   ensureModuleVersion,
 } from "../schema-compatibility.mjs";
+import { NETWORK } from "../native/network.mjs";
 
 // Managed player accounts and sponsored meta-transaction jobs. Amounts in
 // yoctoNEAR are decimal TEXT because u128 exceeds SQLite integers.
 export const MANAGED_ACCOUNTS_SCHEMA = registerModuleSchema({
   name: "managed-accounts",
-  version: 1,
+  version: 2,
   sql: `
 CREATE TABLE IF NOT EXISTS managed_accounts(
  account_id TEXT PRIMARY KEY,
  player_id TEXT NOT NULL UNIQUE REFERENCES players(id),
  slug TEXT NOT NULL UNIQUE,
  factory_id TEXT NOT NULL,
- network TEXT NOT NULL CHECK(network='testnet'),
+ network TEXT NOT NULL CHECK(network IN ('testnet','mainnet')),
  state TEXT NOT NULL CHECK(state IN ('creating','ready','failed')),
  funded_yocto TEXT NOT NULL DEFAULT '0' CHECK(funded_yocto GLOB '[0-9]*'),
  transaction_hash TEXT,
@@ -83,6 +84,21 @@ CREATE TABLE IF NOT EXISTS relay_worker_lease(
  last_error TEXT
 );
 `,
+  // Version 1 allowed only testnet rows. Version 2 widens that CHECK so a
+  // mainnet deployment can use the same schema; no stored row changes.
+  upgrades: [
+    {
+      from: 1,
+      loosen: {
+        managed_accounts: [
+          [
+            "CHECK(network='testnet')",
+            "CHECK(network IN ('testnet','mainnet'))",
+          ],
+        ],
+      },
+    },
+  ],
 });
 
 const initialized = new WeakSet();
@@ -91,6 +107,19 @@ export function initializeManagedAccounts(db) {
   if (!initialized.has(db)) {
     db.exec("INSERT OR IGNORE INTO relay_worker_lease(id) VALUES(1)");
     initialized.add(db);
+  }
+  // One database serves one network. Managed accounts from another network
+  // would point players at keys and balances that do not exist here, so a
+  // mainnet process refuses a testnet database (and the other way round).
+  const foreign = db
+    .prepare("SELECT network FROM managed_accounts WHERE network!=? LIMIT 1")
+    .get(NETWORK);
+  if (foreign) {
+    const error = new Error(
+      `This database holds ${foreign.network} managed accounts but the server is configured for ${NETWORK}. Use a separate database per network.`,
+    );
+    error.code = "NETWORK_MISMATCH";
+    throw error;
   }
   return version;
 }

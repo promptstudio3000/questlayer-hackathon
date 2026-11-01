@@ -1,3 +1,4 @@
+import { NEAR_NETWORK } from "./near-network.ts";
 export const NATIVE_TASK_CONTRACT = "questlayer-tasks-20261031.testnet";
 export const TASK_POLICY = "sponsored-tasks-testnet-v1";
 export const TASK_STORAGE = "50000000000000000000000";
@@ -138,7 +139,7 @@ export function assertTaskQuote(
   const expected = taskTransaction(r);
   if (
     !q ||
-    q.network !== "testnet" ||
+    q.network !== NEAR_NETWORK ||
     q.signerId !== r.accountId ||
     q.receiverId !== NATIVE_TASK_CONTRACT ||
     q.contractId !== NATIVE_TASK_CONTRACT ||

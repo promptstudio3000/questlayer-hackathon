@@ -67,6 +67,33 @@ player copy that names the pilot ("testnet expedition", "testnet vault pilot"), 
 scripts. `NEAR_NETWORK=mainnet` therefore starts the server against mainnet RPC and `*-mainnet.json` manifests
 but is not yet a supported configuration.
 
+Progress, 1 November (later):
+
+- Step 4 done. `managed-accounts` is schema version 2 with `CHECK(network IN ('testnet','mainnet'))`, recorded in
+  `server/schema-known.json` next to version 1. Schema modules can now declare upgrade steps that only rewrite
+  CHECK clauses; each step is proven at registration (old recorded shape plus the edits must equal the new shape,
+  indexes unchanged) and applied inside the owning transaction by rebuilding the table with ordinary SQL (rows
+  copied aside and back unchanged, foreign keys deferred to commit, tables with referential actions refused),
+  followed by foreign-key and integrity checks and a ledger update. `writable_schema` is not used because Node 24
+  opens SQLite in defensive mode. Version 1 databases and
+  backups still pass preflight and upgrade on first start. New accounts store the configured network, and a
+  process refuses a database that holds another network's managed accounts (`NETWORK_MISMATCH`): one database
+  per network. Tests: `tests/schema-module-upgrade.test.mjs`.
+- Step 5 (client) done for validators. `src/near-network.ts` fixes the network at build time
+  (`VITE_NEAR_NETWORK`, default testnet) instead of trusting the server, so a misconfigured server cannot move the
+  client to another chain; every quote validator, quote type, explorer link, the SocialDB receiver and the wallet
+  connector read it, and the self-paid signer still requires `/api/config` to report the same network. Still
+  literal: player copy naming the testnet pilot (UI lane), the tasks pilot contract id and the statically
+  imported `public/*-testnet.json` manifests in `native-level-claim.ts` and `native-vault-quote.ts` (rewards and
+  vaults are outside the mainnet slice).
+- Step 6 started. `scripts/lib/network-guard.mjs` selects the network for operator scripts: testnet by default;
+  mainnet only when the script opts in, `--network mainnet` and `NEAR_NETWORK=mainnet` are both given, the
+  operator key file says `mainnet` with a `.near` account, and `NEAR_MAINNET_CONFIRM` equals that account. It
+  also checks the RPC `chain_id`. `scripts/deploy-player-factory-testnet.mjs` uses it; on mainnet it writes
+  `.data/player-factory-mainnet.json` / `.data/relayer-mainnet.json` and requires explicit
+  `PLAYER_FACTORY_FUND_NEAR` and `RELAYER_FUND_NEAR`. Every other script stays testnet only. A mainnet
+  collectibles deploy script does not exist yet (`deploy-testnet.mjs` is a full smoke run and must not be reused).
+
 Progress, 1 November (step 7): `MAINNET_FEATURES` is parsed in `server/native/network.mjs` (`featureEnabled`,
 `ENABLED_FEATURES`). Testnet keeps every slice on. On mainnet the server refuses to start without `collectibles`
 (the core reader and the minimal slice), `vaults` requires `rewards`, and market, rewards, vaults, relayer, social,

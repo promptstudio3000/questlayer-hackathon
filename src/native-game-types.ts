@@ -1,4 +1,5 @@
 import type { Point, Zone, QuestActivity } from "./types";
+import type { NearNetwork } from "./near-network.ts";
 export type NativeQuest = {
   activity?: QuestActivity;
   prizeClaimed: boolean;
@@ -30,7 +31,7 @@ export type NativeReceipt = {
 };
 export type NativeGameState = {
   status: string;
-  network: "testnet";
+  network: NearNetwork;
   accountId: string | null;
   generatedAt: number;
   collection: {

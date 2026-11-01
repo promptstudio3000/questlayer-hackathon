@@ -7,6 +7,7 @@ import { Account, JsonRpcProvider, actions as nearActions } from "near-api-js";
 import { api } from "./api.ts";
 import { signerFor, type PlayerKeyRecord } from "./player-key.ts";
 import type { ReviewedNativeTransaction } from "./confirmed-native-transaction.ts";
+import { NEAR_NETWORK } from "./near-network.ts";
 
 export const RELAYED_DEPOSITS = ["0", "1", "50000000000000000000000"];
 export class SelfPaidError extends Error {
@@ -27,7 +28,7 @@ let rpcUrl: Promise<string> | null = null;
 function resolveRpcUrl() {
   rpcUrl ??= api<{ network: string; rpcUrl?: string }>("/config")
     .then((config) => {
-      if (config.network !== "testnet" || typeof config.rpcUrl !== "string")
+      if (config.network !== NEAR_NETWORK || typeof config.rpcUrl !== "string")
         throw new SelfPaidError(
           "The game network is unavailable.",
           "SELF_PAID_NETWORK",
@@ -48,7 +49,7 @@ export async function sendSelfPaid(
   transaction: ReviewedNativeTransaction,
 ): Promise<{ transactionHash: string }> {
   if (
-    transaction.network !== "testnet" ||
+    transaction.network !== NEAR_NETWORK ||
     transaction.actions.length !== 1 ||
     transaction.actions[0].type !== "FunctionCall"
   )

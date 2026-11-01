@@ -1,3 +1,4 @@
+import type { NearNetwork } from "./near-network.ts";
 export type Point = { lat: number; lng: number };
 export type Fix = Point & { accuracy: number; timestamp: number };
 export type Item = {
@@ -201,7 +202,7 @@ export type NativePublicProfile = {
   avatar: { contractId: string; tokenId: string } | null;
 };
 export type NativeProfileState = {
-  network: "testnet";
+  network: NearNetwork;
   contractId: string;
   accountId: string;
   status: "unpublished" | "published" | "unsupported";
@@ -214,7 +215,7 @@ export type NativeProfileState = {
   publishEnabled: boolean;
 };
 export type NativeProfileQuote = {
-  network: "testnet";
+  network: NearNetwork;
   receiverId: string;
   accountId: string;
   methodName: "set";
@@ -242,14 +243,14 @@ export type NativeAccount = {
 export type NativeWardrobeState = {
   claimsEnabled?: boolean;
   status: string;
-  network: "testnet";
+  network: NearNetwork;
   contractId: string;
   accounts: NativeAccount[];
 };
 export type NativeCollectionState = {
   outfits?: NativeAccount[];
   status: string;
-  network: "testnet";
+  network: NearNetwork;
   contractId: string;
   name: string;
   version: number;
@@ -281,7 +282,7 @@ export type NativeMarketOffer = {
 };
 export type NativeMarketState = {
   status: string;
-  network: "testnet";
+  network: NearNetwork;
   marketContract: string;
   nftContract: string;
   stats: {

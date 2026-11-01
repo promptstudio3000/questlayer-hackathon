@@ -3,7 +3,7 @@ import { ArrowClockwise, ArrowSquareOut, Wallet } from "@phosphor-icons/react";
 import { api } from "./api";
 import { formatNativeNear } from "./native-amounts";
 import type { NativeProfileState, Player } from "./types";
-export const SOCIAL_TESTNET = "v1.social08.testnet";
+import { EXPLORER_BASE, SOCIAL_CONTRACT_ID } from "./near-network.ts";
 const loadProfile = (accountId: string, fresh: boolean) =>
   api<NativeProfileState>(
     `/native/profile?accountId=${encodeURIComponent(accountId)}${fresh ? "&refresh=1" : ""}`,
@@ -196,7 +196,7 @@ export function NativeProfilePanel({
               Refresh profile
             </button>
             <a
-              href={`https://testnet.nearblocks.io/address/${SOCIAL_TESTNET}`}
+              href={`${EXPLORER_BASE}/address/${SOCIAL_CONTRACT_ID}`}
               target="_blank"
               rel="noreferrer"
             >
