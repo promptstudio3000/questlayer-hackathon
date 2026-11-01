@@ -17,6 +17,7 @@ import {
   FLOAT,
   MAX_TRADES_PER_PLAYER_DAY,
   MILLI,
+  PATRON_BUDGET_RESERVE_BPS,
   REFERENCE,
   SEED_PER_DAY,
   STOCK_EDITIONS,
@@ -26,6 +27,7 @@ import {
   rarityOf,
   SWEEP_BUFFER,
   YOCTO,
+  budgetLeftFor,
   discountSellPrice,
   premiumBudget,
   premiumBuyPrice,
@@ -362,4 +364,70 @@ test("a sweep leaves a restocking reserve behind and sends the rest to the treas
   const sweep = (await keeper.tick({ execute: false })).reports[0];
   assert.equal(sweep.actions.find((a) => a.step === "sweep").amount, String(YOCTO - STOCK_RESERVE));
   assert.equal(sweep.stockReserve, String(STOCK_RESERVE));
+});
+
+const GOLD_U = 1_000_000;
+const makePatron = (db, p, now) =>
+  db
+    .prepare("INSERT INTO positions(id,player_id,pool,active_u,contribution,matures_at,accrued_u,settled_at) VALUES(?,?,?,?,?,?,0,?)")
+    .run(`pos-${p}`, p, "core", 50_000 * GOLD_U, 100, now - 1, now);
+
+test("patron rates are better for the player and still keep the margin floor", () => {
+  for (const edition of ["ember", "dew", "polar", "bloom", "storm", "moon", "comet"]) {
+    for (const floor of [null, 5n * MILLI, 15n * MILLI, 40n * MILLI, 100n * MILLI, 400n * MILLI]) {
+      const base = premiumBuyPrice(edition, floor),
+        buy = premiumBuyPrice(edition, floor, { patron: true });
+      if (base) assert.ok(buy && buy.price >= base.price, `${edition} patron premium is at least the normal one`);
+      if (buy) assert.ok(buy.price * 110n <= buy.resale * 100n, `${edition} patron buy keeps the 10 % margin`);
+      for (const cost of [0n, 10n * MILLI, 50n * MILLI]) {
+        const normal = discountSellPrice(edition, cost, floor),
+          sell = discountSellPrice(edition, cost, floor, { patron: true });
+        if (normal) assert.ok(sell && sell.price <= normal.price, "patron price is never worse");
+        if (sell) assert.ok(sell.price * 100n >= cost * 110n, "patron sale ≥ cost × 1.10");
+      }
+    }
+  }
+  assert.ok(discountSellPrice("polar", 0n, null, { patron: true }).price < discountSellPrice("polar", 0n, null).price);
+  // Budget preference: non-patrons stop at the reserved share, patrons may use all of it.
+  const budget = 100n * MILLI,
+    reserve = (budget * PATRON_BUDGET_RESERVE_BPS) / 10000n;
+  assert.equal(budgetLeftFor({ budget, spent: 0n }), budget - reserve);
+  assert.equal(budgetLeftFor({ budget, spent: budget - reserve }), 0n);
+  assert.equal(budgetLeftFor({ budget, spent: budget - reserve }, { patron: true }), reserve);
+  assert.equal(budgetLeftFor({ budget, spent: budget }, { patron: true }), 0n);
+});
+
+test("only Tier 2 patrons see the rare → epic trade-up and patron sale prices", { skip }, async (t) => {
+  const { c, service, player, encounter, db, now } = setup(t);
+  const alice = player("Alice", "alice.testnet"),
+    bob = player("Bob", "bob.testnet");
+  makePatron(db, alice, now());
+  for (const id of ["aura:polar:1", "aura:polar:2", "aura:bloom:3"]) c.s.owner.set(id, "alice.testnet");
+  for (const id of ["aura:polar:4", "aura:polar:5", "aura:bloom:6"]) c.s.owner.set(id, "bob.testnet");
+  c.s.listings.set("aura:storm:9", { seller: NPC, state: "deposited" });
+  c.s.owner.set("aura:storm:9", MARKET);
+  service.ledger.addLot({ trader: ACTOR.id, tokenId: "aura:storm:9", cost: 0n, source: "trade_up" });
+
+  const bobEnc = await encounter(bob);
+  assert.equal(bobEnc.menu.filter((o) => o.kind === "trade_up").length, 0, "no epic table for Tier 1");
+  const bobSell = bobEnc.menu.find((o) => o.kind === "trade_sell");
+  assert.equal(bobSell.terms.patron, false);
+
+  const enc = await encounter(alice);
+  const sell = enc.menu.find((o) => o.kind === "trade_sell");
+  assert.equal(sell.terms.patron, true);
+  assert.ok(BigInt(sell.terms.price) < BigInt(bobSell.terms.price), "patron pays less for the same lot");
+  assert.match(sell.label, /patron rate/);
+  const offer = enc.menu.find((o) => o.kind === "trade_up");
+  assert.ok(offer, "the patron is offered the epic table");
+  assert.equal(offer.terms.give, "rare");
+  assert.equal(rarityOf(offer.terms.edition), "epic");
+  // Bob cannot accept Alice's patron offer even with her menu in hand.
+  await assert.rejects(service.accept({ player: bob, actor: ACTOR, encounter: enc, offerId: offer.id }), /patrons/);
+  const trade = await service.accept({ player: alice, actor: ACTOR, encounter: enc, offerId: offer.id });
+  for (const id of trade.tokens) c.s.owner.set(id, NPC);
+  const done = await service.completeTradeUp({ player: alice, actor: ACTOR, offerId: offer.id });
+  assert.equal(done.aura.rarity, "epic");
+  // The trader gains three rares (cost 0) for an epic from game supply.
+  assert.equal(service.ledger.held(ACTOR.id).filter((l) => rarityOf(l.token_id.split(":")[1]) === "rare").length, 3);
 });
