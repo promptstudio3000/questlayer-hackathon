@@ -4,6 +4,7 @@ import { createCreatorRuntime } from "./creators/runtime.mjs";
 import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
 import { createAdventureResults } from "./adventure-results.mjs";
 import { recordSchemaVersions, schemaStatus } from "./schema-compatibility.mjs";
+import { resolveBuildId } from "./build-id.mjs";
 import { NoteMedia } from "./note-media.mjs";
 import { TaskEvidence, evidenceTaskView } from "./task-evidence.mjs";
 import { Moderation } from "./moderation.mjs";
@@ -68,6 +69,7 @@ import {
   DEFAULT_RPC,
   manifestName,
 } from "./native/network.mjs";
+const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 import { randomBytes } from "node:crypto";
 import {
@@ -545,7 +547,7 @@ async function api(req, res, url) {
       version: "0.1.0",
       network: NETWORK,
       features: ENABLED_FEATURES,
-      ...schemaStatus(db, { buildId: process.env.QUESTLAYER_BUILD_ID }),
+      ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
       nativeRewards: nativeRewards
