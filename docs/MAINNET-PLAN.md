@@ -102,6 +102,16 @@ creators and tasks answer "not configured" unless listed; `/api/health` and `/ap
 `.testnet` fixtures and are listed in `scripts/test-mainnet.mjs` until their fixtures read the network module.
 `npm run check` runs both passes.
 
+Progress, 1 November (one-command slice): `scripts/deploy-mainnet-slice.mjs` (logic in
+`scripts/lib/mainnet-slice.mjs`) deploys the §1 slice idempotently: collectibles created, deployed and initialised in
+one transaction with the award signer set, factory and relayer accounts with `*-mainnet.json` key files, the
+`social.near` code hash checked, then `public/mainnet-deployment.json` and `public/native-claims-mainnet.json` and a
+runtime env file. Without `--execute` it only plans. It requires the reviewed WASM sha256 and explicit amounts on
+mainnet. The server now boots on mainnet without market and rewards manifests (transaction confirmation and the
+relayer allowlist treat them as absent slices). `tests/mainnet-slice.test.mjs` is the dry run: fake chain, then
+the real server on `NEAR_NETWORK=mainnet` from those manifests, plus the `DISABLE_RELAYER` pause drill. Owner steps:
+`docs/OWNER-RUNBOOK.md` §7. No mainnet transaction has been sent.
+
 ## 4. Owner prerequisites (not Claude's to do)
 
 - A mainnet operator account with a hardware or well-kept key; separate `questlayer.near`-style factory and

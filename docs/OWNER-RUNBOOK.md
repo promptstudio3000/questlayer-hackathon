@@ -72,3 +72,71 @@ ssh -o IdentitiesOnly=yes root@72.61.188.39 'ls /opt/ps3000/apps/mapos* 2>/dev/n
 
 `docs/SUBMISSION.md` has the post draft, video script and payload template. Make the repository public, run a
 secret scan over the history, verify the README steps on a fresh clone, then submit once.
+
+## 7. Mainnet slice: one command (needs Lubos's go, see `docs/MAINNET-PLAN.md` §5)
+
+Nothing here has run on mainnet. `scripts/deploy-mainnet-slice.mjs` deploys the minimal slice from
+`docs/MAINNET-PLAN.md` §1: the collectibles contract (create, deploy and `new` in one transaction, then
+`set_award_signer`), the player factory and relayer accounts with their key files, and a check that `social.near`
+still runs the pinned code. Without `--execute` it only reads the chain and prints the plan; it signs nothing and
+writes nothing. Re-running is safe: finished steps are verified and skipped, any mismatch (other code on the
+contract account, another award signer, a key file missing for an existing account) stops the run.
+
+Owner prerequisites on the Mac, all mode 600, none of them in git or chat:
+
+| File | Content |
+| --- | --- |
+| `.data/near-operator-mainnet.json` | `{"network":"mainnet","accountId":"<operator>.near","secretKey":"ed25519:…"}` with a full-access key |
+| `.data/award-attestor-mainnet.pem` | created by the first `--execute` if absent; never reuse the testnet PEM |
+| reviewed WASM | `bash scripts/build-contracts.sh`, then `sha256sum contracts/target/wasm32-unknown-unknown/release/questlayer_collectibles.wasm`; the reviewer confirms this hash |
+
+```bash
+export NEAR_NETWORK=mainnet NEAR_MAINNET_CONFIRM=<operator>.near \
+  AWARD_SIGNER_PATH=.data/award-attestor-mainnet.pem \
+  COLLECTIBLES_WASM_SHA256=<reviewed sha256> \
+  COLLECTIBLES_FUND_NEAR=3 PLAYER_FACTORY_FUND_NEAR=5 RELAYER_FUND_NEAR=5
+node scripts/deploy-mainnet-slice.mjs --network mainnet            # plan: read-only
+node scripts/deploy-mainnet-slice.mjs --network mainnet --execute  # deploys
+```
+
+The operator needs the three amounts plus 1 NEAR reserve; the script checks the balance first. Optional overrides:
+`COLLECTIBLES_ACCOUNT`, `PLAYER_FACTORY_ACCOUNT`, `RELAYER_ACCOUNT` (direct sub-accounts of the operator only),
+`NEAR_RPC_URL`. The collectibles account gets the operator's public key as a full-access key so reviewed upgrades
+stay possible; deleting that key later locks the contract for good.
+
+Outputs: `public/mainnet-deployment.json` and `public/native-claims-mainnet.json` (commit both; the server reads
+them), `.data/player-factory-mainnet.json`, `.data/relayer-mainnet.json` and `.data/runtime-mainnet.env`. The env
+file holds `NEAR_NETWORK=mainnet`, `VITE_NEAR_NETWORK=mainnet` (build time: the client bundle must be built with
+it), `MAINNET_FEATURES=collectibles,relayer,social`, 0.02 NEAR per new player account, a 0.05 NEAR daily top-up
+cap and the key paths. A mainnet host needs its own database (`NETWORK_MISMATCH` otherwise), so mainnet runs as
+a separate service directory on the VPS, never by flipping the testnet one. Copy the two key files and the award
+PEM to that host by hand (`install-relayer-keys-vps.sh` is testnet only) and set `AWARD_SIGNER_PATH` there.
+
+Rehearsal on testnet: the same command without `--network`, with `COLLECTIBLES_ACCOUNT=nfts-slice.<operator>.testnet`
+so it does not meet the live `nfts.` contract. Testnet key files are `*-testnet.json` and manifests go to
+`output/mainnet-slice-testnet/`, so the live testnet keys and `public/*-testnet.json` stay untouched. The offline
+dry run (fake chain, then the real server booted on `NEAR_NETWORK=mainnet` from the written manifests) is
+`node --test tests/mainnet-slice.test.mjs` and runs in CI.
+
+Check after deploying the mainnet service:
+
+```bash
+curl -s https://<mainnet host>/api/health | jq '{network, features, relayer: .relayer.enabled, nativeRewards: .nativeRewards.status}'
+# expected: "mainnet", ["collectibles","relayer","social"], true, "not-configured"
+```
+
+### Pause drill (`DISABLE_RELAYER`)
+
+Stops every sponsored action: no new player accounts, no relayed gas. Players keep reading and signing self-paid
+actions with their own keys.
+
+1. On the mainnet host add `DISABLE_RELAYER=1` to its `runtime.env` and restart the service.
+2. Check `/api/health`: `relayer.enabled` is `false` (the dry-run test asserts exactly this).
+3. If a key may be compromised, also delete the relayer and factory keys on chain from the Mac
+   (`near account delete-keys` for `relay-…` and `play-…`) and move the key files off the host. Keep
+   `DISABLE_RELAYER=1` while the keys are gone: with the flag the server does not load them, without it the start
+   fails on the missing key.
+4. Resume: remove the flag, restore keys if they were rotated (new key files, same account ids), restart, check
+   `relayer.enabled: true`.
+
+Run the drill once on testnet before the mainnet go: the testnet service takes the same flag.

@@ -79,8 +79,9 @@ export class Relayer {
     assert(accounts, "Managed accounts are required by the relayer.", 503);
     assert(
       contracts &&
-        ["collectibles", "market", "rewards"].every(
-          (n) => typeof contracts[n] === "string",
+        typeof contracts.collectibles === "string" &&
+        ["market", "rewards"].every(
+          (n) => contracts[n] == null || typeof contracts[n] === "string",
         ),
       "Relayer contract allowlist is incomplete.",
       503,

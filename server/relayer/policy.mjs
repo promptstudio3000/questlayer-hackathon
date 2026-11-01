@@ -47,8 +47,14 @@ function checkContext(ctx) {
     Number.isSafeInteger(ctx.blockTtl) &&
     ctx.blockTtl > 0 &&
     plainObject(ctx.contracts) &&
-    ["collectibles", "market", "rewards"].every(
-      (name) => typeof ctx.contracts[name] === "string" && ctx.contracts[name],
+    typeof ctx.contracts.collectibles === "string" &&
+    !!ctx.contracts.collectibles &&
+    // Market and rewards are optional slices (absent on a mainnet host
+    // without them); when present they must be account ids.
+    ["market", "rewards"].every(
+      (name) =>
+        ctx.contracts[name] == null ||
+        (typeof ctx.contracts[name] === "string" && ctx.contracts[name]),
     );
   if (!ok)
     throw new GameError(
@@ -67,8 +73,8 @@ function checkContext(ctx) {
     maxGas: yocto(ctx.maxGas ?? 300000000000000n),
     contracts: {
       collectibles: ctx.contracts.collectibles,
-      market: ctx.contracts.market,
-      rewards: ctx.contracts.rewards,
+      market: ctx.contracts.market || null,
+      rewards: ctx.contracts.rewards || null,
       social: ctx.contracts.social || SOCIAL_CONTRACT,
       factory:
         typeof ctx.contracts.factory === "string"
