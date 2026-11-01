@@ -1,17 +1,17 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-11-01T09:30:27.115Z",
+  "verifiedAt": "2026-11-01T12:31:34.699Z",
   "contractId": "questlayer-rewards-20261101b.testnet",
-  "codeHash": "7CXdMD6hnpY4mgpRmaUfCaJpoEeZYDj1beSvw1kMboMc",
-  "wasmSha256": "5c1a23e27b8a779f519eab710b4c36f77c2595210c2583dcb058fd9d24771b93",
+  "codeHash": "2cQwQ3RvxWYRRzgrKJZHYnYxQxgJWMSdSNtLHY8NKTzD",
+  "wasmSha256": "17ee14f71ea34b215d9c6fbc97d16f0a4d97a1fd05afffa2e3f8016295a1e9de",
   "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
   "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
   "factory": {
     "contractId": "questlayer-vaults-20261101b.testnet",
-    "codeHash": "o3k47gudxqUKhFxTdjvc5FGbSkpZNqz5fnV953B5F38",
-    "wasmSha256": "0bcbd1654df6f2003344ca554e2a9a094e9c92aa0f5dfa707d95020b513a91f3",
-    "vaultCodeHash": "2EqRH4nVgKLp4kezRk8mrfXZivC3kjKw4Z33GeStDUmD",
-    "vaultWasmSha256": "1266fc07d590607ddc84457454f0e96399664cbe4d7b7e9139d6d5c284323040",
+    "codeHash": "CuXpM81e398FHSfLeZ3JfgqXMnnNXgiQQizTiKFBvVJx",
+    "wasmSha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9",
+    "vaultCodeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
+    "vaultWasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7",
     "setupDeposit": "3520000000000000000000000"
   },
   "vaults": [
@@ -19,12 +19,12 @@
       "accountId": "questlayer-vault-20261101b.testnet",
       "beneficiary": "questlayer-dev-20261101.testnet",
       "pool": "aurora.pool.f863973.m0",
-      "codeHash": "2EqRH4nVgKLp4kezRk8mrfXZivC3kjKw4Z33GeStDUmD",
-      "wasmSha256": "1266fc07d590607ddc84457454f0e96399664cbe4d7b7e9139d6d5c284323040"
+      "codeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
+      "wasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
     }
   ],
   "funding": "explicit sponsor; realized staking yield not yet demonstrated",
-  "vaultPolicy": "experimental keyless factory positions, immutable contribution, full exit; testnet only",
+  "vaultPolicy": "experimental keyless factory positions; owner-adjustable contribution settled at the old rate; full or partial exit; testnet only",
   "state": {
     "version": 1,
     "network": "testnet",
@@ -94,6 +94,25 @@
     {
       "label": "Top up separate reward storage and gas reserve",
       "transaction": "FjmiHkJfiCBAUapxzykwZYdBkvNDbs9TymMtCSMk6xFT"
+    },
+    {
+      "label": "Upgrade rewards v2: street find XP",
+      "transaction": "J6Y6FpN6oc91K7Pf9G1CBjzvRFwrfSj53B8E62bFK45N"
+    },
+    {
+      "label": "Upgrade vault v2: questlayer-vault-20261101b.testnet",
+      "transaction": "JBd9DSzYNeYnJwDEBrL2jwkbWM65PNbiBNsyietDFFYz"
+    },
+    {
+      "label": "Upgrade vault factory: new positions get vault v2",
+      "transaction": "2RrR6bc3ooMctap5KahqDzdCyQcdJkuPR8ehaRcJb1Gs"
     }
-  ]
+  ],
+  "streetFinds": {
+    "since": "2026-11-01T12:31:34.699Z",
+    "coinXp": 2,
+    "findXp": 15,
+    "view": "get_day(day_id).finds",
+    "backfill": []
+  }
 }
