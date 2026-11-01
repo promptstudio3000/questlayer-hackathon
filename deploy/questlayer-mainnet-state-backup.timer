@@ -1,0 +1,11 @@
+[Unit]
+Description=QuestLayer mainnet slice daily private state snapshot
+
+[Timer]
+OnCalendar=*-*-* 03:40:00 UTC
+RandomizedDelaySec=10m
+Persistent=true
+Unit=questlayer-mainnet-state-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,19 @@
+[Unit]
+Description=QuestLayer mainnet slice private state snapshot
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/python3 /opt/ps3000/apps/questlayer-hackathon/operations/backup-state.py --state /var/lib/questlayer-mainnet --database-name questlayer-mainnet.sqlite --destination /opt/ps3000/apps/questlayer-mainnet/state-backups --retention-days 14
+UMask=0077
+NoNewPrivileges=yes
+PrivateNetwork=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadOnlyPaths=/var/lib/questlayer-mainnet
+ReadWritePaths=/opt/ps3000/apps/questlayer-mainnet/state-backups
+MemoryMax=256M
+CPUQuota=25%
+TimeoutStartSec=120

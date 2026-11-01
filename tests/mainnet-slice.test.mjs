@@ -16,6 +16,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { createHash } from "node:crypto";
 import { KeyPair } from "near-api-js";
 import {
   slicePlan,
@@ -168,6 +169,27 @@ test("mainnet plan needs the reviewed WASM fingerprint and written amounts", () 
   assert.throws(
     () => plan({ ...mainnetEnv, RELAYER_ACCOUNT: "a.b.questlayer.near" }),
     /direct sub-account/,
+  );
+  // The contract account must hold its code: 350,650 bytes need 3.5065 NEAR
+  // plus the 0.5 NEAR state margin, so 3 NEAR would fail on chain.
+  const real = Buffer.alloc(350650, 1);
+  const realEnv = {
+    ...mainnetEnv,
+    COLLECTIBLES_WASM_SHA256: createHash("sha256").update(real).digest("hex"),
+  };
+  const sized = (env) =>
+    slicePlan({
+      network: "mainnet",
+      operatorId: OPERATOR,
+      env,
+      wasm: real,
+      awardPublicKey: AWARD,
+      stamp: "20261109",
+    });
+  assert.throws(() => sized(realEnv), /at least 4\.0065 NEAR for 350650 bytes/);
+  assert.equal(
+    sized({ ...realEnv, COLLECTIBLES_FUND_NEAR: "4.5" }).collectibles.fund,
+    (45n * NEAR) / 10n,
   );
   const p = plan();
   assert.equal(p.collectibles.accountId, "nfts.questlayer.near");
