@@ -17,6 +17,7 @@ import {
   ensureModuleVersion,
 } from "../schema-compatibility.mjs";
 import { NETWORK } from "./network.mjs";
+import { moderationSuppression } from "../moderation.mjs";
 
 export const SOCIAL_RECORDS_SCHEMA = registerModuleSchema({
   name: "social-records",
@@ -316,6 +317,7 @@ export class NativeSocialRecords {
       accountId,
       noteId,
       localState: note.state,
+      moderation: moderationSuppression(this.db, "record", noteId),
       chain,
       media: media
         ? {
@@ -358,6 +360,11 @@ export class NativeSocialRecords {
     const current = await this.readRecord(accountId, noteId, true);
     let record;
     if (kind === "note") {
+      assert(
+        !moderationSuppression(this.db, "record", noteId),
+        "This record was withdrawn by moderation and cannot be republished.",
+        409,
+      );
       assert(
         note.state === "published",
         "Only a note that is public in the app can be published.",

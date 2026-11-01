@@ -938,11 +938,14 @@
         "output/qa/W03-W13-durable-recovery/README.md",
         "output/qa/W02-W10-next/README.md",
         "output/qa/W02-W10-next/tests.txt",
-        "output/qa/W02-W10-next/build.txt"
+        "output/qa/W02-W10-next/build.txt",
+        "docs/MODERATION-AND-EVIDENCE.md",
+        "tests/moderation.test.mjs",
+        "tests/task-evidence.test.mjs"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W10/",
-      "implementationNote": "Bounded immutable public-text sponsored escrow: ordered review, rejection, appeal, disclosed trusted arbiter, cancellation preserving timely rights, timeout settlement and guarded withdrawal. Three project-owned synthetic testnet flows withdrew all 0.003 test NEAR; 0.25 test NEAR storage funding and 3 yoctoNEAR operating funding are separate. Policy: 48h sponsor review, up to 24h appeal capped at deadline+72h, resolution cutoff deadline+120h; 128 lifetime tasks, 32 submissions/task, max1 test NEAR prize, non-refundable 0.05 test NEAR each creation/submission. Public notes now have reports/blocks/local moderation. Private/photo task evidence, operational moderation coverage, independent governance, physical/device journeys and live elapsed timeout/failure proofs remain open. Local creator safety extends public-note moderation with bounded private quest reports, block controls and trusted report review/suspension CLI. Suspension preserves admitted revisions, pending obligations and locks and prevents publication bypass. RealHTTP lost response, two SQLite races, old-schema additive initialization and actualWAL restore/CLI retries pass. This does not complete private task media, social adapters, physical-place safety or staffed governance."
+      "implementationNote": "Bounded immutable public-text sponsored escrow: ordered review, rejection, appeal, disclosed trusted arbiter, cancellation preserving timely rights, timeout settlement and guarded withdrawal. Three project-owned synthetic testnet flows withdrew all 0.003 test NEAR; 0.25 test NEAR storage funding and 3 yoctoNEAR operating funding are separate. Policy: 48h sponsor review, up to 24h appeal capped at deadline+72h, resolution cutoff deadline+120h; 128 lifetime tasks, 32 submissions/task, max1 test NEAR prize, non-refundable 0.05 test NEAR each creation/submission. Public notes now have reports/blocks/local moderation. Private/photo task evidence, operational moderation coverage, independent governance, physical/device journeys and live elapsed timeout/failure proofs remain open. Local creator safety extends public-note moderation with bounded private quest reports, block controls and trusted report review/suspension CLI. Suspension preserves admitted revisions, pending obligations and locks and prevents publication bypass. RealHTTP lost response, two SQLite races, old-schema additive initialization and actualWAL restore/CLI retries pass. Unified operator moderation queue (notes, NEAR Social records, creator quests, private evidence) with report, review, hide/restore/dismiss/tombstone and a hash-chained audit, plus private sponsored-task photo evidence bound to the on-chain content hash with retention, rate limits and UI states: docs/MODERATION-AND-EVIDENCE.md. Social adapters, physical-place safety and staffed governance remain."
     },
     {
       "id": "W11",
