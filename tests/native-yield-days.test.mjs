@@ -112,6 +112,10 @@ test("yield-backed days spend no more than realized yield, across both days", as
   }
   assert.ok(spent > 0n && spent <= paid);
   assert.equal(days[0].day, "2026-11-04");
+  // Players see where today's rewards come from.
+  const shown = (await f.n.snapshot(null)).day;
+  assert.equal(shown.funding, "realized_yield");
+  assert.equal(shown.fundingEvidence.paid, paid.toString());
   assert.equal(days[0].fundingEvidence.committedBefore, "0");
   // A later harvest frees new yield; the next day sees only what is uncommitted.
   f.vaultState.game_paid = (paid * 2n).toString();
@@ -127,4 +131,11 @@ test("without realized yield nothing is published in yield-backed mode", async (
   const f = fixture({ gamePaid: "0" });
   await runRewardWorker(f.n, f.send, { clock: () => NOW });
   assert.equal(published(f.db).length, 0);
+  // Switching the mode off publishes the ordinary sponsor-funded days again.
+  f.n.yieldBackedDays = false;
+  await runRewardWorker(f.n, f.send, { clock: () => NOW });
+  assert.equal(published(f.db).length, 2);
+  const shown = (await f.n.snapshot(null)).day;
+  assert.equal(shown.funding, "sponsor");
+  assert.equal(shown.fundingEvidence, undefined);
 });

@@ -535,6 +535,7 @@ async function api(req, res, url) {
       distribution: nativeRewards
         ? auditSummary(nativeRewards.lastAudit)
         : { status: "not-configured" },
+      yieldBackedDays: nativeRewards?.yieldBackedDays === true,
       relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
       creatorMoney: creatorMoney
         ? creatorMoney.workerStatus()
