@@ -1,0 +1,45 @@
+# Mainnet slice (docs/MAINNET-PLAN.md §1). Own state directory, database, port and
+# domain; never shares anything with questlayer-hackathon.service (testnet).
+# PLAYER_FACTORY_ACCOUNT and any pause switch (DISABLE_RELAYER=1) go in runtime.env.
+[Unit]
+Description=QuestLayer exploration game (NEAR mainnet slice)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=questlayer-mainnet
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/questlayer-mainnet
+ExecStart=/usr/local/bin/node /opt/ps3000/apps/questlayer-mainnet/current/server/index.mjs
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=TRUST_PROXY=loopback
+Environment=PORT=7092
+Environment=APP_ORIGIN=https://mainnet.questlayer.promptstudio3000.com
+Environment=DATABASE_PATH=/var/lib/questlayer-mainnet/questlayer-mainnet.sqlite
+Environment=STATIC_ASSET_DIR=/opt/ps3000/apps/questlayer-mainnet/assets
+Environment=NEAR_NETWORK=mainnet
+Environment=NEAR_RPC_URL=https://free.rpc.fastnear.com
+Environment=MAINNET_FEATURES=collectibles,relayer,social
+Environment=AWARD_SIGNER_PATH=/var/lib/questlayer-mainnet/award-attestor.pem
+Environment=PLAYER_FACTORY_KEY_PATH=/var/lib/questlayer-mainnet/player-factory-mainnet.json
+Environment=RELAYER_KEY_PATH=/var/lib/questlayer-mainnet/relayer-mainnet.json
+Environment=PLAYER_FACTORY_FUND_YOCTO=20000000000000000000000
+Environment=RELAY_TOPUP_CAP_YOCTO=50000000000000000000000
+Environment=RELAY_MAX_JOBS_PER_DAY=40
+EnvironmentFile=-/opt/ps3000/apps/questlayer-mainnet/runtime.env
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/questlayer-mainnet
+MemoryMax=512M
+CPUQuota=75%
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

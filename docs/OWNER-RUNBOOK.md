@@ -109,8 +109,7 @@ them), `.data/player-factory-mainnet.json`, `.data/relayer-mainnet.json` and `.d
 file holds `NEAR_NETWORK=mainnet`, `VITE_NEAR_NETWORK=mainnet` (build time: the client bundle must be built with
 it), `MAINNET_FEATURES=collectibles,relayer,social`, 0.02 NEAR per new player account, a 0.05 NEAR daily top-up
 cap and the key paths. A mainnet host needs its own database (`NETWORK_MISMATCH` otherwise), so mainnet runs as
-a separate service directory on the VPS, never by flipping the testnet one. Copy the two key files and the award
-PEM to that host by hand (`install-relayer-keys-vps.sh` is testnet only) and set `AWARD_SIGNER_PATH` there.
+a separate service on the VPS (below), never by flipping the testnet one.
 
 Rehearsal on testnet: the same command without `--network`, with `COLLECTIBLES_ACCOUNT=nfts-slice.<operator>.testnet`
 so it does not meet the live `nfts.` contract. Testnet key files are `*-testnet.json` and manifests go to
@@ -118,10 +117,45 @@ so it does not meet the live `nfts.` contract. Testnet key files are `*-testnet.
 dry run (fake chain, then the real server booted on `NEAR_NETWORK=mainnet` from the written manifests) is
 `node --test tests/mainnet-slice.test.mjs` and runs in CI.
 
+### Mainnet service on the VPS
+
+The slice runs as a second service next to the testnet one and shares nothing with it:
+
+| | Testnet | Mainnet slice |
+| --- | --- | --- |
+| Unit | `questlayer-hackathon.service` | `deploy/questlayer-mainnet.service` |
+| App directory | `/opt/ps3000/apps/questlayer-hackathon` | `/opt/ps3000/apps/questlayer-mainnet` |
+| State and SQLite | `/var/lib/questlayer-hackathon/` | `/var/lib/questlayer-mainnet/questlayer-mainnet.sqlite` |
+| Port | 7091 | 7092 |
+| Domain | `questlayer.promptstudio3000.com` | `mainnet.questlayer.promptstudio3000.com` (`MAINNET_DOMAIN` overrides) |
+| Caddy file | `/opt/ps3000/config/caddy/questlayer.caddy` | `/opt/ps3000/config/caddy/questlayer-mainnet.caddy` (written by the deploy) |
+
+The unit fixes `NEAR_NETWORK=mainnet`, `MAINNET_FEATURES=collectibles,relayer,social`, the key paths in its own
+state directory and the §1 limits (0.02 NEAR per account, 0.05 NEAR daily top-up cap, 40 jobs per day).
+`runtime.env` in its app directory holds only `PLAYER_FACTORY_ACCOUNT` and, when needed, `DISABLE_RELAYER=1`.
+
+Order, after the slice is deployed on chain and Lubos has said go:
+
+1. DNS: an A record `mainnet.questlayer.promptstudio3000.com → 72.61.188.39` (Caddy needs it for TLS; the deploy's
+   public health check fails and rolls back without it).
+2. Check that `/etc/caddy/Caddyfile` imports `/opt/ps3000/config/caddy/*.caddy` (or add an import of the new
+   file); the deploy refuses and rolls back if Caddy does not see the new domain.
+3. Commit `public/mainnet-deployment.json` and `public/native-claims-mainnet.json`.
+4. `DEPLOY_HOST=root@72.61.188.39 scripts/install-mainnet-keys-vps.sh`: copies the factory, relayer and award keys
+   into `/var/lib/private/questlayer-mainnet/` (mode 600, never replacing a different key) and writes
+   `PLAYER_FACTORY_ACCOUNT` into the mainnet `runtime.env`. It starts nothing.
+5. `QUESTLAYER_MAINNET_DEPLOY_CONFIRM=mainnet.questlayer.promptstudio3000.com DEPLOY_HOST=root@72.61.188.39 bash scripts/deploy-vps.sh --mainnet`.
+   It refuses without the confirmation, without the two mainnet manifests, without the three keys or without
+   `PLAYER_FACTORY_ACCOUNT`. It runs `npm run check`, builds the client with `VITE_NEAR_NETWORK=mainnet` (and
+   rebuilds the testnet bundle locally afterwards), backs up the mainnet database, installs the unit, checks that
+   local health reports `network: mainnet`, writes the Caddy file and checks the public health. A failure rolls
+   back only the mainnet service. Plain `bash scripts/deploy-vps.sh` still deploys the testnet service exactly as
+   before.
+
 Check after deploying the mainnet service:
 
 ```bash
-curl -s https://<mainnet host>/api/health | jq '{network, features, relayer: .relayer.enabled, nativeRewards: .nativeRewards.status}'
+curl -s https://mainnet.questlayer.promptstudio3000.com/api/health | jq '{network, features, relayer: .relayer.enabled, nativeRewards: .nativeRewards.status}'
 # expected: "mainnet", ["collectibles","relayer","social"], true, "not-configured"
 ```
 
@@ -130,7 +164,8 @@ curl -s https://<mainnet host>/api/health | jq '{network, features, relayer: .re
 Stops every sponsored action: no new player accounts, no relayed gas. Players keep reading and signing self-paid
 actions with their own keys.
 
-1. On the mainnet host add `DISABLE_RELAYER=1` to its `runtime.env` and restart the service.
+1. Add `DISABLE_RELAYER=1` to `/opt/ps3000/apps/questlayer-mainnet/runtime.env` and
+   `systemctl restart questlayer-mainnet`.
 2. Check `/api/health`: `relayer.enabled` is `false` (the dry-run test asserts exactly this).
 3. If a key may be compromised, also delete the relayer and factory keys on chain from the Mac
    (`near account delete-keys` for `relay-…` and `play-…`) and move the key files off the host. Keep
