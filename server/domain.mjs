@@ -36,7 +36,7 @@ export function positionTier(position, now = Date.now()) {
 }
 export function splitYield(net) { amount(net, { min:0 }); const coins = Math.floor(net / 2); return { coins, zones: net-coins }; }
 export function validateFix(fix, target, now = Date.now(), radius = COIN_GPS_RADIUS_M) {
-  point(fix); assert(Number.isFinite(fix.accuracy) && fix.accuracy <= 35 && fix.accuracy >= 0, 'Wait for a more accurate GPS fix.', 422, 'GPS_ACCURACY');
-  assert(Number.isFinite(fix.timestamp) && fix.timestamp <= now+2000 && now-fix.timestamp <= 15_000, 'Your location fix is no longer current.', 422, 'GPS_STALE');
-  assert(distance(fix,target) <= radius, 'Move closer to the item.', 422, 'OUT_OF_RANGE');
+  point(fix); assert(Number.isFinite(fix.accuracy) && fix.accuracy <= 35 && fix.accuracy >= 0, 'Your location is not precise enough yet. Step into the open and try again.', 422, 'GPS_ACCURACY');
+  assert(Number.isFinite(fix.timestamp) && fix.timestamp <= now+2000 && now-fix.timestamp <= 15_000, 'Your location is out of date. Wait a moment for a fresh one, then try again.', 422, 'GPS_STALE');
+  assert(distance(fix,target) <= radius, 'Get a bit closer, then try again.', 422, 'OUT_OF_RANGE');
 }

@@ -1,7 +1,7 @@
 import { defaultDatabasePath } from "./state-path.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
-import { createGuide, guideFacts } from "./ai/guide.mjs";
+import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
 import { createAdventureResults } from "./adventure-results.mjs";
 import { recordSchemaVersions, schemaStatus } from "./schema-compatibility.mjs";
 import { NoteMedia } from "./note-media.mjs";
@@ -2095,6 +2095,18 @@ async function api(req, res, url) {
       "Cache-Control": "private,max-age=60",
     });
     return res.end(gotchi.svg);
+  }
+  if (path === "/api/guide/hint" && method === "POST") {
+    // First-session coach: one grounded sentence for the player's current
+    // step, from the same live world the guide reads. No model, no quota.
+    const i = await body(req);
+    assert(typeof i.step === "string" && i.step.length <= 20, "Unknown step.");
+    const location = i.location ? point(i.location) : null;
+    const world =
+      typeof i.worldId === "string" && i.worldId.length <= 200
+        ? worldView(db, i.worldId, player)
+        : null;
+    return respond(res, { step: i.step, ...(guideHint(i.step, { world, location }) || { hint: null, factIds: [] }) });
   }
   if (path === "/api/npc" && method === "POST") {
     // Grounded guide: answers only from this player's live world and today's

@@ -21,6 +21,7 @@
     "world:pilot": "node scripts/run-world-pilot.mjs",
     "staking:probe": "node scripts/probe-staking-testnet.mjs",
     "funding:simulate": "node scripts/simulate-native-funding.mjs",
+    "e2e:first-session": "node scripts/e2e-first-session.mjs",
     "pilot:city": "node scripts/rehearse-city-pilot.mjs",
     "market:upgrade": "node scripts/upgrade-market-v2-testnet.mjs",
     "market:fixture": "node scripts/lib/signed-order-fixture.mjs"
@@ -51,6 +52,7 @@
     "@types/react-dom": "^19.0.0",
     "@types/three": "0.187.0",
     "@vitejs/plugin-react": "latest",
+    "playwright": "^1.63.0",
     "prettier": "3.9.10",
     "typescript": "^5.9.3",
     "vite": "^8.0.13"

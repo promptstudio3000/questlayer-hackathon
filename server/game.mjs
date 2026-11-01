@@ -148,7 +148,7 @@ function settleQuest(db, player, questId, fix, now, results) {
       "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
     )
     .get(questId);
-  assert(q, "Quest not found.", 404);
+  assert(q, "This discovery is no longer here. Pick another one nearby.", 404);
   demoAdventureWorld(q);
   if (
     db
@@ -170,7 +170,7 @@ function settleQuest(db, player, questId, fix, now, results) {
           "SELECT checkpoint FROM quest_progress WHERE quest_id=? AND player_id=?",
         )
         .get(q.id, player)?.checkpoint || 0) >= (meta.checkpoints || []).length,
-      "Complete the checkpoints in order first.",
+      "Confirm the stops in order first.",
       409,
     );
   // Everyone can finish the personal activity. The funded shared prize is paid once.
@@ -250,7 +250,7 @@ function validateQuestEvidence(db, player, q, fix, now, target) {
   if (zone?.geometry)
     assert(
       contains(zone.geometry, fix),
-      "Enter the marked zone first, then confirm your visit.",
+      "Step inside the place first, then confirm your visit.",
       422,
       "OUTSIDE_ZONE",
     );
@@ -270,7 +270,7 @@ export function advanceRoute(
         "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
       )
       .get(questId);
-    assert(q?.kind === "route", "Walking expedition not found.", 404);
+    assert(q?.kind === "route", "This walk is no longer here. Pick another discovery nearby.", 404);
     demoAdventureWorld(q);
     const metadata = JSON.parse(q.metadata),
       checkpoints = metadata.checkpoints,
@@ -291,13 +291,13 @@ export function advanceRoute(
       };
     assert(
       Number.isInteger(expectedCheckpoint) && expectedCheckpoint === current,
-      "Your expedition changed. Refresh its checkpoint.",
+      "This walk changed. Refresh, then confirm the next stop.",
       409,
       "STALE_PROGRESS",
     );
     assert(
       current < checkpoints.length,
-      "All checkpoints are already recorded.",
+      "Every stop is already confirmed. Finish the walk.",
       409,
     );
     validateQuestEvidence(db, player, q, fix, now, checkpoints[current]);
@@ -519,13 +519,13 @@ export function redeem(db, player, withdrawalId, now = Date.now()) {
 export function equip(db, player, itemId, desiredEquipped) {
   assert(
     desiredEquipped === undefined || typeof desiredEquipped === "boolean",
-    "Invalid equipment choice.",
+    "That outfit change is not possible. Refresh your collection and try again.",
   );
   return atomic(db, () => {
     const item = db
       .prepare("SELECT * FROM inventory WHERE id=? AND player_id=?")
       .get(itemId, player);
-    assert(item, "You do not own this item.", 403);
+    assert(item, "This Aura is not in your collection. Refresh and try again.", 403);
     assert(
       !db
         .prepare("SELECT 1 FROM listings WHERE item_id=? AND state='open'")
@@ -538,7 +538,7 @@ export function equip(db, player, itemId, desiredEquipped) {
           "SELECT 1 FROM native_awards WHERE item_id=? AND state='minted'",
         )
         .get(itemId),
-      "Equip this Aura from your NEAR inventory.",
+      "Try this Aura on from your Secured collection.",
       409,
     );
     assert(
@@ -547,7 +547,7 @@ export function equip(db, player, itemId, desiredEquipped) {
           "SELECT 1 FROM native_awards WHERE item_id=? AND state='issued'",
         )
         .get(itemId),
-      "This Aura is reserved for NEAR. Check or restore its claim before equipping it.",
+      "This Aura is being secured. Check your Secured collection, then try it on.",
       409,
       "ITEM_RESERVED",
     );
@@ -583,7 +583,7 @@ export function listItem(db, player, itemId, price, now = Date.now()) {
     assert(item, "Only your own Aura can be listed.", 403);
     assert(
       !db.prepare("SELECT 1 FROM native_awards WHERE item_id=?").get(itemId),
-      "This Aura is reserved for NEAR and cannot enter the demo market.",
+      "This Aura is being secured, so it cannot be listed in the practice market.",
       409,
     );
     assert(

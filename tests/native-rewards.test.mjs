@@ -571,7 +571,7 @@ test("arena, absent consent, unlinked wallet and wrong GPS cannot issue native r
         f.player,
         input(f, m, { fix: { ...f.fix(m.coins[0]), accuracy: 100 } }),
       ),
-      /accurate/,
+      /not precise enough/,
     );
     await assert.rejects(
       f.n.submit(

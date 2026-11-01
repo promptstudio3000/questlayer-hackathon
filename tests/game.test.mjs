@@ -230,7 +230,7 @@ test("market sale is atomic, conserves balances and transfers equipment rights",
   );
   assert.equal(db.prepare("SELECT SUM(gold_u) AS n FROM players").get().n, sum);
   assert.throws(() => buyItem(db, a, listing, now), /available/);
-  assert.throws(() => equip(db, a, item.id), /not own/);
+  assert.throws(() => equip(db, a, item.id), /not in your collection/);
   equip(db, b, item.id);
   db.close();
 });
@@ -284,11 +284,11 @@ test("physical GPS validation rejects stale, inaccurate and distant evidence", (
   validateFix(good, HOME, now);
   assert.throws(
     () => validateFix({ ...good, timestamp: now - 20000 }, HOME, now),
-    /current/,
+    /out of date/,
   );
   assert.throws(
     () => validateFix({ ...good, accuracy: 100 }, HOME, now),
-    /accurate/,
+    /not precise enough/,
   );
   assert.throws(
     () => validateFix({ ...good, lat: HOME.lat + 0.01 }, HOME, now),

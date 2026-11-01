@@ -236,7 +236,7 @@ test("result inspection checks current ownership/listing/equipment without rewri
   assert.equal(transferred.itemCurrent.status, "not-owned");
   assert.equal(transferred.reward.item.id, itemId);
   assert.equal(transferred.itemCurrent.item, undefined);
-  assert.throws(() => equip(db, a, itemId, true), /own/);
+  assert.throws(() => equip(db, a, itemId, true), /not in your collection/);
   db.prepare("DELETE FROM listings WHERE item_id=?").run(itemId);
   db.prepare("DELETE FROM inventory WHERE id=?").run(itemId);
   assert.equal(service.get(a, resultId).itemCurrent.status, "missing");
@@ -266,7 +266,7 @@ test("issued native vouchers stay reserved until verified restoration, even past
     "UPDATE native_awards SET state='minted',token_id='native-token' WHERE item_id=?",
   ).run(itemId);
   assert.equal(service.get(a, first.result.id).itemCurrent.status, "minted");
-  assert.throws(() => equip(db, a, itemId, true), /NEAR inventory/);
+  assert.throws(() => equip(db, a, itemId, true), /Secured collection/);
   assert.equal(service.get(a, first.result.id).reward.item.id, itemId);
   db.prepare("DELETE FROM native_awards WHERE item_id=?").run(itemId);
   assert.equal(service.get(a, first.result.id).itemCurrent.equippable, true);

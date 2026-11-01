@@ -16,6 +16,28 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+  first-session:
+    # Phone-width (390 px) Playwright journey: name, nearest find, first coin,
+    # first chest, Aura, secure/share, then the feedback settings.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run e2e:first-session
+        env:
+          E2E_SHOTS: ${{ runner.temp }}/first-session
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-session-screenshots
+          path: ${{ runner.temp }}/first-session
   contracts:
     runs-on: ubuntu-latest
     timeout-minutes: 30
