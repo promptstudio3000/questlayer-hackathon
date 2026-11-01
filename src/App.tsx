@@ -3828,7 +3828,13 @@ export default function App() {
           }}
         />
       )}
-      {showNpc && <Npc onClose={() => setShowNpc(false)} />}
+      {showNpc && (
+        <Npc
+          worldId={world?.id}
+          position={position}
+          onClose={() => setShowNpc(false)}
+        />
+      )}
     </div>
   );
 }
@@ -4822,7 +4828,15 @@ function Bounties({
     </>
   );
 }
-function Npc({ onClose }: { onClose: () => void }) {
+function Npc({
+  onClose,
+  worldId,
+  position,
+}: {
+  onClose: () => void;
+  worldId?: string;
+  position?: Point;
+}) {
   const [q, setQ] = useState(""),
     [answer, setAnswer] = useState(
       "Hello, explorer. Start with a free place nearby, pick up a few coins on the way and open a chest. Solo is fine; this haunt is yours to explore.",
@@ -4835,6 +4849,8 @@ function Npc({ onClose }: { onClose: () => void }) {
     try {
       const r = await api<{ answer: string; source: string }>("/npc", {
         question: q,
+        ...(worldId ? { worldId } : {}),
+        ...(position ? { location: position } : {}),
       });
       setAnswer(r.answer);
       setSource(r.source);
@@ -4878,8 +4894,10 @@ function Npc({ onClose }: { onClose: () => void }) {
         </form>
         <small>
           {source === "near-ai"
-            ? "Answered by NEAR AI"
-            : "Standard answers · live guide not connected"}
+            ? "Answered by NEAR AI from live game data"
+            : source === "anthropic"
+              ? "Answered by Claude from live game data"
+              : "Answered from live game data"}
         </small>
       </section>
     </Dialog>

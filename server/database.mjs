@@ -7,6 +7,7 @@ import {
   recordSchemaVersions,
 } from "./schema-compatibility.mjs";
 import { dirname } from "node:path";
+import "./ai/schema.mjs";
 import { GOLD, id, hash, dayKey, levelFor, assert } from "./domain.mjs";
 
 export function openDatabase(
