@@ -176,7 +176,11 @@ const after = await snapshot(),
   });
 assert.ok(Buffer.from(afterCode.code_base64, "base64").equals(wasm));
 assert.deepEqual(after, before, "State changed during the code upgrade.");
-assert.deepEqual(await view("supported_editions"), [...NATIVE_EDITIONS]);
+// The contract lists editions in its own order; only the set must match.
+assert.deepEqual(
+  [...(await view("supported_editions"))].sort(),
+  [...NATIVE_EDITIONS].sort(),
+);
 
 const proof = {
   verifiedAt: new Date().toISOString(),
