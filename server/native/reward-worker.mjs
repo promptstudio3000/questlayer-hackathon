@@ -1,13 +1,11 @@
 import { readFileSync, statSync } from "node:fs";
 import { Account, KeyPairSigner } from "near-api-js";
 import { atomic } from "../database.mjs";
-import { assert, id, dayKey, hash } from "../domain.mjs";
-import { PLZEN } from "../spatial/city-pack.mjs";
-import { shiftDate } from "../spatial/calendar.mjs";
-import { getOrPrepareCityPlan } from "../world-planner.mjs";
+import { assert, id, hash } from "../domain.mjs";
+import { publishNativeDays } from "./day-publication.mjs";
 import {
-  nativeManifest,
-  publicationArgs,
+  nativePublicationMatches,
+  storedNativeManifest,
   rewardMessage,
 } from "./reward-manifest.mjs";
 import { assertTestnetRpc } from "../identity/near.mjs";
@@ -201,10 +199,10 @@ export async function runRewardWorker(
       // Retire only after every accepted receipt for that day is authoritative.
       for (const row of db
         .prepare(
-          "SELECT id,body FROM native_days WHERE state='published' ORDER BY day LIMIT 10",
+          "SELECT * FROM native_days WHERE state='published' ORDER BY day LIMIT 10",
         )
         .all()) {
-        const m = JSON.parse(row.body);
+        const m = storedNativeManifest(row);
         if (
           clock() < m.endsAt + 86400000 ||
           db
@@ -216,59 +214,25 @@ export async function runRewardWorker(
           continue;
         renew();
         let day = await native.view("get_day", { day_id: row.id }, true);
+        assert(
+          nativePublicationMatches(m, day, { closed: day?.closed === true }),
+          "Native day differs from the durable manifest before closure.",
+          503,
+        );
         if (!day?.closed) await sendOwned("close_day", { day_id: row.id });
         day = await native.view("get_day", { day_id: row.id }, true);
-        assert(day?.closed, "Day closure has not confirmed.", 503);
+        assert(
+          nativePublicationMatches(m, day, { closed: true }),
+          "Day closure has not confirmed against its original publication.",
+          503,
+        );
         writeOwned(
           "UPDATE native_days SET state='closed',updated_at=? WHERE id=?",
           clock(),
           row.id,
         );
       }
-      for (const day of [dayKey(clock()), shiftDate(dayKey(clock()))]) {
-        renew();
-        const dayId = `plzen-${day}-v1`;
-        let row = db.prepare("SELECT * FROM native_days WHERE id=?").get(dayId);
-        if (!row) {
-          const plan = getOrPrepareCityPlan(db, PLZEN, day, clock()),
-            treasury = await native.view("get_treasury", {}, true),
-            m = nativeManifest(plan, treasury);
-          if (!m) continue;
-          writeOwned(
-            "INSERT OR IGNORE INTO native_days(id,day,body,hash,updated_at) VALUES(?,?,?,?,?)",
-            m.id,
-            m.day,
-            JSON.stringify(m),
-            m.hash,
-            clock(),
-          );
-          row = db.prepare("SELECT * FROM native_days WHERE id=?").get(dayId);
-        }
-        if (row.state !== "prepared") continue;
-        const m = JSON.parse(row.body);
-        let confirmed = await native.view("get_day", { day_id: m.id }, true),
-          tx = row.transaction_hash;
-        if (!confirmed) {
-          tx = await sendOwned("publish_day", publicationArgs(m));
-          writeOwned(
-            "UPDATE native_days SET transaction_hash=? WHERE id=?",
-            tx,
-            m.id,
-          );
-          confirmed = await native.view("get_day", { day_id: m.id }, true);
-        }
-        assert(
-          confirmed?.manifest_hash === m.hash && !confirmed.closed,
-          "Native day differs from the durable manifest.",
-          503,
-        );
-        writeOwned(
-          "UPDATE native_days SET state='published',updated_at=?,transaction_hash=? WHERE id=?",
-          clock(),
-          tx,
-          m.id,
-        );
-      }
+      await publishNativeDays(native, { clock, renew, writeOwned, sendOwned });
     } catch (error) {
       settlementError = error;
     }

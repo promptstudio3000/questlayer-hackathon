@@ -1,7 +1,22 @@
-import { hash } from "../domain.mjs";
+import { assert, hash, point } from "../domain.mjs";
 import { PLZEN, sampleCityPaths } from "../spatial/city-pack.mjs";
 import { NETWORK } from "./network.mjs";
+import { nativeInteger } from "./staking-pool.mjs";
 export const NATIVE_POLICY = "native-city-v1";
+export function nativeDayId(cityId, day) {
+  assert(
+    typeof cityId === "string" && /^[a-z][a-z0-9-]{0,24}$/.test(cityId),
+    "Invalid native city id.",
+  );
+  assert(
+    typeof day === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(day) &&
+      Number.isFinite(Date.parse(day)) &&
+      new Date(day).toISOString().slice(0, 10) === day,
+    "Invalid native local date.",
+  );
+  return `${cityId}-${day}-v1`;
+}
 const THEMES = [
   [
     "Garden time capsule",
@@ -31,10 +46,23 @@ const THEMES = [
 export function nativeManifest(
   plan,
   treasury,
-  coinPoints = sampleCityPaths(PLZEN),
+  coinPoints = plan.cityId === PLZEN.id ? sampleCityPaths(PLZEN) : null,
 ) {
+  const dayId = nativeDayId(plan.cityId, plan.day);
+  assert(
+    plan.zones.length === 6,
+    "Native v1 requires six suitable city slots; reduced map coverage cannot be published to this contract.",
+    503,
+  );
+  assert(
+    Array.isArray(coinPoints) && coinPoints.length <= 8192,
+    "Supply bounded public-path coins from this city pack.",
+    503,
+  );
+  if (!coinPoints.length) return null;
+  coinPoints.forEach(point);
   const cap = 6n * 10n ** 21n;
-  const available = (bucket) => BigInt(treasury[bucket].available);
+  const available = (bucket) => nativeInteger(treasury[bucket].available);
   const coinBudget = available("coins") < cap ? available("coins") : cap;
   const zoneBudget = available("zones") < cap ? available("zones") : cap;
   const unit = coinBudget / BigInt(coinPoints.length);
@@ -64,7 +92,7 @@ export function nativeManifest(
   const body = {
     version: 1,
     policy: NATIVE_POLICY,
-    id: `plzen-${plan.day}-v1`,
+    id: dayId,
     day: plan.day,
     cityId: plan.cityId,
     timezone: plan.timezone,
@@ -95,6 +123,62 @@ export function publicationArgs(m) {
       tier: q.tier,
     })),
   };
+}
+// The durable body is the publication intent. A retry must never re-price it
+// from newer funds, a changed CityPack or a replacement worker's defaults.
+export function storedNativeManifest(row) {
+  const manifest = JSON.parse(row.body),
+    { hash: stored, ...body } = manifest;
+  assert(
+    manifest.id === row.id &&
+      manifest.day === row.day &&
+      stored === row.hash &&
+      hash(JSON.stringify(body)) === stored,
+    "Native manifest integrity error.",
+    503,
+  );
+  return manifest;
+}
+export function nativePublicationMatches(
+  manifest,
+  day,
+  { closed = false } = {},
+) {
+  if (
+    !day ||
+    day.manifest_hash !== manifest.hash ||
+    day.closed !== closed ||
+    day.storage_reserved !== true
+  )
+    return false;
+  const expected = publicationArgs(manifest);
+  if (
+    ["starts_at", "ends_at", "coin_count", "coin_unit"].some(
+      (key) => String(day[key]) !== String(expected[key]),
+    )
+  )
+    return false;
+  if (
+    !Array.isArray(day.quests) ||
+    day.quests.length !== expected.quests.length
+  )
+    return false;
+  if (
+    expected.quests.some((q, index) =>
+      Object.keys(q).some(
+        (key) => String(day.quests[index]?.[key]) !== String(q[key]),
+      ),
+    )
+  )
+    return false;
+  return (
+    Number.isSafeInteger(day.claims_limit) &&
+    day.claims_limit > 0 &&
+    day.claims_limit <= 256 &&
+    Number.isSafeInteger(day.claims_accepted) &&
+    day.claims_accepted >= 0 &&
+    day.claims_accepted <= day.claims_limit
+  );
 }
 export function rewardMessage(contractId, c) {
   return `QuestLayer native reward v1\nNetwork: ${NETWORK}\nContract: ${contractId}\nReceipt: ${c.receipt_id}\nDay: ${c.day_id}\nKind: ${c.kind}\nIndex: ${c.index}\nReceiver: ${c.receiver_id}\nReceived: ${c.received_at}\nEvidence: ${c.evidence_hash}`;

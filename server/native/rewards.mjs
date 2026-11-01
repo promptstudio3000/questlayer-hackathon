@@ -11,15 +11,28 @@ import {
   point,
 } from "../domain.mjs";
 import { atomic } from "../database.mjs";
-import { rewardMessage } from "./reward-manifest.mjs";
+import {
+  rewardMessage,
+  nativeDayId,
+  nativePublicationMatches,
+  storedNativeManifest,
+} from "./reward-manifest.mjs";
+import { PLZEN } from "../spatial/city-pack.mjs";
 import { NETWORK } from "./network.mjs";
 export class NativeRewards extends NativeContractReader {
-  constructor(db, provider, config, signer, { clock = Date.now } = {}) {
+  constructor(
+    db,
+    provider,
+    config,
+    signer,
+    { clock = Date.now, city = PLZEN } = {},
+  ) {
     super(provider, config.contractId);
     this.db = db;
     this.config = config;
     this.signer = signer;
     this.clock = clock;
+    this.city = city;
     db.exec(`
    CREATE TABLE IF NOT EXISTS native_days(id TEXT PRIMARY KEY,day TEXT NOT NULL,body TEXT NOT NULL,hash TEXT NOT NULL,state TEXT NOT NULL DEFAULT 'prepared',transaction_hash TEXT,updated_at INTEGER NOT NULL);
    CREATE TABLE IF NOT EXISTS native_enrollments(account_id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),consented_at INTEGER NOT NULL);
@@ -60,14 +73,7 @@ export class NativeRewards extends NativeContractReader {
       .prepare("SELECT * FROM native_days WHERE id=? AND state='published'")
       .get(dayId);
     assert(row, "This native day is not confirmed on NEAR yet.", 409);
-    const m = JSON.parse(row.body),
-      { hash: stored, ...body } = m;
-    assert(
-      stored === row.hash && hash(JSON.stringify(body)) === stored,
-      "Native manifest integrity error.",
-      503,
-    );
-    return m;
+    return storedNativeManifest(row);
   }
   async tier(account) {
     let weighted = 0n;
@@ -156,9 +162,7 @@ export class NativeRewards extends NativeContractReader {
     const cfg = await this.view("get_config", {}, true);
     const chainDay = await this.view("get_day", { day_id: dayId }, true);
     assert(
-      chainDay?.manifest_hash === m.hash &&
-        chainDay.storage_reserved === true &&
-        !chainDay.closed,
+      nativePublicationMatches(m, chainDay),
       "Native publication or storage backing is not ready.",
       503,
     );
@@ -353,12 +357,10 @@ export class NativeRewards extends NativeContractReader {
   }
   async snapshot(player, { accountId, location, fresh = false } = {}) {
     const now = this.clock(),
-      day = dayKey(now),
+      day = dayKey(now, this.city.timezone),
       row = this.db
-        .prepare(
-          "SELECT * FROM native_days WHERE day=? AND state='published' ORDER BY id LIMIT 1",
-        )
-        .get(day),
+        .prepare("SELECT * FROM native_days WHERE id=? AND state='published'")
+        .get(nativeDayId(this.city.id, day)),
       m = row ? this.day(row.id) : null;
     if (accountId) this.linked(player, accountId);
     const [treasury, balance, access, chainDay, cfg, codeMatches] =
@@ -421,9 +423,7 @@ export class NativeRewards extends NativeContractReader {
         : { accepted: 0, pending: 0 };
     const publicationReady = !!(
       m &&
-      chainDay?.manifest_hash === m.hash &&
-      chainDay.storage_reserved === true &&
-      !chainDay.closed &&
+      nativePublicationMatches(m, chainDay) &&
       now >= m.startsAt &&
       now < m.endsAt
     );

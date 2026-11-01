@@ -84,7 +84,7 @@ function chooseTargets(shape, entries, rng) {
     }
   return [];
 }
-export function buildCityZones(pack, day) {
+export function buildCityZones(pack, day, { onRejected = () => {} } = {}) {
   const rng = seeded(`${pack.id}:${day}:polygons-v2`),
     sectors = ["central", "north", "east", "southeast", "southwest", "west"];
   const tiers = [1, 1, 1, 2, 2, 3];
@@ -94,54 +94,82 @@ export function buildCityZones(pack, day) {
   }
   const zones = [];
   for (const [slot, sector] of sectors.entries()) {
+    const reject = (c, reason) =>
+      onRejected({ candidateId: c.id, sector, reason });
+    for (const c of pack.candidates.filter(
+      (c) =>
+        c.sector === sector &&
+        (!Array.isArray(c.targets) || c.targets.length < 3),
+    ))
+      reject(c, "insufficient-targets");
     const candidates = pack.candidates
-      .filter((c) => c.sector === sector && c.targets.length >= 3)
+      .filter(
+        (c) =>
+          c.sector === sector &&
+          Array.isArray(c.targets) &&
+          c.targets.length >= 3,
+      )
       .map((c) => ({ c, r: rng() }))
       .sort((a, b) => a.r - b.r);
     for (const { c } of candidates) {
-      let f = feature(c.geometry);
-      if (area(f) > 120000) {
-        const centers = c.targets.filter((_, i) => i % 13 === 0);
-        const center = centers[Math.floor(rng() * centers.length)]?.point;
-        if (!center) continue;
-        f = intersect(
-          featureCollection([f, circle(center, 0.18, { steps: 10 })]),
-        );
-      }
-      if (!f || f.geometry.type !== "Polygon") continue;
-      const reduced = simplify(f, { tolerance: 0.000015, highQuality: true });
-      if (booleanValid(reduced)) f = reduced;
-      if (
-        !booleanValid(f) ||
-        area(f) < 3000 ||
-        zones.some((z) => polygonGap(f.geometry, z.geometry) < 250)
-      )
-        continue;
-      const targets = chooseTargets(f.geometry, c.targets, rng);
-      if (targets.length < 3) continue;
-      const box = bbox(f),
-        ratio =
-          Math.max((box[2] - box[0]) * 0.65, box[3] - box[1]) /
-          Math.max(
-            0.00001,
-            Math.min((box[2] - box[0]) * 0.65, box[3] - box[1]),
+      try {
+        let f = feature(c.geometry);
+        if (area(f) > 120000) {
+          const centers = c.targets.filter((_, i) => i % 13 === 0);
+          const center = centers[Math.floor(rng() * centers.length)]?.point;
+          if (!center) {
+            reject(c, "missing-public-target");
+            continue;
+          }
+          f = intersect(
+            featureCollection([f, circle(center, 0.18, { steps: 10 })]),
           );
-      zones.push({
-        slot,
-        sector,
-        tier: tiers[slot],
-        name: c.name,
-        geometry: f.geometry,
-        targets: targets.map((p) => ({ lng: p[0], lat: p[1] })),
-        lat: targets[0][1],
-        lng: targets[0][0],
-        shapeFamily:
-          ratio > 2.3 ? "green-belt" : area(f) > 25000 ? "park" : "garden",
-        sourceId: c.id,
-        areaM2: Math.round(area(f)),
-        fieldReview: "pending",
-      });
-      break;
+        }
+        if (!f || f.geometry.type !== "Polygon") {
+          reject(c, "disconnected-or-missing-footprint");
+          continue;
+        }
+        const reduced = simplify(f, { tolerance: 0.000015, highQuality: true });
+        if (booleanValid(reduced)) f = reduced;
+        if (!booleanValid(f) || area(f) < 3000) {
+          reject(c, "invalid-or-small-footprint");
+          continue;
+        }
+        if (zones.some((z) => polygonGap(f.geometry, z.geometry) < 250)) {
+          reject(c, "boundary-gap");
+          continue;
+        }
+        const targets = chooseTargets(f.geometry, c.targets, rng);
+        if (targets.length < 3) {
+          reject(c, "insufficient-separated-targets");
+          continue;
+        }
+        const box = bbox(f),
+          ratio =
+            Math.max((box[2] - box[0]) * 0.65, box[3] - box[1]) /
+            Math.max(
+              0.00001,
+              Math.min((box[2] - box[0]) * 0.65, box[3] - box[1]),
+            );
+        zones.push({
+          slot,
+          sector,
+          tier: tiers[slot],
+          name: c.name,
+          geometry: f.geometry,
+          targets: targets.map((p) => ({ lng: p[0], lat: p[1] })),
+          lat: targets[0][1],
+          lng: targets[0][0],
+          shapeFamily:
+            ratio > 2.3 ? "green-belt" : area(f) > 25000 ? "park" : "garden",
+          sourceId: c.id,
+          areaM2: Math.round(area(f)),
+          fieldReview: "pending",
+        });
+        break;
+      } catch {
+        reject(c, "invalid-candidate-data");
+      }
     }
   }
   return zones;
