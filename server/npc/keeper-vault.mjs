@@ -10,8 +10,8 @@
 //  - Ceremonies: a one-time moment when a deposit matures and when the
 //    account reaches a new tier. The patron title it grants is cosmetic and
 //    stays after a withdrawal (no decay, D29).
-//  - Inner vault: patron-only story chapters, gated by tier AND level so money
-//    alone cannot skip play. Lures are things to read or wear, never odds,
+//  - Inner vault: patron-only story chapters, gated by tier (owner decision
+//    1 Nov; an optional level gate is configurable). Lures are things to read or wear, never odds,
 //    payouts or multipliers.
 // Reads only. It never signs, moves funds or changes a chance.
 import { readFileSync } from "node:fs";
@@ -105,7 +105,9 @@ export function keeperVaultSettings(env = process.env) {
   return {
     enabled: env.KEEPER_VAULT_ENABLED !== "0",
     innerTier: int(env.KEEPER_INNER_TIER, 2, 1, 3),
-    innerLevel: int(env.KEEPER_INNER_LEVEL, 5, 1, 50),
+    // Owner decision 1 Nov: staker lures are gated by tier only. A level gate
+    // stays available through KEEPER_INNER_LEVEL (1 = no level gate).
+    innerLevel: int(env.KEEPER_INNER_LEVEL, 1, 1, 50),
     maturityEpochs: int(env.KEEPER_MATURITY_EPOCHS, 2, 0, 10),
     epochHours: Number(env.KEEPER_EPOCH_HOURS) > 0 && Number(env.KEEPER_EPOCH_HOURS) <= 48 ? Number(env.KEEPER_EPOCH_HOURS) : 12,
     patronTitle: (env.KEEPER_PATRON_TITLE || "Patron of the Gate").slice(0, 40),
