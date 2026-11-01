@@ -106,6 +106,8 @@ import {
 } from "./world.mjs";
 import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
+import { createActorRoutes } from "./actors/routes.mjs";
+import { actorsEnabled, createActorService } from "./actors/service.mjs";
 import {
   GOLD,
   DAY,
@@ -330,6 +332,9 @@ const creatorBonusVote =
     ? new CreatorBonusVote(db, bonusVoteSettings(process.env))
     : null;
 const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
+// Roaming NPCs and monsters (docs/NPC-PLAN.md §14): off unless ACTORS_ENABLED=1.
+const actorService = actorsEnabled() ? createActorService(db) : null;
+const actorRoutes = createActorRoutes(actorService);
 const creatorMoney = creatorsManifest
   ? new CreatorMoney(db, provider, creatorsManifest, {
       transport: process.env.CREATORS_PUBLISHER_KEY_PATH
@@ -932,6 +937,10 @@ async function api(req, res, url) {
   const player = auth(req);
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
+  if (
+    await actorRoutes.handle(req, res, url, { player, body, respond, assert })
   )
     return;
   if (
