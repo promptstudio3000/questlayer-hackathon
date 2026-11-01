@@ -188,7 +188,7 @@
       "native": true,
       "source": "monster",
       "motif": "Cracked guardian horns around a shattered ward rune",
-      "how": "Beat a zone guardian monster"
+      "how": "Beat your first zone guardian monster"
     },
     {
       "id": "wisp",
@@ -201,7 +201,7 @@
       "native": true,
       "source": "npc",
       "motif": "Ghost-fire lantern with three orbiting soul flames",
-      "how": "Win the wandering will-o'-wisp's item game"
+      "how": "Win a Pocket Wisp mini-game"
     },
     {
       "id": "bossbane",
