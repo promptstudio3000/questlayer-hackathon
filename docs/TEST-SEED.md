@@ -42,6 +42,9 @@ npm run seed:test -- remove   [--db path]
   Needs `CREATOR_COMMUNITY_ENABLED=1`; otherwise this part is skipped.
 - **NPCs and monsters.** `TEST_SEED=1` turns the roaming actors on, as
   `ACTORS_ENABLED=1` does.
+- **Daily board.** Vera, Tomas and Jana finish today's board 7, 11 and 16 hours
+  into each world day, so the "explorers finished today" count moves
+  (`docs/DAILY-BOARD.md`). No XP for them.
 - **Starter kit for every real explorer**, once, on sign-up or the next app load:
   Northern Lights (can be secured as a NEAR Aura and sold on the signed-order
   market), Ember Wisp (practice market or the monster altar), 300 XP (enough to

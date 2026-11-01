@@ -8,6 +8,8 @@ import { buyItem } from "../game.mjs";
 import { editionForDemoName } from "../aura-catalog.mjs";
 import { initSocialContent } from "../social-content.mjs";
 import { GOLD } from "../domain.mjs";
+import { ensureModuleVersion } from "../schema-compatibility.mjs";
+import { DAILY_BOARD_SCHEMA } from "../daily-board/schema.mjs";
 import {
   SEED_VERSION,
   SEED_PREFIX,
@@ -23,6 +25,7 @@ import {
   SEED_CREATORS,
   SEED_CREATOR_QUESTS,
   STARTER_KIT,
+  SEED_BOARD_FINISHERS,
 } from "./content.mjs";
 
 const MARKER = `test-seed:${SEED_VERSION}`;
@@ -300,6 +303,7 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     }
     db.prepare("INSERT OR IGNORE INTO daily_jobs(job_key,created_at) VALUES (?,?)").run(MARKER, now);
     tickPresence(now);
+    tickBoards(now);
     return { version: SEED_VERSION, creators: creatorResult, ...counts() };
   }
 
@@ -433,9 +437,31 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return accepted;
   }
 
+  /** Seed explorers finish today's daily board on their schedule, for every live world day. */
+  function tickBoards(now = clock()) {
+    ensureModuleVersion(db, DAILY_BOARD_SCHEMA);
+    const days = db
+      .prepare(
+        "SELECT json_extract(manifest,'$.day') AS day,MAX(json_extract(manifest,'$.endsAt')) AS ends FROM worlds WHERE json_valid(manifest) AND json_extract(manifest,'$.endsAt')>? GROUP BY 1",
+      )
+      .all(now);
+    const insert = db.prepare(
+      "INSERT OR IGNORE INTO daily_board_claims(player_id,day_id,xp,goals,data,created_at) VALUES(?,?,0,'[]',?,?)",
+    );
+    let finished = 0;
+    for (const { day, ends } of days)
+      for (const f of SEED_BOARD_FINISHERS) {
+        const at = Number(ends) - DAY + f.afterHours * 3_600_000;
+        if (typeof day === "string" && at <= now)
+          finished += Number(insert.run(f.id, day, JSON.stringify({ seed: SEED_VERSION }), at).changes);
+      }
+    return finished;
+  }
+
   /** Economy step: buyer, task approvals, creator completions, restocking. */
   function tickEconomy(now = clock()) {
     return {
+      boards: tickBoards(now),
       bought: tickBuyer(now),
       approved: tickBounties(now),
       completions: tickCompletions(now),
@@ -456,6 +482,9 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
         ? n("SELECT count(*) n FROM creator_quests WHERE substr(id,1,5)='seed-' AND state='published'")
         : 0,
       kits: n("SELECT count(*) n FROM history WHERE substr(id,1,9)='seed-kit-'"),
+      boards: has("daily_board_claims")
+        ? n("SELECT count(*) n FROM daily_board_claims WHERE substr(player_id,1,5)='seed-'")
+        : 0,
     };
   }
 
@@ -534,5 +563,5 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     });
   }
 
-  return { apply, purge, status, grantKit, tickPresence, tickEconomy };
+  return { apply, purge, status, grantKit, tickPresence, tickEconomy, tickBoards };
 }

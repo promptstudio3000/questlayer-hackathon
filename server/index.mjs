@@ -124,6 +124,9 @@ import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
 import { createMonsterHunt } from "./actors/hunt/index.mjs";
 import { createHuntRoutes } from "./actors/hunt/routes.mjs";
+import { dailyBoardSettings } from "./daily-board/config.mjs";
+import { createDailyBoard } from "./daily-board/service.mjs";
+import { createDailyBoardRoutes } from "./daily-board/routes.mjs";
 import {
   GOLD,
   DAY,
@@ -397,6 +400,13 @@ const monsterHunt = createMonsterHunt(db, actorService, {
   bossHp: Number(process.env.BOSS_HP) || undefined,
 });
 const huntRoutes = createHuntRoutes(monsterHunt, actorService, db);
+// Daily board of three goals (docs/DAILY-BOARD.md): on by default except on
+// mainnet; DAILY_BOARD_* settings change the goals and bonus. No streak.
+const dailyBoardConfig = dailyBoardSettings(process.env, NETWORK);
+const dailyBoard = dailyBoardConfig.enabled
+  ? createDailyBoard(db, dailyBoardConfig, { actorsOn: () => !!actorService })
+  : null;
+const dailyBoardRoutes = createDailyBoardRoutes(dailyBoard, db);
 const testSeed = createTestSeed(db, {
   creators: creatorRuntime.services
     ? {
@@ -677,6 +687,7 @@ async function api(req, res, url) {
         ? socialRecords.workerStatus()
         : { status: "not-configured" },
       testSeed: testSeedActive ? testSeed.status() : { status: "off" },
+      dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
       now: Date.now(),
     });
   if (path === "/api/quest-templates" && method === "GET")
@@ -1037,6 +1048,8 @@ async function api(req, res, url) {
   )
     return;
   if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (
     await actorRoutes.handle(req, res, url, { player, body, respond, assert })
