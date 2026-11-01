@@ -1,0 +1,102 @@
+// Routes for NPC traders and the vault keeper (N3). Trade and keeper calls
+// need a live encounter token (the player is standing next to the NPC).
+//   POST /api/actors/:id/offers/(trade_buy|trade_sell|trade_up):<hex>/accept   {encounter}
+//   POST /api/actors/:id/offers/trade_up:<hex>/complete                       {encounter}
+//   POST /api/actors/:id/keeper                                               {encounter}
+//   GET  /api/npc/traders     public books: float, 7-day P&L, premiums, sweeps
+import { formatNear } from "./trader-pricing.mjs";
+
+const TRADE = /^\/api\/actors\/([a-z0-9-]{3,44})\/offers\/((?:trade_buy|trade_sell|trade_up):[0-9a-f]{16})\/(accept|complete)$/;
+const KEEPER = /^\/api\/actors\/([a-z0-9-]{3,44})\/keeper$/;
+
+/** Plain-language view of a player's market balance and vault positions. */
+export async function keeperView({ db, player, market, vaults }) {
+  const accounts = db
+    .prepare("SELECT account_id FROM wallet_links WHERE player_id=? ORDER BY verified_at")
+    .all(player)
+    .map((r) => r.account_id)
+    .slice(0, 3);
+  const out = { accounts: [], lines: [] };
+  if (!accounts.length) {
+    out.lines.push("Link a NEAR account and I can show your market balance and staking vaults.");
+    return out;
+  }
+  for (const accountId of accounts) {
+    const entry = { accountId, market: null, vaults: [] };
+    if (market) {
+      try {
+        const a = await market.view("get_account", { account_id: accountId }, true);
+        entry.market = { credit: a.credit, withdrawing: a.withdrawing, listed: a.listed };
+        out.lines.push(
+          `${accountId}: ${formatNear(a.credit)} test NEAR in your market balance${BigInt(a.withdrawing || "0") > 0n ? `, ${formatNear(a.withdrawing)} on its way out` : ""}${a.listed ? `, ${a.listed} Aura(s) held by the market` : ""}.`,
+        );
+      } catch {
+        out.lines.push(`${accountId}: the market balance is not readable right now.`);
+      }
+    }
+    if (vaults) {
+      try {
+        const snap = await vaults.snapshot(player, accountId);
+        for (const p of snap.positions) {
+          const s = p.position || {};
+          const v = {
+            vault: p.account_id,
+            state: p.state,
+            pool: p.pool,
+            staked: s.staked ?? null,
+            contributionPercent: s.contribution_bps != null ? s.contribution_bps / 100 : null,
+            exitRequested: !!s.exit_requested,
+            unlockEpoch: s.unlock_epoch ?? null,
+            epoch: s.epoch ?? null,
+            ownerCredit: s.owner_credit ?? null,
+          };
+          entry.vaults.push(v);
+          out.lines.push(
+            `Vault ${p.account_id} (${p.state})${v.staked != null ? `: ${formatNear(v.staked)} test NEAR staked` : ""}${v.contributionPercent != null ? `, ${v.contributionPercent}% of the yield goes to the game` : ""}${v.ownerCredit != null && BigInt(v.ownerCredit) > 0n ? `, ${formatNear(v.ownerCredit)} test NEAR earned for you` : ""}${v.exitRequested ? `, exit requested (unlocks at epoch ${v.unlockEpoch}, now ${v.epoch})` : ""}.`,
+          );
+        }
+        if (!snap.positions.length) out.lines.push(`${accountId}: no staking vault yet. Open Stake to create one.`);
+      } catch {
+        out.lines.push(`${accountId}: the vaults are not readable right now.`);
+      }
+    }
+    out.accounts.push(entry);
+  }
+  out.lines.push("I never move your funds: every deposit, exit or change is signed by you on the usual confirmation screen.");
+  return out;
+}
+
+export function createTraderRoutes({ traders, actors, db, market, vaults }) {
+  return {
+    async handle(req, res, url, { player, body, respond, assert }) {
+      const path = url.pathname,
+        method = req.method || "GET";
+      if (path === "/api/npc/traders" && method === "GET") {
+        assert(traders, "NPC traders are not open here.", 503, "NPC_TRADERS_DISABLED");
+        respond(res, await traders.books());
+        return true;
+      }
+      if (method !== "POST" || !path.startsWith("/api/actors/")) return false;
+      const trade = path.match(TRADE),
+        keeper = path.match(KEEPER);
+      if (!trade && !keeper) return false;
+      assert(actors, "Characters on the map are not enabled here.", 503, "ACTORS_DISABLED");
+      const input = await body(req);
+      const actorId = (trade || keeper)[1];
+      const encounter = await actors.requireEncounter({ token: input.encounter, player, actorId });
+      const actor = { ...encounter.def, ...encounter.actor };
+      if (keeper) {
+        assert(actor.archetype === "keeper", "This character keeps no vault.", 404, "NPC_UNKNOWN");
+        respond(res, await keeperView({ db, player, market, vaults }));
+        return true;
+      }
+      assert(traders?.isTrader(actorId), "This trader is not open for business yet.", 503, "NPC_TRADERS_DISABLED");
+      if (trade[3] === "accept") respond(res, await traders.accept({ player, actor, encounter, offerId: trade[2] }));
+      else {
+        assert(trade[2].startsWith("trade_up:"), "Only trade-ups are turned in.", 400, "NPC_OFFER");
+        respond(res, await traders.completeTradeUp({ player, actor, offerId: trade[2] }));
+      }
+      return true;
+    },
+  };
+}
