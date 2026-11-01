@@ -45,6 +45,9 @@ Local continuation, 1 November: the zone/map worker now rejects malformed candid
 - Rewards treasury generation 2026-11-01 publishes today and tomorrow from funded buckets; the vault holds 5 test
   NEAR at the Aurora pool with a 50 % contribution. The worker harvests gain and flushes realized yield to the
   treasury as epochs pass (observe `questlayer-vault-20261101.testnet` `get_state`).
+  First rewarded epoch observed (2026-11-01 09:15 UTC, epoch 5401): +0.000353 NEAR on 5 NEAR, harvest condition met
+  but no harvest yet (high-water unchanged, `game_paid` 0), so no realized-yield funding so far. The reward worker
+  must be running with the publisher key for it to happen (`public/native-yield-observation.json`).
 - Creator money (`questlayer-creators-20261101.testnet`) is live and proven: paid access 80/20, donations,
   support rounds, withdrawals, treasury flush. The server publisher (`server/native/creator-money.mjs`) mirrors
   published quests, verified completions and likes and runs the UTC daily round from the API process; its first

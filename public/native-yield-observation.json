@@ -1,0 +1,41 @@
+{
+  "network": "testnet",
+  "observedAt": "2026-11-01T09:15:00Z",
+  "source": "read-only RPC views at finality=final via test.rpc.fastnear.com; no transaction was sent",
+  "chain": { "epochHeight": 5401, "epochStartHeight": 275701255, "observedBlockHeight": 275728065, "epochLength": 43200 },
+  "treasuryVault": {
+    "vault": "questlayer-vault-20261101.testnet",
+    "pool": "aurora.pool.f863973.m0",
+    "contributionBps": 5000,
+    "stage": "idle",
+    "observedEpoch": "5401",
+    "principal": "5000000000000000000000000",
+    "highWaterBasis": "5000000000000000000000000",
+    "staked": "5000352633616636642407005",
+    "unstaked": "4",
+    "poolCanWithdraw": true,
+    "unrealizedGain": "352633616636642407009",
+    "gameShareAtHarvest": "176316808318321203504",
+    "gameCredit": "0",
+    "gamePaid": "0"
+  },
+  "playerVault": {
+    "vault": "v3.questlayer-vaults-20261101.testnet",
+    "principal": "500000000000000000000000",
+    "staked": "500035263361663664240697",
+    "highWaterBasis": "500000000000000000000000",
+    "gamePaid": "0"
+  },
+  "pilotExit": {
+    "vault": "v0.questlayer-vaults-20261031.testnet",
+    "stage": "unlocking",
+    "unlockEpoch": "5402",
+    "epoch": "5401"
+  },
+  "rewardsTreasury": {
+    "contract": "questlayer-rewards-20261101.testnet",
+    "funded": "200000000000000000000000",
+    "note": "unchanged sponsor funding; no realized-yield receipt yet"
+  },
+  "conclusion": "The vaults crossed their first rewarded epoch: about 0.000353 NEAR of gain on 5 NEAR (about 0.007 % per epoch). The worker's harvest condition (gain above high-water + 1e18 yocto, contribution > 0) is met, but no harvest has run: high-water basis is unchanged and game_paid is 0. Realized-yield funding of the treasury has not happened. After a harvest the game share still needs four unlock epochs before withdrawal and flush."
+}
