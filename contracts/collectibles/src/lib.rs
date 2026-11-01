@@ -19,7 +19,7 @@ const EXPLORER_MEDIA: &str = include_str!("../assets/explorer-uri.txt");
 /// Mirrors the `native` entries of server/data/aura-catalog.json (a Node test
 /// keeps them equal). Code-only: adding an edition needs no state migration,
 /// and token ids stay `aura:<edition>:<serial>` with a 256 cap per edition.
-const AURA_EDITIONS: [(&str, &str, &str); 15] = [
+const AURA_EDITIONS: [(&str, &str, &str); 21] = [
     ("polar", "Northern Lights", include_str!("../assets/aura-polar-uri.txt")),
     ("moon", "Moonwake Aura", include_str!("../assets/aura-moon-uri.txt")),
     ("gold", "Sunlit Aura", include_str!("../assets/aura-gold-uri.txt")),
@@ -35,20 +35,32 @@ const AURA_EDITIONS: [(&str, &str, &str); 15] = [
     ("wardbreaker", "Wardbreaker Horns", include_str!("../assets/aura-wardbreaker-uri.txt")),
     ("wisp", "Will-o'-Wisp Halo", include_str!("../assets/aura-wisp-uri.txt")),
     ("bossbane", "Bossbane Fangring", include_str!("../assets/aura-bossbane-uri.txt")),
+    ("stride", "Silver Stride", include_str!("../assets/aura-stride-uri.txt")),
+    ("kindle", "Altar Kindle", include_str!("../assets/aura-kindle-uri.txt")),
+    ("compass", "Wayfarer's Compass", include_str!("../assets/aura-compass-uri.txt")),
+    ("quill", "Storyteller's Quill", include_str!("../assets/aura-quill-uri.txt")),
+    ("laurel", "Pathfinder Laurel", include_str!("../assets/aura-laurel-uri.txt")),
+    ("summit", "Summit Crown", include_str!("../assets/aura-summit-uri.txt")),
 ];
-/// NPC- and monster-only editions: (edition id, required claim id prefix,
+/// NPC-, monster- and level-only editions: (edition id, required claim id prefix,
 /// token description). They are minted only through a claim whose id carries
 /// the prefix (signed award claims via `redeem_aura`, or the oracle's
 /// `mint_aura_once`), never by the claim-less oracle `mint_aura`. Anyone can
 /// audit where every such token came from with `get_claim`. Mirrors the
 /// `source` field of server/data/aura-catalog.json (a Node test keeps them equal).
-const CLAIM_ONLY_EDITIONS: [(&str, &str, &str); 6] = [
+const CLAIM_ONLY_EDITIONS: [(&str, &str, &str); 12] = [
     ("pilgrim", "earned:npc:", "Earned from a QuestLayer NPC."),
     ("chronicle", "earned:npc:", "Earned from a QuestLayer NPC."),
     ("ledger", "earned:npc:", "Earned from a QuestLayer NPC."),
     ("wisp", "earned:npc:", "Earned from a QuestLayer NPC."),
     ("wardbreaker", "earned:monster:", "Earned by beating a QuestLayer monster."),
     ("bossbane", "earned:monster:", "Earned by beating a QuestLayer monster."),
+    ("stride", "earned:level:", "Earned by reaching QuestLayer level 5."),
+    ("kindle", "earned:level:", "Earned by reaching QuestLayer level 6."),
+    ("compass", "earned:level:", "Earned by reaching QuestLayer level 7."),
+    ("quill", "earned:level:", "Earned by reaching QuestLayer level 8."),
+    ("laurel", "earned:level:", "Earned by reaching QuestLayer level 9."),
+    ("summit", "earned:level:", "Earned by reaching QuestLayer level 10."),
 ];
 fn claim_only(edition: &str) -> Option<(&'static str, &'static str)> {
     CLAIM_ONLY_EDITIONS
@@ -356,7 +368,7 @@ impl Collectibles {
         self.assert_oracle();
         assert!(
             claim_only(&edition).is_none(),
-            "This Aura is only earned from NPCs and monsters"
+            "This Aura is only earned from NPCs, monsters or levels"
         );
         let initial = env::storage_usage();
         let token_id = self.next_aura(&edition);
@@ -387,7 +399,7 @@ impl Collectibles {
         if let Some((prefix, _)) = claim_only(&edition) {
             assert!(
                 claim_id.starts_with(prefix),
-                "This Aura is only earned from NPCs and monsters"
+                "This Aura is only earned from NPCs, monsters or levels"
             );
         }
         if let Some(old) = self.claims.get(&claim_id) {
@@ -974,7 +986,8 @@ mod tests {
             c.supported_editions(),
             [
                 "polar", "moon", "gold", "ember", "dew", "bloom", "storm", "comet", "nova",
-                "pilgrim", "chronicle", "ledger", "wardbreaker", "wisp", "bossbane"
+                "pilgrim", "chronicle", "ledger", "wardbreaker", "wisp", "bossbane",
+                "stride", "kindle", "compass", "quill", "laurel", "summit"
             ]
         );
         let mut covers = std::collections::HashSet::new();
@@ -1023,6 +1036,12 @@ mod tests {
             ("wisp", "Will-o'-Wisp Halo", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
             ("wardbreaker", "Wardbreaker Horns", "earned:monster:", "Earned by beating a QuestLayer monster. Testnet collectible."),
             ("bossbane", "Bossbane Fangring", "earned:monster:", "Earned by beating a QuestLayer monster. Testnet collectible."),
+            ("stride", "Silver Stride", "earned:level:", "Earned by reaching QuestLayer level 5. Testnet collectible."),
+            ("kindle", "Altar Kindle", "earned:level:", "Earned by reaching QuestLayer level 6. Testnet collectible."),
+            ("compass", "Wayfarer's Compass", "earned:level:", "Earned by reaching QuestLayer level 7. Testnet collectible."),
+            ("quill", "Storyteller's Quill", "earned:level:", "Earned by reaching QuestLayer level 8. Testnet collectible."),
+            ("laurel", "Pathfinder Laurel", "earned:level:", "Earned by reaching QuestLayer level 9. Testnet collectible."),
+            ("summit", "Summit Crown", "earned:level:", "Earned by reaching QuestLayer level 10. Testnet collectible."),
         ]
         .into_iter()
         .enumerate()
@@ -1048,7 +1067,7 @@ mod tests {
             assert_eq!(again.token_id, token.token_id);
             assert_eq!(c.edition_minted(edition.into()), 1);
         }
-        assert_eq!(c.claim_only_editions().len(), 6);
+        assert_eq!(c.claim_only_editions().len(), 12);
         assert!(c
             .claim_only_editions()
             .iter()
@@ -1063,7 +1082,7 @@ mod tests {
         );
     }
     #[test]
-    #[should_panic(expected = "This Aura is only earned from NPCs and monsters")]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters or levels")]
     fn npc_edition_rejects_a_plain_earned_claim() {
         let mut c = fresh();
         let key = award_key(&mut c);
@@ -1072,7 +1091,23 @@ mod tests {
         c.redeem_aura("earned:chest9".into(), "wisp".into(), a("alice.testnet"), 1000, signature);
     }
     #[test]
-    #[should_panic(expected = "This Aura is only earned from NPCs and monsters")]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters or levels")]
+    fn level_edition_rejects_an_npc_claim() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature =
+            award_signature(&c, &key, "earned:npc:plzen:2", "summit", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:npc:plzen:2".into(), "summit".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters or levels")]
+    fn oracle_cannot_mint_level_editions_without_a_claim() {
+        let mut c = fresh();
+        mint(&mut c, "laurel");
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters or levels")]
     fn monster_edition_rejects_an_npc_claim() {
         let mut c = fresh();
         let key = award_key(&mut c);
@@ -1082,13 +1117,13 @@ mod tests {
         c.redeem_aura("earned:npc:plzen:1".into(), "bossbane".into(), a("alice.testnet"), 1000, signature);
     }
     #[test]
-    #[should_panic(expected = "This Aura is only earned from NPCs and monsters")]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters or levels")]
     fn oracle_cannot_mint_npc_editions_without_a_claim() {
         let mut c = fresh();
         mint(&mut c, "wardbreaker");
     }
     #[test]
-    #[should_panic(expected = "This Aura is only earned from NPCs and monsters")]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters or levels")]
     fn oracle_claim_mint_needs_the_prefix_too() {
         let mut c = fresh();
         context("oracle.testnet", NearToken::from_near(1));

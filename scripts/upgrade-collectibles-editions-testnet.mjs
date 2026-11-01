@@ -1,6 +1,7 @@
 // Code-only testnet upgrade of the collectibles Aura editions: catalog v2
-// (PR #32) and the NPC/monster-only editions (N5), whose CLAIM_ONLY_EDITIONS
-// mint only for earned:npc: / earned:monster: claims.
+// (PR #32), the NPC/monster-only editions (N5) and the L5-L10 level editions,
+// whose CLAIM_ONLY_EDITIONS mint only for earned:npc: / earned:monster: /
+// earned:level: claims.
 // No state migration: schema stays 3, every token, minted counter, equipment
 // slot and the award signer are compared before and after. Only the project's
 // own testnet operator key in .data/near-operator.json signs.
@@ -179,7 +180,7 @@ if (topUp > 0n)
     }),
   );
 if (!alreadyDeployed)
-  await record("deploy NPC/monster editions collectibles code (no state migration)", () =>
+  await record("deploy Aura editions collectibles code (no state migration)", () =>
     contract.signAndSendTransaction({
       receiverId: contractId,
       actions: [actions.deployContract(wasm)],
@@ -219,13 +220,13 @@ const proof = {
   awardSignerPreserved: before.awardSigner === after.awardSigner,
   transactions,
 };
-mkdirSync("output/qa/N5-npc-editions", { recursive: true });
+mkdirSync("output/qa/level-editions", { recursive: true });
 writeFileSync(
   "public/native-editions-testnet.json",
   JSON.stringify(proof, null, 2) + "\n",
 );
 writeFileSync(
-  "output/qa/N5-npc-editions/testnet-upgrade-proof.json",
+  "output/qa/level-editions/testnet-upgrade-proof.json",
   JSON.stringify(proof, null, 2) + "\n",
 );
 // The claims manifest carries the code fingerprint the server verifies.
@@ -233,7 +234,7 @@ const claims = JSON.parse(readFileSync("public/native-claims-testnet.json", "utf
 assert.equal(claims.contractId, contractId);
 claims.wasmSha256 = wasmSha256;
 claims.codeUpgrade =
-  "Code-only NPC/monster Aura editions upgrade (N5); award signer, tokens and equipment unchanged. See public/native-editions-testnet.json.";
+  "Code-only Aura editions upgrade (N5 NPC/monster editions plus the L5-L10 level editions); award signer, tokens and equipment unchanged. See public/native-editions-testnet.json.";
 writeFileSync("public/native-claims-testnet.json", JSON.stringify(claims, null, 2) + "\n");
 // Both records now match the reproducible build, so they leave the allowlist.
 for (const file of ["native-claims-testnet.json", "native-editions-testnet.json"])
