@@ -547,6 +547,64 @@ only phrases taunts and questions from facts and never decides an outcome.
 The minimal hackathon demo adds M0 + M1 (+ M2 if there is time) to the NPC minimum: one guardian on a zone, beaten by
 a Plzeň quiz, opening the zone chest; one lurker mini-game giving a loot roll.
 
+## 14. Shared interfaces for the parallel slices (wave 1)
+
+N0+M0 own these interfaces, and the other slices build on them without changing them. Propose a change in the design
+thread instead of forking it.
+
+**One entity model for NPCs and monsters**
+```ts
+type ActorKind = "npc" | "monster";
+type Archetype =
+  | "storyteller" | "trader" | "keeper" | "quest_giver" | "wandering_rare"   // npc
+  | "roamer" | "guardian" | "lurker" | "boss";                               // monster
+interface ActorDefinition {            // server/data/actors/<cityId>.json, schema-checked
+  id: string;                          // /^[a-z0-9-]{3,40}$/, stable across days
+  kind: ActorKind; archetype: Archetype;
+  name: string; title?: string;        // display text (English source, localised in UI)
+  model: string;                       // key in src/actor-models.ts (slice 5 owns the art)
+  home?: { lat: number; lng: number }; // stationed or home-range centre; guardians/lurkers may omit (planner places them)
+  rangeM: number; speedMps: number; dwellMin: [number, number];
+  hours?: [string, string];            // local "08:00", "20:00"
+  windows?: number;                    // wandering_rare / boss: appearances per day
+  persona?: string;                    // persona card id for N1 (server/data/personas/*.json)
+  enabled: boolean;
+}
+interface ActorSegment { from: number; to: number; path: [number, number][]; dwell?: boolean } // ms epoch, [lng,lat]
+interface ActorView {                  // GET /api/actors?worldId=&lat=&lng=
+  id: string; kind: ActorKind; archetype: Archetype; name: string; model: string;
+  segments: ActorSegment[];            // today's segments in the area, at most the next 2 h
+  revealRadiusM?: number;              // lurker 60, wandering_rare 300; omitted = always visible
+  guards?: { zoneId?: string; questId?: string }; // guardians
+  state?: "active" | "defeated" | "cooldown";     // for this player
+}
+```
+- `server/actors/definitions.mjs` (load and validate), `server/actors/schedule.mjs` (pure: `planDay(def, cityPack,
+  worldSeed, dayId)`, `positionAt(segments, t)`), `server/actors/spawns.mjs` (monster placement, reusing
+  world-planner and place-safety).
+- **Encounter:** `POST /api/actors/:id/encounter {worldId, location}` returns `{encounter: "enc_…", expiresAt,
+  actor: ActorView, menu: Offer[]}`. The token binds player, actor, day, segment and menu hash, lasts 5 min and is
+  stored in `actor_encounters`. Every later call (`/talk`, `/offers/:offerId/accept`, `/challenge`, `/challenge/:id/submit`)
+  requires it.
+- **Offer** (rules engine output, N2/N3/M1 fill it): `{id, kind: "quest"|"chapter"|"trade_buy"|"trade_sell"|"trade_up"|"challenge"|"roll", label, terms, expiresAt}`.
+- **Schema modules** (via `registerModuleSchema`): `actors` v1 holds `actor_encounters`, `actor_offers`,
+  `actor_relationships`, `actor_progress` (shards, defeats, cooldowns), `ai_npc_requests`. N0 creates all tables, so
+  later slices only add columns through a version bump.
+- **Feature flag:** `ACTORS_ENABLED` (default off in tests, on for the testnet VPS), with `NPC_AI_PROVIDER` reused
+  from §5.
+- **Client:** `src/actors-layer.ts` adds a MapLibre layer that animates `ActorView.segments`.
+  `src/actor-models.ts` maps `model` to a three.js factory, and slice 5 provides those factories. N0 ships simple
+  placeholder billboards, so nothing waits on the art.
+
+**Art and licences (checked 1 Nov 2026 via the GitHub API).** The Aavegotchi repositories with art have **no
+licence**: `aavegotchi-assets`, `gotchiverse-2d`, `GotchiGuardiansInverse`, `unity-sdk`, `aavegotchi-minigame-template`,
+`brand-kit` and `aavegotchi-3d-render-skill`. Only code repositories are MIT or Apache: `aavegotchi-contracts`,
+`aavegotchi-base`, `aavegotchi-phaser-template`, `fake-gotchis`, `gamepoints` and `rektless-public`. So Gotchiverse
+characters (for example Lickquidators), land parcels and installations **can't be copied into the repo**. Slice 5
+builds **original procedural low-poly three.js models** in the Aavegotchi-compatible palette and style (§5 of
+`docs/AAVEGOTCHI-REUSE.md`). Like the existing SDK GLB proxy, it may *load on demand* official models only once the
+owner confirms that the developer invitation covers them.
+
 ## Sources
 - NEAR AI Cloud private inference: https://docs.near.ai/cloud/private-inference
 - NEAR AI gateway verification / attestation: https://docs.near.ai/cloud/verification/gateway
