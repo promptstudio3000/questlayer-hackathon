@@ -1,4 +1,4 @@
-# Roaming NPCs: design and hackathon plan
+# Roaming NPCs and monsters: design and hackathon plan
 
 Status: **proposal, not implemented** (1 November 2026). Planning only: no contract, chain or VPS change has been
 made for it. Everything below targets **testnet**. Mainnet stays off until the owner's final go (see
@@ -464,6 +464,88 @@ gives a real testnet Aura for a quest.
   `runtime.env` (`NEAR_AI_API_KEY`, `NPC_AI_PROVIDER=near-ai`, model `deepseek/deepseek-v4.1-flash`). Ollama stays
   the automatic fallback. That would let the demo show real "verified private inference" with an attestation
   badge. Until then the badge is hidden, and nothing in the plan depends on it.
+
+## 13. Monsters (added 1 Nov 2026 at the owner's request)
+
+Monsters are the "opponent" layer on top of the same machinery as NPCs. They use the deterministic placement on the
+pedestrian graph, the presence checks, encounter tokens, the rules-engine rewards and the commit–reveal loot rolls.
+The theme is the Aavegotchi-compatible pixel and spooky look from `docs/AAVEGOTCHI-REUSE.md` §5. The creatures are
+**our own originals**: we don't use Aavegotchi lore characters, names or art until the owner has checked the rights
+and trademark items listed in §4 of that doc.
+
+### 13.1 Monster kinds
+| Kind | Behaviour | Placement | Example (original) |
+| --- | --- | --- | --- |
+| **Roamer** | walks routes like an NPC, faster, short dwell | home range 300–800 m, 4–8 per city | "Glitch Moth" drifting between lamps |
+| **Guardian** | stands still and guards something: a zone chest, a landmark, a street-find cluster | picked daily like zones (`world-planner.mjs`), never in closed or sensitive places, at most 1 per zone | "Rune Warden" at the zone entrance |
+| **Lurker** | invisible until you are within 60 m; appears near street finds | random subset of street-find points per day | "Pocket Wisp" hiding in a hedge |
+| **Boss** (weekly) | one per city per week, cooperative, shared HP pool that all players chip at | a public square, announced in advance | "Storm Golem" |
+
+Spawn rules: the seed is `sha256(worldSeed ‖ "monster" ‖ kind ‖ dayId)`. Daylight hours only, density caps (at most
+one monster per 150 m of path), respect for operator pause and closures, and a fresh layout every day like the
+zones. A guardian can make a zone feel "occupied": the zone chest opens only after the guardian is beaten. That is a
+new objective type in the quest templates, and it reuses zone entry evidence.
+
+### 13.2 How you beat a monster (three formats, all server-checked)
+1. **Themed quiz:** 3 questions about the city place you are standing at (facts from the city pack and reviewed
+   place notes) or about the game's own lore and Auras. AI may *phrase* a question from facts, but the answers are
+   fixed in the question bank, and the server checks them. Questions are seeded per encounter, with 20 s per
+   question.
+2. **Primitive mini-games** (client-side, about 20 s): tap rhythm, trace the glowing path, memory sequence, "catch
+   the wisp". The server issues a seeded challenge (sequence, timing window), and the client returns its inputs.
+   The server replays and validates them with timing plausibility bounds, so a bot gets no advantage from a
+   faster-than-human score.
+3. **Light duel** (our own design, inspired by trait-based gotchi battlers but not a copy of any of them): 3 rounds.
+   Each round you pick one of three stances (Strike / Guard / Trick, which beat each other in a cycle). The monster
+   has a published tendency ("Rune Wardens like to Guard") plus a seeded pick per round. Damage comes from the
+   account level and a small skill bonus from a timed tap. It is deterministic given the encounter seed and your
+   choices, and the server resolves it.
+
+One attempt per monster per player per hour. A loss costs nothing except the cooldown. Bosses accept one hit per
+player every 10 minutes.
+
+### 13.3 What drives power (fairness rule)
+The Aura catalog says set bonuses are **visual only and never change GOLD, XP, rewards or odds**. Auras are
+tradeable, so letting them change win odds would make battles pay-to-win. Therefore:
+- **Power comes only from account-bound progression:** level and XP, which can't be sold (`docs/GAME-RULES.md` E18),
+  plus the player's skill in the mini-game or duel.
+- **Equipped Auras and linked Aavegotchi items change flavour, not odds:** an element "affinity" picks the battle
+  animation, the monster's taunt line and which mini-game variant you get. The win probability stays the same.
+- **Later (owner decision): Aavegotchi traits.** For linked original gotchis we could read the traits read-only
+  from Base. `server/aavegotchi.mjs` reads `equippedWearables` today; `getAavegotchi` would add NRG/AGG/SPK/BRN.
+  They would map to stance tendencies. This must stay balanced (traits change *style*, capped at ±5 % effect) and
+  needs the trademark and rights check first.
+
+### 13.4 Rewards (no free minting, same rules as NPCs)
+- **XP** per win, once per monster per day, and guardian wins open the zone chest. Shared zone prizes stay first
+  finisher only, from the backed bucket.
+- **Monster shards:** an off-chain, account-bound counter per element. Craft 10 shards plus one common Aura at the
+  trader or keeper into an **NPC/monster-only Aura edition** claim (N5 editions plus new ones such as `wardbreaker`
+  and `wisp`). This gives the edition decision a steady use and sinks commons into the trader's stock, which feeds
+  the treasury economics in §2.2.
+- **Loot roll:** lurker and boss wins give a roll ticket for `npc-games` (§7), which can win rare edition claims.
+  There is no wager.
+- **Boss:** when the shared HP hits zero, every player who landed ≥ 3 hits gets a boss-edition Aura claim, capped by
+  supply. A public event and a leaderboard by hits (not by money).
+
+### 13.5 Abuse controls specific to monsters
+Seeded challenges that the server validates, so the client never reports "I won". Cooldowns and encounter tokens
+as for NPCs. Quiz answers are never sent to the client before submit. Plausibility checks on mini-game timing. A
+daily cap on shard and claim issuance per account and per city. The same GPS speed checks. The AI (Ollama now)
+only phrases taunts and questions from facts and never decides an outcome.
+
+### 13.6 Monster roadmap slices
+| Slice | Content | Depends | Est. |
+| --- | --- | --- | --- |
+| **M0 Spawns** | monster definitions, daily spawn planner (roamer, guardian, lurker), map layer, encounter API | N0 | 1 day |
+| **M1 Quiz + mini-games** | question bank (Plzeň places + lore), 2 mini-games with server replay validation | M0 | 2 days |
+| **M2 Duel** | stance duel engine (pure function plus tests), UI | M0 | 1–2 days |
+| **M3 Rewards** | XP, guardian-locked chests, shards and crafting into NPC/monster editions, roll tickets | M1, N4, N5 | 1–2 days |
+| **M4 Weekly boss** | shared HP, hit cooldowns, participant claims, event page | M3 | 1–2 days |
+| **M5 Aavegotchi traits** | read-only traits → stance style; after the rights check | M2 | after the hackathon |
+
+The minimal hackathon demo adds M0 + M1 (+ M2 if there is time) to the NPC minimum: one guardian on a zone, beaten by
+a Plzeň quiz, opening the zone chest; one lurker mini-game giving a loot roll.
 
 ## Sources
 - NEAR AI Cloud private inference: https://docs.near.ai/cloud/private-inference
