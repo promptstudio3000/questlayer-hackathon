@@ -184,6 +184,16 @@ async function newExplorerContext(browser, profile) {
   return context;
 }
 
+// The home-screen offer (after 45 s of play; on iPhone the Share → Add to
+// Home Screen card) and the "New version ready" notice sit over the top bar.
+// Dismiss them whenever they get in the way, as a player would.
+async function dismissInstallOffer(page) {
+  await page.addLocatorHandler(page.locator(".pwa-install, .pwa-update"), async (card) => {
+    console.log("  dismissed a home-screen/update card");
+    await card.getByRole("button", { name: /Got it|Not now|Later/ }).click();
+  });
+}
+
 // Navigate to the app and measure the first load against BUDGET.
 async function firstLoad(page, url, report) {
   const scripts = new Map();
@@ -303,6 +313,7 @@ async function runDevice(name, server) {
     const context = await newExplorerContext(browser, profile);
     const page = await context.newPage();
     page.on("pageerror", (e) => console.error("page error:", e.message));
+    await dismissInstallOffer(page);
 
     console.log("1. Name");
     await firstLoad(page, server.url, report);
@@ -451,6 +462,7 @@ async function runDevice(name, server) {
     // A second explorer, on the same device, fills the order.
     const buyerContext = await newExplorerContext(browser, profile);
     const buyer = await buyerContext.newPage();
+    await dismissInstallOffer(buyer);
     buyer.on("pageerror", (e) => console.error("buyer page error:", e.message));
     await buyer.goto(server.url);
     await buyer.getByPlaceholder("Your explorer name").fill(`Buyer ${name}`);
