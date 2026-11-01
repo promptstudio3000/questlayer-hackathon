@@ -1,0 +1,23 @@
+.npc-sheet { display: grid; gap: 12px; max-width: 420px; }
+.npc-head { display: grid; grid-template-columns: 96px 1fr auto; gap: 12px; align-items: center; }
+.npc-head h2 { margin: 0; font-size: 20px; }
+.npc-title, .npc-source, .npc-note { margin: 2px 0 0; font-size: 13px; opacity: 0.75; }
+.npc-portrait { width: 96px; height: 96px; border-radius: 12px; background: radial-gradient(circle at 50% 40%, #3d0981, #200543); overflow: hidden; }
+.npc-portrait canvas, .npc-portrait img { width: 100%; height: 100%; display: block; }
+.npc-close { background: none; border: 0; font-size: 24px; line-height: 1; cursor: pointer; color: inherit; min-width: 44px; min-height: 44px; }
+.npc-bubble { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--surface, #fff); color: var(--ink, #1e1e1e); border: 2px solid #c82ac2; }
+.npc-sheet h3 { margin: 0 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
+.npc-offer { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; border: 2px solid #8348ff; background: transparent; color: inherit; cursor: pointer; min-height: 44px; }
+.npc-offer.suggested { border-color: #ff1dff; box-shadow: 0 0 5px #ff1dff; }
+.npc-offer small { white-space: nowrap; opacity: 0.8; }
+.npc-task { padding: 10px 12px; border-radius: 10px; border: 1px solid #8348ff; margin-bottom: 6px; }
+.npc-task p { margin: 0 0 4px; }
+.npc-task ul { margin: 0 0 8px; padding-left: 4px; list-style: none; font-size: 14px; }
+.npc-task li.done { opacity: 0.7; }
+.npc-task button, .npc-chat button { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 0; background: var(--action, #672eeb); color: #fff; cursor: pointer; }
+.npc-task button:disabled, .npc-chat button:disabled, .npc-offer:disabled { opacity: 0.55; cursor: default; }
+.npc-chat { display: flex; gap: 8px; }
+.npc-chat input { flex: 1; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid #8348ff; font: inherit; }
+.npc-notice { margin: 0; color: #219497; }
+.npc-error { margin: 0; color: #c0392b; }
+@media (prefers-reduced-motion: reduce) { .npc-offer.suggested { box-shadow: none; } }
