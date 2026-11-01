@@ -8,14 +8,18 @@ import { nearestNode, pathGraph, seededRandom } from "./schedule.mjs";
 
 // At most one monster per this many metres (§13.1 density cap).
 export const MONSTER_SPACING_M = 150;
+// Lurkers hide within this distance of a street find (§13.1).
+export const LURKER_FIND_RADIUS_M = 40;
 const ROAMER_SPACING_M = 300;
 
 /**
- * planSpawns(city, pack, worldSeed, dayId, { zones, closed })
- *   -> [{ def, id, home: {lat,lng}, guards? }]
+ * planSpawns(city, pack, worldSeed, dayId, { zones, closed, finds })
+ *   -> [{ def, id, home: {lat,lng}, guards?, near? }]
  * `zones` are the world's zones with placeStatus; closed ones get no guardian.
+ * `finds` are today's street finds ({id, lat, lng}); lurkers hide next to a
+ * seeded subset of them, or on seeded path points when there are none.
  */
-export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = [] } = {}) {
+export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = [], finds = [] } = {}) {
   const g = pathGraph(pack, closed);
   if (!g.nodes.length) return [];
   const out = [],
@@ -47,6 +51,27 @@ export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = 
       for (let n = 1; n <= count; n++) {
         out.push({ def, id: instanceId(def, n), home: def.home });
         if (def.kind === "monster") monsters.push(def.home);
+      }
+      continue;
+    }
+    if (def.archetype === "lurker" && finds.length) {
+      const pool = [...finds].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const mine = [];
+      let n = 1;
+      for (const find of pool) {
+        if (n > count) break;
+        const at = nearestNode(g, find, LURKER_FIND_RADIUS_M);
+        if (at < 0) continue;
+        const p = node(at);
+        if (!spaced(p, MONSTER_SPACING_M, mine) || !spaced(p, MONSTER_SPACING_M, monsters)) continue;
+        mine.push(p);
+        monsters.push(p);
+        out.push({ def, id: instanceId(def, n), home: p, near: { findId: find.id } });
+        n++;
       }
       continue;
     }

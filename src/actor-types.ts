@@ -34,6 +34,10 @@ export interface ActorView {
   guards?: { zoneId?: string; questId?: string };
   state?: "active" | "defeated" | "cooldown";
   cooldownUntil?: number;
+  /** Weekly boss: the shared HP pool (server/actors/hunt). */
+  boss?: { hp: number; maxHp: number; weekId: string; participants: number; state: "active" | "defeated" };
+  /** A static prop drawn at the boss's home, e.g. the Great Portal arena. */
+  arena?: { model: string; lat: number; lng: number };
 }
 
 export interface ActorsResponse {

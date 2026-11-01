@@ -4,10 +4,35 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "./Dialog";
 import type { ActorEncounter, ActorOffer } from "./actor-types";
-import { npcAccept, npcGreet, npcTalk, npcTurnIn, type NpcActiveLine, type NpcReply } from "./npc-client";
+import {
+  keeperView,
+  npcAccept,
+  npcGreet,
+  npcTalk,
+  npcTurnIn,
+  tradeAccept,
+  tradeUpComplete,
+  type KeeperView,
+  type NpcActiveLine,
+  type NpcReply,
+  type NpcTrade,
+} from "./npc-client";
 import "./npc-sheet.css";
 
 const EMOTE: Record<string, string> = { wave: "👋", think: "🤔", laugh: "😄", shrug: "🤷", none: "" };
+const isTrade = (offer: ActorOffer) => offer.kind.startsWith("trade_");
+const near = (yocto: string) => (Number(BigInt(yocto) / 10n ** 21n) / 1000).toFixed(3);
+
+function tradeText(t: NpcTrade, who: string) {
+  if (t.kind === "trade_up")
+    return t.state === "completed"
+      ? `Done. ${t.aura ? `${t.aura.name} (${t.aura.rarity}) is yours; secure it on NEAR from your wardrobe.` : ""}${t.ledgerAura ? ` ${who} also hands you the ${t.ledgerAura.name}.` : ""}`
+      : `Send ${t.tokens?.join(", ")} to ${t.receiver} (wardrobe → transfer), then tap "Check hand-over". The deal stays open 30 minutes.`;
+  const minutes = Math.max(1, Math.round((t.deadlineMs - Date.now()) / 60000));
+  return t.kind === "trade_buy"
+    ? `${who} signed a buy order: ${near(t.price)} test NEAR for ${t.tokenId}. Open Market → Signed offers and tap "Hand to the market and accept" within ${minutes} min.`
+    : `${who} signed a sell order: ${t.tokenId} for ${near(t.price)} test NEAR. Open Market → Signed offers and buy it within ${minutes} min.`;
+}
 
 function Portrait({ model, label }: { model: string; label: string }) {
   const host = useRef<HTMLDivElement>(null);
@@ -30,6 +55,8 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [trades, setTrades] = useState<Record<string, NpcTrade>>({});
+  const [vault, setVault] = useState<KeeperView | null>(null);
   const token = encounter.encounter;
   const run = async (task: () => Promise<void>) => {
     setBusy(true);
@@ -44,10 +71,17 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   };
   useEffect(() => {
     run(async () => setReply(await npcGreet(actorId, token)));
+    if (encounter.actor.archetype === "keeper") keeperView(actorId, token).then(setVault, () => setVault(null));
   }, [actorId, token]);
   const refresh = async () => setReply(await npcGreet(actorId, token));
   const accept = (offer: ActorOffer) =>
     run(async () => {
+      if (isTrade(offer)) {
+        const t = await tradeAccept(actorId, token, offer.id);
+        setTrades((all) => ({ ...all, [offer.id]: t }));
+        setNotice(tradeText(t, reply?.npc?.name || encounter.actor.name));
+        return;
+      }
       await npcAccept(actorId, token, offer.id);
       setNotice(`Task accepted: ${offer.label}`);
       await refresh();
@@ -61,6 +95,12 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
           : `+${r.xp} XP${r.aura ? ` and ${r.aura.name} (${r.aura.rarity}). Secure it on NEAR from your wardrobe.` : "."}${r.note ? ` ${r.note}` : ""}`,
       );
       await refresh();
+    });
+  const handOver = (offerId: string) =>
+    run(async () => {
+      const t = await tradeUpComplete(actorId, token, offerId);
+      setTrades((all) => ({ ...all, [offerId]: t }));
+      setNotice(tradeText(t, reply?.npc?.name || encounter.actor.name));
     });
   const send = (event: React.FormEvent) => {
     event.preventDefault();
@@ -127,11 +167,33 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
               >
                 <span>{offer.label}</span>
                 <small>
-                  {String((offer.terms as { xp?: number }).xp ?? "")} XP
-                  {(offer.terms as { aura?: boolean }).aura ? " + Aura" : ""}
+                  {isTrade(offer)
+                    ? trades[offer.id]
+                      ? "Signed · see below"
+                      : offer.kind === "trade_up"
+                        ? "3 commons → 1 rare"
+                        : "Signed order on the testnet market"
+                    : `${String((offer.terms as { xp?: number }).xp ?? "")} XP${(offer.terms as { aura?: boolean }).aura ? " + Aura" : ""}`}
                 </small>
               </button>
             ))}
+            {Object.entries(trades)
+              .filter(([, t]) => t.kind === "trade_up" && t.state === "issued")
+              .map(([offerId]) => (
+                <button type="button" key={offerId} disabled={busy} onClick={() => handOver(offerId)}>
+                  Check hand-over
+                </button>
+              ))}
+          </section>
+        )}
+        {vault && (
+          <section aria-label="Your vault and balance">
+            <h3>Your vault and balance</h3>
+            <ul className="npc-keeper">
+              {vault.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
           </section>
         )}
         <form className="npc-chat" onSubmit={send}>

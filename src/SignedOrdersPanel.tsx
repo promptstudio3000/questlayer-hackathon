@@ -255,6 +255,23 @@ export function SignedOrdersPanel({
   const fill = (o: RelayedOrder) =>
     run(o.terms.kind === "sell" ? "Buying the Aura…" : "Accepting the offer…", async () => {
       const sellOrder = o.terms.kind === "sell";
+      // A buy order (for example from an NPC trader) names an Aura you still
+      // hold in your wallet: hand it to the market first, then accept.
+      if (!sellOrder && !escrowedByMe.some((l) => l.token_id === o.terms.token_id)) {
+        setStep("Handing the Aura to the market…");
+        await call({
+          receiverId: data.nftContract,
+          methodName: "nft_transfer_call",
+          args: { receiver_id: data.marketContract, token_id: o.terms.token_id, approval_id: null, memo: null, msg: JSON.stringify({ deposit: true }) },
+          deposit: "1",
+          gas: "200000000000000",
+        });
+        const held = await waitFor((s) =>
+          s.listings.some((l) => l.token_id === o.terms.token_id && l.state === "deposited" && l.seller === accountId),
+        );
+        if (!held) throw Error("The market has not confirmed the Aura yet. Refresh, then accept again.");
+        setStep("Accepting the offer…");
+      }
       await call({
         receiverId: data.marketContract,
         methodName: sellOrder ? "fill_sell_order" : "fill_buy_order",
@@ -403,7 +420,8 @@ export function SignedOrdersPanel({
               {others.map((o) => {
                 const sellOrder = o.terms.kind === "sell",
                   heldByMe = escrowedByMe.some((l) => l.token_id === o.terms.token_id),
-                  canAct = sellOrder ? o.fillable : o.fillable && heldByMe;
+                  inWallet = owned.some((i) => i.tokenId === o.terms.token_id),
+                  canAct = sellOrder ? o.fillable : (o.fillable && heldByMe) || (!sellOrder && inWallet);
                 return (
                   <article className="native-offer signed-order" key={o.id}>
                     <div>
@@ -431,13 +449,13 @@ export function SignedOrdersPanel({
                         </span>
                       )}
                     </div>
-                    {(sellOrder || heldByMe) && (
+                    {(sellOrder || heldByMe || inWallet) && (
                       <button
                         className="primary-button"
                         disabled={working || data.stats.paused || !canAct}
                         onClick={() => void fill(o)}
                       >
-                        {sellOrder ? `Buy for ${formatNativeNear(o.terms.price)} test NEAR` : "Accept offer"}
+                        {sellOrder ? `Buy for ${formatNativeNear(o.terms.price)} test NEAR` : heldByMe ? "Accept offer" : "Hand to the market and accept"}
                       </button>
                     )}
                   </article>

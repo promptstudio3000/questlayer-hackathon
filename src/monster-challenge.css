@@ -237,3 +237,15 @@
 .monster-result.won svg { color: var(--gold, #e3a800); }
 .monster-result .monster-primary { width: 100%; margin-top: 8px; }
 .monster-reveal { color: var(--ink-secondary, #665577); font-size: 14px; }
+
+.monster-rewards { color: var(--ink, #2a1f3d); font-weight: 600; margin: 8px 0; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.monster-rewards.missed { font-weight: 400; color: var(--ink-secondary, #665577); }
+.monster-boss .monster-sigil { background-color: #b0283c; border-radius: 50% 50% 12px 12px; }
+.boss-pool { margin: 8px 0 12px; }
+.boss-bar { height: 14px; border-radius: 7px; background: rgba(176, 40, 60, 0.15); overflow: hidden; }
+.boss-bar span { display: block; height: 100%; background: linear-gradient(90deg, #ff6b6b, #b0283c); transition: width 0.4s ease; }
+.boss-board h3,
+.hunt-pouch h3 { font-size: 15px; margin: 14px 0 6px; }
+.boss-board ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.boss-board li { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 8px; border-radius: 8px; }
+.boss-board li.you { background: rgba(157, 123, 240, 0.15); font-weight: 600; }

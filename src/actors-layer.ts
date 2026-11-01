@@ -100,11 +100,14 @@ export function attachActorsLayer(
     visible = true,
     loading: AbortController | null = null,
     gone = false;
+  // Static props under an actor, e.g. the Great Portal at the boss's square.
+  const arenas = new Map<string, { marker: maplibregl.Marker; node: HTMLElement; model: string }>();
   const select = (a: ActorView) => onSelect(markers.get(a.id)?.actor || a);
   let art: Awaited<ReturnType<typeof loadActorArt>> = null;
   loadActorArt().then((m) => {
     art = m;
     for (const { actor, node } of markers.values()) paint(actor, node);
+    for (const { node, model } of arenas.values()) paintArena(node, model);
   });
   function paint(actor: ActorView, node: HTMLElement) {
     if (!art?.actorSprite || node.querySelector("img")) return;
@@ -141,7 +144,39 @@ export function attachActorsLayer(
       fetchedAt = Date.now(); // back off for a minute on errors
     }
   }
+  function syncArenas() {
+    const want = new Map(actors.filter((a) => a.arena).map((a) => [a.id, a.arena!]));
+    for (const [id, a] of arenas)
+      if (!want.has(id)) {
+        a.marker.remove();
+        arenas.delete(id);
+      }
+    for (const [id, arena] of want) {
+      if (arenas.has(id)) continue;
+      const node = document.createElement("div");
+      node.className = "actor-arena";
+      node.setAttribute("aria-hidden", "true");
+      const marker = new maplibregl.Marker({ element: node, anchor: "bottom" }).setLngLat([arena.lng, arena.lat]);
+      arenas.set(id, { marker, node, model: arena.model });
+      paintArena(node, arena.model);
+    }
+  }
+  function paintArena(node: HTMLElement, model: string) {
+    if (!art?.actorSprite || node.querySelector("img")) return;
+    art
+      .actorSprite(model, 128)
+      .then((url) => {
+        if (gone || !url || node.querySelector("img")) return;
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "";
+        img.className = "actor-sprite";
+        node.append(img);
+      })
+      .catch(() => {});
+  }
   function sync() {
+    syncArenas();
     const keep = new Set(actors.map((a) => a.id));
     for (const [id, m] of markers)
       if (!keep.has(id)) {
@@ -164,6 +199,10 @@ export function attachActorsLayer(
   }
   function tick() {
     const now = Date.now() + skew;
+    for (const { marker } of arenas.values()) {
+      if (!visible) marker.remove();
+      else if (!(marker as unknown as { _map?: unknown })._map) marker.addTo(map);
+    }
     for (const { marker, actor, node } of markers.values()) {
       const p = visible ? actorPositionAt(actor.segments, now) : null;
       const hidden =
@@ -205,6 +244,8 @@ export function attachActorsLayer(
       window.clearInterval(timer);
       for (const m of markers.values()) m.marker.remove();
       markers.clear();
+      for (const a of arenas.values()) a.marker.remove();
+      arenas.clear();
     },
   };
 }

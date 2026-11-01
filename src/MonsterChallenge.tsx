@@ -91,7 +91,13 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
           <div>
             <h2>{monster.name}</h2>
             <p className="monster-sub">
-              {monster.archetype === "guardian" ? "Guardian" : monster.archetype === "lurker" ? "Lurker" : "Roamer"}
+              {monster.archetype === "guardian"
+                ? "Guardian"
+                : monster.archetype === "lurker"
+                  ? "Lurker"
+                  : monster.archetype === "boss"
+                    ? "Weekly boss"
+                    : "Roamer"}
               {menu ? ` · you are level ${menu.level}` : ""}
             </p>
           </div>
@@ -156,6 +162,7 @@ function ResultView({ result, onClose }: { result: ChallengeResult; onClose: () 
         Score {result.result.score} of {result.result.max}.{" "}
         {won ? "It won't bother this street again today." : reason || retryLabel(result.retryAt)}
       </p>
+      {won && result.rewards && <RewardLine rewards={result.rewards} />}
       {result.detail.reveal && (
         <p className="monster-reveal">
           Its moves were fixed before you started: {result.detail.reveal.picks.map((s) => STANCE_COPY[s].label).join(", ")}.
@@ -168,6 +175,20 @@ function ResultView({ result, onClose }: { result: ChallengeResult; onClose: () 
   );
 }
 
+function RewardLine({ rewards }: { rewards: NonNullable<ChallengeResult["rewards"]> }) {
+  const parts = [
+    rewards.xp ? `+${rewards.xp} XP` : null,
+    rewards.shards ? `+${rewards.shards.count} ${rewards.shards.element} shard${rewards.shards.count > 1 ? "s" : ""}` : null,
+    rewards.rollTicket ? "a roll ticket" : null,
+  ].filter(Boolean);
+  return (
+    <>
+      {parts.length > 0 && <p className="monster-rewards">You earned {parts.join(", ")}.</p>}
+      {rewards.unlocks && <p className="monster-rewards">The zone chest it guarded is open for you now.</p>}
+    </>
+  );
+}
+
 type PlayProps = {
   challenge: Challenge;
   busy: boolean;
@@ -176,6 +197,11 @@ type PlayProps = {
   onDone: (r: ChallengeResult) => void;
   onError: (m: string) => void;
 };
+
+/** Mini-game player, shared with the weekly boss sheet (BossFight.tsx). */
+export function ChallengePlay(props: PlayProps) {
+  return <Play {...props} />;
+}
 
 function Play(props: PlayProps) {
   const c = props.challenge;

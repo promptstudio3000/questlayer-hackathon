@@ -113,8 +113,15 @@ import { actorsEnabled, createActorService } from "./actors/service.mjs";
 import "./npc/menu-builder.mjs";
 import { createNpcService } from "./npc/service.mjs";
 import { createNpcRoutes } from "./npc/routes.mjs";
+import { registerMenuBuilder } from "./actors/menu.mjs";
+import { loadTraders, traderKeysPath } from "./npc/trader-keys.mjs";
+import { createTraderService } from "./npc/trader.mjs";
+import { createTraderRoutes } from "./npc/trader-routes.mjs";
+import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
+import { createMonsterHunt } from "./actors/hunt/index.mjs";
+import { createHuntRoutes } from "./actors/hunt/routes.mjs";
 import {
   GOLD,
   DAY,
@@ -345,11 +352,49 @@ const actorRoutes = createActorRoutes(actorService);
 // NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
 // Ollama setup; the key stays in the runtime environment only.
 const npcRoutes = createNpcRoutes(actorService ? createNpcService(db) : null, actorService, db);
+// NPC traders on market v2 (N3): on when actors run, the market is v2 and the
+// private traders file exists (<state dir>/npc-traders.json or
+// NPC_TRADERS_PATH). NPC_TRADER_ENABLED=0 turns them off. Testnet only.
+let npcTraders = null;
+try {
+  const traderKeys =
+    actorService && nativeMarket && signedOrderIndex && NETWORK === "testnet" && process.env.NPC_TRADER_ENABLED !== "0"
+      ? loadTraders(traderKeysPath())
+      : null;
+  if (traderKeys?.size)
+    npcTraders = createTraderService({
+      db,
+      traders: traderKeys,
+      market: nativeMarket,
+      nfts: nativeCollectibles,
+      orderIndex: signedOrderIndex,
+    });
+} catch (error) {
+  console.error("NPC traders disabled:", error?.message || error);
+}
+if (npcTraders)
+  registerMenuBuilder("trader", async (context) => {
+    try {
+      return await npcTraders.menu(context);
+    } catch (error) {
+      console.error("NPC trader menu:", error?.code || error?.message || error);
+      return [];
+    }
+  });
+const traderRoutes = createTraderRoutes({ traders: npcTraders, actors: actorService, db, market: nativeMarket, vaults: nativeVaults });
 // Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
 // account level (spendable XP) plus skill, never Auras or items.
+// Monster hunt (NPC-PLAN §13, M3+M4): win rewards, guardian-locked chests and
+// the weekly co-op boss. Same ACTORS_ENABLED flag; BOSS_HP sizes the pool.
+const monsterHunt = createMonsterHunt(db, actorService, {
+  levelOf: (player) => demoProgression(db, player).level,
+  bossHp: Number(process.env.BOSS_HP) || undefined,
+});
+const huntRoutes = createHuntRoutes(monsterHunt, actorService, db);
 const challengeRoutes = createChallengeRoutes(
   createMonsterChallenges(db, actorService, {
     levelOf: (player) => demoProgression(db, player).level,
+    onResult: monsterHunt?.onChallengeResult,
   }),
 );
 const creatorMoney = creatorsManifest
@@ -961,9 +1006,13 @@ async function api(req, res, url) {
     await challengeRoutes.handle(req, res, url, { player, body, respond, assert })
   )
     return;
+  if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
   if (
     await actorRoutes.handle(req, res, url, { player, body, respond, assert })
   )
+    return;
+  if (await traderRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await npcRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
@@ -1694,8 +1743,10 @@ async function api(req, res, url) {
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/claim" && method === "POST") {
-    const input = await body(req),
-      result = game.claimQuest(db, player, input.questId, input.fix);
+    const input = await body(req);
+    // A guardian monster on duty locks its zone chest until you beat it.
+    monsterHunt?.chests.assertOpen(player, input.questId);
+    const result = game.claimQuest(db, player, input.questId, input.fix);
     emit("quest", { id: input.questId });
     return respond(res, { ...result, player: profile(player) });
   }
@@ -2499,6 +2550,20 @@ const orderIndexWorker =
   !backgroundWorkersDisabled && signedOrderIndex
     ? startOrderIndexWorker(signedOrderIndex, { intervalMs: 30000 })
     : null;
+// Trader keeper: settles orders, escrows stock, sweeps profit above the float
+// into rewards fund_rewards("sponsor") and restores the float. It signs only
+// when the traders file carries the trader's own account key.
+const traderKeeper =
+  !backgroundWorkersDisabled && npcTraders && rewardsConfig?.contractId
+    ? startTraderKeeper(
+        createTraderKeeper({
+          service: npcTraders,
+          provider,
+          rewardsId: rewardsConfig.contractId,
+          log: (entry) => entry.reports.some((r) => r.actions?.length || r.error) && console.log(JSON.stringify(entry)),
+        }),
+      )
+    : null;
 const creatorMoneyWorker =
   !backgroundWorkersDisabled && creatorMoney?.enabled
     ? startCreatorMoneyWorker(creatorMoney, { intervalMs: 30000 })
@@ -2540,6 +2605,7 @@ async function close() {
   await relayWorker?.stop?.();
   await creatorMoneyWorker?.stop?.();
   orderIndexWorker?.stop();
+  traderKeeper?.stop();
   await pinWorker?.stop?.();
   for (const r of listeners) r.end();
   server.close(() => {

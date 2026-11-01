@@ -82,6 +82,9 @@ export function createChallengeService({
       challengeId: c.id,
       actorId: c.actorId,
       archetype: c.archetype,
+      name: c.name,
+      element: c.element,
+      ...(c.guards ? { guards: c.guards } : {}),
       format: c.format,
       outcome: verdict.won ? "won" : "lost",
       score: verdict.score,
@@ -92,12 +95,18 @@ export function createChallengeService({
     };
     store.recordOutcome(c.player, c.actorId, c.dayId, verdict.won, result.finishedAt);
     store.closeChallenge(c.id, verdict.won, { ...result, reason: verdict.reason }, result.finishedAt);
+    let rewards = null;
     try {
-      onResult({ ...result, player: c.player });
+      rewards = onResult({ ...result, player: c.player }) || null;
     } catch {
       // Reward hooks must never turn a verified result into an error.
     }
-    return { result, detail: verdict, retryAt: verdict.won ? undefined : c.startedAt + ATTEMPT_COOLDOWN_MS };
+    return {
+      result,
+      detail: verdict,
+      retryAt: verdict.won ? undefined : c.startedAt + ATTEMPT_COOLDOWN_MS,
+      ...(rewards ? { rewards } : {}),
+    };
   }
 
   const LABELS = { quiz: "Answer its riddles", rhythm: "Match its rhythm", trace: "Trace its rune path", memory: "Repeat its rune song", duel: "Duel it" };
@@ -164,6 +173,9 @@ export function createChallengeService({
         encounterId: enc.encounterId,
         actorId: actor.id,
         archetype: actor.archetype,
+        name: actor.name,
+        element: actor.element,
+        guards: actor.guards,
         format,
         dayId: enc.dayId,
         seedCommitment: sha256(seed),

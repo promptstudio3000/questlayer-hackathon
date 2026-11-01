@@ -33,3 +33,32 @@ export const npcAccept = (actorId: string, encounter: string, offerId: string) =
   api<{ offerId: string; state: string }>(`${base(actorId)}/offers/${offerId}/accept`, { encounter });
 export const npcTurnIn = (actorId: string, encounter: string, offerId: string) =>
   api<NpcTurnIn>(`${base(actorId)}/offers/${offerId}/complete`, { encounter });
+
+// NPC traders and the vault keeper (server/npc/trader-routes.mjs).
+export interface NpcTrade {
+  tradeId: string;
+  kind: "trade_buy" | "trade_sell" | "trade_up";
+  state: string;
+  tokenId: string;
+  price: string;
+  deadlineMs: number;
+  order?: unknown;
+  market?: string;
+  nftContract?: string;
+  tokens?: string[];
+  receiver?: string;
+  edition?: string;
+  aura?: { id: string; name: string; rarity: string } | null;
+  ledgerAura?: { id: string; name: string; rarity: string } | null;
+  replay?: boolean;
+}
+export interface KeeperView {
+  accounts: { accountId: string }[];
+  lines: string[];
+}
+export const tradeAccept = (actorId: string, encounter: string, offerId: string) =>
+  api<NpcTrade>(`${base(actorId)}/offers/${offerId}/accept`, { encounter });
+export const tradeUpComplete = (actorId: string, encounter: string, offerId: string) =>
+  api<NpcTrade>(`${base(actorId)}/offers/${offerId}/complete`, { encounter });
+export const keeperView = (actorId: string, encounter: string) =>
+  api<KeeperView>(`${base(actorId)}/keeper`, { encounter });
