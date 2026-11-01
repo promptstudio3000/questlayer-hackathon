@@ -129,6 +129,9 @@ import { createHuntRoutes } from "./actors/hunt/routes.mjs";
 import { dailyBoardSettings } from "./daily-board/config.mjs";
 import { createDailyBoard } from "./daily-board/service.mjs";
 import { createDailyBoardRoutes } from "./daily-board/routes.mjs";
+import { seasonSettings } from "./season/config.mjs";
+import { createSeason } from "./season/service.mjs";
+import { createSeasonRoutes } from "./season/routes.mjs";
 import {
   GOLD,
   DAY,
@@ -433,6 +436,12 @@ const dailyBoard = dailyBoardConfig.enabled
   ? createDailyBoard(db, dailyBoardConfig, { actorsOn: () => !!actorService })
   : null;
 const dailyBoardRoutes = createDailyBoardRoutes(dailyBoard, db);
+// Hackathon season (docs/SEASON.md): cosmetic leaderboard of hunts, visits and
+// NPC lines, season mark + Aura at the goal, pot meter. Off by default on
+// mainnet; SEASON_* settings change the window, goal and points.
+const seasonConfig = seasonSettings(process.env, NETWORK);
+const season = seasonConfig.enabled ? createSeason(db, seasonConfig) : null;
+const seasonRoutes = createSeasonRoutes(season);
 const testSeed = createTestSeed(db, {
   creators: creatorRuntime.services
     ? {
@@ -714,6 +723,7 @@ async function api(req, res, url) {
         : { status: "not-configured" },
       testSeed: testSeedActive ? testSeed.status() : { status: "off" },
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
+      season: season ? season.status() : { status: "off" },
       now: Date.now(),
     });
   if (path === "/api/levels" && method === "GET")
@@ -1078,6 +1088,8 @@ async function api(req, res, url) {
   if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await seasonRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (
     await actorRoutes.handle(req, res, url, { player, body, respond, assert })

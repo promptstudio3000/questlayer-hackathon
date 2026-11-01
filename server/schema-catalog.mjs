@@ -7,6 +7,7 @@ for (const relative of [
   "./actors/schema.mjs",
   "./creators/bonus-vote.mjs",
   "./daily-board/schema.mjs",
+  "./season/schema.mjs",
   "./creators/completion.mjs",
   "./relayer/schema.mjs",
   "./native/creator-money.mjs",

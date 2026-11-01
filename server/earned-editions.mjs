@@ -13,6 +13,7 @@
 //   wisp        first Pocket Wisp mini-game win           server/actors/hunt/rewards.mjs
 //   wardbreaker first zone guardian win                   server/actors/hunt/rewards.mjs
 //   bossbane    3+ landed hits on a defeated weekly boss  server/actors/hunt/boss.mjs
+//   season      the hackathon season goal                 server/season/service.mjs
 import { id } from "./domain.mjs";
 import { AURA_CATALOG, AURA_SUPPLY } from "./aura-catalog.mjs";
 import { history } from "./database.mjs";
@@ -29,7 +30,7 @@ export const EARNED_EDITIONS_SCHEMA = registerModuleSchema({
 
 export const PILGRIM_LINES = 5;
 export const EARNED_EDITION_IDS = Object.freeze(
-  AURA_CATALOG.filter((e) => e.source === "npc" || e.source === "monster").map((e) => e.id),
+  AURA_CATALOG.filter((e) => ["npc", "monster", "season"].includes(e.source)).map((e) => e.id),
 );
 
 const ready = new WeakSet();
