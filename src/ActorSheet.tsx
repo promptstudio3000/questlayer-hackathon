@@ -26,6 +26,7 @@ function optional(files: Record<string, () => Promise<unknown>>, name: string) {
 }
 const NpcSheet = optional(import.meta.glob("./NpcSheet.tsx"), "NpcSheet");
 const MonsterChallenge = optional(import.meta.glob("./MonsterChallenge.tsx"), "MonsterChallenge");
+const BossFight = lazy(async () => ({ default: (await import("./BossFight")).BossFight }));
 
 const PROBLEM: Record<string, string> = {
   OUT_OF_RANGE: "Too far away. Walk closer: you need to be within about 35 m.",
@@ -55,7 +56,7 @@ export function ActorSheet({
     | { kind: "ready"; encounter: ActorEncounter }
     | { kind: "error"; message: string; retry: boolean }
   >({ kind: "loading" });
-  const [handoff, setHandoff] = useState<"npc" | "challenge" | null>(null);
+  const [handoff, setHandoff] = useState<"npc" | "challenge" | "boss" | null>(null);
   const stage = useRef<HTMLDivElement>(null);
   const attempt = useRef(0);
 
@@ -112,6 +113,12 @@ export function ActorSheet({
         <NpcSheet actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} />
       </Suspense>
     );
+  if (ready && handoff === "boss")
+    return (
+      <Suspense fallback={null}>
+        <BossFight actor={ready.actor} encounter={ready.encounter} worldId={worldId} onClose={onClose} />
+      </Suspense>
+    );
   if (ready && handoff === "challenge" && MonsterChallenge)
     return (
       <Suspense fallback={null}>
@@ -149,19 +156,25 @@ export function ActorSheet({
             <p className="actor-status" role="status">
               You are {ready.distanceM} m away. This meeting lasts 5 minutes.
             </p>
+            {ready.actor.boss && (
+              <p className="actor-note">
+                Shared boss health: {ready.actor.boss.hp} / {ready.actor.boss.maxHp} · {ready.actor.boss.participants} hunters this week.
+              </p>
+            )}
             {ready.actor.state === "defeated" && (
               <p className="actor-note">You already beat this one today.</p>
             )}
             {ready.menu.length ? (
               <ul className="actor-offers">
                 {ready.menu.map((offer) => {
-                  const canChallenge = offer.kind === "challenge" && !!MonsterChallenge;
+                  const isBoss = offer.kind === "challenge" && offer.terms.format === "boss-hit";
+                  const canChallenge = isBoss || (offer.kind === "challenge" && !!MonsterChallenge);
                   return (
                     <li key={offer.id}>
                       <button
                         className="primary-button"
                         disabled={!canChallenge}
-                        onClick={() => canChallenge && setHandoff("challenge")}
+                        onClick={() => canChallenge && setHandoff(isBoss ? "boss" : "challenge")}
                       >
                         {offer.label}
                       </button>

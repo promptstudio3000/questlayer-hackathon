@@ -115,6 +115,8 @@ import { createNpcService } from "./npc/service.mjs";
 import { createNpcRoutes } from "./npc/routes.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
+import { createMonsterHunt } from "./actors/hunt/index.mjs";
+import { createHuntRoutes } from "./actors/hunt/routes.mjs";
 import {
   GOLD,
   DAY,
@@ -347,9 +349,17 @@ const actorRoutes = createActorRoutes(actorService);
 const npcRoutes = createNpcRoutes(actorService ? createNpcService(db) : null, actorService, db);
 // Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
 // account level (spendable XP) plus skill, never Auras or items.
+// Monster hunt (NPC-PLAN §13, M3+M4): win rewards, guardian-locked chests and
+// the weekly co-op boss. Same ACTORS_ENABLED flag; BOSS_HP sizes the pool.
+const monsterHunt = createMonsterHunt(db, actorService, {
+  levelOf: (player) => demoProgression(db, player).level,
+  bossHp: Number(process.env.BOSS_HP) || undefined,
+});
+const huntRoutes = createHuntRoutes(monsterHunt, actorService, db);
 const challengeRoutes = createChallengeRoutes(
   createMonsterChallenges(db, actorService, {
     levelOf: (player) => demoProgression(db, player).level,
+    onResult: monsterHunt?.onChallengeResult,
   }),
 );
 const creatorMoney = creatorsManifest
@@ -960,6 +970,8 @@ async function api(req, res, url) {
   if (
     await challengeRoutes.handle(req, res, url, { player, body, respond, assert })
   )
+    return;
+  if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (
     await actorRoutes.handle(req, res, url, { player, body, respond, assert })
@@ -1694,8 +1706,10 @@ async function api(req, res, url) {
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/claim" && method === "POST") {
-    const input = await body(req),
-      result = game.claimQuest(db, player, input.questId, input.fix);
+    const input = await body(req);
+    // A guardian monster on duty locks its zone chest until you beat it.
+    monsterHunt?.chests.assertOpen(player, input.questId);
+    const result = game.claimQuest(db, player, input.questId, input.fix);
     emit("quest", { id: input.questId });
     return respond(res, { ...result, player: profile(player) });
   }

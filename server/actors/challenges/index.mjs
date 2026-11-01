@@ -47,7 +47,7 @@ export function nearestPlace(places, at) {
   return best?.name || null;
 }
 
-export function createMonsterChallenges(db, actorService, { levelOf, secret, now = () => Date.now() } = {}) {
+export function createMonsterChallenges(db, actorService, { levelOf, secret, now = () => Date.now(), onResult } = {}) {
   if (!actorService) return null;
   const city = defaultCity();
   const encounters = {
@@ -66,6 +66,7 @@ export function createMonsterChallenges(db, actorService, { levelOf, secret, now
     levelOf,
     now,
     store: dbChallengeStore(db),
+    onResult,
   });
   // Monster menus list the three formats on offer today (boss events: M4).
   registerMenuBuilder("monster", ({ actor, player, dayId, expiresAt }) =>

@@ -67,7 +67,7 @@ test("monster spawns respect spacing, closures and open zones", () => {
     for (let j = i + 1; j < monsters.length; j++)
       assert.ok(distance(monsters[i].home, monsters[j].home) >= 150);
   assert.equal(a.filter((s) => s.def.archetype === "roamer").length, 6);
-  assert.ok(!a.some((s) => s.def.id === "lick-boss"), "disabled boss stays off");
+  assert.equal(a.filter((s) => s.def.id === "lick-boss").length, 1, "one weekly boss at its square");
 });
 
 function world(db, { arena = true } = {}) {

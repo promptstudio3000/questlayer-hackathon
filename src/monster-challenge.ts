@@ -28,6 +28,14 @@ export type ChallengeResult = {
   result: { challengeId: string; outcome: "won" | "lost"; score: number; max: number; format: ChallengeFormat };
   detail: { reason?: string; reveal?: { picks: Stance[]; salt: string; commitment: string } };
   retryAt?: number;
+  /** Granted by the hunt slice (server/actors/hunt/rewards.mjs) on a win. */
+  rewards?: HuntWinRewards | null;
+};
+export type HuntWinRewards = {
+  xp: number;
+  shards: { element: string; count: number } | null;
+  rollTicket: boolean;
+  unlocks: { zoneId: string } | null;
 };
 export type DuelRoundLog = { stance: Stance; monster: Stance; outcome: "win" | "lose" | "clash"; skill: number; dealt: number; taken: number };
 export type DuelRoundResponse = { duel: { round: number; playerHp: number; monsterHp: number; last: DuelRoundLog; ringMs?: number } } & Partial<ChallengeResult>;
