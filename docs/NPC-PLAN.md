@@ -568,6 +568,8 @@ interface ActorDefinition {            // server/data/actors/<cityId>.json, sche
   hours?: [string, string];            // local "08:00", "20:00"
   windows?: number;                    // wandering_rare / boss: appearances per day
   persona?: string;                    // persona card id for N1 (server/data/personas/*.json)
+  element?: "ember" | "frost" | "storm" | "void"; // monsters: flavour/affinity only, never odds (§13.3)
+  count?: number;                      // 1–20, planned archetypes spawn numbered instances (glitch-moth-1…n)
   enabled: boolean;
 }
 interface ActorSegment { from: number; to: number; path: [number, number][]; dwell?: boolean } // ms epoch, [lng,lat]
@@ -587,9 +589,10 @@ interface ActorView {                  // GET /api/actors?worldId=&lat=&lng=
   stored in `actor_encounters`. Every later call (`/talk`, `/offers/:offerId/accept`, `/challenge`, `/challenge/:id/submit`)
   requires it.
 - **Offer** (rules engine output, N2/N3/M1 fill it): `{id, kind: "quest"|"chapter"|"trade_buy"|"trade_sell"|"trade_up"|"challenge"|"roll", label, terms, expiresAt}`.
-- **Schema modules** (via `registerModuleSchema`): `actors` v1 holds `actor_encounters`, `actor_offers`,
-  `actor_relationships`, `actor_progress` (shards, defeats, cooldowns), `ai_npc_requests`. N0 creates all tables, so
-  later slices only add columns through a version bump.
+- **Schema modules** (via `registerModuleSchema`): `actors` v1 (PR #50, see `docs/ACTORS-API.md`) holds
+  `actor_encounters`, `actor_offers`, `actor_relationships`, `actor_progress`, `actor_shards`, `actor_player_fixes`
+  (speed check) and `ai_npc_requests`. Module upgrades in this repo can only loosen CHECK clauses, not add
+  columns, so later slices store extra fields in the existing JSON columns.
 - **Feature flag:** `ACTORS_ENABLED` (default off in tests, on for the testnet VPS), with `NPC_AI_PROVIDER` reused
   from §5.
 - **Client:** `src/actors-layer.ts` adds a MapLibre layer that animates `ActorView.segments`.
