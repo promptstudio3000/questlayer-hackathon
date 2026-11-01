@@ -10,7 +10,7 @@
 // chosen by the chest entitlement rules; the player secures it on NEAR through
 // the existing award-signed `redeem_aura` claim.
 import { hash } from "../domain.mjs";
-import { extraQuestLines } from "../levels.mjs";
+import { extraQuestLines, extraStoryChapters } from "../levels.mjs";
 
 export const NPC_OFFER_POLICY = "npc-offers-v1";
 export const LINE_XP_PER_STEP = 20;
@@ -155,7 +155,8 @@ export function buildMenu({ actor, persona, world, now = Date.now(), done = new 
     }
   } else if (archetype === "storyteller") {
     for (const q of steps) {
-      if (offers.length >= 2) break;
+      // L8 unlock (server/data/level-table.json): one more chapter on offer.
+      if (offers.length >= 2 + extraStoryChapters(level)) break;
       const offerId = `chapter:${hash(`${seed}|${q.id}`).slice(0, 16)}`;
       if (done.has(offerId)) continue;
       const finishesSet = (chapters + 1) % STORY_SET_SIZE === 0;

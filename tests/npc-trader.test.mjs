@@ -10,7 +10,8 @@ import { verifySignedOrderLocally } from "../server/native/signed-orders.mjs";
 import { NETWORK } from "../server/native/network.mjs";
 import { parseTraders } from "../server/npc/trader-keys.mjs";
 import { createTraderService } from "../server/npc/trader.mjs";
-import { createTraderKeeper, sweepReceiptId } from "../server/npc/trader-keeper.mjs";
+import { createTraderKeeper, stockClaimId, sweepReceiptId } from "../server/npc/trader-keeper.mjs";
+import { awardMessage } from "../server/native/award-vouchers.mjs";
 import { offerFacts } from "../server/npc/offers.mjs";
 import {
   FLOAT,
@@ -18,6 +19,11 @@ import {
   MILLI,
   REFERENCE,
   SEED_PER_DAY,
+  STOCK_EDITIONS,
+  STOCK_RESERVE,
+  STOCK_TARGET,
+  pickStockEdition,
+  rarityOf,
   SWEEP_BUFFER,
   YOCTO,
   discountSellPrice,
@@ -109,6 +115,9 @@ function chain() {
     contractId: NFTS,
     view: async (method, args = {}) => {
       if (method === "nft_token") return s.owner.has(args.token_id) ? { token_id: args.token_id, owner_id: s.owner.get(args.token_id) } : null;
+      if (method === "get_award_signer") return s.awardKey || null;
+      if (method === "edition_minted") return s.minted?.[args.edition] || 0;
+      if (method === "get_claim_token") return s.claims?.get(args.claim_id) || null;
       if (method === "nft_tokens_for_owner")
         return [...s.owner.entries()].filter(([, o]) => o === args.account_id).map(([token_id, owner_id]) => ({ token_id, owner_id }));
       throw new Error(method);
@@ -251,4 +260,106 @@ test("traders files are testnet-only and keys must parse", () => {
   assert.throws(() =>
     parseTraders({ network: "testnet", traders: [{ actorId: "x1x", accountId: "npc.near", signingKey: KeyPair.fromRandom("ed25519").toString() }] }),
   );
+});
+
+test("stock editions always leave the treasury a margin over the mint cost", () => {
+  assert.ok(STOCK_EDITIONS.length >= 2);
+  for (const e of STOCK_EDITIONS) assert.ok(["rare", "epic"].includes(rarityOf(e)), `${e} is rare or epic`);
+  assert.ok(!STOCK_EDITIONS.includes("ember"), "commons cannot carry the mint cost at 0.02");
+  // Least-stocked first, never a claim-only edition.
+  const first = pickStockEdition([], 0);
+  assert.ok(STOCK_EDITIONS.includes(first));
+  assert.notEqual(pickStockEdition([first], 0), first);
+  // A real mint cost still sells at ≥ cost × 1.10 and below the book.
+  for (const e of STOCK_EDITIONS) {
+    const p = discountSellPrice(e, 22n * MILLI, null);
+    assert.ok(p && p.price * 100n >= 22n * MILLI * 110n && p.price <= referenceValue(e));
+  }
+});
+
+function stockKeeper(t, { liquid = YOCTO, awardKey } = {}) {
+  const ctx = setup(t);
+  const { c, service } = ctx;
+  const signer = { publicKey: "award-pub", sign: (m) => `sig:${m.length}` };
+  c.s.awardKey = awardKey ?? signer.publicKey;
+  c.s.claims = new Map();
+  c.s.minted = {};
+  let amount = liquid;
+  const calls = [];
+  const account = {
+    callFunctionRaw: async ({ contractId, methodName, args, deposit }) => {
+      calls.push({ contractId, methodName, args, deposit });
+      if (methodName === "redeem_aura") {
+        const n = (c.s.minted[args.edition] || 0) + 1;
+        c.s.minted[args.edition] = n;
+        const tokenId = `aura:${args.edition}:${n}`;
+        c.s.claims.set(args.claim_id, tokenId);
+        c.s.owner.set(tokenId, args.receiver_id);
+        amount -= 18n * MILLI; // storage + gas
+      }
+      if (methodName === "nft_transfer_call") {
+        c.s.owner.set(args.token_id, MARKET);
+        c.s.listings.set(args.token_id, { seller: NPC, state: "deposited" });
+        amount -= 2n * MILLI;
+      }
+      return { status: {}, transaction: { hash: `tx-${calls.length}` } };
+    },
+  };
+  const provider = { query: async () => ({ amount: String(amount), storage_usage: 0 }) };
+  const keeper = createTraderKeeper({ service, provider, rewardsId: "rewards.testnet", awardSigner: signer, accountFor: () => account });
+  return { ...ctx, keeper, calls, signer };
+}
+
+test("the keeper stocks an empty shelf with signed claims and escrows it", { skip }, async (t) => {
+  const { c, keeper, calls, service, signer, encounter, player } = stockKeeper(t);
+  for (let i = 0; i < STOCK_TARGET; i++) await keeper.tick({ execute: true });
+  const redeems = calls.filter((x) => x.methodName === "redeem_aura");
+  assert.equal(redeems.length, STOCK_TARGET, "one mint per tick until the shelf holds 3");
+  const r0 = redeems[0];
+  assert.equal(r0.contractId, NFTS);
+  assert.equal(r0.args.receiver_id, NPC, "the trader redeems to itself");
+  assert.match(r0.args.claim_id, /^earned:npc-stock:kupec-vojtech:\d{8}:1$/);
+  assert.equal(r0.args.claim_id, stockClaimId(ACTOR.id, r0.args.claim_id.split(":")[3], 1));
+  const msg = awardMessage(NFTS, { ...r0.args, expires_at: r0.args.expires_at_ms });
+  assert.equal(r0.args.signature, signer.sign(msg));
+  assert.equal(new Set(redeems.map((x) => x.args.edition)).size, STOCK_TARGET, "three different editions");
+  assert.equal(c.s.listings.size, STOCK_TARGET, "all stock is in market escrow");
+  const lots = service.ledger.held(ACTOR.id);
+  assert.equal(lots.length, STOCK_TARGET);
+  for (const lot of lots) assert.equal(BigInt(lot.cost), 21n * MILLI, "cost = measured spend + escrow allowance");
+  // A full shelf mints nothing more.
+  await keeper.tick({ execute: true });
+  assert.equal(calls.filter((x) => x.methodName === "redeem_aura").length, STOCK_TARGET);
+  // A brand-new explorer now sees sales above cost × 1.10.
+  const enc = await encounter(player("Newbie", "newbie.testnet"));
+  const sells = enc.menu.filter((o) => o.kind === "trade_sell");
+  assert.ok(sells.length >= 1, "a fresh player sees offers");
+  for (const o of sells) assert.ok(BigInt(o.terms.price) * 100n >= 21n * MILLI * 110n);
+});
+
+test("stocking needs the collection to trust the award key, liquid NEAR and a daily cap", { skip }, async (t) => {
+  const wrong = stockKeeper(t, { awardKey: "someone-else" });
+  const r = await wrong.keeper.tick({ execute: true });
+  assert.deepEqual(r.reports[0].actions, [{ step: "stock", skipped: "award-signer" }]);
+  const poor = stockKeeper(t, { liquid: YOCTO / 2n + 10n * MILLI });
+  const p = await poor.keeper.tick({ execute: true });
+  assert.equal(p.reports[0].actions[0].skipped, "low-liquid");
+  assert.equal(poor.calls.length, 0);
+  // Daily cap: sold-out stock refills at most 3 times a day.
+  const busy = stockKeeper(t);
+  for (let i = 0; i < 6; i++) {
+    await busy.keeper.tick({ execute: true });
+    busy.c.s.listings.clear(); // pretend everything sold
+  }
+  assert.equal(busy.calls.filter((x) => x.methodName === "redeem_aura").length, 3);
+});
+
+test("a sweep leaves a restocking reserve behind and sends the rest to the treasury", { skip }, async (t) => {
+  const { c, service } = setup(t);
+  const provider = { query: async () => ({ amount: String(YOCTO / 2n), storage_usage: 0 }) }; // no spare liquid
+  const keeper = createTraderKeeper({ service, provider, rewardsId: "rewards.testnet" });
+  c.s.credit.set(NPC, FLOAT + SWEEP_BUFFER + YOCTO);
+  const sweep = (await keeper.tick({ execute: false })).reports[0];
+  assert.equal(sweep.actions.find((a) => a.step === "sweep").amount, String(YOCTO - STOCK_RESERVE));
+  assert.equal(sweep.stockReserve, String(STOCK_RESERVE));
 });
