@@ -164,7 +164,26 @@ import {
   ArrowClockwise,
   WifiSlash,
   Flame,
+  Vibrate,
+  SpeakerHigh,
+  PersonSimpleRun,
+  BookOpen,
 } from "@phosphor-icons/react";
+import { Details, ScreenTabPanel, ScreenTabs } from "./ScreenTabs";
+import {
+  BAG_TABS,
+  COMMUNITY_TABS,
+  MARKET_TABS,
+  PROFILE_TABS,
+  ProfileHero,
+  ProfileTile,
+  SettingsSwitch,
+  communityTabOf,
+  creatorSection,
+  profileTabOf,
+  type CommunityTab,
+  type ProfileTab,
+} from "./screens";
 import {
   startRegistration,
   startAuthentication,
@@ -346,8 +365,16 @@ export default function App() {
     creatorCapability?.playerId === player?.id &&
     creatorCapability?.enabled === true;
   const creatorPlaces = useCreatorPlaces(player?.id ?? null);
-  const { tab, walletView, sheetExpanded, taskRealm, notesView, creatorView } =
-    navigation;
+  const {
+    tab,
+    walletView,
+    sheetExpanded,
+    taskRealm,
+    notesView,
+    creatorView,
+    profileView,
+    marketView,
+  } = navigation;
   const navigationContext = useRef({ signature: "", revision: 0 });
   const navigationSignature = JSON.stringify([
     tab,
@@ -356,6 +383,8 @@ export default function App() {
     taskRealm,
     notesView,
     creatorView,
+    profileView,
+    marketView,
   ]);
   if (navigationContext.current.signature !== navigationSignature)
     navigationContext.current = {
@@ -367,7 +396,30 @@ export default function App() {
     setSheetExpanded = navigation.setter("sheetExpanded"),
     setTaskRealm = navigation.setter("taskRealm"),
     setNotesView = navigation.setter("notesView"),
-    setCreatorView = navigation.setter("creatorView");
+    setCreatorView = navigation.setter("creatorView"),
+    setMarketView = navigation.setter("marketView");
+  const profileTab = profileTabOf(tab, profileView);
+  const showProfileTabs = tab === "settings" || tab === "fuel" || tab === "wallet";
+  function chooseProfileTab(next: ProfileTab) {
+    if (next === "stake") setTab("fuel");
+    else if (next === "rewards") setTab("wallet");
+    else navigation.update({ tab: "settings", profileView: next });
+  }
+  const communityTab = communityTabOf(tab, creatorView);
+  const showCommunityTabs =
+    tab === "community" || tab === "bounties" || tab === "messages";
+  function chooseCommunityTab(next: CommunityTab) {
+    if (next === "tasks") setTab("bounties");
+    else if (next === "notes") setTab("messages");
+    else
+      navigation.update({
+        tab: "community",
+        creatorView:
+          creatorSection(creatorView) === next
+            ? creatorView
+            : { page: next === "creators" ? "creators" : "community" },
+      });
+  }
   const [nativeWardrobe, setNativeWardrobe] =
       useState<NativeWardrobeState | null>(null),
     [nativeError, setNativeError] = useState("");
@@ -2528,7 +2580,11 @@ export default function App() {
       ? nativePlay
         ? "Nearby walks"
         : "Nearby discoveries"
-      : nav.find((n) => n.id === tab)?.label ||
+      : showProfileTabs
+        ? "Profile"
+        : showCommunityTabs
+          ? "Community"
+          : nav.find((n) => n.id === tab)?.label ||
         {
           messages: "Map notes",
           bounties: "Community tasks",
@@ -2919,6 +2975,34 @@ export default function App() {
               </button>
             )}
           </div>
+          {showProfileTabs && (
+            <ScreenTabs
+              label="Profile"
+              idBase="profile"
+              tabs={PROFILE_TABS}
+              value={profileTab}
+              onChange={chooseProfileTab}
+              withPanel={tab !== "wallet"}
+            />
+          )}
+          {showCommunityTabs && (
+            <ScreenTabs
+              label="Community"
+              idBase="community"
+              tabs={COMMUNITY_TABS}
+              value={communityTab}
+              onChange={chooseCommunityTab}
+            />
+          )}
+          {(tab === "inventory" || tab === "market") && (
+            <ScreenTabs
+              label="Inventory"
+              idBase="bag"
+              tabs={BAG_TABS}
+              value={tab === "market" ? "market" : "items"}
+              onChange={(next) => setTab(next === "market" ? "market" : "inventory")}
+            />
+          )}
           {tab === "explore" && !selected && !nativePlay && (
             <>
               {!world?.zones.length && !recommendation && world && (
@@ -3341,7 +3425,7 @@ export default function App() {
             />
           )}
           {tab === "inventory" && (
-            <>
+            <ScreenTabPanel idBase="bag" value="items">
               <Inventory
                 key={player.id}
                 onOriginalAppearance={(appearance) =>
@@ -3469,7 +3553,7 @@ export default function App() {
                   return result === true;
                 }}
               />
-            </>
+            </ScreenTabPanel>
           )}
           {((tab === "explore" && nativePlay) ||
             tab === "expeditions" ||
@@ -3572,192 +3656,208 @@ export default function App() {
               <ArrowRight size={20} />
             </button>
           )}
-          {tab === "settings" && (
-            <div className="play-menu">
-              <button className="play-entry" onClick={() => setTab("market")}>
-                <Storefront size={24} />
-                <span>
-                  <b>Market</b>
-                  <small>Trade Auras with other explorers</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-              <button className="play-entry" onClick={() => setTab("fuel")}>
-                <Flame size={24} />
-                <span>
-                  <b>Fuel the city</b>
-                  <small>Stake to grow the pot and open Tier 2 places</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-              <button className="play-entry" onClick={() => setTab("wallet")}>
-                <Wallet size={24} />
-                <span>
-                  <b>Rewards and balance</b>
-                  <small>Your GOLD, receipts and practice staking</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-              <AccountSessions
-                player={player}
-                onConnect={connectNear}
-                onSecure={() => void attachPasskey()}
-                onRevoke={revokeGameSessions}
-                busy={busy}
+          {tab === "settings" && profileView === "character" && (
+            <ScreenTabPanel idBase="profile" value="character">
+              <ProfileHero
+                avatar={
+                  <Character
+                    items={appearanceItems}
+                    originTokenId={player.appearance.originTokenId}
+                    compact
+                  />
+                }
+                name={player.name}
+                level={hudLevel}
+                progress={
+                  hudXp !== null && hudLevel !== null
+                    ? Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          ((hudXp - 100 * (hudLevel - 1) ** 2) /
+                            (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) *
+                            100,
+                        ),
+                      )
+                    : null
+                }
+                detail={
+                  hudXp !== null && hudLevel !== null
+                    ? `${hudXp} / ${100 * hudLevel ** 2} XP to level ${hudLevel + 1}`
+                    : "Secure your explorer to keep progress"
+                }
               />
-              <DeviceKeys
-                status={invisible.status}
-                accountId={invisible.accountId}
-                keys={invisible.keys}
-                localPublicKey={invisible.publicKey}
-                busy={busy}
-                onSetupRecovery={setupRecoveryPasskey}
-                onRevoke={revokeDevice}
-                onRestore={restoreThisDevice}
-              />
-              <details className="advanced-settings">
-                <summary>Advanced</summary>
-                <div
-                  className="play-mode-switch"
-                  role="group"
-                  aria-label="Reward ledger"
-                >
-                  <button
-                    aria-pressed={!nativePlay}
-                    onClick={() => chooseLedger(false)}
-                  >
-                    Practice ledger
-                  </button>
-                  <button
-                    aria-pressed={nativePlay}
-                    onClick={() => chooseLedger(true)}
-                  >
-                    Test network
-                  </button>
-                </div>
-                <p className="fine-print">
-                  Practice GOLD is play money. The test network uses NEAR
-                  testnet tokens. Neither has monetary value; receipts for both
-                  live in Rewards and balance.
-                </p>
-                <button className="play-entry" onClick={() => setTab("fund")}>
-                  <ChartDonut size={24} />
-                  <span>
-                    <b>Game economy</b>
-                    <small>Where rewards come from</small>
-                  </span>
-                  <ArrowRight size={20} />
-                </button>
-              </details>
-              <button
-                className="play-entry"
-                aria-pressed={map3D}
-                onClick={toggleMap3D}
-              >
-                <Cube size={24} />
-                <span>
-                  <b>3D character: {map3D ? "On" : "Off"}</b>
-                  <small>Choose 2D for a lighter map</small>
-                </span>
-              </button>
+              <div className="profile-tiles">
+                <ProfileTile
+                  icon={Backpack}
+                  label="Wardrobe"
+                  hint="Items and Auras"
+                  onClick={() => setTab("inventory")}
+                />
+                <ProfileTile
+                  icon={Storefront}
+                  label="Market"
+                  hint="Trade Auras"
+                  onClick={() => setTab("market")}
+                />
+                <ProfileTile
+                  icon={Flame}
+                  label="Stake"
+                  hint="Grow the pot · open Tier 2"
+                  onClick={() => setTab("fuel")}
+                />
+                <ProfileTile
+                  icon={Wallet}
+                  label="Rewards"
+                  hint="GOLD and receipts"
+                  onClick={() => setTab("wallet")}
+                />
+              </div>
+              <p className="fine-print">
+                {nativePlay
+                  ? "You are playing on the test network. Test NEAR has no monetary value."
+                  : "You are playing with practice GOLD, which is play money."}
+              </p>
+            </ScreenTabPanel>
+          )}
+          {tab === "settings" && profileView === "settings" && (
+            <ScreenTabPanel idBase="profile" value="settings">
               <section
-                className="feedback-settings"
-                aria-labelledby="feedback-settings-title"
+                className="settings-group"
+                aria-labelledby="settings-game-title"
               >
-                <h2 id="feedback-settings-title">
-                  Sound, vibration and motion
-                </h2>
-                <div
-                  className="play-mode-switch"
-                  role="group"
-                  aria-label="Vibration"
+                <h2 id="settings-game-title">Game</h2>
+                <SettingsSwitch
+                  icon={Cube}
+                  label="3D character"
+                  hint="Turn off for a lighter map"
+                  checked={map3D}
+                  onChange={() => toggleMap3D()}
+                />
+                <SettingsSwitch
+                  icon={Vibrate}
+                  label="Vibration"
+                  checked={feedback.haptics}
+                  onChange={(on) => {
+                    setFeedbackPreferences({ haptics: on });
+                    if (on) cue("step");
+                  }}
+                />
+                <SettingsSwitch
+                  icon={SpeakerHigh}
+                  label="Sound"
+                  checked={feedback.sound}
+                  onChange={(on) => {
+                    setFeedbackPreferences({ sound: on });
+                    if (on) previewSound();
+                  }}
+                />
+                <SettingsSwitch
+                  icon={PersonSimpleRun}
+                  label="Reduce motion"
+                  hint="Stops map flights, walking and sparkles"
+                  checked={feedback.motion === "reduce"}
+                  onChange={(on) =>
+                    setFeedbackPreferences({ motion: on ? "reduce" : "system" })
+                  }
+                />
+              </section>
+              <section
+                className="settings-group"
+                aria-labelledby="settings-help-title"
+              >
+                <h2 id="settings-help-title">Help</h2>
+                <button
+                  type="button"
+                  className="settings-row"
+                  onClick={() => setShowNpc(true)}
                 >
-                  <button
-                    aria-pressed={feedback.haptics}
-                    onClick={() => {
-                      setFeedbackPreferences({ haptics: true });
-                      cue("step");
-                    }}
-                  >
-                    Vibration on
-                  </button>
-                  <button
-                    aria-pressed={!feedback.haptics}
-                    onClick={() => setFeedbackPreferences({ haptics: false })}
-                  >
-                    Off
-                  </button>
-                </div>
-                <div
-                  className="play-mode-switch"
-                  role="group"
-                  aria-label="Sound"
-                >
-                  <button
-                    aria-pressed={feedback.sound}
-                    onClick={() => {
-                      setFeedbackPreferences({ sound: true });
-                      previewSound();
-                    }}
-                  >
-                    Sound on
-                  </button>
-                  <button
-                    aria-pressed={!feedback.sound}
-                    onClick={() => setFeedbackPreferences({ sound: false })}
-                  >
-                    Off
-                  </button>
-                </div>
-                <div
-                  className="play-mode-switch"
-                  role="group"
-                  aria-label="Motion"
-                >
-                  <button
-                    aria-pressed={feedback.motion === "system"}
-                    onClick={() => setFeedbackPreferences({ motion: "system" })}
-                  >
-                    Motion like my device
-                  </button>
-                  <button
-                    aria-pressed={feedback.motion === "reduce"}
-                    onClick={() => setFeedbackPreferences({ motion: "reduce" })}
-                  >
-                    Reduce motion
-                  </button>
-                </div>
-                <p className="fine-print">
-                  Reduce motion stops map flights, walking animation and
-                  sparkles. Vibration works on phones that support it.
-                </p>
+                  <Question size={22} aria-hidden="true" />
+                  <span>Help & guide</span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </button>
                 {!firstSession.visible && (
                   <button
-                    className="play-entry"
+                    type="button"
+                    className="settings-row"
                     onClick={() => {
                       firstSession.show();
                       setTab("explore");
                       setSheetExpanded(false);
                     }}
                   >
-                    <Compass size={24} />
-                    <span>
-                      <b>Show first steps again</b>
-                      <small>The short guide for new explorers</small>
-                    </span>
-                    <ArrowRight size={20} />
+                    <Compass size={22} aria-hidden="true" />
+                    <span>Show first steps again</span>
+                    <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 )}
+                <button
+                  type="button"
+                  className="settings-row"
+                  onClick={() => setTab("fund")}
+                >
+                  <BookOpen size={22} aria-hidden="true" />
+                  <span>
+                    Game economy
+                    <small>Where rewards come from</small>
+                  </span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </button>
               </section>
-              <button className="play-entry" onClick={() => setShowNpc(true)}>
-                <Question size={24} />
-                <span>
-                  <b>Help & guide</b>
-                  <small>How to play</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-            </div>
+              <section
+                className="settings-group"
+                aria-labelledby="settings-account-title"
+              >
+                <h2 id="settings-account-title">Account and devices</h2>
+                <div className="settings-pad">
+                  <AccountSessions
+                    player={player}
+                    onConnect={connectNear}
+                    onSecure={() => void attachPasskey()}
+                    onRevoke={revokeGameSessions}
+                    busy={busy}
+                  />
+                  <DeviceKeys
+                    status={invisible.status}
+                    accountId={invisible.accountId}
+                    keys={invisible.keys}
+                    localPublicKey={invisible.publicKey}
+                    busy={busy}
+                    onSetupRecovery={setupRecoveryPasskey}
+                    onRevoke={revokeDevice}
+                    onRestore={restoreThisDevice}
+                  />
+                </div>
+              </section>
+              <details className="advanced-settings settings-group">
+                <summary>Advanced: reward ledger</summary>
+                <div className="settings-pad">
+                  <div
+                    className="play-mode-switch"
+                    role="group"
+                    aria-label="Reward ledger"
+                  >
+                    <button
+                      aria-pressed={!nativePlay}
+                      onClick={() => chooseLedger(false)}
+                    >
+                      Practice ledger
+                    </button>
+                    <button
+                      aria-pressed={nativePlay}
+                      onClick={() => chooseLedger(true)}
+                    >
+                      Test network
+                    </button>
+                  </div>
+                  <p className="fine-print">
+                    Practice GOLD is play money. The test network uses NEAR
+                    testnet tokens. Neither has monetary value; receipts for
+                    both live in Profile · Rewards.
+                  </p>
+                </div>
+              </details>
+            </ScreenTabPanel>
           )}
           {tab === "funding" && (
             <RewardFundingPage
@@ -3767,11 +3867,7 @@ export default function App() {
             />
           )}
           {tab === "fuel" && (
-            <>
-              <button className="back-link" onClick={() => setTab("settings")}>
-                <ArrowLeft size={20} />
-                Settings
-              </button>
+            <ScreenTabPanel idBase="profile" value="stake">
               <FuelTheCity
                 player={player}
                 account={
@@ -3784,13 +3880,28 @@ export default function App() {
                 onConnect={connectNear}
                 onTransaction={operateNativeVault}
               />
-            </>
+              <button
+                type="button"
+                className="play-entry"
+                onClick={() => {
+                  setWalletView("staking");
+                  setTab("wallet");
+                }}
+              >
+                <Leaf size={22} />
+                <span>
+                  <b>Vault staking</b>
+                  <small>Your staked balance and practice staking</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
+            </ScreenTabPanel>
           )}
           {tab === "fund" && (
             <>
               <button className="back-link" onClick={() => setTab("settings")}>
                 <ArrowLeft size={20} />
-                Settings
+                Profile
               </button>
               <NativeEconomyPanel />
               <details className="play-details">
@@ -3800,45 +3911,17 @@ export default function App() {
             </>
           )}
           {tab === "community" && (
-            <>
-              <details className="play-details" open={!creatorsEnabled}>
-                <summary>Map notes and sponsored tasks</summary>
-                <div className="play-menu">
-                  <button
-                    className="play-entry"
-                    onClick={() => setTab("messages")}
-                  >
-                    <ChatCircle size={26} />
-                    <span>
-                      <b>Map notes</b>
-                      <small>Leave a note at a place</small>
-                    </span>
-                    <ArrowRight size={20} />
-                  </button>
-                  <button
-                    className="play-entry"
-                    onClick={() => setTab("bounties")}
-                  >
-                    <Flag size={26} />
-                    <span>
-                      <b>Community tasks</b>
-                      <small>Fund a task · share proof · earn a reward</small>
-                    </span>
-                    <ArrowRight size={20} />
-                  </button>
-                  <p className="play-hint">
-                    Notes are pinned where you stand on the map. Tasks pay from
-                    their sponsor's reward.
-                  </p>
-                </div>
-              </details>
-              <CommunityBonusVote
-                key={`bonus-${player.id}`}
-                playerId={player.id}
-                notify={notify}
-              />
+            <ScreenTabPanel idBase="community" value={communityTab}>
+              {communityTab === "creators" && (
+                <CommunityBonusVote
+                  key={`bonus-${player.id}`}
+                  playerId={player.id}
+                  notify={notify}
+                />
+              )}
               <CreatorCommunity
                 key={player.id}
+                section={communityTab === "creators" ? "creators" : "quests"}
                 player={player}
                 notify={notify}
                 view={creatorView}
@@ -3864,20 +3947,22 @@ export default function App() {
                   );
                 }}
               />
-            </>
+            </ScreenTabPanel>
           )}
           {tab === "market" && (
+            <ScreenTabPanel idBase="bag" value="market">
+              <ScreenTabs
+                label="Market"
+                idBase="market"
+                variant="sub"
+                sticky={false}
+                tabs={MARKET_TABS}
+                value={marketView}
+                onChange={setMarketView}
+              />
+              <ScreenTabPanel idBase="market" value={marketView}>
+                {marketView === "practice" ? (
             <Market
-              nativeContent={
-                <NativeMarketPanel
-                  player={player}
-                  wardrobe={nativeWardrobe}
-                  busy={busy}
-                  onConnect={connectNear}
-                  onTrade={tradeNative}
-                  orderSigner={orderSigner}
-                />
-              }
               player={player}
               busy={busy}
               onBuy={(listing) =>
@@ -3900,15 +3985,23 @@ export default function App() {
               }
               onInventory={() => setTab("inventory")}
             />
-          )}
-          {(tab === "bounties" ||
-            (tab === "messages" && notesView === "browse")) && (
-            <button className="back-link" onClick={() => setTab("community")}>
-              <ArrowLeft size={20} />
-              Community
-            </button>
+                ) : (
+                  <NativeMarketPanel
+                    key={marketView}
+                    section={marketView}
+                    player={player}
+                    wardrobe={nativeWardrobe}
+                    busy={busy}
+                    onConnect={connectNear}
+                    onTrade={tradeNative}
+                    orderSigner={orderSigner}
+                  />
+                )}
+              </ScreenTabPanel>
+            </ScreenTabPanel>
           )}
           {tab === "messages" && (
+            <ScreenTabPanel idBase="community" value="notes">
             <MapNotes
               key={player.id}
               playerId={player.id}
@@ -3925,9 +4018,10 @@ export default function App() {
                 window.dispatchEvent(new Event("questlayer:social-blocks"));
               }}
             />
+            </ScreenTabPanel>
           )}
           {tab === "bounties" && (
-            <>
+            <ScreenTabPanel idBase="community" value="tasks">
               <div
                 className="play-mode-switch"
                 role="group"
@@ -3961,7 +4055,7 @@ export default function App() {
                   notify={notify}
                 />
               )}
-            </>
+            </ScreenTabPanel>
           )}
         </main>
       )}
@@ -4951,14 +5045,12 @@ function FundPanel() {
 }
 function Market({
   player,
-  nativeContent,
   busy,
   onBuy,
   onCancel,
   onInventory,
 }: {
   player: Player;
-  nativeContent: ReactNode;
   busy: string;
   onBuy: (l: Listing) => void;
   onCancel: (l: Listing) => void;
@@ -4977,18 +5069,13 @@ function Market({
   }, []);
   return (
     <>
-      {nativeContent}
-      <h2 className="demo-market-heading">Practice GOLD market</h2>
-      <p className="panel-subtitle">
-        Find an Aura that feels like you. Or pass your discovery along.
-      </p>
-      <div className="market-banner">
-        <Storefront size={29} />
-        <span>
-          <b>From explorers, for explorers</b>
-          <small>Fixed prices · 0% fee · practice Auras</small>
-        </span>
+      <div className="section-label">
+        <h2>Practice GOLD market</h2>
+        <span className="badge purple">PRACTICE</span>
       </div>
+      <p className="market-lead">
+        Fixed prices · 0% fee · practice GOLD is play money.
+      </p>
       <div className="section-label">
         <h2>On the market</h2>
         <button className="text-button" onClick={onInventory}>
@@ -5037,9 +5124,13 @@ function Market({
           ))}
         </div>
       )}
-      <p className="fine-print">
-        These offers use practice GOLD. Secured Auras trade separately above.
-      </p>
+      <Details>
+        <p>
+          Find an Aura that feels like you, or pass your discovery along. These
+          offers use practice GOLD. Secured Auras trade for test NEAR in the
+          Secured and Offers tabs.
+        </p>
+      </Details>
     </>
   );
 }
