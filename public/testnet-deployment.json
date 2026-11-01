@@ -1,71 +1,71 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-10-31T23:30:06.783Z",
-  "gameContract": "game.questlayer-dev-20261031.testnet",
-  "collectiblesContract": "nfts.questlayer-dev-20261031.testnet",
-  "operator": "questlayer-dev-20261031.testnet",
-  "smokeAccount": "explorer.questlayer-dev-20261031.testnet",
+  "verifiedAt": "2026-11-01T09:28:42.998Z",
+  "gameContract": "game.questlayer-dev-20261101.testnet",
+  "collectiblesContract": "nfts.questlayer-dev-20261101.testnet",
+  "operator": "questlayer-dev-20261101.testnet",
+  "smokeAccount": "explorer.questlayer-dev-20261101.testnet",
   "tokenId": "aura:polar:1",
   "transactions": [
     {
-      "label": "create game.questlayer-dev-20261031.testnet",
-      "transaction": "HZhh23GQynUgTthLp94e7hsPszZDt8XQgJf8LEKJnAEH"
+      "label": "create game.questlayer-dev-20261101.testnet",
+      "transaction": "54jCfaX54b1bathmvWKXxwdPGFPpieJFM6ZHJ8V8YkKi"
     },
     {
-      "label": "create nfts.questlayer-dev-20261031.testnet",
-      "transaction": "2d8hXFwMGd6kLo1tbu2JmgSni8eAZELStiHa2hm7mpwz"
+      "label": "create nfts.questlayer-dev-20261101.testnet",
+      "transaction": "E51ceMiarjDth3uh2hTL6kSEHQG3ur44fzWDEsFcbXny"
     },
     {
-      "label": "create explorer.questlayer-dev-20261031.testnet",
-      "transaction": "Hag8sTjhUhhZzqjWBXCud2FH7zheNKWC6ZfSQuouT27i"
+      "label": "create explorer.questlayer-dev-20261101.testnet",
+      "transaction": "A45eVaQaPrFNhz6pBWgHTcDxcc9WkXu8LjQ4cWSNAwF8"
     },
     {
-      "label": "deploy game.questlayer-dev-20261031.testnet",
-      "transaction": "7Ke1qoxbcg6obW4QusZt23cDX1CvcjW7rpbwnn6zJVpH"
+      "label": "deploy game.questlayer-dev-20261101.testnet",
+      "transaction": "9EXTsLZ9bBQZdPF8f11SLWuGVHmGfeYvtB1FMvH4De93"
     },
     {
-      "label": "deploy nfts.questlayer-dev-20261031.testnet",
-      "transaction": "2Ddg2rop6oboipPUuo4vKKDxkXXwpDpNvxYewpMvS1B2"
+      "label": "deploy nfts.questlayer-dev-20261101.testnet",
+      "transaction": "1Qx9FvU8iA4PAiBa7rxQEDHnEqfFegaPxjYHizyWwNq"
     },
     {
       "label": "fund 50/50 reward buckets",
-      "transaction": "Ey4Cn1zjCWz8oV4vfqxVqVWvQRpuzjD319d3V4qgrVij"
+      "transaction": "F9tE9wobGpiHddFa2zg8fA8Xwa9S6E3QLmyx8HKMZsNK"
     },
     {
       "label": "publish shared street coin batch",
-      "transaction": "A5hEDDVsHDEdbf4v6xKUh7jYpYEC7yftHhEicH2foTbU"
+      "transaction": "J5nCghNzxB5m3YWVoKFVHEoafNhA7D8P4EoCcAXjG2tc"
     },
     {
       "label": "settle one shared coin",
-      "transaction": "FJUTtvjBmxifsTA9DSv13wbGoEK1Vfh1bjhAxEzPFwqq"
+      "transaction": "FgsVyqkmfeNByw1WpPzCQUfqLTTDyDTp4jRsGi1Dbzbb"
     },
     {
       "label": "replay coin without duplicate credit",
-      "transaction": "9TkdApB32FXV7CxNKHT57DjoKtMGeVxutjVMEJSBq6ZP"
+      "transaction": "FmE9BUeej82wjSWsaD9GzzQSEWchUr1o53SLHQpx7GTA"
     },
     {
       "label": "publish funded solo quest",
-      "transaction": "6PY6BLW81GgJD3daxwg1GXQZwe17Zo5motr2Cdsxb9gy"
+      "transaction": "Bi8tTFhvNmgLVaxrHKY3Y2ix9cz8Bh7Ks3qTpjBD2XTh"
     },
     {
       "label": "complete a quest without another player",
-      "transaction": "5T6HrZjkBcgUbak1hYkoyJSAx8Z7Bfd1rDAT6u6McwaX"
+      "transaction": "B4HMp8visjhYGt2NKQmMwx1HzZwWWMkV3avL15kDASxD"
     },
     {
       "label": "withdraw actual testnet reward",
-      "transaction": "epRFgj763BQPMrHn3jzeXARvMF3Mkryh8TqFxYqhb2e"
+      "transaction": "Cs2GmrTXb8E7UKgHujcY16JAw7bpcNzzBVSe4WcrVriU"
     },
     {
       "label": "mint a real NEP-171 Aura",
-      "transaction": "B2pGnqLYrzZHEoX7dNXmuhwS8MntbCcQQhixvrCKXhyp"
+      "transaction": "Hq1hKBd2ctc9HowohSR84WFVRNdus25Eyfaqi1qZANrz"
     },
     {
       "label": "equip owned NFT",
-      "transaction": "jbFPbDggrku2PB3rD7vEmQXgTEiKuw2zFH8fA2BYxjv"
+      "transaction": "AJqENjkxjM8ATxJ3LxKAU9oKWWb3a6w4ZM5gX2txmkaa"
     },
     {
       "label": "transfer NFT and clear original equipment",
-      "transaction": "EwC6XmugYdXhmd1KLskyju7AoHjvV6umd2ZQFMmkrZw9"
+      "transaction": "CwTwLTgNbbsEkZcdBMmE1yLAyXkzsT36kCkuvunDmjyr"
     }
   ],
   "treasury": {
@@ -83,7 +83,7 @@
     "owed": "0",
     "pending": "0",
     "paid": "110000000000000000000",
-    "oracle": "questlayer-dev-20261031.testnet",
+    "oracle": "questlayer-dev-20261101.testnet",
     "paused": false
   },
   "gameEconomy": "separate-demo-ledger",

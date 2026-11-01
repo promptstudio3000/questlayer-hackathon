@@ -5,7 +5,7 @@ HOST_TARGET="${DEPLOY_HOST:-root@72.61.188.39}"
 RELEASE_TAG="$(date -u +%Y%m%dT%H%M%SZ)"
 ARCHIVE_PATH="/tmp/questlayer-hackathon-${RELEASE_TAG}.tgz"
 if [[ "${QUESTLAYER_CHECKS_PASSED:-0}" != 1 ]]; then npm run check; fi
-COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE_PATH" dist server package.json package-lock.json deploy/questlayer-hackathon.service deploy/retain-static-assets.py
+COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE_PATH" dist server public/*.json package.json package-lock.json deploy/questlayer-hackathon.service deploy/retain-static-assets.py
 scp -o BatchMode=yes -o ConnectTimeout=15 "$ARCHIVE_PATH" "${HOST_TARGET}:/tmp/questlayer-hackathon-${RELEASE_TAG}.tgz"
 ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST_TARGET" bash -s -- "$RELEASE_TAG" <<'REMOTE'
 set -Eeuo pipefail
