@@ -64,16 +64,19 @@ function checkContext(ctx) {
     blockHeight: BigInt(ctx.blockHeight),
     blockTtl: BigInt(ctx.blockTtl),
     maxGas: yocto(ctx.maxGas ?? 300000000000000n),
-    maxBuyDeposit: yocto(ctx.maxBuyDeposit ?? 0n),
     contracts: {
       collectibles: ctx.contracts.collectibles,
       market: ctx.contracts.market,
       rewards: ctx.contracts.rewards,
       social: ctx.contracts.social || SOCIAL_CONTRACT,
       factory:
-        typeof ctx.contracts.factory === "string" ? ctx.contracts.factory : null,
+        typeof ctx.contracts.factory === "string"
+          ? ctx.contracts.factory
+          : null,
       creators:
-        typeof ctx.contracts.creators === "string" ? ctx.contracts.creators : null,
+        typeof ctx.contracts.creators === "string"
+          ? ctx.contracts.creators
+          : null,
     },
     factorySetupDeposit:
       ctx.factorySetupDeposit === undefined || ctx.factorySetupDeposit === null
@@ -115,6 +118,20 @@ function keyActionPublicKey(value) {
 
 // Pure allowlist. Accepts the decoded SignedDelegate (see delegate.mjs) and the
 // server-observed context, returns the single sponsored call or throws.
+//
+// Who pays: in a NEP-366 meta-transaction the relayer's own transaction carries
+// every attached deposit of the delegated actions (verified on testnet, receipt
+// chain in output/qa/2026-11-testnet). The player's balance is never touched.
+// Therefore only storage-class deposits (0, 1 yocto, 0.05 NEAR) are relayed;
+// money actions (market purchase, creator payments, staking) are refused with
+// RELAY_SELF_PAID and signed by the player's device key as ordinary
+// transactions, where the player pays both the deposit and the gas.
+export const RELAYED_DEPOSITS = [0n, 1n, STORAGE_DEPOSIT];
+const selfPaid = (label) =>
+  fail(
+    "RELAY_SELF_PAID",
+    `${label} is paid from your own account, not through the relayer.`,
+  );
 export function validateDelegate(decoded, context) {
   const ctx = checkContext(context);
   const delegateAction =
@@ -266,7 +283,6 @@ export function validateDelegate(decoded, context) {
     );
   const unsupported = () =>
     fail("RELAY_METHOD", `${method} on ${receiverId} is not sponsored.`);
-  let sponsorDeposit = true;
   if (receiverId === c.collectibles) {
     if (method === "mint_avatar") {
       depositIs(STORAGE_DEPOSIT, "Avatar minting");
@@ -301,86 +317,56 @@ export function validateDelegate(decoded, context) {
       );
     } else unsupported();
   } else if (receiverId === c.market) {
-    if (method === "buy") {
-      demand(
-        deposit > 0n && deposit <= ctx.maxBuyDeposit,
-        "RELAY_DEPOSIT",
-        "The purchase price is outside the relayed range.",
-      );
-      sponsorDeposit = false;
-    } else if (method === "cancel" || method === "withdraw")
+    if (method === "buy") selfPaid("A purchase");
+    else if (method === "cancel" || method === "withdraw")
       depositIs(1n, "Market action");
     else unsupported();
   } else if (receiverId === c.rewards) {
     if (method === "withdraw") depositIs(1n, "Reward withdrawal");
     else unsupported();
   } else if (c.creators && receiverId === c.creators) {
-    // Creator money: the buyer's or donor's own NEAR; gas is sponsored.
-    if (method === "buy_access" || method === "donate") {
-      sponsorDeposit = false;
-      demand(
-        deposit > 0n && deposit <= ctx.maxBuyDeposit,
-        "RELAY_DEPOSIT",
-        "The amount is outside the relayed range.",
-      );
-      demand(
-        keysOf(args, ["quest_id"]) &&
-          typeof args.quest_id === "string" &&
-          args.quest_id.length <= 64,
-        "RELAY_ARGS",
-        "Creator payments name one quest.",
-      );
-    } else if (method === "withdraw") {
+    // Creator money moves only in self-paid transactions; withdrawals are relayed.
+    if (method === "buy_access" || method === "donate")
+      selfPaid("A creator payment");
+    else if (method === "withdraw") {
       depositIs(1n, "Creator withdrawal");
       demand(keysOf(args, []), "RELAY_ARGS", "Withdrawal takes no arguments.");
     } else unsupported();
   } else if (c.factory && receiverId === c.factory) {
-    // Staking money is the player's own: gas is sponsored, deposits are not.
-    sponsorDeposit = false;
-    if (method === "create_position") {
-      demand(
-        ctx.factorySetupDeposit !== null && deposit === ctx.factorySetupDeposit,
-        "RELAY_DEPOSIT",
-        "Position creation requires the exact published setup deposit.",
-      );
-      demand(
-        keysOf(args, ["pool_id", "contribution_bps"]) &&
-          typeof args.pool_id === "string" &&
-          ctx.factoryPools.includes(args.pool_id) &&
-          Number.isSafeInteger(args.contribution_bps) &&
-          args.contribution_bps >= 0 &&
-          args.contribution_bps <= 10000,
-        "RELAY_ARGS",
-        "Choose a reviewed validator and a 0–100 % contribution.",
-      );
-    } else if (method === "register_position") {
+    // Staking money (setup deposit, stake) is self-paid; maintenance is relayed.
+    if (method === "create_position") selfPaid("Opening a staking position");
+    else if (method === "register_position") {
       depositIs(0n, "Position registration");
       demand(
-        keysOf(args, ["id"]) && typeof args.id === "string" && /^\d{1,20}$/.test(args.id),
+        keysOf(args, ["id"]) &&
+          typeof args.id === "string" &&
+          /^\d{1,20}$/.test(args.id),
         "RELAY_ARGS",
         "Position registration takes one position id.",
       );
     } else if (method === "withdraw_refund") {
       depositIs(1n, "Refund withdrawal");
-      demand(keysOf(args, []), "RELAY_ARGS", "Refund withdrawal takes no arguments.");
+      demand(
+        keysOf(args, []),
+        "RELAY_ARGS",
+        "Refund withdrawal takes no arguments.",
+      );
     } else unsupported();
   } else if (c.factory && receiverId.endsWith("." + c.factory)) {
-    sponsorDeposit = false;
     demand(
       ctx.ownedVaults.includes(receiverId),
       "RELAY_RECEIVER",
       "Only your own staking position can be operated.",
     );
     demand(keysOf(args, []), "RELAY_ARGS", "Vault actions take no arguments.");
-    if (method === "deposit_and_stake")
-      demand(
-        deposit >= 10n ** 21n && deposit <= 1000n * 10n ** 24n,
-        "RELAY_DEPOSIT",
-        "Stake between 0.001 and 1000 NEAR.",
-      );
+    if (method === "deposit_and_stake") selfPaid("A stake deposit");
     else if (method === "request_exit" || method === "withdraw_owner")
       depositIs(1n, "Position authorization");
-    else if (method === "refresh" || method === "advance" || method === "harvest")
+    else if (
+      method === "refresh" ||
+      method === "advance" ||
+      method === "harvest"
+    )
       depositIs(0n, "Position maintenance");
     else unsupported();
   } else if (receiverId === c.social) {
@@ -400,6 +386,12 @@ export function validateDelegate(decoded, context) {
       "Only your own SocialDB namespace can be published.",
     );
   } else fail("RELAY_RECEIVER", "This contract is not sponsored.");
+  // Defense in depth: the branches above only accept these amounts.
+  demand(
+    RELAYED_DEPOSITS.includes(deposit),
+    "RELAY_DEPOSIT",
+    "Only storage-class deposits are relayed.",
+  );
   return {
     ...base,
     kind: "call",
@@ -407,6 +399,7 @@ export function validateDelegate(decoded, context) {
     args,
     gas: call.gas.toString(),
     deposit: deposit.toString(),
-    sponsorDeposit,
+    // The relayer's transaction carries the deposit; this is always true.
+    sponsorDeposit: true,
   };
 }

@@ -234,7 +234,6 @@ const relayer = managedAccounts
         blockTtl: relayConfig.blockTtl,
         maxJobsPerDay: relayConfig.maxJobsPerDay,
         maxGas: relayConfig.maxGas,
-        maxBuyDeposit: relayConfig.maxBuyDeposit,
         vaults: nativeVaults,
         factorySetupDeposit: rewardsConfig?.factory?.setupDeposit ?? null,
         factoryPools: VAULT_POOLS.map((p) => p.id),
@@ -514,6 +513,7 @@ async function api(req, res, url) {
     return respond(res, {
       mode: "demo",
       network: "testnet",
+      rpcUrl: rpc,
       coinValue: 0.01,
       coinSplit: 50,
       zoneSplit: 50,

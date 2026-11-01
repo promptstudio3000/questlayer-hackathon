@@ -69,7 +69,6 @@ export class Relayer {
       blockTtl = 120,
       maxJobsPerDay = 40,
       maxGas = 300000000000000n,
-      maxBuyDeposit = 5n * 10n ** 24n,
       policyContext = null,
       vaults = null,
       factorySetupDeposit = null,
@@ -109,7 +108,6 @@ export class Relayer {
     this.blockTtl = blockTtl;
     this.maxJobsPerDay = maxJobsPerDay;
     this.maxGas = BigInt(maxGas);
-    this.maxBuyDeposit = BigInt(maxBuyDeposit);
     this.customContext = policyContext;
     initializeManagedAccounts(db);
   }
@@ -217,7 +215,6 @@ export class Relayer {
       blockHeight,
       blockTtl: this.blockTtl,
       maxGas: this.maxGas,
-      maxBuyDeposit: this.maxBuyDeposit,
       contracts: this.contracts,
       factorySetupDeposit: this.factorySetupDeposit,
       factoryPools: this.factoryPools,
@@ -259,7 +256,6 @@ export class Relayer {
       maxBlockHeight: String(ctx.blockHeight + ctx.blockTtl),
       blockTtl: ctx.blockTtl,
       maxGas: this.maxGas.toString(),
-      maxBuyDeposit: this.maxBuyDeposit.toString(),
       receiverId: receiverId ?? null,
       methodName: methodName ?? null,
       contracts: this.contracts,
@@ -565,14 +561,8 @@ export class Relayer {
       renew();
     }
     if (!outcome) {
-      if (call.sponsorDeposit && BigInt(call.deposit) > 0n) {
-        await this.accounts.ensureFunded(
-          call.senderId,
-          BigInt(call.deposit) + STATE_MARGIN,
-          { jobId: job.id, write },
-        );
-        renew();
-      }
+      // The relayer's transaction carries the attached deposit (NEP-366), so
+      // the player's account needs no transfer before sending.
       const signed = await this.transport.sign({
         receiverId: call.senderId,
         actions: [actions.signedDelegate(decoded.signedDelegate)],
@@ -604,12 +594,12 @@ export class Relayer {
     if (failure) {
       const verdict = classifyFailure(failure, call);
       if (verdict.topup && job.attempts === 0) {
-        // The delegate nonce may already be consumed; one funded retry proves it either way.
-        await this.accounts.ensureFunded(
-          call.senderId,
-          BigInt(call.deposit) + STATE_MARGIN,
-          { jobId: job.id, write },
-        );
+        // Only the account's own state storage can run short; one margin-funded
+        // retry proves it either way (the nonce may already be consumed).
+        await this.accounts.ensureFunded(call.senderId, STATE_MARGIN, {
+          jobId: job.id,
+          write,
+        });
         write(() =>
           this.db
             .prepare("UPDATE relay_jobs SET transaction_hash=NULL WHERE id=?")
@@ -620,6 +610,8 @@ export class Relayer {
           "The account was topped up; retrying the signed action.",
         );
       }
+      // A shortfall after the funded retry is final; the budget is not spent twice.
+      if (verdict.topup) verdict.terminal = true;
       throw verdict;
     }
     const result = verifyRelayOutcome(outcome, {

@@ -302,3 +302,23 @@ Second tier (not in the ten): make the 120,000 GOLD credit and tier maturity an 
 "demo tier unlock" button so the staking detour is not mistaken for gameplay (P2); add a
 "playable now" summary that counts open, eligible, uncompleted quests (P3); fold the two mode
 switches into one three-state control (P4); add `clientRequestId` to stake/list (M7).
+
+
+## Addendum, 1 November 2026: relayer deposits (critical, fixed)
+
+Observed behaviour, not a source reading: the first live staking proof relayed `create_position` with the
+3.52 NEAR setup deposit from a fresh managed account. The relayer account lost 3.53 NEAR and the player account
+kept its full balance; `EXPERIMENTAL_tx_status` shows the relayer's Delegate receipt carrying the deposit into
+the factory call. In NEP-366 the relayer's transaction pays every attached deposit of the delegated actions.
+
+Before the fix `policy.mjs` relayed `buy` up to `RELAY_MAX_BUY_DEPOSIT_YOCTO` (5 NEAR), `buy_access`/`donate`
+up to the same cap, `create_position` (3.52 NEAR) and `deposit_and_stake` up to 1,000 NEAR, believing the
+player's balance paid them. Any managed account could have drained the relayer up to its balance within the
+daily job cap. The pre-send top-up also transferred the storage deposit to the player's account in addition to
+the relayer paying it on chain (double spend of 0.05 NEAR per mint).
+
+Fix (`server/relayer/policy.mjs`, `relay.mjs`, `config.mjs`, `src/self-paid-native-transaction.ts`,
+`src/native-signer.ts`): only 0, 1 yocto and 0.05 NEAR deposits are relayed and re-checked after every branch;
+money actions return `RELAY_SELF_PAID` and the managed signer sends them as ordinary transactions signed by the
+device key; the top-up path funds only a 0.01 NEAR state margin once. Tests: `tests/relayer-policy.test.mjs`,
+`tests/relayer.test.mjs`. Live re-proof: `public/native-sponsored-stake-proof.json`.

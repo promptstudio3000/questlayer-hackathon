@@ -46,7 +46,11 @@ funded and signed in the background. The blockchain is a property of the items, 
   published quests, verified completions and likes and runs the UTC daily round from the API process; its first
   live round (2026-11-01, 0.01 NEAR) is transaction `3aBKSkm3N4rhoxriFG5vZosSiFeWrqAKo49V5u47HZSc`. Player
   payments are quoted by `/api/native/creators/prepare`; the UI is the next step (`docs/PLAN-FOR-OPUS.md`).
-- The relayer allowlists staking positions (money never sponsored) and creator payments from the invisible account.
+- Relayer money rule (1 November, evening): a NEP-366 relayer pays every attached deposit, verified live when a
+  relayed `create_position` took 3.52 NEAR from the relayer. The policy now relays only storage-class deposits
+  (0, 1 yocto, 0.05 NEAR); purchases, creator payments and staking are self-paid transactions signed by the same
+  device key, still without a wallet popup (`docs/RELAYER.md`, "Who pays what"). Live proof after the fix:
+  `public/native-sponsored-stake-proof.json` (position `v3.questlayer-vaults-20261101.testnet`).
 - Public records (W10.1, `server/native/social-records.mjs`): a note that is already public in the app can be
   written under the player's own NEAR Social namespace from their own account (`/api/native/records*`), with the
   photo's IPFS content address, rounded anchors, optional author fix, confirm-by-readback and tombstones for

@@ -48,11 +48,6 @@ export function relayerConfiguration(env = process.env) {
       10000,
     ),
     maxGas: yocto(env.RELAY_MAX_GAS, "300000000000000", "RELAY_MAX_GAS"),
-    maxBuyDeposit: yocto(
-      env.RELAY_MAX_BUY_DEPOSIT_YOCTO,
-      "5000000000000000000000000",
-      "RELAY_MAX_BUY_DEPOSIT_YOCTO",
-    ),
     blockTtl: count(env.RELAY_BLOCK_TTL, 120, "RELAY_BLOCK_TTL", 1000),
   };
 }

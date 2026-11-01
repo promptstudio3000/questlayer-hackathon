@@ -20,17 +20,35 @@ relayer account pays gas, verifies the final receipt and keeps a durable job rec
 | `schema.mjs`               | Module `managed-accounts@1` (`managed_accounts`, `managed_account_keys`, `managed_account_funding`, `relay_jobs`, `relay_budget`, `relay_worker_lease`). |
 | `routes.mjs`, `config.mjs` | Route dispatcher for the parent server and the environment contract.                                                                                     |
 
+## Who pays what
+
+In a NEP-366 meta-transaction the relayer's own transaction carries every attached deposit of
+the delegated actions; the player's balance is never debited. This was verified on testnet on
+1 November 2026 when a relayed `create_position` moved 3.52 NEAR out of the relayer while the
+player's account kept its balance (receipt chain in `output/qa/2026-11-testnet/README.md`).
+Consequently:
+
+- The relayer accepts only storage-class deposits: 0, 1 yocto or 0.05 NEAR
+  (`RELAYED_DEPOSITS` in `policy.mjs`, enforced again after every branch).
+- Money actions (`buy`, `buy_access`, `donate`, `create_position`, `deposit_and_stake`) are
+  refused with `RELAY_SELF_PAID`. The client sends them as ordinary transactions signed by the
+  same device key (`src/self-paid-native-transaction.ts`): the player pays the deposit and the
+  gas, still without a wallet popup. Reviewed quotes are unchanged.
+- The daily top-up (`RELAY_TOPUP_CAP_YOCTO`) covers only the account's own state storage
+  (0.01 NEAR margin after a `LackBalanceForState` failure, one retry), never a deposit.
+
 ## What is sponsored
 
-Gas for every relayed action, plus storage-class deposits on the player's own account
-(topped up by the factory within `RELAY_TOPUP_CAP_YOCTO` per account per UTC day):
+Gas for every relayed action and the storage-class deposit it carries:
 
 - collectibles: `mint_avatar` (0.05 NEAR), `redeem_aura` (0.05 NEAR, `receiver_id` = sender),
   `equip_aura`/`unequip_aura` (0), `nft_transfer_call` (1 yocto, to the market only),
   `nft_transfer` (1 yocto, only to a wallet linked to the same explorer)
-- market: `buy` (0 < deposit ≤ `RELAY_MAX_BUY_DEPOSIT_YOCTO`, **price is never topped up**),
-  `cancel` (1), `withdraw` (1)
+- market: `cancel` (1), `withdraw` (1); purchases are self-paid
 - rewards: `withdraw` (1); SocialDB `v1.social08.testnet` `set` (1 or 0.05 NEAR, own namespace only)
+- staking: `register_position` (0), `withdraw_refund` (1), own vault `request_exit`/`withdraw_owner`
+  (1), `refresh`/`advance`/`harvest` (0); setup deposit and stake are self-paid
+- creators: `withdraw` (1); payments and donations are self-paid
 - on the account itself: `addKey` (full access, key previously registered via
   `POST /api/account/keys`) and `deleteKey` (registered removal, never the signing key)
 
@@ -56,7 +74,7 @@ gas above `RELAY_MAX_GAS`, JSON arguments above 8 KiB, purchase prices, mainnet.
 - Final receipts are verified against the stored normalized call (signer, receiver,
   method, args, gas, deposit, nonce, expiry, key); mint results must be owned by the
   sender. Errors: `RELAY_NONCE`, `RELAY_EXPIRED`, `RELAY_SIGNATURE`,
-  `RELAY_INSUFFICIENT_BALANCE` (one funded retry for sponsored deposits), `RELAY_CONTRACT_FAILED`,
+  `RELAY_INSUFFICIENT_BALANCE` (one margin-funded retry for state storage), `RELAY_SELF_PAID`, `RELAY_CONTRACT_FAILED`,
   `RELAY_OUTCOME`; network errors retry with `min(300 s, 5 s·2^min(attempts,6))`.
 - Daily budgets: `RELAY_MAX_JOBS_PER_DAY` submissions and `RELAY_TOPUP_CAP_YOCTO` per account.
 
@@ -74,7 +92,6 @@ mode `0600`; both keys must be full-access keys of their account on testnet.
 | `RELAY_TOPUP_CAP_YOCTO`       | Max sponsored top-up per account per day                 | `2e23`                |
 | `RELAY_MAX_JOBS_PER_DAY`      | Max submissions per account per day                      | `40`                  |
 | `RELAY_MAX_GAS`               | Max gas per delegated action                             | `300000000000000`     |
-| `RELAY_MAX_BUY_DEPOSIT_YOCTO` | Max market purchase price relayed                        | `5e24`                |
 | `RELAY_BLOCK_TTL`             | Max blocks a delegate may stay valid                     | `120`                 |
 | `DISABLE_RELAYER`             | `1` disables accounts and relaying                       | unset                 |
 
@@ -126,7 +143,7 @@ const relayer = managedAccounts
       accounts: managedAccounts,
       contracts: { collectibles: nativeCollectibles.contractId, market: marketContractId, rewards: rewardsConfig?.contractId },
       blockTtl: relayConfig.blockTtl, maxJobsPerDay: relayConfig.maxJobsPerDay,
-      maxGas: relayConfig.maxGas, maxBuyDeposit: relayConfig.maxBuyDeposit })
+      maxGas: relayConfig.maxGas })
   : null;
 const relayerRoutes = createRelayerRoutes({ relayer, accounts: managedAccounts });
 // inside api(), after `const player = auth(req);`

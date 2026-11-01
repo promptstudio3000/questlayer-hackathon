@@ -56,42 +56,31 @@ test("prepare, submit, pre-flight funding and verified confirmation of a sponsor
     methodName: "mint_avatar",
     receiverId: CONTRACTS.collectibles,
   });
-  // The 0.05 NEAR storage deposit was pre-funded by the factory within the daily cap.
-  const funding = f.rows("managed_account_funding");
-  assert.equal(funding.length, 1);
-  assert.equal(funding[0].kind, "topup");
-  assert.equal(
-    funding[0].amount_yocto,
-    (6n * 10n ** 22n - NEAR / 100n).toString(),
-  );
-  assert.equal(
-    f.factory.calls[0].actions[0].transfer.deposit,
-    6n * 10n ** 22n - NEAR / 100n,
-  );
-  assert.equal(
-    f.relayer.budget(acct.accountId).topupYocto,
-    funding[0].amount_yocto,
-  );
+  // The relayer's own transaction carries the 0.05 NEAR storage deposit
+  // (NEP-366); the player's account is not topped up for it.
+  assert.deepEqual(f.rows("managed_account_funding"), []);
+  assert.equal(f.factory.calls.length, 0);
+  assert.equal(f.relayer.budget(acct.accountId).topupYocto, "0");
   assert.equal(f.transport.sends[0].receiverId, acct.accountId);
   assert.equal(f.relayer.list(f.player, acct.accountId).jobs.length, 1);
   assert.equal(f.relayer.workerStatus().lease.owner, null);
   assert.equal(f.relayer.workerStatus().jobs.confirmed, 1);
-  // A buy is not sponsored: the player's own balance pays and no top-up occurs.
-  const buy = await f.relayer.submit(f.player, {
-    signedDelegateBase64: await f.sign(acct, {
-      receiverId: CONTRACTS.market,
-      action: actions.functionCall(
-        "buy",
-        { token_id: "aura:polar:1", listing_id: 1 },
-        50_000_000_000_000n,
-        NEAR,
-      ),
+  // A purchase would make the relayer pay the price: refused before signing.
+  await assert.rejects(
+    f.relayer.submit(f.player, {
+      signedDelegateBase64: await f.sign(acct, {
+        receiverId: CONTRACTS.market,
+        action: actions.functionCall(
+          "buy",
+          { token_id: "aura:polar:1", listing_id: 1 },
+          50_000_000_000_000n,
+          NEAR,
+        ),
+      }),
     }),
-  });
-  assert.equal(buy.sponsorDeposit, false);
-  await f.relayer.runRelayJobs();
-  assert.equal(f.job(buy.id).state, "confirmed");
-  assert.equal(f.rows("managed_account_funding").length, 1);
+    (error) => error.code === "RELAY_SELF_PAID",
+  );
+  assert.equal(f.rows("managed_account_funding").length, 0);
 });
 
 test("resubmitting the same signed delegate is idempotent and never spends budget twice", async (t) => {
@@ -349,7 +338,7 @@ test("outcome verification rejects foreign tokens, foreign signers and classifie
   assert.throws(() => f.relayer.status(bobPlayer, panic.id), /not found/);
 });
 
-test("insufficient balance tops up a sponsored deposit once, never a purchase price", async (t) => {
+test("a state-storage shortfall funds one margin-sized top-up and retries once; a second shortfall is final", async (t) => {
   const f = fixture();
   t.after(() => f.db.close());
   const acct = f.ready(f.player, "alice-novakova", { amount: NEAR });
@@ -377,11 +366,11 @@ test("insufficient balance tops up a sponsored deposit once, never a purchase pr
   });
   assert.equal(f.job(mint.id).error_code, "RELAY_INSUFFICIENT_BALANCE");
   assert.equal(f.job(mint.id).transaction_hash, null);
-  assert.equal(
-    f.rows("managed_account_funding").length,
-    1,
-    "the pre-flight top-up already covers the deposit",
-  );
+  const funding = f.rows("managed_account_funding");
+  assert.equal(funding.length, 1);
+  assert.equal(funding[0].kind, "topup");
+  // Only the state margin is funded, never the relayed deposit itself.
+  assert.equal(funding[0].amount_yocto, (10n ** 22n).toString());
   f.advance(5000);
   assert.deepEqual(await f.relayer.runRelayJobs(), {
     completed: 1,
@@ -389,36 +378,32 @@ test("insufficient balance tops up a sponsored deposit once, never a purchase pr
     retried: 0,
   });
   assert.equal(f.rows("managed_account_funding").length, 1);
-  const buy = await f.relayer.submit(f.player, {
+  const equip = await f.relayer.submit(f.player, {
     signedDelegateBase64: await f.sign(acct, {
-      receiverId: CONTRACTS.market,
       action: actions.functionCall(
-        "buy",
-        { token_id: "aura:polar:1", listing_id: 1 },
+        "equip_aura",
+        { token_id: "aura:polar:1" },
         50_000_000_000_000n,
-        NEAR,
+        0n,
       ),
     }),
   });
   f.transport.onSend = async ({ hash, signedDelegate }) =>
-    outcomeFor(signedDelegate, {
-      hash,
-      failure: {
-        ActionError: {
-          index: 0,
-          kind: {
-            LackBalanceForState: { account_id: acct.accountId, amount: "1" },
-          },
-        },
-      },
-    });
+    outcomeFor(signedDelegate, { hash, failure: lack });
+  f.state.accounts.get(acct.accountId).amount = 0n;
+  assert.deepEqual(await f.relayer.runRelayJobs(), {
+    completed: 0,
+    failed: 0,
+    retried: 1,
+  });
+  f.advance(5000);
   assert.deepEqual(await f.relayer.runRelayJobs(), {
     completed: 0,
     failed: 1,
     retried: 0,
   });
-  assert.equal(f.job(buy.id).error_code, "RELAY_INSUFFICIENT_BALANCE");
-  assert.equal(f.rows("managed_account_funding").length, 1);
+  assert.equal(f.job(equip.id).error_code, "RELAY_INSUFFICIENT_BALANCE");
+  assert.equal(f.rows("managed_account_funding").length, 2);
 });
 
 test("submission enforces ownership, readiness, signature and policy before anything is stored", async (t) => {

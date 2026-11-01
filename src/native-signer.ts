@@ -6,6 +6,7 @@ import {
   type ReviewedNativeTransaction,
 } from "./confirmed-native-transaction";
 import { sendRelayed } from "./relayed-native-transaction";
+import { isRelayedDeposit, sendSelfPaid } from "./self-paid-native-transaction";
 import type { PlayerKeyRecord } from "./player-key";
 
 type Wallet = Parameters<typeof sendConfirmedNative>[0] & {
@@ -30,12 +31,19 @@ export function walletSigner(wallet: Wallet, accountId: string): NativeSigner {
     },
   };
 }
-export function managedSigner(key: PlayerKeyRecord, accountId: string): NativeSigner {
+// Storage-class deposits (0, 1 yocto, 0.05 NEAR) go through the relayer with
+// no popup and no fee; money actions are signed and paid by the same device
+// key as ordinary transactions, still without a wallet popup.
+export function managedSigner(
+  key: PlayerKeyRecord,
+  accountId: string,
+): NativeSigner {
   return {
     kind: "managed",
     accountId,
     async send(transaction) {
-      await sendRelayed(key, transaction);
+      if (isRelayedDeposit(transaction)) await sendRelayed(key, transaction);
+      else await sendSelfPaid(key, transaction);
     },
   };
 }
