@@ -9,7 +9,7 @@ this file says who does what, in which order, and what "done" means. Update it w
 | --- | --- | --- |
 | Invisible account + relayer | live on testnet; money actions self-paid, only storage-class deposits relayed | `public/native-invisible-account-proof.json`, `public/native-sponsored-stake-proof.json`, `docs/RELAYER.md` |
 | Rewards treasury, daily Plzeň days | two days published; whole-treasury audit **verified**; worker refuses to publish on drift | `public/native-distribution-proof.json` |
-| Staking vault and yield cycle | 5 + 0.5 test NEAR staked; harvest/flush automated, waiting for epochs | `docs/STATUS.md` |
+| Staking vault and yield cycle | first harvest done automatically at epoch 5401; cash unlocks at 5405 (about 3 Nov), then flush to the treasury | `docs/STATUS.md` |
 | Creator money | contract proven; publisher opens/finalizes UTC rounds from the API | `public/native-creators-proof.json` |
 | Public records (NEAR Social) | note record written and confirmed from an invisible account | `public/native-public-record-proof.json` |
 | Zone preparation and map backend (Codex) | durable publication, 0–6 zone shortfalls, pedestrian graph tooling, closures, viewport reads, pilot | `docs/WORLD-WORKER.md`, `docs/MAP-BACKEND-CONTINUATION-2026-11-01.md` |

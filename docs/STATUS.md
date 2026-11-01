@@ -62,6 +62,10 @@ Local continuation, 1 November: the zone/map worker now rejects malformed candid
   address and pinning reports "unavailable". Live proof: a note published from a fresh invisible account, relayed
 `set` on `v1.social08.testnet` (transaction `4YKtshNX1d1QfdkN4RGsMQXfbY834WMuz29fuUNrjBdy`) and confirmed from
 chain; see `public/native-public-record-proof.json`. The UI is the next step.
+- First realized-yield harvest (1 November, about 09:23 UTC): after one epoch the three funded vaults earned
+  about 5 % a year. The reward worker harvested them without help, unstaking the city's 50 % share. The
+  unstake unlocks at epoch 5405, about two days later. The worker then advances the vaults and flushes the cash
+  into the rewards treasury as realized yield; that flush is the remaining step of the yield-cycle proof.
 - Treasury distribution audit (1 November): every reserved coin and prize on `questlayer-rewards-20261101.testnet`
   is explained by the two open Plzeň days, the ledger is conserved and the account holds about 47 times its
   liabilities; the rewards contract now caps each local date across all cities on chain (in-place upgrade, state
