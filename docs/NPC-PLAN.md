@@ -76,6 +76,21 @@ archetype is code. The persona is reviewed data in `server/data/npcs/<city>.json
 - Why players hunt traders: the rates beat the open market, stock rotates daily, and each trader carries 1–2
   "wanted" editions per day that pay the highest premium.
 
+**Trader economics must favour the game treasury (owner decision, 1 Nov 2026).** Each trader starts with a 2 test NEAR
+float, and the float must grow over time. The rules engine enforces this with deterministic limits:
+- **Margin floor:** the trader never sells below `cost basis × 1.10`. Its buy premium is paid only on "wanted" editions
+  that have a resale path (other traders, other cities or later days) with an expected margin of at least 10 %.
+- **Self-funding premiums:** the daily premium budget is at most 50 % of the trader's realized profit over the last
+  7 days, plus a small seed allowance of 0.1 test NEAR per day for the first week. A trader that is losing money
+  automatically stops paying premiums and only sells.
+- **Trade-up fee:** a trade-up takes in 3 commons, which become resale stock, and pays out 1 rare claim from capped
+  supply. The net value of each trade-up goes to the trader.
+- **Sweep to treasury:** once a trader's balance exceeds 2 NEAR plus a buffer, the surplus is withdrawn with market
+  `withdraw` and paid into the rewards contract with `fund_rewards("sponsor", "npc-<id>-<week>")`. That is an
+  allowed funding source today, so the profit backs street coins and zone prizes. Each sweep is a public receipt.
+- **KPI** on the NPC ledger page: float, 7-day P&L and swept total per trader. Players still get a better deal than
+  the open market. The trader earns because it is patient, can move stock between places and days, and buys in bulk.
+
 ### 2.3 Keeper (bank / storage)
 - On-chain: a guided, explained UI over the vault and market balance calls players already have. The keeper
   makes staking legible ("your position earned 0.0003 test NEAR this epoch, unlock in about 2 epochs") using
@@ -156,7 +171,7 @@ The collectibles contract mints 9 editions (`AURA_EDITIONS`), with rarities comm
 (`mint_claim` returns the same token on replay), and the voucher expires. `server/native/award-vouchers.mjs`
 already signs these.
 
-**Phase B (collectibles code change, optional).** Add NPC-only editions to `AURA_EDITIONS`. The contract comment
+**Phase B (collectibles code change, approved by the owner on 1 Nov 2026; NPC editions will grow over time).** Add NPC-only editions to `AURA_EDITIONS`. The contract comment
 says this needs no state migration:
 
 | Edition id | Name | Rarity | Source |
@@ -200,8 +215,10 @@ facts. Upgrade it to:
    `/api/health`;
 3. verify the per-response signature when it is present, and store `signature_hash` in `ai_npc_requests`.
 
-Fallback order is configurable: `NPC_AI_PROVIDER=near-ai|ollama|anthropic|template|off`. The current Ollama
-deepseek setup stays the fallback, and the template (rules) answer is always the last resort.
+Fallback order is configurable: `NPC_AI_PROVIDER=near-ai|ollama|anthropic|template|off`. **For the hackathon, NPCs
+run on the existing Ollama Cloud key** (owner decision, 1 Nov 2026), because no NEAR AI Cloud key exists yet. The
+NEAR AI provider is built and tested against a mock, ready to switch on later (see section 12). The template (rules)
+answer is always the last resort.
 
 ### 5.2 Prompt structure
 
@@ -393,11 +410,11 @@ asks for a VPS testnet deploy, as usual.
 | **N2 Quest giver + storyteller** | offer menus for quests/chapters, encounter tokens, Aura claims `earned:npc:*` | N0, N1 | 1–2 days | e2e on testnet: meet NPC (mocked GPS) → finish line → redeem Aura; replay returns the same token |
 | **N3 Trader + keeper** | NPC account(s), signing key, `deposit_near` budget; premium buy / discount sell / trade-up; keeper UI over vault and balance | N2, market v2 live | 2 days | two test accounts: premium buy fills, second taker fails, caps stop the 4th trade, `cancel_all_orders` works |
 | **N4 Wandering rare + item game** | `contracts/npc-games` (near-sdk 5, sandbox tests, Docker build hash), relayer allowlist, ticket and resolve worker | N2 | 2–3 days | sandbox: same-block resolve rejected; wrong secret rejected; timeout gives min prize; testnet roll → claim |
-| **N5 NPC editions (optional)** | 4 new editions + art + catalog, collectibles rebuild/redeploy | N2 | 1–2 days | catalog/contract equality test; reproducible hash in CI |
+| **N5 NPC editions** | 4 new editions + art + catalog, collectibles rebuild/redeploy | N2 | 1–2 days | catalog/contract equality test; reproducible hash in CI |
 | **N6 Demo + evidence** | judge path in `docs/HACKATHON-DEMO.md`, recorded run, NPC ledger page, economy page entry for the NPC budget | all | 1 day | the 60-second judge path includes "meet the merchant" |
 
-Suggested order given the deadline: **N0 → N1 ∥ N2 → N3 ∥ N4 → N6**, with N5 only if the art is ready by about
-9 November. A minimal demo is N0 + N1 + N2 (about 4 days): an NPC walks the map, talks privately via NEAR AI and
+Suggested order given the deadline: **N0 → N1 ∥ N2 ∥ N5 → N3 ∥ N4 → N6**. N5 starts early because it needs art and
+a collectibles redeploy. A minimal demo is N0 + N1 + N2 (about 4 days): an NPC walks the map, talks privately via NEAR AI and
 gives a real testnet Aura for a quest.
 
 ### Demo script (target)
@@ -424,15 +441,34 @@ gives a real testnet Aura for a quest.
 
 ---
 
-## 11. Open decisions for the owner
-1. **Item game:** only free, earned rolls (recommended) or wagering items too (needs legal review)?
-2. **New NPC-only Aura editions now (N5) or after submission?** This needs art and a collectibles redeploy.
-3. **NPC budget size** for traders on testnet (proposal: 2 test NEAR per trader per week).
-4. **NEAR AI Cloud key:** the owner needs a NEAR AI Cloud API key for the VPS `runtime.env` (`NEAR_AI_API_KEY`,
-   never in git); the model choice depends on what that account offers.
+## 11. Owner decisions (1 Nov 2026)
+1. **Item game:** earned rolls only, with no wagering. These are free mini-games, never a wager.
+2. **NPC-only Aura editions:** yes. They are built in N5 and will be expanded later.
+3. **Trader budget:** a 2 test NEAR float per trader, and it must grow. Trading must favour the game treasury
+   (section 2.2 economics).
+4. **AI provider:** Ollama for now. NEAR AI Cloud comes later, once the cost is clear (section 12).
+
+## 12. Mini-report: NEAR AI Cloud key and cost
+- **How to get a key:** sign in at https://cloud.near.ai, buy credits in "Credits" (prepaid, pay-as-you-go, no
+  subscription or minimum stated), then create a key in "API Keys". A spend cap can be set per key, and usage is
+  reported per key. The API is OpenAI-compatible at `https://cloud-api.near.ai/v1`.
+- **The same model we use on Ollama is available privately:** `deepseek/deepseek-v4.1-flash` runs in a NEAR AI
+  Private TEE and supports JSON mode. It costs $0.30 per 1M input tokens and $1.20 per 1M output tokens (public
+  catalog `GET /v1/models`, read 1 Nov 2026).
+  Cheaper private options: `z-ai/glm-5.3-flash` ($0.08 / $0.50, structured outputs) and `Qwen/Qwen3.8-27B`
+  ($0.04 / $1.35).
+- **Cost estimate:** one NPC reply is about 1,500 input and 150 output tokens, so about $0.0006 on DeepSeek V4.1 Flash.
+  1,000 conversations cost about $0.63, and $5 of credits covers about 8,000 replies, which is more than the whole
+  hackathon demo and the judging period need. With a per-key spend cap of $5–10 the risk is bounded.
+- **Recommendation:** when convenient, buy $5 of credits, create a key with a $5 cap and put it only in the VPS
+  `runtime.env` (`NEAR_AI_API_KEY`, `NPC_AI_PROVIDER=near-ai`, model `deepseek/deepseek-v4.1-flash`). Ollama stays
+  the automatic fallback. That would let the demo show real "verified private inference" with an attestation
+  badge. Until then the badge is hidden, and nothing in the plan depends on it.
 
 ## Sources
 - NEAR AI Cloud private inference: https://docs.near.ai/cloud/private-inference
 - NEAR AI gateway verification / attestation: https://docs.near.ai/cloud/verification/gateway
 - NEAR randomness security: https://docs.near.org/smart-contracts/security/random
 - Shade Agents overview: https://docs.near.org/ai/shade-agents/concepts/framework-overview
+- NEAR AI Cloud quickstart: https://docs.near.ai/cloud/quickstart/
+- NEAR AI pricing and models: https://near.ai/pricing, https://near.ai/models
