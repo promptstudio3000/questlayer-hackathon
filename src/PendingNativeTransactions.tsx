@@ -20,6 +20,7 @@ import {
   type PendingNativeTransaction,
 } from "./confirmed-native-transaction";
 import "./pending-native-transactions.css";
+import { EXPLORER_BASE } from "./near-network.ts";
 const labels: Record<string, string> = {
   create_task: "Fund sponsored task",
   submit_evidence: "Submit task evidence",
@@ -408,7 +409,7 @@ export function PendingNativeTransactions({
               </button>
               {entry.transactionHash && (
                 <a
-                  href={`https://testnet.nearblocks.io/txns/${encodeURIComponent(entry.transactionHash)}`}
+                  href={`${EXPLORER_BASE}/txns/${encodeURIComponent(entry.transactionHash)}`}
                   target="_blank"
                   rel="noreferrer"
                 >

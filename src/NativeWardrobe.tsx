@@ -22,6 +22,7 @@ import type {
   NativeAccount,
   Item,
 } from "./types";
+import { EXPLORER_BASE } from "./near-network.ts";
 export function nativeAppearanceItems(
   account: NativeAccount | undefined,
 ): Item[] {
@@ -451,7 +452,7 @@ export function NativeWardrobe({
             </div>
             <a
               className="text-button"
-              href={`https://testnet.nearblocks.io/address/${gallery.contractId}`}
+              href={`${EXPLORER_BASE}/address/${gallery.contractId}`}
               target="_blank"
               rel="noreferrer"
             >

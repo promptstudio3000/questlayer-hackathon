@@ -1,4 +1,6 @@
 import type { SignAndSendTransactionParams } from "@hot-labs/near-connect";
+import { NEAR_NETWORK } from "./near-network.ts";
+import type { NearNetwork } from "./near-network.ts";
 
 type Call = {
   methodName: string;
@@ -7,7 +9,7 @@ type Call = {
   deposit: string;
 };
 export type ReviewedNativeTransaction = {
-  network: "testnet";
+  network: NearNetwork;
   signerId: string;
   receiverId: string;
   actions: [{ type: "FunctionCall"; params: Call }];
@@ -16,7 +18,7 @@ type Wallet = {
   signAndSendTransaction(input: SignAndSendTransactionParams): Promise<unknown>;
 };
 type Quote = Call & {
-  network: "testnet";
+  network: NearNetwork;
   signerId: string;
   receiverId: string;
 };
@@ -80,7 +82,7 @@ function validQuote(value: unknown): value is Quote {
         "deposit",
       ].includes(k),
     ) &&
-    q.network === "testnet" &&
+    q.network === NEAR_NETWORK &&
     typeof q.signerId === "string" &&
     /^[a-z0-9._-]{2,64}$/.test(q.signerId) &&
     typeof q.receiverId === "string" &&
@@ -337,7 +339,7 @@ export async function exportPendingNativeTransactions(
       {
         format: "questlayer-native-receipts",
         version: 1,
-        network: "testnet",
+        network: NEAR_NETWORK,
         playerId: context.playerId,
         exportedAt: Date.now(),
         entries,
@@ -372,7 +374,7 @@ export async function importPendingNativeTransactions(
     !file ||
     file.format !== "questlayer-native-receipts" ||
     file.version !== 1 ||
-    file.network !== "testnet" ||
+    file.network !== NEAR_NETWORK ||
     file.playerId !== context.playerId ||
     !Number.isSafeInteger(file.exportedAt) ||
     file.exportedAt <= 0 ||
@@ -536,7 +538,7 @@ async function verify(
   }
   if (
     result.confirmed !== true ||
-    result.network !== "testnet" ||
+    result.network !== NEAR_NETWORK ||
     result.accountId !== entry.accountId ||
     result.contractId !== entry.quote.receiverId ||
     result.transactionHash !== transactionHash
@@ -606,7 +608,7 @@ export async function sendConfirmedNative(
   context: NativeConfirmationContext,
 ) {
   if (
-    transaction.network !== "testnet" ||
+    transaction.network !== NEAR_NETWORK ||
     transaction.actions.length !== 1 ||
     transaction.actions[0].type !== "FunctionCall"
   )
@@ -671,7 +673,7 @@ export async function sendConfirmedNative(
       const anchor = await response.json();
       if (
         !response.ok ||
-        anchor.network !== "testnet" ||
+        anchor.network !== NEAR_NETWORK ||
         anchor.accountId !== entry.accountId
       )
         throw Error(

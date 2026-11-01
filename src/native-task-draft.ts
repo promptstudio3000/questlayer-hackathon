@@ -3,6 +3,7 @@ import {
   TASK_POLICY,
   type TaskRequest,
 } from "./native-task-quote.ts";
+import { NEAR_NETWORK } from "./near-network.ts";
 export type TaskReviewScope = {
   playerId: string;
   accountId: string;
@@ -32,7 +33,7 @@ export async function reviewedTaskClientId(
   if (
     !scope.playerId ||
     !scope.accountId ||
-    scope.network !== "testnet" ||
+    scope.network !== NEAR_NETWORK ||
     scope.contractId !== NATIVE_TASK_CONTRACT ||
     !scope.codeHash ||
     scope.policy !== TASK_POLICY ||

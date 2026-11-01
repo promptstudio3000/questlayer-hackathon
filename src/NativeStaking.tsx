@@ -17,6 +17,7 @@ import "./native-staking.css";
 import { api } from "./api";
 import type { Player } from "./types";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
+import { EXPLORER_BASE } from "./near-network.ts";
 type Position = {
   id: string;
   account_id: string;
@@ -478,7 +479,7 @@ export function NativeStaking({
                       )}
                       <a
                         className="staking-explorer"
-                        href={`https://testnet.nearblocks.io/address/${p.account_id}`}
+                        href={`${EXPLORER_BASE}/address/${p.account_id}`}
                         target="_blank"
                         rel="noreferrer"
                       >
