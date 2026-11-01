@@ -655,3 +655,59 @@ test("link revoked during executed-code lookup cannot expose a terminal failure 
     f.db.close();
   }
 });
+test("vault v2 partial exit and contribution change confirm only on a v2 position with exact arguments", async () => {
+  for (const input of [
+    {
+      methodName: "request_partial_exit",
+      args: { amount: "1000000000000000000000000" },
+    },
+    { methodName: "set_contribution", args: { contribution_bps: 2500 } },
+  ]) {
+    const f = fixture({
+      receiverId: VAULT,
+      gas: "280000000000000",
+      deposit: "1",
+      ...input,
+    });
+    f.vaults.state = async () => ({ beneficiary: ACCOUNT, version: 2 });
+    assert.equal((await f.confirm()).confirmed, true);
+    f.result.status.SuccessValue = encode(false);
+    await assert.rejects(f.confirm(), /did not complete/);
+    f.db.close();
+    // A v1 vault has neither method.
+    const v1 = fixture({
+      receiverId: VAULT,
+      gas: "280000000000000",
+      deposit: "1",
+      ...input,
+    });
+    v1.vaults.state = async () => ({ beneficiary: ACCOUNT, version: 1 });
+    await assert.rejects(v1.confirm(), /no partial exit/);
+    v1.db.close();
+  }
+  for (const input of [
+    { methodName: "request_partial_exit", args: { amount: "999" } },
+    { methodName: "request_partial_exit", args: { amount: 10 ** 24 } },
+    {
+      methodName: "request_partial_exit",
+      args: { amount: "1000000000000000000000000", to: "mallory.testnet" },
+    },
+    { methodName: "set_contribution", args: { contribution_bps: 10001 } },
+    { methodName: "set_contribution", args: { contribution_bps: "2500" } },
+    {
+      methodName: "set_contribution",
+      args: { contribution_bps: 2500 },
+      deposit: "0",
+    },
+  ]) {
+    const f = fixture({
+      receiverId: VAULT,
+      gas: "280000000000000",
+      deposit: "1",
+      ...input,
+    });
+    f.vaults.state = async () => ({ beneficiary: ACCOUNT, version: 2 });
+    await assert.rejects(f.confirm());
+    f.db.close();
+  }
+});

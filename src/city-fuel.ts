@@ -30,12 +30,25 @@ export function fuelStatus(p: FuelPosition): { tone: FuelTone; label: string } {
   }
   if (s.owner_pending !== "0" || s.game_pending !== "0")
     return { tone: "pending", label: "Transfer on its way" };
+  const partial = BigInt(String(s.partial_exit ?? "0"));
   if (s.stage === "unlocking")
-    return { tone: "unlocking", label: "Coming back to you" };
-  if (s.stage !== "idle") return { tone: "pending", label: "Pool is working…" };
+    return {
+      tone: "unlocking",
+      label: partial > 0n ? "Part of your stake is coming back" : "Coming back to you",
+    };
+  if (s.stage !== "idle")
+    return {
+      tone: "pending",
+      label: partial > 0n ? "Taking part of your stake out…" : "Pool is working…",
+    };
   if (s.owner_credit !== "0")
     return { tone: "ready", label: "Ready to withdraw" };
   if (s.exit_requested) return { tone: "unlocking", label: "Exit requested" };
+  if (typeof s.pending_contribution_bps === "number")
+    return {
+      tone: "pending",
+      label: `Switching to ${s.pending_contribution_bps / 100} % after settlement`,
+    };
   return BigInt(String(s.principal || "0")) > 0n
     ? { tone: "active", label: "Fueling the city" }
     : { tone: "ready", label: "Ready for fuel" };
@@ -45,12 +58,137 @@ function yoctoToGold(v: bigint): number {
   return Number((v * 1000n * 1000n) / YOCTO) / 1000;
 }
 
+/** The contribution in force: v2 vaults can change it, so the live state wins. */
+export function contributionBps(p: FuelPosition): number {
+  const live = p.position?.contribution_bps;
+  return typeof live === "number" ? live : p.contribution_bps;
+}
+
 /** Weighted stake of one position in GOLD: principal × contribution share. */
 export function weightedGold(p: FuelPosition): number {
   const s = p.position;
   if (!s || s.exit_requested) return 0;
   const principal = BigInt(String(s.principal || "0"));
-  return yoctoToGold((principal * BigInt(p.contribution_bps)) / 10_000n);
+  return yoctoToGold((principal * BigInt(contributionBps(p))) / 10_000n);
+}
+
+/**
+ * Only vault v2 has request_partial_exit and set_contribution. Factory
+ * positions created before the upgrade stay v1, so the app offers these
+ * actions only where the live state says version 2.
+ */
+export function isVaultV2(p: FuelPosition): boolean {
+  return p.position?.version === 2;
+}
+
+const MIN_POSITION = 10n ** 21n;
+const big = (v: unknown) => BigInt(String(v ?? "0"));
+const mulBps = (v: bigint, bps: number) =>
+  (v / 10_000n) * BigInt(bps) + ((v % 10_000n) * BigInt(bps)) / 10_000n;
+const near = (v: bigint) => Number((v * 1000n) / YOCTO) / 1000;
+
+export type PartialExitQuote =
+  | { ok: false; reason: string }
+  | {
+      ok: true;
+      /** test NEAR the owner gets back (the principal taken out). */
+      receiveNear: number;
+      /** The game's share of gain so far, settled at today's rate. */
+      cityFeeNear: number;
+      remainingNear: number;
+      goldAfter: number;
+      tierAfter: number;
+    };
+
+/**
+ * Mirrors the vault: the request takes `amount` of principal, settles the
+ * game's share of the gain so far, and must leave at least 0.001 test NEAR.
+ */
+export function quotePartialExit(
+  p: FuelPosition,
+  amountYocto: string,
+  summary: FuelSummary,
+): PartialExitQuote {
+  const s = p.position;
+  if (!s || !isVaultV2(p))
+    return { ok: false, reason: "This stake predates partial withdrawals; use a full exit." };
+  if (s.stage !== "idle" || s.exit_requested)
+    return { ok: false, reason: "Wait until the current operation finishes." };
+  if (big(s.partial_exit) > 0n)
+    return { ok: false, reason: "A partial withdrawal is already on its way." };
+  const amount = BigInt(amountYocto),
+    principal = big(s.principal);
+  if (amount < MIN_POSITION || amount + MIN_POSITION > principal)
+    return {
+      ok: false,
+      reason: "Leave at least 0.001 test NEAR staked, or use a full exit.",
+    };
+  const total = big(s.staked) + big(s.unstaked),
+    gain = total > big(s.high_water_basis) ? total - big(s.high_water_basis) : 0n,
+    fee = mulBps(gain, contributionBps(p)),
+    remaining = principal - amount;
+  const goldAfter =
+    summary.myWeightedGold -
+    weightedGold(p) +
+    yoctoToGold((remaining * BigInt(contributionBps(p))) / 10_000n);
+  return {
+    ok: true,
+    receiveNear: near(amount),
+    cityFeeNear: near(fee),
+    remainingNear: near(remaining),
+    goldAfter,
+    tierAfter: tierFor(goldAfter),
+  };
+}
+
+export type ContributionQuote =
+  | { ok: false; reason: string }
+  | {
+      ok: true;
+      /** True when earned gain settles at the old rate first (a harvest). */
+      settlesFirst: boolean;
+      oldPct: number;
+      newPct: number;
+      goldAfter: number;
+      tierAfter: number;
+    };
+
+/** Mirrors set_contribution: earned gain is never re-priced. */
+export function quoteContribution(
+  p: FuelPosition,
+  newBps: number,
+  summary: FuelSummary,
+): ContributionQuote {
+  const s = p.position;
+  if (!s || !isVaultV2(p))
+    return { ok: false, reason: "This stake predates share changes; exit and start a new one." };
+  if (!Number.isInteger(newBps) || newBps < 0 || newBps > 10_000)
+    return { ok: false, reason: "Choose a share between 0 and 100 %." };
+  if (s.stage !== "idle" || s.exit_requested)
+    return { ok: false, reason: "Wait until the current operation finishes." };
+  if (big(s.partial_exit) > 0n)
+    return { ok: false, reason: "Wait for the partial withdrawal to finish." };
+  const current = contributionBps(p),
+    waiting = typeof s.pending_contribution_bps === "number";
+  if (newBps === current && !waiting)
+    return { ok: false, reason: "This is already your share." };
+  if (waiting && newBps === s.pending_contribution_bps)
+    return { ok: false, reason: "This change is already waiting." };
+  const total = big(s.staked) + big(s.unstaked),
+    gain = total > big(s.high_water_basis) ? total - big(s.high_water_basis) : 0n,
+    principal = big(s.principal);
+  const goldAfter =
+    summary.myWeightedGold -
+    weightedGold(p) +
+    yoctoToGold((principal * BigInt(newBps)) / 10_000n);
+  return {
+    ok: true,
+    settlesFirst: mulBps(gain, current) > 0n,
+    oldPct: current / 100,
+    newPct: newBps / 100,
+    goldAfter,
+    tierAfter: tierFor(goldAfter),
+  };
 }
 
 export function tierFor(weighted: number): number {

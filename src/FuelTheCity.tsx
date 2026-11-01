@@ -10,11 +10,16 @@ import {
 import { api } from "./api";
 import {
   CONTRIBUTION_CHOICES,
+  contributionBps,
   fuelStatus,
+  isVaultV2,
   previewFuel,
+  quoteContribution,
+  quotePartialExit,
   summarizeFuel,
   weightedGold,
   type FuelPosition,
+  type FuelSummary,
 } from "./city-fuel";
 import { NativeStaking, type VaultSnapshot } from "./NativeStaking";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
@@ -32,12 +37,12 @@ type CityStaking = {
 
 const fmt = (n: number, max = 0) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: max }).format(n);
+const fmtNear = (yocto: string) => fmt(Number(BigInt(yocto) / 10n ** 21n) / 1000, 3);
+const tierName = (t: number) => (t === 1 ? "Free" : `Tier ${t}`);
 
 type Outcome =
-  | { kind: "idle" }
-  | { kind: "pending"; text: string }
-  | { kind: "done"; text: string }
-  | { kind: "failed"; text: string };
+  | { kind: "idle"; where?: undefined }
+  | { kind: "pending" | "done" | "failed"; text: string; where?: "adjust" };
 
 /** Profile → Fuel the city. Staking as a choice with a city meter, not an APY table. */
 export function FuelTheCity({
@@ -93,7 +98,14 @@ export function FuelTheCity({
     (p) => p.position && p.position.stage === "idle" && !p.position.exit_requested,
   );
   const setupPending = positions.find((p) => !p.position);
-  const fixedContribution = active ? active.contribution_bps / 100 : null;
+  const fixedContribution = active ? contributionBps(active) / 100 : null;
+  const adjustable = active && isVaultV2(active) ? active : null;
+  const withdrawable = positions.find(
+    (p) =>
+      p.position &&
+      String(p.position.owner_credit) !== "0" &&
+      String(p.position.owner_pending) === "0",
+  );
   const pct = fixedContribution ?? contribution;
   let amountError = "";
   let amountNear = 0;
@@ -104,18 +116,29 @@ export function FuelTheCity({
   }
   const preview = previewFuel(summary, amountError ? 0 : amountNear, pct);
 
-  async function send(request: Omit<VaultRequest, "accountId">, pending: string, done: string) {
-    setOutcome({ kind: "pending", text: pending });
+  async function send(
+    request: Omit<VaultRequest, "accountId">,
+    pending: string,
+    done: string,
+    where?: "adjust",
+  ): Promise<boolean> {
+    setOutcome({ kind: "pending", text: pending, where });
     try {
       const ok = await onTransaction({ ...request, accountId: account });
       setOutcome(
         ok
-          ? { kind: "done", text: done }
-          : { kind: "failed", text: "It didn't go through. Nothing was taken; try again." },
+          ? { kind: "done", text: done, where }
+          : {
+              kind: "failed",
+              text: "It didn't go through. Nothing was taken; try again.",
+              where,
+            },
       );
       await refresh();
+      return ok;
     } catch (e) {
-      setOutcome({ kind: "failed", text: (e as Error).message });
+      setOutcome({ kind: "failed", text: (e as Error).message, where });
+      return false;
     }
   }
 
@@ -226,7 +249,7 @@ export function FuelTheCity({
                       {st.label}
                     </span>
                     <span>
-                      {p.contribution_bps / 100} % of yield to the city ·{" "}
+                      {contributionBps(p) / 100} % of yield to the city ·{" "}
                       {fmt(weightedGold(p))} GOLD fuel
                     </span>
                   </li>
@@ -265,7 +288,10 @@ export function FuelTheCity({
                 ) : (
                   <p className="fuel-fixed">
                     This stake gives <b>{fixedContribution} %</b> of its yield to
-                    the city. To change it, exit and start a new one.
+                    the city.{" "}
+                    {adjustable
+                      ? "You can change it below."
+                      : "To change it, exit and start a new one."}
                   </p>
                 )}
                 {active && (
@@ -371,18 +397,50 @@ export function FuelTheCity({
                 </p>
               </>
             )}
-            {outcome.kind === "done" && (
+            {withdrawable && (
+              <div className="fuel-state fuel-ready">
+                <CheckCircle size={20} aria-hidden="true" />
+                <span>
+                  {fmtNear(String(withdrawable.position!.owner_credit))} test NEAR
+                  is back and ready to withdraw.
+                </span>
+                <button
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={() =>
+                    void send(
+                      { action: "withdraw", vaultId: withdrawable.account_id },
+                      "Withdrawing…",
+                      "Withdrawn to your balance.",
+                    )
+                  }
+                >
+                  Withdraw
+                </button>
+              </div>
+            )}
+            {outcome.kind === "done" && !outcome.where && (
               <p className="fuel-state fuel-ready" role="status">
                 <CheckCircle size={20} aria-hidden="true" /> {outcome.text}
               </p>
             )}
-            {outcome.kind === "failed" && (
+            {outcome.kind === "failed" && !outcome.where && (
               <p className="fuel-state fuel-failed" role="alert">
                 <WarningCircle size={20} aria-hidden="true" /> {outcome.text}
               </p>
             )}
           </div>
         </>
+      )}
+
+      {vaults?.config && adjustable && account && (
+        <FuelAdjust
+          position={adjustable}
+          summary={summary}
+          busy={busy}
+          outcome={outcome}
+          send={(r, p, d) => send(r, p, d, "adjust")}
+        />
       )}
 
       <details className="play-details fuel-advanced">
@@ -397,5 +455,178 @@ export function FuelTheCity({
         />
       </details>
     </section>
+  );
+}
+
+type Send = (
+  request: Omit<VaultRequest, "accountId">,
+  pending: string,
+  done: string,
+) => Promise<boolean>;
+
+/**
+ * Vault v2 only: take part of the stake out, or change the city's share of
+ * future yield. Both quote first; the vault settles earned gain at the old
+ * rate, so nothing already earned is re-priced.
+ */
+function FuelAdjust({
+  position,
+  summary,
+  busy,
+  outcome,
+  send,
+}: {
+  position: FuelPosition;
+  summary: FuelSummary;
+  busy: boolean;
+  outcome: Outcome;
+  send: Send;
+}) {
+  const [takeOut, setTakeOut] = useState(""),
+    [share, setShare] = useState<number | null>(null);
+  let amountYocto = "",
+    amountError = "";
+  if (takeOut)
+    try {
+      amountYocto = parseTestNear(takeOut);
+    } catch (e) {
+      amountError = (e as Error).message.replace("Stake", "Take out");
+    }
+  const exitQuote = amountYocto ? quotePartialExit(position, amountYocto, summary) : null;
+  const shareQuote = share === null ? null : quoteContribution(position, share * 100, summary);
+  const current = contributionBps(position) / 100;
+  const pending = position.position?.pending_contribution_bps;
+  return (
+    <div className="fuel-action fuel-adjust">
+      <h2>Change your stake</h2>
+
+      <section aria-labelledby="fuel-partial-title" className="fuel-adjust-part">
+        <h3 id="fuel-partial-title">Take some out</h3>
+        <p>
+          You have {fmtNear(String(position.position?.principal ?? "0"))} test
+          NEAR staked. The rest keeps fueling the city.
+        </p>
+        <label className="fuel-amount">
+          <span>Amount · test NEAR</span>
+          <input
+            inputMode="decimal"
+            value={takeOut}
+            placeholder="0.5"
+            disabled={busy}
+            aria-invalid={!!amountError || exitQuote?.ok === false}
+            onChange={(e) => setTakeOut(e.target.value)}
+          />
+        </label>
+        {amountError && (
+          <p className="fuel-error" role="alert">
+            {amountError}
+          </p>
+        )}
+        {exitQuote && !exitQuote.ok && (
+          <p className="fuel-error" role="alert">
+            {exitQuote.reason}
+          </p>
+        )}
+        {exitQuote?.ok && (
+          <p className="fuel-preview" data-testid="partial-quote">
+            You get back about {fmt(exitQuote.receiveNear, 3)} test NEAR
+            {exitQuote.cityFeeNear > 0
+              ? `; ${fmt(exitQuote.cityFeeNear, 3)} test NEAR of yield already earned goes to the city at today's ${current} %`
+              : ""}
+            . {fmt(exitQuote.remainingNear, 3)} test NEAR stays staked →{" "}
+            {fmt(exitQuote.goldAfter)} GOLD fuel, {tierName(exitQuote.tierAfter)}.
+            It arrives after about 1–7 days of unstaking.
+          </p>
+        )}
+        <button
+          className="secondary-button"
+          disabled={busy || !exitQuote?.ok}
+          onClick={() =>
+            void send(
+              { action: "partial", vaultId: position.account_id, amount: amountYocto },
+              "Taking part of your stake out…",
+              "Requested. Your test NEAR is unstaking; withdraw it here when it's back.",
+            ).then((ok) => ok && setTakeOut(""))
+          }
+        >
+          {busy ? "Working…" : `Take ${exitQuote?.ok ? takeOut + " test NEAR " : ""}out`}
+        </button>
+      </section>
+
+      <section aria-labelledby="fuel-share-title" className="fuel-adjust-part">
+        <h3 id="fuel-share-title">City share of your yield</h3>
+        <p>
+          Now <b>{current} %</b>
+          {typeof pending === "number"
+            ? `, switching to ${pending / 100} % once earned yield settles`
+            : ""}
+          .
+        </p>
+        <div className="fuel-choice" role="radiogroup" aria-label="New city share">
+          {[{ pct: 0, label: "None", hint: "Keep all yield" }, ...CONTRIBUTION_CHOICES].map(
+            (c) => (
+              <button
+                key={c.pct}
+                role="radio"
+                aria-checked={share === c.pct}
+                disabled={busy}
+                onClick={() => setShare(c.pct)}
+              >
+                <b>{c.label}</b>
+                <span>{c.pct} %</span>
+                <small>{c.hint}</small>
+              </button>
+            ),
+          )}
+        </div>
+        {shareQuote && !shareQuote.ok && (
+          <p className="fuel-error" role="alert">
+            {shareQuote.reason}
+          </p>
+        )}
+        {shareQuote?.ok && (
+          <p className="fuel-preview" data-testid="share-quote">
+            {shareQuote.settlesFirst
+              ? `Yield already earned settles at ${shareQuote.oldPct} % first; ${shareQuote.newPct} % applies when that settlement arrives (about 1–7 days).`
+              : `${shareQuote.newPct} % applies right away, to yield earned from now on.`}{" "}
+            → {fmt(shareQuote.goldAfter)} GOLD fuel, {tierName(shareQuote.tierAfter)}.
+          </p>
+        )}
+        <button
+          className="secondary-button"
+          disabled={busy || !shareQuote?.ok}
+          onClick={() =>
+            void send(
+              {
+                action: "contribution",
+                vaultId: position.account_id,
+                contributionBps: share! * 100,
+              },
+              "Changing the city share…",
+              shareQuote?.ok && shareQuote.settlesFirst
+                ? "Requested. The new share applies once earned yield settles."
+                : "City share changed.",
+            ).then((ok) => ok && setShare(null))
+          }
+        >
+          {busy ? "Working…" : "Change share"}
+        </button>
+      </section>
+      {outcome.where === "adjust" && outcome.kind === "pending" && (
+        <p className="fuel-state" role="status">
+          <Clock size={20} aria-hidden="true" /> {outcome.text}
+        </p>
+      )}
+      {outcome.where === "adjust" && outcome.kind === "done" && (
+        <p className="fuel-state fuel-ready" role="status">
+          <CheckCircle size={20} aria-hidden="true" /> {outcome.text}
+        </p>
+      )}
+      {outcome.where === "adjust" && outcome.kind === "failed" && (
+        <p className="fuel-state fuel-failed" role="alert">
+          <WarningCircle size={20} aria-hidden="true" /> {outcome.text}
+        </p>
+      )}
+    </div>
   );
 }

@@ -34,6 +34,8 @@ const labels: Record<string, string> = {
   withdraw_refund: "Withdraw setup refund",
   deposit_and_stake: "Stake NEAR",
   request_exit: "Request unstaking",
+  request_partial_exit: "Take part of a stake out",
+  set_contribution: "Change city share",
   withdraw_owner: "Withdraw released NEAR",
   refresh: "Refresh position",
   advance: "Continue withdrawal",

@@ -268,3 +268,23 @@
     column-gap: 8px;
   }
 }
+.fuel-adjust-part {
+  display: grid;
+  gap: 10px;
+}
+.fuel-adjust-part + .fuel-adjust-part {
+  padding-top: 12px;
+  border-top: 1px solid var(--decorative-border);
+}
+.fuel-adjust h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.fuel-adjust-part > p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.fuel-adjust .fuel-choice {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
