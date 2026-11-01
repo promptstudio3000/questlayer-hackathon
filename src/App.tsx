@@ -10,6 +10,11 @@ import {
 } from "./adventure-results";
 import { PendingNativeTransactions } from "./PendingNativeTransactions";
 import { CreatorCommunity } from "./CreatorCommunity";
+import {
+  assertCreatorQuote,
+  type CreatorPaymentQuote,
+  type CreatorPaymentRequest,
+} from "./creator-money-quote";
 import { useAppNavigation } from "./useAppNavigation";
 import { createReadEpoch } from "./read-epoch";
 import { usePickupFeedback } from "./usePickupFeedback";
@@ -1569,6 +1574,32 @@ export default function App() {
               },
             },
           ],
+        },
+        { playerId: player!.id },
+      );
+      return true;
+    });
+    return result === true;
+  }
+  async function operateCreatorPayment(
+    request: CreatorPaymentRequest,
+    expected: { contractId: string; price?: string },
+  ): Promise<boolean> {
+    const result = await action("creator-payment", async () => {
+      const { signer, accountId } = await resolveSigner();
+      if (!player?.wallets.some((w) => w.account_id === accountId))
+        throw Error("Link this account before paying a creator.");
+      const quote = await api<CreatorPaymentQuote>(
+        "/native/creators/prepare",
+        request,
+      );
+      assertCreatorQuote(quote, request, { accountId, ...expected });
+      await signer.send(
+        {
+          network: NEAR_NETWORK,
+          signerId: accountId,
+          receiverId: quote.receiverId,
+          actions: [quote.actions[0]],
         },
         { playerId: player!.id },
       );
@@ -3331,6 +3362,16 @@ export default function App() {
                 view={creatorView}
                 onViewChange={setCreatorView}
                 onPlayerChange={me}
+                position={position}
+                money={{
+                  accountId:
+                    invisible.status === "ready" && invisible.accountId
+                      ? invisible.accountId
+                      : player.wallets[0]?.account_id || "",
+                  managed:
+                    invisible.status === "ready" && !!invisible.accountId,
+                  pay: operateCreatorPayment,
+                }}
                 onCapabilityChange={(enabled) => {
                   if (latest.current.player?.id !== player.id) return;
                   setCreatorCapability((previous) =>
