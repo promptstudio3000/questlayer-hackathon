@@ -40,7 +40,14 @@ src=sqlite3.connect(f'file:{sys.argv[1]}?mode=ro',uri=True); dst=sqlite3.connect
 PY
 [[ -f "$OLD_UNIT" ]] && cp -a "$OLD_UNIT" "$BACKUP/auratrail.service"
 [[ -f "$OLD_APP/runtime.env" ]] && cp -a "$OLD_APP/runtime.env" "$BACKUP/runtime.env"
-if [[ ! -d "$NEW_STATE" ]]; then mv "$OLD_STATE" "$NEW_STATE"; else echo "$NEW_STATE already exists; refusing to merge" >&2; exit 1; fi
+if [[ -e "$NEW_STATE" || -L "$NEW_STATE" ]]; then echo "$NEW_STATE already exists; refusing to merge" >&2; exit 1; fi
+if [[ -L "$OLD_STATE" ]]; then
+  # DynamicUser=yes keeps state in /var/lib/private/<name> behind a symlink;
+  # systemd refuses a StateDirectory symlink that points at another name.
+  [[ "$(readlink "$OLD_STATE")" == private/auratrail && ! -e /var/lib/private/questlayer-hackathon ]] || { echo "Unexpected $OLD_STATE symlink" >&2; exit 1; }
+  mv /var/lib/private/auratrail /var/lib/private/questlayer-hackathon
+  ln -s private/questlayer-hackathon "$NEW_STATE"; rm -f "$OLD_STATE"
+else mv "$OLD_STATE" "$NEW_STATE"; fi
 chmod 700 "$NEW_STATE"; chown "$OWNER" "$NEW_STATE"
 for f in auratrail.sqlite auratrail.sqlite-wal auratrail.sqlite-shm; do [[ -e "$NEW_STATE/$f" ]] && mv "$NEW_STATE/$f" "$NEW_STATE/${f/auratrail/questlayer-hackathon}"; done
 for d in releases assets state-backups; do [[ -d "$OLD_APP/$d" ]] && mv "$OLD_APP/$d" "$NEW_APP/$d"; done
