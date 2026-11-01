@@ -109,6 +109,7 @@ export class CreatorMoney {
       clock = Date.now,
       roundBudgetYocto = 10n ** 22n,
       maxRoundBudgetYocto = null,
+      bonusVote = null,
     } = {},
   ) {
     this.db = db;
@@ -119,6 +120,9 @@ export class CreatorMoney {
     this.roundBudget = BigInt(roundBudgetYocto);
     this.maxRoundBudget =
       maxRoundBudgetYocto === null ? null : BigInt(maxRoundBudgetYocto);
+    // Optional community vote (server/creators/bonus-vote.mjs): when a day has
+    // voted bonus quests, only their support is recorded into that day's round.
+    this.bonusVote = bonusVote;
     ensureModuleVersion(db, CREATOR_MONEY_SCHEMA);
     db.exec("INSERT OR IGNORE INTO creator_money_lease(id) VALUES(1)");
   }
@@ -155,6 +159,9 @@ export class CreatorMoney {
       treasury,
       creator,
       registeredQuests: quests.length,
+      ...(this.bonusVote && {
+        bonusVote: this.bonusVote.results(utcDay(this.clock())),
+      }),
       myQuests: mine.map((q) => q.quest_id),
       pendingJobs: this.db
         .prepare(
@@ -475,7 +482,8 @@ export class CreatorMoney {
     if (!this.lease(owner, now)) return { busy: true };
     let confirmed = 0,
       failed = 0,
-      retried = 0;
+      retried = 0,
+      held = 0;
     try {
       this.sync(now);
       await this.rounds(now);
@@ -486,6 +494,36 @@ export class CreatorMoney {
         .all(this.clock(), maxJobs);
       for (const job of due) {
         if (!this.lease(owner, this.clock())) break;
+        if (job.kind === "record_support" && this.bonusVote) {
+          const at = this.clock();
+          // Gate by the round actually open on chain, not by the clock.
+          const round = this.db
+            .prepare(
+              "SELECT day FROM creator_money_rounds WHERE state IN ('open','finalizing') ORDER BY day LIMIT 1",
+            )
+            .get();
+          if (
+            round &&
+            !this.bonusVote.counts(JSON.parse(job.args).quest_id, round.day, at)
+          ) {
+            // Not a bonus quest today: keep the support for a day it wins.
+            this.db
+              .prepare(
+                "UPDATE creator_money_jobs SET run_after=?,last_error=?,updated_at=? WHERE id=?",
+              )
+              .run(
+                // Yesterday's round is still closing: look again shortly.
+                round.day === utcDay(at)
+                  ? this.bonusVote.nextCheck(at)
+                  : at + 60000,
+                "Held: not among today's community bonus quests.",
+                at,
+                job.id,
+              );
+            held++;
+            continue;
+          }
+        }
         try {
           const hash = await this.send(job);
           this.complete(job, hash);
@@ -532,7 +570,9 @@ export class CreatorMoney {
         )
         .run(owner);
     }
-    return { confirmed, failed, retried };
+    return this.bonusVote
+      ? { confirmed, failed, retried, held }
+      : { confirmed, failed, retried };
   }
   async send(job) {
     const args = JSON.parse(job.args);

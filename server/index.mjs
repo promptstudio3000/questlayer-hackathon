@@ -40,6 +40,11 @@ import {
   loadCreatorsPublisher,
   startCreatorMoneyWorker,
 } from "./native/creator-money.mjs";
+import {
+  CreatorBonusVote,
+  bonusVoteSettings,
+  createBonusVoteRoutes,
+} from "./creators/bonus-vote.mjs";
 import { auditDistribution, auditSummary } from "./native/distribution.mjs";
 import {
   NativeSocialRecords,
@@ -313,6 +318,16 @@ const creatorsManifest =
     process.env.CREATOR_COMMUNITY_ENABLED === "1")
     ? loadCreatorsManifest(creatorsManifestPath)
     : null;
+// Community vote on the daily creator bonus: testnet only, on by default
+// there (CREATOR_BONUS_VOTE=0 turns it off). It creates its tables on first
+// use and answers "not enabled" until the creator community exists.
+const creatorBonusVote =
+  NETWORK !== "mainnet" &&
+  featureEnabled("creators") &&
+  process.env.CREATOR_BONUS_VOTE !== "0"
+    ? new CreatorBonusVote(db, bonusVoteSettings(process.env))
+    : null;
+const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
 const creatorMoney = creatorsManifest
   ? new CreatorMoney(db, provider, creatorsManifest, {
       transport: process.env.CREATORS_PUBLISHER_KEY_PATH
@@ -325,6 +340,7 @@ const creatorMoney = creatorsManifest
       roundBudgetYocto:
         process.env.CREATOR_ROUND_BUDGET_YOCTO || "10000000000000000000000",
       maxRoundBudgetYocto: creatorsManifest.policy?.max_round_budget ?? null,
+      bonusVote: creatorBonusVote,
     })
   : null;
 const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
@@ -914,6 +930,15 @@ async function api(req, res, url) {
   const player = auth(req);
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
+  if (
+    await creatorBonusVoteRoutes.handle(req, res, url, {
+      player,
+      body,
+      respond,
+      assert,
+    })
   )
     return;
   if (

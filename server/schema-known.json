@@ -466,6 +466,18 @@
         "signed_market_orders_maker": "CREATE INDEX IF NOT EXISTS signed_market_orders_maker ON signed_market_orders(maker,received_at DESC)",
         "signed_market_orders_checked": "CREATE INDEX IF NOT EXISTS signed_market_orders_checked ON signed_market_orders(state,checked_at)"
       }
+    },
+    {
+      "name": "creator-bonus-vote",
+      "version": 1,
+      "source": "server/creators/bonus-vote.mjs",
+      "tables": {
+        "creator_bonus_results": "CREATE TABLE creator_bonus_results(\n day TEXT PRIMARY KEY CHECK(day GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),\n winners TEXT NOT NULL CHECK(json_valid(winners)),\n tally TEXT NOT NULL CHECK(json_valid(tally)),\n voters INTEGER NOT NULL CHECK(voters>=0),\n policy TEXT NOT NULL CHECK(json_valid(policy)),\n tallied_at INTEGER NOT NULL\n)",
+        "creator_bonus_votes": "CREATE TABLE creator_bonus_votes(\n day TEXT NOT NULL CHECK(day GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),\n voter TEXT NOT NULL,\n quest_id TEXT NOT NULL,\n cast_at INTEGER NOT NULL,\n PRIMARY KEY(day,voter,quest_id)\n)"
+      },
+      "indexes": {
+        "creator_bonus_votes_quest": "CREATE INDEX IF NOT EXISTS creator_bonus_votes_quest ON creator_bonus_votes(day,quest_id)"
+      }
     }
   ]
 }
