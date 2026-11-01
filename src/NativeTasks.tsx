@@ -14,6 +14,8 @@ import {
 import { api } from "./api";
 import type { Player } from "./types";
 import { useFormDraft } from "./useFormDraft";
+import { EvidencePhotoPicker, EvidencePhotoViewer } from "./TaskEvidencePhotos";
+import { evidenceCommitment, type EvidencePhoto } from "./task-evidence-photo";
 import { createReadEpoch } from "./read-epoch";
 import {
   matchingPublishedTask,
@@ -302,7 +304,13 @@ export function NativeTasks({
     publicAck && ackBinding === acknowledgementScope && !!binding;
   const latestAck = useRef(publicAckValid);
   latestAck.current = publicAckValid;
-  const evidenceTerms = JSON.stringify(evidenceDraft.values);
+  const [evidencePhoto, setEvidencePhoto] = useState<EvidencePhoto | null>(
+    null,
+  );
+  const evidenceTerms = JSON.stringify([
+    evidenceDraft.values,
+    evidencePhoto?.sha256 ?? "",
+  ]);
   const latestEvidenceTerms = useRef(evidenceTerms);
   latestEvidenceTerms.current = evidenceTerms;
   const ownSubmission = data?.submissions.find(
@@ -585,7 +593,10 @@ export function NativeTasks({
           "Enter an IPFS content address without a path, or leave it empty.",
         );
       const appealId = caps?.appealSubmissionId;
-      const contentHash = await digest({ text, reference: ref });
+      // A private photo is committed only by its fingerprint.
+      const contentHash = await digest(
+        evidenceCommitment(text, ref, evidencePhoto?.sha256 ?? ""),
+      );
       if (
         !mounted.current ||
         !operations.current.isCurrent(operation, latest.current) ||
@@ -618,7 +629,8 @@ export function NativeTasks({
     <p className="task-public">
       <WarningCircle aria-hidden="true" />
       This text, wallet and content reference become public chain records. They
-      cannot be erased. Do not include private details, exact GPS or photos.
+      cannot be erased. Do not include private details or exact GPS. A private
+      photo is never published; only its fingerprint is.
     </p>
   );
   const acknowledgement = (
@@ -1012,6 +1024,17 @@ export function NativeTasks({
                     ? "Appeal cost: network fee only. The original 0.05 test NEAR storage cost is not refunded."
                     : "Submitting costs 0.05 test NEAR for non-refundable storage, plus network fee. One submission per wallet; approval is not guaranteed."}
                 </p>
+                {account && selectedId !== null && (
+                  <EvidencePhotoPicker
+                    accountId={account}
+                    taskId={selectedId}
+                    disabled={busy}
+                    onPhoto={(photo) => {
+                      setEvidencePhoto(photo);
+                      setPublicAck(false);
+                    }}
+                  />
+                )}
                 {publicNotice}
                 {acknowledgement}
                 <button
@@ -1045,6 +1068,12 @@ export function NativeTasks({
                 <div className="task-own-receipt">
                   <h3>Your evidence · {ownSubmission.status}</h3>
                   <p>{ownSubmission.evidence.text}</p>
+                  <EvidencePhotoViewer
+                    accountId={account}
+                    taskId={task.task_id}
+                    submissionId={ownSubmission.submission_id}
+                    canReport={false}
+                  />
                   {ownSubmission.review_reason && (
                     <p>Review: {ownSubmission.review_reason}</p>
                   )}
@@ -1066,6 +1095,12 @@ export function NativeTasks({
                 <h3>Next evidence to review</h3>
                 <p className="task-account">{reviewSubmission.claimant_id}</p>
                 <p>{reviewSubmission.evidence.text}</p>
+                <EvidencePhotoViewer
+                  accountId={account}
+                  taskId={task.task_id}
+                  submissionId={reviewSubmission.submission_id}
+                  canReport
+                />
                 <label>
                   Decision reason
                   <textarea
@@ -1139,6 +1174,12 @@ export function NativeTasks({
                 {resolving && (
                   <>
                     <p>{resolving.evidence.text}</p>
+                    <EvidencePhotoViewer
+                      accountId={account}
+                      taskId={task.task_id}
+                      submissionId={resolving.submission_id}
+                      canReport
+                    />
                     <p>Appeal: {resolving.appeal?.text}</p>
                     <label>
                       Public resolution reason

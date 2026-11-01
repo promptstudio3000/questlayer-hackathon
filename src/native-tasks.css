@@ -344,3 +344,42 @@
 .native-tasks .task-finalize p {
   font-size: 14px;
 }
+
+/* Private photo evidence */
+.native-tasks .task-photo {
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.15));
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.native-tasks .task-photo legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  padding: 0 4px;
+}
+.native-tasks .task-photo-ready {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.native-tasks .task-photo-ready img {
+  max-width: min(100%, 320px);
+  max-height: 240px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+.native-tasks .task-photo-placeholder {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 72px;
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.15);
+}
+.native-tasks .task-photo-status {
+  margin: 0;
+}
