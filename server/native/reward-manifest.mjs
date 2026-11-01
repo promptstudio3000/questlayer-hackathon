@@ -1,5 +1,5 @@
 import { assert, hash, point } from "../domain.mjs";
-import { PLZEN, sampleCityPaths } from "../spatial/city-pack.mjs";
+import { cityById, sampleCityPaths } from "../spatial/city-pack.mjs";
 import { NETWORK } from "./network.mjs";
 import { nativeInteger } from "./staking-pool.mjs";
 export const NATIVE_POLICY = "native-city-v1";
@@ -46,7 +46,9 @@ const THEMES = [
 export function nativeManifest(
   plan,
   treasury,
-  coinPoints = plan.cityId === PLZEN.id ? sampleCityPaths(PLZEN) : null,
+  coinPoints = cityById(plan.cityId)
+    ? sampleCityPaths(cityById(plan.cityId))
+    : null,
   { budget = null, funding = null } = {},
 ) {
   const dayId = nativeDayId(plan.cityId, plan.day);

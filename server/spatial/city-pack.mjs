@@ -21,12 +21,92 @@ import {
   createPedestrianRouter,
   validateExclusions,
 } from "./pedestrian-graph.mjs";
-export const PLZEN = JSON.parse(
-  readFileSync(new URL("../data/plzen-v1.json", import.meta.url), "utf8"),
+// City registry: server/data/cities.json lists every CityPack the server knows.
+// "live" packs are planned daily and matched by GPS; "preview" packs load and
+// validate but never reach players. Exactly one live city is the default: it
+// hosts the arena and is the one city native rewards publish for. Funding is
+// separate (NATIVE_FUNDED_CITIES in server/native/allocation.mjs).
+const CITY_STATUSES = new Set(["live", "preview"]);
+function boxesOverlap(a, b) {
+  return a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+}
+export function loadCityRegistry(
+  registry,
+  readPack = (file) =>
+    JSON.parse(
+      readFileSync(new URL(`../data/${file}`, import.meta.url), "utf8"),
+    ),
+) {
+  if (!registry || registry.version !== 1 || !Array.isArray(registry.cities))
+    throw Error("City registry must be { version: 1, cities: [...] }.");
+  const entries = registry.cities;
+  if (!entries.length || entries.length > 32)
+    throw Error("City registry needs 1 to 32 cities.");
+  const byId = new Map();
+  for (const entry of entries) {
+    if (!/^[a-z][a-z0-9-]{1,31}$/.test(entry?.id || ""))
+      throw Error(`Invalid city id ${JSON.stringify(entry?.id)}.`);
+    if (byId.has(entry.id)) throw Error(`Duplicate city ${entry.id}.`);
+    if (!CITY_STATUSES.has(entry.status))
+      throw Error(`City ${entry.id} needs status live or preview.`);
+    if (!/^[a-z0-9-]+(\.[a-z0-9-]+)*\.json$/.test(entry.pack || ""))
+      throw Error(`City ${entry.id} needs a pack file in server/data.`);
+    const pack = readPack(entry.pack);
+    if (pack?.id !== entry.id)
+      throw Error(
+        `Pack ${entry.pack} has id ${pack?.id}, expected ${entry.id}.`,
+      );
+    const c = pack.coverage;
+    if (
+      !Array.isArray(c) ||
+      c.length !== 4 ||
+      !c.every(Number.isFinite) ||
+      !(c[0] < c[2] && c[1] < c[3]) ||
+      !(pack.center?.lng >= c[0] && pack.center.lng <= c[2]) ||
+      !(pack.center?.lat >= c[1] && pack.center.lat <= c[3]) ||
+      typeof pack.timezone !== "string"
+    )
+      throw Error(
+        `Pack ${entry.id} needs a timezone and a centre inside its coverage.`,
+      );
+    byId.set(entry.id, { ...entry, default: entry.default === true, pack });
+  }
+  const live = [...byId.values()].filter((e) => e.status === "live"),
+    defaults = [...byId.values()].filter((e) => e.default);
+  if (defaults.length !== 1 || defaults[0].status !== "live")
+    throw Error("Exactly one live city must be the default.");
+  for (let i = 0; i < live.length; i++)
+    for (let j = i + 1; j < live.length; j++)
+      if (boxesOverlap(live[i].pack.coverage, live[j].pack.coverage))
+        throw Error(`Live cities ${live[i].id} and ${live[j].id} overlap.`);
+  return {
+    defaultCity: defaults[0].pack,
+    liveCities: live.map((e) => e.pack),
+    allCities: [...byId.values()].map((e) => e.pack),
+    statusOf: (id) => byId.get(id)?.status || null,
+  };
+}
+export const CITY_REGISTRY = loadCityRegistry(
+  JSON.parse(
+    readFileSync(new URL("../data/cities.json", import.meta.url), "utf8"),
+  ),
 );
+export const DEFAULT_CITY = CITY_REGISTRY.defaultCity;
+export const LIVE_CITIES = CITY_REGISTRY.liveCities;
+// Kept for scripts and QA that are about Plzeň specifically.
+export const PLZEN = CITY_REGISTRY.allCities.find((c) => c.id === "plzen");
+export function cityById(id) {
+  return CITY_REGISTRY.allCities.find((c) => c.id === id) || null;
+}
+export function liveCityById(id) {
+  return LIVE_CITIES.find((c) => c.id === id) || null;
+}
 export function cityFor(p) {
-  const [b, l, r, t] = PLZEN.coverage;
-  return p.lng >= b && p.lng <= r && p.lat >= l && p.lat <= t ? PLZEN : null;
+  for (const city of LIVE_CITIES) {
+    const [b, l, r, t] = city.coverage;
+    if (p.lng >= b && p.lng <= r && p.lat >= l && p.lat <= t) return city;
+  }
+  return null;
 }
 export function contains(geometry, p) {
   return (

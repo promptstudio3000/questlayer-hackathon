@@ -13,7 +13,12 @@ import {
   tierFor,
 } from "./domain.mjs";
 import { atomic } from "./database.mjs";
-import { PLZEN, cityFor, sampleCityPaths } from "./spatial/city-pack.mjs";
+import {
+  DEFAULT_CITY,
+  cityFor,
+  liveCityById,
+  sampleCityPaths,
+} from "./spatial/city-pack.mjs";
 import { describeStoredQuest } from "./quest-templates.mjs";
 import { STREET_FIND_XP, streetFindIds } from "./street-finds.mjs";
 import { publicPathSnapshot } from "./spatial/map-data.mjs";
@@ -29,8 +34,8 @@ import {
   pointClosed,
   placeClosed,
 } from "./spatial/place-safety.mjs";
-export const HOME = PLZEN.center;
-export const ZONE_NAMES = PLZEN.candidates.map((c) => c.name);
+export const HOME = DEFAULT_CITY.center;
+export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
 const citySamples = new WeakMap();
 function samplePaths(paths, max = 350) {
@@ -137,7 +142,8 @@ export async function retryStreetWorlds(
 }
 function publicManifest(db, w) {
   let center = w.center;
-  if (w.cityId === "plzen") center = PLZEN.center;
+  const registered = w.cityId ? liveCityById(w.cityId) : null;
+  if (registered) center = registered.center;
   else if (!w.arena) {
     const [lat, lng] = cellToLatLng(w.region);
     center = { lat, lng };
@@ -159,7 +165,7 @@ export async function ensureWorld(
   now = Date.now(),
   { mapData = {} } = {},
 ) {
-  const baseCity = arena ? PLZEN : cityFor(location),
+  const baseCity = arena ? DEFAULT_CITY : cityFor(location),
     city = baseCity ? effectiveCityPack(db, baseCity) : null,
     region = city
       ? `city-${city.id}`

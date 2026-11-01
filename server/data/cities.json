@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "cities": [
+    {
+      "id": "plzen",
+      "pack": "plzen-v1.json",
+      "status": "live",
+      "default": true
+    }
+  ]
+}

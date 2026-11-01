@@ -1,6 +1,10 @@
 import { atomic } from "./database.mjs";
 import { dayKey, hash, id, assert } from "./domain.mjs";
-import { PLZEN, buildCityZones } from "./spatial/city-pack.mjs";
+import {
+  DEFAULT_CITY,
+  LIVE_CITIES,
+  buildCityZones,
+} from "./spatial/city-pack.mjs";
 import { shiftDate, localDateBounds } from "./spatial/calendar.mjs";
 import { effectiveCityPack } from "./spatial/place-safety.mjs";
 import {
@@ -131,7 +135,7 @@ export function getOrPrepareCityPlan(db, city, day, now = Date.now()) {
   const plan = buildCityPlan(city, day);
   return atomic(db, () => storePlan(db, descriptor, plan, now));
 }
-export function enqueueCityPlans(db, now = Date.now(), cities = [PLZEN]) {
+export function enqueueCityPlans(db, now = Date.now(), cities = LIVE_CITIES) {
   validateCities(cities);
   cities = cities.map((city) => effectiveCityPack(db, city));
   return atomic(db, () => {
@@ -150,7 +154,7 @@ export async function runWorldJobs(
   db,
   {
     clock = Date.now,
-    cities = [PLZEN],
+    cities = LIVE_CITIES,
     build = buildCityPlan,
     leaseMs = 30000,
     maxJobs = 2,
@@ -234,7 +238,11 @@ export async function runWorldJobs(
   }
   return completed;
 }
-export function worldPreparationStatus(db, now = Date.now(), city = PLZEN) {
+export function worldPreparationStatus(
+  db,
+  now = Date.now(),
+  city = DEFAULT_CITY,
+) {
   city = effectiveCityPack(db, city);
   const today = dayKey(now, city.timezone);
   return {
@@ -276,7 +284,7 @@ export function startWorldPlanner(
   {
     intervalMs = 60000,
     clock = Date.now,
-    cities = [PLZEN],
+    cities = LIVE_CITIES,
     maxJobs = 2,
     afterPreparation = async () => {},
   } = {},

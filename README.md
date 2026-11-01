@@ -14,48 +14,76 @@ commit is dated 31 October 2026 and the alpha, the testnet pilots and all later 
 is no pre-hackathon baseline to separate (Q-003); development continues on the branch `claude/upbeat-gauss-5czir7`
 and merges into `main`. Commit dates are real and were not rewritten.
 
-## Try it in two minutes (do X, see Y)
+## For judges: 60 seconds, no install
+
+Open **https://questlayer.promptstudio3000.com/** on a phone or desktop. No wallet, no extension, no seed phrase.
+
+| # | Do | See |
+| --- | --- | --- |
+| 1 | Type a name under "What should we call you?", press **Start exploring** | The Plzeň map with your ghost explorer in the city centre. You are in the city demo: tapping the map moves you. |
+| 2 | Tap the map next to a gold coin on a path | The coin disappears for every player, the counter ticks and you get XP. |
+| 3 | Press the **Nearest discovery** card, then **Walk there** (repeat until in range), then **Open chest** | The result sheet: exact XP and the Aura you received ("Reward collected"). |
+| 4 | Press **Try it on** | The same Aura is now worn by your character on the map. |
+| 5 | Press **Secure this Aura**, then **Share your Aura** | The Aura is minted as an NFT to your own NEAR account in the background (no popup, gas is sponsored); sharing opens the share sheet with a PNG card (downloads on desktop). |
+| 6 | Reload the page | Name, XP, Aura and equipment are still there. |
+| 7 | Profile → **Advanced** | Your NEAR account id and the network. This is the only place the chain is named. |
+
+On a phone outside Plzeň, **Use my location** switches to your own surroundings (street finds on mapped paths
+near you); the six daily zones with chests exist in Plzeň.
+
+## What is on chain, and where to see it
+
+Every account below is on NEAR **testnet** and can be opened at `https://testnet.nearblocks.io/address/<account>`.
+
+| Piece | Account | What to look for |
+| --- | --- | --- |
+| Your explorer | a sub-account of the player factory under `questlayer-dev-20261101.testnet`, shown in Profile → Advanced (NEAR account) | A sub-account created after step 1 with a key held only by your device ([docs/RELAYER.md](docs/RELAYER.md)). |
+| Auras and avatars (NEP-171) | `nfts.questlayer-dev-20261101.testnet` ([contracts/collectibles](contracts/collectibles)) | The mint from step 5 to your account, and equip calls. |
+| Gas sponsor (NEP-366 relayer) | `relay-20261101.questlayer-dev-20261101.testnet` | Meta-transactions relayed for players; it never carries money. |
+| Rewards treasury (coins, zone prizes, XP) | `questlayer-rewards-20261101b.testnet` ([contracts/rewards](contracts/rewards)) | Published days and claims. Live books check: `/api/native/distribution` returns `status: verified`. |
+| Staking vault that funds rewards from yield | `questlayer-vault-20261101b.testnet` via `questlayer-vaults-20261101b.testnet` | Harvests; timeline in `public/native-yield-cycle.json`. |
+| Aura market (fixed-price escrow) | `questlayer-market-20261101b.testnet` ([contracts/market](contracts/market)) | Profile → Market: list, buy, cancel. |
+| Creator money, sponsored tasks, public notes | `questlayer-creators-20261101b.testnet`, `questlayer-tasks-20261031.testnet`, `v1.social08.testnet` | Pilots; see [docs/STATUS.md](docs/STATUS.md). |
+
+`GET https://questlayer.promptstudio3000.com/api/health` lists the enabled features, the relayer and the books
+check. Transaction proofs with hashes (no keys) are in `public/`; some were recorded on earlier testnet
+generations (`questlayer-dev-20261031`, `auratrail-dev-20261030`), so their account names differ from the table:
+
+- `native-invisible-account-proof.json`: name → sponsored sub-account → relayed avatar mint, no wallet.
+- `earned-aura-testnet.json`: a chest Aura earned in play and secured to the player's own account.
+- `native-distribution-proof.json`: the treasury audit behind "Books checked".
+- `native-creators-proof.json`: paid quest access 80/20, donation, support round, creator withdrawal.
+- `native-public-record-proof.json`: a public map note under the player's own NEAR Social namespace.
+- `native-sponsored-stake-proof.json`: the stake is paid by the player's key; the relayer refuses money.
+- `native-rewards-testnet.json`, `native-market-testnet.json`, `native-claims-testnet.json`: contract manifests
+  with code hashes.
+
+## Testnet now, mainnet honestly
+
+Everything runs on **testnet** today and nothing here has monetary value. GOLD on the map is practice GOLD unless
+the server publishes a funded day (then **Today's pot** shows the amounts and their source). Mainnet is a
+deliberate, gated step: [docs/MAINNET-PLAN.md](docs/MAINNET-PLAN.md) defines a minimal slice (collectibles,
+sponsored accounts and gas with daily caps, NEAR Social) behind `NEAR_NETWORK=mainnet` and `MAINNET_FEATURES`,
+with a go/no-go gate on 9 November 2026. The rewards treasury, vaults, market and creator money stay on testnet
+until they have an external review. If mainnet ships, this section will name the accounts; until then, any claim
+of "mainnet" elsewhere is wrong.
+
+## Run it yourself
 
 Requirements: Node.js 24 (`.nvmrc`), npm. No wallet, no keys.
 
 ```bash
 npm ci
-npm run dev
+npm run dev        # open http://127.0.0.1:5173/
 ```
 
-| Do | See |
-| --- | --- |
-| Open http://127.0.0.1:5173/ | The first-run page with the ghost explorer and one input. |
-| Type a name, press **Start exploring** | The Plzeň map, your explorer in the centre, one objective card ("Your next quest"). |
-| Tap the map near a coin (city demo moves by tapping) | The coin disappears for every player and the counter ticks. |
-| Open the objective, press **Walk there**, then **Open chest** | A result sheet with the exact XP and the Aura you received. |
-| Press **Try it on** | The same Aura on your map character. |
-| Reload | Name, XP, item and equipment are still there (server-side state). |
-| Profile → **Advanced** | Where the test-network details live, deliberately out of the loop. |
+The steps above work the same locally (secure needs a relayer, see [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md)).
+Automated checks: `npm run check` (build, application tests, mainnet-guard tests) and
+`bash scripts/build-contracts.sh --test` (contract tests). The full guide, including the isolated QA server,
+the testnet scripts and phone testing, is [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md).
 
-Automated checks: `npm run check` (build + 490 application tests), `cargo test --manifest-path contracts/Cargo.toml --workspace`
-(about 100 contract tests). The full guide, including the isolated QA server, the testnet scripts and phone testing,
-is [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md).
-
-## What is on NEAR
-
-| Piece | Where | How the player meets it |
-| --- | --- | --- |
-| Rewards (coins, XP, level entitlements) | `questlayer-rewards-20261101.testnet` ([contracts/rewards](contracts/rewards)) | The server attests a visit; a background worker relays the claim. The player sees "Reward collected". |
-| Auras and avatars (NEP-171, two equipment slots) | `nfts.questlayer-dev-20261031.testnet` ([contracts/collectibles](contracts/collectibles)), see `public/testnet-deployment.json` | "Secure this Aura" mints it to the player's own account; equipping is on-chain. |
-| Invisible player account | sub-account under a factory account, device-held key, NEP-366 meta-transactions relayed by the server ([server/relayer](server/relayer), [docs/RELAYER.md](docs/RELAYER.md)) | Nothing. The account is created in the background after the name-only start. |
-| Market (fixed-price NFT escrow) | `questlayer-market-20261101.testnet` ([contracts/market](contracts/market)) | Profile → Market: list, buy, cancel. |
-| Staking vault pilot, creator money, sponsored tasks, NEAR Social | `questlayer-vault(s)-20261101.testnet`, `questlayer-creators-20261101.testnet`, `questlayer-tasks-20261031.testnet`, `v1.social08.testnet` | Profile → Advanced. Pilots; see [docs/STATUS.md](docs/STATUS.md). |
-
-Transaction proofs with hashes are in `public/*-testnet.json` and `public/*proof*.json` (no keys):
-
-- `native-invisible-account-proof.json`: name → sponsored sub-account → relayed avatar mint, no wallet.
-- `native-creators-proof.json`: paid quest access 80/20, donation, support round, creator withdrawal, treasury flush.
-- `native-public-record-proof.json`: a public map note written under the player's own NEAR Social namespace.
-- `native-sponsored-stake-proof.json`: staking position and stake paid by the player's own key; the relayer
-  refuses to carry money and sponsors only zero-deposit maintenance.
-- `native-rewards-testnet.json`, `native-market-testnet.json`, `native-claims-testnet.json`: contract manifests
-  with code hashes for rewards/vault/factory, the Aura market and Aura claims.
+Cities come from `server/data/cities.json`: Plzeň is the only live and funded city; a second city is a new
+CityPack file plus one registry line ([docs/SECOND-CITY-PLAYBOOK.md](docs/SECOND-CITY-PLAYBOOK.md)).
 
 ## The economy, in one page
 

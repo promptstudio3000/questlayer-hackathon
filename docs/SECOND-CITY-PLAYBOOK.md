@@ -34,21 +34,29 @@ rejected candidate.
    crossings. Add exclusion polygons (`exclusions`) where needed and set `fieldReview` when done. This is the gate
    for real players.
 7. **Commit the pack** as `server/data/<id>-v1.json` with an attribution note in `server/data/README.md` (ODbL).
-8. **Wire the city in code** (the list below), add the city to `NATIVE_FUNDED_CITIES` only when its daily share is
-   funded (`server/native/allocation.mjs`), deploy to testnet and run `npm run world:pilot` against it.
+8. **Register the city**: add one line to `server/data/cities.json`, first with `"status": "preview"` (the pack
+   loads and is validated at start-up, players never see it), then `"live"` once field review is done. Live cities
+   are planned daily by the world worker and matched by GPS (`cityFor`). Add the city to `NATIVE_FUNDED_CITIES`
+   only when its daily share is funded (`server/native/allocation.mjs`), deploy to testnet and run
+   `npm run world:pilot` against it. No code change is needed.
 
-## Still hard-wired to Plzeň
+## City registry (done 1 November 2026)
 
-These need a small "city registry" change before a second city can go live (preview works today without them):
+`server/data/cities.json` replaces the hard-wired Plzeň. `server/spatial/city-pack.mjs` loads it at start-up and
+refuses to start when ids repeat, a pack's `id` differs from its entry, a centre lies outside its coverage, two live
+coverage boxes overlap, or there is not exactly one live `default` city. It exports `LIVE_CITIES`, `DEFAULT_CITY`,
+`cityById` and `cityFor`; `PLZEN` stays for Plzeň-specific scripts. The Plzeň pack file is byte-for-byte unchanged
+(a test pins its SHA-256 and its plan source hash), so existing plans and native commitments keep their ids.
 
-| Place | What it does now |
+| Place | Now |
 | --- | --- |
-| `server/spatial/city-pack.mjs` `PLZEN`, `cityFor()` | Only Plzeň is loaded; `cityFor` checks only its box. Needs a list of packs. |
-| `server/world.mjs` (`HOME`, `ZONE_NAMES`, `cityId === "plzen"`) | Arena centre and zone names come from Plzeň. |
-| `server/world-planner.mjs` (`cities = [PLZEN]` defaults) | Daily jobs plan only Plzeň. |
-| `server/native/reward-manifest.mjs`, `day-publication.mjs`, `rewards.mjs` | Coin points and day ids (`plzen-<day>-v1`) for Plzeň. |
-| `server/prepare-worlds.mjs --once` | Refuses custom packs on purpose; activation must go through the registry. |
-| `scripts/place-operator.mjs`, QA and proof scripts | Use Plzeň directly; fine for a first second city, update later. |
+| `server/spatial/city-pack.mjs` `cityFor()` | Checks every live city's box. |
+| `server/world.mjs` | Arena and `HOME` use the default city; stored manifests re-centre on their own registered city. |
+| `server/world-planner.mjs` | Daily jobs plan every live city; status defaults to the default city. |
+| `server/native/reward-manifest.mjs` | Coin points come from the plan's own registered city. |
+| `server/native/day-publication.mjs`, `rewards.mjs` | Publish for the default city only (one funded city per publisher, on purpose). |
+| `server/prepare-worlds.mjs --once` | Prepares all live cities; still refuses custom `--pack` files. |
+| `scripts/place-operator.mjs`, QA and proof scripts | Still use `PLZEN` directly; fine while Plzeň is the default. |
 
 ## Dry run, 1 November 2026
 

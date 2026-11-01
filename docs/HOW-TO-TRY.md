@@ -1,6 +1,6 @@
 # How to try QuestLayer
 
-Updated 1 November 2026. This is the living "try it from zero" guide; every delivery updates it.
+Updated 1 November 2026 (synced with the current UI labels). This is the living "try it from zero" guide; every delivery updates it.
 Each step says what to do and what you should see. Nothing here needs real money: the game runs on
 NEAR **testnet** and a separate demo ledger.
 
@@ -13,7 +13,12 @@ NEAR **testnet** and a separate demo ledger.
 | Browser | Chrome/Android, Safari/iOS 17+, or desktop Chrome/Firefox/Safari |
 | Network | the map needs `tiles.openfreemap.org`; native features need `test.rpc.fastnear.com` |
 
-## 1. Run locally in two minutes
+## 1. Fastest: the public testnet alpha
+
+Open https://questlayer.promptstudio3000.com/ and follow the checks below; the relayer is on there, so
+**Secure this Aura** works without setup. `GET /api/health` lists the enabled features.
+
+## 1a. Run locally in two minutes
 
 ```bash
 npm ci
@@ -25,10 +30,13 @@ Background workers, native attestations and creator content are off unless you c
 
 What to check:
 
-1. Enter a name and press **Start exploring**. The map of Plzeň appears with your explorer in the centre.
+1. Enter a name under "What should we call you?" and press **Start exploring**. The map of Plzeň appears with
+   your explorer in the centre (city demo).
 2. Tap a coin near you (in the city demo, tap the map to walk). The coin disappears and the counter ticks.
-3. Open the objective card ("Your next quest"), press **Walk there**, then **Open chest** when in range.
-4. The result sheet shows the exact XP and item. Press **Try it on**; the same Aura is now on your map character.
+3. Press the **Nearest discovery** card (or **Nearest find** for a street find), press **Walk there** (it reads
+   **Walk … m closer** while far away, so press it again), then **Open chest** when in range. Zones that are not
+   open yet say **Not open yet**; route quests use **Confirm stop N** and **Finish walk**.
+4. The result sheet ("Reward collected") shows the exact XP and item, or "No Aura this time. XP still counts." Press **Try it on**; the same Aura is now on your map character.
    **Share your Aura** opens the phone's share sheet with a PNG card (ghost, both Aura slots, name, edition line);
    on desktop the card downloads. With a relayer configured (section 5) the sheet also shows **Secure this Aura**
    (no popup); after the first secured Aura it offers a passkey once.
@@ -36,9 +44,10 @@ What to check:
 5a. Profile → **Fuel the city** shows the city fuel meter, your share and your tier, then one choice (Light /
    Balanced / All in) and **Set up my stake** or **Add fuel**. Deposits are paid from your balance; with an
    invisible account there is no popup, otherwise your NEAR wallet asks. Without a vault server it says fueling isn't open.
-6. Profile → **Secure with a passkey**: the same explorer now opens from any device that syncs the passkey
+6. Profile → **Secure with a passkey** (also offered as "Secure your explorer with a passkey" after the first
+   secured Aura): the same explorer now opens from any device that syncs the passkey
    (Welcome → "I already have an explorer").
-7. On Explore, open the sheet (**Show discoveries** on a phone) and find **Today's pot** under the objective.
+7. On Explore, open the sheet (**Show discoveries** on a phone; **Show map** closes it) and find **Today's pot** under the objective.
    Without the native ledger it reads **Practice** ("Practice GOLD is play money with no value") and shows no
    amounts. With it, it shows the coins and zone prizes left today (of the amount funded today, when the server
    reports per-date totals), the source (sponsors / realized yield) and a **Books checked** chip from
@@ -71,8 +80,8 @@ Open http://127.0.0.1:8891/. `GET /api/health` returns `status:ok` with schema v
 ## 4. Automated checks
 
 ```bash
-npm run check                      # build, then 480+ application tests
-cargo test --manifest-path contracts/Cargo.toml --workspace
+npm run check                      # build, application tests, mainnet-guard tests
+bash scripts/build-contracts.sh --test   # contracts (builds the vault WASM first)
 ```
 
 Expected: all tests pass; the build prints the hashed `dist/assets/*.js` files. The HTTP integration test needs
@@ -102,11 +111,10 @@ chain record once it is confirmed.
 
 ## 6. On a phone
 
-The easiest path is the public alpha at https://questlayer.promptstudio3000.com/ once the next release is
-deployed (see `docs/VPS-MIGRATION.md`). For a local build, expose port 5173 over HTTPS (Codespaces port
+The easiest path is the public alpha at https://questlayer.promptstudio3000.com/ (testnet). For a local build, expose port 5173 over HTTPS (Codespaces port
 forwarding or a tunnel), because geolocation and passkeys require a secure origin. Then:
 
-1. Allow location when asked, choose **Use my location**.
+1. Choose **Use my location** and allow location when asked. **Back to city demo** returns to Plzeň.
 2. Walk; coins within reach are collected automatically while the app is in the foreground.
 3. Report: device, OS, browser, whether GPS accuracy showed, and anything that felt confusing.
 4. Turn on flight mode and reload: a returning explorer sees "You're offline" with **Try again** instead of the
@@ -115,4 +123,11 @@ forwarding or a tunnel), because geolocation and passkeys require a secure origi
 ## 7. What is not yet verified
 
 Real iOS/Android field play, the relayer on a public host, a complete staking yield cycle and the App Store
-track remain open. See `docs/STATUS.md`.
+track remain open. Mainnet is not live; the gate and the minimal slice are in `docs/MAINNET-PLAN.md`.
+See `docs/STATUS.md`.
+
+## 8. Cities
+
+`server/data/cities.json` lists every CityPack. Plzeň is the only `live` city and the default (arena, native
+rewards); funding is separate (`NATIVE_FUNDED_CITIES`). A `preview` city loads and validates but never reaches
+players. Adding a city: `docs/SECOND-CITY-PLAYBOOK.md`.
