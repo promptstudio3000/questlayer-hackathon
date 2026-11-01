@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 for (const relative of [
   "./adventure-results.mjs",
   "./ai/schema.mjs",
+  "./actors/schema.mjs",
   "./creators/bonus-vote.mjs",
   "./creators/completion.mjs",
   "./relayer/schema.mjs",
