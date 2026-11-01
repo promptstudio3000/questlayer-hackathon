@@ -79,7 +79,9 @@ These scripts send real testnet transactions and need a testnet operator key in 
 | Prove invisible account | start the API with the relayer env, then `node scripts/prove-invisible-account-testnet.mjs` | `public/native-invisible-account-proof.json` with the account and transaction hashes |
 
 Run the server with `PLAYER_FACTORY_KEY_PATH`, `RELAYER_KEY_PATH` and `PLAYER_FACTORY_ACCOUNT` set to enable
-invisible accounts; see `docs/RELAYER.md`.
+invisible accounts; see `docs/RELAYER.md`. Add `CREATORS_PUBLISHER_KEY_PATH` (from
+`node scripts/deploy-creators-testnet.mjs`) to run the creator money publisher: `GET /api/health` then shows
+`creatorMoney.jobs.confirmed` growing and `GET /api/native/creators` shows `openRound` set to today's UTC date.
 
 ## 6. On a phone
 

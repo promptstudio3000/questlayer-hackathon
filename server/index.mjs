@@ -25,6 +25,13 @@ import { loadServiceAccount } from "./relayer/key-transport.mjs";
 import { ManagedAccounts } from "./relayer/accounts.mjs";
 import { Relayer, startRelayWorker } from "./relayer/relay.mjs";
 import { createRelayerRoutes } from "./relayer/routes.mjs";
+import {
+  CreatorMoney,
+  createCreatorMoneyRoutes,
+  loadCreatorsManifest,
+  loadCreatorsPublisher,
+  startCreatorMoneyWorker,
+} from "./native/creator-money.mjs";
 import { NativeVaults, FACTORY_ID, VAULT_POOLS } from "./native/vaults.mjs";
 import { NativeSocialProfile } from "./native/social-profile.mjs";
 import { resolvePublicFile } from "./static-files.mjs";
@@ -177,7 +184,9 @@ const relayer = managedAccounts
           collectibles: nativeCollectibles.contractId,
           market: marketContractId,
           factory: rewardsConfig?.factory?.contractId || FACTORY_ID,
-          creators: existsSync(resolve(APP_ROOT, "public/native-creators-testnet.json"))
+          creators: existsSync(
+            resolve(APP_ROOT, "public/native-creators-testnet.json"),
+          )
             ? JSON.parse(
                 readFileSync(
                   resolve(APP_ROOT, "public/native-creators-testnet.json"),
@@ -209,6 +218,36 @@ const relayerRoutes = createRelayerRoutes({
   accounts: managedAccounts,
 });
 if (nativeRewards) nativeRewards.vaultRegistry = nativeVaults;
+// Creator money (W09): reads and quotes work from the manifest alone; the
+// publisher outbox mirrors published quests, completions, likes and daily
+// rounds on chain only when the publisher key is configured.
+const creatorsManifestPath = resolve(
+  APP_ROOT,
+  "public/native-creators-testnet.json",
+);
+// Hosts with neither the publisher key nor the creator community keep their
+// schema free of creator tables; the routes then answer "not configured".
+const creatorsManifest =
+  existsSync(creatorsManifestPath) &&
+  (process.env.CREATORS_PUBLISHER_KEY_PATH ||
+    process.env.CREATOR_COMMUNITY_ENABLED === "1")
+    ? loadCreatorsManifest(creatorsManifestPath)
+    : null;
+const creatorMoney = creatorsManifest
+  ? new CreatorMoney(db, provider, creatorsManifest, {
+      transport: process.env.CREATORS_PUBLISHER_KEY_PATH
+        ? await loadCreatorsPublisher(
+            provider,
+            process.env.CREATORS_PUBLISHER_KEY_PATH,
+            creatorsManifest.contractId,
+          )
+        : null,
+      roundBudgetYocto:
+        process.env.CREATOR_ROUND_BUDGET_YOCTO || "10000000000000000000000",
+      maxRoundBudgetYocto: creatorsManifest.policy?.max_round_budget ?? null,
+    })
+  : null;
+const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 const tasksManifestPath = [
   resolve(APP_ROOT, "public/native-tasks-testnet.json"),
@@ -431,6 +470,9 @@ async function api(req, res, url) {
         ? nativeRewards.workerStatus()
         : { status: "not-configured" },
       relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
+      creatorMoney: creatorMoney
+        ? creatorMoney.workerStatus()
+        : { status: "not-configured" },
       now: Date.now(),
     });
   if (path === "/api/quest-templates" && method === "GET")
@@ -760,6 +802,16 @@ async function api(req, res, url) {
   const player = auth(req);
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
+  if (
+    await creatorMoneyRoutes.handle(req, res, url, {
+      player,
+      body,
+      respond,
+      assert,
+      accountFor: (id) => creatorMoney?.accountFor(id) ?? null,
+    })
   )
     return;
   if (path === "/api/adventure-results" && method === "GET") {
@@ -2040,6 +2092,10 @@ const relayWorker =
   !backgroundWorkersDisabled && relayer
     ? startRelayWorker(relayer, { intervalMs: 15000 })
     : null;
+const creatorMoneyWorker =
+  !backgroundWorkersDisabled && creatorMoney?.enabled
+    ? startCreatorMoneyWorker(creatorMoney, { intervalMs: 30000 })
+    : null;
 let nextMediaPrune = 0;
 const maintenance = setInterval(() => {
   if (backgroundWorkersDisabled) return;
@@ -2074,6 +2130,7 @@ async function close() {
   await worldPlanner?.stop();
   await rewardWorker?.stop();
   await relayWorker?.stop?.();
+  await creatorMoneyWorker?.stop?.();
   for (const r of listeners) r.end();
   server.close(() => {
     db.close();

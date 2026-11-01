@@ -78,6 +78,24 @@ mode `0600`; both keys must be full-access keys of their account on testnet.
 | `RELAY_BLOCK_TTL`             | Max blocks a delegate may stay valid                     | `120`                 |
 | `DISABLE_RELAYER`             | `1` disables accounts and relaying                       | unset                 |
 
+### Creator money publisher (`server/native/creator-money.mjs`)
+
+The creators contract trusts one publisher account for facts the server already verifies off chain. The
+server mirrors them through a durable outbox (`creator_money_jobs`, lease, backoff like the relayer) and never
+moves money itself: published quests → `register_quest`, accepted completions → `record_support(completion)`,
+one like per player and quest → `record_support(like)`, one UTC day → `open_round` then `finalize_round` the
+next day. Player payments (`buy_access`, `donate`, `withdraw`) are quoted by `POST /api/native/creators/prepare`
+and signed by the player (relayed from the invisible account, never sponsored).
+
+| Variable                      | Meaning                                                       | Default            |
+| ----------------------------- | ------------------------------------------------------------- | ------------------ |
+| `CREATORS_PUBLISHER_KEY_PATH` | Publisher function-call key of the creators contract account  | unset = read only  |
+
+The module and its tables load only when this key or `CREATOR_COMMUNITY_ENABLED=1` is set, so hosts without
+creator features keep their schema unchanged. `scripts/install-relayer-keys-vps.sh` installs the key next to the
+relayer keys when `.data/creators-publisher.json` exists.
+| `CREATOR_ROUND_BUDGET_YOCTO`  | Daily round budget; capped by policy and the funded pot       | `1e22` (0.01 NEAR) |
+
 ## Wiring in `server/index.mjs`
 
 ```js

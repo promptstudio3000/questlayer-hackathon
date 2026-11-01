@@ -365,6 +365,21 @@
         "relay_jobs_account_order": "CREATE INDEX IF NOT EXISTS relay_jobs_account_order ON relay_jobs(account_id,state,seq)",
         "relay_jobs_player_time": "CREATE INDEX IF NOT EXISTS relay_jobs_player_time ON relay_jobs(player_id,created_at DESC)"
       }
+    },
+    {
+      "name": "creator-money",
+      "version": 1,
+      "source": "server/native/creator-money.mjs",
+      "tables": {
+        "creator_money_jobs": "CREATE TABLE creator_money_jobs(\n seq INTEGER PRIMARY KEY AUTOINCREMENT,\n id TEXT NOT NULL UNIQUE,\n kind TEXT NOT NULL CHECK(kind IN ('register_quest','set_price','close_quest','record_support','open_round','finalize_round')),\n args TEXT NOT NULL CHECK(json_valid(args)),\n state TEXT NOT NULL CHECK(state IN ('queued','retrying','confirmed','failed')),\n attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts>=0),\n run_after INTEGER NOT NULL,\n transaction_hash TEXT,\n last_error TEXT,\n created_at INTEGER NOT NULL,\n updated_at INTEGER NOT NULL\n)",
+        "creator_money_lease": "CREATE TABLE creator_money_lease(\n id INTEGER PRIMARY KEY CHECK(id=1),\n owner TEXT,\n until_ms INTEGER NOT NULL DEFAULT 0,\n last_success INTEGER,\n last_error TEXT\n)",
+        "creator_money_quests": "CREATE TABLE creator_money_quests(\n quest_id TEXT PRIMARY KEY,\n author_account TEXT NOT NULL,\n registered_at INTEGER,\n transaction_hash TEXT\n)",
+        "creator_money_rounds": "CREATE TABLE creator_money_rounds(\n day TEXT PRIMARY KEY,\n budget_yocto TEXT NOT NULL CHECK(budget_yocto GLOB '[0-9]*'),\n state TEXT NOT NULL CHECK(state IN ('opening','open','finalizing','finalized')),\n opened_tx TEXT,\n finalized_tx TEXT,\n paid_yocto TEXT,\n updated_at INTEGER NOT NULL\n)",
+        "creator_money_support": "CREATE TABLE creator_money_support(\n quest_id TEXT NOT NULL,\n player_id TEXT NOT NULL,\n kind TEXT NOT NULL CHECK(kind IN ('like','completion')),\n account_id TEXT NOT NULL,\n recorded_at INTEGER,\n transaction_hash TEXT,\n PRIMARY KEY(quest_id,player_id,kind)\n)"
+      },
+      "indexes": {
+        "creator_money_jobs_due": "CREATE INDEX IF NOT EXISTS creator_money_jobs_due ON creator_money_jobs(state,run_after,seq)"
+      }
     }
   ]
 }

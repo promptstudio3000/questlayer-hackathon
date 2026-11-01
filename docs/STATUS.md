@@ -42,7 +42,10 @@ funded and signed in the background. The blockchain is a property of the items, 
   NEAR at the Aurora pool with a 50 % contribution. The worker harvests gain and flushes realized yield to the
   treasury as epochs pass (observe `questlayer-vault-20261101.testnet` `get_state`).
 - Creator money (`questlayer-creators-20261101.testnet`) is live and proven: paid access 80/20, donations,
-  support rounds, withdrawals, treasury flush. The server publisher service and the UI are the next steps.
+  support rounds, withdrawals, treasury flush. The server publisher (`server/native/creator-money.mjs`) mirrors
+  published quests, verified completions and likes and runs the UTC daily round from the API process; its first
+  live round (2026-11-01, 0.01 NEAR) is transaction `3aBKSkm3N4rhoxriFG5vZosSiFeWrqAKo49V5u47HZSc`. Player
+  payments are quoted by `/api/native/creators/prepare`; the UI is the next step (`docs/PLAN-FOR-OPUS.md`).
 - The relayer allowlists staking positions (money never sponsored) and creator payments from the invisible account.
 
 ## Not in scope before the hackathon deadline

@@ -25,7 +25,7 @@ Read first: `docs/STATUS.md`, `docs/CLAUDE-AUDIT-AND-STRATEGY.md`, `DESIGN.md`, 
 | Native rewards/XP/levels | `/api/native/rewards*`, `/api/native/progression*`, `useNativeGame` | native ledger auto-on when rewards + relayer configured |
 | Aura securing | `/api/native/claims*` + `mintEarnedAura` | copy: "Secure this Aura" |
 | Staking position | `/api/native/vaults*` (quotes) + relayed `create_position`/`deposit_and_stake`/`request_exit`/`withdraw_owner` | money never sponsored |
-| Creator money | contract `questlayer-creators-*` (`buy_access`, `donate`, `withdraw`), server service and `/api/native/creators*` (backend lane, in progress) | quotes carry exact price |
+| Creator money | `GET /api/native/creators` (pot, policy, open round, my credit), `GET /api/native/creators/quest?quest=`, `POST /api/native/creators/prepare {kind: buy|donate|withdraw, questId, amount}` → reviewed tx for `NativeSigner.send`, `POST /api/native/creators/like {questId}` | quotes carry exact price and the 80/20 split; likes count once per player |
 | Economy facts | `docs/ECONOMY-RULES.md`, `/api/native/economy` | "Today's pot" source |
 
 ## Slices in order
