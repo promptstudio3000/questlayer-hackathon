@@ -108,6 +108,9 @@ import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
 import { createActorRoutes } from "./actors/routes.mjs";
 import { actorsEnabled, createActorService } from "./actors/service.mjs";
+import "./npc/menu-builder.mjs";
+import { createNpcService } from "./npc/service.mjs";
+import { createNpcRoutes } from "./npc/routes.mjs";
 import {
   GOLD,
   DAY,
@@ -335,6 +338,9 @@ const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
 // Roaming NPCs and monsters (docs/NPC-PLAN.md §14): off unless ACTORS_ENABLED=1.
 const actorService = actorsEnabled() ? createActorService(db) : null;
 const actorRoutes = createActorRoutes(actorService);
+// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
+// Ollama setup; the key stays in the runtime environment only.
+const npcRoutes = createNpcRoutes(actorService ? createNpcService(db) : null, actorService, db);
 const creatorMoney = creatorsManifest
   ? new CreatorMoney(db, provider, creatorsManifest, {
       transport: process.env.CREATORS_PUBLISHER_KEY_PATH
@@ -942,6 +948,8 @@ async function api(req, res, url) {
   if (
     await actorRoutes.handle(req, res, url, { player, body, respond, assert })
   )
+    return;
+  if (await npcRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (
     await creatorBonusVoteRoutes.handle(req, res, url, {

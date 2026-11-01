@@ -100,7 +100,7 @@ export function buildMenu({ actor, persona, world, now = Date.now(), done = new 
       offers.push({
         id: offerId,
         kind: "quest",
-        label: `Walk: ${where.join(", then ")}`,
+        label: `Walk: ${where.join(", then ")}`.slice(0, 120),
         terms: {
           steps: line.map((q) => stepView(q, zones)),
           xp,
@@ -119,7 +119,7 @@ export function buildMenu({ actor, persona, world, now = Date.now(), done = new 
       offers.push({
         id: offerId,
         kind: "chapter",
-        label: `Chapter: ${q.title}${zones.get(q.zone_id) ? ` in ${zones.get(q.zone_id).name}` : ""}`,
+        label: `Chapter: ${q.title}${zones.get(q.zone_id) ? ` in ${zones.get(q.zone_id).name}` : ""}`.slice(0, 120),
         terms: {
           steps: [stepView(q, zones)],
           xp: CHAPTER_XP,

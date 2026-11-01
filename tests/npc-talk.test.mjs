@@ -19,20 +19,9 @@ const RADA = { id: "rada", kind: "npc", archetype: "quest_giver", name: "Poutnic
 const BELA = { id: "bela", kind: "npc", archetype: "storyteller", name: "Kronikářka Běla", persona: "kronikarka-bela" };
 const VOJTECH = { id: "vojtech", kind: "npc", archetype: "trader", name: "Kupec Vojtěch", persona: "kupec-vojtech" };
 
-// The actors v1 tables belong to the N0 slice's schema module. Until it is in
-// this branch, the test creates the same columns so the NPC code runs.
-function ensureActorTables(db) {
-  db.exec(`
-CREATE TABLE IF NOT EXISTS ai_npc_requests(id TEXT PRIMARY KEY,player_id TEXT NOT NULL,actor_id TEXT NOT NULL,provider TEXT NOT NULL,model TEXT,outcome TEXT NOT NULL CHECK(outcome IN('answered','fallback','template','limited')),reason TEXT,facts_hash TEXT NOT NULL,menu_hash TEXT NOT NULL,output_hash TEXT NOT NULL,signature_hash TEXT,attested INTEGER NOT NULL DEFAULT 0,created_at INTEGER NOT NULL);
-CREATE TABLE IF NOT EXISTS actor_offers(id TEXT PRIMARY KEY,actor_id TEXT NOT NULL,player_id TEXT NOT NULL,encounter_id TEXT,kind TEXT NOT NULL,terms TEXT NOT NULL,menu_hash TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('offered','accepted','completed','expired')),expires_at INTEGER NOT NULL,created_at INTEGER NOT NULL,completed_at INTEGER);
-CREATE TABLE IF NOT EXISTS actor_relationships(player_id TEXT NOT NULL,actor_id TEXT NOT NULL,trust INTEGER NOT NULL DEFAULT 0,notes TEXT NOT NULL DEFAULT '[]',updated_at INTEGER NOT NULL,PRIMARY KEY(player_id,actor_id));
-`);
-}
-
 async function fixture(t, opts = {}) {
   const db = openDatabase(":memory:");
   t.after(() => db.close());
-  ensureActorTables(db);
   const player = createPlayer(db, "Walker", NOW);
   const world = await ensureWorld(db, HOME, true, NOW);
   let clock = NOW;
@@ -262,4 +251,43 @@ test("Ollama NPC provider sends the schema and never the key in the body", async
   assert.ok(!sent.init.body.includes("secret-key"));
   assert.match(sent.init.body, /player_message/);
   assert.deepEqual(templateReply(personaFor(RADA), [], { lang: "cs" }).emote, "wave");
+});
+
+test("the NPC menu plugs into the encounter hook and routes need a live encounter", async (t) => {
+  const { db, player, view, service } = await fixture(t);
+  await import("../server/npc/menu-builder.mjs");
+  const { buildActorMenu } = await import("../server/actors/menu.mjs");
+  const { createNpcRoutes } = await import("../server/npc/routes.mjs");
+  const world = view();
+  const menu = await buildActorMenu({ actor: RADA, def: RADA, player, world, now: NOW, db });
+  assert.ok(menu.length >= 1 && menu.every((o) => o.kind === "quest"));
+  const monster = await buildActorMenu({ actor: { id: "m-1", kind: "monster", archetype: "roamer", name: "M" }, def: {}, player, world, now: NOW, db });
+  assert.equal(monster[0].kind, "challenge", "monsters keep their own menu");
+  const actors = {
+    requireEncounter: ({ token, actorId }) => {
+      if (token !== "enc_ok") throw Object.assign(Error("Meet the character first."), { status: 403 });
+      return { encounterId: "enc_ok", actor: { ...RADA, id: actorId }, def: RADA, worldId: world.id, menu };
+    },
+  };
+  const routes = createNpcRoutes(service, actors, db);
+  const out = [];
+  const ctx = (input) => ({
+    player,
+    body: async () => input,
+    respond: (_res, value) => out.push(value),
+    assert: (c, m) => {
+      if (!c) throw Error(m);
+    },
+  });
+  const req = { method: "POST" };
+  const url = (p) => new URL(`http://x${p}`);
+  assert.equal(await routes.handle(req, {}, url("/api/actors/rada/encounter"), ctx({})), false);
+  await assert.rejects(routes.handle(req, {}, url("/api/actors/rada/talk"), ctx({ encounter: "nope", message: "hi" })), /Meet/);
+  assert.equal(await routes.handle(req, {}, url("/api/actors/rada/greet"), ctx({ encounter: "enc_ok" })), true);
+  assert.equal(out[0].menu.length, menu.length);
+  await routes.handle(req, {}, url(`/api/actors/rada/offers/${menu[0].id}/accept`), ctx({ encounter: "enc_ok" }));
+  assert.equal(out[1].state, "accepted");
+  assert.equal(db.prepare("SELECT encounter_id FROM actor_offers").get().encounter_id, "enc_ok");
+  const disabled = createNpcRoutes(null, null, db);
+  await assert.rejects(disabled.handle(req, {}, url("/api/actors/rada/talk"), ctx({})), /not enabled/);
 });

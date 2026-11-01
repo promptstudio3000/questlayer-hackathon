@@ -27,6 +27,8 @@ import {
   validateNpcOutput,
 } from "./talk.mjs";
 import { createNpcStore } from "./store.mjs";
+import { ensureModuleVersion } from "../schema-compatibility.mjs";
+import { ACTORS_SCHEMA } from "../actors/schema.mjs";
 
 const WORLD_FACTS = new Set(["mode", "paused", "zones", "progress", "next", "later", "safety"]);
 const rowId = (offerId, player) => `${offerId}@${player}`;
@@ -59,17 +61,20 @@ export function createNpcService(
     personas,
   } = {},
 ) {
+  ensureModuleVersion(db, ACTORS_SCHEMA);
   const store = createNpcStore(db, { clock });
   const playerLevel = (player) => levelFor(db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp || 0);
   const personaOf = (actor) => (personas ? personaFor(actor, personas) : personaFor(actor));
 
-  function context(player, actor, world) {
+  // `bound` is the menu the encounter token was issued with; when present it
+  // is the only menu this conversation may use.
+  function context(player, actor, world, bound = null) {
     assert(actor && actor.kind !== "monster", "This character does not talk.", 404, "NPC_UNKNOWN");
     const persona = personaOf(actor);
     const now = clock();
     const rows = store.offersFor(player, actor.id);
     const today = rows.filter((r) => r.terms.worldId === world?.id);
-    const menu = buildMenu({
+    const menu = bound ?? buildMenu({
       actor,
       persona,
       world,
@@ -98,8 +103,8 @@ export function createNpcService(
   }
 
   // Greeting + menu for a fresh encounter (no model call: cheap and instant).
-  function greet({ player, actor, world }) {
-    const { persona, menu, rows } = context(player, actor, world);
+  function greet({ player, actor, world, encounter = null }) {
+    const { persona, menu, rows } = context(player, actor, world, encounter?.menu);
     const reply = templateReply(persona, menu, { lang: "cs" });
     return {
       npc: { id: actor.id, name: persona.name, title: persona.title || null, archetype: persona.archetype },
@@ -113,7 +118,7 @@ export function createNpcService(
     };
   }
 
-  async function talk({ player, actor, world, message }) {
+  async function talk({ player, actor, world, message, encounter = null }) {
     assert(
       typeof message === "string" && message.trim() && message.length <= 300,
       "Say something of up to 300 characters.",
@@ -121,7 +126,7 @@ export function createNpcService(
       "NPC_INPUT",
     );
     const text = clean(message);
-    const { persona, menu, level, now, rows } = context(player, actor, world);
+    const { persona, menu, level, now, rows } = context(player, actor, world, encounter?.menu);
     const facts = npcFacts({ persona, world, menu, level, now });
     const factsHash = hash(JSON.stringify(facts));
     const mh = menuHash(menu);
@@ -191,20 +196,28 @@ export function createNpcService(
     };
   }
 
-  function accept({ player, actor, world, encounterId, offerId }) {
+  function accept({ player, actor, world, encounter = null, offerId }) {
     assert(typeof offerId === "string" && offerId.length <= 80, "Choose an offer.", 400, "NPC_OFFER");
     const id = rowId(offerId, player);
     const prior = store.offer(id, player);
     if (prior && prior.actor_id === actor.id) return { offerId, state: prior.state };
+    // The offer must be on the encounter's menu AND still on today's menu
+    // (a step finished meanwhile, or the daily cap reached, removes it).
     const { menu } = context(player, actor, world);
     const offer = menu.find((o) => o.id === offerId);
-    assert(offer, "This offer is no longer available.", 409, "NPC_OFFER_GONE");
+    assert(
+      offer && (!encounter?.menu || encounter.menu.some((o) => o.id === offerId)),
+      "This offer is no longer available.",
+      409,
+      "NPC_OFFER_GONE",
+    );
+    const encounterId = encounter?.encounterId ?? "direct";
     return atomic(db, () => {
       store.insertOffer({
         id,
         actor: actor.id,
         player,
-        encounter: encounterId ?? null,
+        encounter: encounterId,
         kind: offer.kind,
         terms: { ...offer.terms, offerId, label: offer.label, worldId: world.id, policy: NPC_OFFER_POLICY },
         menuHash: menuHash(menu),
