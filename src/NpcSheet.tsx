@@ -3,6 +3,7 @@
 // box and the player's open tasks from this character, with turn-in.
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "./Dialog";
+import LockedChip, { OPEN_STAKE_EVENT } from "./LockedChip";
 import type { ActorEncounter, ActorOffer } from "./actor-types";
 import {
   keeperView,
@@ -185,6 +186,23 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                   Check hand-over
                 </button>
               ))}
+          </section>
+        )}
+        {!!reply?.locked?.length && (
+          <section aria-label="For stakers">
+            <h3>For stakers</h3>
+            {reply.locked.map((chip) => (
+              <LockedChip
+                key={chip.id}
+                label={chip.label}
+                perk={chip.perk}
+                gate={chip.locked}
+                onStake={() => {
+                  onClose();
+                  window.dispatchEvent(new Event(OPEN_STAKE_EVENT));
+                }}
+              />
+            ))}
           </section>
         )}
         {vault?.stake && (

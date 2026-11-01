@@ -194,6 +194,19 @@ P0 should land before the submission (14 Nov), P1 if time allows, P2 after.
 | P2-2 | Push-your-luck trails, route preview with monsters | Makes walks interesting | No |
 | P2-3 | Stance "prep" before duels (Battler-style) | Depth in combat without selling power | No |
 
+### Decisions settled (1 Nov 2026, 23:40 UTC)
+
+The owner switched the project to no-ask mode (only mainnet and secrets in GitHub still need him), so the open
+decisions above are settled as follows:
+
+| Topic | Decision |
+| --- | --- |
+| Staker lure gate | Tier only, no level (owner's own choice, 23:00 UTC): Tier 2; Tier 3 for the wandering rare. |
+| Level table L5–L10 | Yes. Unlocks at every level as in section 6; only L10 grants an item (a new supply-capped level Aura edition). |
+| Patron rank | Yes. Ranks 1–5 grow with matured, unwithdrawn stake epochs; no decay, the earned rank cosmetic stays after a withdrawal. |
+| Daily board | Yes. Three goals from today's world, a small XP bonus for all three, no streak and no penalty, so it is not a D29 streak mechanic. |
+| Hackathon season | Yes, until 14 Nov 23:59 UTC. Leaderboard counts hunts, visits and NPC lines, never money; a season Aura for everyone who reaches the goal. |
+
 ## 8. UI direction (handed to the UI thread)
 
 The owner's notes (1 Nov) and this analysis agree on the same UI shape. The UI thread owns the implementation.

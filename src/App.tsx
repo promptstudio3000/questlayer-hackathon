@@ -365,6 +365,12 @@ export default function App() {
     setTaskRealm = navigation.setter("taskRealm"),
     setNotesView = navigation.setter("notesView"),
     setCreatorView = navigation.setter("creatorView");
+  // Locked staker chips (src/LockedChip.tsx) open the stake screen.
+  useEffect(() => {
+    const open = () => setTab("fuel");
+    window.addEventListener("questlayer:open-stake", open);
+    return () => window.removeEventListener("questlayer:open-stake", open);
+  }, [setTab]);
   const [nativeWardrobe, setNativeWardrobe] =
       useState<NativeWardrobeState | null>(null),
     [nativeError, setNativeError] = useState("");

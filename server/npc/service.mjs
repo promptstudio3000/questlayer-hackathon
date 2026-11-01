@@ -12,6 +12,7 @@ import { guideFacts } from "../ai/guide.mjs";
 import { personaFor } from "./personas.mjs";
 import {
   buildMenu,
+  lockedOffers,
   menuHash,
   offerFacts,
   MAX_AURAS_PER_NPC_DAY,
@@ -76,6 +77,7 @@ export function createNpcService(
     const now = clock();
     const rows = store.offersFor(player, actor.id);
     const today = rows.filter((r) => r.terms.worldId === world?.id);
+    const level = playerLevel(player);
     const menu = bound ?? buildMenu({
       actor,
       persona,
@@ -84,9 +86,12 @@ export function createNpcService(
       done: new Set(today.map((r) => r.terms.offerId)),
       linesToday: today.filter((r) => r.kind === "quest").length,
       chapters: rows.filter((r) => r.kind === "chapter" && r.state === "completed").length,
-      level: playerLevel(player),
+      level,
     });
-    return { persona, now, rows, menu, level: playerLevel(player) };
+    // Locked chips are recomputed every time (never bound to the encounter):
+    // they are presentation only and can never be accepted.
+    const locked = lockedOffers({ actor, persona, world, now });
+    return { persona, now, rows, menu, locked, level };
   }
 
   function activeView(rows, world) {
@@ -107,7 +112,7 @@ export function createNpcService(
 
   // Greeting + menu for a fresh encounter (no model call: cheap and instant).
   function greet({ player, actor, world, encounter = null }) {
-    const { persona, menu, rows } = context(player, actor, world, encounter?.menu);
+    const { persona, menu, locked, rows } = context(player, actor, world, encounter?.menu);
     const reply = templateReply(persona, menu, { lang: "cs" });
     return {
       npc: { id: actor.id, name: persona.name, title: persona.title || null, archetype: persona.archetype },
@@ -115,6 +120,7 @@ export function createNpcService(
       emote: reply.emote,
       menu,
       menuHash: menuHash(menu),
+      locked,
       active: activeView(rows, world),
       source: "template",
       policy: NPC_TALK_POLICY,
@@ -129,7 +135,7 @@ export function createNpcService(
       "NPC_INPUT",
     );
     const text = clean(message);
-    const { persona, menu, level, now, rows } = context(player, actor, world, encounter?.menu);
+    const { persona, menu, locked, level, now, rows } = context(player, actor, world, encounter?.menu);
     const facts = npcFacts({ persona, world, menu, level, now });
     const factsHash = hash(JSON.stringify(facts));
     const mh = menuHash(menu);
@@ -189,6 +195,7 @@ export function createNpcService(
       offer: result.offer ? menu[result.offer.index] : null,
       menu,
       menuHash: mh,
+      locked,
       active: activeView(rows, world),
       source: outcome === "answered" ? provider.name : "template",
       attested: false,
