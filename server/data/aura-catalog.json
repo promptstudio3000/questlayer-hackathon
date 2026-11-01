@@ -1,13 +1,30 @@
 {
-  "version": 2,
-  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
+  "version": 3,
+  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. `source` says where an edition comes from: chest editions drop from zone chests by entitlement; npc and monster editions never drop from chests and the contract only mints them for award claims whose id starts with earned:npc: or earned:monster: (CLAIM_ONLY_EDITIONS). Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
   "supplyPerEdition": 256,
-  "rarities": ["common", "rare", "epic", "legendary"],
+  "rarities": [
+    "common",
+    "rare",
+    "epic",
+    "legendary"
+  ],
   "entitlements": {
-    "common": { "minZoneTier": 1, "minLevel": 1 },
-    "rare": { "minZoneTier": 1, "minLevel": 2 },
-    "epic": { "minZoneTier": 2, "minLevel": 3 },
-    "legendary": { "minZoneTier": 3, "minLevel": 4 }
+    "common": {
+      "minZoneTier": 1,
+      "minLevel": 1
+    },
+    "rare": {
+      "minZoneTier": 1,
+      "minLevel": 2
+    },
+    "epic": {
+      "minZoneTier": 2,
+      "minLevel": 3
+    },
+    "legendary": {
+      "minZoneTier": 3,
+      "minLevel": 4
+    }
   },
   "editions": [
     {
@@ -19,7 +36,8 @@
       "color": "#ff8a4c",
       "set": "first-light",
       "native": true,
-      "motif": "Three drifting flame wisps"
+      "motif": "Three drifting flame wisps",
+      "source": "chest"
     },
     {
       "id": "dew",
@@ -30,7 +48,8 @@
       "color": "#8fd3ff",
       "set": "first-light",
       "native": true,
-      "motif": "Water ripples with falling drops"
+      "motif": "Water ripples with falling drops",
+      "source": "chest"
     },
     {
       "id": "polar",
@@ -42,7 +61,8 @@
       "demoColor": "#8dd8bd",
       "set": "night-sky",
       "native": true,
-      "motif": "Aurora ribbon with hanging curtains"
+      "motif": "Aurora ribbon with hanging curtains",
+      "source": "chest"
     },
     {
       "id": "bloom",
@@ -53,7 +73,8 @@
       "color": "#ff9fc8",
       "set": "first-light",
       "native": true,
-      "motif": "Ring of leaves and five-petal flowers"
+      "motif": "Ring of leaves and five-petal flowers",
+      "source": "chest"
     },
     {
       "id": "storm",
@@ -64,7 +85,8 @@
       "color": "#8fa6ff",
       "set": "tempest",
       "native": true,
-      "motif": "Cloud crown with crackling bolts"
+      "motif": "Cloud crown with crackling bolts",
+      "source": "chest"
     },
     {
       "id": "moon",
@@ -76,7 +98,8 @@
       "demoColor": "#b49beb",
       "set": "night-sky",
       "native": true,
-      "motif": "Crescent with a star-dust wake"
+      "motif": "Crescent with a star-dust wake",
+      "source": "chest"
     },
     {
       "id": "comet",
@@ -87,7 +110,8 @@
       "color": "#e6ecff",
       "set": "tempest",
       "native": true,
-      "motif": "Orbiting comet with a rose tail"
+      "motif": "Orbiting comet with a rose tail",
+      "source": "chest"
     },
     {
       "id": "gold",
@@ -99,7 +123,8 @@
       "demoColor": "#f2c869",
       "set": "solar-crown",
       "native": true,
-      "motif": "Sun halo with rays"
+      "motif": "Sun halo with rays",
+      "source": "chest"
     },
     {
       "id": "nova",
@@ -110,7 +135,86 @@
       "color": "#ff5fa8",
       "set": "solar-crown",
       "native": true,
-      "motif": "Starburst ring with radiant spikes"
+      "motif": "Starburst ring with radiant spikes",
+      "source": "chest"
+    },
+    {
+      "id": "pilgrim",
+      "name": "Pilgrim's Path",
+      "demoName": "Pilgrim's Path",
+      "rarity": "rare",
+      "slot": "below",
+      "color": "#9bd17a",
+      "set": "wayfarers",
+      "native": true,
+      "source": "npc",
+      "motif": "Footprint trail circling a mossy waystone",
+      "how": "Finish five quest-giver lines"
+    },
+    {
+      "id": "chronicle",
+      "name": "Chronicle Crown",
+      "demoName": "Chronicle Crown",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#b48cff",
+      "set": "wayfarers",
+      "native": true,
+      "source": "npc",
+      "motif": "Open storybook crown with floating rune pages",
+      "how": "Complete a storyteller chapter set"
+    },
+    {
+      "id": "ledger",
+      "name": "Merchant's Ledger",
+      "demoName": "Merchant's Ledger",
+      "rarity": "epic",
+      "slot": "below",
+      "color": "#e0a94a",
+      "set": "wayfarers",
+      "native": true,
+      "source": "npc",
+      "motif": "Ring of stacked coins tied with a ledger ribbon",
+      "how": "Trade with a roaming trader ten times"
+    },
+    {
+      "id": "wardbreaker",
+      "name": "Wardbreaker Horns",
+      "demoName": "Wardbreaker Horns",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#7cf0b0",
+      "set": "night-hunt",
+      "native": true,
+      "source": "monster",
+      "motif": "Cracked guardian horns around a shattered ward rune",
+      "how": "Beat a zone guardian monster"
+    },
+    {
+      "id": "wisp",
+      "name": "Will-o'-Wisp Halo",
+      "demoName": "Will-o'-Wisp Halo",
+      "rarity": "legendary",
+      "slot": "above",
+      "color": "#9ff6ff",
+      "set": "night-hunt",
+      "native": true,
+      "source": "npc",
+      "motif": "Ghost-fire lantern with three orbiting soul flames",
+      "how": "Win the wandering will-o'-wisp's item game"
+    },
+    {
+      "id": "bossbane",
+      "name": "Bossbane Fangring",
+      "demoName": "Bossbane Fangring",
+      "rarity": "legendary",
+      "slot": "below",
+      "color": "#ff6b6b",
+      "set": "night-hunt",
+      "native": true,
+      "source": "monster",
+      "motif": "Ring of monster fangs around a glowing rift",
+      "how": "Land three hits on the weekly boss"
     }
   ],
   "sets": [
@@ -137,6 +241,18 @@
       "name": "Solar Crown",
       "glow": "#ffd667",
       "bonus": "Radiant golden pulse"
+    },
+    {
+      "id": "wayfarers",
+      "name": "Wayfarers",
+      "glow": "#e0b25a",
+      "bonus": "Lantern-warm road-dust trail"
+    },
+    {
+      "id": "night-hunt",
+      "name": "Night Hunt",
+      "glow": "#7cf0b0",
+      "bonus": "Ghostly green afterglow"
     }
   ]
 }

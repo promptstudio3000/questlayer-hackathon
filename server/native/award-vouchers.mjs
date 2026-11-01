@@ -18,6 +18,7 @@ import { nearAccountId } from "../identity/near.mjs";
 import { NETWORK } from "./network.mjs";
 import {
   LEGACY_NATIVE_EDITIONS,
+  awardClaimPrefix,
   nativeEditionForName,
 } from "../aura-catalog.mjs";
 export function awardMessage(contractId, claim) {
@@ -173,7 +174,8 @@ export class AwardVouchers {
           "INSERT INTO native_awards(item_id,claim_id,player_id,receiver_id,edition,state,expires_at,created_at) VALUES(?,?,?,?,?,'issued',?,?)",
         ).run(
           itemId,
-          "earned:" + id("aura"),
+          // NPC and monster editions need earned:npc: / earned:monster: on-chain.
+          awardClaimPrefix(edition) + id("aura"),
           player,
           receiverId,
           edition,

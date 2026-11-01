@@ -135,3 +135,46 @@ test("native token ids accept every catalog edition within the 256 cap", () => {
   assert.equal(server.nativeEditionForName("Ember Wisp"), "ember");
   assert.equal(server.nativeEditionForName("Mosslight"), null);
 });
+test("NPC and monster editions never drop from chests and match the contract's claim-only table", () => {
+  const rust = readFileSync(
+      new URL("../contracts/collectibles/src/lib.rs", import.meta.url),
+      "utf8",
+    ),
+    start = rust.indexOf("const CLAIM_ONLY_EDITIONS"),
+    table = rust.slice(start, rust.indexOf("];", start)),
+    rows = [...table.matchAll(/\("([a-z]+)", "(earned:[a-z]+:)", "[^"]+"\)/g)].map((r) => [
+      r[1],
+      r[2],
+    ]);
+  const special = AURA_CATALOG.filter((e) => e.source !== "chest");
+  assert.ok(special.length >= 6);
+  assert.deepEqual(
+    rows.sort(),
+    special.map((e) => [e.id, server.awardClaimPrefix(e.id)]).sort(),
+  );
+  for (const e of AURA_CATALOG) {
+    assert.ok(["chest", "npc", "monster"].includes(e.source), e.id);
+    if (e.source === "chest") assert.equal(server.awardClaimPrefix(e.id), "earned:");
+    else {
+      assert.ok(e.native, `${e.id} must be mintable`);
+      assert.ok(e.how, `${e.id} says how it is earned`);
+      for (const tier of [1, 2, 3])
+        for (const level of [1, 5, 50]) assert.ok(!auraEntitled(e, tier, level));
+    }
+  }
+  assert.equal(server.awardClaimPrefix("wisp"), "earned:npc:");
+  assert.equal(server.awardClaimPrefix("bossbane"), "earned:monster:");
+  for (const tier of [1, 2, 3])
+    for (const level of [1, 5, 50])
+      assert.ok(server.entitledEditions(tier, level).every((e) => e.source === "chest"));
+  const db = openDatabase(":memory:"),
+    player = createPlayer(db, "Hunter");
+  for (let i = 0; i < 40; i++) {
+    const pick = chooseChestAura(db, player, 3, 50);
+    assert.equal(pick.source, "chest");
+    db.prepare(
+      "INSERT INTO inventory VALUES (?,?,'aura',?,?,?,?,0,1,0)",
+    ).run(`h${i}`, player, pick.demoName, pick.rarity, pick.slot, pick.color);
+  }
+  db.close();
+});
