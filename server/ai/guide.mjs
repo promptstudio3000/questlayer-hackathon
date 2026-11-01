@@ -10,7 +10,7 @@
 import { distance, GameError, hash, id } from "../domain.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { AI_OPERATIONS_SCHEMA } from "./schema.mjs";
-import { clean, screenText } from "./text-policy.mjs";
+import { clean, debugRejected, screenText } from "./text-policy.mjs";
 import { ollamaConfiguration, ollamaJson } from "./ollama.mjs";
 
 export const GUIDE_POLICY = "guide-v1";
@@ -153,15 +153,27 @@ export function guideFacts({ world = null, native = null, location = null, now =
 
 const numbers = (text) => text.match(/\d+(?:[.:]\d+)*/g) || [];
 
+// Thousands separators and decimal commas are normalised so "1 670 m" or
+// "0,140 NEAR" match the facts' "1670" and "0.140".
+const normaliseNumbers = (text) =>
+  text
+    .replace(/(\d)[ \u00a0\u202f,](?=\d{3}(?!\d))/g, "$1")
+    .replace(/(\d),(\d)/g, "$1.$2");
+
 export function validateGuideOutput(output, facts) {
-  if (!output || typeof output !== "object" || Array.isArray(output)) return { reason: "schema" };
-  if (Object.keys(output).sort().join() !== "answer,factIds") return { reason: "schema" };
-  if (typeof output.answer !== "string" || !Array.isArray(output.factIds)) return { reason: "schema" };
-  const answer = clean(output.answer);
-  if (answer.length < 10 || answer.length > 600) return { reason: "answer-length" };
+  if (!output || typeof output !== "object" || Array.isArray(output)) return { reason: "schema-not-object" };
+  // Lenient on shape (only answer and fact ids are read), strict on content.
+  const text = output.answer ?? output.text ?? output.response;
+  if (typeof text !== "string") return { reason: "schema-missing-answer" };
   const known = new Set(facts.map((f) => f.id));
-  if (!output.factIds.length || !output.factIds.every((f) => typeof f === "string" && known.has(f)))
-    return { reason: "unknown-fact" };
+  const rawIds = output.factIds ?? output.fact_ids ?? output.facts;
+  const factIds = Array.isArray(rawIds)
+    ? rawIds.filter((f) => typeof f === "string" && known.has(f))
+    : [];
+  if (Array.isArray(rawIds) && rawIds.length && !factIds.length) return { reason: "unknown-fact" };
+  output = { answer: text, factIds: factIds.length ? factIds : [...known] };
+  const answer = normaliseNumbers(clean(output.answer));
+  if (answer.length < 10 || answer.length > 600) return { reason: "answer-length" };
   const reason = screenText(answer, GUIDE_RULES);
   if (reason) return { reason };
   const allowed = new Set(facts.flatMap((f) => numbers(f.text)));
@@ -335,7 +347,9 @@ export function createGuide(
         outcome = "limited";
       } else {
         try {
-          const checked = validateGuideOutput(await provider.answer(q, facts), facts);
+          const raw = await provider.answer(q, facts);
+          const checked = validateGuideOutput(raw, facts);
+          if (!checked.value) debugRejected(env, "guide", checked.reason, raw);
           if (checked.value) {
             result = checked.value;
             outcome = "answered";
@@ -344,8 +358,14 @@ export function createGuide(
             outcome = "fallback";
           }
         } catch (error) {
-          reason = error instanceof SyntaxError ? "schema" : "provider-unavailable";
+          reason = error.reason ||
+          (error instanceof SyntaxError
+            ? "unparseable-json"
+            : /^provider-[a-z]+( \(\d{3}\))?$/.test(error.message || "")
+              ? error.message
+              : "provider-unavailable");
           outcome = "fallback";
+          debugRejected(env, "guide", reason, error.sample);
         }
       }
     }

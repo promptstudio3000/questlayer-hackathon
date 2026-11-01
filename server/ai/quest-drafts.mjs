@@ -23,7 +23,7 @@ import { CREATOR_PLACE_TEMPLATES } from "../creators/place-policy.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { QUEST_DRAFTS_SCHEMA } from "./schema.mjs";
 import { booleanIntersects, feature } from "@turf/turf";
-import { clean, screenText } from "./text-policy.mjs";
+import { clean, debugRejected, screenText } from "./text-policy.mjs";
 import { ollamaConfiguration, ollamaJson } from "./ollama.mjs";
 
 export const QUEST_DRAFT_POLICY = "quest-drafts-v1";
@@ -326,9 +326,11 @@ export function providerFromConfiguration(config, env = process.env) {
 export function validateDraftOutput(output, request) {
   if (!output || typeof output !== "object" || Array.isArray(output))
     return { reason: "schema" };
-  const keys = Object.keys(output).sort().join();
-  if (keys !== "description,stopHints,stopOrder,title") return { reason: "schema" };
-  const { title, description, stopOrder, stopHints } = output;
+  // Lenient on shape (extra keys ignored, "2" read as 2), strict on content.
+  const { title, description, stopHints } = output;
+  const stopOrder = Array.isArray(output.stopOrder)
+    ? output.stopOrder.map((i) => (typeof i === "string" && /^\d{1,2}$/.test(i) ? Number(i) : i))
+    : output.stopOrder;
   if (typeof title !== "string" || typeof description !== "string") return { reason: "schema" };
   if (!Array.isArray(stopOrder) || !Array.isArray(stopHints)) return { reason: "schema" };
   const t = clean(title),
@@ -530,13 +532,21 @@ export function createQuestDrafter(
       reason = null;
     if (provider) {
       try {
-        const result = validateDraftOutput(await provider.generate(structuredClone(request)), request);
+        const raw = await provider.generate(structuredClone(request));
+        const result = validateDraftOutput(raw, request);
+        if (!result.value) debugRejected(env, "quest-draft", result.reason, raw);
         if (result.value) {
           value = result.value;
           source = provider.name;
         } else reason = result.reason;
       } catch (error) {
-        reason = error instanceof SyntaxError ? "schema" : "provider-unavailable";
+        reason = error.reason ||
+          (error instanceof SyntaxError
+            ? "unparseable-json"
+            : /^provider-[a-z]+( \(\d{3}\))?$/.test(error.message || "")
+              ? error.message
+              : "provider-unavailable");
+        debugRejected(env, "quest-draft", reason, error.sample);
       }
     }
     if (!value) {
