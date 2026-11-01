@@ -151,6 +151,13 @@ import {
   SOCIAL_CONTRACT_ID,
   onNearNetwork,
 } from "./near-network.ts";
+import { nearestDiscovery } from "./nearest-discovery.ts";
+import {
+  WALK_CAP_M,
+  WALK_STEP_MS,
+  cappedWalkTarget,
+  walkSteps,
+} from "./map-motion.ts";
 
 type Tab =
   | "explore"
@@ -1024,6 +1031,7 @@ export default function App() {
       )
         return;
       e.preventDefault();
+      stopWalk();
       setPosition((p) => ({
         lat:
           p.lat +
@@ -1102,12 +1110,43 @@ export default function App() {
     },
     [],
   );
-  function move(p: Point) {
-    if (arena && !nativePlay) {
-      setPosition(p);
+  const walkTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopWalk = () => {
+    if (walkTimer.current !== null) clearInterval(walkTimer.current);
+    walkTimer.current = null;
+  };
+  useEffect(() => stopWalk, []);
+  useEffect(() => {
+    if (!arena || nativePlay) stopWalk();
+  }, [arena, nativePlay]);
+  const [streetFindTarget, setStreetFindTarget] = useState<string | null>(
+    null,
+  );
+  function goToStreetFind(coin: { id: string; lat: number; lng: number }) {
+    setStreetFindTarget(coin.id);
+    if (arena && !nativePlay) move(coin);
+    else {
+      setFollow(false);
       setOverview(false);
-      setFollow(true);
     }
+  }
+  function move(p: Point) {
+    if (!arena || nativePlay) return;
+    stopWalk();
+    setOverview(false);
+    setFollow(true);
+    const from = latest.current.position,
+      { point } = cappedWalkTarget(from, p),
+      steps = matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? [point]
+        : walkSteps(from, point);
+    setPosition(steps.shift()!);
+    if (!steps.length) return;
+    walkTimer.current = setInterval(() => {
+      const next = steps.shift();
+      if (next) setPosition(next);
+      if (!steps.length) stopWalk();
+    }, WALK_STEP_MS);
   }
   function chooseNativeQuest(index: number) {
     const q = nativeGame.state?.day?.quests.find((q) => q.index === index);
@@ -2052,31 +2091,27 @@ export default function App() {
         Number(b.tier > (player?.tier || 1)) ||
       meters(position, a) - meters(position, b),
   );
-  const recommended = world?.quests
-    .filter(
-      (q) =>
-        q.tier <= (player?.tier || 1) &&
-        !q.completed &&
-        q.opens_at <= now &&
-        q.closes_at > now,
-    )
-    .sort(
-      (a, b) =>
-        Number(
-          !player?.inventory.some((i) => i.kind === "aura") &&
-            b.kind === "chest" &&
-            b.itemAvailable,
-        ) -
-          Number(
-            !player?.inventory.some((i) => i.kind === "aura") &&
-              a.kind === "chest" &&
-              a.itemAvailable,
-          ) ||
-        meters(position, questPoint(a)) - meters(position, questPoint(b)),
-    )[0];
-  const recommendedZone = world?.zones.find(
-    (z) => z.id === recommended?.zone_id,
-  );
+  const recommendation = world
+    ? nearestDiscovery({
+        position,
+        quests: world.quests,
+        zones: world.zones,
+        coins: world.coins,
+        tier: player?.tier || 1,
+        now,
+        questPoint,
+      })
+    : null;
+  const recommended =
+    recommendation?.kind === "quest" ? recommendation.quest : undefined;
+  const recommendedZone =
+    recommendation?.kind === "quest" ? recommendation.zone : undefined;
+  const recommendedFind =
+    recommendation?.kind === "find" ? recommendation : null;
+  const findTarget =
+    !nativePlay && streetFindTarget
+      ? world?.coins.find((c) => c.id === streetFindTarget && c.find) || null
+      : null;
   const zoneQuests = (world?.quests || []).filter(
     (q) =>
       q.zone_id === selected?.id ||
@@ -2137,9 +2172,22 @@ export default function App() {
         }
         overview={overview}
         focusZone={selected}
-        nativeTarget={nativeTarget}
+        nativeTarget={
+          nativeTarget ||
+          (findTarget
+            ? {
+                lat: findTarget.lat,
+                lng: findTarget.lng,
+                label: `Street find · +${world?.streetFindXp ?? 15} XP`,
+              }
+            : null)
+        }
         nativeTargetKind={
-          nativeObjective.reference?.kind === "coin" ? "coin" : "route"
+          nativePlay
+            ? nativeObjective.reference?.kind === "coin"
+              ? "coin"
+              : "route"
+            : "discovery"
         }
         world={displayWorld}
         position={position}
@@ -2419,6 +2467,30 @@ export default function App() {
           </div>
           {tab === "explore" && !selected && !nativePlay && (
             <>
+              {recommendedFind && !nativeTarget && !adventureNotice && (
+                <button
+                  className="recommended-quest"
+                  onClick={() => goToStreetFind(recommendedFind.coin)}
+                >
+                  <span className="recommended-art">
+                    <GameObjectArt kind="discovery" size={32} />
+                  </span>
+                  <span>
+                    <small>Nearest find</small>
+                    <strong>
+                      Street find · +{world?.streetFindXp ?? 15} XP
+                    </strong>
+                    <span>
+                      On a mapped path ·{" "}
+                      {distanceLabel(recommendedFind.distance)}
+                      {arena && recommendedFind.distance > WALK_CAP_M
+                        ? ` · walk in ${Math.ceil(recommendedFind.distance / WALK_CAP_M)} steps`
+                        : ""}
+                    </span>
+                  </span>
+                  <ArrowRight size={20} />
+                </button>
+              )}
               {recommended &&
                 recommendedZone &&
                 !nativeTarget &&
@@ -2437,7 +2509,7 @@ export default function App() {
                       />
                     </span>
                     <span>
-                      <small>Your next quest</small>
+                      <small>Nearest discovery</small>
                       <strong>{recommended.title}</strong>
                       <span>
                         {recommendedZone.name} ·{" "}
@@ -2698,7 +2770,10 @@ export default function App() {
                         className="primary-button"
                         onClick={() => move(questPoint(q))}
                       >
-                        Walk there <NavigationArrow />
+                        {meters(position, questPoint(q)) > WALK_CAP_M
+                          ? `Walk ${WALK_CAP_M} m closer`
+                          : "Walk there"}{" "}
+                        <NavigationArrow />
                       </button>
                     ) : (
                       <button

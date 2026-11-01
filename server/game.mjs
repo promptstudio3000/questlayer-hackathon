@@ -19,6 +19,11 @@ import {
 import { contains } from "./spatial/city-pack.mjs";
 import { closedPlaces, assertPlaceOpen } from "./spatial/place-safety.mjs";
 import { QUEST_POLICY } from "./quest-templates.mjs";
+import {
+  STREET_COIN_XP,
+  STREET_FIND_XP,
+  streetFindIds,
+} from "./street-finds.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
 import {
   createAdventureResults,
@@ -112,12 +117,22 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     db.prepare(
       "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
     ).run(coin.value_u, coin.value_u, "coins");
-    db.prepare("UPDATE players SET gold_u=gold_u+?,xp=xp+2 WHERE id=?").run(
+    const find = streetFindIds(db, coin.world_id).has(coinId),
+      xp = find ? STREET_FIND_XP : STREET_COIN_XP;
+    db.prepare("UPDATE players SET gold_u=gold_u+?,xp=xp+? WHERE id=?").run(
       coin.value_u,
+      xp,
       player,
     );
-    history(db, player, "coin", "Street coin", coin.value_u, { coin: coinId });
-    return { value: coin.value_u, xp: 2 };
+    history(
+      db,
+      player,
+      "coin",
+      find ? "Street find" : "Street coin",
+      coin.value_u,
+      { coin: coinId, ...(find ? { find: true } : {}) },
+    );
+    return { value: coin.value_u, xp, ...(find ? { find: true } : {}) };
   });
 }
 export function claimQuest(db, player, questId, fix, now = Date.now()) {

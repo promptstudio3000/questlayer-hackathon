@@ -15,6 +15,7 @@ import {
 import { atomic } from "./database.mjs";
 import { PLZEN, cityFor, sampleCityPaths } from "./spatial/city-pack.mjs";
 import { describeStoredQuest } from "./quest-templates.mjs";
+import { STREET_FIND_XP, streetFindIds } from "./street-finds.mjs";
 import { publicPathSnapshot } from "./spatial/map-data.mjs";
 import {
   worldQuery,
@@ -419,6 +420,7 @@ export function worldView(db, id, player = null, options = {}) {
         "SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL",
       )
       .all(id);
+  const finds = streetFindIds(db, id);
   const more = !!query.limit && rows.length > query.limit,
     page = query.limit ? rows.slice(0, query.limit) : rows;
   return {
@@ -427,7 +429,10 @@ export function worldView(db, id, player = null, options = {}) {
     cityZoneCount: zones.length,
     visibleZoneCount: visibleZones.length,
     openEligibleCount: eligible.size,
-    coins: page.filter((p) => !pointClosed(closed, p)),
+    coins: page
+      .filter((p) => !pointClosed(closed, p))
+      .map((c) => (finds.has(c.id) ? { ...c, find: true } : c)),
+    streetFindXp: STREET_FIND_XP,
     ...(query.limit
       ? {
           page: {
