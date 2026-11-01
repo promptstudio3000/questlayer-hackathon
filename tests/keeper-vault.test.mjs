@@ -103,8 +103,9 @@ test("ceremonies: matured once, tier steps once, patron title stays", () => {
   assert.ok(exited.patron, "the earned title stays after an exit (no decay)");
 });
 
-test("the inner vault needs both tier and level, and every default is configurable", () => {
-  const { view } = setup();
+test("the inner vault is gated by tier (level gate optional), and every default is configurable", () => {
+  assert.equal(setup().view(state({ principal: 100n * N, epoch: 100 }), 1).inner.open, true, "tier only by default");
+  const { view } = setup({ env: { KEEPER_INNER_LEVEL: "5" } });
   const s = state({ principal: 100n * N, epoch: 100 }); // weighted 50 → tier 2
   const low = view(s, 4).inner;
   assert.equal(low.open, false);
@@ -149,7 +150,7 @@ test("your stake today: growth since the last reading before today and today's c
 });
 
 test("the Keeper view and the Profile stake route return the card; ceremonies close by id", async () => {
-  const { db, player, kv } = setup();
+  const { db, player, kv } = setup({ env: { KEEPER_INNER_LEVEL: "5" } });
   const vaults = {
     snapshot: async () => ({
       positions: [{ account_id: "v1.testnet", pool: "pool", state: "ready", position: state({ principal: 100n * N, epoch: 100 }) }],
