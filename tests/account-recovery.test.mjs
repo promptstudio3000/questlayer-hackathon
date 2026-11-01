@@ -177,11 +177,11 @@ const keyState = (f, publicKey) =>
     .prepare("SELECT state FROM managed_account_keys WHERE public_key=?")
     .get(publicKey)?.state;
 
-test("the same passkey secret always derives the same recovery key", () => {
+test("the same passkey secret always derives the same recovery key", async () => {
   const prf = randomBytes(32);
-  const a = recoveryKeyFromPrf(prf, "a.players.testnet"),
-    b = recoveryKeyFromPrf(new Uint8Array(prf), "a.players.testnet"),
-    other = recoveryKeyFromPrf(randomBytes(32), "a.players.testnet");
+  const a = await recoveryKeyFromPrf(prf, "a.players.testnet"),
+    b = await recoveryKeyFromPrf(new Uint8Array(prf), "a.players.testnet"),
+    other = await recoveryKeyFromPrf(randomBytes(32), "a.players.testnet");
   assert.equal(a.publicKey, b.publicKey);
   assert.equal(a.origin, "prf");
   assert.notEqual(a.publicKey, other.publicKey);
@@ -189,7 +189,7 @@ test("the same passkey secret always derives the same recovery key", () => {
     KeyPair.fromString(a.secretKey).getPublicKey().toString(),
     a.publicKey,
   );
-  assert.throws(() => recoveryKeyFromPrf(new Uint8Array(16), null), /usable/);
+  await assert.rejects(recoveryKeyFromPrf(new Uint8Array(16), null), /usable/);
   assert.equal(
     new TextDecoder().decode(RECOVERY_PRF_SALT),
     "questlayer:recovery-key:v1",
