@@ -181,6 +181,7 @@ export function NativeLevelRewards({
                     }}
                   >
                     <AuraArt
+                      edition={m.edition}
                       color={
                         m.edition === "polar"
                           ? "#59ddcc"

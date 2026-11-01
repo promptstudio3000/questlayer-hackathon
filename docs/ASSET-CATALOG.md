@@ -7,6 +7,7 @@ QuestLayer uses its own canonical SVG explorer and Aura artwork for its native N
 | Asset | Source / evidence | Adopted scope | Rights status |
 | --- | --- | --- | --- |
 | Historical native collectible SVG covers | `src/character-art.ts`; generated public artwork and embedded NEAR NFT media | Historical native collectible cover media; the shared UI now uses the official starter template below | Authored project artwork |
+| Aura edition sprites (catalog v2) | `src/aura-art-data.ts` (pixel painters), `server/data/aura-catalog.json` (editions, sets, entitlements); rendered sheet under `output/qa/W04-aura-catalog/` | Nine editions (Ember Wisp, Dewfall Ring, Northern Lights, Meadow Bloom, Stormcrown, Moonwake/Moon Ring, Comet Trail, Sunlit/Golden Dust, Nova Bloom), each authored for the 48x24 `above` and 56x20 `below` grids with two sparkle frames | Original project pixel geometry generated from hand-placed keypoints in source; no upstream or third-party artwork, fonts or generators. Distributable as project artwork. |
 | Shared map/list game objects | `src/game-object-art-data.ts` and `src/game-object-art.tsx`; [provenance and rendered evidence](../output/qa/W02-object-art/README.md) | Authored 32px coin, chest, discovery, route/place, completion/lock and independent selection states; shared SVG/DOM/raster rendering | Original project pixel geometry; independent of verified character layers and upstream artwork. Brand/trademark release gates remain separate. |
 | Original on-chain Aavegotchi SVG | Canonical Base contract, selected through verified wallet ownership | Read-only chosen appearance; shared only during active presence | Original asset; no ownership transfer or claim that the artwork is MIT/CC0 |
 | Aavegotchi 3D body / wardrobe | [Official SDK page](https://www.aavegotchi.com/sdk), its published invitation to build Gotchi experiences in Unity and beyond, and [official renderer interface](https://github.com/aavegotchi/aavegotchi-3d-render-skill) | Prototype map and dressing-room visualization from already available upstream GLBs | Published developer-use invitation is recorded; no standard blanket artwork license is asserted. Complete catalog/commercial/trademark rights review remains open. |
@@ -64,3 +65,29 @@ A manual inventory refresh performs a new ownership lookup, bounded to one force
 A real public read at Base block `53326551` verified six SVGs (#85, #384, #57, #84, #58, #82), totalling 2,062 bytes. Their hashes and explicit `ownershipClaimed:false` values are in `output/qa/W04-real-assets/public-item-source.json`. The local reference fixture labels them as not owned; its raw files are ignored and excluded from deployment. Runtime player ownership was separately tested through isolated HTTP/RPC fixtures, not a personal wallet signing session.
 
 The small map renderer preserves its drawing buffer and repaints on move/resize/foreground restoration, including one bounded reveal frame after becoming visible. This prevents an intermittently blank character after viewport changes without introducing an idle rendering loop. The browser round-trip regression and follow-up build are recorded in the same evidence directory.
+
+## Aura catalog v2 (2026-11-01)
+
+The Aura wardrobe grew from three to nine editions. `server/data/aura-catalog.json` is the single source for names, rarity, default slot, colour, set and the `native` flag; the client reads it through `src/aura-catalog.ts` and the server through `server/aura-catalog.mjs`, and `tests/aura-catalog.test.mjs` keeps them in step.
+
+| Edition | Rarity | Slot | Set | Native NFT |
+| --- | --- | --- | --- | --- |
+| Ember Wisp | common | above | First Light | no |
+| Dewfall Ring | common | below | First Light | no |
+| Northern Lights | rare | above | Night Sky | yes (`aura:polar:*`) |
+| Meadow Bloom | rare | below | First Light | no |
+| Stormcrown | epic | above | Tempest | no |
+| Moonwake Aura (demo name Moon Ring) | epic | below | Night Sky | yes (`aura:moon:*`) |
+| Comet Trail | epic | below | Tempest | no |
+| Sunlit Aura (demo name Golden Dust) | legendary | above | Solar Crown | yes (`aura:gold:*`) |
+| Nova Bloom | legendary | below | Solar Crown | no |
+
+**Artwork and rights.** Every sprite is drawn in code by the painters in `src/aura-art-data.ts`, using the existing style rules: light from the upper left, a 1px `#1A0335` outline at 40% opacity, a static base layer and two alternating sparkle frames. No upstream Aavegotchi artwork, wearable geometry or third-party asset is used, so the sprites are project-authored artwork under the repository license. The on-chain cover media of already minted Aura tokens is unchanged.
+
+**Entitlements.** A chest can hold an edition only when the chest's zone tier and the player's level meet its rarity rule: common in any zone at any level, rare from level 2, epic in expedition or gold zones (tier 2+) from level 3, legendary in gold zones (tier 3) from level 4. Within the allowed editions the server prefers ones the player does not yet hold, then rotates, and skips editions whose 256-copy practice supply is used up. A chest's `itemAvailable` flag now reflects that player's entitled supply. Already stored inventory rows keep their names, rarity and colour; nothing is renamed or reissued.
+
+**Set bonuses are cosmetic only.** Wearing two different editions of one set (one above, one below) adds a soft glow behind the explorer and a short note in the wardrobe. It never changes GOLD, XP, rewards, drop chances or any claim. Reduced motion shows a static glow.
+
+**Native boundary.** The reviewed collectibles contract (`contracts/collectibles`, sha256 in `WASM_SHA256`) still mints only `polar`, `moon` and `gold`. The six new editions are game wardrobe items and cannot be secured on NEAR yet; the existing award voucher path already refuses them. Making them native needs a contract change, a fresh review and a testnet upgrade, which is deliberately left out of this change so the reviewed mainnet artifact stays valid. Already issued tokens are untouched.
+
+**Wardrobe.** The practice collection can be filtered by slot, rarity and set, is sorted rarest first, and has an Aura catalog listing every edition with where it can be found and how many the player holds. Controls are native buttons and selects with 48px targets.

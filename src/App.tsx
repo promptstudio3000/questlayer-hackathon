@@ -4587,7 +4587,7 @@ function Market({
         <div className="item-grid">
           {items.map((i) => (
             <article className={`item-card rarity-${i.rarity}`} key={i.id}>
-              <AuraArt color={i.color} slot={i.slot} />
+              <AuraArt color={i.color} slot={i.slot} name={i.name} />
               <Badge>{rarityNames[i.rarity]}</Badge>
               <h3>{i.name}</h3>
               <small>

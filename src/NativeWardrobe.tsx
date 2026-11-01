@@ -52,7 +52,7 @@ export function nativeAppearanceItems(
 export function NativePicture({ item }: { item: NativeItem }) {
   // Game appearance preview; historical on-chain cover media is unchanged.
   return item.kind === "aura" ? (
-    <AuraArt color={item.color} small />
+    <AuraArt color={item.color} edition={item.edition} small />
   ) : (
     <Ghost />
   );
@@ -206,7 +206,11 @@ export function NativeWardrobe({
                             })
                           }
                         >
-                          <AuraArt color={item.color} slot={slot || "above"} />
+                          <AuraArt
+                            color={item.color}
+                            edition={item.edition}
+                            slot={slot || "above"}
+                          />
                           <strong>{item.title}</strong>
                           <span className="inventory-rarity">
                             {item.rarity}
@@ -323,6 +327,7 @@ export function NativeWardrobe({
                 <div className="inventory-item-detail">
                   <AuraArt
                     color={selectedItem.color}
+                    edition={selectedItem.edition}
                     slot={
                       selectedAccount.equipment.below === selectedItem.tokenId
                         ? "below"

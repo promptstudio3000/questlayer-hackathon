@@ -22,6 +22,13 @@ import { Dialog } from "./Dialog";
 import { useFormDraft } from "./useFormDraft";
 import { createReadEpoch } from "./read-epoch";
 import { AuraArt, Ghost } from "./Ghost";
+import { AuraCatalog, AuraSetStatus, AuraWardrobeFilters } from "./AuraWardrobe";
+import {
+  DEFAULT_WARDROBE_FILTER,
+  filterAuras,
+  sortAuras,
+  type WardrobeFilter,
+} from "./aura-wardrobe.ts";
 import { OriginalItemGallery, type OriginalItem } from "./OriginalItemGallery";
 import type { Item, Player } from "./types";
 import "./inventory.css";
@@ -124,6 +131,10 @@ export function Inventory({
   const auras = player.inventory.filter(
     (item) => item.kind === "aura" && item.native_claim_state !== "minted",
   );
+  const [wardrobeFilter, setWardrobeFilter] = useState<WardrobeFilter>(
+    DEFAULT_WARDROBE_FILTER,
+  );
+  const shownAuras = sortAuras(filterAuras(auras, wardrobeFilter));
   // Resolve every action against current inventory: a removed or reserved item
   // must not stay actionable through an older selection.
   const selected = auras.find((item) => item.id === selectedId);
@@ -308,6 +319,8 @@ export function Inventory({
         })}
       </div>
 
+      <AuraSetStatus items={characterItems} />
+
       <section className="inventory-collection" aria-label="Your collection">
         <div className="inventory-section-heading">
           <h3>Your collection</h3>
@@ -338,9 +351,23 @@ export function Inventory({
               Auras are the glow you find in chests. Wear one above and one
               below.
             </p>
-            {!!auras.length && (
+            {auras.length > 1 && (
+              <AuraWardrobeFilters
+                filter={wardrobeFilter}
+                onChange={setWardrobeFilter}
+                shown={shownAuras.length}
+                total={auras.length}
+                disabled={locked}
+              />
+            )}
+            {!!auras.length && !shownAuras.length && (
+              <p className="inventory-collection-caption">
+                No Auras match these filters.
+              </p>
+            )}
+            {!!shownAuras.length && (
               <div className="inventory-item-grid">
-                {auras.map((item) => (
+                {shownAuras.map((item) => (
                   <button
                     className={`inventory-item-choice rarity-${item.rarity}`}
                     key={item.id}
@@ -353,7 +380,7 @@ export function Inventory({
                     }}
                     aria-label={`${item.name}, ${rarityNames[item.rarity] || item.rarity}, ${item.slot}${item.equipped ? ", equipped" : ""}${item.native_claim_state === "issued" ? ", claim reserved" : ""}`}
                   >
-                    <AuraArt color={item.color} slot={item.slot} />
+                    <AuraArt color={item.color} slot={item.slot} name={item.name} />
                     <strong>{item.name}</strong>
                     <span>
                       {rarityNames[item.rarity] || item.rarity} ·{" "}
@@ -389,6 +416,7 @@ export function Inventory({
                 )}
               </div>
             )}
+            <AuraCatalog items={auras} />
             {player.nativeOutfit && (
               <p className="inventory-notice">
                 Your map ghost wears the secured outfit. Equipping a practice
@@ -616,7 +644,7 @@ export function Inventory({
             ) : (
               <>
                 <div className="inventory-item-detail">
-                  <AuraArt color={selected.color} slot={selected.slot} />
+                  <AuraArt color={selected.color} slot={selected.slot} name={selected.name} />
                   <h3>{selected.name}</h3>
                   <p>
                     {rarityNames[selected.rarity] || selected.rarity} ·{" "}

@@ -1,3 +1,4 @@
+import { DEMO_AURA_NAMES } from "../server/aura-catalog.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -176,7 +177,7 @@ test("the final route checkpoint and exact result commit together and duplicate 
 });
 test("zero-item chests and another player's shared prize retain their exact independent results", async (t) => {
   const { db, a, b, chest, quests } = await fixture(t);
-  for (const name of ["Northern Lights", "Moon Ring", "Golden Dust"])
+  for (const name of DEMO_AURA_NAMES)
     db.prepare("INSERT INTO editions VALUES(?,256,256)").run(name);
   const empty = claimQuest(db, a, chest.id, chest, now);
   assert.equal(empty.item, null);

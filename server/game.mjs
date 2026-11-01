@@ -16,6 +16,7 @@ import {
   splitYield,
   COIN_ARENA_RADIUS_M,
 } from "./domain.mjs";
+import { AURA_SUPPLY, entitledEditions } from "./aura-catalog.mjs";
 import { contains } from "./spatial/city-pack.mjs";
 import { closedPlaces, assertPlaceOpen } from "./spatial/place-safety.mjs";
 import { assertWorldActive } from "./operator/world-controls.mjs";
@@ -192,7 +193,10 @@ function settleQuest(db, player, questId, fix, now, results) {
     player,
   );
   let item = null;
-  if (q.kind === "chest") item = mintAura(db, player, now);
+  if (q.kind === "chest") {
+    const xp = db.prepare("SELECT xp FROM players WHERE id=?").get(player).xp;
+    item = mintAura(db, player, now, q.tier, levelFor(xp));
+  }
   const resultId = recordAdventureResult(db, {
     player,
     quest: q,
@@ -321,26 +325,41 @@ export function advanceRoute(
     return { awaiting: true, progress };
   });
 }
-const AURAS = [
-  ["Northern Lights", "rare", "above", "#8dd8bd"],
-  ["Moon Ring", "epic", "below", "#b49beb"],
-  ["Golden Dust", "legendary", "above", "#f2c869"],
-];
-function mintAura(db, player, now) {
-  const count = db
-    .prepare(
-      "SELECT COUNT(*) AS n FROM inventory WHERE player_id=? AND kind='aura'",
-    )
-    .get(player).n;
-  const rotated = [...AURAS.slice(count % 3), ...AURAS.slice(0, count % 3)];
-  const chosen = rotated.find(
-    ([name]) =>
-      (db.prepare("SELECT minted FROM editions WHERE name=?").get(name)
-        ?.minted || 0) < 256,
+/**
+ * Pick the chest Aura from the cosmetic catalog. A zone's tier and the
+ * player's level decide which rarities the chest can hold; within that set the
+ * player's Aura count rotates the choice, preferring editions they lack, and
+ * exhausted editions are skipped. Stored inventory rows are never renamed.
+ */
+export function chooseChestAura(db, player, zoneTier, level) {
+  const entitled = entitledEditions(zoneTier, level);
+  if (!entitled.length) return null;
+  const owned = new Map(
+    db
+      .prepare(
+        "SELECT name, COUNT(*) AS n FROM inventory WHERE player_id=? AND kind='aura' GROUP BY name",
+      )
+      .all(player)
+      .map((r) => [r.name, r.n]),
   );
+  const count = [...owned.values()].reduce((n, v) => n + v, 0),
+    start = count % entitled.length,
+    rotated = [...entitled.slice(start), ...entitled.slice(0, start)].filter(
+      (e) =>
+        (db.prepare("SELECT minted FROM editions WHERE name=?").get(e.demoName)
+          ?.minted || 0) < AURA_SUPPLY,
+    );
+  return rotated.find((e) => !owned.has(e.demoName)) || rotated[0] || null;
+}
+function mintAura(db, player, now, zoneTier = 1, level = 1) {
+  const chosen = chooseChestAura(db, player, zoneTier, level);
   if (!chosen) return null;
-  const [name, rarity, slot, color] = chosen;
-  db.prepare("INSERT OR IGNORE INTO editions VALUES (?,0,256)").run(name);
+  const { demoName: name, rarity, slot } = chosen,
+    color = chosen.demoColor || chosen.color;
+  db.prepare("INSERT OR IGNORE INTO editions VALUES (?,0,?)").run(
+    name,
+    AURA_SUPPLY,
+  );
   const e = db.prepare("SELECT * FROM editions WHERE name=?").get(name);
   if (e.minted >= e.max_supply) return null;
   const item = {
