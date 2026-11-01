@@ -8,6 +8,7 @@ for (const relative of [
   "./ai/schema.mjs",
   "./creators/bonus-vote.mjs",
   "./daily-board/schema.mjs",
+  "./earned-editions.mjs",
   "./creators/completion.mjs",
   "./moderation.mjs",
   "./native/creator-money.mjs",
