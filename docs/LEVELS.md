@@ -17,7 +17,11 @@ Every level unlocks one thing to do or wear. Nothing in the table changes odds, 
 | 9 | 6,400 | "Pathfinder" title on the profile (`value`) | live |
 | 10 | 8,100 | Golden level ring (`value`: gold) | live |
 
-Staker lures are gated by tier only (owner decision 1 Nov, PR #64), so they are not level unlocks.
+Staker content opens by step AND level (owner decision 1 Nov 23:47 UTC, replacing "tier only"): Staker (2 NEAR
+matured) + L2 opens the Keeper's inner vault, the stake today numbers and patron chapter 1; Staker + L4 the rest of
+the patron line, the patron Aura and patron trader rates; Tier 2 + L6 the Tier 2 quest lines and the boss arena
+seat; Tier 3 + L8 the wandering rare's patron option. These gates live in `server/data/staker-gates.json`
+(`docs/GAME-LOOPS.md` §5), not in this level table, and change nothing about odds, damage or payouts.
 `coming` entries (none by default) are shown as previews and do nothing until their feature ships (then flip `status` to `live`).
 
 ## Configuration

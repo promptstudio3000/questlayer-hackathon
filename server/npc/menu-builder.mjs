@@ -6,6 +6,7 @@ import { levelFor } from "../domain.mjs";
 import { buildMenu } from "./offers.mjs";
 import { personaFor } from "./personas.mjs";
 import { createNpcStore } from "./store.mjs";
+import { playerStakerAccess } from "../staker-gates.mjs";
 
 export function npcMenu({ actor, def, player, world, now = Date.now(), db }) {
   const persona = personaFor({ ...def, ...actor, persona: def?.persona ?? actor?.persona });
@@ -15,6 +16,7 @@ export function npcMenu({ actor, def, player, world, now = Date.now(), db }) {
   if (!view) return [];
   const rows = createNpcStore(db).offersFor(player, actor.id);
   const today = rows.filter((r) => r.terms.worldId === view.id);
+  const level = levelFor(db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp || 0);
   return buildMenu({
     actor: { ...actor, archetype: actor.archetype || def?.archetype },
     persona,
@@ -23,7 +25,8 @@ export function npcMenu({ actor, def, player, world, now = Date.now(), db }) {
     done: new Set(today.map((r) => r.terms.offerId)),
     linesToday: today.filter((r) => r.kind === "quest").length,
     chapters: rows.filter((r) => r.kind === "chapter" && r.state === "completed").length,
-    level: levelFor(db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp || 0),
+    level,
+    access: playerStakerAccess(db, player, { worldTier: view.playerTier, level }),
   });
 }
 

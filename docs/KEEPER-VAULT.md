@@ -29,8 +29,9 @@ state; it never signs, moves funds or changes a chance. Code: `server/npc/keeper
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `KEEPER_VAULT_ENABLED` | on | `0` turns the card, ceremonies and inner vault off |
-| `KEEPER_INNER_TIER` | `2` | Tier needed for the inner vault (1–3) |
-| `KEEPER_INNER_LEVEL` | `1` | Optional level gate for the inner vault (1 = none) |
+| `STAKER_GATES_JSON` | table | The inner vault and stake-today gates (`keeper_inner`, `stake_today`, default Staker + L2) live in `server/data/staker-gates.json`; `KEEPER_INNER_TIER`/`KEEPER_INNER_LEVEL` are no longer read |
+| `STAKER_MIN_NEAR` | `2` | Matured stake that makes a player a Staker (patron rank 0) |
+| `NEAR_PRICE_EUR` / `NEAR_PRICE_FEED` | feed | Reference price for "~5 €" labels; `off` shows NEAR only |
 | `KEEPER_MATURITY_EPOCHS` | `2` | Epochs shown in the countdown (mirror of the contract rule) |
 | `KEEPER_EPOCH_HOURS` | `12` | Hours per epoch for the time estimate |
 | `KEEPER_PATRON_TITLE` | `Patron of the Gate` | Cosmetic title from the first tier ceremony |

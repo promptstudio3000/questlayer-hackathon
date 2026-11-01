@@ -24,7 +24,7 @@ export interface NpcLockedOffer {
   kind: string;
   label: string;
   perk?: string;
-  locked: { tier: number };
+  locked: { tier: number; step?: string; level?: number; missing?: string[]; stakeNear?: string };
 }
 export interface NpcTurnIn {
   offerId: string;
