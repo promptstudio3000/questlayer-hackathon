@@ -72,8 +72,10 @@ Progress, 1 November (later):
 - Step 4 done. `managed-accounts` is schema version 2 with `CHECK(network IN ('testnet','mainnet'))`, recorded in
   `server/schema-known.json` next to version 1. Schema modules can now declare upgrade steps that only rewrite
   CHECK clauses; each step is proven at registration (old recorded shape plus the edits must equal the new shape,
-  indexes unchanged) and applied with SQLite's documented `writable_schema` procedure inside the owning
-  transaction, followed by an integrity check and a ledger update. No row is rewritten. Version 1 databases and
+  indexes unchanged) and applied inside the owning transaction by rebuilding the table with ordinary SQL (rows
+  copied aside and back unchanged, foreign keys deferred to commit, tables with referential actions refused),
+  followed by foreign-key and integrity checks and a ledger update. `writable_schema` is not used because Node 24
+  opens SQLite in defensive mode. Version 1 databases and
   backups still pass preflight and upgrade on first start. New accounts store the configured network, and a
   process refuses a database that holds another network's managed accounts (`NETWORK_MISMATCH`): one database
   per network. Tests: `tests/schema-module-upgrade.test.mjs`.

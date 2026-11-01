@@ -84,9 +84,9 @@ function transaction(db, work) {
 // CREATE TABLE statements (for example widening a CHECK). Each step is proven
 // at registration, without IO: applying its replacements to the recorded older
 // shape must yield exactly the current shape, and indexes may not change.
-// Steps run through SQLite's documented writable_schema procedure, which is
-// only valid for edits that leave every stored row and the on-disk format
-// untouched; table rebuilds and data rewrites stay separate reviewed work.
+// Steps run by rebuilding the table inside the owning transaction (see
+// applyUpgrade); rows are copied unchanged, so data rewrites stay separate
+// reviewed work.
 function checkUpgrades(name, version, tables, indexes, upgrades) {
   if (!Array.isArray(upgrades) || upgrades.length > 8)
     fail("Invalid module upgrade list.");
@@ -406,29 +406,45 @@ export function recordSchemaVersions(db) {
       db.exec(`PRAGMA user_version=${CORE_SCHEMA_VERSION}`);
   });
 }
-function applyUpgrade(db, step) {
-  const version = db.prepare("PRAGMA schema_version").get().schema_version;
-  db.exec("PRAGMA writable_schema=ON");
+// Rebuilds each edited table with ordinary SQL so it also works when SQLite's
+// defensive mode forbids writable_schema (Node 24 default): copy rows aside,
+// drop, recreate from the proven definition, copy back. Foreign keys stay
+// enforced but deferred to the owning transaction's commit, and re-inserting
+// the parent rows satisfies the children again. A table that another table
+// references with an ON DELETE/UPDATE action is refused, because the drop
+// would fire it. Callers verify the final shape afterwards.
+function applyUpgrade(db, step, definition) {
+  const tables = tableRows(db).map((r) => r.name);
+  for (const table of Object.keys(step.edits))
+    for (const other of tables)
+      for (const fk of db.prepare(`PRAGMA foreign_key_list("${other}")`).all())
+        if (
+          fk.table === table &&
+          (fk.on_delete !== "NO ACTION" || fk.on_update !== "NO ACTION")
+        )
+          fail(
+            "Module upgrade cannot rebuild a table with referential actions.",
+          );
+  const deferred = db
+    .prepare("PRAGMA defer_foreign_keys")
+    .get().defer_foreign_keys;
+  db.exec("PRAGMA defer_foreign_keys=ON");
   try {
-    const update = db.prepare(
-      "UPDATE sqlite_master SET sql=? WHERE type='table' AND name=? AND sql=?",
-    );
-    for (const [table, pairs] of Object.entries(step.edits)) {
-      const current = db
-        .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?")
-        .get(table).sql;
-      let next = current;
-      for (const [from, to] of pairs) {
-        if (next.split(from).length !== 2)
-          fail("Stored table text does not match the upgrade step.");
-        next = next.replace(from, to);
-      }
-      if (update.run(next, table, current).changes !== 1)
-        fail("Module upgrade could not rewrite its table definition.");
+    for (const table of Object.keys(step.edits)) {
+      const aside = `questlayer_upgrade_${table}`;
+      const before = db.prepare(`SELECT count(*) AS n FROM "${table}"`).get().n;
+      db.exec(`CREATE TEMP TABLE "${aside}" AS SELECT * FROM main."${table}"`);
+      db.exec(`DROP TABLE main."${table}"`);
+      db.exec(definition.tables[table]);
+      db.exec(`INSERT INTO main."${table}" SELECT * FROM temp."${aside}"`);
+      db.exec(`DROP TABLE temp."${aside}"`);
+      if (db.prepare(`SELECT count(*) AS n FROM "${table}"`).get().n !== before)
+        fail("Module upgrade changed the number of stored rows.");
     }
-    db.exec(`PRAGMA schema_version=${version + 1}`);
+    if (db.prepare("PRAGMA foreign_key_check").all().length)
+      fail("Database foreign-key integrity failed after module upgrade.");
   } finally {
-    db.exec("PRAGMA writable_schema=OFF");
+    db.exec(`PRAGMA defer_foreign_keys=${deferred ? "ON" : "OFF"}`);
   }
   const integrity = db.prepare("PRAGMA integrity_check(1)").get();
   if (Object.values(integrity)[0] !== "ok")
@@ -458,7 +474,7 @@ export function ensureModuleVersion(db, definition) {
       fail("Unknown future or altered module version.");
     return transaction(db, () => {
       inspectDatabaseSchema(db);
-      applyUpgrade(db, step);
+      applyUpgrade(db, step, definition);
       if (row)
         db.prepare(
           `UPDATE ${LEDGER} SET version=?,fingerprint=? WHERE name=? AND version=?`,
