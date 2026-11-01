@@ -2,14 +2,38 @@ import {
   AdventureResultDialog,
   AdventureResultResume,
   AdventureResultHistoryButton,
-} from "./AdventureResults";
+  PendingNativeTransactions,
+  CreatorCommunity,
+  MapNotes,
+  NativeCollectionControl,
+  NativeTasks,
+  Inventory,
+  AccountSessions,
+  DeviceKeys,
+  NativeLevelRewards,
+  NativeMarketPanel,
+  NativeExpeditions,
+  NativeEconomyPanel,
+  RewardFundingPage,
+  TodaysPot,
+  SecureAndShare,
+  FuelTheCity,
+  NativeStaking,
+  AuraClaims,
+  NativeWardrobe,
+  NativeProfilePanel,
+  preloadPanels,
+} from "./lazy-panels";
+// Styles of the split-off screens stay in the main stylesheet, in their old
+// order, so nothing shifts while a screen's script is still loading.
+import "./adventure-results.css";
+import "./pending-native-transactions.css";
+import "./creator-community.css";
 import { useAdventureResults } from "./useAdventureResults";
 import {
   adventureItemForEquip,
   type AdventureResult,
 } from "./adventure-results";
-import { PendingNativeTransactions } from "./PendingNativeTransactions";
-import { CreatorCommunity } from "./CreatorCommunity";
 import {
   assertCreatorQuote,
   type CreatorPaymentQuote,
@@ -33,11 +57,11 @@ import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
 import { sendConfirmedNative } from "./confirmed-native-transaction";
 import { walletSigner, type NativeSigner } from "./native-signer";
 import { useInvisibleAccount } from "./useInvisibleAccount";
-import { MapNotes } from "./MapNotes";
+import "./map-notes.css";
 import { useNativeGame } from "./useNativeGame";
 import { useNativeAutoCollect } from "./useNativeAutoCollect";
-import { NativeCollectionControl } from "./NativeCollectionControl";
-import { NativeTasks } from "./NativeTasks";
+import "./native-collection.css";
+import "./native-tasks.css";
 import {
   assertTaskQuote,
   type TaskRequest,
@@ -45,22 +69,13 @@ import {
 } from "./native-task-quote";
 import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
-import { Inventory } from "./Inventory";
-import { AccountSessions } from "./AccountSessions";
-import { DeviceKeys } from "./DeviceKeys";
-import {
-  restoreWithPasskey,
-  revokeAccountKey,
-  setupPasskeyRecovery,
-  signOutOtherSessions,
-} from "./account-recovery";
+import "./inventory.css";
 import { indexedDbKeyStore } from "./player-key";
-import { NativeLevelRewards, type NativeMilestone } from "./NativeLevelRewards";
+import type { NativeMilestone } from "./NativeLevelRewards";
 import {
   assertNativeLevelClaim,
   type NativeLevelClaim,
 } from "./native-level-claim";
-import { NativeMarketPanel } from "./NativeMarketPanel";
 import type { MarketCall } from "./SignedOrdersPanel";
 import type { ReviewedNativeTransaction } from "./confirmed-native-transaction";
 import {
@@ -69,13 +84,12 @@ import {
   type MessageWallet,
   type OrderSigner,
 } from "./order-signers";
-import { NativeExpeditions } from "./NativeExpeditions";
-import { NativeEconomyPanel } from "./NativeEconomyPanel";
-import { RewardFundingPage, TodaysPot } from "./RewardFunding";
-import { SecureAndShare } from "./SecureAndShare";
+import "./play-ui.css";
+import "./reward-funding.css";
+import "./secure-share.css";
 import "./offline-gate.css";
-import { FuelTheCity } from "./FuelTheCity";
-import { NativeStaking } from "./NativeStaking";
+import "./fuel-the-city.css";
+import "./native-staking.css";
 import {
   assertVaultQuote,
   type VaultQuote,
@@ -84,10 +98,8 @@ import {
 import "./styles.css";
 import "./theme-accents.css";
 import type { NativeTradeRequest } from "./types";
-import { AuraClaims } from "./AuraClaims";
 import type { NativeAuraClaim } from "./types";
-import { NativeWardrobe, nativeAppearanceItems } from "./NativeWardrobe";
-import { NativeProfilePanel } from "./NativeProfile";
+import { nativeAppearanceItems } from "./native-appearance";
 import { publishNoteRecord, type NoteRecordKind } from "./note-record";
 import type { NativeProfileQuote } from "./types";
 import { assertProfileQuote } from "./native-profile-quote";
@@ -152,7 +164,7 @@ import {
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
-import { DeferredGameMap as GameMap } from "./DeferredGameMap";
+import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
 import { Ghost, AuraArt } from "./Ghost";
 import type {
@@ -179,7 +191,7 @@ import { FirstSessionCoach, useFirstSession } from "./FirstSession";
 import type { FirstStepId } from "./first-session";
 import {
   cue,
-    loadFeedbackPreferences,
+  loadFeedbackPreferences,
   prefersReducedMotion,
   previewSound,
   setFeedbackPreferences,
@@ -299,6 +311,17 @@ export default function App() {
     loadFeedbackPreferences(),
   );
   useEffect(() => subscribeFeedback(setFeedback), []);
+  // Once there is a player, fetch the map and the split-off screens in the
+  // background so later taps do not wait for the network.
+  const hasPlayer = !!player;
+  useEffect(() => {
+    if (!hasPlayer) return;
+    void preloadGameMap().catch(() => {});
+    const idle =
+      window.requestIdleCallback ??
+      ((f: () => void) => window.setTimeout(f, 200));
+    idle(() => preloadPanels());
+  }, [hasPlayer]);
   const firstSession = useFirstSession(player);
   const world =
     worldOwner.current === player?.id && worldData?.arena === arena
@@ -1179,9 +1202,7 @@ export default function App() {
   useEffect(() => {
     if (!arena || nativePlay) stopWalk();
   }, [arena, nativePlay]);
-  const [streetFindTarget, setStreetFindTarget] = useState<string | null>(
-    null,
-  );
+  const [streetFindTarget, setStreetFindTarget] = useState<string | null>(null);
   function goToStreetFind(coin: { id: string; lat: number; lng: number }) {
     setStreetFindTarget(coin.id);
     if (arena && !nativePlay) move(coin);
@@ -1280,9 +1301,7 @@ export default function App() {
     setFollow(true);
     const from = latest.current.position,
       { point } = cappedWalkTarget(from, p),
-      steps = prefersReducedMotion()
-        ? [point]
-        : walkSteps(from, point);
+      steps = prefersReducedMotion() ? [point] : walkSteps(from, point);
     setPosition(steps.shift()!);
     if (!steps.length) return;
     walkTimer.current = setInterval(() => {
@@ -1665,7 +1684,8 @@ export default function App() {
       await refreshNative(true);
       return true;
     });
-    if (result !== true) throw Error("The action was not sent. Nothing changed.");
+    if (result !== true)
+      throw Error("The action was not sent. Nothing changed.");
     return hash;
   }
   const walletForOrders = useRef<{
@@ -1901,7 +1921,8 @@ export default function App() {
   ): Promise<boolean> {
     const account = recordAccount?.accountId;
     const result = await action("note-record", async () => {
-      if (!account || !player) throw Error("Your explorer account is not ready yet.");
+      if (!account || !player)
+        throw Error("Your explorer account is not ready yet.");
       const { signer, accountId } = await signerForAccount(account);
       if (accountId !== account)
         throw Error("Choose the linked account shown for this record.");
@@ -1931,6 +1952,7 @@ export default function App() {
         accountId = invisible.accountId;
       if (!deviceKey || !accountId)
         throw Error("Your explorer account is still being prepared.");
+      const { setupPasskeyRecovery } = await import("./account-recovery");
       await setupPasskeyRecovery({
         deviceKey,
         accountId,
@@ -1951,12 +1973,14 @@ export default function App() {
       if (!deviceKey || !accountId)
         throw Error("Your explorer account is still being prepared.");
       try {
+        const { revokeAccountKey } = await import("./account-recovery");
         await revokeAccountKey({ deviceKey, accountId, publicKey, api });
       } finally {
         await invisible.refresh().catch(() => undefined);
       }
       let signedOut = "";
       if (signOutOthers) {
+        const { signOutOtherSessions } = await import("./account-recovery");
         const r = await signOutOtherSessions({ deviceKey, accountId, api });
         signedOut = ` ${r.revokedSessions} other session(s) signed out.`;
       }
@@ -1967,6 +1991,7 @@ export default function App() {
   }
   async function restoreThisDevice() {
     const ok = await action("recovery-restore", async () => {
+      const { restoreWithPasskey } = await import("./account-recovery");
       const restored = await restoreWithPasskey<Player>({
         store: indexedDbKeyStore(),
         credentials: navigator.credentials,
@@ -2507,77 +2532,85 @@ export default function App() {
         "QuestLayer";
   return (
     <div className="app-shell">
-      <GameMap
-        playerTier={nativePlay ? nativeGame.state?.access?.tier : player?.tier}
-        now={now}
-        map3D={!!player && map3D}
-        sheetExpanded={sheetExpanded}
-        panelMode={tab}
-        onCoin={
-          nativePlay
-            ? (id) => {
-                const coin = nativeGame.state?.day?.coins.find(
-                  (c) => `native-coin:${c.index}` === id,
-                );
-                if (!coin) return;
-                nativeObjective.select("coin", coin.index);
-                setTab("expeditions");
-                setSheetExpanded(true);
-                setFollow(false);
-              }
-            : undefined
-        }
-        onQuest={(id) =>
-          nativePlay
-            ? chooseNativeQuest(Number(id.split(":")[1]))
-            : chooseZoneQuest(id)
-        }
-        overview={overview}
-        focusZone={selected}
-        nativeTarget={
-          nativeTarget ||
-          (findTarget
-            ? {
-                lat: findTarget.lat,
-                lng: findTarget.lng,
-                label: `Street find · +${world?.streetFindXp ?? 15} XP`,
-              }
-            : null)
-        }
-        nativeTargetKind={
-          nativePlay
-            ? nativeObjective.reference?.kind === "coin"
-              ? "coin"
-              : "route"
-            : "discovery"
-        }
-        world={displayWorld}
-        position={position}
-        arena={arena && !nativePlay}
-        globe={globe}
-        equipped={equipped}
-        others={others}
-        skinUrl={
-          player?.appearance?.originTokenId
-            ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
-            : undefined
-        }
-        onMove={move}
-        onZone={(z) =>
-          nativePlay
-            ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
-            : selectZone(z)
-        }
-        follow={follow}
-        onPan={() => setFollow(false)}
-        creatorPlaces={creatorPlaces}
-        onCreatorPlace={(questId) => {
-          setTab("community");
-          setCreatorView({ page: "quest", questId });
-          setSheetExpanded(true);
-          setFollow(false);
-        }}
-      />
+      {player ? (
+        <GameMap
+          playerTier={
+            nativePlay ? nativeGame.state?.access?.tier : player?.tier
+          }
+          now={now}
+          map3D={!!player && map3D}
+          sheetExpanded={sheetExpanded}
+          panelMode={tab}
+          onCoin={
+            nativePlay
+              ? (id) => {
+                  const coin = nativeGame.state?.day?.coins.find(
+                    (c) => `native-coin:${c.index}` === id,
+                  );
+                  if (!coin) return;
+                  nativeObjective.select("coin", coin.index);
+                  setTab("expeditions");
+                  setSheetExpanded(true);
+                  setFollow(false);
+                }
+              : undefined
+          }
+          onQuest={(id) =>
+            nativePlay
+              ? chooseNativeQuest(Number(id.split(":")[1]))
+              : chooseZoneQuest(id)
+          }
+          overview={overview}
+          focusZone={selected}
+          nativeTarget={
+            nativeTarget ||
+            (findTarget
+              ? {
+                  lat: findTarget.lat,
+                  lng: findTarget.lng,
+                  label: `Street find · +${world?.streetFindXp ?? 15} XP`,
+                }
+              : null)
+          }
+          nativeTargetKind={
+            nativePlay
+              ? nativeObjective.reference?.kind === "coin"
+                ? "coin"
+                : "route"
+              : "discovery"
+          }
+          world={displayWorld}
+          position={position}
+          arena={arena && !nativePlay}
+          globe={globe}
+          equipped={equipped}
+          others={others}
+          skinUrl={
+            player?.appearance?.originTokenId
+              ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
+              : undefined
+          }
+          onMove={move}
+          onZone={(z) =>
+            nativePlay
+              ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
+              : selectZone(z)
+          }
+          follow={follow}
+          onPan={() => setFollow(false)}
+          creatorPlaces={creatorPlaces}
+          onCreatorPlace={(questId) => {
+            setTab("community");
+            setCreatorView({ page: "quest", questId });
+            setSheetExpanded(true);
+            setFollow(false);
+          }}
+        />
+      ) : (
+        // MapLibre and the map style load only after the name step, so the
+        // welcome screen ships without them (see scripts/check-bundle-budget.mjs).
+        <div className="game-map map-placeholder" aria-hidden="true" />
+      )}
       <div className="map-vignette" />
       <aside className="nav-rail">
         <button
@@ -2853,8 +2886,8 @@ export default function App() {
                 <div className="explore-empty" role="status">
                   <strong>Nothing open right here yet</strong>
                   <p>
-                    Today's discoveries are still being placed. Pull the map
-                    to look around, or check back in a few minutes.
+                    Today's discoveries are still being placed. Pull the map to
+                    look around, or check back in a few minutes.
                   </p>
                 </div>
               )}
@@ -2862,35 +2895,38 @@ export default function App() {
                 <div className="explore-empty" role="status">
                   <strong>You've done everything open for you today</strong>
                   <p>
-                    New discoveries open with the next day. Coins on the
-                    streets still count while you walk.
+                    New discoveries open with the next day. Coins on the streets
+                    still count while you walk.
                   </p>
                 </div>
               )}
-              {!coachStep && recommendedFind && !nativeTarget && !adventureNotice && (
-                <button
-                  className="recommended-quest"
-                  onClick={() => goToStreetFind(recommendedFind.coin)}
-                >
-                  <span className="recommended-art">
-                    <GameObjectArt kind="discovery" size={32} />
-                  </span>
-                  <span>
-                    <small>Nearest find</small>
-                    <strong>
-                      Street find · +{world?.streetFindXp ?? 15} XP
-                    </strong>
-                    <span>
-                      On a mapped path ·{" "}
-                      {distanceLabel(recommendedFind.distance)}
-                      {arena && recommendedFind.distance > WALK_CAP_M
-                        ? ` · walk in ${Math.ceil(recommendedFind.distance / WALK_CAP_M)} steps`
-                        : ""}
+              {!coachStep &&
+                recommendedFind &&
+                !nativeTarget &&
+                !adventureNotice && (
+                  <button
+                    className="recommended-quest"
+                    onClick={() => goToStreetFind(recommendedFind.coin)}
+                  >
+                    <span className="recommended-art">
+                      <GameObjectArt kind="discovery" size={32} />
                     </span>
-                  </span>
-                  <ArrowRight size={20} />
-                </button>
-              )}
+                    <span>
+                      <small>Nearest find</small>
+                      <strong>
+                        Street find · +{world?.streetFindXp ?? 15} XP
+                      </strong>
+                      <span>
+                        On a mapped path ·{" "}
+                        {distanceLabel(recommendedFind.distance)}
+                        {arena && recommendedFind.distance > WALK_CAP_M
+                          ? ` · walk in ${Math.ceil(recommendedFind.distance / WALK_CAP_M)} steps`
+                          : ""}
+                      </span>
+                    </span>
+                    <ArrowRight size={20} />
+                  </button>
+                )}
               {!coachStep &&
                 recommended &&
                 recommendedZone &&
@@ -3413,10 +3449,7 @@ export default function App() {
                 />
               )}
               {tab === "explore" && nativePlay && (
-                <TodaysPot
-                  practice={false}
-                  onOpen={() => setTab("funding")}
-                />
+                <TodaysPot practice={false} onOpen={() => setTab("funding")} />
               )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}
@@ -3594,7 +3627,9 @@ export default function App() {
                 className="feedback-settings"
                 aria-labelledby="feedback-settings-title"
               >
-                <h2 id="feedback-settings-title">Sound, vibration and motion</h2>
+                <h2 id="feedback-settings-title">
+                  Sound, vibration and motion
+                </h2>
                 <div
                   className="play-mode-switch"
                   role="group"
@@ -3616,7 +3651,11 @@ export default function App() {
                     Off
                   </button>
                 </div>
-                <div className="play-mode-switch" role="group" aria-label="Sound">
+                <div
+                  className="play-mode-switch"
+                  role="group"
+                  aria-label="Sound"
+                >
                   <button
                     aria-pressed={feedback.sound}
                     onClick={() => {
@@ -3633,7 +3672,11 @@ export default function App() {
                     Off
                   </button>
                 </div>
-                <div className="play-mode-switch" role="group" aria-label="Motion">
+                <div
+                  className="play-mode-switch"
+                  role="group"
+                  aria-label="Motion"
+                >
                   <button
                     aria-pressed={feedback.motion === "system"}
                     onClick={() => setFeedbackPreferences({ motion: "system" })}
@@ -3688,10 +3731,7 @@ export default function App() {
           )}
           {tab === "fuel" && (
             <>
-              <button
-                className="back-link"
-                onClick={() => setTab("settings")}
-              >
+              <button className="back-link" onClick={() => setTab("settings")}>
                 <ArrowLeft size={20} />
                 Settings
               </button>
@@ -4080,10 +4120,7 @@ export default function App() {
               Your explorer and progress are saved. They'll be right here as
               soon as you're back online.
             </p>
-            <button
-              className="primary-button"
-              onClick={() => void me()}
-            >
+            <button className="primary-button" onClick={() => void me()}>
               Try again <ArrowClockwise size={18} />
             </button>
           </section>
@@ -4246,6 +4283,7 @@ function Welcome({
             minLength={2}
             maxLength={24}
             onChange={(e) => setName(e.target.value)}
+            onFocus={preloadGameMap}
             autoComplete="nickname"
           />
           <button className="primary-button" type="submit" disabled={!!busy}>

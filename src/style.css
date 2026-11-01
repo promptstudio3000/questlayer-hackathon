@@ -4091,3 +4091,4 @@ select {
 .native-offer.signed-order {
   grid-template-columns: minmax(0, 1fr);
 }
+.map-placeholder {background:linear-gradient(160deg,#f3ecfb 0%,#e6dcf5 100%);}
