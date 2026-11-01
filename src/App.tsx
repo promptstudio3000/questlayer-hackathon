@@ -3324,6 +3324,7 @@ export default function App() {
                 map3D={map3D}
                 onMap3D={toggleMap3D}
                 initialCollection={nativePlay ? "near" : "demo"}
+                xp={hudXp === null ? null : Number(hudXp)}
                 onExplore={() => setTab("explore")}
                 characterItems={appearanceItems}
                 adventureResults={

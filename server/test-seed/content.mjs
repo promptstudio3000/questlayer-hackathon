@@ -120,9 +120,25 @@ export const SEED_CREATOR_QUESTS = Object.freeze([
   },
 ]);
 
-// Granted once to every real explorer while the seed is active.
+// Granted once to every real explorer while the seed is active. Enough Auras
+// to fill a backpack row or two across every rarity and both slots (Ember Wisp
+// twice, so stacked duplicates show up), and XP that lands a new explorer in
+// the middle of level 3 (400-900 XP) so the level bar is visibly part filled.
+// `equip` pairs Northern Lights and Moon Ring (Night Sky set) only when the
+// explorer has nothing worn in that slot yet.
 export const STARTER_KIT = Object.freeze({
-  auras: ["Northern Lights", "Ember Wisp"],
-  xp: 300,
-  shards: { ember: 4, frost: 3, storm: 3 },
+  auras: Object.freeze([
+    "Northern Lights",
+    "Ember Wisp",
+    "Ember Wisp",
+    "Dewfall Ring",
+    "Meadow Bloom",
+    "Moon Ring",
+    "Stormcrown",
+    "Comet Trail",
+    "Golden Dust",
+  ]),
+  equip: Object.freeze(["Northern Lights", "Moon Ring"]),
+  xp: 650,
+  shards: Object.freeze({ ember: 4, frost: 3, storm: 3 }),
 });
