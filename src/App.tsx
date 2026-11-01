@@ -22,11 +22,13 @@ import {
   FuelTheCity,
   NativeStaking,
   AuraClaims,
+  WispRolls,
   NativeWardrobe,
   NativeProfilePanel,
   preloadPanels,
   ActorSheet,
 } from "./lazy-panels";
+import type { RollCall } from "./WispRolls";
 // Styles of the split-off screens stay in the main stylesheet, in their old
 // order, so nothing shifts while a screen's script is still loading.
 import "./adventure-results.css";
@@ -2147,6 +2149,32 @@ export default function App() {
     });
     return ok === true;
   }
+  // Wisp rolls take no deposit, so the explorer account relays them silently.
+  async function sendWispRoll(call: RollCall) {
+    const managed = invisible.signer;
+    if (!managed) throw Error("Your explorer account is not ready yet.");
+    if (!onNearNetwork(call.receiverId) || call.deposit !== "0")
+      throw Error("This roll is not on the game network.");
+    await managed.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: managed.accountId,
+        receiverId: call.receiverId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: call.methodName,
+              args: call.args,
+              gas: call.gas,
+              deposit: "0",
+            },
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
+  }
   async function mintEarnedAura(item: Item): Promise<boolean> {
     const done = await action("native-claim", async () => {
       try {
@@ -3353,6 +3381,15 @@ export default function App() {
                 }
                 nativeContent={
                   <>
+                    <WispRolls
+                      accountId={
+                        invisible.status === "ready" && invisible.signer
+                          ? invisible.signer.accountId
+                          : null
+                      }
+                      send={sendWispRoll}
+                      onWon={() => void me()}
+                    />
                     <NativeWardrobe
                       player={player}
                       data={nativeWardrobe}
