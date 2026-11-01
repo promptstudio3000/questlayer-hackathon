@@ -159,7 +159,7 @@ export function validateActorFile(file, cityId) {
   });
 }
 
-// Templates with count > 1 spawn numbered instances: glitch-moth-1, -2, …
+// Templates with count > 1 spawn numbered instances: lickquidator-1, -2, …
 export function instanceId(def, n) {
   return (def.count || 1) > 1 ? `${def.id}-${n}` : def.id;
 }

@@ -21,7 +21,7 @@ type HandoffProps = {
 function optional(files: Record<string, () => Promise<unknown>>, name: string) {
   const load = Object.values(files)[0];
   return load
-    ? lazy(async () => ({ default: (await load() as Record<string, ComponentType<HandoffProps>>)[name] }))
+    ? lazy(async () => ({ default: ((m) => m[name] || m.default)(await load() as Record<string, ComponentType<HandoffProps>>) }))
     : null;
 }
 const NpcSheet = optional(import.meta.glob("./NpcSheet.tsx"), "NpcSheet");
