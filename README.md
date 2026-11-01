@@ -41,11 +41,11 @@ is [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md).
 
 | Piece | Where | How the player meets it |
 | --- | --- | --- |
-| Rewards (coins, XP, level entitlements) | `questlayer-rewards-20261031.testnet` ([contracts/rewards](contracts/rewards)) | The server attests a visit; a background worker relays the claim. The player sees "Reward collected". |
-| Auras and avatars (NEP-171, two equipment slots) | collectibles contract ([contracts/collectibles](contracts/collectibles)); redeploy under a `questlayer-*` account is in progress, see `public/testnet-deployment.json` | "Secure this Aura" mints it to the player's own account; equipping is on-chain. |
+| Rewards (coins, XP, level entitlements) | `questlayer-rewards-20261101.testnet` ([contracts/rewards](contracts/rewards)) | The server attests a visit; a background worker relays the claim. The player sees "Reward collected". |
+| Auras and avatars (NEP-171, two equipment slots) | `nfts.questlayer-dev-20261031.testnet` ([contracts/collectibles](contracts/collectibles)), see `public/testnet-deployment.json` | "Secure this Aura" mints it to the player's own account; equipping is on-chain. |
 | Invisible player account | sub-account under a factory account, device-held key, NEP-366 meta-transactions relayed by the server ([server/relayer](server/relayer), [docs/RELAYER.md](docs/RELAYER.md)) | Nothing. The account is created in the background after the name-only start. |
-| Market (fixed-price NFT escrow) | `questlayer-market-20261031.testnet` ([contracts/market](contracts/market)) | Profile → Market: list, buy, cancel. |
-| Staking vault pilot, sponsored tasks, NEAR Social profile | `questlayer-vault(s)-20261031.testnet`, `questlayer-tasks-20261031.testnet`, `v1.social08.testnet` | Profile → Advanced. Pilots; see [docs/STATUS.md](docs/STATUS.md). |
+| Market (fixed-price NFT escrow) | `questlayer-market-20261101.testnet` ([contracts/market](contracts/market)) | Profile → Market: list, buy, cancel. |
+| Staking vault pilot, creator money, sponsored tasks, NEAR Social | `questlayer-vault(s)-20261101.testnet`, `questlayer-creators-20261101.testnet`, `questlayer-tasks-20261031.testnet`, `v1.social08.testnet` | Profile → Advanced. Pilots; see [docs/STATUS.md](docs/STATUS.md). |
 
 Transaction proofs with hashes are in `public/*-testnet.json` and `public/*proof*.json` (no keys):
 
