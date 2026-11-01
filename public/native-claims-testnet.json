@@ -1,18 +1,18 @@
 {
-  "verifiedAt": "2026-10-31T23:32:53.964Z",
+  "verifiedAt": "2026-11-01T09:34:31.674Z",
   "network": "testnet",
-  "contractId": "nfts.questlayer-dev-20261031.testnet",
+  "contractId": "nfts.questlayer-dev-20261101.testnet",
   "version": 3,
-  "application": "http://127.0.0.1:8787",
-  "attestationPublicKey": "T68vHE8Rak1yQ/6rwEt7rfGOiB2o+EC79y56+RaLaNU=",
+  "application": "https://questlayer.promptstudio3000.com",
+  "attestationPublicKey": "q0C8Robd95EVO8v7BaR1E+ML/GdE8f5NH2lVYqiekYk=",
   "existingTokensPreserved": true,
   "existingEquipmentPreserved": true,
   "supplyBefore": "1",
-  "wasmSha256": "cfce0fb5c8e43bfd6807a439f5698ca0391d36b7d43bc0363c6614bdd04a472d",
+  "wasmSha256": "6dc835d06740d78a4a999c1fadbc0aa9403686c6bf61ba829e59e26582f1cb95",
   "transactions": [
     {
       "step": "Configure application attestation public key, not a wallet access key",
-      "transaction": "2axpqY1FwPnoRH1FWeGRCxCLiJ6TpHZ7jqtZoyixWDHt"
+      "transaction": "6rnhdjRKA8oD1Htc7VpLmptwYy6qPvpNwefHRKDwDojY"
     }
   ]
 }

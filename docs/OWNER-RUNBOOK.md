@@ -1,65 +1,62 @@
 # Owner runbook: keys, VPS migration, deployment
 
-Commands the owner runs from the Mac (the cloud session cannot reach port 22). Replace nothing unless noted.
-Never paste private keys into chat or commits.
+Commands the owner runs from the Mac (the cloud session cannot reach port 22). The Mac checkout is
+`~/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON`. Never paste private keys into chat or commits.
 
-## 1. Save the service keys created in the cloud session
+## Current state (2026-11-01)
 
-The cloud session created these testnet keys under `.data/` of its working directory (gitignored). Open each file in
-the session's file browser and save it to `~/NEAR-HACKATHON/.data/` on the Mac with the same name, then:
+The VPS migration (§2) and deployment (§4) are done. The keys of the earlier `questlayer-dev-20261031.testnet`
+operator were lost with a reclaimed cloud container, so the testnet contracts were redeployed from the Mac under a
+new operator. Generate service keys only on a machine that keeps them; a cloud container is not one.
 
-```bash
-chmod 700 ~/NEAR-HACKATHON/.data && chmod 600 ~/NEAR-HACKATHON/.data/*
-```
-
-| File | Purpose |
+| File in `.data/` (Mac, mode 600) | Account / purpose |
 | --- | --- |
-| `near-operator.json` | `questlayer-dev-20261031.testnet`: owner of game/nfts/market/factory/relayer contracts and accounts |
-| `player-factory.json` | `play-20261031.questlayer-dev-20261031.testnet`: creates and funds player sub-accounts |
-| `relayer.json` | `relay-20261031.questlayer-dev-20261031.testnet`: pays gas for relayed actions |
-| `award-attestor.pem` | application award signer registered on `nfts.questlayer-dev-20261031.testnet` (claims manifest v3) |
+| `near-operator.json` | `questlayer-dev-20261101.testnet`: owner of game, nfts, market, rewards, vaults, creators |
+| `player-factory.json` | `play-20261101.questlayer-dev-20261101.testnet`: creates and funds player sub-accounts |
+| `relayer.json` | `relay-20261101.questlayer-dev-20261101.testnet`: pays gas for relayed actions |
+| `creators-publisher.json` | publisher key of `questlayer-creators-20261101b.testnet` |
+| `reward-worker.json` | worker key of `questlayer-rewards-20261101b.testnet` (vaults `questlayer-vaults-20261101b`, treasury vault `questlayer-vault-20261101b`) |
+| `reward-attestor.pem` | reward attestor, unchanged; the VPS holds the same key |
 
-Testnet only; no monetary value. Back them up privately (a password manager entry is enough).
+The award signer on `nfts.questlayer-dev-20261101.testnet` is the VPS application's existing
+`award-attestor.pem` (public key in `public/native-claims-testnet.json`); it was not replaced. The previous keys are
+archived in `.data/archive-20261101-before-rotation/`. Testnet only; back them up privately.
 
-## 2. One-time VPS migration from the former installation
+## 1. Keys
+
+`scripts/install-relayer-keys-vps.sh` installs the factory, relayer and creators publisher keys and refuses to
+replace an existing different key. `scripts/install-native-worker-vps.sh` is pinned to the 2026-10-31 rewards
+contract; the 20261101b worker key was installed by hand with the old one kept as `reward-worker.json.old-20261031`.
+
+## 2. One-time VPS migration from the former installation (done)
 
 ```bash
-cd ~/NEAR-HACKATHON
-git fetch origin && git checkout claude/upbeat-gauss-5czir7 && git pull
 DEPLOY_HOST=root@72.61.188.39 scripts/migrate-vps-legacy.sh
 ```
 
-Expected: "Local health OK", the public health JSON, "Migration <stamp> complete". Rollback if needed:
+Expected: "Local health OK", the public health JSON, "Migration <stamp> complete". Rollback:
+`scripts/migrate-vps-legacy.sh --rollback <stamp>`. The script now handles the `DynamicUser=yes` state symlink
+(`/var/lib/<name> -> private/<name>`); the first run on 2026-11-01 failed on it and was repaired by hand.
 
-```bash
-DEPLOY_HOST=root@72.61.188.39 scripts/migrate-vps-legacy.sh --rollback <stamp>
-```
+## 3. Moving the reward worker to a new rewards contract
 
-## 3. Install the new service keys on the VPS
-
-```bash
-cd ~/NEAR-HACKATHON
-DEPLOY_HOST=root@72.61.188.39 scripts/install-relayer-keys-vps.sh
-```
-
-Then replace the award signer with the one registered on the new collectibles contract:
-
-```bash
-scp -o IdentitiesOnly=yes ~/NEAR-HACKATHON/.data/award-attestor.pem root@72.61.188.39:/var/lib/questlayer-hackathon/award-attestor.pem.new
-ssh -o IdentitiesOnly=yes root@72.61.188.39 'cd /var/lib/questlayer-hackathon && cp -a award-attestor.pem award-attestor.pem.old-nfts && mv award-attestor.pem.new award-attestor.pem && chmod 600 award-attestor.pem && chown --reference=questlayer-hackathon.sqlite award-attestor.pem'
-```
+`native_days` is not keyed by contract. Days published on a previous contract make the worker stop with
+"Published native day no longer matches its durable manifest." Move such rows aside only when they have no rows in
+`native_reward_claims`, keep a copy outside the database (the schema check rejects unknown tables) and let the
+worker republish them. On 2026-11-01 the rows for 2026-11-01 and 2026-11-02 were moved this way; the copy is in
+`/opt/ps3000/apps/questlayer-hackathon/backups/before-native-day-retire-*/`.
 
 ## 4. Deploy the current branch
 
 ```bash
-cd ~/NEAR-HACKATHON && npm ci
-DEPLOY_HOST=root@72.61.188.39 scripts/deploy-vps.sh
-curl -s https://questlayer.promptstudio3000.com/api/health | jq '{status, relayer, nativeRewards, schema}'
+npm ci
+DEPLOY_HOST=root@72.61.188.39 bash scripts/deploy-vps.sh
+curl -s https://questlayer.promptstudio3000.com/api/health | jq '{network, relayer, distribution, creatorMoney, socialRecords, nativeRewards}'
 ```
 
-Expected: `relayer.enabled: true`. Native rewards stay "not-configured" until the reward attestor/worker keys for
-`questlayer-rewards-20261031.testnet` are present in `/var/lib/questlayer-hackathon` (they were installed earlier
-from the previous operator; `scripts/install-native-worker-vps.sh` reinstalls them from `.data/`).
+Expected: `network: testnet`, `relayer.enabled: true`, `distribution.status: verified`, `creatorMoney.enabled: true`,
+`socialRecords.contractId` set and `nativeRewards.last_error: null`. The release archive includes `public/*.json`
+because the server reads the network manifests from there.
 
 ## 5. Optional: reuse MapOS credentials
 

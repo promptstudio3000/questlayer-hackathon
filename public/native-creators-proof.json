@@ -1,11 +1,11 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-10-31T23:59:55.872Z",
-  "contractId": "questlayer-creators-20261101.testnet",
-  "codeHash": "3LbwTwZ51xb8YdPjEh5zrvZ714gci5V9V9AvuLY6DskA",
-  "wasmSha256": "22bcea38a75fdf038e734789d6ad3b648869e8a829770cccedd05c85c57c4c1f",
-  "rewardsReceiver": "questlayer-rewards-20261101.testnet",
-  "publisherPublicKey": "ed25519:k8ZuaJdnKKhkxC1Jr9f9JTXxwm2HCsSbnqGvJUTcBdH",
+  "verifiedAt": "2026-11-01T09:32:23.307Z",
+  "contractId": "questlayer-creators-20261101b.testnet",
+  "codeHash": "HTaB1zHpHrfiAQpfAHY2JLGew3JYyusr7F3dUCtiPcyr",
+  "wasmSha256": "f48999b1068f823644cf631e8fd3eab58afe7d0450257ed95a24ff8aa5532eed",
+  "rewardsReceiver": "questlayer-rewards-20261101b.testnet",
+  "publisherPublicKey": "ed25519:5rotASVzJ3R7MMnJ92SAJu1ZBYhf9dktMMNZbGrgTHd1",
   "policy": {
     "version": "creator-money-v1",
     "like_weight": 1,
@@ -22,21 +22,21 @@
     "treasury-flush"
   ],
   "smoke": {
-    "paidQuest": "smoke-paid-mvx2bocr",
-    "freeQuest": "smoke-free-mvx2bocr",
+    "paidQuest": "smoke-paid-mvxms3ay",
+    "freeQuest": "smoke-free-mvxms3ay",
     "round": {
-      "day": "smoke-mvx2bocr",
+      "day": "smoke-mvxms3ay",
       "budget": "100000000000000000000000",
       "policy_version": "creator-money-v1",
       "finalized": true,
       "paid": "100000000000000000000000",
       "scores": [
         [
-          "explorer.questlayer-dev-20261031.testnet",
+          "explorer.questlayer-dev-20261101.testnet",
           3
         ],
         [
-          "questlayer-dev-20261031.testnet",
+          "questlayer-dev-20261101.testnet",
           1
         ]
       ]
@@ -45,7 +45,7 @@
       "paid": "100000000000000000000000",
       "creator_share": "80000000000000000000000",
       "treasury_share": "20000000000000000000000",
-      "at": "1793491159622"
+      "at": "1793525514457"
     },
     "buyer": {
       "credit": "0",
@@ -69,60 +69,60 @@
   },
   "transactions": [
     {
-      "label": "Deploy and initialize questlayer-creators-20261101.testnet",
-      "transaction": "HpU3uPq93YTHin1hLHcrYKUCrTLBR74x45cL2kgZEcFq"
+      "label": "Deploy and initialize questlayer-creators-20261101b.testnet",
+      "transaction": "HPqqCpTz5Cd17HRrk2aUfav8AboqHT3YHz4n1ho5inWh"
     },
     {
       "label": "Install bounded publisher key",
-      "transaction": "F8ervpHJxaHyo5XuXEosMYmemNQGfzdks69NBZQqfsoa"
+      "transaction": "GqG3xRTL3LdpsNSZk7UrB2gbW9vBabT88jg7T119Fpbv"
     },
     {
       "label": "Fund the creator fund with 1 test NEAR",
-      "transaction": "J8EUezc5c6QVvuv4kFXSavCzLVwCrwnfZ5bcBUHgpAau"
+      "transaction": "3Xten7VxsksQSSxqpduqfNxxkjULWZUFCWbbjQayUrL4"
     },
     {
       "label": "Register a paid creator quest",
-      "transaction": "2r2vHg4iA1NjqaQQ9q31mHRpcq9MC9MbtGcrcJRwwWff"
+      "transaction": "GasDDSLQKW2h8HxPyqYKT2PgSE3AxrLrDHqMn6aDAgPt"
     },
     {
       "label": "Register a free creator quest",
-      "transaction": "HBmX9mwcX6iRxrELwASZiAd2cyF777UBK8RVyMudFqb2"
+      "transaction": "9mLC6k2MpRiL25FvPuoJEhyHY5rg2FRWsovGesGFNitC"
     },
     {
       "label": "Buy access for exactly 0.1 test NEAR (80/20)",
-      "transaction": "4ZKu7KdYCF5jBYjwjEfSnznYHFrpDbVgk8P23bex28Eu"
+      "transaction": "ALmeo1kDGoyh8oyWhLGGSSjLjzSH35RS1nBn16r5whJS"
     },
     {
       "label": "Repeat purchase is a free no-op",
-      "transaction": "FxwQ8KY6pmbp2EN2MG9J5SrKioNC9FyGNAipxTwMvef6"
+      "transaction": "DZ4n8Bhwb9DaPQnt1DARwx58q3AG9HH3C2mMANATSjRq"
     },
     {
       "label": "Donate 0.02 test NEAR to the free quest's author",
-      "transaction": "7mtVNBZQtETP6UUhppcXqtybF5zRbrWrHP7bfeE9NSm3"
+      "transaction": "Dw3fP9nPzS9NsoqTmAL5BvoRb57X7PAQhqkDqo2KfPyU"
     },
     {
       "label": "Open a support round with 0.1 test NEAR",
-      "transaction": "5qRjxRzDRASjCFB9KqALStvtwRVee6QGvaMcDJA8igD8"
+      "transaction": "EUKps2Y2x3oFxKJ4fGngRNikgeqWRCGCm4g7B9CfuvV6"
     },
     {
       "label": "Record one verified completion",
-      "transaction": "G8zmrk3PKVQcAoBCr5qxvxhXKiJBDRydGpUyKMUtbPYy"
+      "transaction": "DzrGmQ36dB8y8y5boRF5FQUjPndPzwNWQTEcUfT6gJk3"
     },
     {
       "label": "Record one like",
-      "transaction": "CDRZeY7Za5wPba8CnnKQfzZeTiCEbWgnsf9kTKfNJF7i"
+      "transaction": "5a116Gge4WvQbpmqswPRhvkdTpnaSfazqeZAquN5E2y"
     },
     {
       "label": "Finalize the round",
-      "transaction": "FSnrGzGobKFfWBJZxMSwRkNguyaJxUAKmQ29ipawnuzA"
+      "transaction": "EjsyHTqgY2KB8aAHQ8QczRHh4DFKUnwHRE2ZXaXZ71NV"
     },
     {
       "label": "Creator withdraws earnings",
-      "transaction": "DCW98rC62kKGNk9j8bkSsBJt7Ldd6zKF2yf2DDe7qy2Q"
+      "transaction": "GyGfWxh3ybJQeBRvCBDv7drx6Ai2YXzRVJin6PEnLjS4"
     },
     {
       "label": "Flush the treasury share to the rewards contract",
-      "transaction": "34JvFKvaTPmsVtiLByew2Tq89naekLfNRBHcFBUFiNCr"
+      "transaction": "E6UB18zxnZ65cyqFZ9myomEAoWU7fmuos8vARdXYxhuD"
     }
   ]
 }

@@ -1,11 +1,11 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-10-31T23:59:55.872Z",
-  "contractId": "questlayer-creators-20261101.testnet",
-  "codeHash": "3LbwTwZ51xb8YdPjEh5zrvZ714gci5V9V9AvuLY6DskA",
-  "wasmSha256": "22bcea38a75fdf038e734789d6ad3b648869e8a829770cccedd05c85c57c4c1f",
-  "rewardsReceiver": "questlayer-rewards-20261101.testnet",
-  "publisherPublicKey": "ed25519:k8ZuaJdnKKhkxC1Jr9f9JTXxwm2HCsSbnqGvJUTcBdH",
+  "verifiedAt": "2026-11-01T09:32:23.307Z",
+  "contractId": "questlayer-creators-20261101b.testnet",
+  "codeHash": "HTaB1zHpHrfiAQpfAHY2JLGew3JYyusr7F3dUCtiPcyr",
+  "wasmSha256": "f48999b1068f823644cf631e8fd3eab58afe7d0450257ed95a24ff8aa5532eed",
+  "rewardsReceiver": "questlayer-rewards-20261101b.testnet",
+  "publisherPublicKey": "ed25519:5rotASVzJ3R7MMnJ92SAJu1ZBYhf9dktMMNZbGrgTHd1",
   "policy": {
     "version": "creator-money-v1",
     "like_weight": 1,
