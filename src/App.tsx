@@ -104,7 +104,7 @@ import {
 } from "./native-vault-quote";
 import "./styles.css";
 import "./theme-accents.css";
-import { HudXpRing, levelSummary } from "./HudXpRing";
+import { HudXpRing } from "./HudXpRing";
 import type { NativeTradeRequest } from "./types";
 import type { NativeAuraClaim } from "./types";
 import { nativeAppearanceItems } from "./native-appearance";
@@ -2761,11 +2761,7 @@ export default function App() {
               <button
                 ref={profileButton}
                 className="profile-pill"
-                aria-label={
-                  hudProgress
-                    ? `Explorer profile · ${levelSummary(hudProgress)}`
-                    : "Explorer profile"
-                }
+                aria-label={hudProgress ? undefined : "Explorer profile"}
                 aria-expanded={menu}
                 aria-controls="explorer-profile"
                 onClick={() => setMenu((v) => !v)}
@@ -2783,6 +2779,7 @@ export default function App() {
                       originTokenId={player.appearance.originTokenId}
                       compact
                     />
+                    <span className="sr-only">, explorer profile</span>
                   </HudXpRing>
                 ) : (
                   <>
@@ -4075,7 +4072,7 @@ export default function App() {
             </span>
             <button
               aria-label={
-                arena || nativePlay ? "Use my location" : "Back to city demo"
+                arena || nativePlay ? "Use GPS, my location" : "Demo, back to city demo"
               }
               onClick={() => (arena || nativePlay ? locate() : returnToArena())}
             >

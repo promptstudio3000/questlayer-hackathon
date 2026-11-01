@@ -58,5 +58,6 @@ export function HudXpRing({ level, xp, levelStartXp, nextLevelXp, ring = null, c
 
 /** Spoken summary for the control that hosts the ring. */
 export function levelSummary({ level, xp, nextLevelXp }: Pick<HudXpRingProps, "level" | "xp" | "nextLevelXp">) {
-  return `Level ${level}, ${xp} of ${nextLevelXp} XP for level ${level + 1}`;
+  // Starts with the visible readout so the accessible name contains the visible text (WCAG 2.5.3).
+  return `Lv ${level} ${xp.toLocaleString("en-US")}/${nextLevelXp.toLocaleString("en-US")} XP, level ${level + 1} next`;
 }

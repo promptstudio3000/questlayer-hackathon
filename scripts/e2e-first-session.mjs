@@ -485,9 +485,10 @@ async function runDevice(name, server) {
 
     console.log("8. Equip from the collection");
     await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
-    const aura = page.locator(".inventory-item-choice").first();
+    // The backpack grid: the first-session Aura is the worn cell.
+    const aura = page.locator(".inv-grid .inv-cell.worn").first();
     await aura.waitFor();
-    const auraName = (await aura.locator("strong").innerText()).trim();
+    const auraName = ((await aura.getAttribute("aria-label")) || "").split(",")[0].trim();
     assert.match(
       (await aura.getAttribute("aria-label")) || "",
       /equipped/,
@@ -495,20 +496,20 @@ async function runDevice(name, server) {
     );
     await scan(page, "inventory");
     await aura.click();
-    const itemActions = page.locator(".inventory-item-actions");
+    const itemActions = page.locator(".inv-detail-actions");
     await itemActions.getByRole("button", { name: "Take it off" }).click();
     await itemActions.getByRole("button", { name: "Try it on" }).waitFor();
     await itemActions.getByRole("button", { name: "Try it on" }).click();
     await itemActions.getByRole("button", { name: "Take it off" }).waitFor();
-    assert.match(await page.locator(".inventory-item-detail .inventory-source").innerText(), /Equipped/);
+    assert.match(await page.locator(".inv-detail .inventory-source").innerText(), /Equipped/);
     await quietToast(page);
     await capture(page, "inventory-equipped");
 
     console.log("9. Practice market order");
-    await itemActions.getByRole("button", { name: "List on market" }).click();
+    await itemActions.getByRole("button", { name: "Sell" }).click();
     await page.locator("#inventory-list-price").fill("25");
     await scan(page, "market-listing-form");
-    await page.getByRole("button", { name: "List for practice GOLD" }).click();
+    await page.locator(".inv-detail-actions").getByRole("button", { name: "List", exact: true }).click();
     await page.getByText("Your Aura is on the market.").waitFor({ timeout: 10_000 });
     await quietToast(page);
     // A second explorer, on the same device, fills the order.
@@ -534,14 +535,14 @@ async function runDevice(name, server) {
     // The seller sees the sale: the Aura has left the collection.
     await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
     await page.waitForFunction(
-      (n) => ![...document.querySelectorAll(".inventory-item-choice strong")].some((e) => e.textContent.trim() === n),
+      (n) => ![...document.querySelectorAll(".inv-grid .inv-cell:not(.locked):not(.empty)")].some((e) => (e.getAttribute("aria-label") || "").split(",")[0].trim() === n),
       auraName,
       { timeout: 15_000 },
     ).catch(async () => {
       await page.reload();
       await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
       await page.waitForFunction(
-        (n) => ![...document.querySelectorAll(".inventory-item-choice strong")].some((e) => e.textContent.trim() === n),
+        (n) => ![...document.querySelectorAll(".inv-grid .inv-cell:not(.locked):not(.empty)")].some((e) => (e.getAttribute("aria-label") || "").split(",")[0].trim() === n),
         auraName,
         { timeout: 15_000 },
       );
