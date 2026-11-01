@@ -25,6 +25,7 @@
     "staking:probe": "node scripts/probe-staking-testnet.mjs",
     "funding:simulate": "node scripts/simulate-native-funding.mjs",
     "e2e:first-session": "node scripts/e2e-first-session.mjs",
+    "e2e:bonus-vote": "node scripts/e2e-bonus-vote.mjs",
     "pilot:city": "node scripts/rehearse-city-pilot.mjs",
     "market:upgrade": "node scripts/upgrade-market-v2-testnet.mjs",
     "market:fixture": "node scripts/lib/signed-order-fixture.mjs"

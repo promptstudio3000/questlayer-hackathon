@@ -1,0 +1,102 @@
+.bonus-vote {
+  margin: 24px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--decorative-border, #d7cbe9);
+  color: var(--ink, #1a0335);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.bonus-vote h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 22px;
+  line-height: 1.3;
+}
+.bonus-vote p {
+  margin: 8px 0;
+}
+.bonus-vote-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  color: var(--ink-secondary, #665577);
+}
+.bonus-vote-note {
+  padding: 12px;
+  border-radius: var(--radius-item, 12px);
+  background: var(--surface-soft, #f2ebff);
+}
+.bonus-vote-winners {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--success, #176553);
+}
+.bonus-vote-winners svg {
+  flex: none;
+  margin-top: 3px;
+}
+.bonus-vote-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.bonus-vote-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 1px solid var(--decorative-border, #d7cbe9);
+  border-radius: var(--radius-item, 12px);
+  background: var(--surface-raised, #fff);
+}
+.bonus-vote-list li.is-mine {
+  border-color: var(--action, #672eeb);
+}
+.bonus-vote-title {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.bonus-vote-title small {
+  color: var(--ink-secondary, #665577);
+  font-size: 14px;
+}
+.bonus-vote-button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 88px;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid var(--action, #672eeb);
+  border-radius: var(--radius-control, 8px);
+  background: var(--surface-raised, #fff);
+  color: var(--action, #672eeb);
+  font: inherit;
+  cursor: pointer;
+  transition: transform var(--motion-press, 100ms) var(--ease-out, ease-out);
+}
+.bonus-vote-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.bonus-vote-button.voted {
+  background: var(--action, #672eeb);
+  color: var(--on-action, #fff);
+}
+.bonus-vote-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.bonus-vote-button:focus-visible {
+  outline: 2px solid var(--focus, #672eeb);
+  outline-offset: 2px;
+}
