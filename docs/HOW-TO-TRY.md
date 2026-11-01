@@ -29,7 +29,13 @@ What to check:
 2. Tap a coin near you (in the city demo, tap the map to walk). The coin disappears and the counter ticks.
 3. Open the objective card ("Your next quest"), press **Walk there**, then **Open chest** when in range.
 4. The result sheet shows the exact XP and item. Press **Try it on**; the same Aura is now on your map character.
+   **Share your Aura** opens the phone's share sheet with a PNG card (ghost, both Aura slots, name, edition line);
+   on desktop the card downloads. With a relayer configured (section 5) the sheet also shows **Secure this Aura**
+   (no popup); after the first secured Aura it offers a passkey once.
 5. Reload the page: name, XP, item and equipment are still there.
+5a. Profile → **Fuel the city** shows the city fuel meter, your share and your tier, then one choice (Light /
+   Balanced / All in) and **Set up my stake** or **Add fuel**. Deposits are paid from your balance; with an
+   invisible account there is no popup, otherwise your NEAR wallet asks. Without a vault server it says fueling isn't open.
 6. Profile → **Secure with a passkey**: the same explorer now opens from any device that syncs the passkey
    (Welcome → "I already have an explorer").
 7. On Explore, open the sheet (**Show discoveries** on a phone) and find **Today's pot** under the objective.
@@ -103,6 +109,8 @@ forwarding or a tunnel), because geolocation and passkeys require a secure origi
 1. Allow location when asked, choose **Use my location**.
 2. Walk; coins within reach are collected automatically while the app is in the foreground.
 3. Report: device, OS, browser, whether GPS accuracy showed, and anything that felt confusing.
+4. Turn on flight mode and reload: a returning explorer sees "You're offline" with **Try again** instead of the
+   first-run page.
 
 ## 7. What is not yet verified
 

@@ -1,0 +1,26 @@
+/* Shown when a returning explorer starts the app without a server answer. */
+.offline-gate {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  color: var(--ink);
+}
+.offline-gate > svg {
+  color: var(--ink-secondary);
+}
+.offline-gate h2 {
+  margin: 0;
+  font-size: 24px;
+}
+.offline-gate p {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--ink-secondary);
+  line-height: 1.5;
+}
+.offline-gate .primary-button {
+  min-height: 48px;
+  font-size: 16px;
+}

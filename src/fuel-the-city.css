@@ -1,0 +1,270 @@
+/* Fuel the city: a city meter and one decision, light surfaces. */
+.fuel {
+  display: grid;
+  gap: 14px;
+}
+.fuel h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.fuel-intro {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+.fuel-meter-card,
+.fuel-action {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--decorative-border);
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+}
+.fuel-meter-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.fuel-meter-head > svg {
+  flex: none;
+  color: var(--discovery);
+}
+.fuel-meter-head p {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.fuel-meter {
+  position: relative;
+  display: block;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+.fuel-meter > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--action), var(--discovery));
+  transition: width var(--motion-sheet) var(--ease-out);
+}
+.fuel-meter > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--coin);
+  box-shadow: inset -2px 0 0 var(--ink);
+}
+.fuel-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.fuel-numbers div {
+  display: grid;
+  gap: 2px;
+}
+.fuel-numbers dt {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ink-secondary);
+}
+.fuel-numbers dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.fuel-tier {
+  display: grid;
+  gap: 6px;
+}
+.fuel-tier-bar {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+.fuel-tier-bar > span {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  background: var(--action);
+}
+.fuel-tier p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+.fuel-tier svg {
+  vertical-align: -3px;
+  color: var(--action);
+}
+.fuel-positions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.fuel-positions li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+  font-size: 14px;
+}
+.fuel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface-raised);
+  color: var(--ink-secondary);
+}
+.fuel-chip.fuel-active,
+.fuel-chip.fuel-ready {
+  color: var(--success);
+  background: var(--success-surface);
+}
+.fuel-chip.fuel-failed {
+  color: var(--error);
+  background: var(--error-surface);
+}
+.fuel-choice {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.fuel-choice button {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  min-height: 84px;
+  padding: 10px;
+  text-align: left;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+.fuel-choice button[aria-checked="true"] {
+  border: 2px solid var(--action);
+  padding: 9px;
+  background: var(--surface-soft);
+}
+.fuel-choice b {
+  font-size: 15px;
+}
+.fuel-choice span {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--action);
+}
+.fuel-choice small {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ink-secondary);
+}
+.fuel-fixed,
+.fuel-preview,
+.fuel-paid,
+.fuel-error {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.fuel-paid {
+  color: var(--ink-secondary);
+}
+.fuel-error {
+  color: var(--error);
+}
+.fuel-amount {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.fuel-amount input {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-size: 18px;
+  color: var(--ink);
+  background: var(--surface-raised);
+}
+.fuel-consent {
+  color: var(--ink);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.fuel-consent input {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  margin-top: 1px;
+}
+.fuel .primary-button {
+  min-height: 48px;
+  font-size: 16px;
+}
+.fuel-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  line-height: 1.4;
+  background: var(--surface-soft);
+}
+.fuel-state.fuel-ready {
+  color: var(--success);
+  background: var(--success-surface);
+}
+.fuel-state.fuel-failed {
+  flex-wrap: wrap;
+  color: var(--error);
+  background: var(--error-surface);
+}
+.fuel-state svg {
+  flex: none;
+  margin-top: 1px;
+}
+.fuel-advanced summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 380px) {
+  .fuel-numbers {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fuel-choice {
+    grid-template-columns: 1fr;
+  }
+  .fuel-choice button {
+    min-height: 0;
+    grid-template-columns: auto auto 1fr;
+    align-items: baseline;
+    column-gap: 8px;
+  }
+}

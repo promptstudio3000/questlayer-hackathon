@@ -51,6 +51,9 @@ import { NativeMarketPanel } from "./NativeMarketPanel";
 import { NativeExpeditions } from "./NativeExpeditions";
 import { NativeEconomyPanel } from "./NativeEconomyPanel";
 import { RewardFundingPage, TodaysPot } from "./RewardFunding";
+import { SecureAndShare } from "./SecureAndShare";
+import "./offline-gate.css";
+import { FuelTheCity } from "./FuelTheCity";
 import { NativeStaking } from "./NativeStaking";
 import {
   assertVaultQuote,
@@ -116,6 +119,9 @@ import {
   UserCircle,
   Path,
   ArrowUUpLeft,
+  ArrowClockwise,
+  WifiSlash,
+  Flame,
 } from "@phosphor-icons/react";
 import {
   startRegistration,
@@ -150,7 +156,8 @@ type Tab =
   | "bounties"
   | "community"
   | "settings"
-  | "expeditions";
+  | "expeditions"
+  | "fuel";
 const HOME = { lat: 49.74745, lng: 13.3774 };
 const nav = [
   { id: "explore", label: "Explore", icon: Compass },
@@ -164,7 +171,7 @@ function navigationActive(tab: Tab, id: string) {
     (id === "community" && ["messages", "bounties"].includes(tab)) ||
     (id === "explore" && ["expeditions", "funding"].includes(tab)) ||
     (id === "inventory" && tab === "market") ||
-    (id === "settings" && ["wallet", "fund"].includes(tab))
+    (id === "settings" && ["wallet", "fund", "fuel"].includes(tab))
   );
 }
 const rarityNames: Record<string, string> = {
@@ -223,6 +230,7 @@ export default function App() {
   const worldOwner = useRef<string | undefined>(undefined);
   const [player, setPlayer] = useState<Player | null>(null),
     [loaded, setLoaded] = useState(false),
+    [meUnreachable, setMeUnreachable] = useState(false),
     [worldData, setWorld] = useState<World | null>(null),
     [position, setPosition] = useState<Point>(HOME),
     [fix, setFix] = useState<Fix | null>(null),
@@ -681,15 +689,19 @@ export default function App() {
     const token = playerReads.current.begin(ownerContext());
     try {
       const r = await api<{ player: Player }>("/me");
-      if (playerReads.current.isCurrent(token, ownerContext()))
+      if (playerReads.current.isCurrent(token, ownerContext())) {
         setPlayer(r.player);
+        setMeUnreachable(false);
+      }
     } catch (e) {
-      if (
-        playerReads.current.isCurrent(token, ownerContext()) &&
-        e instanceof ApiError &&
-        e.status === 401
-      )
+      if (!playerReads.current.isCurrent(token, ownerContext())) return;
+      if (e instanceof ApiError && e.status === 401) {
         setPlayer(null);
+        setMeUnreachable(false);
+      } else if (!(e instanceof ApiError) || e.status >= 500)
+        // No answer at all (offline, server restarting): don't show the
+        // first-run page to someone who already has an explorer.
+        setMeUnreachable(true);
     } finally {
       if (playerReads.current.isCurrent(token, ownerContext())) setLoaded(true);
     }
@@ -777,7 +789,10 @@ export default function App() {
   }, [player?.id]);
   useEffect(() => {
     void me();
-    const a = () => setOnline(navigator.onLine);
+    const a = () => {
+      setOnline(navigator.onLine);
+      if (navigator.onLine && !latest.current.player) void me();
+    };
     window.addEventListener("online", a);
     window.addEventListener("offline", a);
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -1702,8 +1717,8 @@ export default function App() {
     });
     return ok === true;
   }
-  async function mintEarnedAura(item: Item) {
-    await action("native-claim", async () => {
+  async function mintEarnedAura(item: Item): Promise<boolean> {
+    const done = await action("native-claim", async () => {
       try {
         const { signer, accountId } = await resolveSigner();
         if (!player?.wallets.some((w) => w.account_id === accountId))
@@ -1761,10 +1776,12 @@ export default function App() {
           );
         await refreshNative(true);
         notify("Your Aura is secured. Try it on from your Secured collection.");
+        return true;
       } finally {
         await me();
       }
     });
+    return done === true;
   }
   async function checkAuraClaim(item: Item) {
     await action("native-claim-check", async () => {
@@ -2080,6 +2097,7 @@ export default function App() {
           settings: "Settings",
           fund: "Game economy",
           funding: "How rewards are funded",
+          fuel: "Fuel the city",
           expeditions: "Nearby walks",
           inventory: "Inventory",
           market: "Market",
@@ -3009,6 +3027,14 @@ export default function App() {
                 </span>
                 <ArrowRight size={20} />
               </button>
+              <button className="play-entry" onClick={() => setTab("fuel")}>
+                <Flame size={24} />
+                <span>
+                  <b>Fuel the city</b>
+                  <small>Stake to grow the pot and open Tier 2 places</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
               <button className="play-entry" onClick={() => setTab("wallet")}>
                 <Wallet size={24} />
                 <span>
@@ -3085,6 +3111,29 @@ export default function App() {
               onExplore={() => setTab("explore")}
               onLedger={() => setTab("fund")}
             />
+          )}
+          {tab === "fuel" && (
+            <>
+              <button
+                className="back-link"
+                onClick={() => setTab("settings")}
+              >
+                <ArrowLeft size={20} />
+                Settings
+              </button>
+              <FuelTheCity
+                player={player}
+                account={
+                  invisible.status === "ready" && invisible.accountId
+                    ? invisible.accountId
+                    : player.wallets[0]?.account_id || ""
+                }
+                managed={invisible.status === "ready" && !!invisible.accountId}
+                cityName={world?.cityName}
+                onConnect={connectNear}
+                onTransaction={operateNativeVault}
+              />
+            </>
           )}
           {tab === "fund" && (
             <>
@@ -3432,7 +3481,25 @@ export default function App() {
           </div>
         </Dialog>
       )}
-      {loaded && !player && (
+      {loaded && !player && meUnreachable && (
+        <Dialog label="Can't reach QuestLayer" open onClose={() => {}}>
+          <section className="welcome-card offline-gate">
+            <WifiSlash size={40} aria-hidden="true" />
+            <h2>{online ? "Can't reach QuestLayer" : "You're offline"}</h2>
+            <p>
+              Your explorer and progress are saved. They'll be right here as
+              soon as you're back online.
+            </p>
+            <button
+              className="primary-button"
+              onClick={() => void me()}
+            >
+              Try again <ArrowClockwise size={18} />
+            </button>
+          </section>
+        </Dialog>
+      )}
+      {loaded && !player && !meUnreachable && (
         <Welcome
           error={toast?.error ? toast.text : undefined}
           onNear={(name) => connectNear({ signIn: true, name })}
@@ -3453,6 +3520,26 @@ export default function App() {
           busy={!!busy}
           actionError={toast?.error ? toast.text : undefined}
           onInspect={inspectAdventureResult}
+          itemActions={(item) =>
+            item.kind === "aura" && (
+              <SecureAndShare
+                item={item}
+                player={player}
+                busy={!!busy}
+                place={world?.cityName}
+                availability={
+                  invisible.status === "ready" && nativeWardrobe?.claimsEnabled
+                    ? "ready"
+                    : invisible.status === "creating" ||
+                        (invisible.status === "ready" && !nativeWardrobe)
+                      ? "preparing"
+                      : "off"
+                }
+                onSecure={mintEarnedAura}
+                onPasskey={attachPasskey}
+              />
+            )
+          }
           onEquip={(result) => void equipAdventureResult(result)}
           onInventory={() => {
             adventureResults.close();

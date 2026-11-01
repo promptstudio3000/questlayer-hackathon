@@ -13,7 +13,7 @@ export function AuraClaims({
   enabled: boolean;
   busy: string;
   onConnect: () => Promise<void>;
-  onMint: (item: Item) => Promise<void>;
+  onMint: (item: Item) => Promise<unknown>;
   onConfirm: (item: Item) => Promise<void>;
   onRestore: (item: Item) => Promise<void>;
 }) {
