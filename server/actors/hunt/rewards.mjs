@@ -4,7 +4,8 @@
 // shards and roll tickets, and the only Aura route is crafting shards plus a
 // common Aura into a supply-capped monster edition (claim prefix
 // earned:monster:, see server/aura-catalog.mjs).
-import { assert, id } from "../../domain.mjs";
+import { assert, id, levelFor } from "../../domain.mjs";
+import { altarOfferingsPerDay } from "../../levels.mjs";
 import { AURA_CATALOG, AURA_SUPPLY } from "../../aura-catalog.mjs";
 import { atomic, history } from "../../database.mjs";
 import { ensureModuleVersion } from "../../schema-compatibility.mjs";
@@ -100,7 +101,9 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
       craftedToday = db
         .prepare("SELECT COUNT(*) AS n FROM monster_rewards WHERE player_id=? AND kind='craft' AND day_id=?")
         .get(player, dayId).n,
-      common = commonAura(player);
+      common = commonAura(player),
+      // L6 unlock (server/data/level-table.json): a second offering per day.
+      perDay = altarOfferingsPerDay(levelFor(db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp || 0), CRAFTS_PER_DAY);
     return {
       shards,
       shardTotal: total,
@@ -112,12 +115,13 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
       craft: {
         edition: CRAFT_EDITION,
         shards: CRAFT_SHARDS,
-        ready: total >= CRAFT_SHARDS && guardianWins > 0 && !!common && craftedToday < CRAFTS_PER_DAY,
+        ready: total >= CRAFT_SHARDS && guardianWins > 0 && !!common && craftedToday < perDay,
+        perDay,
         needs: [
           ...(total < CRAFT_SHARDS ? ["shards"] : []),
           ...(guardianWins ? [] : ["guardian"]),
           ...(common ? [] : ["common-aura"]),
-          ...(craftedToday < CRAFTS_PER_DAY ? [] : ["daily"]),
+          ...(craftedToday < perDay ? [] : ["daily"]),
         ],
       },
     };
@@ -143,7 +147,7 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
       const s = summary(player, dayId);
       assert(s.guardianWins > 0, "Beat a zone guardian first.", 409, "CRAFT_GUARDIAN");
       assert(s.shardTotal >= CRAFT_SHARDS, `You need ${CRAFT_SHARDS} monster shards.`, 409, "CRAFT_SHARDS");
-      assert(s.craft.needs.indexOf("daily") < 0, "The altar accepts one offering per day.", 429, "CRAFT_DAILY");
+      assert(s.craft.needs.indexOf("daily") < 0, s.craft.perDay > 1 ? `The altar accepts ${s.craft.perDay} offerings per day.` : "The altar accepts one offering per day.", 429, "CRAFT_DAILY");
       const aura = commonAura(player, itemId);
       assert(aura, "Offer a common Aura you are not wearing, listing or claiming.", 409, "CRAFT_AURA");
       db.prepare("INSERT OR IGNORE INTO players(id,name,gold_u,created_at) VALUES(?,?,0,?)").run(ALTAR_ACCOUNT, "Golden Altar", at);

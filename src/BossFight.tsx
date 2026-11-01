@@ -31,14 +31,14 @@ type Pouch = {
   dailyShardCap: number;
   rollTickets: number;
   guardianWins: number;
-  craft: { edition: string; shards: number; ready: boolean; needs: string[] };
+  craft: { edition: string; shards: number; ready: boolean; needs: string[]; perDay?: number };
 };
 
 const NEEDS: Record<string, string> = {
   shards: "more monster shards",
   guardian: "a guardian win",
   "common-aura": "a common Aura you are not wearing",
-  daily: "tomorrow (one offering a day)",
+  daily: "tomorrow (daily offerings used)",
 };
 
 export function BossFight({

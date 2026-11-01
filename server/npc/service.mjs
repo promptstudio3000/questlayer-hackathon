@@ -82,6 +82,7 @@ export function createNpcService(
       done: new Set(today.map((r) => r.terms.offerId)),
       linesToday: today.filter((r) => r.kind === "quest").length,
       chapters: rows.filter((r) => r.kind === "chapter" && r.state === "completed").length,
+      level: playerLevel(player),
     });
     return { persona, now, rows, menu, level: playerLevel(player) };
   }
