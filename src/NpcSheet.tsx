@@ -92,7 +92,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
       setNotice(
         r.replay
           ? "Already turned in."
-          : `+${r.xp} XP${r.aura ? ` and ${r.aura.name} (${r.aura.rarity}). Secure it on NEAR from your wardrobe.` : "."}${r.note ? ` ${r.note}` : ""}`,
+          : `+${r.xp} XP${r.aura ? ` and ${r.aura.name} (${r.aura.rarity})` : ""}${r.edition ? `${r.aura ? "," : " and"} plus the NPC-only ${r.edition.name} (${r.edition.rarity})` : ""}.${r.aura || r.edition ? " Secure it on NEAR from your wardrobe." : ""}${r.note ? ` ${r.note}` : ""}`,
       );
       await refresh();
     });

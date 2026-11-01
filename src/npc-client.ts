@@ -21,6 +21,8 @@ export interface NpcTurnIn {
   state: string;
   xp?: number;
   aura?: { id: string; name: string; rarity: string } | null;
+  /** NPC-only edition earned with this turn-in (once per player). */
+  edition?: { id: string; name: string; rarity: string } | null;
   note?: string;
   replay?: boolean;
 }

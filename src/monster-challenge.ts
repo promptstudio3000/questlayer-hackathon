@@ -36,6 +36,8 @@ export type HuntWinRewards = {
   shards: { element: string; count: number } | null;
   rollTicket: boolean;
   unlocks: { zoneId: string } | null;
+  /** Monster/NPC-only edition paid on the first win of this kind (once per player). */
+  edition?: { id: string; name: string; rarity: string; edition: string } | null;
 };
 export type DuelRoundLog = { stance: Stance; monster: Stance; outcome: "win" | "lose" | "clash"; skill: number; dealt: number; taken: number };
 export type DuelRoundResponse = { duel: { round: number; playerHp: number; monsterHp: number; last: DuelRoundLog; ringMs?: number } } & Partial<ChallengeResult>;

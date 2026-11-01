@@ -62,8 +62,9 @@ within 60 m, so they are not part of that count. See "Verification log" below fo
   verified" badge: NEAR AI Cloud is not connected yet.
 - **Quest (N3, N5):** Ráda offers lines only for discoveries that stay open at least 30 more minutes, so **do not record
   in the last 30 minutes before Prague midnight** (23:00 UTC in winter): her menu is empty then and she says she has no
-  errands. The quest Aura is a regular chest-catalog Aura (`mintAura`, entitlement rules), not the NPC-only "Pilgrim's
-  Path" edition: no server path grants `pilgrim`, `chronicle` or `wisp` yet. Say "an Aura", not "an NPC-exclusive Aura".
+  errands. The quest Aura is a regular chest-catalog Aura (`mintAura`, entitlement rules); the NPC-only "Pilgrim's
+  Path" edition arrives on the fifth turned-in line, and Běla's first finished chapter set pays the Chronicle Crown
+  (`server/earned-editions.mjs`, once per explorer and edition).
   Five of the six zones have a guardian; if neither chest on the chosen line is guarded, film N4 on any roamer
   instead. Ráda gives at most two lines per explorer per day.
 - **NPC-only Auras:** today they are reachable only through the monster hunt (**Wardbreaker Horns**: 10 shards + a
