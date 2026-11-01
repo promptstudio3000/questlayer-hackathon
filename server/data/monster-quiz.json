@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "note": "Fixed question bank for monster quizzes. Answers live only on the server and are never sent before submit. AI may rephrase a prompt later, but the answer index is fixed here. Place questions name the city pack candidate names they belong to in `places`.",
+  "lore": [
+    {
+      "id": "lore-fair-power",
+      "prompt": "What makes your explorer stronger against monsters?",
+      "choices": ["Your level and your own skill", "The rarest Aura you own", "How much GOLD you hold", "How many items you equip"],
+      "answer": 0
+    },
+    {
+      "id": "lore-set-bonus",
+      "prompt": "What does a complete Aura set bonus change?",
+      "choices": ["Only how your explorer looks", "Your chance to win a duel", "The XP you earn", "The GOLD a chest pays"],
+      "answer": 0
+    },
+    {
+      "id": "lore-stance-guard",
+      "prompt": "In a monster duel, which stance stops a Strike?",
+      "choices": ["Guard", "Trick", "Strike", "None of them"],
+      "answer": 0
+    },
+    {
+      "id": "lore-stance-trick",
+      "prompt": "In a monster duel, which stance slips past a Guard?",
+      "choices": ["Trick", "Strike", "Guard", "None of them"],
+      "answer": 0
+    },
+    {
+      "id": "lore-stance-strike",
+      "prompt": "In a monster duel, which stance breaks a Trick?",
+      "choices": ["Strike", "Guard", "Trick", "None of them"],
+      "answer": 0
+    },
+    {
+      "id": "lore-lurker",
+      "prompt": "How do you find a lurker?",
+      "choices": ["Walk close to it, it appears within about 60 m", "Buy a map from the trader", "Wait for midnight", "Equip a legendary Aura"],
+      "answer": 0
+    },
+    {
+      "id": "lore-loss",
+      "prompt": "What do you lose when a monster beats you?",
+      "choices": ["Nothing, you just wait before trying again", "Half of your GOLD", "Your equipped Aura", "One level"],
+      "answer": 0
+    },
+    {
+      "id": "lore-xp-sell",
+      "prompt": "Can you buy or sell XP and levels?",
+      "choices": ["No, they stay with your account", "Yes, on the market", "Only at the trader", "Only on mainnet"],
+      "answer": 0
+    }
+  ],
+  "cities": {
+    "plzen": [
+      {
+        "id": "plzen-founded",
+        "prompt": "Which king founded Plzeň around 1295?",
+        "choices": ["Wenceslas II", "Charles IV", "Ottokar II", "George of Poděbrady"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-rivers",
+        "prompt": "How many rivers meet in Plzeň?",
+        "choices": ["Four", "Two", "Three", "Six"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-river-names",
+        "prompt": "Which of these rivers flows through Plzeň?",
+        "choices": ["Radbuza", "Morava", "Ohře", "Jizera"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-cathedral",
+        "prompt": "The tower of St. Bartholomew's Cathedral on the main square is about how tall?",
+        "choices": ["102 m", "52 m", "75 m", "148 m"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-lager",
+        "prompt": "In which year was the first Pilsner lager brewed in Plzeň?",
+        "choices": ["1842", "1795", "1901", "1868"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-liberation",
+        "prompt": "Which army liberated Plzeň in May 1945?",
+        "choices": ["The US Army", "The Red Army", "The British Army", "The French Army"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-capital-culture",
+        "prompt": "In which year was Plzeň a European Capital of Culture?",
+        "choices": ["2015", "2000", "2010", "2020"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-synagogue",
+        "prompt": "The Great Synagogue of Plzeň is among the largest in…",
+        "choices": ["Europe", "Bohemia only", "Plzeň Region only", "Prague"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-skoda",
+        "prompt": "Which engineering works grew famous in Plzeň under Emil Škoda?",
+        "choices": ["Škoda Works", "Tatra", "ČKD", "Zetor"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-underground",
+        "prompt": "What lies beneath Plzeň's historic centre?",
+        "choices": ["Kilometres of old cellars and passages", "A metro line", "A salt mine", "A Roman bath"],
+        "answer": 0
+      },
+      {
+        "id": "plzen-smetana",
+        "prompt": "Smetanovy sady are named after Bedřich Smetana. What was he?",
+        "choices": ["A composer", "A brewer", "A king", "A painter"],
+        "answer": 0,
+        "places": ["Smetanovy sady"]
+      },
+      {
+        "id": "plzen-safarik",
+        "prompt": "Šafaříkovy sady honour Pavel Josef Šafařík. What was he known for?",
+        "choices": ["Slavic language and history scholarship", "Building bridges", "Brewing beer", "Composing operas"],
+        "answer": 0,
+        "places": ["Šafaříkovy sady"]
+      },
+      {
+        "id": "plzen-hus",
+        "prompt": "Husův park is named after Jan Hus. Who was he?",
+        "choices": ["A church reformer", "A football coach", "A brewer", "A Habsburg emperor"],
+        "answer": 0,
+        "places": ["Husův park"]
+      },
+      {
+        "id": "plzen-may-gardens",
+        "prompt": "Sady 5. května remember 5 May. What happened then in 1945?",
+        "choices": ["The Czech uprising against the occupation began", "Plzeň was founded", "The brewery opened", "The cathedral was finished"],
+        "answer": 0,
+        "places": ["sady 5. května"]
+      },
+      {
+        "id": "plzen-ceske-udoli",
+        "prompt": "České údolí in Plzeň is mainly…",
+        "choices": ["A green valley along the Radbuza", "A shopping street", "A football stadium", "A railway yard"],
+        "answer": 0,
+        "places": ["České údolí"]
+      }
+    ]
+  }
+}

@@ -96,6 +96,7 @@ import {
   playerView,
   history,
   createPlayer,
+  demoProgression,
 } from "./database.mjs";
 import {
   HOME,
@@ -111,6 +112,8 @@ import { actorsEnabled, createActorService } from "./actors/service.mjs";
 import "./npc/menu-builder.mjs";
 import { createNpcService } from "./npc/service.mjs";
 import { createNpcRoutes } from "./npc/routes.mjs";
+import { createMonsterChallenges } from "./actors/challenges/index.mjs";
+import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
 import {
   GOLD,
   DAY,
@@ -341,6 +344,13 @@ const actorRoutes = createActorRoutes(actorService);
 // NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
 // Ollama setup; the key stays in the runtime environment only.
 const npcRoutes = createNpcRoutes(actorService ? createNpcService(db) : null, actorService, db);
+// Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
+// account level (spendable XP) plus skill, never Auras or items.
+const challengeRoutes = createChallengeRoutes(
+  createMonsterChallenges(db, actorService, {
+    levelOf: (player) => demoProgression(db, player).level,
+  }),
+);
 const creatorMoney = creatorsManifest
   ? new CreatorMoney(db, provider, creatorsManifest, {
       transport: process.env.CREATORS_PUBLISHER_KEY_PATH
@@ -943,6 +953,10 @@ async function api(req, res, url) {
   const player = auth(req);
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
+  if (
+    await challengeRoutes.handle(req, res, url, { player, body, respond, assert })
   )
     return;
   if (
