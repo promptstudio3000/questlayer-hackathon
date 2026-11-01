@@ -47,7 +47,15 @@ is [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md).
 | Market (fixed-price NFT escrow) | `questlayer-market-20261031.testnet` ([contracts/market](contracts/market)) | Profile → Market: list, buy, cancel. |
 | Staking vault pilot, sponsored tasks, NEAR Social profile | `questlayer-vault(s)-20261031.testnet`, `questlayer-tasks-20261031.testnet`, `v1.social08.testnet` | Profile → Advanced. Pilots; see [docs/STATUS.md](docs/STATUS.md). |
 
-Transaction proofs with hashes are in `public/*-testnet.json` and `public/*proof*.json` (no keys).
+Transaction proofs with hashes are in `public/*-testnet.json` and `public/*proof*.json` (no keys):
+
+- `native-invisible-account-proof.json`: name → sponsored sub-account → relayed avatar mint, no wallet.
+- `native-creators-proof.json`: paid quest access 80/20, donation, support round, creator withdrawal, treasury flush.
+- `native-public-record-proof.json`: a public map note written under the player's own NEAR Social namespace.
+- `native-sponsored-stake-proof.json`: staking position and stake paid by the player's own key; the relayer
+  refuses to carry money and sponsors only zero-deposit maintenance.
+- `native-rewards-testnet.json`, `native-market-testnet.json`, `native-claims-testnet.json`: contract manifests
+  with code hashes for rewards/vault/factory, the Aura market and Aura claims.
 
 ## The economy, in one page
 

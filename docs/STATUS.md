@@ -58,6 +58,9 @@ funded and signed in the background. The blockchain is a property of the items, 
   address and pinning reports "unavailable". Live proof: a note published from a fresh invisible account, relayed
 `set` on `v1.social08.testnet` (transaction `4YKtshNX1d1QfdkN4RGsMQXfbY834WMuz29fuUNrjBdy`) and confirmed from
 chain; see `public/native-public-record-proof.json`. The UI is the next step.
+- Network configuration: `server/native/network.mjs` is the single source for the NEAR network (`NEAR_NETWORK`,
+  testnet by default); server modules no longer spell "testnet". Mainnet stays unsupported until the remaining
+  steps in `docs/MAINNET-PLAN.md` land.
 
 ## Not in scope before the hackathon deadline
 
