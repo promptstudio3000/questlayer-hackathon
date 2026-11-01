@@ -2,6 +2,7 @@ import { NativeContractReader } from "./reader.mjs";
 import { nativeItem } from "./collectibles.mjs";
 import { assert } from "../domain.mjs";
 import { NETWORK } from "./network.mjs";
+import { isNativeAuraTokenId } from "../aura-catalog.mjs";
 import { verifySignedOrderLocally } from "./signed-orders.mjs";
 const MAX_RELAYED_ORDERS = 256;
 export class NativeMarket extends NativeContractReader {
@@ -49,7 +50,7 @@ export class NativeMarket extends NativeContractReader {
       verifiedListing = null;
     if (verifyTokenId) {
       assert(
-        /^aura:(polar|moon|gold):\d{1,3}$/.test(verifyTokenId),
+        isNativeAuraTokenId(verifyTokenId),
         "Choose a native Aura.",
       );
       verifiedListing = await this.view(
