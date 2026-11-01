@@ -20,7 +20,7 @@ this file says who does what, in which order, and what "done" means. Update it w
 
 - **Claude (backend, contracts, chain):** treasury and yield, distribution, mainnet path, contract v2 work, proofs.
 - **Opus 5.5 subagents (product slices):** the UI slices of `docs/PLAN-FOR-OPUS.md`, one slice per agent, client
-  files only, with screenshots. Running now: slice 2 "Today's pot", slice 7 "PWA polish".
+  files only, with screenshots. Done 1 November: slice 2 "Today's pot", slice 7 "PWA polish"; next 3–6.
 - **Codex (map backend, operations):** Plzeň topology and entries, field checks, VPS migration and deployment,
   device matrix.
 - **Owner:** decisions below, real phones, mainnet payout account, X post and video, submission form.
