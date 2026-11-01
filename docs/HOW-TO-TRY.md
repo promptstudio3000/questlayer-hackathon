@@ -77,6 +77,7 @@ These scripts send real testnet transactions and need a testnet operator key in 
 | Deploy game + collectibles | `node scripts/deploy-testnet.mjs` | updated `public/testnet-deployment.json` with transaction hashes |
 | Player factory + relayer accounts | `node scripts/deploy-player-factory-testnet.mjs` | `.data/player-factory.json`, `.data/relayer.json` and the three env lines to add |
 | Prove invisible account | start the API with the relayer env, then `node scripts/prove-invisible-account-testnet.mjs` | `public/native-invisible-account-proof.json` with the account and transaction hashes |
+| Prove a public note record | same API, then `node scripts/prove-public-record-testnet.mjs` | `public/native-public-record-proof.json`; the record is readable under `<account>/questlayer/notes/<note>` on `v1.social08.testnet` |
 
 Run the server with `PLAYER_FACTORY_KEY_PATH`, `RELAYER_KEY_PATH` and `PLAYER_FACTORY_ACCOUNT` set to enable
 invisible accounts; see `docs/RELAYER.md`. Add `CREATORS_PUBLISHER_KEY_PATH` (from

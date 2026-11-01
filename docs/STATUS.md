@@ -51,7 +51,9 @@ funded and signed in the background. The blockchain is a property of the items, 
   written under the player's own NEAR Social namespace from their own account (`/api/native/records*`), with the
   photo's IPFS content address, rounded anchors, optional author fix, confirm-by-readback and tombstones for
   removals. Pinning runs through an optional add endpoint (`IPFS_ADD_URL`); without it the record carries the
-  address and pinning reports "unavailable". No live record has been written yet; the UI is the next step.
+  address and pinning reports "unavailable". Live proof: a note published from a fresh invisible account, relayed
+`set` on `v1.social08.testnet` (transaction `4YKtshNX1d1QfdkN4RGsMQXfbY834WMuz29fuUNrjBdy`) and confirmed from
+chain; see `public/native-public-record-proof.json`. The UI is the next step.
 
 ## Not in scope before the hackathon deadline
 
