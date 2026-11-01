@@ -20,6 +20,26 @@ Source: `contracts/npc-games/src/lib.rs` (tests in `src/tests.rs`). WASM pin: `q
 5. Server signs the award claim `earned:npc-roll:<roll_id>` only for a roll whose status is `Resolved` **or**
    `TimedOut`, using `get_roll(...).prize`.
 
+## Redeeming earned tickets (GAME-LOOPS P0-4)
+`server/npc/rolls.mjs` runs the flow for the game, tested in `tests/npc-rolls.test.mjs`. The tickets come from lurker wins and the boss (`monster_rewards`, kind `roll`).
+Each roll uses one ticket, and the player gets to it from Inventory, then Secured, then "Roll at the wisp".
+
+- `POST /api/npc-rolls {accountId}` signs a ticket for a fresh secret. An unused ticket is signed again with a new expiry and
+  does not use a second ticket. The client relays `start_roll` from the explorer account with no deposit.
+- `POST /api/npc-rolls/<id>` reads `get_roll` at `final`. It reveals the secret only when the start is final and at least
+  3 blocks old (`next: "resolve"`). It answers `next: "timeout"` once the window has closed, and `next: "done"` once the
+  prize is paid.
+- Payment reads the recorded prize and pays it once, as a demo Aura. `aura-rare` and `aura-epic` become a chest edition
+  of that rarity, chosen from the on-chain `random`. `aura-legendary-wisp` becomes the Will-o'-Wisp Halo.
+  `trader-voucher` becomes a common Aura for now, which the altar and the traders take. A sold-out edition pays 25 XP.
+- The player secures the Aura through the ordinary `redeem_aura` flow. Its claim id is reserved as
+  `earned:npc-roll:<roll_id>`. NPC-only editions (the wisp) use `earned:npc:roll:<roll_id>`, because the
+  collectibles contract requires the `earned:npc:` prefix for them.
+- A background pass every 30 s pays out rolls that somebody else resolved or timed out.
+- The relayer sponsors only `start_roll`, `resolve_roll` and `claim_timeout` on this contract, with no deposit and fixed argument shapes.
+- The host needs the ticket key in its state directory: `bash scripts/install-npc-ticket-key-vps.sh` (from the Mac), then
+  deploy. If the key is missing, or does not match `get_config().ticket_signer`, rolls stay off.
+
 ## Prize tables
 `publish_table(table_id, tiers, minimum)` (owner, 1 yocto). Tables are immutable; publish `wisp-v2` to change odds.
 `set_table_active` only stops new rolls. A tier may carry `daily_cap` (≥ 1, per UTC day, whole table); a capped draw
