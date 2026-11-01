@@ -32,7 +32,15 @@ export function nativeWorldView(
       tier: q.tier,
       gold_u: 0,
       xp: q.xp,
-      kind: "route",
+      kind:
+        q.activity?.icon === "chest"
+          ? "chest"
+          : q.activity?.icon === "visit"
+            ? "visit"
+            : "route",
+      ...(q.activity?.icon === "chest" && q.reward !== "0"
+        ? { itemAvailable: !q.prizeClaimed && !q.prizePending }
+        : {}),
       completed: Number(q.checkpoint >= q.targets.length),
       checkpoint: q.checkpoint,
       checkpointCount: q.targets.length,

@@ -82,13 +82,17 @@ export function questTemplateCatalog() {
     policy: QUEST_POLICY,
     version: VERSION,
     activationDay: QUEST_POLICY_START_DAY,
-    scope: "New, unprepared demo city days; native-city-v1 stays unchanged.",
+    scope:
+      "New, unprepared demo city days and new native-city-v2 days; published native-city-v1 days stay unchanged.",
     templates: TEMPLATES.map((t) => ({
       ...t,
       stepLabels: [...t.stepLabels],
       status: "implemented",
       modes: ["demo-arena", "demo-gps"],
-      nativePolicy: t.id === "ordered-trail" ? "native-city-v1" : null,
+      nativePolicy:
+        t.id === "ordered-trail"
+          ? ["native-city-v1", "native-city-v2"]
+          : ["native-city-v2"],
       safety: { ...SAFETY },
       durationMinutes: null,
       durationReason: "No verified walking route or field timing is available.",
@@ -233,8 +237,21 @@ export function describeStoredQuest(q, metadata = {}) {
   return activity(template(id), targets, "legacy-demo-v2");
 }
 
-// Response-only enrichment. Never add this object to the hashed v1 manifest body.
+// Response-only enrichment. Never add this object to a hashed manifest body.
+// v1 quests have no template and stay three ordered checkpoints; v2 quests
+// name the template they were published with.
 export function describeNativeQuest(q) {
+  if (q.template) {
+    const t = template(q.template);
+    const result = activity(t, q.targets, "native-city-v2");
+    if (t.kind === "chest")
+      result.objective = "Reach the chest and open it for the zone prize.";
+    result.rewardConstraint =
+      t.kind === "chest"
+        ? "Personal XP once; the first opener takes any funded zone prize. No item is minted."
+        : "Personal XP once; any funded shared GOLD prize pays once. Observations are optional.";
+    return result;
+  }
   const result = activity(
     template("ordered-trail"),
     q.targets,

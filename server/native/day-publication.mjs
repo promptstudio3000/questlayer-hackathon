@@ -9,7 +9,10 @@ import {
 } from "../spatial/place-safety.mjs";
 import {
   nativeDayId,
+  nativeDayIds,
+  nativeDayRow,
   nativeManifest,
+  nativeManifestVersion,
   nativePublicationMatches,
   publicationArgs,
   storedNativeManifest,
@@ -66,20 +69,35 @@ export async function publishNativeDays(
   let published = 0;
   for (const day of [today, shiftDate(today)]) {
     renew();
-    const dayId = nativeDayId(city.id, day);
-    let row = native.db
-      .prepare("SELECT * FROM native_days WHERE id=?")
-      .get(dayId);
+    // A date keeps the version it was first prepared as; only a date with no
+    // stored manifest takes the configured version for new days.
+    let row = nativeDayRow(native.db, city.id, day);
+    const dayId = row
+      ? row.id
+      : nativeDayId(
+          city.id,
+          day,
+          nativeManifestVersion(day, native.manifestV2From),
+        );
     if (row && !["prepared", "published"].includes(row.state)) continue;
     let confirmed = await native.view("get_day", { day_id: dayId }, true);
     renew();
     // A restored host may have lost the exact funded body. Do not reconstruct
-    // its rewards from today's remaining treasury or a changed source pack.
-    assert(
-      row || !confirmed,
-      "Published native day has no durable manifest. Restore its exact publication intent before continuing.",
-      503,
-    );
+    // its rewards from today's remaining treasury or a changed source pack,
+    // and never publish a second version of a date that is already on chain.
+    if (!row)
+      for (const other of nativeDayIds(city.id, day)) {
+        const chain =
+          other === dayId
+            ? confirmed
+            : await native.view("get_day", { day_id: other }, true);
+        renew();
+        assert(
+          !chain,
+          "Published native day has no durable manifest. Restore its exact publication intent before continuing.",
+          503,
+        );
+      }
     if (!row) {
       const plan = getOrPrepareCityPlan(native.db, city, day, clock());
       const treasury = await native.view("get_treasury", {}, true);
@@ -119,7 +137,11 @@ export async function publishNativeDays(
         sampleCityPaths(activeCity).filter(
           (p) => !pointClosed(activeCity.exclusions || [], p),
         ),
-        { budget: { coins: share.coins, zones: share.zones }, funding },
+        {
+          budget: { coins: share.coins, zones: share.zones },
+          funding,
+          version: dayId.endsWith("-v2") ? 2 : 1,
+        },
       );
       if (!manifest) continue;
       writeOwned(
