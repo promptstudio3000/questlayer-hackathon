@@ -2,6 +2,7 @@
 // carries the encounter token from POST /api/actors/:id/encounter.
 import { api } from "./api";
 import type { ActorOffer } from "./actor-types";
+import type { StakeCard } from "./StakeToday";
 
 export interface NpcStep { questId: string; title: string; kind: string; zone: string | null; done?: boolean }
 export interface NpcActiveLine { offerId: string; kind: string; label: string; steps: NpcStep[]; xp: number; aura: boolean }
@@ -21,6 +22,8 @@ export interface NpcTurnIn {
   state: string;
   xp?: number;
   aura?: { id: string; name: string; rarity: string } | null;
+  /** NPC-only edition earned with this turn-in (once per player). */
+  edition?: { id: string; name: string; rarity: string } | null;
   note?: string;
   replay?: boolean;
 }
@@ -55,6 +58,8 @@ export interface NpcTrade {
 export interface KeeperView {
   accounts: { accountId: string }[];
   lines: string[];
+  // Keeper's inner vault (server/npc/keeper-vault.mjs); absent when it is off.
+  stake?: StakeCard;
 }
 export const tradeAccept = (actorId: string, encounter: string, offerId: string) =>
   api<NpcTrade>(`${base(actorId)}/offers/${offerId}/accept`, { encounter });

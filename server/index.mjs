@@ -1,4 +1,5 @@
 import { defaultDatabasePath } from "./state-path.mjs";
+import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
 import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
@@ -126,11 +127,15 @@ import { registerMenuBuilder } from "./actors/menu.mjs";
 import { loadTraders, traderKeysPath } from "./npc/trader-keys.mjs";
 import { createTraderService } from "./npc/trader.mjs";
 import { createTraderRoutes } from "./npc/trader-routes.mjs";
+import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
 import { createMonsterHunt } from "./actors/hunt/index.mjs";
 import { createHuntRoutes } from "./actors/hunt/routes.mjs";
+import { dailyBoardSettings } from "./daily-board/config.mjs";
+import { createDailyBoard } from "./daily-board/service.mjs";
+import { createDailyBoardRoutes } from "./daily-board/routes.mjs";
 import {
   GOLD,
   DAY,
@@ -427,7 +432,31 @@ if (npcTraders)
       return [];
     }
   });
-const traderRoutes = createTraderRoutes({ traders: npcTraders, actors: actorService, db, market: nativeMarket, vaults: nativeVaults });
+// Keeper's inner vault (GAME-LOOPS P0-3): stake card, E+2 countdown and
+// ceremonies. Read-only; KEEPER_* variables override every default.
+const keeperVaultConfig = keeperVaultSettings(process.env);
+const keeperVault =
+  nativeVaults && keeperVaultConfig.enabled
+    ? createKeeperVault(db, {
+        settings: keeperVaultConfig,
+        today: () => {
+          try {
+            return nativeRewards?.todayCoins() ?? null;
+          } catch {
+            return null;
+          }
+        },
+      })
+    : null;
+const traderRoutes = createTraderRoutes({
+  traders: npcTraders,
+  actors: actorService,
+  db,
+  market: nativeMarket,
+  vaults: nativeVaults,
+  keeperVault,
+  levelOf: (player) => demoProgression(db, player).level,
+});
 // Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
 // account level (spendable XP) plus skill, never Auras or items.
 // Monster hunt (NPC-PLAN §13, M3+M4): win rewards, guardian-locked chests and
@@ -437,6 +466,13 @@ const monsterHunt = createMonsterHunt(db, actorService, {
   bossHp: Number(process.env.BOSS_HP) || undefined,
 });
 const huntRoutes = createHuntRoutes(monsterHunt, actorService, db);
+// Daily board of three goals (docs/DAILY-BOARD.md): on by default except on
+// mainnet; DAILY_BOARD_* settings change the goals and bonus. No streak.
+const dailyBoardConfig = dailyBoardSettings(process.env, NETWORK);
+const dailyBoard = dailyBoardConfig.enabled
+  ? createDailyBoard(db, dailyBoardConfig, { actorsOn: () => !!actorService })
+  : null;
+const dailyBoardRoutes = createDailyBoardRoutes(dailyBoard, db);
 const testSeed = createTestSeed(db, {
   creators: creatorRuntime.services
     ? {
@@ -723,8 +759,11 @@ async function api(req, res, url) {
             contractId: npcRolls.contractId,
           }
         : { status: "not-configured" },
+      dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
       now: Date.now(),
     });
+  if (path === "/api/levels" && method === "GET")
+    return respond(res, publicLevelTable());
   if (path === "/api/quest-templates" && method === "GET")
     return respond(res, questTemplateCatalog());
   if (path === "/api/native/distribution" && method === "GET") {
@@ -1083,6 +1122,8 @@ async function api(req, res, url) {
   )
     return;
   if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (
     await npcRollRoutes.handle(req, res, url, { player, body, respond, assert })
@@ -2635,7 +2676,7 @@ const orderIndexWorker =
   !backgroundWorkersDisabled && signedOrderIndex
     ? startOrderIndexWorker(signedOrderIndex, { intervalMs: 30000 })
     : null;
-// Trader keeper: settles orders, escrows stock, sweeps profit above the float
+// Trader keeper: settles orders, mints and escrows stock, sweeps profit above the float
 // into rewards fund_rewards("sponsor") and restores the float. It signs only
 // when the traders file carries the trader's own account key.
 const traderKeeper =
@@ -2645,6 +2686,9 @@ const traderKeeper =
           service: npcTraders,
           provider,
           rewardsId: rewardsConfig.contractId,
+          // Starting stock: award-signed redeem_aura to the trader's own account.
+          awardSigner,
+          stock: process.env.NPC_TRADER_STOCK !== "0",
           log: (entry) => entry.reports.some((r) => r.actions?.length || r.error) && console.log(JSON.stringify(entry)),
         }),
       )

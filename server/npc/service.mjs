@@ -29,6 +29,7 @@ import {
 import { createNpcStore } from "./store.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { ACTORS_SCHEMA } from "../actors/schema.mjs";
+import { PILGRIM_LINES, awardEditionOnce, ensureEarnedEditions } from "../earned-editions.mjs";
 
 const WORLD_FACTS = new Set(["mode", "paused", "zones", "progress", "next", "later", "safety"]);
 const rowId = (offerId, player) => `${offerId}@${player}`;
@@ -62,6 +63,7 @@ export function createNpcService(
   } = {},
 ) {
   ensureModuleVersion(db, ACTORS_SCHEMA);
+  ensureEarnedEditions(db);
   const store = createNpcStore(db, { clock });
   const playerLevel = (player) => levelFor(db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp || 0);
   const personaOf = (actor) => (personas ? personaFor(actor, personas) : personaFor(actor));
@@ -82,6 +84,7 @@ export function createNpcService(
       done: new Set(today.map((r) => r.terms.offerId)),
       linesToday: today.filter((r) => r.kind === "quest").length,
       chapters: rows.filter((r) => r.kind === "chapter" && r.state === "completed").length,
+      level: playerLevel(player),
     });
     return { persona, now, rows, menu, level: playerLevel(player) };
   }
@@ -246,18 +249,27 @@ export function createNpcService(
       assert(store.completeOffer(id, player) === 1, "This task was already turned in.", 409, "NPC_OFFER");
       const xp = row.terms.xp;
       db.prepare("UPDATE players SET xp=xp+? WHERE id=?").run(xp, player);
-      let aura = null;
-      if (row.terms.aura) {
+      let aura = null,
+        edition = null;
+      // NPC-only editions, once per player: the first finished chapter set
+      // pays the Chronicle Crown instead of a chest Aura; the fifth turned-in
+      // quest-giver line adds Pilgrim's Path on top of the line's Aura.
+      if (row.kind === "chapter" && row.terms.aura)
+        edition = awardEditionOnce(db, player, "chronicle", `npc:${actor.id}:${offerId}`, now);
+      if (row.terms.aura && !edition) {
         if (store.aurasGrantedToday(actor.id) <= MAX_AURAS_PER_NPC_DAY) {
           aura = mintAura(db, player, now, row.terms.zoneTier || 1, playerLevel(player));
         }
       }
+      if (row.kind === "quest" && store.completedQuestLines(player) >= PILGRIM_LINES)
+        edition = awardEditionOnce(db, player, "pilgrim", `npc:${actor.id}:${offerId}`, now);
       store.remember(player, actor.id, null, 1);
       history(db, player, "npc-quest", `Task from ${personaOf(actor).name}`, 0, {
         actor: actor.id,
         offerId,
         xp,
         aura: aura?.name || null,
+        edition: edition?.name || null,
         policy: NPC_OFFER_POLICY,
       });
       return {
@@ -265,7 +277,8 @@ export function createNpcService(
         state: "completed",
         xp,
         aura,
-        ...(row.terms.aura && !aura ? { note: "No Aura edition you are entitled to has supply left today; the XP still counts." } : {}),
+        ...(edition ? { edition } : {}),
+        ...(row.terms.aura && !aura && !edition ? { note: "No Aura edition you are entitled to has supply left today; the XP still counts." } : {}),
         ...(row.kind === "chapter" ? { chapter: row.terms.chapter, setSize: STORY_SET_SIZE } : {}),
       };
     });

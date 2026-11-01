@@ -19,7 +19,7 @@ owner's go before implementation, because they touch rules in `docs/GAME-RULES.m
   ritual with a cooldown (petting), seasons with a public pot, and holders getting flair rather than power. QuestLayer
   already has the honest version of the economy; it needs those four presentation and loop ideas.
 - **Top proposals for the hackathon** (section 7): level bar and level rewards to L10, visible locked staker offers
-  at NPCs (level + tier gate), a "Patron" rank that grows with matured stake age, a daily board of three small
+  at NPCs (tier gate only, owner decision 1 Nov), a "Patron" rank that grows with matured stake age, a daily board of three small
   goals, redeemable roll tickets, a two-week hackathon season, and a "your stake today" card.
 
 ## 2. Aavegotchi ecosystem: what each game's magic is
@@ -122,26 +122,27 @@ monster power is level + skill, no wagering.
 
 | Stage | Player sees | What moves them on |
 | --- | --- | --- |
-| 1. Free explorer (L1–L4) | Free zones, coins, monsters, NPC talk | Locked offers start appearing at L3 (greyed, with a lock and "Stakers from L5"). |
-| 2. Curious (L4–L5) | The Keeper says "the inner vault opens for patrons" and shows the T2 zone prize of today | A small first stake has a clear, previewed result: what unlocks, when (E+2 date), what it earns. |
+| 1. Free explorer (L1–L4) | Free zones, coins, monsters, NPC talk | Locked offers are visible from the start (greyed, with a lock and "Stakers · Tier 2"). |
+| 2. Curious (any level) | The Keeper says "the inner vault opens for patrons" and shows the T2 zone prize of today | A small first stake has a clear, previewed result: what unlocks, when (E+2 date), what it earns. |
 | 3. New staker (deposit confirmed) | A pending patron badge on the avatar, a countdown to E+2, NPCs greet "future patron" | E+2 ceremony: the badge lights up, locked chips at NPCs turn on, one welcome quest line opens. |
-| 4. Patron (Tier 2, L5+) | Patron quest lines, patron trader rates, patron-only cosmetics, "your stake today" card | Patron rank grows with matured stake days; Tier 3 preview is visible the same way. |
-| 5. High patron (Tier 3, L8+) | Tier 3 zone, the rare wanderer's patron option, season leaderboard flair | Season pot and cosmetic ranks keep them in. |
+| 4. Patron (Tier 2) | Patron quest lines, patron trader rates, patron-only cosmetics, "your stake today" card | Patron rank grows with matured stake days; Tier 3 preview is visible the same way. |
+| 5. High patron (Tier 3) | Tier 3 zone, the rare wanderer's patron option, season leaderboard flair | Season pot and cosmetic ranks keep them in. |
 
 ### Stakers-only lures (respecting the rules)
 
-Every lure is gated by **both** a tier and a level, so money alone cannot skip play ("od levelu něco"), and every
+**Owner decision (1 Nov 2026, 23:00 UTC): lures are gated by tier only, with no level requirement.** A player
+unlocks them as soon as their stake matures at E+2 into Tier 2 or Tier 3. Every
 lure is something to *do* or *wear*, never better odds or a payout multiplier.
 
 | Lure | Where | Gate | Why it fits the rules |
 | --- | --- | --- | --- |
-| **Locked offer chips** | NpcSheet: storyteller, quest giver, trader, keeper, wandering rare | Shown to everyone from L3; usable at Tier 2 + L5 (Tier 3 + L8 for the rare) | Pure presentation. Today `offers.mjs` filters these out; it should return them with `locked: {tier, level}` instead. |
-| **Patron quest lines** | Storyteller and quest giver | Tier 2 + L5 | Lines lead into T2/T3 zones, which already require the tier (E16). Their prize is still the zone's backed prize. |
-| **Keeper's inner vault** | Keeper | Tier 2 + L5 | Gives the bank NPC a job: a patron-only story line, the "your stake today" card and the E+2 ceremony. Reads only, never moves funds. |
-| **Patron trader rates** | Traders | Tier 2 + L5 | Trade-up 3→1 becomes available on a rare→epic table, and the premium-buy budget prefers patrons. The margin floor and sweep stay, so the float still grows (owner decision 1 Nov). |
-| **Patron edition Auras** | Keeper line, NPC-only editions | Tier 2 + L5, earned by finishing the patron line | NPC-only editions are already approved; cosmetic only (E17). |
+| **Locked offer chips** | NpcSheet: storyteller, quest giver, trader, keeper, wandering rare | Shown to everyone; usable at Tier 2 (Tier 3 for the rare) | Pure presentation. Today `offers.mjs` filters these out; it should return them with `locked: {tier}` instead. |
+| **Patron quest lines** | Storyteller and quest giver | Tier 2 | Lines lead into T2/T3 zones, which already require the tier (E16). Their prize is still the zone's backed prize. |
+| **Keeper's inner vault** | Keeper | Tier 2 | Gives the bank NPC a job: a patron-only story line, the "your stake today" card and the E+2 ceremony. Reads only, never moves funds. |
+| **Patron trader rates** | Traders | Tier 2 | Trade-up 3→1 becomes available on a rare→epic table, and the premium-buy budget prefers patrons. The margin floor and sweep stay, so the float still grows (owner decision 1 Nov). |
+| **Patron edition Auras** | Keeper line, NPC-only editions | Tier 2, earned by finishing the patron line | NPC-only editions are already approved; cosmetic only (E17). |
 | **Patron rank** (kinship-like) | Avatar badge, profile | Grows with each epoch of matured, unwithdrawn stake; ranks 1–5 | Rewards holding, not depositing more. No decay or streak penalty (D29): withdrawing just stops growth; the earned rank cosmetic stays. **Decision** (new progression track). |
-| **Wandering rare's patron option** | Wandering rare NPC | Tier 3 + L8 | The rare is visible to everyone (FOMO), its extra dialogue and edition only for high patrons. |
+| **Wandering rare's patron option** | Wandering rare NPC | Tier 3 | The rare is visible to everyone (FOMO), its extra dialogue and edition only for high patrons. |
 | **Boss arena seat** | Weekly boss | Tier 2 | A patron-coloured spot and a name plate on the hunters board. Damage stays level × skill (fairness rule §13.3). |
 
 What we deliberately do **not** offer stakers: extra roll tickets, higher odds, more boss damage, bigger coin values
@@ -161,7 +162,7 @@ rules and the legal line in NPC-PLAN §7.3.
 
 | Leak | Fix | Effort |
 | --- | --- | --- |
-| Nothing after L4 | Level table to L10 with an unlock at every level, not always an item: L5 patron chips usable, L6 second craft recipe, L7 extra NPC quest slot, L8 Tier 3 rare option, L9 cosmetic title, L10 a level Aura. Items need supply-capped editions. | M |
+| Nothing after L4 | Level table to L10 with an unlock at every level, not always an item: L5 second craft recipe, L6 extra NPC quest slot, L7 boss name plate colour, L8 third craft recipe, L9 cosmetic title, L10 a level Aura. Items need supply-capped editions. | M |
 | No XP bar | HUD avatar with an XP ring and "Level 4 · 620 / 900"; the API already returns `levelStartXp` and `nextLevelXp`. | S |
 | Roll tickets dead end | Worker signs `earned:npc-roll:<id>` for resolved and timed-out rolls; ticket count shows a "Roll at the wisp" button. | M |
 | One craft recipe | Three more altar recipes using shards + commons (sink for commons, which also restocks traders). | S |
@@ -180,7 +181,7 @@ P0 should land before the submission (14 Nov), P1 if time allows, P2 after.
 | # | Proposal | Why first | Needs owner decision |
 | --- | --- | --- | --- |
 | P0-1 | XP bar + level table to L10 | Fixes the earliest dead end, everyone sees it | Level item editions (supply) |
-| P0-2 | Locked staker chips at NPCs (tier + level gate) | The cheapest lure; turns hidden content into a reason to stake | Gate values (proposed Tier 2 + L5, Tier 3 + L8) |
+| P0-2 | Locked staker chips at NPCs (tier gate) | The cheapest lure; turns hidden content into a reason to stake | Decided: tier only (Tier 2, Tier 3 for the rare) |
 | P0-3 | Keeper inner vault + "your stake today" card + E+2 ceremony | Makes earning visible, gives the bank NPC a job | No |
 | P0-4 | Redeem roll tickets | Closes a dead end that already has a contract | No |
 | P0-5 | Daily board of three goals | Gives every session a target | Yes (D29 check) |
@@ -207,7 +208,7 @@ The owner's notes (1 Nov) and this analysis agree on the same UI shape. The UI t
 - **Short sheets.** Every bottom sheet gets tabs and a max height; prose moves into "Details" disclosures.
 - **Service buttons small and together.** One compact toolbar or a gear menu (recenter, 2D/3D, location, help,
   settings) instead of buttons spread across menus.
-- **Locked staker chips** use one shared component: greyed art, lock, "Stakers · Level 5", tap opens the stake
+- **Locked staker chips** use one shared component: greyed art, lock, "Stakers · Tier 2", tap opens the stake
   preview.
 - **HUD:** avatar with XP ring, GOLD, daily board progress (0/3), boss countdown when relevant.
 - **Seeded content in every tab** (market, inventory, tasks, creators) via the test world (`TEST_SEED=1`,

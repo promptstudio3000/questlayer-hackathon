@@ -18,6 +18,7 @@ import { AURA_CATALOG, AURA_SUPPLY } from "../aura-catalog.mjs";
 import { id } from "../domain.mjs";
 import { signTraderOrder } from "./trader-keys.mjs";
 import { createTraderLedger } from "./trader-ledger.mjs";
+import { awardEditionOnce } from "../earned-editions.mjs";
 import {
   BUY_TTL_MS,
   FLOAT,
@@ -377,9 +378,8 @@ export function createTraderService({
 
   function grantLedgerAura(trader, player) {
     if (ledger.settledCount(trader, player) < LEDGER_TRADES_FOR_AURA) return null;
-    const name = AURA_CATALOG.find((e) => e.id === "ledger")?.demoName;
-    if (!name || db.prepare("SELECT 1 FROM inventory WHERE player_id=? AND name=?").get(player, name)) return null;
-    const item = mintEdition(db, player, "ledger", clock());
+    // Once per player, ever (server/earned-editions.mjs).
+    const item = awardEditionOnce(db, player, "ledger", `npc:${trader}`, clock());
     if (item) history(db, player, "npc-trade", `Merchant's Ledger from ${trader}`, 0, { actor: trader, policy: NPC_TRADER_POLICY });
     return item;
   }
@@ -504,6 +504,7 @@ export function createTraderService({
     nftId,
     marketView: (method, args, fresh) => market.view(method, args, fresh),
     nftsView: (method, args, fresh) => nfts.view(method, args, fresh),
+    listings,
     isTrader: (actorId) => traders.has(actorId),
     menu,
     accept,

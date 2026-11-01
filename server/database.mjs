@@ -8,6 +8,8 @@ import {
 } from "./schema-compatibility.mjs";
 import { dirname } from "node:path";
 import "./ai/schema.mjs";
+// Created at server start by default, so every tool that opens the database must know it.
+import "./daily-board/schema.mjs";
 import { GOLD, id, hash, dayKey, levelFor, assert } from "./domain.mjs";
 
 export function openDatabase(

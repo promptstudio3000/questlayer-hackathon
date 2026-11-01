@@ -26,6 +26,28 @@ All in `server/npc/trader-pricing.mjs` (pure, unit-tested):
   rewards `fund_rewards("sponsor", "npc-<id>-<yyyymmdd>-<n>")`, then re-deposits the float. Each sweep is a
   public receipt and appears in `GET /api/npc/traders`.
 
+## Starting stock (keeper, every 10 min)
+
+A new explorer should see Vojtěch's offers right away, so the keeper keeps his shelf filled:
+- **Shelf:** the trader's Auras in market escrow plus in its wallet. Target **3**, the market's limit of active
+  listings/deposits per account.
+- **Mint:** when the shelf is short, one stock Aura per tick (max **3 a day**). The server signs an award claim
+  `earned:npc-stock:<actor>:<yyyymmdd>:<n>` with its award key and the trader account redeems it to itself
+  (`redeem_aura`, 0.05 NEAR attached, unused storage refunded). Claim ids are deterministic, so a retry returns the
+  same token. The collection must already trust the server's award key (`get_award_signer`), otherwise the report
+  says `skipped: award-signer`.
+- **Editions:** rare and epic chest Auras only (polar, bloom, storm, moon, comet), least-stocked first. A common's
+  reference (0.02) cannot carry the ~0.02 NEAR it costs to mint and escrow one with a 10 % margin. NPC/monster
+  editions are claim-only and never stocked. An edition past 200 of its 256 on-chain copies is skipped.
+- **Cost basis:** the NEAR the mint really took (storage + gas) plus a 0.003 escrow-gas allowance, rounded up. The
+  usual rule then prices the sale at `max(market × 0.90, cost × 1.10)`, e.g. ~0.045 test NEAR for a rare.
+- **Escrow:** the same tick escrows the new token (`nft_transfer_call {"deposit":true}`), so the next encounter shows
+  it as a `trade_sell` offer; the sell order itself is signed per player after they accept (3 min).
+- **Funding:** mints are paid from the trader's liquid NEAR above the 0.5 gas reserve, never from the 2 NEAR market
+  float. A sweep leaves up to 0.1 NEAR (`STOCK_RESERVE`) liquid for restocking and sends the rest to the treasury.
+  With too little liquid the report says `skipped: low-liquid` and restocking waits for the next sweep.
+- `NPC_TRADER_STOCK=0` turns stocking off; the rest of the keeper keeps running.
+
 ## Pieces
 
 | Piece | File |

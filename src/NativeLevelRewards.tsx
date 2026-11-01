@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowClockwise, Star, Check, Lock } from "@phosphor-icons/react";
 import { api } from "./api";
 import { AuraArt } from "./Ghost";
+import { catalogEdition } from "./aura-catalog";
 import type { Player } from "./types";
 import type { NearNetwork } from "./near-network.ts";
 export type NativeMilestone = {
@@ -187,9 +188,15 @@ export function NativeLevelRewards({
                           ? "#59ddcc"
                           : m.edition === "moon"
                             ? "#b8a0ee"
-                            : "#ffd667"
+                            : m.edition === "gold"
+                              ? "#ffd667"
+                              : (catalogEdition(m.edition)?.color ?? "#ffd667")
                       }
-                      slot={m.edition === "moon" ? "below" : "above"}
+                      slot={
+                        m.edition === "moon"
+                          ? "below"
+                          : (catalogEdition(m.edition)?.slot ?? "above")
+                      }
                     />
                     <strong>Level {m.level}</strong>
                     <small>

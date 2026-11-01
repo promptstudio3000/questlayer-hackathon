@@ -185,6 +185,11 @@ function RewardLine({ rewards }: { rewards: NonNullable<ChallengeResult["rewards
     <>
       {parts.length > 0 && <p className="monster-rewards">You earned {parts.join(", ")}.</p>}
       {rewards.unlocks && <p className="monster-rewards">The zone chest it guarded is open for you now.</p>}
+      {rewards.edition && (
+        <p className="monster-rewards">
+          First win: {rewards.edition.name} ({rewards.edition.rarity}) is in your wardrobe. Secure it on NEAR from there.
+        </p>
+      )}
     </>
   );
 }

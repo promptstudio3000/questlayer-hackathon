@@ -2,6 +2,7 @@
 // (server/actors/menu.mjs). Imported for its side effect by server/index.mjs.
 import { registerMenuBuilder } from "../actors/menu.mjs";
 import { worldView } from "../world.mjs";
+import { levelFor } from "../domain.mjs";
 import { buildMenu } from "./offers.mjs";
 import { personaFor } from "./personas.mjs";
 import { createNpcStore } from "./store.mjs";
@@ -22,6 +23,7 @@ export function npcMenu({ actor, def, player, world, now = Date.now(), db }) {
     done: new Set(today.map((r) => r.terms.offerId)),
     linesToday: today.filter((r) => r.kind === "quest").length,
     chapters: rows.filter((r) => r.kind === "chapter" && r.state === "completed").length,
+    level: levelFor(db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp || 0),
   });
 }
 

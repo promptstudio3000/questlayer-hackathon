@@ -4,19 +4,27 @@
 //   POST /api/actors/:id/offers/trade_up:<hex>/complete                       {encounter}
 //   POST /api/actors/:id/keeper                                               {encounter}
 //   GET  /api/npc/traders     public books: float, 7-day P&L, premiums, sweeps
+//   GET  /api/keeper/stake                       "your stake today" card (Profile → Stake)
+//   POST /api/keeper/ceremonies/:id/seen         closes an E+2 / tier ceremony
 import { formatNear } from "./trader-pricing.mjs";
 
 const TRADE = /^\/api\/actors\/([a-z0-9-]{3,44})\/offers\/((?:trade_buy|trade_sell|trade_up):[0-9a-f]{16})\/(accept|complete)$/;
 const KEEPER = /^\/api\/actors\/([a-z0-9-]{3,44})\/keeper$/;
+const CEREMONY = /^\/api\/keeper\/ceremonies\/(kcer_[A-Za-z0-9_-]{4,80})\/seen$/;
 
-/** Plain-language view of a player's market balance and vault positions. */
-export async function keeperView({ db, player, market, vaults }) {
-  const accounts = db
+function linkedAccounts(db, player) {
+  return db
     .prepare("SELECT account_id FROM wallet_links WHERE player_id=? ORDER BY verified_at")
     .all(player)
     .map((r) => r.account_id)
     .slice(0, 3);
+}
+
+/** Plain-language view of a player's market balance and vault positions. */
+export async function keeperView({ db, player, market, vaults, keeperVault = null, level = 1 }) {
+  const accounts = linkedAccounts(db, player);
   const out = { accounts: [], lines: [] };
+  const positions = [];
   if (!accounts.length) {
     out.lines.push("Link a NEAR account and I can show your market balance and staking vaults.");
     return out;
@@ -37,6 +45,10 @@ export async function keeperView({ db, player, market, vaults }) {
     if (vaults) {
       try {
         const snap = await vaults.snapshot(player, accountId);
+        positions.push({
+          accountId,
+          vaults: snap.positions.map((p) => ({ vault: p.account_id, pool: p.pool, state: p.state, s: p.position })),
+        });
         for (const p of snap.positions) {
           const s = p.position || {};
           const v = {
@@ -63,10 +75,29 @@ export async function keeperView({ db, player, market, vaults }) {
     out.accounts.push(entry);
   }
   out.lines.push("I never move your funds: every deposit, exit or change is signed by you on the usual confirmation screen.");
+  if (keeperVault?.settings.enabled) out.stake = keeperVault.view({ player, level, positions });
   return out;
 }
 
-export function createTraderRoutes({ traders, actors, db, market, vaults }) {
+/** The stake card without the market lines, for Profile → Stake. */
+export async function stakeCard({ db, player, vaults, keeperVault, level = 1 }) {
+  const positions = [];
+  let unreadable = 0;
+  for (const accountId of linkedAccounts(db, player)) {
+    try {
+      const snap = await vaults.snapshot(player, accountId);
+      positions.push({
+        accountId,
+        vaults: snap.positions.map((p) => ({ vault: p.account_id, pool: p.pool, state: p.state, s: p.position })),
+      });
+    } catch {
+      unreadable++;
+    }
+  }
+  return { ...keeperVault.view({ player, level, positions }), linked: positions.length + unreadable, unreadable };
+}
+
+export function createTraderRoutes({ traders, actors, db, market, vaults, keeperVault = null, levelOf = () => 1 }) {
   return {
     async handle(req, res, url, { player, body, respond, assert }) {
       const path = url.pathname,
@@ -74,6 +105,17 @@ export function createTraderRoutes({ traders, actors, db, market, vaults }) {
       if (path === "/api/npc/traders" && method === "GET") {
         assert(traders, "NPC traders are not open here.", 503, "NPC_TRADERS_DISABLED");
         respond(res, await traders.books());
+        return true;
+      }
+      if (path === "/api/keeper/stake" && method === "GET") {
+        assert(keeperVault?.settings.enabled && vaults, "The Keeper's vault is not open here.", 503, "KEEPER_DISABLED");
+        respond(res, await stakeCard({ db, player, vaults, keeperVault, level: levelOf(player) }));
+        return true;
+      }
+      const ceremony = method === "POST" && path.match(CEREMONY);
+      if (ceremony) {
+        assert(keeperVault, "The Keeper's vault is not open here.", 503, "KEEPER_DISABLED");
+        respond(res, keeperVault.seen(player, ceremony[1]));
         return true;
       }
       if (method !== "POST" || !path.startsWith("/api/actors/")) return false;
@@ -87,7 +129,7 @@ export function createTraderRoutes({ traders, actors, db, market, vaults }) {
       const actor = { ...encounter.def, ...encounter.actor };
       if (keeper) {
         assert(actor.archetype === "keeper", "This character keeps no vault.", 404, "NPC_UNKNOWN");
-        respond(res, await keeperView({ db, player, market, vaults }));
+        respond(res, await keeperView({ db, player, market, vaults, keeperVault, level: levelOf(player) }));
         return true;
       }
       assert(traders?.isTrader(actorId), "This trader is not open for business yet.", 503, "NPC_TRADERS_DISABLED");

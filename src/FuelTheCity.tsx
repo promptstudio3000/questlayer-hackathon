@@ -22,6 +22,7 @@ import {
   type FuelSummary,
 } from "./city-fuel";
 import { NativeStaking, type VaultSnapshot } from "./NativeStaking";
+import { StakeToday } from "./StakeToday";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import type { Player } from "./types";
 import "./fuel-the-city.css";
@@ -257,6 +258,8 @@ export function FuelTheCity({
               })}
             </ul>
           )}
+
+          <StakeToday />
 
           <div className="fuel-action">
             <h2>{active ? "Add fuel" : "Start fueling"}</h2>

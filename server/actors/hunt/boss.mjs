@@ -4,8 +4,8 @@
 // mini-game; the server replays the inputs and turns the score into damage
 // from account level (capped) and skill only. One hit per player every 10
 // minutes. When HP reaches zero, every player with a landed hit gets XP and a
-// roll ticket, and everyone with 3+ landed hits gets a Bossbane Fangring while
-// supply lasts. The leaderboard counts hits, never money.
+// roll ticket, and everyone with 3+ landed hits gets a Bossbane Fangring (once per
+// player, while supply lasts). The leaderboard counts hits, never money.
 import { createHmac, randomBytes } from "node:crypto";
 import { assert } from "../../domain.mjs";
 import { atomic } from "../../database.mjs";
@@ -14,7 +14,7 @@ import { MINIGAMES, createMinigame, scoreMinigame, minimumPlayMs } from "../chal
 import { playerPower } from "../challenges/duel.mjs";
 import { sha256 } from "../challenges/rng.mjs";
 import { HUNT_SCHEMA } from "./schema.mjs";
-import { grantEdition } from "./rewards.mjs";
+import { awardEditionOnce } from "../../earned-editions.mjs";
 
 export const BOSS_HIT_COOLDOWN_MS = 10 * 60_000;
 export const BOSS_HIT_TTL_MS = 2 * 60_000;
@@ -117,9 +117,10 @@ export function createBossService(db, {
       const source = `boss:${event.id}`;
       rewards.addXp(r.player_id, source, BOSS_XP, day, "Helped defeat the weekly boss", at);
       rewards.grant(r.player_id, source, "roll", 1, day, {}, at);
+      // Bossbane is paid once per player, ever (server/earned-editions.mjs).
       if (r.hits >= BOSS_HITS_FOR_EDITION && rewards.grant(r.player_id, source, "edition", 1, day, { edition: BOSS_EDITION }, at)) {
-        const item = grantEdition(db, r.player_id, BOSS_EDITION, at);
-        if (!item) db.prepare("UPDATE monster_rewards SET amount=0,data=? WHERE player_id=? AND source=? AND kind='edition'").run(JSON.stringify({ edition: BOSS_EDITION, soldOut: true }), r.player_id, source);
+        const item = awardEditionOnce(db, r.player_id, BOSS_EDITION, `monster:${source}`, at);
+        if (!item) db.prepare("UPDATE monster_rewards SET amount=0,data=? WHERE player_id=? AND source=? AND kind='edition'").run(JSON.stringify({ edition: BOSS_EDITION, notPaid: true }), r.player_id, source);
       }
     }
   }
