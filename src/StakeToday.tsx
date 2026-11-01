@@ -208,7 +208,7 @@ export function InnerVault({ card }: { card: StakeCard }) {
         <p className="stake-note">Patrons only. Stories, never better odds.</p>
       ) : (
         <p className="stake-chip">
-          Patrons · Tier {inner.gate.tier} + Level {inner.gate.level} · you need {inner.missing.join(" and ")}
+          Patrons · Tier {inner.gate.tier}{inner.gate.level > 1 ? ` + Level ${inner.gate.level}` : ""} · you need {inner.missing.join(" and ")}
         </p>
       )}
       <ol>

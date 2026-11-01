@@ -15,7 +15,7 @@ state; it never signs, moves funds or changes a chance. Code: `server/npc/keeper
   shows "matures by epoch X at the latest". At 0 % city share a stake never counts toward tier; the card says so.
 - **Ceremonies**: one-time cards when a deposit matures and when the account reaches Tier 2 or Tier 3. The first
   tier ceremony gives the cosmetic patron title, which stays after a withdrawal (no decay, D29).
-- **Inner vault**: patron story chapters, gated by tier **and** level (default Tier 2 + Level 5). Locked players see
+- **Inner vault**: patron story chapters, gated by tier (default Tier 2; owner decision 1 Nov: tier only, an optional level gate is configurable). Locked players see
   the chapter titles and what is missing. Lures are things to read or wear, never odds, payouts or multipliers.
 
 ## API
@@ -30,7 +30,7 @@ state; it never signs, moves funds or changes a chance. Code: `server/npc/keeper
 | --- | --- | --- |
 | `KEEPER_VAULT_ENABLED` | on | `0` turns the card, ceremonies and inner vault off |
 | `KEEPER_INNER_TIER` | `2` | Tier needed for the inner vault (1–3) |
-| `KEEPER_INNER_LEVEL` | `5` | Level needed for the inner vault (1–50) |
+| `KEEPER_INNER_LEVEL` | `1` | Optional level gate for the inner vault (1 = none) |
 | `KEEPER_MATURITY_EPOCHS` | `2` | Epochs shown in the countdown (mirror of the contract rule) |
 | `KEEPER_EPOCH_HOURS` | `12` | Hours per epoch for the time estimate |
 | `KEEPER_PATRON_TITLE` | `Patron of the Gate` | Cosmetic title from the first tier ceremony |

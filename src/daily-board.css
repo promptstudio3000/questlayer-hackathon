@@ -1,0 +1,111 @@
+.daily-board-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 13px;
+  min-height: 44px;
+  background: var(--surface-soft);
+  border: 1px solid var(--decorative-border);
+  border-radius: 24px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.daily-board-chip b {
+  font-size: 14px;
+}
+.daily-board-chip.is-complete {
+  background: var(--success-surface);
+  color: var(--success);
+}
+.daily-board-chip.is-ready {
+  border-color: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent);
+}
+.daily-board-sheet {
+  display: grid;
+  gap: 14px;
+  padding: 22px 20px;
+  max-width: 420px;
+}
+.daily-board-sheet h2 {
+  margin: 0;
+}
+.daily-board-lead {
+  margin: 0;
+  color: var(--ink-secondary);
+}
+.daily-board-sheet ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.daily-board-sheet li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--decorative-border);
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+  color: var(--control-border);
+}
+.daily-board-sheet li.done {
+  background: var(--success-surface);
+  color: var(--success);
+}
+.daily-board-sheet li b {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+}
+.daily-board-bar {
+  display: block;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+.daily-board-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--action);
+  transition: width var(--motion-feedback) var(--ease-out);
+}
+.daily-board-sheet li.done .daily-board-bar > span {
+  background: var(--success);
+}
+.daily-board-sheet small {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-secondary);
+}
+.daily-board-done {
+  margin: 0;
+  color: var(--success);
+  font-weight: 500;
+}
+.daily-board-error {
+  margin: 0;
+  color: var(--error);
+}
+/* Phones: the chip shares the top bar with GOLD and the profile, so the
+   wordmark and the GOLD label give it room (profile stays fully visible). */
+@media (max-width: 430px) {
+  .daily-board-chip {
+    padding: 7px 9px;
+    gap: 4px;
+    min-height: 40px;
+  }
+  .daily-board-chip b {
+    font-size: 12px;
+  }
+  .topbar .wordmark > span {
+    font-size: 17px;
+  }
+  .topbar .balance-pill > span:not(.gold-icon) {
+    display: none;
+  }
+}
