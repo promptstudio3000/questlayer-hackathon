@@ -1,5 +1,5 @@
 [workspace]
-members = ["game", "collectibles", "market", "rewards", "vault", "vault-factory", "tasks", "creators", "npc-games"]
+members = ["game", "collectibles", "market", "rewards", "vault", "vault-factory", "tasks", "creators", "npc-games", "badges"]
 resolver = "2"
 
 [workspace.dependencies]

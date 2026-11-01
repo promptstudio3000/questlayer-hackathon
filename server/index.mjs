@@ -129,6 +129,10 @@ import { createHuntRoutes } from "./actors/hunt/routes.mjs";
 import { dailyBoardSettings } from "./daily-board/config.mjs";
 import { createDailyBoard } from "./daily-board/service.mjs";
 import { createDailyBoardRoutes } from "./daily-board/routes.mjs";
+import { loadPlaceBadges } from "./badges/place-catalog.mjs";
+import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
+import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
+import { createBadgeRoutes } from "./badges/routes.mjs";
 import {
   GOLD,
   DAY,
@@ -433,6 +437,37 @@ const dailyBoard = dailyBoardConfig.enabled
   ? createDailyBoard(db, dailyBoardConfig, { actorsOn: () => !!actorService })
   : null;
 const dailyBoardRoutes = createDailyBoardRoutes(dailyBoard, db);
+// Badges (docs/BADGES.md): place badges for notable places reached with GPS
+// (game database, cosmetic, never sellable) and POAP-like player badges on
+// the soulbound questlayer_badges contract. The contract id comes from
+// public/native-badges-<network>.json (or NEAR_BADGES_CONTRACT); the minter
+// key from <state dir>/badges-minter.json (or BADGES_MINTER_KEY_PATH).
+const badgesManifestPath = [
+  resolve(APP_ROOT, `public/${manifestName("native-badges")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-badges")}`),
+].find((p) => existsSync(p));
+const badgeChain = createBadgeChain({
+  provider,
+  contractId:
+    process.env.NEAR_BADGES_CONTRACT ||
+    (badgesManifestPath
+      ? JSON.parse(readFileSync(badgesManifestPath, "utf8")).contractId
+      : null),
+  signer: awardSigner,
+  keyPath:
+    process.env.BADGES_MINTER_KEY_PATH ||
+    resolve(dirname(defaultDatabasePath()), "badges-minter.json"),
+});
+const badgeService =
+  process.env.BADGES_ENABLED === "0"
+    ? null
+    : createBadgeService(db, {
+        catalog: loadPlaceBadges({ extraPath: process.env.PLACE_BADGES_EXTRA_PATH || null }),
+        linkedAccount: (player) => linkedAccount(player),
+        settings: userBadgeSettings(process.env, NETWORK),
+        chain: () => badgeChain,
+      });
+const badgeRoutes = createBadgeRoutes(badgeService);
 const testSeed = createTestSeed(db, {
   creators: creatorRuntime.services
     ? {
@@ -1078,6 +1113,8 @@ async function api(req, res, url) {
   if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await badgeRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (
     await actorRoutes.handle(req, res, url, { player, body, respond, assert })
@@ -2610,6 +2647,10 @@ const rewardWorker =
         keyPath: process.env.REWARD_WORKER_KEY_PATH,
       })
     : null;
+const badgeWorker =
+  !backgroundWorkersDisabled && badgeService && badgeService.settings.enabled
+    ? startBadgeWorker(badgeService, badgeChain)
+    : null;
 const relayWorker =
   !backgroundWorkersDisabled && relayer
     ? startRelayWorker(relayer, { intervalMs: 15000 })
@@ -2699,6 +2740,7 @@ async function close() {
   await creatorMoneyWorker?.stop?.();
   orderIndexWorker?.stop();
   traderKeeper?.stop();
+  badgeWorker?.stop();
   await pinWorker?.stop?.();
   for (const r of listeners) r.end();
   server.close(() => {
