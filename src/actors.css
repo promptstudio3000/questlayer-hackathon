@@ -1,6 +1,5 @@
 /* Roaming NPCs and monsters: map markers and the encounter sheet. */
 .actor-marker {
-  position: relative;
   display: grid;
   justify-items: center;
   min-width: 48px;
