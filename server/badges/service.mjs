@@ -364,7 +364,29 @@ export function createBadgeService(db, { catalog, linkedAccount, settings = user
     return db.prepare("UPDATE user_badges SET state='hidden',updated_at=? WHERE id=?").run(now(), id).changes === 1;
   }
 
+  /** Health summary: catalog size, chain readiness and the mint queue. */
+  function status() {
+    const c = chain();
+    const q = (sql) => db.prepare(sql).get().n;
+    return {
+      status: "on",
+      places: catalog.badges.length,
+      placeVersion: catalog.version,
+      placeAwards: q("SELECT count(*) AS n FROM place_badge_awards"),
+      userBadges: settings.enabled ? "on" : "off",
+      contractId: c?.contractId ?? null,
+      minting: !!c?.ready,
+      minterError: c?.ready ? null : (c?.error ?? null),
+      queue: {
+        designs: q("SELECT count(*) AS n FROM user_badges WHERE state='queued'"),
+        claims: q("SELECT count(*) AS n FROM user_badge_claims WHERE state='queued'"),
+        failed: q("SELECT count(*) AS n FROM user_badge_claims WHERE state='failed'"),
+      },
+    };
+  }
+
   return {
+    status,
     catalog,
     settings,
     check,

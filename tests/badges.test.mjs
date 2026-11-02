@@ -253,3 +253,15 @@ test("POI pipeline records become extra place badges, curated places win", async
   assert.equal(c.byId.get("landmark-hrad-radyne").source, "poi");
   assert.equal(c.byId.get("peak-snezka").source, "curated");
 });
+
+test("health status reports the catalog, chain readiness and the queue", () => {
+  const { badges, alice, now } = setup();
+  badges.check(alice, fix(SNEZKA, now()));
+  badges.createUserBadge(alice, { title: "Queue me", kind: "event" });
+  const s = badges.status();
+  assert.equal(s.status, "on");
+  assert.equal(s.places, 69);
+  assert.equal(s.placeAwards, 1);
+  assert.equal(s.minting, false);
+  assert.deepEqual(s.queue, { designs: 1, claims: 0, failed: 0 });
+});
