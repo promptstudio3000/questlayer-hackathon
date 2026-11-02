@@ -81,6 +81,13 @@ Add an entry to `scripts/poi/regions.mjs` (Geofabrik URL, ISO country, bbox) and
 `poi.env`. Europe and the planet need the same stages with more disk; the per-stage memory stays bounded by the
 number of places, not by the number of paths.
 
+## Run status and coverage
+
+Every run writes `last-run.json` next to `current.sqlite` (`running`, then `ok` with the version, or `failed` with the
+stage and the error; SIGTERM counts as failed). A failed run keeps the previous release live. `/api/health` reports
+both as `poiWorld` (see `docs/WORLD-COVERAGE.md`), and `npm run world:coverage` turns the file into a coverage
+report and map.
+
 ## Tests
 
 `tests/poi-pipeline.test.mjs` runs the whole build on `tests/fixtures/poi/` without network: merge and fold rules,

@@ -497,6 +497,10 @@ the Mac, with a W4 stub until W4 lands._
 
 **W12 — Global coverage QA (Mac)**
 
+_Status (2 Nov 2026): implemented for Czechia on the VPS POI file, see `docs/WORLD-COVERAGE.md`: `npm run
+world:coverage`, `poiWorld` in `/api/health`, and the `npm run e2e:world` journeys. Auto-city sectors are a 3 km
+six-sector proxy until W5 lands; POI quest counts are the C.3 capacity until W6 lands._
+
 > Add `npm run world:coverage -- --poi <file> --cities <n> --days 365` producing a report: per country cells
 > with ≥1 POI quest, quests per cell distribution, share of excluded POIs by reason, auto cities with all six
 > sectors, empty-sector list, and a random sample of 50 POI quests with map links for manual review. Save it in
