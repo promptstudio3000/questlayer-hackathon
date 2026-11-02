@@ -420,6 +420,8 @@ the Mac, with a W4 stub until W4 lands._
 
 **W4 — Taxonomy and safety filter**
 
+> Done: `server/poi/` and `docs/POI-SAFETY.md` (interface for W3/W5/W6, reason codes, closures).
+
 > Implement `server/poi/taxonomy.mjs` (OSM tags and Overture categories → the ~30 categories) and
 > `server/poi/safety.mjs` (exclusion list in C.2.3, path snapping to a public path within 40 m, `review` state,
 > operator closures from `system-place-safety`). Every excluded POI keeps a reason code. Tests: one fixture per
