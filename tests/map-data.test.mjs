@@ -278,3 +278,52 @@ test("hung, malformed, denied and oversized map responses fail boundedly without
     db.close();
   }
 });
+
+test("a slow provider never holds the request, and its late answer is cached for the retry", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    let calls = 0;
+    const fetcher = async () => {
+      calls++;
+      await new Promise((r) => setTimeout(r, 40));
+      return ok();
+    };
+    const first = await publicPathSnapshot(db, region, {
+      clock: () => NOW,
+      fetcher,
+      timeoutMs: 5,
+      offline: null,
+    });
+    assert.equal(first.status, "unavailable");
+    await new Promise((r) => setTimeout(r, 80));
+    const later = await publicPathSnapshot(db, region, {
+      clock: () => NOW + 10 * 60 * 1000,
+      fetcher,
+      timeoutMs: 5,
+      offline: null,
+    });
+    assert.equal(later.status, "cached");
+    assert.equal(later.paths.length, 1);
+    assert.equal(calls, 1);
+  } finally {
+    db.close();
+  }
+});
+
+test("the provider fallback sends a contact User-Agent", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    let agent = null;
+    await publicPathSnapshot(db, region, {
+      clock: () => NOW,
+      offline: null,
+      fetcher: async (_url, init) => {
+        agent = init.headers["User-Agent"];
+        return ok();
+      },
+    });
+    assert.match(agent, /^QuestLayer\/1\.0 \(\+https:\/\//);
+  } finally {
+    db.close();
+  }
+});

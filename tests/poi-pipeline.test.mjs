@@ -255,3 +255,50 @@ test("whatever W4 module is installed builds the fixtures", async () => {
   assert.equal(rows["osm:n4"].safety, "excluded");
   assert.match(rows["osm:n4"].safety_reason, /inside.school/);
 });
+
+test("walkable ways become offline path cells the map adapter serves", async () => {
+  const { manifest, outPath, db } = await build();
+  const cells = db.prepare("SELECT h3r7, ways, points FROM path_cell").all();
+  db.close();
+  assert.ok(cells.length >= 1);
+  assert.equal(manifest.counts.pathCells, cells.length);
+  const { openOfflinePaths } = await import("../server/spatial/offline-paths.mjs");
+  const { publicPathSnapshot } = await import("../server/spatial/map-data.mjs");
+  const { openDatabase } = await import("../server/database.mjs");
+  const { latLngToCell } = await import("h3-js");
+  const offline = openOfflinePaths(outPath);
+  const region = latLngToCell(49.747, 13.378, 7);
+  const local = offline.paths(region);
+  assert.ok(local.paths.length >= 2, "footway + residential");
+  // The private footway near the fountain never becomes a street path.
+  const flat = local.paths.flat();
+  assert.ok(!flat.some(([lng, lat]) => lat === 49.75 && lng >= 13.3799 && lng <= 13.3801));
+  const app = openDatabase(":memory:");
+  try {
+    let calls = 0;
+    const snap = await publicPathSnapshot(app, region, {
+      offline,
+      fetcher: async () => {
+        calls++;
+        throw Error("no network");
+      },
+    });
+    assert.equal(snap.status, "fresh");
+    assert.equal(snap.source, "offline");
+    assert.equal(calls, 0);
+    // A cell the file does not cover still uses the provider fallback.
+    const elsewhere = latLngToCell(50.08, 14.42, 7);
+    const miss = await publicPathSnapshot(app, elsewhere, {
+      offline,
+      fetcher: async () => {
+        calls++;
+        throw Error("no network");
+      },
+    });
+    assert.equal(miss.status, "unavailable");
+    assert.equal(calls, 1);
+  } finally {
+    app.close();
+    offline.close();
+  }
+});
