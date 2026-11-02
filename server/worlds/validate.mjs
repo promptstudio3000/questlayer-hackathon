@@ -28,7 +28,14 @@ export const TOKEN_KEYS = Object.freeze(Object.keys(LOOKUPS.color).map(kebab));
 const BASE_COLORS = Object.fromEntries(Object.entries(LOOKUPS.color).map(([k, v]) => [kebab(k), v]));
 const TEXT_PAIRS = LOOKUPS.textPairsToVerify.map(([fg, bg]) => [kebab(fg), kebab(bg)]);
 
-export const QUEST_TEMPLATE_IDS = Object.freeze(questTemplateCatalog().templates.map((t) => t.id));
+// Zone templates only: street-cell POI templates (W6) are attached per H3 cell
+// by server/poi-quests.mjs, not listed by a pack. A pack that wants to weight
+// them needs a new -v<n> pack file and a validator change.
+export const QUEST_TEMPLATE_IDS = Object.freeze(
+  questTemplateCatalog()
+    .templates.filter((t) => t.scope === "zone")
+    .map((t) => t.id),
+);
 export const ARCHETYPES = Object.freeze([...NPC_ARCHETYPES, ...MONSTER_ARCHETYPES]);
 
 // Third-party marks that may appear in pack text only when listed in
