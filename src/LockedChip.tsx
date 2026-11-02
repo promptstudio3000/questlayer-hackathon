@@ -1,18 +1,45 @@
 // Shared locked chip for stakers-only lures (docs/GAME-LOOPS.md §5, §8):
-// greyed art, a lock, "Stakers · Tier 2". Tapping it opens a short preview of
-// what unlocks it and a button to the stake screen. Lures are only things to do
-// or wear; this chip never shows odds or payouts.
+// greyed art, a lock and exactly what is missing ("Stake 2 NEAR (~5 €) ·
+// Reach level 4", from server/staker-gates.mjs). Tapping it opens a short
+// preview and a button to the stake sheet with the amount prefilled. Lures are
+// only things to do or wear; this chip never shows odds or payouts.
 import { useState } from "react";
 import "./locked-chip.css";
 
 export const OPEN_STAKE_EVENT = "questlayer:open-stake";
-export const openStakeScreen = () => window.dispatchEvent(new Event(OPEN_STAKE_EVENT));
+export const STAKER_SUGGEST_NEAR = "2";
+
+// The stake sheet mounts after the tab switch, so the prefill waits here.
+let stakePrefill: string | null = null;
+/** Amount a chip asked the stake sheet to prefill (read once). */
+export function takeStakePrefill(): string | null {
+  const v = stakePrefill;
+  stakePrefill = null;
+  return v;
+}
+export const openStakeScreen = (near: string = STAKER_SUGGEST_NEAR) => {
+  stakePrefill = /^\d{1,4}(\.\d{1,3})?$/.test(near) ? near : STAKER_SUGGEST_NEAR;
+  window.dispatchEvent(new CustomEvent(OPEN_STAKE_EVENT, { detail: { near: stakePrefill } }));
+};
 
 export interface LockGate {
-  tier: number;
+  tier?: number;
+  step?: "staker" | "tier2" | "tier3" | string;
+  level?: number;
+  /** Exactly what is missing, ready to show: "Stake 2 NEAR (~5 €)", "Reach level 4". */
+  missing?: string[];
+  /** NEAR to prefill on the stake sheet. */
+  stakeNear?: string;
 }
 
-export const lockLabel = (gate: LockGate) => `Stakers · Tier ${gate.tier}`;
+const stepName = (gate: LockGate) =>
+  gate.step === "staker" ? "Stakers" : gate.step?.startsWith("tier") ? `Tier ${gate.step.slice(4)}` : gate.tier ? `Tier ${gate.tier}` : "Stakers";
+
+export const lockLabel = (gate: LockGate) =>
+  gate.missing?.length ? gate.missing.join(" · ") : `${stepName(gate)}${gate.level && gate.level > 1 ? ` · Level ${gate.level}` : ""}`;
+
+const needsStake = (gate: LockGate) =>
+  !gate.missing || gate.missing.some((m) => /^(Stake|Reach Tier|Your stake)/.test(m));
 
 export default function LockedChip({
   label,
@@ -23,7 +50,7 @@ export default function LockedChip({
   label: string;
   perk?: string;
   gate: LockGate;
-  onStake?: () => void;
+  onStake?: (near?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -36,11 +63,18 @@ export default function LockedChip({
       {open && (
         <div className="locked-chip-preview">
           {perk && <p>{perk}.</p>}
-          <p>Stake NEAR to reach Tier {gate.tier}. It turns on two epochs after the deposit.</p>
+          <p>
+            {gate.missing?.length
+              ? `Missing: ${gate.missing.join(", ")}.`
+              : `Stake NEAR to reach ${stepName(gate)}.`}{" "}
+            {needsStake(gate) ? "A stake counts two epochs after the deposit." : "Keep exploring to level up."}
+          </p>
           <p className="locked-chip-fair">Staking unlocks things to do and wear, never better odds.</p>
-          <button type="button" onClick={onStake}>
-            See staking
-          </button>
+          {needsStake(gate) && (
+            <button type="button" onClick={() => onStake(gate.stakeNear || STAKER_SUGGEST_NEAR)}>
+              Stake {gate.stakeNear || STAKER_SUGGEST_NEAR} NEAR
+            </button>
+          )}
         </div>
       )}
     </div>

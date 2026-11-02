@@ -20,6 +20,7 @@ for (const relative of [
   "./operator/world-controls.mjs",
   "./relayer/schema.mjs",
   "./spatial/place-safety.mjs",
+  "./staker-gates.mjs",
   "./task-evidence.mjs",
 ]) {
   const url = new URL(relative, import.meta.url);
