@@ -141,6 +141,18 @@ Reviewer did not write this change. Scope: `git diff 26550b1 1d6ac40 -- contract
 
 Reproduced on Linux x86_64 in Docker `rust:1.97.0` (`linux/amd64`) with `bash scripts/build-contracts.sh --no-check`: `questlayer_collectibles.wasm` 374,130 bytes, matching `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. All 38 collectibles contract tests pass, and `tests/aura-catalog`, `award-vouchers`, `native-progression` and `levels` pass (35/35). Reviewed sha256 **`0edba1506f14de0afde3601bd52f6131c1e7753cbd550767c522460ca8c559b9`**.
 
+## Patron and season editions (2026-11-02)
+
+The contract changed after the L5–L10 review. Diff: `git diff 1f23d9c <this PR head> -- contracts/collectibles` (source plus two new asset files and `WASM_SHA256`). Owner approval: patron edition with the patron quest lines (GAME-LOOPS P1-1) and the hackathon season with a season Aura (P1-3), both settled 1 Nov 2026 (PR #84, no-ask mode for testnet).
+
+- Two editions added to `AURA_EDITIONS`: `patron` ("Patron's Lantern") and `season` ("Hackathon Pennant"); the table grows from 21 to 23 rows. Existing rows, titles and media files are unchanged.
+- The same two are added to `CLAIM_ONLY_EDITIONS`: `patron` with `earned:npc:` ("Earned from a QuestLayer NPC.", like the other NPC editions) and `season` with the new prefix `earned:season:` ("Earned in a QuestLayer season."). The server's `awardClaimPrefix` maps catalog `source: "season"` to `earned:season:`.
+- The claim-only panic text is now "This Aura is only earned from NPCs, monsters, levels or seasons" (was "…NPCs, monsters or levels").
+- No state or schema change (still V3, no migration); the voucher message, `network()`, the 256 cap and the token id format are unchanged.
+- Tests: the claim-prefix redeem test covers both, `season_edition_rejects_a_level_claim`, `patron_edition_rejects_a_season_claim`, `oracle_cannot_mint_season_or_patron_editions_without_a_claim`; `supported_editions` lists 23. All 41 collectibles contract tests pass.
+
+Build (Docker `rust:1.97.0`, linux/amd64, the `scripts/build-contracts-docker.sh` command; every other contract reproduced its pinned hash byte for byte): `questlayer_collectibles.wasm` 376,458 bytes, sha256 `e2a41b19…31e9`, recorded in `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. Code storage rises by about 0.03 NEAR. Until the testnet upgrade runs, `public/native-claims-testnet.json` and `public/native-editions-testnet.json` still describe the deployed `0edba150…` build and are listed under `testnetDeploymentsNotFromThisBuild`; the upgrade script removes them.
+
 ## Reproducible builds in CI
 
 The `reproducible-contracts` CI job builds every contract with `scripts/build-contracts-docker.sh` (Docker `rust:1.97.0`, `linux/amd64`), uploads the WASM files and `SHA256SUMS` as the `contract-wasm-linux-amd64` artifact, and runs `scripts/check-wasm-hashes.mjs`. It fails when any WASM differs from `contracts/wasm-sha256.json`, when the collectibles WASM differs from `contracts/collectibles/WASM_SHA256` or the last reviewed hash above, or when a `wasmSha256` in `public/native-*-testnet.json` is neither a current build nor listed with its exact hash under `testnetDeploymentsNotFromThisBuild` (older testnet deployments built before path remapping). A `codeHash` next to it must be the base58 of the same sha256. On macOS run `npm run contracts:docker`; after an intended contract change, `npm run contracts:docker -- --write` (or copy the hashes from the CI job summary). Deploy only the Docker or CI artifact.

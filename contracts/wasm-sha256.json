@@ -2,7 +2,7 @@
   "about": "sha256 of every contract WASM built by scripts/build-contracts-docker.sh (Docker rust:1.97.0, linux/amd64, path remapping). CI (reproducible-contracts) rebuilds them and fails on any difference. macOS aarch64 builds hash differently; use the Docker build or the CI artifact. After an intended contract change run `npm run contracts:docker -- --write` (or copy the hashes from the CI job summary).",
   "toolchain": "rust:1.97.0 linux/amd64",
   "contracts": {
-    "questlayer_collectibles": "0edba1506f14de0afde3601bd52f6131c1e7753cbd550767c522460ca8c559b9",
+    "questlayer_collectibles": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
     "questlayer_creators": "df12b5f9f544ebbfa545df7d80d0a7834fafc22605da366664472b063360c40b",
     "questlayer_game": "c7ab37be026f1aa1ec0441b3fbf0ea40af4dcfd70f31197d2e0046ddccdba34f",
     "questlayer_market": "1642a65af521b17b9d46786d66d1606c223cbf68d6a53cd90d620ce8ce225435",
@@ -45,6 +45,14 @@
     "public/native-wardrobe-testnet.json:wasmSha256": {
       "contract": "questlayer_collectibles",
       "sha256": "1cb649afccc9ccfb7ef2a99e29bf346e312b94915feb17fdd1c4fdfb8bf07488"
+    },
+    "public/native-claims-testnet.json:wasmSha256": {
+      "contract": "questlayer_collectibles",
+      "sha256": "0edba1506f14de0afde3601bd52f6131c1e7753cbd550767c522460ca8c559b9"
+    },
+    "public/native-editions-testnet.json:wasmSha256": {
+      "contract": "questlayer_collectibles",
+      "sha256": "0edba1506f14de0afde3601bd52f6131c1e7753cbd550767c522460ca8c559b9"
     }
   }
 }

@@ -33,6 +33,8 @@ export const AURA_EDITIONS = [
   "quill",
   "laurel",
   "summit",
+  "patron",
+  "season",
 ] as const;
 export type AuraEdition = (typeof AURA_EDITIONS)[number];
 export const AURA_GRIDS = Object.freeze({
@@ -274,6 +276,22 @@ const PALETTES: Readonly<Record<AuraEdition, Palette>> = Object.freeze({
     fringe: "#7A6FB8", // dusk rock
     spark: "#FFFFFF",
     spark2: "#FFF6CF",
+  },
+  patron: {
+    hi: "#FFF4D6",
+    body: "#FFD01F", // lantern glow
+    deep: "#C98A2E",
+    fringe: "#5B3F7A", // patron violet
+    spark: "#FFFFFF",
+    spark2: "#FFE7A8",
+  },
+  season: {
+    hi: "#E6F7FF",
+    body: "#4FC3FF", // pennant blue
+    deep: "#2A7FC9",
+    fringe: "#24407A",
+    spark: "#FFFFFF",
+    spark2: "#FF8FB1", // confetti pink
   },
 });
 
@@ -1614,6 +1632,78 @@ function paintSummitBelow(c: Canvas) {
   c.star(49, 3, "spark2", "spark", "b");
 }
 
+// ---- Patron and season editions -------------------------------------------
+// Patron's Lantern: NPC-only (earned:npc:), the end of the Patron's Path.
+// Hackathon Pennant: season-only (earned:season:), the season goal.
+
+function lantern(c: Canvas, x: number, top: number) {
+  // A small hanging lantern: dark cap, glowing body, dark base.
+  c.put(x, top, "fringe");
+  for (let px = x - 1; px <= x + 1; px++) c.put(px, top + 1, "fringe");
+  for (let y = top + 2; y <= top + 4; y++)
+    for (let px = x - 1; px <= x + 1; px++) c.put(px, y, px === x - 1 ? "hi" : "body");
+  for (let px = x - 1; px <= x + 1; px++) c.put(px, top + 5, "deep");
+}
+function paintPatronAbove(c: Canvas) {
+  ellipseRing(c, 24, 17, 16, 4.5, 2.4, (_dx, _dy, light) =>
+    light > 0.4 ? "body" : light < -0.4 ? "fringe" : "deep",
+  );
+  lantern(c, 14, 6);
+  lantern(c, 24, 2);
+  lantern(c, 34, 6);
+  c.outline();
+  c.star(6, 5, "spark2", "spark", "a");
+  c.star(42, 5, "spark2", "spark", "b");
+}
+function paintPatronBelow(c: Canvas) {
+  groundRing(c, (light) => (light > 0.45 ? "body" : light > -0.35 ? "deep" : "fringe"));
+  lantern(c, 12, 1);
+  lantern(c, 28, 0);
+  lantern(c, 44, 1);
+  // The patron seal: a small diamond at the front of the ring.
+  c.put(28, 18, "hi");
+  c.put(27, 19, "body");
+  c.put(29, 19, "body");
+  c.put(28, 20, "deep");
+  c.outline();
+  c.put(28, 2, "spark", "a");
+  c.put(12, 3, "spark", "b");
+  c.star(5, 3, "spark2", "spark", "a");
+  c.star(51, 3, "spark2", "spark", "b");
+}
+function pennant(c: Canvas, x: number, top: number, dir: number, key = "body") {
+  // A pole with a small triangular flag pointing in `dir`.
+  for (let y = top; y <= top + 6; y++) c.put(x, y, "fringe");
+  for (let i = 0; i < 4; i++)
+    for (let y = top + Math.ceil(i / 2); y <= top + 4 - Math.ceil(i / 2); y++)
+      c.put(x + dir * (i + 1), y, i === 0 ? "hi" : key);
+}
+function paintSeasonAbove(c: Canvas) {
+  ellipseRing(c, 24, 17, 16, 4.5, 2.4, (_dx, _dy, light) =>
+    light > 0.45 ? "hi" : light < -0.4 ? "deep" : "body",
+  );
+  pennant(c, 12, 7, 1);
+  pennant(c, 19, 4, 1, "deep");
+  pennant(c, 29, 4, -1, "deep");
+  pennant(c, 36, 7, -1);
+  c.outline();
+  c.star(24, 3, "spark2", "spark", "a");
+  c.put(24, 3, "spark", "b");
+  c.put(7, 4, "spark2", "a");
+  c.put(41, 4, "spark2", "b");
+  c.put(16, 1, "spark2", "b");
+  c.put(32, 1, "spark2", "a");
+}
+function paintSeasonBelow(c: Canvas) {
+  groundRing(c, (light) => (light > 0.5 ? "hi" : light > -0.3 ? "body" : "deep"));
+  pennant(c, 14, 1, 1);
+  pennant(c, 42, 1, -1);
+  c.outline();
+  c.star(28, 2, "spark2", "spark", "a");
+  c.put(22, 3, "spark2", "b");
+  c.put(34, 3, "spark2", "b");
+}
+
 const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => void>> = {
   above: {
     polar: paintPolarAbove,
@@ -1637,6 +1727,8 @@ const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => 
     quill: paintQuillAbove,
     laurel: paintLaurelAbove,
     summit: paintSummitAbove,
+    patron: paintPatronAbove,
+    season: paintSeasonAbove,
     generic: paintGenericAbove,
   },
   below: {
@@ -1661,6 +1753,8 @@ const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => 
     quill: paintQuillBelow,
     laurel: paintLaurelBelow,
     summit: paintSummitBelow,
+    patron: paintPatronBelow,
+    season: paintSeasonBelow,
     generic: paintGenericBelow,
   },
 };

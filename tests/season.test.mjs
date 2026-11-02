@@ -113,11 +113,15 @@ test("claim: goal required, once per explorer, season mark recorded, closed afte
   assert.equal(v.me.claimed, true);
   assert.equal(v.me.reached, true);
   assert.equal(v.finishers, 1);
-  // No season edition in the catalog yet: the mark is recorded, no Aura.
-  assert.equal(v.aura, null);
-  assert.equal(v.me.aura, null);
+  // The season Aura (catalog edition "season", claim prefix earned:season:) lands in the wardrobe once.
+  assert.equal(v.aura.id, "season");
+  assert.equal(v.me.aura.edition, "season");
+  const item = db.prepare("SELECT name FROM inventory WHERE id=?").get(v.me.aura.itemId);
+  assert.equal(item.name, "Hackathon Pennant");
   const again = season.claim(alice);
   assert.equal(again.finishers, 1);
+  assert.equal(again.me.aura.itemId, v.me.aura.itemId);
+  assert.equal(db.prepare("SELECT count(*) n FROM inventory WHERE player_id=? AND name='Hackathon Pennant'").get(alice).n, 1);
   assert.equal(db.prepare("SELECT count(*) n FROM history WHERE player_id=? AND kind='season'").get(alice).n, 1);
   // XP is untouched: the season pays nothing but the cosmetic mark.
   assert.equal(db.prepare("SELECT xp FROM players WHERE id=?").get(alice).xp, 0);
@@ -186,4 +190,13 @@ test("routes: public view, claim needs sign-in, disabled season answers enabled:
   assert.equal(await routes.handle({ method: "GET" }, {}, url("/api/other"), { player: alice, respond, assert: assertFn }), false);
   await createSeasonRoutes(null).handle({ method: "GET" }, {}, url("/api/season"), { player: null, respond, assert: assertFn });
   assert.deepEqual(out.at(-1), { enabled: false });
+});
+
+test("SEASON_AURA can switch the Aura off; the mark is still recorded", async () => {
+  const { db, alice, season } = await setup({ env: { SEASON_GOAL: "1", SEASON_AURA: "none" } });
+  hunt(db, alice, 1);
+  const v = season.claim(alice);
+  assert.equal(v.aura, null);
+  assert.equal(v.me.claimed, true);
+  assert.equal(v.me.aura, null);
 });
