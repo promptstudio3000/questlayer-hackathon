@@ -59,6 +59,13 @@ import { NativeVaults, FACTORY_ID, VAULT_POOLS } from "./native/vaults.mjs";
 import { NativeSocialProfile } from "./native/social-profile.mjs";
 import { resolvePublicFile } from "./static-files.mjs";
 import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
+import { NativeContractReader } from "./native/reader.mjs";
+import {
+  NpcRolls,
+  createNpcRollRoutes,
+  loadTicketSigner,
+  startNpcRollWorker,
+} from "./npc/rolls.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
@@ -230,7 +237,39 @@ const awardSigner = nativeAttestationsDisabled
       process.env.AWARD_SIGNER_PATH ||
         resolve(dirname(defaultDatabasePath()), "award-attestor.pem"),
     );
-const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner);
+// Earned wisp rolls on the npc-games contract (docs/NPC-GAMES.md). The ticket
+// key is a private file in the state directory (scripts/install-npc-ticket-key-vps.sh);
+// without it, or on a network without the manifest, rolls stay off.
+const npcGamesManifestPath = [
+  resolve(APP_ROOT, `public/${manifestName("native-npc-games")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-npc-games")}`),
+].find((p) => existsSync(p));
+const npcGamesManifest = npcGamesManifestPath
+  ? JSON.parse(readFileSync(npcGamesManifestPath, "utf8"))
+  : null;
+const npcTicketSigner =
+  npcGamesManifest?.network === NETWORK &&
+  npcGamesManifest.contractId &&
+  !nativeAttestationsDisabled
+    ? loadTicketSigner(
+        process.env.NPC_TICKET_SIGNER_PATH ||
+          resolve(dirname(defaultDatabasePath()), "npc-games-ticket-signer.pem"),
+      )
+    : null;
+// The npc_rolls table exists only on a host that holds the ticket key.
+const npcRolls = npcTicketSigner
+  ? new NpcRolls(db, {
+      contract: new NativeContractReader(provider, npcGamesManifest.contractId),
+      finalHeight: async () =>
+        Number((await provider.viewBlock({ finality: "final" })).header.height),
+      signer: npcTicketSigner,
+      manifest: npcGamesManifest,
+    })
+  : null;
+const npcRollRoutes = createNpcRollRoutes(npcRolls);
+const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner, {
+  claimIdFor: npcRolls ? (itemId) => npcRolls.claimIdFor(itemId) : null,
+});
 const rewardsManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-rewards")}`),
   resolve(APP_ROOT, `dist/${manifestName("native-rewards")}`),
@@ -301,6 +340,7 @@ const relayer = managedAccounts
                   ),
                 ).contractId
               : undefined,
+          npcGames: npcRolls?.contractId || undefined,
           rewards: !featureEnabled("rewards")
             ? undefined
             : rewardsConfig?.contractId ||
@@ -748,6 +788,12 @@ async function api(req, res, url) {
         ? socialRecords.workerStatus()
         : { status: "not-configured" },
       testSeed: testSeedActive ? testSeed.status() : { status: "off" },
+      npcRolls: npcRolls
+        ? {
+            status: (await npcRolls.readiness()).ok ? "ready" : "off",
+            contractId: npcRolls.contractId,
+          }
+        : { status: "not-configured" },
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
       now: Date.now(),
     });
@@ -1115,6 +1161,10 @@ async function api(req, res, url) {
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await badgeRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (
+    await npcRollRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
     return;
   if (
     await actorRoutes.handle(req, res, url, { player, body, respond, assert })
@@ -2661,6 +2711,8 @@ const pinWorker =
   socialRecords.pinAdapter
     ? startPinWorker(socialRecords, { intervalMs: 60000 })
     : null;
+const npcRollWorker =
+  !backgroundWorkersDisabled && npcRolls ? startNpcRollWorker(npcRolls) : null;
 const orderIndexWorker =
   !backgroundWorkersDisabled && signedOrderIndex
     ? startOrderIndexWorker(signedOrderIndex, { intervalMs: 30000 })
@@ -2739,6 +2791,7 @@ async function close() {
   await relayWorker?.stop?.();
   await creatorMoneyWorker?.stop?.();
   orderIndexWorker?.stop();
+  npcRollWorker?.stop();
   traderKeeper?.stop();
   badgeWorker?.stop();
   await pinWorker?.stop?.();

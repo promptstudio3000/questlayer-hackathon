@@ -26,6 +26,14 @@ export type DemoNavigationTarget = {
   questId: string | null;
   realm: "arena" | "gps";
 };
+export type ProfileView = "character" | "settings";
+export type MarketView = "practice" | "secured" | "offers";
+export const PROFILE_VIEWS: readonly ProfileView[] = ["character", "settings"];
+export const MARKET_VIEWS: readonly MarketView[] = [
+  "practice",
+  "secured",
+  "offers",
+];
 export type AppNavigation = {
   tab: AppTab;
   walletView: "rewards" | "staking" | "demo";
@@ -33,6 +41,10 @@ export type AppNavigation = {
   notesView: "browse" | "compose" | "blocked";
   sheetExpanded: boolean;
   creatorView: CreatorCommunityView;
+  /** Profile screen sub-tab shown while `tab` is "settings". */
+  profileView: ProfileView;
+  /** Market screen sub-tab shown while `tab` is "market". */
+  marketView: MarketView;
   demoTarget?: DemoNavigationTarget | null;
   nativeTarget?: NativeObjective | null;
 };
@@ -44,6 +56,8 @@ export const initialAppNavigation = (): AppNavigation => ({
   notesView: "browse",
   sheetExpanded: false,
   creatorView: { page: "community" },
+  profileView: "character",
+  marketView: "practice",
 });
 const identifier = (v: unknown): v is string =>
   typeof v === "string" && v.length > 0 && v.length <= 512;
@@ -78,6 +92,18 @@ export function parseAppNavigation(
     !["browse", "compose", "blocked"].includes(v.notesView) ||
     typeof v.sheetExpanded !== "boolean" ||
     !creatorView
+  )
+    return null;
+  // Sub-tabs were added after the first stored entries: a missing value falls
+  // back to its default so older history entries still restore.
+  if (
+    v.profileView !== undefined &&
+    !PROFILE_VIEWS.includes(v.profileView as ProfileView)
+  )
+    return null;
+  if (
+    v.marketView !== undefined &&
+    !MARKET_VIEWS.includes(v.marketView as MarketView)
   )
     return null;
   let demoTarget: DemoNavigationTarget | null | undefined =
@@ -133,6 +159,8 @@ export function parseAppNavigation(
     notesView: v.notesView as AppNavigation["notesView"],
     sheetExpanded: v.sheetExpanded,
     creatorView,
+    profileView: (v.profileView as ProfileView | undefined) ?? "character",
+    marketView: (v.marketView as MarketView | undefined) ?? "practice",
     demoTarget,
     nativeTarget,
   };

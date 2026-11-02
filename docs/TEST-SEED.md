@@ -45,11 +45,21 @@ npm run seed:test -- remove   [--db path]
 - **Daily board.** Vera, Tomas and Jana finish today's board 7, 11 and 16 hours
   into each world day, so the "explorers finished today" count moves
   (`docs/DAILY-BOARD.md`). No XP for them.
-- **Starter kit for every real explorer**, once, on sign-up or the next app load:
-  Northern Lights (can be secured as a NEAR Aura and sold on the signed-order
-  market), Ember Wisp (practice market or the monster altar), 300 XP (enough to
-  publish an own creator quest) and 10 monster shards. It appears in history as
-  "Test kit".
+- **Starter kit for every real explorer**, once, on sign-up or the next app load,
+  so the Inventory backpack grid is full and the level bar is part filled:
+  - Nine practice Auras across every rarity and both slots: Northern Lights
+    (can be secured as a NEAR Aura and sold on the signed-order market), Ember
+    Wisp twice (a stacked duplicate; practice market or the monster altar),
+    Dewfall Ring, Meadow Bloom, Moon Ring, Stormcrown, Comet Trail and Golden
+    Dust. The six editions not in the kit show as locked slots in the grid.
+  - Northern Lights and Moon Ring are worn (Night Sky set glow), but only in a
+    slot where the explorer wears nothing yet; an Aura already worn stays.
+  - 650 XP: a new explorer sits mid level 3 (400 to 900 XP) and can publish an
+    own creator quest.
+  - 10 monster shards.
+
+  It appears in history as "Test kit". The first copy of each edition keeps the
+  id `seed-kit-<player>-<edition>`; a duplicate adds `-2`.
 
 Nothing in the seed signs a NEAR transaction. Seed authors have no NEAR account, so
 seed quests are not mirrored to the creators contract; likes and paid access on them

@@ -406,11 +406,19 @@ export class NativeProgression {
     let milestones;
     try {
       await this.code(block, this.contractId, this.collectiblesCodeHash);
+      // Level-item editions exist only after the collectibles upgrade that adds
+      // them; until the deployed contract lists one, its milestone stays unavailable.
+      const all = nativeLevelMilestones(),
+        needsList = all.some((m) => !NATIVE_LEVEL_MILESTONES.includes(m)),
+        supported = needsList
+          ? new Set(await this.view(block, this.contractId, "supported_editions"))
+          : null,
+        listed = all.filter((m) => !supported || NATIVE_LEVEL_MILESTONES.includes(m) || supported.has(m.edition));
       const [key, version, values] = await Promise.all([
         this.view(block, this.contractId, "get_award_signer"),
         this.view(block, this.contractId, "get_version"),
         Promise.all(
-          nativeLevelMilestones().map(async (milestone) => {
+          listed.map(async (milestone) => {
             const claimId = nativeLevelClaimId(
               this.sourceContractId,
               this.contractId,
@@ -470,6 +478,18 @@ export class NativeProgression {
           expiresAt: prior?.expires_at || null,
         };
       });
+      for (const milestone of all)
+        if (!listed.includes(milestone))
+          milestones.push({
+            ...milestone,
+            claimId: nativeLevelClaimId(this.sourceContractId, this.contractId, accountId, milestone.level),
+            state: "unavailable",
+            claimable: false,
+            tokenId: null,
+            remaining: null,
+            expiresAt: null,
+          });
+      milestones.sort((a, b) => a.level - b.level);
     } catch {
       milestones = this.unavailableMilestones(accountId);
     }

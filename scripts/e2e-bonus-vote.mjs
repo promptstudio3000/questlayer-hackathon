@@ -134,7 +134,9 @@ async function openCommunity(page) {
     .getByRole("button", { name: "Community", exact: true })
     .first()
     .click();
-  await page.locator(".creator-community, .play-details").first().waitFor();
+  // The bonus vote lives on Community → Creators.
+  await page.getByRole("tab", { name: /Creators/ }).click();
+  await page.getByRole("tabpanel").first().waitFor();
 }
 
 async function main() {

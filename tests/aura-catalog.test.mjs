@@ -153,7 +153,7 @@ test("NPC and monster editions never drop from chests and match the contract's c
     special.map((e) => [e.id, server.awardClaimPrefix(e.id)]).sort(),
   );
   for (const e of AURA_CATALOG) {
-    assert.ok(["chest", "npc", "monster"].includes(e.source), e.id);
+    assert.ok(["chest", "npc", "monster", "level"].includes(e.source), e.id);
     if (e.source === "chest") assert.equal(server.awardClaimPrefix(e.id), "earned:");
     else {
       assert.ok(e.native, `${e.id} must be mintable`);
@@ -164,6 +164,7 @@ test("NPC and monster editions never drop from chests and match the contract's c
   }
   assert.equal(server.awardClaimPrefix("wisp"), "earned:npc:");
   assert.equal(server.awardClaimPrefix("bossbane"), "earned:monster:");
+  assert.equal(server.awardClaimPrefix("summit"), "earned:level:");
   for (const tier of [1, 2, 3])
     for (const level of [1, 5, 50])
       assert.ok(server.entitledEditions(tier, level).every((e) => e.source === "chest"));

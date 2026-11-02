@@ -33,6 +33,25 @@ export const SELL_TTL_MS = 3 * 60_000;
 export const WANTED_PER_DAY = 2;
 export const LEDGER_TRADES_FOR_AURA = 10; // Merchant's Ledger edition
 
+// Patron trader rates (docs/GAME-LOOPS.md P1-5, owner decision 1 Nov 2026):
+// gated by stake tier only (Tier 2+), never by level. Every patron rate still
+// sits inside the margin floor, so the float keeps growing:
+//   - sales from stock at market × 0.85 instead of × 0.90, never below cost × 1.10;
+//   - premium buys at market × 1.20 instead of × 1.15, never above resale / 1.10;
+//   - a rare→epic trade-up table (3 rares for 1 epic, epic edition from game supply);
+//   - the premium budget prefers patrons: non-patrons may spend only the first
+//     half of a day's budget, the rest is held for patrons.
+export const PATRON_TIER = 2;
+export const PATRON_DISCOUNT_BPS = 8500n;
+export const PATRON_PREMIUM_BPS = 12000n;
+export const PATRON_BUDGET_RESERVE_BPS = 5000n; // share of the day's budget held for patrons
+export const isPatron = (tier) => Number.isInteger(tier) && tier >= PATRON_TIER;
+/** Trade-up tables: [given rarity, received rarity]; the epic table is patron-only. */
+export const TRADEUP_TABLES = Object.freeze([
+  Object.freeze({ give: "common", get: "rare", patron: false }),
+  Object.freeze({ give: "rare", get: "epic", patron: true }),
+]);
+
 // Reference resale values per rarity (test NEAR). The trader can move stock to
 // other places and days, so it values an Aura at least at this reference even
 // when the local order book is thin.
@@ -97,15 +116,16 @@ export function resaleValue(edition, floor = null) {
  * price = min(floor × 1.15, resale / 1.10), and it must be at least the local
  * floor (otherwise it is no premium) and the market minimum.
  */
-export function premiumBuyPrice(edition, floor = null) {
+export function premiumBuyPrice(edition, floor = null, { patron = false } = {}) {
   const resale = resaleValue(edition, floor);
   if (resale == null) return null;
   // Without local sell orders a player can only get a quick-sale price.
   const market = floor ?? bps(referenceValue(edition), QUICK_SALE_BPS);
   const cap = roundDown((resale * 10000n) / MARGIN_BPS);
-  const price = roundDown(bps(market, PREMIUM_BPS)) < cap ? roundDown(bps(market, PREMIUM_BPS)) : cap;
+  const offer = roundDown(bps(market, patron ? PATRON_PREMIUM_BPS : PREMIUM_BPS));
+  const price = offer < cap ? offer : cap;
   if (price < MILLI || price < market) return null;
-  return { price, premium: price - market, market, resale };
+  return { price, premium: price - market, market, resale, patron: !!patron };
 }
 
 /**
@@ -113,14 +133,26 @@ export function premiumBuyPrice(edition, floor = null) {
  * is at most the market price (never worse for the player than the open book)
  * and never below the margin floor. `discount` says whether it beats the book.
  */
-export function discountSellPrice(edition, costBasis, floor = null) {
+export function discountSellPrice(edition, costBasis, floor = null, { patron = false } = {}) {
   const market = floor ?? referenceValue(edition);
   if (market == null) return null;
   const marginFloor = roundUp(bps(BigInt(costBasis), MARGIN_BPS));
-  const discount = roundDown(bps(market, DISCOUNT_BPS));
+  const discount = roundDown(bps(market, patron ? PATRON_DISCOUNT_BPS : DISCOUNT_BPS));
   const price = discount > marginFloor ? discount : marginFloor;
   if (price < MILLI || price > market) return null;
-  return { price, market, marginFloor, discount: price < market };
+  return { price, market, marginFloor, discount: price < market, patron: !!patron };
+}
+
+/**
+ * Premium budget a player may still use today. Patrons may use all of what is
+ * left; others only what is left of the first (1 − reserve) share, so a
+ * premium for a patron is still there late in the day.
+ */
+export function budgetLeftFor({ budget, spent }, { patron = false } = {}) {
+  const b = BigInt(budget),
+    s = BigInt(spent);
+  const cap = patron ? b : b - bps(b, PATRON_BUDGET_RESERVE_BPS);
+  return cap > s ? cap - s : 0n;
 }
 
 /** Daily premium budget from realized 7-day profit and the first-week seed. */

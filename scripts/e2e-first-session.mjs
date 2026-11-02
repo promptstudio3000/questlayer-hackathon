@@ -204,7 +204,7 @@ async function cardOverlaps(page, where) {
         "top bar": document.querySelectorAll(".topbar"),
         "profile menu": document.querySelectorAll(".profile-menu"),
         "tab bar": document.querySelectorAll(".nav-rail"),
-        "Market entry": [...document.querySelectorAll(".play-entry")].filter((e) =>
+        "Market entry": [...document.querySelectorAll(".profile-tiles button")].filter((e) =>
           /^Market/.test(e.textContent.trim()),
         ),
       };
@@ -468,15 +468,16 @@ async function runDevice(name, server) {
     console.log("7. Sound, vibration and motion settings");
     await page.getByRole("button", { name: "Explorer profile" }).click();
     await page.getByRole("button", { name: "Profile and settings" }).click();
-    const settings = page.locator(".feedback-settings");
+    await page.getByRole("tab", { name: "Settings" }).click();
+    const settings = page.getByRole("tabpanel");
     await settings.scrollIntoViewIfNeeded();
-    await settings.getByRole("button", { name: "Sound on" }).click();
-    await settings.getByRole("button", { name: "Off" }).first().click();
-    await settings.getByRole("button", { name: "Reduce motion" }).click();
-    assert.equal(
-      await settings.getByRole("button", { name: "Reduce motion" }).getAttribute("aria-pressed"),
-      "true",
-    );
+    const sound = settings.getByRole("switch", { name: /Sound/ });
+    if ((await sound.getAttribute("aria-checked")) !== "true") await sound.click();
+    const vibration = settings.getByRole("switch", { name: /Vibration/ });
+    if ((await vibration.getAttribute("aria-checked")) === "true") await vibration.click();
+    const motion = settings.getByRole("switch", { name: /Reduce motion/ });
+    await motion.click();
+    assert.equal(await motion.getAttribute("aria-checked"), "true");
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("questlayer-feedback-v1")));
     assert.deepEqual(saved, { haptics: false, sound: true, motion: "reduce" });
     await capture(page, "settings-feedback");
@@ -484,9 +485,10 @@ async function runDevice(name, server) {
 
     console.log("8. Equip from the collection");
     await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
-    const aura = page.locator(".inventory-item-choice").first();
+    // The backpack grid: the first-session Aura is the worn cell.
+    const aura = page.locator(".inv-grid .inv-cell.worn").first();
     await aura.waitFor();
-    const auraName = (await aura.locator("strong").innerText()).trim();
+    const auraName = ((await aura.getAttribute("aria-label")) || "").split(",")[0].trim();
     assert.match(
       (await aura.getAttribute("aria-label")) || "",
       /equipped/,
@@ -494,20 +496,20 @@ async function runDevice(name, server) {
     );
     await scan(page, "inventory");
     await aura.click();
-    const itemActions = page.locator(".inventory-item-actions");
+    const itemActions = page.locator(".inv-detail-actions");
     await itemActions.getByRole("button", { name: "Take it off" }).click();
     await itemActions.getByRole("button", { name: "Try it on" }).waitFor();
     await itemActions.getByRole("button", { name: "Try it on" }).click();
     await itemActions.getByRole("button", { name: "Take it off" }).waitFor();
-    assert.match(await page.locator(".inventory-item-detail .inventory-source").innerText(), /Equipped/);
+    assert.match(await page.locator(".inv-detail .inventory-source").innerText(), /Equipped/);
     await quietToast(page);
     await capture(page, "inventory-equipped");
 
     console.log("9. Practice market order");
-    await itemActions.getByRole("button", { name: "List on market" }).click();
+    await itemActions.getByRole("button", { name: "Sell" }).click();
     await page.locator("#inventory-list-price").fill("25");
     await scan(page, "market-listing-form");
-    await page.getByRole("button", { name: "List for practice GOLD" }).click();
+    await page.locator(".inv-detail-actions").getByRole("button", { name: "List", exact: true }).click();
     await page.getByText("Your Aura is on the market.").waitFor({ timeout: 10_000 });
     await quietToast(page);
     // A second explorer, on the same device, fills the order.
@@ -533,14 +535,14 @@ async function runDevice(name, server) {
     // The seller sees the sale: the Aura has left the collection.
     await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
     await page.waitForFunction(
-      (n) => ![...document.querySelectorAll(".inventory-item-choice strong")].some((e) => e.textContent.trim() === n),
+      (n) => ![...document.querySelectorAll(".inv-grid .inv-cell:not(.locked):not(.empty)")].some((e) => (e.getAttribute("aria-label") || "").split(",")[0].trim() === n),
       auraName,
       { timeout: 15_000 },
     ).catch(async () => {
       await page.reload();
       await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
       await page.waitForFunction(
-        (n) => ![...document.querySelectorAll(".inventory-item-choice strong")].some((e) => e.textContent.trim() === n),
+        (n) => ![...document.querySelectorAll(".inv-grid .inv-cell:not(.locked):not(.empty)")].some((e) => (e.getAttribute("aria-label") || "").split(",")[0].trim() === n),
         auraName,
         { timeout: 15_000 },
       );
@@ -594,7 +596,8 @@ async function runDevice(name, server) {
       await capture(cardPage, "home-screen-card-profile-menu");
       await profileButton.click();
       await cardPage.getByRole("button", { name: "Profile", exact: true }).first().click();
-      await cardPage.locator(".play-entry").filter({ hasText: /^Market/ }).waitFor();
+      await cardPage.getByRole("tab", { name: "Character" }).click();
+      await cardPage.locator(".profile-tiles button").filter({ hasText: /^Market/ }).waitFor();
       await check("Profile screen");
       await capture(cardPage, "home-screen-card-profile-screen");
       await card.getByRole("button", { name: /Got it|Not now/ }).click();

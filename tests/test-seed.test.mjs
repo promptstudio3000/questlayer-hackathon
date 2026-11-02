@@ -104,13 +104,26 @@ test("starter kit, bots and purge leave no seed trace", () => {
     assert.equal(seed.grantKit(me, now), true);
     assert.equal(seed.grantKit(me, now), false);
     const auras = db
-      .prepare("SELECT id,name FROM inventory WHERE player_id=? AND kind='aura'")
+      .prepare("SELECT id,name,rarity,slot,equipped FROM inventory WHERE player_id=? AND kind='aura'")
       .all(me);
     assert.deepEqual(auras.map((a) => a.name).sort(), [...STARTER_KIT.auras].sort());
+    // A full backpack: every rarity, both slots, a stacked duplicate and a
+    // worn Night Sky pair; ids stay unique and seed-prefixed for purge.
+    assert.ok(auras.length >= 8);
+    assert.equal(new Set(auras.map((a) => a.id)).size, auras.length);
+    assert.ok(auras.every((a) => a.id.startsWith("seed-kit-")));
+    assert.deepEqual([...new Set(auras.map((a) => a.rarity))].sort(), ["common", "epic", "legendary", "rare"]);
+    assert.deepEqual([...new Set(auras.map((a) => a.slot))].sort(), ["above", "below"]);
+    assert.deepEqual(
+      auras.filter((a) => a.equipped).map((a) => `${a.slot}:${a.name}`).sort(),
+      ["above:Northern Lights", "below:Moon Ring"],
+    );
     assert.equal(demoProgression(db, me).earnedXp, STARTER_KIT.xp);
+    // Mid level 3 (400..900 XP) so the level bar is visibly part filled.
+    assert.equal(demoProgression(db, me).level, 3);
 
     // Selling: list the kit Aura, the seed buyer takes it after the delay.
-    const ember = auras.find((a) => a.name === "Ember Wisp");
+    const ember = auras.find((a) => a.name === "Ember Wisp" && !a.equipped);
     listItem(db, me, ember.id, 5_000 * GOLD, now);
     assert.equal(seed.tickEconomy(now + 1000).bought, 0);
     now += 60_000;
@@ -193,6 +206,33 @@ test("starter kit, bots and purge leave no seed trace", () => {
     );
     assert.equal(db.prepare("SELECT state FROM creator_quests WHERE id='my-quest'").get().state, "published");
     assert.deepEqual(seed.purge(), { removed: 0 });
+  } finally {
+    db.close();
+  }
+});
+
+test("starter kit never replaces an Aura the explorer already wears", () => {
+  const now = 1_800_000_000_000;
+  const { db, seed } = world(() => now);
+  try {
+    seed.apply();
+    const me = createPlayer(db, "Wearer", now);
+    db.prepare("INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?,?)").run(
+      "own-aura", me, "aura", "Pilgrim's Path", "rare", "below", "#c9a35a", 1, null, now,
+    );
+    assert.equal(seed.grantKit(me, now), true);
+    const worn = db
+      .prepare("SELECT id,slot FROM inventory WHERE player_id=? AND kind='aura' AND equipped=1 ORDER BY slot")
+      .all(me);
+    assert.deepEqual(
+      worn.map((a) => `${a.slot}:${a.id}`),
+      [`above:seed-kit-${me}-polar`, "below:own-aura"],
+    );
+    seed.purge();
+    assert.deepEqual(
+      db.prepare("SELECT id,equipped FROM inventory WHERE player_id=? AND kind='aura'").all(me).map((r) => ({ ...r })),
+      [{ id: "own-aura", equipped: 1 }],
+    );
   } finally {
     db.close();
   }
