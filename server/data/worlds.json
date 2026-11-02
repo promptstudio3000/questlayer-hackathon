@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "layers": [
+    {
+      "id": "aavegotchi",
+      "pack": "worlds/aavegotchi-v1.json",
+      "status": "live",
+      "default": true
+    }
+  ]
+}

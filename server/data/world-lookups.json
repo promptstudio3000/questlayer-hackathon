@@ -1,0 +1,90 @@
+{
+  "note": "Server copy of client lookups for WorldPack validation (the deploy ships server/ only). tests/world-layers.test.mjs keeps it equal to src/game-object-art-data.ts, src/actor-models.ts and docs/design-tokens.json.",
+  "objectKinds": [
+    "coin",
+    "chest",
+    "discovery",
+    "route",
+    "place"
+  ],
+  "actorModels": [
+    "chronicler",
+    "merchant",
+    "keeper",
+    "pilgrim",
+    "wisp",
+    "glitch-moth",
+    "rune-warden",
+    "pocket-wisp",
+    "storm-golem",
+    "lick-soldier",
+    "lick-brute",
+    "lick-speedy",
+    "lick-turret",
+    "lick-boss",
+    "great-portal",
+    "golden-altar"
+  ],
+  "color": {
+    "ink": "#1A0335",
+    "inkSecondary": "#665577",
+    "surface": "#FCFAFF",
+    "surfaceRaised": "#FFFFFF",
+    "surfaceSoft": "#F2EBFF",
+    "action": "#672EEB",
+    "onAction": "#FFFFFF",
+    "discovery": "#FF1DFF",
+    "onDiscovery": "#1A0335",
+    "coin": "#FEF87D",
+    "onCoin": "#1A0335",
+    "success": "#176553",
+    "successSurface": "#E3F6EE",
+    "error": "#A32947",
+    "errorSurface": "#FFF0F3",
+    "decorativeBorder": "#D7CBE9",
+    "controlBorder": "#806A99",
+    "focus": "#672EEB"
+  },
+  "textPairsToVerify": [
+    [
+      "ink",
+      "surface"
+    ],
+    [
+      "ink",
+      "surfaceRaised"
+    ],
+    [
+      "inkSecondary",
+      "surface"
+    ],
+    [
+      "inkSecondary",
+      "surfaceRaised"
+    ],
+    [
+      "inkSecondary",
+      "surfaceSoft"
+    ],
+    [
+      "onAction",
+      "action"
+    ],
+    [
+      "onDiscovery",
+      "discovery"
+    ],
+    [
+      "onCoin",
+      "coin"
+    ],
+    [
+      "success",
+      "successSurface"
+    ],
+    [
+      "error",
+      "errorSurface"
+    ]
+  ]
+}

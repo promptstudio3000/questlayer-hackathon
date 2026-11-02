@@ -1,0 +1,307 @@
+{
+  "schema": "questlayer.worldpack/1",
+  "id": "aavegotchi",
+  "version": "2026-11-02.1",
+  "kind": "official",
+  "owner": "questlayer-dev-20261101.testnet",
+  "name": {
+    "en": "Aavegotchi",
+    "cs": "Aavegotchi"
+  },
+  "lore": {
+    "en": "Gotchi explorers walk the real city, find shimmering coins and chests in parks and squares, and meet the chroniclers, keepers and pilgrims who guard the daily zones.",
+    "cs": "Gotchi průzkumníci chodí skutečným městem, hledají třpytivé mince a truhly v parcích a na náměstích a potkávají kronikáře, strážce a poutníky, kteří hlídají denní zóny.",
+    "tone": [
+      "playful",
+      "curious",
+      "friendly"
+    ],
+    "forbidden": [
+      "violence",
+      "gambling",
+      "danger"
+    ]
+  },
+  "rights": {
+    "assets": [],
+    "trademarks": [
+      {
+        "mark": "Aavegotchi",
+        "holder": "Pixelcraft Studios",
+        "evidence": "docs/ASSET-CATALOG.md (published Aavegotchi SDK developer invitation; owner confirmation 1 Nov 2026)"
+      },
+      {
+        "mark": "Gotchi",
+        "holder": "Pixelcraft Studios",
+        "evidence": "docs/ASSET-CATALOG.md (published Aavegotchi SDK developer invitation; owner confirmation 1 Nov 2026)"
+      },
+      {
+        "mark": "Gotchiverse",
+        "holder": "Pixelcraft Studios",
+        "evidence": "docs/ASSET-CATALOG.md (Gotchiverse props and monsters under the recorded developer invitation)"
+      }
+    ],
+    "ownershipSource": null
+  },
+  "skin": {
+    "tokens": {},
+    "objects": {
+      "coin": "builtin:coin",
+      "chest": "builtin:chest",
+      "discovery": "builtin:discovery",
+      "route": "builtin:route",
+      "place": "builtin:place"
+    },
+    "zoneColors": {
+      "1": "#258b73",
+      "2": "#672eeb",
+      "3": "#c29222"
+    },
+    "avatar": "aavegotchi-base"
+  },
+  "poiAffinity": {
+    "park": 3,
+    "viewpoint": 3,
+    "garden": 2,
+    "plaza": 2,
+    "monument": 2,
+    "library": 1,
+    "museum": 1
+  },
+  "questTypes": [
+    {
+      "template": "path-visit",
+      "flavour": {
+        "en": "Visit the zone",
+        "cs": "Navštiv zónu"
+      }
+    },
+    {
+      "template": "ordered-trail",
+      "flavour": {
+        "en": "Follow the trail",
+        "cs": "Projdi stezku"
+      }
+    },
+    {
+      "template": "return-trail",
+      "flavour": {
+        "en": "There and back",
+        "cs": "Tam a zpět"
+      }
+    },
+    {
+      "template": "cosmetic-chest",
+      "flavour": {
+        "en": "Open the chest",
+        "cs": "Otevři truhlu"
+      }
+    }
+  ],
+  "actors": [
+    {
+      "archetype": "storyteller",
+      "model": "chronicler",
+      "density": "1-per-city",
+      "persona": "plzen/kronikarka-bela"
+    },
+    {
+      "archetype": "trader",
+      "model": "merchant",
+      "density": "1-per-city",
+      "persona": "plzen/kupec-vojtech"
+    },
+    {
+      "archetype": "keeper",
+      "model": "keeper",
+      "density": "1-per-city",
+      "persona": "plzen/strazce-brany"
+    },
+    {
+      "archetype": "quest_giver",
+      "model": "pilgrim",
+      "density": "1-per-city",
+      "persona": "plzen/poutnice-rada"
+    },
+    {
+      "archetype": "wandering_rare",
+      "model": "wisp",
+      "density": "low",
+      "persona": "plzen/bludicka"
+    },
+    {
+      "archetype": "roamer",
+      "model": "lick-soldier",
+      "density": "medium"
+    },
+    {
+      "archetype": "roamer",
+      "model": "lick-speedy",
+      "density": "medium"
+    },
+    {
+      "archetype": "guardian",
+      "model": "lick-brute",
+      "density": "low"
+    },
+    {
+      "archetype": "guardian",
+      "model": "lick-turret",
+      "density": "low"
+    },
+    {
+      "archetype": "lurker",
+      "model": "pocket-wisp",
+      "density": "low"
+    },
+    {
+      "archetype": "boss",
+      "model": "lick-boss",
+      "density": "low"
+    }
+  ],
+  "rewards": {
+    "xpWeight": 1,
+    "editions": [
+      {
+        "id": "ember",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "dew",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "polar",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "bloom",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "storm",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "moon",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "comet",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "gold",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "nova",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "pilgrim",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "chronicle",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "ledger",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "wardbreaker",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "wisp",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "bossbane",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "stride",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "kindle",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "compass",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "quill",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "laurel",
+        "supply": 256,
+        "slot": "below"
+      },
+      {
+        "id": "summit",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "patron",
+        "supply": 256,
+        "slot": "above"
+      },
+      {
+        "id": "season",
+        "supply": 256,
+        "slot": "above"
+      }
+    ],
+    "money": "none"
+  },
+  "rules": {
+    "languages": [
+      "en",
+      "cs"
+    ],
+    "hours": [
+      "08:00",
+      "20:00"
+    ],
+    "minLevel": 1,
+    "cities": [
+      "*"
+    ],
+    "densityCapPerCell": 6,
+    "killSwitch": "WORLD_AAVEGOTCHI=0"
+  },
+  "provenance": {
+    "authoredBy": [
+      "human:lubos",
+      "claude"
+    ],
+    "promptHashes": []
+  }
+}

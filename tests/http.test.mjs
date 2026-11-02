@@ -227,6 +227,12 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     a.cookie,
   );
   assert.equal(page.status, 200);
+  // World layers: the default theme is named in responses only.
+  assert.equal(w.data.layerId, "aavegotchi");
+  assert.equal(page.data.layerId, "aavegotchi");
+  const config = await request("/config");
+  assert.equal(config.data.layerId, "aavegotchi");
+  assert.deepEqual(config.data.layers.map((l) => l.id), ["aavegotchi"]);
   assert.equal(page.data.coins.length, 7);
   assert.equal(page.data.cityZoneCount, 6);
   assert.ok(page.data.page.nextCursor);

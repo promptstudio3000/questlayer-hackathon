@@ -21,6 +21,7 @@
     "check:clean-clone": "bash scripts/clean-clone-check.sh",
     "world:prepare": "node server/prepare-worlds.mjs --once",
     "world:preview": "node server/prepare-worlds.mjs --preview",
+    "world:validate": "node server/cli/world-validate.mjs",
     "world:pilot": "node scripts/run-world-pilot.mjs",
     "staking:probe": "node scripts/probe-staking-testnet.mjs",
     "funding:simulate": "node scripts/simulate-native-funding.mjs",
