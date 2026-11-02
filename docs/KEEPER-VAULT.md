@@ -6,13 +6,13 @@ state; it never signs, moves funds or changes a chance. Code: `server/npc/keeper
 
 ## What the player sees
 
-- **Your stake today** (Keeper sheet and Fuel the city / Profile → Stake): GOLD kept for you and given to the city
+- **Your stake today** (Keeper sheet and Fuel the prize pool / Profile → Stake): GOLD kept for you and given to the global prize pool
   since the Keeper's last reading before today (or its first reading today), plus what is still growing in the pool.
   If today's coins are yield-funded, the card says how many of today's coins your realized city payments equal in
   value. That is attribution only: the coins stay shared and first come, first served.
 - **E+2 countdown** in real epochs. The vault contract counts a deposit toward tier only from the second epoch after
   it, but does not expose tranche epochs. The Keeper records the epoch it first saw a new, not-yet-mature deposit and
-  shows "matures by epoch X at the latest". At 0 % city share a stake never counts toward tier; the card says so.
+  shows "matures by epoch X at the latest". At 0 % prize pool share a stake never counts toward tier; the card says so.
 - **Ceremonies**: one-time cards when a deposit matures and when the account reaches Tier 2 or Tier 3. The first
   tier ceremony gives the cosmetic patron title, which stays after a withdrawal (no decay, D29).
 - **Inner vault**: patron story chapters, gated by tier (default Tier 2; owner decision 1 Nov: tier only, an optional level gate is configurable). Locked players see

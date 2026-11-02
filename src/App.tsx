@@ -2661,7 +2661,7 @@ export default function App() {
           settings: "Settings",
           fund: "Game economy",
           funding: "How rewards are funded",
-          fuel: "Fuel the city",
+          fuel: "Fuel the prize pool",
           expeditions: "Nearby walks",
           inventory: "Inventory",
           market: "Market",

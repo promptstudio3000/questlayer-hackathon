@@ -68,7 +68,7 @@ test("position states use pending, ready and failed words", () => {
   assert.equal(fuelStatus({ ...position(1, 100), position: null, state: "created" }).tone, "pending");
   assert.equal(fuelStatus(position(1, 100, { owner_credit: "5" })).tone, "ready");
   assert.equal(fuelStatus(position(1, 100, { stage: "unlocking" })).tone, "unlocking");
-  assert.equal(fuelStatus(position(1, 100)).label, "Fueling the city");
+  assert.equal(fuelStatus(position(1, 100)).label, "Fueling the prize pool");
 });
 
 const v2 = (principalNear, bps, extra = {}) =>

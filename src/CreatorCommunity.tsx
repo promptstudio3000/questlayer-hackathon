@@ -2514,8 +2514,8 @@ function QuestEditor({
             <span>
               <strong>Paid unlock</strong>
               <small>
-                Explorers pay once to unlock: 80% to you, 20% to the city reward
-                pot.
+                Explorers pay once to unlock: 80% to you, 20% to the global prize
+                pool.
               </small>
             </span>
           </label>

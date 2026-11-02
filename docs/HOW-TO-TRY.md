@@ -41,7 +41,7 @@ What to check:
    on desktop the card downloads. With a relayer configured (section 5) the sheet also shows **Secure this Aura**
    (no popup); after the first secured Aura it offers a passkey once.
 5. Reload the page: name, XP, item and equipment are still there.
-5a. Profile → **Fuel the city** shows the city fuel meter, your share and your tier, then one choice (Light /
+5a. Profile → **Fuel the prize pool** shows the global prize pool fuel meter, your share and your tier, then one choice (Light /
    Balanced / All in) and **Set up my stake** or **Add fuel**. Deposits are paid from your balance; with an
    invisible account there is no popup, otherwise your NEAR wallet asks. Without a vault server it says fueling isn't open.
 6. Profile → **Secure with a passkey** (also offered as "Secure your explorer with a passkey" after the first
