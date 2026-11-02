@@ -64,7 +64,12 @@ export type Zone = {
   lat: number;
   lng: number;
   radius: number;
-  geometry?: { type: "Polygon"; coordinates: number[][][] };
+  geometry?:
+    | { type: "Polygon"; coordinates: number[][][] }
+    // POI category hunts (W6): one small circle per stop.
+    | { type: "MultiPolygon"; coordinates: number[][][][] };
+  /** "poi" for a street-cell POI quest place (W6). */
+  source?: string;
   sector?: string;
   shapeFamily?: string;
   kind: string;
@@ -132,6 +137,12 @@ export type World = {
   coinRadius?: number;
   streetFindXp?: number;
   quality?: { notice: string; fieldReview: string };
+  /** Street cells: today's POI quests (W6). "empty" = nothing here yet. */
+  poiQuests?: {
+    status: "ready" | "empty";
+    count: number;
+    notice?: string;
+  };
   endsAt: number;
   zones: Zone[];
   coins: Coin[];

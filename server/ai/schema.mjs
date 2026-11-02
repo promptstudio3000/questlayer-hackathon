@@ -23,3 +23,15 @@ CREATE TABLE IF NOT EXISTS ai_proposals(id TEXT PRIMARY KEY,city_id TEXT NOT NUL
 CREATE TABLE IF NOT EXISTS ai_operator_audit(seq INTEGER PRIMARY KEY,id TEXT NOT NULL UNIQUE,operator TEXT NOT NULL,action TEXT NOT NULL,target TEXT NOT NULL,detail TEXT NOT NULL CHECK(json_valid(detail)),created_at INTEGER NOT NULL,prev_hash TEXT NOT NULL,hash TEXT NOT NULL)
 `,
 });
+
+// Quest flavour cache (W8, docs/QUEST-FLAVOUR.md). Texts are written only by
+// the nightly batch, after validation; player requests only read them.
+export const FLAVOUR_SCHEMA = registerModuleSchema({
+  name: "ai-flavour",
+  version: 1,
+  sql: `
+CREATE TABLE IF NOT EXISTS ai_flavour_cache(poi_id TEXT NOT NULL,template TEXT NOT NULL,layer_id TEXT NOT NULL,lang TEXT NOT NULL,prompt_version TEXT NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL,provider TEXT NOT NULL,model TEXT,input_hash TEXT NOT NULL,batch_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(poi_id,template,layer_id,lang,prompt_version));
+CREATE TABLE IF NOT EXISTS ai_flavour_batches(id TEXT PRIMARY KEY,trigger TEXT NOT NULL CHECK(trigger IN('nightly','manual')),provider TEXT NOT NULL,model TEXT,prompt_version TEXT NOT NULL,layer_id TEXT NOT NULL,since_ms INTEGER NOT NULL,regions INTEGER NOT NULL DEFAULT 0,cells INTEGER NOT NULL DEFAULT 0,pois INTEGER NOT NULL DEFAULT 0,requested INTEGER NOT NULL DEFAULT 0,generated INTEGER NOT NULL DEFAULT 0,rejected INTEGER NOT NULL DEFAULT 0,failed_calls INTEGER NOT NULL DEFAULT 0,calls INTEGER NOT NULL DEFAULT 0,tokens_used INTEGER NOT NULL DEFAULT 0,token_budget INTEGER NOT NULL,outcome TEXT NOT NULL CHECK(outcome IN('running','completed','budget','skipped','failed')),reason TEXT,started_at INTEGER NOT NULL,finished_at INTEGER);
+CREATE INDEX IF NOT EXISTS ai_flavour_batches_time ON ai_flavour_batches(started_at)
+`,
+});

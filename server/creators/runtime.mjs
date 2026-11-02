@@ -56,7 +56,14 @@ export function creatorConfiguration(env = process.env) {
 // mounts only player operations; trusted operator actions use the local CLI.
 export function createCreatorRuntime(
   db,
-  { env = process.env, origin, authenticate, clock = Date.now, drafts = true },
+  {
+    env = process.env,
+    origin,
+    authenticate,
+    clock = Date.now,
+    drafts = true,
+    admitStart = null,
+  },
 ) {
   const config = creatorConfiguration(env);
   const services = config.enabled
@@ -90,6 +97,7 @@ export function createCreatorRuntime(
     enabled: config.enabled,
     origin,
     authenticate,
+    admitStart,
   });
   async function handle(req, res) {
     const url = new URL(req.url, origin);
