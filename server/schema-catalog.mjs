@@ -20,6 +20,7 @@ for (const relative of [
   "./npc/trader-ledger.mjs",
   "./operator/world-controls.mjs",
   "./relayer/schema.mjs",
+  "./season/schema.mjs",
   "./spatial/place-safety.mjs",
   "./staker-gates.mjs",
   "./task-evidence.mjs",
