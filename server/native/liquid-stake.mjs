@@ -24,6 +24,7 @@ export const KNOWN_TOKENS = {
     { id: "stnear", label: "stNEAR (Meta Pool)", contract: "meta-pool.near", price: "get_st_near_price", instantExit: "metapool", app: "https://www.metapool.app/" },
     { id: "linear", label: "LiNEAR", contract: "linear-protocol.near", price: "ft_price", instantExit: null, app: "https://app.linearprotocol.org/" },
     { id: "rnear", label: "rNEAR (Rhea)", contract: "lst.rhealab.near", price: "ft_price", instantExit: null, app: "https://app.rhea.finance/" },
+    { id: "nearx", label: "NearX (Stader)", contract: "v2-nearx.stader-labs.near", price: "get_nearx_price", instantExit: null, app: "https://www.staderlabs.com/near/" },
   ],
 };
 
