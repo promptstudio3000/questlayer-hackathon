@@ -25,6 +25,11 @@ All in `server/npc/trader-pricing.mjs` (pure, unit-tested):
 - **Sweep:** the keeper withdraws credit above float + 0.25 buffer (only when no buy order is open) and pays it into
   rewards `fund_rewards("sponsor", "npc-<id>-<yyyymmdd>-<n>")`, then re-deposits the float. Each sweep is a
   public receipt and appears in `GET /api/npc/traders`.
+- **Patron rates (GAME-LOOPS P1-5, Tier 2+, tier only, no level gate):** stock sells at `max(market × 0.85,
+  cost × 1.10)`; premium buys at `min(market × 1.20, resale / 1.10)`; a patron-only 3 rares → 1 epic trade-up
+  (the epic comes from game edition supply, the rares become stock at cost 0); and the premium budget prefers
+  patrons: non-patrons may spend only the first 50 % of a day's budget, patrons the rest. The tier is checked
+  again on accept (`NPC_TRADE_PATRON`). The margin floor, caps and sweep are unchanged, so the float still grows.
 
 ## Starting stock (keeper, every 10 min)
 

@@ -11,8 +11,12 @@
 //               released only to the player standing next to the trader).
 //   trade_up    the player hands 3 commons to the trader account and receives
 //               one rare Aura (game claim, secured via award-signed redeem).
+//               Patrons (Tier 2+) also get a 3 rares → 1 epic table.
+// Patron rates (GAME-LOOPS P1-5): Tier 2+ players get a deeper stock discount,
+// a higher premium and first call on the premium budget, all inside the
+// margin floor (trader-pricing.mjs). Gated by stake tier only.
 // Ten settled trades with one trader earn the NPC-only Merchant's Ledger Aura.
-import { GameError, assert, hash } from "../domain.mjs";
+import { GameError, assert, hash, positionTier, tierFor } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
 import { AURA_CATALOG, AURA_SUPPLY } from "../aura-catalog.mjs";
 import { id } from "../domain.mjs";
@@ -28,7 +32,10 @@ import {
   NPC_TRADER_POLICY,
   SELL_TTL_MS,
   TRADEUP_COMMONS,
+  TRADEUP_TABLES,
+  budgetLeftFor,
   discountSellPrice,
+  isPatron,
   editionOf,
   formatNear,
   premiumBudget,
@@ -140,6 +147,17 @@ export function createTraderService({
   const credit = async (trader, fresh = false) =>
     BigInt((await market.view("get_account", { account_id: trader.accountId }, fresh))?.credit || "0");
 
+  /** The player's stake tier, as the world view computes it (positions, matured). */
+  function tierOf(player) {
+    const now = clock();
+    return tierFor(
+      db
+        .prepare("SELECT * FROM positions WHERE player_id=?")
+        .all(player)
+        .reduce((n, p) => n + positionTier(p, now), 0),
+    );
+  }
+
   function budgetFor(trader, dayId) {
     const first = trader.fundedAt || ledger.firstActivity(trader.actorId) || clock();
     const daysActive = Math.floor((clock() - first) / DAY);
@@ -156,6 +174,8 @@ export function createTraderService({
     await reconcile({ trader: actor.id }).catch(() => {});
     if (ledger.tradesToday(actor.id, dayId, player) >= MAX_TRADES_PER_PLAYER_DAY) return [];
     if (ledger.tradesToday(actor.id, dayId) >= MAX_TRADES_PER_TRADER_DAY) return [];
+    const patron = isPatron(tierOf(player));
+    const rate = patron ? " (patron rate)" : "";
     const accounts = linked(player);
     const book = await listings();
     const offers = [];
@@ -166,18 +186,19 @@ export function createTraderService({
       if (offers.length >= 2) break;
       if (!escrowed.has(lot.token_id) || ledger.openSellFor(actor.id, lot.token_id)) continue;
       const edition = editionOf(lot.token_id);
-      const p = discountSellPrice(edition, BigInt(lot.cost), floorFor(edition));
+      const p = discountSellPrice(edition, BigInt(lot.cost), floorFor(edition), { patron });
       if (!p) continue;
       offers.push({
         id: offerId("trade_sell", [actor.id, dayId, player, lot.token_id, p.price]),
         kind: "trade_sell",
-        label: `Buy ${tokenLabel(lot.token_id)} for ${formatNear(p.price)} test NEAR${p.discount ? " (below market)" : ""}`,
+        label: `Buy ${tokenLabel(lot.token_id)} for ${formatNear(p.price)} test NEAR${p.discount ? " (below market)" : ""}${p.discount ? rate : ""}`,
         terms: {
           tokenId: lot.token_id,
           edition,
           price: p.price.toString(),
           market: p.market.toString(),
           discount: p.discount,
+          patron,
           trader: trader.accountId,
           ttlMs: SELL_TTL_MS,
           policy: NPC_TRADER_POLICY,
@@ -191,18 +212,18 @@ export function createTraderService({
       const wanted = wantedEditions(actor.id, dayId);
       const budget = budgetFor(trader, dayId);
       let free = (await credit(trader)) - ledger.reservedForBuys(actor.id);
-      let premiumLeft = budget.left;
+      let premiumLeft = budgetLeftFor(budget, { patron });
       for (const edition of wanted) {
         const token = mine.find((t) => editionOf(t.tokenId) === edition && !ledger.tokenInTradeUp(t.tokenId));
         if (!token) continue;
-        const p = premiumBuyPrice(edition, floorFor(edition));
+        const p = premiumBuyPrice(edition, floorFor(edition), { patron });
         if (!p || p.premium > premiumLeft || p.price > free) continue;
         premiumLeft -= p.premium;
         free -= p.price;
         offers.push({
           id: offerId("trade_buy", [actor.id, dayId, player, token.tokenId, p.price]),
           kind: "trade_buy",
-          label: `Sell me your ${tokenLabel(token.tokenId)} for ${formatNear(p.price)} test NEAR (+${formatNear(p.premium)} over market)`,
+          label: `Sell me your ${tokenLabel(token.tokenId)} for ${formatNear(p.price)} test NEAR (+${formatNear(p.premium)} over market)${rate}`.slice(0, 120),
           terms: {
             tokenId: token.tokenId,
             accountId: token.accountId,
@@ -214,31 +235,40 @@ export function createTraderService({
             trader: trader.accountId,
             ttlMs: BUY_TTL_MS,
             wanted: true,
+            patron,
             policy: NPC_TRADER_POLICY,
           },
           expiresAt: until,
         });
       }
-      // Trade-up: three commons (held directly, not escrowed) for one rare.
-      const rare = AURA_CATALOG.filter((e) => e.native && e.source === "chest" && e.rarity === "rare")
-        .map((e) => e.id)
-        .sort((a, b) => hash(`${actor.id}|${dayId}|${a}`).localeCompare(hash(`${actor.id}|${dayId}|${b}`)))
-        .find((e) => editionLeft(db, e));
-      const byAccount = new Map();
-      for (const t of mine)
-        if (!t.escrowed && rarityOf(editionOf(t.tokenId)) === "common" && !ledger.tokenInTradeUp(t.tokenId))
-          byAccount.set(t.accountId, [...(byAccount.get(t.accountId) || []), t.tokenId]);
-      const pick = [...byAccount.entries()].find(([, list]) => list.length >= TRADEUP_COMMONS);
-      if (rare && pick) {
+      // Trade-ups (held directly, not escrowed): 3 commons → 1 rare for
+      // everyone, 3 rares → 1 epic for patrons. The received Aura comes from
+      // game edition supply, so the trader only gains stock.
+      const inTrade = new Set();
+      for (const table of TRADEUP_TABLES) {
+        if (table.patron && !patron) continue;
+        const target = AURA_CATALOG.filter((e) => e.native && e.source === "chest" && e.rarity === table.get)
+          .map((e) => e.id)
+          .sort((a, b) => hash(`${actor.id}|${dayId}|${a}`).localeCompare(hash(`${actor.id}|${dayId}|${b}`)))
+          .find((e) => editionLeft(db, e));
+        const byAccount = new Map();
+        for (const t of mine)
+          if (!t.escrowed && rarityOf(editionOf(t.tokenId)) === table.give && !inTrade.has(t.tokenId) && !ledger.tokenInTradeUp(t.tokenId))
+            byAccount.set(t.accountId, [...(byAccount.get(t.accountId) || []), t.tokenId]);
+        const pick = [...byAccount.entries()].find(([, list]) => list.length >= TRADEUP_COMMONS);
+        if (!target || !pick) continue;
         const tokens = pick[1].sort().slice(0, TRADEUP_COMMONS);
+        tokens.forEach((x) => inTrade.add(x));
         offers.push({
-          id: offerId("trade_up", [actor.id, dayId, player, ...tokens, rare]),
+          id: offerId("trade_up", [actor.id, dayId, player, ...tokens, target]),
           kind: "trade_up",
-          label: `Trade ${tokens.map(tokenLabel).join(", ")} for one ${editionName(rare)}`.slice(0, 120),
+          label: `Trade ${tokens.map(tokenLabel).join(", ")} for one ${editionName(target)}${table.patron ? rate : ""}`.slice(0, 120),
           terms: {
             tokens,
             accountId: pick[0],
-            edition: rare,
+            edition: target,
+            give: table.give,
+            patron: table.patron,
             trader: trader.accountId,
             ttlMs: TRADEUP_TTL_MS,
             policy: NPC_TRADER_POLICY,
@@ -298,6 +328,9 @@ export function createTraderService({
       now = clock(),
       t = offer.terms;
     capCheck(actor.id, dayId, player);
+    // A patron rate needs the tier at accept time too (stake may have moved).
+    const patron = isPatron(tierOf(player));
+    assert(!t.patron || patron, "This rate is for patrons (Tier 2) only.", 403, "NPC_TRADE_PATRON");
     if (offer.kind === "trade_up") {
       assert(t.tokens.every((x) => !ledger.tokenInTradeUp(x)), "One of these Auras is already in a trade.", 409, "NPC_TRADE_GONE");
       assert(linked(player).includes(t.accountId), "Link this NEAR account first.", 403);
@@ -329,7 +362,7 @@ export function createTraderService({
       price = BigInt(t.price);
       premium = BigInt(t.premium);
       const budget = budgetFor(trader, dayId);
-      assert(premium <= budget.left, "The trader is out of premium budget today.", 409, "NPC_TRADE_BUDGET");
+      assert(premium <= budgetLeftFor(budget, { patron }), "The trader is out of premium budget today.", 409, "NPC_TRADE_BUDGET");
       assert(price <= (await credit(trader, true)) - ledger.reservedForBuys(actor.id), "The trader's purse is empty right now.", 409, "NPC_TRADE_BUDGET");
       deadlineMs = now + BUY_TTL_MS;
     } else {

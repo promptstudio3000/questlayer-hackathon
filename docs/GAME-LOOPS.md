@@ -69,7 +69,7 @@ it says so rather than guessing.
 | Keeper | Reads stake and vaults | Information only | Nothing | **Dead end**: the bank NPC does nothing a player wants. |
 | Monsters (roamer, guardian, lurker) | Quiz / mini-game / stance duel | XP, shards, roll tickets | Guardian unlocks chests; shards to altar | Good, but shards have one recipe. |
 | Weekly boss | Hits every 10 min | 60 XP, roll ticket, Bossbane Fangring at 3+ hits | Social, wardrobe | Good; needs a visible schedule so people plan for it. |
-| Roll tickets (npc-games) | Earns from lurkers/boss | Commit-reveal roll for an Aura | Wardrobe | **Dead end until redeemed** (worker still has to sign `earned:npc-roll:*`). |
+| Roll tickets (npc-games) | Earns from lurkers/boss | Commit-reveal roll for an Aura | Wardrobe | Redeemable: Inventory → Secured → Roll at the wisp (docs/NPC-GAMES.md). |
 | Altar crafting | 10 shards + common Aura + guardian win | Wardbreaker Horns | Wardrobe | One recipe, then nothing. |
 | Staking / Fuel the city | Deposits NEAR, picks 0–100 % contribution | Tier after E+2, retained yield, pot grows | T2/T3 zones, Today's pot | **Weak**: two epochs of silence after deposit, tier benefits are not shown before or after. |
 | Today's pot | Looks | Understanding | Motivation | Good idea, needs the player's own share in it. |
@@ -189,7 +189,7 @@ P0 should land before the submission (14 Nov), P1 if time allows, P2 after.
 | P1-2 | Patron rank by matured stake age (done: `server/npc/patron-rank.mjs`, see KEEPER-VAULT.md) | Kinship-like retention for stakers | Yes (new track) |
 | P1-3 | Hackathon season with cosmetic leaderboard and season pot meter | Week rhythm, demo story for judges | Yes |
 | P1-4 | More altar recipes | Shard and common-Aura sinks | No |
-| P1-5 | Patron trader rates | Better deals without breaking the float rule | Trader parameters |
+| P1-5 | Patron trader rates | Better deals without breaking the float rule | Done: trader-pricing.mjs (patron discount 0.85, premium 1.20, rare→epic table, budget reserve 50 %) |
 | P2-1 | Co-op boss bonus when several players hit within the same window (guild channeling idea) | Social play | No |
 | P2-2 | Push-your-luck trails, route preview with monsters | Makes walks interesting | No |
 | P2-3 | Stance "prep" before duels (Battler-style) | Depth in combat without selling power | No |

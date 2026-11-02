@@ -58,13 +58,15 @@ export class AwardVouchers {
     db,
     native,
     signer,
-    { clock = Date.now, ttlMs = 15 * 60000 } = {},
+    { clock = Date.now, ttlMs = 15 * 60000, claimIdFor = null } = {},
   ) {
     this.db = db;
     this.native = native;
     this.signer = signer;
     this.clock = clock;
     this.ttlMs = ttlMs;
+    // Rewards that already reserved a claim id (NPC rolls: earned:npc-roll:<id>).
+    this.claimIdFor = claimIdFor;
   }
   publicInfo() {
     return {
@@ -175,7 +177,7 @@ export class AwardVouchers {
         ).run(
           itemId,
           // NPC and monster editions need earned:npc: / earned:monster: on-chain.
-          awardClaimPrefix(edition) + id("aura"),
+          this.claimIdFor?.(itemId) || awardClaimPrefix(edition) + id("aura"),
           player,
           receiverId,
           edition,

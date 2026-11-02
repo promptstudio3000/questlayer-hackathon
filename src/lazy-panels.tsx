@@ -116,6 +116,7 @@ export const NativeStaking = lazyNamed(
   "NativeStaking",
 );
 export const AuraClaims = lazyNamed(() => import("./AuraClaims"), "AuraClaims");
+export const WispRolls = lazyNamed(() => import("./WispRolls"), "WispRolls");
 export const NativeWardrobe = lazyNamed(
   () => import("./NativeWardrobe"),
   "NativeWardrobe",
