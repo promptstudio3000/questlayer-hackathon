@@ -53,6 +53,16 @@ export interface StakeCard {
     missing: string[];
     stakeNear?: string;
     chapters: { title: string; text?: string; locked?: boolean }[];
+    /** Patron's Path: progress through the patron quest lines (P1-1). */
+    path?: {
+      done: number;
+      of: number;
+      story: { title: string; text?: string; locked?: boolean }[];
+      edition: { id: string; name: string | null; available: boolean; earned: boolean };
+      /** What the next step and the Aura need (staker gates: step AND level). */
+      next?: { key: string; open: boolean; missing: string[]; stakeNear?: string } | null;
+      auraGate?: { key: string; open: boolean; missing: string[] } | null;
+    };
   };
   linked?: number;
 }
@@ -244,7 +254,40 @@ export function InnerVault({ card }: { card: StakeCard }) {
           </li>
         ))}
       </ol>
+      {inner.path && <PatronPath path={inner.path} open={inner.open} />}
     </section>
+  );
+}
+
+function PatronPath({ path, open }: { path: NonNullable<StakeCard["inner"]["path"]>; open: boolean }) {
+  const reward = path.edition.earned
+    ? `You wear the ${path.edition.name} Aura.`
+    : path.edition.available
+      ? `Finish it for the ${path.edition.name} Aura (cosmetic, once per player).`
+      : "Finish it for the patron edition Aura (cosmetic, arrives with the next collectibles upgrade).";
+  return (
+    <div className="patron-path" aria-label="Patron's Path">
+      <h4>
+        Patron's Path · {path.done}/{path.of}
+      </h4>
+      <p className="stake-note">
+        {path.next && !path.next.open
+          ? `Next step needs: ${path.next.missing.join(" · ")}. `
+          : open || path.next?.open
+            ? "Take a patron walk from a quest giver or a patron chapter from a storyteller, one each per day. "
+            : "Patron walks and chapters open for stakers. "}
+        {reward}
+        {path.auraGate && !path.auraGate.open && !path.edition.earned ? ` The Aura needs: ${path.auraGate.missing.join(" · ")}.` : ""}
+      </p>
+      <ol>
+        {path.story.map((c) => (
+          <li key={c.title} className={c.locked ? "locked" : ""}>
+            <strong>{c.title}</strong>
+            {c.text && <p>{c.text}</p>}
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 

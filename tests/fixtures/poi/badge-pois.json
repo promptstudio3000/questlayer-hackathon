@@ -1,0 +1,8 @@
+[
+ {"id":"osm:n1","name":"Rozhledna Krkavec","names":{"cs":"Rozhledna Krkavec"},"category":"viewpoint","lat":49.8051,"lng":13.3968,"notability":30,"safety":"ok","country":"CZ","region":"Plzeňský kraj"},
+ {"id":"osm:n2","name":"Some Bench","category":"bench_with_view","lat":49.80,"lng":13.39,"notability":90,"safety":"ok"},
+ {"id":"osm:n3","name":"Hrad Radyně","category":"castle","lat":49.6857,"lng":13.4155,"notability":60,"safety":"ok","country":"CZ"},
+ {"id":"osm:n4","name":"Unknown Tower","category":"landmark_tower","lat":49.9,"lng":13.5,"notability":2,"safety":"ok"},
+ {"id":"osm:n5","name":"Military Ruin","category":"ruins","lat":49.95,"lng":13.6,"notability":80,"safety":"excluded"},
+ {"id":"osm:n6","name":"Katedrála sv. Bartoloměje","category":"historic_building","lat":49.7476,"lng":13.3776,"notability":200,"safety":"ok"}
+]

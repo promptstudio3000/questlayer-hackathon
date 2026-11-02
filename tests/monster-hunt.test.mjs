@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
@@ -8,7 +9,7 @@ import { PLZEN } from "../server/spatial/city-pack.mjs";
 import { loadCityActors } from "../server/actors/definitions.mjs";
 import { planSpawns, LURKER_FIND_RADIUS_M } from "../server/actors/spawns.mjs";
 import { distance } from "../server/domain.mjs";
-import { createHuntRewards, CRAFT_SHARDS, DAILY_SHARD_CAP, ALTAR_ACCOUNT } from "../server/actors/hunt/rewards.mjs";
+import { createHuntRewards, CRAFT_SHARDS, DAILY_SHARD_CAP, ALTAR_ACCOUNT, ALTAR_RECIPES } from "../server/actors/hunt/rewards.mjs";
 import { createChestGuard } from "../server/actors/hunt/guardians.mjs";
 import { createBossService, weekIdFor, hitDamage, BOSS_HIT_COOLDOWN_MS } from "../server/actors/hunt/boss.mjs";
 import { createRhythm, scoreRhythm, MINIGAMES } from "../server/actors/challenges/minigames.mjs";
@@ -108,6 +109,51 @@ test("crafting turns 10 shards and a common Aura into Wardbreaker Horns", () => 
   assert.equal(rewards.summary(p, DAY).shardTotal, 0);
   // One from the first guardian win (once per player), one from the altar.
   assert.equal(db.prepare("SELECT minted FROM editions WHERE name='Wardbreaker Horns'").get().minted, 2);
+});
+
+test("altar recipes sink element shards and common Auras into existing native editions", () => {
+  const db = setup();
+  const rewards = createHuntRewards(db);
+  const p = createPlayer(db, "Alchemist");
+  const catalog = JSON.parse(readFileSync(new URL("../server/data/aura-catalog.json", import.meta.url), "utf8"));
+  assert.ok(ALTAR_RECIPES.length >= 4);
+  for (const r of ALTAR_RECIPES) assert.equal(catalog.editions.find((e) => e.id === r.edition)?.native, true, r.id);
+  // Frost recipe: frost shards only, no guardian needed.
+  for (let i = 0; i < 5; i++) rewards.onChallengeResult(win(p, "roamer", `lickquidator-s${i}`, { element: "storm" }));
+  for (let i = 0; i < 5; i++) rewards.onChallengeResult(win(p, "roamer", `lickquidator-f${i}`, { element: "frost" }));
+  addAura(db, p);
+  let frost = rewards.summary(p, DAY).altar.recipes.find((r) => r.id === "frost-lights");
+  assert.deepEqual(frost.needs, ["shards"]);
+  assert.throws(() => rewards.craft(p, { dayId: DAY, recipe: "frost-lights" }), (e) => e.code === "CRAFT_SHARDS");
+  rewards.onChallengeResult(win(p, "roamer", "lickquidator-f5", { element: "frost" }));
+  frost = rewards.summary(p, DAY).altar.recipes.find((r) => r.id === "frost-lights");
+  assert.equal(frost.ready, true);
+  const out = rewards.craft(p, { dayId: DAY, recipe: "frost-lights" });
+  assert.equal(out.item.name, "Northern Lights");
+  assert.deepEqual(out.spent, { frost: 6 });
+  assert.equal(rewards.shardsOf(p).storm, 5);
+  // Shared daily limit across recipes.
+  assert.throws(() => rewards.craft(p, { dayId: DAY, recipe: "frost-lights" }), (e) => e.code === "CRAFT_DAILY");
+  assert.throws(() => rewards.craft(p, { dayId: DAY, recipe: "nope" }), (e) => e.code === "CRAFT_RECIPE");
+});
+
+test("epic altar recipes need a guardian win and two common Auras", () => {
+  const db = setup();
+  const rewards = createHuntRewards(db);
+  const p = createPlayer(db, "Stormcaller");
+  const NEXT = "2026-11-03";
+  for (let i = 0; i < 8; i++) rewards.onChallengeResult(win(p, "roamer", `lickquidator-${i}`, { element: "storm" }));
+  const one = addAura(db, p);
+  assert.throws(() => rewards.craft(p, { dayId: NEXT, recipe: "storm-crown" }), (e) => e.code === "CRAFT_GUARDIAN");
+  rewards.onChallengeResult(win(p, "guardian", "lick-brute-1", { element: "void" }));
+  assert.throws(() => rewards.craft(p, { dayId: NEXT, recipe: "storm-crown" }), (e) => e.code === "CRAFT_AURA");
+  const two = addAura(db, p);
+  const out = rewards.craft(p, { dayId: NEXT, recipe: "storm-crown", itemId: two });
+  assert.equal(out.item.name, "Stormcrown");
+  assert.deepEqual(out.offeredAll.map((a) => a.id), [two, one]);
+  for (const id of [one, two]) assert.equal(db.prepare("SELECT player_id FROM inventory WHERE id=?").get(id).player_id, ALTAR_ACCOUNT);
+  assert.equal(rewards.shardsOf(p).storm, 0);
+  assert.equal(rewards.shardsOf(p).void, 2);
 });
 
 test("a guardian on duty locks its zone chest until you beat it", () => {

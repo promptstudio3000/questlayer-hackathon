@@ -1797,6 +1797,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "questlayer-badges"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "near-sdk",
+]
+
+[[package]]
 name = "questlayer-collectibles"
 version = "0.1.0"
 dependencies = [

@@ -30,8 +30,9 @@ import {
 import { createNpcStore } from "./store.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { ACTORS_SCHEMA } from "../actors/schema.mjs";
-import { playerStakerAccess } from "../staker-gates.mjs";
+import { checkGate, playerStakerAccess } from "../staker-gates.mjs";
 import { PILGRIM_LINES, awardEditionOnce, ensureEarnedEditions } from "../earned-editions.mjs";
+import { PATRON_AURA_GATE, PATRON_EDITION, PATRON_PATH_LINES, completedPatronLines, isPatronRow, npcMenuCounts, patronStoryFor } from "./patron-path.mjs";
 
 const WORLD_FACTS = new Set(["mode", "paused", "zones", "progress", "next", "later", "safety"]);
 const rowId = (offerId, player) => `${offerId}@${player}`;
@@ -78,23 +79,13 @@ export function createNpcService(
     const persona = personaOf(actor);
     const now = clock();
     const rows = store.offersFor(player, actor.id);
-    const today = rows.filter((r) => r.terms.worldId === world?.id);
     const level = playerLevel(player);
     const access = playerStakerAccess(db, player, { worldTier: world?.playerTier, level });
-    const menu = bound ?? buildMenu({
-      actor,
-      persona,
-      world,
-      now,
-      done: new Set(today.map((r) => r.terms.offerId)),
-      linesToday: today.filter((r) => r.kind === "quest").length,
-      chapters: rows.filter((r) => r.kind === "chapter" && r.state === "completed").length,
-      level,
-      access,
-    });
+    const counts = npcMenuCounts(db, player, rows, world?.id);
+    const menu = bound ?? buildMenu({ actor, persona, world, now, ...counts, level, access });
     // Locked chips are recomputed every time (never bound to the encounter):
     // they are presentation only and can never be accepted.
-    const locked = lockedOffers({ actor, persona, world, now, level, access, priceEur: priceEur() });
+    const locked = lockedOffers({ actor, persona, world, now, level, access, priceEur: priceEur(), patronDone: counts.patronDone });
     return { persona, now, rows, menu, locked, level };
   }
 
@@ -111,6 +102,7 @@ export function createNpcService(
         })),
         xp: r.terms.xp,
         aura: !!r.terms.aura,
+        ...(r.terms.patron ? { patron: { pathLine: r.terms.pathLine, pathOf: r.terms.pathOf } } : {}),
       }));
   }
 
@@ -274,6 +266,19 @@ export function createNpcService(
       }
       if (row.kind === "quest" && store.completedQuestLines(player) >= PILGRIM_LINES)
         edition = awardEditionOnce(db, player, "pilgrim", `npc:${actor.id}:${offerId}`, now);
+      // Patron's Path (P1-1): each patron line reveals the next patron story
+      // chapter; the path's end earns the patron edition once per player. A
+      // line finished before the edition existed pays it on the next one.
+      let patron = null;
+      if (isPatronRow(row)) {
+        const step = completedPatronLines(db, player);
+        // The edition has its own gate (patron_aura); a player below it keeps
+        // the progress and gets the Aura on a later patron line.
+        const auraOpen = checkGate(PATRON_AURA_GATE, playerStakerAccess(db, player, { worldTier: world?.playerTier, level: playerLevel(player) })).open;
+        const seal = step >= PATRON_PATH_LINES && auraOpen ? awardEditionOnce(db, player, PATRON_EDITION, `npc:${actor.id}:${offerId}`, now) : null;
+        if (seal && !edition) edition = seal;
+        patron = { pathLine: Math.min(step, PATRON_PATH_LINES), pathOf: PATRON_PATH_LINES, story: patronStoryFor(step), edition: seal };
+      }
       store.remember(player, actor.id, null, 1);
       history(db, player, "npc-quest", `Task from ${personaOf(actor).name}`, 0, {
         actor: actor.id,
@@ -281,6 +286,7 @@ export function createNpcService(
         xp,
         aura: aura?.name || null,
         edition: edition?.name || null,
+        ...(patron ? { patron: patron.pathLine } : {}),
         policy: NPC_OFFER_POLICY,
       });
       return {
@@ -289,6 +295,7 @@ export function createNpcService(
         xp,
         aura,
         ...(edition ? { edition } : {}),
+        ...(patron ? { patron } : {}),
         ...(row.terms.aura && !aura && !edition ? { note: "No Aura edition you are entitled to has supply left today; the XP still counts." } : {}),
         ...(row.kind === "chapter" ? { chapter: row.terms.chapter, setSize: STORY_SET_SIZE } : {}),
       };
