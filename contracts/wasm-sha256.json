@@ -11,7 +11,8 @@
     "questlayer_rewards": "9fc25ac69c71d227f1ba78e980d9461d358752e2a6b786e39a91546e56418a50",
     "questlayer_tasks": "055954f30c81b4dfd56b3bd9a88c469aeb74c50d5eb4eb83f9aeb5b8bbc51751",
     "questlayer_vault": "9bc4ffa8d4b7c2f403efa7ebb2cc1bc20e086039d5c690fdbdd82aaff93347d5",
-    "questlayer_vault_factory": "b459ef272d62077540a617feb35bfff71b71d8c88bb6e171ae7a448728a06f0b"
+    "questlayer_vault_factory": "b459ef272d62077540a617feb35bfff71b71d8c88bb6e171ae7a448728a06f0b",
+    "questlayer_yield_vault": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700"
   },
   "testnetDeploymentsNotFromThisBuild": {
     "about": "Testnet records whose deployed WASM was built before reproducible builds (or from older source) and so cannot match today's build. Each entry pins the exact recorded hash: a new deployment record must either match the reproducible build or be added here on purpose. Mainnet deploys must never appear here.",

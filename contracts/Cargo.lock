@@ -1875,6 +1875,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "questlayer-yield-vault"
+version = "0.1.0"
+dependencies = [
+ "near-sdk",
+ "primitive-types",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
