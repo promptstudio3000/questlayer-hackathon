@@ -69,6 +69,38 @@ const TEMPLATES = [
   },
 ];
 
+// POI quests in street cells (docs/WORLDS-PLAN.md C.3/C.4, task W6). They
+// validate like path-visit and the ordered trail, but their targets come from
+// the checked POI file (safety "ok", snapped to a public path), never from a
+// zone polygon, and a category hunt takes its stops in any order.
+const POI_TEMPLATES = [
+  {
+    id: "poi-visit",
+    kind: "visit",
+    icon: "visit",
+    title: "Place visit",
+    objective: "Reach the marked public spot next to this place and confirm your visit.",
+    actionLabel: "Confirm visit",
+    stepLabels: ["Reach the marker"],
+    evidenceKind: "point-proximity",
+    distinctTargets: 1,
+    rewardConstraint: "Personal XP once. No GOLD or NEAR prize.",
+  },
+  {
+    id: "poi-category-hunt",
+    kind: "route",
+    icon: "trail",
+    title: "Place hunt",
+    objective: "Visit three places of one kind in this area today, in any order.",
+    actionLabel: "Record stop",
+    stepLabels: ["Find one", "Find another", "Find the last one"],
+    evidenceKind: "unordered-proximity",
+    distinctTargets: 3,
+    rewardConstraint:
+      "Personal XP once after the last stop. No GOLD or NEAR prize.",
+  },
+];
+
 const SAFETY = {
   access: "mapped-paths-only",
   routing: "straight-line-only",
@@ -88,6 +120,7 @@ export function questTemplateCatalog() {
       ...t,
       stepLabels: [...t.stepLabels],
       status: "implemented",
+      scope: "zone",
       modes: ["demo-arena", "demo-gps"],
       nativePolicy:
         t.id === "ordered-trail"
@@ -96,7 +129,20 @@ export function questTemplateCatalog() {
       safety: { ...SAFETY },
       durationMinutes: null,
       durationReason: "No verified walking route or field timing is available.",
-    })),
+    })).concat(
+      POI_TEMPLATES.map((t) => ({
+        ...t,
+        stepLabels: [...t.stepLabels],
+        status: "implemented",
+        scope: "street-cell",
+        modes: ["demo-gps"],
+        nativePolicy: [],
+        safety: { ...SAFETY },
+        durationMinutes: null,
+        durationReason:
+          "No verified walking route or field timing is available.",
+      })),
+    ),
     planned: [
       {
         id: "landmark-clue",
@@ -123,7 +169,9 @@ export function questTemplateCatalog() {
 }
 
 function template(id) {
-  const result = TEMPLATES.find((t) => t.id === id);
+  const result =
+    TEMPLATES.find((t) => t.id === id) ||
+    POI_TEMPLATES.find((t) => t.id === id);
   assert(result, "Unknown quest template.");
   return result;
 }
@@ -144,9 +192,11 @@ function activity(t, targets, policy = QUEST_POLICY) {
     evidence: {
       kind: t.evidenceKind,
       attests:
-        t.kind === "route"
-          ? "Accepted checkpoint coordinates in order."
-          : "Accepted coordinates near the target.",
+        t.evidenceKind === "unordered-proximity"
+          ? "Accepted coordinates near each stop, in any order."
+          : t.kind === "route"
+            ? "Accepted checkpoint coordinates in order."
+            : "Accepted coordinates near the target.",
       doesNotAttest:
         "Physical presence, the path walked, an observation or a photograph.",
       observationRequired: false,
@@ -159,6 +209,25 @@ function activity(t, targets, policy = QUEST_POLICY) {
     durationMinutes: null,
     rewardConstraint: t.rewardConstraint,
   };
+}
+
+/**
+ * Activity for a POI quest (W6). Targets are the POIs' public-path check-in
+ * points; the caller has already checked spacing and safety.
+ */
+export function poiQuestActivity(templateId, targets, { objective, policy } = {}) {
+  const t = template(templateId);
+  assert(
+    Array.isArray(targets) && targets.length === t.distinctTargets,
+    "The POI template needs its exact number of targets.",
+  );
+  const result = activity(
+    t,
+    targets.map((p) => point(p)),
+    policy || QUEST_POLICY,
+  );
+  if (objective) result.objective = objective;
+  return result;
 }
 
 export function instantiateQuestTemplate(templateId, zone) {

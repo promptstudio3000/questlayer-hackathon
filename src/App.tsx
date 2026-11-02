@@ -3071,7 +3071,19 @@ export default function App() {
           )}
           {tab === "explore" && !selected && !nativePlay && (
             <>
-              {!world?.zones.length && !recommendation && world && (
+              {!world?.zones.length &&
+                !recommendation &&
+                world &&
+                world.poiQuests?.status === "empty" && (
+                  <EmptyState art="place" title="Nothing here yet" status>
+                    This area has no checked public places for quests today.
+                    Street coins still follow mapped paths.
+                  </EmptyState>
+                )}
+              {!world?.zones.length &&
+                !recommendation &&
+                world &&
+                world.poiQuests?.status !== "empty" && (
                 <EmptyState art="place" title="Nothing open right here yet" status>
                   Today's discoveries are still being placed. Pull the map to
                   look around, or check back in a few minutes.

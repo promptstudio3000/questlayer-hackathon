@@ -108,6 +108,8 @@ export function createCreatorApi({
   authenticate,
   origin,
   enabled = false,
+  // Optional async gate run before a start (paid access on chain).
+  admitStart = null,
 }) {
   const siteOrigin = new URL(origin).origin;
   fail(
@@ -335,6 +337,8 @@ export function createCreatorApi({
               code: "CREATOR_NOT_FOUND",
             });
           fields(body, action[1]);
+          if (action[0] === "start" && admitStart)
+            await admitStart(actor, parts[1], community.publicQuest(actor, parts[1]));
           result = lifecycle[action[0]]({ actor, questId: parts[1], ...body });
         } else
           return response(404, {

@@ -31,7 +31,8 @@
     "market:upgrade": "node scripts/upgrade-market-v2-testnet.mjs",
     "market:fixture": "node scripts/lib/signed-order-fixture.mjs",
     "seed:test": "node scripts/test-seed.mjs",
-    "poi:classify": "node server/poi/cli.mjs"
+    "poi:classify": "node server/poi/cli.mjs",
+    "ai:flavour": "node server/cli/ai-flavour.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

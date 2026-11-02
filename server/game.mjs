@@ -22,6 +22,12 @@ import { closedPlaces, assertPlaceOpen } from "./spatial/place-safety.mjs";
 import { assertWorldActive } from "./operator/world-controls.mjs";
 import { QUEST_POLICY } from "./quest-templates.mjs";
 import {
+  POI_QUEST_POLICY,
+  huntVisited,
+  nearestOpenStop,
+  recordHuntStop,
+} from "./poi-quests.mjs";
+import {
   STREET_COIN_XP,
   STREET_FIND_XP,
   streetFindIds,
@@ -142,7 +148,7 @@ export function claimQuest(db, player, questId, fix, now = Date.now()) {
   const results = createAdventureResults(db);
   return atomic(db, () => settleQuest(db, player, questId, fix, now, results));
 }
-function settleQuest(db, player, questId, fix, now, results) {
+function settleQuest(db, player, questId, fix, now, results, target = null) {
   const q = db
     .prepare(
       "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
@@ -161,7 +167,8 @@ function settleQuest(db, player, questId, fix, now, results) {
     "This place is closed for today. Find another discovery.",
     410,
   );
-  validateQuestEvidence(db, player, q, fix, now, q);
+  // An unordered POI hunt finishes at whichever stop came last.
+  validateQuestEvidence(db, player, q, fix, now, target || q);
   const meta = JSON.parse(q.metadata || "{}");
   if (q.kind === "route")
     assert(
@@ -300,9 +307,19 @@ export function advanceRoute(
       "Every stop is already confirmed. Finish the walk.",
       409,
     );
-    validateQuestEvidence(db, player, q, fix, now, checkpoints[current]);
+    // A POI category hunt (W6) accepts its stops in any order: the fix must be
+    // near one stop this player has not recorded yet.
+    let stop = current;
+    if (metadata.unordered) {
+      point(fix);
+      const open = nearestOpenStop(checkpoints, huntVisited(db, q.id, player), fix);
+      assert(open, "Every stop is already confirmed. Finish the hunt.", 409);
+      stop = open.index;
+    }
+    validateQuestEvidence(db, player, q, fix, now, checkpoints[stop]);
     const requiresNewFix =
-      metadata.activity?.policy === QUEST_POLICY &&
+      (metadata.activity?.policy === QUEST_POLICY ||
+        metadata.activity?.policy === POI_QUEST_POLICY) &&
       !JSON.parse(q.manifest).arena;
     // A return stop cannot reuse the original starting fix. This only rejects
     // replayed observations; browser coordinates are not proof of physical truth.
@@ -316,10 +333,20 @@ export function advanceRoute(
     db.prepare(
       "INSERT INTO quest_progress VALUES (?,?,?,?) ON CONFLICT(quest_id,player_id) DO UPDATE SET checkpoint=excluded.checkpoint,updated_at=excluded.updated_at",
     ).run(q.id, player, current + 1, requiresNewFix ? fix.timestamp : now);
+    if (metadata.unordered)
+      recordHuntStop(db, q.id, player, stop, requiresNewFix ? fix.timestamp : now, now);
     const progress = { completed: current + 1, total: checkpoints.length };
     if (progress.completed === progress.total)
       return {
-        ...settleQuest(db, player, questId, fix, now, results),
+        ...settleQuest(
+          db,
+          player,
+          questId,
+          fix,
+          now,
+          results,
+          metadata.unordered ? checkpoints[stop] : null,
+        ),
         progress,
       };
     return { awaiting: true, progress };

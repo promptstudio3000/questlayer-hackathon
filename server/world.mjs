@@ -39,6 +39,11 @@ import {
   placeClosed,
 } from "./spatial/place-safety.mjs";
 import { pauseState, pauseFor } from "./operator/world-controls.mjs";
+import {
+  defaultPoiSource,
+  huntVisited,
+  materializePoiQuests,
+} from "./poi-quests.mjs";
 export const HOME = DEFAULT_CITY.center;
 export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
@@ -163,7 +168,29 @@ function publicManifest(db, w) {
   return w;
 }
 
+// Street worlds get today's POI quests on first load (docs/WORLDS-PLAN.md C.3,
+// task W6), from the local POI file only; city worlds and the arena never do.
 export async function ensureWorld(
+  db,
+  location = HOME,
+  arena = true,
+  now = Date.now(),
+  { mapData = {}, poiSource } = {},
+) {
+  const world = await ensureBaseWorld(db, location, arena, now, { mapData });
+  if (arena || world.cityId) return world;
+  try {
+    return materializePoiQuests(db, world, {
+      source: poiSource === undefined ? defaultPoiSource() : poiSource,
+      now,
+    });
+  } catch (error) {
+    // POI quests are an addition: a broken POI file never hides the street world.
+    console.warn("poi-quests: materialisation failed", error?.message || error);
+    return world;
+  }
+}
+async function ensureBaseWorld(
   db,
   location = HOME,
   arena = true,
@@ -200,7 +227,7 @@ export async function ensureWorld(
       : await publicPathSnapshot(db, region, { ...mapData, clock: () => now });
     const effectiveNow = now + Math.max(0, Date.now() - started);
     if (effectiveNow >= endsAt)
-      return ensureWorld(db, location, arena, effectiveNow, { mapData });
+      return ensureBaseWorld(db, location, arena, effectiveNow, { mapData });
     if (city && !citySamples.has(city.paths))
       citySamples.set(city.paths, sampleCityPaths(city));
     const samples = city
@@ -389,11 +416,16 @@ export function worldView(db, id, player = null, options = {}) {
     .map((q) => {
       const meta = JSON.parse(q.metadata || "{}");
       const cps = meta.checkpoints || [];
+      // A category hunt takes its stops in any order: point at the first open one.
+      const visited = meta.unordered ? huntVisited(db, q.id, player) : null;
       return {
         ...q,
         metadata: undefined,
         checkpointCount: cps.length,
-        nextPoint: cps[q.checkpoint] || null,
+        nextPoint: visited
+          ? cps.find((_, i) => !visited.has(i)) || null
+          : cps[q.checkpoint] || null,
+        ...(visited ? { visitedStops: [...visited].sort((a, b) => a - b) } : {}),
         activity: describeStoredQuest(q, meta),
       };
     });

@@ -74,7 +74,9 @@ export function inBounds(p, bounds) {
 export function zoneInBounds(zone, bounds) {
   if (!bounds) return true;
   if (!zone.geometry) return inBounds(zone, bounds);
-  const points = zone.geometry.coordinates.flat();
+  const points = zone.geometry.coordinates.flat(
+    zone.geometry.type === "MultiPolygon" ? 2 : 1,
+  );
   return (
     Math.max(...points.map((p) => p[0])) >= bounds[0] &&
     Math.min(...points.map((p) => p[0])) <= bounds[2] &&
