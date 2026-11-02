@@ -48,7 +48,23 @@ const ID = /^[a-z0-9-]{3,40}$/,
     "enabled",
     "element",
     "count",
+    "homeFrom",
   ]);
+
+// The generic cast (server/data/actors/_generic.json) runs in any city
+// without a reviewed file and in every active street cell. It may not hold
+// archetypes that touch the treasury or need a reviewed zone.
+export const GENERIC_CAST = "_generic";
+export const GENERIC_DENIED = Object.freeze(["trader", "keeper", "guardian", "boss"]);
+// Density cap per world cell, shared by every layer (docs/WORLDS-PLAN.md B.4):
+// at most this many instances of each archetype in one street cell.
+export const DENSITY_CAP_PER_CELL = Object.freeze({
+  quest_giver: 1,
+  storyteller: 1,
+  wandering_rare: 1,
+  roamer: 1,
+  lurker: 2,
+});
 
 const text = (v, max) =>
   typeof v === "string" && v.trim() === v && v.length >= 1 && v.length <= max;
@@ -70,6 +86,10 @@ export function validateActorDefinition(def, where = "actor") {
   assert(text(def.name, 60), `${where}: invalid name.`);
   assert(def.title === undefined || text(def.title, 80), `${where}: invalid title.`);
   assert(ID.test(def.model), `${where}: invalid model.`);
+  assert(
+    def.homeFrom === undefined || (def.homeFrom === "poi" && def.home === undefined && def.kind === "npc"),
+    `${where}: homeFrom is "poi" for NPCs without a fixed home.`,
+  );
   if (def.home !== undefined)
     assert(
       num(def.home?.lat, -85, 85) &&
@@ -77,7 +97,7 @@ export function validateActorDefinition(def, where = "actor") {
         Object.keys(def.home).length === 2,
       `${where}: invalid home.`,
     );
-  else
+  else if (!def.homeFrom)
     assert(
       PLANNED_ARCHETYPES.includes(def.archetype),
       `${where}: this archetype needs a home.`,
@@ -152,6 +172,16 @@ export function validateActorFile(file, cityId) {
       ids.add(id);
     }
   }
+  if (cityId === GENERIC_CAST) {
+    const per = {};
+    for (const a of actors) {
+      assert(!GENERIC_DENIED.includes(a.archetype), `Actor file: ${a.archetype} needs a reviewed city file.`);
+      assert(!a.home, `Actor file: generic actor ${a.id} cannot have fixed coordinates.`);
+      per[a.archetype] = (per[a.archetype] || 0) + (a.count || 1);
+    }
+    for (const [archetype, n] of Object.entries(per))
+      assert(n <= (DENSITY_CAP_PER_CELL[archetype] ?? 0), `Actor file: too many ${archetype} for one cell.`);
+  } else assert(actors.every((a) => !a.homeFrom), "Actor file: homeFrom is for the generic cast.");
   return Object.freeze({
     cityId,
     hours: Object.freeze([...file.hours]),
@@ -171,11 +201,18 @@ export function loadCityActors(
 ) {
   const key = `${dir}|${cityId}`;
   if (cache.has(key)) return cache.get(key);
-  assert(/^[a-z0-9-]{1,40}$/.test(cityId), "Invalid city.");
+  assert(cityId === GENERIC_CAST || /^[a-z0-9-]{1,40}$/.test(cityId), "Invalid city.");
   const url = new URL(`${cityId}.json`, dir);
   const result = existsSync(url)
     ? validateActorFile(JSON.parse(readFileSync(url, "utf8")), cityId)
     : null;
   cache.set(key, result);
   return result;
+}
+
+/** The generic cast; never null (the file ships with the server). */
+export function loadGenericActors(dir) {
+  const cast = loadCityActors(GENERIC_CAST, dir);
+  assert(cast, "Generic actor file missing.");
+  return cast;
 }

@@ -13,7 +13,10 @@ import {
   placeClosed,
 } from "../spatial/place-safety.mjs";
 import { pauseFor, pauseState } from "../operator/world-controls.mjs";
-import { loadCityActors, REVEAL_RADIUS_M } from "./definitions.mjs";
+import { cellToLatLng, getResolution, isValidCell } from "h3-js";
+import { DENSITY_CAP_PER_CELL, loadCityActors, loadGenericActors, REVEAL_RADIUS_M } from "./definitions.mjs";
+import { actorPois } from "./pois.mjs";
+import { pathGraph } from "./schedule.mjs";
 import { buildActorMenu, menuHash } from "./menu.mjs";
 import { ACTORS_SCHEMA } from "./schema.mjs";
 import { planDay, positionAt } from "./schedule.mjs";
@@ -64,7 +67,53 @@ export function createActorService(db, options = {}) {
   const clock = options.clock || Date.now,
     cities = options.cityById || cityById,
     loadActors = options.loadCityActors || loadCityActors,
+    loadGeneric = options.loadGenericActors || loadGenericActors,
     plans = new Map();
+
+  // Street cells walk the cell's cached public-path snapshot (the same one
+  // street coins use). No map request happens here: a cell without a
+  // snapshot simply has no actors yet.
+  function cellPack(region) {
+    let row;
+    try {
+      row = db.prepare("SELECT data FROM geo_cache WHERE region=?").get(region);
+    } catch {
+      return null;
+    }
+    if (!row) return null;
+    try {
+      const parsed = JSON.parse(row.data),
+        raw = Array.isArray(parsed) ? parsed : parsed.paths;
+      if (!Array.isArray(raw) || !raw.length) return null;
+      const [lat, lng] = cellToLatLng(region);
+      return {
+        id: `cell-${region}`,
+        version: `${parsed.observedAt ?? 0}`,
+        paths: raw.slice(0, 150).map((points) => ({ points })),
+        exclusions: [],
+        candidates: [],
+        center: { lat, lng },
+        minComponent: 8,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  // Which cast plays in this world: a reviewed city file wins; any other city
+  // pack and every active street cell gets the generic cast, capped per cell.
+  function castFor(manifest) {
+    if (manifest.cityId) {
+      const base = cities(manifest.cityId);
+      if (!base) return null;
+      const reviewed = loadActors(manifest.cityId);
+      return { cast: reviewed || loadGeneric(), base, generic: !reviewed, packKey: "" };
+    }
+    const region = manifest.region;
+    if (manifest.arena || typeof region !== "string" || !isValidCell(region) || getResolution(region) !== 7) return null;
+    const pack = cellPack(region);
+    return pack ? { cast: loadGeneric(), base: pack, generic: true, cell: region, packKey: pack.version } : null;
+  }
 
   function manifestFor(worldId) {
     assert(typeof worldId === "string" && worldId.length >= 1 && worldId.length <= 200, "Open today's map first.", 400, "WORLD_REQUIRED");
@@ -75,13 +124,13 @@ export function createActorService(db, options = {}) {
 
   // Day plan per world and closure version, cached in memory (pure input).
   function planFor(manifest) {
-    const city = manifest.cityId ? loadActors(manifest.cityId) : null,
-      base = city ? cities(manifest.cityId) : null;
-    if (!city || !base) return null;
+    const source = castFor(manifest);
+    if (!source) return null;
+    const { cast: city, base } = source;
     const closed = closedPlaces(db, manifest.cityId),
-      key = `${manifest.id}|${closed.map((c) => `${c.id}@${c.version}`).join(",")}`;
+      key = `${manifest.id}|${source.packKey}|${closed.map((c) => `${c.id}@${c.version}`).join(",")}`;
     if (plans.has(key)) return plans.get(key);
-    const pack = effectiveCityPack(db, base),
+    const pack = source.cell ? base : effectiveCityPack(db, base),
       seed = worldSeed(manifest),
       dayStart = localDateStart(manifest.day, manifest.timezone),
       zones = (manifest.zones || []).map((z) => ({
@@ -89,10 +138,23 @@ export function createActorService(db, options = {}) {
         placeStatus: placeClosed(closed, z.sourceId, z) ? "closed" : "open",
       }));
     const finds = streetFinds(manifest.id);
-    const instances = planSpawns(city, pack, seed, manifest.day, { zones, closed, finds }).map((s) => {
-      const def = { ...s.def, instanceId: s.id };
+    const pois = source.generic ? actorPois({ manifest, pack, graph: pathGraph(pack, closed), zones, closed }) : null,
+      // Generic ids differ per cell so a win in one street cell is not a win
+      // in the next one; city ids stay as reviewed.
+      suffix = source.cell ? `-${sha(source.cell).slice(0, 6)}` : "";
+    const spawned = planSpawns(city, pack, seed, manifest.day, {
+      zones,
+      closed,
+      finds,
+      pois,
+      cap: source.cell ? DENSITY_CAP_PER_CELL : null,
+    });
+    const instances = spawned.map((s) => {
+      const id = `${s.id}${suffix}`,
+        def = { ...s.def, instanceId: id };
       return {
         ...s,
+        id,
         segments: planDay(def, pack, seed, manifest.day, {
           dayStart,
           hours: city.hours,

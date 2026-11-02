@@ -75,7 +75,10 @@ const graphs = new WeakMap();
  */
 export function pathGraph(pack, closed = []) {
   const exclusions = [...(pack.exclusions || []), ...closed];
-  const key = exclusions.map((e) => e.id).sort().join("|");
+  // Street cells carry a few short Overpass ways, so they may accept smaller
+  // fragments than a CityPack (pack.minComponent).
+  const minComponent = pack.minComponent || MIN_COMPONENT;
+  const key = `${minComponent}|${exclusions.map((e) => e.id).sort().join("|")}`;
   let byKey = graphs.get(pack.paths);
   if (!byKey) graphs.set(pack.paths, (byKey = new Map()));
   if (byKey.has(key)) return byKey.get(key);
@@ -177,7 +180,7 @@ export function pathGraph(pack, closed = []) {
   // Tiny fragments (a lone courtyard path) are not worth a route.
   const nodes = [];
   for (let i = 0; i < lng.length; i++)
-    if (sizes[comp[i]] >= MIN_COMPONENT) nodes.push(i);
+    if (sizes[comp[i]] >= minComponent) nodes.push(i);
   const graph = { lng, lat, adj, comp, nodes };
   byKey.set(key, graph);
   return graph;

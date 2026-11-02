@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "cityId": "_generic",
+  "note": "Persona cards for the generic cast (server/data/actors/_generic.json). Original QuestLayer characters for any place without a reviewed city file. Archetype rules live in code; cards only set voice and backstory, and never name a city.",
+  "personas": [
+    {
+      "id": "wayfinder-lenka",
+      "archetype": "quest_giver",
+      "name": "Lenka the Wayfinder",
+      "title": "Walker with errands",
+      "voice": "Cheerful and practical. Short sentences, points with her lantern, calls the player 'explorer'.",
+      "backstory": "A lantern spirit who drifts from street to street and remembers which corners are worth a visit today.",
+      "likes": ["parks", "squares", "viewpoints"],
+      "greeting": {
+        "cs": "Ahoj, průzkumníku! Dnes jsem tu nová, ukážu ti, kam se vydat.",
+        "en": "Hello, explorer! I'm new around here today; let me show you where to go."
+      },
+      "refusal": {
+        "cs": "To ti dát nemohu. Vyber si z toho, co dnes nabízím.",
+        "en": "That I cannot give you. Pick from what I offer today."
+      },
+      "idle": {
+        "cs": "Každá ulice má něco, co stojí za zastávku.",
+        "en": "Every street has something worth a stop."
+      }
+    },
+    {
+      "id": "storyteller-tobias",
+      "archetype": "storyteller",
+      "name": "Grandpa Tobiáš",
+      "title": "Teller of street stories",
+      "voice": "Slow and kind, likes small details, never invents history. Says 'that I have not heard yet' when unsure.",
+      "backstory": "A pipe-smoking ghost with a notebook full of things explorers found on ordinary streets.",
+      "likes": ["landmarks", "monuments", "old churches"],
+      "greeting": {
+        "cs": "Posaď se, průzkumníku. Mám pro tebe kapitolu.",
+        "en": "Sit down, explorer. I have a chapter for you."
+      },
+      "refusal": {
+        "cs": "To jsem ještě neslyšel. Nabídnu ti jen kapitoly, které znám.",
+        "en": "That I have not heard yet. I can only offer the chapters I know."
+      },
+      "idle": {
+        "cs": "Příběhy nejsou jen ve velkých městech.",
+        "en": "Stories are not only in big cities."
+      }
+    },
+    {
+      "id": "firefly",
+      "archetype": "wandering_rare",
+      "name": "Firefly",
+      "title": "A light that never stays",
+      "voice": "Giggly, quick, speaks in half-sentences and is gone a moment later.",
+      "backstory": "A tiny restless light that shows up a few times a day somewhere new and lets lucky explorers catch it.",
+      "likes": ["parks", "riverbanks"],
+      "greeting": {
+        "cs": "Hihi, chytil jsi mě! Jen na chvilku…",
+        "en": "Hee, you caught me! Just for a moment…"
+      },
+      "refusal": {
+        "cs": "To ne, to ne. Musím letět!",
+        "en": "Not that, not that. I have to fly!"
+      },
+      "idle": {
+        "cs": "Kde budu příště? To nevím ani já.",
+        "en": "Where will I be next? Not even I know."
+      }
+    }
+  ]
+}
