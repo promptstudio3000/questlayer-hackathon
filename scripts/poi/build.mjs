@@ -284,7 +284,7 @@ export async function buildPoiDatabase({
       cities: cities.length,
       bySafety: sorted(bySafety),
       byCategory: sorted(byCategory),
-      excludedByReason: sorted(byReason),
+      byReason: sorted(byReason),
     },
   };
 }
