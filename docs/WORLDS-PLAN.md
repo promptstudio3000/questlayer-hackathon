@@ -569,7 +569,10 @@ notice and are never funded. 3. Original "Punk City" theme. 4. Player worlds pri
 - Rewards: 40 XP visit, 90 XP hunt, one chest per cell/day (60 XP, Aura only while edition supply lasts),
   `gold_u = 0` always; street coins unchanged.
 - An empty cell stores `poiQuests.status = "empty"` and the client says "Nothing here yet".
-- Titles use deterministic template text; the W8 flavour cache (`server/ai/flavour.mjs`) plugs in next.
+- Titles: the stored rule text, replaced at read time by validated W8 flavour text (`flavourText`, cache hit only); chests keep their own text and the activity objective stays authoritative.
+- Auto cities (W5) get the same POI quests per H3 cell inside the city, materialised for the cell the player
+  loads from (job key `poi-quests:<worldId>:<cell>`, `manifest.poiQuests.cells`), spaced 250 m from the city's
+  own zones too. XP and cosmetics only, the "Unverified map" notice stays. Reviewed cities (Plzeň) never get them.
 
 **W5 is implemented** (2 Nov 2026) for Czechia with a 15,000-people threshold (owner decision: Czechia only before
 14 Nov). It runs on the VPS as a step of the World worker instead of on the Mac, because the OSM extracts already
