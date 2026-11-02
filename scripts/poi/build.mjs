@@ -12,12 +12,15 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
+import { deflateRawSync } from "node:zlib";
 import { latLngToCell, cellToParent } from "h3-js";
 import { readJsonLines } from "./lib/ndjson.mjs";
 import {
   ExclusionIndex,
   PathSnapper,
+  CELL_LIMITS,
   applyWikidata,
+  cellPieces,
   finalizeRecord,
   mergeOverture,
   normalizeOsmFeature,
@@ -41,6 +44,10 @@ CREATE UNIQUE INDEX poi_id ON poi(id);
 CREATE INDEX poi_cell ON poi(h3r7, safety, category);
 CREATE TABLE partition(h3r5 TEXT PRIMARY KEY, pois INTEGER NOT NULL, ok INTEGER NOT NULL,
   review INTEGER NOT NULL, excluded INTEGER NOT NULL, hash TEXT NOT NULL) WITHOUT ROWID;
+-- Offline street paths per H3 res-7 cell: deflate-raw JSON [[[lng,lat],...],...],
+-- the shape server/spatial/map-data.mjs serves (<= 150 paths, <= 30000 points).
+CREATE TABLE path_cell(h3r7 TEXT PRIMARY KEY, h3r5 TEXT NOT NULL, paths BLOB NOT NULL,
+  ways INTEGER NOT NULL, points INTEGER NOT NULL) WITHOUT ROWID;
 CREATE TABLE city(geonameid INTEGER PRIMARY KEY, name TEXT NOT NULL, ascii_name TEXT NOT NULL,
   lat REAL NOT NULL, lng REAL NOT NULL, country TEXT NOT NULL, admin1 TEXT, population INTEGER NOT NULL,
   timezone TEXT, h3r5 TEXT NOT NULL);
@@ -90,6 +97,13 @@ export async function buildPoiDatabase({
 }) {
   const tmp = `${outPath}.tmp`;
   rmSync(tmp, { force: true });
+  const db = new DatabaseSync(tmp);
+  db.exec("PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA page_size=4096;");
+  db.exec(SCHEMA_SQL);
+  // Way pieces are staged on disk so memory stays bounded by the place count.
+  db.exec(`CREATE TABLE path_piece(h3r7 TEXT NOT NULL, priority INTEGER NOT NULL, way TEXT NOT NULL,
+    run INTEGER NOT NULL, points TEXT NOT NULL)`);
+  const stagePiece = db.prepare("INSERT INTO path_piece VALUES(?,?,?,?,?)");
 
   // 1. OSM places, keyed by id (an element can appear once per export).
   const osm = new Map();
@@ -115,8 +129,11 @@ export async function buildPoiDatabase({
   for (const path of list(inputs.osmPaths))
     for await (const feature of readJsonLines(path)) {
       snapper.considerFeature(feature);
-      pathFeatures++;
+      if (++pathFeatures % 50000 === 1) db.exec(pathFeatures === 1 ? "BEGIN" : "COMMIT; BEGIN");
+      for (const piece of cellPieces(feature))
+        stagePiece.run(piece.h3r7, piece.priority, piece.wayId, piece.run, JSON.stringify(piece.points));
     }
+  if (pathFeatures) db.exec("COMMIT");
   log(`path features: ${pathFeatures}, snapped: ${snapper.best.size}`);
 
   // 4. Exclusion areas.
@@ -156,11 +173,6 @@ export async function buildPoiDatabase({
   cities.sort((a, b) => a.geonameid - b.geonameid);
 
   // 7. Write.
-  const db = new DatabaseSync(tmp);
-  db.exec(
-    "PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA page_size=4096;",
-  );
-  db.exec(SCHEMA_SQL);
   const insert =
     db.prepare(`INSERT INTO poi(h3r5,id,h3r7,lat,lng,category,name,names,wikidata,notability,
     sources,safety,safety_reason,access,hours,path_ref,facts,source_hash)
@@ -224,6 +236,8 @@ export async function buildPoiDatabase({
       p.excluded,
       p.hash.digest("hex"),
     );
+  const paths = packPathCells(db);
+  log(`path cells: ${paths.cells}`);
   const insertCity = db.prepare("INSERT INTO city VALUES(?,?,?,?,?,?,?,?,?,?)");
   for (const c of cities)
     insertCity.run(
@@ -282,11 +296,53 @@ export async function buildPoiDatabase({
       exclusionAreas: exclusions.count,
       partitions: partitions.size,
       cities: cities.length,
+      pathCells: paths.cells,
+      pathWays: paths.ways,
+      pathPoints: paths.points,
       bySafety: sorted(bySafety),
       byCategory: sorted(byCategory),
       byReason: sorted(byReason),
     },
   };
+}
+
+// Packs staged pieces into one row per cell, deterministic order: priority,
+// then way id, then run.
+function packPathCells(db) {
+  db.exec("CREATE INDEX path_piece_order ON path_piece(h3r7, priority, way, run)");
+  const insert = db.prepare("INSERT INTO path_cell VALUES(?,?,?,?,?)");
+  const totals = { cells: 0, ways: 0, points: 0 };
+  let cell = null,
+    paths = [],
+    points = 0,
+    last = null;
+  const flush = () => {
+    if (!cell || !paths.length) return;
+    insert.run(cell, cellToParent(cell, 5), deflateRawSync(JSON.stringify(paths), { level: 9 }), paths.length, points);
+    totals.cells++;
+    totals.ways += paths.length;
+    totals.points += points;
+  };
+  for (const piece of db.prepare("SELECT h3r7, way, run, points FROM path_piece ORDER BY h3r7, priority, way, run").iterate()) {
+    if (piece.h3r7 !== cell) {
+      flush();
+      cell = piece.h3r7;
+      paths = [];
+      points = 0;
+    }
+    // Neighbouring region extracts overlap at borders: keep a way's run once.
+    const key = `${piece.way}:${piece.run}`;
+    if (key === last) continue;
+    last = key;
+    if (paths.length >= CELL_LIMITS.paths) continue;
+    const line = JSON.parse(piece.points);
+    if (points + line.length > CELL_LIMITS.points) continue;
+    paths.push(line);
+    points += line.length;
+  }
+  flush();
+  db.exec("DROP TABLE path_piece");
+  return totals;
 }
 
 export const ATTRIBUTION_LINE =

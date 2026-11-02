@@ -55,12 +55,25 @@ poi(h3r5, id, h3r7, lat, lng, category, name, names JSON, wikidata, notability, 
     safety ok|review|excluded, safety_reason, access, hours, path_ref JSON, facts JSON, source_hash)
     PRIMARY KEY (h3r5, id) WITHOUT ROWID   -- rows clustered by H3 res-5 parent
 partition(h3r5, pois, ok, review, excluded, hash)
+path_cell(h3r7, h3r5, paths BLOB, ways, points)  -- deflate-raw JSON street paths per res-7 cell
 city(geonameid, name, ascii_name, lat, lng, country, admin1, population, timezone, h3r5)
 meta(key, value)                           -- schema questlayer.poi/1, version, rule versions, attribution
 ```
 
 Readers (W5, W6) open `/var/lib/questlayer-poi/current.sqlite` read-only and query by `h3r5`/`h3r7` with
 `safety='ok'`.
+
+## Offline street paths
+
+The same OSM path export also fills `path_cell`: every walkable way (footway, pedestrian, path, living street,
+steps, cycleway, bridleway, residential, unclassified, track; never `access`/`foot` = no, private, customers,
+permit, agricultural, forestry) is split into per-cell runs. Each cell keeps at most 150 paths and 30,000 points,
+footpaths first. `server/spatial/map-data.mjs` reads this file first through `server/spatial/offline-paths.mjs`
+(`POI_DB_PATH`, default `/var/lib/questlayer-poi/current.sqlite`, `off` disables it). Street worlds outside
+reviewed cities therefore get paths, coins and NPCs without any network call. Reviewed CityPacks (Plzeň) never use
+it. Overpass stays only as a fallback for cells the file lacks: it sends a contact User-Agent, a request waits at most 4 s, and the
+provider call keeps running in the background (up to 25 s) and caches a late answer for the next retry.
+A full Czechia build gives 17,310 cells with 1.06 million ways, adds about 100 MB, and takes about 3 minutes.
 
 ## On the VPS
 

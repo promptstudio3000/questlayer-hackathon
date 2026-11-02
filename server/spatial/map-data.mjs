@@ -1,7 +1,13 @@
 import { cellToBoundary, isValidCell, getResolution } from "h3-js";
 import { assert, DAY, point } from "../domain.mjs";
+import { sharedOfflinePaths } from "./offline-paths.mjs";
+
+// Overpass etiquette: a contact User-Agent; without one it answers 406.
+export const MAP_USER_AGENT =
+  "QuestLayer/1.0 (+https://questlayer.promptstudio3000.com/how-it-works; street paths fallback)";
 
 const pending = new WeakMap();
+const providerFetches = new WeakMap();
 const MAX_BYTES = 2 * 1024 * 1024;
 function pathsFrom(value) {
   assert(Array.isArray(value) && value.length <= 150, "Invalid map snapshot.");
@@ -61,12 +67,22 @@ function sourcePaths(json) {
       .map((e) => e.geometry.map((p) => [p.lon, p.lat])),
   );
 }
-// Fixed cell bounds, never the first visitor's precise GPS. Failed refreshes
-// keep an explicitly stale snapshot and a durable retry deadline.
+// Fixed cell bounds, never the first visitor's precise GPS. The World
+// worker's offline file answers first (no network on the request path);
+// Overpass is only a fallback for cells the file does not cover. A player
+// request waits at most `timeoutMs` for it, while the provider request keeps
+// running up to `providerTimeoutMs` and stores its result for the next retry.
+// Failed refreshes keep an explicitly stale snapshot and a durable retry deadline.
 export async function publicPathSnapshot(
   db,
   region,
-  { clock = Date.now, fetcher = globalThis.fetch, timeoutMs = 4000 } = {},
+  {
+    clock = Date.now,
+    fetcher = globalThis.fetch,
+    timeoutMs = 4000,
+    providerTimeoutMs = 25000,
+    offline = sharedOfflinePaths(),
+  } = {},
 ) {
   assert(
     isValidCell(region) && getResolution(region) === 7,
@@ -80,6 +96,21 @@ export async function publicPathSnapshot(
   if (jobs.has(region)) return jobs.get(region);
   const work = (async () => {
     const now = clock();
+    const local = offline?.paths(region);
+    if (local) {
+      try {
+        return {
+          status: "fresh",
+          paths: pathsFrom(local.paths),
+          observedAt: local.observedAt ?? now,
+          retryAt: now + 7 * DAY,
+          reason: null,
+          source: "offline",
+        };
+      } catch {
+        // A malformed row falls through to the cache and provider.
+      }
+    }
     let old = null;
     const cached = db
       .prepare("SELECT data,expires_at FROM geo_cache WHERE region=?")
@@ -137,31 +168,68 @@ export async function publicPathSnapshot(
       lngs = bounds.map((p) => p[1]);
     const box = `(${Math.min(...lats)},${Math.min(...lngs)},${Math.max(...lats)},${Math.max(...lngs)})`;
     const query =
-      "[out:json][timeout:3];(" +
-      ["footway", "pedestrian", "path", "living_street"]
+      "[out:json][timeout:25];(" +
+      ["footway", "pedestrian", "path", "living_street", "steps", "residential"]
         .map(
           (h) =>
             `way[highway=${h}][access!=private][access!=no][foot!=no]${box};`,
         )
         .join("") +
       ");out tags geom 150;";
-    const controller = new AbortController();
+    let fetches = providerFetches.get(db);
+    if (!fetches) {
+      fetches = new Map();
+      providerFetches.set(db, fetches);
+    }
+    let provider = fetches.get(region);
+    if (!provider) {
+      const controller = new AbortController();
+      const stop = setTimeout(() => controller.abort(), providerTimeoutMs);
+      stop.unref?.();
+      provider = (async () =>
+        sourcePaths(
+          await boundedJson(
+            await fetcher(
+              "https://overpass-api.de/api/interpreter?" +
+                new URLSearchParams({ data: query }),
+              {
+                signal: controller.signal,
+                headers: { "User-Agent": MAP_USER_AGENT },
+              },
+            ),
+          ),
+        ))();
+      fetches.set(region, provider);
+      // A late answer still lands in the cache for the next retry.
+      provider
+        .then((paths) => {
+          const at = clock();
+          const entry = {
+            version: 1,
+            paths,
+            observedAt: at,
+            freshUntil: at + 7 * DAY,
+            retryAt: at + 7 * DAY,
+            attempts: 0,
+          };
+          try {
+            db.prepare("INSERT OR REPLACE INTO geo_cache VALUES(?,?,?)").run(
+              region,
+              JSON.stringify(entry),
+              entry.retryAt,
+            );
+          } catch {}
+        })
+        .catch(() => {})
+        .finally(() => {
+          clearTimeout(stop);
+          if (fetches.get(region) === provider) fetches.delete(region);
+        });
+    }
     let timer;
     try {
       const paths = await Promise.race([
-        (async () =>
-          sourcePaths(
-            await boundedJson(
-              await fetcher(
-                "https://overpass-api.de/api/interpreter?" +
-                  new URLSearchParams({ data: query }),
-                {
-                  signal: controller.signal,
-                  headers: { "User-Agent": "QuestLayer map adapter" },
-                },
-              ),
-            ),
-          ))(),
+        provider,
         new Promise((_, reject) => {
           timer = setTimeout(
             () => reject(Error("Map request timed out.")),
@@ -204,7 +272,6 @@ export async function publicPathSnapshot(
       return result(entry, usable ? "stale" : "unavailable");
     } finally {
       clearTimeout(timer);
-      controller.abort();
     }
   })();
   jobs.set(region, work);
