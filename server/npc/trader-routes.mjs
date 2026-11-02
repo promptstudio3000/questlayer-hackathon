@@ -8,6 +8,7 @@
 //   POST /api/keeper/ceremonies/:id/seen         closes an E+2 / tier ceremony
 //   GET  /api/staker/gates       the staker gate table with this player's state
 import { formatNear } from "./trader-pricing.mjs";
+import { patronPathView } from "./patron-path.mjs";
 import { allGates, defaultStakerGates, playerStakerAccess } from "../staker-gates.mjs";
 
 const TRADE = /^\/api\/actors\/([a-z0-9-]{3,44})\/offers\/((?:trade_buy|trade_sell|trade_up):[0-9a-f]{16})\/(accept|complete)$/;
@@ -77,7 +78,7 @@ export async function keeperView({ db, player, market, vaults, keeperVault = nul
     out.accounts.push(entry);
   }
   out.lines.push("I never move your funds: every deposit, exit or change is signed by you on the usual confirmation screen.");
-  if (keeperVault?.settings.enabled) out.stake = keeperVault.view({ player, level, positions });
+  if (keeperVault?.settings.enabled) out.stake = keeperVault.view({ player, level, positions, patronPath: (gate) => patronPathView(db, player, gate) });
   return out;
 }
 
@@ -96,7 +97,7 @@ export async function stakeCard({ db, player, vaults, keeperVault, level = 1 }) 
       unreadable++;
     }
   }
-  return { ...keeperVault.view({ player, level, positions }), linked: positions.length + unreadable, unreadable };
+  return { ...keeperVault.view({ player, level, positions, patronPath: (gate) => patronPathView(db, player, gate) }), linked: positions.length + unreadable, unreadable };
 }
 
 /** Gate table + the player's cached staker state, for chips and the stake sheet. */

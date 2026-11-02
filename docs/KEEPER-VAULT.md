@@ -41,3 +41,24 @@ state; it never signs, moves funds or changes a chance. Code: `server/npc/keeper
 
 Tables (`keeper-vault` schema module) appear on the first Keeper visit: `keeper_vault_watch`,
 `keeper_stake_days`, `keeper_ceremonies`.
+
+## Patron quest lines (GAME-LOOPS P1-1)
+
+Code: `server/npc/patron-path.mjs`, `server/npc/offers.mjs`; tests: `tests/patron-path.test.mjs`.
+
+- Gates come from `server/data/staker-gates.json` (step AND level, owner decision 1 Nov 23:47): path step 1 opens at
+  `patron_chapter_1` (Staker + L2), steps 2+ at `patron_line` (Staker + L4), the Aura at `patron_aura` (Staker + L4).
+  Staker = matured stake of at least 2 NEAR.
+- An open player gets one **patron walk** per day from each quest giver (two stops ending in the highest zone tier
+  they may enter, so Tier 2+ zones only once `t2_lines` opens) and one **patron chapter** per day from each
+  storyteller. Both sit outside the regular daily caps and outside the storyteller's chapter sets.
+- Same XP as any line (20 per stop + 10, chapters 15), the walk's Aura from the ordinary chest entitlement, and the
+  stops pay their zone's ordinary prize. No bonus XP, odds or payouts.
+- Each turned-in patron line is a step on the **Patron's Path** (3 steps, across all NPCs). Each step reveals the next
+  patron story chapter; the third earns the NPC-only **patron edition** Aura once per player when `patron_aura` is
+  open (otherwise on a later patron line).
+- The edition joins the catalog with the next shared collectibles upgrade. Until then the path still counts, and a
+  player who already finished it gets the Aura on their next patron line after the upgrade.
+- A closed next step shows a `patron_path` locked chip at quest givers and storytellers with exactly what is missing
+  ("Stake 2 NEAR · Reach level 2"). The Keeper's inner vault shows `inner.path` (progress, revealed story, edition,
+  `next` and `auraGate`) to everyone. Progress and the edition stay after a withdrawal (D29).
