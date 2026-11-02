@@ -1,15 +1,28 @@
 import { currentRelease } from "./pwa-boot";
 import "./style.css";
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { PwaPrompts } from "./pwa-prompts";
 import { registerServiceWorker } from "./pwa-state";
 
+// "How it works" one-pager (docs/HOW-IT-WORKS-PLAN.md): its own lazy chunk,
+// so the welcome screen's first load does not grow.
+const HowItWorks = lazy(() => import("./how-it-works/HowItWorks"));
+const HOW_IT_WORKS_PATH = /^\/how-it-works\/?$/;
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
-    <PwaPrompts />
+    {HOW_IT_WORKS_PATH.test(location.pathname) ? (
+      <Suspense fallback={null}>
+        <HowItWorks />
+      </Suspense>
+    ) : (
+      <>
+        <App />
+        <PwaPrompts />
+      </>
+    )}
   </React.StrictMode>,
 );
 

@@ -3864,7 +3864,15 @@ export default function App() {
                   <span>Help & guide</span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
-                {!firstSession.visible && (
+<a className="settings-row" href="/how-it-works">
+                  <Sparkle size={22} aria-hidden="true" />
+                  <span>
+                    How it works
+                    <small>The game in one page</small>
+                  </span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </a>
+                                {!firstSession.visible && (
                   <button
                     type="button"
                     className="settings-row"
@@ -4509,6 +4517,11 @@ function Welcome({
           <br />
           Earn Auras, the glow your friendly ghost wears.
         </p>
+        <a className="welcome-how" href="/how-it-works">
+          <Sparkle size={16} weight="fill" aria-hidden="true" />
+          How it works
+          <ArrowRight size={16} aria-hidden="true" />
+        </a>
         {error && (
           <p className="inline-error" role="alert">
             {error}
