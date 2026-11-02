@@ -67,6 +67,8 @@ import {
   startNpcRollWorker,
 } from "./npc/rolls.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
+import { startFlavourWorker } from "./ai/flavour-batch.mjs";
+import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
@@ -848,6 +850,7 @@ async function api(req, res, url) {
       ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
+      questFlavour: flavourStatus(db),
       nativeRewards: nativeRewards
         ? nativeRewards.workerStatus()
         : { status: "not-configured" },
@@ -2789,6 +2792,8 @@ const server = createServer(async (req, res) => {
 const worldPlanner = backgroundWorkersDisabled
   ? null
   : startWorldPlanner(db, { afterPreparation: () => retryStreetWorlds(db) });
+// Nightly quest flavour texts (docs/QUEST-FLAVOUR.md); never on a request path.
+const flavourWorker = backgroundWorkersDisabled ? null : startFlavourWorker(db);
 const rewardWorker =
   !backgroundWorkersDisabled &&
   nativeRewards &&
@@ -2888,6 +2893,7 @@ async function close() {
   if (testSeedWorker) clearInterval(testSeedWorker);
   await worldPlanner?.stop();
   await rewardWorker?.stop();
+  flavourWorker?.stop();
   await relayWorker?.stop?.();
   await creatorMoneyWorker?.stop?.();
   orderIndexWorker?.stop();

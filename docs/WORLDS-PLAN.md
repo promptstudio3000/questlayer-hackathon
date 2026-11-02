@@ -462,6 +462,9 @@ the Mac, with a W4 stub until W4 lands._
 
 **W8 — Flavour text batch**
 
+> Done (2 Nov 2026): `server/ai/flavour.mjs` (read side for W6) and `server/ai/flavour-batch.mjs`, see
+> `docs/QUEST-FLAVOUR.md`.
+
 > Add `server/ai/flavour-batch.mjs` and `npm run ai:flavour -- --since 7d`: for cells and cities with players in
 > the last 7 days, generate quest titles/descriptions per `(poiId, template, layerId, language, promptVersion)`
 > through the existing provider interface (`template|ollama|anthropic|near-ai|off`), validate with
