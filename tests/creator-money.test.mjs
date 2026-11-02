@@ -484,3 +484,32 @@ test("the approved revision's access price is registered, then mirrored once wit
     "0",
   );
 });
+
+test("paid quests start only after access is bought; free and own quests pass", async () => {
+  const f = fixture();
+  const author = "author.players.questlayer.testnet",
+    walker = "walker.players.questlayer.testnet";
+  f.chain.state.quests.set("q-free", { author, price: "0", open: true });
+  f.chain.state.quests.set("q-paid", {
+    author,
+    price: (NEAR / 2n).toString(),
+    open: true,
+  });
+  assert.equal(await f.money.admitStart(f.walker, "q-free", {}), true);
+  await assert.rejects(f.money.admitStart(f.walker, "q-paid", {}), {
+    status: 402,
+    code: "CREATOR_ACCESS_REQUIRED",
+  });
+  await assert.rejects(f.money.admitStart(f.nobody, "q-paid", {}), {
+    code: "ACCOUNT_NOT_READY",
+  });
+  assert.equal(await f.money.admitStart(f.author, "q-paid", {}), true);
+  f.chain.state.access.set(`q-paid|${walker}`, { paid: "1" });
+  assert.equal(await f.money.admitStart(f.walker, "q-paid", {}), true);
+  // Reviewed as paid but not yet listed on chain: nothing can be bought yet.
+  await assert.rejects(
+    f.money.admitStart(f.walker, "q-later", { price: "1" }),
+    { status: 409, code: "CREATOR_ACCESS_PENDING" },
+  );
+  assert.equal(await f.money.admitStart(f.walker, "q-later", {}), true);
+});

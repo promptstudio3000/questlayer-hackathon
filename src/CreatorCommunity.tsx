@@ -1284,6 +1284,9 @@ function QuestDetail({
   const title = part?.content.title || quest?.title || "Your quest";
   const reportTarget = creatorReportTarget(quest, part);
   const creator = part?.creator || quest?.creator;
+  // A paid quest starts only after the unlock below; the server enforces it too.
+  const [unlocked, setUnlocked] = useState<boolean | null>(null);
+  const needsUnlock = !!quest?.price && !!money && unlocked !== true;
   return (
     <>
       <Back
@@ -1367,7 +1370,7 @@ function QuestDetail({
             ) : (
               <button
                 className="primary-button"
-                disabled={busy}
+                disabled={busy || needsUnlock}
                 onClick={() =>
                   void act(
                     `/quests/${idPath(quest.id)}/participation`,
@@ -1381,6 +1384,13 @@ function QuestDetail({
                 <ArrowRight size={20} />
               </button>
             )}
+            {quest.creator.id !== playerId && needsUnlock && (
+              <p className="creator-hint" role="status">
+                {unlocked === null
+                  ? "Checking your unlock…"
+                  : "Unlock this quest below to start it."}
+              </p>
+            )}
           </>
         )
       )}
@@ -1389,6 +1399,7 @@ function QuestDetail({
           questId={quest.id}
           ownQuest={quest.creator.id === playerId}
           money={money}
+          onAccess={setUnlocked}
         />
       )}
       {reportTarget && (
