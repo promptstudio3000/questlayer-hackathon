@@ -131,6 +131,7 @@ import { createNearPrice } from "./near-price.mjs";
 import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mjs";
 import { createTreasuryView } from "./native/stnear-treasury.mjs";
+import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
@@ -495,6 +496,9 @@ const liquidStake =
   liquidStakeConfig.enabled && liquidStakeConfig.tokens.length
     ? createLiquidStake({ provider, settings: liquidStakeConfig })
     : null;
+// Rhea Lend markets (docs/YIELD-VAULT-PLAN.md): read-only rates and utilization.
+const rheaConfig = rheaSettings(process.env, NETWORK);
+const rheaMarkets = rheaConfig.enabled ? createRheaMarkets({ provider, settings: rheaConfig }) : null;
 const traderRoutes = createTraderRoutes({
   traders: npcTraders,
   actors: actorService,
@@ -1229,6 +1233,10 @@ async function api(req, res, url) {
     return;
   if (url.pathname === "/api/treasury/stnear" && req.method === "GET")
     return respond(res, await stnearTreasury());
+  if (url.pathname === "/api/yield/markets" && req.method === "GET") {
+    assert(rheaMarkets, "Rhea Lend markets are not open here.", 503, "RHEA_DISABLED");
+    return respond(res, await rheaMarkets.read());
+  }
   if (url.pathname === "/api/staker/liquid" && req.method === "GET") {
     assert(liquidStake, "Liquid staking is not open here.", 503, "LIQUID_STAKE_DISABLED");
     return respond(res, await liquidStake.forPlayer(db, player));

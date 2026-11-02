@@ -32,12 +32,12 @@ cosmetic gates, reconsider before trader rates use it.
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `LIQUID_STAKE_ENABLED` | off | `1` turns the reading and the route on |
-| `LIQUID_STAKE_TOKENS` | `stnear,linear` on testnet, empty on mainnet | allowlist; mainnet knows `stnear,linear,rnear` |
+| `LIQUID_STAKE_TOKENS` | `stnear,linear` on testnet, empty on mainnet | allowlist; mainnet knows `stnear,linear,rnear,nearx` |
 | `LIQUID_HOLD_HOURS` | `24` | hold window, 1–36 h |
 | `LIQUID_HOLD_CHECKPOINTS` | `7` | past balances read per token, 2–12 |
 
 Known contracts: testnet `meta-v2.pool.testnet`, `linear-protocol.testnet`; mainnet `meta-pool.near`,
-`linear-protocol.near`, `lst.rhealab.near` (rNEAR, mainnet only).
+`linear-protocol.near`, `lst.rhealab.near` (rNEAR) and `v2-nearx.stader-labs.near` (NearX), the last two mainnet only.
 
 ## Next steps
 
