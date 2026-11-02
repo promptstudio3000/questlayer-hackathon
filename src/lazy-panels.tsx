@@ -84,6 +84,7 @@ export const AccountSessions = lazyNamed(
   "AccountSessions",
 );
 export const DeviceKeys = lazyNamed(() => import("./DeviceKeys"), "DeviceKeys");
+export const BadgeBook = lazyNamed(() => import("./BadgeBook"), "BadgeBook");
 export const NativeLevelRewards = lazyNamed(
   () => import("./NativeLevelRewards"),
   "NativeLevelRewards",
