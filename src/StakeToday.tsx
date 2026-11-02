@@ -44,6 +44,7 @@ export interface StakeCard {
   coins: { dayId: string; coinUnit: string; coinCount: number; funding: string; backed: number; givenPaid: string } | null;
   ceremonies: StakeCeremony[];
   patron: { title: string; since: number } | null;
+  rank?: PatronRank | null;
   staker?: { step: "none" | "staker" | "tier2" | "tier3"; staker: boolean; matured: string; maturing: string; minNear: string; priceEur: number | null };
   stakeToday?: { open: boolean; missing: string[]; stakeNear: string };
   inner: {
@@ -65,6 +66,19 @@ export interface StakeCard {
     };
   };
   linked?: number;
+}
+
+/** Patron rank 1–5 (GAME-LOOPS P1-2): matured patron epochs, no decay. */
+export interface PatronRank {
+  rank: number;
+  name: string | null;
+  epochs: number;
+  growing: boolean;
+  staker: boolean;
+  step: "staker" | "tier2" | "tier3";
+  next: { rank: number; name: string; epochs: number; left: number } | null;
+  ladder: { rank: number; name: string; epochs: number }[];
+  rankUp: { rank: number; name: string } | null;
 }
 
 const GOLD = 10n ** 21n; // 1 GOLD = 0.001 NEAR
@@ -151,7 +165,53 @@ function maturityLine(v: StakeVault, card: StakeCard) {
   }
 }
 
-export function StakeTodayCard({ card, onSeen }: { card: StakeCard; onSeen?: (id: string) => void }) {
+export const seenRank = (rank: number) => api<{ seen: boolean }>(`/keeper/rank/${rank}/seen`, {});
+
+function PatronRankUp({ rank, onSeen }: { rank: PatronRank; onSeen: () => void }) {
+  if (!rank.rankUp) return null;
+  return (
+    <div className="stake-ceremony" role="status" aria-live="polite">
+      <div className="stake-ceremony-item">
+        <span className="stake-ceremony-seal" aria-hidden="true">{"✦".repeat(Math.min(rank.rankUp.rank, 3))}</span>
+        <div>
+          <strong>Patron rank {rank.rankUp.rank}: {rank.rankUp.name}</strong>
+          <p>
+            {rank.epochs} epoch{rank.epochs === 1 ? "" : "s"} of matured fuel kept the city lit. The rank is yours to keep, even if you withdraw later.
+          </p>
+        </div>
+        <button type="button" onClick={onSeen}>Thank the Keeper</button>
+      </div>
+    </div>
+  );
+}
+
+/** Rank ladder: five pips, the current name and what the next step needs. */
+export function PatronRankLadder({ rank }: { rank: PatronRank }) {
+  const epochHint = (n: number) => `${n} epoch${n === 1 ? "" : "s"}`;
+  return (
+    <div className="patron-rank" aria-label={`Patron rank ${rank.rank} of 5`}>
+      <ol className="patron-rank-pips">
+        {rank.ladder.map((step) => (
+          <li key={step.rank} className={step.rank <= rank.rank ? "on" : ""} title={`${step.name}: ${epochHint(step.epochs)}`}>
+            <span aria-hidden="true">{step.rank}</span>
+            <span className="sr-only">{`${step.name}${step.rank <= rank.rank ? " (earned)" : ""}`}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="stake-note">
+        {rank.rank ? `Patron rank ${rank.rank} · ${rank.name}. ` : rank.staker ? "Rank 0 · Staker. " : "No patron rank yet. "}
+        {rank.next
+          ? rank.growing
+            ? `${epochHint(rank.next.left)} more of holding your matured stake makes you ${rank.next.name}.`
+            : `It grows with every epoch you hold matured stake${rank.step === "staker" ? "" : ` at ${rank.step === "tier2" ? "Tier 2" : "Tier 3"}`}; ${rank.next.name} needs ${epochHint(rank.next.epochs)} in all.`
+          : "The highest rank. It stays yours."}
+        {rank.rank > 0 && !rank.growing && rank.next ? " Your rank stays; it only pauses." : ""}
+      </p>
+    </div>
+  );
+}
+
+export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; onSeen?: (id: string) => void; onRankSeen?: () => void }) {
   const vaults = card.accounts.flatMap((a) => a.vaults);
   const withData = vaults.filter((v) => v.today);
   const since = withData.length ? Math.min(...withData.map((v) => v.today!.since)) : null;
@@ -159,10 +219,17 @@ export function StakeTodayCard({ card, onSeen }: { card: StakeCard; onSeen?: (id
   return (
     <section className="stake-today" aria-labelledby="stake-today-title">
       {onSeen && <StakeCeremonies card={card} onSeen={onSeen} />}
+      {onRankSeen && card.rank && <PatronRankUp rank={card.rank} onSeen={onRankSeen} />}
       <header>
         <h3 id="stake-today-title">Your stake today</h3>
         {card.patron && <span className="stake-patron">✦ {card.patron.title}</span>}
+        {card.rank && card.rank.name && (
+          <span className="stake-patron stake-rank">
+            Rank {card.rank.rank} · {card.rank.name}
+          </span>
+        )}
       </header>
+      {card.rank && (card.rank.rank > 0 || card.hasPosition) && <PatronRankLadder rank={card.rank} />}
       {!card.hasPosition ? (
         <>
           <p>No stake yet. A small stake matures in {card.maturityEpochs} epochs (about {card.maturityEpochs * card.epochHours} h) and then counts for the city.</p>
@@ -309,5 +376,9 @@ export function StakeToday() {
   if (!card) return null;
   const seen = (id: string) =>
     void seenCeremony(id).finally(() => setCard((c) => (c ? { ...c, ceremonies: c.ceremonies.filter((x) => x.id !== id) } : c)));
-  return <StakeTodayCard card={card} onSeen={seen} />;
+  const rankSeen = () => {
+    const r = card.rank?.rankUp?.rank;
+    if (r) void seenRank(r).finally(() => setCard((c) => (c?.rank ? { ...c, rank: { ...c.rank, rankUp: null } } : c)));
+  };
+  return <StakeTodayCard card={card} onSeen={seen} onRankSeen={rankSeen} />;
 }

@@ -18,6 +18,7 @@ for (const relative of [
   "./native/social-records.mjs",
   "./npc/rolls-schema.mjs",
   "./npc/keeper-vault.mjs",
+  "./npc/patron-rank.mjs",
   "./npc/trader-ledger.mjs",
   "./operator/world-controls.mjs",
   "./relayer/schema.mjs",

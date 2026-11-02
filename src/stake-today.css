@@ -25,6 +25,12 @@
 @keyframes stake-glow { from { box-shadow: 0 0 0 0 #ffd01f; transform: scale(0.97); } to { box-shadow: 0 0 0 12px transparent; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .stake-ceremony-item { animation: none; } }
 @media (max-width: 360px) { .stake-today-numbers { grid-template-columns: 1fr; } }
+.stake-rank { background: #3d0981; color: #ffd01f; }
+.patron-rank { display: grid; gap: 6px; }
+.patron-rank-pips { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.patron-rank-pips li { flex: 1; display: grid; place-items: center; min-height: 28px; border-radius: 8px; border: 2px solid #8348ff; font-weight: 700; font-variant-numeric: tabular-nums; opacity: 0.55; }
+.patron-rank-pips li.on { background: #ffd01f; border-color: #ffd01f; color: #2a1650; opacity: 1; }
+.patron-rank .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .patron-path { display: grid; gap: 6px; border-top: 1px dashed #8348ff; padding-top: 8px; }
 .patron-path h4 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
 .npc-offer.patron, .npc-task.patron { border-color: #ffd01f; }

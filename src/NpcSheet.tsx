@@ -18,7 +18,7 @@ import {
   type NpcReply,
   type NpcTrade,
 } from "./npc-client";
-import { InnerVault, StakeTodayCard, seenCeremony } from "./StakeToday";
+import { InnerVault, StakeTodayCard, seenCeremony, seenRank } from "./StakeToday";
 import "./npc-sheet.css";
 
 const EMOTE: Record<string, string> = { wave: "👋", think: "🤔", laugh: "😄", shrug: "🤷", none: "" };
@@ -220,6 +220,13 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                   setVault((v) => (v?.stake ? { ...v, stake: { ...v.stake, ceremonies: v.stake.ceremonies.filter((c) => c.id !== id) } } : v)),
                 )
               }
+              onRankSeen={() => {
+                const r = vault.stake?.rank?.rankUp?.rank;
+                if (r)
+                  void seenRank(r).finally(() =>
+                    setVault((v) => (v?.stake?.rank ? { ...v, stake: { ...v.stake, rank: { ...v.stake.rank, rankUp: null } } } : v)),
+                  );
+              }}
             />
             <InnerVault card={vault.stake} />
           </>

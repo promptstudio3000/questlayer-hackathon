@@ -6,6 +6,7 @@
 //   GET  /api/npc/traders     public books: float, 7-day P&L, premiums, sweeps
 //   GET  /api/keeper/stake                       "your stake today" card (Profile → Stake)
 //   POST /api/keeper/ceremonies/:id/seen         closes an E+2 / tier ceremony
+//   POST /api/keeper/rank/:rank/seen             closes a patron rank-up ceremony
 //   GET  /api/staker/gates       the staker gate table with this player's state
 // A liquid-stake reader (server/native/liquid-stake.mjs), when on, adds held
 // stNEAR/LiNEAR to the Staker step of the Keeper's reading.
@@ -16,6 +17,7 @@ import { allGates, defaultStakerGates, playerStakerAccess } from "../staker-gate
 const TRADE = /^\/api\/actors\/([a-z0-9-]{3,44})\/offers\/((?:trade_buy|trade_sell|trade_up):[0-9a-f]{16})\/(accept|complete)$/;
 const KEEPER = /^\/api\/actors\/([a-z0-9-]{3,44})\/keeper$/;
 const CEREMONY = /^\/api\/keeper\/ceremonies\/(kcer_[A-Za-z0-9_-]{4,80})\/seen$/;
+const RANK_SEEN = /^\/api\/keeper\/rank\/([1-5])\/seen$/;
 
 function linkedAccounts(db, player) {
   return db
@@ -163,6 +165,12 @@ export function createTraderRoutes({ traders, actors, db, market, vaults, keeper
       if (ceremony) {
         assert(keeperVault, "The Keeper's vault is not open here.", 503, "KEEPER_DISABLED");
         respond(res, keeperVault.seen(player, ceremony[1]));
+        return true;
+      }
+      const rankSeen = method === "POST" && path.match(RANK_SEEN);
+      if (rankSeen) {
+        assert(keeperVault, "The Keeper's vault is not open here.", 503, "KEEPER_DISABLED");
+        respond(res, keeperVault.rankSeen(player, Number(rankSeen[1])));
         return true;
       }
       if (method !== "POST" || !path.startsWith("/api/actors/")) return false;
