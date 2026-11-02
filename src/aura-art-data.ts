@@ -27,6 +27,12 @@ export const AURA_EDITIONS = [
   "wardbreaker",
   "wisp",
   "bossbane",
+  "stride",
+  "kindle",
+  "compass",
+  "quill",
+  "laurel",
+  "summit",
 ] as const;
 export type AuraEdition = (typeof AURA_EDITIONS)[number];
 export const AURA_GRIDS = Object.freeze({
@@ -220,6 +226,54 @@ const PALETTES: Readonly<Record<AuraEdition, Palette>> = Object.freeze({
     fringe: "#4A1035", // rift
     spark: "#FFFFFF",
     spark2: "#FFB15C", // ember glow
+  },
+  stride: {
+    hi: "#FFFFFF",
+    body: "#C9D3E0", // silver
+    deep: "#8592A8",
+    fringe: "#4E5A73",
+    spark: "#FFFFFF",
+    spark2: "#E6F0FF",
+  },
+  kindle: {
+    hi: "#FFF4C2",
+    body: "#FF9F43", // altar flame
+    deep: "#D9622B",
+    fringe: "#8A5A2B", // brass
+    spark: "#FFFFFF",
+    spark2: "#FFD27A",
+  },
+  compass: {
+    hi: "#E9FFF5",
+    body: "#5FD3A8", // verdigris
+    deep: "#2E9C7E",
+    fringe: "#1F5E5A",
+    spark: "#FFFFFF",
+    spark2: "#FFE08A", // needle gold
+  },
+  quill: {
+    hi: "#F2F5FF",
+    body: "#8FA8FF", // ink blue
+    deep: "#5262C9",
+    fringe: "#2E2F7A",
+    spark: "#FFFFFF",
+    spark2: "#C9D6FF",
+  },
+  laurel: {
+    hi: "#F1FFD9",
+    body: "#9BE36B", // leaf
+    deep: "#4FA33F",
+    fringe: "#2C6B2F",
+    spark: "#FFFFFF",
+    spark2: "#FFE08A", // gold ribbon
+  },
+  summit: {
+    hi: "#FFFFFF", // snow
+    body: "#FFE08A", // gold crown
+    deep: "#D9A441",
+    fringe: "#7A6FB8", // dusk rock
+    spark: "#FFFFFF",
+    spark2: "#FFF6CF",
   },
 });
 
@@ -1363,6 +1417,203 @@ function paintBossbaneBelow(c: Canvas) {
   c.star(52, 4, "spark2", "spark", "b");
 }
 
+// ---- Level editions (L5-L10) ---------------------------------------------
+// Earned only by reaching a level (claim prefix earned:level:). Same rules:
+// upper-left light, the shared ink outline on the base layer, two sparkle frames.
+
+function paintStrideAbove(c: Canvas) {
+  // A thin silver ring with a stride of prints walking over it.
+  ellipseRing(c, 24, 16, 17, 4.5, 2.6, (_dx, _dy, light) =>
+    light > 0.4 ? "hi" : light < -0.4 ? "deep" : "body",
+  );
+  for (const [x, y] of [
+    [11, 7],
+    [17, 5],
+    [23, 4],
+    [29, 5],
+    [35, 7],
+  ] as [number, number][])
+    footprint(c, x, y);
+  c.outline();
+  c.star(5, 4, "spark2", "spark", "a");
+  c.star(43, 4, "spark2", "spark", "b");
+}
+function paintStrideBelow(c: Canvas) {
+  groundRing(c, (light) => (light > 0.5 ? "hi" : light > -0.3 ? "body" : "deep"));
+  for (const [x, y, flip] of [
+    [7, 12, false],
+    [13, 15, false],
+    [20, 16, false],
+    [34, 17, true],
+    [41, 16, true],
+    [47, 13, true],
+  ] as [number, number, boolean][])
+    footprint(c, x, flip ? y + 1 : y - 2, flip);
+  c.outline();
+  footprint(c, 26, 2, false, "a");
+  footprint(c, 30, 2, false, "b");
+  c.star(5, 4, "spark2", "spark", "a");
+  c.star(51, 4, "spark2", "spark", "b");
+}
+function paintKindleAbove(c: Canvas) {
+  // A small brass altar ring with three flames standing on it.
+  ellipseRing(c, 24, 18, 14, 4, 2.6, (_dx, _dy, light) =>
+    light > 0.3 ? "fringe" : "deep",
+  );
+  flame(c, 16, 9, 17, 2.4);
+  flame(c, 24, 4, 17, 3.4);
+  flame(c, 32, 9, 17, 2.4);
+  c.outline();
+  c.put(16, 6, "spark2", "a");
+  c.put(32, 5, "spark2", "b");
+  c.star(24, 1, "spark2", "spark", "a");
+  c.star(41, 6, "spark2", "spark", "b");
+  c.put(6, 7, "spark2", "a");
+}
+function paintKindleBelow(c: Canvas) {
+  groundRing(c, (light) => (light > 0.4 ? "fringe" : light > -0.4 ? "deep" : "fringe"));
+  flame(c, 10, 4, 11, 2);
+  flame(c, 28, 1, 7, 2.4);
+  flame(c, 46, 4, 11, 2);
+  c.outline();
+  c.put(10, 1, "spark2", "a");
+  c.put(46, 1, "spark2", "b");
+  c.star(20, 2, "spark2", "spark", "b");
+  c.star(37, 2, "spark2", "spark", "a");
+}
+function compassPoints(c: Canvas, cx: number, cy: number, rx: number, ry: number) {
+  // Four diamond points around the ring: N and S tall, E and W wide.
+  for (let i = 0; i < 4; i++) {
+    c.put(cx, cy - ry - 1 - i, i === 3 ? "hi" : "spark2");
+    c.put(cx - rx - 1 - i, cy, i === 3 ? "deep" : "spark2");
+    c.put(cx + rx + i, cy, i === 3 ? "deep" : "spark2");
+  }
+  for (let i = 0; i < 2; i++) c.put(cx, cy + ry + i, "spark2");
+}
+function paintCompassAbove(c: Canvas) {
+  ellipseRing(c, 24, 15.5, 15, 4.5, 2.4, (_dx, _dy, light) =>
+    light > 0.5 ? "hi" : light < -0.4 ? "deep" : "body",
+  );
+  compassPoints(c, 24, 15, 15, 4);
+  // Needle across the middle.
+  line(c, 17, 13, 31, 17, "spark2");
+  c.outline();
+  c.star(7, 5, "spark2", "spark", "a");
+  c.star(41, 5, "spark2", "spark", "b");
+}
+function paintCompassBelow(c: Canvas) {
+  groundRing(c, (light) =>
+    light > 0.55 ? "hi" : light > -0.2 ? "body" : light > -0.6 ? "deep" : "fringe",
+  );
+  compassPoints(c, 28, 12, 25, 6);
+  c.outline();
+  c.star(10, 3, "spark2", "spark", "a");
+  c.star(46, 3, "spark2", "spark", "b");
+  c.put(28, 1, "spark", "a");
+}
+function quill(c: Canvas, x: number, y: number, length: number) {
+  // A slanted feather: a shaft with vanes on its upper side and a dark nib.
+  for (let i = 0; i < length; i++) {
+    const px = x + i,
+      py = y - Math.round(i * 0.6);
+    c.put(px, py, i < 2 ? "fringe" : "deep");
+    if (i >= 2) {
+      const vane = Math.min(3, Math.round(Math.sin((i / length) * Math.PI) * 3.5));
+      for (let v = 1; v <= vane; v++) c.put(px - v, py - v, v === vane ? "hi" : "body");
+    }
+  }
+}
+function paintQuillAbove(c: Canvas) {
+  ellipseRing(c, 24, 17.5, 16, 4.5, 2.4, (_dx, _dy, light) =>
+    light > 0.3 ? "body" : light < -0.4 ? "fringe" : "deep",
+  );
+  quill(c, 20, 15, 14);
+  c.outline();
+  // Ink stars written along the ring.
+  c.star(8, 13, "spark2", "spark", "a");
+  c.star(40, 13, "spark2", "spark", "b");
+  c.put(14, 9, "spark2", "b");
+  c.put(36, 21, "spark2", "a");
+  c.star(38, 3, "spark2", "spark", "a");
+}
+function paintQuillBelow(c: Canvas) {
+  groundRing(c, (light) => (light > 0.4 ? "body" : light > -0.4 ? "deep" : "fringe"));
+  quill(c, 22, 11, 14);
+  c.outline();
+  c.star(8, 4, "spark2", "spark", "a");
+  c.star(48, 4, "spark2", "spark", "b");
+  c.put(16, 2, "spark2", "b");
+}
+function leaf(c: Canvas, x: number, y: number, dir: number, layer: Layer = "base") {
+  c.put(x, y, "body", layer);
+  c.put(x + dir, y, "hi", layer);
+  c.put(x, y - 1, "deep", layer);
+  c.put(x + dir, y + 1, "deep", layer);
+}
+function paintLaurelAbove(c: Canvas) {
+  ellipseRing(c, 24, 16, 16, 4.5, 2.4, (_dx, _dy, light) => (light > 0.3 ? "deep" : "fringe"));
+  for (let i = 0; i < 6; i++) {
+    leaf(c, 9 + i * 2, 15 - i, -1);
+    leaf(c, 39 - i * 2, 15 - i, 1);
+  }
+  c.put(24, 21, "spark2");
+  c.put(23, 21, "spark2");
+  c.put(25, 21, "spark2");
+  c.outline();
+  c.star(24, 4, "spark2", "spark", "a");
+  c.star(6, 6, "spark2", "spark", "b");
+  c.star(42, 6, "spark2", "spark", "b");
+}
+function paintLaurelBelow(c: Canvas) {
+  // A ground wreath: leaves pointing round the ring, gold ribbon at the front.
+  groundRing(c, (light) => (light > 0.4 ? "body" : light > -0.4 ? "deep" : "fringe"));
+  for (let i = 0; i < 7; i++) {
+    const a = Math.PI * (0.1 + (i / 6) * 0.8),
+      x = 28 + Math.cos(a) * 25,
+      y = 12.5 - Math.sin(a) * 6.5;
+    leaf(c, Math.round(x), Math.round(y) - 1, x < 28 ? 1 : -1);
+  }
+  for (let x = 25; x <= 31; x++) c.put(x, 19, "spark2");
+  c.put(26, 18, "spark2");
+  c.put(30, 18, "spark2");
+  c.outline();
+  c.star(6, 3, "spark2", "spark", "a");
+  c.star(50, 3, "spark2", "spark", "b");
+  c.put(28, 1, "spark", "a");
+}
+function peak(c: Canvas, x: number, top: number, base: number) {
+  for (let y = top; y <= base; y++) {
+    const half = Math.round((y - top) * 0.9);
+    for (let px = x - half; px <= x + half; px++)
+      c.put(px, y, y - top < 2 ? "hi" : px < x ? "body" : "deep");
+  }
+}
+function paintSummitAbove(c: Canvas) {
+  // A gold crown band with three snowy peaks and a summit star.
+  ellipseRing(c, 24, 18, 16, 3.8, 2.4, (_dx, _dy, light) =>
+    light > 0.5 ? "hi" : light < -0.4 ? "deep" : "body",
+  );
+  peak(c, 14, 10, 16);
+  peak(c, 24, 5, 16);
+  peak(c, 34, 10, 16);
+  c.outline();
+  c.star(24, 2, "spark2", "spark", "a");
+  c.put(24, 2, "spark", "b");
+  c.star(5, 7, "spark2", "spark", "b");
+  c.star(43, 7, "spark2", "spark", "a");
+}
+function paintSummitBelow(c: Canvas) {
+  groundRing(c, (light) =>
+    light > 0.55 ? "hi" : light > -0.2 ? "body" : light > -0.6 ? "deep" : "fringe",
+  );
+  peak(c, 18, 2, 7);
+  peak(c, 28, 0, 7);
+  peak(c, 38, 2, 7);
+  c.outline();
+  c.star(7, 3, "spark2", "spark", "a");
+  c.star(49, 3, "spark2", "spark", "b");
+}
+
 const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => void>> = {
   above: {
     polar: paintPolarAbove,
@@ -1380,6 +1631,12 @@ const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => 
     wardbreaker: paintWardbreakerAbove,
     wisp: paintWispAbove,
     bossbane: paintBossbaneAbove,
+    stride: paintStrideAbove,
+    kindle: paintKindleAbove,
+    compass: paintCompassAbove,
+    quill: paintQuillAbove,
+    laurel: paintLaurelAbove,
+    summit: paintSummitAbove,
     generic: paintGenericAbove,
   },
   below: {
@@ -1398,6 +1655,12 @@ const PAINTERS: Record<AuraSlot, Record<AuraEdition | "generic", (c: Canvas) => 
     wardbreaker: paintWardbreakerBelow,
     wisp: paintWispBelow,
     bossbane: paintBossbaneBelow,
+    stride: paintStrideBelow,
+    kindle: paintKindleBelow,
+    compass: paintCompassBelow,
+    quill: paintQuillBelow,
+    laurel: paintLaurelBelow,
+    summit: paintSummitBelow,
     generic: paintGenericBelow,
   },
 };

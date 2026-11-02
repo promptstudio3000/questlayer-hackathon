@@ -7,6 +7,7 @@ import {
   nativeLevelClaimId,
   nativeLevelProgress,
 } from "../server/native/progression.mjs";
+import { loadLevelTable, setLevelTable } from "../server/levels.mjs";
 
 const initialTime = Date.parse("2026-10-31T14:00:00Z");
 function setup() {
@@ -50,6 +51,7 @@ function setup() {
     hook: null,
     hang: false,
     accounts: new Map(),
+    supported: ["polar", "moon", "gold"],
   };
   const requests = [];
   const provider = {
@@ -98,6 +100,7 @@ function setup() {
       else if (method === "get_award_signer") data = state.key;
       else if (method === "get_version") data = state.version;
       else if (method === "edition_minted") data = state.minted;
+      else if (method === "supported_editions") data = state.supported;
       else if (method === "get_claim")
         data = state.claims.get(args.claim_id) || null;
       else throw Error("Unexpected view " + method);
@@ -656,5 +659,28 @@ test("reviewed collectible WASM SHA256 converts to NEAR's base58 code fingerprin
     );
   } finally {
     s.db.close();
+  }
+});
+
+test("level-item milestones stay unavailable until the contract lists their edition", async () => {
+  const s = setup();
+  const previous = setLevelTable(loadLevelTable({ LEVEL_ITEM_EDITIONS: "1" }));
+  try {
+    s.nextBlock(1600);
+    let result = await s.service.snapshot(s.player, "alice.testnet");
+    assert.deepEqual(result.milestones.map((m) => m.level), [2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    assert.equal(result.milestones.find((m) => m.level === 2).state, "available");
+    assert.equal(result.milestones.find((m) => m.level === 5).state, "unavailable");
+    await assert.rejects(s.service.issue(s.player, "alice.testnet", 5), /unavailable/);
+    s.state.supported = [...s.state.supported, "stride", "kindle", "compass", "quill", "laurel", "summit"];
+    s.nextBlock(1600);
+    result = await s.service.snapshot(s.player, "alice.testnet");
+    assert.equal(result.milestones.find((m) => m.level === 5).state, "available");
+    assert.equal(result.milestones.find((m) => m.level === 5).edition, "stride");
+    assert.equal(result.milestones.find((m) => m.level === 6).state, "locked");
+    const claim = await s.service.issue(s.player, "alice.testnet", 5);
+    assert.match(claim.claim_id || claim.claimId, /^earned:level:/);
+  } finally {
+    setLevelTable(previous);
   }
 });
