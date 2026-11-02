@@ -90,6 +90,8 @@ same builder as reviewed packs (`server/spatial/city-pack-builder.mjs`) on the k
   park centred in one is dropped;
 - reviewed cities in `server/data/cities.json` win: same id or centre inside a reviewed coverage box skips the
   city, and no auto feature inside a reviewed box is used (the server enforces this again on load);
+- a GeoNames place whose centre lies inside a larger auto city's box (city districts such as Žižkov or Brno-střed) is
+  folded into that city;
 - a city with no zone on any of seven sample days is not published.
 
 Output: `city-packs-<poi version>-a<builder>/` with `<id>.json` (`fieldReview: "auto"`, `status: "auto"`,

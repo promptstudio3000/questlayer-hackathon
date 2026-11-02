@@ -48,6 +48,7 @@ test("city selection: Czech cities from 15k, reviewed Plzeň wins, stable ids", 
     row(3, "Tiny", 49.9, 15.0, 14999),
     row(4, "Wien", 48.2, 16.37, 1691468, { country: "AT" }),
     row(5, "Černice", 49.72, 13.43, 20000), // inside Plzeň coverage
+    row(6, "Žižkov", 50.083, 14.45, 58267), // a Prague district
   ];
   const { cities, skipped } = selectAutoCities(rows, { reviewed });
   assert.deepEqual(
@@ -58,6 +59,7 @@ test("city selection: Czech cities from 15k, reviewed Plzeň wins, stable ids", 
     skipped.map((s) => [s.name, s.reason]),
     [
       ["Plzeň", "reviewed-city-wins"],
+      ["Žižkov", "inside-larger-city"],
       ["Černice", "inside-reviewed-city"],
     ],
   );

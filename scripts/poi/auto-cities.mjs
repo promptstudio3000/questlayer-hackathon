@@ -127,6 +127,12 @@ export function selectAutoCities(
       skip("inside-reviewed-city");
       continue;
     }
+    // GeoNames lists city districts (Žižkov, Brno-střed, ...) as places of
+    // their own; a centre inside a larger city's box belongs to that city.
+    if (cities.some((c) => inBox([r.lng, r.lat], c.coverage))) {
+      skip("inside-larger-city");
+      continue;
+    }
     if (!r.timezone) {
       skip("no-timezone");
       continue;
