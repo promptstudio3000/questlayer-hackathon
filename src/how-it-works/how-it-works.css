@@ -1,0 +1,1517 @@
+/* "How it works" one-pager. Scoped under .hiw; loaded only on /how-it-works.
+   Final states are the base styles. Entrance animations exist only when motion
+   is allowed (system setting and the in-game Motion setting) and run once a
+   chapter carries data-inview="true". Only transform and opacity animate. */
+.hiw {
+  --hiw-bg: #1a0335;
+  --hiw-bg-2: #26084a;
+  --hiw-panel: #2f0f58;
+  --hiw-panel-2: #3b1670;
+  --hiw-line: #5b3a8a;
+  --hiw-text: #fff6e8;
+  --hiw-muted: #cdbde3;
+  --hiw-accent: #ff1dff;
+  --hiw-action: #8a5cff;
+  --hiw-coin: #fef87d;
+  --hiw-mint: #7ff0c8;
+  --hiw-shadow: 4px 4px 0 #0c0119;
+  --hiw-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --hiw-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 85% -10%, #4a1a8c 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 40%, #3a0f66 0%, transparent 55%),
+    var(--hiw-bg);
+  color: var(--hiw-text);
+  font-family: var(--font-body, "Kanit", system-ui, sans-serif);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-x: clip;
+}
+html.hiw-root {
+  background: #1a0335;
+  scroll-padding-top: 64px;
+}
+@media (min-width: 900px) and (min-height: 640px) {
+  html.hiw-root {
+    scroll-snap-type: y proximity;
+  }
+  .hiw-chapter,
+  .hiw-hero {
+    scroll-snap-align: start;
+  }
+}
+.hiw a {
+  color: inherit;
+}
+.hiw p {
+  line-height: 1.5;
+}
+.hiw :focus-visible {
+  outline: 3px solid var(--hiw-coin);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.hiw-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Top bar, progress, chapter rail */
+.hiw-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 4px;
+  z-index: 30;
+  background: linear-gradient(90deg, var(--hiw-accent), var(--hiw-coin));
+  transform-origin: left;
+  transform: scaleX(var(--p, 0));
+}
+.hiw-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+  padding-top: max(8px, env(safe-area-inset-top));
+  background: color-mix(in srgb, var(--hiw-bg) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #ffffff14;
+}
+.hiw-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  font-weight: 700;
+  font-size: 18px;
+  text-decoration: none;
+}
+.hiw-brand img {
+  border-radius: 8px;
+}
+.hiw-top-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--hiw-coin);
+  color: var(--hiw-bg) !important;
+  font-weight: 600;
+  text-decoration: none;
+}
+.hiw-rail {
+  display: none;
+}
+@media (min-width: 1100px) {
+  .hiw-rail {
+    display: block;
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 15;
+  }
+  .hiw-rail ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .hiw-rail a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    min-height: 28px;
+    text-decoration: none;
+    color: var(--hiw-muted);
+    font-size: 14px;
+  }
+  .hiw-rail-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--hiw-muted);
+    transition: transform 200ms var(--hiw-ease), background 200ms;
+    flex: none;
+  }
+  .hiw-rail-label {
+    position: absolute;
+    right: 32px;
+    white-space: nowrap;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #1a0335e6;
+    opacity: 0;
+    transform: translateX(6px);
+    transition: opacity 200ms, transform 200ms var(--hiw-ease);
+  }
+  .hiw-rail a:hover .hiw-rail-label,
+  .hiw-rail a:focus-visible .hiw-rail-label,
+  .hiw-rail a[aria-current] .hiw-rail-label {
+    opacity: 1;
+    transform: none;
+  }
+  .hiw-rail a[aria-current] {
+    color: var(--hiw-text);
+  }
+  .hiw-rail a[aria-current] .hiw-rail-dot {
+    background: var(--hiw-accent);
+    border-color: var(--hiw-accent);
+    transform: scale(1.3);
+  }
+}
+
+/* Shared type and controls */
+.hiw-eyebrow {
+  margin: 0 0 8px;
+  color: var(--hiw-accent);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hiw-eyebrow span {
+  color: var(--hiw-muted);
+  margin-right: 6px;
+}
+.hiw h1,
+.hiw h2 {
+  margin: 0 0 12px;
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.hiw h1 {
+  font-size: clamp(40px, 7vw, 84px);
+}
+.hiw h1 em {
+  font-style: normal;
+  color: var(--hiw-coin);
+  display: block;
+}
+.hiw h2 {
+  font-size: clamp(30px, 4.4vw, 56px);
+}
+.hiw-lead {
+  margin: 0 0 20px;
+  font-size: clamp(17px, 1.6vw, 21px);
+  color: var(--hiw-muted);
+  max-width: 34em;
+  text-wrap: pretty;
+}
+.hiw-lead b {
+  color: var(--hiw-text);
+}
+.hiw-chips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hiw-chips li {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hiw-line);
+  background: #ffffff0d;
+  font-size: 15px;
+}
+.hiw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0 20px;
+}
+.hiw-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 22px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 17px;
+  text-decoration: none;
+  border: 2px solid #0c0119;
+  transition: transform 100ms var(--hiw-ease), box-shadow 100ms var(--hiw-ease);
+}
+.hiw-button.primary {
+  background: var(--hiw-coin);
+  color: var(--hiw-bg) !important;
+  box-shadow: var(--hiw-shadow);
+}
+.hiw-button.primary:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 #0c0119;
+}
+.hiw-button.primary:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 #0c0119;
+}
+.hiw-button.ghost {
+  border-color: var(--hiw-line);
+  background: #ffffff0a;
+}
+.hiw-button.ghost:hover {
+  background: #ffffff16;
+}
+
+/* Hero */
+.hiw-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: calc(100svh - 64px);
+  padding: 24px 16px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow-y: clip;
+}
+.hiw-hero-bg {
+  position: absolute;
+  inset: 0 -50vw;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(calc(var(--y, 0) * 0.25px));
+  opacity: 0.5;
+}
+.hiw-hero-bg .street {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, #7a52b8 20%, #7a52b8 80%, transparent);
+  opacity: 0.35;
+}
+.hiw-hero-bg .street.h {
+  left: 0;
+  right: 0;
+  height: 10px;
+}
+.hiw-hero-bg .street.v {
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  background: linear-gradient(180deg, transparent, #7a52b8 20%, #7a52b8 80%, transparent);
+}
+.street.h.one { top: 28%; }
+.street.h.two { top: 74%; transform: rotate(-3deg); }
+.street.v.one { left: 50%; transform: rotate(8deg); }
+.street.v.two { left: 62%; }
+.street.v.three { left: 82%; transform: rotate(-6deg); }
+.hiw-hero-art {
+  position: relative;
+  justify-self: center;
+  width: min(56vw, 240px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+.hiw-hero-glow {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff1dff55 0%, #8a5cff33 45%, transparent 70%);
+}
+.hiw .hiw-hero-ghost {
+  width: 62%;
+  position: relative;
+  z-index: 2;
+}
+.hiw .ghost-art img,
+.hiw .ghost-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+.hiw-hero-aura {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.hiw-hero-coin {
+  position: absolute;
+  z-index: 4;
+}
+.hiw-hero-coin.c0 { left: 4%; top: 58%; }
+.hiw-hero-coin.c1 { right: 6%; top: 34%; }
+.hiw-hero-coin.c2 { right: 18%; bottom: 6%; }
+.hiw-hero-copy {
+  position: relative;
+  z-index: 2;
+}
+@media (min-width: 900px) {
+  .hiw-hero {
+    grid-template-columns: 1.15fr 0.85fr;
+    padding: 48px 72px 72px 32px;
+  }
+  .hiw-hero-copy {
+    grid-row: 1;
+    grid-column: 1;
+  }
+  .hiw-hero-art {
+    grid-column: 2;
+    width: min(36vw, 440px);
+  }
+}
+
+/* Chapters */
+.hiw-chapter {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 64px 16px;
+  border-top: 1px solid #ffffff10;
+}
+@media (max-width: 899px) {
+  .hiw-chapter:not(.hiw-join) {
+    gap: 0;
+  }
+  .hiw-chapter:not(.hiw-join) .hiw-copy {
+    display: contents;
+  }
+  .hiw-chapter:not(.hiw-join) .hiw-copy > * {
+    order: 3;
+  }
+  .hiw-chapter:not(.hiw-join) .hiw-eyebrow,
+  .hiw-chapter:not(.hiw-join) .hiw-copy > h2 {
+    order: 1;
+  }
+  .hiw-chapter:not(.hiw-join) .hiw-scene {
+    order: 2;
+    margin: 8px 0 24px;
+  }
+}
+@media (min-width: 900px) {
+  .hiw-chapter {
+    min-height: calc(100svh - 64px);
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    padding: 72px 72px 72px 32px;
+  }
+  .hiw-chapter.flip .hiw-copy {
+    order: 2;
+  }
+}
+.hiw-scene {
+  min-width: 0;
+}
+.hiw-panel,
+.hiw-walk,
+.hiw-zones,
+.hiw-levels,
+.hiw-collect,
+.hiw-badges,
+.hiw-npcs,
+.hiw-stake,
+.hiw-season {
+  background: var(--hiw-panel);
+  border: 2px solid #0c0119;
+  border-radius: 20px;
+  box-shadow: 6px 6px 0 #0c0119;
+  padding: 16px;
+}
+
+/* 01 Walk */
+.hiw-walk-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  background: #3e2a5e;
+}
+.hiw-blocks rect {
+  fill: #574178;
+}
+.hiw-blocks .park {
+  fill: #2f6b55;
+}
+.hiw-route-shadow {
+  fill: none;
+  stroke: #ffffff22;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+.hiw-route {
+  fill: none;
+  stroke: var(--hiw-accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 0.02 0.015;
+}
+.hiw-pickup-label {
+  font: 600 11px var(--font-body, sans-serif);
+  fill: var(--hiw-coin);
+  text-anchor: middle;
+}
+.hiw-pickup-art {
+  opacity: 0.35;
+}
+.hiw-tally {
+  display: flex;
+  justify-content: space-around;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 20px;
+  font-weight: 600;
+}
+.hiw-tally span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hiw-tally svg {
+  color: var(--hiw-coin);
+}
+
+/* 02 Zones */
+.hiw-zone-map {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #3e2a5e;
+}
+.hiw-zone {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  min-height: 72px;
+  border-radius: 40% 60% 55% 45% / 55% 40% 60% 45%;
+  font-size: 14px;
+}
+.hiw-zone.t1 {
+  background: #2f8f6b;
+  color: #eafff6;
+  border: 2px solid var(--hiw-mint);
+}
+.hiw-zone.t2 {
+  background: #4b2d78;
+  color: var(--hiw-muted);
+  border: 2px dashed #8a6bbf;
+}
+.hiw-zone.t3 {
+  background: #4b2d78;
+  color: var(--hiw-coin);
+  border: 2px dashed var(--hiw-coin);
+}
+.hiw-chest {
+  grid-column: 1 / -1;
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 120px;
+}
+.hiw-chest > span {
+  grid-area: 1 / 1;
+}
+.hiw-chest-closed {
+  opacity: 0;
+}
+.hiw-chest-aura {
+  transform: translateY(-46px);
+}
+.hiw-zone-steps {
+  list-style: none;
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.hiw-zone-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+/* 03 Levels */
+.hiw-levels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: center;
+}
+@media (min-width: 560px) {
+  .hiw-levels {
+    grid-template-columns: 140px 1fr;
+  }
+}
+.hiw-ring {
+  position: relative;
+  width: 140px;
+  justify-self: center;
+}
+.hiw-ring svg {
+  display: block;
+  width: 100%;
+  transform: rotate(-90deg);
+}
+.hiw-ring circle {
+  fill: none;
+  stroke-width: 12;
+}
+.hiw-ring .track {
+  stroke: #ffffff1a;
+}
+.hiw-ring .fill {
+  stroke: var(--hiw-coin);
+  stroke-linecap: round;
+  stroke-dashoffset: 0;
+}
+.hiw-ring-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  line-height: 1;
+}
+.hiw-ring-label small {
+  font-size: 14px;
+  color: var(--hiw-muted);
+}
+.hiw-ring-label b {
+  font-size: 48px;
+}
+.hiw-ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.hiw-ladder li {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #ffffff0a;
+  font-size: 14px;
+}
+.hiw-ladder b {
+  color: var(--hiw-coin);
+}
+.hiw-ladder em {
+  font-style: normal;
+  color: var(--hiw-mint);
+}
+.hiw-ladder small {
+  color: var(--hiw-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* 04 Collectibles */
+.hiw-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.hiw-card {
+  position: relative;
+  aspect-ratio: 3 / 4;
+}
+.hiw-card-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  padding: 6px;
+  text-align: center;
+  border-radius: 12px;
+  border: 2px solid #0c0119;
+  background: var(--hiw-panel-2);
+  font-size: 13px;
+  line-height: 1.2;
+}
+.hiw-card-face b {
+  font-size: 13px;
+}
+.hiw-card-face small {
+  color: var(--hiw-muted);
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.hiw-card-face[data-rarity="rare"] { box-shadow: inset 0 0 0 2px #59ddcc; }
+.hiw-card-face[data-rarity="epic"] { box-shadow: inset 0 0 0 2px #c27bff; }
+.hiw-card-face[data-rarity="legendary"] { box-shadow: inset 0 0 0 2px var(--hiw-coin); }
+.hiw-card-face .aura-sprite,
+.hiw-card-face svg {
+  max-width: 100%;
+  height: auto;
+}
+.hiw-card.flips .front {
+  visibility: hidden;
+}
+.hiw-card-face.back {
+  background: linear-gradient(160deg, #5b2fb3, #2a0b52);
+}
+.hiw-card-face.back small {
+  text-transform: none;
+}
+.hiw-wear {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  margin-top: 16px;
+}
+.hiw .hiw-wear-ghost {
+  width: 96px;
+}
+.hiw-wear-aura {
+  position: absolute;
+  top: -14px;
+  z-index: 2;
+}
+.hiw-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #ffffff12;
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+}
+.hiw-switch span {
+  position: relative;
+  z-index: 1;
+  padding: 6px 16px;
+  text-align: center;
+}
+.hiw-switch span:last-of-type {
+  color: var(--hiw-bg);
+}
+.hiw-switch i {
+  position: absolute;
+  inset: 0 0 0 50%;
+  border-radius: 999px;
+  background: var(--hiw-mint);
+}
+
+/* 05 Badges */
+.hiw-badge-map {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 70% 25%, #6b4c96 0 12%, transparent 13%),
+    radial-gradient(circle at 25% 40%, #2f6b55 0 14%, transparent 15%),
+    linear-gradient(160deg, #46306a, #33204f);
+  overflow: hidden;
+}
+.hiw-badge-trail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hiw-badge-trail path {
+  fill: none;
+  stroke: #ffffff55;
+  stroke-width: 0.8;
+  stroke-dasharray: 2 2;
+  vector-effect: non-scaling-stroke;
+}
+.hiw-medal {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  width: 96px;
+}
+.hiw-medal-disc {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fffbc2, var(--hiw-coin) 45%, #d8a849);
+  color: var(--hiw-bg);
+  border: 3px solid #0c0119;
+  box-shadow: 0 3px 0 #0c0119;
+}
+.hiw-medal small {
+  padding: 0 6px;
+  border-radius: 6px;
+  color: var(--hiw-text);
+  background: #1a0335e6;
+  font-size: 12px;
+}
+.hiw-badge-kinds {
+  list-style: none;
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.hiw-badge-kinds li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #ffffff10;
+  font-weight: 600;
+}
+
+/* 06 NPCs */
+.hiw-npc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.hiw-npc {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: var(--hiw-panel-2);
+  text-align: center;
+}
+.hiw-npc-art {
+  position: relative;
+  width: 64px;
+  padding-top: 10px;
+}
+.hiw-npc-aura {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+.hiw-npc-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.hiw-bubble {
+  position: relative;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--hiw-text);
+  color: var(--hiw-bg);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.hiw-npc-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.hiw-monster,
+.hiw-tradeup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #ffffff0d;
+  font-size: 14px;
+  line-height: 1.25;
+}
+.hiw-monster svg {
+  color: var(--hiw-accent);
+  flex: none;
+}
+.hiw-monster small {
+  display: block;
+  color: var(--hiw-muted);
+  font-size: 12px;
+}
+.hiw-tradeup {
+  justify-content: center;
+  gap: 2px;
+}
+.hiw-tradeup .in {
+  margin-left: -10px;
+}
+.hiw-tradeup .arrow {
+  margin: 0 4px 0 6px;
+  color: var(--hiw-coin);
+  flex: none;
+}
+
+/* 07 Staking */
+.hiw-vault-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.hiw-vault {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  color: var(--hiw-muted);
+}
+.hiw-near-coin {
+  position: absolute;
+  top: -10px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--hiw-mint);
+  color: var(--hiw-bg);
+  border: 2px solid #0c0119;
+  font-weight: 700;
+  line-height: 0.9;
+  font-size: 16px;
+  opacity: 0;
+}
+.hiw-near-coin small {
+  font-size: 8px;
+}
+.hiw-epochs {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+.hiw-epochs::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 7px;
+  height: 3px;
+  background: var(--hiw-mint);
+  transform-origin: left;
+}
+.hiw-epochs li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--hiw-muted);
+}
+.hiw-epochs li span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--hiw-mint);
+  border: 2px solid #0c0119;
+}
+.hiw-staker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--hiw-coin);
+  color: var(--hiw-bg);
+  font-weight: 700;
+  box-shadow: 0 0 0 4px #fef87d33;
+}
+.hiw-gates {
+  list-style: none;
+  margin: 16px 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.hiw-gates li {
+  display: grid;
+  grid-template-columns: 28px 112px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #ffffff0d;
+  border: 1px solid var(--hiw-line);
+  font-size: 14px;
+  line-height: 1.3;
+}
+.hiw-lock {
+  display: grid;
+  place-items: center;
+}
+.hiw-lock svg {
+  grid-area: 1 / 1;
+}
+.hiw-lock .closed {
+  opacity: 0;
+}
+.hiw-lock .open {
+  color: var(--hiw-mint);
+}
+.hiw-gate-step {
+  font-weight: 700;
+  color: var(--hiw-coin);
+}
+.hiw-pot {
+  display: grid;
+  gap: 6px;
+}
+.hiw-pot-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.hiw-pot-bar {
+  height: 14px;
+  border-radius: 999px;
+  background: #ffffff14;
+  overflow: hidden;
+}
+.hiw-pot-bar i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--hiw-mint), var(--hiw-coin));
+  transform-origin: left;
+  transform: scaleX(0.72);
+}
+.hiw-pot-note {
+  font-size: 14px;
+  color: var(--hiw-muted);
+}
+@media (max-width: 480px) {
+  .hiw-gates li {
+    grid-template-columns: 24px 1fr;
+  }
+  .hiw-gate-what {
+    grid-column: 2;
+  }
+  .hiw-vault-row {
+    grid-template-columns: auto 1fr;
+  }
+  .hiw-staker-badge {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+}
+
+/* 08 Seasons */
+.hiw-season-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+.hiw-season-head svg {
+  color: var(--hiw-coin);
+}
+.hiw-season-head b {
+  font-size: 28px;
+}
+.hiw-season-bar {
+  display: flex;
+  gap: 3px;
+  height: 44px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff10;
+}
+.hiw-season-bar .seg {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hiw-bg);
+  white-space: nowrap;
+  overflow: hidden;
+  transform-origin: left;
+}
+.seg.hunt { background: #ff7ad9; }
+.seg.visit { background: var(--hiw-mint); }
+.seg.line { background: var(--hiw-coin); }
+.hiw-season-points {
+  list-style: none;
+  display: flex;
+  justify-content: space-around;
+  margin: 10px 0;
+  padding: 0;
+  font-size: 15px;
+}
+.hiw-season-points b {
+  color: var(--hiw-coin);
+}
+.hiw-ranks {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.hiw-ranks li {
+  display: grid;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--hiw-panel-2);
+  font-weight: 600;
+  line-height: 1.25;
+}
+.hiw-ranks small {
+  font-weight: 400;
+  color: var(--hiw-muted);
+  font-size: 13px;
+}
+
+/* 09 Fair play */
+.hiw-principles {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+.hiw-principles li {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--hiw-panel);
+  border: 2px solid #0c0119;
+  box-shadow: var(--hiw-shadow);
+}
+.hiw-principles svg {
+  color: var(--hiw-accent);
+}
+.hiw-principles b {
+  font-size: 19px;
+}
+.hiw-principles span {
+  color: var(--hiw-muted);
+}
+
+/* 10 Join */
+.hiw-join {
+  grid-template-columns: 1fr;
+}
+.hiw-join .hiw-copy {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+.hiw-steps {
+  list-style: none;
+  margin: 8px 0 20px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.hiw-steps li {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--hiw-panel);
+  border: 2px solid #0c0119;
+}
+.hiw-steps li > span:nth-child(2) {
+  display: grid;
+}
+.hiw-steps li > span:nth-child(2) > span {
+  color: var(--hiw-muted);
+}
+.hiw-steps li.optional {
+  background: transparent;
+  border: 2px dashed var(--hiw-line);
+}
+.hiw-steps small {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #ffffff14;
+  color: var(--hiw-muted);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.hiw-step-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--hiw-panel-2);
+  color: var(--hiw-coin);
+}
+.hiw-step-check {
+  color: var(--hiw-mint);
+}
+.hiw-fine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hiw-muted);
+  font-size: 14px;
+}
+
+/* ---------------------------------------------------------------------------
+   Motion. Everything below runs only when motion is allowed. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduce"]) .hiw:not(.hiw-still) {
+    /* Hero: idle float and coins popping. */
+    & .hiw-hero-ghost {
+      animation: hiw-float 4s ease-in-out infinite;
+    }
+    & .hiw-hero-aura {
+      animation: hiw-float-aura 4s ease-in-out infinite;
+    }
+    & .hiw-hero-glow {
+      animation: hiw-pulse 4s ease-in-out infinite;
+    }
+    & .hiw-hero-coin {
+      animation:
+        hiw-pop 600ms var(--hiw-pop) both,
+        hiw-bob 3s ease-in-out infinite;
+      animation-delay:
+        calc(400ms + var(--i) * 260ms),
+        calc(1000ms + var(--i) * 260ms);
+    }
+    & .hiw-hero-copy > * {
+      animation: hiw-rise 700ms var(--hiw-ease) both;
+    }
+    & .hiw-hero-copy > :nth-child(2) { animation-delay: 80ms; }
+    & .hiw-hero-copy > :nth-child(3) { animation-delay: 160ms; }
+    & .hiw-hero-copy > :nth-child(4) { animation-delay: 240ms; }
+    & .hiw-hero-copy > :nth-child(5) { animation-delay: 320ms; }
+
+    /* Chapter copy rises in when the chapter arrives. */
+    & .hiw-chapter[data-inview="false"] .hiw-copy > *,
+    & .hiw-chapter[data-inview="false"] .hiw-scene {
+      opacity: 0;
+    }
+    & .hiw-chapter[data-inview="true"] .hiw-copy > * {
+      animation: hiw-rise 700ms var(--hiw-ease) both;
+    }
+    & .hiw-chapter[data-inview="true"] .hiw-copy > :nth-child(2) { animation-delay: 80ms; }
+    & .hiw-chapter[data-inview="true"] .hiw-copy > :nth-child(3) { animation-delay: 160ms; }
+    & .hiw-chapter[data-inview="true"] .hiw-copy > :nth-child(n + 4) { animation-delay: 240ms; }
+    & .hiw-chapter[data-inview="true"] .hiw-scene {
+      animation: hiw-scene-in 800ms var(--hiw-ease) 120ms both;
+    }
+    & [data-inview="true"] .hiw-chips li {
+      animation: hiw-pop 500ms var(--hiw-pop) both;
+      animation-delay: calc(500ms + var(--i) * 90ms);
+    }
+
+    /* 01 Walk: route draws, pickups fade as the ghost passes. */
+    & [data-inview="true"] .hiw-route {
+      stroke-dasharray: 1;
+      animation: hiw-draw 4200ms cubic-bezier(0.45, 0, 0.55, 1) both;
+    }
+    & [data-inview="true"] .hiw-pickup-art {
+      animation: hiw-collect 500ms var(--hiw-ease) both;
+      animation-delay: var(--at);
+    }
+    & [data-inview="true"] .hiw-pickup-label {
+      animation: hiw-float-label 900ms var(--hiw-ease) both;
+      animation-delay: var(--at);
+    }
+
+    /* 02 Zones: zones appear one by one, the chest shakes, opens, the Aura rises. */
+    & [data-inview="true"] .hiw-zone {
+      animation: hiw-pop 500ms var(--hiw-pop) both;
+      animation-delay: calc(300ms + var(--i) * 140ms);
+    }
+    & [data-inview="true"] .hiw-chest-closed {
+      animation: hiw-chest-shake 1400ms ease-in-out 1200ms both;
+    }
+    & [data-inview="true"] .hiw-chest-open {
+      animation: hiw-appear 1ms linear 2600ms both;
+    }
+    & [data-inview="true"] .hiw-chest-aura {
+      animation: hiw-aura-rise 900ms var(--hiw-pop) 2650ms both;
+    }
+    & [data-inview="true"] .hiw-zone-steps li {
+      animation: hiw-rise 500ms var(--hiw-ease) both;
+      animation-delay: calc(3200ms + var(--i) * 120ms);
+    }
+
+    /* 03 Levels: ring fills, ladder lights. */
+    & [data-inview="true"] .hiw-ring .fill {
+      animation: hiw-ring 2600ms cubic-bezier(0.33, 1, 0.68, 1) both;
+    }
+    & [data-inview="true"] .hiw-ladder li {
+      animation: hiw-slide 450ms var(--hiw-ease) both;
+      animation-delay: calc(200ms + var(--i) * 220ms);
+    }
+
+    /* 04 Collectibles: deal, flip, try on, secure. */
+    & [data-inview="true"] .hiw-card {
+      animation: hiw-deal 600ms var(--hiw-pop) both;
+      animation-delay: calc(200ms + var(--i) * 150ms);
+    }
+    & [data-inview="true"] .hiw-card.flips .front {
+      animation: hiw-flip-out 280ms ease-in 1500ms both;
+    }
+    & [data-inview="true"] .hiw-card.flips .back {
+      animation: hiw-flip-in 320ms var(--hiw-ease) 1780ms both;
+    }
+    & [data-inview="true"] .hiw-wear-aura {
+      animation: hiw-try-on 700ms var(--hiw-pop) 2300ms both;
+    }
+    & [data-inview="true"] .hiw-switch i {
+      animation: hiw-switch 500ms var(--hiw-ease) 3000ms both;
+    }
+
+    /* 05 Badges: trail draws, medals stamp down. */
+    & [data-inview="true"] .hiw-badge-trail path {
+      animation: hiw-fade 1200ms ease both;
+    }
+    & [data-inview="true"] .hiw-medal-disc {
+      animation: hiw-stamp 550ms var(--hiw-pop) both;
+      animation-delay: calc(400ms + var(--i) * 420ms);
+    }
+    & [data-inview="true"] .hiw-medal small {
+      animation: hiw-fade 400ms ease both;
+      animation-delay: calc(650ms + var(--i) * 420ms);
+    }
+    & [data-inview="true"] .hiw-badge-kinds li {
+      animation: hiw-rise 500ms var(--hiw-ease) both;
+      animation-delay: calc(2300ms + var(--i) * 120ms);
+    }
+
+    /* 06 NPCs: slide in, bubbles pop, the monster shakes, three Auras merge. */
+    & [data-inview="true"] .hiw-npc {
+      animation: hiw-slide 500ms var(--hiw-ease) both;
+      animation-delay: calc(200ms + var(--i) * 160ms);
+    }
+    & [data-inview="true"] .hiw-bubble {
+      animation: hiw-pop 450ms var(--hiw-pop) both;
+      animation-delay: calc(700ms + var(--i) * 300ms);
+    }
+    & [data-inview="true"] .hiw-monster svg {
+      animation: hiw-shake 600ms ease-in-out 2000ms 2 both;
+    }
+    & [data-inview="true"] .hiw-tradeup .in {
+      animation: hiw-merge 900ms var(--hiw-ease) 2200ms both;
+    }
+    & [data-inview="true"] .hiw-tradeup .out {
+      animation: hiw-pop 600ms var(--hiw-pop) 3000ms both;
+    }
+
+    /* 07 Staking: deposit, two epochs, Staker lights, gates open. */
+    & [data-inview="true"] .hiw-near-coin {
+      animation: hiw-deposit 900ms cubic-bezier(0.5, 0, 0.75, 0) 300ms both;
+    }
+    & [data-inview="true"] .hiw-epochs::before {
+      animation: hiw-grow-x 1600ms linear 1200ms both;
+    }
+    & [data-inview="true"] .hiw-epochs li span {
+      animation: hiw-pop 400ms var(--hiw-pop) both;
+      animation-delay: calc(1200ms + var(--i) * 780ms);
+    }
+    & [data-inview="true"] .hiw-staker-badge {
+      animation: hiw-light 700ms var(--hiw-pop) 2900ms both;
+    }
+    & [data-inview="true"] .hiw-gates li {
+      animation: hiw-rise 450ms var(--hiw-ease) both;
+      animation-delay: calc(400ms + var(--i) * 120ms);
+    }
+    & [data-inview="true"] .hiw-lock .closed {
+      animation: hiw-unlock-out 300ms ease both;
+      animation-delay: calc(3400ms + var(--i) * 450ms);
+    }
+    & [data-inview="true"] .hiw-lock .open {
+      animation: hiw-unlock-in 400ms var(--hiw-pop) both;
+      animation-delay: calc(3400ms + var(--i) * 450ms);
+    }
+    & [data-inview="true"] .hiw-pot-bar i {
+      animation: hiw-pot 2400ms var(--hiw-ease) 1200ms both;
+    }
+
+    /* 08 Seasons: segments grow, ranks light. */
+    & [data-inview="true"] .hiw-season-bar .seg {
+      animation: hiw-grow-x 700ms var(--hiw-ease) both;
+      animation-delay: calc(300ms + var(--i) * 650ms);
+    }
+    & [data-inview="true"] .hiw-season-points li {
+      animation: hiw-pop 400ms var(--hiw-pop) both;
+      animation-delay: calc(300ms + var(--i) * 650ms);
+    }
+    & [data-inview="true"] .hiw-ranks li {
+      animation: hiw-pop 450ms var(--hiw-pop) both;
+      animation-delay: calc(2400ms + var(--i) * 220ms);
+    }
+
+    /* 09 Fair play: tiles flip in. */
+    & [data-inview="true"] .hiw-principles li {
+      animation: hiw-tile 650ms var(--hiw-ease) both;
+      animation-delay: calc(200ms + var(--i) * 160ms);
+    }
+
+    /* 10 Join: steps arrive in order, checks tick. */
+    & [data-inview="true"] .hiw-steps li {
+      animation: hiw-slide 500ms var(--hiw-ease) both;
+      animation-delay: calc(200ms + var(--i) * 160ms);
+    }
+    & [data-inview="true"] .hiw-step-check {
+      animation: hiw-pop 400ms var(--hiw-pop) both;
+      animation-delay: calc(1300ms + var(--i) * 300ms);
+    }
+  }
+}
+
+@keyframes hiw-rise {
+  from { opacity: 0; transform: translateY(18px); }
+}
+@keyframes hiw-scene-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+}
+@keyframes hiw-pop {
+  from { opacity: 0; transform: scale(0.4); }
+}
+@keyframes hiw-fade {
+  from { opacity: 0; }
+}
+@keyframes hiw-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes hiw-float {
+  50% { transform: translateY(-10px); }
+}
+@keyframes hiw-float-aura {
+  50% { transform: translate(-50%, -10px); }
+}
+@keyframes hiw-pulse {
+  50% { opacity: 0.6; transform: scale(1.06); }
+}
+@keyframes hiw-bob {
+  50% { transform: translateY(-8px) rotate(6deg); }
+}
+@keyframes hiw-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes hiw-collect {
+  0% { opacity: 1; transform: none; }
+  40% { opacity: 1; transform: translateY(-6px) scale(1.3); }
+  100% { opacity: 0.35; transform: none; }
+}
+@keyframes hiw-float-label {
+  0% { opacity: 0; transform: translateY(6px); }
+  30% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes hiw-chest-shake {
+  0% { opacity: 1; transform: none; }
+  20%, 60% { opacity: 1; transform: rotate(-7deg); }
+  40%, 80% { opacity: 1; transform: rotate(7deg); }
+  99% { opacity: 1; transform: none; }
+  100% { opacity: 0; }
+}
+@keyframes hiw-aura-rise {
+  from { opacity: 0; transform: translateY(0) scale(0.5); }
+}
+@keyframes hiw-ring {
+  from { stroke-dashoffset: var(--c); }
+}
+@keyframes hiw-slide {
+  from { opacity: 0; transform: translateX(-16px); }
+}
+@keyframes hiw-deal {
+  from { opacity: 0; transform: translateY(-40px) rotate(-12deg); }
+}
+@keyframes hiw-flip-out {
+  from { visibility: visible; transform: none; }
+  to { visibility: visible; transform: scaleX(0); }
+}
+@keyframes hiw-flip-in {
+  from { transform: scaleX(0); }
+}
+@keyframes hiw-try-on {
+  from { opacity: 0; transform: translateY(-40px) scale(0.6); }
+}
+@keyframes hiw-switch {
+  from { transform: translateX(-100%); }
+}
+@keyframes hiw-stamp {
+  0% { opacity: 0; transform: scale(2.2) rotate(-20deg); }
+  70% { opacity: 1; transform: scale(0.92) rotate(4deg); }
+}
+@keyframes hiw-shake {
+  25% { transform: translateX(-4px) rotate(-10deg); }
+  75% { transform: translateX(4px) rotate(10deg); }
+}
+@keyframes hiw-merge {
+  0% { opacity: 1; transform: none; }
+  100% { opacity: 0.25; transform: translateX(10px) scale(0.8); }
+}
+@keyframes hiw-deposit {
+  0% { opacity: 1; transform: translateY(-50px); }
+  80% { opacity: 1; transform: translateY(26px) scale(0.9); }
+  100% { opacity: 0; transform: translateY(30px) scale(0.6); }
+}
+@keyframes hiw-grow-x {
+  from { transform: scaleX(0); }
+}
+@keyframes hiw-light {
+  from { opacity: 0.25; transform: scale(0.8); filter: grayscale(1); }
+}
+@keyframes hiw-unlock-out {
+  from { opacity: 1; }
+  to { opacity: 0; transform: scale(0.6); }
+}
+@keyframes hiw-unlock-in {
+  from { opacity: 0; transform: scale(0.4); }
+}
+@keyframes hiw-pot {
+  from { transform: scaleX(0); }
+}
+@keyframes hiw-tile {
+  from { opacity: 0; transform: perspective(600px) rotateX(-70deg); }
+}
+@media (max-width: 559px) {
+  .hiw-npc-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

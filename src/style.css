@@ -4094,3 +4094,28 @@ select {
   grid-template-columns: minmax(0, 1fr);
 }
 .map-placeholder {background:linear-gradient(160deg,#f3ecfb 0%,#e6dcf5 100%);}
+/* Welcome screen link to the "How it works" one-pager. */
+.welcome-how {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: -4px 0 12px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--decorative-border);
+  background: var(--surface-soft);
+  color: var(--action);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.welcome-how:hover {
+  background: #e6dbfb;
+}
+a.settings-row {
+  text-decoration: none;
+}
+a.settings-row:hover {
+  background: var(--surface-soft);
+}
