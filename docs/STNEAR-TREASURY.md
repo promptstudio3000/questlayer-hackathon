@@ -1,4 +1,8 @@
-# Game treasury in stNEAR (testnet)
+# Global treasury in stNEAR (testnet)
+
+One global prize pool / treasury for the whole game, never split per city.
+How the daily budget is shared between cities is decided later by
+`server/native/allocation.mjs`, not here.
 
 The sponsor treasury (the operator wallet `questlayer-dev-20261101.testnet`
 that funds reward days) holds its capital as **stNEAR** from Meta Pool
