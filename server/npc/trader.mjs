@@ -11,12 +11,13 @@
 //               released only to the player standing next to the trader).
 //   trade_up    the player hands 3 commons to the trader account and receives
 //               one rare Aura (game claim, secured via award-signed redeem).
-//               Patrons (Tier 2+) also get a 3 rares → 1 epic table.
-// Patron rates (GAME-LOOPS P1-5): Tier 2+ players get a deeper stock discount,
+//               Patrons (Staker + level 4) also get a 3 rares → 1 epic table.
+// Patron rates (GAME-LOOPS P1-5): patrons (staker-gates.json patron_trader_rates) get a deeper stock discount,
 // a higher premium and first call on the premium budget, all inside the
-// margin floor (trader-pricing.mjs). Gated by stake tier only.
+// margin floor (trader-pricing.mjs). Gated by step and level, never odds.
 // Ten settled trades with one trader earn the NPC-only Merchant's Ledger Aura.
-import { GameError, assert, hash, positionTier, tierFor } from "../domain.mjs";
+import { GameError, assert, hash, levelFor, positionTier, tierFor } from "../domain.mjs";
+import { checkGate, playerStakerAccess } from "../staker-gates.mjs";
 import { atomic, history } from "../database.mjs";
 import { AURA_CATALOG, AURA_SUPPLY } from "../aura-catalog.mjs";
 import { id } from "../domain.mjs";
@@ -35,7 +36,6 @@ import {
   TRADEUP_TABLES,
   budgetLeftFor,
   discountSellPrice,
-  isPatron,
   editionOf,
   formatNear,
   premiumBudget,
@@ -158,6 +158,16 @@ export function createTraderService({
     );
   }
 
+  /**
+   * Patron rates follow the staker gate table (patron_trader_rates, default
+   * Staker + level 4; owner decision 1 Nov 23:47). Staker = 2 NEAR matured,
+   * read from the Keeper's staker status cache; Tier 2 counts as a Staker.
+   */
+  function isPatronPlayer(player) {
+    const level = levelFor(db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp || 0);
+    return checkGate("patron_trader_rates", playerStakerAccess(db, player, { worldTier: tierOf(player), level })).open;
+  }
+
   function budgetFor(trader, dayId) {
     const first = trader.fundedAt || ledger.firstActivity(trader.actorId) || clock();
     const daysActive = Math.floor((clock() - first) / DAY);
@@ -174,7 +184,7 @@ export function createTraderService({
     await reconcile({ trader: actor.id }).catch(() => {});
     if (ledger.tradesToday(actor.id, dayId, player) >= MAX_TRADES_PER_PLAYER_DAY) return [];
     if (ledger.tradesToday(actor.id, dayId) >= MAX_TRADES_PER_TRADER_DAY) return [];
-    const patron = isPatron(tierOf(player));
+    const patron = isPatronPlayer(player);
     const rate = patron ? " (patron rate)" : "";
     const accounts = linked(player);
     const book = await listings();
@@ -329,8 +339,8 @@ export function createTraderService({
       t = offer.terms;
     capCheck(actor.id, dayId, player);
     // A patron rate needs the tier at accept time too (stake may have moved).
-    const patron = isPatron(tierOf(player));
-    assert(!t.patron || patron, "This rate is for patrons (Tier 2) only.", 403, "NPC_TRADE_PATRON");
+    const patron = isPatronPlayer(player);
+    assert(!t.patron || patron, "This rate is for patrons (Stakers from level 4) only.", 403, "NPC_TRADE_PATRON");
     if (offer.kind === "trade_up") {
       assert(t.tokens.every((x) => !ledger.tokenInTradeUp(x)), "One of these Auras is already in a trade.", 409, "NPC_TRADE_GONE");
       assert(linked(player).includes(t.accountId), "Link this NEAR account first.", 403);

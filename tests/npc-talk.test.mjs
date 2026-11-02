@@ -298,7 +298,10 @@ test("locked staker chips: Tier 2/3 lines show to free players, never as offers"
   assert.equal(w.playerTier, 1);
   for (const npc of [RADA, BELA]) {
     const persona = personaFor(npc);
-    const locked = lockedOffers({ actor: npc, persona, world: w, now: NOW });
+    const all = lockedOffers({ actor: npc, persona, world: w, now: NOW });
+    // The Patron's Path chip (tests/patron-path.test.mjs) comes first; the rest are tier lines.
+    assert.equal(all[0].kind, "patron_path");
+    const locked = all.filter((c) => c.kind !== "patron_path");
     const liveTiers = [...new Set(w.quests.filter((q) => q.tier > 1 && !q.completed && q.opens_at <= NOW && q.closes_at > NOW + 30 * 60_000).map((q) => q.tier))].sort();
     assert.ok(liveTiers.includes(2));
     assert.deepEqual(locked.map((c) => c.locked.tier), liveTiers, "one chip per higher tier");
@@ -310,12 +313,12 @@ test("locked staker chips: Tier 2/3 lines show to free players, never as offers"
     const lockedQuest = new Set(w.quests.filter((q) => q.tier > 1).map((q) => q.id));
     for (const o of buildMenu({ actor: npc, persona, world: w, now: NOW }))
       assert.ok(o.terms.steps.every((s) => !lockedQuest.has(s.questId)), "menu holds only Tier 1 steps");
-    for (const c of locked) {
+    for (const c of all) {
       assert.match(c.id, /^locked:/);
       assert.doesNotMatch(`${c.label} ${c.perk}`, /odds|chance|multiplier|%/i, "lures are things to do, never odds");
     }
     const reply = service.greet({ player, actor: npc, world: w });
-    assert.deepEqual(reply.locked, locked);
+    assert.deepEqual(reply.locked, all);
     assert.ok(!reply.menu.some((o) => o.id.startsWith("locked:")));
     assert.throws(() => service.accept({ player, actor: npc, world: w, offerId: locked[0].id }), /no longer available/);
   }

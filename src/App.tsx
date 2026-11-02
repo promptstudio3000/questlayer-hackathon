@@ -29,6 +29,7 @@ import {
   NativeProfilePanel,
   preloadPanels,
   ActorSheet,
+  BadgeBook,
 } from "./lazy-panels";
 import type { RollCall } from "./WispRolls";
 // Styles of the split-off screens stay in the main stylesheet, in their old
@@ -799,6 +800,39 @@ export default function App() {
   function notify(text: string, error = false) {
     setToast({ text, error });
   }
+  // Place badges (docs/BADGES.md): with real GPS on, check the fix against
+  // the notable places every 30 s or after ~40 m of movement. Cosmetic only.
+  const badgeCheck = useRef<{ at: number; lat: number; lng: number } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!player || arena || !fix) return;
+    const last = badgeCheck.current;
+    const moved = last
+      ? Math.hypot(
+          (fix.lat - last.lat) * 111_000,
+          (fix.lng - last.lng) * 111_000 * Math.cos((fix.lat * Math.PI) / 180),
+        )
+      : Infinity;
+    if (last && Date.now() - last.at < 30_000 && moved < 40) return;
+    if (last && Date.now() - last.at < 8_000) return;
+    badgeCheck.current = { at: Date.now(), lat: fix.lat, lng: fix.lng };
+    api<{ earned: { name: string; nameCs: string; icon: string }[] }>(
+      "/badges/check",
+      { fix },
+    )
+      .then((r) => {
+        if (!r.earned?.length) return;
+        notify(
+          `Badge earned: ${r.earned.map((b) => `${b.icon} ${b.nameCs || b.name}`).join(", ")}`,
+        );
+        window.dispatchEvent(new Event("questlayer:badges"));
+      })
+      .catch(() => {
+        /* Badges are optional; a weak fix just tries again later. */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fix, arena, player?.id]);
   function updateOwnedPlayer(next: Player) {
     if (latest.current.player?.id !== next.id) return;
     playerReads.current.invalidate();
@@ -3759,6 +3793,14 @@ export default function App() {
                     : "Secure your explorer to keep progress"
                 }
               />
+              <div className="play-menu">
+                <BadgeBook
+                  key={player.id}
+                  fix={fix}
+                  arena={arena}
+                  onConnectNear={() => void connectNear()}
+                />
+              </div>
               <p className="fine-print">
                 {nativePlay
                   ? "You are playing on the test network. Test NEAR has no monetary value."
