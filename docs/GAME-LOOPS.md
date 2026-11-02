@@ -1,5 +1,8 @@
 # Game loops: where the fun is, where it leaks, and how staking becomes the goal
 
+> **Money is global** (2 Nov 2026, docs/GLOBAL-TREASURY.md): one treasury and one daily budget for the whole game.
+> Cities only decide where rewards appear; the budget is split between live cities by recent player demand.
+
 1 November 2026. Analysis requested by the owner: research what makes each Aavegotchi ecosystem game fun, check
 whether every QuestLayer mechanic sits in a loop that feeds the next one, list what is boring, and design
 stakers-only lures so that the main goal (stake NEAR and earn) is something the game pulls players toward.
@@ -71,7 +74,7 @@ it says so rather than guessing.
 | Weekly boss | Hits every 10 min | 60 XP, roll ticket, Bossbane Fangring at 3+ hits | Social, wardrobe | Good; needs a visible schedule so people plan for it. |
 | Roll tickets (npc-games) | Earns from lurkers/boss | Commit-reveal roll for an Aura | Wardrobe | Redeemable: Inventory → Secured → Roll at the wisp (docs/NPC-GAMES.md). |
 | Altar crafting | 10 shards + common Aura + guardian win | Wardbreaker Horns | Wardrobe | One recipe, then nothing. |
-| Staking / Fuel the city | Deposits NEAR, picks 0–100 % contribution | Tier after E+2, retained yield, pot grows | T2/T3 zones, Today's pot | **Weak**: two epochs of silence after deposit, tier benefits are not shown before or after. |
+| Staking / Fuel the prize pool | Deposits NEAR, picks 0–100 % contribution | Tier after E+2, retained yield, pot grows | T2/T3 zones, Today's pot | **Weak**: two epochs of silence after deposit, tier benefits are not shown before or after. |
 | Today's pot | Looks | Understanding | Motivation | Good idea, needs the player's own share in it. |
 | Creator quests | Publishes, locks XP | Followers, completions, creator round | Content supply | Competes with leveling (locked XP lowers level); fine for veterans. |
 | Community tasks, map notes | Posts, completes | Escrowed bounty | GOLD | Separate island; does not touch level or stake. |
@@ -155,7 +158,7 @@ The whole ladder is one table, `server/data/staker-gates.json` (module `server/s
   used for a trade or payout.
 - **Where the Staker step is measured**: the Keeper's vault reading (Profile → Stake, the Keeper sheet, and an
   NPC greeting when the cached status is older than 10 minutes) records matured and maturing stake in
-  `staker_status`; NPC menus read that cache. At 0 % city share the contract cannot show maturity, so the
+  `staker_status`; NPC menus read that cache. At 0 % prize pool share the contract cannot show maturity, so the
   Keeper counts the stake as matured after its own E+2 observation (Staker step only, never a tier).
 - A zone's own tier rule (E16) still applies: a Tier 2 line needs Tier 2 even if the table were lowered.
 - In-flight work wires to the same table: patron rank (#87), patron lines and Patron's Path (#88: chapter 1 at
@@ -180,7 +183,7 @@ rules and the legal line in NPC-PLAN §7.3.
 ### Making earning visible
 
 - **"Your stake today" card** (Keeper and Profile → Stake): validator yield retained by you today, the part you gave
-  to the city, and *which coins on today's map your contribution backed* (the Gotchiverse channeling idea, honest
+  to the global prize pool, and *which coins on today's map your contribution backed* (the Gotchiverse channeling idea, honest
   version: attribution only, the coins are still shared and first-come). Data: vault position + treasury allocation
   receipts already exist; the per-coin attribution is a display over the day's allocation, not a new money path.
 - **E+2 countdown** with the real epoch, not hours, and a ceremony when it matures.

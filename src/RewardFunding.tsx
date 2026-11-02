@@ -359,7 +359,7 @@ export function RewardFundingPage({
             <Handshake size={24} aria-hidden="true" />
             <span>
               <strong>Sponsors</strong>
-              <small>Partners fund rewards directly for the city.</small>
+              <small>Partners fund the global prize pool directly.</small>
             </span>
           </li>
           <li>
