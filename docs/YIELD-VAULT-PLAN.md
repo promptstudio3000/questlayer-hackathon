@@ -63,3 +63,12 @@ without debt needs no oracle prices. Our contract never borrows.
 1. Contract `questlayer-yield-vault` + tests + Docker build + `wasm-sha256.json` (worker thread).
 2. Treasury in stNEAR + daily harvester script on the Mac (needs the operator key; worker thread).
 3. Rhea markets reader and staker integration (this thread).
+
+## App wiring (done, 2 Nov)
+
+- `server/native/yield-vault-reader.mjs` reads `get_position` for the player's linked accounts. LST principal
+  (yoctoNEAR) counts at once; stable principal converts at `YIELD_STABLE_EUR` (0.85 €/USD, conservative) and the
+  EUR reference price, and does not count without a price. Contract from `YIELD_VAULT_ACCOUNT` or
+  `public/native-yield-vault-<network>.json`; `YIELD_VAULT_ENABLED=0` turns it off. `GET /api/yield/position`.
+- The Keeper's reading sums the wallet-held reader (24 h hold) and the yield vault (at once) into the Staker step
+  only. Tiers and the city share stay on the native vault.

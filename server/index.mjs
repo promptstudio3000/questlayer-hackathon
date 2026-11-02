@@ -132,6 +132,7 @@ import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mjs";
 import { createTreasuryView } from "./native/stnear-treasury.mjs";
 import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
+import { combineStakeReaders, createYieldVaultReader, yieldVaultSettings } from "./native/yield-vault-reader.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
@@ -423,7 +424,7 @@ const npcRoutes = createNpcRoutes(
     // Refreshes the staker status through the Keeper's vault reading.
     refreshStaker: (player) =>
       keeperVault && nativeVaults
-        ? stakeCard({ db, player, vaults: nativeVaults, keeperVault, level: demoProgression(db, player).level, liquidStake })
+        ? stakeCard({ db, player, vaults: nativeVaults, keeperVault, level: demoProgression(db, player).level, liquidStake: stakerReaders })
         : null,
   },
 );
@@ -496,6 +497,18 @@ const liquidStake =
   liquidStakeConfig.enabled && liquidStakeConfig.tokens.length
     ? createLiquidStake({ provider, settings: liquidStakeConfig })
     : null;
+// Yield vault (docs/YIELD-VAULT.md): locked deposits count toward Staker at once.
+// Contract from YIELD_VAULT_ACCOUNT or public/native-yield-vault-<network>.json.
+const yieldVaultManifestPath = resolve(APP_ROOT, `public/native-yield-vault-${NETWORK}.json`);
+const yieldVaultConfig = yieldVaultSettings(
+  process.env,
+  existsSync(yieldVaultManifestPath) ? JSON.parse(readFileSync(yieldVaultManifestPath, "utf8")) : null,
+);
+const yieldVaultReader = yieldVaultConfig.enabled
+  ? createYieldVaultReader({ provider, settings: yieldVaultConfig, priceEur: () => nearPrice.eur() })
+  : null;
+// Every Staker source besides the native vault, summed for the Keeper's reading.
+const stakerReaders = combineStakeReaders([liquidStake, yieldVaultReader]);
 // Rhea Lend markets (docs/YIELD-VAULT-PLAN.md): read-only rates and utilization.
 const rheaConfig = rheaSettings(process.env, NETWORK);
 const rheaMarkets = rheaConfig.enabled ? createRheaMarkets({ provider, settings: rheaConfig }) : null;
@@ -508,7 +521,7 @@ const traderRoutes = createTraderRoutes({
   keeperVault,
   levelOf: (player) => demoProgression(db, player).level,
   priceEur: () => nearPrice.eur(),
-  liquidStake,
+  liquidStake: stakerReaders,
 });
 // Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
 // account level (spendable XP) plus skill, never Auras or items.
@@ -1236,6 +1249,10 @@ async function api(req, res, url) {
   if (url.pathname === "/api/yield/markets" && req.method === "GET") {
     assert(rheaMarkets, "Rhea Lend markets are not open here.", 503, "RHEA_DISABLED");
     return respond(res, await rheaMarkets.read());
+  }
+  if (url.pathname === "/api/yield/position" && req.method === "GET") {
+    assert(yieldVaultReader, "The yield vault is not open here.", 503, "YIELD_VAULT_DISABLED");
+    return respond(res, await yieldVaultReader.forPlayer(db, player));
   }
   if (url.pathname === "/api/staker/liquid" && req.method === "GET") {
     assert(liquidStake, "Liquid staking is not open here.", 503, "LIQUID_STAKE_DISABLED");
