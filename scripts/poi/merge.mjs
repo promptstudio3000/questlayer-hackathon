@@ -415,3 +415,57 @@ export function finalizeRecord(record, { snapper, exclusions, closures, w4 }) {
   row.source_hash = sha256(canonical({ ...row, tags: record.tags || {} }));
   return row;
 }
+
+// Walkable ways served as offline street paths per H3 res-7 cell (the same
+// access rules as server/spatial/map-data.mjs). Lower priority wins a cell's
+// 150-path budget first.
+const WALK_PRIORITY = {
+  footway: 0, pedestrian: 0, path: 0, living_street: 0, steps: 0,
+  cycleway: 1, bridleway: 1, residential: 2, unclassified: 3, track: 3,
+};
+const WALK_DENIED = new Set(["no", "private", "customers", "permit", "agricultural", "forestry"]);
+
+export function walkPriority(tags = {}) {
+  const p = WALK_PRIORITY[tags.highway];
+  if (p === undefined || tags.area === "yes" || WALK_DENIED.has(tags.access) || WALK_DENIED.has(tags.foot))
+    return null;
+  return p;
+}
+
+export const CELL_LIMITS = Object.freeze({ paths: 150, points: 30000, pointsPerPath: 2048 });
+
+// Splits a way into per-cell runs. Each run keeps one vertex on either side
+// so a path does not stop short of the cell edge.
+export function cellPieces(feature) {
+  const props = feature?.properties || {};
+  const priority = walkPriority(tagsOf(props));
+  if (priority === null) return [];
+  const identity = osmIdentity(props, feature);
+  const wayId = identity ? `${identity.t}${identity.n}` : "";
+  const g = feature.geometry;
+  const lines = g?.type === "LineString" ? [g.coordinates] : g?.type === "MultiLineString" ? g.coordinates : [];
+  const pieces = [];
+  for (const line of lines) {
+    if (line.length < 2) continue;
+    const coords = line.map(([lng, lat]) => [round6(lng), round6(lat)]);
+    const cells = coords.map(([lng, lat]) => latLngToCell(lat, lng, 7));
+    let start = 0,
+      run = 0;
+    for (let i = 1; i <= coords.length; i++) {
+      if (i < coords.length && cells[i] === cells[start]) continue;
+      const from = Math.max(0, start - 1),
+        to = Math.min(coords.length, i + 1);
+      const points = coords.slice(from, to);
+      for (let k = 0; k < points.length - 1; k += CELL_LIMITS.pointsPerPath - 1)
+        pieces.push({
+          h3r7: cells[start],
+          priority,
+          wayId,
+          run: run++,
+          points: points.slice(k, k + CELL_LIMITS.pointsPerPath),
+        });
+      start = i;
+    }
+  }
+  return pieces.filter((p) => p.points.length >= 2);
+}

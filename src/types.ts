@@ -133,10 +133,17 @@ export type World = {
   source: string;
   center: Point;
   cityName?: string;
+  /** "auto": an auto city built from unreviewed map data (never funded). */
+  cityStatus?: "reviewed" | "auto";
   cityZoneCount?: number;
   coinRadius?: number;
   streetFindXp?: number;
-  quality?: { notice: string; fieldReview: string };
+  quality?: {
+    notice: string;
+    fieldReview: string;
+    status?: "auto";
+    funded?: false;
+  };
   /** Street cells: today's POI quests (W6). "empty" = nothing here yet. */
   poiQuests?: {
     status: "ready" | "empty";

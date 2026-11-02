@@ -500,6 +500,10 @@ the Mac, with a W4 stub until W4 lands._
 
 **W12 — Global coverage QA (Mac)**
 
+_Status (2 Nov 2026): implemented for Czechia on the VPS POI file, see `docs/WORLD-COVERAGE.md`: `npm run
+world:coverage`, `poiWorld` in `/api/health`, and the `npm run e2e:world` journeys. Auto-city sectors are a 3 km
+six-sector proxy until W5 lands; POI quest counts are the C.3 capacity until W6 lands._
+
 > Add `npm run world:coverage -- --poi <file> --cities <n> --days 365` producing a report: per country cells
 > with ≥1 POI quest, quests per cell distribution, share of excluded POIs by reason, auto cities with all six
 > sectors, empty-sector list, and a random sample of 50 POI quests with map links for manual review. Save it in
@@ -566,3 +570,10 @@ notice and are never funded. 3. Original "Punk City" theme. 4. Player worlds pri
   `gold_u = 0` always; street coins unchanged.
 - An empty cell stores `poiQuests.status = "empty"` and the client says "Nothing here yet".
 - Titles: the stored rule text, replaced at read time by validated W8 flavour text (`flavourText`, cache hit only); chests keep their own text and the activity objective stays authoritative.
+
+**W5 is implemented** (2 Nov 2026) for Czechia with a 15,000-people threshold (owner decision: Czechia only before
+14 Nov). It runs on the VPS as a step of the World worker instead of on the Mac, because the OSM extracts already
+live there. Details in `docs/POI-PIPELINE.md` "Auto cities (W5)": `scripts/poi/auto-cities.mjs` builds the packs,
+`server/spatial/auto-cities.mjs` loads them lazily with hash checks, `cityFor` resolves reviewed > auto > cell,
+the client shows the "Unverified map" notice, auto zones carry no prize, and `NATIVE_FUNDED_CITIES` refuses auto
+cities at start-up.

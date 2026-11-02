@@ -1,6 +1,7 @@
 import { atomic } from "./database.mjs";
 import { dayKey, hash, id, assert } from "./domain.mjs";
 import {
+  AUTO_CITIES,
   DEFAULT_CITY,
   LIVE_CITIES,
   buildCityZones,
@@ -285,6 +286,9 @@ export function startWorldPlanner(
     intervalMs = 60000,
     clock = Date.now,
     cities = LIVE_CITIES,
+    // Auto cities are prepared lazily on the first visit (C.3 point 3); the
+    // planner only retires their old blueprints.
+    autoCities = () => AUTO_CITIES.entries,
     maxJobs = 2,
     afterPreparation = async () => {},
   } = {},
@@ -305,7 +309,7 @@ export function startWorldPlanner(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name='native_days'",
           )
           .get();
-        for (const city of cities) {
+        for (const city of [...cities, ...autoCities()]) {
           const cutoff = shiftDate(dayKey(clock(), city.timezone), -14);
           db.prepare(
             `DELETE FROM world_blueprints WHERE city_id=? AND day<? AND id NOT IN(SELECT id FROM world_jobs WHERE state='running' AND lease_until>?)

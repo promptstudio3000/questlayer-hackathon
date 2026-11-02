@@ -55,12 +55,25 @@ poi(h3r5, id, h3r7, lat, lng, category, name, names JSON, wikidata, notability, 
     safety ok|review|excluded, safety_reason, access, hours, path_ref JSON, facts JSON, source_hash)
     PRIMARY KEY (h3r5, id) WITHOUT ROWID   -- rows clustered by H3 res-5 parent
 partition(h3r5, pois, ok, review, excluded, hash)
+path_cell(h3r7, h3r5, paths BLOB, ways, points)  -- deflate-raw JSON street paths per res-7 cell
 city(geonameid, name, ascii_name, lat, lng, country, admin1, population, timezone, h3r5)
 meta(key, value)                           -- schema questlayer.poi/1, version, rule versions, attribution
 ```
 
 Readers (W5, W6) open `/var/lib/questlayer-poi/current.sqlite` read-only and query by `h3r5`/`h3r7` with
 `safety='ok'`.
+
+## Offline street paths
+
+The same OSM path export also fills `path_cell`: every walkable way (footway, pedestrian, path, living street,
+steps, cycleway, bridleway, residential, unclassified, track; never `access`/`foot` = no, private, customers,
+permit, agricultural, forestry) is split into per-cell runs. Each cell keeps at most 150 paths and 30,000 points,
+footpaths first. `server/spatial/map-data.mjs` reads this file first through `server/spatial/offline-paths.mjs`
+(`POI_DB_PATH`, default `/var/lib/questlayer-poi/current.sqlite`, `off` disables it). Street worlds outside
+reviewed cities therefore get paths, coins and NPCs without any network call. Reviewed CityPacks (Plzeň) never use
+it. Overpass stays only as a fallback for cells the file lacks: it sends a contact User-Agent, a request waits at most 4 s, and the
+provider call keeps running in the background (up to 25 s) and caches a late answer for the next retry.
+A full Czechia build gives 17,310 cells with 1.06 million ways, adds about 100 MB, and takes about 3 minutes.
 
 ## On the VPS
 
@@ -75,11 +88,50 @@ Readers (W5, W6) open `/var/lib/questlayer-poi/current.sqlite` read-only and que
 - Follow a run with `journalctl -u questlayer-poi -f`. The last line is the manifest JSON; copy it into
   `server/data/poi-manifest.json` in a PR.
 
+## Auto cities (W5)
+
+After each release `run.mjs` runs `scripts/poi/auto-cities.mjs` (also runnable alone:
+`node scripts/poi/auto-cities.mjs --work=/var/lib/questlayer-poi [--min-pop=15000] [--country=CZ]`). It builds one
+CityPack per GeoNames city of the imported countries with at least 15,000 people (`AUTO_CITY_MIN_POP`), using the
+same builder as reviewed packs (`server/spatial/city-pack-builder.mjs`) on the kept OSM extracts:
+
+- parks and gardens from `osm-<region>-pois.geojsonseq`, walkable ways (footway, pedestrian, path, living street,
+  no private access) from `osm-<region>-paths.geojsonseq`, at most 3,500 per city, ways through parks first;
+- coverage box sized by population (half side `1.5 + 3·sqrt(pop/100k)` km, 12 km cap), timezone from GeoNames;
+  a feature in two boxes belongs to the nearer city centre;
+- targets inside exclusion polygons (schools, hospitals, playgrounds, cemeteries, military, ...) are dropped, and a
+  park centred in one is dropped;
+- reviewed cities in `server/data/cities.json` win: same id or centre inside a reviewed coverage box skips the
+  city, and no auto feature inside a reviewed box is used (the server enforces this again on load);
+- a GeoNames place whose centre lies inside a larger auto city's box (city districts such as Žižkov or Brno-střed) is
+  folded into that city;
+- a city with no zone on any of seven sample days is not published.
+
+Output: `city-packs-<poi version>-a<builder>/` with `<id>.json` (`fieldReview: "auto"`, `status: "auto"`,
+`funded: false`), `index.json` (SHA-256 per pack), `report.json` (cities built, empty sectors, zones per city per
+sample day) and `manifest.json` (hashes and counts only: the one file that may be copied into git). The
+`city-packs` symlink is swapped atomically; the game re-reads the index within a minute, no restart. The game
+finds it at `/var/lib/questlayer-poi/city-packs` (or `AUTO_CITIES_DIR`); `AUTO_CITIES=0` turns auto cities off.
+`/api/health` shows `autoCities`. `scripts/deploy-vps.sh` starts one worker run when a POI release exists but no
+auto city index does.
+
+In the game: precedence is reviewed live city > auto city > H3 cell. An auto city gets the daily zone plan
+(prepared lazily on the first visit), generic NPCs and street coins from the demo bucket, a visible "Unverified
+map" notice, and no zone prize. Auto cities are never in native publication, and start-up refuses an auto city in
+`NATIVE_FUNDED_CITIES`. Promotion to a reviewed city follows `docs/SECOND-CITY-PLAYBOOK.md`.
+
 ## Adding a region
 
 Add an entry to `scripts/poi/regions.mjs` (Geofabrik URL, ISO country, bbox) and set `WORLD_REGIONS=cz,sk` in
 `poi.env`. Europe and the planet need the same stages with more disk; the per-stage memory stays bounded by the
 number of places, not by the number of paths.
+
+## Run status and coverage
+
+Every run writes `last-run.json` next to `current.sqlite` (`running`, then `ok` with the version, or `failed` with the
+stage and the error; SIGTERM counts as failed). A failed run keeps the previous release live. `/api/health` reports
+both as `poiWorld` (see `docs/WORLD-COVERAGE.md`), and `npm run world:coverage` turns the file into a coverage
+report and map.
 
 ## Tests
 
