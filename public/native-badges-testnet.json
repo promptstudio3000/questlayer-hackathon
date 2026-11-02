@@ -1,0 +1,20 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-02T00:33:36.076Z",
+  "contractId": "questlayer-badges-20261102.testnet",
+  "codeHash": "3QjysRXNdY1mRFEx33nzxofvTFayRyRZGi7f3n56rf2q",
+  "wasmSha256": "23cc54a71915bac02d595b6880363491f9a341fc54756a77f7d5d4e1fd72797a",
+  "claimSignerPublicKey": "q0C8Robd95EVO8v7BaR1E+ML/GdE8f5NH2lVYqiekYk=",
+  "minterPublicKey": "ed25519:284z7Nzs35Kcwx28n1P3W4wjNgkifJeKwp14wuoK4ibJ",
+  "badgeBaseYocto": "20000000000000000000000",
+  "perClaimYocto": "4000000000000000000000",
+  "transferable": false,
+  "capabilities": [
+    "soulbound",
+    "signed-claims",
+    "creator-award",
+    "sponsored-create",
+    "nep171-views",
+    "budget-refund"
+  ]
+}

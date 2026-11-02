@@ -1,10 +1,10 @@
 {
-  "verifiedAt": "2026-11-01T23:59:48.684Z",
+  "verifiedAt": "2026-11-02T00:45:41.963Z",
   "network": "testnet",
   "contractId": "nfts.questlayer-dev-20261101.testnet",
   "schemaVersion": 3,
-  "codeHash": "zzx62x4jjUxWMnCsMVFj2ZUQouWPPWPFmU5uoGS7Q1W",
-  "wasmSha256": "0edba1506f14de0afde3601bd52f6131c1e7753cbd550767c522460ca8c559b9",
+  "codeHash": "GFiGzcWZ7XGd7se3721nn2h75rUkk4mkCyRhLSJCu8D6",
+  "wasmSha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
   "supportedEditions": [
     "ember",
     "dew",
@@ -26,7 +26,9 @@
     "compass",
     "quill",
     "laurel",
-    "summit"
+    "summit",
+    "patron",
+    "season"
   ],
   "claimOnlyEditions": {
     "bossbane": "earned:monster:",
@@ -35,8 +37,10 @@
     "kindle": "earned:level:",
     "laurel": "earned:level:",
     "ledger": "earned:npc:",
+    "patron": "earned:npc:",
     "pilgrim": "earned:npc:",
     "quill": "earned:level:",
+    "season": "earned:season:",
     "stride": "earned:level:",
     "summit": "earned:level:",
     "wardbreaker": "earned:monster:",
@@ -48,7 +52,7 @@
   "transactions": [
     {
       "step": "deploy Aura editions collectibles code (no state migration)",
-      "transaction": "frgnjWp816fP7S2LTofSYjRgYimLRk8VqtWafvtbYXm"
+      "transaction": "39CjTMt896VSFKZF3A1KqukUJxpNrijRtUMAePTz1uCA"
     }
   ]
 }
