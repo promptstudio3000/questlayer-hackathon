@@ -51,6 +51,12 @@ jobs:
         if: matrix.device == 'phone-390'
         env:
           E2E_SHOTS: ${{ runner.temp }}/first-session/bonus-vote
+      # "Play in Brno" and "play in a village" on the Czechia POI fixture
+      # (docs/WORLD-COVERAGE.md); Chromium-only, so it rides phone-390 too.
+      - run: npm run e2e:world
+        if: matrix.device == 'phone-390'
+        env:
+          E2E_SHOTS: ${{ runner.temp }}/first-session/world-journeys
       - uses: actions/upload-artifact@v4
         if: always()
         with:

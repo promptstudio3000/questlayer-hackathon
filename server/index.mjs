@@ -151,6 +151,7 @@ import { seasonSettings } from "./season/config.mjs";
 import { createSeason } from "./season/service.mjs";
 import { createSeasonRoutes } from "./season/routes.mjs";
 import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
+import { poiWorldStatus } from "./poi/coverage.mjs";
 import {
   GOLD,
   DAY,
@@ -850,6 +851,9 @@ async function api(req, res, url) {
       ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
+      // POI database version, coverage totals and the World worker's last
+      // run (docs/WORLD-COVERAGE.md); cached per published file.
+      poiWorld: poiWorldStatus(),
       questFlavour: flavourStatus(db),
       nativeRewards: nativeRewards
         ? nativeRewards.workerStatus()
