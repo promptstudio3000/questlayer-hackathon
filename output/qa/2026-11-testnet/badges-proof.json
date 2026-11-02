@@ -1,0 +1,54 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-02T00:33:36.076Z",
+  "contractId": "questlayer-badges-20261102.testnet",
+  "codeHash": "3QjysRXNdY1mRFEx33nzxofvTFayRyRZGi7f3n56rf2q",
+  "wasmSha256": "23cc54a71915bac02d595b6880363491f9a341fc54756a77f7d5d4e1fd72797a",
+  "claimSignerPublicKey": "q0C8Robd95EVO8v7BaR1E+ML/GdE8f5NH2lVYqiekYk=",
+  "minterPublicKey": "ed25519:284z7Nzs35Kcwx28n1P3W4wjNgkifJeKwp14wuoK4ibJ",
+  "badgeBaseYocto": "20000000000000000000000",
+  "perClaimYocto": "4000000000000000000000",
+  "transferable": false,
+  "capabilities": [
+    "soulbound",
+    "signed-claims",
+    "creator-award",
+    "sponsored-create",
+    "nep171-views",
+    "budget-refund"
+  ],
+  "smoke": {
+    "badgeId": "questlayer-testnet-launch",
+    "held": [
+      {
+        "token_id": "questlayer-testnet-launch:1",
+        "owner_id": "questlayer-dev-20261101.testnet",
+        "metadata": {
+          "title": "🏅 QuestLayer testnet launch",
+          "description": "Was there when player badges went live on NEAR testnet.",
+          "issued_at": "1793579613253",
+          "copies": 500,
+          "extra": "{\"badge_id\":\"questlayer-testnet-launch\",\"serial\":1,\"creator_id\":\"questlayer-dev-20261101.testnet\",\"kind\":\"Event\",\"color\":\"#c08a2b\",\"via\":\"Creator\",\"soulbound\":true}"
+        }
+      }
+    ]
+  },
+  "transactions": [
+    {
+      "label": "Deploy and initialize questlayer-badges-20261102.testnet",
+      "transaction": "1kqxed1ffFAWWsQSrXhmBHqZD1f6avm5K4oHphWiy2R"
+    },
+    {
+      "label": "Install the bounded minter key (create_badge, claim)",
+      "transaction": "PFcyFzDzr3Q6B7SomhNYHcWvQrPTS6F496kkHKNPFgM"
+    },
+    {
+      "label": "Sponsored create_badge through the minter key",
+      "transaction": "8Usu3TCC3G7HMcaKuXmr6wbTNReq7LL1iH4NFusdqX2R"
+    },
+    {
+      "label": "Creator awards the launch badge",
+      "transaction": "8fcBetJkPzgAMEYErJyP3oxsmNGmjgW5E9rPgPYCDitt"
+    }
+  ]
+}
