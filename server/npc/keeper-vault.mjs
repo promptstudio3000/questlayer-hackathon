@@ -20,6 +20,7 @@
 import { readFileSync } from "node:fs";
 import { registerModuleSchema, ensureModuleVersion } from "../schema-compatibility.mjs";
 import { dayKey, id } from "../domain.mjs";
+import { createPatronRank, rankSettings } from "./patron-rank.mjs";
 import { allGates, checkGate, defaultStakerGates, recordStakerStatus, stakerAccess } from "../staker-gates.mjs";
 
 export const KEEPER_VAULT_SCHEMA = registerModuleSchema({
@@ -116,6 +117,7 @@ export function keeperVaultSettings(env = process.env) {
     ceremonies: env.KEEPER_CEREMONIES !== "0",
     chapters,
     timezone: env.KEEPER_TIMEZONE || "Europe/Prague",
+    rank: rankSettings(env),
   };
 }
 
@@ -195,6 +197,8 @@ export function createKeeperVault(
     ready = true;
   };
   const q = (sql) => db.prepare(sql);
+  // Patron rank 1–5 (GAME-LOOPS P1-2), its own schema module.
+  const patronRank = settings.rank?.enabled ? createPatronRank(db, { clock, settings: settings.rank }) : null;
 
   function remember(player, accountId, vault, s, maturity) {
     const now = clock(),
@@ -361,6 +365,11 @@ export function createKeeperVault(
     const inner = checkGate("keeper_inner", access, { settings: gates, priceEur: price });
     const stakeToday = checkGate("stake_today", access, { settings: gates, priceEur: price });
     const open = inner.open;
+    // Patron rank (GAME-LOOPS P1-2): rank 0 is the Staker step; every
+    // epoch at that step (default) on matured stake adds one.
+    const rank = patronRank
+      ? patronRank.observe(player, { epoch: Number.isInteger(epoch) ? epoch : null, step: access.step, amount: access.matured })
+      : null;
     return {
       epoch,
       epochHours: settings.epochHours,
@@ -373,6 +382,7 @@ export function createKeeperVault(
       coins,
       ceremonies: ceremonies.filter((c) => !c.seenAt),
       patron: patronSince ? { title: settings.patronTitle, since: patronSince } : null,
+      rank,
       staker: {
         step: access.stepName,
         staker: access.staker,
@@ -408,5 +418,8 @@ export function createKeeperVault(
     return { seen: r.changes > 0 };
   }
 
-  return { view, seen, settings };
+  const rankSeen = (player, rank) => patronRank?.seen(player, rank) ?? { seen: false };
+  const badge = (player) => patronRank?.badge(player) ?? null;
+
+  return { view, seen, rankSeen, badge, settings };
 }

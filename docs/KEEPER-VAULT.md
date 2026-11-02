@@ -18,11 +18,23 @@ state; it never signs, moves funds or changes a chance. Code: `server/npc/keeper
 - **Inner vault**: patron story chapters, gated by tier (default Tier 2; owner decision 1 Nov: tier only, an optional level gate is configurable). Locked players see
   the chapter titles and what is missing. Lures are things to read or wear, never odds, payouts or multipliers.
 
+- **Patron rank 1–5** (GAME-LOOPS P1-2, `server/npc/patron-rank.mjs`): rank 0 is the Staker step (at least
+  `STAKER_MIN_NEAR`, default 2 NEAR, of matured stake; see `server/staker-gates.mjs`). Ranks 1–5 grow by one for every
+  epoch the player stays at that step on matured, unwithdrawn stake. Depositing more does not speed it up;
+  holding does. Default ladder: Spark 1, Ember 4, Lantern 14, Beacon 28, Hearthfire 60 epochs (12 h each, so about
+  0.5, 2, 7, 14 and 30 days). No decay or streak penalty (D29): an exit only pauses growth, the rank stays. The Keeper
+  reads vaults when the card opens, so epochs between two readings are credited when both readings were at patron
+  step and the matured stake did not shrink (a shrink or a pause credits only the current epoch; one gap is capped
+  at `KEEPER_RANK_GAP_MAX`). A one-time rank-up ceremony shows the highest new rank. Cosmetic only: it never
+  changes odds, payouts, damage or tiers.
+
 ## API
 
 - `POST /api/actors/:id/keeper {encounter}`: the old lines plus `stake` (the card, ceremonies, inner vault).
 - `GET /api/keeper/stake`: the same card without the market lines (no encounter needed).
 - `POST /api/keeper/ceremonies/:id/seen`: closes a ceremony.
+- `POST /api/keeper/rank/:rank/seen`: closes the patron rank-up ceremony. The card carries `rank` (rank, name,
+  epochs, growing, next, ladder, rankUp).
 
 ## Settings (all optional)
 
@@ -38,9 +50,15 @@ state; it never signs, moves funds or changes a chance. Code: `server/npc/keeper
 | `KEEPER_CEREMONIES` | on | `0` stops new ceremonies |
 | `KEEPER_INNER_PATH` | built-in | JSON file `[{title, text}]` (max 12) replacing the chapters |
 | `KEEPER_TIMEZONE` | `Europe/Prague` | Day boundary for "today" |
+| `KEEPER_RANK_ENABLED` | on | `0` turns the patron rank off |
+| `KEEPER_RANK_EPOCHS` | `1,4,14,28,60` | Patron epochs for ranks 1–5 (five rising integers) |
+| `KEEPER_RANK_NAMES` | `Spark,Ember,Lantern,Beacon,Hearthfire` | Five rank names (max 24 chars each) |
+| `KEEPER_RANK_STEP` | `staker` | Step whose epochs count toward the rank: `staker`, `tier2` or `tier3` |
+| `KEEPER_RANK_GAP_MAX` | `14` | Most epochs credited for one gap between readings |
 
 Tables (`keeper-vault` schema module) appear on the first Keeper visit: `keeper_vault_watch`,
-`keeper_stake_days`, `keeper_ceremonies`.
+`keeper_stake_days`, `keeper_ceremonies`; the `keeper-patron-rank` module adds `keeper_patron_rank` and
+`keeper_patron_rank_ups`.
 
 ## Patron quest lines (GAME-LOOPS P1-1)
 
