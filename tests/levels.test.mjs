@@ -91,15 +91,18 @@ test("level-item editions only appear behind LEVEL_ITEM_EDITIONS=1", () => {
   assert.equal(publicLevelTable(loadLevelTable({})).levels.some((e) => e.item), false);
   const on = loadLevelTable({ LEVEL_ITEM_EDITIONS: "1" });
   const items = levelItemMilestones(on);
-  assert.deepEqual(items.map((m) => m.level), [10]);
+  assert.deepEqual(items.map((m) => m.level), [5, 6, 7, 8, 9, 10]);
+  assert.equal(new Set(items.map((m) => m.edition)).size, 6, "one edition per level");
   for (const m of items) {
     const e = AURA_CATALOG.find((x) => x.id === m.edition);
-    assert.ok(e?.native && e.source === "chest", "a mintable, non claim-only edition");
+    assert.ok(e?.native && e.source === "level", "a native level-only edition");
+    assert.equal(e.name, m.name);
+    assert.equal(e.how, `Reach level ${m.level}`);
   }
   assert.equal(nativeLevelMilestones(), NATIVE_LEVEL_MILESTONES);
   const previous = setLevelTable(on);
   try {
-    assert.deepEqual(nativeLevelMilestones().map((m) => m.level), [2, 3, 4, 10]);
+    assert.deepEqual(nativeLevelMilestones().map((m) => m.level), [2, 3, 4, 5, 6, 7, 8, 9, 10]);
   } finally {
     setLevelTable(previous);
   }

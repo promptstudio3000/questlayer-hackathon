@@ -3,7 +3,7 @@
 // box and the player's open tasks from this character, with turn-in.
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "./Dialog";
-import LockedChip, { OPEN_STAKE_EVENT } from "./LockedChip";
+import LockedChip, { openStakeScreen } from "./LockedChip";
 import type { ActorEncounter, ActorOffer } from "./actor-types";
 import {
   keeperView,
@@ -203,9 +203,9 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                 label={chip.label}
                 perk={chip.perk}
                 gate={chip.locked}
-                onStake={() => {
+                onStake={(near) => {
                   onClose();
-                  window.dispatchEvent(new Event(OPEN_STAKE_EVENT));
+                  openStakeScreen(near);
                 }}
               />
             ))}

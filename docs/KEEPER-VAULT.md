@@ -29,8 +29,9 @@ state; it never signs, moves funds or changes a chance. Code: `server/npc/keeper
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `KEEPER_VAULT_ENABLED` | on | `0` turns the card, ceremonies and inner vault off |
-| `KEEPER_INNER_TIER` | `2` | Tier needed for the inner vault (1–3) |
-| `KEEPER_INNER_LEVEL` | `1` | Optional level gate for the inner vault (1 = none) |
+| `STAKER_GATES_JSON` | table | The inner vault and stake-today gates (`keeper_inner`, `stake_today`, default Staker + L2) live in `server/data/staker-gates.json`; `KEEPER_INNER_TIER`/`KEEPER_INNER_LEVEL` are no longer read |
+| `STAKER_MIN_NEAR` | `2` | Matured stake that makes a player a Staker (patron rank 0) |
+| `NEAR_PRICE_EUR` / `NEAR_PRICE_FEED` | feed | Reference price for "~5 €" labels; `off` shows NEAR only |
 | `KEEPER_MATURITY_EPOCHS` | `2` | Epochs shown in the countdown (mirror of the contract rule) |
 | `KEEPER_EPOCH_HOURS` | `12` | Hours per epoch for the time estimate |
 | `KEEPER_PATRON_TITLE` | `Patron of the Gate` | Cosmetic title from the first tier ceremony |
@@ -45,15 +46,19 @@ Tables (`keeper-vault` schema module) appear on the first Keeper visit: `keeper_
 
 Code: `server/npc/patron-path.mjs`, `server/npc/offers.mjs`; tests: `tests/patron-path.test.mjs`.
 
-- A player whose matured stake reaches **Tier 2** (tier only, no level gate) gets one **patron walk** per day from each
-  quest giver: two stops that end in a Tier 2+ zone. Each storyteller offers one **patron chapter** per day, set in a
-  Tier 2+ zone. Both sit outside the regular daily caps and outside the storyteller's chapter sets.
-- They pay the same XP as any line (20 per stop + 10, chapters 15), the walk's Aura from the ordinary chest
-  entitlement, and the stops pay their zone's ordinary prize. No bonus XP, odds or payouts.
-- Each turned-in patron line is a step on the **Patron's Path** (3 steps, counted across all NPCs). Each step reveals
-  the next chapter of the patron story; the third earns the NPC-only **patron edition** Aura once per player.
+- Gates come from `server/data/staker-gates.json` (step AND level, owner decision 1 Nov 23:47): path step 1 opens at
+  `patron_chapter_1` (Staker + L2), steps 2+ at `patron_line` (Staker + L4), the Aura at `patron_aura` (Staker + L4).
+  Staker = matured stake of at least 2 NEAR.
+- An open player gets one **patron walk** per day from each quest giver (two stops ending in the highest zone tier
+  they may enter, so Tier 2+ zones only once `t2_lines` opens) and one **patron chapter** per day from each
+  storyteller. Both sit outside the regular daily caps and outside the storyteller's chapter sets.
+- Same XP as any line (20 per stop + 10, chapters 15), the walk's Aura from the ordinary chest entitlement, and the
+  stops pay their zone's ordinary prize. No bonus XP, odds or payouts.
+- Each turned-in patron line is a step on the **Patron's Path** (3 steps, across all NPCs). Each step reveals the next
+  patron story chapter; the third earns the NPC-only **patron edition** Aura once per player when `patron_aura` is
+  open (otherwise on a later patron line).
 - The edition joins the catalog with the next shared collectibles upgrade. Until then the path still counts, and a
   player who already finished it gets the Aura on their next patron line after the upgrade.
-- The Keeper's inner vault shows the path (`inner.path`: done/of, revealed story, edition) to everyone, locked or not.
-  Progress and the edition stay after a withdrawal (D29).
-- Free players keep seeing the greyed "Patron walk" / "Patron chapter" chips (P0-2).
+- A closed next step shows a `patron_path` locked chip at quest givers and storytellers with exactly what is missing
+  ("Stake 2 NEAR · Reach level 2"). The Keeper's inner vault shows `inner.path` (progress, revealed story, edition,
+  `next` and `auraGate`) to everyone. Progress and the edition stay after a withdrawal (D29).

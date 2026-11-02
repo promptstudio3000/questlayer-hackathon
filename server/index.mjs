@@ -126,7 +126,8 @@ import { createNpcRoutes } from "./npc/routes.mjs";
 import { registerMenuBuilder } from "./actors/menu.mjs";
 import { loadTraders, traderKeysPath } from "./npc/trader-keys.mjs";
 import { createTraderService } from "./npc/trader.mjs";
-import { createTraderRoutes } from "./npc/trader-routes.mjs";
+import { createTraderRoutes, stakeCard } from "./npc/trader-routes.mjs";
+import { createNearPrice } from "./near-price.mjs";
 import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
@@ -402,7 +403,20 @@ const actorService =
 const actorRoutes = createActorRoutes(actorService);
 // NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
 // Ollama setup; the key stays in the runtime environment only.
-const npcRoutes = createNpcRoutes(actorService ? createNpcService(db) : null, actorService, db);
+// NEAR → EUR reference for "Stake 2 NEAR (~5 €)" labels (server/near-price.mjs).
+const nearPrice = createNearPrice({ env: process.env });
+const npcRoutes = createNpcRoutes(
+  actorService ? createNpcService(db, { priceEur: () => nearPrice.eur() }) : null,
+  actorService,
+  db,
+  {
+    // Refreshes the staker status through the Keeper's vault reading.
+    refreshStaker: (player) =>
+      keeperVault && nativeVaults
+        ? stakeCard({ db, player, vaults: nativeVaults, keeperVault, level: demoProgression(db, player).level })
+        : null,
+  },
+);
 // NPC traders on market v2 (N3): on when actors run, the market is v2 and the
 // private traders file exists (<state dir>/npc-traders.json or
 // NPC_TRADERS_PATH). NPC_TRADER_ENABLED=0 turns them off. Testnet only.
@@ -439,6 +453,7 @@ const keeperVault =
   nativeVaults && keeperVaultConfig.enabled
     ? createKeeperVault(db, {
         settings: keeperVaultConfig,
+        priceEur: () => nearPrice.eur(),
         today: () => {
           try {
             return nativeRewards?.todayCoins() ?? null;
@@ -456,6 +471,7 @@ const traderRoutes = createTraderRoutes({
   vaults: nativeVaults,
   keeperVault,
   levelOf: (player) => demoProgression(db, player).level,
+  priceEur: () => nearPrice.eur(),
 });
 // Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
 // account level (spendable XP) plus skill, never Auras or items.

@@ -4,6 +4,8 @@
 // through the relayer; anything that moves money (buying, accepting an offer,
 // funding an offer) is paid from the explorer's own account, still without a
 // wallet popup.
+import { EmptyState } from "./EmptyState";
+import { Details } from "./ScreenTabs";
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
@@ -321,14 +323,16 @@ export function SignedOrdersPanel({
   return (
     <section className="signed-orders" aria-labelledby="signed-orders-title">
       <h3 id="signed-orders-title">Signed offers</h3>
-      <p>
-        Name an exact price and how long it stays open.{" "}
-        {wallet
-          ? "Your wallet signs each order; approving it publishes the order but moves nothing."
-          : "Your explorer signs the order on this device, with no popup."}{" "}
-        Only an Aura held by the market can be traded, and the market checks
-        every signature before anything moves.
-      </p>
+      <p>Name an exact price in test NEAR and how long it stays open.</p>
+      <Details>
+        <p>
+          {wallet
+            ? "Your wallet signs each order; approving it publishes the order but moves nothing."
+            : "Your explorer signs the order on this device, with no popup."}{" "}
+          Only an Aura held by the market can be traded, and the market checks
+          every signature before anything moves.
+        </p>
+      </Details>
       {error && <p role="alert">{error}</p>}
       {step && <p role="status">{step}</p>}
       {message && !step && (
@@ -414,7 +418,9 @@ export function SignedOrdersPanel({
           </form>
           <h4>Open orders</h4>
           {!others.length ? (
-            <p>No signed orders from other explorers right now.</p>
+            <EmptyState art="coin" title="No open orders right now">
+              Signed orders from other explorers and traders show up here.
+            </EmptyState>
           ) : (
             <div className="native-offers">
               {others.map((o) => {

@@ -10,13 +10,17 @@
 //  - Ceremonies: a one-time moment when a deposit matures and when the
 //    account reaches a new tier. The patron title it grants is cosmetic and
 //    stays after a withdrawal (no decay, D29).
-//  - Inner vault: patron-only story chapters, gated by tier (owner decision
-//    1 Nov; an optional level gate is configurable). Lures are things to read or wear, never odds,
-//    payouts or multipliers.
+//  - Inner vault and the "stake today" card: gated by the staker gate table
+//    (server/staker-gates.mjs, owner decision 1 Nov 23:47: Staker + level 2,
+//    where Staker = at least STAKER_MIN_NEAR of matured stake). Lures are
+//    things to read or wear, never odds, payouts or multipliers.
+//  - Staker status: every reading records the player's matured stake so NPC
+//    menus can check staker gates without a chain call.
 // Reads only. It never signs, moves funds or changes a chance.
 import { readFileSync } from "node:fs";
 import { registerModuleSchema, ensureModuleVersion } from "../schema-compatibility.mjs";
 import { dayKey, id } from "../domain.mjs";
+import { allGates, checkGate, defaultStakerGates, recordStakerStatus, stakerAccess } from "../staker-gates.mjs";
 
 export const KEEPER_VAULT_SCHEMA = registerModuleSchema({
   name: "keeper-vault",
@@ -104,10 +108,8 @@ export function keeperVaultSettings(env = process.env) {
   }
   return {
     enabled: env.KEEPER_VAULT_ENABLED !== "0",
-    innerTier: int(env.KEEPER_INNER_TIER, 2, 1, 3),
-    // Owner decision 1 Nov: staker lures are gated by tier only. A level gate
-    // stays available through KEEPER_INNER_LEVEL (1 = no level gate).
-    innerLevel: int(env.KEEPER_INNER_LEVEL, 1, 1, 50),
+    // The inner vault gate moved to server/data/staker-gates.json
+    // (keeper_inner, stake_today); STAKER_GATES_JSON overrides it.
     maturityEpochs: int(env.KEEPER_MATURITY_EPOCHS, 2, 0, 10),
     epochHours: Number(env.KEEPER_EPOCH_HOURS) > 0 && Number(env.KEEPER_EPOCH_HOURS) <= 48 ? Number(env.KEEPER_EPOCH_HOURS) : 12,
     patronTitle: (env.KEEPER_PATRON_TITLE || "Patron of the Gate").slice(0, 40),
@@ -171,7 +173,20 @@ export function vaultTotals(s) {
 
 const str = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v == null ? null : v.toString()]));
 
-export function createKeeperVault(db, { clock = Date.now, settings = keeperVaultSettings(), today = () => null } = {}) {
+/** Matured stake that is actually staked (active), in yocto; null if unknown. */
+export function maturedActive(s, m = vaultMaturity(s)) {
+  if (m.mature == null) return null;
+  const principal = big(s.principal),
+    staked = big(s.staked);
+  if (principal === 0n) return 0n;
+  const active = staked < principal ? staked : principal;
+  return (m.mature * active) / principal;
+}
+
+export function createKeeperVault(
+  db,
+  { clock = Date.now, settings = keeperVaultSettings(), today = () => null, gates = defaultStakerGates(), priceEur = () => null } = {},
+) {
   // Tables appear on the first Keeper visit, not at boot, like the other
   // optional NPC modules (a host that never opens the vault stays unchanged).
   let ready = false;
@@ -205,6 +220,26 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
     return q("SELECT pending_since_epoch FROM keeper_vault_watch WHERE vault=?").get(vault)?.pending_since_epoch ?? null;
   }
 
+  // At 0 % city share the contract reports no weighted stake, so maturity
+  // cannot be read back. For the Staker step (not for tiers) the Keeper uses
+  // its own observation: principal unchanged for maturityEpochs epochs.
+  function observedMature(accountId, vault, s) {
+    const principal = big(s.principal),
+      epoch = Number(s.epoch);
+    if (!Number.isFinite(epoch) || principal === 0n) return { matured: 0n, pending: 0n };
+    const row = q("SELECT * FROM keeper_vault_watch WHERE vault=?").get(vault);
+    // First sighting or a new deposit starts the clock; otherwise keep it
+    // (null = already matured). A first sighting is counted conservatively.
+    const since = !row || principal > big(row.principal) ? epoch : (row.pending_since_epoch ?? null);
+    const done = since == null || epoch >= since + settings.maturityEpochs;
+    q(
+      "INSERT INTO keeper_vault_watch(vault,account_id,principal,pending,pending_since_epoch,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(vault) DO UPDATE SET account_id=excluded.account_id,principal=excluded.principal,pending=excluded.pending,pending_since_epoch=excluded.pending_since_epoch,updated_at=excluded.updated_at",
+    ).run(vault, accountId, principal.toString(), done ? "0" : principal.toString(), done ? null : since, clock());
+    const staked = big(s.staked),
+      active = staked < principal ? staked : principal;
+    return done ? { matured: active, pending: 0n } : { matured: 0n, pending: principal };
+  }
+
   function daily(accountId, vault, totals) {
     const now = clock(),
       day = dayKey(now, settings.timezone),
@@ -232,6 +267,8 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
     init();
     const accounts = [];
     let weighted = 0n,
+      matured = 0n,
+      maturing = 0n,
       givenPaid = 0n,
       epoch = null,
       anyPosition = false;
@@ -251,6 +288,14 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
           since = remember(player, accountId, vault, s, m),
           today = daily(accountId, vault, totals);
         givenPaid += totals.givenPaid;
+        if (m.state === "uncounted" && !s.exit_requested) {
+          const o = observedMature(accountId, vault, s);
+          matured += o.matured;
+          maturing += o.pending;
+        } else if (m.state === "pending" || m.state === "mature") {
+          matured += maturedActive(s, m) ?? 0n;
+          maturing += m.pending ?? 0n;
+        }
         const byEpoch = m.state === "pending" && since != null ? since + settings.maturityEpochs : null;
         const epochsLeft = byEpoch != null ? Math.max(0, byEpoch - epoch) : null;
         out.push({
@@ -304,10 +349,12 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
       "SELECT id,account_id accountId,kind,tier,amount,epoch,created_at createdAt,seen_at seenAt FROM keeper_ceremonies WHERE player_id=? ORDER BY created_at DESC LIMIT 20",
     ).all(player);
     const patronSince = q("SELECT MIN(created_at) t FROM keeper_ceremonies WHERE player_id=? AND kind='tier'").get(player)?.t ?? null;
-    const missing = [];
-    if (tier < settings.innerTier) missing.push(`Tier ${settings.innerTier} (matured stake)`);
-    if (level < settings.innerLevel) missing.push(`Level ${settings.innerLevel}`);
-    const open = !missing.length;
+    const access = stakerAccess({ tier, matured, pending: maturing, weighted, level }, gates);
+    recordStakerStatus(db, player, { tier, matured, pending: maturing, weighted }, clock());
+    const price = priceEur();
+    const inner = checkGate("keeper_inner", access, { settings: gates, priceEur: price });
+    const stakeToday = checkGate("stake_today", access, { settings: gates, priceEur: price });
+    const open = inner.open;
     return {
       epoch,
       epochHours: settings.epochHours,
@@ -320,15 +367,28 @@ export function createKeeperVault(db, { clock = Date.now, settings = keeperVault
       coins,
       ceremonies: ceremonies.filter((c) => !c.seenAt),
       patron: patronSince ? { title: settings.patronTitle, since: patronSince } : null,
+      staker: {
+        step: access.stepName,
+        staker: access.staker,
+        matured: access.matured,
+        maturing: access.pending,
+        minNear: gates.minNear,
+        priceEur: price,
+      },
+      stakeToday: { open: stakeToday.open, missing: stakeToday.missing.map((m) => m.label), stakeNear: stakeToday.stakeNear },
+      gates: allGates(access, { settings: gates, priceEur: price }),
       inner: {
         open,
-        gate: { tier: settings.innerTier, level: settings.innerLevel },
-        have: { tier, level },
-        missing,
+        gate: inner.need,
+        have: { step: access.stepName, tier, level },
+        missing: inner.missing.map((m) => m.label),
+        stakeNear: inner.stakeNear,
         chapters: open ? settings.chapters : settings.chapters.map((c) => ({ title: c.title, locked: true })),
         // Patron's Path (P1-1, server/npc/patron-path.mjs): progress through
         // the patron quest lines. Shown to everyone; walking it needs the tier.
-        ...(patronPath ? { path: patronPath } : {}),
+        ...(patronPath
+          ? { path: typeof patronPath === "function" ? patronPath({ access, settings: gates, priceEur: price }) : patronPath }
+          : {}),
       },
     };
   }

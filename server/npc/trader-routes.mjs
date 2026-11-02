@@ -6,8 +6,10 @@
 //   GET  /api/npc/traders     public books: float, 7-day P&L, premiums, sweeps
 //   GET  /api/keeper/stake                       "your stake today" card (Profile → Stake)
 //   POST /api/keeper/ceremonies/:id/seen         closes an E+2 / tier ceremony
+//   GET  /api/staker/gates       the staker gate table with this player's state
 import { formatNear } from "./trader-pricing.mjs";
 import { patronPathView } from "./patron-path.mjs";
+import { allGates, defaultStakerGates, playerStakerAccess } from "../staker-gates.mjs";
 
 const TRADE = /^\/api\/actors\/([a-z0-9-]{3,44})\/offers\/((?:trade_buy|trade_sell|trade_up):[0-9a-f]{16})\/(accept|complete)$/;
 const KEEPER = /^\/api\/actors\/([a-z0-9-]{3,44})\/keeper$/;
@@ -76,7 +78,7 @@ export async function keeperView({ db, player, market, vaults, keeperVault = nul
     out.accounts.push(entry);
   }
   out.lines.push("I never move your funds: every deposit, exit or change is signed by you on the usual confirmation screen.");
-  if (keeperVault?.settings.enabled) out.stake = keeperVault.view({ player, level, positions, patronPath: patronPathView(db, player) });
+  if (keeperVault?.settings.enabled) out.stake = keeperVault.view({ player, level, positions, patronPath: (gate) => patronPathView(db, player, gate) });
   return out;
 }
 
@@ -95,10 +97,24 @@ export async function stakeCard({ db, player, vaults, keeperVault, level = 1 }) 
       unreadable++;
     }
   }
-  return { ...keeperVault.view({ player, level, positions, patronPath: patronPathView(db, player) }), linked: positions.length + unreadable, unreadable };
+  return { ...keeperVault.view({ player, level, positions, patronPath: (gate) => patronPathView(db, player, gate) }), linked: positions.length + unreadable, unreadable };
 }
 
-export function createTraderRoutes({ traders, actors, db, market, vaults, keeperVault = null, levelOf = () => 1 }) {
+/** Gate table + the player's cached staker state, for chips and the stake sheet. */
+export function stakerGatesView({ db, player, level = 1, worldTier = 1, gates = defaultStakerGates(), priceEur = null }) {
+  const access = playerStakerAccess(db, player, { worldTier, level, settings: gates });
+  return {
+    policy: gates.policy,
+    version: gates.version,
+    minNear: gates.minNear,
+    suggestNear: gates.minNear,
+    priceEur: priceEur > 0 ? priceEur : null,
+    access: { step: access.stepName, staker: access.staker, tier: access.tier, level: access.level, matured: access.matured, maturing: access.pending },
+    gates: allGates(access, { settings: gates, priceEur }),
+  };
+}
+
+export function createTraderRoutes({ traders, actors, db, market, vaults, keeperVault = null, levelOf = () => 1, priceEur = () => null, gates = defaultStakerGates() }) {
   return {
     async handle(req, res, url, { player, body, respond, assert }) {
       const path = url.pathname,
@@ -106,6 +122,10 @@ export function createTraderRoutes({ traders, actors, db, market, vaults, keeper
       if (path === "/api/npc/traders" && method === "GET") {
         assert(traders, "NPC traders are not open here.", 503, "NPC_TRADERS_DISABLED");
         respond(res, await traders.books());
+        return true;
+      }
+      if (path === "/api/staker/gates" && method === "GET") {
+        respond(res, stakerGatesView({ db, player, level: player ? levelOf(player) : 1, gates, priceEur: priceEur() }));
         return true;
       }
       if (path === "/api/keeper/stake" && method === "GET") {

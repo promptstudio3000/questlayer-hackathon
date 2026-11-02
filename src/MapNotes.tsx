@@ -1,3 +1,4 @@
+import { EmptyState } from "./EmptyState";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowClockwise,
@@ -917,11 +918,9 @@ export function MapNotes({
             </div>
           ) : (
             !error && (
-              <div className="map-notes-empty">
-                <ChatCircle size={36} />
-                <h3>No notes nearby yet</h3>
-                <p>Leave something for the next ghost passing through.</p>
-              </div>
+              <EmptyState art="ghost" title="No notes nearby yet">
+                Leave something for the next ghost passing through.
+              </EmptyState>
             )
           )}
           <button

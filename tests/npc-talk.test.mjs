@@ -298,26 +298,38 @@ test("locked staker chips: Tier 2/3 lines show to free players, never as offers"
   assert.equal(w.playerTier, 1);
   for (const npc of [RADA, BELA]) {
     const persona = personaFor(npc);
-    const locked = lockedOffers({ actor: npc, persona, world: w, now: NOW });
+    const all = lockedOffers({ actor: npc, persona, world: w, now: NOW });
+    // The Patron's Path chip (tests/patron-path.test.mjs) comes first; the rest are tier lines.
+    assert.equal(all[0].kind, "patron_path");
+    const locked = all.filter((c) => c.kind !== "patron_path");
     const liveTiers = [...new Set(w.quests.filter((q) => q.tier > 1 && !q.completed && q.opens_at <= NOW && q.closes_at > NOW + 30 * 60_000).map((q) => q.tier))].sort();
     assert.ok(liveTiers.includes(2));
-    assert.deepEqual(locked.map((c) => c.locked), liveTiers.map((tier) => ({ tier })), "one chip per higher tier, gated by tier only");
+    assert.deepEqual(locked.map((c) => c.locked.tier), liveTiers, "one chip per higher tier");
+    assert.deepEqual(
+      locked.map((c) => c.locked.missing),
+      liveTiers.map((tier) => [`Reach Tier ${tier} (${tier === 2 ? 50 : 100} NEAR matured)`, "Reach level 6"]),
+      "each chip says exactly what is missing (step and level)",
+    );
     const lockedQuest = new Set(w.quests.filter((q) => q.tier > 1).map((q) => q.id));
     for (const o of buildMenu({ actor: npc, persona, world: w, now: NOW }))
       assert.ok(o.terms.steps.every((s) => !lockedQuest.has(s.questId)), "menu holds only Tier 1 steps");
-    for (const c of locked) {
+    for (const c of all) {
       assert.match(c.id, /^locked:/);
       assert.doesNotMatch(`${c.label} ${c.perk}`, /odds|chance|multiplier|%/i, "lures are things to do, never odds");
     }
     const reply = service.greet({ player, actor: npc, world: w });
-    assert.deepEqual(reply.locked, locked);
+    assert.deepEqual(reply.locked, all);
     assert.ok(!reply.menu.some((o) => o.id.startsWith("locked:")));
     assert.throws(() => service.accept({ player, actor: npc, world: w, offerId: locked[0].id }), /no longer available/);
   }
-  // A Tier 2 staker gets Tier 2 lines as real offers and only the Tier 3 chip.
+  // Tier 2 lines open at Tier 2 + level 6 (staker-gates.json t2_lines); a
+  // lower-level Tier 2 staker sees the chip with only the level missing.
   const t2 = { ...w, playerTier: 2 };
-  assert.ok(lockedOffers({ actor: RADA, persona: personaFor(RADA), world: t2, now: NOW }).every((c) => c.locked.tier === 3));
-  assert.equal(lockedOffers({ actor: RADA, persona: personaFor(RADA), world: { ...w, playerTier: 3 }, now: NOW }).length, 0);
+  const low = lockedOffers({ actor: RADA, persona: personaFor(RADA), world: t2, now: NOW, level: 3 });
+  assert.deepEqual(low.find((c) => c.locked.tier === 2).locked.missing, ["Reach level 6"]);
+  assert.ok(buildMenu({ actor: RADA, persona: personaFor(RADA), world: t2, now: NOW, level: 3 }).every((o) => o.terms.zoneTier === 1));
+  assert.ok(lockedOffers({ actor: RADA, persona: personaFor(RADA), world: t2, now: NOW, level: 6 }).every((c) => c.locked.tier === 3));
+  assert.equal(lockedOffers({ actor: RADA, persona: personaFor(RADA), world: { ...w, playerTier: 3 }, now: NOW, level: 6 }).length, 0);
   assert.equal(lockedOffers({ actor: VOJTECH, persona: personaFor(VOJTECH), world: w, now: NOW }).length, 0);
   assert.ok(world.id);
 });

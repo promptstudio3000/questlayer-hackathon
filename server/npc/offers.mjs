@@ -11,7 +11,8 @@
 // the existing award-signed `redeem_aura` claim.
 import { hash } from "../domain.mjs";
 import { extraQuestLines, extraStoryChapters } from "../levels.mjs";
-import { MAX_PATRON_LINES_PER_DAY, PATRON_PATH_LINES, PATRON_TIER, patronEditionLive } from "./patron-path.mjs";
+import { MAX_PATRON_LINES_PER_DAY, PATRON_PATH_LINES, patronEditionLive, patronGateKey } from "./patron-path.mjs";
+import { checkGate, defaultStakerGates, stakerAccess } from "../staker-gates.mjs";
 
 export const NPC_OFFER_POLICY = "npc-offers-v1";
 export const LINE_XP_PER_STEP = 20;
@@ -24,9 +25,10 @@ export const OFFER_TTL_MS = 15 * 60_000;
 const MIN_TIME_LEFT_MS = 30 * 60_000;
 
 // Locked staker chips (docs/GAME-LOOPS.md §5, P0-2): content in Tier 2/3
-// zones is shown to every player, greyed with its tier, and becomes usable when
-// the player's stake matures into that tier (owner decision 1 Nov: tier only,
-// no level gate). Lures are things to do or wear; a gate never changes odds.
+// zones is shown to every player, greyed, with exactly what is missing. Lines
+// open by step AND level (owner decision 1 Nov 23:47, server/data/
+// staker-gates.json: t2_lines = Tier 2 + L6, t3_lines = Tier 3 + L6). Lures
+// are things to do or wear; a gate never changes odds.
 export const MAX_LOCKED_CHIPS = 2;
 
 // Shape families each persona "likes" map onto (persona.likes are prose).
@@ -48,6 +50,21 @@ function liked(persona, zone) {
 const order = (seed, key) => parseInt(hash(`${seed}|${key}`).slice(0, 8), 16);
 
 const playerTierOf = (world) => (Number.isInteger(world?.playerTier) ? world.playerTier : 1);
+const LINE_GATE = { 2: "t2_lines", 3: "t3_lines" };
+
+/** Staker access for menus: the caller's (cached vault status) or the world tier. */
+const accessOf = (world, level, access, gates) =>
+  access?.step != null ? access : stakerAccess({ tier: playerTierOf(world), level }, gates);
+
+/** Gate of a quest line into a zone of this tier (Tier 1 is always open). */
+export function lineGate(zoneTier, access, { gates = defaultStakerGates(), priceEur = null } = {}) {
+  const key = LINE_GATE[Math.min(3, zoneTier)];
+  if (!key) return { open: true, missing: [] };
+  const g = checkGate(key, access, { settings: gates, priceEur });
+  // The zone's own tier rule (E16) still applies, whatever the table says.
+  if (access.tier < zoneTier && g.open) return { ...g, open: false, missing: [{ kind: "tier", tier: zoneTier, label: `Reach Tier ${zoneTier}` }] };
+  return g;
+}
 
 function liveSteps(world, now) {
   if (!world || world.operatorPause) return [];
@@ -62,39 +79,87 @@ function liveSteps(world, now) {
   );
 }
 
-export function openSteps(world, now) {
-  const tier = playerTierOf(world);
-  return liveSteps(world, now).filter((q) => q.tier <= tier);
+export function openSteps(world, now, { level = 1, access = null, gates = defaultStakerGates() } = {}) {
+  const a = accessOf(world, level, access, gates);
+  const open = new Map();
+  const isOpen = (t) => {
+    if (!open.has(t)) open.set(t, lineGate(t, a, { gates }).open);
+    return open.get(t);
+  };
+  return liveSteps(world, now).filter((q) => q.tier <= a.tier && isOpen(q.tier));
 }
 
 /**
- * Locked chips: quest lines and chapters in zones above the player's tier,
- * one per tier, shown greyed with `locked: {tier}`. They are NOT offers: they
- * never enter the menu, its hash, the model's facts or accept.
+ * Locked chips: quest lines and chapters in zones whose line gate is still
+ * closed, one per tier, shown greyed with `locked: {tier, step, level,
+ * missing, stakeNear}`. They are NOT offers: they never enter the menu, its
+ * hash, the model's facts or accept.
  */
-export function lockedOffers({ actor, persona, world, now = Date.now() }) {
+export function lockedOffers({
+  actor,
+  persona,
+  world,
+  now = Date.now(),
+  level = 1,
+  access = null,
+  gates = defaultStakerGates(),
+  priceEur = null,
+  patronDone = 0,
+}) {
   const archetype = actor?.archetype || persona?.archetype;
   if (!world || !actor || (archetype !== "quest_giver" && archetype !== "storyteller")) return [];
-  const tier = playerTierOf(world);
+  const a = accessOf(world, level, access, gates);
+  const quest = archetype === "quest_giver";
+  // The next Patron's Path step, greyed with exactly what is missing.
+  const pathGate = checkGate(patronGateKey(patronDone), a, { settings: gates, priceEur });
+  const pathChip =
+    !pathGate.open && liveSteps(world, now).length
+      ? [
+          {
+            id: `locked:${hash(`${actor.id}|${world.id}|patron-path`).slice(0, 16)}`,
+            kind: "patron_path",
+            label: `Patron's Path, step ${Math.min(patronDone + 1, PATRON_PATH_LINES)} of ${PATRON_PATH_LINES}: ${quest ? "a patron walk" : "a patron chapter"}`,
+            perk: "A patron story chapter and XP; the last step earns the patron Aura",
+            locked: {
+              step: pathGate.need?.step || "staker",
+              level: pathGate.need?.level || 1,
+              missing: pathGate.missing.map((m) => m.label),
+              stakeNear: pathGate.stakeNear || gates.minNear,
+            },
+          },
+        ]
+      : [];
   const zones = new Map((world.zones || []).map((z) => [z.id, z]));
   const seed = `${actor.id}|${world.id}`;
   const byTier = new Map();
-  for (const q of liveSteps(world, now).sort((a, b) => order(seed, a.id) - order(seed, b.id)))
-    if (q.tier > tier && !byTier.has(q.tier)) byTier.set(q.tier, q);
-  return [...byTier.values()]
+  const gateOf = new Map();
+  for (const q of liveSteps(world, now).sort((x, y) => order(seed, x.id) - order(seed, y.id))) {
+    if (q.tier < 2 || byTier.has(q.tier)) continue;
+    if (!gateOf.has(q.tier)) gateOf.set(q.tier, lineGate(q.tier, a, { gates, priceEur }));
+    if (!gateOf.get(q.tier).open) byTier.set(q.tier, q);
+  }
+  return [
+    ...pathChip,
+    ...[...byTier.values()]
     .sort((a, b) => a.tier - b.tier)
     .slice(0, MAX_LOCKED_CHIPS)
     .map((q) => {
       const zone = zones.get(q.zone_id)?.name;
-      const quest = archetype === "quest_giver";
       return {
         id: `locked:${hash(`${seed}|${q.id}`).slice(0, 16)}`,
         kind: quest ? "patron_quest" : "patron_chapter",
         label: `${quest ? "Patron walk" : "Patron chapter"}: ${q.title}${zone ? ` in ${zone}` : ""}`.slice(0, 120),
         perk: quest ? "A walk into a patron zone, XP and an Aura" : "A patron chapter in a patron zone, with XP",
-        locked: { tier: q.tier },
+        locked: {
+          tier: q.tier,
+          step: gateOf.get(q.tier).need?.step || `tier${q.tier}`,
+          level: gateOf.get(q.tier).need?.level || 1,
+          missing: gateOf.get(q.tier).missing.map((m) => m.label),
+          stakeNear: gateOf.get(q.tier).stakeNear || gates.minNear,
+        },
       };
-    });
+    }),
+  ];
 }
 
 const stepView = (q, zones) => ({
@@ -121,6 +186,8 @@ export function buildMenu({
   linesToday = 0,
   chapters = 0,
   level = 1,
+  access = null,
+  gates = defaultStakerGates(),
   patronToday = 0,
   patronDone = 0,
 }) {
@@ -129,22 +196,29 @@ export function buildMenu({
   const zones = new Map((world.zones || []).map((z) => [z.id, z]));
   const seed = `${actor.id}|${world.id}`;
   const expiresAt = Math.min(now + OFFER_TTL_MS, world.endsAt || Infinity);
-  const steps = openSteps(world, now).sort(
+  const steps = openSteps(world, now, { level, access, gates }).sort(
     (a, b) =>
       liked(persona, zones.get(b.zone_id)) - liked(persona, zones.get(a.zone_id)) ||
       order(seed, a.id) - order(seed, b.id),
   );
   const offers = [];
-  const patronOpen = playerTierOf(world) >= PATRON_TIER && patronToday < MAX_PATRON_LINES_PER_DAY;
+  // Patron's Path (P1-1): its first step opens at patron_chapter_1, the rest
+  // at patron_line (server/data/staker-gates.json, step AND level).
+  const pathAccess = accessOf(world, level, access, gates);
+  const patronOpen =
+    patronToday < MAX_PATRON_LINES_PER_DAY && checkGate(patronGateKey(patronDone), pathAccess, { settings: gates }).open;
+  // Patron stops lead into the highest zone tier the player may enter.
+  const topTier = Math.max(1, ...steps.map((q) => Math.min(q.tier, zones.get(q.zone_id)?.tier || 1)));
+  const inTop = (q) => Math.min(q.tier, zones.get(q.zone_id)?.tier || 1) === topTier;
   if (archetype === "quest_giver") {
     const used = new Set();
-    // Patron line (P1-1): a walk that ends in a Tier 2+ zone, Tier 2 stakers
-    // only. Same XP formula as any line; the lure is the walk, the patron
+    // Patron walk: two stops ending in the highest zone tier open to the
+    // player. Same XP formula as any line; the lure is the walk, the patron
     // story chapter and, at the path's end, the patron edition.
-    const target = patronOpen && steps.find((q) => q.tier >= PATRON_TIER && (zones.get(q.zone_id)?.tier || 1) >= PATRON_TIER);
+    const target = patronOpen && steps.find(inTop);
     if (target) {
       const lead =
-        steps.find((q) => q.id !== target.id && q.zone_id !== target.zone_id && q.tier >= PATRON_TIER) ||
+        steps.find((q) => q.id !== target.id && q.zone_id !== target.zone_id && inTop(q)) ||
         steps.find((q) => q.id !== target.id && q.zone_id !== target.zone_id);
       const line = lead ? [lead, target] : [target];
       const offerId = `quest:${hash(`${seed}|patron|${line.map((q) => q.id).join(",")}`).slice(0, 16)}`;
@@ -199,9 +273,9 @@ export function buildMenu({
       });
     }
   } else if (archetype === "storyteller") {
-    // Patron chapter (P1-1): a chapter set in a Tier 2+ zone, for Tier 2
-    // stakers. It is a step on the Patron's Path, outside the story sets.
-    const scene = patronOpen && steps.find((q) => q.tier >= PATRON_TIER && (zones.get(q.zone_id)?.tier || 1) >= PATRON_TIER);
+    // Patron chapter: set in the highest zone tier open to the player. It is
+    // a step on the Patron's Path, outside the story sets.
+    const scene = patronOpen && steps.find(inTop);
     if (scene) {
       const offerId = `chapter:${hash(`${seed}|patron|${scene.id}`).slice(0, 16)}`;
       if (!done.has(offerId))
@@ -274,7 +348,7 @@ function questFact(o, index) {
   if (o.terms.patron)
     return {
       id: `offer-${index}`,
-      text: `Offer ${index}: ${o.label}. A patron ${o.kind === "chapter" ? "chapter" : "walk"} for Tier ${PATRON_TIER} stakers: ${o.terms.xp} XP${
+      text: `Offer ${index}: ${o.label}. A patron ${o.kind === "chapter" ? "chapter" : "walk"} for stakers: ${o.terms.xp} XP${
         o.terms.aura ? " and one Aura you are entitled to" : ""
       }, and step ${o.terms.pathLine} of ${o.terms.pathOf} on the Patron's Path, which reveals a patron story chapter${
         o.terms.pathEnds ? " and finishes the path with the patron edition Aura" : ""
