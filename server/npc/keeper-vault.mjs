@@ -262,8 +262,10 @@ export function createKeeperVault(
   /**
    * Stake card for one player. `positions` are the vault snapshot rows of
    * each linked account: [{accountId, vaults: [{vault, pool, state, s}]}].
+   * `liquid` is the optional liquid-stake reading (server/native/liquid-stake.mjs):
+   * its held value counts toward the Staker step only, never toward a tier.
    */
-  function view({ player, level, positions }) {
+  function view({ player, level, positions, liquid = null }) {
     init();
     const accounts = [];
     let weighted = 0n,
@@ -349,6 +351,10 @@ export function createKeeperVault(
       "SELECT id,account_id accountId,kind,tier,amount,epoch,created_at createdAt,seen_at seenAt FROM keeper_ceremonies WHERE player_id=? ORDER BY created_at DESC LIMIT 20",
     ).all(player);
     const patronSince = q("SELECT MIN(created_at) t FROM keeper_ceremonies WHERE player_id=? AND kind='tier'").get(player)?.t ?? null;
+    const liquidMature = big(liquid?.matureNear),
+      liquidPending = big(liquid?.near) > liquidMature ? big(liquid?.near) - liquidMature : 0n;
+    matured += liquidMature;
+    maturing += liquidPending;
     const access = stakerAccess({ tier, matured, pending: maturing, weighted, level }, gates);
     recordStakerStatus(db, player, { tier, matured, pending: maturing, weighted }, clock());
     const price = priceEur();
@@ -372,6 +378,9 @@ export function createKeeperVault(
         staker: access.staker,
         matured: access.matured,
         maturing: access.pending,
+        liquid: liquid
+          ? { matureNear: liquidMature.toString(), near: big(liquid.near).toString(), holdHours: liquid.holdHours ?? null, unreadable: liquid.unreadable ?? 0 }
+          : null,
         minNear: gates.minNear,
         priceEur: price,
       },

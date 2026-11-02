@@ -417,7 +417,7 @@ const npcRoutes = createNpcRoutes(
     // Refreshes the staker status through the Keeper's vault reading.
     refreshStaker: (player) =>
       keeperVault && nativeVaults
-        ? stakeCard({ db, player, vaults: nativeVaults, keeperVault, level: demoProgression(db, player).level })
+        ? stakeCard({ db, player, vaults: nativeVaults, keeperVault, level: demoProgression(db, player).level, liquidStake })
         : null,
   },
 );
@@ -483,6 +483,7 @@ const traderRoutes = createTraderRoutes({
   keeperVault,
   levelOf: (player) => demoProgression(db, player).level,
   priceEur: () => nearPrice.eur(),
+  liquidStake,
 });
 // Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
 // account level (spendable XP) plus skill, never Auras or items.

@@ -1,6 +1,6 @@
 # Liquid staking tokens: second path to the Staker step (prototype)
 
-Status 2 Nov 2026: read-only prototype, **off by default**, testnet only. Decision doc (Czech):
+Status 2 Nov 2026: read-only, **off by default**, testnet only. When on, held tokens count toward the Staker step (Keeper reading, `staker_status`, every staker gate) but never toward Tier 2/3. Decision doc (Czech):
 https://claude.ai/artifact/Ct8auUPwFRNWxng3x1AWRh
 
 ## Idea
@@ -41,7 +41,10 @@ Known contracts: testnet `meta-v2.pool.testnet`, `linear-protocol.testnet`; main
 
 ## Next steps
 
-1. After PR #90 merges: `staker_status` adds `matureNear` to matured vault principal for the Staker step only
-   (`STAKER_MIN_NEAR`), and the locked chip offers "or hold 2 NEAR of stNEAR for 24 h".
-2. Profile → Stake: a "Liquid stake" card with value, countdown, instant-exit fee and a link to the protocol app.
-3. Later, post-hackathon: vault v3 holding stNEAR with `liquid_unstake` exit (new contract, review, Docker build).
+1. Done: the Keeper's reading (`/api/keeper/stake`, Keeper visit, NPC greet refresh) adds `matureNear` to matured
+   vault principal and the still-held-too-briefly part to `maturing`, for the Staker step only. The card returns
+   `staker.liquid`. Tier, ceremonies and the city share ignore liquid tokens.
+2. Locked chip text: offer "or hold 2 NEAR of stNEAR for 24 h"; today a fresh purchase shows the vault's
+   "Your stake is maturing (E+2)" label.
+3. Profile → Stake: a "Liquid stake" card with value, countdown, instant-exit fee and a link to the protocol app.
+4. Later, post-hackathon: vault v3 holding stNEAR with `liquid_unstake` exit (new contract, review, Docker build).

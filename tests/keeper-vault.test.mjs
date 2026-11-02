@@ -198,3 +198,43 @@ test("the Keeper view and the Profile stake route return the card; ceremonies cl
   assert.equal(await routes.handle({ method: "POST" }, {}, new URL(`http://x/api/keeper/ceremonies/${id}/seen`), ctx), true);
   assert.equal(sent.seen, true);
 });
+
+test("held liquid tokens count toward the Staker step only, never toward a tier", async () => {
+  const { kv, player, db } = setup();
+  const liquidView = (liquid) => kv.view({ player, level: 2, positions: [], liquid });
+  // 2 NEAR of stNEAR held through the window: Staker, still Tier 1.
+  const held = liquidView({ matureNear: (2n * N).toString(), near: (2n * N).toString(), holdHours: 24 });
+  assert.equal(held.staker.step, "staker");
+  assert.equal(held.tier, 1);
+  assert.equal(held.inner.open, true);
+  assert.equal(held.staker.liquid.matureNear, (2n * N).toString());
+  // 100 NEAR of liquid tokens is still no tier: tiers and the city share stay in the vault.
+  const whale = liquidView({ matureNear: (100n * N).toString(), near: (100n * N).toString() });
+  assert.equal(whale.tier, 1);
+  assert.equal(whale.gates.t2_lines.open, false);
+  // A fresh purchase is maturing, not counted.
+  const fresh = liquidView({ matureNear: "0", near: (2n * N).toString() });
+  assert.equal(fresh.staker.step, "none");
+  assert.equal(fresh.staker.maturing, (2n * N).toString());
+  // 1 NEAR in the vault + 1 NEAR of tokens add up.
+  const mixed = kv.view({
+    player,
+    level: 2,
+    positions: [{ accountId: "pat.testnet", vaults: [{ vault: "v1.testnet", pool: "pool", state: "ready", s: state({ principal: 1n * N, epoch: 100 }) }] }],
+    liquid: { matureNear: (1n * N).toString(), near: (1n * N).toString() },
+  });
+  assert.equal(mixed.staker.step, "staker");
+  // The stake card route passes the reader through.
+  const reader = { forPlayer: async () => ({ matureNear: (2n * N).toString(), holdHours: 24, unreadable: 0, readings: [{ near: (2n * N).toString() }] }) };
+  const routes = createTraderRoutes({ db, vaults: { snapshot: async () => ({ positions: [] }) }, keeperVault: kv, liquidStake: reader, levelOf: () => 2 });
+  let body;
+  await routes.handle({ method: "GET" }, {}, new URL("http://x/api/keeper/stake"), {
+    player,
+    respond: (_res, v) => (body = v),
+    assert: (ok, msg) => {
+      if (!ok) throw new Error(msg);
+    },
+  });
+  assert.equal(body.staker.step, "staker");
+  assert.equal(body.staker.liquid.near, (2n * N).toString());
+});
