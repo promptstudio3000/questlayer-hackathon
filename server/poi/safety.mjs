@@ -5,6 +5,7 @@
 // Pure and deterministic apart from the closure helpers that touch the DB.
 
 import { changeSystemPlace } from "../spatial/place-safety.mjs";
+import { poiCategory } from "./taxonomy.mjs";
 import {
   Grid,
   bboxOf,
@@ -47,6 +48,7 @@ export const SAFETY_REASONS = {
   bar: "Bar, pub or nightclub as a quest target.",
   "adult-venue": "Adult or gambling venue.",
   disused: "Disused or abandoned feature.",
+  aerodrome: "Airport or airfield.",
   "category-review": "Category needs review before use (e.g. skate park).",
   unnamed: "Unnamed feature of a kind that needs a name to be found.",
   uncategorised: "Not a game place category.",
@@ -73,6 +75,7 @@ for (const code of [
   "construction",
   "embassy",
   "police",
+  "aerodrome",
 ])
   SAFETY_REASONS[INSIDE(code)] = `Inside ${code} grounds.`;
 Object.freeze(SAFETY_REASONS);
@@ -270,6 +273,12 @@ export const TAG_RULES = Object.freeze([
     level: "excluded",
     area: true,
     when: { amenity: any("police") },
+  },
+  {
+    code: "aerodrome",
+    level: "excluded",
+    area: true,
+    when: { aeroway: any("aerodrome", "airstrip", "heliport") },
   },
   {
     code: "bar",
@@ -695,4 +704,57 @@ export function changePoiPlace(db, record, input, options) {
     candidates: [{ id: record.id, geometry: squareAround(at) }],
   };
   return changeSystemPlace(db, scope, input, options);
+}
+
+// ---------------------------------------------------------------------------
+// Adapter used by the POI import (W3, scripts/poi/), which does its own path
+// and grounds lookup in SQLite and passes the results in.
+
+export const SAFETY_VERSION = POI_SAFETY_VERSION;
+const EXCLUSION_KINDS = { care_home: "care-home" };
+
+/**
+ * poi: { id, category, name, tags } (tags {} for Overture)
+ * nearestPath: { lat, lng, distanceM, wayId } | null, already within 40 m
+ * exclusion: { kind, id } | null when that path point lies in forbidden grounds
+ * closures: Set of closed POI ids (loadPoiClosures(db).map(c => c.id))
+ * Returns { safety, reason, reasons, target }. reason is the first blocking
+ * code (or the first review code), null when ok.
+ */
+export function assessPoi(
+  poi,
+  { nearestPath = null, exclusion = null, closures = new Set() } = {},
+) {
+  const reasons = [...tagReasons(poi.tags || {})];
+  const meta = poi.category ? poiCategory(poi.category) : null;
+  if (!meta) reasons.push("uncategorised");
+  else {
+    if (meta.requiresName && !poi.name) reasons.push("unnamed");
+    if (meta.review) reasons.push("category-review");
+  }
+  if (exclusion) {
+    const code = EXCLUSION_KINDS[exclusion.kind] || exclusion.kind;
+    reasons.push(
+      SAFETY_REASONS[INSIDE(code)] ? INSIDE(code) : "target-excluded",
+    );
+  }
+  const water = poi.category === "river_walk" || poi.category === "lake_walk";
+  const tooFar =
+    !nearestPath ||
+    !Number.isFinite(nearestPath.distanceM) ||
+    nearestPath.distanceM > MAX_SNAP_M;
+  if (tooFar) reasons.push(water ? "water-no-path" : "no-public-path");
+  if (closures?.has?.(poi.id)) reasons.push("operator-closure");
+  const list = uniq(reasons);
+  const safety = safetyOf(list);
+  const reason = list.find((r) => levelOf(r) === "excluded") || list[0] || null;
+  return {
+    safety,
+    reason,
+    reasons: list,
+    target:
+      tooFar || safety === "excluded"
+        ? null
+        : { lat: nearestPath.lat, lng: nearestPath.lng },
+  };
 }

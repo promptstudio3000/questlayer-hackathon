@@ -57,7 +57,7 @@ Every record is `ok`, `review` or `excluded`, and every non-ok record carries re
 
 | Kind | Codes |
 | --- | --- |
-| Own tags, excluded | `school`, `kindergarten`, `playground`, `hospital`, `care-home`, `prison`, `military`, `private-access`, `railway`, `motorway`, `quarry`, `construction`, `embassy`, `police`, `bar`, `adult-venue`, `disused` |
+| Own tags, excluded | `school`, `kindergarten`, `playground`, `hospital`, `care-home`, `prison`, `military`, `private-access`, `railway`, `motorway`, `quarry`, `construction`, `embassy`, `police`, `aerodrome`, `bar`, `adult-venue`, `disused` |
 | Own tags, review | `worship-exterior`, `cemetery`, `sensitive-memorial` (Stolpersteine, ghost bikes) |
 | Inside grounds | `inside-<code>` for a POI that sits in (or a polygon fully inside) grounds; review grounds give review |
 | Category | `uncategorised`, `unnamed`, `category-review`, `low-confidence` (Overture < 0.5) |
@@ -96,3 +96,18 @@ in under a second.
 
 Not verified yet: real Czech data (W3 runs the import on the Mac), Overture category names against the current
 release, and field review of a sample of quest targets (W12).
+
+## Adapter for the import pipeline (W3)
+
+The import does its own path and grounds lookup in SQLite and calls the per-POI adapter:
+
+- `taxonomy.mjs`: `classifyOsm(tags) -> category | null`, `classifyOverture({ category, basicCategory }) ->
+  category | null` (`category` = Overture `taxonomy.primary`; the specific one wins), `TAXONOMY_VERSION`.
+- `safety.mjs`: `assessPoi(poi, { nearestPath, exclusion, closures }) -> { safety, reason, reasons, target }`
+  and `SAFETY_VERSION`. `poi` is `{ id, category, name, tags }` (`tags` is `{}` for Overture). `nearestPath`
+  is `{ lat, lng, distanceM, wayId }` or `null` (more than 40 m also counts as none). `exclusion` is
+  `{ kind, id }` when that path point lies in forbidden grounds. Kinds are the reason codes above, and
+  `care_home` is also accepted; `cemetery` gives `review`. `closures` is a `Set` of closed POI ids. `reason`
+  is the first blocking code (or the first review code), `null` when ok. `target` is `null` when excluded.
+
+Both paths give the same reason codes, so reports from either can be compared.

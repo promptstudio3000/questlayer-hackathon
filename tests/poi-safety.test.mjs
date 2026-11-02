@@ -15,7 +15,18 @@ import {
   SAFETY_REASONS,
   POI_POLICY,
 } from "../server/poi/index.mjs";
-import { TAG_RULES, tagReasons, levelOf } from "../server/poi/safety.mjs";
+import {
+  TAG_RULES,
+  tagReasons,
+  levelOf,
+  assessPoi,
+  SAFETY_VERSION,
+} from "../server/poi/safety.mjs";
+import {
+  classifyOsm,
+  classifyOverture,
+  TAXONOMY_VERSION,
+} from "../server/poi/taxonomy.mjs";
 import {
   at,
   node,
@@ -144,6 +155,7 @@ const EXCLUSION_FIXTURES = [
   ["embassy", { amenity: "embassy" }],
   ["police", { amenity: "police" }],
   ["bar", { amenity: "pub", name: "U Salzmannů" }],
+  ["aerodrome", { aeroway: "aerodrome", tourism: "viewpoint" }],
   ["adult-venue", { amenity: "casino" }],
   ["disused", { amenity: "fountain", "disused:amenity": "fountain" }],
   ["disused", { tourism: "viewpoint", abandoned: "yes" }],
@@ -389,4 +401,89 @@ test("reason levels and tag reasons stay consistent", () => {
   assert.deepEqual(tagReasons({ amenity: "fountain" }), []);
   for (const code of Object.keys(SAFETY_REASONS))
     assert.match(code, /^[a-z-]+$/);
+});
+
+test("W3 adapter: classifyOsm, classifyOverture and assessPoi", () => {
+  assert.equal(TAXONOMY_VERSION, "poi-taxonomy-v1");
+  assert.equal(SAFETY_VERSION, "poi-safety-v1");
+  assert.equal(classifyOsm({ leisure: "park" }), "park");
+  assert.equal(classifyOsm({ shop: "bakery" }), null);
+  assert.equal(classifyOsm(undefined), null);
+  assert.equal(classifyOverture({ category: "public_plaza" }), "plaza");
+  assert.equal(
+    classifyOverture({ category: "unknown_thing", basicCategory: "park" }),
+    "park",
+  );
+  assert.equal(classifyOverture({ category: "dentist" }), null);
+  const path = { lat: 49.75, lng: 13.38, distanceM: 12, wayId: "osm:w1" };
+  const park = {
+    id: "osm:w100",
+    category: "park",
+    name: "Park",
+    tags: { leisure: "park" },
+  };
+  assert.deepEqual(assessPoi(park, { nearestPath: path }), {
+    safety: "ok",
+    reason: null,
+    reasons: [],
+    target: { lat: 49.75, lng: 13.38 },
+  });
+  const far = assessPoi(park, { nearestPath: null });
+  assert.equal(far.safety, "excluded");
+  assert.equal(far.reason, "no-public-path");
+  assert.equal(far.target, null);
+  const inSchool = assessPoi(park, {
+    nearestPath: path,
+    exclusion: { kind: "school", id: "osm:w101" },
+  });
+  assert.equal(inSchool.safety, "excluded");
+  assert.equal(inSchool.reason, "inside-school");
+  assert.equal(
+    assessPoi(park, {
+      nearestPath: path,
+      exclusion: { kind: "care_home", id: "x" },
+    }).reason,
+    "inside-care-home",
+  );
+  assert.equal(
+    assessPoi(park, {
+      nearestPath: path,
+      exclusion: { kind: "aerodrome", id: "x" },
+    }).reason,
+    "inside-aerodrome",
+  );
+  const cem = assessPoi(park, {
+    nearestPath: path,
+    exclusion: { kind: "cemetery", id: "x" },
+  });
+  assert.equal(cem.safety, "review");
+  assert.equal(cem.reason, "inside-cemetery");
+  assert.deepEqual(cem.target, { lat: 49.75, lng: 13.38 });
+  const closed = assessPoi(park, {
+    nearestPath: path,
+    closures: new Set(["osm:w100"]),
+  });
+  assert.equal(closed.safety, "excluded");
+  assert.equal(closed.reason, "operator-closure");
+  const school = assessPoi(
+    { id: "osm:n5", category: null, name: "ZŠ", tags: { amenity: "school" } },
+    { nearestPath: path },
+  );
+  assert.equal(school.reason, "school");
+  const ovt = assessPoi(
+    { id: "ovt:abc", category: "skate_park", name: "Skatepark", tags: {} },
+    { nearestPath: path },
+  );
+  assert.equal(ovt.safety, "review");
+  assert.equal(ovt.reason, "category-review");
+  const river = assessPoi(
+    {
+      id: "osm:w9",
+      category: "river_walk",
+      name: "Mže",
+      tags: { waterway: "river" },
+    },
+    { nearestPath: { ...path, distanceM: 55 } },
+  );
+  assert.equal(river.reason, "water-no-path");
 });

@@ -389,3 +389,21 @@ export function categorizeOverture(categories = {}) {
       return { category: OVERTURE_CATEGORY_MAP[c], rule: `overture:${c}` };
   return null;
 }
+
+// Adapter names used by the POI import (W3, scripts/poi/). Same rules as above.
+export const TAXONOMY_VERSION = POI_TAXONOMY_VERSION;
+/** OSM tags -> category id or null. */
+export const classifyOsm = (tags) =>
+  categorizeOsm(tags || {})?.category ?? null;
+/**
+ * Overture place -> category id or null. category is taxonomy.primary,
+ * basicCategory the coarser basic_category; the specific one wins.
+ */
+export function classifyOverture({ category, basicCategory } = {}) {
+  return (
+    categorizeOverture({
+      primary: category,
+      alternate: basicCategory ? [basicCategory] : [],
+    })?.category ?? null
+  );
+}
