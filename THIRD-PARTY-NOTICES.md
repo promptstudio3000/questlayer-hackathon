@@ -7,6 +7,7 @@
 - NEAR SDK / contract standards: upstream MIT / Apache-2.0 licensing as applicable, https://github.com/near/near-sdk-rs and https://github.com/near/near-sdk-rs/tree/master/near-contract-standards.
 - NEAR Connect and near-api-js: respective upstream package licenses.
 - SimpleWebAuthn, viem, h3-js, tz-lookup and sharp: respective package licenses.
+- POI database (World worker, `scripts/poi/`, docs/POI-PIPELINE.md): OpenStreetMap (ODbL 1.0, © OpenStreetMap contributors; the database is a derivative database under ODbL and stays on the VPS), Overture Maps Places (CDLA-Permissive-2.0, © Overture Maps Foundation, https://docs.overturemaps.org/attribution/), Wikidata (CC0 1.0), GeoNames cities15000 (CC BY 4.0, https://www.geonames.org/). The map attribution control names these sources. Build tools run only on the VPS and are not distributed: osmium-tool (GPL-3.0), DuckDB CLI (MIT).
 - Turf spatial utilities: MIT, https://github.com/Turfjs/turf. The versioned CityPack retains OpenStreetMap source IDs and ODbL attribution; see `server/data/README.md`.
 - Kanit font: SIL Open Font License; currently loaded through Google Fonts, https://github.com/google/fonts/tree/main/ofl/kanit.
 - Aavegotchi integration reads canonical Base contracts. Connected original appearances are their on-chain SVGs; ownership does not grant a blanket license to redistribute unrelated artwork. No Unity/GLB asset catalog has been copied into this repository.

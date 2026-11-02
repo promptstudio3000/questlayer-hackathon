@@ -1,0 +1,7 @@
+{"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[13.3772, 49.7471], [13.3778, 49.7471], [13.3778, 49.7475], [13.3772, 49.7475], [13.3772, 49.7471]]]}, "properties": {"@type": "way", "@id": 1, "leisure": "park", "name": "Park Test", "name:en": "Test Park"}}
+{"type": "Feature", "geometry": {"type": "Point", "coordinates": [13.3785, 49.7471]}, "properties": {"@type": "node", "@id": 2, "tourism": "artwork", "artwork_type": "statue", "name": "Socha", "wikidata": "Q123"}}
+{"type": "Feature", "geometry": {"type": "Point", "coordinates": [13.38, 49.75]}, "properties": {"@type": "node", "@id": 3, "amenity": "fountain", "name": "Kašna"}}
+{"type": "Feature", "geometry": {"type": "Point", "coordinates": [13.3805, 49.7468]}, "properties": {"@type": "node", "@id": 4, "historic": "memorial", "name": "Pomník u školy"}}
+{"type": "Feature", "geometry": {"type": "Point", "coordinates": [13.3775, 49.7471]}, "properties": {"@type": "node", "@id": 5, "historic": "castle", "access": "private", "name": "Soukromý zámek"}}
+{"type": "Feature", "geometry": {"type": "Point", "coordinates": [13.378, 49.7471]}, "properties": {"@type": "node", "@id": 6, "historic": "monument", "disused": "yes", "name": "Starý pomník"}}
+{"type": "Feature", "geometry": {"type": "Point", "coordinates": [13.3782, 49.7471]}, "properties": {"@type": "node", "@id": 7, "shop": "bakery", "name": "Pekárna"}}
