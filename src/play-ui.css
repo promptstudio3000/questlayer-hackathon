@@ -527,9 +527,13 @@
 .main-panel .recommended-quest {
   margin-top: 0;
 }
+.coverage-note.unverified {
+  border-left: 4px solid var(--gold, #c29222);
+  padding-left: 12px;
+}
 @media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
   .main-panel.explore-panel.sheet-compact .play-entry,
-  .main-panel.explore-panel.sheet-compact .coverage-note {
+  .main-panel.explore-panel.sheet-compact .coverage-note:not(.unverified) {
     display: none;
   }
   .walk-card {

@@ -88,6 +88,38 @@ A full Czechia build gives 17,310 cells with 1.06 million ways, adds about 100 M
 - Follow a run with `journalctl -u questlayer-poi -f`. The last line is the manifest JSON; copy it into
   `server/data/poi-manifest.json` in a PR.
 
+## Auto cities (W5)
+
+After each release `run.mjs` runs `scripts/poi/auto-cities.mjs` (also runnable alone:
+`node scripts/poi/auto-cities.mjs --work=/var/lib/questlayer-poi [--min-pop=15000] [--country=CZ]`). It builds one
+CityPack per GeoNames city of the imported countries with at least 15,000 people (`AUTO_CITY_MIN_POP`), using the
+same builder as reviewed packs (`server/spatial/city-pack-builder.mjs`) on the kept OSM extracts:
+
+- parks and gardens from `osm-<region>-pois.geojsonseq`, walkable ways (footway, pedestrian, path, living street,
+  no private access) from `osm-<region>-paths.geojsonseq`, at most 3,500 per city, ways through parks first;
+- coverage box sized by population (half side `1.5 + 3·sqrt(pop/100k)` km, 12 km cap), timezone from GeoNames;
+  a feature in two boxes belongs to the nearer city centre;
+- targets inside exclusion polygons (schools, hospitals, playgrounds, cemeteries, military, ...) are dropped, and a
+  park centred in one is dropped;
+- reviewed cities in `server/data/cities.json` win: same id or centre inside a reviewed coverage box skips the
+  city, and no auto feature inside a reviewed box is used (the server enforces this again on load);
+- a GeoNames place whose centre lies inside a larger auto city's box (city districts such as Žižkov or Brno-střed) is
+  folded into that city;
+- a city with no zone on any of seven sample days is not published.
+
+Output: `city-packs-<poi version>-a<builder>/` with `<id>.json` (`fieldReview: "auto"`, `status: "auto"`,
+`funded: false`), `index.json` (SHA-256 per pack), `report.json` (cities built, empty sectors, zones per city per
+sample day) and `manifest.json` (hashes and counts only: the one file that may be copied into git). The
+`city-packs` symlink is swapped atomically; the game re-reads the index within a minute, no restart. The game
+finds it at `/var/lib/questlayer-poi/city-packs` (or `AUTO_CITIES_DIR`); `AUTO_CITIES=0` turns auto cities off.
+`/api/health` shows `autoCities`. `scripts/deploy-vps.sh` starts one worker run when a POI release exists but no
+auto city index does.
+
+In the game: precedence is reviewed live city > auto city > H3 cell. An auto city gets the daily zone plan
+(prepared lazily on the first visit), generic NPCs and street coins from the demo bucket, a visible "Unverified
+map" notice, and no zone prize. Auto cities are never in native publication, and start-up refuses an auto city in
+`NATIVE_FUNDED_CITIES`. Promotion to a reviewed city follows `docs/SECOND-CITY-PLAYBOOK.md`.
+
 ## Adding a region
 
 Add an entry to `scripts/poi/regions.mjs` (Geofabrik URL, ISO country, bbox) and set `WORLD_REGIONS=cz,sk` in

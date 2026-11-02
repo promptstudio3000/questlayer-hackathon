@@ -51,7 +51,13 @@ export function buildCityPack({
   importedAt = new Date().toISOString(),
   pathQueryLimit = 3500,
   centralRadiusM = 1200,
+  // "pending" for a pack headed to field review; "auto" for World worker
+  // packs (docs/WORLDS-PLAN.md C.3 point 7) that are never reviewed or funded.
+  fieldReview = "pending",
+  source = "OpenStreetMap contributors / Overpass",
 }) {
+  if (!["pending", "auto"].includes(fieldReview))
+    throw Error("fieldReview is pending or auto.");
   if (!/^[a-z][a-z0-9-]{1,31}$/.test(id || ""))
     throw Error("City id must be lowercase letters, digits or dashes.");
   if (!name || !version || !timezone)
@@ -62,7 +68,7 @@ export function buildCityPack({
     throw Error("The centre must sit inside the coverage box.");
   const walkable = ways(paths)
     .filter((w) => !CLOSED_ACCESS.has(w.tags?.access) && w.tags?.foot !== "no")
-    .map((w) => ({ id: `osm-way-${w.id}`, points: coords(w) }))
+    .map((w) => ({ id: w.cid || `osm-way-${w.id}`, points: coords(w) }))
     .filter(
       (w) => w.points.length >= 2 && w.points.some((p) => inside(p, coverage)),
     )
@@ -75,7 +81,7 @@ export function buildCityPack({
     skipped = [];
   for (const way of ways(parks).sort((a, b) => a.id - b.id)) {
     const ring = coords(way),
-      cid = `osm-way-${way.id}`;
+      cid = way.cid || `osm-way-${way.id}`;
     const closed =
       ring.length >= 4 &&
       ring[0][0] === ring.at(-1)[0] &&
@@ -122,7 +128,7 @@ export function buildCityPack({
       geometry: { type: "Polygon", coordinates: [ring] },
       access: way.tags?.access || "not-specified",
       targets,
-      fieldReview: "pending",
+      fieldReview,
     });
   }
   const pack = {
@@ -133,11 +139,11 @@ export function buildCityPack({
     center,
     coverage,
     boundaryKind: "data-coverage-not-administrative-boundary",
-    source: "OpenStreetMap contributors / Overpass",
+    source,
     sourceUrl: "https://www.openstreetmap.org/copyright",
     license: "ODbL-1.0",
     importedAt,
-    fieldReview: "pending",
+    fieldReview,
     pathQueryLimit,
     pathCoverage: "partial-bounded-snapshot",
     candidates,

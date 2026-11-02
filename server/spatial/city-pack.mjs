@@ -21,6 +21,7 @@ import {
   createPedestrianRouter,
   validateExclusions,
 } from "./pedestrian-graph.mjs";
+import { autoCitiesDir, loadAutoCities } from "./auto-cities.mjs";
 // City registry: server/data/cities.json lists every CityPack the server knows.
 // "live" packs are planned daily and matched by GPS; "preview" packs load and
 // validate but never reach players. Exactly one live city is the default: it
@@ -95,18 +96,45 @@ export const DEFAULT_CITY = CITY_REGISTRY.defaultCity;
 export const LIVE_CITIES = CITY_REGISTRY.liveCities;
 // Kept for scripts and QA that are about Plzeň specifically.
 export const PLZEN = CITY_REGISTRY.allCities.find((c) => c.id === "plzen");
+// Auto cities (status "auto", docs/WORLDS-PLAN.md C.3 point 7): built by the
+// World worker outside git, loaded lazily, never funded. Every reviewed city
+// in the registry (any status) takes precedence over them.
+export const AUTO_CITIES = loadAutoCities(autoCitiesDir(), {
+  reviewed: CITY_REGISTRY.allCities.map((c) => ({
+    id: c.id,
+    coverage: c.coverage,
+  })),
+});
 export function cityById(id) {
-  return CITY_REGISTRY.allCities.find((c) => c.id === id) || null;
+  return (
+    CITY_REGISTRY.allCities.find((c) => c.id === id) ||
+    AUTO_CITIES.pack(id) ||
+    null
+  );
 }
 export function liveCityById(id) {
   return LIVE_CITIES.find((c) => c.id === id) || null;
 }
+/** A city players can be in: a live reviewed city or an auto city. */
+export function playableCityById(id) {
+  return liveCityById(id) || AUTO_CITIES.pack(id) || null;
+}
+/** "live" | "preview" | "auto" | null */
+export function cityStatus(id) {
+  return (
+    CITY_REGISTRY.statusOf(id) || (AUTO_CITIES.has(id) ? "auto" : null)
+  );
+}
+export function isAutoCity(city) {
+  return city?.fieldReview === "auto";
+}
+// Precedence for one location: reviewed live city > auto city > H3 cell.
 export function cityFor(p) {
   for (const city of LIVE_CITIES) {
     const [b, l, r, t] = city.coverage;
     if (p.lng >= b && p.lng <= r && p.lat >= l && p.lat <= t) return city;
   }
-  return null;
+  return AUTO_CITIES.cityFor(p);
 }
 export function contains(geometry, p) {
   return (

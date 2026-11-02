@@ -570,3 +570,10 @@ notice and are never funded. 3. Original "Punk City" theme. 4. Player worlds pri
   `gold_u = 0` always; street coins unchanged.
 - An empty cell stores `poiQuests.status = "empty"` and the client says "Nothing here yet".
 - Titles use deterministic template text; the W8 flavour cache (`server/ai/flavour.mjs`) plugs in next.
+
+**W5 is implemented** (2 Nov 2026) for Czechia with a 15,000-people threshold (owner decision: Czechia only before
+14 Nov). It runs on the VPS as a step of the World worker instead of on the Mac, because the OSM extracts already
+live there. Details in `docs/POI-PIPELINE.md` "Auto cities (W5)": `scripts/poi/auto-cities.mjs` builds the packs,
+`server/spatial/auto-cities.mjs` loads them lazily with hash checks, `cityFor` resolves reviewed > auto > cell,
+the client shows the "Unverified map" notice, auto zones carry no prize, and `NATIVE_FUNDED_CITIES` refuses auto
+cities at start-up.
