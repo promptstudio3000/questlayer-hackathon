@@ -118,4 +118,13 @@ The contract enforces this: `CLAIM_ONLY_EDITIONS` mints these editions only for 
 
 Sprites are original project motifs (silver footprints, altar flames, compass rose, quill, laurel wreath, three snowy peaks) in `src/aura-art-data.ts`; covers come from `scripts/generate-explorer-assets.mjs`. Rendered sheet: `output/qa/level-editions/level-edition-sprites.png`. They become claimable only with `LEVEL_ITEM_EDITIONS=1` and only once the deployed contract lists them.
 
+**Patron and season editions (2026-11-02).** Two more claim-only editions ship in the same code-only collectibles upgrade:
+
+| Edition | Source | Rarity | Slot | How | Claim prefix |
+| --- | --- | --- | --- | --- | --- |
+| Patron's Lantern (`patron`) | npc | epic | above | Finish the Patron's Path (three patron lines, Tier 2 stakers; `server/npc/patron-path.mjs`) | `earned:npc:` |
+| Hackathon Pennant (`season`) | season | epic | above | Reach the hackathon season goal before 14 Nov 2026 23:59:59 UTC (`server/season/`, `docs/SEASON.md`) | `earned:season:` |
+
+Both are awarded once per player through `earned_editions` and never drop from chests. Sprites are original project motifs (three gate lanterns with a patron seal; a ring of pennant flags with a season star) in `src/aura-art-data.ts`; covers come from `scripts/generate-explorer-assets.mjs`. Rendered sheet: `output/qa/patron-season-editions/patron-season-sprites.png`. Both sit in the Wayfarers set (cosmetic bonus only).
+
 **Wardrobe.** The practice collection can be filtered by slot, rarity and set, is sorted rarest first, and has an Aura catalog listing every edition with where it can be found and how many the player holds. Controls are native buttons and selects with 48px targets.

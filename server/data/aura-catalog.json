@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. `source` says where an edition comes from: chest editions drop from zone chests by entitlement; npc, monster and level editions never drop from chests and the contract only mints them for award claims whose id starts with earned:npc:, earned:monster: or earned:level: (CLAIM_ONLY_EDITIONS). Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
+  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. `source` says where an edition comes from: chest editions drop from zone chests by entitlement; npc, monster, level and season editions never drop from chests and the contract only mints them for award claims whose id starts with earned:npc:, earned:monster:, earned:level: or earned:season: (CLAIM_ONLY_EDITIONS). Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
   "supplyPerEdition": 256,
   "rarities": [
     "common",
@@ -293,6 +293,32 @@
       "source": "level",
       "motif": "A crown of three snowy peaks with a summit star",
       "how": "Reach level 10"
+    },
+    {
+      "id": "patron",
+      "name": "Patron's Lantern",
+      "demoName": "Patron's Lantern",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#ffd01f",
+      "set": "wayfarers",
+      "native": true,
+      "source": "npc",
+      "motif": "Gate lantern ring sealed with a gold wax patron seal",
+      "how": "Finish the Patron's Path (three patron lines)"
+    },
+    {
+      "id": "season",
+      "name": "Hackathon Pennant",
+      "demoName": "Hackathon Pennant",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#4fc3ff",
+      "set": "wayfarers",
+      "native": true,
+      "source": "season",
+      "motif": "A ring of small pennant flags with a season star",
+      "how": "Reach the hackathon season goal (until 14 Nov 2026)"
     }
   ],
   "sets": [

@@ -65,6 +65,7 @@ export const AWARD_CLAIM_PREFIX = Object.freeze({
   npc: "earned:npc:",
   monster: "earned:monster:",
   level: "earned:level:",
+  season: "earned:season:",
 });
 export function awardClaimPrefix(edition) {
   const source = AURA_CATALOG.find((e) => e.id === edition)?.source || "chest";
