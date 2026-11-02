@@ -512,3 +512,32 @@ Shared preamble for every prompt (paste first):
    "unreviewed" notice, never funded)?
 3. CryptoPunks: ask Yuga Labs / check terms, or go with the original "Punk City" theme (recommended for now).
 4. Player-made worlds: private-only first (recommended), or public listing from day one.
+
+Owner answers (2 Nov 2026): 1. Czechia only before 14 Nov. 2. Auto cities show zones with an "unverified map"
+notice and are never funded. 3. Original "Punk City" theme. 4. Player worlds private-only.
+
+### C.9 Implementation status
+
+**W1 and W2 are implemented** (2 Nov 2026):
+
+- `server/worlds/schema.mjs` checks the `questlayer.worldpack/1` shape (unknown keys rejected, sizes bounded,
+  64 KiB per pack). `server/worlds/validate.mjs` adds every B.4 rule that does not need the POI DB: rights
+  (assets under `public/worlds/<id>/`, third-party evidence file, known trademarks listed, no "official/endorsed"
+  wording without evidence), text policy (`server/ai/text-policy.mjs`), economy (`money: "none"`, `xpWeight ≤ 1`,
+  finite edition supply, editions only in official packs), quest templates from `server/quest-templates.mjs`,
+  archetypes from `server/actors/definitions.mjs`, actor models and object kinds from the client sources (copied to
+  `server/data/world-lookups.json` because the deploy ships `server/` only; a test keeps the copy in sync),
+  token keys from `docs/design-tokens.json` with a WCAG AA check on every overridden text pair, and rules
+  (private worlds name their cities, the default layer is open from level 1).
+- `server/worlds/registry.mjs` loads `server/data/worlds.json` at start-up: statuses draft/preview/live/retired,
+  exactly one live official default, duplicates and invalid packs refused, private packs never live, a kill
+  switch env per layer (the default cannot be switched off), and the SHA-256 of each pack file. At start-up asset files are not checked (they are not deployed); CI checks them.
+- `server/data/worlds/aavegotchi-v1.json` describes today's world (23 Aura editions, Plzeň actors and personas,
+  the four zone-quest templates, zone tier colours, built-in object art, 08:00–20:00) and is the default layer.
+  Its file hash is pinned in `tests/world-layers.test.mjs`; a change is a new `-v<n>` file.
+- `/api/config` returns `layerId` and the live `layers`; `/api/world` returns `layerId`. Neither is stored in a
+  manifest. A test pins the Plzeň plan hashes for 2026-11-02 and 2026-11-03.
+- `npm run world:validate [-- <file>]` prints a JSON report; `npm test` validates every file under
+  `server/data/worlds/`, so CI gates them.
+- Not done yet: the client still reads its skin from `src/tokens.css` (no visual change); POI-bound checks
+  (spatial, per-cell density across layers) arrive with W4/W6.

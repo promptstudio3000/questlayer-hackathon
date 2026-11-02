@@ -148,6 +148,7 @@ import { createBadgeRoutes } from "./badges/routes.mjs";
 import { seasonSettings } from "./season/config.mjs";
 import { createSeason } from "./season/service.mjs";
 import { createSeasonRoutes } from "./season/routes.mjs";
+import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
 import {
   GOLD,
   DAY,
@@ -903,6 +904,9 @@ async function api(req, res, url) {
       },
       nearAI: !!process.env.NEAR_AI_API_KEY,
       guide: guide.provider,
+      // World layers (docs/WORLDS-PLAN.md): response-only, never hashed.
+      layerId: DEFAULT_LAYER.id,
+      layers: WORLD_REGISTRY.liveLayers(process.env).map(layerSummary),
     });
   if (path === "/api/session" && method === "POST") {
     const input = await body(req);
@@ -1955,7 +1959,11 @@ async function api(req, res, url) {
       });
     expireWorlds(db);
     const world = await ensureWorld(db, location, input.arena !== false);
-    return respond(res, worldView(db, world.id, player, query));
+    // layerId is added to the response only, never to the stored manifest.
+    return respond(res, {
+      ...worldView(db, world.id, player, query),
+      layerId: DEFAULT_LAYER.id,
+    });
   }
   if (path === "/api/world" && method === "GET") {
     const w = worldView(
@@ -1969,7 +1977,7 @@ async function api(req, res, url) {
       }),
     );
     assert(w, "This area could not be found. Refresh the map.", 404);
-    return respond(res, w);
+    return respond(res, { ...w, layerId: DEFAULT_LAYER.id });
   }
   if (path === "/api/coins/claim" && method === "POST") {
     const input = await body(req),
