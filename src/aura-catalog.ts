@@ -16,7 +16,7 @@ export type AuraCatalogEdition = Readonly<{
   set: string;
   native: boolean;
   /** chest: zone chest drops; npc / monster: only earned from those, never from chests. */
-  source: "chest" | "npc" | "monster" | "level";
+  source: "chest" | "npc" | "monster" | "level" | "season";
   motif: string;
   /** How an NPC or monster edition is earned. */
   how?: string;
@@ -79,6 +79,8 @@ export function auraEntitled(
 /** Where an edition is found: chest entitlement, or the NPC / monster that awards it. */
 export function editionSourceLabel(edition: AuraCatalogEdition) {
   if (edition.source === "npc") return `NPC only · ${edition.how || "Earned from a roaming NPC"}`;
+  if (edition.source === "season")
+    return `Season reward · ${edition.how || "Earned by reaching the season goal"}`;
   if (edition.source === "level")
     return `Level reward · ${edition.how || "Earned by reaching a level"}`;
   if (edition.source === "monster")

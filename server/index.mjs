@@ -830,6 +830,7 @@ async function api(req, res, url) {
         : { status: "not-configured" },
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
       season: season ? season.status() : { status: "off" },
+      badges: badgeService ? badgeService.status() : { status: "off" },
       now: Date.now(),
     });
   if (path === "/api/levels" && method === "GET")
