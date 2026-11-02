@@ -405,6 +405,9 @@ Shared preamble for every prompt (paste first):
 
 **W3 — Global POI pipeline (Mac)**
 
+_Status (2 Nov 2026): implemented as a VPS worker for Czechia, see `docs/POI-PIPELINE.md`; runs on the VPS, not
+the Mac, with a W4 stub until W4 lands._
+
 > Add `scripts/poi/` with: `fetch.mjs` (downloads Geofabrik extracts for a country list, the Overture places
 > release for a bbox via DuckDB, Wikidata items with coordinates via the weekly dump or batched SPARQL; records
 > URL, version, date and SHA-256 of every input in `.data/poi/inputs.json`), `extract-osm.mjs` (osmium

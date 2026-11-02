@@ -1,0 +1,11 @@
+[Unit]
+Description=QuestLayer weekly POI import
+
+[Timer]
+OnCalendar=Sun *-*-* 02:40:00 UTC
+RandomizedDelaySec=20m
+Persistent=true
+Unit=questlayer-poi.service
+
+[Install]
+WantedBy=timers.target

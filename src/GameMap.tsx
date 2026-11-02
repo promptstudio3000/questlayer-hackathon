@@ -190,7 +190,13 @@ export function GameMap(props: GameMapProps) {
     });
     map.current = m;
     m.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
+      new maplibregl.AttributionControl({
+        compact: true,
+        // Quest places come from the POI database (docs/POI-PIPELINE.md);
+        // ODbL asks for this notice wherever produced content is shown.
+        customAttribution:
+          "Places © OpenStreetMap contributors (ODbL), Overture Maps, Wikidata, GeoNames",
+      }),
       "bottom-right",
     );
     const marker = document.createElement("div");

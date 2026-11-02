@@ -1,0 +1,33 @@
+[Unit]
+Description=QuestLayer World worker: global POI import (docs/POI-PIPELINE.md)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=questlayer-poi
+Group=questlayer-poi
+StateDirectory=questlayer-poi
+StateDirectoryMode=0755
+WorkingDirectory=/var/lib/questlayer-poi
+Environment=NODE_ENV=production
+Environment=HOME=/var/lib/questlayer-poi
+Environment=POI_WORK_DIR=/var/lib/questlayer-poi
+Environment=WORLD_REGIONS=cz
+Environment=POI_KEEP_RELEASES=2
+Environment=DUCKDB_BIN=/opt/ps3000/apps/questlayer-hackathon/tools/duckdb
+# Optional overrides (WORLD_REGIONS, OVERTURE_RELEASE, POI_CLOSURES_FILE).
+# Never point this at runtime.env: the worker needs no secrets.
+EnvironmentFile=-/opt/ps3000/apps/questlayer-hackathon/poi.env
+ExecStart=/usr/local/bin/node /opt/ps3000/apps/questlayer-hackathon/current/scripts/poi/run.mjs
+UMask=0022
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=100%
+MemoryMax=3G
+TimeoutStartSec=4h
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/questlayer-poi
