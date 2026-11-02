@@ -3149,6 +3149,9 @@ export default function App() {
                 <Badge tone="green">
                   <Leaf size={12} /> {world?.cityName || "Your surroundings"}
                 </Badge>
+                {world?.cityStatus === "auto" && (
+                  <Badge tone="gold">Unverified map</Badge>
+                )}
                 <span>
                   <Clock size={13} /> Refresh in{" "}
                   {world ? remaining(world.endsAt) : "…"}
@@ -3163,8 +3166,15 @@ export default function App() {
                 </span>
               </div>
               {world?.quality && (
-                <details className="coverage-note">
-                  <summary>About this map</summary>
+                <details
+                  className={`coverage-note${world.cityStatus === "auto" ? " unverified" : ""}`}
+                  open={world.cityStatus === "auto" || undefined}
+                >
+                  <summary>
+                    {world.cityStatus === "auto"
+                      ? "Unverified map: generated automatically"
+                      : "About this map"}
+                  </summary>
                   <p>{world.quality.notice}</p>
                 </details>
               )}

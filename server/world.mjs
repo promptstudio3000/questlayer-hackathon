@@ -18,9 +18,11 @@ import { atomic } from "./database.mjs";
 import {
   DEFAULT_CITY,
   cityFor,
-  liveCityById,
+  isAutoCity,
+  playableCityById,
   sampleCityPaths,
 } from "./spatial/city-pack.mjs";
+import { AUTO_CITY_NOTICE } from "./spatial/auto-cities.mjs";
 import { describeStoredQuest } from "./quest-templates.mjs";
 import { STREET_FIND_XP, streetFindIds } from "./street-finds.mjs";
 import { publicPathSnapshot } from "./spatial/map-data.mjs";
@@ -145,7 +147,7 @@ export async function retryStreetWorlds(
 }
 function publicManifest(db, w) {
   let center = w.center;
-  const registered = w.cityId ? liveCityById(w.cityId) : null;
+  const registered = w.cityId ? playableCityById(w.cityId) : null;
   if (registered) center = registered.center;
   else if (!w.arena) {
     const [lat, lng] = cellToLatLng(w.region);
@@ -209,6 +211,8 @@ export async function ensureWorld(
       [lat, lng] = city
         ? [city.center.lat, city.center.lng]
         : cellToLatLng(region);
+    // Auto cities (unreviewed map data) are practice only: no zone prize.
+    const auto = isAutoCity(city);
     const zones = base.map((z) => ({
       ...z,
       id: `${worldId}:zone:${z.slot}`,
@@ -226,9 +230,14 @@ export async function ensureWorld(
       region,
       cityId: city?.id || null,
       cityName: city?.name || null,
+      ...(city ? { cityStatus: auto ? "auto" : "reviewed" } : {}),
       timezone,
       arena,
-      source: city ? "OpenStreetMap CityPack" : "OpenStreetMap / Overpass",
+      source: auto
+        ? "OpenStreetMap auto CityPack"
+        : city
+          ? "OpenStreetMap CityPack"
+          : "OpenStreetMap / Overpass",
       center: { lat, lng },
       boundary: city ? null : cellToBoundary(region, true),
       paths: [],
@@ -239,10 +248,13 @@ export async function ensureWorld(
       coverage: city ? "city-pack" : "street-only",
       quality: {
         fieldReview: city?.fieldReview || "pending",
+        ...(auto ? { status: "auto", funded: false } : {}),
         pathCoverage: city?.pathCoverage || "bounded-live-query",
         routing: "straight-line-only",
         geometry: "OSM-polygons",
-        notice: city
+        notice: auto
+          ? AUTO_CITY_NOTICE
+          : city
           ? "Map-data preview. Walking routes and physical access still require field review."
           : "City zones are not available here yet. Street coins use mapped public paths.",
       },
@@ -282,8 +294,13 @@ export async function ensureWorld(
       for (const z of [...zones].sort(
         (a, b) => a.tier - b.tier || a.slot - b.slot,
       )) {
-        const desired =
-          z.tier === 3 ? 5000 * GOLD : z.tier === 2 ? 1000 * GOLD : 0;
+        const desired = auto
+          ? 0
+          : z.tier === 3
+            ? 5000 * GOLD
+            : z.tier === 2
+              ? 1000 * GOLD
+              : 0;
         const available = db
             .prepare("SELECT available_u FROM treasury WHERE bucket='zones'")
             .get().available_u,

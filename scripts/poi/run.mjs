@@ -264,4 +264,24 @@ for (const old of releases.slice(0, Math.max(0, releases.length - (keep - 1))))
   for (const suffix of [".sqlite", ".manifest.json", ".ATTRIBUTION.md"])
     rmSync(`${workDir}/releases/poi-${old}${suffix}`, { force: true });
 
+// W5: auto CityPacks from this release (docs/WORLDS-PLAN.md C.3 point 7).
+// A failure here never withdraws the POI release; the previous packs stay.
+if (process.env.AUTO_CITIES !== "0") {
+  try {
+    const { runAutoCities } = await import("./auto-cities.mjs");
+    const auto = await runAutoCities({
+      workDir,
+      regions: regions.map((r) => r.id),
+      minPopulation: Number(process.env.AUTO_CITY_MIN_POP || 15000),
+      log: (m) => log(m),
+    });
+    log(
+      `auto cities ${auto.index.version}: ${auto.report.published}/${auto.report.selected} published`,
+    );
+  } catch (error) {
+    log(`auto cities failed: ${error.stack || error.message}`);
+    process.exitCode = 1;
+  }
+}
+
 console.log(JSON.stringify(manifest));

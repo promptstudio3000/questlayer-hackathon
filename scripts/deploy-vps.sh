@@ -102,6 +102,12 @@ systemctl enable "$APP_NAME" >/dev/null
 systemctl restart "$APP_NAME"
 for i in {1..25}; do if curl -fsS "http://127.0.0.1:$APP_PORT/api/health" >/dev/null; then break; fi; sleep 1; done
 curl -fsS "http://127.0.0.1:$APP_PORT/api/health"
+# W5: the World worker builds auto CityPacks after each POI import. When a POI
+# release exists but no auto city index yet, start one worker run now (it reuses
+# the downloaded inputs) instead of waiting for Sunday's timer.
+if [[ "$TARGET" != mainnet && -f /etc/systemd/system/questlayer-poi.service && -e /var/lib/questlayer-poi/current.sqlite && ! -e /var/lib/questlayer-poi/city-packs/index.json ]]; then
+ systemctl start --no-block questlayer-poi.service && echo "Started questlayer-poi to build auto cities (journalctl -u questlayer-poi)."
+fi
 if [[ "$TARGET" == mainnet ]]; then
  curl -fsS "http://127.0.0.1:$APP_PORT/api/health" | python3 -c 'import json,sys; h=json.load(sys.stdin); assert h["network"]=="mainnet", h["network"]; print("network:", h["network"], "features:", h["features"])'
 fi

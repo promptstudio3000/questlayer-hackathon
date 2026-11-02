@@ -31,6 +31,7 @@ import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
 import { allocationSettings } from "./native/allocation.mjs";
+import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
 import { ManagedAccounts } from "./relayer/accounts.mjs";
@@ -380,7 +381,12 @@ const relayerRoutes = createRelayerRoutes({
 });
 if (nativeRewards) {
   nativeRewards.vaultRegistry = nativeVaults;
-  Object.assign(nativeRewards, allocationSettings(process.env));
+  Object.assign(
+    nativeRewards,
+    allocationSettings(process.env, {
+      isAutoCity: (id) => cityStatus(id) === "auto",
+    }),
+  );
 }
 // Creator money (W09): reads and quotes work from the manifest alone; the
 // publisher outbox mirrors published quests, completions, likes and daily
@@ -842,6 +848,14 @@ async function api(req, res, url) {
       ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
+      autoCities: AUTO_CITIES.entries.length
+        ? {
+            status: "on",
+            version: AUTO_CITIES.version,
+            cities: AUTO_CITIES.entries.length,
+            funded: false,
+          }
+        : { status: "off" },
       nativeRewards: nativeRewards
         ? nativeRewards.workerStatus()
         : { status: "not-configured" },

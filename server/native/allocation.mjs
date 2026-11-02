@@ -212,6 +212,7 @@ export function realizedYieldBacking({ vaultStates, yieldDays, rewardsId }) {
 /**
  * Reads the publisher's allocation settings from the environment:
  * NATIVE_FUNDED_CITIES="plzen:1,brno:1" (where the global budget may appear;
+ *   never an auto city: isAutoCity(id) refuses it;
  *   default every live city; weights default to 1 and apply only to
  *   NATIVE_BUDGET_SPLIT=weights),
  * NATIVE_BUDGET_SPLIT=demand|weights (default demand: players decide where
@@ -220,7 +221,10 @@ export function realizedYieldBacking({ vaultStates, yieldDays, rewardsId }) {
  * NATIVE_YIELD_BACKED_DAYS=1 (publish only what realized yield covers),
  * NATIVE_MANIFEST_V2_FROM=YYYY-MM-DD|off (first new date prepared as v2).
  */
-export function allocationSettings(env = process.env) {
+export function allocationSettings(
+  env = process.env,
+  { isAutoCity = () => false } = {},
+) {
   const settings = {};
   if (env.NATIVE_FUNDED_CITIES) {
     settings.fundedCities = fundedCities(
@@ -232,6 +236,14 @@ export function allocationSettings(env = process.env) {
         };
       }),
     );
+    // Auto cities run on unreviewed map data and are never funded
+    // (docs/WORLDS-PLAN.md C.1): start-up refuses such a configuration.
+    for (const c of settings.fundedCities)
+      assert(
+        !isAutoCity(c.id),
+        `NATIVE_FUNDED_CITIES lists auto city ${c.id}; auto cities are never funded.`,
+        503,
+      );
   }
   const split = (env.NATIVE_BUDGET_SPLIT || "demand").trim();
   assert(
