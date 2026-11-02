@@ -367,10 +367,14 @@ test("a sweep leaves a restocking reserve behind and sends the rest to the treas
 });
 
 const GOLD_U = 1_000_000;
-const makePatron = (db, p, now) =>
-  db
+// Patron rates follow staker-gates.json (patron_trader_rates = Staker + L4):
+// a Tier 2 stake makes a Staker, and 900 XP is level 4.
+const makePatron = (db, p, now) => {
+  db.prepare("UPDATE players SET xp=900 WHERE id=?").run(p);
+  return db
     .prepare("INSERT INTO positions(id,player_id,pool,active_u,contribution,matures_at,accrued_u,settled_at) VALUES(?,?,?,?,?,?,0,?)")
     .run(`pos-${p}`, p, "core", 50_000 * GOLD_U, 100, now - 1, now);
+};
 
 test("patron rates are better for the player and still keep the margin floor", () => {
   for (const edition of ["ember", "dew", "polar", "bloom", "storm", "moon", "comet"]) {
@@ -397,7 +401,7 @@ test("patron rates are better for the player and still keep the margin floor", (
   assert.equal(budgetLeftFor({ budget, spent: budget }, { patron: true }), 0n);
 });
 
-test("only Tier 2 patrons see the rare → epic trade-up and patron sale prices", { skip }, async (t) => {
+test("only patrons (Staker + L4) see the rare → epic trade-up and patron sale prices", { skip }, async (t) => {
   const { c, service, player, encounter, db, now } = setup(t);
   const alice = player("Alice", "alice.testnet"),
     bob = player("Bob", "bob.testnet");
