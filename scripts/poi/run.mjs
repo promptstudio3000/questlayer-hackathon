@@ -40,6 +40,43 @@ for (const arg of process.argv.slice(2)) {
 const workDir = resolve(
   args.get("work") || process.env.POI_WORK_DIR || ".data/poi",
 );
+mkdirSync(workDir, { recursive: true });
+
+// last-run.json: what /api/health reports as poiWorld.lastRun. A failed run
+// keeps the previous release live and records the stage and the error.
+const lastRunPath = `${workDir}/last-run.json`;
+const startedAt = new Date().toISOString();
+let stage = "start";
+function writeLastRun(extra) {
+  try {
+    const tmp = `${lastRunPath}.next`;
+    writeFileSync(
+      tmp,
+      JSON.stringify(
+        { startedAt, stage, pid: process.pid, ...extra },
+        null,
+        2,
+      ) + "\n",
+    );
+    renameSync(tmp, lastRunPath);
+  } catch {}
+}
+function failed(error) {
+  // A second run that finds the lock must not overwrite the live run's record.
+  if (stage !== "lock")
+    writeLastRun({
+      status: "failed",
+      finishedAt: new Date().toISOString(),
+      error: String(error?.message || error).slice(0, 500),
+    });
+  console.error(error);
+  process.exit(1);
+}
+process.on("uncaughtException", failed);
+process.on("unhandledRejection", failed);
+for (const signal of ["SIGTERM", "SIGINT"])
+  process.on(signal, () => failed(new Error(`Stopped by ${signal}.`)));
+
 const regions = parseRegions(args.get("regions") || process.env.WORLD_REGIONS);
 const keep = Math.max(1, Number(process.env.POI_KEEP_RELEASES || 2));
 const log = (msg) => console.error(`[poi] ${new Date().toISOString()} ${msg}`);
@@ -67,8 +104,11 @@ function takeLock() {
     }
   }
 }
+stage = "lock";
 takeLock();
 process.on("exit", () => rmSync(lockPath, { force: true }));
+stage = "start";
+writeLastRun({ status: "running", regions: regions.map((r) => r.id) });
 
 const inputsPath = `${workDir}/inputs.json`;
 const recorded = readInputs(inputsPath);
@@ -91,6 +131,7 @@ const buildInputs = {
   geonames: [],
 };
 
+stage = "fetch";
 for (const region of regions) {
   const prev = recorded.regions?.[region.id] || {};
   const pbf = `${workDir}/inputs/${region.id}-latest.osm.pbf`;
@@ -124,6 +165,7 @@ for (const region of regions) {
   buildInputs.overture.push({ path: overture.path, country: region.country });
 }
 
+stage = "geonames";
 const geonames = await fetchGeonames({
   workDir: `${workDir}/inputs`,
   previous: recorded.geonames,
@@ -137,6 +179,7 @@ buildInputs.geonames.push({
 });
 save();
 
+stage = "wikidata";
 const wikidataCache = `${workDir}/inputs/wikidata.ndjson`;
 const ids = await collectWikidataIds(buildInputs.osmPois);
 const wd = await fetchWikidata({ ids, cachePath: wikidataCache, log });
@@ -183,6 +226,7 @@ const version = `${regions.map((r) => r.id).join("-")}-${osmDate}-${inputHash}`;
 const file = `${workDir}/releases/poi-${version}.sqlite`;
 const manifestPath = `${workDir}/releases/poi-${version}.manifest.json`;
 
+stage = "build";
 let manifest;
 if (existsSync(file) && existsSync(manifestPath) && !args.has("rebuild")) {
   log(`release ${version} already built`);
@@ -240,6 +284,7 @@ if (existsSync(file) && existsSync(manifestPath) && !args.has("rebuild")) {
   );
 }
 
+stage = "publish";
 // Atomically repoint current.* and keep the newest `keep` releases.
 for (const [link, target] of [
   ["current.sqlite", `releases/poi-${version}.sqlite`],
@@ -266,7 +311,9 @@ for (const old of releases.slice(0, Math.max(0, releases.length - (keep - 1))))
 
 // W5: auto CityPacks from this release (docs/WORLDS-PLAN.md C.3 point 7).
 // A failure here never withdraws the POI release; the previous packs stay.
+let autoCities = null;
 if (process.env.AUTO_CITIES !== "0") {
+  stage = "auto-cities";
   try {
     const { runAutoCities } = await import("./auto-cities.mjs");
     const auto = await runAutoCities({
@@ -275,13 +322,27 @@ if (process.env.AUTO_CITIES !== "0") {
       minPopulation: Number(process.env.AUTO_CITY_MIN_POP || 15000),
       log: (m) => log(m),
     });
+    autoCities = {
+      version: auto.index.version,
+      published: auto.report.published,
+      selected: auto.report.selected,
+    };
     log(
       `auto cities ${auto.index.version}: ${auto.report.published}/${auto.report.selected} published`,
     );
   } catch (error) {
     log(`auto cities failed: ${error.stack || error.message}`);
+    autoCities = { error: String(error.message).slice(0, 300) };
     process.exitCode = 1;
   }
 }
 
+stage = "done";
+writeLastRun({
+  status: "ok",
+  finishedAt: new Date().toISOString(),
+  version,
+  pois: manifest.counts?.pois ?? null,
+  autoCities,
+});
 console.log(JSON.stringify(manifest));
