@@ -1,0 +1,19 @@
+{
+  "network": "testnet",
+  "account": "questlayer-dev-20261101.testnet",
+  "contract": "meta-v2.pool.testnet",
+  "rewardsContract": "questlayer-rewards-20261101b.testnet",
+  "receiptPrefix": "stnear-yield-",
+  "principal": "1998749999999999999999998",
+  "deposits": [
+    {
+      "at": "2026-11-02T01:26:41.290Z",
+      "near": "2000000000000000000000000",
+      "stnear": "624853017056266884882232",
+      "transaction": "AxmWFEwW1Hj4SMxeqBvehZw6UixkBYcaQvVYfbgpveNk"
+    }
+  ],
+  "harvests": [],
+  "withdrawals": [],
+  "updatedAt": "2026-11-02T01:26:41.292Z"
+}
