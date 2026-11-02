@@ -126,7 +126,8 @@ import { createNpcRoutes } from "./npc/routes.mjs";
 import { registerMenuBuilder } from "./actors/menu.mjs";
 import { loadTraders, traderKeysPath } from "./npc/trader-keys.mjs";
 import { createTraderService } from "./npc/trader.mjs";
-import { createTraderRoutes } from "./npc/trader-routes.mjs";
+import { createTraderRoutes, stakeCard } from "./npc/trader-routes.mjs";
+import { createNearPrice } from "./near-price.mjs";
 import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
@@ -136,6 +137,9 @@ import { createHuntRoutes } from "./actors/hunt/routes.mjs";
 import { dailyBoardSettings } from "./daily-board/config.mjs";
 import { createDailyBoard } from "./daily-board/service.mjs";
 import { createDailyBoardRoutes } from "./daily-board/routes.mjs";
+import { seasonSettings } from "./season/config.mjs";
+import { createSeason } from "./season/service.mjs";
+import { createSeasonRoutes } from "./season/routes.mjs";
 import {
   GOLD,
   DAY,
@@ -402,7 +406,20 @@ const actorService =
 const actorRoutes = createActorRoutes(actorService);
 // NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
 // Ollama setup; the key stays in the runtime environment only.
-const npcRoutes = createNpcRoutes(actorService ? createNpcService(db) : null, actorService, db);
+// NEAR → EUR reference for "Stake 2 NEAR (~5 €)" labels (server/near-price.mjs).
+const nearPrice = createNearPrice({ env: process.env });
+const npcRoutes = createNpcRoutes(
+  actorService ? createNpcService(db, { priceEur: () => nearPrice.eur() }) : null,
+  actorService,
+  db,
+  {
+    // Refreshes the staker status through the Keeper's vault reading.
+    refreshStaker: (player) =>
+      keeperVault && nativeVaults
+        ? stakeCard({ db, player, vaults: nativeVaults, keeperVault, level: demoProgression(db, player).level })
+        : null,
+  },
+);
 // NPC traders on market v2 (N3): on when actors run, the market is v2 and the
 // private traders file exists (<state dir>/npc-traders.json or
 // NPC_TRADERS_PATH). NPC_TRADER_ENABLED=0 turns them off. Testnet only.
@@ -439,6 +456,7 @@ const keeperVault =
   nativeVaults && keeperVaultConfig.enabled
     ? createKeeperVault(db, {
         settings: keeperVaultConfig,
+        priceEur: () => nearPrice.eur(),
         today: () => {
           try {
             return nativeRewards?.todayCoins() ?? null;
@@ -456,6 +474,7 @@ const traderRoutes = createTraderRoutes({
   vaults: nativeVaults,
   keeperVault,
   levelOf: (player) => demoProgression(db, player).level,
+  priceEur: () => nearPrice.eur(),
 });
 // Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
 // account level (spendable XP) plus skill, never Auras or items.
@@ -473,6 +492,12 @@ const dailyBoard = dailyBoardConfig.enabled
   ? createDailyBoard(db, dailyBoardConfig, { actorsOn: () => !!actorService })
   : null;
 const dailyBoardRoutes = createDailyBoardRoutes(dailyBoard, db);
+// Hackathon season (docs/SEASON.md): cosmetic leaderboard of hunts, visits and
+// NPC lines, season mark + Aura at the goal, pot meter. Off by default on
+// mainnet; SEASON_* settings change the window, goal and points.
+const seasonConfig = seasonSettings(process.env, NETWORK);
+const season = seasonConfig.enabled ? createSeason(db, seasonConfig) : null;
+const seasonRoutes = createSeasonRoutes(season);
 const testSeed = createTestSeed(db, {
   creators: creatorRuntime.services
     ? {
@@ -760,6 +785,7 @@ async function api(req, res, url) {
           }
         : { status: "not-configured" },
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
+      season: season ? season.status() : { status: "off" },
       now: Date.now(),
     });
   if (path === "/api/levels" && method === "GET")
@@ -1124,6 +1150,8 @@ async function api(req, res, url) {
   if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await seasonRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (
     await npcRollRoutes.handle(req, res, url, { player, body, respond, assert })

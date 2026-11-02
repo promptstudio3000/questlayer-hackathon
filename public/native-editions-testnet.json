@@ -1,10 +1,10 @@
 {
-  "verifiedAt": "2026-11-01T15:15:09.863Z",
+  "verifiedAt": "2026-11-01T23:59:48.684Z",
   "network": "testnet",
   "contractId": "nfts.questlayer-dev-20261101.testnet",
   "schemaVersion": 3,
-  "codeHash": "2aUe5uV2YdPKCYsEmL9CtamVSiwpuq8RKM2GatjatJuv",
-  "wasmSha256": "176f1b0777c52e0eb592e50f365fe6a0663b3bec29c4c1b7431649bc4428dee9",
+  "codeHash": "zzx62x4jjUxWMnCsMVFj2ZUQouWPPWPFmU5uoGS7Q1W",
+  "wasmSha256": "0edba1506f14de0afde3601bd52f6131c1e7753cbd550767c522460ca8c559b9",
   "supportedEditions": [
     "ember",
     "dew",
@@ -20,23 +20,35 @@
     "ledger",
     "wardbreaker",
     "wisp",
-    "bossbane"
+    "bossbane",
+    "stride",
+    "kindle",
+    "compass",
+    "quill",
+    "laurel",
+    "summit"
   ],
   "claimOnlyEditions": {
     "bossbane": "earned:monster:",
     "chronicle": "earned:npc:",
+    "compass": "earned:level:",
+    "kindle": "earned:level:",
+    "laurel": "earned:level:",
     "ledger": "earned:npc:",
     "pilgrim": "earned:npc:",
+    "quill": "earned:level:",
+    "stride": "earned:level:",
+    "summit": "earned:level:",
     "wardbreaker": "earned:monster:",
     "wisp": "earned:npc:"
   },
-  "tokensPreserved": 1,
-  "equipmentPreserved": 1,
+  "tokensPreserved": 4,
+  "equipmentPreserved": 2,
   "awardSignerPreserved": true,
   "transactions": [
     {
-      "step": "deploy NPC/monster editions collectibles code (no state migration)",
-      "transaction": "A9KvjRZjzD5ZMjGncfgCi3WQu76VVTBxLSCW6ZanxrGZ"
+      "step": "deploy Aura editions collectibles code (no state migration)",
+      "transaction": "frgnjWp816fP7S2LTofSYjRgYimLRk8VqtWafvtbYXm"
     }
   ]
 }

@@ -1,12 +1,13 @@
 // Patron rank (GAME-LOOPS P1-2): a kinship-like track for stakers.
-//  - Ranks 1–5 grow with each epoch the player spends as a patron: at least
-//    one linked account at the patron tier (default Tier 2) on matured,
+//  - Rank 0 is the Staker step (server/staker-gates.mjs: at least
+//    STAKER_MIN_NEAR, default 2 NEAR, of matured stake). Ranks 1–5 grow with
+//    each epoch the player spends at that step (KEEPER_RANK_STEP) on matured,
 //    unwithdrawn stake. Depositing more does not speed it up; holding does.
 //  - No decay and no streak penalty (D29): a withdrawal only stops growth.
 //    Counted epochs and the earned rank stay.
 //  - The Keeper reads vault state only when a player opens the stake card, so
 //    epochs between two readings are credited when both readings qualify and
-//    the weighted stake did not shrink in between (a shrink credits only the
+//    the matured stake did not shrink in between (a shrink credits only the
 //    current epoch). A single gap is capped (KEEPER_RANK_GAP_MAX).
 //  - Purely cosmetic: a badge, a name and a one-time rank-up ceremony. It
 //    never changes odds, payouts, damage or tiers.
@@ -40,6 +41,9 @@ CREATE TABLE IF NOT EXISTS keeper_patron_rank_ups(
 
 export const DEFAULT_RANK_EPOCHS = [1, 4, 14, 28, 60];
 export const DEFAULT_RANK_NAMES = ["Spark", "Ember", "Lantern", "Beacon", "Hearthfire"];
+export const RANK_ZERO_NAME = "Staker";
+// Same order as STEPS in server/staker-gates.mjs.
+const STEP_NUMBER = { staker: 1, tier2: 2, tier3: 3 };
 
 /** KEEPER_RANK_EPOCHS="1,4,14,28,60" (strictly rising, five values). */
 export function rankSettings(env = process.env) {
@@ -58,7 +62,9 @@ export function rankSettings(env = process.env) {
     enabled: env.KEEPER_RANK_ENABLED !== "0",
     epochs,
     names,
-    minTier: int(env.KEEPER_RANK_TIER, 2, 1, 3),
+    // Step whose epochs count: staker (default, owner decision 1 Nov 23:47), tier2 or tier3.
+    minStep: STEP_NUMBER[env.KEEPER_RANK_STEP] ?? 1,
+    minStepName: STEP_NUMBER[env.KEEPER_RANK_STEP] ? env.KEEPER_RANK_STEP : "staker",
     gapMax: int(env.KEEPER_RANK_GAP_MAX, 14, 1, 1000),
   };
 }
@@ -82,14 +88,16 @@ export function createPatronRank(db, { clock = Date.now, settings = rankSettings
   const q = (sql) => db.prepare(sql);
 
   /**
-   * One reading at `epoch`. `tier` is the player's best account tier on
-   * matured stake, `weighted` that account's weighted stake (yocto string).
+   * One reading at `epoch`. `step` is the player's staker step (0 none,
+   * 1 staker, 2 tier 2, 3 tier 3), `amount` the matured active stake (yocto),
+   * used only to see whether the stake shrank between readings.
    * Returns the public rank view.
    */
-  function observe(player, { epoch, tier, weighted }) {
+  function observe(player, { epoch, step, amount }) {
     init();
     const now = clock();
-    const qualified = Number.isInteger(epoch) && tier >= settings.minTier;
+    const weighted = String(amount ?? "0");
+    const qualified = Number.isInteger(epoch) && step >= settings.minStep;
     const row = q("SELECT * FROM keeper_patron_rank WHERE player_id=?").get(player);
     let epochs = row?.epochs ?? 0,
       lastEpoch = row?.last_epoch ?? null,
@@ -126,18 +134,20 @@ export function createPatronRank(db, { clock = Date.now, settings = rankSettings
     ).run(player, epochs, rank, lastEpoch, lastWeighted, lastQualified, seenRank, first, now);
     for (let r = (row?.rank ?? 0) + 1; r <= rank; r++)
       q("INSERT OR IGNORE INTO keeper_patron_rank_ups(player_id,rank,epoch,epochs,created_at) VALUES(?,?,?,?,?)").run(player, r, epoch ?? null, epochs, now);
-    return describe({ epochs, rank, seenRank, growing: qualified, first });
+    return describe({ epochs, rank, seenRank, growing: qualified, first, staker: step >= 1 });
   }
 
-  function describe({ epochs, rank, seenRank, growing, first }) {
+  function describe({ epochs, rank, seenRank, growing, first, staker }) {
     const next = rank < 5 ? { rank: rank + 1, name: settings.names[rank], epochs: settings.epochs[rank], left: settings.epochs[rank] - epochs } : null;
     return {
       rank,
-      name: rank ? settings.names[rank - 1] : null,
+      // Rank 0 = Staker: matured stake at the Staker step, no epochs yet.
+      name: rank ? settings.names[rank - 1] : staker || epochs ? RANK_ZERO_NAME : null,
+      staker: !!staker,
       epochs,
       growing,
       sinceEpoch: first,
-      minTier: settings.minTier,
+      step: settings.minStepName,
       next,
       ladder: settings.epochs.map((e, i) => ({ rank: i + 1, name: settings.names[i], epochs: e })),
       // One ceremony for the highest unseen rank (several steps at once show as one).

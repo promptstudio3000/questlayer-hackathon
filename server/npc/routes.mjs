@@ -6,11 +6,16 @@
 //   POST /api/actors/:id/offers/:offerId/complete    {encounter}
 //   POST /api/actors/:id/greet                       {encounter}
 import { worldView } from "../world.mjs";
+import { readStakerStatus } from "../staker-gates.mjs";
+
+// The staker status (matured stake) is refreshed from the vaults on a greeting
+// when older than this, so locked chips match the player's real stake.
+const STAKER_STALE_MS = 10 * 60_000;
 
 const TALK = /^\/api\/actors\/([a-z0-9-]{3,44})\/(talk|greet)$/;
 const OFFER = /^\/api\/actors\/([a-z0-9-]{3,44})\/offers\/((?:quest|chapter):[0-9a-f]{16})\/(accept|complete)$/;
 
-export function createNpcRoutes(npc, actors, db) {
+export function createNpcRoutes(npc, actors, db, { refreshStaker = null, clock = Date.now } = {}) {
   return {
     async handle(req, res, url, { player, body, respond, assert }) {
       const path = url.pathname;
@@ -26,6 +31,15 @@ export function createNpcRoutes(npc, actors, db) {
       const world = worldView(db, encounter.worldId, player);
       assert(world, "This day has ended.", 410, "ENCOUNTER_EXPIRED");
       const actor = { ...encounter.def, ...encounter.actor, persona: encounter.def?.persona };
+      if (talk?.[2] === "greet" && refreshStaker) {
+        const s = readStakerStatus(db, player);
+        if (!s || clock() - s.updatedAt > STAKER_STALE_MS)
+          try {
+            await refreshStaker(player);
+          } catch {
+            /* The last status (or none) stays; chips may lag one reading. */
+          }
+      }
       if (talk?.[2] === "greet") respond(res, npc.greet({ player, actor, world, encounter }));
       else if (talk) respond(res, await npc.talk({ player, actor, world, encounter, message: input.message }));
       else if (offer[3] === "accept") respond(res, npc.accept({ player, actor, world, encounter, offerId: offer[2] }));

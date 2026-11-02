@@ -19,12 +19,16 @@ import {
 } from "./reward-manifest.mjs";
 import { allocateDailyBudget, realizedYieldBacking } from "./allocation.mjs";
 import { NativeContractReader } from "./reader.mjs";
+import { onContractSql, recordCurrentDay } from "./day-contracts.mjs";
 
 /** Stored manifests that claim realized-yield funding, oldest first. */
-export function yieldBackedManifests(db) {
+export function yieldBackedManifests(db, contractId = null) {
+  // With a contract, days quarantined as another generation's are left out:
+  // their yield was promised by that contract's vaults, not this one's.
+  const onContract = contractId ? onContractSql(db) : "";
   return db
-    .prepare("SELECT * FROM native_days ORDER BY day,id")
-    .all()
+    .prepare(`SELECT * FROM native_days d WHERE 1=1${onContract} ORDER BY day,id`)
+    .all(...(onContract ? [contractId] : []))
     .map(storedNativeManifest)
     .filter((m) => m.funding === "realized_yield");
 }
@@ -47,7 +51,7 @@ export async function readYieldBacking(native) {
     })),
     ...realizedYieldBacking({
       vaultStates,
-      yieldDays: yieldBackedManifests(native.db),
+      yieldDays: yieldBackedManifests(native.db, native.contractId),
       rewardsId: native.contractId,
     }),
   };
@@ -211,6 +215,7 @@ export async function publishNativeDays(
       tx,
       dayId,
     );
+    recordCurrentDay(writeOwned, dayId, native.contractId, clock());
     published++;
   }
   return published;

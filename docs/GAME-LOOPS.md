@@ -122,28 +122,56 @@ monster power is level + skill, no wagering.
 
 | Stage | Player sees | What moves them on |
 | --- | --- | --- |
-| 1. Free explorer (L1–L4) | Free zones, coins, monsters, NPC talk | Locked offers are visible from the start (greyed, with a lock and "Stakers · Tier 2"). |
+| 1. Free explorer (L1–L4) | Free zones, coins, monsters, NPC talk | Locked offers are visible from the start (greyed, with a lock and exactly what is missing, e.g. "Stake 2 NEAR (~5 €) · Reach level 2"). |
 | 2. Curious (any level) | The Keeper says "the inner vault opens for patrons" and shows the T2 zone prize of today | A small first stake has a clear, previewed result: what unlocks, when (E+2 date), what it earns. |
 | 3. New staker (deposit confirmed) | A pending patron badge on the avatar, a countdown to E+2, NPCs greet "future patron" | E+2 ceremony: the badge lights up, locked chips at NPCs turn on, one welcome quest line opens. |
+| 3b. Staker (2 NEAR matured, patron rank 0) | Inner vault, stake today card, patron chapter 1 at L2; the rest of the patron line, patron Aura and trader rates at L4 | Tier 2 lines and the boss seat preview (Tier 2 + L6). |
 | 4. Patron (Tier 2) | Patron quest lines, patron trader rates, patron-only cosmetics, "your stake today" card | Patron rank grows with matured stake days; Tier 3 preview is visible the same way. |
 | 5. High patron (Tier 3) | Tier 3 zone, the rare wanderer's patron option, season leaderboard flair | Season pot and cosmetic ranks keep them in. |
 
 ### Stakers-only lures (respecting the rules)
 
-**Owner decision (1 Nov 2026, 23:00 UTC): lures are gated by tier only, with no level requirement.** A player
-unlocks them as soon as their stake matures at E+2 into Tier 2 or Tier 3. Every
-lure is something to *do* or *wear*, never better odds or a payout multiplier.
+**Owner decision (1 Nov 2026, 23:47 UTC, replaces "tier only" from 23:00): staker content opens gradually by
+step AND level, so it does not block beginners, and the main goal is to turn players into stakers from about
+5 € (2 NEAR).** A new lowest step, **Staker** (patron rank 0), needs at least `STAKER_MIN_NEAR` (default 2) of
+matured (E+2) active stake. Tier 2 and Tier 3 stay as the vault contract defines them. Every lure is something to
+*do* or *wear*, never better odds, damage or a payout multiplier.
+
+The whole ladder is one table, `server/data/staker-gates.json` (module `server/staker-gates.mjs`), with
+`STAKER_GATES_JSON` / `STAKER_GATES_PATH` overrides per gate and `STAKER_MIN_NEAR` for the minimum:
+
+| Gate key | Step + level | What opens |
+| --- | --- | --- |
+| `keeper_inner`, `stake_today`, `patron_chapter_1` | Staker + L2 | Keeper's inner vault, the "your stake today" numbers, patron chapter 1 |
+| `patron_line`, `patron_aura`, `patron_trader_rates` | Staker + L4 | The rest of the patron line, the patron Aura, patron trader rates |
+| `t2_lines`, `boss_arena_seat` | Tier 2 + L6 | Tier 2 quest lines at NPCs, the boss arena seat |
+| `t3_lines` | Tier 3 + L6 | Tier 3 quest lines at NPCs |
+| `wandering_rare_patron` | Tier 3 + L8 | The wandering rare's patron option |
+
+- **Locked chips say exactly what is missing**: "Stake 2 NEAR (~5 €)", "Your stake is maturing (E+2)",
+  "Reach Tier 2 (50 NEAR matured)", "Reach level 4". Tapping one opens the stake sheet with 2 NEAR prefilled.
+- **€ only with a price**: `server/near-price.mjs` reads `NEAR_PRICE_EUR` (fixed) or a cached CoinGecko price
+  (`NEAR_PRICE_FEED=off` disables it). Without a price the labels show NEAR only. The price is a label, never
+  used for a trade or payout.
+- **Where the Staker step is measured**: the Keeper's vault reading (Profile → Stake, the Keeper sheet, and an
+  NPC greeting when the cached status is older than 10 minutes) records matured and maturing stake in
+  `staker_status`; NPC menus read that cache. At 0 % city share the contract cannot show maturity, so the
+  Keeper counts the stake as matured after its own E+2 observation (Staker step only, never a tier).
+- A zone's own tier rule (E16) still applies: a Tier 2 line needs Tier 2 even if the table were lowered.
+- In-flight work wires to the same table: patron rank (#87), patron lines and Patron's Path (#88: chapter 1 at
+  `patron_chapter_1`, the rest at `patron_line`, the edition at `patron_aura`) and trader rates (#85 at
+  `patron_trader_rates`).
 
 | Lure | Where | Gate | Why it fits the rules |
 | --- | --- | --- | --- |
-| **Locked offer chips** | NpcSheet: storyteller, quest giver, trader, keeper, wandering rare | Shown to everyone; usable at Tier 2 (Tier 3 for the rare) | Pure presentation. Today `offers.mjs` filters these out; it should return them with `locked: {tier}` instead. |
-| **Patron quest lines** | Storyteller and quest giver | Tier 2 | Lines lead into T2/T3 zones, which already require the tier (E16). Their prize is still the zone's backed prize. |
-| **Keeper's inner vault** | Keeper | Tier 2 | Gives the bank NPC a job: a patron-only story line, the "your stake today" card and the E+2 ceremony. Reads only, never moves funds. |
-| **Patron trader rates** | Traders | Tier 2 | Trade-up 3→1 becomes available on a rare→epic table, and the premium-buy budget prefers patrons. The margin floor and sweep stay, so the float still grows (owner decision 1 Nov). |
-| **Patron edition Auras** | Keeper line, NPC-only editions | Tier 2, earned by finishing the patron line | NPC-only editions are already approved; cosmetic only (E17). |
-| **Patron rank** (kinship-like) | Avatar badge, profile | Grows with each epoch of matured, unwithdrawn stake; ranks 1–5 | Rewards holding, not depositing more. No decay or streak penalty (D29): withdrawing just stops growth; the earned rank cosmetic stays. **Decision** (new progression track). |
-| **Wandering rare's patron option** | Wandering rare NPC | Tier 3 | The rare is visible to everyone (FOMO), its extra dialogue and edition only for high patrons. |
-| **Boss arena seat** | Weekly boss | Tier 2 | A patron-coloured spot and a name plate on the hunters board. Damage stays level × skill (fairness rule §13.3). |
+| **Locked offer chips** | NpcSheet: storyteller, quest giver, trader, keeper, wandering rare | Shown to everyone with exactly what is missing | Pure presentation; `offers.mjs` returns them with `locked: {tier, step, level, missing, stakeNear}`. |
+| **Patron quest lines** | Storyteller and quest giver | Chapter 1: Staker + L2; the rest: Staker + L4 | Lines that go into T2/T3 zones still need that zone's tier (E16). Their prize is still the zone's backed prize. |
+| **Keeper's inner vault** | Keeper | Staker + L2 | Gives the bank NPC a job: a patron-only story line, the "your stake today" card and the E+2 ceremony. Reads only, never moves funds. |
+| **Patron trader rates** | Traders | Staker + L4 | Trade-up 3→1 becomes available on a rare→epic table, and the premium-buy budget prefers patrons. The margin floor and sweep stay, so the float still grows (owner decision 1 Nov). |
+| **Patron edition Auras** | Keeper line, NPC-only editions | Staker + L4, earned by finishing the patron line | NPC-only editions are already approved; cosmetic only (E17). |
+| **Patron rank** (kinship-like) | Avatar badge, profile | Rank 0 = Staker; ranks 1–5 grow with each epoch of matured, unwithdrawn stake | Rewards holding, not depositing more. No decay or streak penalty (D29). |
+| **Wandering rare's patron option** | Wandering rare NPC | Tier 3 + L8 | The rare is visible to everyone (FOMO), its extra dialogue and edition only for high patrons. |
+| **Boss arena seat** | Weekly boss | Tier 2 + L6 | A patron-coloured spot and a name plate on the hunters board. Damage stays level × skill (fairness rule §13.3). |
 
 What we deliberately do **not** offer stakers: extra roll tickets, higher odds, more boss damage, bigger coin values
 for the same walk, or anything bought with GOLD that changes a chance. Those would break the fairness and no-wagering
@@ -201,7 +229,7 @@ decisions above are settled as follows:
 
 | Topic | Decision |
 | --- | --- |
-| Staker lure gate | Tier only, no level (owner's own choice, 23:00 UTC): Tier 2; Tier 3 for the wandering rare. |
+| Staker lure gate | **Changed 23:47 UTC**: by step AND level (Staker = 2 NEAR matured + L2/L4, Tier 2 + L6, Tier 3 + L8), table in `server/data/staker-gates.json`. See section 5. |
 | Level table L5–L10 | Yes. Unlocks at every level as in section 6; only L10 grants an item (a new supply-capped level Aura edition). |
 | Patron rank | Yes. Ranks 1–5 grow with matured, unwithdrawn stake epochs; no decay, the earned rank cosmetic stays after a withdrawal. |
 | Daily board | Yes. Three goals from today's world, a small XP bonus for all three, no streak and no penalty, so it is not a D29 streak mechanic. |
@@ -221,8 +249,8 @@ The owner's notes (1 Nov) and this analysis agree on the same UI shape. The UI t
 - **Short sheets.** Every bottom sheet gets tabs and a max height; prose moves into "Details" disclosures.
 - **Service buttons small and together.** One compact toolbar or a gear menu (recenter, 2D/3D, location, help,
   settings) instead of buttons spread across menus.
-- **Locked staker chips** use one shared component: greyed art, lock, "Stakers · Tier 2", tap opens the stake
-  preview.
+- **Locked staker chips** use one shared component (`src/LockedChip.tsx`): greyed art, lock, exactly what is
+  missing ("Stake 2 NEAR (~5 €) · Reach level 4"); tap opens the stake sheet with 2 NEAR prefilled.
 - **HUD:** avatar with XP ring, GOLD, daily board progress (0/3), boss countdown when relevant.
 - **Seeded content in every tab** (market, inventory, tasks, creators) via the test world (`TEST_SEED=1`,
   `docs/TEST-SEED.md`) so no tab looks empty in the demo.

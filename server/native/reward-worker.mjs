@@ -13,6 +13,12 @@ import { assertTestnetRpc } from "../identity/near.mjs";
 import { NativeContractReader } from "./reader.mjs";
 import { VAULT_POOLS } from "./vaults.mjs";
 import { NETWORK } from "./network.mjs";
+import {
+  nativeDayContract,
+  onContractSql,
+  quarantineForeignDay,
+  recordCurrentDay,
+} from "./day-contracts.mjs";
 const METHODS = ["publish_day", "close_day", "claim", "maintain_vault"];
 export async function rewardTransport(
   provider,
@@ -198,46 +204,80 @@ export async function runRewardWorker(
         }
       }
       // Retire only after every accepted receipt for that day is authoritative.
+      // Days of another rewards contract (an older generation) are quarantined
+      // and skipped, so they never stop the audit or publication. A failing day
+      // of this contract does not stop the other closures or the audit, but it
+      // still withholds new publication: the chain then differs from what we
+      // committed, which is a reason to stop, not to carry on.
+      let retireError = null;
+      const contractId = native.contractId;
+      const onContract = onContractSql(db);
       for (const row of db
         .prepare(
-          "SELECT * FROM native_days WHERE state='published' ORDER BY day LIMIT 10",
+          `SELECT * FROM native_days d WHERE state='published'${onContract} ORDER BY day LIMIT 10`,
         )
-        .all()) {
-        const m = storedNativeManifest(row);
-        if (
-          clock() < m.endsAt + 86400000 ||
-          db
-            .prepare(
-              "SELECT 1 FROM native_reward_claims WHERE day_id=? AND state!='confirmed'",
-            )
-            .get(row.id)
-        )
-          continue;
-        renew();
-        let day = await native.view("get_day", { day_id: row.id }, true);
-        assert(
-          nativePublicationMatches(m, day, { closed: day?.closed === true }),
-          "Native day differs from the durable manifest before closure.",
-          503,
-        );
-        if (!day?.closed) await sendOwned("close_day", { day_id: row.id });
-        day = await native.view("get_day", { day_id: row.id }, true);
-        assert(
-          nativePublicationMatches(m, day, { closed: true }),
-          "Day closure has not confirmed against its original publication.",
-          503,
-        );
-        writeOwned(
-          "UPDATE native_days SET state='closed',updated_at=? WHERE id=?",
-          clock(),
-          row.id,
-        );
+        .all(...(onContract ? [contractId] : []))) {
+        try {
+          const m = storedNativeManifest(row);
+          if (
+            clock() < m.endsAt + 86400000 ||
+            db
+              .prepare(
+                "SELECT 1 FROM native_reward_claims WHERE day_id=? AND state!='confirmed'",
+              )
+              .get(row.id)
+          )
+            continue;
+          renew();
+          let day = await native.view("get_day", { day_id: row.id }, true);
+          const owner = nativeDayContract(db, row.id);
+          if (!owner) {
+            // Legacy row with no recorded contract: a published day that the
+            // current contract does not know was published on an older one.
+            if (!day) {
+              quarantineForeignDay(
+                writeOwned,
+                row.id,
+                `Published day is absent from ${contractId}; it belongs to an earlier rewards contract.`,
+                clock(),
+              );
+              continue;
+            }
+            recordCurrentDay(writeOwned, row.id, contractId, clock());
+          }
+          assert(
+            nativePublicationMatches(m, day, { closed: day?.closed === true }),
+            "Native day differs from the durable manifest before closure.",
+            503,
+          );
+          if (!day?.closed) await sendOwned("close_day", { day_id: row.id });
+          day = await native.view("get_day", { day_id: row.id }, true);
+          assert(
+            nativePublicationMatches(m, day, { closed: true }),
+            "Day closure has not confirmed against its original publication.",
+            503,
+          );
+          writeOwned(
+            "UPDATE native_days SET state='closed',updated_at=? WHERE id=?",
+            clock(),
+            row.id,
+          );
+        } catch (error) {
+          if (/lease expired/i.test(String(error.message))) throw error;
+          retireError ||= new Error(
+            `${String(error.message).slice(0, 160)} (day ${row.id})`,
+          );
+          retireError.status ||= error.status;
+        }
       }
       // Settled claims and closures first; then prove the treasury still adds
       // up before reserving anything new. Drift stops publication only.
       const audit = await auditDistribution(native, { clock });
       native.lastAudit = audit;
       renew();
+      // The audit result is stored either way; the day's own error is the
+      // more specific report.
+      if (retireError) throw retireError;
       assert(
         audit.status !== "drift",
         `Distribution audit found drift (${(audit.failed || []).join(", ")}); new days are not published.`,

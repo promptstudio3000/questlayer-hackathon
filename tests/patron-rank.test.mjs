@@ -38,8 +38,9 @@ test("rank thresholds and settings", () => {
   assert.deepEqual(rankSettings({}).epochs, DEFAULT_RANK_EPOCHS);
   assert.deepEqual(rankSettings({ KEEPER_RANK_EPOCHS: "1,2,3,4,5" }).epochs, [1, 2, 3, 4, 5]);
   assert.deepEqual(rankSettings({ KEEPER_RANK_EPOCHS: "1,1,3,4,5" }).epochs, DEFAULT_RANK_EPOCHS, "must rise");
-  assert.equal(rankSettings({ KEEPER_RANK_TIER: "3" }).minTier, 3);
-  assert.equal(rankSettings({ KEEPER_RANK_TIER: "7" }).minTier, 2);
+  assert.equal(rankSettings({}).minStep, 1, "Staker step by default");
+  assert.equal(rankSettings({ KEEPER_RANK_STEP: "tier2" }).minStep, 2);
+  assert.equal(rankSettings({ KEEPER_RANK_STEP: "gold" }).minStep, 1);
   assert.equal(rankSettings({ KEEPER_RANK_ENABLED: "0" }).enabled, false);
 });
 
@@ -96,11 +97,23 @@ test("no decay: an exit pauses growth but keeps the rank; rank-up ceremony close
   assert.deepEqual(kv.badge(player), { rank: 4, name: "Beacon", epochs: 4 });
 });
 
-test("tier 1 stakes do not count; the patron tier is configurable", () => {
+test("rank 0 = Staker from 2 NEAR matured; less does not count; the step is configurable", () => {
   const { view } = setup();
-  assert.equal(view(state({ principal: 20n * N, epoch: 100 })).rank.epochs, 0);
-  const t1 = setup({ KEEPER_RANK_TIER: "1" });
-  assert.equal(t1.view(state({ principal: 20n * N, epoch: 100 })).rank.epochs, 1);
+  let r = view(state({ principal: 1n * N, epoch: 100 })).rank;
+  assert.equal(r.epochs, 0, "1 NEAR is below the Staker step");
+  assert.equal(r.name, null);
+  const fresh = setup();
+  r = fresh.view(state({ principal: 3n * N, mature: 0n, epoch: 100 })).rank;
+  assert.equal(r.staker, false, "still maturing");
+  r = fresh.view(state({ principal: 3n * N, epoch: 102 })).rank;
+  assert.equal(r.staker, true);
+  assert.equal(r.epochs, 1, "a Tier 1 staker earns patron epochs too");
+  const zero = setup({ KEEPER_RANK_EPOCHS: "2,4,6,8,10" });
+  r = zero.view(state({ principal: 3n * N, epoch: 100 })).rank;
+  assert.deepEqual([r.rank, r.name], [0, "Staker"]);
+  const t2 = setup({ KEEPER_RANK_STEP: "tier2" });
+  assert.equal(t2.view(state({ principal: 20n * N, epoch: 100 })).rank.epochs, 0);
+  assert.equal(t2.view(state({ principal: 100n * N, epoch: 101 })).rank.epochs, 1);
   const off = setup({ KEEPER_RANK_ENABLED: "0" });
   assert.equal(off.view(state({ principal: 100n * N, epoch: 100 })).rank, null);
 });
@@ -120,5 +133,5 @@ test("standalone module works without the Keeper card", () => {
   const db = openDatabase(":memory:");
   const pr = createPatronRank(db, { settings: rankSettings({}) });
   assert.equal(pr.badge("nobody"), null);
-  assert.equal(pr.observe("p", { epoch: 5, tier: 2, weighted: "1" }).rank, 1);
+  assert.equal(pr.observe("p", { epoch: 5, step: 1, amount: "1" }).rank, 1);
 });

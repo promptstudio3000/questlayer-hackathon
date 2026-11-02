@@ -12,6 +12,7 @@ for (const relative of [
   "./creators/completion.mjs",
   "./moderation.mjs",
   "./native/creator-money.mjs",
+  "./native/day-contracts.mjs",
   "./native/order-index.mjs",
   "./native/social-records.mjs",
   "./npc/rolls-schema.mjs",
@@ -20,7 +21,9 @@ for (const relative of [
   "./npc/trader-ledger.mjs",
   "./operator/world-controls.mjs",
   "./relayer/schema.mjs",
+  "./season/schema.mjs",
   "./spatial/place-safety.mjs",
+  "./staker-gates.mjs",
   "./task-evidence.mjs",
 ]) {
   const url = new URL(relative, import.meta.url);
