@@ -546,3 +546,20 @@ notice and are never funded. 3. Original "Punk City" theme. 4. Player worlds pri
   `server/data/worlds/`, so CI gates them.
 - Not done yet: the client still reads its skin from `src/tokens.css` (no visual change); POI-bound checks
   (spatial, per-cell density across layers) arrive with W4/W6.
+
+**W6 is implemented** (2 Nov 2026, `server/poi-quests.mjs`):
+
+- Street worlds (`demo:<h3r7>:<day>:v2`, never city worlds or the arena) get up to 6 POI quests on the first load
+  of the day, read from the W3 file (`POI_DB_PATH`, default `/var/lib/questlayer-poi/current.sqlite`, opened
+  read-only, reopened when the symlink changes). Only `safety='ok'` rows with a `path_ref` target are used.
+  `POI_QUESTS=off` disables it; a missing file changes nothing.
+- Seed `hash(layerId, cell, localDate, poi-quests-v1)`; targets ≥ 250 m apart; up to 2 category hunts
+  (`poi-category-hunt`, 3 stops of one category, any order, progress in `poi_hunt_stops`) and single visits
+  (`poi-visit`); POIs used in the cell during the 3 previous local days are only reused when nothing else fits;
+  Wikidata notability raises the chance a little. Open during the layer hours (08:00–20:00 local).
+- Once semantics: quest rows, the world manifest (`poiQuests`, extra zones with `source: "poi"`) and the job key
+  `poi-quests:<worldId>` are written in one transaction.
+- Rewards: 40 XP visit, 90 XP hunt, one chest per cell/day (60 XP, Aura only while edition supply lasts),
+  `gold_u = 0` always; street coins unchanged.
+- An empty cell stores `poiQuests.status = "empty"` and the client says "Nothing here yet".
+- Titles use deterministic template text; the W8 flavour cache (`server/ai/flavour.mjs`) plugs in next.

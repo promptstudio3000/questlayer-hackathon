@@ -712,7 +712,9 @@ export function GameMap(props: GameMapProps) {
     if (props.overview) {
       const b = new maplibregl.LngLatBounds();
       for (const z of props.world.zones)
-        for (const p of z.geometry?.coordinates[0] || [[z.lng, z.lat]])
+        for (const p of z.geometry?.type === "MultiPolygon"
+          ? z.geometry.coordinates.flatMap((poly) => poly[0])
+          : z.geometry?.coordinates[0] || [[z.lng, z.lat]])
           b.extend(p as [number, number]);
       if (!b.isEmpty()) {
         const dx = (b.getEast() - b.getWest()) * 0.08,

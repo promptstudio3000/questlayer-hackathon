@@ -44,7 +44,14 @@ test("catalog exposes enforceable mechanics, capability gaps and no invented dur
   const catalog = questTemplateCatalog();
   assert.deepEqual(
     catalog.templates.map((t) => t.id),
-    ["path-visit", "ordered-trail", "return-trail", "cosmetic-chest"],
+    [
+      "path-visit",
+      "ordered-trail",
+      "return-trail",
+      "cosmetic-chest",
+      "poi-visit",
+      "poi-category-hunt",
+    ],
   );
   assert.ok(
     catalog.templates.every(
