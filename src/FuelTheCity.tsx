@@ -23,9 +23,19 @@ import {
 } from "./city-fuel";
 import { NativeStaking, type VaultSnapshot } from "./NativeStaking";
 import { StakeToday } from "./StakeToday";
+import { STAKER_SUGGEST_NEAR, takeStakePrefill } from "./LockedChip";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import type { Player } from "./types";
 import "./fuel-the-city.css";
+
+type StakerGates = { minNear: string; suggestNear: string; priceEur: number | null; access: { step: string; staker: boolean } };
+
+/** "~5 €" for a NEAR amount, only when the server has a reference price. */
+export function eurHint(near: number, priceEur: number | null | undefined): string | null {
+  if (!priceEur || !(near > 0)) return null;
+  const v = near * priceEur;
+  return `~${v < 10 ? String(Math.round(v * 2) / 2) : Math.round(v)} €`;
+}
 
 type CityStaking = {
   staking?: {
@@ -66,7 +76,8 @@ export function FuelTheCity({
   const [vaults, setVaults] = useState<VaultSnapshot | null>(null),
     [city, setCity] = useState<CityStaking | null>(null),
     [readError, setReadError] = useState(""),
-    [amount, setAmount] = useState("1"),
+    [amount, setAmount] = useState(() => takeStakePrefill() || STAKER_SUGGEST_NEAR),
+    [gates, setGates] = useState<StakerGates | null>(null),
     [contribution, setContribution] = useState(50),
     [understood, setUnderstood] = useState(false),
     [outcome, setOutcome] = useState<Outcome>({ kind: "idle" });
@@ -89,6 +100,23 @@ export function FuelTheCity({
   useEffect(() => {
     void refresh();
   }, [account]);
+  useEffect(() => {
+    let live = true;
+    api<StakerGates>("/staker/gates").then(
+      (g) => live && setGates(g),
+      () => undefined,
+    );
+    // A locked chip tapped while this sheet is open prefills it too.
+    const onOpen = () => {
+      const near = takeStakePrefill();
+      if (near) setAmount(near);
+    };
+    window.addEventListener("questlayer:open-stake", onOpen);
+    return () => {
+      live = false;
+      window.removeEventListener("questlayer:open-stake", onOpen);
+    };
+  }, []);
 
   const positions = (vaults?.positions || []) as FuelPosition[];
   const summary = summarizeFuel(positions, {
@@ -312,6 +340,15 @@ export function FuelTheCity({
                 {active && amountError && (
                   <p className="fuel-error" role="alert">
                     {amountError}
+                  </p>
+                )}
+                {active && !amountError && (
+                  <p className="fuel-suggest">
+                    {gates && !gates.access.staker
+                      ? `${gates.suggestNear} NEAR${eurHint(Number(gates.suggestNear), gates.priceEur) ? ` (${eurHint(Number(gates.suggestNear), gates.priceEur)})` : ""} makes you a Staker after two epochs: the Keeper's inner vault and patron chapters open step by step with your level.`
+                      : eurHint(amountNear, gates?.priceEur)
+                        ? `${amount} NEAR is about ${eurHint(amountNear, gates?.priceEur)!.slice(1)} at today's mainnet price.`
+                        : null}
                   </p>
                 )}
                 {active && !amountError && (

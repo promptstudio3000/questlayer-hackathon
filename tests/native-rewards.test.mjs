@@ -1201,3 +1201,123 @@ test("distribution drift stops new day publication and is recorded for health", 
     f.db.close();
   }
 });
+
+test("published days record the rewards contract they were confirmed on", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    const row = f.db
+      .prepare("SELECT * FROM native_day_contracts WHERE day_id=?")
+      .get(m.id);
+    assert.equal(row.state, "current");
+    assert.equal(row.contract_id, "rewards.testnet");
+  } finally {
+    f.db.close();
+  }
+});
+
+test("a published day of an earlier rewards contract is quarantined and never blocks later publication", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    // Legacy host state: the row predates contract tracking, and the current
+    // contract (a new generation) has never seen the day.
+    f.db.prepare("DELETE FROM native_day_contracts").run();
+    f.state.days.delete(m.id);
+    f.setNow(m.endsAt + 86400001);
+    f.state.sent.length = 0;
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(
+      f.state.sent.some((s) => s.method === "close_day"),
+      false,
+    );
+    assert.ok(
+      f.state.sent.some(
+        (s) => s.method === "publish_day" && s.args.day_id !== m.id,
+      ),
+      "later days still publish",
+    );
+    assert.equal(
+      f.db.prepare("SELECT state FROM native_days WHERE id=?").get(m.id).state,
+      "published",
+      "the row is kept, not closed or rewritten",
+    );
+    const q = f.db
+      .prepare("SELECT * FROM native_day_contracts WHERE day_id=?")
+      .get(m.id);
+    assert.equal(q.state, "foreign");
+    assert.equal(q.contract_id, null);
+    const status = f.n.workerStatus();
+    assert.deepEqual(status.foreignDays, [m.id]);
+    assert.equal(status.last_error, null);
+    // Later runs skip the quarantined day without reading it again.
+    const view = f.n.view,
+      read = [];
+    f.n.view = async (method, args, fresh) => {
+      if (method === "get_day") read.push(args.day_id);
+      return view(method, args, fresh);
+    };
+    f.state.sent.length = 0;
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(f.state.sent.filter((s) => s.args?.day_id === m.id).length, 0);
+    assert.equal(f.n.workerStatus().last_error, null);
+    f.n.view = view;
+  } finally {
+    f.db.close();
+  }
+});
+
+test("a day recorded on another contract is skipped; a legacy day on this contract is backfilled and closed", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    f.setNow(m.endsAt + 86400001);
+    f.db
+      .prepare(
+        "UPDATE native_day_contracts SET contract_id='rewards-old.testnet' WHERE day_id=?",
+      )
+      .run(m.id);
+    f.state.sent.length = 0;
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(f.state.days.get(m.id).closed, false);
+    assert.equal(
+      f.state.sent.some((s) => s.method === "close_day"),
+      false,
+    );
+    // Legacy (unrecorded) row that the current contract does know.
+    f.db.prepare("DELETE FROM native_day_contracts WHERE day_id=?").run(m.id);
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(f.state.days.get(m.id).closed, true);
+    assert.equal(
+      f.db.prepare("SELECT state FROM native_days WHERE id=?").get(m.id).state,
+      "closed",
+    );
+    assert.equal(
+      f.db
+        .prepare("SELECT contract_id FROM native_day_contracts WHERE day_id=?")
+        .get(m.id).contract_id,
+      "rewards.testnet",
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("a mismatched day of this contract does not stop other closures or the audit, but withholds publication", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    f.state.days.get(m.id).coin_unit = "1";
+    f.setNow(m.endsAt + 86400001);
+    f.n.lastAudit = null;
+    f.state.sent.length = 0;
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /before closure\. \(day plzen-2026-10-31-v1\)/,
+    );
+    assert.ok(f.n.lastAudit, "the audit still ran");
+    assert.equal(f.state.sent.length, 0);
+  } finally {
+    f.db.close();
+  }
+});

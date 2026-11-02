@@ -217,7 +217,7 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
     }
     check("date-totals-match-publications", datesOk, { dates: dateRows });
     // Only hosts that published yield-backed days run this check.
-    if (yieldBackedManifests(native.db).length) {
+    if (yieldBackedManifests(native.db, native.contractId).length) {
       const backing = await readYieldBacking(native);
       check("yield-backed-days-covered", backing.covered, {
         paid: backing.paid,

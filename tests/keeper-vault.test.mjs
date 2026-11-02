@@ -1,5 +1,5 @@
 // Keeper's inner vault (GAME-LOOPS P0-3): stake card, E+2 countdown,
-// ceremonies and the tier + level gate. Read-only over vault state.
+// ceremonies and the staker + level gate. Read-only over vault state.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { openDatabase, createPlayer } from "../server/database.mjs";
@@ -103,34 +103,55 @@ test("ceremonies: matured once, tier steps once, patron title stays", () => {
   assert.ok(exited.patron, "the earned title stays after an exit (no decay)");
 });
 
-test("the inner vault is gated by tier (level gate optional), and every default is configurable", () => {
-  assert.equal(setup().view(state({ principal: 100n * N, epoch: 100 }), 1).inner.open, true, "tier only by default");
-  const { view } = setup({ env: { KEEPER_INNER_LEVEL: "5" } });
-  const s = state({ principal: 100n * N, epoch: 100 }); // weighted 50 → tier 2
-  const low = view(s, 4).inner;
-  assert.equal(low.open, false);
-  assert.deepEqual(low.missing, ["Level 5"]);
-  assert.ok(low.chapters.every((c) => c.locked && !c.text));
-  const open = view(s, 5).inner;
-  assert.equal(open.open, true);
-  assert.equal(open.chapters[0].text, DEFAULT_CHAPTERS[0].text);
-  const poor = view(state({ principal: 10n * N, epoch: 100 }), 9).inner;
-  assert.deepEqual(poor.missing, ["Tier 2 (matured stake)"]);
+test("the inner vault opens at Staker (2 NEAR matured) + level 2, and every default is configurable", () => {
+  // 2 NEAR matured at 50 % city share: no tier, but a Staker.
+  const small = state({ principal: 2n * N, epoch: 100 });
+  const { view } = setup();
+  const l1 = view(small, 1);
+  assert.equal(l1.tier, 1);
+  assert.equal(l1.staker.step, "staker");
+  assert.equal(l1.inner.open, false);
+  assert.deepEqual(l1.inner.missing, ["Reach level 2"]);
+  assert.ok(l1.inner.chapters.every((c) => c.locked && !c.text));
+  assert.equal(l1.stakeToday.open, false);
+  const l2 = view(small, 2);
+  assert.equal(l2.inner.open, true);
+  assert.equal(l2.inner.chapters[0].text, DEFAULT_CHAPTERS[0].text);
+  assert.equal(l2.stakeToday.open, true);
+  assert.equal(l2.gates.patron_line.open, false, "the rest of the patron line waits for level 4");
+  assert.deepEqual(l2.gates.patron_line.missing.map((m) => m.label), ["Reach level 4"]);
+  assert.deepEqual(l2.gates.t2_lines.missing.map((m) => m.label), ["Reach Tier 2 (50 NEAR matured)", "Reach level 6"]);
+  // 1 NEAR is not enough; the chip names the stake and the level.
+  const poor = setup().view(state({ principal: 1n * N, epoch: 100 }), 1).inner;
+  assert.deepEqual(poor.missing, ["Stake 2 NEAR", "Reach level 2"]);
+  assert.equal(poor.stakeNear, "2");
+  // Still maturing: the chip says so instead of asking for more.
+  const young = setup().view(state({ principal: 3n * N, mature: 0n, epoch: 100 }), 5).inner;
+  assert.deepEqual(young.missing, ["Your stake is maturing (E+2)"]);
 
   const custom = keeperVaultSettings({
-    KEEPER_INNER_TIER: "3",
-    KEEPER_INNER_LEVEL: "8",
     KEEPER_MATURITY_EPOCHS: "3",
     KEEPER_EPOCH_HOURS: "6",
     KEEPER_PATRON_TITLE: "Friend of the Vault",
     KEEPER_CEREMONIES: "0",
   });
   assert.deepEqual(
-    [custom.innerTier, custom.innerLevel, custom.maturityEpochs, custom.epochHours, custom.patronTitle, custom.ceremonies],
-    [3, 8, 3, 6, "Friend of the Vault", false],
+    [custom.maturityEpochs, custom.epochHours, custom.patronTitle, custom.ceremonies],
+    [3, 6, "Friend of the Vault", false],
   );
-  assert.equal(keeperVaultSettings({ KEEPER_INNER_TIER: "9" }).innerTier, 2, "bad values fall back");
+  assert.equal(keeperVaultSettings({ KEEPER_MATURITY_EPOCHS: "99" }).maturityEpochs, 2, "bad values fall back");
   assert.equal(keeperVaultSettings({ KEEPER_VAULT_ENABLED: "0" }).enabled, false);
+});
+
+test("at 0 % city share the Keeper counts a stake as matured after its own E+2 observation", () => {
+  const { view, db, player } = setup();
+  const zero = (epoch) => state({ principal: 2n * N, bps: 0, epoch });
+  assert.equal(view(zero(100), 2).staker.step, "none");
+  assert.equal(view(zero(101), 2).staker.step, "none");
+  const later = view(zero(102), 2);
+  assert.equal(later.staker.step, "staker");
+  assert.equal(later.inner.open, true);
+  assert.equal(db.prepare("SELECT matured FROM staker_status WHERE player_id=?").get(player).matured, (2n * N).toString());
 });
 
 test("your stake today: growth since the last reading before today and today's coin equivalence", () => {
@@ -150,7 +171,7 @@ test("your stake today: growth since the last reading before today and today's c
 });
 
 test("the Keeper view and the Profile stake route return the card; ceremonies close by id", async () => {
-  const { db, player, kv } = setup({ env: { KEEPER_INNER_LEVEL: "5" } });
+  const { db, player, kv } = setup();
   const vaults = {
     snapshot: async () => ({
       positions: [{ account_id: "v1.testnet", pool: "pool", state: "ready", position: state({ principal: 100n * N, epoch: 100 }) }],
@@ -171,7 +192,7 @@ test("the Keeper view and the Profile stake route return the card; ceremonies cl
     },
   };
   assert.equal(await routes.handle({ method: "GET" }, {}, new URL("http://x/api/keeper/stake"), ctx), true);
-  assert.equal(sent.inner.open, false, "level 2 keeps the inner vault closed");
+  assert.equal(sent.inner.open, true, "Tier 2 at level 2 opens the inner vault (Staker + L2)");
   assert.equal(sent.linked, 1);
   const id = sent.ceremonies.find((c) => c.kind === "tier").id;
   assert.equal(await routes.handle({ method: "POST" }, {}, new URL(`http://x/api/keeper/ceremonies/${id}/seen`), ctx), true);

@@ -194,6 +194,7 @@ import {
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import { DailyBoard } from "./DailyBoard";
+import { SeasonCard } from "./Season";
 import { Character } from "./Character";
 import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
@@ -3154,6 +3155,7 @@ export default function App() {
                 </span>
               </div>
               <TodaysPot practice onOpen={() => setTab("funding")} />
+              <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               <div className="section-label">
                 <h2>Nearby discoveries</h2>
                 <span>
@@ -3646,6 +3648,9 @@ export default function App() {
               )}
               {tab === "explore" && nativePlay && (
                 <TodaysPot practice={false} onOpen={() => setTab("funding")} />
+              )}
+              {tab === "explore" && nativePlay && (
+                <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}

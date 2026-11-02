@@ -30,6 +30,7 @@ import {
 import { createNpcStore } from "./store.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { ACTORS_SCHEMA } from "../actors/schema.mjs";
+import { playerStakerAccess } from "../staker-gates.mjs";
 import { PILGRIM_LINES, awardEditionOnce, ensureEarnedEditions } from "../earned-editions.mjs";
 
 const WORLD_FACTS = new Set(["mode", "paused", "zones", "progress", "next", "later", "safety"]);
@@ -61,6 +62,7 @@ export function createNpcService(
     provider = config.provider === "off" ? null : npcProviderFor(config, env),
     clock = Date.now,
     personas,
+    priceEur = () => null,
   } = {},
 ) {
   ensureModuleVersion(db, ACTORS_SCHEMA);
@@ -78,6 +80,7 @@ export function createNpcService(
     const rows = store.offersFor(player, actor.id);
     const today = rows.filter((r) => r.terms.worldId === world?.id);
     const level = playerLevel(player);
+    const access = playerStakerAccess(db, player, { worldTier: world?.playerTier, level });
     const menu = bound ?? buildMenu({
       actor,
       persona,
@@ -87,10 +90,11 @@ export function createNpcService(
       linesToday: today.filter((r) => r.kind === "quest").length,
       chapters: rows.filter((r) => r.kind === "chapter" && r.state === "completed").length,
       level,
+      access,
     });
     // Locked chips are recomputed every time (never bound to the encounter):
     // they are presentation only and can never be accepted.
-    const locked = lockedOffers({ actor, persona, world, now });
+    const locked = lockedOffers({ actor, persona, world, now, level, access, priceEur: priceEur() });
     return { persona, now, rows, menu, locked, level };
   }
 
