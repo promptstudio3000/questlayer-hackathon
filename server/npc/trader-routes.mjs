@@ -7,6 +7,8 @@
 //   GET  /api/keeper/stake                       "your stake today" card (Profile → Stake)
 //   POST /api/keeper/ceremonies/:id/seen         closes an E+2 / tier ceremony
 //   GET  /api/staker/gates       the staker gate table with this player's state
+// A liquid-stake reader (server/native/liquid-stake.mjs), when on, adds held
+// stNEAR/LiNEAR to the Staker step of the Keeper's reading.
 import { formatNear } from "./trader-pricing.mjs";
 import { patronPathView } from "./patron-path.mjs";
 import { allGates, defaultStakerGates, playerStakerAccess } from "../staker-gates.mjs";
@@ -23,8 +25,20 @@ function linkedAccounts(db, player) {
     .slice(0, 3);
 }
 
+/** Liquid tokens held by the player's linked wallets, or null when off/unreadable. */
+async function liquidOf(liquidStake, db, player) {
+  if (!liquidStake) return null;
+  try {
+    const r = await liquidStake.forPlayer(db, player);
+    const near = r.readings.reduce((a, x) => a + BigInt(x.near), 0n).toString();
+    return { matureNear: r.matureNear, near, holdHours: r.holdHours, unreadable: r.unreadable };
+  } catch {
+    return null;
+  }
+}
+
 /** Plain-language view of a player's market balance and vault positions. */
-export async function keeperView({ db, player, market, vaults, keeperVault = null, level = 1 }) {
+export async function keeperView({ db, player, market, vaults, keeperVault = null, level = 1, liquidStake = null }) {
   const accounts = linkedAccounts(db, player);
   const out = { accounts: [], lines: [] };
   const positions = [];
@@ -78,12 +92,19 @@ export async function keeperView({ db, player, market, vaults, keeperVault = nul
     out.accounts.push(entry);
   }
   out.lines.push("I never move your funds: every deposit, exit or change is signed by you on the usual confirmation screen.");
-  if (keeperVault?.settings.enabled) out.stake = keeperVault.view({ player, level, positions, patronPath: (gate) => patronPathView(db, player, gate) });
+  if (keeperVault?.settings.enabled)
+    out.stake = keeperVault.view({
+      player,
+      level,
+      positions,
+      liquid: await liquidOf(liquidStake, db, player),
+      patronPath: (gate) => patronPathView(db, player, gate),
+    });
   return out;
 }
 
 /** The stake card without the market lines, for Profile → Stake. */
-export async function stakeCard({ db, player, vaults, keeperVault, level = 1 }) {
+export async function stakeCard({ db, player, vaults, keeperVault, level = 1, liquidStake = null }) {
   const positions = [];
   let unreadable = 0;
   for (const accountId of linkedAccounts(db, player)) {
@@ -97,7 +118,12 @@ export async function stakeCard({ db, player, vaults, keeperVault, level = 1 }) 
       unreadable++;
     }
   }
-  return { ...keeperVault.view({ player, level, positions, patronPath: (gate) => patronPathView(db, player, gate) }), linked: positions.length + unreadable, unreadable };
+  const liquid = await liquidOf(liquidStake, db, player);
+  return {
+    ...keeperVault.view({ player, level, positions, liquid, patronPath: (gate) => patronPathView(db, player, gate) }),
+    linked: positions.length + unreadable,
+    unreadable,
+  };
 }
 
 /** Gate table + the player's cached staker state, for chips and the stake sheet. */
@@ -114,7 +140,7 @@ export function stakerGatesView({ db, player, level = 1, worldTier = 1, gates = 
   };
 }
 
-export function createTraderRoutes({ traders, actors, db, market, vaults, keeperVault = null, levelOf = () => 1, priceEur = () => null, gates = defaultStakerGates() }) {
+export function createTraderRoutes({ traders, actors, db, market, vaults, keeperVault = null, levelOf = () => 1, priceEur = () => null, gates = defaultStakerGates(), liquidStake = null }) {
   return {
     async handle(req, res, url, { player, body, respond, assert }) {
       const path = url.pathname,
@@ -130,7 +156,7 @@ export function createTraderRoutes({ traders, actors, db, market, vaults, keeper
       }
       if (path === "/api/keeper/stake" && method === "GET") {
         assert(keeperVault?.settings.enabled && vaults, "The Keeper's vault is not open here.", 503, "KEEPER_DISABLED");
-        respond(res, await stakeCard({ db, player, vaults, keeperVault, level: levelOf(player) }));
+        respond(res, await stakeCard({ db, player, vaults, keeperVault, level: levelOf(player), liquidStake }));
         return true;
       }
       const ceremony = method === "POST" && path.match(CEREMONY);
@@ -150,7 +176,7 @@ export function createTraderRoutes({ traders, actors, db, market, vaults, keeper
       const actor = { ...encounter.def, ...encounter.actor };
       if (keeper) {
         assert(actor.archetype === "keeper", "This character keeps no vault.", 404, "NPC_UNKNOWN");
-        respond(res, await keeperView({ db, player, market, vaults, keeperVault, level: levelOf(player) }));
+        respond(res, await keeperView({ db, player, market, vaults, keeperVault, level: levelOf(player), liquidStake }));
         return true;
       }
       assert(traders?.isTrader(actorId), "This trader is not open for business yet.", 503, "NPC_TRADERS_DISABLED");
