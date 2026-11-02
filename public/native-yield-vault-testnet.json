@@ -1,0 +1,74 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-02T03:22:21.720Z",
+  "contractId": "questlayer-yield-20261102.testnet",
+  "codeHash": "Hy9RJ8LxDzzLMwWtp2c4MuFq26xi6DQYz4K6Su6S6xUo",
+  "wasmSha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
+  "ownerId": "questlayer-dev-20261101.testnet",
+  "treasuryId": "questlayer-dev-20261101.testnet",
+  "rheaId": "contract.burrow.testnet",
+  "lockMs": "86400000",
+  "tokens": [
+    {
+      "token_id": "meta-v2.pool.testnet",
+      "kind": "lst",
+      "value_unit": "yoctoNEAR",
+      "price_source": {
+        "contract": "meta-v2.pool.testnet",
+        "method": "get_st_near_price",
+        "scale": "1000000000000000000000000"
+      },
+      "strategy": "hold",
+      "cap": "100000000000000000000000000",
+      "account_cap": "10000000000000000000000000",
+      "min_deposit": "100000000000000000000000",
+      "buffer_bps": 2000,
+      "max_util_bps": 9500,
+      "safety_bps": 10
+    },
+    {
+      "token_id": "linear-protocol.testnet",
+      "kind": "lst",
+      "value_unit": "yoctoNEAR",
+      "price_source": {
+        "contract": "linear-protocol.testnet",
+        "method": "ft_price",
+        "scale": "1000000000000000000000000"
+      },
+      "strategy": "hold",
+      "cap": "100000000000000000000000000",
+      "account_cap": "10000000000000000000000000",
+      "min_deposit": "100000000000000000000000",
+      "buffer_bps": 2000,
+      "max_util_bps": 9500,
+      "safety_bps": 10
+    },
+    {
+      "token_id": "usdc.fakes.testnet",
+      "kind": "stable",
+      "value_unit": "token",
+      "price_source": null,
+      "strategy": "rhea",
+      "cap": "10000000000",
+      "account_cap": "1000000000",
+      "min_deposit": "100000",
+      "buffer_bps": 2000,
+      "max_util_bps": 9500,
+      "safety_bps": 10
+    },
+    {
+      "token_id": "usdt.fakes.testnet",
+      "kind": "stable",
+      "value_unit": "token",
+      "price_source": null,
+      "strategy": "rhea",
+      "cap": "10000000000",
+      "account_cap": "1000000000",
+      "min_deposit": "100000",
+      "buffer_bps": 2000,
+      "max_util_bps": 9500,
+      "safety_bps": 10
+    }
+  ],
+  "audited": false
+}
