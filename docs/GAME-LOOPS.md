@@ -216,7 +216,7 @@ P0 should land before the submission (14 Nov), P1 if time allows, P2 after.
 | P1-1 | Patron quest lines + patron edition | The core staker reward | Patron edition supply |
 | P1-2 | Patron rank by matured stake age | Kinship-like retention for stakers | Yes (new track) |
 | P1-3 | Hackathon season with cosmetic leaderboard and season pot meter | Week rhythm, demo story for judges | Yes |
-| P1-4 | More altar recipes | Shard and common-Aura sinks | No |
+| P1-4 | More altar recipes (**live**: frost → Northern Lights, ember → Comet Trail, storm → Stormcrown, void → Moonwake; `ALTAR_RECIPES` in `server/actors/hunt/rewards.mjs`) | Shard and common-Aura sinks | No |
 | P1-5 | Patron trader rates | Better deals without breaking the float rule | Done: trader-pricing.mjs (patron discount 0.85, premium 1.20, rare→epic table, budget reserve 50 %) |
 | P2-1 | Co-op boss bonus when several players hit within the same window (guild channeling idea) | Social play | No |
 | P2-2 | Push-your-luck trails, route preview with monsters | Makes walks interesting | No |
