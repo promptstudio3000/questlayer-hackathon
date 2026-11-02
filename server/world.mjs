@@ -179,11 +179,14 @@ export async function ensureWorld(
   { mapData = {}, poiSource } = {},
 ) {
   const world = await ensureBaseWorld(db, location, arena, now, { mapData });
-  if (arena || world.cityId) return world;
+  // Reviewed cities keep their own plan; auto cities get POI quests in the
+  // player's H3 cell (W6 + W5), street cells in the whole cell world.
+  if (arena || (world.cityId && world.cityStatus !== "auto")) return world;
   try {
     return materializePoiQuests(db, world, {
       source: poiSource === undefined ? defaultPoiSource() : poiSource,
       now,
+      cell: world.cityId ? latLngToCell(location.lat, location.lng, 7) : null,
     });
   } catch (error) {
     // POI quests are an addition: a broken POI file never hides the street world.

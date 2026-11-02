@@ -242,6 +242,7 @@ export function planCellPoiQuests({
   pois,
   recent = new Set(),
   policy = POI_QUEST_POLICY,
+  avoid = [],
 }) {
   assert(isValidCell(cell) && getResolution(cell) === 7, "A POI plan needs an H3 res-7 cell.");
   assert(/^\d{4}-\d{2}-\d{2}$/.test(day), "A POI plan needs a local date.");
@@ -255,7 +256,8 @@ export function planCellPoiQuests({
       return { ...p, fresh: !recent.has(p.id), key: unit(seed, p.id) ** (1 / weight) };
     })
     .sort((a, b) => b.fresh - a.fresh || b.key - a.key || (a.id < b.id ? -1 : 1));
-  const picked = [];
+  // `avoid`: targets already on the map (an auto city's own zones) keep the gap too.
+  const picked = avoid.filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng));
   const used = new Set();
   const spaced = (p, extra = []) =>
     [...picked, ...extra].every((q) => distance(q, p) >= MIN_POI_GAP_M);
@@ -323,9 +325,13 @@ function circle(p, radius = POI_TARGET_RADIUS_M, steps = 16) {
 export function isStreetWorld(manifest) {
   return !!manifest && !manifest.cityId && !manifest.arena && typeof manifest.region === "string" && !manifest.region.startsWith("city-");
 }
+/** Auto cities (W5, unreviewed map data): POI quests per H3 cell inside the city. */
+export function isAutoCityWorld(manifest) {
+  return !!manifest && !manifest.arena && !!manifest.cityId && manifest.cityStatus === "auto";
+}
 
 /** World ids of the same cell on the previous POI_ROTATION_DAYS local days. */
-function recentPoiIds(db, manifest) {
+function recentPoiIds(db, manifest, cell) {
   const ids = [];
   for (let d = 1; d <= POI_ROTATION_DAYS; d++)
     ids.push(`demo:${manifest.region}:${shiftDate(manifest.day, -d)}:v2`);
@@ -335,7 +341,12 @@ function recentPoiIds(db, manifest) {
       `SELECT metadata FROM quests WHERE world_id IN (${ids.map(() => "?").join(",")}) AND json_valid(metadata) AND json_extract(metadata,'$.poi') IS NOT NULL`,
     )
     .all(...ids))
-    for (const id of JSON.parse(row.metadata).poi?.ids || []) recent.add(id);
+  {
+    const poi = JSON.parse(row.metadata).poi;
+    // A city world holds many cells: rotation is per cell.
+    if (poi?.cell && poi.cell !== cell) continue;
+    for (const id of poi?.ids || []) recent.add(id);
+  }
   return recent;
 }
 
@@ -358,38 +369,49 @@ const EMPTY_NOTICE =
   "Nothing here yet. This area has no checked public places for quests today. Street coins still follow mapped paths.";
 
 /**
- * Attach today's POI quests to a street world, once. Two parallel calls create
+ * Attach today's POI quests to a street world, or to one H3 cell of an auto
+ * city world (the cell the player loads from), once. Two parallel calls create
  * one set: the job key and the quest rows are written in one transaction.
  * Returns the (possibly updated) manifest. Never throws for a missing POI file.
+ * Reviewed cities (Plzeň) never get POI quests.
  */
-export function materializePoiQuests(db, manifest, { source = defaultPoiSource(), now = Date.now(), layerId = DEFAULT_LAYER.id } = {}) {
-  if (!isStreetWorld(manifest) || manifest.poiQuests || now >= manifest.endsAt) return manifest;
+export function materializePoiQuests(db, manifest, { source = defaultPoiSource(), now = Date.now(), layerId = DEFAULT_LAYER.id, cell = null } = {}) {
+  const street = isStreetWorld(manifest),
+    auto = !street && isAutoCityWorld(manifest);
+  if ((!street && !auto) || now >= manifest.endsAt) return manifest;
+  const target = street ? manifest.region : cell;
+  if (!target || !isValidCell(target) || getResolution(target) !== 7) return manifest;
+  const key = street ? `poi-quests:${manifest.id}` : `poi-quests:${manifest.id}:${target}`;
+  const done = (m) => (street ? !!m.poiQuests : !!m.poiQuests?.cells?.[target]);
+  if (done(manifest)) return manifest;
   if (!source || !source.available()) return manifest;
-  if (db.prepare("SELECT 1 FROM daily_jobs WHERE job_key=?").get(`poi-quests:${manifest.id}`)) {
+  if (db.prepare("SELECT 1 FROM daily_jobs WHERE job_key=?").get(key)) {
     const row = db.prepare("SELECT manifest FROM worlds WHERE id=?").get(manifest.id);
     return row ? JSON.parse(row.manifest) : manifest;
   }
-  const pois = source.cellPois(manifest.region);
+  const pois = source.cellPois(target);
   if (!Array.isArray(pois)) return manifest;
   return atomic(db, () => {
-    const key = `poi-quests:${manifest.id}`;
     const row = db.prepare("SELECT manifest FROM worlds WHERE id=?").get(manifest.id);
     if (!row) return manifest;
     const current = JSON.parse(row.manifest);
-    if (current.poiQuests || db.prepare("SELECT 1 FROM daily_jobs WHERE job_key=?").get(key)) return current;
+    if (done(current) || db.prepare("SELECT 1 FROM daily_jobs WHERE job_key=?").get(key)) return current;
+    const existing = (current.zones || []).filter((z) => z.source === "poi").length;
     const plan = planCellPoiQuests({
       layerId,
-      cell: current.region,
+      cell: target,
       day: current.day,
       pois,
-      recent: recentPoiIds(db, current),
+      recent: recentPoiIds(db, current, target),
+      avoid: (current.zones || []).flatMap((z) => (z.targets?.length ? z.targets : [z])),
     });
     const { opensAt, closesAt } = playWindow(current.day, current.timezone);
     const zones = [];
+    const tag = street ? "" : `${target}-`;
     plan.quests.forEach((q, i) => {
-      const slot = 100 + i,
-        zoneId = `${current.id}:zone:poi-${i}`,
-        questId = `${current.id}:quest:poi-${i}:0`,
+      const slot = 100 + existing + i,
+        zoneId = `${current.id}:zone:poi-${tag}${i}`,
+        questId = `${current.id}:quest:poi-${tag}${i}:0`,
         first = q.pois[0],
         targets = q.pois.map((p) => ({ lat: p.lat, lng: p.lng }));
       const hunt = q.template === "poi-category-hunt";
@@ -468,20 +490,36 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
             category: q.category,
             ids: q.pois.map((p) => p.id),
             names: q.pois.map((p) => p.name || null),
+            cell: target,
             seed: plan.seed,
           },
         }),
       );
     });
     current.zones = [...current.zones, ...zones];
-    current.poiQuests = {
-      policy: POI_QUEST_POLICY,
-      layerId,
-      source: source.version?.() || null,
-      status: zones.length ? "ready" : "empty",
-      count: zones.length,
-      ...(zones.length ? {} : { notice: EMPTY_NOTICE }),
-    };
+    if (street)
+      current.poiQuests = {
+        policy: POI_QUEST_POLICY,
+        layerId,
+        source: source.version?.() || null,
+        status: zones.length ? "ready" : "empty",
+        count: zones.length,
+        ...(zones.length ? {} : { notice: EMPTY_NOTICE }),
+      };
+    else {
+      // An auto city keeps one count per cell a player has opened today.
+      const cells = { ...(current.poiQuests?.cells || {}), [target]: zones.length };
+      const count = Object.values(cells).reduce((n, c) => n + c, 0);
+      current.poiQuests = {
+        policy: POI_QUEST_POLICY,
+        layerId,
+        source: source.version?.() || null,
+        status: count ? "ready" : "empty",
+        count,
+        cells,
+        ...(count ? {} : { notice: EMPTY_NOTICE }),
+      };
+    }
     db.prepare("UPDATE worlds SET manifest=? WHERE id=?").run(JSON.stringify(current), current.id);
     db.prepare("INSERT INTO daily_jobs VALUES (?,?)").run(key, now);
     return current;
