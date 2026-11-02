@@ -12,6 +12,7 @@ for (const relative of [
   "./creators/completion.mjs",
   "./moderation.mjs",
   "./native/creator-money.mjs",
+  "./native/day-contracts.mjs",
   "./native/order-index.mjs",
   "./native/social-records.mjs",
   "./npc/rolls-schema.mjs",

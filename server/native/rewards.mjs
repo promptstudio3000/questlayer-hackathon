@@ -20,6 +20,10 @@ import {
 import { DEFAULT_CITY } from "../spatial/city-pack.mjs";
 import { NETWORK } from "./network.mjs";
 import {
+  ensureNativeDayContracts,
+  foreignNativeDays,
+} from "./day-contracts.mjs";
+import {
   assertNativePlaceOpen,
   closedPlaces,
 } from "../spatial/place-safety.mjs";
@@ -60,6 +64,7 @@ export class NativeRewards extends NativeContractReader {
    INSERT OR IGNORE INTO native_worker_lease(id) VALUES(1);
    CREATE TABLE IF NOT EXISTS native_vault_jobs(account_id TEXT PRIMARY KEY,next_check INTEGER NOT NULL DEFAULT 0,last_action TEXT,last_state TEXT,last_error TEXT);
   `);
+    ensureNativeDayContracts(db);
   }
   linked(player, account) {
     assert(
@@ -609,6 +614,8 @@ export class NativeRewards extends NativeContractReader {
           "SELECT COUNT(*) n FROM native_reward_claims WHERE state!='confirmed'",
         )
         .get().n,
+      // Published days of an earlier rewards contract, skipped by the worker.
+      foreignDays: foreignNativeDays(this.db).map((d) => d.id),
     };
   }
 }
