@@ -183,6 +183,56 @@ export class CreatorMoney {
       true,
     );
   }
+  /** Paid quests need bought access before a start; free quests pass through. */
+  async admitStart(playerId, questId, localQuest = {}) {
+    const localPrice = BigInt(localQuest?.price || "0");
+    let chain;
+    try {
+      chain = await this.quest(questId);
+    } catch {
+      assert(
+        localPrice === 0n,
+        "We could not check your unlock right now. Try again in a moment.",
+        503,
+        "CREATOR_ACCESS_UNKNOWN",
+      );
+      return true;
+    }
+    const price = chain ? BigInt(chain.price || "0") : localPrice;
+    if (price === 0n) return true;
+    assert(
+      chain,
+      "This paid quest opens for unlocking shortly after publishing.",
+      409,
+      "CREATOR_ACCESS_PENDING",
+    );
+    const account = this.accountFor(playerId);
+    assert(
+      account,
+      "Your explorer account is still being prepared.",
+      409,
+      "ACCOUNT_NOT_READY",
+    );
+    if (chain.author === account) return true;
+    let access;
+    try {
+      access = await this.access(questId, account);
+    } catch {
+      assert(
+        false,
+        "We could not check your unlock right now. Try again in a moment.",
+        503,
+        "CREATOR_ACCESS_UNKNOWN",
+      );
+    }
+    assert(
+      access,
+      "Unlock this quest before starting it.",
+      402,
+      "CREATOR_ACCESS_REQUIRED",
+    );
+    return true;
+  }
   // ---- Reviewed player transactions ----------------------------------------------
   async prepare(accountId, { kind, questId, amount } = {}) {
     nearAccountId(accountId);

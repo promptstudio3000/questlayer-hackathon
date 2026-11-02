@@ -178,7 +178,13 @@ const moderation = new Moderation(db, { evidence: taskEvidence });
 const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
-const creatorRuntime = createCreatorRuntime(db, { origin, authenticate: auth });
+const creatorRuntime = createCreatorRuntime(db, {
+  origin,
+  authenticate: auth,
+  // Paid quests start only after the player bought access on the creators contract.
+  admitStart: (actor, questId, quest) =>
+    creatorMoney?.admitStart(actor, questId, quest),
+});
 const guide = createGuide(db);
 const rpc = process.env.NEAR_RPC_URL || DEFAULT_RPC;
 const provider = createNearProvider(rpc);

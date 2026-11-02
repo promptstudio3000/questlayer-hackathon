@@ -49,7 +49,9 @@ Local continuation, 1 November: the zone/map worker now rejects malformed candid
   support rounds, withdrawals, treasury flush. The server publisher (`server/native/creator-money.mjs`) mirrors
   published quests, verified completions and likes and runs the UTC daily round from the API process; its first
   live round (2026-11-01, 0.01 NEAR) is transaction `3aBKSkm3N4rhoxriFG5vZosSiFeWrqAKo49V5u47HZSc`. Player
-  payments are quoted by `/api/native/creators/prepare`; the UI is the next step (`docs/PLAN-FOR-OPUS.md`).
+  payments are quoted by `/api/native/creators/prepare`. UI: quest detail has gifts, like and paid unlock
+  (`src/CreatorMoney.tsx`), My creations has earnings and withdraw; a paid quest starts only after its unlock
+  (`CreatorMoney.admitStart`, 402 `CREATOR_ACCESS_REQUIRED`).
 - Relayer money rule (1 November, evening): a NEP-366 relayer pays every attached deposit, verified live when a
   relayed `create_position` took 3.52 NEAR from the relayer. The policy now relays only storage-class deposits
   (0, 1 yocto, 0.05 NEAR); purchases, creator payments and staking are self-paid transactions signed by the same
@@ -61,7 +63,8 @@ Local continuation, 1 November: the zone/map worker now rejects malformed candid
   removals. Pinning runs through an optional add endpoint (`IPFS_ADD_URL`); without it the record carries the
   address and pinning reports "unavailable". Live proof: a note published from a fresh invisible account, relayed
 `set` on `v1.social08.testnet` (transaction `4YKtshNX1d1QfdkN4RGsMQXfbY834WMuz29fuUNrjBdy`) and confirmed from
-chain; see `public/native-public-record-proof.json`. The UI is the next step.
+chain; see `public/native-public-record-proof.json`. UI: Notes → own note → public record dialog
+(`src/NoteRecordDialog.tsx`) with consent, permanence, photo pin state, publish/update and mark removed.
 - First realized-yield harvest (1 November, about 09:23 UTC): after one epoch the three funded vaults earned
   about 5 % a year. The reward worker harvested them without help, unstaking the city's 50 % share. The
   unstake unlocks at epoch 5405, about two days later. The worker then advances the vaults and flushes the cash
