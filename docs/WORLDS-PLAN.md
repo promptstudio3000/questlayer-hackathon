@@ -446,6 +446,9 @@ Shared preamble for every prompt (paste first):
 
 **W7 — Generic actors**
 
+> Status: wave 1 done (generic cast, POI homes, per-cell caps; see `docs/ACTORS-API.md`). POIs come from CityPack
+> parks, zones and path junctions until the W6 POI DB registers through `registerPoiSource`.
+
 > Add `server/data/actors/_generic.json` and `server/data/personas/_generic.json` (original characters, CS+EN,
 > archetype rules unchanged). In `server/actors/definitions.mjs`/`spawns.mjs` resolve actor homes from safe POIs
 > at plan time for auto cities and active cells; a reviewed city file overrides the generic one. Density caps per

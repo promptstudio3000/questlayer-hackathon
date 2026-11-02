@@ -21,3 +21,30 @@ Encounter rules: distance ≤ 35 m (≤ 50 m while the actor dwells at a station
 like arena coins do. Tokens (`enc_…`) last 5 minutes and bind player, actor, day, segment and menu hash.
 
 Lurkers (60 m) and the wandering rare (300 m) are only listed for a player already within reveal range. `GET /api/actors` sends at most the next 2 h of segments (about 7 KB gzip for Plzeň).
+
+## Generic cast for every city and street cell (W7)
+
+`docs/WORLDS-PLAN.md` C.6 W7, wave 1. Which cast plays in a world is decided in `castFor` in
+`server/actors/service.mjs`:
+
+| World | Cast | Walkable graph | Homes |
+| --- | --- | --- | --- |
+| City with a reviewed file (`server/data/actors/<cityId>.json`, today Plzeň) | that file, unchanged | the CityPack | as reviewed |
+| Any other CityPack (preview or future auto cities) | `server/data/actors/_generic.json` | the CityPack | NPCs at a seeded safe POI |
+| Active street cell (H3 res 7 world outside a city) | `_generic.json`, capped by `DENSITY_CAP_PER_CELL` | the cell's cached public-path snapshot (`geo_cache`, the same one street coins use; `minComponent` 8) | NPCs at a seeded safe POI |
+
+- The generic cast is original QuestLayer characters with persona cards in `server/data/personas/_generic.json`:
+  quest giver Lenka the Wayfinder, storyteller Grandpa Tobiáš, wandering rare Firefly, one Glitch Moth roamer and two
+  Pocket Wisp lurkers. The loader rejects traders, keepers, guardians and bosses in the generic file (treasury or
+  reviewed zones), fixed coordinates, and more instances than the per-cell cap.
+- `homeFrom: "poi"` (NPCs only, generic file only) resolves a home at plan time from `server/actors/pois.mjs`:
+  CityPack candidate parks, today's open zones, sources added with `registerPoiSource` (the W6 POI DB plugs in here),
+  and path junctions as the fallback every mapped cell has. Closed and excluded places are dropped; the home snaps to
+  the path graph within 250 m, and generic NPCs stay 150 m apart.
+- `DENSITY_CAP_PER_CELL` (`server/actors/definitions.mjs`) is shared by all layers: per cell at most 1 quest giver,
+  1 storyteller, 1 wandering rare, 1 roamer, 2 lurkers.
+- Cell instance ids get a 6-hex suffix from the cell (`glitch-moth-1a2b3c`), so a win in one cell is not a win in
+  the next one. City ids are unchanged.
+- No model or map call happens on the player path: a cell without a cached snapshot has no actors until the street
+  world hydrates. Rewards stay XP, shards, roll tickets and cosmetic editions; there is no GOLD/NEAR prize outside
+  funded cities.

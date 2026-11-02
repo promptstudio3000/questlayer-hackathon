@@ -19,17 +19,51 @@ const ROAMER_SPACING_M = 300;
  * `finds` are today's street finds ({id, lat, lng}); lurkers hide next to a
  * seeded subset of them, or on seeded path points when there are none.
  */
-export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = [], finds = [] } = {}) {
+export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = [], finds = [], pois = null, cap = null } = {}) {
   const g = pathGraph(pack, closed);
   if (!g.nodes.length) return [];
   const out = [],
-    monsters = [];
+    monsters = [],
+    npcHomes = [],
+    used = {};
+  // `cap` (DENSITY_CAP_PER_CELL) limits instances per archetype in one cell.
+  const room = (def) => (cap ? Math.max(0, Math.min(def.count || 1, (cap[def.archetype] ?? 0) - (used[def.archetype] || 0))) : def.count || 1);
   const node = (i) => ({ lat: g.lat[i], lng: g.lng[i] });
   const spaced = (p, min, list) => list.every((q) => distance(p, q) >= min);
   for (const def of city.actors) {
     if (!def.enabled) continue;
     const rng = seededRandom(worldSeed, "spawn", def.id, dayId),
-      count = def.count || 1;
+      count = room(def);
+    if (!count) continue;
+    used[def.archetype] = (used[def.archetype] || 0) + count;
+    if (def.homeFrom === "poi") {
+      // Generic NPCs live at a seeded safe POI on the path graph, apart from
+      // each other; with no usable POI they fall back to a seeded path point.
+      const pool = [...(pois || [])];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      for (let n = 1; n <= count; n++) {
+        let home = null,
+          poiId = null;
+        for (const poi of pool) {
+          const at = nearestNode(g, poi, 250);
+          if (at < 0 || !spaced(node(at), MONSTER_SPACING_M, npcHomes)) continue;
+          home = node(at);
+          poiId = poi.id;
+          pool.splice(pool.indexOf(poi), 1);
+          break;
+        }
+        for (let tries = 0; !home && tries < 100; tries++) {
+          const p = node(g.nodes[Math.floor(rng() * g.nodes.length)]);
+          if (spaced(p, MONSTER_SPACING_M, npcHomes) || tries === 99) home = p;
+        }
+        npcHomes.push(home);
+        out.push({ def, id: instanceId(def, n), home, ...(poiId ? { poi: { id: poiId } } : {}) });
+      }
+      continue;
+    }
     if (def.archetype === "guardian") {
       const open = zones
         .filter((z) => z.placeStatus !== "closed" && Number.isFinite(z.lat))
