@@ -92,16 +92,16 @@ for (const t of TOKENS) {
   }
 }
 if (!(await viewOn(RHEA, "storage_balance_of", { account_id: contractId })))
-  await record("Register the vault on Rhea Lend", () => callOn(contractId, "register_on_rhea", {}, NEAR / 10, 50n * TGAS));
+  await record("Register the vault on Rhea Lend", () => callOn(contractId, "register_on_rhea", {}, NEAR / 10n, 50n * TGAS));
 
 // Smoke: the operator stakes 0.2 NEAR with Meta Pool and deposits the stNEAR.
 const ST = "meta-v2.pool.testnet";
 let st = BigInt(await viewOn(ST, "ft_balance_of", { account_id: operator.accountId }));
-if (st < NEAR / 10) {
-  await record("Stake 0.2 NEAR with Meta Pool for the smoke deposit", () => callOn(ST, "deposit_and_stake", {}, NEAR / 5, 50n * TGAS));
+if (st < NEAR / 10n) {
+  await record("Stake 0.2 NEAR with Meta Pool for the smoke deposit", () => callOn(ST, "deposit_and_stake", {}, NEAR / 5n, 50n * TGAS));
   st = BigInt(await viewOn(ST, "ft_balance_of", { account_id: operator.accountId }));
 }
-const amount = st < NEAR / 5 ? st : NEAR / 5;
+const amount = st < NEAR / 5n ? st : NEAR / 5n;
 await record("Deposit stNEAR into the yield vault", () => callOn(ST, "ft_transfer_call", { receiver_id: contractId, amount: String(amount), msg: "deposit" }, 1n, 150n * TGAS));
 const position = (await view("get_position", { account_id: operator.accountId })).find((p) => p.token_id === ST);
 assert(position && BigInt(position.principal) > 0n, "Deposit not recorded");
