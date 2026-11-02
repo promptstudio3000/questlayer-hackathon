@@ -385,3 +385,40 @@ test("history depth is bounded by replacement without trapping or dropping exter
   assert.equal(history.entries.length, 1);
   assert.equal(history.state.walletConnector, "preserve");
 });
+
+test("screen sub-tabs persist, and entries stored before sub-tabs existed still restore", () => {
+  const { history, journal } = fixture();
+  journal.write(nav({ tab: "settings", profileView: "settings" }));
+  journal.write(nav({ tab: "market", marketView: "offers" }));
+  history.back();
+  assert.equal(journal.restore(history.state).profileView, "settings");
+  history.forward();
+  assert.equal(journal.restore(history.state).marketView, "offers");
+
+  const legacy = { ...initialAppNavigation(), tab: "market" };
+  delete legacy.profileView;
+  delete legacy.marketView;
+  const parsed = parseAppNavigation(legacy, "player-a");
+  assert.equal(parsed.tab, "market");
+  assert.equal(parsed.profileView, "character");
+  assert.equal(parsed.marketView, "practice");
+  const old = fixture({
+    [NAVIGATION_STATE_KEY]: {
+      version: 1,
+      playerId: "player-a",
+      rootId: "old-root",
+      depth: 0,
+      value: legacy,
+    },
+  });
+  assert.equal(old.journal.initial.tab, "market");
+  assert.equal(old.journal.initial.marketView, "practice");
+
+  for (const patch of [
+    { profileView: "wallet" },
+    { profileView: 1 },
+    { marketView: "auction" },
+    { marketView: null },
+  ])
+    assert.equal(parseAppNavigation(nav(patch), "player-a"), null);
+});
