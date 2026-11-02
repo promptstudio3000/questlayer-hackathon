@@ -20,6 +20,7 @@ import { assert, distance, hash } from "./domain.mjs";
 import { atomic } from "./database.mjs";
 import { localDateBounds, shiftDate } from "./spatial/calendar.mjs";
 import { poiQuestActivity } from "./quest-templates.mjs";
+import { flavourText } from "./ai/flavour.mjs";
 import { DEFAULT_LAYER } from "./worlds/registry.mjs";
 import {
   ensureModuleVersion,
@@ -466,6 +467,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
             template: q.template,
             category: q.category,
             ids: q.pois.map((p) => p.id),
+            names: q.pois.map((p) => p.name || null),
             seed: plan.seed,
           },
         }),
@@ -518,3 +520,26 @@ export function recordHuntStop(db, questId, player, stop, fixAt, now) {
   ).run(questId, player, stop, fixAt, now);
 }
 
+
+/**
+ * Response-time title and description for a stored POI quest (W8 flavour):
+ * the validated text from the nightly cache when one exists, else the stored
+ * rule text. Read-only, synchronous, no model call. A chest keeps its own text
+ * (the flavour templates describe a visit, not a chest). The activity's
+ * objective and steps stay authoritative for what the quest requires.
+ */
+export function poiQuestText(db, quest, meta, { lang = "en", layerId = DEFAULT_LAYER.id } = {}) {
+  const poi = meta?.poi;
+  if (!poi || quest.kind === "chest" || !Array.isArray(poi.ids) || !poi.ids.length) return null;
+  try {
+    const text = flavourText(db, {
+      poi: { id: poi.ids[0], category: poi.category, name: poi.names?.[0] || null },
+      template: poi.template,
+      lang,
+      layerId,
+    });
+    return text.source === "cache" ? { title: text.title, description: text.description } : null;
+  } catch {
+    return null;
+  }
+}

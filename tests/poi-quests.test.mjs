@@ -11,6 +11,7 @@ import { ensureWorld, worldView } from "../server/world.mjs";
 import { claimQuest, advanceRoute } from "../server/game.mjs";
 import { DEFAULT_CITY } from "../server/spatial/city-pack.mjs";
 import { zoneInBounds } from "../server/spatial/world-query.mjs";
+import { flavourText, FLAVOUR_PROMPT_VERSION } from "../server/ai/flavour.mjs";
 import {
   MAX_POI_QUESTS_PER_CELL,
   MIN_POI_GAP_M,
@@ -310,6 +311,38 @@ test("POI quests open only during the layer's play hours", async () => {
     const q = worldView(db, w.id, player, { now: NOW }).quests.find((x) => x.kind === "visit");
     const late = Date.parse("2026-11-02T20:30:00Z"); // 21:30 in Prague
     assert.throws(() => claimQuest(db, player, q.id, fix(q, late), late), /closed for today/);
+  } finally {
+    db.close();
+  }
+});
+
+test("cached W8 flavour text replaces the stored title at read time; chests keep theirs", async () => {
+  const db = openDatabase(":memory:");
+  try {
+    const w = await ensureWorld(db, { lat: clat, lng: clng }, false, NOW, {
+      mapData,
+      poiSource: staticPoiSource(POIS),
+    });
+    const before = worldView(db, w.id, null, { now: NOW }).quests;
+    const visit = before.find((q) => q.kind === "visit"),
+      chest = before.find((q) => q.kind === "chest");
+    const meta = (id) =>
+      JSON.parse(db.prepare("SELECT metadata FROM quests WHERE id=?").get(id).metadata).poi;
+    // The flavour module creates its cache table on first read.
+    flavourText(db, { poi: { id: "x", category: "park" }, template: "poi-visit" });
+    const put = db.prepare(
+      "INSERT INTO ai_flavour_cache VALUES(?,?,?,'en',?,?,?,'fake',NULL,'h','b',0)",
+    );
+    put.run(meta(visit.id).ids[0], "poi-visit", "aavegotchi", FLAVOUR_PROMPT_VERSION, "Old stones by the path", "A quiet corner of the old town where the path bends past carved stone.");
+    put.run(meta(chest.id).ids[0], "poi-visit", "aavegotchi", FLAVOUR_PROMPT_VERSION, "Not for chests", "This text must never replace the chest rule text at all.");
+    const after = worldView(db, w.id, null, { now: NOW }).quests;
+    assert.equal(after.find((q) => q.id === visit.id).title, "Old stones by the path");
+    assert.equal(after.find((q) => q.id === chest.id).title, chest.title);
+    assert.equal(
+      after.find((q) => q.id === visit.id).activity.objective,
+      visit.activity.objective,
+      "the rule text stays authoritative",
+    );
   } finally {
     db.close();
   }

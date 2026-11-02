@@ -565,4 +565,4 @@ notice and are never funded. 3. Original "Punk City" theme. 4. Player worlds pri
 - Rewards: 40 XP visit, 90 XP hunt, one chest per cell/day (60 XP, Aura only while edition supply lasts),
   `gold_u = 0` always; street coins unchanged.
 - An empty cell stores `poiQuests.status = "empty"` and the client says "Nothing here yet".
-- Titles use deterministic template text; the W8 flavour cache (`server/ai/flavour.mjs`) plugs in next.
+- Titles: the stored rule text, replaced at read time by validated W8 flavour text (`flavourText`, cache hit only); chests keep their own text and the activity objective stays authoritative.

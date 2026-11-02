@@ -41,6 +41,7 @@ import {
   defaultPoiSource,
   huntVisited,
   materializePoiQuests,
+  poiQuestText,
 } from "./poi-quests.mjs";
 export const HOME = DEFAULT_CITY.center;
 export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
@@ -403,6 +404,7 @@ export function worldView(db, id, player = null, options = {}) {
       const visited = meta.unordered ? huntVisited(db, q.id, player) : null;
       return {
         ...q,
+        ...(meta.poi ? poiQuestText(db, q, meta, { lang: options.lang }) || {} : {}),
         metadata: undefined,
         checkpointCount: cps.length,
         nextPoint: visited
