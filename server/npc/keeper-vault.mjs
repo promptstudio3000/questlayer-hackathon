@@ -265,7 +265,7 @@ export function createKeeperVault(
    * `liquid` is the optional liquid-stake reading (server/native/liquid-stake.mjs):
    * its held value counts toward the Staker step only, never toward a tier.
    */
-  function view({ player, level, positions, liquid = null }) {
+  function view({ player, level, positions, liquid = null, patronPath = null }) {
     init();
     const accounts = [];
     let weighted = 0n,
@@ -393,6 +393,11 @@ export function createKeeperVault(
         missing: inner.missing.map((m) => m.label),
         stakeNear: inner.stakeNear,
         chapters: open ? settings.chapters : settings.chapters.map((c) => ({ title: c.title, locked: true })),
+        // Patron's Path (P1-1, server/npc/patron-path.mjs): progress through
+        // the patron quest lines. Shown to everyone; walking it needs the tier.
+        ...(patronPath
+          ? { path: typeof patronPath === "function" ? patronPath({ access, settings: gates, priceEur: price }) : patronPath }
+          : {}),
       },
     };
   }

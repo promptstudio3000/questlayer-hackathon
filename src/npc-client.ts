@@ -5,7 +5,16 @@ import type { ActorOffer } from "./actor-types";
 import type { StakeCard } from "./StakeToday";
 
 export interface NpcStep { questId: string; title: string; kind: string; zone: string | null; done?: boolean }
-export interface NpcActiveLine { offerId: string; kind: string; label: string; steps: NpcStep[]; xp: number; aura: boolean }
+export interface NpcActiveLine {
+  offerId: string;
+  kind: string;
+  label: string;
+  steps: NpcStep[];
+  xp: number;
+  aura: boolean;
+  /** Patron line (Tier 2 stakers): its step on the Patron's Path. */
+  patron?: { pathLine: number; pathOf: number };
+}
 export interface NpcReply {
   say: string;
   emote: "wave" | "think" | "laugh" | "shrug" | "none";
@@ -33,6 +42,13 @@ export interface NpcTurnIn {
   aura?: { id: string; name: string; rarity: string } | null;
   /** NPC-only edition earned with this turn-in (once per player). */
   edition?: { id: string; name: string; rarity: string } | null;
+  /** Patron line turn-in: Patron's Path step and the story chapter it reveals. */
+  patron?: {
+    pathLine: number;
+    pathOf: number;
+    story: { title: string; text: string };
+    edition: { id: string; name: string; rarity: string } | null;
+  };
   note?: string;
   replay?: boolean;
 }

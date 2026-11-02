@@ -94,7 +94,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
       setNotice(
         r.replay
           ? "Already turned in."
-          : `+${r.xp} XP${r.aura ? ` and ${r.aura.name} (${r.aura.rarity})` : ""}${r.edition ? `${r.aura ? "," : " and"} plus the NPC-only ${r.edition.name} (${r.edition.rarity})` : ""}.${r.aura || r.edition ? " Secure it on NEAR from your wardrobe." : ""}${r.note ? ` ${r.note}` : ""}`,
+          : `+${r.xp} XP${r.aura ? ` and ${r.aura.name} (${r.aura.rarity})` : ""}${r.edition ? `${r.aura ? "," : " and"} plus the NPC-only ${r.edition.name} (${r.edition.rarity})` : ""}.${r.aura || r.edition ? " Secure it on NEAR from your wardrobe." : ""}${r.patron ? ` Patron's Path ${r.patron.pathLine}/${r.patron.pathOf}: "${r.patron.story.title}". ${r.patron.story.text}${r.patron.edition && r.patron.edition.id !== r.edition?.id ? ` You also earned ${r.patron.edition.name}.` : ""}` : ""}${r.note ? ` ${r.note}` : ""}`,
       );
       await refresh();
     });
@@ -138,8 +138,10 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
             {reply.active.map((line) => {
               const ready = line.steps.every((s) => s.done);
               return (
-                <div className="npc-task" key={line.offerId}>
-                  <p>{line.label}</p>
+                <div className={`npc-task${line.patron ? " patron" : ""}`} key={line.offerId}>
+                  <p>
+                    {line.patron && <span className="patron-tag">✦ Patron {line.patron.pathLine}/{line.patron.pathOf}</span>} {line.label}
+                  </p>
                   <ul>
                     {line.steps.map((s) => (
                       <li key={s.questId} className={s.done ? "done" : ""}>
@@ -163,7 +165,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
               <button
                 type="button"
                 key={offer.id}
-                className={`npc-offer${offer.id === suggested ? " suggested" : ""}`}
+                className={`npc-offer${offer.id === suggested ? " suggested" : ""}${(offer.terms as { patron?: boolean }).patron ? " patron" : ""}`}
                 disabled={busy}
                 onClick={() => accept(offer)}
               >
@@ -175,7 +177,11 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                       : offer.kind === "trade_up"
                         ? "3 commons → 1 rare"
                         : "Signed order on the testnet market"
-                    : `${String((offer.terms as { xp?: number }).xp ?? "")} XP${(offer.terms as { aura?: boolean }).aura ? " + Aura" : ""}`}
+                    : `${String((offer.terms as { xp?: number }).xp ?? "")} XP${(offer.terms as { aura?: boolean }).aura ? " + Aura" : ""}${
+                        (offer.terms as { patron?: boolean }).patron
+                          ? ` · Patron's Path ${String((offer.terms as { pathLine?: number }).pathLine)}/${String((offer.terms as { pathOf?: number }).pathOf)}`
+                          : ""
+                      }`}
                 </small>
               </button>
             ))}
