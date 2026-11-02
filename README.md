@@ -90,8 +90,10 @@ Automated checks: `npm run check` (build, application tests, mainnet-guard tests
 `bash scripts/build-contracts.sh --test` (contract tests). The full guide, including the isolated QA server,
 the testnet scripts and phone testing, is [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md).
 
-Cities come from `server/data/cities.json`: Plzeň is the only live and funded city; a second city is a new
+Cities come from `server/data/cities.json`: Plzeň is the only live city; a second city is a new
 CityPack file plus one registry line ([docs/SECOND-CITY-PLAYBOOK.md](docs/SECOND-CITY-PLAYBOOK.md)).
+Money is global: one treasury and one daily budget, placed on the map by player demand
+([docs/GLOBAL-TREASURY.md](docs/GLOBAL-TREASURY.md)).
 
 ## The economy, in one page
 

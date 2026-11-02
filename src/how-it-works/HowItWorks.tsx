@@ -528,7 +528,7 @@ function StakingScene({ active, reduce }: { active: boolean; reduce: boolean }) 
       </ol>
       <div className="hiw-pot">
         <span className="hiw-pot-label">
-          <HandCoins size={18} weight="fill" /> City prize pot, filled by yield
+          <HandCoins size={18} weight="fill" /> One global prize pool, filled by yield
         </span>
         <span className="hiw-pot-bar">
           <i />
@@ -749,7 +749,7 @@ export default function HowItWorks() {
             </h1>
             <p className="hiw-lead">
               Walk real streets, collect coins, open chests and dress your ghost in Auras that are truly yours. Stake a
-              little NEAR when you want more, and its yield fills the city's prize pot.
+              little NEAR when you want more, and its yield grows one prize pool shared by every city.
             </p>
             <div className="hiw-actions">
               <a className="hiw-button primary" href={PLAY_URL}>
@@ -783,7 +783,7 @@ export default function HowItWorks() {
           flip
           eyebrow="Daily zones"
           title="Six new zones every day."
-          lead="Each day the city gets six zones with trails, visits and chests. Three are open to everyone; the others open as you stake. Chests hold Auras."
+          lead="Each day every live city gets six zones with trails, visits and chests, all paid from the same global prize pool. Three are open to everyone; the others open as you stake. Chests hold Auras."
           chips={["3 free", "2 for Tier 2", "1 for Tier 3"]}
           scene={<ZonesScene />}
         />
@@ -838,13 +838,15 @@ export default function HowItWorks() {
           lead={
             <>
               From {STAKER_MIN_NEAR} NEAR (about 5 €) you become a <b>Staker</b>. Your NEAR stays yours and keeps
-              earning staking yield; you choose how much of that yield goes to the city's prize pot. After two epochs
+              earning staking yield; you choose how much of that yield goes to the global prize pool. There is one pool for the whole game, and each
+              day's rewards land where people actually play. After two epochs
               your stake matures and new things open step by step, together with your level.
             </>
           }
           chips={[
             `Staker from ${STAKER_MIN_NEAR} NEAR`,
             `Tier 2 from ${TIER_NEAR.tier2} NEAR, Tier 3 from ${TIER_NEAR.tier3}`,
+            "One global prize pool",
             "Withdraw any time",
             "Unlocks to do and wear, never odds",
           ]}

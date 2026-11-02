@@ -1,5 +1,5 @@
 // "Your stake today" (GAME-LOOPS P0-3): what the player's vaults retained and
-// gave to the city today, the E+2 countdown in real epochs, the one-time
+// gave to the prize pool today, the E+2 countdown in real epochs, the one-time
 // maturity / tier ceremony and the Keeper's inner vault. Data comes from
 // server/npc/keeper-vault.mjs (Keeper sheet, or GET /api/keeper/stake).
 import { useEffect, useState } from "react";
@@ -112,11 +112,11 @@ function ceremonyText(c: StakeCeremony, card: StakeCard) {
   if (c.kind === "tier")
     return {
       title: `Tier ${c.tier} is yours`,
-      text: `Your matured stake opened Tier ${c.tier} places in the city.${card.patron ? ` You now wear the "${card.patron.title}" title, and it stays yours.` : ""}`,
+      text: `Your matured stake opened Tier ${c.tier} places on the map.${card.patron ? ` You now wear the "${card.patron.title}" title, and it stays yours.` : ""}`,
     };
   return {
     title: "Your fuel has matured",
-    text: `${gold(c.amount)} GOLD of new stake now counts for the city${c.epoch != null ? ` (epoch ${c.epoch})` : ""}.`,
+    text: `${gold(c.amount)} GOLD of new stake now fuels the prize pool${c.epoch != null ? ` (epoch ${c.epoch})` : ""}.`,
   };
 }
 
@@ -149,9 +149,9 @@ function maturityLine(v: StakeVault, card: StakeCard) {
         ? `${gold(m.pending)} GOLD matures by epoch ${m.byEpoch} at the latest (now ${card.epoch}${m.epochsLeft ? `, ${m.epochsLeft} epoch${m.epochsLeft === 1 ? "" : "s"} ≈ ${m.hoursLeft} h` : ", any moment"}).`
         : `${gold(m.pending)} GOLD is still maturing (E+${card.maturityEpochs}).`;
     case "mature":
-      return `All ${gold(v.principal)} GOLD has matured and counts for the city.`;
+      return `All ${gold(v.principal)} GOLD has matured and fuels the prize pool.`;
     case "uncounted":
-      return "At 0 % city share this stake earns only for you and does not count toward a tier. It still makes you a Staker once it has matured.";
+      return "At 0 % prize pool share this stake earns only for you and does not count toward a tier. It still makes you a Staker once it has matured.";
     case "refreshing":
       return "The vault is waiting for its pool to be read again; maturity shows after the next refresh.";
     case "exiting":
@@ -176,7 +176,7 @@ function PatronRankUp({ rank, onSeen }: { rank: PatronRank; onSeen: () => void }
         <div>
           <strong>Patron rank {rank.rankUp.rank}: {rank.rankUp.name}</strong>
           <p>
-            {rank.epochs} epoch{rank.epochs === 1 ? "" : "s"} of matured fuel kept the city lit. The rank is yours to keep, even if you withdraw later.
+            {rank.epochs} epoch{rank.epochs === 1 ? "" : "s"} of matured fuel kept the prize pool lit. The rank is yours to keep, even if you withdraw later.
           </p>
         </div>
         <button type="button" onClick={onSeen}>Thank the Keeper</button>
@@ -232,7 +232,7 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
       {card.rank && (card.rank.rank > 0 || card.hasPosition) && <PatronRankLadder rank={card.rank} />}
       {!card.hasPosition ? (
         <>
-          <p>No stake yet. A small stake matures in {card.maturityEpochs} epochs (about {card.maturityEpochs * card.epochHours} h) and then counts for the city.</p>
+          <p>No stake yet. A small stake matures in {card.maturityEpochs} epochs (about {card.maturityEpochs * card.epochHours} h) and then fuels the prize pool.</p>
           {card.stakeToday && !card.stakeToday.open && (
             <LockedChip
               label="Your stake today"
@@ -246,7 +246,7 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
           {card.stakeToday && !card.stakeToday.open ? (
             <LockedChip
               label="Today's numbers"
-              perk="What your vault kept for you and gave to the city today"
+              perk="What your vault kept for you and gave to the prize pool today"
               gate={{ step: "staker", missing: card.stakeToday.missing, stakeNear: card.stakeToday.stakeNear }}
             />
           ) : (
@@ -257,7 +257,7 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
               <dd>+{gold(sumField(card, (v) => v.today?.retained))} GOLD</dd>
             </div>
             <div>
-              <dt>Given to the city</dt>
+              <dt>Given to the prize pool</dt>
               <dd>+{gold(sumField(card, (v) => v.today?.given))} GOLD</dd>
             </div>
             <div>
@@ -273,7 +273,7 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
           {card.coins && (
             <p className="stake-coins">
               {card.coins.funding === "realized_yield"
-                ? `Your vaults have paid ${gold(card.coins.givenPaid)} GOLD into the city: the value of ${card.coins.backed} of today's ${card.coins.coinCount} coins. The coins stay shared, first come first served.`
+                ? `Your vaults have paid ${gold(card.coins.givenPaid)} GOLD into the global prize pool: the value of ${card.coins.backed} of today's ${card.coins.coinCount} coins. The coins stay shared, first come first served.`
                 : `Today's ${card.coins.coinCount} coins are sponsor-funded. The ${gold(card.coins.givenPaid)} GOLD your vaults paid in waits in the pot for coming days.`}
             </p>
           )}
@@ -291,7 +291,7 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
           </ul>
           <p className="stake-note">
             {card.tier > 1 ? `Tier ${card.tier}` : card.staker?.staker ? "Staker" : "Free explorer"}
-            {card.nextTier ? ` · ${gold(card.nextTier.missing, 0)} GOLD more matured fuel opens Tier ${card.nextTier.tier}.` : " · every place in the city is open to you."}
+            {card.nextTier ? ` · ${gold(card.nextTier.missing, 0)} GOLD more matured fuel opens Tier ${card.nextTier.tier}.` : " · every place on the map is open to you."}
           </p>
         </>
       )}

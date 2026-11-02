@@ -1,5 +1,9 @@
 import { assert, dayKey } from "../domain.mjs";
-import { DEFAULT_CITY, sampleCityPaths } from "../spatial/city-pack.mjs";
+import {
+  DEFAULT_CITY,
+  LIVE_CITIES,
+  sampleCityPaths,
+} from "../spatial/city-pack.mjs";
 import { shiftDate } from "../spatial/calendar.mjs";
 import { getOrPrepareCityPlan } from "../world-planner.mjs";
 import {
@@ -17,7 +21,12 @@ import {
   publicationArgs,
   storedNativeManifest,
 } from "./reward-manifest.mjs";
-import { allocateDailyBudget, realizedYieldBacking } from "./allocation.mjs";
+import {
+  allocateDailyBudget,
+  demandWeights,
+  realizedYieldBacking,
+  recentCityPlayers,
+} from "./allocation.mjs";
 import { NativeContractReader } from "./reader.mjs";
 import { onContractSql, recordCurrentDay } from "./day-contracts.mjs";
 
@@ -55,6 +64,13 @@ export async function readYieldBacking(native) {
       rewardsId: native.contractId,
     }),
   };
+}
+
+/** Every live city plus this publisher's own, as allocation entries. */
+function mapCities(city) {
+  const ids = new Set(LIVE_CITIES.map((c) => c.id));
+  ids.add(city.id);
+  return [...ids].map((id) => ({ id }));
 }
 
 // One explicitly selected CityPack per publisher. This is not permission to
@@ -124,12 +140,19 @@ export async function publishNativeDays(
           },
         };
       }
+      // One global treasury and budget; cities only decide where it shows.
+      // By default every live city is eligible and the split follows recent
+      // players, so money goes where people play (docs/GLOBAL-TREASURY.md).
+      const eligible = native.fundedCities || mapCities(city);
       const allocation = allocateDailyBudget({
         available: {
           coins: treasury.coins.available,
           zones: treasury.zones.available,
         },
-        cities: native.fundedCities || [{ id: city.id }],
+        cities:
+          native.budgetSplit === "weights"
+            ? eligible
+            : demandWeights(eligible, recentCityPlayers(native.db, day)),
         shareBps: native.dailyShareBps ?? 10000,
         limit,
       });

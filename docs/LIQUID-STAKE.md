@@ -11,7 +11,7 @@ counts only what stayed in that wallet for the whole hold window (default 24 h).
 Meta Pool's `liquid_unstake` (0.30–3 % on testnet) or a DEX; the count drops at the next reading.
 
 The game never signs, swaps or holds a token, and the city receives **no yield share** from liquid tokens.
-Tier 2/3 and the city share stay with the vault (`contracts/vault`).
+Tier 2/3 and the prize pool share stay with the vault (`contracts/vault`).
 
 ## Why a hold window
 
@@ -43,7 +43,7 @@ Known contracts: testnet `meta-v2.pool.testnet`, `linear-protocol.testnet`; main
 
 1. Done: the Keeper's reading (`/api/keeper/stake`, Keeper visit, NPC greet refresh) adds `matureNear` to matured
    vault principal and the still-held-too-briefly part to `maturing`, for the Staker step only. The card returns
-   `staker.liquid`. Tier, ceremonies and the city share ignore liquid tokens.
+   `staker.liquid`. Tier, ceremonies and the prize pool share ignore liquid tokens.
 2. Locked chip text: offer "or hold 2 NEAR of stNEAR for 24 h"; today a fresh purchase shows the vault's
    "Your stake is maturing (E+2)" label.
 3. Profile → Stake: a "Liquid stake" card with value, countdown, instant-exit fee and a link to the protocol app.

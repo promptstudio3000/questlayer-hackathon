@@ -16,7 +16,7 @@ This document is the plan. The implementation lives in `src/how-it-works/` and i
 | Someone watching over a shoulder (big screen) | Scrolled by another person | Each chapter makes sense from its headline and animation alone, in about 10 seconds |
 
 One sentence the page must land: **Walk your real city, collect and wear things that are yours, and if you want
-more, stake a little NEAR: your stake stays yours and its yield fills the city's prize pot.**
+more, stake a little NEAR: your stake stays yours and its yield grows one global prize pool shared by every city.**
 
 ## 2. Principles for the page
 

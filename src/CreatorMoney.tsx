@@ -216,7 +216,7 @@ export function CreatorSupport({
               {price > 0n && !quest?.access && (
                 <p className="creator-hint">
                   {100 - treasuryPct}% to the creator, {treasuryPct}% to the
-                  city reward pot.
+                  global prize pool.
                 </p>
               )}
               {quest?.access && (

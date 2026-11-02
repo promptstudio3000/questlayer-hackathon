@@ -193,7 +193,10 @@ test("realized-yield backing counts vault payouts against yield-backed days", ()
 });
 
 test("allocation settings come from the environment", () => {
-  assert.deepEqual(allocationSettings({}), { yieldBackedDays: false });
+  assert.deepEqual(allocationSettings({}), {
+    budgetSplit: "demand",
+    yieldBackedDays: false,
+  });
   assert.deepEqual(
     allocationSettings({
       NATIVE_FUNDED_CITIES: "plzen:3, brno",
@@ -205,6 +208,7 @@ test("allocation settings come from the environment", () => {
         { id: "brno", weight: 1 },
         { id: "plzen", weight: 3 },
       ],
+      budgetSplit: "demand",
       dailyShareBps: 500,
       yieldBackedDays: true,
     },
@@ -213,4 +217,56 @@ test("allocation settings come from the environment", () => {
     () => allocationSettings({ NATIVE_DAILY_SHARE_BPS: "20000" }),
     /1 to 10000/,
   );
+});
+
+// Global treasury (docs/GLOBAL-TREASURY.md): one budget, placed by demand.
+import { DatabaseSync } from "node:sqlite";
+import {
+  demandWeights,
+  recentCityPlayers,
+} from "../server/native/allocation.mjs";
+
+test("demand weights are 1 + recent players, capped, and ignore operator weights", () => {
+  assert.deepEqual(
+    demandWeights([{ id: "plzen", weight: 9 }, { id: "brno" }], { plzen: 4 }),
+    [
+      { id: "brno", weight: 1 },
+      { id: "plzen", weight: 5 },
+    ],
+  );
+  assert.equal(demandWeights([{ id: "plzen" }], { plzen: 5000 })[0].weight, 1000);
+  assert.equal(demandWeights([{ id: "plzen" }], { plzen: -3 })[0].weight, 1);
+});
+
+test("the global budget follows players and never exceeds the one treasury budget", () => {
+  const a = allocateDailyBudget({
+    available: { coins: "1000", zones: "1000" },
+    cities: demandWeights([{ id: "plzen" }, { id: "brno" }], { plzen: 8 }),
+  });
+  assert.equal(a.cities.find((c) => c.id === "plzen").coins, "900");
+  assert.equal(a.cities.find((c) => c.id === "brno").coins, "100");
+  const spent = a.cities.reduce((n, c) => n + BigInt(c.coins), 0n);
+  assert.equal(spent + BigInt(a.unallocated.coins), BigInt(a.budget.coins));
+});
+
+test("recent players count distinct accounts in the seven dates before the day", () => {
+  const db = new DatabaseSync(":memory:");
+  db.exec(
+    "CREATE TABLE native_reward_claims(day_id TEXT, account_id TEXT, kind TEXT, item_index INTEGER)",
+  );
+  const add = db.prepare("INSERT INTO native_reward_claims VALUES(?,?,'coin',0)");
+  add.run("plzen-2026-11-03-v2", "a.testnet");
+  add.run("plzen-2026-11-03-v2", "a.testnet");
+  add.run("plzen-2026-10-28-v1", "b.testnet");
+  add.run("plzen-2026-10-27-v1", "old.testnet"); // eight days before: out
+  add.run("plzen-2026-11-04-v2", "today.testnet"); // the day itself: out
+  add.run("brno-2026-11-01-v2", "a.testnet");
+  assert.deepEqual(recentCityPlayers(db, "2026-11-04"), { plzen: 2, brno: 1 });
+  assert.deepEqual(recentCityPlayers(new DatabaseSync(":memory:"), "2026-11-04"), {});
+});
+
+test("NATIVE_BUDGET_SPLIT defaults to demand and rejects unknown values", () => {
+  assert.equal(allocationSettings({}).budgetSplit, "demand");
+  assert.equal(allocationSettings({ NATIVE_BUDGET_SPLIT: "weights" }).budgetSplit, "weights");
+  assert.throws(() => allocationSettings({ NATIVE_BUDGET_SPLIT: "city" }));
 });

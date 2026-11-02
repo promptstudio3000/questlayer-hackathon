@@ -1,4 +1,4 @@
-// "Fuel the city": staking presented as a game decision. Pure helpers so the
+// "Fuel the prize pool" (formerly "Fuel the city"): staking presented as a game decision. Pure helpers so the
 // tier and share numbers are testable. Amounts arrive as yoctoNEAR strings;
 // the player sees GOLD (1 NEAR = 1,000 GOLD) and test NEAR for deposits.
 
@@ -50,7 +50,7 @@ export function fuelStatus(p: FuelPosition): { tone: FuelTone; label: string } {
       label: `Switching to ${s.pending_contribution_bps / 100} % after settlement`,
     };
   return BigInt(String(s.principal || "0")) > 0n
-    ? { tone: "active", label: "Fueling the city" }
+    ? { tone: "active", label: "Fueling the prize pool" }
     : { tone: "ready", label: "Ready for fuel" };
 }
 
@@ -257,6 +257,6 @@ export function previewFuel(
 
 export const CONTRIBUTION_CHOICES = [
   { pct: 25, label: "Light", hint: "Keep most of your yield" },
-  { pct: 50, label: "Balanced", hint: "Half fuels the city" },
-  { pct: 100, label: "All in", hint: "All yield fuels the city" },
+  { pct: 50, label: "Balanced", hint: "Half fuels the prize pool" },
+  { pct: 100, label: "All in", hint: "All yield fuels the prize pool" },
 ] as const;
