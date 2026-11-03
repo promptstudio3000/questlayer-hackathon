@@ -410,6 +410,17 @@ async function ensureBaseWorld(
   return job;
 }
 export function worldView(db, id, player = null, options = {}) {
+  // options.timing (an object) collects ms per phase for Server-Timing.
+  const spans = options.timing,
+    mark = (() => {
+      let last = performance.now();
+      return (name) => {
+        if (!spans) return;
+        const at = performance.now();
+        spans[name] = (spans[name] || 0) + (at - last);
+        last = at;
+      };
+    })();
   const row = db.prepare("SELECT manifest FROM worlds WHERE id=?").get(id);
   if (!row) return null;
   const query = worldQuery(options),
@@ -418,6 +429,7 @@ export function worldView(db, id, player = null, options = {}) {
     manifest = publicManifest(db, JSON.parse(row.manifest)),
     closed = closedPlaces(db, manifest.cityId),
     paused = pauseState(db, manifest.cityId, manifest.day);
+  mark("wmanifest");
   const quests = db
     .prepare(
       "SELECT q.*,EXISTS(SELECT 1 FROM quest_claims c WHERE c.quest_id=q.id AND c.player_id=?) AS completed,COALESCE((SELECT checkpoint FROM quest_progress p WHERE p.quest_id=q.id AND p.player_id=?),0) AS checkpoint FROM quests q WHERE q.world_id=? ORDER BY q.tier,q.id",
@@ -483,6 +495,7 @@ export function worldView(db, id, player = null, options = {}) {
       )
       .map((q) => q.zone_id),
   );
+  mark("wquests");
   let rows;
   if (query.limit) {
     const after = readQueryCursor(id, query),
@@ -516,10 +529,12 @@ export function worldView(db, id, player = null, options = {}) {
         "SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL",
       )
       .all(id);
+  mark("wcoins");
   const finds = streetFindIds(db, id);
+  mark("wfinds");
   const more = !!query.limit && rows.length > query.limit,
     page = query.limit ? rows.slice(0, query.limit) : rows;
-  return {
+  const view = {
     ...manifest,
     zones: visibleZones,
     cityZoneCount: zones.length,
@@ -552,6 +567,8 @@ export function worldView(db, id, player = null, options = {}) {
           q.kind === "chest" && (chestStock.get(q.tier) ?? false),
       })),
   };
+  mark("wrest");
+  return view;
 }
 export function expireWorlds(db, now = Date.now()) {
   return atomic(db, () => {

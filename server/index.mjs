@@ -2050,12 +2050,18 @@ async function api(req, res, url) {
         limit: input.limit,
         cursor: input.cursor,
       });
+    const spans = (res.timingSpans = {});
+    let at = performance.now();
     expireWorlds(db);
+    spans.wexpire = performance.now() - at;
+    at = performance.now();
     const world = await ensureWorld(db, location, input.arena !== false);
+    spans.wensure = performance.now() - at;
     warmActorPlan(world);
     // layerId is added to the response only, never to the stored manifest.
     return respond(res, {
       ...worldView(db, world.id, player, {
+        timing: spans,
         ...query,
         near: input.near,
         lang: input.lang === "cs" ? "cs" : "en",
@@ -2066,6 +2072,7 @@ async function api(req, res, url) {
   if (path === "/api/world" && method === "GET") {
     limit("world-read", player, 240, "Please wait before refreshing the map again.");
     const w = worldView(db, url.searchParams.get("id"), player, {
+      timing: (res.timingSpans = {}),
       near: url.searchParams.get("near") ?? undefined,
       ...worldQuery({
         bounds: url.searchParams.get("bbox") ?? undefined,
@@ -2870,7 +2877,13 @@ function timeApiRequest(req, res, path) {
       if (!res.headersSent)
         res.setHeader(
           "Server-Timing",
-          `app;dur=${ms.toFixed(1)}, loop;dur=${loop.toFixed(1)}`,
+          [
+            `app;dur=${ms.toFixed(1)}`,
+            `loop;dur=${loop.toFixed(1)}`,
+            ...Object.entries(res.timingSpans || {}).map(
+              ([name, d]) => `${name};dur=${d.toFixed(1)}`,
+            ),
+          ].join(", "),
         );
       if (ms >= SLOW_API_MS)
         console.warn(
