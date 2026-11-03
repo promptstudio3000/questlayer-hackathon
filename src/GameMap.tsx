@@ -20,6 +20,8 @@ import {
   totemHeight,
   zoneTotemFeatures,
   zoneWallFeatures,
+  zoneBeamSpots,
+  beamFeatures,
 } from "./zone-landmarks";
 import type { NearbyExplorer } from "./types";
 import type { ActorView } from "./actor-types";
@@ -69,6 +71,8 @@ export type GameMapProps = {
   onZone: (z: Zone) => void;
   follow: boolean;
   onPan: () => void;
+  /** Map centre after a player pan or zoom ends (not after follow moves). */
+  onMoveEnd?: (center: Point, zoom: number) => void;
   /** Places creators pinned (visit, trail start, chest); tap opens the quest. */
   creatorPlaces?: CreatorMapPlace[];
   onCreatorPlace?: (questId: string) => void;
@@ -307,6 +311,20 @@ export function GameMap(props: GameMapProps) {
       .setLngLat([props.position.lng, props.position.lat])
       .addTo(m);
     m.on("dragstart", () => latest.current.onPan());
+    // Only moves the player made (drag, pinch, wheel), not camera follow.
+    // Read the centre once a drag's inertia has settled.
+    let settle: ReturnType<typeof setTimeout> | undefined;
+    const ended = (e: { originalEvent?: unknown }) => {
+      if (!e.originalEvent) return;
+      clearTimeout(settle);
+      settle = setTimeout(() => {
+        if (map.current !== m) return;
+        const c = m.getCenter();
+        latest.current.onMoveEnd?.({ lat: c.lat, lng: c.lng }, m.getZoom());
+      }, 700);
+    };
+    m.on("dragend", ended);
+    m.on("zoomend", ended);
     // Screen pixels per metre of height, so zone pins sit on their totems.
     const totemScale = () => {
       const metresPerPixel =
@@ -432,7 +450,7 @@ export function GameMap(props: GameMapProps) {
         },
       });
       // Zone landmarks (src/zone-landmarks.ts): wall, totem and the items inside.
-      for (const id of ["zone-walls", "zone-totems", "zone-loot"])
+      for (const id of ["zone-walls", "zone-totems", "zone-loot", "sky-beams", "find-beams"])
         m.addSource(id, {
           type: "geojson",
           data: { type: "FeatureCollection", features: [] },
@@ -449,6 +467,19 @@ export function GameMap(props: GameMapProps) {
           "fill-extrusion-opacity": 0.45,
         },
       });
+      // The aura keeps rising above the wall as a fainter band.
+      m.addLayer({
+        id: "zone-walls-halo",
+        type: "fill-extrusion",
+        source: "zone-walls",
+        minzoom: 13,
+        paint: {
+          "fill-extrusion-color": ["get", "color"],
+          "fill-extrusion-height": ["get", "halo"],
+          "fill-extrusion-base": ["get", "height"],
+          "fill-extrusion-opacity": 0.16,
+        },
+      });
       m.addLayer({
         id: "zone-totems",
         type: "fill-extrusion",
@@ -461,23 +492,46 @@ export function GameMap(props: GameMapProps) {
           "fill-extrusion-opacity": 0.92,
         },
       });
+      // Sky beams (src/zone-landmarks.ts beamFeatures): a faint wide halo and
+      // a bright core, for open zones, rare events and street finds.
+      for (const [source, minzoom] of [
+        ["sky-beams", 11],
+        ["find-beams", 13],
+      ] as const)
+        for (const part of ["halo", "core"] as const)
+          m.addLayer({
+            id: `${source}-${part}`,
+            type: "fill-extrusion",
+            source,
+            minzoom,
+            filter: ["==", ["get", "part"], part],
+            paint: {
+              "fill-extrusion-color": ["get", "color"],
+              "fill-extrusion-height": ["get", "height"],
+              "fill-extrusion-base": ["get", "base"],
+              "fill-extrusion-opacity": part === "core" ? 0.78 : 0.22,
+              "fill-extrusion-vertical-gradient": false,
+            },
+          });
       m.addLayer({
         id: "zone-loot",
         type: "symbol",
         source: "zone-loot",
-        minzoom: 15,
+        minzoom: 14,
         layout: {
           "icon-image": ["get", "image"],
           "icon-size": [
             "interpolate",
             ["linear"],
             ["zoom"],
-            15,
-            0.45,
-            17,
-            0.7,
+            14,
+            0.55,
+            16,
+            0.9,
+            18,
+            1.2,
             19,
-            0.95,
+            1.35,
           ],
           "icon-allow-overlap": true,
           "icon-ignore-placement": true,
@@ -540,6 +594,14 @@ export function GameMap(props: GameMapProps) {
         geometry: { type: "Point", coordinates: [c.lng, c.lat] },
       })),
     });
+    (m.getSource("find-beams") as GeoJSONSource)?.setData({
+      type: "FeatureCollection",
+      features: beamFeatures(
+        coins
+          .filter((c) => c.find && !c.claimant)
+          .map((c) => ({ id: c.id, lat: c.lat, lng: c.lng, color: "#ff1dff", kind: "find" as const })),
+      ),
+    } as Parameters<GeoJSONSource["setData"]>[0]);
   }, [coins, ready]);
   useEffect(() => {
     const m = map.current;
@@ -577,6 +639,9 @@ export function GameMap(props: GameMapProps) {
     );
     (m.getSource("zone-totems") as GeoJSONSource)?.setData(
       collection(zoneTotemFeatures(props.world.zones, zoneQuests, objectContext)),
+    );
+    (m.getSource("sky-beams") as GeoJSONSource)?.setData(
+      collection(beamFeatures(zoneBeamSpots(props.world.zones, zoneQuests, zoneNow))),
     );
     const lootFeatures = zoneLootFeatures(
       props.world.zones,

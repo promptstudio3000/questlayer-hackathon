@@ -459,6 +459,12 @@ async function runDevice(name, server) {
       await button.click();
       await walkToTarget(page);
       await page.waitForTimeout(400);
+      // "Turn toward it" folds the sheet so the pad is free; the folded
+      // sheet keeps the chosen place, one tap opens it again.
+      if (!(await detail.isVisible())) {
+        await page.locator(".compact-selection").click();
+        await detail.waitFor();
+      }
     }
     const reward = page.getByRole("dialog");
     await reward.waitFor({ timeout: 15_000 });

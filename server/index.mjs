@@ -2100,7 +2100,10 @@ async function api(req, res, url) {
     expireWorlds(db);
     spans.wexpire = performance.now() - at;
     at = performance.now();
-    const world = await ensureWorld(db, location, input.arena !== false);
+    // `explore`: a spot of the same city the player asked to search (map moved).
+    const world = await ensureWorld(db, location, input.arena !== false, Date.now(), {
+      cellAt: input.explore ? point(input.explore) : null,
+    });
     spans.wensure = performance.now() - at;
     viewWorld(player, world.id);
     warmActorPlan(world);

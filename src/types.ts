@@ -143,6 +143,8 @@ export type World = {
   source: string;
   center: Point;
   cityName?: string;
+  /** Set for city worlds (reviewed or auto); street cells have none. */
+  cityId?: string | null;
   /** "auto": an auto city built from unreviewed map data (never funded). */
   cityStatus?: "reviewed" | "auto";
   cityZoneCount?: number;
@@ -159,6 +161,8 @@ export type World = {
     status: "ready" | "empty";
     count: number;
     notice?: string;
+    /** City worlds: POI quest count per H3 cell searched today. */
+    cells?: Record<string, number>;
   };
   endsAt: number;
   zones: Zone[];

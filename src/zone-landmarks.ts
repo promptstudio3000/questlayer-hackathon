@@ -37,7 +37,10 @@ const RARITY_LABEL: Record<AuraRarity, string> = {
 
 // Rarer zones are taller so they read from further away.
 const TOTEM_HEIGHT = { 1: 42, 2: 56, 3: 72 } as Record<number, number>;
-const WALL_HEIGHT = { 1: 16, 2: 22, 3: 30 } as Record<number, number>;
+// Walls are tall enough to read over the rooftops from a few streets away;
+// a fainter halo band continues above them so the aura fades into the sky.
+const WALL_HEIGHT = { 1: 34, 2: 46, 3: 60 } as Record<number, number>;
+const WALL_HALO = 1.9;
 /** Totem height in metres; the map lifts the zone pin onto its top. */
 export const totemHeight = (tier: number) =>
   TOTEM_HEIGHT[tier] || TOTEM_HEIGHT[1];
@@ -231,7 +234,7 @@ export function zoneWallFeatures(
       if (poly[0]?.length > 3)
         out.push({
           type: "Feature",
-          properties: { id: z.id, color: z.color, height },
+          properties: { id: z.id, color: z.color, height, halo: height * WALL_HALO },
           geometry: { type: "Polygon", coordinates: band(poly[0], 1.6) },
         });
   }
@@ -287,6 +290,63 @@ export function zoneTotemFeatures(
       h,
       phase === "open" ? "#fef87d" : spent ? "#c9c0cc" : "#fcfaff",
     );
+  }
+  return out;
+}
+
+/** Height of a sky beam in metres: visible over the city from far away. */
+export const BEAM_HEIGHT = { zone: 420, event: 300, find: 160, actor: 260 };
+export type BeamKind = keyof typeof BEAM_HEIGHT;
+export type BeamSpot = {
+  id: string;
+  lat: number;
+  lng: number;
+  color: string;
+  kind: BeamKind;
+  /** Lit beams are full strength; a dim beam marks something opening later. */
+  dim?: boolean;
+};
+
+/**
+ * Sky beams: a thin bright core and a wide faint halo rising from a spot, so
+ * a player sees where the zones, events and important NPCs are from far away.
+ * Open zones get a full beam, rare zones that open later a dim one.
+ */
+export function zoneBeamSpots(
+  zones: readonly Zone[],
+  quests: readonly Quest[],
+  now: number,
+): BeamSpot[] {
+  const out: BeamSpot[] = [];
+  for (const z of zones) {
+    const phase = zonePhase(z, quests, now);
+    if (phase === "open")
+      out.push({ id: z.id, lat: z.lat, lng: z.lng, color: z.color, kind: "zone" });
+    else if (phase === "upcoming" && z.tier >= 3)
+      out.push({ id: z.id, lat: z.lat, lng: z.lng, color: z.color, kind: "event", dim: true });
+  }
+  return out;
+}
+
+export function beamFeatures(spots: readonly BeamSpot[]): Feature[] {
+  const out: Feature[] = [];
+  for (const b of spots) {
+    const height = BEAM_HEIGHT[b.kind] * (b.dim ? 0.6 : 1);
+    // A totem stands at a zone centre: the beam rises out of its crown.
+    const base = b.kind === "zone" || b.kind === "event" ? 6 : 2;
+    for (const [part, r] of [["core", b.kind === "find" ? 1.4 : 2.2], ["halo", b.kind === "find" ? 4 : 6.5]] as const)
+      out.push({
+        type: "Feature",
+        properties: {
+          id: `${b.id}:${part}`,
+          part,
+          color: b.color,
+          base,
+          height,
+          dim: !!b.dim,
+        },
+        geometry: { type: "Polygon", coordinates: [circle(b.lng, b.lat, r, 10)] },
+      });
   }
   return out;
 }

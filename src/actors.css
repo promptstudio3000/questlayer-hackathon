@@ -168,3 +168,34 @@
 /* Static arena prop under the weekly boss (Great Portal). */
 .actor-arena { pointer-events: none; width: 88px; height: 88px; opacity: 0.9; }
 .actor-arena .actor-sprite { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(223, 171, 255, 0.7)); }
+/* Sky beam over important characters, so they read from far away. */
+.actor-marker {
+  position: relative;
+}
+.actor-quest_giver::before,
+.actor-trader::before,
+.actor-keeper::before,
+.actor-storyteller::before,
+.actor-boss::before,
+.actor-wandering_rare::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 38px;
+  z-index: -1;
+  width: 8px;
+  height: min(240px, 32vh);
+  transform: translateX(-50%);
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(to top, #4adbfbcc, #4adbfb55 55%, #4adbfb00);
+  box-shadow: 0 0 14px 4px #4adbfb40;
+  pointer-events: none;
+}
+.actor-boss::before,
+.actor-wandering_rare::before {
+  background: linear-gradient(to top, #f643f0cc, #f643f055 55%, #f643f000);
+  box-shadow: 0 0 14px 4px #f643f040;
+}
+.actor-defeated::before {
+  display: none;
+}

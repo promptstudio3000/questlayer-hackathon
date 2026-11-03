@@ -175,23 +175,28 @@ function publicManifest(db, w) {
 }
 
 // Street worlds get today's POI quests on first load (docs/WORLDS-PLAN.md C.3,
-// task W6), from the local POI file only; city worlds and the arena never do.
+// task W6), from the local POI file only. City worlds (auto and reviewed, the
+// city demo too) get them per H3 cell: the player's cell, or `cellAt` when the
+// player asks to search another spot of the same city ("Search this area").
 export async function ensureWorld(
   db,
   location = HOME,
   arena = true,
   now = Date.now(),
-  { mapData = {}, poiSource } = {},
+  { mapData = {}, poiSource, cellAt = null } = {},
 ) {
   const world = await ensureBaseWorld(db, location, arena, now, { mapData });
-  // Reviewed cities keep their own plan; auto cities get POI quests in the
-  // player's H3 cell (W6 + W5), street cells in the whole cell world.
-  if (arena || (world.cityId && world.cityStatus !== "auto")) return world;
+  if (!world.cityId && arena) return world;
+  // A searched spot must lie in the same city; otherwise the player's own cell.
+  const at =
+    world.cityId && cellAt && cityFor(cellAt)?.id === world.cityId
+      ? cellAt
+      : location;
   try {
     return materializePoiQuests(db, world, {
       source: poiSource === undefined ? defaultPoiSource() : poiSource,
       now,
-      cell: world.cityId ? latLngToCell(location.lat, location.lng, 7) : null,
+      cell: world.cityId ? latLngToCell(at.lat, at.lng, 7) : null,
     });
   } catch (error) {
     // POI quests are an addition: a broken POI file never hides the street world.

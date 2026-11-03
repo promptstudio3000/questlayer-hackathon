@@ -239,7 +239,7 @@ test("an empty cell says nothing here yet; a missing POI file changes nothing", 
   }
 });
 
-test("a city cell and the arena use their own world, never POI quests", async () => {
+test("a city cell and the arena use their own world, each with its own POI quests", async () => {
   const db = openDatabase(":memory:");
   try {
     const cityPois = fixturePois(latLngToCell(DEFAULT_CITY.center.lat, DEFAULT_CITY.center.lng, 7));
@@ -251,10 +251,12 @@ test("a city cell and the arena use their own world, never POI quests", async ()
       poiSource: staticPoiSource(cityPois),
     });
     assert.ok(arena.arena);
-    assert.equal(
-      db.prepare("SELECT count(*) n FROM quests WHERE id LIKE '%:quest:poi-%'").get().n,
-      0,
-    );
+    assert.notEqual(city.id, arena.id);
+    // Reviewed cities add POI quests per cell (docs/WORLDS-PLAN.md); each world keeps its own set.
+    const per = (id) =>
+      db.prepare("SELECT count(*) n FROM quests WHERE world_id=? AND id LIKE '%:quest:poi-%'").get(id).n;
+    assert.ok(per(city.id) > 0);
+    assert.ok(per(arena.id) > 0);
   } finally {
     db.close();
   }
