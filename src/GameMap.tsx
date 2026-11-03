@@ -46,6 +46,8 @@ export type GameMapProps = {
   onCoin?: (coinId: string) => void;
   overview: boolean;
   focusZone: Zone | null;
+  /** The one place the player should head to next (coach / nearest quest). */
+  nextZoneId?: string | null;
   nativeTarget?: (Point & { label: string }) | null;
   nativeTargetKind?: "coin" | "route" | "discovery";
   playerTier?: number;
@@ -590,14 +592,23 @@ export function GameMap(props: GameMapProps) {
       const node = document.createElement("button");
       const art = zoneObjectPresentation(z, props.world.quests, objectContext);
       const selected = props.focusZone?.id === z.id;
+      const next = !selected && props.nextZoneId === z.id;
       const countdown = zoneCountdown(z, zoneQuests, zoneNow);
       wrap.className = `zone-totem-marker tier-${z.tier} phase-${countdown.phase}${props.overview ? " map-overview" : ""}${props.globe ? " hidden" : ""}`;
-      node.className = `zone-map-pin game-object-map-pin tier-${z.tier}${props.overview ? " map-overview-pin" : ""}`;
-      node.title = `${z.name} · ${art.label}`;
+      node.className = `zone-map-pin game-object-map-pin tier-${z.tier}${next ? " zone-map-pin-next" : ""}${props.overview ? " map-overview-pin" : ""}`;
+      node.title = `${z.name} · ${art.label}${next ? " · next quest" : ""}`;
       const detail = zoneLandmarkLabel(z, zoneQuests, zoneNow);
       node.setAttribute("aria-label", `${node.title}${detail ? ` · ${detail}` : ""}`);
       node.setAttribute("aria-pressed", String(selected));
       node.innerHTML = gameObjectMarkup({ ...art, selected });
+      if (next) {
+        node.dataset.next = "true";
+        const tag = document.createElement("i");
+        tag.className = "zone-map-pin-next-label";
+        tag.setAttribute("aria-hidden", "true");
+        tag.textContent = "Next quest";
+        node.append(tag);
+      }
       node.addEventListener("click", (e) => {
         e.stopPropagation();
         latest.current.onZone(z);
@@ -625,6 +636,7 @@ export function GameMap(props: GameMapProps) {
     props.overview,
     props.globe,
     props.focusZone?.id,
+    props.nextZoneId,
     zoneArtKey,
   ]);
   // Countdown chips tick with the app clock; only their text changes.
