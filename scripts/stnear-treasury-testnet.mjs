@@ -155,6 +155,8 @@ async function status() {
         account: settings.account,
         contract: settings.contract,
         stnear: near(live.balance),
+        vault: live.vault,
+        parkedInVaultNear: near(live.parked),
         price: near(live.price),
         valueNear: near(live.value),
         principalNear: near(principal),

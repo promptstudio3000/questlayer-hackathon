@@ -9,6 +9,7 @@ import {
   fundingAttachment,
   SPONSOR_STORAGE_FEE,
   createTreasuryView,
+  readTreasury,
 } from "../server/native/stnear-treasury.mjs";
 
 const N = 10n ** 24n;
@@ -118,4 +119,79 @@ test("public view combines the record with the live balance", async () => {
     createTreasuryView({ provider, record: () => null }),
     /not in stNEAR/,
   );
+});
+
+test("stNEAR parked in the yield vault counts as treasury value, but only wallet stNEAR is sold", async () => {
+  const settings = treasurySettings({}, "testnet");
+  assert.equal(settings.vault, "questlayer-yield-20261102.testnet");
+  assert.equal(
+    treasurySettings({ STNEAR_TREASURY_VAULT: "off" }, "testnet").vault,
+    null,
+  );
+  const price = 3n * N;
+  // 2 stNEAR in the wallet (6 NEAR) + 4 NEAR parked, principal 9.9 NEAR.
+  const base = {
+    balance: 2n * N,
+    price,
+    principal: (99n * N) / 10n,
+    settings: { ...settings, maxHarvestBps: 200 },
+    date,
+  };
+  const without = planHarvest(base);
+  assert.equal(without.reason, "growth-below-minimum");
+  const withVault = planHarvest({ ...base, parked: 4n * N });
+  assert.equal(withVault.action, "harvest");
+  assert.equal(withVault.growth, N / 10n);
+  // Growth larger than the wallet can cover is never sold from the vault.
+  const tiny = planHarvest({
+    ...base,
+    balance: N / 1000n,
+    parked: (99n * N) / 10n + N / 10n - (3n * N) / 1000n,
+  });
+  assert.equal(tiny.reason, "growth-not-in-wallet");
+
+  const enc = (v) => [...Buffer.from(JSON.stringify(v))];
+  const provider = {
+    async query(q) {
+      if (q.method_name === "ft_balance_of")
+        return { result: enc((2n * N).toString()) };
+      if (q.method_name === "get_st_near_price")
+        return { result: enc(price.toString()) };
+      if (q.method_name === "get_position")
+        return {
+          result: enc([
+            {
+              token_id: "usdc.fakes.testnet",
+              kind: "stable",
+              withdrawable: "5",
+            },
+            {
+              token_id: "meta-v2.pool.testnet",
+              kind: "lst",
+              withdrawable: (4n * N).toString(),
+            },
+          ]),
+        };
+      throw new Error(q.method_name);
+    },
+  };
+  const live = await readTreasury(provider, {
+    contract: "meta-v2.pool.testnet",
+    account: "op.testnet",
+    vault: settings.vault,
+  });
+  assert.equal(live.parked, 4n * N);
+  assert.equal(live.value, 10n * N);
+  const broken = {
+    query: async (q) =>
+      q.method_name === "get_position"
+        ? Promise.reject(new Error("x"))
+        : provider.query(q),
+  };
+  const safe = await readTreasury(broken, {
+    contract: "meta-v2.pool.testnet",
+    account: "op.testnet",
+    vault: settings.vault,
+  });
+  assert.equal(safe.parked, 0n);
 });
