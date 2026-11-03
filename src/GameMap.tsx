@@ -516,17 +516,24 @@ export function GameMap(props: GameMapProps) {
       setReady(false);
     };
   }, []);
+  // Coins get their own effect: re-sending them on every zone or overview
+  // change was the map's heaviest upload on a phone.
+  const coins = props.world?.coins;
   useEffect(() => {
     const m = map.current;
-    if (!m || !ready || !props.world) return;
+    if (!m || !ready || !coins) return;
     (m.getSource("coins") as GeoJSONSource)?.setData({
       type: "FeatureCollection",
-      features: props.world.coins.map((c) => ({
+      features: coins.map((c) => ({
         type: "Feature",
         properties: { id: c.id, find: !!c.find },
         geometry: { type: "Point", coordinates: [c.lng, c.lat] },
       })),
     });
+  }, [coins, ready]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !props.world) return;
     const zoneNow = objectContext.now,
       zoneQuests = props.world.quests;
     (m.getSource("zones") as GeoJSONSource)?.setData({

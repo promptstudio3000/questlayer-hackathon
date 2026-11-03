@@ -910,7 +910,11 @@ export default function App() {
     worldLoading.current = true;
     setBusy("world");
     try {
-      const w = await api<World>("/world", { location, arena: asArena });
+      const w = await api<World>("/world", {
+        location,
+        arena: asArena,
+        near: location,
+      });
       if (
         worldReads.current.isCurrent(token, worldContext("replace")) &&
         w.arena === asArena
@@ -944,8 +948,10 @@ export default function App() {
       return;
     const token = worldReads.current.begin(worldContext("refresh"));
     try {
+      // Only the coins around the player (docs/PERFORMANCE-BUDGET.md).
+      const nearAt = `${state.position.lat.toFixed(5)},${state.position.lng.toFixed(5)}`;
       const w = await api<World>(
-        `/world?id=${encodeURIComponent(state.world.id)}`,
+        `/world?id=${encodeURIComponent(state.world.id)}&near=${nearAt}`,
       );
       if (
         worldReads.current.isCurrent(token, worldContext("refresh")) &&
@@ -1052,6 +1058,17 @@ export default function App() {
       if (questRefresh) clearTimeout(questRefresh);
     };
   }, [player?.id]);
+  // The world carries only nearby coins: fetch the next ring once the player
+  // has walked (or jumped) a third of the way to its edge.
+  const nearRefreshAt = useRef(0);
+  useEffect(() => {
+    const ring = world?.coinsNear;
+    if (!player || !ring) return;
+    if (meters(position, ring) < ring.radiusM / 3) return;
+    if (Date.now() - nearRefreshAt.current < 3000) return;
+    nearRefreshAt.current = Date.now();
+    void refreshWorld();
+  }, [player?.id, world?.coinsNear, position]);
   useEffect(() => {
     if (!player) return;
     const t = setInterval(() => {

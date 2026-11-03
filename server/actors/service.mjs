@@ -31,6 +31,10 @@ export const MAX_GPS_ACCURACY_M = 30;
 export const MAX_FIX_AGE_MS = 15_000;
 export const MAX_SPEED_MPS = 15;
 export const SEGMENT_HORIZON_MS = 2 * 3600_000;
+// The map refetches every minute, so the list sends only the next 20 minutes
+// of each walk (was the full 2 h: ~80 KB a minute on a phone, see
+// docs/PERFORMANCE-BUDGET.md). SEGMENT_HORIZON_MS still decides who is listed.
+export const LIST_HORIZON_MS = 20 * 60_000;
 export const ENCOUNTERS_PER_HOUR = 60;
 
 // Slices can add fields to an ActorView (the hunt slice adds boss HP and the
@@ -210,7 +214,7 @@ export function createActorService(db, options = {}) {
   function view(instance, now, progress, { trim = true } = {}) {
     const { def } = instance;
     const segments = (trim
-      ? instance.segments.filter((s) => s.to > now - 60_000 && s.from < now + SEGMENT_HORIZON_MS)
+      ? instance.segments.filter((s) => s.to > now - 60_000 && s.from < now + LIST_HORIZON_MS)
       : instance.segments
     ).map((s) => ({
       from: s.from,

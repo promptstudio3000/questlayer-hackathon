@@ -88,7 +88,8 @@ import {
 } from "./native/network.mjs";
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -170,6 +171,7 @@ const nativeAttestationsDisabled =
 const backgroundWorkersDisabled =
   process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
+ensureMapReadIndexes(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
 const adventureResults = createAdventureResults(db);
@@ -787,6 +789,28 @@ async function body(req) {
   } catch {
     assert(false, "Invalid request.");
   }
+}
+// GET reads the client polls (the map refreshes every 15 s): the phone's own
+// cache keeps the last body and the server answers 304 when nothing changed.
+// Private, so a shared proxy never stores one player's view.
+function respondCached(req, res, data) {
+  const body = JSON.stringify(data),
+    tag = `"${createHash("sha1").update(body).digest("base64url").slice(0, 27)}"`,
+    seen = String(req.headers["if-none-match"] || "")
+      .split(",")
+      .map((t) => t.trim().replace(/^W\//, ""));
+  const headers = {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "private, no-cache",
+    ETag: tag,
+    Vary: "Cookie",
+  };
+  if (seen.includes(tag)) {
+    res.writeHead(304, headers);
+    return res.end();
+  }
+  res.writeHead(200, headers);
+  res.end(body);
 }
 function respond(res, data, status = 200, headers = {}) {
   res.writeHead(status, {
@@ -2009,24 +2033,26 @@ async function api(req, res, url) {
     const world = await ensureWorld(db, location, input.arena !== false);
     // layerId is added to the response only, never to the stored manifest.
     return respond(res, {
-      ...worldView(db, world.id, player, { ...query, lang: input.lang === "cs" ? "cs" : "en" }),
+      ...worldView(db, world.id, player, {
+        ...query,
+        near: input.near,
+        lang: input.lang === "cs" ? "cs" : "en",
+      }),
       layerId: DEFAULT_LAYER.id,
     });
   }
   if (path === "/api/world" && method === "GET") {
     limit("world-read", player, 240, "Please wait before refreshing the map again.");
-    const w = worldView(
-      db,
-      url.searchParams.get("id"),
-      player,
-      worldQuery({
+    const w = worldView(db, url.searchParams.get("id"), player, {
+      near: url.searchParams.get("near") ?? undefined,
+      ...worldQuery({
         bounds: url.searchParams.get("bbox") ?? undefined,
         limit: url.searchParams.get("limit") ?? undefined,
         cursor: url.searchParams.get("cursor") ?? undefined,
       }),
-    );
+    });
     assert(w, "This area could not be found. Refresh the map.", 404);
-    return respond(res, { ...w, layerId: DEFAULT_LAYER.id });
+    return respondCached(req, res, { ...w, layerId: DEFAULT_LAYER.id });
   }
   if (path === "/api/coins/claim" && method === "POST") {
     limit("coin", player, 240, "Please slow down collecting coins.");

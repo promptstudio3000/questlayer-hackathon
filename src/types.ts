@@ -163,6 +163,8 @@ export type World = {
   endsAt: number;
   zones: Zone[];
   coins: Coin[];
+  /** Set when the server sent only the coins within radiusM of this point. */
+  coinsNear?: Point & { radiusM: number };
   quests: Quest[];
 };
 export type Listing = {
