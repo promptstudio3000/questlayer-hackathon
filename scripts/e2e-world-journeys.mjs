@@ -27,6 +27,9 @@ import {
   pathsAround,
 } from "../tests/fixtures/world-coverage/czechia.mjs";
 import { coverageReport, openPoiDb } from "../server/poi/coverage.mjs";
+import "../server/schema-catalog.mjs";
+import { openDatabase } from "../server/database.mjs";
+import { createActorService } from "../server/actors/service.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -166,9 +169,27 @@ async function journey(browser, server, j, expected) {
         })}`,
       )
     ).json();
-    const cast = (actors.actors || [])
+    let cast = (actors.actors || [])
       .map((a) => a.role || a.kind)
       .filter(Boolean);
+    // Street casts walk only in city hours (08:00-20:00 local). A CI run at
+    // night plans the same cast with the service's clock set to local noon,
+    // so the check still holds at any hour.
+    if (!cast.length) {
+      const db = openDatabase(server.databasePath);
+      try {
+        const noon = world.endsAt - 12 * 3600_000;
+        const planned = await createActorService(db, { clock: () => noon }).list({
+          player: null,
+          worldId: world.id,
+          location: j.spot,
+        });
+        cast = planned.actors.map((a) => a.role || a.kind).filter(Boolean);
+        console.log(`  outside city hours: ${cast.length} actors planned for noon`);
+      } finally {
+        db.close();
+      }
+    }
     assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
     // POI quests for this cell, from the database the server reads.
     assert.ok(
