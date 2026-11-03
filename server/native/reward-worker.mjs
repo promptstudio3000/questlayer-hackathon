@@ -357,11 +357,24 @@ export async function runRewardWorker(
                   : "refresh";
           }
           if (action) {
-            await sendOwned("maintain_vault", {
+            const transactionHash = await sendOwned("maintain_vault", {
               vault_id: v.accountId,
               action,
             });
             state = await reader.view("get_state", {}, true);
+            // One line per maintenance call so yield-cycle steps stay auditable.
+            console.log(
+              JSON.stringify({
+                event: "vault-maintenance",
+                vault: v.accountId,
+                action,
+                transactionHash,
+                stage: state.stage,
+                gameCredit: state.game_credit,
+                gamePaid: state.game_paid,
+                at: new Date(clock()).toISOString(),
+              }),
+            );
           }
           writeOwned(
             "INSERT INTO native_vault_jobs VALUES(?,?,?,?,NULL) ON CONFLICT(account_id) DO UPDATE SET next_check=excluded.next_check,last_action=excluded.last_action,last_state=excluded.last_state,last_error=NULL",
