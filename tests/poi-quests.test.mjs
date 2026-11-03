@@ -279,18 +279,18 @@ test("POI quests pay XP once; a category hunt accepts its stops in any order", a
     assert.equal(hunt.activity.templateId, "poi-category-hunt");
     assert.equal(hunt.checkpointCount, 3);
     const stops = hunt.activity.steps.map((s) => s.point);
-    let t = NOW + 1000;
+    let t = NOW + 600_000;
     const step1 = advanceRoute(db, player, hunt.id, fix(stops[2], t), 0, t);
     assert.deepEqual(step1, { awaiting: true, progress: { completed: 1, total: 3 } });
     // The same stop again does not count twice: the nearest open stop is far.
-    t += 1000;
+    t += 600_000; // walking pace (fair-play travel guard)
     assert.throws(() => advanceRoute(db, player, hunt.id, fix(stops[2], t), 1, t), /closer/);
     const mid = worldView(db, w.id, player, { now: t }).quests.find((q) => q.id === hunt.id);
     assert.deepEqual(mid.visitedStops, [2]);
     assert.deepEqual(mid.nextPoint, stops[0]);
-    t += 1000;
+    t += 600_000; // walking pace (fair-play travel guard)
     advanceRoute(db, player, hunt.id, fix(stops[0], t), 1, t);
-    t += 1000;
+    t += 600_000; // walking pace (fair-play travel guard)
     const done = advanceRoute(db, player, hunt.id, fix(stops[1], t), 2, t);
     assert.equal(done.xp, POI_XP.hunt);
     assert.equal(done.reward, 0);

@@ -231,6 +231,7 @@ import {
   subscribeFeedback,
   type FeedbackPreferences,
 } from "./feedback";
+import LandmarkClue from "./LandmarkClue";
 import {
   WALK_CAP_M,
   WALK_STEP_MS,
@@ -323,6 +324,7 @@ export default function App() {
   };
   const worldOwner = useRef<string | undefined>(undefined);
   const [player, setPlayer] = useState<Player | null>(null),
+    [clueChoice, setClueChoice] = useState<Record<string, string>>({}),
     [loaded, setLoaded] = useState(false),
     [meUnreachable, setMeUnreachable] = useState(false),
     [worldData, setWorld] = useState<World | null>(null),
@@ -1029,8 +1031,15 @@ export default function App() {
         w ? { ...w, coins: w.coins.filter((c) => c.id !== d.id) } : w,
       );
     });
+    // Every explorer's discovery is broadcast: coalesce bursts into one map
+    // refresh so a busy city does not multiply world reads per client.
+    let questRefresh: ReturnType<typeof setTimeout> | null = null;
     s.addEventListener("quest", () => {
-      if (latest.current.player?.id === owner) void refreshWorld();
+      if (latest.current.player?.id !== owner || questRefresh) return;
+      questRefresh = setTimeout(() => {
+        questRefresh = null;
+        if (latest.current.player?.id === owner) void refreshWorld();
+      }, 2500);
     });
     s.addEventListener("market", () => void me());
     const sync = setInterval(() => {
@@ -1041,6 +1050,7 @@ export default function App() {
     return () => {
       s.close();
       clearInterval(sync);
+      if (questRefresh) clearTimeout(questRefresh);
     };
   }, [player?.id]);
   useEffect(() => {
@@ -2536,6 +2546,7 @@ export default function App() {
           result?: AdventureResult;
           replayed?: boolean;
           awaiting?: boolean;
+          clue?: { correct: boolean; xp: number; answer: string };
           progress?: { completed: number; total: number };
         }>(
           q?.kind === "route" && (q.checkpoint || 0) < (q.checkpointCount || 0)
@@ -2544,6 +2555,7 @@ export default function App() {
           {
             questId: qId,
             checkpoint: q?.checkpoint || 0,
+            ...(q?.clue ? { answer: clueChoice[qId] } : {}),
             fix: arena
               ? { ...position, accuracy: 0, timestamp: Date.now() }
               : fix,
@@ -2560,6 +2572,12 @@ export default function App() {
         if (sameView && r.awaiting)
           notify(
             tr("Stop {0} of {1} confirmed. Walk to the next stop.", { 0: r.progress?.completed, 1: r.progress?.total }),
+          );
+        else if (sameView && !r.replayed && r.clue)
+          notify(
+            r.clue.correct
+              ? tr("Right answer: +{0} XP.", { 0: r.xp })
+              : tr("Visit counted: +{0} XP. The right answer is now marked.", { 0: r.xp }),
           );
         else if (sameView && !r.replayed)
           notify(
@@ -3319,6 +3337,16 @@ export default function App() {
                       </Badge>
                     </div>
                     <p>{q.activity?.objective || q.description}</p>
+                    {q.clue && (
+                      <LandmarkClue
+                        clue={q.clue}
+                        choice={clueChoice[q.id]}
+                        disabled={!!busy || !!q.completed}
+                        onChoose={(choice) =>
+                          setClueChoice((all) => ({ ...all, [q.id]: choice }))
+                        }
+                      />
+                    )}
                     {q.activity && (
                       <div className="play-facts">
                         <span>
@@ -3411,6 +3439,7 @@ export default function App() {
                         className="primary-button"
                         disabled={
                           !!busy ||
+                          (!!q.clue && !clueChoice[q.id]) ||
                           meters(position, questPoint(q)) > 25 ||
                           q.opens_at > now ||
                           q.closes_at <= now

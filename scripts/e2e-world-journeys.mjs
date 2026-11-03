@@ -69,8 +69,7 @@ async function startServer(dir, poiDbPath) {
       DISABLE_RELAYER: "1",
       POI_DB_PATH: poiDbPath,
       ACTORS_ENABLED: "1",
-      // NPC hours are 08:00-20:00 local; keep the cast out so the journey
-      // checks the same thing whatever time CI runs.
+      // Generic actors keep 07:00-22:00 hours; the e2e runs at any hour.
       ACTORS_ALL_DAY: "1",
     },
     stdio: ["ignore", "inherit", "inherit"],
@@ -172,6 +171,8 @@ async function journey(browser, server, j, expected) {
     const cast = (actors.actors || [])
       .map((a) => a.role || a.kind)
       .filter(Boolean);
+    // The e2e server plans the cast all day (ACTORS_ALL_DAY), so this holds
+    // at any hour; the 07:00-22:00 schedule itself is unit-tested.
     assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
     // POI quests for this cell, from the database the server reads.
     assert.ok(

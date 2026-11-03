@@ -2,6 +2,9 @@
 // There is deliberately no HTTP endpoint that accepts a claimed operator role.
 import { existsSync } from "node:fs";
 import { isAbsolute } from "node:path";
+// Load every module schema first: the live database holds tables that modules
+// create lazily, and preflight rejects tables it does not know.
+import "../schema-catalog.mjs";
 import { openDatabase } from "../database.mjs";
 import { SocialContent } from "../social-content.mjs";
 import { assert } from "../domain.mjs";

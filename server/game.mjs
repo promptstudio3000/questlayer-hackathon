@@ -21,6 +21,7 @@ import { contains } from "./spatial/city-pack.mjs";
 import { closedPlaces, assertPlaceOpen } from "./spatial/place-safety.mjs";
 import { assertWorldActive } from "./operator/world-controls.mjs";
 import { QUEST_POLICY } from "./quest-templates.mjs";
+import { answerClue } from "./landmark-clue.mjs";
 import {
   POI_QUEST_POLICY,
   huntVisited,
@@ -33,6 +34,12 @@ import {
   streetFindIds,
 } from "./street-finds.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
+import {
+  XP_CAP_NOTES,
+  capLocationXp,
+  ensureFairPlaySchema,
+  guardTravel,
+} from "./fair-play.mjs";
 import {
   createAdventureResults,
   demoAdventureWorld,
@@ -82,6 +89,7 @@ export function reserveYield(db, jobKey, net, now = Date.now()) {
   });
 }
 export function claimCoin(db, player, coinId, fix, now = Date.now()) {
+  ensureFairPlaySchema(db);
   return atomic(db, () => {
     const coin = db
       .prepare(
@@ -105,8 +113,10 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     );
     assertPlaceOpen(closedPlaces(db, world.cityId), null, coin);
     assertWorldActive(db, world.cityId, world.day);
-    if (!world.arena) validateFix(fix, coin, now);
-    else {
+    if (!world.arena) {
+      validateFix(fix, coin, now);
+      guardTravel(db, player, fix, now);
+    } else {
       point(fix);
       assert(
         distance(fix, coin) <= COIN_ARENA_RADIUS_M,
@@ -127,7 +137,13 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
     ).run(coin.value_u, coin.value_u, "coins");
     const find = streetFindIds(db, coin.world_id).has(coinId),
-      xp = find ? STREET_FIND_XP : STREET_COIN_XP;
+      { xp, cap } = capLocationXp(
+        db,
+        player,
+        find ? STREET_FIND_XP : STREET_COIN_XP,
+        coin,
+        now,
+      );
     db.prepare("UPDATE players SET gold_u=gold_u+?,xp=xp+? WHERE id=?").run(
       coin.value_u,
       xp,
@@ -139,16 +155,22 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       "coin",
       find ? "Street find" : "Street coin",
       coin.value_u,
-      { coin: coinId, ...(find ? { find: true } : {}) },
+      { coin: coinId, ...(find ? { find: true } : {}), ...(cap ? { xpCap: cap } : {}) },
     );
-    return { value: coin.value_u, xp, ...(find ? { find: true } : {}) };
+    return {
+      value: coin.value_u,
+      xp,
+      ...(find ? { find: true } : {}),
+      ...(cap ? { xpCap: cap, note: XP_CAP_NOTES[cap] } : {}),
+    };
   });
 }
-export function claimQuest(db, player, questId, fix, now = Date.now()) {
+export function claimQuest(db, player, questId, fix, now = Date.now(), { answer = null } = {}) {
+  ensureFairPlaySchema(db);
   const results = createAdventureResults(db);
-  return atomic(db, () => settleQuest(db, player, questId, fix, now, results));
+  return atomic(db, () => settleQuest(db, player, questId, fix, now, results, null, answer));
 }
-function settleQuest(db, player, questId, fix, now, results, target = null) {
+function settleQuest(db, player, questId, fix, now, results, target = null, answer = null) {
   const q = db
     .prepare(
       "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
@@ -169,7 +191,13 @@ function settleQuest(db, player, questId, fix, now, results, target = null) {
   );
   // An unordered POI hunt finishes at whichever stop came last.
   validateQuestEvidence(db, player, q, fix, now, target || q);
+  if (!JSON.parse(q.manifest).arena) guardTravel(db, player, fix, now);
   const meta = JSON.parse(q.metadata || "{}");
+  // A landmark clue (server/landmark-clue.mjs) takes one answer with the visit.
+  const clue = meta.clue
+    ? answerClue(db, { questId: q.id, player, clue: meta.clue, choice: answer, now })
+    : null;
+  const earned = clue ? clue.xp : q.xp;
   if (q.kind === "route")
     assert(
       (db
@@ -194,9 +222,10 @@ function settleQuest(db, player, questId, fix, now, results, target = null) {
       ).run(reward, reward, "zones");
   }
   db.prepare("INSERT INTO quest_claims VALUES (?,?,?)").run(q.id, player, now);
+  const { xp, cap } = capLocationXp(db, player, earned, target || q, now);
   db.prepare("UPDATE players SET gold_u=gold_u+?,xp=xp+? WHERE id=?").run(
     reward,
-    q.xp,
+    xp,
     player,
   );
   let item = null;
@@ -208,22 +237,26 @@ function settleQuest(db, player, questId, fix, now, results, target = null) {
     player,
     quest: q,
     reward,
-    xp: q.xp,
+    xp,
     item,
     now,
   });
   history(db, player, "quest", q.title, reward, {
     quest: q.id,
-    xp: q.xp,
+    xp,
     item: item?.name,
     resultId,
+    ...(clue ? { clue: clue.correct } : {}),
+    ...(cap ? { xpCap: cap } : {}),
   });
   return {
     reward,
-    xp: q.xp,
+    xp,
     item,
+    ...(clue ? { clue } : {}),
     result: results.get(player, resultId),
     replayed: false,
+    ...(cap ? { xpCap: cap, note: XP_CAP_NOTES[cap] } : {}),
   };
 }
 function validateQuestEvidence(db, player, q, fix, now, target) {
@@ -270,6 +303,7 @@ export function advanceRoute(
   expectedCheckpoint,
   now = Date.now(),
 ) {
+  ensureFairPlaySchema(db);
   const results = createAdventureResults(db);
   return atomic(db, () => {
     const q = db
@@ -330,6 +364,7 @@ export function advanceRoute(
         422,
         "GPS_REPLAY",
       );
+    if (!JSON.parse(q.manifest).arena) guardTravel(db, player, fix, now);
     db.prepare(
       "INSERT INTO quest_progress VALUES (?,?,?,?) ON CONFLICT(quest_id,player_id) DO UPDATE SET checkpoint=excluded.checkpoint,updated_at=excluded.updated_at",
     ).run(q.id, player, current + 1, requiresNewFix ? fix.timestamp : now);

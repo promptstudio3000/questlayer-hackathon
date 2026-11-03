@@ -8,9 +8,9 @@ Nothing in this file is sent automatically; the owner confirms the exact payload
 
 Draft (≤ 280 characters, attach the demo video):
 
-> Built at NEAR HACKATHON: QuestLayer, a walk-and-discover game on the real map of Plzeň. Type a name, play, earn a
-> glowing Aura and wear it. Your NEAR account, rewards and NFTs are created and signed in the background: no wallet
-> popups, no seed phrases. @NEARProtocol #NEARHackathon Repo + how to try: github.com/promptstudio3000/questlayer-hackathon
+> Built at NEAR HACKATHON: QuestLayer, a walk-and-discover game on the real map of Czechia. Type a name, do
+> quests at real places near you, wear your Aura. NEAR account, rewards and NFTs run in the background: no
+> wallet popups. @NEARProtocol #NEARHackathon github.com/promptstudio3000/questlayer-hackathon
 
 Optional tags: @NearLegion @NearBuilders. End with a question, e.g. "Which city should we map next?"
 
@@ -31,7 +31,7 @@ The 3-minute script with shot list, voice-over and fallbacks is [HACKATHON-DEMO.
   "nearAddress": "<mainnet payout account, e.g. team.near>",
   "projectUrl": "https://github.com/promptstudio3000/questlayer-hackathon",
   "demoUrl": "https://x.com/<owner>/status/<id>",
-  "idea": "QuestLayer is a location-based exploration game on real OpenStreetMap geography (Plzeň). Players start with a name only; the server creates a sponsored NEAR sub-account per player and relays NEP-366 meta-transactions, so rewards (NEP-171 Auras, XP, level entitlements) and the fixed-price Aura market settle on NEAR testnet without wallet popups, seed phrases or gas prompts. The economy is backed before publication (coins and zone prizes reserved from funded buckets, 50/50 allocation, first valid claim wins, exactly-once settlement) and documented in one readable rules page.",
+  "idea": "QuestLayer is a location-based exploration game on real OpenStreetMap geography across Czechia: about 198,000 safety-filtered public places become daily quests in every street cell, with NPCs, monsters and street coins, while Plzeň is the reviewed city with funded reward days. Players start with a name only; the server creates a sponsored NEAR sub-account per player and relays NEP-366 meta-transactions, so rewards (NEP-171 Auras, XP, level entitlements) and the fixed-price Aura market settle on NEAR testnet without wallet popups, seed phrases or gas prompts. The economy is backed before publication (coins and zone prizes reserved from funded buckets, 50/50 allocation, first valid claim wins, exactly-once settlement) and documented in one readable rules page.",
   "consent": true
 }
 ```
