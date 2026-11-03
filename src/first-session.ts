@@ -30,14 +30,14 @@ export const FIRST_STEPS: FirstStep[] = [
     id: "find",
     get title() { return tr("Reach the nearest find"); },
     get hint() { return tr("A street find waits nearby. Walk there and your ghost picks it up."); },
-    get action() { return tr("Walk there"); },
+    get action() { return tr("Point me there"); },
     done: "First street find collected.",
   },
   {
     id: "coin",
     get title() { return tr("Pick up a coin"); },
     get hint() { return tr("Coins lie along the streets. Walk over one to pick it up."); },
-    get action() { return tr("Walk to a coin"); },
+    get action() { return tr("Point me to a coin"); },
     done: "First coin in your pocket.",
   },
   {
