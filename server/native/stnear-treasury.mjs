@@ -20,6 +20,10 @@ export const TREASURY_TOKENS = {
   testnet: {
     contract: "meta-v2.pool.testnet",
     label: "stNEAR (Meta Pool testnet)",
+    // The yield vault the operator also parks stNEAR in
+    // (public/native-yield-vault-testnet.json). That stNEAR is still treasury
+    // principal: without counting it the harvest sees a loss and never runs.
+    vault: "questlayer-yield-20261102.testnet",
   },
   mainnet: { contract: "meta-pool.near", label: "stNEAR (Meta Pool)" },
 };
@@ -43,6 +47,11 @@ export function treasurySettings(env = process.env, network = "testnet") {
     network,
     contract: env.STNEAR_TREASURY_CONTRACT || token?.contract || null,
     account: env.STNEAR_TREASURY_ACCOUNT || null,
+    // "off" disables counting stNEAR held in the yield vault.
+    vault:
+      env.STNEAR_TREASURY_VAULT === "off"
+        ? null
+        : env.STNEAR_TREASURY_VAULT || token?.vault || null,
     // Below this, growth waits for another day: the sponsor storage fee and
     // gas would otherwise eat a visible share of it.
     minHarvest: near(env.STNEAR_MIN_HARVEST_NEAR, 0.01),
@@ -76,6 +85,8 @@ export function harvestReceiptId(date) {
  *  balance    stNEAR held (yocto stNEAR)
  *  price      yocto NEAR per 1 stNEAR
  *  principal  NEAR put in and not yet taken out (yocto)
+ *  parked     NEAR value of treasury stNEAR held in the yield vault (yocto).
+ *             It counts toward value, but only wallet stNEAR can be sold.
  *  quote      (shares) => yocto NEAR the pool would pay right now, or null
  *             when the plan only needs the gross figures
  */
@@ -83,18 +94,19 @@ export function planHarvest({
   balance,
   price,
   principal,
+  parked = 0n,
   quote = null,
   settings,
   harvested = [],
   date,
 }) {
-  for (const [k, v] of Object.entries({ balance, price, principal }))
+  for (const [k, v] of Object.entries({ balance, price, principal, parked }))
     assert(typeof v === "bigint" && v >= 0n, `Invalid ${k}.`);
   assert(price > 0n, "Invalid price.");
   const receiptId = harvestReceiptId(date);
-  const value = valueOf(balance, price);
+  const value = valueOf(balance, price) + parked;
   const growth = value > principal ? value - principal : 0n;
-  const base = { receiptId, value, principal, growth, price, balance };
+  const base = { receiptId, value, principal, growth, price, balance, parked };
   if (harvested.includes(receiptId))
     return { ...base, action: "skip", reason: "already-harvested" };
   if (principal === 0n)
@@ -106,6 +118,8 @@ export function planHarvest({
   const sell = sharesFor(growth, price);
   if (sell === 0n)
     return { ...base, action: "skip", reason: "growth-below-minimum" };
+  if (sell > balance)
+    return { ...base, action: "skip", reason: "growth-not-in-wallet", sell };
   if (quote == null) return { ...base, action: "harvest", sell };
   assert(typeof quote === "bigint" && quote >= 0n, "Invalid quote.");
   const gross = valueOf(sell, price);
@@ -150,16 +164,45 @@ async function view(provider, contract, method, args = {}) {
   return JSON.parse(Buffer.from(r.result).toString());
 }
 
-/** Live read of the treasury position. */
-export async function readTreasury(provider, { contract, account }) {
+/**
+ * NEAR value of the account's stNEAR position in the yield vault. The vault
+ * pays the NEAR value back in stNEAR and sends LST growth to its treasury,
+ * so the position's `withdrawable` (yoctoNEAR) is what the treasury owns there.
+ */
+export async function readParked(provider, { contract, account, vault }) {
+  if (!vault) return 0n;
+  // A failed read counts nothing: that can only make the harvest skip, never oversell.
+  const rows = await view(provider, vault, "get_position", {
+    account_id: account,
+  }).catch(() => null);
+  const row = Array.isArray(rows)
+    ? rows.find((r) => r?.token_id === contract && r?.kind === "lst")
+    : null;
+  return row ? u128(String(row.withdrawable ?? "0"), "vault position") : 0n;
+}
+
+/** Live read of the treasury position (wallet stNEAR plus any parked in the vault). */
+export async function readTreasury(
+  provider,
+  { contract, account, vault = null },
+) {
   assert(contract && account, "Treasury is not configured.", 503);
-  const [balance, price] = await Promise.all([
+  const [balance, price, parked] = await Promise.all([
     view(provider, contract, "ft_balance_of", { account_id: account }),
     view(provider, contract, "get_st_near_price"),
+    readParked(provider, { contract, account, vault }),
   ]);
   const b = u128(balance, "stNEAR balance"),
     p = u128(price, "stNEAR price");
-  return { contract, account, balance: b, price: p, value: valueOf(b, p) };
+  return {
+    contract,
+    account,
+    vault,
+    balance: b,
+    price: p,
+    parked,
+    value: valueOf(b, p) + parked,
+  };
 }
 
 /** What the pool pays now for selling `shares` stNEAR instantly. */
@@ -197,6 +240,7 @@ export function createTreasuryView({
     const live = await readTreasury(provider, {
       contract: r.contract,
       account: r.account,
+      vault: r.vault ?? TREASURY_TOKENS[r.network]?.vault ?? null,
     });
     const principal = BigInt(r.principal || "0");
     const value = {
@@ -204,6 +248,8 @@ export function createTreasuryView({
       account: r.account,
       contract: r.contract,
       balance: s(live.balance),
+      parked: s(live.parked),
+      vault: live.vault,
       price: s(live.price),
       value: s(live.value),
       principal: s(principal),
