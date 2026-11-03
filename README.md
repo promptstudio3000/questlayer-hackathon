@@ -1,8 +1,9 @@
 # QuestLayer
 
 **Little adventures. Real discoveries.** A location-based exploration game on real OpenStreetMap geography,
-built on NEAR. Walk through Plzeň, collect street coins, open a zone chest, receive an Aura and wear it on your
-character. The NEAR account, the rewards and the Aura NFTs exist, but the player never sees a wallet popup,
+built on NEAR. Open it anywhere in Czechia and there is something to do nearby: street coins on mapped paths, quests
+at real public places, NPCs and monsters. In Plzeň, the funded showcase city, open a zone chest, receive an Aura and
+wear it on your character. The NEAR account, the rewards and the Aura NFTs exist, but the player never sees a wallet popup,
 a seed phrase or a gas prompt: the chain is a property of the items, not a screen.
 
 Built for the [NEAR Hackathon](https://nearhackathon.com/) (1–14 November 2026), tracks **Games With Real
@@ -28,12 +29,27 @@ Open **https://questlayer.promptstudio3000.com/** on a phone or desktop. No wall
 | 6 | Reload the page | Name, XP, Aura and equipment are still there. |
 | 7 | Profile → **Advanced** | Your NEAR account id and the network. This is the only place the chain is named. |
 
-On a phone outside Plzeň, **Use my location** switches to your own surroundings (street finds on mapped paths
-near you); the six daily zones with chests exist in Plzeň.
+### Anywhere in Czechia
+
+On a phone anywhere in Czechia, **Use GPS** (top bar) switches from the Plzeň city demo to your own surroundings.
+On desktop, set a location first (Chromium DevTools → Sensors → Location, e.g. Brno 49.1952, 16.6080).
+
+| Where you are | What you get |
+| --- | --- |
+| Any street cell (H3 res-7, about 5 km²) | Street coins on mapped paths, the generic NPC and monster cast, and up to six **place quests** a day at real public places (single visits and three-stop category hunts, one cell chest). "Nothing here yet" if the cell has no safe place. |
+| A town with at least 15,000 people | An **auto city**: daily zones built from map data with an **Unverified map** notice, plus the same place quests per cell. Never funded. Live when `/api/health` → `autoCities.status` is `on`; on 3 November the first build on the public host was still pending, so towns played as street cells. |
+| Plzeň (reviewed city) | The six daily zones with chests and the funded reward days. |
+
+The places come from one import of OpenStreetMap, Wikidata and GeoNames for Czechia, filtered for safety (no
+schools, military, private ground, places without a public path) before any quest is placed. Live numbers on
+[`/api/health`](https://questlayer.promptstudio3000.com/api/health) → `poiWorld` (3 November 2026: 290,817 places,
+197,999 quest-ready, place quests possible in 14,999 of the country's ~15,282 cells, 98 %). Away from Plzeň
+everything pays XP and cosmetics only, never GOLD or NEAR. Details: [docs/POI-PIPELINE.md](docs/POI-PIPELINE.md),
+[docs/POI-SAFETY.md](docs/POI-SAFETY.md), [docs/WORLD-COVERAGE.md](docs/WORLD-COVERAGE.md).
 
 ## What is on chain, and where to see it
 
-Every account below is on NEAR **testnet**, existed on 1 November 2026 (checked with `view_account` against
+Every account below is on NEAR **testnet**, existed on 3 November 2026 (checked with `view_account` against
 `rpc.testnet.near.org`) and matches the manifests in `public/native-*-testnet.json` and
 `public/testnet-deployment.json`. Click an id to open it on NearBlocks.
 
@@ -50,6 +66,10 @@ Every account below is on NEAR **testnet**, existed on 1 November 2026 (checked 
 | Creator money: paid quests, donations ([contracts/creators](contracts/creators)) | [`questlayer-creators-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-creators-20261101b.testnet) | Pilot, enabled on the public host. |
 | Sponsored tasks escrow ([contracts/tasks](contracts/tasks)) | [`questlayer-tasks-20261031.testnet`](https://testnet.nearblocks.io/address/questlayer-tasks-20261031.testnet) | Pilot, earlier generation. |
 | Public map notes (NEAR Social, not ours) | [`v1.social08.testnet`](https://testnet.nearblocks.io/address/v1.social08.testnet) | Notes written under the player's own namespace. |
+| Yield vault: stNEAR, LiNEAR, USDC, USDT deposits ([contracts/yield-vault](contracts/yield-vault)) | [`questlayer-yield-20261102.testnet`](https://testnet.nearblocks.io/address/questlayer-yield-20261102.testnet) | A deposit makes the player a Staker at once; yield is skimmed for map rewards ([docs/YIELD-VAULT.md](docs/YIELD-VAULT.md)). Treasury stNEAR record: `public/stnear-treasury-testnet.json`. |
+| Player badges, place badges ([contracts/badges](contracts/badges)) | [`questlayer-badges-20261102.testnet`](https://testnet.nearblocks.io/address/questlayer-badges-20261102.testnet) | Badges minted for visited places ([docs/BADGES.md](docs/BADGES.md)). |
+| Item games, commit-reveal rolls ([contracts/npc-games](contracts/npc-games)) | [`questlayer-npc-games-20261101.testnet`](https://testnet.nearblocks.io/address/questlayer-npc-games-20261101.testnet) | Earned roll tickets, `start_roll` / `resolve_roll` ([docs/NPC-GAMES.md](docs/NPC-GAMES.md)). |
+| NPC trader Vojtěch (plain account) | [`npc-kupec-vojtech.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/npc-kupec-vojtech.questlayer-dev-20261101.testnet) | Signed market orders from the trader's own funded account ([docs/NPC-TRADERS.md](docs/NPC-TRADERS.md)). |
 | Operator (deploys and owns the dev contracts) | [`questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/questlayer-dev-20261101.testnet) | Plain account, no contract code. |
 
 [`GET /api/health`](https://questlayer.promptstudio3000.com/api/health) shows `"network":"testnet"`, the enabled features
@@ -90,8 +110,11 @@ Automated checks: `npm run check` (build, application tests, mainnet-guard tests
 `bash scripts/build-contracts.sh --test` (contract tests). The full guide, including the isolated QA server,
 the testnet scripts and phone testing, is [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md).
 
-Cities come from `server/data/cities.json`: Plzeň is the only live city; a second city is a new
-CityPack file plus one registry line ([docs/SECOND-CITY-PLAYBOOK.md](docs/SECOND-CITY-PLAYBOOK.md)).
+The world has three layers: reviewed cities from `server/data/cities.json` (Plzeň is the only one, and the only one
+that can be funded), auto cities built on the server by the World worker for every Czech town with at least 15,000
+people, and H3 street cells everywhere else. Locally there is no country import, so outside Plzeň you get street
+cells; `npm run world:coverage -- --fixture` and `npm run e2e:world` exercise the Czechia layers on a small fixture.
+Promoting an auto city to a reviewed one follows [docs/SECOND-CITY-PLAYBOOK.md](docs/SECOND-CITY-PLAYBOOK.md).
 Money is global: one treasury and one daily budget, placed on the map by player demand
 ([docs/GLOBAL-TREASURY.md](docs/GLOBAL-TREASURY.md)).
 
@@ -145,8 +168,12 @@ trusted for location evidence only.
   character (official template layers, see `public/art/aavegotchi/provenance.json`).
 - **Server**: Node 24 ESM, SQLite (WAL), server-authoritative gameplay (coins, quests, receipts, equipment),
   durable background workers (world planner, reward relay, account/relayer jobs) with leases and backoff.
-- **Contracts**: Rust `near-sdk` workspace with eight members (game, collectibles, rewards, vault, vault-factory,
-  market, tasks, creators).
+- **Contracts**: Rust `near-sdk` workspace with eleven members (game, collectibles, rewards, vault, vault-factory,
+  market, tasks, creators, npc-games, badges, yield-vault); CI checks every WASM hash against
+  `contracts/wasm-sha256.json`.
+- **World**: one POI file for Czechia (OSM, Wikidata, GeoNames; SQLite, read-only on the VPS) feeds auto cities,
+  place quests and NPC homes; quest titles get nightly AI flavour text that is validated and cached, never trusted
+  for rules or rewards.
 - **Identity**: name-only start, device key + sponsored sub-account, optional passkey, optional external wallet
   (NEP-413 sign-in). The server never holds a player private key or seed.
 
@@ -172,5 +199,7 @@ deploy/, scripts/  systemd units, VPS deployment and migration, testnet scripts
 Browser GPS can be spoofed; the location validator is trusted for physical evidence, while contracts enforce
 backing and exactly-once claims. Testnet operation is not a mainnet audit. A device-held key is the same custody
 class as a browser wallet; the passkey-derived recovery key and the external-wallet link are the recovery paths.
-Real-device field play, a complete staking yield cycle, NEAR Intents and store distribution remain open.
+Auto cities and place quests come from map data nobody has walked, so they carry an "Unverified map" notice and
+never pay money. Real-device field play, a complete staking yield cycle, NEAR Intents and store distribution remain
+open.
 See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). All product text and documentation are English.
