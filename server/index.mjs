@@ -120,7 +120,7 @@ import {
 import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
 import { createActorRoutes } from "./actors/routes.mjs";
-import { actorsEnabled, createActorService } from "./actors/service.mjs";
+import { actorsAllDay, actorsEnabled, createActorService } from "./actors/service.mjs";
 import { testSeedMode as readTestSeedMode } from "./test-seed/config.mjs";
 import { createTestSeed } from "./test-seed/seed.mjs";
 import "./npc/menu-builder.mjs";
@@ -426,7 +426,9 @@ const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
 // Roaming NPCs and monsters (docs/NPC-PLAN.md §14): off unless ACTORS_ENABLED=1.
 // The testnet test world turns them on too.
 const actorService =
-  actorsEnabled() || testSeedMode === "apply" ? createActorService(db) : null;
+  actorsEnabled() || testSeedMode === "apply"
+    ? createActorService(db, { allDay: actorsAllDay(process.env, NETWORK) })
+    : null;
 const actorRoutes = createActorRoutes(actorService);
 // NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
 // Ollama setup; the key stays in the runtime environment only.
