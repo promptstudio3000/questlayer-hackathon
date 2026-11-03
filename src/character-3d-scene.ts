@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { characterYaw } from "./map-motion";
 
 function disposeObject(object: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(),
@@ -107,7 +108,7 @@ export function createCharacterScene(
   };
   const setMapView = (bearing: number, pitch: number, heading = 180) => {
     if (!loaded || disposed) return;
-    const yaw = ((bearing + 180 - heading) * Math.PI) / 180;
+    const yaw = (characterYaw(bearing, heading) * Math.PI) / 180;
     camera.position.set(
       Math.sin(yaw) * height * 3.1,
       height * (0.2 + Math.max(0, Math.min(60, pitch)) / 100),

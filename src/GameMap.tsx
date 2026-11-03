@@ -5,7 +5,7 @@ import {
 } from "./character-art";
 import { auraEdition } from "./aura-art-data.ts";
 import { loadCharacterModel } from "./character-model-client";
-import { moveMapMarker } from "./map-motion";
+import { DEMO_TICK_MS, moveMapMarker } from "./map-motion";
 import {
   gameObjectMarkup,
   rasterizeGameObject,
@@ -57,7 +57,12 @@ export type GameMapProps = {
   others: NearbyExplorer[];
   skinUrl?: string;
   map3D?: boolean;
-  onMove: (p: Point) => void;
+  /**
+   * Compass heading the explorer faces. The city demo pad sets it; real play
+   * passes the GPS course when the device reports one. Without it the
+   * character turns toward its last step.
+   */
+  facing?: number;
   onZone: (z: Zone) => void;
   follow: boolean;
   onPan: () => void;
@@ -337,8 +342,7 @@ export function GameMap(props: GameMapProps) {
           return;
         }
       }
-      if (latest.current.arena && !latest.current.globe)
-        latest.current.onMove({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+      // No tap-to-walk: real play moves with GPS, the demo with its pad.
     });
     m.on("error", () => {
       if (!gone) setError(true);
@@ -724,17 +728,28 @@ export function GameMap(props: GameMapProps) {
         (props.position.lng - previous.lng) *
         Math.cos((props.position.lat * Math.PI) / 180),
       travelled = Math.hypot(north, east) * 111320;
-    if (travelled >= 2 && travelled <= 80)
+    if (props.facing !== undefined) heading.current = props.facing;
+    else if (travelled >= 2 && travelled <= 80)
       heading.current = (Math.atan2(east, north) * 180) / Math.PI;
     const m = map.current;
     if (m && !props.globe)
       pawn.current?.setMapView(m.getBearing(), m.getPitch(), heading.current);
     return moveMapMarker(avatar.current, props.position, {
       reducedMotion: prefersReducedMotion(),
+      // Demo pad steps arrive every tick; glide one tick so they join up.
+      duration: props.arena && props.facing !== undefined ? DEMO_TICK_MS + 30 : 450,
     });
   }, [props.position, ready]);
   useEffect(() => {
+    if (props.facing === undefined) return;
+    heading.current = props.facing;
+    const m = map.current;
+    if (m && !props.globe)
+      pawn.current?.setMapView(m.getBearing(), m.getPitch(), heading.current);
+  }, [props.facing, ready]);
+  useEffect(() => {
     if (!map.current) return;
+    const demoGlide = props.arena && props.facing !== undefined;
     if (props.follow && !props.globe && !props.overview)
       map.current.easeTo({
         center: [props.position.lng, props.position.lat],
@@ -742,7 +757,10 @@ export function GameMap(props: GameMapProps) {
         padding: { top: 0, bottom: 0, left: 0, right: 0 },
         duration: prefersReducedMotion()
           ? 0
-          : 450,
+          : demoGlide
+            ? DEMO_TICK_MS + 30
+            : 450,
+        ...(demoGlide ? { easing: (t: number) => t } : {}),
       });
   }, [
     props.position,
