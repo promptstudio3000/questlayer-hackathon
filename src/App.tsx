@@ -4188,7 +4188,7 @@ export default function App() {
               <X size={12} />
             </button>
           )}
-          {arena && !nativePlay && !globe && (
+          {arena && !nativePlay && !globe && tab === "explore" && (
             <DemoControls
               held={demoWalk.held}
               running={demoWalk.running}
