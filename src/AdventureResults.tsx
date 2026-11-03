@@ -1,9 +1,9 @@
 import {
-  ArrowRight,
   Check,
   ClockCounterClockwise,
   X,
 } from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";

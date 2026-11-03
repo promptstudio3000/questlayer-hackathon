@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import {
   ArrowClockwise,
-  ArrowRight,
   CheckCircle,
   CloudSlash,
   Handshake,
@@ -12,6 +11,7 @@ import {
   XCircle,
   ChartDonut,
 } from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { GameObjectArt } from "./game-object-art";
 import {
   CHECK_NAMES,

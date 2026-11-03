@@ -1,5 +1,6 @@
 @import "./fonts.css";
 @import "./tokens.css";
+@import "./i18n-scripts.css";
 :root {
   font-family: var(--font-body);
   color: var(--ink);

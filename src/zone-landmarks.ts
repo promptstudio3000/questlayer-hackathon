@@ -82,8 +82,8 @@ function clock(ms: number) {
 function windowLength(ms: number) {
   const h = ms / 3600000;
   if (h >= 20) return tr("all day");
-  if (h >= 1) return `${Math.round(h * 10) / 10} h`;
-  return `${Math.max(1, Math.round(ms / 60000))} min`;
+  if (h >= 1) return tr("{0} h", { 0: Math.round(h * 10) / 10 });
+  return tr("{0} min", { 0: Math.max(1, Math.round(ms / 60000)) });
 }
 
 /** The text on a zone's countdown chip. Shown whether or not the player can play it. */

@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
   ArrowClockwise,
-  CaretRight,
   CheckCircle,
   Clock,
   Flag,
@@ -11,6 +9,7 @@ import {
   Wallet,
   WarningCircle,
 } from "@phosphor-icons/react";
+import { ArrowLeft, CaretRight } from "./dir-icons";
 import { api } from "./api";
 import type { Player } from "./types";
 import { useFormDraft } from "./useFormDraft";

@@ -6,7 +6,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  ArrowRight,
   ArrowsClockwise,
   Backpack,
   Check,
@@ -24,6 +23,7 @@ import {
   Wallet,
   X,
 } from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { api, GOLD } from "./api";
 import { Character } from "./Character";
 import { Character3D } from "./Character3D";
