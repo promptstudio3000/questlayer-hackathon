@@ -10,6 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import type { DemoControl } from "./useDemoWalk";
 import "./demo-controls.css";
+import { tr } from "./i18n";
 
 const STORE = "questlayer.demoPad.open";
 function storedOpen() {
@@ -23,8 +24,8 @@ function storedOpen() {
 function direction(relative: number) {
   const r = ((relative + 540) % 360) - 180;
   if (Math.abs(r) <= 20) return "ahead";
-  if (Math.abs(r) >= 150) return "behind you";
-  return r > 0 ? "to your right" : "to your left";
+  if (Math.abs(r) >= 150) return tr("behind you");
+  return r > 0 ? tr("to your right") : tr("to your left");
 }
 
 /**
@@ -62,8 +63,8 @@ export function DemoControls({
     return (
       <button
         className="demo-pad-open"
-        aria-label="Demo controls"
-        title="Demo controls (arrows or WASD)"
+        aria-label={tr("Demo controls")}
+        title={tr("Demo controls (arrows or WASD)")}
         onClick={() => setOpen(true)}
       >
         <GameController size={22} weight="fill" />
@@ -90,49 +91,48 @@ export function DemoControls({
   return (
     <section
       className="demo-pad"
-      aria-label="Demo controls"
+      aria-label={tr("Demo controls")}
       data-running={running || undefined}
     >
       <header>
         <span>
-          <GameController size={14} weight="fill" /> Demo walk
-        </span>
+          <GameController size={14} weight="fill" /> {" "}{tr("Demo walk")}</span>
         <button
           className="demo-pad-min"
-          aria-label="Hide demo controls"
-          title="Hide demo controls"
+          aria-label={tr("Hide demo controls")}
+          title={tr("Hide demo controls")}
           onClick={() => setOpen(false)}
         >
           <Minus size={14} weight="bold" />
         </button>
       </header>
       <div className="demo-pad-grid">
-        <button className="demo-forward" aria-label="Walk forward" title="Forward (↑ / W)" {...hold("forward")}>
+        <button className="demo-forward" aria-label={tr("Walk forward")} title={tr("Forward (↑ / W)")} {...hold("forward")}>
           <ArrowFatUp size={22} weight="fill" />
         </button>
-        <button className="demo-left" aria-label="Turn left" title="Turn left (← / A)" {...hold("left")}>
+        <button className="demo-left" aria-label={tr("Turn left")} title={tr("Turn left (← / A)")} {...hold("left")}>
           <ArrowArcLeft size={22} weight="bold" />
         </button>
         <button
           className="demo-run"
-          aria-label="Run"
+          aria-label={tr("Run")}
           aria-pressed={run}
-          title="Run (hold Shift)"
+          title={tr("Run (hold Shift)")}
           onClick={() => setRun(!run)}
         >
           <PersonSimpleRun size={22} weight={running ? "fill" : "regular"} />
         </button>
-        <button className="demo-right" aria-label="Turn right" title="Turn right (→ / D)" {...hold("right")}>
+        <button className="demo-right" aria-label={tr("Turn right")} title={tr("Turn right (→ / D)")} {...hold("right")}>
           <ArrowArcRight size={22} weight="bold" />
         </button>
-        <button className="demo-back" aria-label="Step back" title="Back (↓ / S)" {...hold("back")}>
+        <button className="demo-back" aria-label={tr("Step back")} title={tr("Back (↓ / S)")} {...hold("back")}>
           <ArrowFatDown size={22} weight="fill" />
         </button>
       </div>
       <p className="demo-pad-hint">
         {target
           ? `${target.label} · ${target.meters < 1000 ? `${Math.round(target.meters)} m` : `${(target.meters / 1000).toFixed(1)} km`} ${direction(target.relative)}`
-          : "Arrows or WASD · Shift runs"}
+          : tr("Arrows or WASD · Shift runs")}
       </p>
     </section>
   );

@@ -10,6 +10,7 @@ import {
   type LevelTable,
 } from "./levels";
 import "./xp-bar.css";
+import { tr } from "./i18n";
 
 export function useLevelTable() {
   const [table, setTable] = useState<LevelTable>(DEFAULT_LEVEL_TABLE);
@@ -51,7 +52,7 @@ export function XpBar({
       <div
         className="xp-bar"
         role="progressbar"
-        aria-label={`Level ${p.level} progress`}
+        aria-label={tr("Level {0} progress", { 0: p.level })}
         aria-valuemin={p.levelStartXp}
         aria-valuemax={p.nextLevelXp}
         aria-valuenow={p.xp}
@@ -65,14 +66,14 @@ export function XpBar({
         aria-haspopup="dialog"
       >
         <small>
-          {p.title ? `${p.title} · ` : ""}Level {p.level} ·{" "}
+          {p.title ? `${p.title} · ` : ""}{tr("Level")}{" "}{p.level} ·{" "}
           {p.xp.toLocaleString("en-US")} / {p.nextLevelXp.toLocaleString("en-US")} XP
           {note ? ` · ${note}` : ""}
         </small>
         <small className="xp-bar-next">
           {p.next
-            ? `Next at L${p.next.level}: ${p.next.unlock.title}`
-            : "Level path complete"}
+            ? tr("Next at L{0}: {1}", { 0: p.next.level, 1: p.next.unlock.title })
+            : tr("Level path complete")}
         </small>
       </button>
       {open && (
@@ -92,15 +93,15 @@ export function LevelPath({
   onClose: () => void;
 }) {
   return (
-    <Dialog label="Level path" onClose={onClose}>
+    <Dialog label={tr("Level path")} onClose={onClose}>
       <div className="level-path">
         <div className="panel-heading">
-          <h2>Level path</h2>
-          <button className="icon-button" aria-label="Close level path" onClick={onClose}>
+          <h2>{tr("Level path")}</h2>
+          <button className="icon-button" aria-label={tr("Close level path")} onClick={onClose}>
             <X size={20} />
           </button>
         </div>
-        <p>Every level opens something new to do or wear. Levels never change odds or payouts.</p>
+        <p>{tr("Every level opens something new to do or wear. Levels never change odds or payouts.")}</p>
         <ol>
           {table.levels.map((e) => {
             const reached = level >= e.level;
@@ -112,13 +113,13 @@ export function LevelPath({
                 <span className="level-path-badge">{e.level}</span>
                 <span>
                   <b>{e.unlock.title}</b>
-                  {e.item && <small>Level item: {e.item.name}</small>}
+                  {e.item && <small>{tr("Level item:")}{" "}{e.item.name}</small>}
                   <small>
                     {e.requiredXp.toLocaleString("en-US")} XP
-                    {e.unlock.status === "coming" ? " · coming soon" : ""}
+                    {e.unlock.status === "coming" ? tr(" · coming soon") : ""}
                   </small>
                 </span>
-                {reached ? <Check size={18} aria-label="Unlocked" /> : <Lock size={18} aria-label="Locked" />}
+                {reached ? <Check size={18} aria-label={tr("Unlocked")} /> : <Lock size={18} aria-label={tr("Locked")} />}
               </li>
             );
           })}

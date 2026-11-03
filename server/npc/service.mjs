@@ -110,7 +110,7 @@ export function createNpcService(
   // Greeting + menu for a fresh encounter (no model call: cheap and instant).
   function greet({ player, actor, world, encounter = null }) {
     const { persona, menu, locked, rows } = context(player, actor, world, encounter?.menu);
-    const reply = templateReply(persona, menu, { lang: "cs" });
+    const reply = templateReply(persona, menu, { lang: "en" });
     return {
       npc: { id: actor.id, name: persona.name, title: persona.title || null, archetype: persona.archetype },
       say: reply.say,

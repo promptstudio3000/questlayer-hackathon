@@ -4,6 +4,7 @@ import { api, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import { goldCompact } from "./reward-funding";
 import "./season.css";
+import { tr } from "./i18n";
 
 // Hackathon season (docs/SEASON.md): a cosmetic leaderboard of hunts, zone
 // visits and NPC lines, a season mark and Aura at the goal, and a meter of the
@@ -86,7 +87,7 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
       setSeason(await api<Season>("/season/claim", {}));
       onClaimed?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not claim the season mark.");
+      setError(e instanceof Error ? e.message : tr("Could not claim the season mark."));
     } finally {
       setBusy(false);
     }
@@ -113,21 +114,18 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
           <span className="season-card-line">
             {me
               ? `${me.points}/${season.goal} points${me.place ? ` · #${me.place}` : ""}${me.claimed ? " · goal reached" : ""}`
-              : `${season.players || 0} explorers on the board`}
+              : tr("{0} explorers on the board", { 0: season.players || 0 })}
             {season.pot ? ` · pot ${gold(season.pot.total)}` : ""}
           </span>
         </span>
         <ArrowRight size={20} aria-hidden="true" className="season-card-go" />
       </button>
       {open && (
-        <Dialog label={season.name || "Season"} onClose={() => setOpen(false)}>
+        <Dialog label={season.name || tr("Season")} onClose={() => setOpen(false)}>
           <section className="season-sheet">
             <h2>{season.name}</h2>
             <p className="season-lead">
-              Until {new Date(season.endsAt).toUTCString().replace(":59 GMT", " UTC").replace(/:\d\d UTC$/, " UTC")}. Points
-              for hunts ({p.hunt}), zone visits ({p.visit}) and NPC lines ({p.line}). Never GOLD, NEAR or stake. Ranks are
-              cosmetic titles; they change no reward, odds or damage.
-            </p>
+              {tr("Until")}{" "}{new Date(season.endsAt).toUTCString().replace(":59 GMT", " UTC").replace(/:\d\d UTC$/, " UTC")}{tr(". Points for hunts (")}{p.hunt}{tr("), zone visits (")}{p.visit}{tr(") and NPC lines (")}{p.line}{tr("). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.")}</p>
             {me && (
               <div className="season-me">
                 <div className="season-me-head">
@@ -140,12 +138,11 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
                   <span style={{ width: `${pct}%` }} />
                 </span>
                 <small>
-                  {me.hunts} hunts · {me.visits} visits · {me.lines} NPC lines
-                </small>
+                  {me.hunts} {" "}{tr("hunts ·")}{" "}{me.visits} {" "}{tr("visits ·")}{" "}{me.lines} {" "}{tr("NPC lines")}</small>
                 {me.claimed ? (
                   <p className="season-done">
-                    Season mark earned.{" "}
-                    {me.aura ? "The season Aura is in your wardrobe." : season.aura ? "" : "The season Aura arrives with the next collectibles update."}
+                    {tr("Season mark earned.")}{" "}
+                    {me.aura ? tr("The season Aura is in your wardrobe.") : season.aura ? "" : tr("The season Aura arrives with the next collectibles update.")}
                   </p>
                 ) : (
                   <button
@@ -153,18 +150,18 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
                     disabled={!me.reached || busy || season.phase !== "live"}
                     onClick={() => void claim()}
                   >
-                    {me.reached ? "Claim the season mark" : `${season.goal - me.points} points to the season mark`}
+                    {me.reached ? tr("Claim the season mark") : tr("{0} points to the season mark", { 0: season.goal - me.points })}
                   </button>
                 )}
                 {me.claimed && season.aura && !me.aura && (
                   <button className="secondary-button" disabled={busy} onClick={() => void claim()}>
-                    Collect the {season.aura.name}
+                    {tr("Collect the")}{" "}{season.aura.name}
                   </button>
                 )}
                 {error && <p className="season-error">{error}</p>}
               </div>
             )}
-            <h3>Leaderboard</h3>
+            <h3>{tr("Leaderboard")}</h3>
             {season.leaderboard?.length ? (
               <ol className="season-board">
                 {season.leaderboard.map((r) => (
@@ -179,18 +176,18 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
                 ))}
               </ol>
             ) : (
-              <p className="fine-print">Nobody has scored yet. Beat a monster, visit a zone or finish an NPC line.</p>
+              <p className="fine-print">{tr("Nobody has scored yet. Beat a monster, visit a zone or finish an NPC line.")}</p>
             )}
             {season.pot && (
               <div className="season-pot">
                 <div className="season-me-head">
-                  <b>Season pot</b>
+                  <b>{tr("Season pot")}</b>
                   <span>{gold(season.pot.total)}</span>
                 </div>
                 <span
                   className="season-bar is-pot"
                   role="meter"
-                  aria-label="Season pot"
+                  aria-label={tr("Season pot")}
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={Math.round(season.pot.fillBps / 100)}
@@ -198,19 +195,17 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
                   <span style={{ width: `${season.pot.fillBps / 100}%` }} />
                 </span>
                 <small>
-                  {season.pot.publishedDays} reward days published on NEAR: {gold(season.pot.fromYield)} from staking yield,{" "}
-                  {gold(season.pot.fromSponsors)} from sponsors. Trader margins swept to the treasury:{" "}
-                  {gold(season.pot.traderSweeps)} (paid out through later days).
-                </small>
+                  {season.pot.publishedDays} {" "}{tr("reward days published on NEAR:")}{" "}{gold(season.pot.fromYield)} {" "}{tr("from staking yield,")}{" "}
+                  {gold(season.pot.fromSponsors)} {" "}{tr("from sponsors. Trader margins swept to the treasury:")}{" "}
+                  {gold(season.pot.traderSweeps)} {" "}{tr("(paid out through later days).")}</small>
               </div>
             )}
             <p className="fine-print">
-              {season.finishers ? `${season.finishers} explorers reached the goal. ` : ""}
+              {season.finishers ? tr("{0} explorers reached the goal. ", { 0: season.finishers }) : ""}
               {when}.
             </p>
             <button className="secondary-button" onClick={() => setOpen(false)}>
-              Close
-            </button>
+              {tr("Close")}</button>
           </section>
         </Dialog>
       )}

@@ -21,6 +21,7 @@ import {
 } from "./confirmed-native-transaction";
 import "./pending-native-transactions.css";
 import { EXPLORER_BASE } from "./near-network.ts";
+import { tr } from "./i18n";
 const labels: Record<string, string> = {
   create_task: "Fund sponsored task",
   submit_evidence: "Submit task evidence",
@@ -170,8 +171,8 @@ export function PendingNativeTransactions({
       if (!isCurrent(who)) return;
       setFeedback({
         text: clear
-          ? "Receipt cleared. Check your current balance or Aura before doing anything else."
-          : "Confirmed. Refresh your balance or collection to see the result.",
+          ? tr("Receipt cleared. Check your current balance or Aura before doing anything else.")
+          : tr("Confirmed. Refresh your balance or collection to see the result."),
         error: false,
       });
       heading.current?.focus();
@@ -206,7 +207,7 @@ export function PendingNativeTransactions({
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 10000);
       setFeedback({
-        text: "Receipt download started. Keep the file private; it contains your account names and receipt details.",
+        text: tr("Receipt download started. Keep the file private; it contains your account names and receipt details."),
         error: false,
       });
     } catch (error) {
@@ -237,8 +238,8 @@ export function PendingNativeTransactions({
       if (!isCurrent(who)) return;
       setFeedback({
         text: result.imported
-          ? `${result.imported === 1 ? "Receipt imported" : `${result.imported} receipts imported`}. Use Check confirmation to see the result. Nothing was sent.`
-          : "These receipts are already saved. Use Check confirmation to see their result.",
+          ? tr("{0}. Use Check confirmation to see the result. Nothing was sent.", { 0: result.imported === 1 ? "Receipt imported" : `${result.imported} receipts imported` })
+          : tr("These receipts are already saved. Use Check confirmation to see their result."),
         error: false,
       });
       heading.current?.focus();
@@ -260,17 +261,17 @@ export function PendingNativeTransactions({
   return (
     <section
       className={`native-pending${showHeading ? "" : " native-pending-empty"}`}
-      aria-label="Receipt recovery"
+      aria-label={tr("Receipt recovery")}
     >
       {showHeading && (
         <header>
           <Clock size={23} aria-hidden="true" />
           <h3 ref={heading} tabIndex={-1}>
-            {hasPending ? "Check your last receipt" : "Receipt recovery"}
+            {hasPending ? tr("Check your last receipt") : tr("Receipt recovery")}
           </h3>
         </header>
       )}
-      {hasPending && <p>Checking a receipt never sends anything again.</p>}
+      {hasPending && <p>{tr("Checking a receipt never sends anything again.")}</p>}
       {current.error && (
         <p className="native-pending-error" role="alert">
           {current.error}
@@ -287,15 +288,11 @@ export function PendingNativeTransactions({
         </p>
       )}
       <details className="native-recovery-file">
-        <summary>Receipt backup and recovery</summary>
+        <summary>{tr("Receipt backup and recovery")}</summary>
         <p>
-          Saved receipts stay in this browser after it closes. Keep a backup
-          before clearing site data or moving to another device.
-        </p>
+          {tr("Saved receipts stay in this browser after it closes. Keep a backup before clearing site data or moving to another device.")}</p>
         <p>
-          The file holds account names and receipt details, never keys or a
-          recovery phrase. Keep it private.
-        </p>
+          {tr("The file holds account names and receipt details, never keys or a recovery phrase. Keep it private.")}</p>
         <div className="native-pending-actions">
           <button
             className="secondary-button"
@@ -303,7 +300,7 @@ export function PendingNativeTransactions({
             onClick={() => void downloadReceipts()}
           >
             <DownloadSimple size={19} aria-hidden="true" />
-            {busy === "export" ? "Preparing…" : "Download receipts"}
+            {busy === "export" ? tr("Preparing…") : tr("Download receipts")}
           </button>
           <button
             className="secondary-button"
@@ -311,7 +308,7 @@ export function PendingNativeTransactions({
             onClick={() => recoveryFile.current?.click()}
           >
             <UploadSimple size={19} aria-hidden="true" />
-            {busy === "import" ? "Importing…" : "Import receipts"}
+            {busy === "import" ? tr("Importing…") : tr("Import receipts")}
           </button>
           <input
             ref={recoveryFile}
@@ -319,7 +316,7 @@ export function PendingNativeTransactions({
             type="file"
             accept="application/json,.json"
             tabIndex={-1}
-            aria-label="Choose a receipt backup"
+            aria-label={tr("Choose a receipt backup")}
             onChange={(event) => {
               const file = event.target.files?.[0];
               event.target.value = "";
@@ -328,19 +325,16 @@ export function PendingNativeTransactions({
           />
         </div>
         {!current.ready && !current.error && (
-          <p role="status">Checking saved receipts…</p>
+          <p role="status">{tr("Checking saved receipts…")}</p>
         )}
         {!hasPending && current.ready && (
-          <p>No pending receipts are saved here.</p>
+          <p>{tr("No pending receipts are saved here.")}</p>
         )}
         {!linkedAccounts.length && (
-          <p>Link the original NEAR account to import its receipts.</p>
+          <p>{tr("Link the original NEAR account to import its receipts.")}</p>
         )}
         <p>
-          Import into the same explorer with the original NEAR account linked.
-          Imported receipts still need Check confirmation; loading a file never
-          sends anything.
-        </p>
+          {tr("Import into the same explorer with the original NEAR account linked. Imported receipts still need Check confirmation; loading a file never sends anything.")}</p>
       </details>
       {current.entries.map((entry) => {
         const linked = linkedAccounts.includes(entry.accountId),
@@ -348,13 +342,13 @@ export function PendingNativeTransactions({
         return (
           <article key={entry.id} className="native-pending-entry">
             <div className="native-pending-title">
-              <b>{labels[entry.quote.methodName] || "NEAR receipt"}</b>
+              <b>{labels[entry.quote.methodName] || tr("NEAR receipt")}</b>
               <span>
                 {entry.phase === "failed"
-                  ? "Final · incomplete"
+                  ? tr("Final · incomplete")
                   : entry.transactionHash
-                    ? "Needs confirmation"
-                    : "Check your wallet app"}
+                    ? tr("Needs confirmation")
+                    : tr("Check your wallet app")}
               </span>
             </div>
             <p className="native-pending-account">{entry.accountId}</p>
@@ -365,12 +359,11 @@ export function PendingNativeTransactions({
               </p>
             )}
             {!linked && (
-              <p>Link this NEAR account again to check its receipt.</p>
+              <p>{tr("Link this NEAR account again to check its receipt.")}</p>
             )}
             {!entry.transactionHash && (
               <label>
-                Receipt ID from your wallet app
-                <input
+                {tr("Receipt ID from your wallet app")}<input
                   value={hashes[entry.id] || ""}
                   onChange={(event) =>
                     setHashes((value) => ({
@@ -385,14 +378,10 @@ export function PendingNativeTransactions({
                   disabled={!linked || !!busy}
                 />
                 <small>
-                  If your wallet app gave no clear result, find this receipt in
-                  its history. Nothing is sent again here.
-                </small>
+                  {tr("If your wallet app gave no clear result, find this receipt in its history. Nothing is sent again here.")}</small>
                 {entry.afterBlock === undefined && (
                   <small>
-                    This older record has no reference point. Match the date,
-                    amount and reviewed terms carefully.
-                  </small>
+                    {tr("This older record has no reference point. Match the date, amount and reviewed terms carefully.")}</small>
                 )}
               </label>
             )}
@@ -407,7 +396,7 @@ export function PendingNativeTransactions({
                 onClick={() => void check(entry)}
               >
                 <ArrowClockwise size={19} aria-hidden="true" />
-                {checking ? "Checking…" : "Check confirmation"}
+                {checking ? tr("Checking…") : tr("Check confirmation")}
               </button>
               {entry.transactionHash && (
                 <a
@@ -415,38 +404,34 @@ export function PendingNativeTransactions({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  View receipt <ArrowSquareOut size={18} aria-hidden="true" />
+                  {tr("View receipt")}{" "}<ArrowSquareOut size={18} aria-hidden="true" />
                 </a>
               )}
             </div>
             <details>
-              <summary>Reviewed terms</summary>
+              <summary>{tr("Reviewed terms")}</summary>
               <dl>
-                <dt>Requested</dt>
+                <dt>{tr("Requested")}</dt>
                 <dd>{new Date(entry.createdAt).toLocaleString()}</dd>
-                <dt>Network</dt>
-                <dd>NEAR testnet</dd>
-                <dt>Contract</dt>
+                <dt>{tr("Network")}</dt>
+                <dd>{tr("NEAR testnet")}</dd>
+                <dt>{tr("Contract")}</dt>
                 <dd>{entry.quote.receiverId}</dd>
-                <dt>Method</dt>
+                <dt>{tr("Method")}</dt>
                 <dd>{entry.quote.methodName}</dd>
-                <dt>Attached deposit</dt>
-                <dd>{exactNear(entry.quote.deposit)} test NEAR</dd>
-                <dt>Gas limit</dt>
+                <dt>{tr("Attached deposit")}</dt>
+                <dd>{exactNear(entry.quote.deposit)} {" "}{tr("test NEAR")}</dd>
+                <dt>{tr("Gas limit")}</dt>
                 <dd>{entry.quote.gas}</dd>
               </dl>
               <pre>{JSON.stringify(entry.quote.args, null, 2)}</pre>
               <p>
-                Reviewed terms are saved in this browser. Clearing site data
-                removes this record; the NEAR receipt itself remains.
-              </p>
+                {tr("Reviewed terms are saved in this browser. Clearing site data removes this record; the NEAR receipt itself remains.")}</p>
             </details>
             {entry.phase === "failed" && (
               <div className="native-pending-failure">
                 <p>
-                  A failed receipt can still have changed a balance or left a
-                  credit. Check your balance, stake or Aura first.
-                </p>
+                  {tr("A failed receipt can still have changed a balance or left a credit. Check your balance, stake or Aura first.")}</p>
                 <label>
                   <input
                     type="checkbox"
@@ -459,19 +444,15 @@ export function PendingNativeTransactions({
                     }
                     disabled={!!busy}
                   />
-                  I checked my current balance or Aura.
-                </label>
+                  {tr("I checked my current balance or Aura.")}</label>
                 <button
                   className="secondary-button"
                   disabled={!linked || !!busy || !acknowledged[entry.id]}
                   onClick={() => void check(entry, true)}
                 >
-                  Clear checked failure
-                </button>
+                  {tr("Clear checked failure")}</button>
                 <small>
-                  The failure is checked once more before clearing. Nothing is
-                  sent or repeated.
-                </small>
+                  {tr("The failure is checked once more before clearing. Nothing is sent or repeated.")}</small>
               </div>
             )}
           </article>

@@ -12,6 +12,7 @@ import { AURA_CATALOG, AURA_ENTITLEMENTS } from "./aura-catalog.ts";
 import type { AuraCatalogEdition, AuraRarity } from "./aura-catalog.ts";
 import { zoneObjectPresentation } from "./game-object-art-data.ts";
 import type { Quest, Zone } from "./types.ts";
+import { tr } from "./i18n.ts";
 
 type Ring = [number, number][];
 type Polygon = Ring[];
@@ -80,7 +81,7 @@ function clock(ms: number) {
 
 function windowLength(ms: number) {
   const h = ms / 3600000;
-  if (h >= 20) return "all day";
+  if (h >= 20) return tr("all day");
   if (h >= 1) return `${Math.round(h * 10) / 10} h`;
   return `${Math.max(1, Math.round(ms / 60000))} min`;
 }
@@ -96,14 +97,14 @@ export function zoneCountdown(
     ? `${RARITY_LABEL[zoneRarity(zone.tier)]} · open ${windowLength(zone.closesAt - zone.opensAt)}`
     : RARITY_LABEL[zoneRarity(zone.tier)];
   if (phase === "upcoming")
-    return { phase, text: `Opens in ${clock(zone.opensAt - now)}`, window };
+    return { phase, text: tr("Opens in {0}", { 0: clock(zone.opensAt - now) }), window };
   if (phase === "open")
     return zone.closesAt - zone.opensAt >= 20 * 3600000 &&
       zone.closesAt - now > 6 * 3600000
-      ? { phase, text: "Open now", window }
-      : { phase, text: `Closes in ${clock(zone.closesAt - now)}`, window };
-  if (phase === "done") return { phase, text: "Cleared", window };
-  if (phase === "closed") return { phase, text: "Closed", window };
+      ? { phase, text: tr("Open now"), window }
+      : { phase, text: tr("Closes in {0}", { 0: clock(zone.closesAt - now) }), window };
+  if (phase === "done") return { phase, text: tr("Cleared"), window };
+  if (phase === "closed") return { phase, text: tr("Closed"), window };
   return { phase, text: "", window };
 }
 

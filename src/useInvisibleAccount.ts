@@ -12,6 +12,7 @@ import {
 } from "./player-key";
 import { managedSigner, type NativeSigner } from "./native-signer";
 import type { NearNetwork } from "./near-network.ts";
+import { tr } from "./i18n.ts";
 
 export type ManagedAccountView = {
   network: NearNetwork;
@@ -111,7 +112,7 @@ export function useInvisibleAccount(
         }
         if (account.state === "failed") {
           setError(
-            account.error || "The explorer account could not be prepared.",
+            account.error || tr("The explorer account could not be prepared."),
           );
           setStatus("error");
           return;

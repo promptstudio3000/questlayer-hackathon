@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sparkle } from "@phosphor-icons/react";
 import type { CreatorPlaceTemplate } from "./creator-community-types";
+import { tr } from "./i18n";
 
 type Point = { lat: number; lng: number };
 type DraftPlace = { id: string; name: string; sector: string; stopCount: number };
@@ -34,7 +35,7 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   });
   const value = await response.json().catch(() => null);
   if (!response.ok)
-    throw new Error(value?.error || "The draft helper is unavailable.");
+    throw new Error(value?.error || tr("The draft helper is unavailable."));
   return value as T;
 }
 
@@ -112,23 +113,17 @@ export function AiQuestDraft({
       }}
     >
       <summary>
-        <Sparkle size={20} aria-hidden="true" /> Suggest a draft for a public
-        place
-      </summary>
+        <Sparkle size={20} aria-hidden="true" /> {" "}{tr("Suggest a draft for a public place")}</summary>
       <p className="creator-hint">
-        Pick a reviewed park and get a suggested{" "}
-        {chosen === "trail" ? "trail" : chosen} with stops on mapped public
-        paths. It only fills this form: you edit it, save it and submit it for
-        review. Rewards and price are never part of the suggestion.
-      </p>
+        {tr("Pick a reviewed park and get a suggested")}{" "}
+        {chosen === "trail" ? "trail" : chosen} {" "}{tr("with stops on mapped public paths. It only fills this form: you edit it, save it and submit it for review. Rewards and price are never part of the suggestion.")}</p>
       {status && !status.enabled && (
-        <p role="status">The draft helper is turned off. Write the quest yourself.</p>
+        <p role="status">{tr("The draft helper is turned off. Write the quest yourself.")}</p>
       )}
       {status?.enabled && (
         <div className="creator-ai-fields">
           <label>
-            Place
-            <select
+            {tr("Place")}<select
               value={placeId}
               disabled={disabled || busy}
               onChange={(e) => setPlaceId(e.target.value)}
@@ -142,8 +137,7 @@ export function AiQuestDraft({
           </label>
           {chosen === "trail" && (
             <label>
-              Stops
-              <select
+              {tr("Stops")}<select
                 value={Math.min(stops, maxStops)}
                 disabled={disabled || busy}
                 onChange={(e) => setStops(Number(e.target.value))}
@@ -159,24 +153,22 @@ export function AiQuestDraft({
             </label>
           )}
           <label>
-            Language
-            <select
+            {tr("Language")}<select
               value={language}
               disabled={disabled || busy}
               onChange={(e) => setLanguage(e.target.value as "en" | "cs")}
             >
-              <option value="en">English</option>
+              <option value="en">{tr("English")}</option>
               <option value="cs">Čeština</option>
             </select>
           </label>
           <label>
-            Idea (optional)
-            <input
+            {tr("Idea (optional)")}<input
               type="text"
               maxLength={280}
               value={notes}
               disabled={disabled || busy}
-              placeholder="A calm morning loop for families"
+              placeholder={tr("A calm morning loop for families")}
               onChange={(e) => setNotes(e.target.value)}
             />
           </label>
@@ -187,22 +179,19 @@ export function AiQuestDraft({
             onClick={suggest}
           >
             <Sparkle size={20} aria-hidden="true" />
-            {busy ? "Preparing a suggestion…" : "Fill the form with a suggestion"}
+            {busy ? tr("Preparing a suggestion…") : tr("Fill the form with a suggestion")}
           </button>
           <p className="creator-hint">
-            {status.limits.remainingThisHour} suggestions left this hour.
-          </p>
+            {status.limits.remainingThisHour} {" "}{tr("suggestions left this hour.")}</p>
         </div>
       )}
       {result && (
         <div role="status" className="creator-hint">
           <p>
-            Suggestion added to the form (
-            {result.provenance.source === "template"
-              ? "standard template"
-              : "AI draft"}
-            ). Check every stop and edit the text before you save.
-          </p>
+            {tr("Suggestion added to the form (")}{result.provenance.source === "template"
+              ? tr("standard template")
+              : tr("AI draft")}
+            {tr("). Check every stop and edit the text before you save.")}</p>
           <ul>
             {result.warnings.map((w) => (
               <li key={w}>{w}</li>

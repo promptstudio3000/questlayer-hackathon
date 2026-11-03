@@ -8,6 +8,7 @@
 // The map uses one shared offscreen renderer to bake each model once into a cached PNG sprite, so N markers cost
 // no extra WebGL contexts. The encounter sheet uses createActorScene for one animated, rotatable view.
 import * as THREE from "three";
+import { tr } from "./i18n.ts";
 
 export const ACTOR_MODELS = [
   "chronicler",
@@ -60,23 +61,23 @@ export const ACTOR_MODEL_INFO: Record<
   ActorModel,
   { label: string; role: string; color: string }
 > = {
-  chronicler: { label: "Chronicler", role: "Storyteller NPC", color: "#b9a6ff" },
-  merchant: { label: "Travelling merchant", role: "Trader NPC", color: "#81cdcf" },
-  keeper: { label: "Gate keeper", role: "Keeper (bank) NPC", color: "#8f88b8" },
-  pilgrim: { label: "Pilgrim", role: "Quest giver NPC", color: "#ff96ff" },
-  wisp: { label: "Will-o'-wisp", role: "Wandering rare NPC", color: "#51ffa8" },
-  "glitch-moth": { label: "Glitch Moth", role: "Roamer monster", color: "#fa34f3" },
-  "rune-warden": { label: "Rune Warden", role: "Guardian monster", color: "#37f4f1" },
-  "pocket-wisp": { label: "Pocket Wisp", role: "Lurker monster", color: "#7bd88f" },
-  "storm-golem": { label: "Storm Golem", role: "Weekly boss", color: "#fffa65" },
-  "sun-beetle": { label: "Sun Beetle", role: "Daytime roamer monster", color: "#ffd01f" },
+  chronicler: { get label() { return tr("Chronicler"); }, role: "Storyteller NPC", color: "#b9a6ff" },
+  merchant: { get label() { return tr("Travelling merchant"); }, role: "Trader NPC", color: "#81cdcf" },
+  keeper: { get label() { return tr("Gate keeper"); }, role: "Keeper (bank) NPC", color: "#8f88b8" },
+  pilgrim: { get label() { return tr("Pilgrim"); }, role: "Quest giver NPC", color: "#ff96ff" },
+  wisp: { get label() { return tr("Will-o'-wisp"); }, role: "Wandering rare NPC", color: "#51ffa8" },
+  "glitch-moth": { get label() { return tr("Glitch Moth"); }, role: "Roamer monster", color: "#fa34f3" },
+  "rune-warden": { get label() { return tr("Rune Warden"); }, role: "Guardian monster", color: "#37f4f1" },
+  "pocket-wisp": { get label() { return tr("Pocket Wisp"); }, role: "Lurker monster", color: "#7bd88f" },
+  "storm-golem": { get label() { return tr("Storm Golem"); }, role: "Weekly boss", color: "#fffa65" },
+  "sun-beetle": { get label() { return tr("Sun Beetle"); }, role: "Daytime roamer monster", color: "#ffd01f" },
   "lick-soldier": { label: "Lickquidator", role: "Roamer monster (Gotchiverse)", color: "#16a78f" },
   "lick-brute": { label: "Lickquidator Brute", role: "Guardian monster (Gotchiverse)", color: "#8345ff" },
   "lick-speedy": { label: "Dire Tire", role: "Fast roamer (Gotchiverse)", color: "#cebcf1" },
   "lick-turret": { label: "Laser Beamer", role: "Zone guardian turret (Gotchiverse)", color: "#ffb800" },
   "lick-boss": { label: "Lickquidator Boss", role: "Weekly boss (Gotchiverse)", color: "#fa34f3" },
-  "great-portal": { label: "Great Portal", role: "Boss arena / landmark prop (Gotchiverse)", color: "#dfabff" },
-  "golden-altar": { label: "Golden Altar", role: "Keeper station prop (Gotchiverse)", color: "#ffd01f" },
+  "great-portal": { get label() { return tr("Great Portal"); }, role: "Boss arena / landmark prop (Gotchiverse)", color: "#dfabff" },
+  "golden-altar": { get label() { return tr("Golden Altar"); }, role: "Keeper station prop (Gotchiverse)", color: "#ffd01f" },
 };
 
 // Palette (docs/AAVEGOTCHI-REUSE.md §2/§5).

@@ -4,6 +4,7 @@ import { api } from "./api";
 import { formatNativeNear } from "./native-amounts";
 import type { NativeProfileState, Player } from "./types";
 import { EXPLORER_BASE, SOCIAL_CONTRACT_ID } from "./near-network.ts";
+import { tr } from "./i18n";
 const loadProfile = (accountId: string, fresh: boolean) =>
   api<NativeProfileState>(
     `/native/profile?accountId=${encodeURIComponent(accountId)}${fresh ? "&refresh=1" : ""}`,
@@ -60,7 +61,7 @@ export function NativeProfilePanel({
       .catch(() => {
         if (current)
           setError(
-            "Your NEAR Social profile is temporarily unavailable. Try again.",
+            tr("Your NEAR Social profile is temporarily unavailable. Try again."),
           );
       });
     return () => {
@@ -76,39 +77,35 @@ export function NativeProfilePanel({
   return (
     <section
       className="native-card native-profile"
-      aria-label="Public NEAR profile"
+      aria-label={tr("Public NEAR profile")}
     >
       <header>
         <div>
-          <h3>Your public explorer</h3>
+          <h3>{tr("Your public explorer")}</h3>
         </div>
         <Wallet size={24} aria-hidden="true" />
       </header>
       <p>
-        Save your game alias and your NEAR avatar reference with NEAR Social.
-        Your location, balance and inventory stay out of this profile.
-      </p>
+        {tr("Save your game alias and your NEAR avatar reference with NEAR Social. Your location, balance and inventory stay out of this profile.")}</p>
       {!accountId ? (
         <button
           className="secondary-button"
           disabled={!!busy}
           onClick={() => void onConnect()}
         >
-          Connect NEAR wallet
-        </button>
+          {tr("Connect NEAR wallet")}</button>
       ) : (
         <>
           {accounts.length > 1 ? (
             <label className="profile-account">
-              Profile wallet
-              <select
+              {tr("Profile wallet")}<select
                 value={accountId}
                 onChange={(e) => setSelected(e.target.value)}
                 disabled={!!busy}
               >
                 {accounts.map((a) => (
                   <option key={a} value={a}>
-                    {a === managedAccountId ? `${a} (explorer account)` : a}
+                    {a === managedAccountId ? tr("{0} (explorer account)", { 0: a }) : a}
                   </option>
                 ))}
               </select>
@@ -116,7 +113,7 @@ export function NativeProfilePanel({
           ) : null}
           <p className="native-account-id">{accountId}</p>
           <div className="profile-alias">
-            <span>Game alias</span>
+            <span>{tr("Game alias")}</span>
             <strong>{player.name}</strong>
           </div>
           {error ? (
@@ -124,57 +121,54 @@ export function NativeProfilePanel({
               {error}
             </p>
           ) : !snapshot ? (
-            <p role="status">Checking NEAR Social…</p>
+            <p role="status">{tr("Checking NEAR Social…")}</p>
           ) : (
             <>
               <p className="profile-avatar">
                 {snapshot.publishAvatar ? (
                   <>
-                    <span>Owned NEAR avatar to link</span>
+                    <span>{tr("Owned NEAR avatar to link")}</span>
                     <strong>{snapshot.publishAvatar.tokenId}</strong>
                   </>
                 ) : (
-                  "No NEAR avatar reference will be included. Your alias can still be published."
+                  tr("No NEAR avatar reference will be included. Your alias can still be published.")
                 )}
               </p>
               {snapshot.status === "published" && (
                 <p className="profile-published">
-                  Published alias: <strong>{snapshot.profile?.name}</strong>
+                  {tr("Published alias:")}{" "}<strong>{snapshot.profile?.name}</strong>
                   {snapshot.profile?.avatar && (
                     <span>
                       {snapshot.avatarVerified
-                        ? "Owned NEAR avatar linked."
-                        : "This avatar reference is no longer verified as yours."}
+                        ? tr("Owned NEAR avatar linked.")
+                        : tr("This avatar reference is no longer verified as yours.")}
                     </span>
                   )}
                 </p>
               )}
               {snapshot.status === "unsupported" && (
                 <p className="notice">
-                  An earlier profile format is present. Publishing updates
-                  QuestLayer’s profile fields.
-                </p>
+                  {tr("An earlier profile format is present. Publishing updates QuestLayer’s profile fields.")}</p>
               )}
               {managed ? (
                 <p className="profile-storage">
-                  No popup and no fee. QuestLayer covers the{" "}
+                  {tr("No popup and no fee. QuestLayer covers the")}{" "}
                   {snapshot.deposit === "1"
-                    ? "network fee"
-                    : `${formatNativeNear(snapshot.deposit)} test NEAR storage credit`}{" "}
-                  for your explorer account.
-                </p>
+                    ? tr("network fee")
+                    : tr("{0} test NEAR storage credit", { 0: formatNativeNear(snapshot.deposit) })}{" "}
+                  {tr("for your explorer account.")}</p>
               ) : (
                 <p className="profile-storage">
-                  Wallet attachment:{" "}
+                  {tr("Wallet attachment:")}{" "}
                   <strong>
                     {snapshot.deposit === "1"
-                      ? "1 yoctoNEAR"
-                      : `${formatNativeNear(snapshot.deposit)} test NEAR`}
+                      ? tr("1 yoctoNEAR")
+                      : tr("{0} test NEAR", { 0: formatNativeNear(snapshot.deposit) })}
                   </strong>
                   {snapshot.deposit !== "1" &&
-                    " as storage credit, plus the network fee. Unused credit stays in your NEAR Social storage balance."}
+                    tr(" as storage credit, plus the network fee. Unused credit stays in your NEAR Social storage balance.")}
                   {snapshot.deposit === "1" &&
-                    " plus the network fee. Your existing NEAR Social storage credit covers the profile."}
+                    tr(" plus the network fee. Your existing NEAR Social storage credit covers the profile.")}
                 </p>
               )}
               <label className="profile-consent">
@@ -185,14 +179,12 @@ export function NativeProfilePanel({
                   disabled={!!busy}
                 />
                 <span>
-                  Make this alias and avatar reference public on NEAR testnet.
-                  <small>Blockchain transaction history remains public.</small>
+                  {tr("Make this alias and avatar reference public on NEAR testnet.")}<small>{tr("Blockchain transaction history remains public.")}</small>
                 </span>
               </label>
               {!snapshot.publishEnabled && (
                 <p className="notice" role="status">
-                  Publishing is paused while the profile contract is checked.
-                </p>
+                  {tr("Publishing is paused while the profile contract is checked.")}</p>
               )}
               <button
                 className="primary-button"
@@ -201,9 +193,9 @@ export function NativeProfilePanel({
               >
                 {busy === "native-profile"
                   ? managed
-                    ? "Publishing…"
-                    : "Confirm in your wallet…"
-                  : "Publish QuestLayer profile"}
+                    ? tr("Publishing…")
+                    : tr("Confirm in your wallet…")
+                  : tr("Publish QuestLayer profile")}
               </button>
             </>
           )}
@@ -214,15 +206,13 @@ export function NativeProfilePanel({
               onClick={() => setRevision((r) => r + 1)}
             >
               <ArrowClockwise aria-hidden="true" />
-              Refresh profile
-            </button>
+              {tr("Refresh profile")}</button>
             <a
               href={`${EXPLORER_BASE}/address/${SOCIAL_CONTRACT_ID}`}
               target="_blank"
               rel="noreferrer"
             >
-              NEAR Social contract
-              <ArrowSquareOut aria-hidden="true" />
+              {tr("NEAR Social contract")}<ArrowSquareOut aria-hidden="true" />
             </a>
           </div>
         </>

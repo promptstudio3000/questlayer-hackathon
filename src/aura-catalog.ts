@@ -3,6 +3,7 @@
 // Everything here is cosmetic: entitlements decide which editions a chest can
 // hold, and set bonuses only change how the explorer glows.
 import catalog from "../server/data/aura-catalog.json" with { type: "json" };
+import { tr } from "./i18n.ts";
 
 export type AuraRarity = "common" | "rare" | "epic" | "legendary";
 export type AuraCatalogEdition = Readonly<{
@@ -78,13 +79,13 @@ export function auraEntitled(
 }
 /** Where an edition is found: chest entitlement, or the NPC / monster that awards it. */
 export function editionSourceLabel(edition: AuraCatalogEdition) {
-  if (edition.source === "npc") return `NPC only · ${edition.how || "Earned from a roaming NPC"}`;
+  if (edition.source === "npc") return tr("NPC only · {0}", { 0: edition.how || "Earned from a roaming NPC" });
   if (edition.source === "season")
-    return `Season reward · ${edition.how || "Earned by reaching the season goal"}`;
+    return tr("Season reward · {0}", { 0: edition.how || "Earned by reaching the season goal" });
   if (edition.source === "level")
-    return `Level reward · ${edition.how || "Earned by reaching a level"}`;
+    return tr("Level reward · {0}", { 0: edition.how || "Earned by reaching a level" });
   if (edition.source === "monster")
-    return `Monster only · ${edition.how || "Earned by beating a monster"}`;
+    return tr("Monster only · {0}", { 0: edition.how || "Earned by beating a monster" });
   return entitlementLabel(edition.rarity);
 }
 export function entitlementLabel(rarity: unknown) {
@@ -95,7 +96,7 @@ export function entitlementLabel(rarity: unknown) {
       : rule.minZoneTier === 2
         ? "expedition or gold zones"
         : "any zone chest";
-  return rule.minLevel > 1 ? `Level ${rule.minLevel}+ · ${zone}` : `Any level · ${zone}`;
+  return rule.minLevel > 1 ? tr("Level {0}+ · {1}", { 0: rule.minLevel, 1: zone }) : tr("Any level · {0}", { 0: zone });
 }
 /**
  * The cosmetic set bonus for the worn pair, or null. Both slots must hold

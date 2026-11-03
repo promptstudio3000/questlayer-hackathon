@@ -35,6 +35,7 @@ import { prefersReducedMotion } from "./feedback";
 import { paintMapSky, skyFor, skyLabel } from "./map-sky";
 import { MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
 import "./map-sky.css";
+import { tr } from "./i18n";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
@@ -792,7 +793,7 @@ export function GameMap(props: GameMapProps) {
         belowEdition: bottom && auraEdition(bottom),
         scale: 2,
         skinUrl: props.skinUrl,
-      }) + '<span class="you-label">YOU</span>';
+      }) + `<span class="you-label">${tr("YOU")}</span>`;
     if (modelHost) element.append(modelHost);
     skinFallback(element, color);
   }, [equipmentKey, props.skinUrl, ready]);
@@ -1037,7 +1038,7 @@ export function GameMap(props: GameMapProps) {
       <div
         ref={el}
         className={`game-map maplibregl-map sky-${sky.phase}${props.globe ? " globe-view" : ""}`}
-        aria-label="Real OpenStreetMap world"
+        aria-label={tr("Real OpenStreetMap world")}
       />
       {!props.globe && (
         <div
@@ -1059,8 +1060,8 @@ export function GameMap(props: GameMapProps) {
       {!ready && (
         <div className="map-loading" role="status">
           {error
-            ? "Map loading is taking longer. Your game panels are still available."
-            : "Preparing your corner of the world…"}
+            ? tr("Map loading is taking longer. Your game panels are still available.")
+            : tr("Preparing your corner of the world…")}
         </div>
       )}
     </>

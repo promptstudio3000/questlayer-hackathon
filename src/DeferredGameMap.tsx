@@ -1,5 +1,6 @@
 import { Component, lazy, Suspense, type ReactNode } from "react";
 import type { GameMapProps } from "./GameMap";
+import { tr } from "./i18n";
 let mapModule: Promise<typeof import("./GameMap")> | undefined;
 // Starts downloading MapLibre and the map chunk ahead of time, e.g. while the
 // player types their name. Safe to call any number of times.
@@ -25,14 +26,13 @@ export class MapBoundary extends Component<
     if (this.state.failed)
       return (
         <div className="map-loading map-failure" role="alert">
-          <strong>The map could not open.</strong>
-          <p>Your inventory and wallet are still available.</p>
+          <strong>{tr("The map could not open.")}</strong>
+          <p>{tr("Your inventory and wallet are still available.")}</p>
           <button
             className="secondary-button"
             onClick={() => window.location.reload()}
           >
-            Reload game
-          </button>
+            {tr("Reload game")}</button>
         </div>
       );
     return this.props.children;
@@ -44,8 +44,7 @@ export function DeferredGameMap(props: GameMapProps) {
       <Suspense
         fallback={
           <div className="map-loading" role="status">
-            Preparing the map…
-          </div>
+            {tr("Preparing the map…")}</div>
         }
       >
         <MapView {...props} />

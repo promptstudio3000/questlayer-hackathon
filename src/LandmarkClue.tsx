@@ -3,6 +3,7 @@
 // One answer per player: it is sent together with the visit confirmation.
 import type { QuestClue } from "./types";
 import "./landmark-clue.css";
+import { tr } from "./i18n";
 
 export default function LandmarkClue({
   clue,
@@ -43,9 +44,9 @@ export default function LandmarkClue({
       <p className="fine-print">
         {result
           ? result.correct
-            ? "Right. The answer comes from Wikidata."
-            : "Not quite. The highlighted answer is the one Wikidata gives."
-          : `One answer: ${clue.xp.correct} XP if right, ${clue.xp.miss} XP for the visit. Facts from Wikidata (CC0).`}
+            ? tr("Right. The answer comes from Wikidata.")
+            : tr("Not quite. The highlighted answer is the one Wikidata gives.")
+          : tr("One answer: {0} XP if right, {1} XP for the visit. Facts from Wikidata (CC0).", { 0: clue.xp.correct, 1: clue.xp.miss })}
       </p>
     </fieldset>
   );

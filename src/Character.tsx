@@ -3,6 +3,7 @@ import { Ghost } from "./Ghost";
 import { AuraSprite, auraEdition } from "./aura-art";
 import { activeAuraSet } from "./aura-catalog.ts";
 import type { Item } from "./types";
+import { tr } from "./i18n";
 export function Character({
   items,
   originTokenId,
@@ -34,8 +35,8 @@ export function Character({
       role="img"
       aria-label={
         preview
-          ? "Preview of explorer appearance"
-          : "Equipped character appearance"
+          ? tr("Preview of explorer appearance")
+          : tr("Equipped character appearance")
       }
     >
       {bottom && (
@@ -54,7 +55,7 @@ export function Character({
       {originTokenId && !failed ? (
         <img
           src={`/api/aavegotchi/skin?tokenId=${encodeURIComponent(originTokenId)}`}
-          alt="Verified original Aavegotchi"
+          alt={tr("Verified original Aavegotchi")}
           onError={() => setFailed(true)}
         />
       ) : (
@@ -73,7 +74,7 @@ export function Character({
           />
         </i>
       )}
-      {failed && !compact && <small>Original appearance unavailable</small>}
+      {failed && !compact && <small>{tr("Original appearance unavailable")}</small>}
     </div>
   );
 }

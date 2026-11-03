@@ -24,6 +24,7 @@ import type {
 } from "./types";
 import { EXPLORER_BASE } from "./near-network.ts";
 import { nativeAppearanceItems } from "./native-appearance";
+import { tr } from "./i18n";
 export { nativeAppearanceItems };
 export function NativePicture({ item }: { item: NativeItem }) {
   // Game appearance preview; historical on-chain cover media is unchanged.
@@ -88,7 +89,7 @@ export function NativeWardrobe({
       } catch {
         if (current && generation === request)
           setGalleryError(
-            "The public collection could not load. Try again later.",
+            tr("The public collection could not load. Try again later."),
           );
       }
     };
@@ -102,17 +103,14 @@ export function NativeWardrobe({
   return (
     <section className="native-wardrobe">
       <p className="inventory-collection-caption">
-        Auras secured to your NEAR account. They stay separate from practice
-        Auras and GOLD.
-      </p>
+        {tr("Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.")}</p>
       {!player.wallets.length ? (
         <button
           className="inventory-action"
           disabled={!!busy}
           onClick={() => void onConnect()}
         >
-          <Wallet size={20} aria-hidden="true" /> Connect a NEAR wallet
-        </button>
+          <Wallet size={20} aria-hidden="true" /> {" "}{tr("Connect a NEAR wallet")}</button>
       ) : (
         <>
           <button
@@ -120,11 +118,9 @@ export function NativeWardrobe({
             disabled={!!busy}
             onClick={onRefresh}
           >
-            <ArrowClockwise size={18} aria-hidden="true" /> Refresh secured
-            collection
-          </button>
+            <ArrowClockwise size={18} aria-hidden="true" /> {" "}{tr("Refresh secured collection")}</button>
           {!data && !error && (
-            <p role="status">Loading your secured collection…</p>
+            <p role="status">{tr("Loading your secured collection…")}</p>
           )}
           {error && (
             <p className="inventory-error" role="alert">
@@ -139,13 +135,13 @@ export function NativeWardrobe({
               <section
                 className="native-account"
                 key={account.accountId}
-                aria-label={`Secured collection for ${account.accountId}`}
+                aria-label={tr("Secured collection for {0}", { 0: account.accountId })}
               >
                 <strong className="native-address">{account.accountId}</strong>
                 <span>
                   {account.supply} secured{" "}
                   {account.supply === "1" ? "item" : "items"}
-                  {wearing ? " · On the map now" : ""}
+                  {wearing ? tr(" · On the map now") : ""}
                 </span>
                 {!!account.items.length && (
                   <button
@@ -156,8 +152,8 @@ export function NativeWardrobe({
                     }
                   >
                     {wearing
-                      ? "Wear my practice outfit"
-                      : "Wear this secured outfit"}
+                      ? tr("Wear my practice outfit")
+                      : tr("Wear this secured outfit")}
                     <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 )}
@@ -194,12 +190,12 @@ export function NativeWardrobe({
                           <em>
                             {slot ? (
                               <>
-                                <Check size={14} aria-hidden="true" /> Equipped{" "}
+                                <Check size={14} aria-hidden="true" /> {" "}{tr("Equipped")}{" "}
                                 {slot}
                               </>
                             ) : (
                               <>
-                                View item{" "}
+                                {tr("View item")}{" "}
                                 <ArrowRight size={14} aria-hidden="true" />
                               </>
                             )}
@@ -211,35 +207,31 @@ export function NativeWardrobe({
                 )}
                 {!auras.length && (
                   <p>
-                    No secured Auras yet. Secure an earned Aura under Secure
-                    Auras & public profile below.
-                  </p>
+                    {tr("No secured Auras yet. Secure an earned Aura under Secure Auras & public profile below.")}</p>
                 )}
                 <details className="inventory-disclosure">
                   <summary>
-                    Secured explorer{" "}
+                    {tr("Secured explorer")}{" "}
                     <span>
                       {account.starterOwned
-                        ? "· Owned"
+                        ? tr("· Owned")
                         : account.starterMinted
-                          ? "· Already secured"
-                          : "· Create"}
+                          ? tr("· Already secured")
+                          : tr("· Create")}
                     </span>
                   </summary>
                   <div className="inventory-disclosure-body">
                     {!account.starterMinted ? (
                       <>
                         <p>
-                          Securing holds up to <strong>0.05 test NEAR</strong>{" "}
-                          for storage; anything unused comes back. No practice
-                          GOLD is spent.
-                        </p>
+                          {tr("Securing holds up to")}{" "}<strong>{tr("0.05 test NEAR")}</strong>{" "}
+                          {tr("for storage; anything unused comes back. No practice GOLD is spent.")}</p>
                         <button
                           className="inventory-action"
                           disabled={actionBlocked}
                           onClick={() => void onMint(account.accountId)}
                         >
-                          Secure my explorer{" "}
+                          {tr("Secure my explorer")}{" "}
                           <ArrowRight size={18} aria-hidden="true" />
                         </button>
                       </>
@@ -248,10 +240,9 @@ export function NativeWardrobe({
                         {account.starterOwned ? (
                           <>
                             <Check size={16} aria-hidden="true" />
-                            Your explorer is secured to this account.
-                          </>
+                            {tr("Your explorer is secured to this account.")}</>
                         ) : (
-                          "Your explorer was already secured."
+                          tr("Your explorer was already secured.")
                         )}
                       </p>
                     )}
@@ -272,8 +263,7 @@ export function NativeWardrobe({
                 </details>
                 {account.truncated && (
                   <p className="fine-print">
-                    Showing the first 100 items plus what you wear.
-                  </p>
+                    {tr("Showing the first 100 items plus what you wear.")}</p>
                 )}
               </section>
             );
@@ -281,13 +271,13 @@ export function NativeWardrobe({
         </>
       )}
       {selection && (
-        <Dialog label="NEAR Aura details" onClose={() => setSelection(null)}>
+        <Dialog label={tr("NEAR Aura details")} onClose={() => setSelection(null)}>
           <section className="inventory-dialog">
             <header>
-              <h2>NEAR Aura</h2>
+              <h2>{tr("NEAR Aura")}</h2>
               <button
                 className="inventory-icon-button"
-                aria-label="Close NEAR Aura details"
+                aria-label={tr("Close NEAR Aura details")}
                 onClick={() => setSelection(null)}
               >
                 <X size={22} />
@@ -295,9 +285,7 @@ export function NativeWardrobe({
             </header>
             {!selectedAccount || !selectedItem ? (
               <p>
-                This Aura is no longer in the loaded collection. Refresh your
-                secured collection to check.
-              </p>
+                {tr("This Aura is no longer in the loaded collection. Refresh your secured collection to check.")}</p>
             ) : (
               <>
                 <div className="inventory-item-detail">
@@ -317,13 +305,11 @@ export function NativeWardrobe({
                       ? ` · #${selectedItem.serial}`
                       : ""}
                   </p>
-                  <span className="inventory-source">Secured Aura</span>
+                  <span className="inventory-source">{tr("Secured Aura")}</span>
                 </div>
                 {error && (
                   <p className="inventory-error" role="alert">
-                    Ownership could not be checked. Close this Aura and refresh
-                    the collection before changing your outfit.
-                  </p>
+                    {tr("Ownership could not be checked. Close this Aura and refresh the collection before changing your outfit.")}</p>
                 )}
                 <div className="inventory-item-actions">
                   {(["above", "below"] as const).map((slot) => {
@@ -350,33 +336,31 @@ export function NativeWardrobe({
                   })}
                   <p className="inventory-sale-note" role="status">
                     {error
-                      ? "Showing the last loaded outfit; ownership could not be checked."
+                      ? tr("Showing the last loaded outfit; ownership could not be checked.")
                       : busy
-                        ? "Waiting for your approval and a confirmed outfit…"
+                        ? tr("Waiting for your approval and a confirmed outfit…")
                         : selectedAccount.equipment.above ===
                             selectedItem.tokenId
-                          ? "Equipped above."
+                          ? tr("Equipped above.")
                           : selectedAccount.equipment.below ===
                               selectedItem.tokenId
-                            ? "Equipped below."
-                            : "Not equipped."}
+                            ? tr("Equipped below.")
+                            : tr("Not equipped.")}
                   </p>
                   {(!player.nativeOutfit ||
                     player.nativeAccount !== selectedAccount.accountId) && (
                     <p className="inventory-sale-note">
-                      Your map ghost wears another outfit. Choose Wear this
-                      secured outfit after equipping.
-                    </p>
+                      {tr("Your map ghost wears another outfit. Choose Wear this secured outfit after equipping.")}</p>
                   )}
                 </div>
                 <details className="inventory-disclosure">
-                  <summary>Details</summary>
+                  <summary>{tr("Details")}</summary>
                   <div className="inventory-disclosure-body">
                     <p className="native-address">
-                      Token: {selectedItem.tokenId}
+                      {tr("Token:")}{" "}{selectedItem.tokenId}
                     </p>
                     <p className="native-address">
-                      Account: {selectedAccount.accountId}
+                      {tr("Account:")}{" "}{selectedAccount.accountId}
                     </p>
                   </div>
                 </details>
@@ -389,7 +373,7 @@ export function NativeWardrobe({
         className="native-gallery"
         onToggle={(e) => setShowGallery(e.currentTarget.open)}
       >
-        <summary>Browse everyone's secured Auras</summary>
+        <summary>{tr("Browse everyone's secured Auras")}</summary>
         {galleryError ? (
           <>
             <p role="alert">{galleryError}</p>
@@ -397,26 +381,24 @@ export function NativeWardrobe({
               className="button secondary"
               onClick={() => setGalleryRefresh((n) => n + 1)}
             >
-              Retry collection
-            </button>
+              {tr("Retry collection")}</button>
           </>
         ) : !gallery ? (
-          <p role="status">Loading the public collection…</p>
+          <p role="status">{tr("Loading the public collection…")}</p>
         ) : (
           <>
             {gallery.outfits?.map((outfit) => (
               <div className="native-outfit-preview" key={outfit.accountId}>
                 <Character items={nativeAppearanceItems(outfit)} />
                 <div>
-                  <strong>Secured outfit</strong>
+                  <strong>{tr("Secured outfit")}</strong>
                   <small className="native-address">{outfit.accountId}</small>
-                  <span>What this explorer wears right now</span>
+                  <span>{tr("What this explorer wears right now")}</span>
                 </div>
               </div>
             ))}
             <p>
-              {gallery.name} · {gallery.supply} secured items
-            </p>
+              {gallery.name} · {gallery.supply} {" "}{tr("secured items")}</p>
             <div className="native-items">
               {gallery.items.map((item) => (
                 <article className="native-item" key={item.tokenId}>
@@ -425,7 +407,7 @@ export function NativeWardrobe({
                     <h3>{item.title}</h3>
                     <small className="native-address">{item.tokenId}</small>
                     <small className="native-address">
-                      Owner: {item.ownerId}
+                      {tr("Owner:")}{" "}{item.ownerId}
                     </small>
                   </div>
                 </article>
@@ -437,8 +419,7 @@ export function NativeWardrobe({
               target="_blank"
               rel="noreferrer"
             >
-              View on NEAR explorer
-              <ArrowSquareOut size={16} />
+              {tr("View on NEAR explorer")}<ArrowSquareOut size={16} />
             </a>
           </>
         )}

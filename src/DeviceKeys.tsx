@@ -15,6 +15,7 @@ import {
   type AccountKey,
 } from "./account-recovery";
 import type { InvisibleAccountStatus } from "./useInvisibleAccount";
+import { tr } from "./i18n";
 
 export function DeviceKeys({
   status,
@@ -43,18 +44,14 @@ export function DeviceKeys({
     return (
       <section
         className="play-native account-devices"
-        aria-label="Devices and recovery"
+        aria-label={tr("Devices and recovery")}
       >
         <div className="play-section-heading">
           <h2>
-            <DeviceMobile size={22} /> This device is not set up yet
-          </h2>
+            <DeviceMobile size={22} /> {" "}{tr("This device is not set up yet")}</h2>
         </div>
         <p className="play-hint">
-          Your explorer account {accountId} was created on another device. Use
-          your recovery passkey to let this device play with it too. Nothing is
-          paid and no secret leaves your passkey.
-        </p>
+          {tr("Your explorer account")}{" "}{accountId} {" "}{tr("was created on another device. Use your recovery passkey to let this device play with it too. Nothing is paid and no secret leaves your passkey.")}</p>
         <button
           className="primary-button"
           disabled={!!busy}
@@ -62,13 +59,11 @@ export function DeviceKeys({
         >
           <Fingerprint size={20} />
           {busy === "recovery-restore"
-            ? "Adding this device…"
-            : "Use my recovery passkey"}
+            ? tr("Adding this device…")
+            : tr("Use my recovery passkey")}
         </button>
         <p className="play-hint">
-          No recovery passkey yet? Keep playing on the device that created your
-          explorer and add one under Profile there first.
-        </p>
+          {tr("No recovery passkey yet? Keep playing on the device that created your explorer and add one under Profile there first.")}</p>
       </section>
     );
   if (status !== "ready") return null;
@@ -78,17 +73,14 @@ export function DeviceKeys({
   return (
     <section
       className="play-native account-devices"
-      aria-label="Devices and recovery"
+      aria-label={tr("Devices and recovery")}
     >
       <div className="play-section-heading">
         <h2>
-          <DeviceMobile size={22} /> Devices
-        </h2>
+          <DeviceMobile size={22} /> {" "}{tr("Devices")}</h2>
       </div>
       <p className="play-hint">
-        These keys can act for your explorer account <small>{accountId}</small>.
-        Each one stays on its own device; QuestLayer never holds them.
-      </p>
+        {tr("These keys can act for your explorer account")}{" "}<small>{accountId}</small>{tr(". Each one stays on its own device; QuestLayer never holds them.")}</p>
       <ul className="session-list device-list">
         {rows.map((row) => (
           <li key={row.publicKey}>
@@ -112,25 +104,23 @@ export function DeviceKeys({
                         setConfirm(null);
                     }}
                   >
-                    {busy === "device-revoke" ? "Revoking…" : "Confirm revoke"}
+                    {busy === "device-revoke" ? tr("Revoking…") : tr("Confirm revoke")}
                   </button>
                   <button
                     className="secondary-button"
                     disabled={!!busy}
                     onClick={() => setConfirm(null)}
                   >
-                    Keep
-                  </button>
+                    {tr("Keep")}</button>
                 </span>
               ) : (
                 <button
                   className="text-button"
                   disabled={!!busy}
-                  aria-label={`Revoke ${row.title}`}
+                  aria-label={tr("Revoke {0}", { 0: row.title })}
                   onClick={() => setConfirm(row.publicKey)}
                 >
-                  <Trash size={16} /> Revoke
-                </button>
+                  <Trash size={16} /> {" "}{tr("Revoke")}</button>
               ))}
           </li>
         ))}
@@ -138,11 +128,7 @@ export function DeviceKeys({
       {!recovery ? (
         <div className="session-review">
           <p>
-            <ShieldCheck size={18} /> Add a recovery passkey so you can bring
-            this explorer to a new phone or laptop, even if this device is lost.
-            Your password manager keeps the passkey; QuestLayer only learns its
-            public key.
-          </p>
+            <ShieldCheck size={18} /> {" "}{tr("Add a recovery passkey so you can bring this explorer to a new phone or laptop, even if this device is lost. Your password manager keeps the passkey; QuestLayer only learns its public key.")}</p>
           <button
             className="secondary-button"
             disabled={!!busy}
@@ -150,15 +136,13 @@ export function DeviceKeys({
           >
             <Fingerprint size={20} />
             {busy === "recovery-setup"
-              ? "Saving your recovery passkey…"
-              : "Create a recovery passkey"}
+              ? tr("Saving your recovery passkey…")
+              : tr("Create a recovery passkey")}
           </button>
         </div>
       ) : (
         <p className="play-hint">
-          <Key size={16} /> On a new device choose “Restore with a recovery
-          passkey” on the welcome screen.
-        </p>
+          <Key size={16} /> {" "}{tr("On a new device choose “Restore with a recovery passkey” on the welcome screen.")}</p>
       )}
       <details
         className="native-extras"
@@ -166,29 +150,22 @@ export function DeviceKeys({
         onToggle={(e) => setLost((e.target as HTMLDetailsElement).open)}
       >
         <summary>
-          <WarningCircle size={20} /> Lost a device?
-        </summary>
+          <WarningCircle size={20} /> {" "}{tr("Lost a device?")}</summary>
         {others.length === 0 ? (
           <p className="play-hint">
-            No other device can act for this explorer. If you lose this one,
-            restore on a new device with your recovery passkey
-            {recovery ? "." : " (create one above first)."}
+            {tr("No other device can act for this explorer. If you lose this one, restore on a new device with your recovery passkey")}{recovery ? "." : tr(" (create one above first).")}
           </p>
         ) : (
           <>
             <p className="play-hint">
-              Revoke the lost device here. It can no longer sign anything for
-              your account once the network confirms the change, usually within
-              seconds.
-            </p>
+              {tr("Revoke the lost device here. It can no longer sign anything for your account once the network confirms the change, usually within seconds.")}</p>
             <label className="session-check">
               <input
                 type="checkbox"
                 checked={signOut}
                 onChange={(e) => setSignOut(e.target.checked)}
               />
-              Also sign out every other game session
-            </label>
+              {tr("Also sign out every other game session")}</label>
             <ul className="session-list">
               {others.map((row) => (
                 <li key={row.publicKey}>
@@ -201,8 +178,8 @@ export function DeviceKeys({
                   >
                     <Trash size={16} />
                     {busy === "device-revoke"
-                      ? "Revoking…"
-                      : "This one is lost, revoke it"}
+                      ? tr("Revoking…")
+                      : tr("This one is lost, revoke it")}
                   </button>
                 </li>
               ))}

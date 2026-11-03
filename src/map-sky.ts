@@ -4,6 +4,7 @@
 // (server/actors/schedule.mjs). Pure palette data plus one painter.
 import type * as maplibregl from "maplibre-gl";
 import { skyAt, type Sky, type SkyPhase } from "./sun.ts";
+import { tr } from "./i18n.ts";
 
 export type MapPalette = {
   background: string;
@@ -125,22 +126,22 @@ const clock = (t: number) =>
 
 /** Short chip text and a full label for screen readers. */
 export function skyLabel(sky: Sky, now = Date.now()): { short: string; long: string } {
-  if (sky.polar === "day") return { short: "Midnight sun", long: "Day all day here, the sun does not set today." };
-  if (sky.polar === "night") return { short: "Polar night", long: "Night all day here, the sun does not rise today." };
+  if (sky.polar === "day") return { short: tr("Midnight sun"), long: tr("Day all day here, the sun does not set today.") };
+  if (sky.polar === "night") return { short: tr("Polar night"), long: tr("Night all day here, the sun does not rise today.") };
   const { sunrise, sunset } = sky;
-  if (sunrise === undefined || sunset === undefined) return { short: "Day", long: "Day" };
+  if (sunrise === undefined || sunset === undefined) return { short: tr("Day"), long: tr("Day") };
   // The next event after now (sunTimes covers the solar day around now).
   const DAY = 86_400_000;
   const nextRise = sunrise > now ? sunrise : sunrise + DAY,
     nextSet = sunset > now ? sunset : sunset + DAY;
   switch (sky.phase) {
     case "day":
-      return { short: `Sunset ${clock(nextSet)}`, long: `Day here. Sunset at ${clock(nextSet)}; night creatures come out after it.` };
+      return { short: tr("Sunset {0}", { 0: clock(nextSet) }), long: tr("Day here. Sunset at {0}; night creatures come out after it.", { 0: clock(nextSet) }) };
     case "dusk":
-      return { short: "Dusk", long: `Dusk here. Night creatures are out until sunrise at ${clock(nextRise)}.` };
+      return { short: tr("Dusk"), long: tr("Dusk here. Night creatures are out until sunrise at {0}.", { 0: clock(nextRise) }) };
     case "dawn":
-      return { short: `Sunrise ${clock(nextRise)}`, long: `Dawn here. Sunrise at ${clock(nextRise)}; day creatures come out with it.` };
+      return { short: tr("Sunrise {0}", { 0: clock(nextRise) }), long: tr("Dawn here. Sunrise at {0}; day creatures come out with it.", { 0: clock(nextRise) }) };
     default:
-      return { short: `Sunrise ${clock(nextRise)}`, long: `Night here. Night creatures are out until sunrise at ${clock(nextRise)}.` };
+      return { short: tr("Sunrise {0}", { 0: clock(nextRise) }), long: tr("Night here. Night creatures are out until sunrise at {0}.", { 0: clock(nextRise) }) };
   }
 }

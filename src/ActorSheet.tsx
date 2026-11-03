@@ -8,6 +8,7 @@ import { api, ApiError } from "./api";
 import type { ActorEncounter, ActorView } from "./actor-types";
 import { actorRoleLabel } from "./actors-layer";
 import "./actors.css";
+import { tr } from "./i18n";
 
 type Location = { lat: number; lng: number; accuracy?: number; timestamp?: number };
 type HandoffProps = {
@@ -63,7 +64,7 @@ export function ActorSheet({
   async function meet() {
     const mine = ++attempt.current;
     if (!location) {
-      setState({ kind: "error", message: "Waiting for your location.", retry: true });
+      setState({ kind: "error", message: tr("Waiting for your location."), retry: true });
       return;
     }
     setState({ kind: "loading" });
@@ -80,7 +81,7 @@ export function ActorSheet({
       const code = e instanceof ApiError ? e.code : "";
       setState({
         kind: "error",
-        message: PROBLEM[code] || (e instanceof ApiError ? e.message : "Could not reach the game. Try again."),
+        message: PROBLEM[code] || (e instanceof ApiError ? e.message : tr("Could not reach the game. Try again.")),
         retry: code !== "ACTORS_DISABLED",
       });
     }
@@ -128,7 +129,7 @@ export function ActorSheet({
   return (
     <Dialog label={actor.name} onClose={onClose}>
       <section className={`actor-sheet actor-sheet-${actor.kind}`}>
-        <button className="icon-button close" onClick={onClose} aria-label="Close">
+        <button className="icon-button close" onClick={onClose} aria-label={tr("Close")}>
           ×
         </button>
         <div className="actor-stage" ref={stage} aria-hidden="true" />
@@ -141,33 +142,30 @@ export function ActorSheet({
           {actor.title && <p className="actor-title">{actor.title}</p>}
           {actor.phase && (
             <p className="actor-title actor-phase">
-              {actor.phase === "night" ? "Night creature · out until sunrise" : "Day creature · out until sunset"}
+              {actor.phase === "night" ? tr("Night creature · out until sunrise") : tr("Day creature · out until sunset")}
             </p>
           )}
         </header>
-        {state.kind === "loading" && <p className="actor-status" role="status">Walking up…</p>}
+        {state.kind === "loading" && <p className="actor-status" role="status">{tr("Walking up…")}</p>}
         {state.kind === "error" && (
           <div className="actor-status actor-problem" role="alert">
             <p>{state.message}</p>
             {state.retry && (
               <button className="secondary-button" onClick={() => void meet()}>
-                Try again
-              </button>
+                {tr("Try again")}</button>
             )}
           </div>
         )}
         {ready && (
           <>
             <p className="actor-status" role="status">
-              You are {ready.distanceM} m away. This meeting lasts 5 minutes.
-            </p>
+              {tr("You are")}{" "}{ready.distanceM} {" "}{tr("m away. This meeting lasts 5 minutes.")}</p>
             {ready.actor.boss && (
               <p className="actor-note">
-                Shared boss health: {ready.actor.boss.hp} / {ready.actor.boss.maxHp} · {ready.actor.boss.participants} hunters this week.
-              </p>
+                {tr("Shared boss health:")}{" "}{ready.actor.boss.hp} / {ready.actor.boss.maxHp} · {ready.actor.boss.participants} {" "}{tr("hunters this week.")}</p>
             )}
             {ready.actor.state === "defeated" && (
-              <p className="actor-note">You already beat this one today.</p>
+              <p className="actor-note">{tr("You already beat this one today.")}</p>
             )}
             {ready.menu.length ? (
               <ul className="actor-offers">
@@ -183,7 +181,7 @@ export function ActorSheet({
                       >
                         {offer.label}
                       </button>
-                      {!canChallenge && <small>Opens in an upcoming update.</small>}
+                      {!canChallenge && <small>{tr("Opens in an upcoming update.")}</small>}
                     </li>
                   );
                 })}
@@ -191,8 +189,8 @@ export function ActorSheet({
             ) : (
               <p className="actor-note">
                 {actor.kind === "npc"
-                  ? "They nod and go back to their errands. Conversations open in an upcoming update."
-                  : "Nothing to do here right now."}
+                  ? tr("They nod and go back to their errands. Conversations open in an upcoming update.")
+                  : tr("Nothing to do here right now.")}
               </p>
             )}
           </>

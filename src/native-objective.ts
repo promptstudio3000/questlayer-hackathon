@@ -6,6 +6,7 @@ import type {
 import type { Point } from "./types";
 import { NEAR_NETWORK } from "./near-network.ts";
 import type { NearNetwork } from "./near-network.ts";
+import { tr } from "./i18n.ts";
 
 export type NativeObjective = {
   version: 1;
@@ -111,20 +112,20 @@ export function nativeVisitReadReason(
   now: number,
 ): string {
   if (!nativeSnapshotFresh(state, now) || !state)
-    return "Refresh the current testnet state before recording visits";
+    return tr("Refresh the current testnet state before recording visits");
   if (state.network !== NEAR_NETWORK || state.accountId !== accountId)
-    return "Refresh the selected testnet account before recording visits";
+    return tr("Refresh the selected testnet account before recording visits");
   if (
     state.status !== "ready" ||
     !state.day ||
     !Number.isFinite(state.day.startsAt) ||
     !Number.isFinite(state.day.endsAt)
   )
-    return "Waiting for the published testnet day";
-  if (now < state.day.startsAt) return "The testnet day is not open yet";
-  if (now >= state.day.endsAt) return "Today's native day has ended";
+    return tr("Waiting for the published testnet day");
+  if (now < state.day.startsAt) return tr("The testnet day is not open yet");
+  if (now >= state.day.endsAt) return tr("Today's native day has ended");
   if (!state.collection.available || state.collection.paused)
-    return "Native visits are paused or not yet available";
+    return tr("Native visits are paused or not yet available");
   return "";
 }
 export function makeNativeObjective(
@@ -279,8 +280,8 @@ export function resolveNativeObjective(
           ? "Native visits are paused · Open coin"
           : "NEAR testnet · Open coin",
       ),
-      label: "Street coin",
-      target: { lat: coin.lat, lng: coin.lng, label: "Street coin" },
+      label: tr("Street coin"),
+      target: { lat: coin.lat, lng: coin.lng, label: tr("Street coin") },
     };
   }
   if (!quest || !quest.targets.length || !validIndex(quest.checkpoint))

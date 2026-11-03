@@ -1,4 +1,5 @@
-// The guided first five minutes: name → nearest find → first coin → first
+
+import { tr } from "./i18n.ts";// The guided first five minutes: name → nearest find → first coin → first
 // chest → Aura → secure or share. Progress is derived from the player's
 // confirmed server state wherever possible (history, inventory, secured
 // state); only "shared" has no server trace, so it is a local mark. Nothing
@@ -20,44 +21,44 @@ export type FirstStep = {
 export const FIRST_STEPS: FirstStep[] = [
   {
     id: "name",
-    title: "Name your ghost",
-    hint: "Pick a name so other explorers know who found what.",
-    action: "Start exploring",
+    get title() { return tr("Name your ghost"); },
+    get hint() { return tr("Pick a name so other explorers know who found what."); },
+    get action() { return tr("Start exploring"); },
     done: "Your ghost has a name.",
   },
   {
     id: "find",
-    title: "Reach the nearest find",
-    hint: "A street find waits nearby. Walk there and your ghost picks it up.",
-    action: "Point me there",
+    get title() { return tr("Reach the nearest find"); },
+    get hint() { return tr("A street find waits nearby. Walk there and your ghost picks it up."); },
+    get action() { return tr("Point me there"); },
     done: "First street find collected.",
   },
   {
     id: "coin",
-    title: "Pick up a coin",
-    hint: "Coins lie along the streets. Walk over one to pick it up.",
-    action: "Point me to a coin",
+    get title() { return tr("Pick up a coin"); },
+    get hint() { return tr("Coins lie along the streets. Walk over one to pick it up."); },
+    get action() { return tr("Point me to a coin"); },
     done: "First coin in your pocket.",
   },
   {
     id: "chest",
-    title: "Open your first chest",
-    hint: "Chests hide in parks. Walk to the nearest one and open it.",
-    action: "Show the chest",
+    get title() { return tr("Open your first chest"); },
+    get hint() { return tr("Chests hide in parks. Walk to the nearest one and open it."); },
+    get action() { return tr("Show the chest"); },
     done: "Chest opened.",
   },
   {
     id: "aura",
-    title: "Wear your Aura",
-    hint: "An Aura is the glow your ghost wears. Try it on to see it on the map.",
-    action: "Try it on",
+    get title() { return tr("Wear your Aura"); },
+    get hint() { return tr("An Aura is the glow your ghost wears. Try it on to see it on the map."); },
+    get action() { return tr("Try it on"); },
     done: "Your ghost is glowing.",
   },
   {
     id: "secure",
-    title: "Secure or share it",
-    hint: "Keep your Aura for good, or share a card of it with a friend.",
-    action: "Secure or share",
+    get title() { return tr("Secure or share it"); },
+    get hint() { return tr("Keep your Aura for good, or share a card of it with a friend."); },
+    get action() { return tr("Secure or share"); },
     done: "All set. The city is yours to explore.",
   },
 ];
