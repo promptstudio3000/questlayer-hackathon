@@ -1,7 +1,23 @@
-// Encounter sheet for a roaming NPC: 3D portrait, speech bubble, the offer
-// buttons the server computed (they always work without AI), a short chat
-// box and the player's open tasks from this character, with turn-in.
-import { useEffect, useRef, useState } from "react";
+// Encounter sheet for a roaming NPC, built like a game dialog: a big portrait
+// with the NPC's line in a speech bubble, the actions the server computed
+// (they always work without AI) and a box to write to them. Everything else
+// (open tasks, the keeper's vault, the character profile) lives in tabs.
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  BookOpen,
+  CheckCircle,
+  Coins,
+  DiceFive,
+  IdentificationCard,
+  ListChecks,
+  PaperPlaneRight,
+  Scroll,
+  Sparkle,
+  Swap,
+  Sword,
+  Vault,
+  X,
+} from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
 import LockedChip, { openStakeScreen } from "./LockedChip";
 import type { ActorEncounter, ActorOffer } from "./actor-types";
@@ -18,40 +34,49 @@ import {
   type NpcReply,
   type NpcTrade,
 } from "./npc-client";
+import { npcStrings } from "./npc-i18n";
 import { InnerVault, StakeTodayCard, seenCeremony, seenRank } from "./StakeToday";
 import "./npc-sheet.css";
 
 const EMOTE: Record<string, string> = { wave: "👋", think: "🤔", laugh: "😄", shrug: "🤷", none: "" };
 const isTrade = (offer: ActorOffer) => offer.kind.startsWith("trade_");
-const near = (yocto: string) => (Number(BigInt(yocto) / 10n ** 21n) / 1000).toFixed(3);
+const ICON: Record<string, ReactNode> = {
+  quest: <Scroll weight="duotone" />,
+  chapter: <BookOpen weight="duotone" />,
+  trade_buy: <Coins weight="duotone" />,
+  trade_sell: <Coins weight="duotone" />,
+  trade_up: <Swap weight="duotone" />,
+  roll: <DiceFive weight="duotone" />,
+  challenge: <Sword weight="duotone" />,
+};
+/** Portraits baked from the original models (scripts/bake-npc-portraits.mjs). */
+const BAKED = new Set(["chronicler", "merchant", "keeper", "pilgrim", "wisp"]);
+type Tab = "talk" | "tasks" | "vault" | "about";
 
-function tradeText(t: NpcTrade, who: string) {
-  if (t.kind === "trade_up")
-    return t.state === "completed"
-      ? `Done. ${t.aura ? `${t.aura.name} (${t.aura.rarity}) is yours; secure it on NEAR from your wardrobe.` : ""}${t.ledgerAura ? ` ${who} also hands you the ${t.ledgerAura.name}.` : ""}`
-      : `Send ${t.tokens?.join(", ")} to ${t.receiver} (wardrobe → transfer), then tap "Check hand-over". The deal stays open 30 minutes.`;
-  const minutes = Math.max(1, Math.round((t.deadlineMs - Date.now()) / 60000));
-  return t.kind === "trade_buy"
-    ? `${who} signed a buy order: ${near(t.price)} test NEAR for ${t.tokenId}. Open Market → Signed offers and tap "Hand to the market and accept" within ${minutes} min.`
-    : `${who} signed a sell order: ${t.tokenId} for ${near(t.price)} test NEAR. Open Market → Signed offers and buy it within ${minutes} min.`;
-}
-
-function Portrait({ model, label }: { model: string; label: string }) {
-  const host = useRef<HTMLDivElement>(null);
+function Portrait({ model, label, emote }: { model: string; label: string; emote: string }) {
+  const [src, setSrc] = useState(BAKED.has(model) ? `/art/npc/${model}.png` : "");
   useEffect(() => {
-    let dispose: (() => void) | undefined, cancelled = false;
-    import("./actor-models").then(({ createActorScene }) => {
-      if (!cancelled && host.current) dispose = createActorScene(host.current, model, { label }).dispose;
-    });
+    if (BAKED.has(model)) return;
+    let gone = false;
+    import("./actor-models").then(({ actorSprite }) => actorSprite(model, 384)).then((url) => !gone && setSrc(url), () => {});
     return () => {
-      cancelled = true;
-      dispose?.();
+      gone = true;
     };
-  }, [model, label]);
-  return <div className="npc-portrait" ref={host} />;
+  }, [model]);
+  return (
+    <div className="npc-portrait">
+      {src && <img src={src} alt={label} width={384} height={384} />}
+      {emote && (
+        <span className="npc-emote" aria-hidden="true">
+          {emote}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function NpcSheet({ actorId, encounter, onClose }: { actorId: string; encounter: ActorEncounter; onClose: () => void }) {
+  const t = npcStrings();
   const [reply, setReply] = useState<NpcReply | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -59,6 +84,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   const [notice, setNotice] = useState("");
   const [trades, setTrades] = useState<Record<string, NpcTrade>>({});
   const [vault, setVault] = useState<KeeperView | null>(null);
+  const [tab, setTab] = useState<Tab>("talk");
   const token = encounter.encounter;
   const run = async (task: () => Promise<void>) => {
     setBusy(true);
@@ -66,7 +92,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
     try {
       await task();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t.error);
     } finally {
       setBusy(false);
     }
@@ -74,35 +100,33 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   useEffect(() => {
     run(async () => setReply(await npcGreet(actorId, token)));
     if (encounter.actor.archetype === "keeper") keeperView(actorId, token).then(setVault, () => setVault(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actorId, token]);
+  const name = reply?.npc?.name || encounter.actor.name;
   const refresh = async () => setReply(await npcGreet(actorId, token));
   const accept = (offer: ActorOffer) =>
     run(async () => {
       if (isTrade(offer)) {
-        const t = await tradeAccept(actorId, token, offer.id);
-        setTrades((all) => ({ ...all, [offer.id]: t }));
-        setNotice(tradeText(t, reply?.npc?.name || encounter.actor.name));
+        const trade = await tradeAccept(actorId, token, offer.id);
+        setTrades((all) => ({ ...all, [offer.id]: trade }));
+        setNotice(t.trade(trade, name));
         return;
       }
       await npcAccept(actorId, token, offer.id);
-      setNotice(`Task accepted: ${offer.label}`);
+      setNotice(t.accepted(offer.label));
       await refresh();
     });
   const turnIn = (line: NpcActiveLine) =>
     run(async () => {
       const r = await npcTurnIn(actorId, token, line.offerId);
-      setNotice(
-        r.replay
-          ? "Already turned in."
-          : `+${r.xp} XP${r.aura ? ` and ${r.aura.name} (${r.aura.rarity})` : ""}${r.edition ? `${r.aura ? "," : " and"} plus the NPC-only ${r.edition.name} (${r.edition.rarity})` : ""}.${r.aura || r.edition ? " Secure it on NEAR from your wardrobe." : ""}${r.patron ? ` Patron's Path ${r.patron.pathLine}/${r.patron.pathOf}: "${r.patron.story.title}". ${r.patron.story.text}${r.patron.edition && r.patron.edition.id !== r.edition?.id ? ` You also earned ${r.patron.edition.name}.` : ""}` : ""}${r.note ? ` ${r.note}` : ""}`,
-      );
+      setNotice(r.replay ? t.already : t.turnedIn(r));
       await refresh();
     });
   const handOver = (offerId: string) =>
     run(async () => {
-      const t = await tradeUpComplete(actorId, token, offerId);
-      setTrades((all) => ({ ...all, [offerId]: t }));
-      setNotice(tradeText(t, reply?.npc?.name || encounter.actor.name));
+      const trade = await tradeUpComplete(actorId, token, offerId);
+      setTrades((all) => ({ ...all, [offerId]: trade }));
+      setNotice(t.trade(trade, name));
     });
   const send = (event: React.FormEvent) => {
     event.preventDefault();
@@ -112,35 +136,133 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
       const r = await npcTalk(actorId, token, text);
       setReply((old) => ({ ...r, npc: r.npc ?? old?.npc }));
       setMessage("");
+      setNotice("");
     });
   };
-  const name = reply?.npc?.name || encounter.actor.name;
+
+  const archetype = reply?.npc?.archetype || encounter.actor.archetype;
+  const title = reply?.npc?.title || encounter.actor.title;
   const suggested = reply?.offer?.id;
+  const active = reply?.active ?? [];
+  const ready = active.filter((line) => line.steps.every((s) => s.done));
+  const pendingHandOver = Object.entries(trades).filter(([, x]) => x.kind === "trade_up" && x.state === "issued");
+  const tabs: { id: Tab; label: string; icon: ReactNode; badge?: number }[] = [
+    { id: "talk", label: t.tabTalk, icon: <Sparkle weight="duotone" /> },
+    { id: "tasks", label: t.tabTasks, icon: <ListChecks weight="duotone" />, badge: active.length || undefined },
+    ...(vault ? [{ id: "vault" as Tab, label: t.tabVault, icon: <Vault weight="duotone" /> }] : []),
+    { id: "about", label: t.tabAbout, icon: <IdentificationCard weight="duotone" /> },
+  ];
+
+  const offerMeta = (offer: ActorOffer) => {
+    const terms = offer.terms as { xp?: number; aura?: boolean; patron?: boolean; pathLine?: number; pathOf?: number };
+    if (isTrade(offer)) return trades[offer.id] ? t.signed : t.offerTag[offer.kind];
+    if (terms.patron) return t.patron(terms.pathLine, terms.pathOf);
+    return t.reward(terms.xp, !!terms.aura) || t.offerTag[offer.kind] || "";
+  };
+
+  const turnInButton = (line: NpcActiveLine) => (
+    <button type="button" className="npc-action turn-in" disabled={busy} onClick={() => turnIn(line)}>
+      <span className="npc-action-icon">
+        <CheckCircle weight="fill" />
+      </span>
+      <span className="npc-action-label">{line.label}</span>
+      <small>{t.turnIn(line.xp, line.aura)}</small>
+    </button>
+  );
+
   return (
-    <Dialog label={`Talk to ${name}`} onClose={onClose}>
-      <div className="npc-sheet">
-        <header className="npc-head">
-          <Portrait model={encounter.actor.model} label={name} />
-          <div>
+    <Dialog label={t.talkTo(name)} onClose={onClose}>
+      <div className={`npc-sheet npc-${archetype}`}>
+        <header className="npc-hero">
+          <Portrait model={encounter.actor.model} label={name} emote={reply ? EMOTE[reply.emote] || "" : ""} />
+          <div className="npc-plate">
+            <span className="npc-role">{t.role[archetype] || archetype}</span>
             <h2>{name}</h2>
-            {(reply?.npc?.title || encounter.actor.title) && <p className="npc-title">{reply?.npc?.title || encounter.actor.title}</p>}
-            <p className="npc-source">{reply?.source && reply.source !== "template" ? "AI voice · answers from game data only" : "Standard replies"}</p>
           </div>
-          <button type="button" className="npc-close" onClick={onClose} aria-label="Close">×</button>
+          <button type="button" className="npc-close" onClick={onClose} aria-label={t.close}>
+            <X weight="bold" />
+          </button>
         </header>
+
         <p className="npc-bubble" aria-live="polite">
-          {reply ? `${EMOTE[reply.emote] || ""} ${reply.say}`.trim() : "…"}
+          {reply ? reply.say : t.thinking}
         </p>
-        {reply?.note && <p className="npc-note">{reply.note}</p>}
-        {!!reply?.active.length && (
-          <section aria-label="Your tasks">
-            <h3>Your tasks</h3>
-            {reply.active.map((line) => {
-              const ready = line.steps.every((s) => s.done);
+
+        <nav className="npc-tabs" role="tablist">
+          {tabs.map((x) => (
+            <button
+              type="button"
+              role="tab"
+              key={x.id}
+              aria-selected={tab === x.id}
+              className={tab === x.id ? "active" : ""}
+              onClick={() => setTab(x.id)}
+            >
+              {x.icon}
+              <span>{x.label}</span>
+              {x.badge ? <b className="npc-badge">{x.badge}</b> : null}
+            </button>
+          ))}
+        </nav>
+
+        {tab === "talk" && (
+          <div className="npc-panel" role="tabpanel">
+            <div className="npc-actions">
+              {ready.map((line) => (
+                <div key={line.offerId}>{turnInButton(line)}</div>
+              ))}
+              {reply?.menu.map((offer) => (
+                <button
+                  type="button"
+                  key={offer.id}
+                  className={`npc-action${offer.id === suggested ? " suggested" : ""}${(offer.terms as { patron?: boolean }).patron ? " patron" : ""}`}
+                  disabled={busy}
+                  onClick={() => accept(offer)}
+                >
+                  <span className="npc-action-icon">{ICON[offer.kind] || <Sparkle weight="duotone" />}</span>
+                  <span className="npc-action-label">{offer.label}</span>
+                  <small>{offerMeta(offer)}</small>
+                </button>
+              ))}
+              {pendingHandOver.map(([offerId]) => (
+                <button type="button" className="npc-action turn-in" key={offerId} disabled={busy} onClick={() => handOver(offerId)}>
+                  <span className="npc-action-icon">
+                    <Swap weight="duotone" />
+                  </span>
+                  <span className="npc-action-label">{t.checkHandOver}</span>
+                </button>
+              ))}
+              {reply?.locked?.map((chip) => (
+                <LockedChip
+                  key={chip.id}
+                  label={chip.label}
+                  perk={chip.perk}
+                  gate={chip.locked}
+                  onStake={(amount) => {
+                    onClose();
+                    openStakeScreen(amount);
+                  }}
+                />
+              ))}
+              {reply && !reply.menu.length && !ready.length && !reply.locked?.length && <p className="npc-empty">{t.noActions}</p>}
+              {active.length > ready.length && (
+                <button type="button" className="npc-link" onClick={() => setTab("tasks")}>
+                  {t.moreTasks(active.length - ready.length)} →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === "tasks" && (
+          <div className="npc-panel" role="tabpanel">
+            {!active.length && <p className="npc-empty">{t.noTasks}</p>}
+            {active.map((line) => {
+              const done = line.steps.every((s) => s.done);
               return (
                 <div className={`npc-task${line.patron ? " patron" : ""}`} key={line.offerId}>
-                  <p>
-                    {line.patron && <span className="patron-tag">✦ Patron {line.patron.pathLine}/{line.patron.pathOf}</span>} {line.label}
+                  <p className="npc-task-title">
+                    {line.patron && <span className="patron-tag">✦ {t.patron(line.patron.pathLine, line.patron.pathOf)}</span>} {line.label}
                   </p>
                   <ul>
                     {line.steps.map((s) => (
@@ -150,109 +272,82 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                       </li>
                     ))}
                   </ul>
-                  <button type="button" disabled={busy || !ready} onClick={() => turnIn(line)}>
-                    {ready ? `Turn in for ${line.xp} XP${line.aura ? " + Aura" : ""}` : "Finish the stops, then come back"}
+                  <button type="button" className="npc-turnin" disabled={busy || !done} onClick={() => turnIn(line)}>
+                    {done ? t.turnIn(line.xp, line.aura) : t.notReady}
                   </button>
                 </div>
               );
             })}
-          </section>
+          </div>
         )}
-        {!!reply?.menu.length && (
-          <section aria-label="Offers">
-            <h3>Offers</h3>
-            {reply.menu.map((offer) => (
-              <button
-                type="button"
-                key={offer.id}
-                className={`npc-offer${offer.id === suggested ? " suggested" : ""}${(offer.terms as { patron?: boolean }).patron ? " patron" : ""}`}
-                disabled={busy}
-                onClick={() => accept(offer)}
-              >
-                <span>{offer.label}</span>
-                <small>
-                  {isTrade(offer)
-                    ? trades[offer.id]
-                      ? "Signed · see below"
-                      : offer.kind === "trade_up"
-                        ? "3 commons → 1 rare"
-                        : "Signed order on the testnet market"
-                    : `${String((offer.terms as { xp?: number }).xp ?? "")} XP${(offer.terms as { aura?: boolean }).aura ? " + Aura" : ""}${
-                        (offer.terms as { patron?: boolean }).patron
-                          ? ` · Patron's Path ${String((offer.terms as { pathLine?: number }).pathLine)}/${String((offer.terms as { pathOf?: number }).pathOf)}`
-                          : ""
-                      }`}
-                </small>
-              </button>
-            ))}
-            {Object.entries(trades)
-              .filter(([, t]) => t.kind === "trade_up" && t.state === "issued")
-              .map(([offerId]) => (
-                <button type="button" key={offerId} disabled={busy} onClick={() => handOver(offerId)}>
-                  Check hand-over
-                </button>
-              ))}
-          </section>
+
+        {tab === "vault" && vault && (
+          <div className="npc-panel npc-vault" role="tabpanel">
+            {vault.stake && (
+              <>
+                <StakeTodayCard
+                  card={vault.stake}
+                  onSeen={(id) =>
+                    void seenCeremony(id).finally(() =>
+                      setVault((v) => (v?.stake ? { ...v, stake: { ...v.stake, ceremonies: v.stake.ceremonies.filter((c) => c.id !== id) } } : v)),
+                    )
+                  }
+                  onRankSeen={() => {
+                    const r = vault.stake?.rank?.rankUp?.rank;
+                    if (r)
+                      void seenRank(r).finally(() =>
+                        setVault((v) => (v?.stake?.rank ? { ...v, stake: { ...v.stake, rank: { ...v.stake.rank, rankUp: null } } } : v)),
+                      );
+                  }}
+                />
+                <InnerVault card={vault.stake} />
+              </>
+            )}
+            <section aria-label={t.vaultBalance}>
+              <h3>{t.vaultBalance}</h3>
+              <ul className="npc-keeper">
+                {vault.lines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </section>
+          </div>
         )}
-        {!!reply?.locked?.length && (
-          <section aria-label="For stakers">
-            <h3>For stakers</h3>
-            {reply.locked.map((chip) => (
-              <LockedChip
-                key={chip.id}
-                label={chip.label}
-                perk={chip.perk}
-                gate={chip.locked}
-                onStake={(near) => {
-                  onClose();
-                  openStakeScreen(near);
-                }}
-              />
-            ))}
-          </section>
+
+        {tab === "about" && (
+          <div className="npc-panel npc-about" role="tabpanel">
+            <h3>{t.about}</h3>
+            {title && <p>{title}</p>}
+            {reply?.note && <p>{reply.note}</p>}
+            <p className="npc-fine">{reply?.source && reply.source !== "template" ? t.aiVoice : t.stdVoice}</p>
+            <p className="npc-fine">{t.aiNote}</p>
+          </div>
         )}
-        {vault?.stake && (
-          <>
-            <StakeTodayCard
-              card={vault.stake}
-              onSeen={(id) =>
-                void seenCeremony(id).finally(() =>
-                  setVault((v) => (v?.stake ? { ...v, stake: { ...v.stake, ceremonies: v.stake.ceremonies.filter((c) => c.id !== id) } } : v)),
-                )
-              }
-              onRankSeen={() => {
-                const r = vault.stake?.rank?.rankUp?.rank;
-                if (r)
-                  void seenRank(r).finally(() =>
-                    setVault((v) => (v?.stake?.rank ? { ...v, stake: { ...v.stake, rank: { ...v.stake.rank, rankUp: null } } } : v)),
-                  );
-              }}
-            />
-            <InnerVault card={vault.stake} />
-          </>
+
+        {notice && (
+          <button type="button" className="npc-notice" role="status" onClick={() => setNotice("")}>
+            {notice}
+          </button>
         )}
-        {vault && (
-          <section aria-label="Your vault and balance">
-            <h3>Your vault and balance</h3>
-            <ul className="npc-keeper">
-              {vault.lines.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </section>
+        {error && (
+          <p className="npc-error" role="alert">
+            {error}
+          </p>
         )}
+
         <form className="npc-chat" onSubmit={send}>
           <input
             value={message}
             maxLength={300}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={`Say something to ${name}`}
-            aria-label={`Message to ${name}`}
+            placeholder={t.sayTo(name)}
+            aria-label={t.messageTo(name)}
+            enterKeyHint="send"
           />
-          <button type="submit" disabled={busy || !message.trim()}>Send</button>
+          <button type="submit" disabled={busy || !message.trim()} aria-label={t.send}>
+            <PaperPlaneRight weight="fill" />
+          </button>
         </form>
-        {notice && <p className="npc-notice" role="status">{notice}</p>}
-        {error && <p className="npc-error" role="alert">{error}</p>}
       </div>
     </Dialog>
   );
