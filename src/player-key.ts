@@ -1,14 +1,7 @@
 // The player's own signing key for the invisible NEAR account. It is generated
 // in the browser and stays on this device; the server only ever sees the public
 // key. A passkey-derived recovery key is optional and never a server-stored seed.
-import {
-  KeyPair,
-  KeyPairSigner,
-  PublicKey,
-  actions,
-  buildDelegateAction,
-  encodeSignedDelegate,
-} from "near-api-js";
+import { loadNearApi } from "./near-api.ts";
 
 export type PlayerKeyRecord = {
   publicKey: string;
@@ -91,6 +84,7 @@ export async function createDeviceKey(
 ): Promise<PlayerKeyRecord> {
   const existing = await store.get(DEVICE_KEY);
   if (existing) return existing;
+  const { KeyPair } = await loadNearApi();
   const key = KeyPair.fromRandom("ed25519");
   const record: PlayerKeyRecord = {
     publicKey: key.getPublicKey().toString(),
@@ -109,7 +103,8 @@ export async function bindAccount(store: KeyStore, accountId: string) {
     throw Error("This device key already belongs to another explorer.");
   await store.put(DEVICE_KEY, { ...record, accountId });
 }
-export function signerFor(record: PlayerKeyRecord) {
+export async function signerFor(record: PlayerKeyRecord) {
+  const { KeyPairSigner } = await loadNearApi();
   return KeyPairSigner.fromSecretKey(record.secretKey as `ed25519:${string}`);
 }
 function base64(bytes: Uint8Array) {
@@ -129,6 +124,8 @@ export async function signDelegate(
     maxBlockHeight: string;
   },
 ) {
+  const { PublicKey, actions, buildDelegateAction, encodeSignedDelegate } =
+    await loadNearApi();
   const publicKey = PublicKey.from(record.publicKey);
   const delegateAction = buildDelegateAction({
     senderId: input.senderId,
@@ -146,7 +143,7 @@ export async function signDelegate(
     publicKey,
   });
   const { signedDelegate, delegateHash } =
-    await signerFor(record).signDelegateAction(delegateAction);
+    await (await signerFor(record)).signDelegateAction(delegateAction);
   return {
     signedDelegateBase64: base64(encodeSignedDelegate(signedDelegate)),
     delegateHash: Array.from(delegateHash, (b) =>

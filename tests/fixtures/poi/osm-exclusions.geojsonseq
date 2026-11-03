@@ -1,0 +1,1 @@
+{"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[13.38, 49.7465], [13.381, 49.7465], [13.381, 49.7469], [13.38, 49.7469], [13.38, 49.7465]]]}, "properties": {"@type": "way", "@id": 200, "amenity": "school", "name": "ZŠ"}}

@@ -54,7 +54,7 @@ coverage boxes overlap, or there is not exactly one live `default` city. It expo
 | `server/world.mjs` | Arena and `HOME` use the default city; stored manifests re-centre on their own registered city. |
 | `server/world-planner.mjs` | Daily jobs plan every live city; status defaults to the default city. |
 | `server/native/reward-manifest.mjs` | Coin points come from the plan's own registered city. |
-| `server/native/day-publication.mjs`, `rewards.mjs` | Publish for the default city only (one funded city per publisher, on purpose). |
+| `server/native/day-publication.mjs`, `rewards.mjs` | Publish for the default city only (one publisher per city). Money is global: every live city is eligible for the one daily budget, split by player demand (docs/GLOBAL-TREASURY.md). |
 | `server/prepare-worlds.mjs --once` | Prepares all live cities; still refuses custom `--pack` files. |
 | `scripts/place-operator.mjs`, QA and proof scripts | Still use `PLZEN` directly; fine while Plzeň is the default. |
 

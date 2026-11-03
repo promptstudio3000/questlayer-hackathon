@@ -71,6 +71,7 @@ try {
       400,
     );
     const runtime = createCreatorRuntime(db, {
+      drafts: false,
       origin: "http://localhost",
       authenticate: () => null,
     });

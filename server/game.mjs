@@ -16,9 +16,17 @@ import {
   splitYield,
   COIN_ARENA_RADIUS_M,
 } from "./domain.mjs";
+import { AURA_SUPPLY, entitledEditions } from "./aura-catalog.mjs";
 import { contains } from "./spatial/city-pack.mjs";
 import { closedPlaces, assertPlaceOpen } from "./spatial/place-safety.mjs";
+import { assertWorldActive } from "./operator/world-controls.mjs";
 import { QUEST_POLICY } from "./quest-templates.mjs";
+import {
+  POI_QUEST_POLICY,
+  huntVisited,
+  nearestOpenStop,
+  recordHuntStop,
+} from "./poi-quests.mjs";
 import {
   STREET_COIN_XP,
   STREET_FIND_XP,
@@ -96,6 +104,7 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       "ALREADY_CLAIMED",
     );
     assertPlaceOpen(closedPlaces(db, world.cityId), null, coin);
+    assertWorldActive(db, world.cityId, world.day);
     if (!world.arena) validateFix(fix, coin, now);
     else {
       point(fix);
@@ -139,13 +148,13 @@ export function claimQuest(db, player, questId, fix, now = Date.now()) {
   const results = createAdventureResults(db);
   return atomic(db, () => settleQuest(db, player, questId, fix, now, results));
 }
-function settleQuest(db, player, questId, fix, now, results) {
+function settleQuest(db, player, questId, fix, now, results, target = null) {
   const q = db
     .prepare(
       "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
     )
     .get(questId);
-  assert(q, "Quest not found.", 404);
+  assert(q, "This discovery is no longer here. Pick another one nearby.", 404);
   demoAdventureWorld(q);
   if (
     db
@@ -158,7 +167,8 @@ function settleQuest(db, player, questId, fix, now, results) {
     "This place is closed for today. Find another discovery.",
     410,
   );
-  validateQuestEvidence(db, player, q, fix, now, q);
+  // An unordered POI hunt finishes at whichever stop came last.
+  validateQuestEvidence(db, player, q, fix, now, target || q);
   const meta = JSON.parse(q.metadata || "{}");
   if (q.kind === "route")
     assert(
@@ -167,7 +177,7 @@ function settleQuest(db, player, questId, fix, now, results) {
           "SELECT checkpoint FROM quest_progress WHERE quest_id=? AND player_id=?",
         )
         .get(q.id, player)?.checkpoint || 0) >= (meta.checkpoints || []).length,
-      "Complete the checkpoints in order first.",
+      "Confirm the stops in order first.",
       409,
     );
   // Everyone can finish the personal activity. The funded shared prize is paid once.
@@ -190,7 +200,10 @@ function settleQuest(db, player, questId, fix, now, results) {
     player,
   );
   let item = null;
-  if (q.kind === "chest") item = mintAura(db, player, now);
+  if (q.kind === "chest") {
+    const xp = db.prepare("SELECT xp FROM players WHERE id=?").get(player).xp;
+    item = mintAura(db, player, now, q.tier, levelFor(xp));
+  }
   const resultId = recordAdventureResult(db, {
     player,
     quest: q,
@@ -232,6 +245,7 @@ function validateQuestEvidence(db, player, q, fix, now, target) {
   const world = JSON.parse(q.manifest),
     zone = world.zones.find((z) => z.id === q.zone_id);
   assertPlaceOpen(closedPlaces(db, world.cityId), zone?.sourceId, target);
+  assertWorldActive(db, world.cityId, world.day, zone?.slot ?? null);
   if (!world.arena) validateFix(fix, target, now, 25);
   else {
     point(fix);
@@ -243,7 +257,7 @@ function validateQuestEvidence(db, player, q, fix, now, target) {
   if (zone?.geometry)
     assert(
       contains(zone.geometry, fix),
-      "Enter the marked zone first, then confirm your visit.",
+      "Step inside the place first, then confirm your visit.",
       422,
       "OUTSIDE_ZONE",
     );
@@ -263,7 +277,7 @@ export function advanceRoute(
         "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
       )
       .get(questId);
-    assert(q?.kind === "route", "Walking expedition not found.", 404);
+    assert(q?.kind === "route", "This walk is no longer here. Pick another discovery nearby.", 404);
     demoAdventureWorld(q);
     const metadata = JSON.parse(q.metadata),
       checkpoints = metadata.checkpoints,
@@ -284,18 +298,28 @@ export function advanceRoute(
       };
     assert(
       Number.isInteger(expectedCheckpoint) && expectedCheckpoint === current,
-      "Your expedition changed. Refresh its checkpoint.",
+      "This walk changed. Refresh, then confirm the next stop.",
       409,
       "STALE_PROGRESS",
     );
     assert(
       current < checkpoints.length,
-      "All checkpoints are already recorded.",
+      "Every stop is already confirmed. Finish the walk.",
       409,
     );
-    validateQuestEvidence(db, player, q, fix, now, checkpoints[current]);
+    // A POI category hunt (W6) accepts its stops in any order: the fix must be
+    // near one stop this player has not recorded yet.
+    let stop = current;
+    if (metadata.unordered) {
+      point(fix);
+      const open = nearestOpenStop(checkpoints, huntVisited(db, q.id, player), fix);
+      assert(open, "Every stop is already confirmed. Finish the hunt.", 409);
+      stop = open.index;
+    }
+    validateQuestEvidence(db, player, q, fix, now, checkpoints[stop]);
     const requiresNewFix =
-      metadata.activity?.policy === QUEST_POLICY &&
+      (metadata.activity?.policy === QUEST_POLICY ||
+        metadata.activity?.policy === POI_QUEST_POLICY) &&
       !JSON.parse(q.manifest).arena;
     // A return stop cannot reuse the original starting fix. This only rejects
     // replayed observations; browser coordinates are not proof of physical truth.
@@ -309,35 +333,60 @@ export function advanceRoute(
     db.prepare(
       "INSERT INTO quest_progress VALUES (?,?,?,?) ON CONFLICT(quest_id,player_id) DO UPDATE SET checkpoint=excluded.checkpoint,updated_at=excluded.updated_at",
     ).run(q.id, player, current + 1, requiresNewFix ? fix.timestamp : now);
+    if (metadata.unordered)
+      recordHuntStop(db, q.id, player, stop, requiresNewFix ? fix.timestamp : now, now);
     const progress = { completed: current + 1, total: checkpoints.length };
     if (progress.completed === progress.total)
       return {
-        ...settleQuest(db, player, questId, fix, now, results),
+        ...settleQuest(
+          db,
+          player,
+          questId,
+          fix,
+          now,
+          results,
+          metadata.unordered ? checkpoints[stop] : null,
+        ),
         progress,
       };
     return { awaiting: true, progress };
   });
 }
-const AURAS = [
-  ["Northern Lights", "rare", "above", "#8dd8bd"],
-  ["Moon Ring", "epic", "below", "#b49beb"],
-  ["Golden Dust", "legendary", "above", "#f2c869"],
-];
-function mintAura(db, player, now) {
-  const count = db
-    .prepare(
-      "SELECT COUNT(*) AS n FROM inventory WHERE player_id=? AND kind='aura'",
-    )
-    .get(player).n;
-  const rotated = [...AURAS.slice(count % 3), ...AURAS.slice(0, count % 3)];
-  const chosen = rotated.find(
-    ([name]) =>
-      (db.prepare("SELECT minted FROM editions WHERE name=?").get(name)
-        ?.minted || 0) < 256,
+/**
+ * Pick the chest Aura from the cosmetic catalog. A zone's tier and the
+ * player's level decide which rarities the chest can hold; within that set the
+ * player's Aura count rotates the choice, preferring editions they lack, and
+ * exhausted editions are skipped. Stored inventory rows are never renamed.
+ */
+export function chooseChestAura(db, player, zoneTier, level) {
+  const entitled = entitledEditions(zoneTier, level);
+  if (!entitled.length) return null;
+  const owned = new Map(
+    db
+      .prepare(
+        "SELECT name, COUNT(*) AS n FROM inventory WHERE player_id=? AND kind='aura' GROUP BY name",
+      )
+      .all(player)
+      .map((r) => [r.name, r.n]),
   );
+  const count = [...owned.values()].reduce((n, v) => n + v, 0),
+    start = count % entitled.length,
+    rotated = [...entitled.slice(start), ...entitled.slice(0, start)].filter(
+      (e) =>
+        (db.prepare("SELECT minted FROM editions WHERE name=?").get(e.demoName)
+          ?.minted || 0) < AURA_SUPPLY,
+    );
+  return rotated.find((e) => !owned.has(e.demoName)) || rotated[0] || null;
+}
+export function mintAura(db, player, now, zoneTier = 1, level = 1) {
+  const chosen = chooseChestAura(db, player, zoneTier, level);
   if (!chosen) return null;
-  const [name, rarity, slot, color] = chosen;
-  db.prepare("INSERT OR IGNORE INTO editions VALUES (?,0,256)").run(name);
+  const { demoName: name, rarity, slot } = chosen,
+    color = chosen.demoColor || chosen.color;
+  db.prepare("INSERT OR IGNORE INTO editions VALUES (?,0,?)").run(
+    name,
+    AURA_SUPPLY,
+  );
   const e = db.prepare("SELECT * FROM editions WHERE name=?").get(name);
   if (e.minted >= e.max_supply) return null;
   const item = {
@@ -497,13 +546,13 @@ export function redeem(db, player, withdrawalId, now = Date.now()) {
 export function equip(db, player, itemId, desiredEquipped) {
   assert(
     desiredEquipped === undefined || typeof desiredEquipped === "boolean",
-    "Invalid equipment choice.",
+    "That outfit change is not possible. Refresh your collection and try again.",
   );
   return atomic(db, () => {
     const item = db
       .prepare("SELECT * FROM inventory WHERE id=? AND player_id=?")
       .get(itemId, player);
-    assert(item, "You do not own this item.", 403);
+    assert(item, "This Aura is not in your collection. Refresh and try again.", 403);
     assert(
       !db
         .prepare("SELECT 1 FROM listings WHERE item_id=? AND state='open'")
@@ -516,7 +565,7 @@ export function equip(db, player, itemId, desiredEquipped) {
           "SELECT 1 FROM native_awards WHERE item_id=? AND state='minted'",
         )
         .get(itemId),
-      "Equip this Aura from your NEAR inventory.",
+      "Try this Aura on from your Secured collection.",
       409,
     );
     assert(
@@ -525,7 +574,7 @@ export function equip(db, player, itemId, desiredEquipped) {
           "SELECT 1 FROM native_awards WHERE item_id=? AND state='issued'",
         )
         .get(itemId),
-      "This Aura is reserved for NEAR. Check or restore its claim before equipping it.",
+      "This Aura is being secured. Check your Secured collection, then try it on.",
       409,
       "ITEM_RESERVED",
     );
@@ -561,7 +610,7 @@ export function listItem(db, player, itemId, price, now = Date.now()) {
     assert(item, "Only your own Aura can be listed.", 403);
     assert(
       !db.prepare("SELECT 1 FROM native_awards WHERE item_id=?").get(itemId),
-      "This Aura is reserved for NEAR and cannot enter the demo market.",
+      "This Aura is being secured, so it cannot be listed in the practice market.",
       409,
     );
     assert(

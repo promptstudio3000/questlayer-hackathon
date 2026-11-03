@@ -16,11 +16,11 @@ import { assert, id } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
 import { nearAccountId } from "../identity/near.mjs";
 import { NETWORK } from "./network.mjs";
-const EDITIONS = {
-  "Northern Lights": "polar",
-  "Moonwake Aura": "moon",
-  "Sunlit Aura": "gold",
-};
+import {
+  LEGACY_NATIVE_EDITIONS,
+  awardClaimPrefix,
+  nativeEditionForName,
+} from "../aura-catalog.mjs";
 export function awardMessage(contractId, claim) {
   return `QuestLayer Aura claim v1\nContract: ${contractId}\nNetwork: ${NETWORK}\nClaim: ${claim.claim_id}\nReceiver: ${claim.receiver_id}\nEdition: ${claim.edition}\nExpires: ${claim.expires_at}`;
 }
@@ -58,13 +58,15 @@ export class AwardVouchers {
     db,
     native,
     signer,
-    { clock = Date.now, ttlMs = 15 * 60000 } = {},
+    { clock = Date.now, ttlMs = 15 * 60000, claimIdFor = null } = {},
   ) {
     this.db = db;
     this.native = native;
     this.signer = signer;
     this.clock = clock;
     this.ttlMs = ttlMs;
+    // Rewards that already reserved a claim id (NPC rolls: earned:npc-roll:<id>).
+    this.claimIdFor = claimIdFor;
   }
   publicInfo() {
     return {
@@ -108,13 +110,28 @@ export class AwardVouchers {
       )
       .get(itemId, player);
     assert(item, "Only your own earned Aura can be claimed.", 403);
-    const edition = EDITIONS[item.name];
+    const edition = nativeEditionForName(item.name);
     assert(edition, "This item cannot become a native Aura.");
     const old = db
       .prepare("SELECT * FROM native_awards WHERE item_id=?")
       .get(itemId);
     if (old?.state === "minted")
       return { ...old, network: NETWORK, contractId: this.native.contractId };
+    if (!old && !LEGACY_NATIVE_EDITIONS.includes(edition)) {
+      // Catalog v2 editions need the upgraded contract; never sign a voucher
+      // an older deployment would reject.
+      let supported = [];
+      try {
+        supported = await this.native.view("supported_editions", {}, true);
+      } catch {
+        supported = [];
+      }
+      assert(
+        Array.isArray(supported) && supported.includes(edition),
+        "This Aura edition can be secured on NEAR after the next contract upgrade. Keep your demo Aura for now.",
+        503,
+      );
+    }
     if (!old) {
       const minted = await this.native.view(
         "edition_minted",
@@ -159,7 +176,8 @@ export class AwardVouchers {
           "INSERT INTO native_awards(item_id,claim_id,player_id,receiver_id,edition,state,expires_at,created_at) VALUES(?,?,?,?,?,'issued',?,?)",
         ).run(
           itemId,
-          "earned:" + id("aura"),
+          // NPC and monster editions need earned:npc: / earned:monster: on-chain.
+          this.claimIdFor?.(itemId) || awardClaimPrefix(edition) + id("aura"),
           player,
           receiverId,
           edition,

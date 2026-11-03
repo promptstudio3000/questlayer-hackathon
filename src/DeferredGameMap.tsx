@@ -1,7 +1,17 @@
 import { Component, lazy, Suspense, type ReactNode } from "react";
 import type { GameMapProps } from "./GameMap";
+let mapModule: Promise<typeof import("./GameMap")> | undefined;
+// Starts downloading MapLibre and the map chunk ahead of time, e.g. while the
+// player types their name. Safe to call any number of times.
+export function preloadGameMap() {
+  mapModule ??= import("./GameMap").catch((error) => {
+    mapModule = undefined;
+    throw error;
+  });
+  return mapModule;
+}
 const MapView = lazy(() =>
-  import("./GameMap").then((module) => ({ default: module.GameMap })),
+  preloadGameMap().then((module) => ({ default: module.GameMap })),
 );
 export class MapBoundary extends Component<
   { children: ReactNode },

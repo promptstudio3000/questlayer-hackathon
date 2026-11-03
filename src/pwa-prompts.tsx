@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
   type KeyboardEvent,
 } from "react";
 import {
@@ -41,7 +42,7 @@ const playing = () => !!document.querySelector(".main-panel");
 /** No dialog, expanded sheet, toast or text entry competes for attention. */
 function calmMoment(): boolean {
   if (document.visibilityState !== "visible" || !navigator.onLine) return false;
-  if (document.querySelector("dialog[open], [aria-modal='true']")) return false;
+  if (modalOpen()) return false;
   if (document.querySelector(".sheet-expanded, .app-shell > .toast"))
     return false;
   const active = document.activeElement as HTMLElement | null;
@@ -60,20 +61,60 @@ function restoreFocus(container: HTMLElement | null) {
   else (document.activeElement as HTMLElement | null)?.blur();
 }
 
-/** Sits the prompts just under the app's top bar, whatever its height. */
-function useAnchorTop(active: boolean) {
-  const [top, setTop] = useState<number | null>(null);
+/**
+ * Keeps the prompts clear of the app's bars. Publishes the top bar's bottom
+ * edge and, when the tab bar sits along the bottom (phones), its top edge as
+ * CSS variables; the stylesheet decides which one the cards dock to. A
+ * ResizeObserver follows bar height changes after lazy screens load, after
+ * safe-area or font changes, not only window resizes.
+ */
+function useBarAnchors(active: boolean) {
+  const [vars, setVars] = useState<Record<string, string> | undefined>();
   useLayoutEffect(() => {
     if (!active) return;
     const measure = () => {
-      const bar = document.querySelector(".topbar");
-      setTop(bar ? Math.round(bar.getBoundingClientRect().bottom) + 8 : null);
+      const next: Record<string, string> = {};
+      const bar = document.querySelector(".topbar")?.getBoundingClientRect();
+      if (bar?.height) next["--pwa-top"] = `${Math.round(bar.bottom) + 8}px`;
+      const rail = document.querySelector(".nav-rail")?.getBoundingClientRect();
+      if (rail && rail.width > rail.height && rail.top > window.innerHeight / 2)
+        next["--pwa-bottom"] =
+          `${Math.max(0, Math.round(window.innerHeight - rail.top)) + 8}px`;
+      setVars((prev) =>
+        JSON.stringify(prev) === JSON.stringify(next) ? prev : next,
+      );
     };
     measure();
+    const bars = new ResizeObserver(measure);
+    let watched: Element[] = [];
+    const observe = () => {
+      const now = [...document.querySelectorAll(".topbar, .nav-rail")];
+      if (
+        now.length === watched.length &&
+        now.every((el, i) => el === watched[i])
+      )
+        return false;
+      bars.disconnect();
+      for (const el of now) bars.observe(el);
+      watched = now;
+      return true;
+    };
+    observe();
+    // The bars can mount after the prompts (lazy screens); pick them up.
+    const shell = new MutationObserver(() => {
+      if (observe()) measure();
+    });
+    shell.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
+    return () => {
+      bars.disconnect();
+      shell.disconnect();
+      window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+    };
   }, [active]);
-  return top === null ? undefined : { top: `${top}px` };
+  return vars as CSSProperties | undefined;
 }
 
 function useOnline() {
@@ -88,6 +129,23 @@ function useOnline() {
     };
   }, []);
   return online;
+}
+
+const modalOpen = () =>
+  !!document.querySelector("dialog[open], [aria-modal='true']");
+
+/**
+ * True while a modal dialog (the welcome screen, a reward) is open. A modal
+ * sits in the top layer and makes the page behind it inert, so a notice
+ * shown then would be covered and could not be dismissed; it waits instead.
+ */
+function useModalOpen() {
+  const [open, setOpen] = useState(modalOpen);
+  useEffect(() => {
+    const id = window.setInterval(() => setOpen(modalOpen()), 500);
+    return () => window.clearInterval(id);
+  }, []);
+  return open;
 }
 
 /** Waits for enough visible play time and a calm moment, once per visit. */
@@ -135,8 +193,11 @@ export function PwaPrompts() {
       });
   const moment = useInstallMoment(!!offer);
   const showOffer = !!offer && moment && online;
-  const showUpdate = state.updateReady && !laterUpdate && online;
-  const anchor = useAnchorTop(showOffer || showUpdate || !online || backOnline);
+  const modal = useModalOpen();
+  const showUpdate = state.updateReady && !laterUpdate && online && !modal;
+  const anchor = useBarAnchors(
+    showOffer || showUpdate || !online || backOnline,
+  );
 
   useEffect(() => {
     if (!online) {

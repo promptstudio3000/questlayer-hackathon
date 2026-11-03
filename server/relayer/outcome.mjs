@@ -1,12 +1,13 @@
 import { isDeepStrictEqual } from "node:util";
 import { validReceiptStatus } from "../native/transaction-anchor.mjs";
 import { RelayJobError, terminal, retryLater } from "./errors.mjs";
+import { isNativeAuraTokenId } from "../aura-catalog.mjs";
 
 const plainObject = (value) =>
   !!value && typeof value === "object" && !Array.isArray(value);
 const aura = (value) =>
   typeof value === "string" &&
-  /^aura:(polar|moon|gold):[1-9]\d{0,2}$/.test(value);
+  isNativeAuraTokenId(value);
 export function decodeJson(value) {
   if (typeof value !== "string" || value.length > 32768)
     throw terminal("RELAY_RESULT", "Invalid receipt encoding.");

@@ -440,6 +440,44 @@
         "task_evidence_photos_expiry": "CREATE INDEX IF NOT EXISTS task_evidence_photos_expiry ON task_evidence_photos(state,expires_at)",
         "task_evidence_views_photo": "CREATE INDEX IF NOT EXISTS task_evidence_views_photo ON task_evidence_views(photo_id,viewed_at)"
       }
+    },
+    {
+      "name": "world-operator-controls",
+      "version": 1,
+      "source": "server/operator/world-controls.mjs",
+      "tables": {
+        "world_day_adjustments": "CREATE TABLE world_day_adjustments(city_id TEXT NOT NULL,day TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('active','cleared')),version INTEGER NOT NULL CHECK(version>0),body TEXT NOT NULL CHECK(json_valid(body)),reason TEXT NOT NULL,actor TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(city_id,day))",
+        "world_operator_audit": "CREATE TABLE world_operator_audit(seq INTEGER PRIMARY KEY,actor TEXT NOT NULL,operation_id TEXT NOT NULL,kind TEXT NOT NULL,digest TEXT NOT NULL,receipt TEXT NOT NULL CHECK(json_valid(receipt)),created_at INTEGER NOT NULL,UNIQUE(actor,operation_id))",
+        "world_pauses": "CREATE TABLE world_pauses(city_id TEXT NOT NULL,day TEXT NOT NULL,scope TEXT NOT NULL CHECK(scope='day' OR scope GLOB 'zone:[0-9]'),state TEXT NOT NULL CHECK(state IN('paused','active')),version INTEGER NOT NULL CHECK(version>0),reason TEXT NOT NULL,actor TEXT NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(city_id,day,scope))"
+      },
+      "indexes": {}
+    },
+    {
+      "name": "signed-market-orders",
+      "version": 1,
+      "source": "server/native/order-index.mjs",
+      "tables": {
+        "signed_market_order_cursor": "CREATE TABLE signed_market_order_cursor(\n market TEXT PRIMARY KEY,\n relay_seq INTEGER NOT NULL DEFAULT 0\n)",
+        "signed_market_order_events": "CREATE TABLE signed_market_order_events(\n tx_hash TEXT NOT NULL,\n seq INTEGER NOT NULL,\n market TEXT NOT NULL,\n event TEXT NOT NULL,\n data TEXT NOT NULL CHECK(json_valid(data)),\n recorded_at INTEGER NOT NULL,\n PRIMARY KEY(tx_hash,seq)\n)",
+        "signed_market_orders": "CREATE TABLE signed_market_orders(\n id TEXT PRIMARY KEY,\n market TEXT NOT NULL,\n maker TEXT NOT NULL,\n nonce TEXT NOT NULL,\n kind TEXT NOT NULL CHECK(kind IN ('sell','buy')),\n token_id TEXT NOT NULL,\n price TEXT NOT NULL CHECK(price GLOB '[0-9]*'),\n deadline_ms INTEGER NOT NULL,\n epoch INTEGER NOT NULL,\n signed_order TEXT NOT NULL CHECK(json_valid(signed_order)),\n state TEXT NOT NULL CHECK(state IN ('open','filled','cancelled','expired','rejected')),\n reason TEXT,\n fillable INTEGER NOT NULL DEFAULT 0 CHECK(fillable IN (0,1)),\n settlement_tx TEXT,\n received_at INTEGER NOT NULL,\n checked_at INTEGER NOT NULL,\n closed_at INTEGER\n)"
+      },
+      "indexes": {
+        "signed_market_orders_open": "CREATE INDEX IF NOT EXISTS signed_market_orders_open ON signed_market_orders(market,state,token_id)",
+        "signed_market_orders_maker": "CREATE INDEX IF NOT EXISTS signed_market_orders_maker ON signed_market_orders(maker,received_at DESC)",
+        "signed_market_orders_checked": "CREATE INDEX IF NOT EXISTS signed_market_orders_checked ON signed_market_orders(state,checked_at)"
+      }
+    },
+    {
+      "name": "creator-bonus-vote",
+      "version": 1,
+      "source": "server/creators/bonus-vote.mjs",
+      "tables": {
+        "creator_bonus_results": "CREATE TABLE creator_bonus_results(\n day TEXT PRIMARY KEY CHECK(day GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),\n winners TEXT NOT NULL CHECK(json_valid(winners)),\n tally TEXT NOT NULL CHECK(json_valid(tally)),\n voters INTEGER NOT NULL CHECK(voters>=0),\n policy TEXT NOT NULL CHECK(json_valid(policy)),\n tallied_at INTEGER NOT NULL\n)",
+        "creator_bonus_votes": "CREATE TABLE creator_bonus_votes(\n day TEXT NOT NULL CHECK(day GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),\n voter TEXT NOT NULL,\n quest_id TEXT NOT NULL,\n cast_at INTEGER NOT NULL,\n PRIMARY KEY(day,voter,quest_id)\n)"
+      },
+      "indexes": {
+        "creator_bonus_votes_quest": "CREATE INDEX IF NOT EXISTS creator_bonus_votes_quest ON creator_bonus_votes(day,quest_id)"
+      }
     }
   ]
 }

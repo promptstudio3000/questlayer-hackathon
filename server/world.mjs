@@ -11,14 +11,18 @@ import {
   dayKey,
   positionTier,
   tierFor,
+  levelFor,
 } from "./domain.mjs";
+import { chestAuraAvailable } from "./aura-catalog.mjs";
 import { atomic } from "./database.mjs";
 import {
   DEFAULT_CITY,
   cityFor,
-  liveCityById,
+  isAutoCity,
+  playableCityById,
   sampleCityPaths,
 } from "./spatial/city-pack.mjs";
+import { AUTO_CITY_NOTICE } from "./spatial/auto-cities.mjs";
 import { describeStoredQuest } from "./quest-templates.mjs";
 import { STREET_FIND_XP, streetFindIds } from "./street-finds.mjs";
 import { publicPathSnapshot } from "./spatial/map-data.mjs";
@@ -34,6 +38,13 @@ import {
   pointClosed,
   placeClosed,
 } from "./spatial/place-safety.mjs";
+import { pauseState, pauseFor } from "./operator/world-controls.mjs";
+import {
+  defaultPoiSource,
+  huntVisited,
+  materializePoiQuests,
+  poiQuestText,
+} from "./poi-quests.mjs";
 export const HOME = DEFAULT_CITY.center;
 export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
@@ -142,7 +153,7 @@ export async function retryStreetWorlds(
 }
 function publicManifest(db, w) {
   let center = w.center;
-  const registered = w.cityId ? liveCityById(w.cityId) : null;
+  const registered = w.cityId ? playableCityById(w.cityId) : null;
   if (registered) center = registered.center;
   else if (!w.arena) {
     const [lat, lng] = cellToLatLng(w.region);
@@ -158,7 +169,32 @@ function publicManifest(db, w) {
   return w;
 }
 
+// Street worlds get today's POI quests on first load (docs/WORLDS-PLAN.md C.3,
+// task W6), from the local POI file only; city worlds and the arena never do.
 export async function ensureWorld(
+  db,
+  location = HOME,
+  arena = true,
+  now = Date.now(),
+  { mapData = {}, poiSource } = {},
+) {
+  const world = await ensureBaseWorld(db, location, arena, now, { mapData });
+  // Reviewed cities keep their own plan; auto cities get POI quests in the
+  // player's H3 cell (W6 + W5), street cells in the whole cell world.
+  if (arena || (world.cityId && world.cityStatus !== "auto")) return world;
+  try {
+    return materializePoiQuests(db, world, {
+      source: poiSource === undefined ? defaultPoiSource() : poiSource,
+      now,
+      cell: world.cityId ? latLngToCell(location.lat, location.lng, 7) : null,
+    });
+  } catch (error) {
+    // POI quests are an addition: a broken POI file never hides the street world.
+    console.warn("poi-quests: materialisation failed", error?.message || error);
+    return world;
+  }
+}
+async function ensureBaseWorld(
   db,
   location = HOME,
   arena = true,
@@ -195,7 +231,7 @@ export async function ensureWorld(
       : await publicPathSnapshot(db, region, { ...mapData, clock: () => now });
     const effectiveNow = now + Math.max(0, Date.now() - started);
     if (effectiveNow >= endsAt)
-      return ensureWorld(db, location, arena, effectiveNow, { mapData });
+      return ensureBaseWorld(db, location, arena, effectiveNow, { mapData });
     if (city && !citySamples.has(city.paths))
       citySamples.set(city.paths, sampleCityPaths(city));
     const samples = city
@@ -206,6 +242,8 @@ export async function ensureWorld(
       [lat, lng] = city
         ? [city.center.lat, city.center.lng]
         : cellToLatLng(region);
+    // Auto cities (unreviewed map data) are practice only: no zone prize.
+    const auto = isAutoCity(city);
     const zones = base.map((z) => ({
       ...z,
       id: `${worldId}:zone:${z.slot}`,
@@ -223,9 +261,14 @@ export async function ensureWorld(
       region,
       cityId: city?.id || null,
       cityName: city?.name || null,
+      ...(city ? { cityStatus: auto ? "auto" : "reviewed" } : {}),
       timezone,
       arena,
-      source: city ? "OpenStreetMap CityPack" : "OpenStreetMap / Overpass",
+      source: auto
+        ? "OpenStreetMap auto CityPack"
+        : city
+          ? "OpenStreetMap CityPack"
+          : "OpenStreetMap / Overpass",
       center: { lat, lng },
       boundary: city ? null : cellToBoundary(region, true),
       paths: [],
@@ -236,10 +279,13 @@ export async function ensureWorld(
       coverage: city ? "city-pack" : "street-only",
       quality: {
         fieldReview: city?.fieldReview || "pending",
+        ...(auto ? { status: "auto", funded: false } : {}),
         pathCoverage: city?.pathCoverage || "bounded-live-query",
         routing: "straight-line-only",
         geometry: "OSM-polygons",
-        notice: city
+        notice: auto
+          ? AUTO_CITY_NOTICE
+          : city
           ? "Map-data preview. Walking routes and physical access still require field review."
           : "City zones are not available here yet. Street coins use mapped public paths.",
       },
@@ -279,8 +325,13 @@ export async function ensureWorld(
       for (const z of [...zones].sort(
         (a, b) => a.tier - b.tier || a.slot - b.slot,
       )) {
-        const desired =
-          z.tier === 3 ? 5000 * GOLD : z.tier === 2 ? 1000 * GOLD : 0;
+        const desired = auto
+          ? 0
+          : z.tier === 3
+            ? 5000 * GOLD
+            : z.tier === 2
+              ? 1000 * GOLD
+              : 0;
         const available = db
             .prepare("SELECT available_u FROM treasury WHERE bucket='zones'")
             .get().available_u,
@@ -359,7 +410,8 @@ export function worldView(db, id, player = null, options = {}) {
   const query = worldQuery(options),
     now = options.now ?? Date.now(),
     manifest = publicManifest(db, JSON.parse(row.manifest)),
-    closed = closedPlaces(db, manifest.cityId);
+    closed = closedPlaces(db, manifest.cityId),
+    paused = pauseState(db, manifest.cityId, manifest.day);
   const quests = db
     .prepare(
       "SELECT q.*,EXISTS(SELECT 1 FROM quest_claims c WHERE c.quest_id=q.id AND c.player_id=?) AS completed,COALESCE((SELECT checkpoint FROM quest_progress p WHERE p.quest_id=q.id AND p.player_id=?),0) AS checkpoint FROM quests q WHERE q.world_id=? ORDER BY q.tier,q.id",
@@ -368,21 +420,38 @@ export function worldView(db, id, player = null, options = {}) {
     .map((q) => {
       const meta = JSON.parse(q.metadata || "{}");
       const cps = meta.checkpoints || [];
+      // A category hunt takes its stops in any order: point at the first open one.
+      const visited = meta.unordered ? huntVisited(db, q.id, player) : null;
       return {
         ...q,
+        ...(meta.poi ? poiQuestText(db, q, meta, { lang: options.lang }) || {} : {}),
         metadata: undefined,
         checkpointCount: cps.length,
-        nextPoint: cps[q.checkpoint] || null,
+        nextPoint: visited
+          ? cps.find((_, i) => !visited.has(i)) || null
+          : cps[q.checkpoint] || null,
+        ...(visited ? { visitedStops: [...visited].sort((a, b) => a - b) } : {}),
         activity: describeStoredQuest(q, meta),
       };
     });
-  const remaining =
-    3 * 256 -
-    db.prepare("SELECT COALESCE(SUM(minted),0) AS n FROM editions").get().n;
-  const zones = manifest.zones.map((z) => ({
-      ...z,
-      placeStatus: placeClosed(closed, z.sourceId, z) ? "closed" : "open",
-    })),
+  const level = levelFor(
+      (player &&
+        db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp) ||
+        0,
+    ),
+    chestStock = new Map(
+      [1, 2, 3].map((t) => [t, chestAuraAvailable(db, t, level)]),
+    );
+  // An operator pause reads as a closed place to players; operatorPause says why.
+  const zones = manifest.zones.map((z) => {
+      const pause = pauseFor(paused, z.slot);
+      return {
+        ...z,
+        placeStatus:
+          pause || placeClosed(closed, z.sourceId, z) ? "closed" : "open",
+        ...(pause ? { operatorPause: { reason: pause.reason } } : {}),
+      };
+    }),
     visibleZones = zones.filter((z) => zoneInBounds(z, query.bounds)),
     visibleIds = new Set(visibleZones.map((z) => z.id)),
     zoneById = new Map(zones.map((z) => [z.id, z]));
@@ -435,7 +504,9 @@ export function worldView(db, id, player = null, options = {}) {
     cityZoneCount: zones.length,
     visibleZoneCount: visibleZones.length,
     openEligibleCount: eligible.size,
-    coins: page
+    playerTier: tier,
+    ...(paused.day ? { operatorPause: { reason: paused.day.reason } } : {}),
+    coins: (paused.day ? [] : page)
       .filter((p) => !pointClosed(closed, p))
       .map((c) => (finds.has(c.id) ? { ...c, find: true } : c)),
     streetFindXp: STREET_FIND_XP,
@@ -453,7 +524,8 @@ export function worldView(db, id, player = null, options = {}) {
       .map((q) => ({
         ...q,
         placeStatus: zoneById.get(q.zone_id)?.placeStatus || "open",
-        itemAvailable: q.kind === "chest" && remaining > 0,
+        itemAvailable:
+          q.kind === "chest" && (chestStock.get(q.tier) ?? false),
       })),
   };
 }

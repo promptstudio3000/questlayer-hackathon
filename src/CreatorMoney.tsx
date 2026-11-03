@@ -70,10 +70,13 @@ export function CreatorSupport({
   questId,
   ownQuest,
   money,
+  onAccess,
 }: {
   questId: string;
   ownQuest: boolean;
   money: CreatorMoneyBridge;
+  /** Whether this player may start: free, already unlocked, or creator money off. */
+  onAccess?: (unlocked: boolean) => void;
 }) {
   const [snap, setSnap] = useState<CreatorMoneySnapshot | null>(null),
     [quest, setQuest] = useState<CreatorQuestMoney | null>(null),
@@ -102,14 +105,22 @@ export function CreatorSupport({
         setSnap(s);
         setQuest(q);
         setState("ready");
+        // Not yet listed on chain: a paid quest cannot be unlocked or started yet.
+        onAccess?.(
+          ownQuest ||
+            (!!q.quest && (BigInt(q.quest.price) === 0n || !!q.access)),
+        );
       },
       (error) => {
-        if (!controller.signal.aborted)
-          setState(disabledError(error) ? "off" : "error");
+        if (controller.signal.aborted) return;
+        const off = disabledError(error);
+        setState(off ? "off" : "error");
+        // Creator money off on this host: nothing to unlock, the server agrees.
+        onAccess?.(off);
       },
     );
     return () => controller.abort();
-  }, [questId, refresh]);
+  }, [questId, refresh, ownQuest, onAccess]);
   if (state === "off") return null;
   if (state === "loading")
     return (
@@ -216,7 +227,7 @@ export function CreatorSupport({
               {price > 0n && !quest?.access && (
                 <p className="creator-hint">
                   {100 - treasuryPct}% to the creator, {treasuryPct}% to the
-                  city reward pot.
+                  global prize pool.
                 </p>
               )}
               {quest?.access && (

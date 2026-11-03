@@ -235,7 +235,7 @@ export function AdventureResultDialog({
                             preview
                           />
                         ) : (
-                          <AuraArt color={item.color} slot={item.slot} />
+                          <AuraArt color={item.color} slot={item.slot} name={item.name} />
                         )}
                         <strong>{item.name}</strong>
                         <span>

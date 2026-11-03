@@ -1,0 +1,52 @@
+{
+  "about": "sha256 of every contract WASM built by scripts/build-contracts-docker.sh (Docker rust:1.97.0, linux/amd64, path remapping). CI (reproducible-contracts) rebuilds them and fails on any difference. macOS aarch64 builds hash differently; use the Docker build or the CI artifact. After an intended contract change run `npm run contracts:docker -- --write` (or copy the hashes from the CI job summary).",
+  "toolchain": "rust:1.97.0 linux/amd64",
+  "contracts": {
+    "questlayer_badges": "23cc54a71915bac02d595b6880363491f9a341fc54756a77f7d5d4e1fd72797a",
+    "questlayer_collectibles": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
+    "questlayer_creators": "df12b5f9f544ebbfa545df7d80d0a7834fafc22605da366664472b063360c40b",
+    "questlayer_game": "c7ab37be026f1aa1ec0441b3fbf0ea40af4dcfd70f31197d2e0046ddccdba34f",
+    "questlayer_market": "1642a65af521b17b9d46786d66d1606c223cbf68d6a53cd90d620ce8ce225435",
+    "questlayer_npc_games": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
+    "questlayer_rewards": "9fc25ac69c71d227f1ba78e980d9461d358752e2a6b786e39a91546e56418a50",
+    "questlayer_tasks": "055954f30c81b4dfd56b3bd9a88c469aeb74c50d5eb4eb83f9aeb5b8bbc51751",
+    "questlayer_vault": "9bc4ffa8d4b7c2f403efa7ebb2cc1bc20e086039d5c690fdbdd82aaff93347d5",
+    "questlayer_vault_factory": "b459ef272d62077540a617feb35bfff71b71d8c88bb6e171ae7a448728a06f0b",
+    "questlayer_yield_vault": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700"
+  },
+  "testnetDeploymentsNotFromThisBuild": {
+    "about": "Testnet records whose deployed WASM was built before reproducible builds (or from older source) and so cannot match today's build. Each entry pins the exact recorded hash: a new deployment record must either match the reproducible build or be added here on purpose. Mainnet deploys must never appear here.",
+    "public/native-creators-testnet.json:wasmSha256": {
+      "contract": "questlayer_creators",
+      "sha256": "f48999b1068f823644cf631e8fd3eab58afe7d0450257ed95a24ff8aa5532eed"
+    },
+    "public/native-market-testnet.json:wasmSha256": {
+      "contract": "questlayer_market",
+      "sha256": "bd1f74d2858e468b354c2bb174ca95d921e933898adb9738fced8b817a0439ee"
+    },
+    "public/native-rewards-testnet.json:wasmSha256": {
+      "contract": "questlayer_rewards",
+      "sha256": "17ee14f71ea34b215d9c6fbc97d16f0a4d97a1fd05afffa2e3f8016295a1e9de"
+    },
+    "public/native-rewards-testnet.json:factory.wasmSha256": {
+      "contract": "questlayer_vault_factory",
+      "sha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9"
+    },
+    "public/native-rewards-testnet.json:factory.vaultWasmSha256": {
+      "contract": "questlayer_vault",
+      "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
+    },
+    "public/native-rewards-testnet.json:vaults.0.wasmSha256": {
+      "contract": "questlayer_vault",
+      "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
+    },
+    "public/native-tasks-testnet.json:wasmSha256": {
+      "contract": "questlayer_tasks",
+      "sha256": "f5eef080158fa4b7e7ccd950365421fffe5d4d911fe4827906c9bf056ccdc2c1"
+    },
+    "public/native-wardrobe-testnet.json:wasmSha256": {
+      "contract": "questlayer_collectibles",
+      "sha256": "1cb649afccc9ccfb7ef2a99e29bf346e312b94915feb17fdd1c4fdfb8bf07488"
+    }
+  }
+}

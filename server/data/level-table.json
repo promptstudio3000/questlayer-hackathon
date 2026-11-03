@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "note": "Level table shared by client and server (GAME-LOOPS P0-1). requiredXp follows levelFor in server/domain.mjs: 100*(level-1)^2. Every level unlocks one thing to do or wear; staker lures are gated by tier only (owner decision 1 Nov) and are not part of this table; nothing here ever changes odds, damage, GOLD or payouts. Numbers in `value` are defaults: the operator can override any entry with LEVEL_TABLE_FILE. `item` entries are the level-only Aura editions (claim prefix earned:level:, approved by the owner 1 Nov); they stay hidden and unclaimable unless LEVEL_ITEM_EDITIONS=1, which needs the collectibles upgrade that adds them first. `status`: live = works today, coming = shown as a preview until its feature ships.",
+  "maxLevel": 10,
+  "levels": [
+    { "level": 1, "requiredXp": 0, "unlock": { "id": "explore", "kind": "start", "title": "Free zones, street coins, monsters and NPC talk", "status": "live" } },
+    { "level": 2, "requiredXp": 100, "unlock": { "id": "aura-polar", "kind": "aura", "title": "Northern Lights Aura", "status": "live" } },
+    { "level": 3, "requiredXp": 400, "unlock": { "id": "aura-moon", "kind": "aura", "title": "Moonwake Aura", "status": "live" } },
+    { "level": 4, "requiredXp": 900, "unlock": { "id": "aura-gold", "kind": "aura", "title": "Sunlit Aura", "status": "live" } },
+    { "level": 5, "requiredXp": 1600, "unlock": { "id": "ring-silver", "kind": "ring", "title": "Silver level ring", "value": "silver", "status": "live" }, "item": { "edition": "stride", "name": "Silver Stride" } },
+    { "level": 6, "requiredXp": 2500, "unlock": { "id": "altar-second-offering", "kind": "craft", "title": "Second altar offering each day", "value": 2, "status": "live" }, "item": { "edition": "kindle", "name": "Altar Kindle" } },
+    { "level": 7, "requiredXp": 3600, "unlock": { "id": "extra-quest-line", "kind": "quest-slot", "title": "One more quest line per NPC each day", "value": 1, "status": "live" }, "item": { "edition": "compass", "name": "Wayfarer's Compass" } },
+    { "level": 8, "requiredXp": 4900, "unlock": { "id": "extra-story-chapter", "kind": "story", "title": "One more storyteller chapter on offer", "value": 1, "status": "live" }, "item": { "edition": "quill", "name": "Storyteller's Quill" } },
+    { "level": 9, "requiredXp": 6400, "unlock": { "id": "title-pathfinder", "kind": "title", "title": "Pathfinder title on your profile", "value": "Pathfinder", "status": "live" }, "item": { "edition": "laurel", "name": "Pathfinder Laurel" } },
+    { "level": 10, "requiredXp": 8100, "unlock": { "id": "ring-gold", "kind": "ring", "title": "Golden level ring", "value": "gold", "status": "live" }, "item": { "edition": "summit", "name": "Summit Crown" } }
+  ]
+}

@@ -1,0 +1,173 @@
+/* Guided first session coach (see src/first-session.ts). */
+.first-session {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin: 12px 0;
+  padding: 12px 14px 14px;
+  background: var(--surface-soft);
+  border: 2px solid var(--action);
+  border-radius: var(--radius-item);
+  color: var(--ink);
+  box-shadow: 0 3px 0 #441c6c20;
+}
+.first-session-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+}
+.first-session-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+.first-session-dots {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+}
+.first-session-dots li {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--control-border);
+  background: var(--surface-raised);
+}
+.first-session-dots li.done {
+  background: var(--action);
+  border-color: var(--action);
+}
+.first-session-dots li.current {
+  border-color: var(--action);
+  box-shadow: 0 0 0 3px #672eeb33;
+}
+.first-session-hide {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: -8px -8px -8px auto;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--ink-secondary);
+}
+.first-session-hide:hover {
+  background: #e9deef;
+}
+.first-session h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+}
+.first-session-hint {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--ink-secondary);
+}
+.first-session-hint svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--discovery);
+}
+.first-session .first-session-action {
+  min-height: 48px;
+  font-size: 16px;
+  background: var(--action);
+  color: var(--on-action);
+}
+.first-session .first-session-action:hover {
+  background: #5422c9;
+}
+.first-session .secondary-button.first-session-action {
+  background: var(--surface-raised);
+  color: var(--action);
+  border: 2px solid var(--action);
+}
+.first-session-celebration {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-control);
+  background: var(--success-surface);
+  color: var(--success);
+  font-size: 14px;
+  font-weight: 600;
+  animation: first-session-pop var(--motion-feedback) var(--ease-out);
+}
+@keyframes first-session-pop {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.explore-empty {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px dashed var(--control-border);
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+.explore-empty strong {
+  font-size: 16px;
+}
+.explore-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+/* Feedback settings */
+.feedback-settings {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.feedback-settings h2 {
+  font-size: 14px;
+  margin: 4px 0 0;
+  color: var(--ink-secondary);
+}
+.feedback-settings .play-mode-switch button {
+  min-height: 48px;
+}
+/* Player-chosen reduced motion mirrors the system media query. */
+:root[data-motion="reduce"] {
+  --motion-press: 0ms;
+  --motion-feedback: 0ms;
+  --motion-sheet: 0ms;
+}
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}

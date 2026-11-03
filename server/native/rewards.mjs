@@ -20,9 +20,18 @@ import {
 import { DEFAULT_CITY } from "../spatial/city-pack.mjs";
 import { NETWORK } from "./network.mjs";
 import {
+  ensureNativeDayContracts,
+  foreignNativeDays,
+} from "./day-contracts.mjs";
+import {
   assertNativePlaceOpen,
   closedPlaces,
 } from "../spatial/place-safety.mjs";
+import {
+  assertWorldActive,
+  pauseFor,
+  pauseState,
+} from "../operator/world-controls.mjs";
 /** Local claim rows of a day in any state (the chain's accepted count can never exceed it unless rows were lost). */
 export function knownNativeClaims(db, dayId) {
   return db
@@ -55,6 +64,7 @@ export class NativeRewards extends NativeContractReader {
    INSERT OR IGNORE INTO native_worker_lease(id) VALUES(1);
    CREATE TABLE IF NOT EXISTS native_vault_jobs(account_id TEXT PRIMARY KEY,next_check INTEGER NOT NULL DEFAULT 0,last_action TEXT,last_state TEXT,last_error TEXT);
   `);
+    ensureNativeDayContracts(db);
   }
   linked(player, account) {
     assert(
@@ -84,6 +94,18 @@ export class NativeRewards extends NativeContractReader {
       .get(dayId);
     assert(row, "This native day is not confirmed on NEAR yet.", 409);
     return storedNativeManifest(row);
+  }
+  /** Today's published coin value and count (for the Keeper's stake card). */
+  todayCoins() {
+    const row = nativeDayRow(this.db, this.city.id, dayKey(this.clock(), this.city.timezone), { published: true });
+    if (!row) return null;
+    const m = this.day(row.id);
+    return {
+      dayId: m.id,
+      coinUnit: m.coinUnit,
+      coinCount: m.coins.length,
+      funding: m.funding === "realized_yield" ? "realized_yield" : "sponsor",
+    };
   }
   async tier(account) {
     let weighted = 0n;
@@ -220,6 +242,13 @@ export class NativeRewards extends NativeContractReader {
         m,
         kind === "quest" ? index : null,
         target,
+      );
+      // Native days always carry six zones in slot order, so index is the slot.
+      assertWorldActive(
+        this.db,
+        m.cityId,
+        m.day,
+        kind === "quest" ? index : null,
       );
       const pending = this.db
         .prepare(
@@ -425,7 +454,9 @@ export class NativeRewards extends NativeContractReader {
         : [];
     if (location) point(location);
     const safety = m ? closedPlaces(this.db, m.cityId) : [];
+    const paused = m ? pauseState(this.db, m.cityId, m.day) : null;
     const discoveryOpen = (index, p) => {
+      if (paused && pauseFor(paused, index)) return false;
       if (!safety.length) return true;
       try {
         assertNativePlaceOpen(this.db, m, index, p);
@@ -583,6 +614,8 @@ export class NativeRewards extends NativeContractReader {
           "SELECT COUNT(*) n FROM native_reward_claims WHERE state!='confirmed'",
         )
         .get().n,
+      // Published days of an earlier rewards contract, skipped by the worker.
+      foreignDays: foreignNativeDays(this.db).map((d) => d.id),
     };
   }
 }

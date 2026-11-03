@@ -1,8 +1,11 @@
 import { defaultDatabasePath } from "./state-path.mjs";
+import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
+import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
 import { createAdventureResults } from "./adventure-results.mjs";
 import { recordSchemaVersions, schemaStatus } from "./schema-compatibility.mjs";
+import { resolveBuildId } from "./build-id.mjs";
 import { NoteMedia } from "./note-media.mjs";
 import { TaskEvidence, evidenceTaskView } from "./task-evidence.mjs";
 import { Moderation } from "./moderation.mjs";
@@ -11,6 +14,7 @@ import { NativeProgression } from "./native/progression.mjs";
 import { NativeTasks, TASK_CONTRACT } from "./native/tasks.mjs";
 import { updatePresence, readNearbyPresence } from "./presence.mjs";
 import { GotchiModels } from "./gotchi-models.mjs";
+import { UpstreamModels } from "./upstream-models.mjs";
 import {
   GotchiItemArt,
   linkedItemId,
@@ -18,11 +22,16 @@ import {
 } from "./gotchi-items.mjs";
 import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
+import {
+  SignedOrderIndex,
+  startOrderIndexWorker,
+} from "./native/order-index.mjs";
 import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
 import { allocationSettings } from "./native/allocation.mjs";
+import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
 import { ManagedAccounts } from "./relayer/accounts.mjs";
@@ -35,6 +44,11 @@ import {
   loadCreatorsPublisher,
   startCreatorMoneyWorker,
 } from "./native/creator-money.mjs";
+import {
+  CreatorBonusVote,
+  bonusVoteSettings,
+  createBonusVoteRoutes,
+} from "./creators/bonus-vote.mjs";
 import { auditDistribution, auditSummary } from "./native/distribution.mjs";
 import {
   NativeSocialRecords,
@@ -46,7 +60,16 @@ import { NativeVaults, FACTORY_ID, VAULT_POOLS } from "./native/vaults.mjs";
 import { NativeSocialProfile } from "./native/social-profile.mjs";
 import { resolvePublicFile } from "./static-files.mjs";
 import { AwardVouchers, loadAwardSigner } from "./native/award-vouchers.mjs";
+import { NativeContractReader } from "./native/reader.mjs";
+import {
+  NpcRolls,
+  createNpcRollRoutes,
+  loadTicketSigner,
+  startNpcRollWorker,
+} from "./npc/rolls.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
+import { startFlavourWorker } from "./ai/flavour-batch.mjs";
+import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
@@ -63,6 +86,7 @@ import {
   DEFAULT_RPC,
   manifestName,
 } from "./native/network.mjs";
+const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 import { randomBytes } from "node:crypto";
 import {
@@ -84,6 +108,7 @@ import {
   playerView,
   history,
   createPlayer,
+  demoProgression,
 } from "./database.mjs";
 import {
   HOME,
@@ -94,6 +119,40 @@ import {
 } from "./world.mjs";
 import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
+import { createActorRoutes } from "./actors/routes.mjs";
+import { actorsEnabled, createActorService } from "./actors/service.mjs";
+import { testSeedMode as readTestSeedMode } from "./test-seed/config.mjs";
+import { createTestSeed } from "./test-seed/seed.mjs";
+import "./npc/menu-builder.mjs";
+import { createNpcService } from "./npc/service.mjs";
+import { createNpcRoutes } from "./npc/routes.mjs";
+import { registerMenuBuilder } from "./actors/menu.mjs";
+import { loadTraders, traderKeysPath } from "./npc/trader-keys.mjs";
+import { createTraderService } from "./npc/trader.mjs";
+import { createTraderRoutes, stakeCard } from "./npc/trader-routes.mjs";
+import { createNearPrice } from "./near-price.mjs";
+import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
+import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mjs";
+import { createTreasuryView } from "./native/stnear-treasury.mjs";
+import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
+import { combineStakeReaders, createYieldVaultReader, yieldVaultSettings } from "./native/yield-vault-reader.mjs";
+import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
+import { createMonsterChallenges } from "./actors/challenges/index.mjs";
+import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
+import { createMonsterHunt } from "./actors/hunt/index.mjs";
+import { createHuntRoutes } from "./actors/hunt/routes.mjs";
+import { dailyBoardSettings } from "./daily-board/config.mjs";
+import { createDailyBoard } from "./daily-board/service.mjs";
+import { createDailyBoardRoutes } from "./daily-board/routes.mjs";
+import { loadPlaceBadges } from "./badges/place-catalog.mjs";
+import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
+import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
+import { createBadgeRoutes } from "./badges/routes.mjs";
+import { seasonSettings } from "./season/config.mjs";
+import { createSeason } from "./season/service.mjs";
+import { createSeasonRoutes } from "./season/routes.mjs";
+import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
+import { poiWorldStatus } from "./poi/coverage.mjs";
 import {
   GOLD,
   DAY,
@@ -111,6 +170,8 @@ const nativeAttestationsDisabled =
 const backgroundWorkersDisabled =
   process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
+// Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
+const testSeedMode = readTestSeedMode(process.env, NETWORK);
 const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
 const noteMedia = new NoteMedia();
@@ -121,7 +182,14 @@ const moderation = new Moderation(db, { evidence: taskEvidence });
 const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
-const creatorRuntime = createCreatorRuntime(db, { origin, authenticate: auth });
+const creatorRuntime = createCreatorRuntime(db, {
+  origin,
+  authenticate: auth,
+  // Paid quests start only after the player bought access on the creators contract.
+  admitStart: (actor, questId, quest) =>
+    creatorMoney?.admitStart(actor, questId, quest),
+});
+const guide = createGuide(db);
 const rpc = process.env.NEAR_RPC_URL || DEFAULT_RPC;
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
@@ -188,7 +256,39 @@ const awardSigner = nativeAttestationsDisabled
       process.env.AWARD_SIGNER_PATH ||
         resolve(dirname(defaultDatabasePath()), "award-attestor.pem"),
     );
-const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner);
+// Earned wisp rolls on the npc-games contract (docs/NPC-GAMES.md). The ticket
+// key is a private file in the state directory (scripts/install-npc-ticket-key-vps.sh);
+// without it, or on a network without the manifest, rolls stay off.
+const npcGamesManifestPath = [
+  resolve(APP_ROOT, `public/${manifestName("native-npc-games")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-npc-games")}`),
+].find((p) => existsSync(p));
+const npcGamesManifest = npcGamesManifestPath
+  ? JSON.parse(readFileSync(npcGamesManifestPath, "utf8"))
+  : null;
+const npcTicketSigner =
+  npcGamesManifest?.network === NETWORK &&
+  npcGamesManifest.contractId &&
+  !nativeAttestationsDisabled
+    ? loadTicketSigner(
+        process.env.NPC_TICKET_SIGNER_PATH ||
+          resolve(dirname(defaultDatabasePath()), "npc-games-ticket-signer.pem"),
+      )
+    : null;
+// The npc_rolls table exists only on a host that holds the ticket key.
+const npcRolls = npcTicketSigner
+  ? new NpcRolls(db, {
+      contract: new NativeContractReader(provider, npcGamesManifest.contractId),
+      finalHeight: async () =>
+        Number((await provider.viewBlock({ finality: "final" })).header.height),
+      signer: npcTicketSigner,
+      manifest: npcGamesManifest,
+    })
+  : null;
+const npcRollRoutes = createNpcRollRoutes(npcRolls);
+const awardVouchers = new AwardVouchers(db, nativeCollectibles, awardSigner, {
+  claimIdFor: npcRolls ? (itemId) => npcRolls.claimIdFor(itemId) : null,
+});
 const rewardsManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-rewards")}`),
   resolve(APP_ROOT, `dist/${manifestName("native-rewards")}`),
@@ -229,13 +329,15 @@ const managedAccounts = relayConfig.factoryAccount
       topupCapYocto: relayConfig.topupCapYocto,
     })
   : null;
+const relayerService =
+  managedAccounts && relayConfig.enabled
+    ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
+    : null;
 const relayer = managedAccounts
   ? new Relayer(
       db,
       provider,
-      relayConfig.enabled
-        ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
-        : null,
+      relayerService,
       {
         accounts: managedAccounts,
         contracts: {
@@ -257,6 +359,7 @@ const relayer = managedAccounts
                   ),
                 ).contractId
               : undefined,
+          npcGames: npcRolls?.contractId || undefined,
           rewards: !featureEnabled("rewards")
             ? undefined
             : rewardsConfig?.contractId ||
@@ -276,13 +379,23 @@ const relayer = managedAccounts
       },
     )
   : null;
+const signedOrderIndex = nativeMarket
+  ? new SignedOrderIndex(db, nativeMarket, {
+      relaySenderId: relayerService?.accountId ?? null,
+    })
+  : null;
 const relayerRoutes = createRelayerRoutes({
   relayer,
   accounts: managedAccounts,
 });
 if (nativeRewards) {
   nativeRewards.vaultRegistry = nativeVaults;
-  Object.assign(nativeRewards, allocationSettings(process.env));
+  Object.assign(
+    nativeRewards,
+    allocationSettings(process.env, {
+      isAutoCity: (id) => cityStatus(id) === "auto",
+    }),
+  );
 }
 // Creator money (W09): reads and quotes work from the manifest alone; the
 // publisher outbox mirrors published quests, completions, likes and daily
@@ -300,6 +413,213 @@ const creatorsManifest =
     process.env.CREATOR_COMMUNITY_ENABLED === "1")
     ? loadCreatorsManifest(creatorsManifestPath)
     : null;
+// Community vote on the daily creator bonus: testnet only, on by default
+// there (CREATOR_BONUS_VOTE=0 turns it off). It creates its tables on first
+// use and answers "not enabled" until the creator community exists.
+const creatorBonusVote =
+  NETWORK !== "mainnet" &&
+  featureEnabled("creators") &&
+  process.env.CREATOR_BONUS_VOTE !== "0"
+    ? new CreatorBonusVote(db, bonusVoteSettings(process.env))
+    : null;
+const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
+// Roaming NPCs and monsters (docs/NPC-PLAN.md §14): off unless ACTORS_ENABLED=1.
+// The testnet test world turns them on too.
+const actorService =
+  actorsEnabled() || testSeedMode === "apply" ? createActorService(db) : null;
+const actorRoutes = createActorRoutes(actorService);
+// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
+// Ollama setup; the key stays in the runtime environment only.
+// NEAR → EUR reference for "Stake 2 NEAR (~5 €)" labels (server/near-price.mjs).
+const nearPrice = createNearPrice({ env: process.env });
+const npcRoutes = createNpcRoutes(
+  actorService ? createNpcService(db, { priceEur: () => nearPrice.eur() }) : null,
+  actorService,
+  db,
+  {
+    // Refreshes the staker status through the Keeper's vault reading.
+    refreshStaker: (player) =>
+      keeperVault && nativeVaults
+        ? stakeCard({ db, player, vaults: nativeVaults, keeperVault, level: demoProgression(db, player).level, liquidStake: stakerReaders })
+        : null,
+  },
+);
+// NPC traders on market v2 (N3): on when actors run, the market is v2 and the
+// private traders file exists (<state dir>/npc-traders.json or
+// NPC_TRADERS_PATH). NPC_TRADER_ENABLED=0 turns them off. Testnet only.
+let npcTraders = null;
+try {
+  const traderKeys =
+    actorService && nativeMarket && signedOrderIndex && NETWORK === "testnet" && process.env.NPC_TRADER_ENABLED !== "0"
+      ? loadTraders(traderKeysPath())
+      : null;
+  if (traderKeys?.size)
+    npcTraders = createTraderService({
+      db,
+      traders: traderKeys,
+      market: nativeMarket,
+      nfts: nativeCollectibles,
+      orderIndex: signedOrderIndex,
+    });
+} catch (error) {
+  console.error("NPC traders disabled:", error?.message || error);
+}
+if (npcTraders)
+  registerMenuBuilder("trader", async (context) => {
+    try {
+      return await npcTraders.menu(context);
+    } catch (error) {
+      console.error("NPC trader menu:", error?.code || error?.message || error);
+      return [];
+    }
+  });
+// Keeper's inner vault (GAME-LOOPS P0-3): stake card, E+2 countdown and
+// ceremonies. Read-only; KEEPER_* variables override every default.
+const keeperVaultConfig = keeperVaultSettings(process.env);
+const keeperVault =
+  nativeVaults && keeperVaultConfig.enabled
+    ? createKeeperVault(db, {
+        settings: keeperVaultConfig,
+        priceEur: () => nearPrice.eur(),
+        today: () => {
+          try {
+            return nativeRewards?.todayCoins() ?? null;
+          } catch {
+            return null;
+          }
+        },
+      })
+    : null;
+// Liquid staking tokens (docs/LIQUID-STAKE.md): read-only second path to the
+// Staker step. Off unless LIQUID_STAKE_ENABLED=1.
+// Game treasury held in stNEAR (docs/STNEAR-TREASURY.md): the Mac worker
+// writes a public record (no keys) of deposits and daily growth harvests;
+// this reads it and adds the live stNEAR balance.
+const treasuryRecordPaths = [
+  process.env.STNEAR_TREASURY_RECORD,
+  resolve(dirname(defaultDatabasePath()), manifestName("stnear-treasury")),
+  resolve(APP_ROOT, `public/${manifestName("stnear-treasury")}`),
+  resolve(APP_ROOT, `dist/${manifestName("stnear-treasury")}`),
+].filter(Boolean);
+const stnearTreasury = createTreasuryView({
+  provider,
+  record: () => {
+    const p = treasuryRecordPaths.find((f) => existsSync(f));
+    return p ? JSON.parse(readFileSync(p, "utf8")) : null;
+  },
+});
+const liquidStakeConfig = liquidStakeSettings(process.env, NETWORK);
+const liquidStake =
+  liquidStakeConfig.enabled && liquidStakeConfig.tokens.length
+    ? createLiquidStake({ provider, settings: liquidStakeConfig })
+    : null;
+// Yield vault (docs/YIELD-VAULT.md): locked deposits count toward Staker at once.
+// Contract from YIELD_VAULT_ACCOUNT or public/native-yield-vault-<network>.json.
+const yieldVaultManifestPath = resolve(APP_ROOT, `public/native-yield-vault-${NETWORK}.json`);
+const yieldVaultConfig = yieldVaultSettings(
+  process.env,
+  existsSync(yieldVaultManifestPath) ? JSON.parse(readFileSync(yieldVaultManifestPath, "utf8")) : null,
+);
+const yieldVaultReader = yieldVaultConfig.enabled
+  ? createYieldVaultReader({ provider, settings: yieldVaultConfig, priceEur: () => nearPrice.eur() })
+  : null;
+// Every Staker source besides the native vault, summed for the Keeper's reading.
+const stakerReaders = combineStakeReaders([liquidStake, yieldVaultReader]);
+// Rhea Lend markets (docs/YIELD-VAULT-PLAN.md): read-only rates and utilization.
+const rheaConfig = rheaSettings(process.env, NETWORK);
+const rheaMarkets = rheaConfig.enabled ? createRheaMarkets({ provider, settings: rheaConfig }) : null;
+const traderRoutes = createTraderRoutes({
+  traders: npcTraders,
+  actors: actorService,
+  db,
+  market: nativeMarket,
+  vaults: nativeVaults,
+  keeperVault,
+  levelOf: (player) => demoProgression(db, player).level,
+  priceEur: () => nearPrice.eur(),
+  liquidStake: stakerReaders,
+});
+// Monster quiz, mini-games and stance duel (NPC-PLAN §13.2): power is the
+// account level (spendable XP) plus skill, never Auras or items.
+// Monster hunt (NPC-PLAN §13, M3+M4): win rewards, guardian-locked chests and
+// the weekly co-op boss. Same ACTORS_ENABLED flag; BOSS_HP sizes the pool.
+const monsterHunt = createMonsterHunt(db, actorService, {
+  levelOf: (player) => demoProgression(db, player).level,
+  bossHp: Number(process.env.BOSS_HP) || undefined,
+});
+const huntRoutes = createHuntRoutes(monsterHunt, actorService, db);
+// Daily board of three goals (docs/DAILY-BOARD.md): on by default except on
+// mainnet; DAILY_BOARD_* settings change the goals and bonus. No streak.
+const dailyBoardConfig = dailyBoardSettings(process.env, NETWORK);
+const dailyBoard = dailyBoardConfig.enabled
+  ? createDailyBoard(db, dailyBoardConfig, { actorsOn: () => !!actorService })
+  : null;
+const dailyBoardRoutes = createDailyBoardRoutes(dailyBoard, db);
+// Badges (docs/BADGES.md): place badges for notable places reached with GPS
+// (game database, cosmetic, never sellable) and POAP-like player badges on
+// the soulbound questlayer_badges contract. The contract id comes from
+// public/native-badges-<network>.json (or NEAR_BADGES_CONTRACT); the minter
+// key from <state dir>/badges-minter.json (or BADGES_MINTER_KEY_PATH).
+const badgesManifestPath = [
+  resolve(APP_ROOT, `public/${manifestName("native-badges")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-badges")}`),
+].find((p) => existsSync(p));
+const badgeChain = createBadgeChain({
+  provider,
+  contractId:
+    process.env.NEAR_BADGES_CONTRACT ||
+    (badgesManifestPath
+      ? JSON.parse(readFileSync(badgesManifestPath, "utf8")).contractId
+      : null),
+  signer: awardSigner,
+  keyPath:
+    process.env.BADGES_MINTER_KEY_PATH ||
+    resolve(dirname(defaultDatabasePath()), "badges-minter.json"),
+});
+const badgeService =
+  process.env.BADGES_ENABLED === "0"
+    ? null
+    : createBadgeService(db, {
+        catalog: loadPlaceBadges({ extraPath: process.env.PLACE_BADGES_EXTRA_PATH || null }),
+        linkedAccount: (player) => linkedAccount(player),
+        settings: userBadgeSettings(process.env, NETWORK),
+        chain: () => badgeChain,
+      });
+const badgeRoutes = createBadgeRoutes(badgeService);
+// Hackathon season (docs/SEASON.md): cosmetic leaderboard of hunts, visits and
+// NPC lines, season mark + Aura at the goal, pot meter. Off by default on
+// mainnet; SEASON_* settings change the window, goal and points.
+const seasonConfig = seasonSettings(process.env, NETWORK);
+const season = seasonConfig.enabled ? createSeason(db, seasonConfig) : null;
+const seasonRoutes = createSeasonRoutes(season);
+const testSeed = createTestSeed(db, {
+  creators: creatorRuntime.services
+    ? {
+        services: creatorRuntime.services,
+        moderator: creatorRuntime.config.moderators[0],
+        completionAuthority: creatorRuntime.config.completionAuthorities[0],
+        policyVersion: creatorRuntime.config.policy.version,
+      }
+    : null,
+  log: (message) => console.log(message),
+});
+try {
+  if (testSeedMode === "apply")
+    console.log("Test seed applied:", JSON.stringify(testSeed.apply()));
+  else {
+    const purged = testSeed.purge();
+    if (purged.removed) console.log("Test seed removed:", JSON.stringify(purged));
+  }
+} catch (error) {
+  console.error("Test seed failed:", error?.code || error?.message || error);
+}
+const testSeedActive = testSeedMode === "apply";
+const challengeRoutes = createChallengeRoutes(
+  createMonsterChallenges(db, actorService, {
+    levelOf: (player) => demoProgression(db, player).level,
+    onResult: monsterHunt?.onChallengeResult,
+  }),
+);
 const creatorMoney = creatorsManifest
   ? new CreatorMoney(db, provider, creatorsManifest, {
       transport: process.env.CREATORS_PUBLISHER_KEY_PATH
@@ -312,6 +632,7 @@ const creatorMoney = creatorsManifest
       roundBudgetYocto:
         process.env.CREATOR_ROUND_BUDGET_YOCTO || "10000000000000000000000",
       maxRoundBudgetYocto: creatorsManifest.policy?.max_round_budget ?? null,
+      bonusVote: creatorBonusVote,
     })
   : null;
 const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
@@ -356,6 +677,7 @@ const nativeTransactionConfirmation = new NativeTransactionConfirmation(
   },
 );
 const gotchiModels = new GotchiModels();
+const upstreamModels = new UpstreamModels();
 const gotchiItemArt = new GotchiItemArt();
 const originalLookups = new Map();
 recordSchemaVersions(db);
@@ -532,9 +854,21 @@ async function api(req, res, url) {
       version: "0.1.0",
       network: NETWORK,
       features: ENABLED_FEATURES,
-      ...schemaStatus(db, { buildId: process.env.QUESTLAYER_BUILD_ID }),
+      ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
+      autoCities: AUTO_CITIES.entries.length
+        ? {
+            status: "on",
+            version: AUTO_CITIES.version,
+            cities: AUTO_CITIES.entries.length,
+            funded: false,
+          }
+        : { status: "off" },
+      // POI database version, coverage totals and the World worker's last
+      // run (docs/WORLD-COVERAGE.md); cached per published file.
+      poiWorld: poiWorldStatus(),
+      questFlavour: flavourStatus(db),
       nativeRewards: nativeRewards
         ? nativeRewards.workerStatus()
         : { status: "not-configured" },
@@ -549,8 +883,20 @@ async function api(req, res, url) {
       socialRecords: featureEnabled("social")
         ? socialRecords.workerStatus()
         : { status: "not-configured" },
+      testSeed: testSeedActive ? testSeed.status() : { status: "off" },
+      npcRolls: npcRolls
+        ? {
+            status: (await npcRolls.readiness()).ok ? "ready" : "off",
+            contractId: npcRolls.contractId,
+          }
+        : { status: "not-configured" },
+      dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
+      season: season ? season.status() : { status: "off" },
+      badges: badgeService ? badgeService.status() : { status: "off" },
       now: Date.now(),
     });
+  if (path === "/api/levels" && method === "GET")
+    return respond(res, publicLevelTable());
   if (path === "/api/quest-templates" && method === "GET")
     return respond(res, questTemplateCatalog());
   if (path === "/api/native/distribution" && method === "GET") {
@@ -584,11 +930,16 @@ async function api(req, res, url) {
         intents: process.env.NEAR_INTENTS_CONTRACT || null,
       },
       nearAI: !!process.env.NEAR_AI_API_KEY,
+      guide: guide.provider,
+      // World layers (docs/WORLDS-PLAN.md): response-only, never hashed.
+      layerId: DEFAULT_LAYER.id,
+      layers: WORLD_REGISTRY.liveLayers(process.env).map(layerSummary),
     });
   if (path === "/api/session" && method === "POST") {
     const input = await body(req);
     const result = game.session(db, input.name);
     identitySessions.record(result.token, "guest");
+    if (testSeedActive) testSeed.grantKit(result.player.id);
     return respond(res, { player: profile(result.player.id) }, 201, {
       "Set-Cookie": cookie(result.token),
     });
@@ -874,6 +1225,18 @@ async function api(req, res, url) {
       }),
     );
   }
+  if (path === "/api/native/market/orders" && method === "GET") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    assert(signedOrderIndex, "Signed orders are not available yet.", 503);
+    return respond(res, {
+      network: NETWORK,
+      marketContract: nativeMarket.contractId,
+      index: "durable; every order re-verified by the market contract",
+      orders: await signedOrderIndex.list({
+        tokenId: url.searchParams.get("token"),
+      }),
+    });
+  }
   if (path === "/api/native/claim-signer" && method === "GET") {
     assert(
       awardSigner,
@@ -888,6 +1251,53 @@ async function api(req, res, url) {
   const player = auth(req);
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
+  if (
+    await challengeRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
+  if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await badgeRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await seasonRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (
+    await npcRollRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
+  if (
+    await actorRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
+  if (await traderRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (url.pathname === "/api/treasury/stnear" && req.method === "GET")
+    return respond(res, await stnearTreasury());
+  if (url.pathname === "/api/yield/markets" && req.method === "GET") {
+    assert(rheaMarkets, "Rhea Lend markets are not open here.", 503, "RHEA_DISABLED");
+    return respond(res, await rheaMarkets.read());
+  }
+  if (url.pathname === "/api/yield/position" && req.method === "GET") {
+    assert(yieldVaultReader, "The yield vault is not open here.", 503, "YIELD_VAULT_DISABLED");
+    return respond(res, await yieldVaultReader.forPlayer(db, player));
+  }
+  if (url.pathname === "/api/staker/liquid" && req.method === "GET") {
+    assert(liquidStake, "Liquid staking is not open here.", 503, "LIQUID_STAKE_DISABLED");
+    return respond(res, await liquidStake.forPlayer(db, player));
+  }
+  if (await npcRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (
+    await creatorBonusVoteRoutes.handle(req, res, url, {
+      player,
+      body,
+      respond,
+      assert,
+    })
   )
     return;
   if (
@@ -1193,6 +1603,16 @@ async function api(req, res, url) {
       "Sign in again to check this transaction.",
       401,
     );
+    // Wallet-signed market calls feed the signed-order index from the same
+    // final receipt. The index is advisory, so a failure here never blocks.
+    if (
+      signedOrderIndex &&
+      result?.confirmed &&
+      input?.quote?.receiverId === nativeMarket?.contractId
+    )
+      await signedOrderIndex
+        .recordTransaction(input.transactionHash, input.accountId)
+        .catch(() => {});
     return respond(res, result);
   }
   if (path === "/api/native/vaults/prepare" && method === "POST") {
@@ -1368,6 +1788,34 @@ async function api(req, res, url) {
       );
     return respond(res, { ...result, player: profile(player) });
   }
+  if (path === "/api/native/market/signer" && method === "GET") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    return respond(res, await nativeMarket.signer(url.searchParams.get("account")));
+  }
+  if (path === "/api/native/market/orders/status" && method === "POST") {
+    assert(signedOrderIndex, "Signed orders are not available yet.", 503);
+    const input = await body(req);
+    return respond(res, {
+      statuses: await signedOrderIndex.statuses(input.orders),
+    });
+  }
+  if (path === "/api/native/market/orders" && method === "POST") {
+    assert(nativeMarket, "The secured market is not available yet.", 503);
+    const input = await body(req);
+    assert(signedOrderIndex, "Signed orders are not available yet.", 503);
+    return respond(res, await signedOrderIndex.submit(input.order));
+  }
+  if (path === "/api/native/market/orders/events" && method === "POST") {
+    assert(signedOrderIndex, "Signed orders are not available yet.", 503);
+    const input = await body(req);
+    return respond(
+      res,
+      await signedOrderIndex.recordTransaction(
+        input.transactionHash,
+        input.accountId,
+      ),
+    );
+  }
   if (path === "/api/native/market/accounts" && method === "GET") {
     assert(nativeMarket, "The secured market is not available yet.", 503);
     const accounts = db
@@ -1508,7 +1956,10 @@ async function api(req, res, url) {
     );
     return respond(res, { player: profile(player) });
   }
-  if (path === "/api/me") return respond(res, { player: profile(player) });
+  if (path === "/api/me") {
+    if (testSeedActive) testSeed.grantKit(player);
+    return respond(res, { player: profile(player) });
+  }
   if (path === "/api/events") {
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -1535,7 +1986,11 @@ async function api(req, res, url) {
       });
     expireWorlds(db);
     const world = await ensureWorld(db, location, input.arena !== false);
-    return respond(res, worldView(db, world.id, player, query));
+    // layerId is added to the response only, never to the stored manifest.
+    return respond(res, {
+      ...worldView(db, world.id, player, query),
+      layerId: DEFAULT_LAYER.id,
+    });
   }
   if (path === "/api/world" && method === "GET") {
     const w = worldView(
@@ -1549,7 +2004,7 @@ async function api(req, res, url) {
       }),
     );
     assert(w, "This area could not be found. Refresh the map.", 404);
-    return respond(res, w);
+    return respond(res, { ...w, layerId: DEFAULT_LAYER.id });
   }
   if (path === "/api/coins/claim" && method === "POST") {
     const input = await body(req),
@@ -1570,8 +2025,10 @@ async function api(req, res, url) {
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/claim" && method === "POST") {
-    const input = await body(req),
-      result = game.claimQuest(db, player, input.questId, input.fix);
+    const input = await body(req);
+    // A guardian monster on duty locks its zone chest until you beat it.
+    monsterHunt?.chests.assertOpen(player, input.questId);
+    const result = game.claimQuest(db, player, input.questId, input.fix);
     emit("quest", { id: input.questId });
     return respond(res, { ...result, player: profile(player) });
   }
@@ -2020,6 +2477,31 @@ async function api(req, res, url) {
     });
     return res.end(svg);
   }
+  if (path.startsWith("/api/upstream-models/") && method === "GET") {
+    // Official Gotchiverse models for monsters and stations, fetched from one pinned source and digest-checked
+    // (server/upstream-models.mjs). Immutable per key, so browsers cache them.
+    const key = path.match(/^\/api\/upstream-models\/([a-z-]{3,32})\.fbx$/)?.[1];
+    assert(key && UpstreamModels.has(key), "Unknown model.", 404);
+    const rateKey = `upstream-model:${player}:${Math.floor(Date.now() / 60000)}`;
+    const count = (rates.get(rateKey) || 0) + 1;
+    rates.set(rateKey, count);
+    assert(count <= 30, "Please wait before loading more models.", 429);
+    let model;
+    try {
+      model = await upstreamModels.get(key);
+    } catch (error) {
+      assert(false, error.message, error.status || 502);
+    }
+    res.writeHead(200, {
+      "Content-Type": "application/octet-stream",
+      "Content-Length": model.bytes.length,
+      "Content-Security-Policy": "default-src 'none'; sandbox",
+      "X-Content-Type-Options": "nosniff",
+      ETag: `"${model.sha256}"`,
+      "Cache-Control": "private,max-age=86400,immutable",
+    });
+    return res.end(model.bytes);
+  }
   if (path.startsWith("/api/aavegotchi/wearable/") && method === "GET") {
     const id = path.match(
       /^\/api\/aavegotchi\/wearable\/([1-9]\d{0,4})\.svg$/,
@@ -2069,43 +2551,47 @@ async function api(req, res, url) {
     });
     return res.end(gotchi.svg);
   }
+  if (path === "/api/guide/hint" && method === "POST") {
+    // First-session coach: one grounded sentence for the player's current
+    // step, from the same live world the guide reads. No model, no quota.
+    const i = await body(req);
+    assert(typeof i.step === "string" && i.step.length <= 20, "Unknown step.");
+    const location = i.location ? point(i.location) : null;
+    const world =
+      typeof i.worldId === "string" && i.worldId.length <= 200
+        ? worldView(db, i.worldId, player)
+        : null;
+    return respond(res, { step: i.step, ...(guideHint(i.step, { world, location }) || { hint: null, factIds: [] }) });
+  }
   if (path === "/api/npc" && method === "POST") {
+    // Grounded guide: answers only from this player's live world and today's
+    // testnet day; a model may rephrase those facts, never add to them.
     const i = await body(req);
     assert(
       typeof i.question === "string" && i.question.length <= 300,
       "The question is too long.",
     );
-    let answer =
-      "Every adventure starts around the corner. Pick up street coins, visit a free place and open a chest. Half of the game yield funds coins and half funds places. GOLD here is practice GOLD.";
-    let source = "rules";
-    if (process.env.NEAR_AI_API_KEY && process.env.NEAR_AI_MODEL) {
-      const r = await fetch("https://cloud-api.near.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.NEAR_AI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.NEAR_AI_MODEL,
-          max_tokens: 250,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are the English-speaking QuestLayer guide. Give concise exploration advice in English. 1 NEAR=1000 GOLD. This is a demo; never transfer funds. Game yield is split 50% street coins and 50% zones. Never invent locations or rewards, request keys or claim spending authority.",
-            },
-            { role: "user", content: i.question },
-          ],
-        }),
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (r.ok) {
-        const j = await r.json();
-        answer = j.choices?.[0]?.message?.content || answer;
-        source = "near-ai";
-      }
-    }
-    return respond(res, { answer, source });
+    const location = i.location ? point(i.location) : null;
+    const world =
+      typeof i.worldId === "string" && i.worldId.length <= 200
+        ? worldView(db, i.worldId, player)
+        : null;
+    let native = null;
+    if (nativeRewards)
+      native = await Promise.race([
+        nativeRewards
+          .snapshot(player, location ? { location } : {})
+          .catch(() => null),
+        new Promise((done) => setTimeout(() => done(null), 3000)),
+      ]);
+    return respond(
+      res,
+      await guide.ask({
+        actor: player,
+        question: i.question,
+        facts: guideFacts({ world, native, location }),
+      }),
+    );
   }
   if (path === "/api/bounties" && method === "GET")
     return respond(res, {
@@ -2324,6 +2810,8 @@ const server = createServer(async (req, res) => {
 const worldPlanner = backgroundWorkersDisabled
   ? null
   : startWorldPlanner(db, { afterPreparation: () => retryStreetWorlds(db) });
+// Nightly quest flavour texts (docs/QUEST-FLAVOUR.md); never on a request path.
+const flavourWorker = backgroundWorkersDisabled ? null : startFlavourWorker(db);
 const rewardWorker =
   !backgroundWorkersDisabled &&
   nativeRewards &&
@@ -2331,6 +2819,10 @@ const rewardWorker =
     ? startRewardWorker(nativeRewards, {
         keyPath: process.env.REWARD_WORKER_KEY_PATH,
       })
+    : null;
+const badgeWorker =
+  !backgroundWorkersDisabled && badgeService && badgeService.settings.enabled
+    ? startBadgeWorker(badgeService, badgeChain)
     : null;
 const relayWorker =
   !backgroundWorkersDisabled && relayer
@@ -2342,10 +2834,48 @@ const pinWorker =
   socialRecords.pinAdapter
     ? startPinWorker(socialRecords, { intervalMs: 60000 })
     : null;
+const npcRollWorker =
+  !backgroundWorkersDisabled && npcRolls ? startNpcRollWorker(npcRolls) : null;
+const orderIndexWorker =
+  !backgroundWorkersDisabled && signedOrderIndex
+    ? startOrderIndexWorker(signedOrderIndex, { intervalMs: 30000 })
+    : null;
+// Trader keeper: settles orders, mints and escrows stock, sweeps profit above the float
+// into rewards fund_rewards("sponsor") and restores the float. It signs only
+// when the traders file carries the trader's own account key.
+const traderKeeper =
+  !backgroundWorkersDisabled && npcTraders && rewardsConfig?.contractId
+    ? startTraderKeeper(
+        createTraderKeeper({
+          service: npcTraders,
+          provider,
+          rewardsId: rewardsConfig.contractId,
+          // Starting stock: award-signed redeem_aura to the trader's own account.
+          awardSigner,
+          stock: process.env.NPC_TRADER_STOCK !== "0",
+          log: (entry) => entry.reports.some((r) => r.actions?.length || r.error) && console.log(JSON.stringify(entry)),
+        }),
+      )
+    : null;
 const creatorMoneyWorker =
   !backgroundWorkersDisabled && creatorMoney?.enabled
     ? startCreatorMoneyWorker(creatorMoney, { intervalMs: 30000 })
     : null;
+// Test world explorers walk every 10 s (presence counts only if updated in
+// the last 30 s); the buyer, reviewers and restocking run every 30 s.
+let testSeedTicks = 0;
+const testSeedWorker =
+  !backgroundWorkersDisabled && testSeedActive
+    ? setInterval(() => {
+        try {
+          testSeed.tickPresence();
+          if (testSeedTicks++ % 3 === 0) testSeed.tickEconomy();
+        } catch (e) {
+          console.error("Test seed tick failed", e?.message || e);
+        }
+      }, 10_000)
+    : null;
+testSeedWorker?.unref();
 let nextMediaPrune = 0;
 const maintenance = setInterval(() => {
   if (backgroundWorkersDisabled) return;
@@ -2378,10 +2908,16 @@ server.listen(port, process.env.HOST || "127.0.0.1", () =>
 );
 async function close() {
   clearInterval(maintenance);
+  if (testSeedWorker) clearInterval(testSeedWorker);
   await worldPlanner?.stop();
   await rewardWorker?.stop();
+  flavourWorker?.stop();
   await relayWorker?.stop?.();
   await creatorMoneyWorker?.stop?.();
+  orderIndexWorker?.stop();
+  npcRollWorker?.stop();
+  traderKeeper?.stop();
+  badgeWorker?.stop();
   await pinWorker?.stop?.();
   for (const r of listeners) r.end();
   server.close(() => {

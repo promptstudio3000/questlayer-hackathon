@@ -104,9 +104,12 @@ export function createCreatorApi({
   community,
   safety,
   completion,
+  drafter = null,
   authenticate,
   origin,
   enabled = false,
+  // Optional async gate run before a start (paid access on chain).
+  admitStart = null,
 }) {
   const siteOrigin = new URL(origin).origin;
   fail(
@@ -152,7 +155,39 @@ export function createCreatorApi({
         .filter(Boolean)
         .map((part) => decodeURIComponent(part));
       let result;
-      if (request.method === "GET") {
+      if (parts[0] === "ai") {
+        // Bounded AI drafting: suggestions only, never a saved or published quest.
+        fail(drafter, "AI drafting is not configured.", "AI_DRAFT_DISABLED", 404);
+        if (request.method === "GET" && suffix === "/ai/status") {
+          query(url, []);
+          result = drafter.status(actor);
+        } else if (request.method === "GET" && suffix === "/ai/places") {
+          for (const name of url.searchParams.keys())
+            fail(
+              name === "city" && url.searchParams.getAll(name).length === 1,
+              "Unsupported or repeated query.",
+              "CREATOR_INPUT",
+              400,
+            );
+          result = drafter.places(url.searchParams.get("city"));
+        } else if (request.method === "POST" && suffix === "/ai/quest-drafts") {
+          query(url, []);
+          const body = await jsonBody(request);
+          const allowed = ["cityId", "candidateId", "template", "stops", "notes", "language"];
+          fail(
+            ["cityId", "candidateId", "template"].every((k) => Object.hasOwn(body, k)) &&
+              Object.keys(body).every((k) => allowed.includes(k)),
+            "Unexpected or missing draft fields.",
+            "CREATOR_INPUT",
+            400,
+          );
+          result = await drafter.draft({ ...body, actor });
+        } else
+          return response(404, {
+            error: "Creator route not found.",
+            code: "CREATOR_NOT_FOUND",
+          });
+      } else if (request.method === "GET") {
         const options = query(
           url,
           parts.length === 1 && parts[0] === "quests"
@@ -302,6 +337,8 @@ export function createCreatorApi({
               code: "CREATOR_NOT_FOUND",
             });
           fields(body, action[1]);
+          if (action[0] === "start" && admitStart)
+            await admitStart(actor, parts[1], community.publicQuest(actor, parts[1]));
           result = lifecycle[action[0]]({ actor, questId: parts[1], ...body });
         } else
           return response(404, {

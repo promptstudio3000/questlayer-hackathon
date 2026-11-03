@@ -27,3 +27,4 @@ dev/reference-wearable-*.svg
 runtime.env
 *.tgz
 *.tar.gz
+build-id.txt

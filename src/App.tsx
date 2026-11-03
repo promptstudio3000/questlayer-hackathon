@@ -1,15 +1,48 @@
+import { EmptyState } from "./EmptyState";
+import { XpBar, useLevelTable } from "./XpBar";
+import { levelProgress } from "./levels";
 import {
   AdventureResultDialog,
   AdventureResultResume,
   AdventureResultHistoryButton,
-} from "./AdventureResults";
+  PendingNativeTransactions,
+  CreatorCommunity,
+  CommunityBonusVote,
+  MapNotes,
+  NativeCollectionControl,
+  NativeTasks,
+  Inventory,
+  AccountSessions,
+  DeviceKeys,
+  NativeLevelRewards,
+  NativeMarketPanel,
+  NativeExpeditions,
+  NativeEconomyPanel,
+  RewardFundingPage,
+  TodaysPot,
+  SecureAndShare,
+  FuelTheCity,
+  NativeStaking,
+  AuraClaims,
+  WispRolls,
+  NativeWardrobe,
+  NativeProfilePanel,
+  preloadPanels,
+  ActorSheet,
+  BadgeBook,
+} from "./lazy-panels";
+import type { RollCall } from "./WispRolls";
+// Styles of the split-off screens stay in the main stylesheet, in their old
+// order, so nothing shifts while a screen's script is still loading.
+import "./adventure-results.css";
+import "./pending-native-transactions.css";
+import "./creator-community.css";
+import "./community-bonus-vote.css";
 import { useAdventureResults } from "./useAdventureResults";
 import {
   adventureItemForEquip,
   type AdventureResult,
 } from "./adventure-results";
-import { PendingNativeTransactions } from "./PendingNativeTransactions";
-import { CreatorCommunity } from "./CreatorCommunity";
 import {
   assertCreatorQuote,
   type CreatorPaymentQuote,
@@ -33,11 +66,11 @@ import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
 import { sendConfirmedNative } from "./confirmed-native-transaction";
 import { walletSigner, type NativeSigner } from "./native-signer";
 import { useInvisibleAccount } from "./useInvisibleAccount";
-import { MapNotes } from "./MapNotes";
+import "./map-notes.css";
 import { useNativeGame } from "./useNativeGame";
 import { useNativeAutoCollect } from "./useNativeAutoCollect";
-import { NativeCollectionControl } from "./NativeCollectionControl";
-import { NativeTasks } from "./NativeTasks";
+import "./native-collection.css";
+import "./native-tasks.css";
 import {
   assertTaskQuote,
   type TaskRequest,
@@ -45,29 +78,28 @@ import {
 } from "./native-task-quote";
 import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
-import { Inventory } from "./Inventory";
-import { AccountSessions } from "./AccountSessions";
-import { DeviceKeys } from "./DeviceKeys";
-import {
-  restoreWithPasskey,
-  revokeAccountKey,
-  setupPasskeyRecovery,
-  signOutOtherSessions,
-} from "./account-recovery";
+import type { ActorView } from "./actor-types";
+import "./inventory.css";
 import { indexedDbKeyStore } from "./player-key";
-import { NativeLevelRewards, type NativeMilestone } from "./NativeLevelRewards";
+import type { NativeMilestone } from "./NativeLevelRewards";
 import {
   assertNativeLevelClaim,
   type NativeLevelClaim,
 } from "./native-level-claim";
-import { NativeMarketPanel } from "./NativeMarketPanel";
-import { NativeExpeditions } from "./NativeExpeditions";
-import { NativeEconomyPanel } from "./NativeEconomyPanel";
-import { RewardFundingPage, TodaysPot } from "./RewardFunding";
-import { SecureAndShare } from "./SecureAndShare";
+import type { MarketCall } from "./SignedOrdersPanel";
+import type { ReviewedNativeTransaction } from "./confirmed-native-transaction";
+import {
+  deviceOrderSigner,
+  walletOrderSigner,
+  type MessageWallet,
+  type OrderSigner,
+} from "./order-signers";
+import "./play-ui.css";
+import "./reward-funding.css";
+import "./secure-share.css";
 import "./offline-gate.css";
-import { FuelTheCity } from "./FuelTheCity";
-import { NativeStaking } from "./NativeStaking";
+import "./fuel-the-city.css";
+import "./native-staking.css";
 import {
   assertVaultQuote,
   type VaultQuote,
@@ -75,11 +107,10 @@ import {
 } from "./native-vault-quote";
 import "./styles.css";
 import "./theme-accents.css";
+import { HudXpRing } from "./HudXpRing";
 import type { NativeTradeRequest } from "./types";
-import { AuraClaims } from "./AuraClaims";
 import type { NativeAuraClaim } from "./types";
-import { NativeWardrobe, nativeAppearanceItems } from "./NativeWardrobe";
-import { NativeProfilePanel } from "./NativeProfile";
+import { nativeAppearanceItems } from "./native-appearance";
 import { publishNoteRecord, type NoteRecordKind } from "./note-record";
 import type { NativeProfileQuote } from "./types";
 import { assertProfileQuote } from "./native-profile-quote";
@@ -136,15 +167,36 @@ import {
   ArrowClockwise,
   WifiSlash,
   Flame,
+  Vibrate,
+  SpeakerHigh,
+  PersonSimpleRun,
+  BookOpen,
 } from "@phosphor-icons/react";
+import { Details, ScreenTabPanel, ScreenTabs } from "./ScreenTabs";
+import {
+  BAG_TABS,
+  COMMUNITY_TABS,
+  MARKET_TABS,
+  PROFILE_TABS,
+  ProfileHero,
+  ProfileTile,
+  SettingsSwitch,
+  communityTabOf,
+  creatorSection,
+  profileTabOf,
+  type CommunityTab,
+  type ProfileTab,
+} from "./screens";
 import {
   startRegistration,
   startAuthentication,
 } from "@simplewebauthn/browser";
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
+import { DailyBoard } from "./DailyBoard";
+import { SeasonCard } from "./Season";
 import { Character } from "./Character";
-import { DeferredGameMap as GameMap } from "./DeferredGameMap";
+import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
 import { Ghost, AuraArt } from "./Ghost";
 import type {
@@ -167,6 +219,17 @@ import {
   onNearNetwork,
 } from "./near-network.ts";
 import { nearestDiscovery } from "./nearest-discovery.ts";
+import { FirstSessionCoach, useFirstSession } from "./FirstSession";
+import type { FirstStepId } from "./first-session";
+import {
+  cue,
+  loadFeedbackPreferences,
+  prefersReducedMotion,
+  previewSound,
+  setFeedbackPreferences,
+  subscribeFeedback,
+  type FeedbackPreferences,
+} from "./feedback";
 import {
   WALK_CAP_M,
   WALK_STEP_MS,
@@ -274,8 +337,25 @@ export default function App() {
     [presenceUntil, setPresenceUntil] = useState(0),
     [others, setOthers] = useState<NearbyExplorer[]>([]),
     [showNpc, setShowNpc] = useState(false),
+    [actorOpen, setActorOpen] = useState<ActorView | null>(null),
     [now, setNow] = useState(Date.now()),
     [menu, setMenu] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackPreferences>(() =>
+    loadFeedbackPreferences(),
+  );
+  useEffect(() => subscribeFeedback(setFeedback), []);
+  // Once there is a player, fetch the map and the split-off screens in the
+  // background so later taps do not wait for the network.
+  const hasPlayer = !!player;
+  useEffect(() => {
+    if (!hasPlayer) return;
+    void preloadGameMap().catch(() => {});
+    const idle =
+      window.requestIdleCallback ??
+      ((f: () => void) => window.setTimeout(f, 200));
+    idle(() => preloadPanels());
+  }, [hasPlayer]);
+  const firstSession = useFirstSession(player);
   const world =
     worldOwner.current === player?.id && worldData?.arena === arena
       ? worldData
@@ -289,8 +369,16 @@ export default function App() {
     creatorCapability?.playerId === player?.id &&
     creatorCapability?.enabled === true;
   const creatorPlaces = useCreatorPlaces(player?.id ?? null);
-  const { tab, walletView, sheetExpanded, taskRealm, notesView, creatorView } =
-    navigation;
+  const {
+    tab,
+    walletView,
+    sheetExpanded,
+    taskRealm,
+    notesView,
+    creatorView,
+    profileView,
+    marketView,
+  } = navigation;
   const navigationContext = useRef({ signature: "", revision: 0 });
   const navigationSignature = JSON.stringify([
     tab,
@@ -299,6 +387,8 @@ export default function App() {
     taskRealm,
     notesView,
     creatorView,
+    profileView,
+    marketView,
   ]);
   if (navigationContext.current.signature !== navigationSignature)
     navigationContext.current = {
@@ -310,7 +400,36 @@ export default function App() {
     setSheetExpanded = navigation.setter("sheetExpanded"),
     setTaskRealm = navigation.setter("taskRealm"),
     setNotesView = navigation.setter("notesView"),
-    setCreatorView = navigation.setter("creatorView");
+    setCreatorView = navigation.setter("creatorView"),
+    setMarketView = navigation.setter("marketView");
+  const profileTab = profileTabOf(tab, profileView);
+  const showProfileTabs = tab === "settings" || tab === "fuel" || tab === "wallet";
+  function chooseProfileTab(next: ProfileTab) {
+    if (next === "stake") setTab("fuel");
+    else if (next === "rewards") setTab("wallet");
+    else navigation.update({ tab: "settings", profileView: next });
+  }
+  const communityTab = communityTabOf(tab, creatorView);
+  const showCommunityTabs =
+    tab === "community" || tab === "bounties" || tab === "messages";
+  function chooseCommunityTab(next: CommunityTab) {
+    if (next === "tasks") setTab("bounties");
+    else if (next === "notes") setTab("messages");
+    else
+      navigation.update({
+        tab: "community",
+        creatorView:
+          creatorSection(creatorView) === next
+            ? creatorView
+            : { page: next === "creators" ? "creators" : "community" },
+      });
+  }
+  // Locked staker chips (src/LockedChip.tsx) open the stake screen.
+  useEffect(() => {
+    const open = () => setTab("fuel");
+    window.addEventListener("questlayer:open-stake", open);
+    return () => window.removeEventListener("questlayer:open-stake", open);
+  }, [setTab]);
   const [nativeWardrobe, setNativeWardrobe] =
       useState<NativeWardrobeState | null>(null),
     [nativeError, setNativeError] = useState("");
@@ -634,6 +753,9 @@ export default function App() {
     : (player?.availableXp ?? player?.xp ?? null);
   const hudLevel =
     hudXp === null ? null : 1 + Math.floor(Math.sqrt(Number(hudXp) / 100));
+  const levelTable = useLevelTable();
+  const hudProgress =
+    hudXp === null ? null : levelProgress(Number(hudXp), levelTable);
   const nextWorldRefresh = useRef(0),
     collecting = useRef(new Set<string>()),
     collectionRun = useRef<AbortController | null>(null),
@@ -678,6 +800,39 @@ export default function App() {
   function notify(text: string, error = false) {
     setToast({ text, error });
   }
+  // Place badges (docs/BADGES.md): with real GPS on, check the fix against
+  // the notable places every 30 s or after ~40 m of movement. Cosmetic only.
+  const badgeCheck = useRef<{ at: number; lat: number; lng: number } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!player || arena || !fix) return;
+    const last = badgeCheck.current;
+    const moved = last
+      ? Math.hypot(
+          (fix.lat - last.lat) * 111_000,
+          (fix.lng - last.lng) * 111_000 * Math.cos((fix.lat * Math.PI) / 180),
+        )
+      : Infinity;
+    if (last && Date.now() - last.at < 30_000 && moved < 40) return;
+    if (last && Date.now() - last.at < 8_000) return;
+    badgeCheck.current = { at: Date.now(), lat: fix.lat, lng: fix.lng };
+    api<{ earned: { name: string; nameCs: string; icon: string }[] }>(
+      "/badges/check",
+      { fix },
+    )
+      .then((r) => {
+        if (!r.earned?.length) return;
+        notify(
+          `Badge earned: ${r.earned.map((b) => `${b.icon} ${b.nameCs || b.name}`).join(", ")}`,
+        );
+        window.dispatchEvent(new Event("questlayer:badges"));
+      })
+      .catch(() => {
+        /* Badges are optional; a weak fix just tries again later. */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fix, arena, player?.id]);
   function updateOwnedPlayer(next: Player) {
     if (latest.current.player?.id !== next.id) return;
     playerReads.current.invalidate();
@@ -703,6 +858,7 @@ export default function App() {
         (e.code === "WALLET_CANCELLED" || e.code === "CANCELLED")
       )
         return undefined;
+      cue("error");
       notify(
         e instanceof Error ? e.message : "Something went wrong. Try again.",
         true,
@@ -950,6 +1106,7 @@ export default function App() {
               w ? { ...w, coins: w.coins.filter((c) => c.id !== coin.id) } : w,
             );
             if (!result.alreadyClaimed && !latest.current.nativePlay) {
+              cue("coin");
               pickupFeedback.confirm(
                 demoPickupScope(state.player.id, state.world.id, state.arena),
                 {
@@ -1153,15 +1310,96 @@ export default function App() {
   useEffect(() => {
     if (!arena || nativePlay) stopWalk();
   }, [arena, nativePlay]);
-  const [streetFindTarget, setStreetFindTarget] = useState<string | null>(
-    null,
-  );
+  const [streetFindTarget, setStreetFindTarget] = useState<string | null>(null);
   function goToStreetFind(coin: { id: string; lat: number; lng: number }) {
     setStreetFindTarget(coin.id);
     if (arena && !nativePlay) move(coin);
     else {
       setFollow(false);
       setOverview(false);
+    }
+  }
+  // First-session coach: every step points at an existing game action.
+  function nearestCoin(find: boolean) {
+    const coins = (world?.coins || []).filter(
+      (c) => !c.claimant && !!c.find === find,
+    );
+    let best: (typeof coins)[number] | null = null;
+    for (const c of coins)
+      if (!best || meters(position, c) < meters(position, best)) best = c;
+    return best;
+  }
+  function nearestChest() {
+    if (!world || !player) return null;
+    const zones = new Map(world.zones.map((z) => [z.id, z]));
+    let best: { quest: Quest; zone: Zone; d: number } | null = null;
+    for (const q of world.quests) {
+      const zone = q.zone_id ? zones.get(q.zone_id) : undefined;
+      if (
+        !zone ||
+        q.kind !== "chest" ||
+        q.completed ||
+        q.placeStatus === "closed" ||
+        zone.placeStatus === "closed" ||
+        q.tier > player.tier ||
+        q.opens_at > now ||
+        q.closes_at <= now
+      )
+        continue;
+      const d = meters(position, questPoint(q));
+      if (!best || d < best.d) best = { quest: q, zone, d };
+    }
+    return best;
+  }
+  function runFirstStep(step: FirstStepId) {
+    if (!player) return;
+    if (nativePlay) chooseLedger(false);
+    setTab("explore");
+    if (step !== "chest") setSelected(null);
+    if (step === "find" || step === "coin") {
+      const coin = nearestCoin(step === "find") || nearestCoin(step !== "find");
+      if (!coin) {
+        setSheetExpanded(true);
+        return;
+      }
+      setSheetExpanded(false);
+      if (coin.find) goToStreetFind(coin);
+      else if (arena) move(coin);
+      else setFollow(false);
+      return;
+    }
+    if (step === "chest") {
+      const chest = nearestChest();
+      if (chest) selectZone(chest.zone, chest.quest.id);
+      else setSheetExpanded(true);
+      return;
+    }
+    if (step === "aura") {
+      const aura = [...player.inventory]
+        .reverse()
+        .find((i) => i.kind === "aura" && !i.equipped && !i.native_claim_state);
+      if (!aura) {
+        setTab("inventory");
+        return;
+      }
+      void action("equip", async () => {
+        const r = await api<{ player: Player }>("/equip", {
+          itemId: aura.id,
+          desiredEquipped: true,
+        });
+        updateOwnedPlayer(r.player);
+        setSheetExpanded(false);
+        setFollow(true);
+        notify(`Equipped ${aura.name}. Your new glow is on the map.`);
+      });
+      return;
+    }
+    if (step === "secure") {
+      const reward = adventureResults.results.find(
+        (r) => r.reward?.item?.kind === "aura",
+      );
+      if (reward) inspectAdventureResult(reward.id);
+      else setTab("inventory");
     }
   }
   function move(p: Point) {
@@ -1171,9 +1409,7 @@ export default function App() {
     setFollow(true);
     const from = latest.current.position,
       { point } = cappedWalkTarget(from, p),
-      steps = matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? [point]
-        : walkSteps(from, point);
+      steps = prefersReducedMotion() ? [point] : walkSteps(from, point);
     setPosition(steps.shift()!);
     if (!steps.length) return;
     walkTimer.current = setInterval(() => {
@@ -1519,6 +1755,89 @@ export default function App() {
     });
     return result === true;
   }
+  // Signed-order market calls. The explorer's device key signs silently: free
+  // calls are relayed and money moves in self-paid transactions. A linked
+  // external wallet signs orders with signMessage and sends calls through the
+  // reviewed wallet flow, which confirms them on the server.
+  function marketTransaction(
+    signerId: string,
+    call: MarketCall,
+  ): ReviewedNativeTransaction {
+    if (!onNearNetwork(call.receiverId))
+      throw Error("This market is not on the game network.");
+    return {
+      network: NEAR_NETWORK,
+      signerId,
+      receiverId: call.receiverId,
+      actions: [
+        {
+          type: "FunctionCall",
+          params: {
+            methodName: call.methodName,
+            args: call.args,
+            gas: call.gas,
+            deposit: call.deposit,
+          },
+        },
+      ],
+    };
+  }
+  async function marketCall(
+    send: (signerId: string) => Promise<string | null | void>,
+    signerId: string,
+  ): Promise<string | null> {
+    let hash: string | null = null;
+    const result = await action("native-market", async () => {
+      hash = (await send(signerId)) || null;
+      await refreshNative(true);
+      return true;
+    });
+    if (result !== true)
+      throw Error("The action was not sent. Nothing changed.");
+    return hash;
+  }
+  const walletForOrders = useRef<{
+    accountId: string;
+    wallet: Awaited<ReturnType<typeof chooseNearAccount>>["wallet"];
+  } | null>(null);
+  async function orderWallet(accountId: string) {
+    if (walletForOrders.current?.accountId !== accountId) {
+      const chosen = await chooseNearAccount();
+      if (chosen.accountId !== accountId)
+        throw Error(`Choose the wallet for ${accountId} to sign this order.`);
+      walletForOrders.current = chosen;
+    }
+    return walletForOrders.current!.wallet;
+  }
+  const orderSigner: OrderSigner | null =
+    invisible.signer && invisible.deviceKey?.accountId
+      ? deviceOrderSigner(invisible.deviceKey, (call) =>
+          marketCall(
+            (id) =>
+              invisible.signer!.send(marketTransaction(id, call), {
+                playerId: player!.id,
+              }),
+            invisible.signer!.accountId,
+          ),
+        )
+      : player?.wallets[0]
+        ? walletOrderSigner(
+            player.wallets[0].account_id,
+            async () =>
+              (await orderWallet(
+                player.wallets[0].account_id,
+              )) as unknown as MessageWallet,
+            (call) =>
+              marketCall(async (id) => {
+                const wallet = await orderWallet(id);
+                await walletSigner(wallet, id).send(
+                  marketTransaction(id, call),
+                  { playerId: player!.id },
+                );
+                return null;
+              }, player!.wallets[0].account_id),
+          )
+        : null;
   async function withdrawNativeReward(
     expectedAccount: string,
     contractId: string,
@@ -1710,7 +2029,8 @@ export default function App() {
   ): Promise<boolean> {
     const account = recordAccount?.accountId;
     const result = await action("note-record", async () => {
-      if (!account || !player) throw Error("Your explorer account is not ready yet.");
+      if (!account || !player)
+        throw Error("Your explorer account is not ready yet.");
       const { signer, accountId } = await signerForAccount(account);
       if (accountId !== account)
         throw Error("Choose the linked account shown for this record.");
@@ -1740,6 +2060,7 @@ export default function App() {
         accountId = invisible.accountId;
       if (!deviceKey || !accountId)
         throw Error("Your explorer account is still being prepared.");
+      const { setupPasskeyRecovery } = await import("./account-recovery");
       await setupPasskeyRecovery({
         deviceKey,
         accountId,
@@ -1760,12 +2081,14 @@ export default function App() {
       if (!deviceKey || !accountId)
         throw Error("Your explorer account is still being prepared.");
       try {
+        const { revokeAccountKey } = await import("./account-recovery");
         await revokeAccountKey({ deviceKey, accountId, publicKey, api });
       } finally {
         await invisible.refresh().catch(() => undefined);
       }
       let signedOut = "";
       if (signOutOthers) {
+        const { signOutOtherSessions } = await import("./account-recovery");
         const r = await signOutOtherSessions({ deviceKey, accountId, api });
         signedOut = ` ${r.revokedSessions} other session(s) signed out.`;
       }
@@ -1776,6 +2099,7 @@ export default function App() {
   }
   async function restoreThisDevice() {
     const ok = await action("recovery-restore", async () => {
+      const { restoreWithPasskey } = await import("./account-recovery");
       const restored = await restoreWithPasskey<Player>({
         store: indexedDbKeyStore(),
         credentials: navigator.credentials,
@@ -1916,6 +2240,32 @@ export default function App() {
       return true;
     });
     return ok === true;
+  }
+  // Wisp rolls take no deposit, so the explorer account relays them silently.
+  async function sendWispRoll(call: RollCall) {
+    const managed = invisible.signer;
+    if (!managed) throw Error("Your explorer account is not ready yet.");
+    if (!onNearNetwork(call.receiverId) || call.deposit !== "0")
+      throw Error("This roll is not on the game network.");
+    await managed.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: managed.accountId,
+        receiverId: call.receiverId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: call.methodName,
+              args: call.args,
+              gas: call.gas,
+              deposit: "0",
+            },
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
   }
   async function mintEarnedAura(item: Item): Promise<boolean> {
     const done = await action("native-claim", async () => {
@@ -2204,6 +2554,7 @@ export default function App() {
           adventureResults.isCurrentInspection(inspection) &&
           navigationContext.current.revision === navigationRevision;
         if (sameView && r.result) adventureResults.accept(r.result);
+        if (!r.replayed && !r.awaiting) cue(r.item ? "reward" : "step");
         if (sameView && r.awaiting)
           notify(
             `Stop ${r.progress?.completed} of ${r.progress?.total} confirmed. Walk to the next stop.`,
@@ -2269,6 +2620,19 @@ export default function App() {
     !nativePlay && streetFindTarget
       ? world?.coins.find((c) => c.id === streetFindTarget && c.find) || null
       : null;
+  const coachActive = firstSession.visible && !nativePlay;
+  const coachStep = coachActive ? firstSession.progress.current?.id : undefined;
+  const coachChest = coachStep === "chest" ? nearestChest() : null;
+  const coachLabel =
+    coachStep === "chest"
+      ? coachChest
+        ? coachChest.d > 25
+          ? "Walk to the chest"
+          : "Open the chest"
+        : "See what's open"
+      : coachStep === "find" && !nearestCoin(true)
+        ? "Walk to a coin"
+        : null;
   const zoneQuests = (world?.quests || []).filter(
     (q) =>
       q.zone_id === selected?.id ||
@@ -2285,7 +2649,11 @@ export default function App() {
       ? nativePlay
         ? "Nearby walks"
         : "Nearby discoveries"
-      : nav.find((n) => n.id === tab)?.label ||
+      : showProfileTabs
+        ? "Profile"
+        : showCommunityTabs
+          ? "Community"
+          : nav.find((n) => n.id === tab)?.label ||
         {
           messages: "Map notes",
           bounties: "Community tasks",
@@ -2293,7 +2661,7 @@ export default function App() {
           settings: "Settings",
           fund: "Game economy",
           funding: "How rewards are funded",
-          fuel: "Fuel the city",
+          fuel: "Fuel the prize pool",
           expeditions: "Nearby walks",
           inventory: "Inventory",
           market: "Market",
@@ -2302,77 +2670,87 @@ export default function App() {
         "QuestLayer";
   return (
     <div className="app-shell">
-      <GameMap
-        playerTier={nativePlay ? nativeGame.state?.access?.tier : player?.tier}
-        now={now}
-        map3D={!!player && map3D}
-        sheetExpanded={sheetExpanded}
-        panelMode={tab}
-        onCoin={
-          nativePlay
-            ? (id) => {
-                const coin = nativeGame.state?.day?.coins.find(
-                  (c) => `native-coin:${c.index}` === id,
-                );
-                if (!coin) return;
-                nativeObjective.select("coin", coin.index);
-                setTab("expeditions");
-                setSheetExpanded(true);
-                setFollow(false);
-              }
-            : undefined
-        }
-        onQuest={(id) =>
-          nativePlay
-            ? chooseNativeQuest(Number(id.split(":")[1]))
-            : chooseZoneQuest(id)
-        }
-        overview={overview}
-        focusZone={selected}
-        nativeTarget={
-          nativeTarget ||
-          (findTarget
-            ? {
-                lat: findTarget.lat,
-                lng: findTarget.lng,
-                label: `Street find · +${world?.streetFindXp ?? 15} XP`,
-              }
-            : null)
-        }
-        nativeTargetKind={
-          nativePlay
-            ? nativeObjective.reference?.kind === "coin"
-              ? "coin"
-              : "route"
-            : "discovery"
-        }
-        world={displayWorld}
-        position={position}
-        arena={arena && !nativePlay}
-        globe={globe}
-        equipped={equipped}
-        others={others}
-        skinUrl={
-          player?.appearance?.originTokenId
-            ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
-            : undefined
-        }
-        onMove={move}
-        onZone={(z) =>
-          nativePlay
-            ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
-            : selectZone(z)
-        }
-        follow={follow}
-        onPan={() => setFollow(false)}
-        creatorPlaces={creatorPlaces}
-        onCreatorPlace={(questId) => {
-          setTab("community");
-          setCreatorView({ page: "quest", questId });
-          setSheetExpanded(true);
-          setFollow(false);
-        }}
-      />
+      {player ? (
+        <GameMap
+          playerTier={
+            nativePlay ? nativeGame.state?.access?.tier : player?.tier
+          }
+          now={now}
+          map3D={!!player && map3D}
+          sheetExpanded={sheetExpanded}
+          panelMode={tab}
+          onCoin={
+            nativePlay
+              ? (id) => {
+                  const coin = nativeGame.state?.day?.coins.find(
+                    (c) => `native-coin:${c.index}` === id,
+                  );
+                  if (!coin) return;
+                  nativeObjective.select("coin", coin.index);
+                  setTab("expeditions");
+                  setSheetExpanded(true);
+                  setFollow(false);
+                }
+              : undefined
+          }
+          onQuest={(id) =>
+            nativePlay
+              ? chooseNativeQuest(Number(id.split(":")[1]))
+              : chooseZoneQuest(id)
+          }
+          overview={overview}
+          focusZone={selected}
+          nativeTarget={
+            nativeTarget ||
+            (findTarget
+              ? {
+                  lat: findTarget.lat,
+                  lng: findTarget.lng,
+                  label: `Street find · +${world?.streetFindXp ?? 15} XP`,
+                }
+              : null)
+          }
+          nativeTargetKind={
+            nativePlay
+              ? nativeObjective.reference?.kind === "coin"
+                ? "coin"
+                : "route"
+              : "discovery"
+          }
+          world={displayWorld}
+          position={position}
+          arena={arena && !nativePlay}
+          globe={globe}
+          equipped={equipped}
+          others={others}
+          skinUrl={
+            player?.appearance?.originTokenId
+              ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
+              : undefined
+          }
+          onMove={move}
+          onZone={(z) =>
+            nativePlay
+              ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
+              : selectZone(z)
+          }
+          follow={follow}
+          onPan={() => setFollow(false)}
+          creatorPlaces={creatorPlaces}
+          onCreatorPlace={(questId) => {
+            setTab("community");
+            setCreatorView({ page: "quest", questId });
+            setSheetExpanded(true);
+            setFollow(false);
+          }}
+          actorsWorldId={world?.id || null}
+          onActor={setActorOpen}
+        />
+      ) : (
+        // MapLibre and the map style load only after the name step, so the
+        // welcome screen ships without them (see scripts/check-bundle-budget.mjs).
+        <div className="game-map map-placeholder" aria-hidden="true" />
+      )}
       <div className="map-vignette" />
       <aside className="nav-rail">
         <button
@@ -2422,6 +2800,11 @@ export default function App() {
         <div className="topbar-right">
           {player && (
             <>
+              <DailyBoard
+                worldId={world?.id}
+                refreshKey={`${player.xp}:${player.history?.[0]?.id ?? ""}`}
+                onClaimed={() => void me()}
+              />
               <button
                 className="balance-pill"
                 onClick={() => {
@@ -2447,23 +2830,39 @@ export default function App() {
               <button
                 ref={profileButton}
                 className="profile-pill"
-                aria-label="Explorer profile"
+                aria-label={hudProgress ? undefined : "Explorer profile"}
                 aria-expanded={menu}
                 aria-controls="explorer-profile"
                 onClick={() => setMenu((v) => !v)}
               >
-                <Character
-                  items={appearanceItems}
-                  originTokenId={player.appearance.originTokenId}
-                  compact
-                />
-                <span>
-                  <b>{player.name}</b>
-                  <small>
-                    {hudLevel !== null ? `Level ${hudLevel}` : "Explorer"}
-                  </small>
-                </span>
-                <span className="level-bubble">{hudLevel ?? "—"}</span>
+                {hudProgress ? (
+                  <HudXpRing
+                    level={hudProgress.level}
+                    xp={hudProgress.xp}
+                    levelStartXp={hudProgress.levelStartXp}
+                    nextLevelXp={hudProgress.nextLevelXp}
+                    ring={hudProgress.ring}
+                  >
+                    <Character
+                      items={appearanceItems}
+                      originTokenId={player.appearance.originTokenId}
+                      compact
+                    />
+                    <span className="sr-only">, explorer profile</span>
+                  </HudXpRing>
+                ) : (
+                  <>
+                    <Character
+                      items={appearanceItems}
+                      originTokenId={player.appearance.originTokenId}
+                      compact
+                    />
+                    <span>
+                      <b>{player.name}</b>
+                      <small>Explorer</small>
+                    </span>
+                  </>
+                )}
               </button>
             </>
           )}
@@ -2571,6 +2970,18 @@ export default function App() {
               <ArrowRight size={20} aria-hidden="true" />
             </button>
           )}
+          {tab === "explore" &&
+            coachActive &&
+            !(selected && coachStep === "chest") && (
+              <FirstSessionCoach
+                session={firstSession}
+                worldId={world?.id}
+                position={position}
+                busy={!!busy}
+                onAction={runFirstStep}
+                actionLabel={coachLabel}
+              />
+            )}
           {tab === "explore" && selected && (
             <button
               className="compact-selection"
@@ -2630,33 +3041,93 @@ export default function App() {
               </button>
             )}
           </div>
+          {showProfileTabs && (
+            <ScreenTabs
+              label="Profile"
+              idBase="profile"
+              tabs={PROFILE_TABS}
+              value={profileTab}
+              onChange={chooseProfileTab}
+              withPanel={tab !== "wallet"}
+            />
+          )}
+          {showCommunityTabs && (
+            <ScreenTabs
+              label="Community"
+              idBase="community"
+              tabs={COMMUNITY_TABS}
+              value={communityTab}
+              onChange={chooseCommunityTab}
+            />
+          )}
+          {(tab === "inventory" || tab === "market") && (
+            <ScreenTabs
+              label="Inventory"
+              idBase="bag"
+              tabs={BAG_TABS}
+              value={tab === "market" ? "market" : "items"}
+              onChange={(next) => setTab(next === "market" ? "market" : "inventory")}
+            />
+          )}
           {tab === "explore" && !selected && !nativePlay && (
             <>
-              {recommendedFind && !nativeTarget && !adventureNotice && (
-                <button
-                  className="recommended-quest"
-                  onClick={() => goToStreetFind(recommendedFind.coin)}
-                >
-                  <span className="recommended-art">
-                    <GameObjectArt kind="discovery" size={32} />
-                  </span>
-                  <span>
-                    <small>Nearest find</small>
-                    <strong>
-                      Street find · +{world?.streetFindXp ?? 15} XP
-                    </strong>
-                    <span>
-                      On a mapped path ·{" "}
-                      {distanceLabel(recommendedFind.distance)}
-                      {arena && recommendedFind.distance > WALK_CAP_M
-                        ? ` · walk in ${Math.ceil(recommendedFind.distance / WALK_CAP_M)} steps`
-                        : ""}
-                    </span>
-                  </span>
-                  <ArrowRight size={20} />
-                </button>
+              {!world?.zones.length &&
+                !recommendation &&
+                world &&
+                world.poiQuests?.status === "empty" && (
+                  <EmptyState art="place" title="Nothing here yet" status>
+                    This area has no checked public places for quests today.
+                    Street coins still follow mapped paths.
+                  </EmptyState>
+                )}
+              {!world?.zones.length &&
+                !recommendation &&
+                world &&
+                world.poiQuests?.status !== "empty" && (
+                <EmptyState art="place" title="Nothing open right here yet" status>
+                  Today's discoveries are still being placed. Pull the map to
+                  look around, or check back in a few minutes.
+                </EmptyState>
               )}
-              {recommended &&
+              {world && world.zones.length > 0 && !recommendation && (
+                <EmptyState
+                  art="ghost"
+                  title="You've done everything open for you today"
+                  status
+                >
+                  New discoveries open with the next day. Coins on the streets
+                  still count while you walk.
+                </EmptyState>
+              )}
+              {!coachStep &&
+                recommendedFind &&
+                !nativeTarget &&
+                !adventureNotice && (
+                  <button
+                    className="recommended-quest"
+                    onClick={() => goToStreetFind(recommendedFind.coin)}
+                  >
+                    <span className="recommended-art">
+                      <GameObjectArt kind="discovery" size={32} />
+                    </span>
+                    <span>
+                      <small>Nearest find</small>
+                      <strong>
+                        Street find · +{world?.streetFindXp ?? 15} XP
+                      </strong>
+                      <span>
+                        On a mapped path ·{" "}
+                        {distanceLabel(recommendedFind.distance)}
+                        {arena && recommendedFind.distance > WALK_CAP_M
+                          ? ` · walk in ${Math.ceil(recommendedFind.distance / WALK_CAP_M)} steps`
+                          : ""}
+                      </span>
+                    </span>
+                    <ArrowRight size={20} />
+                  </button>
+                )}
+              {!coachStep &&
+                recommended &&
                 recommendedZone &&
                 !nativeTarget &&
                 !adventureNotice && (
@@ -2690,12 +3161,16 @@ export default function App() {
                 <Badge tone="green">
                   <Leaf size={12} /> {world?.cityName || "Your surroundings"}
                 </Badge>
+                {world?.cityStatus === "auto" && (
+                  <Badge tone="gold">Unverified map</Badge>
+                )}
                 <span>
                   <Clock size={13} /> Refresh in{" "}
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
               <TodaysPot practice onOpen={() => setTab("funding")} />
+              <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               <div className="section-label">
                 <h2>Nearby discoveries</h2>
                 <span>
@@ -2703,8 +3178,15 @@ export default function App() {
                 </span>
               </div>
               {world?.quality && (
-                <details className="coverage-note">
-                  <summary>About this map</summary>
+                <details
+                  className={`coverage-note${world.cityStatus === "auto" ? " unverified" : ""}`}
+                  open={world.cityStatus === "auto" || undefined}
+                >
+                  <summary>
+                    {world.cityStatus === "auto"
+                      ? "Unverified map: generated automatically"
+                      : "About this map"}
+                  </summary>
                   <p>{world.quality.notice}</p>
                 </details>
               )}
@@ -2907,7 +3389,7 @@ export default function App() {
                       {q.kind === "route" && (
                         <span>
                           <Flag />
-                          {q.checkpoint || 0}/{q.checkpointCount} checkpoints
+                          {q.checkpoint || 0}/{q.checkpointCount} stops
                         </span>
                       )}
                       {q.gold_u > 0 && (
@@ -3032,7 +3514,7 @@ export default function App() {
             />
           )}
           {tab === "inventory" && (
-            <>
+            <ScreenTabPanel idBase="bag" value="items">
               <Inventory
                 key={player.id}
                 onOriginalAppearance={(appearance) =>
@@ -3045,6 +3527,7 @@ export default function App() {
                 map3D={map3D}
                 onMap3D={toggleMap3D}
                 initialCollection={nativePlay ? "near" : "demo"}
+                xp={hudXp === null ? null : Number(hudXp)}
                 onExplore={() => setTab("explore")}
                 characterItems={appearanceItems}
                 adventureResults={
@@ -3059,6 +3542,15 @@ export default function App() {
                 }
                 nativeContent={
                   <>
+                    <WispRolls
+                      accountId={
+                        invisible.status === "ready" && invisible.signer
+                          ? invisible.signer.accountId
+                          : null
+                      }
+                      send={sendWispRoll}
+                      onWon={() => void me()}
+                    />
                     <NativeWardrobe
                       player={player}
                       data={nativeWardrobe}
@@ -3160,7 +3652,7 @@ export default function App() {
                   return result === true;
                 }}
               />
-            </>
+            </ScreenTabPanel>
           )}
           {((tab === "explore" && nativePlay) ||
             tab === "expeditions" ||
@@ -3177,10 +3669,10 @@ export default function App() {
                 />
               )}
               {tab === "explore" && nativePlay && (
-                <TodaysPot
-                  practice={false}
-                  onOpen={() => setTab("funding")}
-                />
+                <TodaysPot practice={false} onOpen={() => setTab("funding")} />
+              )}
+              {tab === "explore" && nativePlay && (
+                <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}
@@ -3266,103 +3758,224 @@ export default function App() {
               <ArrowRight size={20} />
             </button>
           )}
-          {tab === "settings" && (
-            <div className="play-menu">
-              <button className="play-entry" onClick={() => setTab("market")}>
-                <Storefront size={24} />
-                <span>
-                  <b>Market</b>
-                  <small>Trade Auras with other explorers</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-              <button className="play-entry" onClick={() => setTab("fuel")}>
-                <Flame size={24} />
-                <span>
-                  <b>Fuel the city</b>
-                  <small>Stake to grow the pot and open Tier 2 places</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-              <button className="play-entry" onClick={() => setTab("wallet")}>
-                <Wallet size={24} />
-                <span>
-                  <b>Rewards and balance</b>
-                  <small>Your GOLD, receipts and practice staking</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-              <AccountSessions
-                player={player}
-                onConnect={connectNear}
-                onSecure={() => void attachPasskey()}
-                onRevoke={revokeGameSessions}
-                busy={busy}
+          {tab === "settings" && profileView === "character" && (
+            <ScreenTabPanel idBase="profile" value="character">
+              <div className="profile-tiles">
+                <ProfileTile
+                  icon={Backpack}
+                  label="Wardrobe"
+                  hint="Items and Auras"
+                  onClick={() => setTab("inventory")}
+                />
+                <ProfileTile
+                  icon={Storefront}
+                  label="Market"
+                  hint="Trade Auras"
+                  onClick={() => setTab("market")}
+                />
+                <ProfileTile
+                  icon={Flame}
+                  label="Stake"
+                  hint="Grow the pot · open Tier 2"
+                  onClick={() => setTab("fuel")}
+                />
+                <ProfileTile
+                  icon={Wallet}
+                  label="Rewards"
+                  hint="GOLD and receipts"
+                  onClick={() => setTab("wallet")}
+                />
+              </div>
+              <ProfileHero
+                avatar={
+                  <Character
+                    items={appearanceItems}
+                    originTokenId={player.appearance.originTokenId}
+                    compact
+                  />
+                }
+                name={player.name}
+                level={hudLevel}
+                progress={
+                  hudXp !== null && hudLevel !== null
+                    ? Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          ((hudXp - 100 * (hudLevel - 1) ** 2) /
+                            (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) *
+                            100,
+                        ),
+                      )
+                    : null
+                }
+                detail={
+                  hudXp !== null && hudLevel !== null
+                    ? `${hudXp} / ${100 * hudLevel ** 2} XP to level ${hudLevel + 1}`
+                    : "Secure your explorer to keep progress"
+                }
               />
-              <DeviceKeys
-                status={invisible.status}
-                accountId={invisible.accountId}
-                keys={invisible.keys}
-                localPublicKey={invisible.publicKey}
-                busy={busy}
-                onSetupRecovery={setupRecoveryPasskey}
-                onRevoke={revokeDevice}
-                onRestore={restoreThisDevice}
-              />
-              <details className="advanced-settings">
-                <summary>Advanced</summary>
-                <div
-                  className="play-mode-switch"
-                  role="group"
-                  aria-label="Reward ledger"
+              <div className="play-menu">
+                <BadgeBook
+                  key={player.id}
+                  fix={fix}
+                  arena={arena}
+                  onConnectNear={() => void connectNear()}
+                />
+              </div>
+              <p className="fine-print">
+                {nativePlay
+                  ? "You are playing on the test network. Test NEAR has no monetary value."
+                  : "You are playing with practice GOLD, which is play money."}
+              </p>
+            </ScreenTabPanel>
+          )}
+          {tab === "settings" && profileView === "settings" && (
+            <ScreenTabPanel idBase="profile" value="settings">
+              <section
+                className="settings-group"
+                aria-labelledby="settings-game-title"
+              >
+                <h2 id="settings-game-title">Game</h2>
+                <SettingsSwitch
+                  icon={Cube}
+                  label="3D character"
+                  hint="Turn off for a lighter map"
+                  checked={map3D}
+                  onChange={() => toggleMap3D()}
+                />
+                <SettingsSwitch
+                  icon={Vibrate}
+                  label="Vibration"
+                  checked={feedback.haptics}
+                  onChange={(on) => {
+                    setFeedbackPreferences({ haptics: on });
+                    if (on) cue("step");
+                  }}
+                />
+                <SettingsSwitch
+                  icon={SpeakerHigh}
+                  label="Sound"
+                  checked={feedback.sound}
+                  onChange={(on) => {
+                    setFeedbackPreferences({ sound: on });
+                    if (on) previewSound();
+                  }}
+                />
+                <SettingsSwitch
+                  icon={PersonSimpleRun}
+                  label="Reduce motion"
+                  hint="Stops map flights, walking and sparkles"
+                  checked={feedback.motion === "reduce"}
+                  onChange={(on) =>
+                    setFeedbackPreferences({ motion: on ? "reduce" : "system" })
+                  }
+                />
+              </section>
+              <section
+                className="settings-group"
+                aria-labelledby="settings-help-title"
+              >
+                <h2 id="settings-help-title">Help</h2>
+                <button
+                  type="button"
+                  className="settings-row"
+                  onClick={() => setShowNpc(true)}
                 >
-                  <button
-                    aria-pressed={!nativePlay}
-                    onClick={() => chooseLedger(false)}
-                  >
-                    Practice ledger
-                  </button>
-                  <button
-                    aria-pressed={nativePlay}
-                    onClick={() => chooseLedger(true)}
-                  >
-                    Test network
-                  </button>
-                </div>
-                <p className="fine-print">
-                  Practice GOLD is play money. The test network uses NEAR
-                  testnet tokens. Neither has monetary value; receipts for both
-                  live in Rewards and balance.
-                </p>
-                <button className="play-entry" onClick={() => setTab("fund")}>
-                  <ChartDonut size={24} />
+                  <Question size={22} aria-hidden="true" />
+                  <span>Help & guide</span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </button>
+<a className="settings-row" href="/how-it-works">
+                  <Sparkle size={22} aria-hidden="true" />
                   <span>
-                    <b>Game economy</b>
+                    How it works
+                    <small>The game in one page</small>
+                  </span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </a>
+                                {!firstSession.visible && (
+                  <button
+                    type="button"
+                    className="settings-row"
+                    onClick={() => {
+                      firstSession.show();
+                      setTab("explore");
+                      setSheetExpanded(false);
+                    }}
+                  >
+                    <Compass size={22} aria-hidden="true" />
+                    <span>Show first steps again</span>
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="settings-row"
+                  onClick={() => setTab("fund")}
+                >
+                  <BookOpen size={22} aria-hidden="true" />
+                  <span>
+                    Game economy
                     <small>Where rewards come from</small>
                   </span>
-                  <ArrowRight size={20} />
+                  <ArrowRight size={18} aria-hidden="true" />
                 </button>
-              </details>
-              <button
-                className="play-entry"
-                aria-pressed={map3D}
-                onClick={toggleMap3D}
+              </section>
+              <section
+                className="settings-group"
+                aria-labelledby="settings-account-title"
               >
-                <Cube size={24} />
-                <span>
-                  <b>3D character: {map3D ? "On" : "Off"}</b>
-                  <small>Choose 2D for a lighter map</small>
-                </span>
-              </button>
-              <button className="play-entry" onClick={() => setShowNpc(true)}>
-                <Question size={24} />
-                <span>
-                  <b>Help & guide</b>
-                  <small>How to play</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-            </div>
+                <h2 id="settings-account-title">Account and devices</h2>
+                <div className="settings-pad">
+                  <AccountSessions
+                    player={player}
+                    onConnect={connectNear}
+                    onSecure={() => void attachPasskey()}
+                    onRevoke={revokeGameSessions}
+                    busy={busy}
+                  />
+                  <DeviceKeys
+                    status={invisible.status}
+                    accountId={invisible.accountId}
+                    keys={invisible.keys}
+                    localPublicKey={invisible.publicKey}
+                    busy={busy}
+                    onSetupRecovery={setupRecoveryPasskey}
+                    onRevoke={revokeDevice}
+                    onRestore={restoreThisDevice}
+                  />
+                </div>
+              </section>
+              <details className="advanced-settings settings-group">
+                <summary>Advanced: reward ledger</summary>
+                <div className="settings-pad">
+                  <div
+                    className="play-mode-switch"
+                    role="group"
+                    aria-label="Reward ledger"
+                  >
+                    <button
+                      aria-pressed={!nativePlay}
+                      onClick={() => chooseLedger(false)}
+                    >
+                      Practice ledger
+                    </button>
+                    <button
+                      aria-pressed={nativePlay}
+                      onClick={() => chooseLedger(true)}
+                    >
+                      Test network
+                    </button>
+                  </div>
+                  <p className="fine-print">
+                    Practice GOLD is play money. The test network uses NEAR
+                    testnet tokens. Neither has monetary value; receipts for
+                    both live in Profile · Rewards.
+                  </p>
+                </div>
+              </details>
+            </ScreenTabPanel>
           )}
           {tab === "funding" && (
             <RewardFundingPage
@@ -3372,14 +3985,7 @@ export default function App() {
             />
           )}
           {tab === "fuel" && (
-            <>
-              <button
-                className="back-link"
-                onClick={() => setTab("settings")}
-              >
-                <ArrowLeft size={20} />
-                Settings
-              </button>
+            <ScreenTabPanel idBase="profile" value="stake">
               <FuelTheCity
                 player={player}
                 account={
@@ -3392,13 +3998,28 @@ export default function App() {
                 onConnect={connectNear}
                 onTransaction={operateNativeVault}
               />
-            </>
+              <button
+                type="button"
+                className="play-entry"
+                onClick={() => {
+                  setWalletView("staking");
+                  setTab("wallet");
+                }}
+              >
+                <Leaf size={22} />
+                <span>
+                  <b>Vault staking</b>
+                  <small>Your staked balance and practice staking</small>
+                </span>
+                <ArrowRight size={20} />
+              </button>
+            </ScreenTabPanel>
           )}
           {tab === "fund" && (
             <>
               <button className="back-link" onClick={() => setTab("settings")}>
                 <ArrowLeft size={20} />
-                Settings
+                Profile
               </button>
               <NativeEconomyPanel />
               <details className="play-details">
@@ -3408,40 +4029,17 @@ export default function App() {
             </>
           )}
           {tab === "community" && (
-            <>
-              <details className="play-details" open={!creatorsEnabled}>
-                <summary>Map notes and sponsored tasks</summary>
-                <div className="play-menu">
-                  <button
-                    className="play-entry"
-                    onClick={() => setTab("messages")}
-                  >
-                    <ChatCircle size={26} />
-                    <span>
-                      <b>Map notes</b>
-                      <small>Leave a note at a place</small>
-                    </span>
-                    <ArrowRight size={20} />
-                  </button>
-                  <button
-                    className="play-entry"
-                    onClick={() => setTab("bounties")}
-                  >
-                    <Flag size={26} />
-                    <span>
-                      <b>Community tasks</b>
-                      <small>Fund a task · share proof · earn a reward</small>
-                    </span>
-                    <ArrowRight size={20} />
-                  </button>
-                  <p className="play-hint">
-                    Notes are pinned where you stand on the map. Tasks pay from
-                    their sponsor's reward.
-                  </p>
-                </div>
-              </details>
+            <ScreenTabPanel idBase="community" value={communityTab}>
+              {communityTab === "creators" && (
+                <CommunityBonusVote
+                  key={`bonus-${player.id}`}
+                  playerId={player.id}
+                  notify={notify}
+                />
+              )}
               <CreatorCommunity
                 key={player.id}
+                section={communityTab === "creators" ? "creators" : "quests"}
                 player={player}
                 notify={notify}
                 view={creatorView}
@@ -3467,19 +4065,22 @@ export default function App() {
                   );
                 }}
               />
-            </>
+            </ScreenTabPanel>
           )}
           {tab === "market" && (
+            <ScreenTabPanel idBase="bag" value="market">
+              <ScreenTabs
+                label="Market"
+                idBase="market"
+                variant="sub"
+                sticky={false}
+                tabs={MARKET_TABS}
+                value={marketView}
+                onChange={setMarketView}
+              />
+              <ScreenTabPanel idBase="market" value={marketView}>
+                {marketView === "practice" ? (
             <Market
-              nativeContent={
-                <NativeMarketPanel
-                  player={player}
-                  wardrobe={nativeWardrobe}
-                  busy={busy}
-                  onConnect={connectNear}
-                  onTrade={tradeNative}
-                />
-              }
               player={player}
               busy={busy}
               onBuy={(listing) =>
@@ -3502,15 +4103,23 @@ export default function App() {
               }
               onInventory={() => setTab("inventory")}
             />
-          )}
-          {(tab === "bounties" ||
-            (tab === "messages" && notesView === "browse")) && (
-            <button className="back-link" onClick={() => setTab("community")}>
-              <ArrowLeft size={20} />
-              Community
-            </button>
+                ) : (
+                  <NativeMarketPanel
+                    key={marketView}
+                    section={marketView}
+                    player={player}
+                    wardrobe={nativeWardrobe}
+                    busy={busy}
+                    onConnect={connectNear}
+                    onTrade={tradeNative}
+                    orderSigner={orderSigner}
+                  />
+                )}
+              </ScreenTabPanel>
+            </ScreenTabPanel>
           )}
           {tab === "messages" && (
+            <ScreenTabPanel idBase="community" value="notes">
             <MapNotes
               key={player.id}
               playerId={player.id}
@@ -3527,9 +4136,10 @@ export default function App() {
                 window.dispatchEvent(new Event("questlayer:social-blocks"));
               }}
             />
+            </ScreenTabPanel>
           )}
           {tab === "bounties" && (
-            <>
+            <ScreenTabPanel idBase="community" value="tasks">
               <div
                 className="play-mode-switch"
                 role="group"
@@ -3563,26 +4173,40 @@ export default function App() {
                   notify={notify}
                 />
               )}
-            </>
+            </ScreenTabPanel>
           )}
         </main>
       )}
       {player && (
         <>
-          <div className="map-top-chip">
+          <div className="map-top-chip map-status-chip">
             <span className="status-dot" />
-            {nativePlay
-              ? arena
-                ? "Turn on location to play"
-                : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
-              : arena
-                ? "City demo · tap to walk"
-                : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`}
+            <span className="map-status-text">
+              {nativePlay
+                ? arena
+                  ? "Turn on location"
+                  : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
+                : arena
+                  ? "City demo · tap to walk"
+                  : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`}
+            </span>
             <button
+              aria-label={
+                arena || nativePlay ? "Use GPS, my location" : "Demo, back to city demo"
+              }
               onClick={() => (arena || nativePlay ? locate() : returnToArena())}
             >
-              {arena || nativePlay ? "Use my location" : "Back to city demo"}
-              <ArrowUpRight size={12} />
+              {arena || nativePlay ? (
+                <>
+                  <NavigationArrow size={14} weight="fill" />
+                  Use GPS
+                </>
+              ) : (
+                <>
+                  <ArrowUpRight size={14} />
+                  Demo
+                </>
+              )}
             </button>
           </div>
           {presence && (
@@ -3597,7 +4221,7 @@ export default function App() {
               <X size={12} />
             </button>
           )}
-          <div className="map-controls">
+          <div className="map-controls map-toolbar" role="toolbar" aria-label="Map tools" aria-orientation="vertical">
             <button
               aria-label="City overview"
               title="City overview"
@@ -3608,7 +4232,7 @@ export default function App() {
                 setSelected(null);
               }}
             >
-              <Compass size={23} />
+              <Compass size={20} />
             </button>
             <button
               aria-label="My location"
@@ -3621,7 +4245,7 @@ export default function App() {
                 else setPosition((p) => ({ ...p }));
               }}
             >
-              <Crosshair size={23} />
+              <Crosshair size={20} />
             </button>
             <button
               aria-label="Globe"
@@ -3639,14 +4263,14 @@ export default function App() {
                 setFollow(true);
               }}
             >
-              <GlobeHemisphereWest size={23} />
+              <GlobeHemisphereWest size={20} />
             </button>
             <button
               aria-label="Map notes"
               title="Map notes"
               onClick={() => setTab("messages")}
             >
-              <ChatCircle size={23} />
+              <ChatCircle size={20} />
             </button>
           </div>
           <div className="player-bottom">
@@ -3660,23 +4284,19 @@ export default function App() {
             </div>
             <div>
               <b>{player.name}</b>
-              <div className="xp-bar">
-                <i
-                  style={{
-                    width:
-                      hudXp !== null && hudLevel !== null
-                        ? `${Math.min(100, ((hudXp - 100 * (hudLevel - 1) ** 2) / (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) * 100)}%`
-                        : "0%",
-                  }}
-                />
-              </div>
-              <small>
-                {hudXp !== null && hudLevel !== null
-                  ? `${hudXp} / ${100 * hudLevel ** 2} XP${!nativePlay && player.lockedXp ? ` · ${player.lockedXp} committed` : ""}`
-                  : playAccount
+              <XpBar
+                xp={hudXp}
+                note={
+                  !nativePlay && player.lockedXp
+                    ? `${player.lockedXp} committed`
+                    : undefined
+                }
+                placeholder={
+                  playAccount
                     ? "Loading your progress…"
-                    : "Secure your explorer to keep progress"}
-              </small>
+                    : "Secure your explorer to keep progress"
+                }
+              />
               {!nativePlay && <PickupSummary totals={pickupFeedback.totals} />}
             </div>
             <button onClick={() => setTab("inventory")} aria-label="Inventory">
@@ -3764,10 +4384,7 @@ export default function App() {
               Your explorer and progress are saved. They'll be right here as
               soon as you're back online.
             </p>
-            <button
-              className="primary-button"
-              onClick={() => void me()}
-            >
+            <button className="primary-button" onClick={() => void me()}>
               Try again <ArrowClockwise size={18} />
             </button>
           </section>
@@ -3812,6 +4429,7 @@ export default function App() {
                 }
                 onSecure={mintEarnedAura}
                 onPasskey={attachPasskey}
+                onDone={() => firstSession.mark("secure")}
               />
             )
           }
@@ -3828,7 +4446,25 @@ export default function App() {
           }}
         />
       )}
-      {showNpc && <Npc onClose={() => setShowNpc(false)} />}
+      {actorOpen && world && (
+        <ActorSheet
+          actor={actorOpen}
+          worldId={world.id}
+          location={
+            world.arena
+              ? { ...position, accuracy: 0, timestamp: Date.now() }
+              : fix
+          }
+          onClose={() => setActorOpen(null)}
+        />
+      )}
+      {showNpc && (
+        <Npc
+          worldId={world?.id}
+          position={position}
+          onClose={() => setShowNpc(false)}
+        />
+      )}
     </div>
   );
 }
@@ -3903,6 +4539,11 @@ function Welcome({
           <br />
           Earn Auras, the glow your friendly ghost wears.
         </p>
+        <a className="welcome-how" href="/how-it-works">
+          <Sparkle size={16} weight="fill" aria-hidden="true" />
+          How it works
+          <ArrowRight size={16} aria-hidden="true" />
+        </a>
         {error && (
           <p className="inline-error" role="alert">
             {error}
@@ -3923,6 +4564,7 @@ function Welcome({
             minLength={2}
             maxLength={24}
             onChange={(e) => setName(e.target.value)}
+            onFocus={preloadGameMap}
             autoComplete="nickname"
           />
           <button className="primary-button" type="submit" disabled={!!busy}>
@@ -4526,14 +5168,12 @@ function FundPanel() {
 }
 function Market({
   player,
-  nativeContent,
   busy,
   onBuy,
   onCancel,
   onInventory,
 }: {
   player: Player;
-  nativeContent: ReactNode;
   busy: string;
   onBuy: (l: Listing) => void;
   onCancel: (l: Listing) => void;
@@ -4552,18 +5192,13 @@ function Market({
   }, []);
   return (
     <>
-      {nativeContent}
-      <h2 className="demo-market-heading">Practice GOLD market</h2>
-      <p className="panel-subtitle">
-        Find an Aura that feels like you. Or pass your discovery along.
-      </p>
-      <div className="market-banner">
-        <Storefront size={29} />
-        <span>
-          <b>From explorers, for explorers</b>
-          <small>Fixed prices · 0% fee · practice Auras</small>
-        </span>
+      <div className="section-label">
+        <h2>Practice GOLD market</h2>
+        <span className="badge purple">PRACTICE</span>
       </div>
+      <p className="market-lead">
+        Fixed prices · 0% fee · practice GOLD is play money.
+      </p>
       <div className="section-label">
         <h2>On the market</h2>
         <button className="text-button" onClick={onInventory}>
@@ -4587,7 +5222,7 @@ function Market({
         <div className="item-grid">
           {items.map((i) => (
             <article className={`item-card rarity-${i.rarity}`} key={i.id}>
-              <AuraArt color={i.color} slot={i.slot} />
+              <AuraArt color={i.color} slot={i.slot} name={i.name} />
               <Badge>{rarityNames[i.rarity]}</Badge>
               <h3>{i.name}</h3>
               <small>
@@ -4612,9 +5247,13 @@ function Market({
           ))}
         </div>
       )}
-      <p className="fine-print">
-        These offers use practice GOLD. Secured Auras trade separately above.
-      </p>
+      <Details>
+        <p>
+          Find an Aura that feels like you, or pass your discovery along. These
+          offers use practice GOLD. Secured Auras trade for test NEAR in the
+          Secured and Offers tabs.
+        </p>
+      </Details>
     </>
   );
 }
@@ -4822,7 +5461,15 @@ function Bounties({
     </>
   );
 }
-function Npc({ onClose }: { onClose: () => void }) {
+function Npc({
+  onClose,
+  worldId,
+  position,
+}: {
+  onClose: () => void;
+  worldId?: string;
+  position?: Point;
+}) {
   const [q, setQ] = useState(""),
     [answer, setAnswer] = useState(
       "Hello, explorer. Start with a free place nearby, pick up a few coins on the way and open a chest. Solo is fine; this haunt is yours to explore.",
@@ -4835,6 +5482,8 @@ function Npc({ onClose }: { onClose: () => void }) {
     try {
       const r = await api<{ answer: string; source: string }>("/npc", {
         question: q,
+        ...(worldId ? { worldId } : {}),
+        ...(position ? { location: position } : {}),
       });
       setAnswer(r.answer);
       setSource(r.source);
@@ -4878,8 +5527,10 @@ function Npc({ onClose }: { onClose: () => void }) {
         </form>
         <small>
           {source === "near-ai"
-            ? "Answered by NEAR AI"
-            : "Standard answers · live guide not connected"}
+            ? "Answered by the AI guide from live game data"
+            : source === "anthropic"
+              ? "Answered by Claude from live game data"
+              : "Answered from live game data"}
         </small>
       </section>
     </Dialog>

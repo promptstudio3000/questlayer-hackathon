@@ -1,0 +1,206 @@
+{
+  "version": 1,
+  "cityId": "plzen",
+  "hours": [
+    "08:00",
+    "20:00"
+  ],
+  "actors": [
+    {
+      "id": "kronikarka-bela",
+      "kind": "npc",
+      "archetype": "storyteller",
+      "name": "Běla the Chronicler",
+      "title": "Keeper of the city's stories",
+      "model": "chronicler",
+      "home": {
+        "lat": 49.74745,
+        "lng": 13.3774
+      },
+      "rangeM": 400,
+      "speedMps": 1.0,
+      "dwellMin": [
+        15,
+        25
+      ],
+      "persona": "kronikarka-bela",
+      "enabled": true
+    },
+    {
+      "id": "kupec-vojtech",
+      "kind": "npc",
+      "archetype": "trader",
+      "name": "Vojtěch the Merchant",
+      "title": "Travelling trader",
+      "model": "merchant",
+      "home": {
+        "lat": 49.74799,
+        "lng": 13.3819
+      },
+      "rangeM": 1500,
+      "speedMps": 1.3,
+      "dwellMin": [
+        10,
+        20
+      ],
+      "persona": "kupec-vojtech",
+      "enabled": true
+    },
+    {
+      "id": "strazce-brany",
+      "kind": "npc",
+      "archetype": "keeper",
+      "name": "Gate Keeper",
+      "title": "Guardian of the vault",
+      "model": "keeper",
+      "home": {
+        "lat": 49.74526,
+        "lng": 13.37966
+      },
+      "rangeM": 0,
+      "speedMps": 0,
+      "dwellMin": [
+        0,
+        0
+      ],
+      "persona": "strazce-brany",
+      "enabled": true
+    },
+    {
+      "id": "poutnice-rada",
+      "kind": "npc",
+      "archetype": "quest_giver",
+      "name": "Ráda the Pilgrim",
+      "title": "Wanderer with errands",
+      "model": "pilgrim",
+      "home": {
+        "lat": 49.74499,
+        "lng": 13.37484
+      },
+      "rangeM": 800,
+      "speedMps": 1.2,
+      "dwellMin": [
+        10,
+        20
+      ],
+      "persona": "poutnice-rada",
+      "enabled": true
+    },
+    {
+      "id": "bludicka",
+      "kind": "npc",
+      "archetype": "wandering_rare",
+      "name": "Bludička",
+      "title": "Will-o'-the-wisp",
+      "model": "wisp",
+      "rangeM": 3000,
+      "speedMps": 2.5,
+      "dwellMin": [
+        2,
+        5
+      ],
+      "windows": 3,
+      "persona": "bludicka",
+      "enabled": true
+    },
+    {
+      "id": "lickquidator",
+      "kind": "monster",
+      "archetype": "roamer",
+      "name": "Lickquidator",
+      "model": "lick-soldier",
+      "element": "storm",
+      "rangeM": 600,
+      "speedMps": 1.4,
+      "dwellMin": [
+        3,
+        8
+      ],
+      "count": 4,
+      "enabled": true
+    },
+    {
+      "id": "dire-tire",
+      "kind": "monster",
+      "archetype": "roamer",
+      "name": "Dire Tire",
+      "model": "lick-speedy",
+      "element": "ember",
+      "rangeM": 900,
+      "speedMps": 2.2,
+      "dwellMin": [
+        2,
+        5
+      ],
+      "count": 2,
+      "enabled": true
+    },
+    {
+      "id": "lick-brute",
+      "kind": "monster",
+      "archetype": "guardian",
+      "name": "Brute Lickquidator",
+      "model": "lick-brute",
+      "element": "void",
+      "rangeM": 0,
+      "speedMps": 0,
+      "dwellMin": [
+        0,
+        0
+      ],
+      "count": 4,
+      "enabled": true
+    },
+    {
+      "id": "laser-beamer",
+      "kind": "monster",
+      "archetype": "guardian",
+      "name": "Laser Beamer",
+      "model": "lick-turret",
+      "element": "frost",
+      "rangeM": 0,
+      "speedMps": 0,
+      "dwellMin": [
+        0,
+        0
+      ],
+      "count": 2,
+      "enabled": true
+    },
+    {
+      "id": "pocket-wisp",
+      "kind": "monster",
+      "archetype": "lurker",
+      "name": "Pocket Wisp",
+      "model": "pocket-wisp",
+      "element": "ember",
+      "rangeM": 0,
+      "speedMps": 0,
+      "dwellMin": [
+        0,
+        0
+      ],
+      "count": 8,
+      "enabled": true
+    },
+    {
+      "id": "lick-boss",
+      "kind": "monster",
+      "archetype": "boss",
+      "name": "Lickquidator Boss",
+      "model": "lick-boss",
+      "element": "void",
+      "home": {
+        "lat": 49.74745,
+        "lng": 13.3774
+      },
+      "rangeM": 0,
+      "speedMps": 0,
+      "dwellMin": [
+        0,
+        0
+      ],
+      "enabled": true
+    }
+  ]
+}

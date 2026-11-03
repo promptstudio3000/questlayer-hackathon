@@ -1797,6 +1797,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "questlayer-badges"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "near-sdk",
+]
+
+[[package]]
 name = "questlayer-collectibles"
 version = "0.1.0"
 dependencies = [
@@ -1823,7 +1831,16 @@ dependencies = [
 name = "questlayer-market"
 version = "0.1.0"
 dependencies = [
+ "ed25519-dalek",
  "near-contract-standards",
+ "near-sdk",
+]
+
+[[package]]
+name = "questlayer-npc-games"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
  "near-sdk",
 ]
 
@@ -1855,6 +1872,14 @@ name = "questlayer-vault-factory"
 version = "0.1.0"
 dependencies = [
  "near-sdk",
+]
+
+[[package]]
+name = "questlayer-yield-vault"
+version = "0.1.0"
+dependencies = [
+ "near-sdk",
+ "primitive-types",
 ]
 
 [[package]]

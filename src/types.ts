@@ -64,7 +64,12 @@ export type Zone = {
   lat: number;
   lng: number;
   radius: number;
-  geometry?: { type: "Polygon"; coordinates: number[][][] };
+  geometry?:
+    | { type: "Polygon"; coordinates: number[][][] }
+    // POI category hunts (W6): one small circle per stop.
+    | { type: "MultiPolygon"; coordinates: number[][][][] };
+  /** "poi" for a street-cell POI quest place (W6). */
+  source?: string;
   sector?: string;
   shapeFamily?: string;
   kind: string;
@@ -72,6 +77,8 @@ export type Zone = {
   closesAt: number;
   color: string;
   placeStatus?: "open" | "closed";
+  /** Set while an operator has paused this zone or the whole day. */
+  operatorPause?: { reason: string };
 };
 export type Coin = Point & {
   id: string;
@@ -126,10 +133,23 @@ export type World = {
   source: string;
   center: Point;
   cityName?: string;
+  /** "auto": an auto city built from unreviewed map data (never funded). */
+  cityStatus?: "reviewed" | "auto";
   cityZoneCount?: number;
   coinRadius?: number;
   streetFindXp?: number;
-  quality?: { notice: string; fieldReview: string };
+  quality?: {
+    notice: string;
+    fieldReview: string;
+    status?: "auto";
+    funded?: false;
+  };
+  /** Street cells: today's POI quests (W6). "empty" = nothing here yet. */
+  poiQuests?: {
+    status: "ready" | "empty";
+    count: number;
+    notice?: string;
+  };
   endsAt: number;
   zones: Zone[];
   coins: Coin[];
@@ -280,7 +300,7 @@ export type NativeMarketOffer = {
   token_id: string;
   seller: string;
   price: string;
-  state: "active" | "buying" | "returning";
+  state: "active" | "buying" | "returning" | "deposited" | "filling";
   buyer: string | null;
   available: boolean;
   token: NativeItem | null;
@@ -291,6 +311,7 @@ export type NativeMarketState = {
   marketContract: string;
   nftContract: string;
   stats: {
+    version?: number;
     paused: boolean;
     listing_count: number;
     funded: string;

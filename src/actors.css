@@ -1,0 +1,170 @@
+/* Roaming NPCs and monsters: map markers and the encounter sheet. */
+.actor-marker {
+  display: grid;
+  justify-items: center;
+  min-width: 48px;
+  min-height: 56px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  filter: drop-shadow(0 5px 4px #23104d38);
+  transition: opacity var(--motion-feedback) var(--ease-out);
+}
+.actor-marker:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-item);
+}
+.actor-sprite {
+  width: 56px;
+  height: 56px;
+  transform: scaleX(var(--actor-facing, 1));
+  pointer-events: none;
+}
+.actor-walking .actor-sprite {
+  animation: actor-step 0.9s ease-in-out infinite;
+}
+.actor-badge {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 8px 0;
+  border-radius: 50% 50% 12px 12px;
+  background: #b9a6ff;
+  color: #230e4f;
+  font-weight: 600;
+  border: 2px solid #230e4f;
+}
+.actor-monster .actor-badge {
+  background: #f643f0;
+}
+.actor-label {
+  max-width: 110px;
+  margin-top: -4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #230e4fe6;
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid #c82ac2;
+}
+.actor-npc .actor-label {
+  border-color: #4adbfb;
+}
+.actor-defeated {
+  opacity: 0.55;
+}
+.actor-wandering_rare .actor-sprite,
+.actor-lurker .actor-sprite {
+  animation: actor-shimmer 2.4s ease-in-out infinite;
+}
+@keyframes actor-step {
+  50% {
+    translate: 0 -3px;
+  }
+}
+@keyframes actor-shimmer {
+  50% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 6px #37f4f1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .actor-walking .actor-sprite,
+  .actor-wandering_rare .actor-sprite,
+  .actor-lurker .actor-sprite {
+    animation: none;
+  }
+}
+
+.actor-sheet {
+  position: relative;
+  width: 400px;
+  max-width: 100%;
+  padding: 24px;
+  text-align: center;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid #8348ff;
+  border-radius: var(--radius-sheet);
+  box-shadow: 0 25px 90px #31253c40;
+}
+.actor-sheet-monster {
+  border-color: #c82ac2;
+}
+.actor-sheet .close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  min-width: 48px;
+  min-height: 48px;
+}
+.actor-stage {
+  height: 180px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 8px;
+  border-radius: var(--radius-item);
+  background: radial-gradient(circle at 50% 70%, #2a1655 0%, #200543 75%);
+}
+.actor-stage > canvas,
+.actor-stage > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+}
+.actor-sheet h2 {
+  margin: 2px 0 4px;
+  font-size: 24px;
+}
+.actor-role,
+.actor-title {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.actor-role {
+  text-transform: capitalize;
+}
+.actor-status,
+.actor-note {
+  margin: 14px 0 0;
+  font-size: 16px;
+}
+.actor-problem {
+  padding: 12px;
+  border-radius: var(--radius-item);
+  background: var(--error-surface);
+  color: var(--error);
+}
+.actor-problem .secondary-button {
+  margin-top: 10px;
+  min-height: 48px;
+}
+.actor-offers {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.actor-offers .primary-button {
+  width: 100%;
+  min-height: 48px;
+}
+.actor-offers small {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+
+/* Static arena prop under the weekly boss (Great Portal). */
+.actor-arena { pointer-events: none; width: 88px; height: 88px; opacity: 0.9; }
+.actor-arena .actor-sprite { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(223, 171, 255, 0.7)); }

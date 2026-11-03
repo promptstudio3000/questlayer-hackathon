@@ -23,36 +23,12 @@ import type {
   Item,
 } from "./types";
 import { EXPLORER_BASE } from "./near-network.ts";
-export function nativeAppearanceItems(
-  account: NativeAccount | undefined,
-): Item[] {
-  return (
-    account?.items.map((item) => ({
-      id: "native:" + item.tokenId,
-      kind: item.kind,
-      name: item.title,
-      rarity: item.rarity,
-      color: item.color,
-      serial: item.serial,
-      slot:
-        item.kind === "avatar"
-          ? "avatar"
-          : account.equipment.above === item.tokenId
-            ? "above"
-            : "below",
-      equipped:
-        item.kind === "avatar" ||
-        account.equipment.above === item.tokenId ||
-        account.equipment.below === item.tokenId
-          ? 1
-          : 0,
-    })) || []
-  );
-}
+import { nativeAppearanceItems } from "./native-appearance";
+export { nativeAppearanceItems };
 export function NativePicture({ item }: { item: NativeItem }) {
   // Game appearance preview; historical on-chain cover media is unchanged.
   return item.kind === "aura" ? (
-    <AuraArt color={item.color} small />
+    <AuraArt color={item.color} edition={item.edition} small />
   ) : (
     <Ghost />
   );
@@ -206,7 +182,11 @@ export function NativeWardrobe({
                             })
                           }
                         >
-                          <AuraArt color={item.color} slot={slot || "above"} />
+                          <AuraArt
+                            color={item.color}
+                            edition={item.edition}
+                            slot={slot || "above"}
+                          />
                           <strong>{item.title}</strong>
                           <span className="inventory-rarity">
                             {item.rarity}
@@ -323,6 +303,7 @@ export function NativeWardrobe({
                 <div className="inventory-item-detail">
                   <AuraArt
                     color={selectedItem.color}
+                    edition={selectedItem.edition}
                     slot={
                       selectedAccount.equipment.below === selectedItem.tokenId
                         ? "below"

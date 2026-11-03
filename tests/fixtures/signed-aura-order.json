@@ -1,0 +1,8 @@
+{
+  "message": "{\"standard\":\"questlayer_aura_order\",\"version\":1,\"kind\":\"sell\",\"network\":\"testnet\",\"market\":\"market.testnet\",\"nft_contract\":\"nfts.testnet\",\"maker\":\"seller.testnet\",\"token_id\":\"aura:polar:1\",\"price\":\"10000000000000000000000000\",\"deadline_ms\":\"1793003600000\",\"epoch\":0}",
+  "nonce": "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
+  "recipient": "market.testnet",
+  "callback_url": null,
+  "public_key": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+  "signature": "do+QSTWkxbxPHde8E0PO8EBVAwZnTKGOLOTTfUp8riMV/d4u1zSraJXo8wQGt3Eed5engf6MLuz6l8rC08w7BA=="
+}

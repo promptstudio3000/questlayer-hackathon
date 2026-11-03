@@ -13,6 +13,8 @@ import {
   zoneObjectPresentation,
 } from "./game-object-art";
 import type { NearbyExplorer } from "./types";
+import type { ActorView } from "./actor-types";
+import type { ActorsLayer } from "./actors-layer";
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -20,6 +22,7 @@ maplibregl.setWorkerUrl(mapWorkerUrl);
 import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Point, World, Zone, Item } from "./types";
+import { prefersReducedMotion } from "./feedback";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
@@ -49,6 +52,9 @@ export type GameMapProps = {
   /** Places creators pinned (visit, trail start, chest); tap opens the quest. */
   creatorPlaces?: CreatorMapPlace[];
   onCreatorPlace?: (questId: string) => void;
+  /** Today's demo world for roaming NPCs and monsters; null hides them. */
+  actorsWorldId?: string | null;
+  onActor?: (actor: ActorView) => void;
 };
 export type CreatorMapPlace = {
   questId: string;
@@ -151,7 +157,7 @@ export function GameMap(props: GameMapProps) {
         zoom: 17,
         pitch: 43,
         offset: cameraOffset(),
-        duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+        duration: prefersReducedMotion()
           ? 0
           : 400,
       });
@@ -184,7 +190,13 @@ export function GameMap(props: GameMapProps) {
     });
     map.current = m;
     m.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
+      new maplibregl.AttributionControl({
+        compact: true,
+        // Quest places come from the POI database (docs/POI-PIPELINE.md);
+        // ODbL asks for this notice wherever produced content is shown.
+        customAttribution:
+          "Places © OpenStreetMap contributors (ODbL), Overture Maps, Wikidata, GeoNames",
+      }),
       "bottom-right",
     );
     const marker = document.createElement("div");
@@ -460,6 +472,40 @@ export function GameMap(props: GameMapProps) {
     });
     return () => markers.forEach((m) => m.remove());
   }, [props.others, ready]);
+  // Roaming NPCs and monsters: a separate chunk, loaded once the map is up.
+  const actorsLayer = useRef<ActorsLayer | null>(null);
+  const actorsEnabled = !!props.onActor && !!props.actorsWorldId;
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !actorsEnabled) return;
+    let gone = false;
+    import("./actors-layer")
+      .then(({ attachActorsLayer }) => {
+        if (gone) return;
+        actorsLayer.current = attachActorsLayer(m, {
+          onSelect: (a) => latest.current.onActor?.(a),
+        });
+        const p = latest.current;
+        actorsLayer.current.update({
+          worldId: p.actorsWorldId || null,
+          position: p.position,
+          visible: !p.globe,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+      actorsLayer.current?.destroy();
+      actorsLayer.current = null;
+    };
+  }, [ready, actorsEnabled]);
+  useEffect(() => {
+    actorsLayer.current?.update({
+      worldId: props.actorsWorldId || null,
+      position: props.position,
+      visible: !props.globe,
+    });
+  }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe]);
   function cameraOffset(): [number, number] {
     if (!phoneLayout()) return [155, 35];
     const box = el.current?.getBoundingClientRect(),
@@ -492,7 +538,7 @@ export function GameMap(props: GameMapProps) {
     if (m && !props.globe)
       pawn.current?.setMapView(m.getBearing(), m.getPitch(), heading.current);
     return moveMapMarker(avatar.current, props.position, {
-      reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+      reducedMotion: prefersReducedMotion(),
     });
   }, [props.position, ready]);
   useEffect(() => {
@@ -502,7 +548,7 @@ export function GameMap(props: GameMapProps) {
         center: [props.position.lng, props.position.lat],
         offset: cameraOffset(),
         padding: { top: 0, bottom: 0, left: 0, right: 0 },
-        duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+        duration: prefersReducedMotion()
           ? 0
           : 450,
       });
@@ -636,7 +682,7 @@ export function GameMap(props: GameMapProps) {
             ),
             pitch: 0,
             bearing: 0,
-            duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+            duration: prefersReducedMotion()
               ? 0
               : 1400,
           }
@@ -647,7 +693,7 @@ export function GameMap(props: GameMapProps) {
             zoom: 16.9,
             pitch: 43,
             bearing: -14,
-            duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+            duration: prefersReducedMotion()
               ? 0
               : 1400,
           },
@@ -666,7 +712,9 @@ export function GameMap(props: GameMapProps) {
     if (props.overview) {
       const b = new maplibregl.LngLatBounds();
       for (const z of props.world.zones)
-        for (const p of z.geometry?.coordinates[0] || [[z.lng, z.lat]])
+        for (const p of z.geometry?.type === "MultiPolygon"
+          ? z.geometry.coordinates.flatMap((poly) => poly[0])
+          : z.geometry?.coordinates[0] || [[z.lng, z.lat]])
           b.extend(p as [number, number]);
       if (!b.isEmpty()) {
         const dx = (b.getEast() - b.getWest()) * 0.08,
@@ -697,7 +745,7 @@ export function GameMap(props: GameMapProps) {
             : { top: 180, bottom: 100, left: 450, right: 55 },
           pitch: 0,
           bearing: 0,
-          duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+          duration: prefersReducedMotion()
             ? 0
             : 650,
         });
@@ -709,7 +757,7 @@ export function GameMap(props: GameMapProps) {
         padding: { top: 0, bottom: 0, left: 0, right: 0 },
         zoom: 16.8,
         pitch: 43,
-        duration: matchMedia("(prefers-reduced-motion: reduce)").matches
+        duration: prefersReducedMotion()
           ? 0
           : 450,
       });

@@ -1,0 +1,17 @@
+{
+  "version": "staker-gates-v1",
+  "note": "Staker content opens gradually by step AND level (owner decision 1 Nov 2026, 23:47 UTC). Steps: staker = matured stake of at least stakerMinNear (patron rank 0); tier2/tier3 = the vault contract's weighted-stake tiers. Lures are things to do or wear, never odds, damage or payouts. Override with STAKER_GATES_PATH / STAKER_GATES_JSON, and the minimum with STAKER_MIN_NEAR.",
+  "stakerMinNear": "2",
+  "gates": {
+    "keeper_inner": { "step": "staker", "level": 2, "label": "The Keeper's inner vault" },
+    "stake_today": { "step": "staker", "level": 2, "label": "Your stake today" },
+    "patron_chapter_1": { "step": "staker", "level": 2, "label": "Patron chapter 1" },
+    "patron_line": { "step": "staker", "level": 4, "label": "The rest of the patron line" },
+    "patron_aura": { "step": "staker", "level": 4, "label": "The patron Aura" },
+    "patron_trader_rates": { "step": "staker", "level": 4, "label": "Patron trader rates" },
+    "t2_lines": { "step": "tier2", "level": 6, "label": "Tier 2 quest lines" },
+    "boss_arena_seat": { "step": "tier2", "level": 6, "label": "A seat in the boss arena" },
+    "t3_lines": { "step": "tier3", "level": 6, "label": "Tier 3 quest lines" },
+    "wandering_rare_patron": { "step": "tier3", "level": 8, "label": "The wandering rare's patron option" }
+  }
+}

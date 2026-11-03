@@ -22,6 +22,25 @@ const original: OriginalInventory = {
 };
 const loadOriginals = async () => original;
 const items: Item[] = [
+  ...(
+    [
+      ["Northern Lights", "rare", "above", "#8dd8bd", 1],
+      ["Moon Ring", "epic", "below", "#b49beb", 1],
+      ["Ember Wisp", "common", "above", "#ff8a4c", 0],
+      ["Comet Trail", "epic", "below", "#e6ecff", 0],
+      ["Nova Bloom", "legendary", "below", "#ff5fa8", 0],
+      ["Stormcrown", "epic", "above", "#8fa6ff", 0],
+    ] as const
+  ).map(([name, rarity, slot, color, equipped], i) => ({
+    id: `demo-catalog-${i}`,
+    kind: "aura" as const,
+    name,
+    rarity,
+    slot,
+    color,
+    equipped,
+    serial: 3 + i,
+  })),
   {
     id: "demo-moon",
     kind: "aura",
@@ -29,7 +48,7 @@ const items: Item[] = [
     rarity: "epic",
     slot: "above",
     color: "#ad72f1",
-    equipped: 1,
+    equipped: 0,
     serial: 7,
   },
   {

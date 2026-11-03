@@ -90,6 +90,10 @@ function checkContext(ctx) {
         typeof ctx.contracts.creators === "string"
           ? ctx.contracts.creators
           : null,
+      npcGames:
+        typeof ctx.contracts.npcGames === "string"
+          ? ctx.contracts.npcGames
+          : null,
     },
     factorySetupDeposit:
       ctx.factorySetupDeposit === undefined || ctx.factorySetupDeposit === null
@@ -330,10 +334,38 @@ export function validateDelegate(decoded, context) {
       );
     } else unsupported();
   } else if (receiverId === c.market) {
-    if (method === "buy") selfPaid("A purchase");
-    else if (method === "cancel" || method === "withdraw")
+    // Anything that moves money (a purchase, filling a signed order, funding
+    // offers) is self-paid. Fills stay self-paid even when only 1 yocto is
+    // attached, because accepting an offer releases the buyer's escrowed NEAR.
+    if (
+      method === "buy" ||
+      method === "fill_sell_order" ||
+      method === "fill_buy_order" ||
+      method === "deposit_near"
+    )
+      selfPaid("A purchase");
+    else if (
+      method === "cancel" ||
+      method === "withdraw" ||
+      method === "cancel_all_orders"
+    )
       depositIs(1n, "Market action");
-    else unsupported();
+    else if (method === "add_signing_key" || method === "remove_signing_key") {
+      depositIs(1n, "Order signing key");
+      demand(
+        keysOf(args, ["public_key"]) &&
+          /^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(args.public_key)),
+        "RELAY_ARGS",
+        "A signing key change takes one ed25519 public key.",
+      );
+    } else if (method === "cancel_order") {
+      depositIs(1n, "Order cancellation");
+      demand(
+        keysOf(args, ["order"]) && plainObject(args.order),
+        "RELAY_ARGS",
+        "An order cancellation takes the signed order.",
+      );
+    } else unsupported();
   } else if (receiverId === c.rewards) {
     if (method === "withdraw") depositIs(1n, "Reward withdrawal");
     else unsupported();
@@ -406,6 +438,46 @@ export function validateDelegate(decoded, context) {
       depositIs(0n, "Position maintenance");
     else unsupported();
     }
+  } else if (c.npcGames && receiverId === c.npcGames) {
+    // Earned mini-game rolls (docs/NPC-GAMES.md): never a deposit, so never a wager.
+    depositIs(0n, "A mini-game roll");
+    const rollId = (v) =>
+      typeof v === "string" && /^[A-Za-z0-9_:.-]{1,96}$/.test(v);
+    const hex64 = (v) => typeof v === "string" && /^[0-9a-f]{64}$/.test(v);
+    if (method === "start_roll")
+      demand(
+        keysOf(args, [
+          "roll_id",
+          "table_id",
+          "commit",
+          "expires_at_ms",
+          "signature",
+        ]) &&
+          rollId(args.roll_id) &&
+          rollId(args.table_id) &&
+          hex64(args.commit) &&
+          typeof args.expires_at_ms === "string" &&
+          /^\d{1,20}$/.test(args.expires_at_ms) &&
+          typeof args.signature === "string" &&
+          args.signature.length === 88,
+        "RELAY_ARGS",
+        "A roll starts with one signed ticket.",
+      );
+    else if (method === "resolve_roll")
+      demand(
+        keysOf(args, ["roll_id", "secret"]) &&
+          rollId(args.roll_id) &&
+          hex64(args.secret),
+        "RELAY_ARGS",
+        "A roll reveal takes the roll id and its secret.",
+      );
+    else if (method === "claim_timeout")
+      demand(
+        keysOf(args, ["roll_id"]) && rollId(args.roll_id),
+        "RELAY_ARGS",
+        "A timeout claim takes one roll id.",
+      );
+    else unsupported();
   } else if (receiverId === c.social) {
     demand(
       method === "set",

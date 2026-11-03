@@ -2,6 +2,7 @@ import { NativeContractReader } from "./reader.mjs";
 import { nativeItem } from "./collectibles.mjs";
 import { assert } from "../domain.mjs";
 import { NETWORK } from "./network.mjs";
+import { isNativeAuraTokenId } from "../aura-catalog.mjs";
 export class NativeMarket extends NativeContractReader {
   constructor(provider, contractId, nfts) {
     super(provider, contractId);
@@ -17,7 +18,7 @@ export class NativeMarket extends NativeContractReader {
       this.view("get_listings", { from_index: fromIndex, limit: 24 }, fresh),
     ]);
     assert(
-      stats.version === 1 &&
+      (stats.version === 1 || stats.version === 2) &&
         stats.network === NETWORK &&
         stats.nft_contract === this.nfts.contractId,
       "This market does not match the QuestLayer collection.",
@@ -44,7 +45,7 @@ export class NativeMarket extends NativeContractReader {
       verifiedListing = null;
     if (verifyTokenId) {
       assert(
-        /^aura:(polar|moon|gold):\d{1,3}$/.test(verifyTokenId),
+        isNativeAuraTokenId(verifyTokenId),
         "Choose a native Aura.",
       );
       verifiedListing = await this.view(
@@ -80,5 +81,9 @@ export class NativeMarket extends NativeContractReader {
         })),
       ),
     };
+  }
+  async signer(accountId) {
+    assert(typeof accountId === "string" && accountId.length <= 64, "Choose an account.");
+    return this.view("get_signer", { account_id: accountId }, true);
   }
 }

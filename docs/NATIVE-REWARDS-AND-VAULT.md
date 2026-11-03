@@ -96,7 +96,7 @@ All funding, including approved realized-yield deposits, also checks actual stor
 - **Upgrade.** `node scripts/upgrade-rewards-v2-testnet.mjs --upgrade-reviewed` on the
   machine with the operator key. Existing keyless factory positions stay v1; the factory
   is upgraded only while it has created none.
-- **App.** Profile → Fuel the city shows "Change your stake" only when a position's live
+- **App.** Profile → Fuel the prize pool shows "Change your stake" only when a position's live
   `get_state.version` is 2: "Take some out" (quote: principal back, city's settled share
   of earned gain, what stays staked, fuel and tier after) and "City share of your yield"
   (quote: applies now, or after earned gain settles at the old rate). `/native/vaults/prepare`

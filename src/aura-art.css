@@ -64,3 +64,76 @@
     animation: none;
   }
 }
+
+/* Authored sprite inside the item card (AuraArt). */
+.aura-art.authored .aura-art-sprite {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+}
+.aura-art.authored .aura-art-sprite.below {
+  top: auto;
+  bottom: 6px;
+  z-index: 0;
+}
+.aura-art.small.authored .aura-art-sprite {
+  top: 2px;
+}
+.aura-art.small.authored .aura-art-sprite.below {
+  top: auto;
+  bottom: 2px;
+}
+
+/* Cosmetic set bonus: a soft glow behind a matching pair. No gameplay effect. */
+.character-composition.aura-set {
+  isolation: isolate;
+}
+.character-composition.aura-set::before {
+  content: "";
+  position: absolute;
+  inset: 12% 18%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--aura-set-glow) 55%, transparent),
+    transparent
+  );
+  pointer-events: none;
+  animation: aura-set-glow 3.2s ease-in-out infinite;
+}
+.character-composition.aura-set-tempest::before {
+  animation: aura-set-flicker 2.4s steps(1, end) infinite;
+}
+@keyframes aura-set-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+@keyframes aura-set-flicker {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  45% {
+    opacity: 0.95;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  55% {
+    opacity: 0.9;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .character-composition.aura-set::before {
+    animation: none;
+    opacity: 0.75;
+  }
+}

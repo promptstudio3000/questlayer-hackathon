@@ -1,0 +1,368 @@
+{
+  "version": 3,
+  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. `source` says where an edition comes from: chest editions drop from zone chests by entitlement; npc, monster, level and season editions never drop from chests and the contract only mints them for award claims whose id starts with earned:npc:, earned:monster:, earned:level: or earned:season: (CLAIM_ONLY_EDITIONS). Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
+  "supplyPerEdition": 256,
+  "rarities": [
+    "common",
+    "rare",
+    "epic",
+    "legendary"
+  ],
+  "entitlements": {
+    "common": {
+      "minZoneTier": 1,
+      "minLevel": 1
+    },
+    "rare": {
+      "minZoneTier": 1,
+      "minLevel": 2
+    },
+    "epic": {
+      "minZoneTier": 2,
+      "minLevel": 3
+    },
+    "legendary": {
+      "minZoneTier": 3,
+      "minLevel": 4
+    }
+  },
+  "editions": [
+    {
+      "id": "ember",
+      "name": "Ember Wisp",
+      "demoName": "Ember Wisp",
+      "rarity": "common",
+      "slot": "above",
+      "color": "#ff8a4c",
+      "set": "first-light",
+      "native": true,
+      "motif": "Three drifting flame wisps",
+      "source": "chest"
+    },
+    {
+      "id": "dew",
+      "name": "Dewfall Ring",
+      "demoName": "Dewfall Ring",
+      "rarity": "common",
+      "slot": "below",
+      "color": "#8fd3ff",
+      "set": "first-light",
+      "native": true,
+      "motif": "Water ripples with falling drops",
+      "source": "chest"
+    },
+    {
+      "id": "polar",
+      "name": "Northern Lights",
+      "demoName": "Northern Lights",
+      "rarity": "rare",
+      "slot": "above",
+      "color": "#9edfc5",
+      "demoColor": "#8dd8bd",
+      "set": "night-sky",
+      "native": true,
+      "motif": "Aurora ribbon with hanging curtains",
+      "source": "chest"
+    },
+    {
+      "id": "bloom",
+      "name": "Meadow Bloom",
+      "demoName": "Meadow Bloom",
+      "rarity": "rare",
+      "slot": "below",
+      "color": "#ff9fc8",
+      "set": "first-light",
+      "native": true,
+      "motif": "Ring of leaves and five-petal flowers",
+      "source": "chest"
+    },
+    {
+      "id": "storm",
+      "name": "Stormcrown",
+      "demoName": "Stormcrown",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#8fa6ff",
+      "set": "tempest",
+      "native": true,
+      "motif": "Cloud crown with crackling bolts",
+      "source": "chest"
+    },
+    {
+      "id": "moon",
+      "name": "Moonwake Aura",
+      "demoName": "Moon Ring",
+      "rarity": "epic",
+      "slot": "below",
+      "color": "#c2a0df",
+      "demoColor": "#b49beb",
+      "set": "night-sky",
+      "native": true,
+      "motif": "Crescent with a star-dust wake",
+      "source": "chest"
+    },
+    {
+      "id": "comet",
+      "name": "Comet Trail",
+      "demoName": "Comet Trail",
+      "rarity": "epic",
+      "slot": "below",
+      "color": "#e6ecff",
+      "set": "tempest",
+      "native": true,
+      "motif": "Orbiting comet with a rose tail",
+      "source": "chest"
+    },
+    {
+      "id": "gold",
+      "name": "Sunlit Aura",
+      "demoName": "Golden Dust",
+      "rarity": "legendary",
+      "slot": "above",
+      "color": "#e7c35f",
+      "demoColor": "#f2c869",
+      "set": "solar-crown",
+      "native": true,
+      "motif": "Sun halo with rays",
+      "source": "chest"
+    },
+    {
+      "id": "nova",
+      "name": "Nova Bloom",
+      "demoName": "Nova Bloom",
+      "rarity": "legendary",
+      "slot": "below",
+      "color": "#ff5fa8",
+      "set": "solar-crown",
+      "native": true,
+      "motif": "Starburst ring with radiant spikes",
+      "source": "chest"
+    },
+    {
+      "id": "pilgrim",
+      "name": "Pilgrim's Path",
+      "demoName": "Pilgrim's Path",
+      "rarity": "rare",
+      "slot": "below",
+      "color": "#9bd17a",
+      "set": "wayfarers",
+      "native": true,
+      "source": "npc",
+      "motif": "Footprint trail circling a mossy waystone",
+      "how": "Finish five quest-giver lines"
+    },
+    {
+      "id": "chronicle",
+      "name": "Chronicle Crown",
+      "demoName": "Chronicle Crown",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#b48cff",
+      "set": "wayfarers",
+      "native": true,
+      "source": "npc",
+      "motif": "Open storybook crown with floating rune pages",
+      "how": "Complete a storyteller chapter set"
+    },
+    {
+      "id": "ledger",
+      "name": "Merchant's Ledger",
+      "demoName": "Merchant's Ledger",
+      "rarity": "epic",
+      "slot": "below",
+      "color": "#e0a94a",
+      "set": "wayfarers",
+      "native": true,
+      "source": "npc",
+      "motif": "Ring of stacked coins tied with a ledger ribbon",
+      "how": "Trade with a roaming trader ten times"
+    },
+    {
+      "id": "wardbreaker",
+      "name": "Wardbreaker Horns",
+      "demoName": "Wardbreaker Horns",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#7cf0b0",
+      "set": "night-hunt",
+      "native": true,
+      "source": "monster",
+      "motif": "Cracked guardian horns around a shattered ward rune",
+      "how": "Beat your first zone guardian monster"
+    },
+    {
+      "id": "wisp",
+      "name": "Will-o'-Wisp Halo",
+      "demoName": "Will-o'-Wisp Halo",
+      "rarity": "legendary",
+      "slot": "above",
+      "color": "#9ff6ff",
+      "set": "night-hunt",
+      "native": true,
+      "source": "npc",
+      "motif": "Ghost-fire lantern with three orbiting soul flames",
+      "how": "Win a Pocket Wisp mini-game"
+    },
+    {
+      "id": "bossbane",
+      "name": "Bossbane Fangring",
+      "demoName": "Bossbane Fangring",
+      "rarity": "legendary",
+      "slot": "below",
+      "color": "#ff6b6b",
+      "set": "night-hunt",
+      "native": true,
+      "source": "monster",
+      "motif": "Ring of monster fangs around a glowing rift",
+      "how": "Land three hits on the weekly boss"
+    },
+    {
+      "id": "stride",
+      "name": "Silver Stride",
+      "demoName": "Silver Stride",
+      "rarity": "rare",
+      "slot": "below",
+      "color": "#c9d3e0",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "Silver footprints circling the feet",
+      "how": "Reach level 5"
+    },
+    {
+      "id": "kindle",
+      "name": "Altar Kindle",
+      "demoName": "Altar Kindle",
+      "rarity": "rare",
+      "slot": "above",
+      "color": "#ff9f43",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "Three altar flames on a small brass ring",
+      "how": "Reach level 6"
+    },
+    {
+      "id": "compass",
+      "name": "Wayfarer's Compass",
+      "demoName": "Wayfarer's Compass",
+      "rarity": "epic",
+      "slot": "below",
+      "color": "#5fd3a8",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "A compass rose ring with four bright points",
+      "how": "Reach level 7"
+    },
+    {
+      "id": "quill",
+      "name": "Storyteller's Quill",
+      "demoName": "Storyteller's Quill",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#8fa8ff",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "A floating quill writing a ring of ink stars",
+      "how": "Reach level 8"
+    },
+    {
+      "id": "laurel",
+      "name": "Pathfinder Laurel",
+      "demoName": "Pathfinder Laurel",
+      "rarity": "legendary",
+      "slot": "below",
+      "color": "#9be36b",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "A laurel wreath of leaves around the feet",
+      "how": "Reach level 9"
+    },
+    {
+      "id": "summit",
+      "name": "Summit Crown",
+      "demoName": "Summit Crown",
+      "rarity": "legendary",
+      "slot": "above",
+      "color": "#ffe08a",
+      "set": "level-path",
+      "native": true,
+      "source": "level",
+      "motif": "A crown of three snowy peaks with a summit star",
+      "how": "Reach level 10"
+    },
+    {
+      "id": "patron",
+      "name": "Patron's Lantern",
+      "demoName": "Patron's Lantern",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#ffd01f",
+      "set": "wayfarers",
+      "native": true,
+      "source": "npc",
+      "motif": "Gate lantern ring sealed with a gold wax patron seal",
+      "how": "Finish the Patron's Path (three patron lines)"
+    },
+    {
+      "id": "season",
+      "name": "Hackathon Pennant",
+      "demoName": "Hackathon Pennant",
+      "rarity": "epic",
+      "slot": "above",
+      "color": "#4fc3ff",
+      "set": "wayfarers",
+      "native": true,
+      "source": "season",
+      "motif": "A ring of small pennant flags with a season star",
+      "how": "Reach the hackathon season goal (until 14 Nov 2026)"
+    }
+  ],
+  "sets": [
+    {
+      "id": "first-light",
+      "name": "First Light",
+      "glow": "#ffb36b",
+      "bonus": "Warm dawn glow around the explorer"
+    },
+    {
+      "id": "night-sky",
+      "name": "Night Sky",
+      "glow": "#9d7bf0",
+      "bonus": "Slow violet starlight shimmer"
+    },
+    {
+      "id": "tempest",
+      "name": "Tempest",
+      "glow": "#8fa6ff",
+      "bonus": "Electric blue flicker"
+    },
+    {
+      "id": "solar-crown",
+      "name": "Solar Crown",
+      "glow": "#ffd667",
+      "bonus": "Radiant golden pulse"
+    },
+    {
+      "id": "wayfarers",
+      "name": "Wayfarers",
+      "glow": "#e0b25a",
+      "bonus": "Lantern-warm road-dust trail"
+    },
+    {
+      "id": "night-hunt",
+      "name": "Night Hunt",
+      "glow": "#7cf0b0",
+      "bonus": "Ghostly green afterglow"
+    },
+    {
+      "id": "level-path",
+      "name": "Level Path",
+      "glow": "#ffe08a",
+      "bonus": "Silver trail sparkle with a warm summit glow"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Ghost } from "./Ghost";
 import { AuraSprite, auraEdition } from "./aura-art";
+import { activeAuraSet } from "./aura-catalog.ts";
 import type { Item } from "./types";
 export function Character({
   items,
@@ -17,10 +18,20 @@ export function Character({
   useEffect(() => setFailed(false), [originTokenId]);
   const top = items.find((i) => i.equipped && i.slot === "above"),
     bottom = items.find((i) => i.equipped && i.slot === "below"),
-    avatar = items.find((i) => i.kind === "avatar");
+    avatar = items.find((i) => i.kind === "avatar"),
+    // Cosmetic only: a matching pair adds a set glow, nothing else.
+    set = activeAuraSet(
+      top && { edition: auraEdition(top) },
+      bottom && { edition: auraEdition(bottom) },
+    );
   return (
     <div
-      className={`character-composition ${compact ? "compact" : ""}`}
+      className={`character-composition ${compact ? "compact" : ""} ${set ? `aura-set aura-set-${set.id}` : ""}`}
+      style={
+        set ? ({ "--aura-set-glow": set.glow } as React.CSSProperties) : undefined
+      }
+      data-aura-set={set?.id}
+      role="img"
       aria-label={
         preview
           ? "Preview of explorer appearance"

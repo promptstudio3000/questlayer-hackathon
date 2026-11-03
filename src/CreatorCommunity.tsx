@@ -32,6 +32,7 @@ import { parseAccessPrice, nearText } from "./creator-money-quote";
 import { formatNativeNear } from "./native-amounts";
 import { Dialog } from "./Dialog";
 import { useFormDraft } from "./useFormDraft";
+import { AiQuestDraft } from "./AiQuestDraft";
 import {
   createCreatorClient,
   creatorDraftIdentity,
@@ -73,6 +74,12 @@ type Props = {
   /** Where the explorer stands now, for "Near you". Never sent to the server. */
   position?: { lat: number; lng: number };
   money?: CreatorMoneyBridge;
+  /**
+   * Community screen tab hosting this component. "quests" shows quest browsing
+   * and started quests; "creators" shows creators and your own creations.
+   * Omitted, every section is reachable from the inner navigation.
+   */
+  section?: "quests" | "creators";
 };
 type Point = { lat: number; lng: number };
 type Loaded = {
@@ -313,6 +320,7 @@ function CreatorCommunitySession({
   client: injected,
   position,
   money,
+  section: screenSection,
 }: Props) {
   const client = useMemo(
     () => injected || createCreatorClient({ playerId: player.id }),
@@ -536,7 +544,7 @@ function CreatorCommunitySession({
           {state.loading
             ? "Checking creator quests…"
             : state.error ||
-              "Creator quests are not enabled on this host yet. Map notes and sponsored tasks remain available above."}
+              "Creator quests are not enabled on this host yet. Map notes and sponsored tasks remain available in the Notes and Tasks tabs."}
         </p>
         {!state.loading && (
           <button
@@ -549,12 +557,18 @@ function CreatorCommunitySession({
       </details>
     );
   const data = state.data;
-  const tabs = [
-    { page: "community", label: "Community" },
-    { page: "following", label: "Following" },
-    { page: "creators", label: "Creators" },
-    { page: "mine", label: "My creations" },
+  const allTabs = [
+    { page: "community", label: "Community", section: "quests" },
+    { page: "following", label: "Following", section: "quests" },
+    { page: "participations", label: "Started", section: "quests" },
+    { page: "creators", label: "Creators", section: "creators" },
+    { page: "mine", label: "My creations", section: "creators" },
   ] as const;
+  const tabs = allTabs.filter((tab) =>
+    screenSection
+      ? tab.section === screenSection
+      : tab.page !== "participations",
+  );
   const active =
     view.page === "edit" || view.page === "profile" || view.page === "blocked"
       ? "mine"
@@ -584,10 +598,15 @@ function CreatorCommunitySession({
           <ArrowClockwise size={22} />
         </button>
       </div>
-      <p className="creator-intro">
-        Find a free quest or write one of your own. Creator quest rewards are
-        not configured yet.
-      </p>
+      <details className="screen-details creator-intro-details">
+        <summary>Details</summary>
+        <div className="screen-details-body">
+          <p className="creator-intro">
+            Find a free quest or write one of your own. Creator quest rewards
+            are not configured yet.
+          </p>
+        </div>
+      </details>
       <nav className="creator-tabs" aria-label="Creator community section">
         {tabs.map((tab) => (
           <button
@@ -599,13 +618,15 @@ function CreatorCommunitySession({
           </button>
         ))}
       </nav>
-      <button
-        className="creator-started"
-        onClick={() => navigate({ page: "participations" })}
-      >
-        <BookmarkSimple size={20} /> Your started quests{" "}
-        <ArrowRight size={20} />
-      </button>
+      {!screenSection && (
+        <button
+          className="creator-started"
+          onClick={() => navigate({ page: "participations" })}
+        >
+          <BookmarkSimple size={20} /> Your started quests{" "}
+          <ArrowRight size={20} />
+        </button>
+      )}
       {message && (
         <p className="creator-message" role="status">
           {message}
@@ -1263,6 +1284,9 @@ function QuestDetail({
   const title = part?.content.title || quest?.title || "Your quest";
   const reportTarget = creatorReportTarget(quest, part);
   const creator = part?.creator || quest?.creator;
+  // A paid quest starts only after the unlock below; the server enforces it too.
+  const [unlocked, setUnlocked] = useState<boolean | null>(null);
+  const needsUnlock = !!quest?.price && !!money && unlocked !== true;
   return (
     <>
       <Back
@@ -1346,7 +1370,7 @@ function QuestDetail({
             ) : (
               <button
                 className="primary-button"
-                disabled={busy}
+                disabled={busy || needsUnlock}
                 onClick={() =>
                   void act(
                     `/quests/${idPath(quest.id)}/participation`,
@@ -1360,6 +1384,13 @@ function QuestDetail({
                 <ArrowRight size={20} />
               </button>
             )}
+            {quest.creator.id !== playerId && needsUnlock && (
+              <p className="creator-hint" role="status">
+                {unlocked === null
+                  ? "Checking your unlock…"
+                  : "Unlock this quest below to start it."}
+              </p>
+            )}
           </>
         )
       )}
@@ -1368,6 +1399,7 @@ function QuestDetail({
           questId={quest.id}
           ownQuest={quest.creator.id === playerId}
           money={money}
+          onAccess={setUnlocked}
         />
       )}
       {reportTarget && (
@@ -2356,6 +2388,24 @@ function QuestEditor({
         </details>
       )}
       <form className="creator-form" onSubmit={save}>
+        {editable && (
+          <AiQuestDraft
+            template={template}
+            disabled={busy}
+            onSuggestion={(suggestion) => {
+              draft.setField("title", suggestion.draft.title.slice(0, 100));
+              draft.setField(
+                "description",
+                suggestion.draft.description.slice(0, 4000),
+              );
+              setTemplate(suggestion.draft.place.template);
+              setPoints(suggestion.draft.place.points);
+              setPlaceError("");
+              setQuote(null);
+              setAccepted(false);
+            }}
+          />
+        )}
         <fieldset className="creator-templates" disabled={!editable || busy}>
           <legend>Template</legend>
           {(Object.keys(PLACE_TEMPLATES) as CreatorPlaceTemplate[]).map(
@@ -2475,8 +2525,8 @@ function QuestEditor({
             <span>
               <strong>Paid unlock</strong>
               <small>
-                Explorers pay once to unlock: 80% to you, 20% to the city reward
-                pot.
+                Explorers pay once to unlock: 80% to you, 20% to the global prize
+                pool.
               </small>
             </span>
           </label>

@@ -263,7 +263,7 @@ svg {
 }
 .balance-pill > span:not(.gold-icon) {
   font-size: 8px;
-  color: #a28d61;
+  color: #6f5f3f;
   letter-spacing: 0.8px;
 }
 .balance-pill > svg {
@@ -407,7 +407,7 @@ svg {
   letter-spacing: 0.7px;
   font-weight: 700;
   background: #eee7f5;
-  color: #927bab;
+  color: #654f80;
   border: 1px solid #e8def0;
   border-radius: 5px;
   white-space: nowrap;
@@ -628,7 +628,7 @@ svg {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #9b86b0;
+  color: #6c5785;
   font-size: 11px;
   background: none;
   padding: 10px 0;
@@ -686,7 +686,7 @@ svg {
   border: 1px solid #e1d7e9;
   border-radius: 9px;
   padding: 10px 13px;
-  color: #816797;
+  color: #654a7b;
   font-size: 11px;
   min-height: 37px;
 }
@@ -769,7 +769,7 @@ svg {
 }
 .fine-print {
   font-size: 10px !important;
-  color: #a497aa !important;
+  color: #6c6072 !important;
   line-height: 1.7 !important;
   margin: 12px 0 !important;
 }
@@ -1179,7 +1179,7 @@ svg {
 }
 .welcome-card > p {
   font-size: 12px;
-  color: #a08e9e;
+  color: #6e5d6c;
   line-height: 1.7;
   margin-bottom: 23px;
 }
@@ -1189,7 +1189,7 @@ svg {
 .welcome-card label {
   font-size: 8px;
   letter-spacing: 1.5px;
-  color: #a28eaa;
+  color: #6f5a79;
   font-weight: 600;
 }
 .welcome-card input {
@@ -1201,7 +1201,7 @@ svg {
   justify-content: center;
   gap: 9px;
   margin-top: 13px;
-  color: #a495a4;
+  color: #6e616e;
   font-size: 9px;
   line-height: 1.6;
 }
@@ -1887,13 +1887,13 @@ input[type="range"] {
   display: flex;
   gap: 14px;
   align-items: center;
-  color: #ad94ba;
+  color: #6c5785;
   margin: 15px 0;
 }
 .market-banner b {
   display: block;
   font-size: 12px;
-  color: #9b82aa;
+  color: #654f80;
 }
 .market-banner small {
   display: block;
@@ -3020,11 +3020,13 @@ select {
   font-size: 12px;
 }
 
-/* MapLibre owns absolute anchor positioning; relative layout displaces geographic markers. */
-.player-marker.maplibregl-marker,
-.zone-map-pin.maplibregl-marker,
-.quest-map-pin.maplibregl-marker,
-.other-player-marker.maplibregl-marker {
+/* MapLibre owns absolute anchor positioning for every map marker (player,
+   zones, quests, NPCs, monsters, arenas). A marker class that sets
+   position: relative puts the marker back into normal flow, so markers stack
+   on each other by a fixed pixel offset: they drift on zoom, jump when another
+   marker appears and leave their route. Two classes outrank any single
+   marker class, whichever stylesheet loads later. */
+.maplibregl-map .maplibregl-marker {
   position: absolute;
   top: 0;
   left: 0;
@@ -3073,8 +3075,21 @@ select {
     z-index: 3;
   }
   .sheet-compact
-    > :not(.sheet-toggle):not(.recommended-quest):not(.compact-selection):not(.native-objective):not(.adventure-notice) {
+    > :not(.sheet-toggle):not(.recommended-quest):not(.compact-selection):not(.native-objective):not(.adventure-notice):not(.first-session) {
     display: none !important;
+  }
+  .main-panel.explore-panel.sheet-compact:has(.first-session) {
+    height: auto;
+    max-height: min(56dvh, 380px);
+    overflow-y: auto;
+  }
+  .sheet-compact .first-session {
+    margin: 0;
+    gap: 6px;
+    padding: 10px 12px 12px;
+  }
+  .sheet-compact .first-session-hint {
+    font-size: 14px;
   }
   .sheet-compact .recommended-quest {
     margin: 0;
@@ -4022,4 +4037,85 @@ select {
 .welcome-card .primary-button {
   justify-content: center;
   gap: 8px;
+}
+.signed-orders {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #ded2e8;
+}
+.signed-orders h3 {
+  font-size: 20px;
+}
+.signed-orders h4 {
+  font-size: 18px;
+  margin: 24px 0 8px;
+}
+.signed-orders > p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.signed-offer-form {
+  grid-column: 1/-1;
+  display: grid;
+  gap: 10px;
+}
+.signed-offer-form p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.signed-order-history {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.signed-order-history li {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #ded2e8;
+  border-radius: 12px;
+  background: #faf7ff;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.signed-order-history li[data-status="open"] {
+  border-color: #7b4bb3;
+}
+.signed-order-history li[data-status="filled"] {
+  background: #e6f2e9;
+}
+.signed-orders > button {
+  width: 100%;
+  margin-top: 12px;
+}
+.native-offer.signed-order {
+  grid-template-columns: minmax(0, 1fr);
+}
+.map-placeholder {background:linear-gradient(160deg,#f3ecfb 0%,#e6dcf5 100%);}
+/* Welcome screen link to the "How it works" one-pager. */
+.welcome-how {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: -4px 0 12px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--decorative-border);
+  background: var(--surface-soft);
+  color: var(--action);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.welcome-how:hover {
+  background: #e6dbfb;
+}
+a.settings-row {
+  text-decoration: none;
+}
+a.settings-row:hover {
+  background: var(--surface-soft);
 }

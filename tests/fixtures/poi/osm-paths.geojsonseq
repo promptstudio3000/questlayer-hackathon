@@ -1,0 +1,3 @@
+{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[13.377, 49.747], [13.379, 49.747]]}, "properties": {"@type": "way", "@id": 100, "highway": "footway"}}
+{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[13.3795, 49.7467], [13.3815, 49.7467]]}, "properties": {"@type": "way", "@id": 101, "highway": "residential"}}
+{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[13.3799, 49.75], [13.3801, 49.75]]}, "properties": {"@type": "way", "@id": 102, "highway": "footway", "access": "private"}}

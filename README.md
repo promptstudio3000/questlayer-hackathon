@@ -33,20 +33,28 @@ near you); the six daily zones with chests exist in Plzeň.
 
 ## What is on chain, and where to see it
 
-Every account below is on NEAR **testnet** and can be opened at `https://testnet.nearblocks.io/address/<account>`.
+Every account below is on NEAR **testnet**, existed on 1 November 2026 (checked with `view_account` against
+`rpc.testnet.near.org`) and matches the manifests in `public/native-*-testnet.json` and
+`public/testnet-deployment.json`. Click an id to open it on NearBlocks.
 
-| Piece | Account | What to look for |
+| Piece | Account (explorer link) | What to look for |
 | --- | --- | --- |
-| Your explorer | a sub-account of the player factory under `questlayer-dev-20261101.testnet`, shown in Profile → Advanced (NEAR account) | A sub-account created after step 1 with a key held only by your device ([docs/RELAYER.md](docs/RELAYER.md)). |
-| Auras and avatars (NEP-171) | `nfts.questlayer-dev-20261101.testnet` ([contracts/collectibles](contracts/collectibles)) | The mint from step 5 to your account, and equip calls. |
-| Gas sponsor (NEP-366 relayer) | `relay-20261101.questlayer-dev-20261101.testnet` | Meta-transactions relayed for players; it never carries money. |
-| Rewards treasury (coins, zone prizes, XP) | `questlayer-rewards-20261101b.testnet` ([contracts/rewards](contracts/rewards)) | Published days and claims. Live books check: `/api/native/distribution` returns `status: verified`. |
-| Staking vault that funds rewards from yield | `questlayer-vault-20261101b.testnet` via `questlayer-vaults-20261101b.testnet` | Harvests; timeline in `public/native-yield-cycle.json`. |
-| Aura market (fixed-price escrow) | `questlayer-market-20261101b.testnet` ([contracts/market](contracts/market)) | Profile → Market: list, buy, cancel. |
-| Creator money, sponsored tasks, public notes | `questlayer-creators-20261101b.testnet`, `questlayer-tasks-20261031.testnet`, `v1.social08.testnet` | Pilots; see [docs/STATUS.md](docs/STATUS.md). |
+| Player account factory (parent of every explorer) | [`play-20261101.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/play-20261101.questlayer-dev-20261101.testnet) | Your explorer is `<name-slug>.play-20261101.questlayer-dev-20261101.testnet`, shown in Profile → Advanced. Created after step 1, key held only by your device ([docs/RELAYER.md](docs/RELAYER.md)). |
+| Auras and avatars, NEP-171 ([contracts/collectibles](contracts/collectibles)) | [`nfts.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/nfts.questlayer-dev-20261101.testnet) | The mint from step 5 to your account, and equip calls. |
+| Game contract ([contracts/game](contracts/game)) | [`game.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/game.questlayer-dev-20261101.testnet) | Coin/zone buckets and claim batches (`public/testnet-deployment.json`). |
+| Gas sponsor, NEP-366 relayer | [`relay-20261101.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/relay-20261101.questlayer-dev-20261101.testnet) | Meta-transactions relayed for players. It never carries money. |
+| Rewards treasury: coins, zone prizes, XP ([contracts/rewards](contracts/rewards)) | [`questlayer-rewards-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-rewards-20261101b.testnet) | Published days and claims. Live books check: `/api/native/distribution` returns `status: verified`. |
+| Vault factory ([contracts/vault-factory](contracts/vault-factory)) | [`questlayer-vaults-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-vaults-20261101b.testnet) | Created the staking vault below. |
+| Staking vault that funds rewards from yield ([contracts/vault](contracts/vault)) | [`questlayer-vault-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-vault-20261101b.testnet) | Harvests into the treasury; timeline in `public/native-yield-cycle.json`. |
+| Aura market, fixed-price escrow ([contracts/market](contracts/market)) | [`questlayer-market-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-market-20261101b.testnet) | Profile → Market: list, buy, cancel. |
+| Creator money: paid quests, donations ([contracts/creators](contracts/creators)) | [`questlayer-creators-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-creators-20261101b.testnet) | Pilot, enabled on the public host. |
+| Sponsored tasks escrow ([contracts/tasks](contracts/tasks)) | [`questlayer-tasks-20261031.testnet`](https://testnet.nearblocks.io/address/questlayer-tasks-20261031.testnet) | Pilot, earlier generation. |
+| Public map notes (NEAR Social, not ours) | [`v1.social08.testnet`](https://testnet.nearblocks.io/address/v1.social08.testnet) | Notes written under the player's own namespace. |
+| Operator (deploys and owns the dev contracts) | [`questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/questlayer-dev-20261101.testnet) | Plain account, no contract code. |
 
-`GET https://questlayer.promptstudio3000.com/api/health` lists the enabled features, the relayer and the books
-check. Transaction proofs with hashes (no keys) are in `public/`; some were recorded on earlier testnet
+[`GET /api/health`](https://questlayer.promptstudio3000.com/api/health) shows `"network":"testnet"`, the enabled features
+(collectibles, market, rewards, vaults, relayer, social, creators, tasks), the relayer account, the creator-money
+contract and `distribution.status: verified`. The 3-minute demo script is [docs/HACKATHON-DEMO.md](docs/HACKATHON-DEMO.md). Transaction proofs with hashes (no keys) are in `public/`; some were recorded on earlier testnet
 generations (`questlayer-dev-20261031`, `auratrail-dev-20261030`), so their account names differ from the table:
 
 - `native-invisible-account-proof.json`: name → sponsored sub-account → relayed avatar mint, no wallet.
@@ -82,8 +90,10 @@ Automated checks: `npm run check` (build, application tests, mainnet-guard tests
 `bash scripts/build-contracts.sh --test` (contract tests). The full guide, including the isolated QA server,
 the testnet scripts and phone testing, is [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md).
 
-Cities come from `server/data/cities.json`: Plzeň is the only live and funded city; a second city is a new
+Cities come from `server/data/cities.json`: Plzeň is the only live city; a second city is a new
 CityPack file plus one registry line ([docs/SECOND-CITY-PLAYBOOK.md](docs/SECOND-CITY-PLAYBOOK.md)).
+Money is global: one treasury and one daily budget, placed on the map by player demand
+([docs/GLOBAL-TREASURY.md](docs/GLOBAL-TREASURY.md)).
 
 ## The economy, in one page
 
@@ -95,12 +105,48 @@ returns to its bucket; more players never create money.
 
 ## Architecture
 
+```mermaid
+flowchart LR
+  subgraph Device["Player device (browser / phone)"]
+    UI["React + MapLibre client<br/>OpenFreeMap tiles, pixel explorer"]
+    KEY["Device key<br/>(+ optional passkey / wallet)"]
+  end
+  subgraph VPS["questlayer.promptstudio3000.com (Node 24)"]
+    API["Game API + SSE<br/>server-authoritative coins, chests, XP"]
+    DB[("SQLite WAL<br/>receipts, inventory, jobs")]
+    WORK["Durable workers<br/>world planner, reward relay, account jobs"]
+    REL["NEP-366 relayer<br/>pays gas only"]
+  end
+  subgraph NEAR["NEAR testnet"]
+    ACC["Player sub-account<br/>*.play-20261101.questlayer-dev-20261101"]
+    NFT["nfts.* NEP-171 Auras"]
+    RW["questlayer-rewards-20261101b<br/>coin + zone buckets"]
+    VLT["questlayer-vault-20261101b<br/>staking yield"]
+    MKT["questlayer-market-20261101b<br/>escrow"]
+    SOC["v1.social08<br/>public notes"]
+  end
+  UI -->|play actions| API
+  API --- DB
+  API --> WORK
+  KEY -->|signs SignedDelegate| REL
+  REL -->|relays meta-tx| ACC
+  ACC --> NFT
+  ACC --> MKT
+  ACC --> SOC
+  WORK -->|publish day, settle claims| RW
+  VLT -->|harvested yield| RW
+  RW -->|payouts| ACC
+```
+
+The player's key signs; the relayer only pays gas; contracts enforce backing and exactly-once claims; the server is
+trusted for location evidence only.
+
 - **Client**: React 19 + TypeScript + Vite, MapLibre on OpenFreeMap vector tiles, Aavegotchi-compatible pixel
   character (official template layers, see `public/art/aavegotchi/provenance.json`).
 - **Server**: Node 24 ESM, SQLite (WAL), server-authoritative gameplay (coins, quests, receipts, equipment),
   durable background workers (world planner, reward relay, account/relayer jobs) with leases and backoff.
-- **Contracts**: Rust `near-sdk` workspace with seven members (game, collectibles, rewards, vault, vault-factory,
-  market, tasks).
+- **Contracts**: Rust `near-sdk` workspace with eight members (game, collectibles, rewards, vault, vault-factory,
+  market, tasks, creators).
 - **Identity**: name-only start, device key + sponsored sub-account, optional passkey, optional external wallet
   (NEP-413 sign-in). The server never holds a player private key or seed.
 

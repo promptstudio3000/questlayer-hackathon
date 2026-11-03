@@ -36,15 +36,21 @@ function setup() {
   );
   let snapshot = { tokenId: null, blockTimestampMs: now },
     minted = 0,
-    key = publicKey;
+    key = publicKey,
+    supported = null;
   const native = {
     contractId: "nfts.project.testnet",
-    view: async (method) =>
-      method === "get_award_signer"
+    view: async (method) => {
+      if (method === "supported_editions") {
+        if (!supported) throw new Error("MethodNotFound");
+        return supported;
+      }
+      return method === "get_award_signer"
         ? key
         : method === "edition_minted"
           ? minted
-          : { token_id: "aura:polar:2", owner_id: "bob.testnet" },
+          : { token_id: "aura:polar:2", owner_id: "bob.testnet" };
+    },
     claimSnapshot: async () => snapshot,
   };
   const issuer = {
@@ -63,8 +69,40 @@ function setup() {
     setSnapshot: (v) => (snapshot = v),
     setMinted: (v) => (minted = v),
     setKey: (v) => (key = v),
+    setSupported: (v) => (supported = v),
   };
 }
+test("catalog v2 editions get a voucher only once the deployed contract supports them", async () => {
+  const s = setup();
+  try {
+    s.db.prepare("INSERT INTO inventory VALUES(?,?,?,?,?,?,?,?,?,?)").run(
+      "aura-ember",
+      s.player,
+      "aura",
+      "Ember Wisp",
+      "common",
+      "above",
+      "#ff8a4c",
+      0,
+      1,
+      now,
+    );
+    await assert.rejects(
+      s.vouchers.issue(s.player, "aura-ember", "alice.testnet"),
+      (e) => e.status === 503 && /next contract upgrade/.test(e.message),
+    );
+    assert.equal(
+      s.db.prepare("SELECT COUNT(*) AS n FROM native_awards").get().n,
+      0,
+    );
+    s.setSupported(["polar", "moon", "gold", "ember"]);
+    const claim = await s.vouchers.issue(s.player, "aura-ember", "alice.testnet");
+    assert.equal(claim.edition, "ember");
+    assert.match(claim.message, /\nEdition: ember\n/);
+  } finally {
+    s.db.close();
+  }
+});
 test("earned vouchers bind contract, receiver, edition and expiry and lock the demo market", async () => {
   const s = setup();
   try {
@@ -103,7 +141,7 @@ test("earned vouchers bind contract, receiver, edition and expiry and lock the d
     );
     assert.throws(
       () => listItem(s.db, s.player, "aura-test", 100),
-      /reserved for NEAR/,
+      /being secured, so it cannot be listed/,
     );
     s.db
       .prepare("INSERT INTO wallet_links VALUES(?,?,?)")

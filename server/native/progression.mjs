@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { assert } from "../domain.mjs";
+import { levelItemMilestones } from "../levels.mjs";
 import { atomic } from "../database.mjs";
 import { nearAccountId } from "../identity/near.mjs";
 import { awardMessage } from "./award-vouchers.mjs";
@@ -26,6 +27,18 @@ export const NATIVE_LEVEL_MILESTONES = Object.freeze([
     name: "Sunlit Aura",
   }),
 ]);
+/**
+ * Native level milestones: the reviewed L2-L4 Auras plus level-item editions
+ * from server/data/level-table.json when LEVEL_ITEM_EDITIONS=1. An item edition
+ * must be one the deployed collectibles contract mints and is not claim-only;
+ * otherwise its claim stays unavailable (the contract rejects it).
+ */
+export function nativeLevelMilestones() {
+  const extra = levelItemMilestones().filter(
+    (m) => !NATIVE_LEVEL_MILESTONES.some((base) => base.level === m.level),
+  );
+  return extra.length ? Object.freeze([...NATIVE_LEVEL_MILESTONES, ...extra.map((m) => Object.freeze(m))]) : NATIVE_LEVEL_MILESTONES;
+}
 
 function exactXp(value) {
   assert(
@@ -349,7 +362,7 @@ export class NativeProgression {
     });
   }
   unavailableMilestones(accountId) {
-    return NATIVE_LEVEL_MILESTONES.map((milestone) => {
+    return nativeLevelMilestones().map((milestone) => {
       const old = this.award(accountId, milestone.level);
       return {
         ...milestone,
@@ -393,11 +406,19 @@ export class NativeProgression {
     let milestones;
     try {
       await this.code(block, this.contractId, this.collectiblesCodeHash);
+      // Level-item editions exist only after the collectibles upgrade that adds
+      // them; until the deployed contract lists one, its milestone stays unavailable.
+      const all = nativeLevelMilestones(),
+        needsList = all.some((m) => !NATIVE_LEVEL_MILESTONES.includes(m)),
+        supported = needsList
+          ? new Set(await this.view(block, this.contractId, "supported_editions"))
+          : null,
+        listed = all.filter((m) => !supported || NATIVE_LEVEL_MILESTONES.includes(m) || supported.has(m.edition));
       const [key, version, values] = await Promise.all([
         this.view(block, this.contractId, "get_award_signer"),
         this.view(block, this.contractId, "get_version"),
         Promise.all(
-          NATIVE_LEVEL_MILESTONES.map(async (milestone) => {
+          listed.map(async (milestone) => {
             const claimId = nativeLevelClaimId(
               this.sourceContractId,
               this.contractId,
@@ -457,6 +478,18 @@ export class NativeProgression {
           expiresAt: prior?.expires_at || null,
         };
       });
+      for (const milestone of all)
+        if (!listed.includes(milestone))
+          milestones.push({
+            ...milestone,
+            claimId: nativeLevelClaimId(this.sourceContractId, this.contractId, accountId, milestone.level),
+            state: "unavailable",
+            claimable: false,
+            tokenId: null,
+            remaining: null,
+            expiresAt: null,
+          });
+      milestones.sort((a, b) => a.level - b.level);
     } catch {
       milestones = this.unavailableMilestones(accountId);
     }
@@ -480,7 +513,7 @@ export class NativeProgression {
   async issue(player, accountId, level) {
     assert(
       Number.isInteger(level) &&
-        NATIVE_LEVEL_MILESTONES.some((entry) => entry.level === level),
+        nativeLevelMilestones().some((entry) => entry.level === level),
       "Choose a supported level reward.",
     );
     const state = await this.snapshot(player, accountId);
@@ -541,7 +574,7 @@ export class NativeProgression {
   async confirm(player, accountId, level) {
     assert(
       Number.isInteger(level) &&
-        NATIVE_LEVEL_MILESTONES.some((entry) => entry.level === level),
+        nativeLevelMilestones().some((entry) => entry.level === level),
       "Choose a supported level reward.",
     );
     const state = await this.snapshot(player, accountId);

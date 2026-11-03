@@ -25,11 +25,15 @@ writeFileSync(
 );
 console.log("Canonical explorer art generated; SHA-256 " + sha256);
 const { auraSvg } = await import("../src/character-art.ts");
-for (const [edition, color] of Object.entries({
-  polar: "#9edfc5",
-  moon: "#c2a0df",
-  gold: "#e7c35f",
-})) {
+// Cover media for every native catalog edition. Covers are the historical
+// explorer-with-ring design tinted by the edition color; minted tokens keep
+// whatever media they were minted with.
+const { default: catalog } = await import("../server/data/aura-catalog.json", {
+  with: { type: "json" },
+});
+for (const [edition, color] of catalog.editions
+  .filter((e) => e.native)
+  .map((e) => [e.id, e.color])) {
   const art = auraSvg(color);
   writeFileSync(`public/aura-${edition}.svg`, art);
   writeFileSync(

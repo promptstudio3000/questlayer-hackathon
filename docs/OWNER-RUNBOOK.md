@@ -88,7 +88,7 @@ Owner prerequisites on the Mac, all mode 600, none of them in git or chat:
 | --- | --- |
 | `.data/near-operator-mainnet.json` | `{"network":"mainnet","accountId":"<operator>.near","secretKey":"ed25519:…"}` with a full-access key |
 | `.data/award-attestor-mainnet.pem` | created by the first `--execute` if absent; never reuse the testnet PEM |
-| reviewed WASM | `bash scripts/build-contracts.sh` (pinned Rust 1.97.0, reproducible); it must match `contracts/collectibles/WASM_SHA256` (`491183e3…7287`, `docs/COLLECTIBLES-REVIEW.md`), which the script reads by itself. Needs the review PR #19 merged: before it the contract refused `redeem_aura` on mainnet |
+| reviewed WASM | `bash scripts/build-contracts.sh` (pinned Rust 1.97.0, reproducible); it must match `contracts/collectibles/WASM_SHA256` (`e2a41b19…31e9` since the patron and hackathon season editions; `0edba150…59b9` for the L5–L10 level editions; `176f1b07…dee9` for the NPC/monster editions; before that `b2684b58…36f7` for the catalog v2 editions and `491183e3…7287`, see `docs/COLLECTIBLES-REVIEW.md`), which the script reads by itself. Needs the review PR #19 merged: before it the contract refused `redeem_aura` on mainnet |
 
 ```bash
 export NEAR_NETWORK=mainnet NEAR_MAINNET_CONFIRM=<operator>.near \
@@ -99,7 +99,7 @@ node scripts/deploy-mainnet-slice.mjs --network mainnet --execute  # deploys
 ```
 
 The operator needs the three amounts plus 1 NEAR reserve (15.5 NEAR with the values above); the script checks the
-balance first. The collectibles amount must cover its code (350,650 bytes is about 3.51 NEAR at 10^19 yocto per
+balance first. The collectibles amount must cover its code (374,130 bytes is about 3.74 NEAR at 10^19 yocto per
 byte) plus 0.5 NEAR of state; the script refuses less, which would otherwise fail on chain with
 `LackBalanceForState`. `COLLECTIBLES_WASM_SHA256` is optional and must equal the recorded hash when set. Optional overrides:
 `COLLECTIBLES_ACCOUNT`, `PLAYER_FACTORY_ACCOUNT`, `RELAYER_ACCOUNT` (direct sub-accounts of the operator only),

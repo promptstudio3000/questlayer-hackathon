@@ -22,9 +22,20 @@ import {
   type FuelSummary,
 } from "./city-fuel";
 import { NativeStaking, type VaultSnapshot } from "./NativeStaking";
+import { StakeToday } from "./StakeToday";
+import { STAKER_SUGGEST_NEAR, takeStakePrefill } from "./LockedChip";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import type { Player } from "./types";
 import "./fuel-the-city.css";
+
+type StakerGates = { minNear: string; suggestNear: string; priceEur: number | null; access: { step: string; staker: boolean } };
+
+/** "~5 €" for a NEAR amount, only when the server has a reference price. */
+export function eurHint(near: number, priceEur: number | null | undefined): string | null {
+  if (!priceEur || !(near > 0)) return null;
+  const v = near * priceEur;
+  return `~${v < 10 ? String(Math.round(v * 2) / 2) : Math.round(v)} €`;
+}
 
 type CityStaking = {
   staking?: {
@@ -44,7 +55,7 @@ type Outcome =
   | { kind: "idle"; where?: undefined }
   | { kind: "pending" | "done" | "failed"; text: string; where?: "adjust" };
 
-/** Profile → Fuel the city. Staking as a choice with a city meter, not an APY table. */
+/** Profile → Fuel the prize pool. Staking as a choice with a pool meter, not an APY table. The pool is global (docs/GLOBAL-TREASURY.md). */
 export function FuelTheCity({
   player,
   account,
@@ -65,7 +76,8 @@ export function FuelTheCity({
   const [vaults, setVaults] = useState<VaultSnapshot | null>(null),
     [city, setCity] = useState<CityStaking | null>(null),
     [readError, setReadError] = useState(""),
-    [amount, setAmount] = useState("1"),
+    [amount, setAmount] = useState(() => takeStakePrefill() || STAKER_SUGGEST_NEAR),
+    [gates, setGates] = useState<StakerGates | null>(null),
     [contribution, setContribution] = useState(50),
     [understood, setUnderstood] = useState(false),
     [outcome, setOutcome] = useState<Outcome>({ kind: "idle" });
@@ -88,6 +100,23 @@ export function FuelTheCity({
   useEffect(() => {
     void refresh();
   }, [account]);
+  useEffect(() => {
+    let live = true;
+    api<StakerGates>("/staker/gates").then(
+      (g) => live && setGates(g),
+      () => undefined,
+    );
+    // A locked chip tapped while this sheet is open prefills it too.
+    const onOpen = () => {
+      const near = takeStakePrefill();
+      if (near) setAmount(near);
+    };
+    window.addEventListener("questlayer:open-stake", onOpen);
+    return () => {
+      live = false;
+      window.removeEventListener("questlayer:open-stake", onOpen);
+    };
+  }, []);
 
   const positions = (vaults?.positions || []) as FuelPosition[];
   const summary = summarizeFuel(positions, {
@@ -152,9 +181,10 @@ export function FuelTheCity({
   return (
     <section className="fuel" aria-labelledby="fuel-title">
       <p className="fuel-intro">
-        Stake test NEAR and choose how much of its yield fuels{" "}
-        {cityName || "the city"}. Your stake stays yours; the yield you share
-        grows tomorrow's pot and opens Tier 2 and Tier 3 places for you.
+        Stake test NEAR and choose how much of its yield fuels the global prize
+        pool. Your stake stays yours; the yield you share grows tomorrow's
+        rewards wherever people play, and opens Tier 2 and Tier 3 places for
+        you.
       </p>
 
       {readError && !vaults && (
@@ -166,7 +196,7 @@ export function FuelTheCity({
           </button>
         </div>
       )}
-      {!vaults && !readError && <p role="status">Reading the city's fuel…</p>}
+      {!vaults && !readError && <p role="status">Reading the prize pool fuel…</p>}
       {vaults?.status === "not-configured" && (
         <p className="fuel-state">
           Fueling isn't open on this server yet. You can keep exploring for free.
@@ -179,11 +209,11 @@ export function FuelTheCity({
             <div className="fuel-meter-head">
               <Flame size={28} weight="duotone" aria-hidden="true" />
               <div>
-                <h2 id="fuel-title">{cityName || "City"} fuel</h2>
+                <h2 id="fuel-title">Prize pool fuel</h2>
                 <p>
                   {summary.cityWeightedGold === null
-                    ? "City total not readable right now"
-                    : `${fmt(summary.cityWeightedGold)} GOLD of stake fueling the city${
+                    ? "Pool total not readable right now"
+                    : `${fmt(summary.cityWeightedGold)} GOLD of stake fueling the prize pool${
                         summary.stakers ? ` · ${summary.stakers} explorers` : ""
                       }`}
                 </p>
@@ -194,8 +224,8 @@ export function FuelTheCity({
               role="img"
               aria-label={
                 summary.share === null
-                  ? "City fuel meter"
-                  : `You give ${fmt(summary.share * 100, 1)} % of the city's fuel`
+                  ? "Prize pool fuel meter"
+                  : `You give ${fmt(summary.share * 100, 1)} % of the prize pool's fuel`
               }
             >
               <span style={{ width: `${cityPct}%` }} />
@@ -227,7 +257,7 @@ export function FuelTheCity({
                 <LockKeyOpen size={16} aria-hidden="true" />{" "}
                 {summary.next
                   ? `${fmt(summary.next.missingGold)} GOLD more fuel opens Tier ${summary.next.tier} places.`
-                  : "Every place in the city is open to you."}
+                  : "Every place on the map is open to you."}
               </p>
             </div>
           </div>
@@ -249,7 +279,7 @@ export function FuelTheCity({
                       {st.label}
                     </span>
                     <span>
-                      {contributionBps(p) / 100} % of yield to the city ·{" "}
+                      {contributionBps(p) / 100} % of yield to the prize pool ·{" "}
                       {fmt(weightedGold(p))} GOLD fuel
                     </span>
                   </li>
@@ -257,6 +287,8 @@ export function FuelTheCity({
               })}
             </ul>
           )}
+
+          <StakeToday />
 
           <div className="fuel-action">
             <h2>{active ? "Add fuel" : "Start fueling"}</h2>
@@ -270,7 +302,7 @@ export function FuelTheCity({
             ) : (
               <>
                 {fixedContribution === null ? (
-                  <div className="fuel-choice" role="radiogroup" aria-label="How much yield fuels the city">
+                  <div className="fuel-choice" role="radiogroup" aria-label="How much yield fuels the prize pool">
                     {CONTRIBUTION_CHOICES.map((c) => (
                       <button
                         key={c.pct}
@@ -288,7 +320,7 @@ export function FuelTheCity({
                 ) : (
                   <p className="fuel-fixed">
                     This stake gives <b>{fixedContribution} %</b> of its yield to
-                    the city.{" "}
+                    the prize pool.{" "}
                     {adjustable
                       ? "You can change it below."
                       : "To change it, exit and start a new one."}
@@ -309,6 +341,15 @@ export function FuelTheCity({
                 {active && amountError && (
                   <p className="fuel-error" role="alert">
                     {amountError}
+                  </p>
+                )}
+                {active && !amountError && (
+                  <p className="fuel-suggest">
+                    {gates && !gates.access.staker
+                      ? `${gates.suggestNear} NEAR${eurHint(Number(gates.suggestNear), gates.priceEur) ? ` (${eurHint(Number(gates.suggestNear), gates.priceEur)})` : ""} makes you a Staker after two epochs: the Keeper's inner vault and patron chapters open step by step with your level.`
+                      : eurHint(amountNear, gates?.priceEur)
+                        ? `${amount} NEAR is about ${eurHint(amountNear, gates?.priceEur)!.slice(1)} at today's mainnet price.`
+                        : null}
                   </p>
                 )}
                 {active && !amountError && (
@@ -504,7 +545,7 @@ function FuelAdjust({
         <h3 id="fuel-partial-title">Take some out</h3>
         <p>
           You have {fmtNear(String(position.position?.principal ?? "0"))} test
-          NEAR staked. The rest keeps fueling the city.
+          NEAR staked. The rest keeps fueling the prize pool.
         </p>
         <label className="fuel-amount">
           <span>Amount · test NEAR</span>
@@ -531,7 +572,7 @@ function FuelAdjust({
           <p className="fuel-preview" data-testid="partial-quote">
             You get back about {fmt(exitQuote.receiveNear, 3)} test NEAR
             {exitQuote.cityFeeNear > 0
-              ? `; ${fmt(exitQuote.cityFeeNear, 3)} test NEAR of yield already earned goes to the city at today's ${current} %`
+              ? `; ${fmt(exitQuote.cityFeeNear, 3)} test NEAR of yield already earned goes to the prize pool at today's ${current} %`
               : ""}
             . {fmt(exitQuote.remainingNear, 3)} test NEAR stays staked →{" "}
             {fmt(exitQuote.goldAfter)} GOLD fuel, {tierName(exitQuote.tierAfter)}.
@@ -554,7 +595,7 @@ function FuelAdjust({
       </section>
 
       <section aria-labelledby="fuel-share-title" className="fuel-adjust-part">
-        <h3 id="fuel-share-title">City share of your yield</h3>
+        <h3 id="fuel-share-title">Prize pool share of your yield</h3>
         <p>
           Now <b>{current} %</b>
           {typeof pending === "number"
@@ -562,7 +603,7 @@ function FuelAdjust({
             : ""}
           .
         </p>
-        <div className="fuel-choice" role="radiogroup" aria-label="New city share">
+        <div className="fuel-choice" role="radiogroup" aria-label="New prize pool share">
           {[{ pct: 0, label: "None", hint: "Keep all yield" }, ...CONTRIBUTION_CHOICES].map(
             (c) => (
               <button
@@ -602,10 +643,10 @@ function FuelAdjust({
                 vaultId: position.account_id,
                 contributionBps: share! * 100,
               },
-              "Changing the city share…",
+              "Changing the prize pool share…",
               shareQuote?.ok && shareQuote.settlesFirst
                 ? "Requested. The new share applies once earned yield settles."
-                : "City share changed.",
+                : "Prize pool share changed.",
             ).then((ok) => ok && setShare(null))
           }
         >

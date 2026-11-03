@@ -27,7 +27,10 @@ ARCHIVE_PATH="/tmp/${APP_NAME}-${RELEASE_TAG}.tgz"
 if [[ "${QUESTLAYER_CHECKS_PASSED:-0}" != 1 ]]; then npm run check; fi
 # The client fixes its network at build time (src/near-network.ts).
 if [[ "$TARGET" == mainnet ]]; then VITE_NEAR_NETWORK=mainnet npm run build; fi
-COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE_PATH" dist server public/*.json package.json package-lock.json "deploy/${APP_NAME}.service" deploy/retain-static-assets.py
+# Record the deployed commit for /api/health; an uncommitted tree stays unrecorded.
+if [[ -z "$(git status --porcelain --untracked-files=no)" ]]; then git rev-parse HEAD > build-id.txt
+else echo "Working tree has uncommitted changes; health will report development-unrecorded." >&2; : > build-id.txt; fi
+COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE_PATH" build-id.txt dist server public/*.json package.json package-lock.json "deploy/${APP_NAME}.service" deploy/retain-static-assets.py scripts/poi
 # Leave the testnet bundle in dist/ for the next testnet deploy or local run.
 if [[ "$TARGET" == mainnet ]]; then npm run build >/dev/null; fi
 scp -o BatchMode=yes -o ConnectTimeout=15 "$ARCHIVE_PATH" "${HOST_TARGET}:/tmp/${APP_NAME}-${RELEASE_TAG}.tgz"
@@ -99,6 +102,12 @@ systemctl enable "$APP_NAME" >/dev/null
 systemctl restart "$APP_NAME"
 for i in {1..25}; do if curl -fsS "http://127.0.0.1:$APP_PORT/api/health" >/dev/null; then break; fi; sleep 1; done
 curl -fsS "http://127.0.0.1:$APP_PORT/api/health"
+# W5: the World worker builds auto CityPacks after each POI import. When a POI
+# release exists but no auto city index yet, start one worker run now (it reuses
+# the downloaded inputs) instead of waiting for Sunday's timer.
+if [[ "$TARGET" != mainnet && -f /etc/systemd/system/questlayer-poi.service && -e /var/lib/questlayer-poi/current.sqlite && ! -e /var/lib/questlayer-poi/city-packs/index.json ]]; then
+ systemctl start --no-block questlayer-poi.service && echo "Started questlayer-poi to build auto cities (journalctl -u questlayer-poi)."
+fi
 if [[ "$TARGET" == mainnet ]]; then
  curl -fsS "http://127.0.0.1:$APP_PORT/api/health" | python3 -c 'import json,sys; h=json.load(sys.stdin); assert h["network"]=="mainnet", h["network"]; print("network:", h["network"], "features:", h["features"])'
 fi

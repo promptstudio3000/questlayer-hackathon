@@ -44,7 +44,14 @@ test("catalog exposes enforceable mechanics, capability gaps and no invented dur
   const catalog = questTemplateCatalog();
   assert.deepEqual(
     catalog.templates.map((t) => t.id),
-    ["path-visit", "ordered-trail", "return-trail", "cosmetic-chest"],
+    [
+      "path-visit",
+      "ordered-trail",
+      "return-trail",
+      "cosmetic-chest",
+      "poi-visit",
+      "poi-category-hunt",
+    ],
   );
   assert.ok(
     catalog.templates.every(
@@ -263,7 +270,7 @@ test("return trail requires ordered departure and return; retries and another pl
     assert.ok(q);
     const points = q.activity.steps.map((s) => s.point);
     assert.equal(points.length, 4);
-    assert.throws(() => claimQuest(db, player, q.id, q, NOW), /checkpoints/);
+    assert.throws(() => claimQuest(db, player, q.id, q, NOW), /stops in order/);
     assert.throws(
       () => advanceRoute(db, player, q.id, points[2], 2, NOW),
       /Refresh/,
