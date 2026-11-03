@@ -3857,7 +3857,7 @@ export default function App() {
                 }
                 detail={
                   hudXp !== null && hudLevel !== null
-                    ? `${hudXp} / ${100 * hudLevel ** 2} XP to level ${hudLevel + 1}`
+                    ? tr("{0} / {1} XP to level {2}", { 0: hudXp, 1: 100 * hudLevel ** 2, 2: hudLevel + 1 })
                     : tr("Secure your explorer to keep progress")
                 }
               />
