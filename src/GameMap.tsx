@@ -289,6 +289,14 @@ export function GameMap(props: GameMapProps) {
       }),
       "bottom-right",
     );
+    // Start the notice collapsed to its (i) button so it never covers the
+    // map or the sheet; one tap opens it.
+    m.once("load", () =>
+      m
+        .getContainer()
+        .querySelector(".maplibregl-ctrl-attrib")
+        ?.classList.remove("maplibregl-compact-show"),
+    );
     const marker = document.createElement("div");
     marker.className = "player-marker";
     marker.innerHTML = starterMarkerMarkup();

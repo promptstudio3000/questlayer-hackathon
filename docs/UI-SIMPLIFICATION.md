@@ -36,3 +36,15 @@ Screen changes:
   Rewards are tabs); Stake intro is one sentence; Game economy has a back
   arrow in the header.
 - Today's board: one lead line, corner ✕, claim button only when ready.
+
+## Wave 2
+
+- Map: the OpenStreetMap/ODbL notice starts collapsed to its (i) button
+  (one tap opens it) instead of covering the map above the sheet.
+- Discoveries: zone cards are slim rows (56 px art); the list heading is
+  "Places today · N" instead of repeating "Nearby discoveries".
+- Second-level switches (Rewards · Staking · Practice, Sponsored ·
+  Practice tasks) are 36 px pill rows.
+- Removed repeated disclaimers: "Test rewards · no monetary value" under
+  the Test network chip, the Signed offers lead line, "Cosmetic only" on
+  the set card, the "originals still being added" note in Wardrobe.

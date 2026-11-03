@@ -115,7 +115,7 @@ export function AuraSetStatus({ items }: { items: Item[] }) {
       >
         <Sparkle size={18} weight="fill" aria-hidden="true" />
         <span>
-          <strong>{set.name} set</strong> · {set.bonus}{tr(". Cosmetic only, no gameplay effect.")}</span>
+          <strong>{set.name} set</strong> · {set.bonus}</span>
       </p>
     );
   const worn = above || below,

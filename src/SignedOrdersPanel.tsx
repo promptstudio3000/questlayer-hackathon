@@ -324,7 +324,6 @@ export function SignedOrdersPanel({
   return (
     <section className="signed-orders" aria-labelledby="signed-orders-title">
       <h3 id="signed-orders-title">{tr("Signed offers")}</h3>
-      <p>{tr("Name an exact price in test NEAR and how long it stays open.")}</p>
       <Details>
         <p>
           {wallet
