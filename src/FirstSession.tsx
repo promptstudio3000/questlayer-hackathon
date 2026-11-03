@@ -1,9 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  Check,
-  Sparkle,
-  X,
-} from "@phosphor-icons/react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, Sparkle, X } from "@phosphor-icons/react";
 import { ArrowRight } from "./dir-icons";
 import { api } from "./api";
 import { cue } from "./feedback";
@@ -138,6 +134,7 @@ export function FirstSessionCoach({
   onAction,
   actionLabel,
   actionDisabled,
+  aside,
 }: {
   session: ReturnType<typeof useFirstSession>;
   worldId?: string;
@@ -147,6 +144,8 @@ export function FirstSessionCoach({
   /** Override for the current step's button, e.g. when nothing is open. */
   actionLabel?: string | null;
   actionDisabled?: boolean;
+  /** Extra line under the action, e.g. the nearest POI quest outside Plzeň. */
+  aside?: ReactNode;
 }) {
   const { progress, celebration } = session;
   const current = progress.current;
@@ -208,6 +207,7 @@ export function FirstSessionCoach({
             {actionLabel || current.action}
             <ArrowRight size={20} aria-hidden="true" />
           </button>
+          {aside}
         </>
       ) : (
         <>

@@ -219,7 +219,7 @@ import {
   SOCIAL_CONTRACT_ID,
   onNearNetwork,
 } from "./near-network.ts";
-import { nearestDiscovery } from "./nearest-discovery.ts";
+import { nearestDiscovery, poiQuestOutlook } from "./nearest-discovery.ts";
 import { FirstSessionCoach, useFirstSession } from "./FirstSession";
 import type { FirstStepId } from "./first-session";
 import {
@@ -2635,6 +2635,57 @@ export default function App() {
       : coachStep === "find" && !nearestCoin(true)
         ? "Walk to a coin"
         : null;
+  // Outside the reviewed city (H3 street cells, auto cities) the coach and
+  // the map point at the nearest open POI quest, or say honestly when quests
+  // open later today or this area has none.
+  const poiWorld =
+    !!world && !nativePlay && (!!world.poiQuests || world.cityStatus === "auto");
+  const poiOutlook =
+    poiWorld && world
+      ? poiQuestOutlook({
+          position,
+          quests: world.quests,
+          zones: world.zones,
+          tier: player?.tier || 1,
+          now,
+          emptyCell: world.poiQuests?.status === "empty",
+          questPoint,
+        })
+      : null;
+  const poiNext = poiOutlook?.state === "open" ? poiOutlook.nearest : null;
+  const coachAside =
+    !coachActive || !poiOutlook ? null : poiNext ? (
+      coachStep === "chest" &&
+      coachChest?.quest.id === poiNext.quest.id ? null : (
+        <button
+          className="first-session-next"
+          onClick={() => selectZone(poiNext.zone, poiNext.quest.id)}
+        >
+          <MapPin size={18} aria-hidden="true" />
+          <span>
+            <small>Nearest quest</small>
+            <strong>{poiNext.quest.title}</strong>
+            <span>{distanceLabel(poiNext.distance)}</span>
+          </span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </button>
+      )
+    ) : (
+      <p className="first-session-note" role="status">
+        {poiOutlook.state === "later"
+          ? `Quests here open at ${new Date(poiOutlook.opensAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: world?.timezone || undefined })}. Street coins count already.`
+          : poiOutlook.state === "empty"
+            ? "No quests in this spot today. Street coins still count; quests wait near parks, squares and landmarks."
+            : "You've done every quest here today. New ones open tomorrow."}
+      </p>
+    );
+  // The map marks one "next" place: the coach's POI quest, else the nearest
+  // recommended zone.
+  const nextZoneId = coachActive
+    ? coachStep === "chest" && coachChest
+      ? coachChest.zone.id
+      : poiNext?.zone.id || null
+    : recommendedZone?.id || null;
   const zoneQuests = (world?.quests || []).filter(
     (q) =>
       q.zone_id === selected?.id ||
@@ -2702,6 +2753,7 @@ export default function App() {
           }
           overview={overview}
           focusZone={selected}
+          nextZoneId={selected ? null : nextZoneId}
           nativeTarget={
             nativeTarget ||
             (findTarget
@@ -2979,6 +3031,7 @@ export default function App() {
                 busy={!!busy}
                 onAction={runFirstStep}
                 actionLabel={coachLabel}
+                aside={coachAside}
               />
             )}
           {tab === "explore" && selected && (
