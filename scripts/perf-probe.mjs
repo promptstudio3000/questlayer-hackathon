@@ -29,7 +29,11 @@ async function call(path, body) {
   const timing = Object.fromEntries(
     [...(r.headers.get("server-timing") || "").matchAll(/(\w+);dur=([\d.]+)/g)].map((m) => [m[1], Number(m[2])]),
   );
-  return { ms: performance.now() - t, status: r.status, kb: Buffer.byteLength(text) / 1024, text, app: timing.app, loop: timing.loop };
+  const spans = Object.entries(timing)
+    .filter(([k]) => k !== "app" && k !== "loop")
+    .map(([k, v]) => `${k} ${Math.round(v)}`)
+    .join(" ");
+  return { ms: performance.now() - t, status: r.status, kb: Buffer.byteLength(text) / 1024, text, app: timing.app, loop: timing.loop, spans };
 }
 const problems = [];
 const session = await call("/session", { name: "PerfProbe" });
@@ -47,6 +51,7 @@ for (const arena of [true, false]) {
     ["me", "/me"],
     ["presence", `/presence?lat=${at.lat}&lng=${at.lng}`],
   ];
+  if (post.spans) console.log(`  ${arena ? "arena" : "street"} POST /world: ${post.spans}`);
   rows.push([`${arena ? "arena" : "street"} POST /world`, post.status, Math.round(post.ms), "-", post.app ?? "-", post.kb.toFixed(1), world.coins?.length]);
   for (const [name, path, kbBudget] of reads) {
     const times = [],
@@ -57,7 +62,7 @@ for (const arena of [true, false]) {
       last = await call(path);
       times.push(last.ms);
       if (last.app !== undefined) apps.push(last.app);
-      if (last.ms > BUDGET.p95Ms) slow.push(`${Math.round(last.ms)} ms (server ${last.app ?? "?"} ms, loop stall ${last.loop ?? "?"} ms)`);
+      if (last.ms > BUDGET.p95Ms) slow.push(`${Math.round(last.ms)} ms (server ${last.app ?? "?"} ms, loop stall ${last.loop ?? "?"} ms${last.spans ? `, ${last.spans}` : ""})`);
     }
     times.sort((a, b) => a - b);
     apps.sort((a, b) => a - b);
