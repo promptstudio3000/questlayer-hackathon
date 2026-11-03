@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, Sparkle, X } from "@phosphor-icons/react";
+import {
+  Check,
+  Sparkle,
+  X,
+} from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { api } from "./api";
 import { cue } from "./feedback";
 import {

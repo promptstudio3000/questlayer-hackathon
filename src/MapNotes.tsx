@@ -2,7 +2,6 @@ import { EmptyState } from "./EmptyState";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowClockwise,
-  ArrowLeft,
   Camera,
   ChatCircle,
   Cube,
@@ -14,6 +13,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
+import { ArrowLeft } from "./dir-icons";
 import { Dialog } from "./Dialog";
 import { Ghost } from "./Ghost";
 import type { Fix, Point } from "./types";

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  ArrowRight,
   ArrowSquareOut,
   ArrowClockwise,
   Wallet,
@@ -9,6 +8,7 @@ import {
   ArrowDown,
   X,
 } from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { Character } from "./Character";
 import { Dialog } from "./Dialog";
 import "./inventory.css";

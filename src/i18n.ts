@@ -21,6 +21,8 @@ type Language = {
 const LANGUAGES = {
   en: { label: "English" },
   cs: { label: "Čeština", load: () => import("./i18n/cs.json") },
+  hi: { label: "हिन्दी", load: () => import("./i18n/hi.json") },
+  ar: { label: "العربية", dir: "rtl", load: () => import("./i18n/ar.json") },
 } satisfies Record<string, Language>;
 
 export type Lang = keyof typeof LANGUAGES;
@@ -62,6 +64,9 @@ function chosenLang(): Lang {
 }
 
 export const lang: Lang = chosenLang();
+
+/** True for right-to-left languages (Arabic). Fixed for the whole page load. */
+export const rtl: boolean = (LANGUAGES[lang] as Language).dir === "rtl";
 
 let dictionary: Dictionary = {};
 

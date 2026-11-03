@@ -137,7 +137,6 @@ import {
   Plus,
   Minus,
   X,
-  ArrowRight,
   ArrowUpRight,
   Sparkle,
   Coins,
@@ -145,7 +144,6 @@ import {
   Clock,
   Check,
   Leaf,
-  ArrowLeft,
   ChatCircle,
   PaperPlane,
   SignOut,
@@ -172,6 +170,8 @@ import {
   PersonSimpleRun,
   BookOpen,
 } from "@phosphor-icons/react";
+import { ArrowRight, ArrowLeft } from "./dir-icons";
+import { ArrowRight as PhArrowRight } from "@phosphor-icons/react";
 import { Details, ScreenTabPanel, ScreenTabs } from "./ScreenTabs";
 import {
   BAG_TABS,
@@ -274,7 +274,7 @@ const rarityNames: Record<string, string> = {
 };
 function distanceLabel(m: number) {
   if (!Number.isFinite(m)) return "";
-  if (m < 1000) return `${Math.round(m / 10) * 10} m away`;
+  if (m < 1000) return tr("{0} m away", { 0: Math.round(m / 10) * 10 });
   return tr("{0} km away", { 0: (m / 1000).toFixed(m < 10000 ? 1 : 0) });
 }
 function units(v: string) {
@@ -2937,7 +2937,7 @@ export default function App() {
                   <PickupSummary totals={pickupFeedback.totals} />
                 )}
               </span>
-              <ArrowRight
+              <PhArrowRight
                 size={20}
                 style={{
                   transform: sheetExpanded ? "rotate(90deg)" : "rotate(-90deg)",
@@ -3804,7 +3804,7 @@ export default function App() {
                 }
                 detail={
                   hudXp !== null && hudLevel !== null
-                    ? `${hudXp} / ${100 * hudLevel ** 2} XP to level ${hudLevel + 1}`
+                    ? tr("{0} of {1} XP to level {2}", { 0: hudXp, 1: 100 * hudLevel ** 2, 2: hudLevel + 1 })
                     : tr("Secure your explorer to keep progress")
                 }
               />
