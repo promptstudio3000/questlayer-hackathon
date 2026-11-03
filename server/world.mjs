@@ -31,6 +31,10 @@ import {
   readQueryCursor,
   queryCursor,
   zoneInBounds,
+  nearQuery,
+  nearBox,
+  NEAR_RADIUS_M,
+  NEAR_COIN_LIMIT,
 } from "./spatial/world-query.mjs";
 import {
   effectiveCityPack,
@@ -408,6 +412,7 @@ export function worldView(db, id, player = null, options = {}) {
   const row = db.prepare("SELECT manifest FROM worlds WHERE id=?").get(id);
   if (!row) return null;
   const query = worldQuery(options),
+    near = query.limit ? null : nearQuery(options.near),
     now = options.now ?? Date.now(),
     manifest = publicManifest(db, JSON.parse(row.manifest)),
     closed = closedPlaces(db, manifest.cityId),
@@ -489,6 +494,20 @@ export function worldView(db, id, player = null, options = {}) {
         `SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL AND id>?${bounds} ORDER BY id LIMIT ?`,
       )
       .all(...params, query.limit + 1);
+  } else if (near) {
+    const [w, south, e, north] = nearBox(near),
+      cosLat = Math.cos((near.lat * Math.PI) / 180),
+      away = (c) =>
+        ((c.lat - near.lat) * 111320) ** 2 +
+        ((c.lng - near.lng) * 111320 * cosLat) ** 2;
+    rows = db
+      .prepare(
+        "SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL AND lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?",
+      )
+      .all(id, south, north, w, e)
+      .filter((c) => away(c) <= NEAR_RADIUS_M ** 2);
+    if (rows.length > NEAR_COIN_LIMIT)
+      rows = rows.sort((a, b) => away(a) - away(b)).slice(0, NEAR_COIN_LIMIT);
   } else
     rows = db
       .prepare(
@@ -510,6 +529,9 @@ export function worldView(db, id, player = null, options = {}) {
       .filter((p) => !pointClosed(closed, p))
       .map((c) => (finds.has(c.id) ? { ...c, find: true } : c)),
     streetFindXp: STREET_FIND_XP,
+    ...(near
+      ? { coinsNear: { lat: near.lat, lng: near.lng, radiusM: NEAR_RADIUS_M } }
+      : {}),
     ...(query.limit
       ? {
           page: {
@@ -531,7 +553,13 @@ export function worldView(db, id, player = null, options = {}) {
 }
 export function expireWorlds(db, now = Date.now()) {
   return atomic(db, () => {
-    for (const row of db.prepare("SELECT id,manifest FROM worlds").all()) {
+    // Worlds already closed out are skipped in SQL, so this stays cheap as
+    // past days pile up (it runs on every POST /api/world).
+    for (const row of db
+      .prepare(
+        "SELECT id,manifest FROM worlds w WHERE NOT EXISTS (SELECT 1 FROM daily_jobs j WHERE j.job_key='expire:'||w.id)",
+      )
+      .all()) {
       const w = JSON.parse(row.manifest);
       if (w.endsAt > now) continue;
       const key = `expire:${row.id}`;

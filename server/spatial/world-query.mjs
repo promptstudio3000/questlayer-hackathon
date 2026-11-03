@@ -84,3 +84,30 @@ export function zoneInBounds(zone, bounds) {
     Math.min(...points.map((p) => p[1])) <= bounds[3]
   );
 }
+
+// Coins near the player (docs/PERFORMANCE-BUDGET.md). A demo arena holds
+// about 6000 coins over 6 km; a phone needs only the ones it can reach or see
+// at street zoom. Zones and quests are never cut, only coins.
+export const NEAR_RADIUS_M = 1500;
+export const NEAR_COIN_LIMIT = 1200;
+export function nearQuery(value) {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value === "string") {
+    const [lat, lng] = value.split(",").map(Number);
+    value = { lat, lng };
+  }
+  assert(
+    value &&
+      Number.isFinite(value.lat) &&
+      Number.isFinite(value.lng) &&
+      Math.abs(value.lat) <= 85 &&
+      Math.abs(value.lng) <= 180,
+    "Use near=lat,lng for nearby coins.",
+  );
+  return { lat: Number(value.lat), lng: Number(value.lng) };
+}
+export function nearBox({ lat, lng }, radiusM = NEAR_RADIUS_M) {
+  const dLat = radiusM / 111320,
+    dLng = radiusM / (111320 * Math.max(0.01, Math.cos((lat * Math.PI) / 180)));
+  return [lng - dLng, lat - dLat, lng + dLng, lat + dLat];
+}

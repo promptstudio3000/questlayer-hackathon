@@ -12,6 +12,7 @@ import "./ai/schema.mjs";
 import "./daily-board/schema.mjs";
 import "./badges/schema.mjs";
 import "./season/schema.mjs";
+import "./map-read-indexes.mjs";
 import { GOLD, id, hash, dayKey, levelFor, assert } from "./domain.mjs";
 
 export function openDatabase(

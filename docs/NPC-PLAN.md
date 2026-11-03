@@ -575,7 +575,7 @@ interface ActorDefinition {            // server/data/actors/<cityId>.json, sche
 interface ActorSegment { from: number; to: number; path: [number, number][]; dwell?: boolean } // ms epoch, [lng,lat]
 interface ActorView {                  // GET /api/actors?worldId=&lat=&lng=
   id: string; kind: ActorKind; archetype: Archetype; name: string; model: string;
-  segments: ActorSegment[];            // today's segments in the area, at most the next 2 h
+  segments: ActorSegment[];            // today's segments in the area, at most the next 20 min
   revealRadiusM?: number;              // lurker 60, wandering_rare 300; omitted = always visible
   guards?: { zoneId?: string; questId?: string }; // guardians
   state?: "active" | "defeated" | "cooldown";     // for this player
