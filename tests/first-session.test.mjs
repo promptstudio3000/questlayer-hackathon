@@ -73,6 +73,19 @@ test("the default explorer avatar does not count as wearing an Aura", () => {
   assert.equal(p.steps.find((s) => s.step.id === "aura").done, false);
 });
 
+test("a testnet starter kit does not skip the chest and Aura steps", () => {
+  const kit = { id: "seed-kit-p1-polar", kind: "aura", equipped: 1 };
+  const p = firstSessionProgress({ ...base, inventory: [kit] });
+  assert.equal(p.completed, 1);
+  assert.equal(p.current.id, "find");
+  const earned = firstSessionProgress({
+    ...base,
+    inventory: [kit, { id: "item_x", kind: "aura", equipped: 1 }],
+  });
+  assert.equal(earned.steps.find((s) => s.step.id === "chest").done, true);
+  assert.equal(earned.steps.find((s) => s.step.id === "aura").done, true);
+});
+
 test("local marks keep steps done after the history window rolls over", () => {
   const p = firstSessionProgress(base, { find: true, coin: true });
   assert.equal(p.current?.id, "chest");

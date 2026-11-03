@@ -70,6 +70,11 @@ export class Relayer {
       blockTtl = 120,
       maxJobsPerDay = 40,
       maxGas = 300000000000000n,
+      // NEP-366: the relayer's transaction carries every attached deposit, and
+      // a failed call refunds it to the player's account (the predecessor).
+      // So storage deposits are a per-account daily budget too (0.5 NEAR =
+      // ten 0.05 NEAR storage deposits), not only the job count.
+      maxDepositYoctoPerDay = 500000000000000000000000n,
       policyContext = null,
       vaults = null,
       factorySetupDeposit = null,
@@ -110,6 +115,7 @@ export class Relayer {
     this.blockTtl = blockTtl;
     this.maxJobsPerDay = maxJobsPerDay;
     this.maxGas = BigInt(maxGas);
+    this.maxDepositYoctoPerDay = BigInt(maxDepositYoctoPerDay);
     this.customContext = policyContext;
     initializeManagedAccounts(db);
   }
@@ -181,7 +187,22 @@ export class Relayer {
       jobs: row?.jobs ?? 0,
       topupYocto: row?.topup_yocto ?? "0",
       maxJobsPerDay: this.maxJobsPerDay,
+      depositYocto: this.depositsToday(accountId, day).toString(),
+      maxDepositYoctoPerDay: this.maxDepositYoctoPerDay.toString(),
     };
+  }
+  /** Deposits the relayer has carried (or will carry) for this account today. */
+  depositsToday(accountId, day = dayKey(this.clock(), "UTC")) {
+    const start = Date.parse(`${day}T00:00:00Z`);
+    let total = 0n;
+    for (const { deposit } of this.db
+      .prepare(
+        "SELECT json_extract(call,'$.deposit') AS deposit FROM relay_jobs WHERE account_id=? AND created_at>=? AND created_at<?",
+      )
+      .all(accountId, start, start + 86400000))
+      if (typeof deposit === "string" && /^\d{1,39}$/.test(deposit))
+        total += BigInt(deposit);
+    return total;
   }
   async context(playerId, accountId, publicKey) {
     const row = this.accounts.owned(playerId, accountId);
@@ -345,6 +366,13 @@ export class Relayer {
         "Today's sponsored actions for this account are used up.",
         429,
         "RELAY_BUDGET",
+      );
+      assert(
+        this.depositsToday(senderId, day) + BigInt(call.deposit) <=
+          this.maxDepositYoctoPerDay,
+        "Today's sponsored storage deposits for this account are used up. Try again tomorrow.",
+        429,
+        "RELAY_DEPOSIT_BUDGET",
       );
       this.db
         .prepare(

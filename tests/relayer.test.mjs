@@ -118,6 +118,45 @@ test("resubmitting the same signed delegate is idempotent and never spends budge
   assert.equal(other, undefined);
 });
 
+test("storage deposits the relayer carries are capped per account and day", async (t) => {
+  // A relayed call that fails refunds its deposit to the player's account, so
+  // without a cap 40 failing 0.05 NEAR calls a day would move 2 NEAR out.
+  const f = fixture({ maxDepositYoctoPerDay: NEAR / 10n });
+  t.after(() => f.db.close());
+  const acct = f.ready();
+  await f.relayer.submit(f.player, { signedDelegateBase64: await f.sign(acct) });
+  await f.relayer.submit(f.player, {
+    signedDelegateBase64: await f.sign(acct, { nonce: 102n }),
+  });
+  assert.equal(f.relayer.budget(acct.accountId).depositYocto, String(NEAR / 10n));
+  await assert.rejects(
+    f.relayer.submit(f.player, {
+      signedDelegateBase64: await f.sign(acct, { nonce: 103n }),
+    }),
+    (e) => e.code === "RELAY_DEPOSIT_BUDGET" && e.status === 429,
+  );
+  // Zero-deposit maintenance still goes through.
+  const equip = await f.relayer.submit(f.player, {
+    signedDelegateBase64: await f.sign(acct, {
+      nonce: 103n,
+      action: actions.functionCall(
+        "equip_aura",
+        { token_id: "aura:polar:1" },
+        30_000_000_000_000n,
+        0n,
+      ),
+    }),
+  });
+  assert.equal(equip.state, "queued");
+  assert.equal(f.relayer.budget(acct.accountId).jobs, 3);
+  // The next UTC day starts a fresh deposit budget.
+  f.advance(86_400_000);
+  const tomorrow = await f.relayer.submit(f.player, {
+    signedDelegateBase64: await f.sign(acct, { nonce: 104n }),
+  });
+  assert.equal(tomorrow.state, "queued");
+});
+
 test("network failures retry durably with bounded backoff and reconcile a lost response by hash", async (t) => {
   const f = fixture();
   t.after(() => f.db.close());

@@ -364,7 +364,7 @@ export function createTraderService({
       });
       return tradeView(ledger.trade(tradeId));
     }
-    let deadlineMs, price, premium = 0n, accountId;
+    let deadlineMs, price, premium = 0n, accountId, purse = 0n;
     if (offer.kind === "trade_buy") {
       accountId = t.accountId;
       assert(linked(player).includes(accountId), "Link this NEAR account first.", 403);
@@ -373,7 +373,8 @@ export function createTraderService({
       premium = BigInt(t.premium);
       const budget = budgetFor(trader, dayId);
       assert(premium <= budgetLeftFor(budget, { patron }), "The trader is out of premium budget today.", 409, "NPC_TRADE_BUDGET");
-      assert(price <= (await credit(trader, true)) - ledger.reservedForBuys(actor.id), "The trader's purse is empty right now.", 409, "NPC_TRADE_BUDGET");
+      purse = await credit(trader, true);
+      assert(price <= purse - ledger.reservedForBuys(actor.id), "The trader's purse is empty right now.", 409, "NPC_TRADE_BUDGET");
       deadlineMs = now + BUY_TTL_MS;
     } else {
       accountId = linked(player)[0] || "unlinked";
@@ -401,6 +402,13 @@ export function createTraderService({
       capCheck(actor.id, dayId, player);
       if (offer.kind === "trade_sell")
         assert(!ledger.openSellFor(actor.id, t.tokenId), "Someone else is buying that Aura.", 409, "NPC_TRADE_GONE");
+      if (offer.kind === "trade_buy") {
+        // Re-check under the write lock: two accepts can pass the checks above
+        // together while the order is being signed and indexed, and each one
+        // alone fits the purse and the premium budget while both do not.
+        assert(premium <= budgetLeftFor(budgetFor(trader, dayId), { patron }), "The trader is out of premium budget today.", 409, "NPC_TRADE_BUDGET");
+        assert(price <= purse - ledger.reservedForBuys(actor.id), "The trader's purse is empty right now.", 409, "NPC_TRADE_BUDGET");
+      }
       return ledger.insertTrade({
         trader: actor.id,
         player,

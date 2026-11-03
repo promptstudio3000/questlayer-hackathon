@@ -247,7 +247,7 @@
 }
 .inv-chip-count {
   font-size: 12px;
-  opacity: 0.75;
+  font-weight: 600;
 }
 
 /* ---- Disclosures and leads: never overlap the controls below ------- */
@@ -436,4 +436,57 @@
 }
 .map-note-menu > div {
   top: 40px;
+}
+
+/* ---- Wave 2 ---------------------------------------------------------- */
+/* Second-level switches (Rewards · Staking · Practice, Sponsored · Practice
+   tasks) are slim pill rows, not a second tab bar. */
+.main-panel .play-switch,
+.main-panel .play-mode-switch {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  margin: 0 0 10px;
+  border-radius: 999px;
+}
+.main-panel .play-switch button,
+.main-panel .play-mode-switch button {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.main-panel .play-switch button svg {
+  width: 16px;
+  height: 16px;
+}
+/* Discovery list: slim rows (56 px art) instead of tall cards. */
+.main-panel .zone-card {
+  min-height: 0;
+  padding: 8px;
+  gap: 10px;
+  align-items: center;
+}
+.main-panel .zone-illustration {
+  width: 56px;
+  height: 56px;
+}
+.main-panel .zone-illustration .game-object-art,
+.main-panel .zone-illustration svg,
+.main-panel .zone-illustration img {
+  max-width: 44px;
+  max-height: 44px;
+}
+.main-panel .zone-info h3 {
+  margin: 2px 0;
+  font-size: 16px;
+  line-height: 1.25;
+}
+.main-panel .zone-list {
+  gap: 8px;
 }

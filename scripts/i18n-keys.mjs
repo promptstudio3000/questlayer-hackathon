@@ -49,6 +49,9 @@ export function untranslatedJsx() {
   const found = [];
   for (const file of files(SRC)) {
     if (!file.endsWith(".tsx")) continue;
+    // The public prize pool ledger (/economy) is an English-only audit page
+    // outside the game UI, like the server's own texts.
+    if (file.startsWith(join(SRC, "economy"))) continue;
     const text = readFileSync(file, "utf8");
     const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     const where = (node) =>

@@ -31,6 +31,9 @@ const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS_ROOT = resolve(
   process.env.E2E_SHOTS || join(ROOT, "output/qa/2026-11-first-session"),
 );
+// Against a live server (E2E_BASE_URL) every explorer the journey makes is
+// named "test ..." so bot accounts are easy to find and clean up.
+const TAG = process.env.E2E_NAME_PREFIX ?? (process.env.E2E_BASE_URL ? "test " : "");
 const CHAIN =
   /\b(wallet|testnet|transaction|NEAR|mint(ed)?|NFT|on-chain|contract|blockchain|demo GOLD)\b/i;
 const STEP_TITLES = {
@@ -393,7 +396,7 @@ async function runDevice(name, server) {
     assert.equal(await page.locator(".pwa-update").count(), 0, `false "New version ready" on ${screen}`);
     for (const v of await a11y(page, screen, report)) blocking.push({ screen, ...v });
   };
-  const explorer = `Mira ${name}`;
+  const explorer = `${TAG}Mira ${name}`;
   const browser = await engine.launch();
   console.log(`\n== ${name} (${engine.name()} ${browser.version()}) ==`);
   try {
@@ -557,7 +560,7 @@ async function runDevice(name, server) {
     await dismissInstallOffer(buyer, layout);
     buyer.on("pageerror", (e) => console.error("buyer page error:", e.message));
     await buyer.goto(server.url);
-    await buyer.getByPlaceholder("Your explorer name").fill(`Buyer ${name}`);
+    await buyer.getByPlaceholder("Your explorer name").fill(`${TAG}Buyer ${name}`);
     await buyer.getByRole("button", { name: "Start exploring" }).click();
     await buyer.getByRole("button", { name: "Hide first steps" }).click();
     await buyer.getByRole("button", { name: "Profile", exact: true }).first().click();
@@ -614,7 +617,7 @@ async function runDevice(name, server) {
     const cardPage = await cardContext.newPage();
     await cardPage.clock.install();
     await cardPage.goto(server.url);
-    await cardPage.getByPlaceholder("Your explorer name").fill(`Card ${name}`);
+    await cardPage.getByPlaceholder("Your explorer name").fill(`${TAG}Card ${name}`);
     await cardPage.getByRole("button", { name: "Start exploring" }).click();
     await cardPage.getByRole("button", { name: "Hide first steps" }).click();
     await cardPage.clock.runFor(50_000);

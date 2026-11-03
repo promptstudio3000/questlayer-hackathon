@@ -10,6 +10,7 @@ import {
   SPONSOR_STORAGE_FEE,
   createTreasuryView,
   readTreasury,
+  fundingAlreadyRecorded,
 } from "../server/native/stnear-treasury.mjs";
 
 const N = 10n ** 24n;
@@ -233,4 +234,21 @@ test("public view says honestly when the stNEAR price has not grown", async () =
   assert.equal((await view(3n * N, 2)).yieldStatus, "waiting");
   assert.equal((await view((29n * N) / 10n, 30)).yieldStatus, "growing");
   assert.equal((await view(3n * N, 30)).depositPrice, price.toString());
+});
+
+test("a funding retry refused as an existing receipt counts as funded", () => {
+  // Shapes near-api-js gives: a thrown error, or a failed status object.
+  assert.equal(
+    fundingAlreadyRecorded(new Error("Smart contract panicked: Funding receipt exists")),
+    true,
+  );
+  assert.equal(
+    fundingAlreadyRecorded({
+      Failure: { ActionError: { kind: { FunctionCallError: { ExecutionError: "Smart contract panicked: Funding receipt exists" } } } },
+    }),
+    true,
+  );
+  assert.equal(fundingAlreadyRecorded(new Error("Exceeded the prepaid gas")), false);
+  assert.equal(fundingAlreadyRecorded({ Failure: { ActionError: "Approved vault only" } }), false);
+  assert.equal(fundingAlreadyRecorded(null), false);
 });

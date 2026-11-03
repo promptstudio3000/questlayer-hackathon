@@ -889,6 +889,8 @@ export default function HowItWorks() {
             </div>
             <p className="hiw-fine">
               <Key size={16} /> {" "}{tr("QuestLayer never asks for your recovery phrase.")}</p>
+            <p className="hiw-fine">
+              <HandCoins size={16} /> {" "}<a href="/economy">{tr("See the prize pool ledger")}</a></p>
           </div>
         </section>
       </main>

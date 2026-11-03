@@ -65,6 +65,7 @@ export const FIRST_STEPS: FirstStep[] = [
 
 type HistoryEntry = { kind: string; title: string };
 type InventoryItem = {
+  id?: string;
   kind: string;
   equipped: number | boolean;
   native_claim_state?: string | null;
@@ -97,7 +98,12 @@ export function provenSteps(player: FirstSessionPlayer | null): Set<FirstStepId>
     if (h.kind === "coin" && h.title === "Street find") proven.add("find");
     if (h.kind === "coin" && h.title === "Street coin") proven.add("coin");
   }
-  const auras = (player.inventory || []).filter((i) => i.kind === "aura");
+  // Testnet starter-kit Auras (TEST_SEED, ids "seed-kit-…") are handed out
+  // at sign-up; they must not tick off "open a chest" / "wear your Aura",
+  // or a newcomer on the test world skips the core loop.
+  const auras = (player.inventory || []).filter(
+    (i) => i.kind === "aura" && !String(i.id || "").startsWith("seed-kit-"),
+  );
   if (auras.length) proven.add("chest");
   if (player.nativeOutfit || auras.some((i) => !!i.equipped)) proven.add("aura");
   if (auras.some((i) => i.native_claim_state === "minted")) proven.add("secure");

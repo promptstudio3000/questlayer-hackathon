@@ -462,7 +462,6 @@ export function NativeExpeditions({
           <ArrowClockwise size={22} />
         </button>
       </div>
-      <p className="play-hint">{tr("Test rewards · no monetary value")}</p>
       {(error || control?.error) && (
         <p className="play-error" role="alert">
           {error || control?.error}

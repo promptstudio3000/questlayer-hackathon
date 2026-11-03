@@ -50,6 +50,8 @@ import {
   createBonusVoteRoutes,
 } from "./creators/bonus-vote.mjs";
 import { auditDistribution, auditSummary } from "./native/distribution.mjs";
+import { createPublicLedger } from "./native/public-ledger.mjs";
+import { readYieldBacking } from "./native/day-publication.mjs";
 import {
   NativeSocialRecords,
   createSocialRecordRoutes,
@@ -153,6 +155,7 @@ import { createBadgeRoutes } from "./badges/routes.mjs";
 import { seasonSettings } from "./season/config.mjs";
 import { createSeason } from "./season/service.mjs";
 import { createSeasonRoutes } from "./season/routes.mjs";
+import { ensureFairPlaySchema, guardTravel } from "./fair-play.mjs";
 import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
 import { poiWorldStatus } from "./poi/coverage.mjs";
 import {
@@ -375,6 +378,7 @@ const relayer = managedAccounts
         },
         blockTtl: relayConfig.blockTtl,
         maxJobsPerDay: relayConfig.maxJobsPerDay,
+        maxDepositYoctoPerDay: relayConfig.maxDepositYoctoPerDay,
         maxGas: relayConfig.maxGas,
         vaults: nativeVaults,
         factorySetupDeposit: rewardsConfig?.factory?.setupDeposit ?? null,
@@ -430,7 +434,13 @@ const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
 // The testnet test world turns them on too.
 const actorService =
   actorsEnabled() || testSeedMode === "apply"
-    ? createActorService(db, { allDay: actorsAllDay(process.env, NETWORK) })
+    ? createActorService(db, {
+        allDay: actorsAllDay(process.env, NETWORK),
+        travelGuard: (player, fix, now) => {
+          ensureFairPlaySchema(db);
+          guardTravel(db, player, fix, now);
+        },
+      })
     : null;
 const actorRoutes = createActorRoutes(actorService);
 // Today's city plans are built off the request path after a restart, so the
@@ -662,6 +672,17 @@ const creatorMoney = creatorsManifest
   : null;
 const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
+// Public economy ledger for the /economy page (docs/ECONOMY-PAGE.md).
+const yieldCycleProofPath = resolve(APP_ROOT, "public/native-yield-cycle-proof.json");
+const publicLedger = createPublicLedger({
+  native: nativeRewards,
+  treasury: stnearTreasury,
+  yieldBacking: readYieldBacking,
+  cycleProof: () =>
+    existsSync(yieldCycleProofPath)
+      ? JSON.parse(readFileSync(yieldCycleProofPath, "utf8"))
+      : null,
+});
 const tasksManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-tasks")}`),
   resolve(APP_ROOT, `dist/${manifestName("native-tasks")}`),
@@ -961,6 +982,10 @@ async function api(req, res, url) {
     if (fresh) nativeRewards.lastAudit = await auditDistribution(nativeRewards);
     return respond(res, nativeRewards.lastAudit);
   }
+  if (path === "/api/economy/ledger" && method === "GET")
+    return respond(res, await publicLedger(), 200, {
+      "Cache-Control": "public, max-age=60",
+    });
   if (path === "/api/native/economy" && method === "GET") {
     assert(nativeEconomy, "Native economy is not configured yet.", 503);
     return respond(res, await nativeEconomy.snapshot());

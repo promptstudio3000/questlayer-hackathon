@@ -805,7 +805,7 @@ export function Inventory({
             </summary>
             <div className="inventory-disclosure-body">
               <p>
-                {tr("Link your Aavegotchi wallet to wear an original you own. Originals stay where they are and cannot be sold here.")}</p>
+                {tr("Wear an original you own. It stays in your wallet.")}</p>
               <button
                 className="inventory-secondary"
                 onClick={() => void onEvm()}
@@ -901,8 +901,6 @@ export function Inventory({
                   )}
                 </>
               )}
-              <p>
-                {tr("Original wearables are still being added; some looks have no 3D preview yet.")}</p>
               {player.appearance?.originTokenId && (
                 <button
                   className="inventory-secondary"
