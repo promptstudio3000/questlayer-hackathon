@@ -265,8 +265,16 @@ async function journey(browser, server, device, j, expected) {
       );
       await page.waitForTimeout(1200);
       await page.screenshot({ path: join(shots, `${j.id}-coach.png`) });
-      // …and the coach line opens it.
-      await next.click();
+      // …and the coach line opens it. Street coins near the spawn point are
+      // picked up on their own, so the coach can move on to "Open your first
+      // chest" meanwhile; when that chest is this same quest the coach hides
+      // the "Nearest quest" line and its main action opens the quest instead.
+      const opener = coach
+        .getByRole("button", {
+          name: /^(Nearest quest|Open the chest|Walk to the chest)/,
+        })
+        .first();
+      await opener.click();
       await page
         .getByRole("heading", { level: 1, name: zone.name })
         .waitFor({ timeout: 10_000 });
