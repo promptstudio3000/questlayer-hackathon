@@ -49,6 +49,7 @@ import {
   materializePoiQuests,
   poiQuestText,
 } from "./poi-quests.mjs";
+import { clueView } from "./landmark-clue.mjs";
 export const HOME = DEFAULT_CITY.center;
 export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
@@ -437,6 +438,7 @@ export function worldView(db, id, player = null, options = {}) {
           : cps[q.checkpoint] || null,
         ...(visited ? { visitedStops: [...visited].sort((a, b) => a - b) } : {}),
         activity: describeStoredQuest(q, meta),
+        ...(meta.clue ? { clue: clueView(db, q.id, meta.clue, player, options.lang) } : {}),
       };
     });
   const level = levelFor(
