@@ -150,6 +150,28 @@ export function planHarvest({
   return { ...base, action: "harvest", sell, quote, feeBps, minExpected };
 }
 
+/**
+ * True when fund_rewards refused a receipt id because this sender already
+ * funded it. The rewards contract keys receipts by `<sender>:<receipt_id>`,
+ * so only an earlier funding of ours can have recorded it: the harvest is
+ * paid and the refused retry's deposit came back. Without this, a funding
+ * whose reply was lost would make every later `fund-pending` fail.
+ */
+export function fundingAlreadyRecorded(failure) {
+  let text;
+  try {
+    text =
+      typeof failure === "string"
+        ? failure
+        : failure instanceof Error
+          ? String(failure.message)
+          : JSON.stringify(failure);
+  } catch {
+    return false;
+  }
+  return /Funding receipt exists/.test(String(text));
+}
+
 /** Attached deposit for fund_rewards: the yield plus the sponsor storage fee. */
 export const fundingAttachment = (received) => received + SPONSOR_STORAGE_FEE;
 

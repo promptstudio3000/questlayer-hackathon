@@ -221,6 +221,28 @@ test("the trader pays no premium when its purse cannot cover the order", { skip 
   assert.equal((await encounter(alice)).menu.filter((o) => o.kind === "trade_buy").length, 0);
 });
 
+test("two buy orders accepted at once never promise more than the trader's purse", { skip }, async (t) => {
+  const { c, service, player, encounter } = setup(t);
+  const [wanted] = wantedEditions(ACTOR.id, DAY);
+  const alice = player("Alice", "alice.testnet"),
+    bob = player("Bob", "bob.testnet");
+  c.s.owner.set(`aura:${wanted}:4`, "alice.testnet");
+  c.s.owner.set(`aura:${wanted}:5`, "bob.testnet");
+  const [ea, eb] = [await encounter(alice), await encounter(bob)];
+  const [oa, ob] = [ea, eb].map((e) => e.menu.find((o) => o.kind === "trade_buy"));
+  assert.ok(oa && ob, "both are offered a premium");
+  // The purse covers either order alone, not both.
+  c.s.credit.set(NPC, BigInt(oa.terms.price) + BigInt(ob.terms.price) - 1n);
+  const results = await Promise.allSettled([
+    service.accept({ player: alice, actor: ACTOR, encounter: ea, offerId: oa.id }),
+    service.accept({ player: bob, actor: ACTOR, encounter: eb, offerId: ob.id }),
+  ]);
+  assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+  const refused = results.find((r) => r.status === "rejected");
+  assert.equal(refused.reason.code, "NPC_TRADE_BUDGET");
+  assert.ok(service.ledger.reservedForBuys(ACTOR.id) <= c.s.credit.get(NPC));
+});
+
 test("a trade-up turns three handed-over commons into one rare Aura", { skip }, async (t) => {
   const { c, service, player, encounter, db } = setup(t);
   const alice = player("Alice", "alice.testnet");

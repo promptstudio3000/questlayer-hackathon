@@ -43,6 +43,7 @@ function fakeChain() {
     get_access: ({ quest_id, account_id }) =>
       state.access.get(`${quest_id}|${account_id}`) ?? null,
     get_creator: ({ account_id }) => creator(account_id),
+    get_round: ({ day }) => state.rounds.get(day) ?? null,
   };
   const provider = {
     async viewNodeStatus() {
@@ -101,8 +102,35 @@ function fakeChain() {
               open: true,
             });
           }
-          if (method === "open_round") state.openRound = args.day;
-          if (method === "finalize_round") state.openRound = null;
+          if (method === "open_round") {
+            if (state.openRound)
+              return {
+                status: {
+                  Failure: {
+                    ActionError: {
+                      kind: {
+                        FunctionCallError: {
+                          ExecutionError:
+                            "Smart contract panicked: A round is already open",
+                        },
+                      },
+                    },
+                  },
+                },
+              };
+            state.openRound = args.day;
+            state.rounds.set(args.day, { budget: args.budget, finalized: false });
+          }
+          if (method === "finalize_round") {
+            state.openRound = null;
+            const r = state.rounds.get(args.day);
+            if (r) r.finalized = true;
+          }
+          if (state.loseReply) {
+            // The call landed on chain, but its reply never reached us.
+            state.loseReply = false;
+            throw new Error("fetch failed");
+          }
           return { status: { SuccessValue: encode(true) } };
         },
       };
@@ -311,6 +339,36 @@ test("a new UTC day finalizes yesterday before opening today; network errors ret
       )
       .get().registered_at,
   );
+});
+
+test("a round opened on chain whose reply was lost is adopted and finalized, not left blocking every later round", async () => {
+  const f = fixture();
+  f.chain.state.loseReply = true;
+  let r = await f.money.run();
+  assert.deepEqual(r, { confirmed: 0, failed: 0, retried: 1 });
+  assert.equal(f.chain.state.openRound, "2026-11-02");
+  // The retry is refused because the round is already open on chain.
+  f.advance(15000);
+  r = await f.money.run();
+  assert.equal(r.failed, 1);
+  // The next pass adopts the chain's open round instead of opening another.
+  r = await f.money.run();
+  assert.equal(
+    f.db
+      .prepare("SELECT state,budget_yocto FROM creator_money_rounds WHERE day='2026-11-02'")
+      .get().state,
+    "open",
+  );
+  assert.equal(
+    f.chain.state.calls.filter((c) => c.method === "open_round").length,
+    2,
+  );
+  // Next UTC day: yesterday's round is finalized and today's opens.
+  f.advance(24 * 3600 * 1000);
+  await f.money.run();
+  await f.money.run();
+  assert.equal(f.chain.state.rounds.get("2026-11-02").finalized, true);
+  assert.equal(f.chain.state.openRound, "2026-11-03");
 });
 
 test("round budget never exceeds the treasury or the policy cap, and no round opens on an empty fund", async () => {

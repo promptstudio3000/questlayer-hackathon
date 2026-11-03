@@ -47,6 +47,11 @@ export function relayerConfiguration(env = process.env) {
       "RELAY_MAX_JOBS_PER_DAY",
       10000,
     ),
+    maxDepositYoctoPerDay: yocto(
+      env.RELAY_MAX_DEPOSIT_YOCTO_PER_DAY,
+      "500000000000000000000000",
+      "RELAY_MAX_DEPOSIT_YOCTO_PER_DAY",
+    ),
     maxGas: yocto(env.RELAY_MAX_GAS, "300000000000000", "RELAY_MAX_GAS"),
     blockTtl: count(env.RELAY_BLOCK_TTL, 120, "RELAY_BLOCK_TTL", 1000),
   };
