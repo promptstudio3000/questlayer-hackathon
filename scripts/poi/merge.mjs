@@ -351,8 +351,12 @@ export function applyWikidata(records, wikidata) {
       if (!record.names[lang]) record.names[lang] = label;
     if (!record.name) record.name = item.labels?.cs || item.labels?.en || null;
     record.notability = Math.max(0, Number(item.sitelinks) || 0);
-    if (item.descriptions && Object.keys(item.descriptions).length)
-      record.facts = item.descriptions;
+    // facts: Wikidata short descriptions by language, plus the inception
+    // year (P571) when known. landmark-clue quests take their answers from
+    // here (server/landmark-clue.mjs); a model never supplies one.
+    const facts = { ...(item.descriptions || {}) };
+    if (Number.isInteger(item.inception)) facts.inception = item.inception;
+    if (Object.keys(facts).length) record.facts = facts;
     record.sources.push({
       source: "wikidata",
       sourceId: record.wikidata,

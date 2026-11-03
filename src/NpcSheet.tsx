@@ -119,7 +119,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   const turnIn = (line: NpcActiveLine) =>
     run(async () => {
       const r = await npcTurnIn(actorId, token, line.offerId);
-      setNotice(r.replay ? t.already : t.turnedIn(r));
+      setNotice(r.replay ? t.already : line.errand ? t.errandDone(r.xp, r.errand?.clueBonusXp) : t.turnedIn(r));
       await refresh();
     });
   const handOver = (offerId: string) =>
@@ -166,7 +166,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
         <CheckCircle weight="fill" />
       </span>
       <span className="npc-action-label">{line.label}</span>
-      <small>{t.turnIn(line.xp, line.aura)}</small>
+      <small>{line.errand ? t.errandReport(line.xp, line.errand.clueBonusXp) : t.turnIn(line.xp, line.aura)}</small>
     </button>
   );
 
@@ -273,7 +273,13 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                     ))}
                   </ul>
                   <button type="button" className="npc-turnin" disabled={busy || !done} onClick={() => turnIn(line)}>
-                    {done ? t.turnIn(line.xp, line.aura) : t.notReady}
+                    {line.errand
+                      ? done
+                        ? t.errandReport(line.xp, line.errand.clueBonusXp)
+                        : t.errandNotReady
+                      : done
+                        ? t.turnIn(line.xp, line.aura)
+                        : t.notReady}
                   </button>
                 </div>
               );

@@ -120,7 +120,7 @@ import {
 import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
 import { createActorRoutes } from "./actors/routes.mjs";
-import { actorsEnabled, createActorService } from "./actors/service.mjs";
+import { actorsAllDay, actorsEnabled, createActorService } from "./actors/service.mjs";
 import { testSeedMode as readTestSeedMode } from "./test-seed/config.mjs";
 import { createTestSeed } from "./test-seed/seed.mjs";
 import "./npc/menu-builder.mjs";
@@ -426,7 +426,9 @@ const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
 // Roaming NPCs and monsters (docs/NPC-PLAN.md §14): off unless ACTORS_ENABLED=1.
 // The testnet test world turns them on too.
 const actorService =
-  actorsEnabled() || testSeedMode === "apply" ? createActorService(db) : null;
+  actorsEnabled() || testSeedMode === "apply"
+    ? createActorService(db, { allDay: actorsAllDay(process.env, NETWORK) })
+    : null;
 const actorRoutes = createActorRoutes(actorService);
 // NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
 // Ollama setup; the key stays in the runtime environment only.
@@ -1988,7 +1990,7 @@ async function api(req, res, url) {
     const world = await ensureWorld(db, location, input.arena !== false);
     // layerId is added to the response only, never to the stored manifest.
     return respond(res, {
-      ...worldView(db, world.id, player, query),
+      ...worldView(db, world.id, player, { ...query, lang: input.lang === "cs" ? "cs" : "en" }),
       layerId: DEFAULT_LAYER.id,
     });
   }
@@ -2028,7 +2030,9 @@ async function api(req, res, url) {
     const input = await body(req);
     // A guardian monster on duty locks its zone chest until you beat it.
     monsterHunt?.chests.assertOpen(player, input.questId);
-    const result = game.claimQuest(db, player, input.questId, input.fix);
+    const result = game.claimQuest(db, player, input.questId, input.fix, undefined, {
+      answer: typeof input.answer === "string" ? input.answer.slice(0, 40) : null,
+    });
     emit("quest", { id: input.questId });
     return respond(res, { ...result, player: profile(player) });
   }
