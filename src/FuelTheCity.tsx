@@ -381,8 +381,8 @@ export function FuelTheCity({
                             vaultId: active.account_id,
                             amount: parseTestNear(amount),
                           },
-                          "Adding your fuel…",
-                          "Fuel added. It starts counting after about two pool epochs.",
+                          tr("Adding your fuel…"),
+                          tr("Fuel added. It starts counting after about two pool epochs."),
                         )
                       : setupPending
                         ? void send(
@@ -391,8 +391,8 @@ export function FuelTheCity({
                               vaultId: setupPending.account_id,
                               positionId: setupPending.id,
                             },
-                            "Finishing setup…",
-                            "Setup finished. Now add your first fuel.",
+                            tr("Finishing setup…"),
+                            tr("Setup finished. Now add your first fuel."),
                           )
                         : void send(
                             {
@@ -401,8 +401,8 @@ export function FuelTheCity({
                               contributionBps: contribution * 100,
                               setupDeposit: vaults.config.setup_deposit,
                             },
-                            "Setting up your stake…",
-                            "Your stake is set up. Now add your first fuel.",
+                            tr("Setting up your stake…"),
+                            tr("Your stake is set up. Now add your first fuel."),
                           )
                   }
                 >
@@ -434,7 +434,7 @@ export function FuelTheCity({
                     void send(
                       { action: "withdraw", vaultId: withdrawable.account_id },
                       "Withdrawing…",
-                      "Withdrawn to your balance.",
+                      tr("Withdrawn to your balance."),
                     )
                   }
                 >
@@ -559,8 +559,8 @@ function FuelAdjust({
           onClick={() =>
             void send(
               { action: "partial", vaultId: position.account_id, amount: amountYocto },
-              "Taking part of your stake out…",
-              "Requested. Your test NEAR is unstaking; withdraw it here when it's back.",
+              tr("Taking part of your stake out…"),
+              tr("Requested. Your test NEAR is unstaking; withdraw it here when it's back."),
             ).then((ok) => ok && setTakeOut(""))
           }
         >
@@ -617,10 +617,10 @@ function FuelAdjust({
                 vaultId: position.account_id,
                 contributionBps: share! * 100,
               },
-              "Changing the prize pool share…",
+              tr("Changing the prize pool share…"),
               shareQuote?.ok && shareQuote.settlesFirst
-                ? "Requested. The new share applies once earned yield settles."
-                : "Prize pool share changed.",
+                ? tr("Requested. The new share applies once earned yield settles.")
+                : tr("Prize pool share changed."),
             ).then((ok) => ok && setShare(null))
           }
         >

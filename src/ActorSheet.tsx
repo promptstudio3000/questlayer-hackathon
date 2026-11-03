@@ -30,15 +30,15 @@ const MonsterChallenge = optional(import.meta.glob("./MonsterChallenge.tsx"), "M
 const BossFight = lazy(async () => ({ default: (await import("./BossFight")).BossFight }));
 
 const PROBLEM: Record<string, string> = {
-  OUT_OF_RANGE: "Too far away. Walk closer: you need to be within about 35 m.",
-  GPS_ACCURACY: "Your GPS is not precise enough yet. Step into the open and try again.",
-  GPS_STALE: "Waiting for a fresh location. Try again in a moment.",
-  IMPLAUSIBLE_MOVE: "Your location jumped too fast. Wait for a steady GPS fix.",
-  ACTOR_AWAY: "They have left for now. Check the map again later.",
-  ACTOR_COOLDOWN: "They need a rest. Come back a little later.",
-  ENCOUNTER_LIMIT: "Take a short break before meeting more characters.",
-  WORLD_PAUSED: "Operators paused today's world for a moment. Your progress is safe.",
-  ACTORS_DISABLED: "Characters are not available on this server.",
+  get OUT_OF_RANGE() { return tr("Too far away. Walk closer: you need to be within about 35 m."); },
+  get GPS_ACCURACY() { return tr("Your GPS is not precise enough yet. Step into the open and try again."); },
+  get GPS_STALE() { return tr("Waiting for a fresh location. Try again in a moment."); },
+  get IMPLAUSIBLE_MOVE() { return tr("Your location jumped too fast. Wait for a steady GPS fix."); },
+  get ACTOR_AWAY() { return tr("They have left for now. Check the map again later."); },
+  get ACTOR_COOLDOWN() { return tr("They need a rest. Come back a little later."); },
+  get ENCOUNTER_LIMIT() { return tr("Take a short break before meeting more characters."); },
+  get WORLD_PAUSED() { return tr("Operators paused today's world for a moment. Your progress is safe."); },
+  get ACTORS_DISABLED() { return tr("Characters are not available on this server."); },
 };
 
 export function ActorSheet({

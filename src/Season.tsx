@@ -79,10 +79,10 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
   const pct = me ? Math.min(100, (me.points / season.goal) * 100) : 0;
   const when =
     season.phase === "ended"
-      ? "Final standings"
+      ? tr("Final standings")
       : season.phase === "upcoming"
-        ? `Starts in ${remaining(season.startsAt || 0)}`
-        : `Ends in ${remaining(season.endsAt)}`;
+        ? tr("Starts in {0}", { 0: remaining(season.startsAt || 0) })
+        : tr("Ends in {0}", { 0: remaining(season.endsAt) });
   const claim = async () => {
     setBusy(true);
     setError("");
@@ -116,9 +116,9 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
           </span>
           <span className="season-card-line">
             {me
-              ? `${me.points}/${season.goal} points${me.place ? ` · #${me.place}` : ""}${me.claimed ? " · goal reached" : ""}`
+              ? `${tr("{0}/{1} points", { 0: me.points, 1: season.goal })}${me.place ? ` · #${me.place}` : ""}${me.claimed ? tr(" · goal reached") : ""}`
               : tr("{0} explorers on the board", { 0: season.players || 0 })}
-            {season.pot ? ` · pot ${gold(season.pot.total)}` : ""}
+            {season.pot ? tr(" · pot {0}", { 0: gold(season.pot.total) }) : ""}
           </span>
         </span>
         <ArrowRight size={20} aria-hidden="true" className="season-card-go" />

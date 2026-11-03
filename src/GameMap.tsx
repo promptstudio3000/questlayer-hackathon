@@ -89,9 +89,9 @@ const CREATOR_PIN_KIND = {
   chest: "chest",
 } as const;
 const CREATOR_PIN_NAME = {
-  visit: "Creator place",
-  trail: "Creator trail",
-  chest: "Creator chest",
+  get visit() { return tr("Creator place"); },
+  get trail() { return tr("Creator trail"); },
+  get chest() { return tr("Creator chest"); },
 };
 function phoneLayout() {
   return (
@@ -162,7 +162,7 @@ function skinFallback(node: HTMLElement, _color?: string) {
     () => {
       image.src = STARTER_SPRITE;
       image.className = "starter-player";
-      image.alt = "Aavegotchi starter appearance";
+      image.alt = tr("Aavegotchi starter appearance");
       node.setAttribute(
         "aria-label",
         (node.getAttribute("aria-label") || "Explorer") +
@@ -606,7 +606,7 @@ export function GameMap(props: GameMapProps) {
         const tag = document.createElement("i");
         tag.className = "zone-map-pin-next-label";
         tag.setAttribute("aria-hidden", "true");
-        tag.textContent = "Next quest";
+        tag.textContent = tr("Next quest");
         node.append(tag);
       }
       node.addEventListener("click", (e) => {
@@ -801,7 +801,7 @@ export function GameMap(props: GameMapProps) {
     element.setAttribute("role", "img");
     element.setAttribute(
       "aria-label",
-      `${props.skinUrl ? "Your linked Aavegotchi" : "Your Aavegotchi starter"}${top ? `; ${top.name} above` : ""}${bottom ? `; ${bottom.name} below` : ""}`,
+      `${props.skinUrl ? tr("Your linked Aavegotchi") : tr("Your Aavegotchi starter")}${top ? `; ${top.name} above` : ""}${bottom ? `; ${bottom.name} below` : ""}`,
     );
     element.innerHTML =
       characterMarkerMarkup({

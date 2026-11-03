@@ -58,10 +58,10 @@ export const STANCE_COPY: Record<Stance, { label: string; beats: Stance }> = {
 };
 
 export const REASON_COPY: Record<string, string> = {
-  "too-fast": "That was faster than a person can play, so it didn't count.",
-  "too-early": "You tapped before the runes finished.",
-  time: "Time ran out.",
-  input: "Your moves didn't reach the monster. Try again later.",
+  get "too-fast"() { return tr("That was faster than a person can play, so it didn't count."); },
+  get "too-early"() { return tr("You tapped before the runes finished."); },
+  get time() { return tr("Time ran out."); },
+  get input() { return tr("Your moves didn't reach the monster. Try again later."); },
 };
 
 // Pointer position inside an element, as unit-square coordinates.

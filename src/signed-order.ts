@@ -116,10 +116,10 @@ export function statusFromCheck(
 }
 
 export const ORDER_STATUS_TEXT: Record<OrderStatus, string> = {
-  pending: "Confirming with the market",
+  get pending() { return tr("Confirming with the market"); },
   open: "Open: anyone can accept it until it expires",
-  filled: "Accepted on chain. Check your collection and market balance.",
-  cancelled: "Cancelled on chain: it can no longer be accepted",
+  get filled() { return tr("Accepted on chain. Check your collection and market balance."); },
+  get cancelled() { return tr("Cancelled on chain: it can no longer be accepted"); },
   expired: "Expired: it can no longer be accepted",
-  rejected: "Not accepted by the market",
+  get rejected() { return tr("Not accepted by the market"); },
 };

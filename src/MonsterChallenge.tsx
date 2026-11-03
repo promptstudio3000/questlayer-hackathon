@@ -158,7 +158,7 @@ function ResultView({ result, onClose }: { result: ChallengeResult; onClose: () 
       {won ? <Trophy size={40} weight="fill" aria-hidden="true" /> : <Shield size={40} aria-hidden="true" />}
       <h3>{won ? tr("You beat it!") : tr("It got away this time")}</h3>
       <p>
-        {tr("Score")}{" "}{result.result.score} of {result.result.max}.{" "}
+        {tr("Score {0} of {1}.", { 0: result.result.score, 1: result.result.max })}{" "}
         {won ? tr("It won't bother this street again today.") : reason || retryLabel(result.retryAt)}
       </p>
       {won && result.rewards && <RewardLine rewards={result.rewards} />}
@@ -257,7 +257,7 @@ function Quiz({ c, busy, submit }: PlayProps & { c: QuizChallenge }) {
   return (
     <div className="monster-quiz">
       <p className="monster-progress">
-        {tr("Question")}{" "}{index + 1} of {c.questions.length}
+        {tr("Question {0} of {1}", { 0: index + 1, 1: c.questions.length })}
         <span>
           <Timer size={16} aria-hidden="true" /> {left} s
         </span>
@@ -447,11 +447,11 @@ function Duel({ c, monster, onDone, onError }: PlayProps & { c: DuelChallenge })
         <Bar label={monster.name} value={hp.monster} max={c.monsterHp} />
       </div>
       <p className="monster-progress">
-        {tr("Round")}{" "}{Math.min(round + 1, c.rounds)} of {c.rounds} {" "}{tr("· power")}{" "}{c.power} {" "}{tr("from level")}{" "}{c.level}
+        {tr("Round {0} of {1} · power {2} from level {3}", { 0: Math.min(round + 1, c.rounds), 1: c.rounds, 2: c.power, 3: c.level })}
       </p>
       {last && (
         <p className="duel-last" aria-live="polite">
-          {tr("You")}{" "}{STANCE_COPY[last.stance].label.toLowerCase()}, it {STANCE_COPY[last.monster].label.toLowerCase()}s:{" "}
+          {tr("You: {0} · it: {1}.", { 0: STANCE_COPY[last.stance].label, 1: STANCE_COPY[last.monster].label })}{" "}
           {last.outcome === "win" ? tr("you hit for {0}", { 0: last.dealt }) : last.outcome === "lose" ? tr("it hits you for {0}", { 0: last.taken }) : tr("a clash, {0} each way", { 0: last.dealt })}.
         </p>
       )}

@@ -127,7 +127,7 @@ export function CommunityBonusVote({
       ) : (
         <ul className="bonus-vote-list">
           {ballot.candidates.map((c) => {
-            const label = c.title || "Community quest";
+            const label = c.title || tr("Community quest");
             const disabled =
               busy !== null ||
               c.own ||

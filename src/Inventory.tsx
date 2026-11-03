@@ -55,11 +55,11 @@ import "./inventory-game.css";
 import { tr } from "./i18n";
 
 const rarityNames: Record<string, string> = {
-  common: "Common",
-  uncommon: "Uncommon",
-  rare: "Rare",
-  epic: "Epic",
-  legendary: "Legendary",
+  get common() { return tr("Common"); },
+  get uncommon() { return tr("Uncommon"); },
+  get rare() { return tr("Rare"); },
+  get epic() { return tr("Epic"); },
+  get legendary() { return tr("Legendary"); },
 };
 const PRICE_DRAFT_FIELDS = { price: 32 };
 export type OriginalInventory = {
@@ -489,7 +489,7 @@ export function Inventory({
           {(["above", "below"] as const).map((slot) => {
             const item = slot === "above" ? wornAbove : wornBelow;
             const own = item && auras.find((entry) => entry.id === item.id);
-            const label = `${slotName(slot)} slot: ${item ? item.name : "empty"}`;
+            const label = tr("{0} slot: {1}", { 0: slotName(slot), 1: item ? item.name : tr("empty") });
             const art = item ? (
               sprite(item)
             ) : (
@@ -531,7 +531,7 @@ export function Inventory({
             >
               <Sparkle size={16} weight="fill" aria-hidden="true" />
               <span>
-                <strong>{wornSet.name} set</strong>
+                <strong>{tr("{0} set", { 0: wornSet.name })}</strong>
                 <small>{tr("Cosmetic glow")}</small>
               </span>
             </p>
@@ -709,7 +709,7 @@ export function Inventory({
                       disabled={locked}
                       onClick={() => openItem(item.id)}
                       title={item.name}
-                      aria-label={`${item.name}, ${rarityName(item.rarity)}, ${slotName(item.slot)}${members.length > 1 ? `, ${members.length} held` : ""}${item.equipped ? ", equipped" : ""}${issued ? ", being secured" : ""}`}
+                      aria-label={`${item.name}, ${rarityName(item.rarity)}, ${slotName(item.slot)}${members.length > 1 ? tr(", {0} held", { 0: members.length }) : ""}${item.equipped ? tr(", equipped") : ""}${issued ? tr(", being secured") : ""}`}
                     >
                       {sprite(item)}
                       {!!item.equipped && (
@@ -836,8 +836,7 @@ export function Inventory({
               {origin?.linked && origin.status === "verified" && (
                 <>
                   <p>
-                    {origin.count || 0} original
-                    {origin.count === 1 ? "" : "s"} verified
+                    {origin.count === 1 ? tr("1 original verified") : tr("{0} originals verified", { 0: origin.count || 0 })}
                     {origin.verifiedAt
                       ? ` · ${new Date(origin.verifiedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
                       : ""}

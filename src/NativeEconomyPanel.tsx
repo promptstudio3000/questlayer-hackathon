@@ -156,9 +156,9 @@ export function NativeEconomyPanel() {
             {staking?.pools.map((p) => (
               <div className="economy-pool" key={p.id}>
                 <b>{p.name}</b>
-                <span>{amount(p.staked)} staked</span>
+                <span>{tr("{0} staked", { 0: amount(p.staked) })}</span>
                 <small>
-                  {p.status} · {amount(p.unstaked)} unstaked
+                  {p.status} · {tr("{0} unstaked", { 0: amount(p.unstaked) })}
                 </small>
               </div>
             ))}

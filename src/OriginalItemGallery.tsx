@@ -60,7 +60,7 @@ export function OriginalItemGallery({ items }: { items: OriginalItem[] }) {
           >
             {tr("Previous items")}</button>
           <span role="status">
-            {tr("Page")}{" "}{page + 1} of {total}
+            {tr("Page {0} of {1}", { 0: page + 1, 1: total })}
           </span>
           <button
             className="secondary-button"

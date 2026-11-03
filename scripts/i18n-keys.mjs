@@ -39,6 +39,40 @@ export function usedKeys() {
   return [...keys].sort();
 }
 
+// Text a player reads that skips tr(): JSX text and the label-like
+// attributes (aria-label, title, placeholder, alt, label) given as a plain
+// string. Brand names, units and codes that stay the same in every language
+// are allowed.
+const SAME_IN_EVERY_LANGUAGE = /^(GOLD|XP|NEAR|testNEAR|QuestLayer|QUEST|LAYER|HP|GPS|Čeština|cq_…|ipfs:\/\/bafy…)$/;
+const LABEL_ATTRIBUTES = new Set(["aria-label", "title", "placeholder", "alt", "label"]);
+export function untranslatedJsx() {
+  const found = [];
+  for (const file of files(SRC)) {
+    if (!file.endsWith(".tsx")) continue;
+    const text = readFileSync(file, "utf8");
+    const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const where = (node) =>
+      `${file.slice(SRC.length + 1)}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}`;
+    (function visit(node) {
+      if (ts.isJsxText(node)) {
+        const value = node.text.trim().replace(/\s+/g, " ");
+        if (/\p{L}{2,}/u.test(value) && !SAME_IN_EVERY_LANGUAGE.test(value)) found.push(`${where(node)} ${JSON.stringify(value)}`);
+      }
+      if (
+        ts.isJsxAttribute(node) &&
+        LABEL_ATTRIBUTES.has(node.name.getText(source)) &&
+        node.initializer &&
+        ts.isStringLiteral(node.initializer) &&
+        /\p{L}{2,}/u.test(node.initializer.text) &&
+        !SAME_IN_EVERY_LANGUAGE.test(node.initializer.text)
+      )
+        found.push(`${where(node)} ${node.name.getText(source)}=${JSON.stringify(node.initializer.text)}`);
+      ts.forEachChild(node, visit);
+    })(source);
+  }
+  return found;
+}
+
 export function dictionaries() {
   return readdirSync(I18N)
     .filter((name) => /^[a-z]{2,3}(-[A-Za-z]+)?\.json$/.test(name))
@@ -58,4 +92,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const unused = Object.keys(entries).filter((k) => !used.has(k));
     console.log(`${id}: ${keys.length - missing.length}/${keys.length} translated, ${unused.length} unused`);
   }
+  const raw = untranslatedJsx();
+  console.log(`${raw.length} JSX texts outside tr()${raw.length ? ":\n  " + raw.join("\n  ") : "."}`);
 }

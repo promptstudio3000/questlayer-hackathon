@@ -57,7 +57,7 @@ function recipeCost(r: Recipe) {
 const NEEDS: Record<string, string> = {
   shards: "more shards of that kind",
   guardian: "a guardian win",
-  "common-aura": "common Auras you are not wearing",
+  get "common-aura"() { return tr("common Auras you are not wearing"); },
   daily: "tomorrow (daily offerings used)",
 };
 
@@ -151,7 +151,7 @@ export function BossFight({
           <span className="monster-sigil" aria-hidden="true" />
           <div>
             <h2>{actor.name}</h2>
-            <p className="monster-sub">{tr("Weekly boss at the Great Portal")}{ev ? ` · week ${ev.weekId.split("-W")[1]}` : ""}</p>
+            <p className="monster-sub">{tr("Weekly boss at the Great Portal")}{ev ? tr(" · week {0}", { 0: ev.weekId.split("-W")[1] }) : ""}</p>
           </div>
         </header>
         {ev && (
@@ -160,7 +160,7 @@ export function BossFight({
               <span style={{ width: `${(100 * ev.hp) / ev.maxHp}%` }} />
             </div>
             <p className="monster-sub">
-              {ev.hp} / {ev.maxHp} {" "}{tr("HP ·")}{" "}{ev.participants} hunter{ev.participants === 1 ? "" : "s"}
+              {ev.hp} / {ev.maxHp} {" "}{tr("HP ·")}{" "}{ev.participants === 1 ? tr("1 hunter") : tr("{0} hunters", { 0: ev.participants })}
               {ev.you ? tr(" · your hits: {0}", { 0: ev.you.hits }) : ""}
             </p>
           </div>
@@ -188,8 +188,7 @@ export function BossFight({
               <p className={`monster-rewards ${result.landed ? "" : "missed"}`} role="status">
                 {result.landed ? (
                   <>
-                    <Lightning size={18} weight="fill" aria-hidden="true" /> {" "}{tr("You dealt")}{" "}{result.damage} {" "}{tr("damage (score")}{" "}{result.score} of{" "}
-                    {result.max}).
+                    <Lightning size={18} weight="fill" aria-hidden="true" /> {" "}{tr("You dealt {0} damage (score {1} of {2}).", { 0: result.damage, 1: result.score, 2: result.max })}
                   </>
                 ) : (
                   tr("Your strike missed. Try again after the cooldown.")
@@ -216,7 +215,7 @@ export function BossFight({
               {ev.leaderboard.map((r) => (
                 <li key={r.rank} className={r.you ? "you" : undefined}>
                   <span>{r.name}</span>
-                  <span>{r.hits} hits</span>
+                  <span>{tr("{0} hits", { 0: r.hits })}</span>
                 </li>
               ))}
             </ol>

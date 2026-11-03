@@ -177,7 +177,7 @@ function PatronRankUp({ rank, onSeen }: { rank: PatronRank; onSeen: () => void }
         <div>
           <strong>{tr("Patron rank")}{" "}{rank.rankUp.rank}: {rank.rankUp.name}</strong>
           <p>
-            {rank.epochs} epoch{rank.epochs === 1 ? "" : "s"} {" "}{tr("of matured fuel kept the prize pool lit. The rank is yours to keep, even if you withdraw later.")}</p>
+            {rank.epochs === 1 ? tr("1 epoch") : tr("{0} epochs", { 0: rank.epochs })} {" "}{tr("of matured fuel kept the prize pool lit. The rank is yours to keep, even if you withdraw later.")}</p>
         </div>
         <button type="button" onClick={onSeen}>{tr("Thank the Keeper")}</button>
       </div>
@@ -194,7 +194,7 @@ export function PatronRankLadder({ rank }: { rank: PatronRank }) {
         {rank.ladder.map((step) => (
           <li key={step.rank} className={step.rank <= rank.rank ? "on" : ""} title={`${step.name}: ${epochHint(step.epochs)}`}>
             <span aria-hidden="true">{step.rank}</span>
-            <span className="sr-only">{`${step.name}${step.rank <= rank.rank ? " (earned)" : ""}`}</span>
+            <span className="sr-only">{step.rank <= rank.rank ? tr("{0} (earned)", { 0: step.name }) : step.name}</span>
           </li>
         ))}
       </ol>
@@ -327,10 +327,10 @@ export function InnerVault({ card }: { card: StakeCard }) {
 
 function PatronPath({ path, open }: { path: NonNullable<StakeCard["inner"]["path"]>; open: boolean }) {
   const reward = path.edition.earned
-    ? `You wear the ${path.edition.name} Aura.`
+    ? tr("You wear the {0} Aura.", { 0: path.edition.name })
     : path.edition.available
-      ? `Finish it for the ${path.edition.name} Aura (cosmetic, once per player).`
-      : "Finish it for the patron edition Aura (cosmetic, arrives with the next collectibles upgrade).";
+      ? tr("Finish it for the {0} Aura (cosmetic, once per player).", { 0: path.edition.name })
+      : tr("Finish it for the patron edition Aura (cosmetic, arrives with the next collectibles upgrade).");
   return (
     <div className="patron-path" aria-label={tr("Patron's Path")}>
       <h4>

@@ -29,10 +29,10 @@ export function zoneRarity(tier: number): AuraRarity {
 }
 
 const RARITY_LABEL: Record<AuraRarity, string> = {
-  common: "Common",
-  rare: "Rare",
-  epic: "Epic",
-  legendary: "Legendary",
+  get common() { return tr("Common"); },
+  get rare() { return tr("Rare"); },
+  get epic() { return tr("Epic"); },
+  get legendary() { return tr("Legendary"); },
 };
 
 // Rarer zones are taller so they read from further away.
@@ -152,7 +152,7 @@ export function zoneLoot(
       });
   }
   if (linked.some((q) => q.gold_u > 0))
-    loot.push({ id: "gold", kind: "gold", name: "Gold", image: "gold-coin" });
+    loot.push({ id: "gold", kind: "gold", name: tr("Gold"), image: "gold-coin" });
   return loot.slice(0, limit);
 }
 

@@ -362,7 +362,7 @@ function CollectiblesScene() {
                 <div className="hiw-card-face back">
                   <ShieldCheck size={28} weight="duotone" />
                   <b>{tr("Edition")}</b>
-                  <small>{tr("Max")}{" "}{AURA_SUPPLY} ever</small>
+                  <small>{tr("Max {0} ever", { 0: AURA_SUPPLY })}</small>
                   <small>{tr("Secured on NEAR")}</small>
                 </div>
               )}
@@ -431,10 +431,10 @@ function BadgesScene() {
 
 // 06 NPCs: cards slide in and speak; the trader merges three Auras into one.
 const NPCS = [
-  { id: "story", get name() { return tr("Storyteller"); }, line: "Want to hear chapter one?", icon: BookOpen, aura: "comet" },
-  { id: "quest", get name() { return tr("Quest giver"); }, line: "Three stops, one chest.", icon: Scroll, aura: "polar" },
-  { id: "trader", get name() { return tr("Trader"); }, line: "Three commons for a rare?", icon: Storefront, aura: "gold" },
-  { id: "keeper", get name() { return tr("Keeper"); }, line: "The inner vault opens for stakers.", icon: Vault, aura: "moon" },
+  { id: "story", get name() { return tr("Storyteller"); }, get line() { return tr("Want to hear chapter one?"); }, icon: BookOpen, aura: "comet" },
+  { id: "quest", get name() { return tr("Quest giver"); }, get line() { return tr("Three stops, one chest."); }, icon: Scroll, aura: "polar" },
+  { id: "trader", get name() { return tr("Trader"); }, get line() { return tr("Three commons for a rare?"); }, icon: Storefront, aura: "gold" },
+  { id: "keeper", get name() { return tr("Keeper"); }, get line() { return tr("The inner vault opens for stakers."); }, icon: Vault, aura: "moon" },
 ] as const;
 function NpcScene() {
   return (
@@ -496,7 +496,7 @@ function StakingScene({ active, reduce }: { active: boolean; reduce: boolean }) 
           <Vault size={64} weight="duotone" />
         </div>
         <ol className="hiw-epochs">
-          {["Deposit", "E+1", "E+2"].map((e, i) => (
+          {[tr("Deposit"), "E+1", "E+2"].map((e, i) => (
             <li key={e} style={stagger(i)}>
               <span />
               {e}
@@ -622,7 +622,7 @@ export default function HowItWorks() {
     const root = document.documentElement;
     root.classList.add("hiw-root");
     const previousTitle = document.title;
-    document.title = "How QuestLayer works";
+    document.title = tr("How QuestLayer works");
     return () => {
       root.classList.remove("hiw-root");
       document.title = previousTitle;
@@ -762,7 +762,7 @@ export default function HowItWorks() {
           eyebrow={tr("Walk and collect")}
           title={tr("Walk. Every street hides something.")}
           lead={tr("Your phone's GPS moves your ghost on a real map. Street coins and sparkling finds appear along the way: walk up to them and they are yours.")}
-          chips={["Street coins", "Sparkle finds", "Honest GPS distance"]}
+          chips={[tr("Street coins"), tr("Sparkle finds"), tr("Honest GPS distance")]}
           scene={<WalkScene active={is("walk")} reduce={reduce} />}
         />
 
@@ -773,7 +773,7 @@ export default function HowItWorks() {
           eyebrow={tr("Daily zones")}
           title={tr("Six new zones every day.")}
           lead={tr("Each day every live city gets six zones with trails, visits and chests, all paid from the same global prize pool. Three are open to everyone; the others open as you stake. Chests hold Auras.")}
-          chips={["3 free", "2 for Tier 2", "1 for Tier 3"]}
+          chips={[tr("3 free"), tr("2 for Tier 2"), tr("1 for Tier 3")]}
           scene={<ZonesScene />}
         />
 
@@ -783,7 +783,7 @@ export default function HowItWorks() {
           eyebrow={tr("Levels")}
           title={tr("Level up to {0}. Every level opens something.", { 0: MAX_LEVEL })}
           lead={tr("Everything you do earns XP. Each level unlocks something to do or to wear: new Auras, rings, quest lines, a title. Never better odds.")}
-          chips={["Level n at 100·(n−1)² XP", "Something new every level"]}
+          chips={[tr("Level n at 100·(n−1)² XP"), tr("Something new every level")]}
           scene={<LevelsScene active={is("levels")} reduce={reduce} />}
         />
 
@@ -794,7 +794,7 @@ export default function HowItWorks() {
           eyebrow={tr("Collectibles and editions")}
           title={tr("Wear what you earn. Own it on NEAR.")}
           lead={tr("Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.", { 0: AURA_SUPPLY })}
-          chips={["Limited editions", "Above and below slots", "Market and traders"]}
+          chips={[tr("Limited editions"), tr("Above and below slots"), tr("Market and traders")]}
           scene={<CollectiblesScene />}
         />
 
@@ -804,7 +804,7 @@ export default function HowItWorks() {
           eyebrow={tr("Badges")}
           title={tr("Collect the places you have really been.")}
           lead={tr("Stand on a summit, at a viewpoint or a landmark and a badge is yours. {0} notable places to start, and players can design their own place, event and quest badges, like a POAP.", { 0: PLACE_BADGE_COUNT })}
-          chips={["Real GPS check", "POAP-like player badges", "Soulbound, never sold"]}
+          chips={[tr("Real GPS check"), tr("POAP-like player badges"), tr("Soulbound, never sold")]}
           scene={<BadgesScene />}
         />
 
@@ -815,7 +815,7 @@ export default function HowItWorks() {
           eyebrow={tr("NPCs, monsters and traders")}
           title={tr("The city is alive.")}
           lead={tr("Friendly ghosts roam the map. Storytellers and quest givers hand out quest lines, monsters wait for a duel, a weekly boss calls everyone out, and traders swap three Auras for a better one.")}
-          chips={["Quest lines", "Monster duels", "Weekly boss", "Trade-ups"]}
+          chips={[tr("Quest lines"), tr("Monster duels"), tr("Weekly boss"), tr("Trade-ups")]}
           scene={<NpcScene />}
         />
 
@@ -829,11 +829,11 @@ export default function HowItWorks() {
               {tr("From")}{" "}{STAKER_MIN_NEAR} {" "}{tr("NEAR (about 5 €) you become a")}{" "}<b>{tr("Staker")}</b>{tr(". Your NEAR stays yours and keeps earning staking yield; you choose how much of that yield goes to the global prize pool. There is one pool for the whole game, and each day's rewards land where people actually play. After two epochs your stake matures and new things open step by step, together with your level.")}</>
           }
           chips={[
-            `Staker from ${STAKER_MIN_NEAR} NEAR`,
-            `Tier 2 from ${TIER_NEAR.tier2} NEAR, Tier 3 from ${TIER_NEAR.tier3}`,
-            "One global prize pool",
-            "Withdraw any time",
-            "Unlocks to do and wear, never odds",
+            tr("Staker from {0} NEAR", { 0: STAKER_MIN_NEAR }),
+            tr("Tier 2 from {0} NEAR, Tier 3 from {1}", { 0: TIER_NEAR.tier2, 1: TIER_NEAR.tier3 }),
+            tr("One global prize pool"),
+            tr("Withdraw any time"),
+            tr("Unlocks to do and wear, never odds"),
           ]}
           scene={<StakingScene active={is("staking")} reduce={reduce} />}
         />
@@ -845,7 +845,7 @@ export default function HowItWorks() {
           eyebrow={tr("Seasons")}
           title={tr("Seasons give every week a goal.")}
           lead={tr("A season runs about {0} days. Hunts, zone visits and NPC lines earn points, never money. Reach the goal for the season mark and the season Aura; go further for cosmetic ranks on the board.", { 0: SEASON.lengthDays })}
-          chips={["Points for play only", "Cosmetic ranks", "Season Aura for finishers", "No streaks"]}
+          chips={[tr("Points for play only"), tr("Cosmetic ranks"), tr("Season Aura for finishers"), tr("No streaks")]}
           scene={<SeasonScene active={is("seasons")} reduce={reduce} />}
         />
 

@@ -182,7 +182,7 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
                       <button
                         className={`badge-medal rarity-${b.rarity}${b.earnedAt ? " is-earned" : ""}`}
                         onClick={() => setDetail(b)}
-                        aria-label={`${b.nameCs}${b.earnedAt ? ", earned" : ", not yet"}`}
+                        aria-label={b.earnedAt ? tr("{0}, earned", { 0: b.nameCs }) : tr("{0}, not yet", { 0: b.nameCs })}
                       >
                         <span className="badge-medal-face" aria-hidden="true">
                           {b.icon}
@@ -285,7 +285,7 @@ function PlayerBadges({
     run(
       `claim:${b.id}`,
       () => api("/badges/user/claim", { badgeId: b.id, fix: gps ?? undefined, code: codes[b.id] }),
-      `${b.title} is yours. It is being minted on NEAR.`,
+      tr("{0} is yours. It is being minted on NEAR.", { 0: b.title }),
     );
   if (!u.enabled) return <p className="badge-lead">{tr("Player badges are not open on this server yet.")}</p>;
   const claimable = (b: UserBadge) => !b.holding || b.holding.state === "failed";
@@ -295,10 +295,10 @@ function PlayerBadges({
       <span>
         <b>{b.title}</b>
         <small>
-          {b.kind === "place" ? tr("Place") : b.kind === "event" ? tr("Event") : tr("Quest")} · {b.claimed}/{b.maxSupply} given
+          {b.kind === "place" ? tr("Place") : b.kind === "event" ? tr("Event") : tr("Quest")} · {tr("{0}/{1} given", { 0: b.claimed, 1: b.maxSupply })}
           {b.distanceM !== undefined ? ` · ${km(b.distanceM)}` : ""}
           {b.holding ? ` · ${holdingLabel(b)}` : ""}
-          {b.mine ? ` · ${b.onChain ? "design on NEAR" : b.state === "failed" ? "design failed" : "design queued"}` : ""}
+          {b.mine ? ` · ${b.onChain ? tr("design on NEAR") : b.state === "failed" ? tr("design failed") : tr("design queued")}` : ""}
         </small>
         {b.description && <small className="user-badge-desc">{b.description}</small>}
         {b.mine && b.code && (
@@ -386,7 +386,7 @@ function PlayerBadges({
                   setCreating(false);
                   setFound(b);
                 },
-                "Badge created. Its design goes on NEAR in a moment; share its id so others can find it.",
+                tr("Badge created. Its design goes on NEAR in a moment; share its id so others can find it."),
               )
             }
           />

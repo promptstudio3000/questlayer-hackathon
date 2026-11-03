@@ -32,7 +32,7 @@ export function editionLine(item: ShareCardInput["item"]): string {
   const parts = [
     edition
       ? AURA_EDITION_NAMES[edition] === item.name
-        ? "Limited edition"
+        ? tr("Limited edition")
         : `${AURA_EDITION_NAMES[edition]} edition`
       : "Explorer Aura",
     item.serial === null || item.serial === undefined ? null : `#${item.serial}`,
@@ -178,7 +178,7 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
   );
 
   // Status pill.
-  const pill = input.secured ? "Secured · yours outside the game" : "Earned on a real walk";
+  const pill = input.secured ? "Secured · yours outside the game" : tr("Earned on a real walk");
   ctx.font = "600 32px Kanit, system-ui, sans-serif";
   const pw = ctx.measureText(pill).width + 64;
   ctx.fillStyle = input.secured ? "#e3f6ee" : "#f2ebff";

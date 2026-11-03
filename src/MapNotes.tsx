@@ -355,10 +355,10 @@ export function MapNotes({
     setView(receipt.state === "abandoned" && text ? "compose" : "browse");
     const result =
       receipt.state === "published"
-        ? "Your note is on the map."
+        ? tr("Your note is on the map.")
         : receipt.state === "abandoned"
-          ? "The unfinished note was discarded."
-          : "This note is no longer visible. It was not posted again.";
+          ? tr("The unfinished note was discarded.")
+          : tr("This note is no longer visible. It was not posted again.");
     setNotice(result);
     notify?.(result);
     await load();
