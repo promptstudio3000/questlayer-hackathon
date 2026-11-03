@@ -79,3 +79,26 @@ test("map read indexes install as a module the schema check accepts", () => {
 test("actor lists stay short: 20 minutes of walk per refetch", () => {
   assert.ok(LIST_HORIZON_MS <= 30 * 60_000);
 });
+
+test("actor plans: a busy city plan stays cached and warm() builds it ahead of players", async () => {
+  const { DatabaseSync } = await import("node:sqlite");
+  const { localDateStart } = await import("../server/spatial/calendar.mjs");
+  const { createActorService, PLAN_CACHE_SIZE } = await import("../server/actors/service.mjs");
+  const DAY = "2026-11-02",
+    dayStart = localDateStart(DAY, "Europe/Prague"),
+    noon = dayStart + 12 * 3600_000;
+  const db = new DatabaseSync(":memory:");
+  const service = createActorService(db, { clock: () => noon });
+  db.exec("CREATE TABLE IF NOT EXISTS worlds(id TEXT PRIMARY KEY, day TEXT, region TEXT, timezone TEXT, manifest TEXT, created_at INTEGER)");
+  const plzen = { id: `demo:arena-city-plzen:${DAY}:v2`, day: DAY, region: "city-plzen", cityId: "plzen", timezone: "Europe/Prague", arena: true, endsAt: dayStart + 86_400_000, zones: [] };
+  db.prepare("INSERT INTO worlds VALUES(?,?,?,?,?,?)").run(plzen.id, DAY, plzen.region, "Europe/Prague", JSON.stringify(plzen), noon - 1000);
+  assert.equal(service.warm(noon), 1);
+  const plan = service.planFor(plzen);
+  // Many other worlds later (each a distinct plan), the hot plan is the same object.
+  for (let i = 0; i < PLAN_CACHE_SIZE + 10; i++) {
+    service.planFor({ ...plzen, id: `${plzen.id}:other-${i}` });
+    if (i % 8 === 0) assert.equal(service.planFor(plzen), plan);
+  }
+  assert.equal(service.planFor(plzen), plan);
+  assert.equal(service.warm(noon), 0, "already warm");
+});

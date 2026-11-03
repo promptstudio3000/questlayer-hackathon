@@ -32,6 +32,28 @@ every request). Answers slower than `SLOW_API_MS` (default 250) are logged as
 player. `perf:probe` prints both and lists each slow answer with its split:
 total minus `app` is network and nginx.
 
+### What the timing found (3 Nov 2026, after #123)
+
+Probing testnet from the cloud (≈120 ms round trip) showed two causes of the
+occasional 400–750 ms answers:
+
+1. **Cold actor plans (code, fixed).** Building the Plzeň actor day plan is
+   0.4–0.6 s of synchronous work. The plan cache was cleared outright once
+   it held 33 worlds, which street cells reach quickly, so a random
+   `/api/actors` call rebuilt the arena plan (`server 625 ms`) and every
+   request waiting behind it saw the stall (`server 1.6 ms, loop stall
+   611 ms`). The cache now evicts least recently used plans
+   (`PLAN_CACHE_SIZE` 128). `warm()` builds today's city plans one second
+   after boot, and the first `POST /api/world` for a city world builds them
+   right after its response.
+2. **Background stalls of 90–150 ms (left as is).** Roughly every 30 s the
+   loop stalls for about 0.1 s while background workers run. This adds up
+   to ~0.15 s to the requests that land in it. It stays under the budget
+   and is not on any player's path.
+
+Everything else is network: `/api/me`, `/api/presence` and the near world
+spend 1–20 ms in the server, and the rest is the round trip.
+
 ## Map rules
 
 - **Coins near the player.** The client always asks for `near` (POST body
