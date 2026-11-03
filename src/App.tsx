@@ -1029,8 +1029,15 @@ export default function App() {
         w ? { ...w, coins: w.coins.filter((c) => c.id !== d.id) } : w,
       );
     });
+    // Every explorer's discovery is broadcast: coalesce bursts into one map
+    // refresh so a busy city does not multiply world reads per client.
+    let questRefresh: ReturnType<typeof setTimeout> | null = null;
     s.addEventListener("quest", () => {
-      if (latest.current.player?.id === owner) void refreshWorld();
+      if (latest.current.player?.id !== owner || questRefresh) return;
+      questRefresh = setTimeout(() => {
+        questRefresh = null;
+        if (latest.current.player?.id === owner) void refreshWorld();
+      }, 2500);
     });
     s.addEventListener("market", () => void me());
     const sync = setInterval(() => {
@@ -1041,6 +1048,7 @@ export default function App() {
     return () => {
       s.close();
       clearInterval(sync);
+      if (questRefresh) clearTimeout(questRefresh);
     };
   }, [player?.id]);
   useEffect(() => {
