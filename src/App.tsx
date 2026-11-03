@@ -3228,9 +3228,8 @@ export default function App() {
               <TodaysPot practice onOpen={() => setTab("funding")} />
               <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               <div className="section-label">
-                <h2>{tr("Nearby discoveries")}</h2>
-                <span>
-                  {world?.cityZoneCount ?? activeZones.length} {" "}{tr("places today")}</span>
+                <h2>{tr("Places today")}</h2>
+                <span>{world?.cityZoneCount ?? activeZones.length}</span>
               </div>
               {world?.quality && (
                 <details
