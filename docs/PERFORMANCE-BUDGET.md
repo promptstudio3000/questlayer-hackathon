@@ -14,12 +14,23 @@ is crossed; raise a number only on purpose, in the same change that needs it.
 | `/api/world` with `near` | ≤ 1200 coins, ≤ 220 KB raw | `tests/perf-budget.test.mjs`, `npm run perf:probe` |
 | `/api/actors` | ≤ 40 KB raw, 20 min of segments | `tests/perf-budget.test.mjs`, `npm run perf:probe` |
 | API p95 (world, actors, me, presence) | ≤ 400 ms from outside the VPS | `npm run perf:probe` |
+| API p95 inside the server (`Server-Timing: app`) | ≤ 100 ms | `npm run perf:probe` |
 | Lighthouse mobile, welcome screen | performance ≥ 0.85, LCP ≤ 3 s | manual, see below |
 
 `npm run perf:probe -- https://questlayer.promptstudio3000.com 20` signs up
 one guest called "PerfProbe" on testnet, loads the Plzeň arena and a Brno
 street world, and times each read 20 times. Env overrides: `PERF_P95_MS`,
 `PERF_WORLD_KB`, `PERF_ACTORS_KB`. Never point it at mainnet.
+
+## Server timing
+
+Every `/api/` answer carries `Server-Timing: app;dur=…, loop;dur=…`: `app` is
+the time from request start to headers inside Node, `loop` is the worst
+event-loop stall in the last ~5 s (a background job or a sync call blocking
+every request). Answers slower than `SLOW_API_MS` (default 250) are logged as
+`Slow API <method> <route> <ms> (loop stall <ms>)`, route only, no query or
+player. `perf:probe` prints both and lists each slow answer with its split:
+total minus `app` is network and nginx.
 
 ## Map rules
 
