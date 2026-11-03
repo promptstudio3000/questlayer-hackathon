@@ -91,6 +91,7 @@ const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 import { createHash, randomBytes } from "node:crypto";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
+import { ensureHotPathIndexes } from "./hot-path-indexes.mjs";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -173,6 +174,7 @@ const backgroundWorkersDisabled =
   process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
 ensureMapReadIndexes(db);
+ensureHotPathIndexes(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
 const adventureResults = createAdventureResults(db);
@@ -730,10 +732,28 @@ function limit(scope, who, max, message) {
   rates.set(key, n);
   assert(n <= max, message, 429, "RATE_LIMITED");
 }
-function emit(type, data) {
-  const event = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
-  for (const client of listeners) client.write(event);
+// The world each explorer last loaded (POST/GET /api/world). Coin and quest
+// events only go to streams of explorers on that world: broadcasting every
+// pick-up in Czechia to every phone was most of the server's socket writes
+// with 500 walkers (npm run load:test). A stream whose explorer has not
+// loaded a world yet still gets everything.
+const viewing = new Map();
+function viewWorld(player, worldId) {
+  if (!worldId || viewing.get(player) === worldId) return;
+  viewing.delete(player);
+  if (viewing.size >= 100_000) viewing.delete(viewing.keys().next().value);
+  viewing.set(player, worldId);
 }
+function emit(type, data, worldId = null) {
+  const event = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const client of listeners) {
+    const at = worldId && viewing.get(client.questlayerPlayer);
+    if (!at || at === worldId) client.write(event);
+  }
+}
+const coinWorld = (coinId) => String(coinId).split(":coin:")[0] || null;
+const questWorld = (questId) =>
+  db.prepare("SELECT world_id FROM quests WHERE id=?").get(String(questId))?.world_id ?? null;
 function cookie(token) {
   return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
@@ -2057,6 +2077,7 @@ async function api(req, res, url) {
     at = performance.now();
     const world = await ensureWorld(db, location, input.arena !== false);
     spans.wensure = performance.now() - at;
+    viewWorld(player, world.id);
     warmActorPlan(world);
     // layerId is added to the response only, never to the stored manifest.
     return respond(res, {
@@ -2081,13 +2102,14 @@ async function api(req, res, url) {
       }),
     });
     assert(w, "This area could not be found. Refresh the map.", 404);
+    viewWorld(player, w.id);
     return respondCached(req, res, { ...w, layerId: DEFAULT_LAYER.id });
   }
   if (path === "/api/coins/claim" && method === "POST") {
     limit("coin", player, 240, "Please slow down collecting coins.");
     const input = await body(req),
       result = game.claimCoin(db, player, input.coinId, input.fix);
-    if (!result.alreadyClaimed) emit("coin", { id: input.coinId });
+    if (!result.alreadyClaimed) emit("coin", { id: input.coinId }, coinWorld(input.coinId));
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/checkpoint" && method === "POST") {
@@ -2100,7 +2122,7 @@ async function api(req, res, url) {
         input.fix,
         input.checkpoint,
       );
-    emit("quest", { id: input.questId });
+    emit("quest", { id: input.questId }, questWorld(input.questId));
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/claim" && method === "POST") {
@@ -2111,7 +2133,7 @@ async function api(req, res, url) {
     const result = game.claimQuest(db, player, input.questId, input.fix, undefined, {
       answer: typeof input.answer === "string" ? input.answer.slice(0, 40) : null,
     });
-    emit("quest", { id: input.questId });
+    emit("quest", { id: input.questId }, questWorld(input.questId));
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/stake" && method === "POST") {

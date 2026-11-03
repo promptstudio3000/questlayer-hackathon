@@ -17,6 +17,7 @@
     "check": "npm run build && npm run budget && npm test && npm run test:mainnet",
     "budget": "node scripts/check-bundle-budget.mjs",
     "perf:probe": "node scripts/perf-probe.mjs",
+    "load:test": "node scripts/load-test.mjs",
     "test:contracts": "bash scripts/build-contracts.sh --test",
     "contracts:docker": "bash scripts/build-contracts-docker.sh",
     "check:clean-clone": "bash scripts/clean-clone-check.sh",

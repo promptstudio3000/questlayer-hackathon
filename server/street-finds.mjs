@@ -9,6 +9,7 @@ export const STREET_FIND_XP = 15;
 export const STREET_COIN_XP = 2;
 
 const cache = new WeakMap();
+export const STREET_FIND_CACHE_SIZE = 1024;
 
 function coinIndex(id) {
   const n = Number(String(id).split(":coin:")[1]);
@@ -39,11 +40,19 @@ export function streetFindIds(db, worldId) {
   const count = db
     .prepare("SELECT COUNT(*) AS n FROM coins WHERE world_id=?")
     .get(worldId).n;
-  if (hit && hit.count === count) return hit.ids;
+  if (hit && hit.count === count) {
+    byWorld.delete(worldId);
+    byWorld.set(worldId, hit);
+    return hit.ids;
+  }
   const ids = pickStreetFinds(
     db.prepare("SELECT id,lat,lng FROM coins WHERE world_id=?").all(worldId),
   );
-  if (byWorld.size > 64) byWorld.clear();
+  // Least recently used out: with hundreds of street worlds open at once a
+  // full clear made every pick-up recompute its world (load test, 3 Nov).
+  if (hit) byWorld.delete(worldId);
+  else if (byWorld.size >= STREET_FIND_CACHE_SIZE)
+    byWorld.delete(byWorld.keys().next().value);
   byWorld.set(worldId, { count, ids });
   return ids;
 }

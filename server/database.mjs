@@ -13,15 +13,38 @@ import "./daily-board/schema.mjs";
 import "./badges/schema.mjs";
 import "./season/schema.mjs";
 import "./map-read-indexes.mjs";
+import "./hot-path-indexes.mjs";
 import { GOLD, id, hash, dayKey, levelFor, assert } from "./domain.mjs";
 
+// Request handlers call db.prepare(sql) inline, so SQLite compiled the same
+// SQL again on every request (~10 µs each, dozens per request; load test,
+// 3 Nov). Reuse one statement per SQL text. all/get/run reset the statement,
+// and SQLite re-prepares it on its own after a schema change. Do not nest two
+// iterate() calls over the same SQL text on this connection.
+export const STATEMENT_CACHE_SIZE = 4000;
+export function cachePreparedStatements(db) {
+  const prepare = db.prepare.bind(db),
+    cache = new Map();
+  db.prepare = (sql, ...rest) => {
+    if (rest.length || typeof sql !== "string") return prepare(sql, ...rest);
+    let statement = cache.get(sql);
+    if (!statement) {
+      statement = prepare(sql);
+      if (cache.size >= STATEMENT_CACHE_SIZE)
+        cache.delete(cache.keys().next().value);
+      cache.set(sql, statement);
+    }
+    return statement;
+  };
+  return db;
+}
 export function openDatabase(
   path = defaultDatabasePath(),
 ) {
   if (path !== ":memory:" && existsSync(path)) preflightDatabase(path);
   if (path !== ":memory:")
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-  const db = new DatabaseSync(path);
+  const db = cachePreparedStatements(new DatabaseSync(path));
   try {
     db.exec(
       "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; BEGIN IMMEDIATE",
