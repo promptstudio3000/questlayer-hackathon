@@ -231,12 +231,9 @@ import {
   type FeedbackPreferences,
 } from "./feedback";
 import LandmarkClue from "./LandmarkClue";
-import {
-  WALK_CAP_M,
-  WALK_STEP_MS,
-  cappedWalkTarget,
-  walkSteps,
-} from "./map-motion.ts";
+import { headingTo, metersBetween } from "./map-motion.ts";
+import { useDemoWalk } from "./useDemoWalk";
+import { DemoControls } from "./DemoControls";
 
 type Tab =
   | "explore"
@@ -328,6 +325,8 @@ export default function App() {
     [worldData, setWorld] = useState<World | null>(null),
     [position, setPosition] = useState<Point>(HOME),
     [fix, setFix] = useState<Fix | null>(null),
+    // Course over ground from the GPS, when the device reports one.
+    [gpsCourse, setGpsCourse] = useState<number | null>(null),
     [arena, setArena] = useState(true),
     [globe, setGlobe] = useState(false),
     [overview, setOverview] = useState(false),
@@ -1192,56 +1191,6 @@ export default function App() {
     };
   }, [player?.id]);
   useEffect(() => {
-    if (!arena || nativePlay || !player) return;
-    const key = (e: KeyboardEvent) => {
-      if (
-        e.defaultPrevented ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.altKey ||
-        document.querySelector("dialog[open]") ||
-        (e.target as HTMLElement).closest(
-          "button,a,main,form,[contenteditable=true]",
-        )
-      )
-        return;
-      if (
-        (e.target as HTMLElement).matches("input,textarea,select") ||
-        ![
-          "ArrowUp",
-          "ArrowDown",
-          "ArrowLeft",
-          "ArrowRight",
-          "w",
-          "a",
-          "s",
-          "d",
-        ].includes(e.key)
-      )
-        return;
-      e.preventDefault();
-      stopWalk();
-      setPosition((p) => ({
-        lat:
-          p.lat +
-          (["ArrowUp", "w"].includes(e.key)
-            ? 0.000065
-            : ["ArrowDown", "s"].includes(e.key)
-              ? -0.000065
-              : 0),
-        lng:
-          p.lng +
-          (["ArrowRight", "d"].includes(e.key)
-            ? 0.0001
-            : ["ArrowLeft", "a"].includes(e.key)
-              ? -0.0001
-              : 0),
-      }));
-    };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, [arena, nativePlay, player?.id]);
-  useEffect(() => {
     if (!presence || !player) return;
     if (document.visibilityState !== "visible") {
       setPresence(false);
@@ -1311,19 +1260,35 @@ export default function App() {
     },
     [],
   );
-  const walkTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const stopWalk = () => {
-    if (walkTimer.current !== null) clearInterval(walkTimer.current);
-    walkTimer.current = null;
-  };
-  useEffect(() => stopWalk, []);
+  // City demo only: the pad / arrows / WASD walk the explorer the way it
+  // faces. Real play has no manual movement; the position is the GPS fix.
+  const demoWalk = useDemoWalk({
+    enabled: !!player && arena && !nativePlay,
+    setPosition,
+    onWalk: () => {
+      setOverview(false);
+      setFollow(true);
+    },
+  });
+  const [demoTarget, setDemoTarget] = useState<
+    (Point & { label: string }) | null
+  >(null);
   useEffect(() => {
-    if (!arena || nativePlay) stopWalk();
+    if (!arena || nativePlay) setDemoTarget(null);
   }, [arena, nativePlay]);
+  useEffect(() => {
+    // Arriving within a few metres settles the explorer on the spot, so thin
+    // path zones still count in the demo. GPS play never snaps.
+    if (demoTarget && metersBetween(position, demoTarget) < 3) {
+      if (arena && !nativePlay)
+        setPosition({ lat: demoTarget.lat, lng: demoTarget.lng });
+      setDemoTarget(null);
+    }
+  }, [position, demoTarget]);
   const [streetFindTarget, setStreetFindTarget] = useState<string | null>(null);
   function goToStreetFind(coin: { id: string; lat: number; lng: number }) {
     setStreetFindTarget(coin.id);
-    if (arena && !nativePlay) move(coin);
+    if (arena && !nativePlay) faceToward(coin, "Street find");
     else {
       setFollow(false);
       setOverview(false);
@@ -1374,7 +1339,7 @@ export default function App() {
       }
       setSheetExpanded(false);
       if (coin.find) goToStreetFind(coin);
-      else if (arena) move(coin);
+      else if (arena) faceToward(coin, coin.find ? "Street find" : "Coin");
       else setFollow(false);
       return;
     }
@@ -1412,21 +1377,13 @@ export default function App() {
       else setTab("inventory");
     }
   }
-  function move(p: Point) {
+  // Demo: turn the explorer toward a place; holding Forward walks there.
+  function faceToward(p: Point, label: string) {
     if (!arena || nativePlay) return;
-    stopWalk();
     setOverview(false);
     setFollow(true);
-    const from = latest.current.position,
-      { point } = cappedWalkTarget(from, p),
-      steps = prefersReducedMotion() ? [point] : walkSteps(from, point);
-    setPosition(steps.shift()!);
-    if (!steps.length) return;
-    walkTimer.current = setInterval(() => {
-      const next = steps.shift();
-      if (next) setPosition(next);
-      if (!steps.length) stopWalk();
-    }, WALK_STEP_MS);
+    demoWalk.face(headingTo(latest.current.position, p));
+    setDemoTarget({ lat: p.lat, lng: p.lng, label });
   }
   function chooseNativeQuest(index: number) {
     const q = nativeGame.state?.day?.quests.find((q) => q.index === index);
@@ -1487,6 +1444,7 @@ export default function App() {
     if (gps.current !== null) navigator.geolocation.clearWatch(gps.current);
     gps.current = null;
     setFix(null);
+    setGpsCourse(null);
     setArena(true);
     setPosition(HOME);
     void loadWorld(HOME, true);
@@ -1531,6 +1489,13 @@ export default function App() {
             };
             setPosition(f);
             setFix(f);
+            const course = p.coords.heading;
+            if (
+              course !== null &&
+              Number.isFinite(course) &&
+              (p.coords.speed ?? 0) > 0.7
+            )
+              setGpsCourse(course);
           },
           () => {
             if (current())
@@ -2798,7 +2763,9 @@ export default function App() {
               ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
               : undefined
           }
-          onMove={move}
+          facing={
+            arena && !nativePlay ? demoWalk.heading : (gpsCourse ?? undefined)
+          }
           onZone={(z) =>
             nativePlay
               ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
@@ -3189,9 +3156,6 @@ export default function App() {
                       <span>
                         On a mapped path ·{" "}
                         {distanceLabel(recommendedFind.distance)}
-                        {arena && recommendedFind.distance > WALK_CAP_M
-                          ? ` · walk in ${Math.ceil(recommendedFind.distance / WALK_CAP_M)} steps`
-                          : ""}
                       </span>
                     </span>
                     <ArrowRight size={20} />
@@ -3494,15 +3458,18 @@ export default function App() {
                         Reward collected <Check />
                       </button>
                     ) : arena && meters(position, questPoint(q)) > 25 ? (
-                      <button
-                        className="primary-button"
-                        onClick={() => move(questPoint(q))}
-                      >
-                        {meters(position, questPoint(q)) > WALK_CAP_M
-                          ? `Walk ${WALK_CAP_M} m closer`
-                          : "Walk there"}{" "}
-                        <NavigationArrow />
-                      </button>
+                      <>
+                        <button
+                          className="primary-button"
+                          onClick={() => faceToward(questPoint(q), q.title)}
+                        >
+                          Turn toward it <NavigationArrow />
+                        </button>
+                        <p className="fine-print">
+                          City demo: hold ↑ or W (or the pad) to walk, Shift
+                          to run. Real play moves only with your phone's GPS.
+                        </p>
+                      </>
                     ) : (
                       <button
                         className="primary-button"
@@ -4269,7 +4236,7 @@ export default function App() {
                   ? "Turn on location"
                   : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
                 : arena
-                  ? "City demo · tap to walk"
+                  ? "City demo · arrows or WASD"
                   : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`}
             </span>
             <button
@@ -4302,6 +4269,27 @@ export default function App() {
                 : "Going visible…"}{" "}
               <X size={12} />
             </button>
+          )}
+          {arena && !nativePlay && !globe && tab === "explore" && (
+            <DemoControls
+              held={demoWalk.held}
+              running={demoWalk.running}
+              run={demoWalk.run}
+              setRun={demoWalk.setRun}
+              press={demoWalk.press}
+              release={demoWalk.release}
+              target={
+                demoTarget
+                  ? {
+                      label: demoTarget.label,
+                      meters: metersBetween(position, demoTarget),
+                      relative:
+                        (headingTo(position, demoTarget) ?? demoWalk.heading) -
+                        demoWalk.heading,
+                    }
+                  : null
+              }
+            />
           )}
           <div className="map-controls map-toolbar" role="toolbar" aria-label="Map tools" aria-orientation="vertical">
             <button

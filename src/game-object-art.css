@@ -49,6 +49,74 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Zone landmark marker (src/zone-landmarks.ts): the zone pin lifted onto the
+   top of its 3D totem, a stem as tall as the totem and a countdown at its base.
+   The marker itself never sets position; MapLibre anchors it. */
+.zone-totem-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.zone-totem-marker > .zone-map-pin,
+.zone-totem-marker > .zone-countdown {
+  pointer-events: auto;
+}
+.zone-totem-stem {
+  display: block;
+  width: 2px;
+  /* --zone-px-per-m is set by the map on every move (GameMap.tsx). */
+  height: min(110px, calc(var(--zone-px-per-m, 0.7px) * var(--totem-h, 36)));
+  margin-top: -4px;
+}
+.zone-countdown {
+  /* Nameplate at the totem base; the marker is MapLibre's absolute box. */
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1a0335e6;
+  color: #fcfaff;
+  font: 700 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 0 #441c6c40;
+}
+.zone-countdown[hidden] {
+  display: none;
+}
+.zone-totem-marker.phase-upcoming > .zone-countdown {
+  background: #672eeb;
+}
+.zone-totem-marker.phase-open > .zone-countdown {
+  background: #176553;
+}
+.zone-totem-marker.phase-closed > .zone-countdown,
+.zone-totem-marker.phase-done > .zone-countdown {
+  background: #6f6478;
+}
+.zone-totem-marker.phase-closed > .zone-map-pin,
+.zone-totem-marker.phase-done > .zone-map-pin {
+  opacity: 0.75;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .zone-totem-marker.phase-open > .zone-map-pin {
+    animation: zone-totem-lure 2.4s ease-in-out infinite;
+  }
+}
+@keyframes zone-totem-lure {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
 /* The one place the coach / nearest-quest card points at. */
 .zone-map-pin.game-object-map-pin.zone-map-pin-next {
   position: relative;

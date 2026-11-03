@@ -1,0 +1,144 @@
+/* City demo walking pad (src/DemoControls.tsx). Real play moves by GPS only. */
+.demo-pad,
+.demo-pad-open {
+  position: absolute;
+  z-index: 16;
+  right: 24px;
+  bottom: 104px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.demo-pad {
+  width: 168px;
+  padding: 6px 8px 8px;
+  border-radius: 18px;
+  background: #fbf9f2f2;
+  border: 2px solid var(--ink, #1a0335);
+  box-shadow: 3px 3px 0 #1a033540;
+  color: var(--ink, #1a0335);
+}
+.demo-pad header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5a4b6e;
+}
+.demo-pad header span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.demo-pad-min {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+}
+.demo-pad-min:hover {
+  background: #ede5f6;
+}
+.demo-pad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(3, 44px);
+  grid-template-areas:
+    ". fwd ."
+    "lft run rgt"
+    ". bck .";
+  gap: 4px;
+  justify-content: center;
+}
+.demo-pad-grid button {
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink, #1a0335);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink, #1a0335);
+  box-shadow: 0 3px 0 var(--ink, #1a0335);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.demo-pad-grid button[aria-pressed="true"] {
+  background: var(--action, #672eeb);
+  color: #fff;
+  box-shadow: 0 1px 0 var(--ink, #1a0335);
+  transform: translateY(2px);
+}
+.demo-pad-grid button:focus-visible,
+.demo-pad-min:focus-visible,
+.demo-pad-open:focus-visible {
+  outline: 3px solid var(--discovery, #ff1dff);
+  outline-offset: 2px;
+}
+.demo-forward { grid-area: fwd; }
+.demo-left { grid-area: lft; }
+.demo-run { grid-area: run; }
+.demo-right { grid-area: rgt; }
+.demo-back { grid-area: bck; }
+.demo-pad-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
+  color: #5a4b6e;
+}
+.demo-pad-open {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid var(--ink, #1a0335);
+  background: #fbf9f2f2;
+  color: var(--action, #672eeb);
+  box-shadow: 3px 3px 0 #1a033540;
+}
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  /* Phones: top-left under the location chip, clear of the bottom sheet,
+     the first-steps card and the map tools on the right. */
+  .demo-pad,
+  .demo-pad-open {
+    left: 12px;
+    right: auto;
+    top: calc(132px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+  .demo-pad {
+    width: 142px;
+    padding: 2px 6px 6px;
+  }
+  .demo-pad-grid {
+    grid-template-columns: repeat(3, 42px);
+    grid-template-rows: repeat(3, 40px);
+  }
+  .demo-pad-hint {
+    font-size: 10px;
+  }
+  body:has(.sheet-expanded) .demo-pad,
+  body:has(.sheet-expanded) .demo-pad-open {
+    display: none;
+  }
+}
+@media (max-height: 500px) and (max-width: 1000px) {
+  /* Landscape phones keep the map tools on the left; use the bottom left. */
+  .demo-pad,
+  .demo-pad-open {
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-pad-grid button[aria-pressed="true"] {
+    transform: none;
+  }
+}

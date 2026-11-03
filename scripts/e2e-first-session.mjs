@@ -139,6 +139,42 @@ async function waitForStep(page, title, timeout = 20_000) {
   );
 }
 
+// The city demo has no tap-to-walk: an action turns the explorer toward its
+// target, then holding Shift + ArrowUp runs the way it faces. Read the
+// remaining distance from the demo pad and stop a few metres short.
+async function remainingMeters(page) {
+  const text = (await page.locator(".demo-pad-hint").first().textContent().catch(() => "")) || "";
+  const m = text.match(/([\d.]+) (km|m) /);
+  return m ? Number(m[1]) * (m[2] === "km" ? 1000 : 1) : 0;
+}
+async function stepForward(page, ms, run) {
+  if (run) await page.keyboard.down("Shift");
+  await page.keyboard.down("ArrowUp");
+  await page.waitForTimeout(ms);
+  await page.keyboard.up("ArrowUp");
+  if (run) await page.keyboard.up("Shift");
+}
+async function walkToTarget(page) {
+  // Let the pad show the new target first.
+  await page
+    .waitForFunction(() => / m |km /.test(document.querySelector(".demo-pad-hint")?.textContent || ""), null, { timeout: 2000 })
+    .catch(() => {});
+  for (let i = 0; i < 20; i++) {
+    // The pad drops the target within 3 m (zones can be thin path strips).
+    const left = await remainingMeters(page);
+    if (!left) return;
+    // Run (14 m/s) while far, then walk (5 m/s) the last metres;
+    // src/map-motion.ts DEMO_RUN_MPS / DEMO_WALK_MPS.
+    const run = left > 30;
+    await stepForward(
+      page,
+      Math.min(4000, Math.max(100, ((left - (run ? 15 : 1)) / (run ? 14 : 5)) * 1000)),
+      run,
+    );
+    await page.waitForTimeout(150);
+  }
+}
+
 // Toasts sit over the sheet for a few seconds; wait so screenshots show it.
 async function quietToast(page) {
   await page
@@ -394,15 +430,17 @@ async function runDevice(name, server) {
       const title = await coachTitle(page);
       if (title !== STEP_TITLES.find && title !== STEP_TITLES.coin) break;
       await page.locator(".first-session-action").click();
-      // The ghost walks (instantly with reduced motion), then the pickup
-      // loop claims coins within reach every 600 ms.
-      await page.waitForTimeout(2500);
+      // The action turns the explorer toward it; run there with the keys,
+      // then the pickup loop claims coins within reach every 600 ms.
+      await walkToTarget(page);
+      await page.waitForTimeout(1500);
     }
     await waitForStep(page, STEP_TITLES.chest);
     await capture(page, "coach-first-chest");
     await assertNoChainWords(page, "chest step");
 
     console.log("4. First chest");
+
     await page.locator(".first-session-action").click();
     const detail = page.locator(".quest-detail").first();
     await detail.waitFor();
@@ -414,8 +452,9 @@ async function runDevice(name, server) {
         await button.click();
         break;
       }
-      assert.match(label, /Walk/, `unexpected chest action: ${label}`);
+      assert.match(label, /Turn toward it/, `unexpected chest action: ${label}`);
       await button.click();
+      await walkToTarget(page);
       await page.waitForTimeout(400);
     }
     const reward = page.getByRole("dialog");
