@@ -25,11 +25,13 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
+import { loadQuizBank } from "../server/actors/challenges/quiz.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const BASE = (process.env.E2E_BASE_URL || "https://questlayer.promptstudio3000.com").replace(/\/$/, "");
 const SHOTS = resolve(process.env.E2E_SHOTS || join(ROOT, "output/qa/live-journeys"));
 const BRNO = { lat: 49.19522, lng: 16.60796 };
+const PLZEN = { lat: 49.74745, lng: 13.3774 };
 const VILLAGE = { name: "Holašovice", lat: 48.96965, lng: 14.27406 };
 const RUN = Date.now().toString(36).slice(-4);
 
@@ -70,7 +72,7 @@ async function explorer(name) {
     } catch {}
     return { status: res.status, data: data || {} };
   };
-  return { player, call };
+  return { player, call, cookie };
 }
 
 /** An actor's position now, from the server's published segments. */
@@ -124,6 +126,40 @@ async function meet(e, world, actorId, spot) {
     assert.ok(actor, `${actorId} is on the map`);
     return e.call("POST", `/api/actors/${actorId}/encounter`, { worldId: world.id, location: fix(actorAt(actor)) });
   });
+}
+
+/**
+ * A newcomer beats a lurker (they hide next to street finds) with the quiz,
+ * answering from the repo's question bank, which earns a wisp-roll ticket.
+ */
+async function beatLurker(name) {
+  const scout = await explorer(`test ${RUN} lurker scout`);
+  const w = await worldAt(scout, PLZEN);
+  let lurker = null;
+  for (const c of w.coins.slice(0, 200)) {
+    const near = await actorsIn(scout, w, c);
+    lurker = near.find((a) => a.archetype === "lurker" && a.state === "active");
+    if (lurker) break;
+  }
+  assert.ok(lurker, "a lurker hides next to a street find in Plzeň");
+  const at = actorAt(lurker);
+  const e = await explorer(name);
+  const w2 = await worldAt(e, at);
+  const enc = await meet(e, w2, lurker.id, at);
+  assert.equal(enc.status, 200, `meet the lurker: ${JSON.stringify(enc.data)}`);
+  const ch = await e.call("POST", `/api/actors/${lurker.id}/challenge`, { encounter: enc.data.encounter, format: "quiz" });
+  assert.equal(ch.status, 200, `quiz: ${JSON.stringify(ch.data)}`);
+  const bank = loadQuizBank().byId;
+  const c = ch.data.challenge;
+  const answers = c.questions.map((q) => {
+    const b = bank.get(q.id);
+    return { id: q.id, choice: q.choices.indexOf(b.choices[b.answer]) };
+  });
+  await sleep(4000); // a person reads the questions
+  const sub = await e.call("POST", `/api/actors/${lurker.id}/challenge/${c.id}/submit`, { encounter: enc.data.encounter, answers });
+  assert.equal(sub.status, 200, `submit: ${JSON.stringify(sub.data)}`);
+  assert.equal(sub.data.result?.outcome, "won", `quiz result: ${JSON.stringify(sub.data.detail)}`);
+  return { e, lurker, result: sub.data };
 }
 
 const API_JOURNEYS = {
@@ -276,17 +312,18 @@ const API_JOURNEYS = {
     note(`trader menu: ${kinds.join(", ")}`);
   },
 
-  async "wisp roll"(note) {
-    const e = await explorer(`test ${RUN} roll`);
+  async "monster win → wisp roll ticket"(note) {
+    const { e, lurker, result } = await beatLurker(`test ${RUN} roll`);
+    note(`beat ${lurker.name} (${result.result.score}/${result.result.max}); rewards ${JSON.stringify(result.rewards || result.reward || {}).slice(0, 120)}`);
     const r = await e.call("GET", "/api/npc-rolls");
     assert.equal(r.status, 200);
     assert.ok(r.data.enabled, `rolls on: ${r.data.reason}`);
-    const total = r.data.odds.reduce((s, o) => s + o.chance, 0);
+    const total = r.data.odds.reduce((sum, o) => sum + o.chance, 0);
     assert.ok(Math.abs(total - 1) < 1e-6, "odds add up to 100 %");
-    assert.equal(r.data.tickets.available, 0, "a newcomer has no ticket");
-    const start = await e.call("POST", "/api/npc-rolls", { accountId: "nobody.testnet" });
-    assert.ok(start.status >= 400, "no roll without an earned ticket");
-    note(`table ${r.data.tableId} on ${r.data.contractId}; without a ticket: ${start.status} "${start.data.error}"`);
+    assert.equal(r.data.tickets.available, 1, `a lurker win gives one roll ticket: ${JSON.stringify(r.data.tickets)}`);
+    const board = await e.call("GET", `/api/daily-board?worldId=${encodeURIComponent((await worldAt(e, actorAt(lurker))).id)}`);
+    assert.ok(board.data.goals.find((g) => g.kind === "monster")?.done, "daily board counts the monster win");
+    note(`ticket earned; table ${r.data.tableId} on ${r.data.contractId}; board monster goal done`);
   },
 
   async "2 NEAR staker step"(note) {
@@ -318,7 +355,7 @@ const API_JOURNEYS = {
 };
 
 async function runApi(report) {
-  for (const [name, fn] of Object.entries(API_JOURNEYS)) {
+  for (const [name, fn] of Object.entries(API_JOURNEYS).filter(([n]) => !arg("journey") || n.includes(arg("journey")))) {
     const notes = [];
     const t0 = Date.now();
     process.stdout.write(`\n[api] ${name}\n`);
@@ -336,7 +373,7 @@ async function runApi(report) {
 }
 
 // ----------------------------------------------------------------- UI layer
-async function newPlayer(browser, device, name, spot) {
+async function newPlayer(browser, device, name, spot, { account = false, cookie = null } = {}) {
   const context = await browser.newContext({
     ...DEVICES[device].profile,
     reducedMotion: "reduce",
@@ -345,6 +382,17 @@ async function newPlayer(browser, device, name, spot) {
       ? { geolocation: { latitude: spot.lat, longitude: spot.lng, accuracy: 8 }, permissions: ["geolocation"] }
       : {}),
   });
+  // Every new explorer gets an invisible NEAR account funded from the
+  // testnet factory (0.1 NEAR). Bot explorers skip it unless the journey
+  // needs to sign (wisp roll); the app plays on without one.
+  if (!account) await context.route("**/api/account/create", (route) => route.abort());
+  if (cookie)
+    await context.addCookies(
+      cookie.split("; ").map((c) => {
+        const i = c.indexOf("=");
+        return { name: c.slice(0, i), value: c.slice(i + 1), url: BASE };
+      }),
+    );
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e.message || e)));
@@ -353,8 +401,10 @@ async function newPlayer(browser, device, name, spot) {
     await card.getByRole("button", { name: /Got it|Not now/ }).click().catch(() => {});
   });
   await page.goto(BASE);
-  await page.getByPlaceholder("Your explorer name").fill(name);
-  await page.getByRole("button", { name: "Start exploring" }).click();
+  if (!cookie) {
+    await page.getByPlaceholder("Your explorer name").fill(name);
+    await page.getByRole("button", { name: "Start exploring" }).click();
+  }
   await page.locator(".first-session, .main-panel").first().waitFor({ timeout: 20_000 });
   let world = null;
   if (spot) {
@@ -526,6 +576,31 @@ function uiJourneys(device) {
       }
     },
 
+    async "monster win → wisp roll → prize"({ browser, shot, note }) {
+      const { e, lurker } = await beatLurker(who("roll"));
+      note(`beat ${lurker.name} through the quiz, ticket earned`);
+      const { page, context, errors } = await newPlayer(browser, device, null, null, { account: true, cookie: e.cookie });
+      try {
+        await page.getByRole("button", { name: "Hide first steps" }).click().catch(() => {});
+        await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
+        await page.locator(".inv-chip").filter({ hasText: "Secured" }).click();
+        const panel = page.getByRole("region", { name: "Wisp rolls" });
+        await panel.waitFor({ timeout: 30_000 });
+        const roll = panel.getByRole("button", { name: /Roll at the wisp|Finish your roll/ });
+        await roll.waitFor({ timeout: 120_000 }); // the invisible account is created first
+        await shot(page, "wisp-ticket");
+        await roll.click();
+        const prize = panel.getByText(/The wisp gave you/);
+        await prize.or(panel.getByRole("alert")).first().waitFor({ timeout: 180_000 });
+        await shot(page, "wisp-prize");
+        assert.equal(await panel.getByRole("alert").count(), 0, `roll error: ${await panel.getByRole("alert").allInnerTexts()}`);
+        note((await prize.innerText()).slice(0, 100));
+        assert.deepEqual(errors, []);
+      } finally {
+        await context.close();
+      }
+    },
+
     async "badges, staking and language"({ browser, shot, note }) {
       const { page, context, errors } = await newPlayer(browser, device, who("profile"));
       try {
@@ -571,7 +646,6 @@ async function scoutUi() {
     village.quests.find((q) => q.kind === "visit" && q.placeStatus === "open") ||
     village.quests.find((q) => q.kind === "chest" && q.placeStatus === "open");
   const giver = (await actorsIn(e, brno, BRNO)).find((a) => a.archetype === "quest_giver" && a.state === "active");
-  const PLZEN = { lat: 49.74745, lng: 13.3774 };
   const plzen = await worldAt(e, PLZEN);
   const trader = (await actorsIn(e, plzen, PLZEN)).find((a) => a.archetype === "trader" && a.state === "active");
   return {
@@ -592,7 +666,17 @@ async function runUi(report, deviceNames) {
       n += 1;
       await page.screenshot({ path: join(dir, `${String(n).padStart(2, "0")}-${label}.png`) });
     };
-    const browser = await DEVICES[device].engine.launch();
+    let browser;
+    try {
+      browser = await DEVICES[device].engine.launch();
+    } catch (error) {
+      // A host without WebKit (cloud containers ship only Chromium) still
+      // checks the iPhone layout, but says so: Safari's engine was not run.
+      if (DEVICES[device].engine === chromium) throw error;
+      console.log(`  ${device}: ${DEVICES[device].engine.name()} is not installed here; using Chromium with the same profile`);
+      report.push({ layer: "ui", device, journey: "engine", ok: true, notes: ["WebKit missing: Chromium emulation"] });
+      browser = await chromium.launch();
+    }
     console.log(`\n== ${device} (${DEVICES[device].engine.name()} ${browser.version()}) ==`);
     try {
       for (const [name, fn] of Object.entries(uiJourneys(device)).filter(([n]) => !arg("journey") || n.includes(arg("journey")))) {
