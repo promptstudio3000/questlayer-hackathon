@@ -87,7 +87,7 @@ const TESTNET_FUNDS = {
 export const STORAGE_YOCTO_PER_BYTE = 10n ** 19n;
 export const COLLECTIBLES_STATE_MARGIN = NEAR / 2n;
 // Spare balance the operator must keep after the run (gas, later upgrades).
-const OPERATOR_RESERVE = NEAR;
+export const OPERATOR_RESERVE = NEAR;
 
 /**
  * Pure plan: account names, amounts, expected code. Mainnet requires every
@@ -343,6 +343,7 @@ export async function runSlice({
     return {
       status: "planned",
       network: plan.network,
+      needed,
       steps,
       manifests: null,
       runtimeEnv: null,
@@ -386,6 +387,7 @@ export async function runSlice({
   return {
     status: "deployed",
     network: plan.network,
+    needed,
     steps,
     transactions,
     manifests,
