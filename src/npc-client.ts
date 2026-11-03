@@ -12,6 +12,8 @@ export interface NpcActiveLine {
   steps: NpcStep[];
   xp: number;
   aura: boolean;
+  /** Errand: finish the place's quest, then meet the NPC again to report. */
+  errand?: { returnRequired: boolean; clueBonusXp: number };
   /** Patron line (Tier 2 stakers): its step on the Patron's Path. */
   patron?: { pathLine: number; pathOf: number };
 }
@@ -50,6 +52,8 @@ export interface NpcTurnIn {
     edition: { id: string; name: string; rarity: string } | null;
   };
   note?: string;
+  /** Errand turn-in: the part of the XP earned by a right landmark answer. */
+  errand?: { clueBonusXp: number };
   replay?: boolean;
 }
 

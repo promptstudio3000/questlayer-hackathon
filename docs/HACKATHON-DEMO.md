@@ -4,9 +4,14 @@ Script and shot list for the submission video. Everything is recorded against th
 **https://questlayer.promptstudio3000.com/** with a fresh explorer (private window, no wallet). Nothing in the video
 has monetary value; say "testnet" on screen at least once.
 
-Checked on 1 November 2026 against `GET /api/health` (`network: testnet`, features `collectibles, market, rewards,
-vaults, relayer, social, creators, tasks`, relayer `relay-20261101.questlayer-dev-20261101.testnet`,
-`distribution.status: verified`) and the manifests in `public/native-*-testnet.json`. Re-check both on recording day.
+The story: **the whole of Czechia is playable, Plzeň is the funded showcase.** The core loop is shown in Plzeň, then one
+shot proves that the same game is waiting in another town.
+
+Checked on 3 November 2026 against `GET /api/health` (build `c1f8fc5`, `network: testnet`, features `collectibles,
+market, rewards, vaults, relayer, social, creators, tasks`, relayer `relay-20261101.questlayer-dev-20261101.testnet`,
+`distribution.status: verified`, `poiWorld.status: ready` with 197,999 quest-ready places in Czechia) and the manifests
+in `public/native-*-testnet.json`. Re-check on recording day, see "Recording-day checks" below. The video is recorded
+only after the phone verification.
 
 ## Before recording
 
@@ -15,22 +20,30 @@ vaults, relayer, social, creators, tasks`, relayer `relay-20261101.questlayer-de
 - Pick a fresh name (e.g. "Demo Nov 3"); a reused explorer may have already opened today's chest.
 - Record in Plzeň city-demo mode: tapping the map moves the explorer. Label it as city demo, not GPS proof.
 - Do not reset the published world or the database for the recording.
+- For shot 8, prepare a location outside Plzeň: Chromium DevTools → **Sensors** → Location → custom, Brno náměstí
+  Svobody `49.1952, 16.6080` (on a phone, record shot 8 where you actually are). Rehearse it once that day so the
+  cell's place quests are already materialised.
 
 ## Script and shot list
 
 | # | Time | Shot (what is on screen) | Action | Voice-over |
 | --- | --- | --- | --- | --- |
 | 1 | 0:00–0:15 | Title card, then the first-run page | Type the name under "What should we call you?" | "QuestLayer turns a walk into a small adventure on the real map. To start, you only type a name." |
-| 2 | 0:15–0:30 | Plzeň map, ghost explorer in the centre | Press **Start exploring**; slow pan of the map | "No wallet, no seed phrase, no gas prompt. A NEAR account for this player is being created in the background." |
-| 3 | 0:30–0:50 | Close-up of a gold coin on a path | Tap next to the coin; coin disappears, XP ticks | "Coins sit on real OpenStreetMap paths. Each one is backed before it is published, and the first valid claim wins." |
-| 4 | 0:50–1:20 | **Nearest discovery** card → zone chest | **Walk there** until in range, then **Open chest** | "Six zones a day in Plzeň hold a chest. Opening it pays exact XP and an Aura." Hold on the "Reward collected" sheet. |
-| 5 | 1:20–1:35 | Result sheet → map character | Press **Try it on** | "The Aura is worn by your character right away." |
-| 6 | 1:35–2:00 | Secure and share panel | **Secure this Aura**, then **Share your Aura** | "Securing mints it as a NEP-171 NFT to the player's own account. The device key signs, our relayer only pays gas. Sharing makes a PNG card." |
-| 7 | 2:00–2:25 | Profile → **Advanced**, then NearBlocks tab | Copy the NEAR account id, paste into NearBlocks testnet; show the mint from `nfts.questlayer-dev-20261101.testnet` | "This is the only place the chain is named. Here is the account and the NFT on testnet." |
-| 8 | 2:25–2:45 | **Today's pot** card → "How rewards are funded", then `/api/health` tab | Scroll to "Books checked"; highlight `distribution.status: verified` | "Rewards come from a treasury contract with separate coin and zone buckets, and the books are checked live against the chain." |
-| 9 | 2:45–3:00 | Architecture diagram from the README, then the URL | Static | "Real map, real ownership, invisible chain. Try it now at questlayer.promptstudio3000.com. Repo link below." |
+| 2 | 0:15–0:25 | Plzeň map, ghost explorer in the centre | Press **Start exploring**; slow pan of the map | "No wallet, no seed phrase, no gas prompt. A NEAR account for this player is being created in the background." |
+| 3 | 0:25–0:40 | Close-up of a gold coin on a path | Tap next to the coin; coin disappears, XP ticks | "Coins sit on real OpenStreetMap paths. Each one is backed before it is published, and the first valid claim wins." |
+| 4 | 0:40–1:05 | **Nearest discovery** card → zone chest | **Walk there** until in range, then **Open chest** | "Plzeň is our reviewed showcase city: six zones a day hold a chest. Opening it pays exact XP and an Aura." Hold on the "Reward collected" sheet. |
+| 5 | 1:05–1:15 | Result sheet → map character | Press **Try it on** | "The Aura is worn by your character right away." |
+| 6 | 1:15–1:35 | Secure and share panel | **Secure this Aura**, then **Share your Aura** | "Securing mints it as a NEP-171 NFT to the player's own account. The device key signs, our relayer only pays gas." |
+| 7 | 1:35–1:55 | Profile → **Advanced**, then NearBlocks tab | Copy the NEAR account id, paste into NearBlocks testnet; show the mint from `nfts.questlayer-dev-20261101.testnet` | "This is the only place the chain is named. Here is the account and the NFT on testnet." |
+| 8 | 1:55–2:25 | Brno (prepared location): street map with coins, an NPC or monster marker and a place quest | Tap **Use GPS** in the top bar; the map jumps to Brno; open a place quest card (a visit or a three-stop hunt at a real public place) | "And it is not just one city. Open it anywhere in Czechia: almost two hundred thousand public places, filtered for safety, become quests, with characters and coins on the streets around you. Outside Plzeň it pays XP and collectibles, never money." |
+| 9 | 2:25–2:45 | **Today's pot** card → "How rewards are funded", then `/api/health` tab | Scroll to "Books checked"; highlight `distribution.status: verified` and `poiWorld` | "Rewards come from one global treasury contract with separate coin and zone buckets, and the books are checked live against the chain." |
+| 10 | 2:45–3:00 | Architecture diagram from the README, then the URL | Static | "Real map, real ownership, invisible chain. Try it now at questlayer.promptstudio3000.com. Repo link below." |
 
-Optional cut-ins if time allows (replace part of shot 8): Profile → **Market** showing a listed Aura in escrow at
+If `/api/health` → `autoCities.status` is `on` on recording day, Brno is an auto city: also show its daily zone and
+the **Unverified map** badge in shot 8 and say "towns get daily zones built from map data, marked unverified until
+someone walks them". If it is `off`, Brno is a street cell and shot 8 shows coins, characters and place quests only.
+
+Optional cut-ins if time allows (replace part of shot 9): Profile → **Market** showing a listed Aura in escrow at
 `questlayer-market-20261101b.testnet`; reload the page to show that name, XP and the worn Aura persist.
 
 ## NPC and monster segment (about 90 s, optional cut)
@@ -110,12 +123,26 @@ Fresh explorers via `POST /api/session`, world from `POST /api/world` (`demo:are
 To repeat the checks on recording day, replay the calls above with a cookie jar (`curl -c jar -b jar`); arena worlds skip
 GPS accuracy checks, so `location: {lat, lng}` at the character's current point is enough.
 
+## Recording-day checks (Czechia shot)
+
+| Check | Expected |
+| --- | --- |
+| `GET /api/health` → `poiWorld.status` | `ready` (version `cz-…`); `cellsWithQuests` close to `countryCells` |
+| `GET /api/health` → `autoCities` | `on` with a city count, or `off` (then skip the auto city line) |
+| `GET /api/health` → `questFlavour.cached` | above 0 means place quests show the nightly flavour titles; at 0 they show rule titles, which is fine |
+| Rehearsal in Brno | at least one place quest card and one NPC or monster within the visible map; otherwise pick another spot from `npm run world:coverage` "Checked places" |
+
+If wave 3 has shipped "first session anywhere in Czechia" by recording day, a fresh explorer outside Plzeň starts in
+their own cell: keep the Plzeň location for shots 1–7 and switch the location only for shot 8.
+
 ## What not to claim
 
 - Not mainnet, not real money. GOLD on the map is practice GOLD unless **Today's pot** shows a funded day.
 - Do not say rewards are already funded by staking yield; the vault (`questlayer-vault-20261101b.testnet`) is live
   but a full yield cycle is still being proven ([STATUS.md](STATUS.md)).
 - City-demo tap-to-move is not proof of physical presence; browser GPS can be spoofed.
+- Outside Plzeň: no funded rewards, no GOLD or NEAR; auto city zones are unverified map data. Do not say "the whole
+  world" or "Europe": coverage is Czechia.
 - No claim of original Aavegotchi art ownership, NEAR Intents settlement or completed iOS acceptance.
 - NPCs: no "private AI" or attestation claim (replies come from Ollama today); no claim that Ráda's quest Aura is an
   NPC-exclusive edition; the npc-games roll on screen is the operator's proof roll, not a player's roll; Vojtěch's

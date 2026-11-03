@@ -43,7 +43,7 @@ export function createNpcRoutes(npc, actors, db, { refreshStaker = null, clock =
       if (talk?.[2] === "greet") respond(res, npc.greet({ player, actor, world, encounter }));
       else if (talk) respond(res, await npc.talk({ player, actor, world, encounter, message: input.message }));
       else if (offer[3] === "accept") respond(res, npc.accept({ player, actor, world, encounter, offerId: offer[2] }));
-      else respond(res, npc.complete({ player, actor, world, offerId: offer[2] }));
+      else respond(res, npc.complete({ player, actor, world, encounter, offerId: offer[2] }));
       return true;
     },
   };

@@ -12,7 +12,7 @@
 // Screenshots and journeys.json land in output/qa/world-journeys/ (override
 // with E2E_SHOTS). E2E_BASE_URL is not supported: the journey owns its data.
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -52,6 +52,18 @@ async function freePort() {
       s.close(() => done(port));
     });
   });
+}
+
+/** Minutes after midnight in Europe/Prague, the layer's local time. */
+function pragueMinute(at = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Prague",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(at);
+  const get = (t) => Number(parts.find((p) => p.type === t).value);
+  return get("hour") * 60 + get("minute");
 }
 
 async function startServer(dir, poiDbPath) {
@@ -169,20 +181,17 @@ async function journey(browser, server, j, expected) {
     const cast = (actors.actors || [])
       .map((a) => a.role || a.kind)
       .filter(Boolean);
-    // The generic cast walks only within its local hours (server/data/actors/
-    // _generic.json); outside them an empty street is correct.
-    const [open, close] = JSON.parse(
-        readFileSync(join(ROOT, "server/data/actors/_generic.json"), "utf8"),
-      ).hours,
-      local = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Prague",
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23",
-      }).format(new Date());
-    if (local >= open && local < close)
+    // The generic cast walks during the layer hours (08:00–20:00 local,
+    // server/data/actors/_generic.json), so a run at night sees nobody.
+    // Require the cast well inside the hours; near the edges and at night
+    // only report it (unit tests cover the schedule itself).
+    const minute = pragueMinute();
+    if (minute >= 8 * 60 + 15 && minute <= 19 * 60 + 45)
       assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
-    else console.log(`  (cast off duty at ${local}; hours ${open}-${close})`);
+    else
+      console.log(
+        `  outside the cast hours (${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")} Prague): ${cast.length} actors, not required`,
+      );
     // POI quests for this cell, from the database the server reads.
     assert.ok(
       expected.questsInCell > 0,

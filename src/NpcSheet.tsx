@@ -94,6 +94,8 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
       setNotice(
         r.replay
           ? "Already turned in."
+          : line.errand
+          ? `Errand done: +${r.xp} XP.${r.errand?.clueBonusXp ? ` Your right answer earned ${r.errand.clueBonusXp} of it.` : ""}`
           : `+${r.xp} XP${r.aura ? ` and ${r.aura.name} (${r.aura.rarity})` : ""}${r.edition ? `${r.aura ? "," : " and"} plus the NPC-only ${r.edition.name} (${r.edition.rarity})` : ""}.${r.aura || r.edition ? " Secure it on NEAR from your wardrobe." : ""}${r.patron ? ` Patron's Path ${r.patron.pathLine}/${r.patron.pathOf}: "${r.patron.story.title}". ${r.patron.story.text}${r.patron.edition && r.patron.edition.id !== r.edition?.id ? ` You also earned ${r.patron.edition.name}.` : ""}` : ""}${r.note ? ` ${r.note}` : ""}`,
       );
       await refresh();
@@ -151,7 +153,13 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                     ))}
                   </ul>
                   <button type="button" disabled={busy || !ready} onClick={() => turnIn(line)}>
-                    {ready ? `Turn in for ${line.xp} XP${line.aura ? " + Aura" : ""}` : "Finish the stops, then come back"}
+                    {line.errand
+                      ? ready
+                        ? `Report back for ${line.xp} XP${line.errand.clueBonusXp ? ` (+${line.errand.clueBonusXp} for a right answer)` : ""}`
+                        : "Do the errand at the place, then come back"
+                      : ready
+                        ? `Turn in for ${line.xp} XP${line.aura ? " + Aura" : ""}`
+                        : "Finish the stops, then come back"}
                   </button>
                 </div>
               );

@@ -104,8 +104,18 @@ export type QuestActivity = {
   distanceLowerBoundM: number;
   durationMinutes: null;
 };
+/** Landmark clue (server/landmark-clue.mjs): answers come from Wikidata. */
+export type QuestClue = {
+  question: string;
+  options: { id: string; text: string }[];
+  source: string;
+  policy: string;
+  xp: { correct: number; miss: number };
+  result?: { choice: string; correct: boolean; answer: string };
+};
 export type Quest = Point & {
   activity?: QuestActivity;
+  clue?: QuestClue;
   id: string;
   title: string;
   description: string;

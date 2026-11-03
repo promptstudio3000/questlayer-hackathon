@@ -2007,7 +2007,7 @@ async function api(req, res, url) {
     const world = await ensureWorld(db, location, input.arena !== false);
     // layerId is added to the response only, never to the stored manifest.
     return respond(res, {
-      ...worldView(db, world.id, player, query),
+      ...worldView(db, world.id, player, { ...query, lang: input.lang === "cs" ? "cs" : "en" }),
       layerId: DEFAULT_LAYER.id,
     });
   }
@@ -2051,7 +2051,9 @@ async function api(req, res, url) {
     const input = await body(req);
     // A guardian monster on duty locks its zone chest until you beat it.
     monsterHunt?.chests.assertOpen(player, input.questId);
-    const result = game.claimQuest(db, player, input.questId, input.fix);
+    const result = game.claimQuest(db, player, input.questId, input.fix, undefined, {
+      answer: typeof input.answer === "string" ? input.answer.slice(0, 40) : null,
+    });
     emit("quest", { id: input.questId });
     return respond(res, { ...result, player: profile(player) });
   }
