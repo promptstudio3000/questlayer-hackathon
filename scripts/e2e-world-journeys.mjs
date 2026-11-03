@@ -267,7 +267,12 @@ async function journey(browser, server, device, j, expected) {
         : coach.getByRole("button", { name: /^Nearest quest/ });
       // …the map marks the same place…
       const pin = page.locator('.zone-map-pin[data-next="true"]');
-      await pin.waitFor({ timeout: 15_000 });
+      // Attached, not visible: map markers re-render on every world update
+      // and WebKit can report one mid-swap as hidden.
+      await pin.waitFor({ state: "attached", timeout: 15_000 }).catch(async (e) => {
+        await page.screenshot({ path: join(shots, `${j.id}-no-next-pin.png`) });
+        throw e;
+      });
       assert.equal(await pin.count(), 1, "exactly one next-quest marker");
       const pinLabel = (await pin.getAttribute("aria-label")) || "";
       const zone = poiZones.find((z) => pinLabel.startsWith(`${z.name} · `));
