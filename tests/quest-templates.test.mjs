@@ -51,6 +51,7 @@ test("catalog exposes enforceable mechanics, capability gaps and no invented dur
       "cosmetic-chest",
       "poi-visit",
       "poi-category-hunt",
+      "landmark-clue",
     ],
   );
   assert.ok(

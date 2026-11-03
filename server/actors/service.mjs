@@ -51,6 +51,14 @@ function decorate(view, ctx) {
   return view;
 }
 
+/**
+ * ACTORS_ALL_DAY=1 is a test-only switch (e2e servers): every actor plays the
+ * whole local day instead of its opening hours. Ignored on mainnet.
+ */
+export function actorsAllDay(env = process.env, network = env.NEAR_NETWORK || "testnet") {
+  return env.ACTORS_ALL_DAY === "1" && network !== "mainnet";
+}
+
 export function actorsEnabled(env = process.env) {
   return env.ACTORS_ENABLED === "1";
 }
@@ -66,6 +74,9 @@ export function worldSeed(manifest) {
 export function createActorService(db, options = {}) {
   ensureModuleVersion(db, ACTORS_SCHEMA);
   const clock = options.clock || Date.now,
+    // Test hook: plan every actor across the whole local day, so e2e runs
+    // see a cast at any hour. Production never sets it (actorsAllDay below).
+    forceAllDay = options.allDay === true,
     cities = options.cityById || cityById,
     loadActors = options.loadCityActors || loadCityActors,
     loadGeneric = options.loadGenericActors || loadGenericActors,
@@ -160,7 +171,7 @@ export function createActorService(db, options = {}) {
           dayStart,
           hours: city.hours,
           home: s.home,
-          allDay: !!manifest.arena,
+          allDay: forceAllDay || !!manifest.arena,
           // Real local daylight at the world's centre picks the day or night cast.
           sky: pack.center,
         }),

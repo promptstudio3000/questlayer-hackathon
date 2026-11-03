@@ -21,6 +21,13 @@ export const CHAPTER_XP = 15;
 export const STORY_SET_SIZE = 3;
 export const MAX_LINES_PER_DAY = 2; // per player and NPC
 export const MAX_AURAS_PER_NPC_DAY = 40; // every player together
+// NPC errands (docs/WORLDS-PLAN.md C.4 `npc-errand`): a quest giver sends the
+// player to one of today's POI quests and wants them back to report. The POI
+// visit is the ordinary quest claim; the return is a fresh encounter with the
+// same NPC after that claim (server/npc/service.mjs complete). XP only.
+export const ERRAND_XP = 40;
+export const ERRAND_CLUE_BONUS_XP = 10; // the landmark clue was answered right
+export const MAX_ERRANDS_PER_DAY = 1; // per player and NPC
 export const OFFER_TTL_MS = 15 * 60_000;
 const MIN_TIME_LEFT_MS = 30 * 60_000;
 
@@ -190,6 +197,7 @@ export function buildMenu({
   gates = defaultStakerGates(),
   patronToday = 0,
   patronDone = 0,
+  errandsToday = 0,
 }) {
   const archetype = actor?.archetype || persona?.archetype;
   if (!world || !actor) return [];
@@ -243,6 +251,37 @@ export function buildMenu({
           expiresAt,
         });
       }
+    }
+    // Errand: one POI quest of today (a landmark clue first), then back here.
+    const errand =
+      errandsToday < MAX_ERRANDS_PER_DAY &&
+      steps
+        .filter((q) => !used.has(q.id) && q.kind !== "route" && zones.get(q.zone_id)?.source === "poi")
+        .sort((a, b) => Number(!!b.clue) - Number(!!a.clue) || order(seed, a.id) - order(seed, b.id))[0];
+    if (errand) {
+      const zone = zones.get(errand.zone_id);
+      const offerId = `quest:${hash(`${seed}|errand|${errand.id}`).slice(0, 16)}`;
+      used.add(errand.id);
+      if (!done.has(offerId))
+        offers.push({
+          id: offerId,
+          kind: "quest",
+          label: `Errand: ${errand.clue ? "find out about" : "check on"} ${zone.name} and come back`.slice(0, 120),
+          terms: {
+            steps: [stepView(errand, zones)],
+            xp: ERRAND_XP,
+            aura: false,
+            zoneTier: zone.tier || 1,
+            errand: {
+              poiId: zone.poi?.ids?.[0] || null,
+              category: zone.poi?.category || null,
+              clue: !!errand.clue,
+              clueBonusXp: errand.clue ? ERRAND_CLUE_BONUS_XP : 0,
+              returnRequired: true,
+            },
+          },
+          expiresAt,
+        });
     }
     // L7 unlock (server/data/level-table.json): one more line per NPC and day.
     if (linesToday >= MAX_LINES_PER_DAY + extraQuestLines(level)) return offers;
@@ -345,6 +384,13 @@ function tradeFact(o, index) {
 }
 
 function questFact(o, index) {
+  if (o.terms.errand)
+    return {
+      id: `offer-${index}`,
+      text: `Offer ${index}: ${o.label}. An errand: the player walks to that place, does its quest there, then comes back to you and reports. Reward: ${o.terms.xp} XP${
+        o.terms.errand.clueBonusXp ? `, plus ${o.terms.errand.clueBonusXp} XP if they answered the place's question right` : ""
+      }.`,
+    };
   if (o.terms.patron)
     return {
       id: `offer-${index}`,

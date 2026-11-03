@@ -14,7 +14,7 @@ import {
   validateActorFile,
 } from "../server/actors/definitions.mjs";
 import { planSpawns } from "../server/actors/spawns.mjs";
-import { createActorService, worldSeed } from "../server/actors/service.mjs";
+import { actorsAllDay, createActorService, worldSeed } from "../server/actors/service.mjs";
 import { personaFor } from "../server/npc/personas.mjs";
 
 const DAY = "2026-11-02",
@@ -124,4 +124,19 @@ test("a cell without a cached path snapshot has no actors and makes no map reque
   assert.equal(service.planFor(manifest), null);
   const list = await service.list({ player: "p1", worldId: manifest.id });
   assert.deepEqual(list.actors, []);
+});
+
+test("the test-only all-day switch keeps a street cast out at night; production keeps opening hours", () => {
+  const night = dayStart + 2 * 3600_000; // 02:00 Prague
+  const live = (options) => {
+    const db = new DatabaseSync(":memory:");
+    const service = createActorService(db, { clock: () => night, ...options });
+    const plan = service.planFor(cellWorld(db));
+    return plan.instances.filter((i) => i.segments.some((s) => s.from <= night && s.to > night));
+  };
+  assert.equal(live({}).length, 0, "generic hours 07:00-22:00 by default");
+  assert.ok(live({ allDay: true }).length > 0, "all-day plan has actors out at 02:00");
+  assert.equal(actorsAllDay({ ACTORS_ALL_DAY: "1" }, "testnet"), true);
+  assert.equal(actorsAllDay({ ACTORS_ALL_DAY: "1" }, "mainnet"), false, "never on mainnet");
+  assert.equal(actorsAllDay({}, "testnet"), false);
 });
