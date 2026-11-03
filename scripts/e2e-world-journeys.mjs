@@ -113,6 +113,9 @@ async function startServer(dir, poiDbPath) {
       DISABLE_RELAYER: "1",
       POI_DB_PATH: poiDbPath,
       ACTORS_ENABLED: "1",
+      // The cast plays all day (test-only); POI quests keep 08:00-20:00, so
+      // the clock is still moved into play hours for them.
+      ACTORS_ALL_DAY: "1",
       E2E_CLOCK_OFFSET_MS: String(CLOCK_OFFSET_MS),
     },
     stdio: ["ignore", "inherit", "inherit"],

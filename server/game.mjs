@@ -21,6 +21,7 @@ import { contains } from "./spatial/city-pack.mjs";
 import { closedPlaces, assertPlaceOpen } from "./spatial/place-safety.mjs";
 import { assertWorldActive } from "./operator/world-controls.mjs";
 import { QUEST_POLICY } from "./quest-templates.mjs";
+import { answerClue } from "./landmark-clue.mjs";
 import {
   POI_QUEST_POLICY,
   huntVisited,
@@ -144,11 +145,11 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     return { value: coin.value_u, xp, ...(find ? { find: true } : {}) };
   });
 }
-export function claimQuest(db, player, questId, fix, now = Date.now()) {
+export function claimQuest(db, player, questId, fix, now = Date.now(), { answer = null } = {}) {
   const results = createAdventureResults(db);
-  return atomic(db, () => settleQuest(db, player, questId, fix, now, results));
+  return atomic(db, () => settleQuest(db, player, questId, fix, now, results, null, answer));
 }
-function settleQuest(db, player, questId, fix, now, results, target = null) {
+function settleQuest(db, player, questId, fix, now, results, target = null, answer = null) {
   const q = db
     .prepare(
       "SELECT q.*,w.manifest FROM quests q JOIN worlds w ON w.id=q.world_id WHERE q.id=?",
@@ -170,6 +171,11 @@ function settleQuest(db, player, questId, fix, now, results, target = null) {
   // An unordered POI hunt finishes at whichever stop came last.
   validateQuestEvidence(db, player, q, fix, now, target || q);
   const meta = JSON.parse(q.metadata || "{}");
+  // A landmark clue (server/landmark-clue.mjs) takes one answer with the visit.
+  const clue = meta.clue
+    ? answerClue(db, { questId: q.id, player, clue: meta.clue, choice: answer, now })
+    : null;
+  const xp = clue ? clue.xp : q.xp;
   if (q.kind === "route")
     assert(
       (db
@@ -196,7 +202,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null) {
   db.prepare("INSERT INTO quest_claims VALUES (?,?,?)").run(q.id, player, now);
   db.prepare("UPDATE players SET gold_u=gold_u+?,xp=xp+? WHERE id=?").run(
     reward,
-    q.xp,
+    xp,
     player,
   );
   let item = null;
@@ -208,20 +214,22 @@ function settleQuest(db, player, questId, fix, now, results, target = null) {
     player,
     quest: q,
     reward,
-    xp: q.xp,
+    xp,
     item,
     now,
   });
   history(db, player, "quest", q.title, reward, {
     quest: q.id,
-    xp: q.xp,
+    xp,
     item: item?.name,
     resultId,
+    ...(clue ? { clue: clue.correct } : {}),
   });
   return {
     reward,
-    xp: q.xp,
+    xp,
     item,
+    ...(clue ? { clue } : {}),
     result: results.get(player, resultId),
     replayed: false,
   };

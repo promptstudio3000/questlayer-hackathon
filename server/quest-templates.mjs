@@ -99,6 +99,20 @@ const POI_TEMPLATES = [
     rewardConstraint:
       "Personal XP once after the last stop. No GOLD or NEAR prize.",
   },
+  {
+    // server/landmark-clue.mjs: the answer is a Wikidata fact, never model text.
+    id: "landmark-clue",
+    kind: "visit",
+    icon: "visit",
+    title: "Landmark clue",
+    objective: "Reach the marked public spot next to this place, then answer one question about it.",
+    actionLabel: "Answer and confirm",
+    stepLabels: ["Reach the marker and answer"],
+    evidenceKind: "point-proximity",
+    distinctTargets: 1,
+    rewardConstraint:
+      "Personal XP once: more for the right answer. One answer. No GOLD or NEAR prize.",
+  },
 ];
 
 const SAFETY = {
@@ -144,12 +158,6 @@ export function questTemplateCatalog() {
       })),
     ),
     planned: [
-      {
-        id: "landmark-clue",
-        status: "planned",
-        requires:
-          "Reviewed landmark facts, authored clues and an answer policy.",
-      },
       {
         id: "geocache",
         status: "planned",
