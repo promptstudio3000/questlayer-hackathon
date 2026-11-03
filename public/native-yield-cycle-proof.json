@@ -106,5 +106,6 @@
     ],
     "observedAt": 1793709222999
   },
-  "verify": "Read get_state on each vault (game_paid) and get_treasury on the rewards contract; each flush hash is visible on https://testnet.nearblocks.io/txns/<hash>."
+  "verify": "Read get_state on each vault (game_paid) and get_treasury on the rewards contract; each flush hash is visible on https://testnet.nearblocks.io/txns/<hash>.",
+  "generation": "20261101 (operator questlayer-dev-20261031). On 1 November the public deployment rotated to generation 20261101b (operator questlayer-dev-20261101); the public host runs the same worker code path against that generation. This proof stays valid for the contracts it names."
 }

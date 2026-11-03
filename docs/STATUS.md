@@ -124,6 +124,9 @@ chain; see `public/native-public-record-proof.json`. UI: Notes → own note → 
   and flushed the cash into the rewards treasury on 3 November. Funding grew by exactly the
   0.000264 NEAR the vaults paid, split 50/50 into the coin and zone buckets, and the distribution audit stayed
   verified. No manual step was needed. Proof with the three flush hashes: `public/native-yield-cycle-proof.json`.
+  This ran on the previous generation (`questlayer-rewards-20261101.testnet`, operator `questlayer-dev-20261031`).
+  The public host now runs generation `20261101b` with the same worker; its treasury already shows a first small
+  realized-yield funding, the rewards contract includes the per-date cap and its audit reads verified.
 - Treasury distribution audit (1 November): every reserved coin and prize on `questlayer-rewards-20261101.testnet`
   is explained by the two open Plzeň days, the ledger is conserved and the account holds about 47 times its
   liabilities; the rewards contract now caps each local date across all cities on chain (in-place upgrade, state
