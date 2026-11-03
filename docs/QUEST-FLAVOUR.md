@@ -87,5 +87,10 @@ sentence over the limit, and counted items the model left out as rejected with n
 goes from 5 of 10 good texts rejected to 0 with every unsafe sample still rejected. Prompt version stays
 `flavour-v1`: texts accepted before still pass the new checks.
 
+A server restart during a nightly batch used to leave its row on `running` with the date's `daily_jobs` claim
+taken, so the batch waited a day. When the worker starts it now marks such nightly rows `failed` with reason
+`interrupted` and releases today's claim, so the timer runs again and fills only the texts still missing
+(manual CLI runs are left alone).
+
 The CLIs in `server/cli/` load `server/schema-catalog.mjs` before opening the database, so tables that other
 modules create lazily no longer fail preflight with `SCHEMA_INCOMPATIBLE`.

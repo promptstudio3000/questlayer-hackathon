@@ -349,3 +349,33 @@ test("missing or rejected items get one follow-up call with the reason, and reas
   assert.deepEqual(status.lastBatch.topRejectionReasons, [{ reason: "reward-claim", count: 1 }]);
   assert.equal(status.lastBatch.id, undefined, "no batch ids in health");
 });
+
+test("a restart marks a killed nightly batch interrupted and frees today's run", async (t) => {
+  const { db } = gameDb(t);
+  const { recoverInterruptedBatches } = await import("../server/ai/flavour-batch.mjs");
+  flavourStatus(db);
+  const now = Date.parse("2026-11-03T01:10:00Z");
+  const row = (id, trigger, started) =>
+    db.prepare("INSERT INTO ai_flavour_batches(id,trigger,provider,prompt_version,layer_id,since_ms,generated,rejected,token_budget,outcome,started_at) VALUES (?,?,'ollama','flavour-v1','aavegotchi',0,213,779,120000,'running',?)").run(id, trigger, started);
+  row("killed", "nightly", Date.parse("2026-11-03T01:00:30Z"));
+  row("old", "nightly", Date.parse("2026-11-01T01:00:30Z"));
+  row("cli", "manual", Date.parse("2026-11-03T01:05:00Z"));
+  db.prepare("INSERT INTO daily_jobs(job_key,created_at) VALUES (?,?)").run("flavour:2026-11-03", now - 600_000);
+  db.prepare("INSERT INTO daily_jobs(job_key,created_at) VALUES (?,?)").run("flavour:2026-11-01", now - 2 * 86_400_000);
+  const runs = [];
+  const worker = startFlavourWorker(db, {
+    env: { FLAVOUR_AI_PROVIDER: "ollama", OLLAMA_API_KEY: "k" },
+    clock: () => now,
+    log: () => {},
+    run: async () => (runs.push(1), { id: "f", outcome: "completed" }),
+  });
+  t.after(() => worker.stop());
+  const outcome = (id) => db.prepare("SELECT outcome,reason,finished_at FROM ai_flavour_batches WHERE id=?").get(id);
+  assert.deepEqual({ ...outcome("killed") }, { outcome: "failed", reason: "interrupted", finished_at: now });
+  assert.equal(outcome("old").reason, "interrupted");
+  assert.equal(outcome("cli").outcome, "running", "manual runs may be alive in another process");
+  assert.equal(db.prepare("SELECT count(*) n FROM daily_jobs WHERE job_key='flavour:2026-11-01'").get().n, 1, "only today's claim is released");
+  assert.equal((await worker.tick()).outcome, "completed", "today's batch runs again");
+  assert.equal(runs.length, 1);
+  assert.deepEqual(recoverInterruptedBatches(db, { clock: () => now }), { interrupted: 0, released: [] });
+});

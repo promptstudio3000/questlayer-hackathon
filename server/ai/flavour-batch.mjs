@@ -520,9 +520,33 @@ export async function runFlavourBatch(
  * FLAVOUR_BATCH_HOUR_UTC, claims `flavour:<date>` in daily_jobs and runs one
  * batch. Requests never wait for it.
  */
+/**
+ * A server restart kills a nightly batch mid-run and leaves its audit row on
+ * "running" with that date's daily_jobs claim taken, so the batch would wait a
+ * whole day. On worker start no nightly batch of this process can be running:
+ * mark such rows failed with reason "interrupted" and release today's claim so
+ * the timer runs again (texts already cached are skipped). Manual CLI runs are
+ * left alone; they may be running in another process.
+ */
+export function recoverInterruptedBatches(db, { clock = Date.now } = {}) {
+  ensureModuleVersion(db, FLAVOUR_SCHEMA);
+  const now = clock();
+  const today = new Date(now).toISOString().slice(0, 10);
+  const orphans = db.prepare("SELECT id,started_at FROM ai_flavour_batches WHERE outcome='running' AND trigger='nightly'").all();
+  const released = [];
+  for (const { id: batchId, started_at } of orphans) {
+    db.prepare("UPDATE ai_flavour_batches SET outcome='failed',reason='interrupted',finished_at=? WHERE id=? AND outcome='running'").run(now, batchId);
+    const date = new Date(started_at).toISOString().slice(0, 10);
+    if (date === today && db.prepare("DELETE FROM daily_jobs WHERE job_key=?").run(`flavour:${date}`).changes) released.push(date);
+  }
+  return { interrupted: orphans.length, released };
+}
+
 export function startFlavourWorker(db, { env = process.env, clock = Date.now, intervalMs = 10 * 60_000, log = (e) => console.log(JSON.stringify(e)), run = runFlavourBatch } = {}) {
   const config = flavourConfiguration(env);
   if (!config.nightly || config.provider === "off" || config.provider === "template") return null;
+  const recovered = recoverInterruptedBatches(db, { clock });
+  if (recovered.interrupted) log({ event: "flavour-batch-recovered", ...recovered });
   let running = false;
   async function tick() {
     if (running) return null;
