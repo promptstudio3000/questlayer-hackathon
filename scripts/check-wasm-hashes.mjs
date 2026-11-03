@@ -4,6 +4,7 @@
 //      docs/COLLECTIBLES-REVIEW.md          (the reviewed collectibles build)
 //   3. every *wasmSha256 in public/native-*-testnet.json: it must equal a current
 //      build, or be listed with that exact hash under testnetDeploymentsNotFromThisBuild.
+//      public/native-*-mainnet.json records must equal a current build, no exceptions.
 //      A sibling codeHash (base58 of the same sha256) must agree with it.
 // `--write` records the current build in contracts/wasm-sha256.json (it never touches
 // the reviewed collectibles hash, which needs a review). Writes SHA256SUMS next to the WASM.
@@ -85,6 +86,8 @@ function walk(file, node, path) {
       if (typeof node[codeKey] === "string" && node[codeKey] !== base58(value))
         errors.push(`${id}: ${codeKey} ${node[codeKey]} is not base58(${value})`);
       if (byHash.has(value)) console.log(`ok   ${id} = ${byHash.get(value)} (this build)`);
+      else if (/-mainnet\.json$/.test(file))
+        errors.push(`${id} pins ${value}: a mainnet record must be the reproducible build, never listed as older.`);
       else if (allowed[id]?.sha256 === value)
         console.log(`old  ${id} = ${allowed[id].contract}, deployed before this build (listed)`);
       else
@@ -96,7 +99,8 @@ function walk(file, node, path) {
     } else walk(file, value, here);
   }
 }
-for (const file of readdirSync("public").filter((f) => /^native-.*-testnet\.json$/.test(f)).sort())
+// Mainnet records (written by scripts/deploy-mainnet-slice.mjs) must always be this build.
+for (const file of readdirSync("public").filter((f) => /^native-.*-(testnet|mainnet)\.json$/.test(f)).sort())
   walk(`public/${file}`, JSON.parse(readFileSync(`public/${file}`, "utf8")), "");
 for (const id of Object.keys(allowed))
   if (id !== "about" && !seen.has(id)) errors.push(`${manifestPath} lists ${id}, which no longer exists`);

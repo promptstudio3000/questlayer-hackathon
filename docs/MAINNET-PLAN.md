@@ -116,7 +116,8 @@ the real server on `NEAR_NETWORK=mainnet` from those manifests, plus the `DISABL
 
 - A mainnet operator account with a hardware or well-kept key; separate `questlayer.near`-style factory and
   relayer sub-accounts; function-call keys for the services, never full-access keys on the VPS.
-- Funding: about 15 NEAR (contract storage, sponsor float, reserve). Keep a written limit.
+- Funding: about 15 NEAR (contract storage, sponsor float, reserve) for the slice; about 24 NEAR with badges and
+  NPC games (§6), plus any stNEAR treasury deposit. Keep a written limit.
 - Disclosures: the in-app Advanced page states that mainnet Auras are real tokens with no promised value; the
   README states which contracts are mainnet and which are testnet; the X post does not claim mainnet features that
   are flagged off.
@@ -130,3 +131,36 @@ contract passed a second read-through by someone who did not write it; the VPS r
 owner has the mainnet accounts and funding ready; the refactor in section 3 is merged with the suite green on
 both networks. Otherwise the submission says "mainnet-ready configuration, deployed on testnet", which is honest
 and costs nothing in the games track.
+
+## 6. Contracts added since the slice (3 November)
+
+Badges, NPC games, the Aura editions, the stNEAR treasury and the yield vault went live on testnet after this plan
+was written. `scripts/deploy-mainnet-slice.mjs` now covers them in the same one command (logic in
+`scripts/lib/mainnet-contracts.mjs`), after the slice and with one balance check for both parts. Every WASM must
+equal the Linux/CI build pinned in `contracts/wasm-sha256.json` (macOS builds hash differently), and
+`scripts/check-wasm-hashes.mjs` now also rejects any `public/native-*-mainnet.json` record that is not the current
+build. Without `--execute` nothing is signed. Nothing has been sent to mainnet.
+
+| Contract | Mainnet status | What the command does | Pinned sha256 |
+| --- | --- | --- | --- |
+| Collectibles Aura editions (23, incl. patron and season) | ready, no extra deploy | the slice deploys the reviewed build; the run checks `supported_editions` lists every edition recorded on testnet and writes `native-editions-mainnet.json` | `e2a41b19…31e9` (= `contracts/collectibles/WASM_SHA256`) |
+| Badges (soulbound) | ready, opt-in | `badges.<operator>`: create + deploy + `new` in one transaction, claim signer = the mainnet award signer, a function-call minter key (`create_badge`, `claim`) with a written gas allowance in `.data/badges-minter-mainnet.json`; writes `native-badges-mainnet.json` | `23cc54a7…797a`, 291,076 B (≥ 3.41 NEAR) |
+| NPC games (earned rolls, no wagering) | ready, opt-in | `npc-games.<operator>`: create + deploy + `new` with its own mainnet ticket signer PEM, timeout 600 blocks, then the `wisp-v1` prize table (same odds as testnet); writes `native-npc-games-mainnet.json` | `9b45b67a…6723`, 244,841 B (≥ 2.95 NEAR) |
+| stNEAR treasury | ready, opt-in | checks `meta-pool.near` answers `get_st_near_price` (1.51 NEAR on 3 Nov); with `STNEAR_TREASURY_DEPOSIT_NEAR` it stakes that amount once and writes `stnear-treasury-mainnet.json`. The daily harvest stays testnet: it funds the rewards contract, which is not on mainnet | — (Meta Pool's contract) |
+| Yield vault | **blocked** | refused by name, listed in the plan output with its blockers | `fc1d090f…7700` |
+
+Yield vault blockers (`YIELD_VAULT_BLOCKERS`; `tests/mainnet-contracts.test.mjs` fails once the source changes):
+`new` panics unless contract, owner and treasury are `.testnet`; the token allowlist names only testnet tokens;
+Rhea Lend is fixed to `contract.burrow.testnet`; and it holds other players' money, so §1 needs an external review
+first. A mainnet build needs a network-selected token table (`meta-pool.near`, `linear-protocol.near`, native USDC
+and USDT) and Rhea id (`contract.main.burrow.near`), a new pinned hash and that review. Until then mainnet Staker
+comes from the native stake path only.
+
+Selection is `MAINNET_CONTRACTS` (comma list of `badges`, `npc-games`, `stnear-treasury`; `editions` always runs).
+Mainnet default is the editions check only, so every extra contract is an explicit choice; the testnet rehearsal
+default is all four. Mainnet amounts are always written: `BADGES_FUND_NEAR`, `BADGES_MINTER_ALLOWANCE_NEAR`,
+`NPC_GAMES_FUND_NEAR`, optional `STNEAR_TREASURY_DEPOSIT_NEAR`; `NPC_TICKET_SIGNER_PATH` must name a mainnet-only
+PEM. The server needs no new feature flag: badges and rolls turn on when their `-mainnet.json` manifest and key
+are present (`deploy/questlayer-mainnet.service` points at the key paths, `scripts/install-mainnet-keys-vps.sh`
+installs them when they exist). Dry run: `node --test tests/mainnet-contracts.test.mjs` (fake chain, in CI).
+Owner steps: `docs/OWNER-RUNBOOK.md` §7.
