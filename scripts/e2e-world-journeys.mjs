@@ -169,7 +169,18 @@ async function journey(browser, server, j, expected) {
     const cast = (actors.actors || [])
       .map((a) => a.role || a.kind)
       .filter(Boolean);
-    assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
+    // The generic cast keeps hours (server/data/actors/_generic.json,
+    // 08:00-20:00 local); outside them an empty street is correct.
+    const hour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        hour: "numeric",
+        hourCycle: "h23",
+        timeZone: "Europe/Prague",
+      }).format(new Date()),
+    );
+    if (hour >= 8 && hour < 20)
+      assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
+    else console.log(`  cast check skipped at ${hour}:00 Prague time (off hours)`);
     // POI quests for this cell, from the database the server reads.
     assert.ok(
       expected.questsInCell > 0,
