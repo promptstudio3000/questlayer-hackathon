@@ -1,8 +1,8 @@
 {
   "version": 1,
   "cityId": "_generic",
-  "note": "Generic cast for any city without its own reviewed file and for every active street cell (docs/WORLDS-PLAN.md C.6 W7). Original QuestLayer characters. No traders, keepers, guardians or bosses here: those touch the treasury or a reviewed zone, so they stay in reviewed city files. NPC homes resolve from safe POIs at plan time (homeFrom: poi).",
-  "hours": ["08:00", "20:00"],
+  "note": "Generic cast for any city without its own reviewed file and for every active street cell (docs/WORLDS-PLAN.md C.6 W7). Original QuestLayer characters. No traders, keepers, guardians or bosses here: those touch the treasury or a reviewed zone, so they stay in reviewed city files. NPC homes resolve from safe POIs at plan time (homeFrom: poi). phase picks day (sunrise to sunset), night (after sunset) or any; per-cell caps hold separately for the day and night cast.",
+  "hours": ["07:00", "22:00"],
   "actors": [
     {
       "id": "wayfinder-lenka",
@@ -16,6 +16,7 @@
       "speedMps": 1.1,
       "dwellMin": [10, 20],
       "persona": "wayfinder-lenka",
+      "phase": "any",
       "enabled": true
     },
     {
@@ -30,6 +31,22 @@
       "speedMps": 0.9,
       "dwellMin": [15, 25],
       "persona": "storyteller-tobias",
+      "phase": "day",
+      "enabled": true
+    },
+    {
+      "id": "watchman-ota",
+      "kind": "npc",
+      "archetype": "storyteller",
+      "name": "Watchman Ota",
+      "title": "Keeps the lamps after dark",
+      "model": "keeper",
+      "homeFrom": "poi",
+      "rangeM": 250,
+      "speedMps": 0.8,
+      "dwellMin": [15, 25],
+      "persona": "watchman-ota",
+      "phase": "night",
       "enabled": true
     },
     {
@@ -44,6 +61,20 @@
       "dwellMin": [2, 5],
       "windows": 3,
       "persona": "firefly",
+      "phase": "night",
+      "enabled": true
+    },
+    {
+      "id": "sun-beetle",
+      "kind": "monster",
+      "archetype": "roamer",
+      "name": "Sun Beetle",
+      "model": "sun-beetle",
+      "element": "ember",
+      "rangeM": 500,
+      "speedMps": 1.0,
+      "dwellMin": [4, 9],
+      "phase": "day",
       "enabled": true
     },
     {
@@ -56,6 +87,7 @@
       "rangeM": 600,
       "speedMps": 1.3,
       "dwellMin": [3, 8],
+      "phase": "night",
       "enabled": true
     },
     {
@@ -69,6 +101,7 @@
       "speedMps": 0,
       "dwellMin": [0, 0],
       "count": 2,
+      "phase": "any",
       "enabled": true
     }
   ]

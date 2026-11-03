@@ -23,6 +23,9 @@ import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Point, World, Zone, Item } from "./types";
 import { prefersReducedMotion } from "./feedback";
+import { paintMapSky, skyFor, skyLabel } from "./map-sky";
+import { MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
+import "./map-sky.css";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
@@ -121,6 +124,19 @@ export function GameMap(props: GameMapProps) {
   );
   const [ready, setReady] = useState(false),
     [error, setError] = useState(false);
+  // Real day and night at the player's position; re-checked every minute.
+  const [skyTick, setSkyTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setSkyTick(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const sky = skyFor(props.position, props.now ?? skyTick);
+  const skyRef = useRef(sky);
+  skyRef.current = sky;
+  useEffect(() => {
+    if (ready && map.current) paintMapSky(map.current, sky.phase);
+  }, [ready, sky.phase]);
+  const skyText = skyLabel(sky, props.now ?? skyTick);
   const [viewportRevision, setViewportRevision] = useState(0);
   useEffect(() => {
     let frame = 0;
@@ -256,44 +272,13 @@ export function GameMap(props: GameMapProps) {
       const style = m.getStyle();
       for (const layer of style.layers as any[]) {
         try {
-          if (layer.type === "background")
-            m.setPaintProperty(layer.id, "background-color", "#e9eadb");
-          if (layer.type === "fill") {
-            if (layer["source-layer"] === "water")
-              m.setPaintProperty(layer.id, "fill-color", "#b5d6d8");
-            else if (
-              layer["source-layer"] === "park" ||
-              layer.id.includes("wood")
-            )
-              m.setPaintProperty(layer.id, "fill-color", "#bdcea6");
-            else if (layer["source-layer"] === "building")
-              m.setPaintProperty(layer.id, "fill-color", "#dad2da");
-            else if (layer["source-layer"] === "landcover")
-              m.setPaintProperty(layer.id, "fill-color", "#d4ddbd");
-          }
           if (
-            layer.type === "line" &&
-            layer["source-layer"] === "transportation"
-          ) {
-            m.setPaintProperty(
-              layer.id,
-              "line-color",
-              layer.id.includes("casing")
-                ? "#cec5c0"
-                : layer.id.includes("path")
-                  ? "#e4d4ae"
-                  : "#fffaf0",
-            );
-          }
-          if (layer.type === "symbol") {
-            if (
-              !["transportation_name", "water_name", "place"].includes(
-                layer["source-layer"],
-              )
+            layer.type === "symbol" &&
+            !["transportation_name", "water_name", "place"].includes(
+              layer["source-layer"],
             )
-              m.setLayoutProperty(layer.id, "visibility", "none");
-            m.setPaintProperty(layer.id, "text-color", "#8d827f");
-          }
+          )
+            m.setLayoutProperty(layer.id, "visibility", "none");
         } catch {}
       }
       const building = style.layers.find(
@@ -316,6 +301,8 @@ export function GameMap(props: GameMapProps) {
             "fill-extrusion-opacity": 0.68,
           },
         });
+      // Day, dusk or night from the real sun at the player (src/map-sky.ts).
+      paintMapSky(m, skyRef.current.phase);
       m.addImage("gold-coin", rasterizeGameObject({ kind: "coin" }));
       m.addImage("street-find", rasterizeGameObject({ kind: "discovery" }));
       m.addSource("zones", {
@@ -838,13 +825,26 @@ export function GameMap(props: GameMapProps) {
     <>
       <div
         ref={el}
-        className={
-          props.globe
-            ? "game-map maplibregl-map globe-view"
-            : "game-map maplibregl-map"
-        }
+        className={`game-map maplibregl-map sky-${sky.phase}${props.globe ? " globe-view" : ""}`}
         aria-label="Real OpenStreetMap world"
       />
+      {!props.globe && (
+        <div
+          className={`map-sky-chip sky-${sky.phase}`}
+          role="status"
+          aria-label={skyText.long}
+          title={skyText.long}
+        >
+          {sky.phase === "day" ? (
+            <Sun size={14} weight="fill" aria-hidden />
+          ) : sky.phase === "night" ? (
+            <MoonStars size={14} weight="fill" aria-hidden />
+          ) : (
+            <SunHorizon size={14} weight="fill" aria-hidden />
+          )}
+          <span aria-hidden>{skyText.short}</span>
+        </div>
+      )}
       {!ready && (
         <div className="map-loading" role="status">
           {error

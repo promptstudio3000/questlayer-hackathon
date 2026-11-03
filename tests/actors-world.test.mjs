@@ -25,8 +25,8 @@ test("day plans are deterministic, contiguous and stay on mapped paths", () => {
     const b = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours });
     assert.deepEqual(a, b, def.id);
     assert.ok(a.length >= 1, def.id);
-    assert.equal(a[0].from, dayStart + 8 * 3600_000);
-    assert.equal(a.at(-1).to, dayStart + 20 * 3600_000);
+    assert.equal(a[0].from, dayStart + 7 * 3600_000);
+    assert.equal(a.at(-1).to, dayStart + 22 * 3600_000);
     for (let i = 1; i < a.length; i++) assert.equal(a[i].from, a[i - 1].to);
     for (const s of a) for (const p of s.path) assert.ok(onGraph(g, p), `${def.id} off path`);
     // Walking speed matches the definition (no teleporting NPC).

@@ -78,13 +78,18 @@ export function screenText(text, rules) {
 // Opt-in operator diagnostics (AI_DEBUG_REJECTED=1): logs a redacted, truncated
 // sample of model output that failed the checks. Off by default; never logs
 // the prompt, the player or anything resembling a credential.
-export function debugRejected(env, feature, reason, output) {
-  if (env?.AI_DEBUG_REJECTED !== "1" || output === undefined || output === null) return;
-  let text = typeof output === "string" ? output : JSON.stringify(output);
-  text = String(text)
+// Short redacted sample of a model output for the operator audit: long
+// key-like strings and emails are masked and the text is cut to 200 characters.
+export function redactedSample(output, max = 200) {
+  const text = typeof output === "string" ? output : JSON.stringify(output);
+  return String(text)
     .replace(/[A-Za-z0-9_\-+/=.]{24,}/g, "[redacted]")
     .replace(/[\w.+-]+@[\w-]+\.\w+/g, "[email]")
     .replace(/\s+/g, " ")
-    .slice(0, 400);
-  console.warn(`[ai-rejected] ${feature} reason=${reason} sample=${text}`);
+    .slice(0, max);
+}
+
+export function debugRejected(env, feature, reason, output) {
+  if (env?.AI_DEBUG_REJECTED !== "1" || output === undefined || output === null) return;
+  console.warn(`[ai-rejected] ${feature} reason=${reason} sample=${redactedSample(output, 400)}`);
 }

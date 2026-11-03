@@ -35,3 +35,13 @@ CREATE TABLE IF NOT EXISTS ai_flavour_batches(id TEXT PRIMARY KEY,trigger TEXT N
 CREATE INDEX IF NOT EXISTS ai_flavour_batches_time ON ai_flavour_batches(started_at)
 `,
 });
+
+// Why flavour texts were rejected, per batch, reason and language (counts and
+// one short redacted sample each). Read by the operator CLI and /api/health.
+export const FLAVOUR_REJECTIONS_SCHEMA = registerModuleSchema({
+  name: "ai-flavour-rejections",
+  version: 1,
+  sql: `
+CREATE TABLE IF NOT EXISTS ai_flavour_rejections(batch_id TEXT NOT NULL,reason TEXT NOT NULL,lang TEXT NOT NULL,count INTEGER NOT NULL DEFAULT 0,sample TEXT,PRIMARY KEY(batch_id,reason,lang))
+`,
+});
