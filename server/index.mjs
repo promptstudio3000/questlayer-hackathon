@@ -74,7 +74,7 @@ import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
-import { clientAddress } from "./http-security.mjs";
+import { clientAddress, pruneRateWindows } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -702,6 +702,13 @@ async function refreshOriginals(address) {
 }
 const listeners = new Set(),
   rates = new Map();
+// Per-minute counters: keys end with ":<minute>". `limit` throws 429 past `max`.
+function limit(scope, who, max, message) {
+  const key = `${scope}:${who}:${Math.floor(Date.now() / 60_000)}`,
+    n = (rates.get(key) || 0) + 1;
+  rates.set(key, n);
+  assert(n <= max, message, 429, "RATE_LIMITED");
+}
 function emit(type, data) {
   const event = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
   for (const client of listeners) client.write(event);
@@ -962,6 +969,13 @@ async function api(req, res, url) {
       layers: WORLD_REGISTRY.liveLayers(process.env).map(layerSummary),
     });
   if (path === "/api/session" && method === "POST") {
+    // New guest explorers per network address: stops bulk alt accounts.
+    limit(
+      "new-guest",
+      clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      30,
+      "Too many new explorers from this network. Please wait a minute.",
+    );
     const input = await body(req);
     const result = game.session(db, input.name);
     identitySessions.record(result.token, "guest");
@@ -1987,6 +2001,10 @@ async function api(req, res, url) {
     return respond(res, { player: profile(player) });
   }
   if (path === "/api/events") {
+    // Each open stream holds a socket: a few per explorer is plenty.
+    const open = [...listeners].filter((r) => r.questlayerPlayer === player).length;
+    assert(open < 4, "Too many open live connections. Close another tab.", 429, "RATE_LIMITED");
+    res.questlayerPlayer = player;
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
@@ -2003,6 +2021,7 @@ async function api(req, res, url) {
     return;
   }
   if (path === "/api/world" && method === "POST") {
+    limit("world-open", player, 30, "Please wait before loading another area.");
     const input = await body(req),
       location = point(input.location || HOME),
       query = worldQuery({
@@ -2023,6 +2042,7 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/world" && method === "GET") {
+    limit("world-read", player, 240, "Please wait before refreshing the map again.");
     const w = worldView(db, url.searchParams.get("id"), player, {
       near: url.searchParams.get("near") ?? undefined,
       ...worldQuery({
@@ -2035,12 +2055,14 @@ async function api(req, res, url) {
     return respondCached(req, res, { ...w, layerId: DEFAULT_LAYER.id });
   }
   if (path === "/api/coins/claim" && method === "POST") {
+    limit("coin", player, 240, "Please slow down collecting coins.");
     const input = await body(req),
       result = game.claimCoin(db, player, input.coinId, input.fix);
     if (!result.alreadyClaimed) emit("coin", { id: input.coinId });
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/checkpoint" && method === "POST") {
+    limit("quest", player, 60, "Please wait before confirming another stop.");
     const input = await body(req),
       result = game.advanceRoute(
         db,
@@ -2053,6 +2075,7 @@ async function api(req, res, url) {
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/claim" && method === "POST") {
+    limit("quest", player, 60, "Please wait before confirming another discovery.");
     const input = await body(req);
     // A guardian monster on duty locks its zone chest until you beat it.
     monsterHunt?.chests.assertOpen(player, input.questId);
@@ -2185,6 +2208,7 @@ async function api(req, res, url) {
     );
   }
   if (path === "/api/presence" && method === "POST") {
+    limit("presence", player, 30, "Please wait before sharing your position again.");
     const input = await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
     return respond(res, updatePresence(db, player, input));
@@ -2920,7 +2944,7 @@ const maintenance = setInterval(() => {
       Date.now(),
     );
     db.prepare("DELETE FROM sessions WHERE expires_at<?").run(Date.now());
-    if (rates.size > 1000) rates.clear();
+    pruneRateWindows(rates);
     if (Date.now() >= nextMediaPrune) {
       noteMedia.prune(db);
       taskEvidence.prune();

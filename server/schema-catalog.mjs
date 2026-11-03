@@ -10,6 +10,7 @@ for (const relative of [
   "./creators/bonus-vote.mjs",
   "./daily-board/schema.mjs",
   "./earned-editions.mjs",
+  "./fair-play.mjs",
   "./map-read-indexes.mjs",
   "./creators/completion.mjs",
   "./moderation.mjs",

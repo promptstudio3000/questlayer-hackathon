@@ -27,6 +27,8 @@ export interface ActorView {
   title?: string;
   model: string;
   element?: ActorElement;
+  /** Walks only by day (sunrise to sunset) or only at night; omitted means any time. */
+  phase?: "day" | "night";
   /** Today's segments in the area, at most the next 2 h. */
   segments: ActorSegment[];
   /** Only visible within this distance; omitted means always visible. */
@@ -46,6 +48,8 @@ export interface ActorsResponse {
   dayId: string | null;
   /** Server time when the list was computed, to correct client clock skew. */
   now: number;
+  /** Day or night at the world's centre (server/sun.mjs). */
+  sky?: { phase: "day" | "dusk" | "dawn" | "night"; sunrise?: number; sunset?: number; polar?: "day" | "night" };
   actors: ActorView[];
 }
 

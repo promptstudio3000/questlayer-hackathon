@@ -1,23 +1,109 @@
-.npc-sheet { display: grid; gap: 12px; max-width: 420px; }
-.npc-head { display: grid; grid-template-columns: 96px 1fr auto; gap: 12px; align-items: center; }
-.npc-head h2 { margin: 0; font-size: 20px; }
-.npc-title, .npc-source, .npc-note { margin: 2px 0 0; font-size: 13px; opacity: 0.75; }
-.npc-portrait { width: 96px; height: 96px; border-radius: 12px; background: radial-gradient(circle at 50% 40%, #3d0981, #200543); overflow: hidden; }
-.npc-portrait canvas, .npc-portrait img { width: 100%; height: 100%; display: block; }
-.npc-close { background: none; border: 0; font-size: 24px; line-height: 1; cursor: pointer; color: inherit; min-width: 44px; min-height: 44px; }
-.npc-bubble { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--surface, #fff); color: var(--ink, #1e1e1e); border: 2px solid #c82ac2; }
-.npc-sheet h3 { margin: 0 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
-.npc-offer { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; border: 2px solid #8348ff; background: transparent; color: inherit; cursor: pointer; min-height: 44px; }
-.npc-offer.suggested { border-color: #ff1dff; box-shadow: 0 0 5px #ff1dff; }
-.npc-offer small { white-space: nowrap; opacity: 0.8; }
-.npc-task { padding: 10px 12px; border-radius: 10px; border: 1px solid #8348ff; margin-bottom: 6px; }
-.npc-task p { margin: 0 0 4px; }
-.npc-task ul { margin: 0 0 8px; padding-left: 4px; list-style: none; font-size: 14px; }
-.npc-task li.done { opacity: 0.7; }
-.npc-task button, .npc-chat button { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 0; background: var(--action, #672eeb); color: #fff; cursor: pointer; }
-.npc-task button:disabled, .npc-chat button:disabled, .npc-offer:disabled { opacity: 0.55; cursor: default; }
-.npc-chat { display: flex; gap: 8px; }
-.npc-chat input { flex: 1; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid #8348ff; font: inherit; }
-.npc-notice { margin: 0; color: #219497; }
-.npc-error { margin: 0; color: #c0392b; }
-@media (prefers-reduced-motion: reduce) { .npc-offer.suggested { box-shadow: none; } }
+/* NPC conversation: a dark game dialog centred on the portrait. */
+.game-dialog:has(> .npc-sheet) {
+  width: min(420px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  padding: 0;
+  border: 2px solid #8348ff;
+  border-radius: 22px;
+  background: #1a0335;
+  color: #f4ecff;
+  overflow: auto;
+}
+.npc-sheet { display: grid; gap: 10px; padding: 0 12px 12px; }
+.npc-hero {
+  position: relative;
+  margin: 0 -12px;
+  height: min(240px, 34dvh);
+  background: radial-gradient(circle at 50% 58%, #8348ff88 0, #3d0981 42%, #1a0335 78%);
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+}
+.npc-quest_giver .npc-hero { background: radial-gradient(circle at 50% 58%, #ff1dff66 0, #3d0981 42%, #1a0335 78%); }
+.npc-trader .npc-hero { background: radial-gradient(circle at 50% 58%, #ffd01f55 0, #3d0981 42%, #1a0335 78%); }
+.npc-keeper .npc-hero { background: radial-gradient(circle at 50% 58%, #37f4f155 0, #3d0981 42%, #1a0335 78%); }
+.npc-wandering_rare .npc-hero { background: radial-gradient(circle at 50% 58%, #7dffc466 0, #3d0981 42%, #1a0335 78%); }
+.npc-portrait { position: absolute; inset: 8px 0 34px; display: grid; place-items: center; }
+.npc-portrait img { height: 100%; width: auto; max-width: 100%; object-fit: contain; filter: drop-shadow(0 10px 14px #0008); animation: npc-bob 3.2s ease-in-out infinite; }
+.npc-emote { position: absolute; top: 14px; left: calc(50% + 50px); font-size: 28px; animation: npc-pop 240ms var(--ease-out, ease-out); }
+.npc-plate { position: absolute; left: 12px; right: 12px; bottom: 8px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.npc-plate h2 { margin: 0; font-size: 22px; line-height: 1.1; color: #fff; text-shadow: 0 2px 0 #1a0335, 0 0 12px #1a0335; }
+.npc-role { order: 2; padding: 2px 8px; border-radius: 99px; background: #1a0335cc; color: #fef87d; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.npc-close { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #1a033599; color: #fff; font-size: 20px; cursor: pointer; }
+.npc-bubble {
+  position: relative;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: #fcfaff;
+  color: #1a0335;
+  font-size: 15px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.npc-bubble::before { content: ""; position: absolute; top: -8px; left: 50%; margin-left: -8px; border: 8px solid transparent; border-top: 0; border-bottom-color: #fcfaff; }
+.npc-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: #ffffff12; }
+.npc-tabs button { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 44px; padding: 4px 2px; border: 0; border-radius: 9px; background: transparent; color: #cbb8ef; font: inherit; font-size: 12px; cursor: pointer; }
+.npc-tabs button svg { font-size: 18px; }
+.npc-tabs button.active { background: #672eeb; color: #fff; }
+.npc-badge { position: absolute; top: 2px; right: calc(50% - 22px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: #ff1dff; color: #1a0335; font-size: 11px; line-height: 16px; }
+.npc-panel { display: grid; gap: 8px; }
+.npc-actions { display: grid; gap: 6px; }
+.npc-action {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 12px 6px 8px;
+  border: 2px solid #8348ff;
+  border-radius: 14px;
+  background: linear-gradient(#3d0981, #2a0660);
+  box-shadow: 0 3px 0 #10021f;
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--motion-press, 100ms) ease-out;
+}
+.npc-action:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #10021f; }
+.npc-action:disabled { opacity: 0.5; cursor: default; }
+.npc-action-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #ffffff1a; font-size: 22px; color: #ff9dff; }
+.npc-action-label { font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.npc-action small { padding: 2px 8px; border-radius: 99px; background: #fef87d; color: #1a0335; font-weight: 600; font-size: 12px; white-space: nowrap; }
+.npc-action.suggested { border-color: #ff1dff; box-shadow: 0 3px 0 #10021f, 0 0 10px #ff1dff88; }
+.npc-action.turn-in { border-color: #37f4a0; background: linear-gradient(#176553, #0f4639); }
+.npc-action.turn-in .npc-action-icon { color: #7dffc4; }
+.npc-action.patron, .npc-task.patron { border-color: #ffd01f; }
+.npc-link { justify-self: start; min-height: 36px; padding: 0 4px; border: 0; background: none; color: #cbb8ef; font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
+.npc-empty, .npc-fine { margin: 0; font-size: 14px; opacity: 0.8; }
+.npc-fine { font-size: 13px; opacity: 0.65; }
+.npc-about p { margin: 0; }
+.npc-sheet h3 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: #cbb8ef; }
+.npc-task { display: grid; gap: 6px; padding: 8px; border-radius: 14px; border: 1px solid #8348ff; }
+.npc-task ul { margin: 0; padding-left: 4px; list-style: none; font-size: 14px; }
+.npc-task li.done { opacity: 0.6; }
+.npc-keeper { margin: 0; padding-left: 18px; font-size: 14px; }
+.npc-vault { padding: 10px; border-radius: 14px; background: #fcfaff; color: #1a0335; }
+.npc-vault h3 { color: #665577; }
+.npc-panel .locked-chip { border-color: #8a7fa8; margin: 0; }
+.npc-panel .locked-chip-face small { color: #cbb8ef; }
+.npc-notice { margin: 0; padding: 8px 12px; border: 0; border-radius: 12px; background: #e3f6ee; color: #176553; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.npc-error { margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff0f3; color: #a32947; font-size: 14px; }
+.npc-chat { position: sticky; bottom: 0; display: flex; gap: 6px; padding-top: 4px; background: #1a0335; }
+.npc-chat input { flex: 1; min-width: 0; min-height: 46px; padding: 0 14px; border: 2px solid #8348ff; border-radius: 23px; background: #fcfaff; color: #1a0335; font: inherit; font-size: 16px; }
+.npc-chat button { display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 50%; background: #ff1dff; color: #1a0335; font-size: 20px; cursor: pointer; }
+.npc-chat button:disabled { opacity: 0.45; cursor: default; }
+.npc-sheet :focus-visible { outline: 3px solid #fef87d; outline-offset: 2px; }
+@keyframes npc-bob { 50% { transform: translateY(-6px); } }
+@keyframes npc-pop { from { transform: scale(0.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .npc-portrait img, .npc-emote { animation: none; }
+  .npc-action { transition: none; }
+}
+.npc-task-title { margin: 0; font-weight: 600; }
+.npc-turnin { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: #37f4a0; color: #0f4639; font: inherit; font-weight: 600; cursor: pointer; }
+.npc-turnin:disabled { background: #ffffff1a; color: #cbb8ef; cursor: default; }

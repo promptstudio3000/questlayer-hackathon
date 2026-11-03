@@ -8,6 +8,9 @@
 //   node server/cli/moderate.mjs verify --database ... --operator NAME
 import { existsSync } from "node:fs";
 import { isAbsolute } from "node:path";
+// Load every module schema first: the live database holds tables that modules
+// create lazily, and preflight rejects tables it does not know.
+import "../schema-catalog.mjs";
 import { openDatabase } from "../database.mjs";
 import { assert } from "../domain.mjs";
 import { Moderation, MODERATION_KINDS } from "../moderation.mjs";

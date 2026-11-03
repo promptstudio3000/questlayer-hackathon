@@ -1,0 +1,79 @@
+/* Day and night on the map (src/map-sky.ts). The base map repaint does most
+   of the work; this adds a soft evening tint and the sky chip. */
+.game-map.sky-night::after,
+.game-map.sky-dusk::after,
+.game-map.sky-dawn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 1.2s ease;
+}
+.game-map.sky-night::after {
+  background:
+    radial-gradient(ellipse at 50% 55%, transparent 35%, #0b0820b3 100%),
+    linear-gradient(180deg, #2a1d5c66 0%, transparent 35%);
+}
+.game-map.sky-dusk::after {
+  background:
+    radial-gradient(ellipse at 50% 55%, transparent 45%, #3d1f5266 100%),
+    linear-gradient(180deg, #ff8a5c33 0%, transparent 40%);
+}
+.game-map.sky-dawn::after {
+  background: linear-gradient(180deg, #ffc48a33 0%, transparent 40%);
+}
+.map-sky-chip {
+  position: absolute;
+  z-index: 10;
+  right: 14px;
+  top: 282px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: auto;
+  color: #5a4b6e;
+  background: #fbf9f2f2;
+  border: 1px solid var(--decorative-border, #d7cbe9);
+  box-shadow: 0 3px 12px #3425470f;
+}
+.map-sky-chip.sky-day > svg {
+  color: #e0a800;
+}
+.map-sky-chip.sky-dusk,
+.map-sky-chip.sky-dawn {
+  color: #5d3a4f;
+  background: #ffe8dcf2;
+  border-color: #f0bfa8;
+}
+.map-sky-chip.sky-dusk > svg,
+.map-sky-chip.sky-dawn > svg {
+  color: #e2703a;
+}
+.map-sky-chip.sky-night {
+  color: #ece6ff;
+  background: #241d4df2;
+  border-color: #4c3f8a;
+  box-shadow: 0 3px 14px #0b082066;
+}
+.map-sky-chip.sky-night > svg {
+  color: #fffa65;
+}
+@media (min-width: 761px) and (min-height: 501px) {
+  .map-sky-chip {
+    top: auto;
+    bottom: 34px;
+    right: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-map::after {
+    transition: none;
+  }
+}
