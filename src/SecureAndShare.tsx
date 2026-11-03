@@ -11,6 +11,7 @@ import { api } from "./api";
 import { shareCard } from "./share-card";
 import type { Item, Player } from "./types";
 import "./secure-share.css";
+import { tr } from "./i18n";
 
 export type SecureAvailability =
   /** Invisible account ready and the collectibles contract accepts our claims. */
@@ -88,7 +89,7 @@ export function SecureAndShare({
     const ok = await onSecure(item);
     setState(ok ? "idle" : "failed");
     if (ok) onDone?.();
-    if (!ok) setError("Securing didn't finish. Your Aura is safe; try again.");
+    if (!ok) setError(tr("Securing didn't finish. Your Aura is safe; try again."));
   }
 
   async function share() {
@@ -120,8 +121,7 @@ export function SecureAndShare({
         <p className="secure-done" role="status">
           <CheckCircle size={20} weight="fill" aria-hidden="true" />
           <span>
-            <b>Secured.</b> This Aura is yours, even outside this game.
-          </span>
+            <b>{tr("Secured.")}</b> {" "}{tr("This Aura is yours, even outside this game.")}</span>
         </p>
       ) : availability === "ready" ? (
         <>
@@ -131,16 +131,16 @@ export function SecureAndShare({
             onClick={() => void secure()}
           >
             {pending
-              ? "Securing your Aura…"
+              ? tr("Securing your Aura…")
               : started
-                ? "Finish securing this Aura"
-                : "Secure this Aura"}
+                ? tr("Finish securing this Aura")
+                : tr("Secure this Aura")}
             <ShieldCheck size={20} />
           </button>
           <p className="secure-hint">
             {pending
-              ? "This takes a few seconds. You can keep this open."
-              : "No popup, nothing to pay: the game covers storage on the test network."}
+              ? tr("This takes a few seconds. You can keep this open.")
+              : tr("No popup, nothing to pay: the game covers storage on the test network.")}
           </p>
           {state === "failed" && (
             <p className="secure-error" role="alert">
@@ -150,8 +150,7 @@ export function SecureAndShare({
         </>
       ) : availability === "preparing" ? (
         <p className="secure-hint" role="status">
-          Preparing your account so you can secure this Aura…
-        </p>
+          {tr("Preparing your account so you can secure this Aura…")}</p>
       ) : null}
       <button
         className="secondary-button share-button"
@@ -159,7 +158,7 @@ export function SecureAndShare({
         onClick={() => void share()}
       >
         <ShareNetwork size={20} aria-hidden="true" />
-        {sharing ? "Making your card…" : "Share your Aura"}
+        {sharing ? tr("Making your card…") : tr("Share your Aura")}
       </button>
       {shareNote && (
         <p className="secure-hint" role="status">
@@ -167,14 +166,12 @@ export function SecureAndShare({
         </p>
       )}
       {nudge && (
-        <div className="passkey-nudge" role="group" aria-label="Keep your explorer">
+        <div className="passkey-nudge" role="group" aria-label={tr("Keep your explorer")}>
           <Fingerprint size={28} aria-hidden="true" />
           <div>
-            <b>Secure your explorer with a passkey</b>
+            <b>{tr("Secure your explorer with a passkey")}</b>
             <p>
-              Your Aura is safe. A passkey lets you come back to this explorer
-              from another phone or after clearing this browser.
-            </p>
+              {tr("Your Aura is safe. A passkey lets you come back to this explorer from another phone or after clearing this browser.")}</p>
             <button
               className="primary-button"
               disabled={busy}
@@ -182,12 +179,12 @@ export function SecureAndShare({
                 void onPasskey().then(() => closeNudge())
               }
             >
-              Add a passkey <Fingerprint size={20} />
+              {tr("Add a passkey")}{" "}<Fingerprint size={20} />
             </button>
           </div>
           <button
             className="passkey-nudge-close"
-            aria-label="Not now"
+            aria-label={tr("Not now")}
             onClick={closeNudge}
           >
             <X size={18} />

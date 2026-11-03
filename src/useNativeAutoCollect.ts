@@ -7,6 +7,7 @@ import type {
   NativeAutoView,
 } from "./native-autocollect";
 import type { NativeReceipt } from "./native-game-types";
+import { tr } from "./i18n.ts";
 
 type Input = Omit<NativeAutoInput, "visible" | "online"> & {
   refresh: (fresh?: boolean) => Promise<void>;
@@ -23,7 +24,7 @@ export function useNativeAutoCollect(input: Input) {
   const [view, setView] = useState<NativeAutoView>({
     enabled: false,
     status: "off",
-    message: "Collect as you walk is off",
+    message: tr("Collect as you walk is off"),
     pending: 0,
     retryAt: null,
     confirmed: { count: 0, amount: "0", xp: 0 },

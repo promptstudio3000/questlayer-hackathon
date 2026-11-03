@@ -11,6 +11,7 @@ import {
   type AuraSlot,
 } from "./aura-art-data.ts";
 import type { Item } from "./types.ts";
+import { tr } from "./i18n.ts";
 
 export const SHARE_CARD = { width: 1080, height: 1350 } as const;
 
@@ -41,9 +42,7 @@ export function editionLine(item: ShareCardInput["item"]): string {
 }
 
 export function shareText(input: ShareCardInput): string {
-  return `${input.explorer} found ${input.item.name} on a QuestLayer walk${
-    input.place ? ` in ${input.place}` : ""
-  }.`;
+  return tr("{0} found {1} on a QuestLayer walk{2}.", { 0: input.explorer, 1: input.item.name, 2: input.place ? ` in ${input.place}` : "" });
 }
 
 export function shareFileName(item: { name: string; serial: number | null }) {

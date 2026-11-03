@@ -20,6 +20,7 @@ import {
 } from "./npc-client";
 import { InnerVault, StakeTodayCard, seenCeremony, seenRank } from "./StakeToday";
 import "./npc-sheet.css";
+import { tr } from "./i18n";
 
 const EMOTE: Record<string, string> = { wave: "👋", think: "🤔", laugh: "😄", shrug: "🤷", none: "" };
 const isTrade = (offer: ActorOffer) => offer.kind.startsWith("trade_");
@@ -28,12 +29,12 @@ const near = (yocto: string) => (Number(BigInt(yocto) / 10n ** 21n) / 1000).toFi
 function tradeText(t: NpcTrade, who: string) {
   if (t.kind === "trade_up")
     return t.state === "completed"
-      ? `Done. ${t.aura ? `${t.aura.name} (${t.aura.rarity}) is yours; secure it on NEAR from your wardrobe.` : ""}${t.ledgerAura ? ` ${who} also hands you the ${t.ledgerAura.name}.` : ""}`
-      : `Send ${t.tokens?.join(", ")} to ${t.receiver} (wardrobe → transfer), then tap "Check hand-over". The deal stays open 30 minutes.`;
+      ? tr("Done. {0}{1}", { 0: t.aura ? `${t.aura.name} (${t.aura.rarity}) is yours; secure it on NEAR from your wardrobe.` : "", 1: t.ledgerAura ? ` ${who} also hands you the ${t.ledgerAura.name}.` : "" })
+      : tr("Send {0} to {1} (wardrobe → transfer), then tap \"Check hand-over\". The deal stays open 30 minutes.", { 0: t.tokens?.join(", "), 1: t.receiver });
   const minutes = Math.max(1, Math.round((t.deadlineMs - Date.now()) / 60000));
   return t.kind === "trade_buy"
-    ? `${who} signed a buy order: ${near(t.price)} test NEAR for ${t.tokenId}. Open Market → Signed offers and tap "Hand to the market and accept" within ${minutes} min.`
-    : `${who} signed a sell order: ${t.tokenId} for ${near(t.price)} test NEAR. Open Market → Signed offers and buy it within ${minutes} min.`;
+    ? tr("{0} signed a buy order: {1} test NEAR for {2}. Open Market → Signed offers and tap \"Hand to the market and accept\" within {3} min.", { 0: who, 1: near(t.price), 2: t.tokenId, 3: minutes })
+    : tr("{0} signed a sell order: {1} for {2} test NEAR. Open Market → Signed offers and buy it within {3} min.", { 0: who, 1: t.tokenId, 2: near(t.price), 3: minutes });
 }
 
 function Portrait({ model, label }: { model: string; label: string }) {
@@ -66,7 +67,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
     try {
       await task();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : tr("Something went wrong."));
     } finally {
       setBusy(false);
     }
@@ -85,7 +86,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
         return;
       }
       await npcAccept(actorId, token, offer.id);
-      setNotice(`Task accepted: ${offer.label}`);
+      setNotice(tr("Task accepted: {0}", { 0: offer.label }));
       await refresh();
     });
   const turnIn = (line: NpcActiveLine) =>
@@ -93,7 +94,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
       const r = await npcTurnIn(actorId, token, line.offerId);
       setNotice(
         r.replay
-          ? "Already turned in."
+          ? tr("Already turned in.")
           : `+${r.xp} XP${r.aura ? ` and ${r.aura.name} (${r.aura.rarity})` : ""}${r.edition ? `${r.aura ? "," : " and"} plus the NPC-only ${r.edition.name} (${r.edition.rarity})` : ""}.${r.aura || r.edition ? " Secure it on NEAR from your wardrobe." : ""}${r.patron ? ` Patron's Path ${r.patron.pathLine}/${r.patron.pathOf}: "${r.patron.story.title}". ${r.patron.story.text}${r.patron.edition && r.patron.edition.id !== r.edition?.id ? ` You also earned ${r.patron.edition.name}.` : ""}` : ""}${r.note ? ` ${r.note}` : ""}`,
       );
       await refresh();
@@ -117,30 +118,30 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   const name = reply?.npc?.name || encounter.actor.name;
   const suggested = reply?.offer?.id;
   return (
-    <Dialog label={`Talk to ${name}`} onClose={onClose}>
+    <Dialog label={tr("Talk to {0}", { 0: name })} onClose={onClose}>
       <div className="npc-sheet">
         <header className="npc-head">
           <Portrait model={encounter.actor.model} label={name} />
           <div>
             <h2>{name}</h2>
             {(reply?.npc?.title || encounter.actor.title) && <p className="npc-title">{reply?.npc?.title || encounter.actor.title}</p>}
-            <p className="npc-source">{reply?.source && reply.source !== "template" ? "AI voice · answers from game data only" : "Standard replies"}</p>
+            <p className="npc-source">{reply?.source && reply.source !== "template" ? tr("AI voice · answers from game data only") : tr("Standard replies")}</p>
           </div>
-          <button type="button" className="npc-close" onClick={onClose} aria-label="Close">×</button>
+          <button type="button" className="npc-close" onClick={onClose} aria-label={tr("Close")}>×</button>
         </header>
         <p className="npc-bubble" aria-live="polite">
           {reply ? `${EMOTE[reply.emote] || ""} ${reply.say}`.trim() : "…"}
         </p>
         {reply?.note && <p className="npc-note">{reply.note}</p>}
         {!!reply?.active.length && (
-          <section aria-label="Your tasks">
-            <h3>Your tasks</h3>
+          <section aria-label={tr("Your tasks")}>
+            <h3>{tr("Your tasks")}</h3>
             {reply.active.map((line) => {
               const ready = line.steps.every((s) => s.done);
               return (
                 <div className={`npc-task${line.patron ? " patron" : ""}`} key={line.offerId}>
                   <p>
-                    {line.patron && <span className="patron-tag">✦ Patron {line.patron.pathLine}/{line.patron.pathOf}</span>} {line.label}
+                    {line.patron && <span className="patron-tag">{tr("✦ Patron")}{" "}{line.patron.pathLine}/{line.patron.pathOf}</span>} {line.label}
                   </p>
                   <ul>
                     {line.steps.map((s) => (
@@ -151,7 +152,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                     ))}
                   </ul>
                   <button type="button" disabled={busy || !ready} onClick={() => turnIn(line)}>
-                    {ready ? `Turn in for ${line.xp} XP${line.aura ? " + Aura" : ""}` : "Finish the stops, then come back"}
+                    {ready ? tr("Turn in for {0} XP{1}", { 0: line.xp, 1: line.aura ? " + Aura" : "" }) : tr("Finish the stops, then come back")}
                   </button>
                 </div>
               );
@@ -159,8 +160,8 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
           </section>
         )}
         {!!reply?.menu.length && (
-          <section aria-label="Offers">
-            <h3>Offers</h3>
+          <section aria-label={tr("Offers")}>
+            <h3>{tr("Offers")}</h3>
             {reply.menu.map((offer) => (
               <button
                 type="button"
@@ -173,10 +174,10 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                 <small>
                   {isTrade(offer)
                     ? trades[offer.id]
-                      ? "Signed · see below"
+                      ? tr("Signed · see below")
                       : offer.kind === "trade_up"
-                        ? "3 commons → 1 rare"
-                        : "Signed order on the testnet market"
+                        ? tr("3 commons → 1 rare")
+                        : tr("Signed order on the testnet market")
                     : `${String((offer.terms as { xp?: number }).xp ?? "")} XP${(offer.terms as { aura?: boolean }).aura ? " + Aura" : ""}${
                         (offer.terms as { patron?: boolean }).patron
                           ? ` · Patron's Path ${String((offer.terms as { pathLine?: number }).pathLine)}/${String((offer.terms as { pathOf?: number }).pathOf)}`
@@ -189,14 +190,13 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
               .filter(([, t]) => t.kind === "trade_up" && t.state === "issued")
               .map(([offerId]) => (
                 <button type="button" key={offerId} disabled={busy} onClick={() => handOver(offerId)}>
-                  Check hand-over
-                </button>
+                  {tr("Check hand-over")}</button>
               ))}
           </section>
         )}
         {!!reply?.locked?.length && (
-          <section aria-label="For stakers">
-            <h3>For stakers</h3>
+          <section aria-label={tr("For stakers")}>
+            <h3>{tr("For stakers")}</h3>
             {reply.locked.map((chip) => (
               <LockedChip
                 key={chip.id}
@@ -232,8 +232,8 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
           </>
         )}
         {vault && (
-          <section aria-label="Your vault and balance">
-            <h3>Your vault and balance</h3>
+          <section aria-label={tr("Your vault and balance")}>
+            <h3>{tr("Your vault and balance")}</h3>
             <ul className="npc-keeper">
               {vault.lines.map((line) => (
                 <li key={line}>{line}</li>
@@ -246,10 +246,10 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
             value={message}
             maxLength={300}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={`Say something to ${name}`}
-            aria-label={`Message to ${name}`}
+            placeholder={tr("Say something to {0}", { 0: name })}
+            aria-label={tr("Message to {0}", { 0: name })}
           />
-          <button type="submit" disabled={busy || !message.trim()}>Send</button>
+          <button type="submit" disabled={busy || !message.trim()}>{tr("Send")}</button>
         </form>
         {notice && <p className="npc-notice" role="status">{notice}</p>}
         {error && <p className="npc-error" role="alert">{error}</p>}

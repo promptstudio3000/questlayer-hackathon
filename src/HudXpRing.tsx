@@ -4,6 +4,7 @@
 // from the caller (levelProgress in src/levels.ts), never from here.
 import type { ReactNode } from "react";
 import "./hud.css";
+import { tr } from "./i18n";
 
 export type HudXpRingProps = {
   level: number;
@@ -47,7 +48,7 @@ export function HudXpRing({ level, xp, levelStartXp, nextLevelXp, ring = null, c
         </span>
       </span>
       <span className="hud-xp-text">
-        <b>Lv {level}</b>
+        <b>{tr("Lv")}{" "}{level}</b>
         <small>
           {xp.toLocaleString("en-US")}/{nextLevelXp.toLocaleString("en-US")} XP
         </small>
@@ -59,5 +60,5 @@ export function HudXpRing({ level, xp, levelStartXp, nextLevelXp, ring = null, c
 /** Spoken summary for the control that hosts the ring. */
 export function levelSummary({ level, xp, nextLevelXp }: Pick<HudXpRingProps, "level" | "xp" | "nextLevelXp">) {
   // Starts with the visible readout so the accessible name contains the visible text (WCAG 2.5.3).
-  return `Lv ${level} ${xp.toLocaleString("en-US")}/${nextLevelXp.toLocaleString("en-US")} XP, level ${level + 1} next`;
+  return tr("Lv {0} {1}/{2} XP, level {3} next", { 0: level, 1: xp.toLocaleString("en-US"), 2: nextLevelXp.toLocaleString("en-US"), 3: level + 1 });
 }

@@ -14,6 +14,7 @@ import {
   loadCharacterModel,
   type CharacterModelDescriptor as Descriptor,
 } from "./character-model-client";
+import { tr } from "./i18n";
 type Scene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
@@ -80,15 +81,15 @@ export function Character3D({
     };
   }, [originTokenId, above, below, attempt]);
   return (
-    <Dialog label="Your character in 3D" onClose={onClose}>
+    <Dialog label={tr("Your character in 3D")} onClose={onClose}>
       <section className="character-room">
         <header>
           <div>
-            <h2>Your look, in 3D</h2>
+            <h2>{tr("Your look, in 3D")}</h2>
           </div>
           <button
             className="icon-button"
-            aria-label="Close 3D preview"
+            aria-label={tr("Close 3D preview")}
             onClick={onClose}
             autoFocus
           >
@@ -99,7 +100,7 @@ export function Character3D({
           {!loaded && (
             <div className="model-fallback">
               <Character items={items} originTokenId={originTokenId} />
-              {!error && <p role="status">Preparing your 3D look…</p>}
+              {!error && <p role="status">{tr("Preparing your 3D look…")}</p>}
             </div>
           )}
         </div>
@@ -108,61 +109,59 @@ export function Character3D({
             <p className="inline-error" role="alert">
               {error}
             </p>
-            <p>Your equipped items and 2D appearance are unchanged.</p>
+            <p>{tr("Your equipped items and 2D appearance are unchanged.")}</p>
             <button
               className="secondary-button"
               onClick={() => setAttempt((v) => v + 1)}
             >
-              Try 3D again
-            </button>
+              {tr("Try 3D again")}</button>
           </>
         ) : (
           <>
-            <div className="model-controls" aria-label="3D view controls">
+            <div className="model-controls" aria-label={tr("3D view controls")}>
               <button
                 disabled={!loaded}
-                aria-label="Rotate left"
+                aria-label={tr("Rotate left")}
                 onClick={() => scene.current?.rotate(-1)}
               >
                 <ArrowLeft />
               </button>
               <button
                 disabled={!loaded}
-                aria-label="Zoom out"
+                aria-label={tr("Zoom out")}
                 onClick={() => scene.current?.zoom(-1)}
               >
                 <MagnifyingGlassMinus />
               </button>
               <button
                 disabled={!loaded}
-                aria-label="Reset 3D view"
+                aria-label={tr("Reset 3D view")}
                 onClick={() => scene.current?.reset()}
               >
                 <ArrowCounterClockwise />
               </button>
               <button
                 disabled={!loaded}
-                aria-label="Zoom in"
+                aria-label={tr("Zoom in")}
                 onClick={() => scene.current?.zoom(1)}
               >
                 <MagnifyingGlassPlus />
               </button>
               <button
                 disabled={!loaded}
-                aria-label="Rotate right"
+                aria-label={tr("Rotate right")}
                 onClick={() => scene.current?.rotate(1)}
               >
                 <ArrowRight />
               </button>
             </div>
             <p className="model-instructions">
-              Drag to turn, pinch to zoom, or use the buttons.
-            </p>
+              {tr("Drag to turn, pinch to zoom, or use the buttons.")}</p>
             {descriptor && !descriptor.complete && (
               <p className="model-coverage">
                 {descriptor.mapCompatible && descriptor.backgroundOmitted
-                  ? "Your original background stays in 2D. Your character and equipped wearables are shown in 3D."
-                  : "Some original wardrobe slots are not available in 3D. Your verified 2D appearance remains the complete view."}
+                  ? tr("Your original background stays in 2D. Your character and equipped wearables are shown in 3D.")
+                  : tr("Some original wardrobe slots are not available in 3D. Your verified 2D appearance remains the complete view.")}
               </p>
             )}
           </>
@@ -173,18 +172,15 @@ export function Character3D({
             target="_blank"
             rel="noreferrer"
           >
-            Aavegotchi SDK artwork
-          </a>{" "}
+            {tr("Aavegotchi SDK artwork")}</a>{" "}
           ·{" "}
           {originTokenId
-            ? `Original #${originTokenId}`
-            : "Starter body preview"}
-          . QuestLayer Auras are separate game items.
-        </p>
+            ? tr("Original #{0}", { 0: originTokenId })
+            : tr("Starter body preview")}
+          {tr(". QuestLayer Auras are separate game items.")}</p>
         {descriptor?.optimized && (
           <p className="model-coverage">
-            Optimized for a lighter mobile preview.
-          </p>
+            {tr("Optimized for a lighter mobile preview.")}</p>
         )}
       </section>
     </Dialog>

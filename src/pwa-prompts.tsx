@@ -32,6 +32,7 @@ import {
   rememberChoice,
 } from "./pwa-state";
 import "./pwa-prompts.css";
+import { tr } from "./i18n";
 
 const TICK_MS = 2000;
 const BACK_ONLINE_MS = 4000;
@@ -293,11 +294,9 @@ export function PwaPrompts() {
             aria-hidden="true"
           />
           <div className="pwa-copy">
-            <strong>You're offline</strong>
+            <strong>{tr("You're offline")}</strong>
             <p>
-              QuestLayer still opens, but new map areas and rewards need a
-              connection. Nothing is collected until you're back online.
-            </p>
+              {tr("QuestLayer still opens, but new map areas and rewards need a connection. Nothing is collected until you're back online.")}</p>
           </div>
         </div>
       )}
@@ -312,7 +311,7 @@ export function PwaPrompts() {
                 aria-hidden="true"
               />
               <div className="pwa-copy">
-                <strong>You're back online</strong>
+                <strong>{tr("You're back online")}</strong>
               </div>
             </div>
           )}
@@ -330,8 +329,8 @@ export function PwaPrompts() {
                 aria-hidden="true"
               />
               <div className="pwa-copy">
-                <strong id="pwa-update-title">New version ready</strong>
-                <p>Reload to get the latest QuestLayer.</p>
+                <strong id="pwa-update-title">{tr("New version ready")}</strong>
+                <p>{tr("Reload to get the latest QuestLayer.")}</p>
               </div>
               <div className="pwa-actions">
                 <button
@@ -341,7 +340,7 @@ export function PwaPrompts() {
                   disabled={state.reloading}
                 >
                   <ArrowsClockwise size={20} weight="bold" aria-hidden="true" />
-                  {state.reloading ? "Reloading…" : "Reload"}
+                  {state.reloading ? tr("Reloading…") : tr("Reload")}
                 </button>
                 <button
                   type="button"
@@ -352,8 +351,7 @@ export function PwaPrompts() {
                     setLaterUpdate(true);
                   }}
                 >
-                  Later
-                </button>
+                  {tr("Later")}</button>
               </div>
             </div>
           )}
@@ -374,26 +372,24 @@ export function PwaPrompts() {
               <div className="pwa-copy">
                 <strong id="pwa-install-title">
                   {offer === "prompt" && !platform.phone
-                    ? "Install QuestLayer"
-                    : "Add QuestLayer to your home screen"}
+                    ? tr("Install QuestLayer")
+                    : tr("Add QuestLayer to your home screen")}
                 </strong>
                 {offer === "prompt" && (
                   <p>
                     {platform.phone
-                      ? "One tap opens your next adventure."
-                      : "Keep it one click away in its own window."}
+                      ? tr("One tap opens your next adventure.")
+                      : tr("Keep it one click away in its own window.")}
                   </p>
                 )}
               </div>
               {offer === "ios" && (
                 <ol className="pwa-steps">
                   <li>
-                    Tap Share
-                    <Export size={20} weight="bold" aria-hidden="true" />
+                    {tr("Tap Share")}<Export size={20} weight="bold" aria-hidden="true" />
                   </li>
                   <li>
-                    Choose Add to Home Screen
-                    <PlusSquare size={20} weight="bold" aria-hidden="true" />
+                    {tr("Choose Add to Home Screen")}<PlusSquare size={20} weight="bold" aria-hidden="true" />
                   </li>
                 </ol>
               )}
@@ -405,15 +401,14 @@ export function PwaPrompts() {
                       className="pwa-button pwa-primary"
                       onClick={() => void install()}
                     >
-                      {platform.phone ? "Add to home screen" : "Install"}
+                      {platform.phone ? tr("Add to home screen") : tr("Install")}
                     </button>
                     <button
                       type="button"
                       className="pwa-button pwa-quiet"
                       onClick={() => closeOffer("dismissed")}
                     >
-                      Not now
-                    </button>
+                      {tr("Not now")}</button>
                   </>
                 ) : (
                   <button
@@ -421,8 +416,7 @@ export function PwaPrompts() {
                     className="pwa-button pwa-quiet"
                     onClick={() => closeOffer("dismissed")}
                   >
-                    Got it
-                  </button>
+                    {tr("Got it")}</button>
                 )}
               </div>
             </aside>

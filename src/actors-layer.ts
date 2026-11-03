@@ -7,6 +7,7 @@ import * as maplibregl from "maplibre-gl";
 import type { ActorSegment, ActorView, ActorsResponse } from "./actor-types";
 import { api, meters } from "./api";
 import "./actors.css";
+import { tr } from "./i18n.ts";
 
 type LngLat = { lng: number; lat: number };
 
@@ -56,7 +57,7 @@ const ARCHETYPE_LABEL: Record<string, string> = {
   boss: "Boss",
 };
 export const actorRoleLabel = (a: Pick<ActorView, "archetype">) =>
-  ARCHETYPE_LABEL[a.archetype] || "Character";
+  ARCHETYPE_LABEL[a.archetype] || tr("Character");
 
 function markerNode(actor: ActorView, onSelect: (a: ActorView) => void) {
   const node = document.createElement("button");

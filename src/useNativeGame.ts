@@ -3,6 +3,7 @@ import { api } from "./api";
 import type { Point } from "./types";
 import type { NativeGameState } from "./native-game-types";
 import { createNativeRefreshQueue } from "./native-refresh-queue";
+import { tr } from "./i18n.ts";
 export function useNativeGame(
   enabled: boolean,
   playerId: string | undefined,
@@ -58,7 +59,7 @@ export function useNativeGame(
             message:
               error instanceof Error
                 ? error.message
-                : "Native adventures could not be refreshed.",
+                : tr("Native adventures could not be refreshed."),
           });
           setSnapshot(null);
         }

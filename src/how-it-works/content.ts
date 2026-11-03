@@ -5,19 +5,20 @@
 import levelTable from "../../server/data/level-table.json" with { type: "json" };
 import stakerGates from "../../server/data/staker-gates.json" with { type: "json" };
 import placeBadges from "../../server/data/place-badges.json" with { type: "json" };
+import { tr } from "../i18n.ts";
 
 export const CHAPTERS = [
-  { id: "start", label: "Start" },
-  { id: "walk", label: "Walk and collect" },
-  { id: "zones", label: "Daily zones" },
-  { id: "levels", label: "Levels" },
-  { id: "collectibles", label: "Collectibles" },
-  { id: "badges", label: "Badges" },
-  { id: "npcs", label: "NPCs and traders" },
-  { id: "staking", label: "Staking" },
-  { id: "seasons", label: "Seasons" },
-  { id: "fair-play", label: "Fair play" },
-  { id: "join", label: "How to join" },
+  { id: "start", get label() { return tr("Start"); } },
+  { id: "walk", get label() { return tr("Walk and collect"); } },
+  { id: "zones", get label() { return tr("Daily zones"); } },
+  { id: "levels", get label() { return tr("Levels"); } },
+  { id: "collectibles", get label() { return tr("Collectibles"); } },
+  { id: "badges", get label() { return tr("Badges"); } },
+  { id: "npcs", get label() { return tr("NPCs and traders"); } },
+  { id: "staking", get label() { return tr("Staking"); } },
+  { id: "seasons", get label() { return tr("Seasons"); } },
+  { id: "fair-play", get label() { return tr("Fair play"); } },
+  { id: "join", get label() { return tr("How to join"); } },
 ] as const;
 export type ChapterId = (typeof CHAPTERS)[number]["id"];
 
@@ -82,9 +83,9 @@ export const SAMPLE_PLACES = ["peak-snezka", "peak-lysa-hora", "landmark-prague-
 export const SEASON = Object.freeze({
   goal: 30,
   points: [
-    { id: "hunt", label: "Hunt", points: 1 },
-    { id: "visit", label: "Zone visit", points: 2 },
-    { id: "line", label: "NPC line", points: 3 },
+    { id: "hunt", get label() { return tr("Hunt"); }, points: 1 },
+    { id: "visit", get label() { return tr("Zone visit"); }, points: 2 },
+    { id: "line", get label() { return tr("NPC line"); }, points: 3 },
   ],
   ranks: ["Explorer", "Season finisher", "Trailblazer", "Season legend"],
   lengthDays: 14,

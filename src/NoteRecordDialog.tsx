@@ -7,6 +7,7 @@ import {
   type NoteRecordKind,
   type NoteRecordStatus,
 } from "./note-record";
+import { tr } from "./i18n";
 
 type Account = { accountId: string; managed: boolean };
 const PIN_COPY: Record<string, string> = {
@@ -75,9 +76,9 @@ export function NoteRecordDialog({
         if (!current) return;
         setError(
           e.code === "RECORDS_DISABLED"
-            ? "Public records are not switched on for this server yet."
+            ? tr("Public records are not switched on for this server yet.")
             : e.code === "ACCOUNT_NOT_READY"
-              ? "Your explorer account is still being prepared. Try again in a minute."
+              ? tr("Your explorer account is still being prepared. Try again in a minute.")
               : e.message,
         );
       })
@@ -115,11 +116,9 @@ export function NoteRecordDialog({
         <h2>{title}</h2>
         {!account ? (
           <p role="status">
-            Your explorer account is still being prepared. Records can be
-            published once it is ready.
-          </p>
+            {tr("Your explorer account is still being prepared. Records can be published once it is ready.")}</p>
         ) : loading && !status ? (
-          <p role="status">Checking NEAR Social…</p>
+          <p role="status">{tr("Checking NEAR Social…")}</p>
         ) : error && !status ? (
           <p className="map-notes-error" role="alert">
             {error}
@@ -128,30 +127,30 @@ export function NoteRecordDialog({
           <>
             <p className="note-record-state" role="status">
               {view === "none" &&
-                "Not published yet. Today it lives only in QuestLayer."}
+                tr("Not published yet. Today it lives only in QuestLayer.")}
               {view === "pending" &&
-                "A record was sent but is not confirmed yet. Refresh in a moment."}
-              {view === "published" && "Published under your account."}
+                tr("A record was sent but is not confirmed yet. Refresh in a moment.")}
+              {view === "published" && tr("Published under your account.")}
               {view === "outdated" &&
-                "Published, but your note changed since. Publish again to update it."}
+                tr("Published, but your note changed since. Publish again to update it.")}
               {view === "removed" &&
-                "Marked removed. Earlier versions stay readable in history."}
+                tr("Marked removed. Earlier versions stay readable in history.")}
             </p>
             {status.media && (
               <p className="note-record-media">
-                <span>Photo address</span>
+                <span>{tr("Photo address")}</span>
                 <code>{status.media.cid}</code>
                 <small>{PIN_COPY[status.media.state] || ""}</small>
               </p>
             )}
             <p>
               {kind === "note"
-                ? "This copies the note text, its map pin and photo address to a public record under "
-                : "This replaces the record under "}
+                ? tr("This copies the note text, its map pin and photo address to a public record under ")
+                : tr("This replaces the record under ")}
               <strong>{status.accountId}</strong>
               {kind === "note"
                 ? "."
-                : " with a removal marker. It does not erase copies others made."}
+                : tr(" with a removal marker. It does not erase copies others made.")}
             </p>
             <label className="profile-consent">
               <input
@@ -162,8 +161,8 @@ export function NoteRecordDialog({
               />
               <span>
                 {kind === "note"
-                  ? "Anyone can read this record."
-                  : "I want this record marked as removed."}
+                  ? tr("Anyone can read this record.")
+                  : tr("I want this record marked as removed.")}
               </span>
             </label>
             <label className="profile-consent">
@@ -174,14 +173,13 @@ export function NoteRecordDialog({
                 onChange={(e) => setPermanence(e.target.checked)}
               />
               <span>
-                I understand a public record cannot be fully erased later.
-                <small>{status.permanence}</small>
+                {tr("I understand a public record cannot be fully erased later.")}<small>{status.permanence}</small>
               </span>
             </label>
             <p className="note-record-fee">
               {account.managed
-                ? "No popup and no fee: QuestLayer covers the storage."
-                : "Your wallet asks you to approve. Storage credit may be attached."}
+                ? tr("No popup and no fee: QuestLayer covers the storage.")
+                : tr("Your wallet asks you to approve. Storage credit may be attached.")}
             </p>
             {error && (
               <p className="map-notes-error" role="alert">
@@ -192,13 +190,12 @@ export function NoteRecordDialog({
         ) : null}
         <div className="map-notes-actions">
           <button type="button" disabled={busy} onClick={onClose}>
-            Close
-          </button>
+            {tr("Close")}</button>
           {status && (
             <button
               type="button"
               disabled={busy || loading}
-              aria-label="Refresh record status"
+              aria-label={tr("Refresh record status")}
               onClick={() => setRevision((r) => r + 1)}
             >
               <ArrowClockwise size={18} />
@@ -208,13 +205,13 @@ export function NoteRecordDialog({
             <button className="map-notes-primary" disabled={!ready}>
               {busy
                 ? account?.managed
-                  ? "Publishing…"
-                  : "Confirm in your wallet…"
+                  ? tr("Publishing…")
+                  : tr("Confirm in your wallet…")
                 : kind === "tombstone"
-                  ? "Mark record removed"
+                  ? tr("Mark record removed")
                   : view === "outdated"
-                    ? "Publish update"
-                    : "Publish record"}
+                    ? tr("Publish update")
+                    : tr("Publish record")}
             </button>
           )}
         </div>
@@ -225,8 +222,7 @@ export function NoteRecordDialog({
             target="_blank"
             rel="noreferrer"
           >
-            Account history
-            <ArrowSquareOut aria-hidden="true" />
+            {tr("Account history")}<ArrowSquareOut aria-hidden="true" />
           </a>
         )}
       </form>

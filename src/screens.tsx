@@ -16,18 +16,20 @@ import {
   UserCircle,
   ShieldCheck,
   Coins,
+  Translate,
   type Icon,
 } from "@phosphor-icons/react";
 import type { ScreenTab } from "./ScreenTabs";
 import type { CreatorCommunityView } from "./creator-community-types";
 import type { MarketView, ProfileView } from "./app-navigation";
+import { lang, LANGS, setLang, tr, type Lang } from "./i18n";
 
 export type ProfileTab = ProfileView | "stake" | "rewards";
 export const PROFILE_TABS: readonly ScreenTab<ProfileTab>[] = [
-  { id: "character", label: "Character", icon: UserCircle },
-  { id: "stake", label: "Stake", icon: Flame },
-  { id: "rewards", label: "Rewards", icon: Trophy },
-  { id: "settings", label: "Settings", icon: GearSix },
+  { id: "character", get label() { return tr("Character"); }, icon: UserCircle },
+  { id: "stake", get label() { return tr("Stake"); }, icon: Flame },
+  { id: "rewards", get label() { return tr("Rewards"); }, icon: Trophy },
+  { id: "settings", get label() { return tr("Settings"); }, icon: GearSix },
 ];
 /** Profile sub-tab for the current app tab ("fuel" and "wallet" keep their routes). */
 export function profileTabOf(tab: string, view: ProfileView): ProfileTab {
@@ -35,23 +37,23 @@ export function profileTabOf(tab: string, view: ProfileView): ProfileTab {
 }
 
 export const MARKET_TABS: readonly ScreenTab<MarketView>[] = [
-  { id: "practice", label: "Practice", icon: Coins },
-  { id: "secured", label: "Secured", icon: ShieldCheck },
-  { id: "offers", label: "Offers", icon: Signature },
+  { id: "practice", get label() { return tr("Practice"); }, icon: Coins },
+  { id: "secured", get label() { return tr("Secured"); }, icon: ShieldCheck },
+  { id: "offers", get label() { return tr("Offers"); }, icon: Signature },
 ];
 
 export type BagTab = "items" | "market";
 export const BAG_TABS: readonly ScreenTab<BagTab>[] = [
-  { id: "items", label: "Items", icon: Backpack },
-  { id: "market", label: "Market", icon: Storefront },
+  { id: "items", get label() { return tr("Items"); }, icon: Backpack },
+  { id: "market", get label() { return tr("Market"); }, icon: Storefront },
 ];
 
 export type CommunityTab = "quests" | "tasks" | "notes" | "creators";
 export const COMMUNITY_TABS: readonly ScreenTab<CommunityTab>[] = [
-  { id: "quests", label: "Quests", icon: Scroll },
-  { id: "tasks", label: "Tasks", icon: Flag },
-  { id: "notes", label: "Notes", icon: ChatCircle },
-  { id: "creators", label: "Creators", icon: PencilSimpleLine },
+  { id: "quests", get label() { return tr("Quests"); }, icon: Scroll },
+  { id: "tasks", get label() { return tr("Tasks"); }, icon: Flag },
+  { id: "notes", get label() { return tr("Notes"); }, icon: ChatCircle },
+  { id: "creators", get label() { return tr("Creators"); }, icon: PencilSimpleLine },
 ];
 const CREATOR_PAGES = new Set([
   "creators",
@@ -93,7 +95,7 @@ export function ProfileHero({
   detail: string;
 }) {
   return (
-    <section className="profile-hero" aria-label="Your character">
+    <section className="profile-hero" aria-label={tr("Your character")}>
       <div className="profile-hero-avatar">
         {avatar}
         <span className="profile-hero-level" aria-hidden="true">
@@ -102,11 +104,11 @@ export function ProfileHero({
       </div>
       <div>
         <h2>{name}</h2>
-        <small>{level !== null ? `Level ${level}` : "Explorer"}</small>
+        <small>{level !== null ? tr("Level {0}", { 0: level }) : tr("Explorer")}</small>
         <div
           className="profile-xp"
           role="progressbar"
-          aria-label="Progress to the next level"
+          aria-label={tr("Progress to the next level")}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progress === null ? undefined : Math.round(progress)}
@@ -171,3 +173,27 @@ export function SettingsSwitch({
   );
 }
 
+
+/** Language row for Settings: English by default, others on request. */
+export function LanguageSetting() {
+  return (
+    <label className="settings-row language-setting">
+      <Translate size={22} aria-hidden="true" />
+      <span>
+        {tr("Language")}
+        <small>{tr("Saved on this device")}</small>
+      </span>
+      <select
+        className="language-select"
+        value={lang}
+        onChange={(event) => setLang(event.target.value as Lang)}
+      >
+        {LANGS.map((option) => (
+          <option key={option.id} value={option.id} lang={option.id}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
