@@ -1,7 +1,6 @@
 import { EmptyState } from "./EmptyState";
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowRight,
   CheckCircle,
   Clock,
   MapPin,
@@ -17,6 +16,7 @@ import {
   Path,
   Star,
 } from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { api, meters } from "./api";
 import type { Fix, Player, Point, QuestActivity } from "./types";
 import { nativeVisitReadReason } from "./native-objective";
@@ -523,7 +523,7 @@ export function NativeExpeditions({
                       <div className="walk-place">
                         <Coins size={24} />
                         {tr("Street coin")}</div>
-                      <h2>{coin ? `${coin.distance} m away` : tr("Coin gone")}</h2>
+                      <h2>{coin ? tr("{0} m away", { 0: coin.distance }) : tr("Coin gone")}</h2>
                       <p>
                         {coin
                           ? tr("{0} GOLD · first explorer takes it", { 0: nativeGold(state.day?.coinUnit || "0") })

@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import {
   ArrowDown,
   ArrowUp,
-  ArrowRight,
   BookOpen,
   Buildings,
   CalendarBlank,
@@ -35,6 +34,7 @@ import {
   UserCircle,
   Vault,
 } from "@phosphor-icons/react";
+import { ArrowRight } from "../dir-icons";
 import { Ghost } from "../Ghost";
 import { GameObjectArt } from "../game-object-art";
 import { AuraSprite } from "../aura-art";

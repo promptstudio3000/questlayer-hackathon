@@ -8,8 +8,6 @@ import {
 } from "react";
 import {
   ArrowClockwise,
-  ArrowLeft,
-  ArrowRight,
   BookmarkSimple,
   Check,
   Eye,
@@ -21,6 +19,7 @@ import {
   Flag,
   ShieldSlash,
 } from "@phosphor-icons/react";
+import { ArrowRight, ArrowLeft } from "./dir-icons";
 import { Ghost } from "./Ghost";
 import {
   CreatorEarningsPanel,

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, Medal } from "@phosphor-icons/react";
+import {
+  Medal,
+} from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { api } from "./api";
 import { Dialog } from "./Dialog";
 import type { Fix } from "./types";

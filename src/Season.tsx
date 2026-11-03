@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Trophy } from "@phosphor-icons/react";
+import {
+  Trophy,
+} from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { api, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import { goldCompact } from "./reward-funding";
