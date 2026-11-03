@@ -375,6 +375,7 @@ const relayer = managedAccounts
         },
         blockTtl: relayConfig.blockTtl,
         maxJobsPerDay: relayConfig.maxJobsPerDay,
+        maxDepositYoctoPerDay: relayConfig.maxDepositYoctoPerDay,
         maxGas: relayConfig.maxGas,
         vaults: nativeVaults,
         factorySetupDeposit: rewardsConfig?.factory?.setupDeposit ?? null,

@@ -17,7 +17,7 @@ that decides whether it ships before 14 November or stays "documented, flagged o
 Amounts: factory funds each account with 0.02 NEAR; relayer top-ups capped at 0.05 NEAR per account per day;
 total sponsor float 10 NEAR with an alert at 3 NEAR. All are env values, not code. The relayer carries only
 storage-class deposits (0, 1 yocto, 0.05 NEAR) by policy; money actions are self-paid by the player's key, so the
-float is exposed to at most `RELAY_MAX_JOBS_PER_DAY × 0.05 NEAR` per account per day.
+float is exposed to at most `RELAY_MAX_DEPOSIT_YOCTO_PER_DAY` (default 0.5 NEAR) per account per day.
 
 ## 2. Testnet assumptions that must become configuration
 
