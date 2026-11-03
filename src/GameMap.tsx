@@ -33,6 +33,8 @@ export type GameMapProps = {
   onCoin?: (coinId: string) => void;
   overview: boolean;
   focusZone: Zone | null;
+  /** The one place the player should head to next (coach / nearest quest). */
+  nextZoneId?: string | null;
   nativeTarget?: (Point & { label: string }) | null;
   nativeTargetKind?: "coin" | "route" | "discovery";
   playerTier?: number;
@@ -416,11 +418,20 @@ export function GameMap(props: GameMapProps) {
       const node = document.createElement("button");
       const art = zoneObjectPresentation(z, props.world.quests, objectContext);
       const selected = props.focusZone?.id === z.id;
-      node.className = `zone-map-pin game-object-map-pin tier-${z.tier}${props.overview ? " map-overview-pin" : ""}${props.globe ? " hidden" : ""}`;
-      node.title = `${z.name} · ${art.label}`;
+      const next = !selected && props.nextZoneId === z.id;
+      node.className = `zone-map-pin game-object-map-pin tier-${z.tier}${next ? " zone-map-pin-next" : ""}${props.overview ? " map-overview-pin" : ""}${props.globe ? " hidden" : ""}`;
+      node.title = `${z.name} · ${art.label}${next ? " · next quest" : ""}`;
       node.setAttribute("aria-label", node.title);
       node.setAttribute("aria-pressed", String(selected));
       node.innerHTML = gameObjectMarkup({ ...art, selected });
+      if (next) {
+        node.dataset.next = "true";
+        const tag = document.createElement("i");
+        tag.className = "zone-map-pin-next-label";
+        tag.setAttribute("aria-hidden", "true");
+        tag.textContent = "Next quest";
+        node.append(tag);
+      }
       node.addEventListener("click", (e) => {
         e.stopPropagation();
         latest.current.onZone(z);
@@ -437,6 +448,7 @@ export function GameMap(props: GameMapProps) {
     props.overview,
     props.globe,
     props.focusZone?.id,
+    props.nextZoneId,
     zoneArtKey,
   ]);
   useEffect(() => {

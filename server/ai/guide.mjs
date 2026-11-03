@@ -200,11 +200,34 @@ export function guideHint(step, { world = null, location = null, now = Date.now(
     )
     .map((q) => ({ q, d: metersTo(q.nextPoint || q) }))
     .sort((a, b) => (a.d ?? 0) - (b.d ?? 0));
-  if (!chests.length)
+  if (!chests.length) {
+    // Before play hours a POI cell's chest is already placed but not open;
+    // say when, instead of sending the player away until tomorrow.
+    const later = (world.quests || [])
+      .filter((q) => q.kind === "chest" && !q.completed && q.tier <= tier && q.opens_at > now && q.closes_at > now)
+      .sort((a, b) => a.opens_at - b.opens_at)[0];
+    if (later) {
+      const at = new Date(later.opens_at).toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        ...(world.timezone ? { timeZone: world.timezone } : {}),
+      });
+      const name = zones.get(later.zone_id)?.name;
+      return {
+        hint: `The chest${name ? ` at ${name}` : ""} opens at ${at}. Pick up street coins until then.`,
+        factIds: ["next"],
+      };
+    }
+    if (world.poiQuests?.status === "empty")
+      return {
+        hint: "No chest in this spot today. Chests wait near parks, squares and landmarks; street coins still count here.",
+        factIds: ["next"],
+      };
     return {
       hint: "No chest is open for you right now. New chests open with the next day.",
       factIds: ["next"],
     };
+  }
   const { q, d } = chests[0];
   const zone = zones.get(q.zone_id);
   const where = zone?.name ? ` in ${zone.name}` : "";
