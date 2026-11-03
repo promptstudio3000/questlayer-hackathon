@@ -89,6 +89,7 @@ import {
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 import { createHash, randomBytes } from "node:crypto";
+import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
 import {
   generateRegistrationOptions,
@@ -2824,6 +2825,40 @@ const types = {
   ".glb": "model/gltf-binary",
   ".json": "application/json; charset=utf-8",
 };
+// Server-side timing (docs/PERFORMANCE-BUDGET.md): every API answer carries
+// Server-Timing "app" (request start to headers) and "loop" (worst event-loop
+// stall in the last few seconds), so a slow phone request can be split into
+// network, handler and a blocked loop. Slow ones are logged by route only.
+const loopDelay = monitorEventLoopDelay({ resolution: 10 });
+loopDelay.enable();
+let loopWorstMs = 0;
+setInterval(() => {
+  loopWorstMs = loopDelay.max / 1e6;
+  loopDelay.reset();
+}, 5000).unref();
+const SLOW_API_MS = Number(process.env.SLOW_API_MS || 250);
+function timeApiRequest(req, res, path) {
+  const started = performance.now(),
+    writeHead = res.writeHead;
+  let done = false;
+  res.writeHead = function (...args) {
+    if (!done) {
+      done = true;
+      const ms = performance.now() - started,
+        loop = Math.max(loopWorstMs, loopDelay.max / 1e6);
+      if (!res.headersSent)
+        res.setHeader(
+          "Server-Timing",
+          `app;dur=${ms.toFixed(1)}, loop;dur=${loop.toFixed(1)}`,
+        );
+      if (ms >= SLOW_API_MS)
+        console.warn(
+          `Slow API ${req.method} ${path.replace(/[0-9a-f-]{16,}|\d{4,}/g, ":id")} ${Math.round(ms)} ms (loop stall ${Math.round(loop)} ms)`,
+        );
+    }
+    return writeHead.apply(this, args);
+  };
+}
 const server = createServer(async (req, res) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -2833,7 +2868,10 @@ const server = createServer(async (req, res) => {
   );
   try {
     const url = new URL(req.url, "http://localhost");
-    if (url.pathname.startsWith("/api/")) return await api(req, res, url);
+    if (url.pathname.startsWith("/api/")) {
+      timeApiRequest(req, res, url.pathname);
+      return await api(req, res, url);
+    }
     const target = resolvePublicFile(
       resolve(APP_ROOT, "dist"),
       url.pathname,
