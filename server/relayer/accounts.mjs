@@ -58,6 +58,10 @@ export class ManagedAccounts {
     this.clock = clock;
     initializeManagedAccounts(db);
   }
+  /** NEAR account ids are at most 64 characters: slug + "." + factory. */
+  get maxSlug() {
+    return Math.max(8, Math.min(MAX_SLUG, 63 - String(this.factoryId || "").length));
+  }
   slugFor(name) {
     const base = String(name ?? "")
       .normalize("NFKD")
@@ -65,7 +69,7 @@ export class ManagedAccounts {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
-      .slice(0, MAX_SLUG)
+      .slice(0, this.maxSlug)
       .replace(/-+$/g, "");
     const slug = base.length >= 2 ? base : "explorer";
     assert(
@@ -178,7 +182,7 @@ export class ManagedAccounts {
         409,
         "ACCOUNT_TAKEN",
       );
-      slug = `${this.slugFor(name ?? playerName).slice(0, MAX_SLUG - 5)}-${randomBytes(3).toString("hex").slice(0, 4)}`;
+      slug = `${this.slugFor(name ?? playerName).slice(0, this.maxSlug - 5).replace(/-+$/g, "")}-${randomBytes(3).toString("hex").slice(0, 4)}`;
       accountId = `${slug}.${this.factoryId}`;
     }
     const now = this.clock();
