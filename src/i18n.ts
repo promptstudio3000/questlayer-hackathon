@@ -21,6 +21,7 @@ type Language = {
 const LANGUAGES = {
   en: { label: "English" },
   cs: { label: "Čeština", load: () => import("./i18n/cs.json") },
+  ru: { label: "Русский", load: () => import("./i18n/ru.json") },
 } satisfies Record<string, Language>;
 
 export type Lang = keyof typeof LANGUAGES;
