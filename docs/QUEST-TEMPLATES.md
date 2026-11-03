@@ -153,11 +153,16 @@ supply, tier calculations and the 50/50 treasury split are unchanged. Completed
 quests continue to reject duplicate completion; existing history is the durable
 receipt. A completed response must not be recreated as a second reward celebration.
 
+## Landmark clues and NPC errands (street cells, 3 November)
+
+See `docs/LANDMARK-ERRANDS.md`. `landmark-clue` is a POI visit plus one
+multiple-choice answer taken from Wikidata facts; `npc-errand` is a quest-giver
+offer that sends the player to one of today's POI quests and back. Both are XP only.
+
 ## Planned capabilities and remaining gates
 
 | Capability | Required work before enabling it |
 | --- | --- |
-| Landmark clue | Reviewed facts and permissions, authored clue/answer pairs, accessibility alternatives, replay policy |
 | Geocaching interaction | Approved and accessible cache sites, owner permission, environmental constraints, maintained cache evidence, lost-cache recovery |
 | Photo observation | Private upload handling and EXIF removal, retention/consent, review and appeals, clear limits on automated judgment |
 | A route with walking time | Licensed pedestrian graph, barrier/access checking, actual route lengths, accessible alternatives and field timing |

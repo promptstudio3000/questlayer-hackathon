@@ -22,6 +22,7 @@ for (const relative of [
   "./npc/trader-ledger.mjs",
   "./operator/world-controls.mjs",
   "./poi-quests.mjs",
+  "./landmark-clue.mjs",
   "./relayer/schema.mjs",
   "./season/schema.mjs",
   "./spatial/place-safety.mjs",

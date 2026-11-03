@@ -63,7 +63,8 @@ export function npcMenuCounts(db, player, rows, worldId) {
   const today = rows.filter((r) => r.terms.worldId === worldId);
   return {
     done: new Set(today.map((r) => r.terms.offerId)),
-    linesToday: today.filter((r) => r.kind === "quest" && !isPatronRow(r)).length,
+    linesToday: today.filter((r) => r.kind === "quest" && !isPatronRow(r) && !r.terms.errand).length,
+    errandsToday: today.filter((r) => r.terms.errand).length,
     chapters: rows.filter((r) => r.kind === "chapter" && r.state === "completed" && !isPatronRow(r)).length,
     patronToday: today.filter(isPatronRow).length,
     patronDone: completedPatronLines(db, player),
