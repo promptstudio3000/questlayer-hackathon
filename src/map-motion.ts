@@ -5,6 +5,8 @@ type Marker = {
 };
 type Options = {
   reducedMotion: boolean;
+  /** Glide length; the demo pad uses one tick so steps join up. */
+  duration?: number;
   now?: () => number;
   requestFrame?: (callback: (at: number) => void) => number;
   cancelFrame?: (id: number) => void;
@@ -15,6 +17,7 @@ export function moveMapMarker(
   target: Point,
   {
     reducedMotion,
+    duration = 450,
     now = () => performance.now(),
     requestFrame = (callback) => requestAnimationFrame(callback),
     cancelFrame = (id) => cancelAnimationFrame(id),
@@ -42,8 +45,9 @@ export function moveMapMarker(
     cancelled = false;
   const tick = (at: number) => {
     if (cancelled) return;
-    const progress = Math.max(0, Math.min(1, (at - began) / 450)),
-      eased = progress * progress * (3 - 2 * progress);
+    const progress = Math.max(0, Math.min(1, (at - began) / duration)),
+      eased =
+        duration < 300 ? progress : progress * progress * (3 - 2 * progress);
     marker.setLngLat([
       start.lng + (target.lng - start.lng) * eased,
       start.lat + (target.lat - start.lat) * eased,
@@ -58,11 +62,20 @@ export function moveMapMarker(
   };
 }
 
-// City-demo "Walk there" moves the explorer at most this far per tap, so the
-// arena still asks players to cross the map instead of teleporting to a prize.
-export const WALK_CAP_M = 250;
-export const WALK_STEP_M = 6;
-export const WALK_STEP_MS = 80;
+// City demo movement. Real play moves only with the device GPS; the demo
+// walks the explorer with the on-screen pad or arrows / WASD. Forward and back
+// follow the way the character faces, and left / right turn it.
+export const DEMO_TICK_MS = 100;
+export const DEMO_WALK_MPS = 5;
+// Under the 15 m/s GPS jump cap even though the demo arena is exempt.
+export const DEMO_RUN_MPS = 14;
+export const DEMO_BACK_FACTOR = 0.6;
+export const DEMO_TURN_DPS = 150;
+// Facing the camera at the starting map bearing (-14°), so the face shows.
+export const DEMO_START_HEADING = 166;
+export function normalizeHeading(degrees: number) {
+  return ((degrees % 360) + 360) % 360;
+}
 function span(a: Point, b: Point) {
   const dy = ((b.lat - a.lat) * Math.PI) / 180,
     dx =
@@ -70,33 +83,56 @@ function span(a: Point, b: Point) {
       Math.cos(((a.lat + b.lat) * Math.PI) / 360);
   return Math.hypot(dx, dy) * 6371000;
 }
-export function cappedWalkTarget(from: Point, to: Point, cap = WALK_CAP_M) {
-  const distance = span(from, to);
-  if (!Number.isFinite(distance) || distance <= cap)
-    return { point: { lat: to.lat, lng: to.lng }, distance, capped: false };
-  const f = cap / distance;
+export const metersBetween = span;
+/** Compass heading (0 = north, 90 = east) from one point to another. */
+export function headingTo(from: Point, to: Point) {
+  const north = to.lat - from.lat,
+    east = (to.lng - from.lng) * Math.cos((from.lat * Math.PI) / 180);
+  if (!north && !east) return null;
+  return normalizeHeading((Math.atan2(east, north) * 180) / Math.PI);
+}
+/** The point `meters` away along a compass heading (negative = backwards). */
+export function stepFrom(from: Point, heading: number, meters: number): Point {
+  const rad = (heading * Math.PI) / 180,
+    north = Math.cos(rad) * meters,
+    east = Math.sin(rad) * meters;
   return {
-    point: {
-      lat: from.lat + (to.lat - from.lat) * f,
-      lng: from.lng + (to.lng - from.lng) * f,
-    },
-    distance: cap,
-    capped: true,
+    lat: from.lat + (north / 6371000) * (180 / Math.PI),
+    lng:
+      from.lng +
+      (east / (6371000 * Math.cos((from.lat * Math.PI) / 180))) *
+        (180 / Math.PI),
   };
 }
-// Intermediate positions (ending exactly at `to`) for an animated walk.
-export function walkSteps(from: Point, to: Point, step = WALK_STEP_M) {
-  const distance = span(from, to);
-  if (!Number.isFinite(distance) || distance <= step)
-    return [{ lat: to.lat, lng: to.lng }];
-  const n = Math.ceil(distance / step);
-  return Array.from({ length: n }, (_, i) => {
-    const f = (i + 1) / n;
-    return i === n - 1
-      ? { lat: to.lat, lng: to.lng }
-      : {
-          lat: from.lat + (to.lat - from.lat) * f,
-          lng: from.lng + (to.lng - from.lng) * f,
-        };
-  });
+export type DemoInput = {
+  forward: boolean;
+  back: boolean;
+  left: boolean;
+  right: boolean;
+  run: boolean;
+};
+/** One movement tick: turn first, then walk along the new facing. */
+export function demoTick(
+  from: Point,
+  heading: number,
+  input: DemoInput,
+  seconds: number,
+) {
+  const turn = (input.right ? 1 : 0) - (input.left ? 1 : 0),
+    walk = (input.forward ? 1 : 0) - (input.back ? DEMO_BACK_FACTOR : 0),
+    next = normalizeHeading(heading + turn * DEMO_TURN_DPS * seconds),
+    meters = walk * (input.run ? DEMO_RUN_MPS : DEMO_WALK_MPS) * seconds;
+  return {
+    heading: next,
+    position: meters ? stepFrom(from, next, meters) : from,
+    moved: meters !== 0,
+  };
+}
+/**
+ * Yaw (degrees) for the map character camera. The model faces +Z; the camera
+ * sits screen-south of it, so a character heading `heading` on a map rotated to
+ * `bearing` must show its side that points at the bottom of the screen.
+ */
+export function characterYaw(bearing: number, heading: number) {
+  return normalizeHeading(heading - bearing - 180);
 }
