@@ -47,10 +47,22 @@ export const FAIR_PLAY_SCHEMA = registerModuleSchema({
 CREATE TABLE IF NOT EXISTS fair_play_xp(player_id TEXT NOT NULL REFERENCES players(id),day TEXT NOT NULL,cell TEXT NOT NULL,xp INTEGER NOT NULL CHECK(xp>=0),updated_at INTEGER NOT NULL,PRIMARY KEY(player_id,day,cell))`,
 });
 const ready = new WeakSet();
-/** Call outside a transaction (the module ledger may open its own). */
+/**
+ * Create the tables once per connection. Outside a transaction it takes the
+ * write lock first (BEGIN IMMEDIATE waits on busy_timeout), so two connections
+ * making their first claim at once never race to create them.
+ */
 export function ensureFairPlaySchema(db) {
   if (ready.has(db)) return;
-  ensureModuleVersion(db, FAIR_PLAY_SCHEMA);
+  if (db.isTransaction) return void ensureModuleVersion(db, FAIR_PLAY_SCHEMA);
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    ensureModuleVersion(db, FAIR_PLAY_SCHEMA);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
   ready.add(db);
 }
 
