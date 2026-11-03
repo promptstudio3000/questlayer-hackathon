@@ -51,7 +51,7 @@
       "name": "Firefly",
       "title": "A light that never stays",
       "voice": "Giggly, quick, speaks in half-sentences and is gone a moment later.",
-      "backstory": "A tiny restless light that shows up a few times a day somewhere new and lets lucky explorers catch it.",
+      "backstory": "A tiny restless light that shows up a few times each evening somewhere new and lets lucky explorers catch it.",
       "likes": ["parks", "riverbanks"],
       "greeting": {
         "cs": "Hihi, chytil jsi mě! Jen na chvilku…",
@@ -64,6 +64,27 @@
       "idle": {
         "cs": "Kde budu příště? To nevím ani já.",
         "en": "Where will I be next? Not even I know."
+      }
+    },
+    {
+      "id": "watchman-ota",
+      "archetype": "storyteller",
+      "name": "Watchman Ota",
+      "title": "Keeps the lamps after dark",
+      "voice": "Calm and low, counts the hours, swings his lantern. Short sentences, keeps explorers on lit streets and never sends anyone down dark side streets.",
+      "backstory": "A lamp-keeper spirit who walks the lit streets after sunset and tells what the day left behind.",
+      "likes": ["squares", "street lamps", "church towers"],
+      "greeting": {
+        "cs": "Odbila už hodina, průzkumníku. Pojď na světlo, něco ti povím.",
+        "en": "The hour has struck, explorer. Come into the light, I'll tell you something."
+      },
+      "refusal": {
+        "cs": "To ti nepovím. Hlídám jen to, co znám.",
+        "en": "That I won't tell you. I only keep watch over what I know."
+      },
+      "idle": {
+        "cs": "Ve dne vypráví Tobiáš, v noci já.",
+        "en": "Tobiáš tells the stories by day, I tell them by night."
       }
     }
   ]

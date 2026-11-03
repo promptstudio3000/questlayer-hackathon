@@ -8,6 +8,7 @@
 import { createHash } from "node:crypto";
 import { distance } from "../domain.mjs";
 import { pointClosed } from "../spatial/place-safety.mjs";
+import { daylightSpans, nightSpans } from "../sun.mjs";
 
 const MINUTE = 60_000;
 const JOIN_M = 15;
@@ -251,21 +252,48 @@ function minutes(hhmm) {
 /**
  * Active window(s) for a definition on one local day, as [start, end] ms.
  * `dayStart` is local midnight (calendar.localDateStart). Practice worlds pass
- * `allDay` so the demo works at any hour.
+ * `allDay` so the demo works at any hour. With `sky` ({lat,lng}), a definition
+ * with phase "day" walks only between local sunrise and sunset, and a "night"
+ * one only after sunset (and before sunrise), inside the same opening hours.
  */
-export function activeWindows(def, { dayStart, hours, allDay = false, rng }) {
+export function activeWindows(def, { dayStart, hours, allDay = false, rng, sky = null }) {
   const [open, close] = allDay ? ["00:00", "23:59"] : def.hours || hours;
   const start = dayStart + minutes(open) * MINUTE,
     end = dayStart + minutes(close) * MINUTE;
-  if (!def.windows) return [[start, end]];
+  const phase = allDay || !sky ? "any" : def.phase || "any";
+  const spans =
+    phase === "day"
+      ? daylightSpans(start, end, sky.lat, sky.lng)
+      : phase === "night"
+        ? nightSpans(start, end, sky.lat, sky.lng)
+        : [[start, end]];
+  // Slivers (a night span of a few minutes before sunrise) are not worth a walk.
+  const usable = phase === "any" ? spans : spans.filter(([a, b]) => b - a >= 20 * MINUTE);
+  if (!def.windows) return usable;
   // Short appearances (wandering rare, boss): `windows` × 20 min, spread
-  // across the day in equal slices so they never overlap.
-  const slice = (end - start) / def.windows,
+  // across the active time in equal slices so they never overlap.
+  const total = usable.reduce((n, [a, b]) => n + (b - a), 0);
+  if (!total) return [];
+  const slice = total / def.windows,
     length = Math.min(20 * MINUTE, slice);
-  return Array.from({ length: def.windows }, (_, i) => {
-    const s = start + i * slice + Math.floor(rng() * (slice - length));
-    return [s, s + length];
-  });
+  // Map an offset into active time back to a clock time.
+  const clockAt = (offset) => {
+    for (const [a, b] of usable) {
+      if (offset <= b - a) return a + offset;
+      offset -= b - a;
+    }
+    return usable.at(-1)[1];
+  };
+  const out = [];
+  for (let i = 0; i < def.windows; i++) {
+    const offset = i * slice + Math.floor(rng() * (slice - length));
+    let s = clockAt(offset);
+    // Keep each appearance inside one span.
+    const span = usable.find(([a, b]) => s >= a && s < b) || usable.at(-1);
+    if (s + length > span[1]) s = Math.max(span[0], span[1] - length);
+    out.push([s, Math.min(span[1], s + length)]);
+  }
+  return out;
 }
 
 function pick(rng, list) {
@@ -274,7 +302,7 @@ function pick(rng, list) {
 
 /**
  * planDay(def, cityPack, worldSeed, dayId, options) -> ActorSegment[]
- * options: { dayStart, hours, home?, allDay?, closed? }
+ * options: { dayStart, hours, home?, allDay?, closed?, sky? }
  * `home` overrides def.home (the spawn planner passes it for planned actors).
  * Segments are contiguous inside each active window; a dwell segment has a
  * one-point path.
