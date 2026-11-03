@@ -374,6 +374,7 @@ async function runApi(report) {
 }
 
 // ----------------------------------------------------------------- UI layer
+let lastFrame = null;
 async function newPlayer(browser, device, name, spot, { account = false, cookie = null } = {}) {
   const context = await browser.newContext({
     ...DEVICES[device].profile,
@@ -395,6 +396,12 @@ async function newPlayer(browser, device, name, spot, { account = false, cookie 
       }),
     );
   const page = await context.newPage();
+  // Keep the last frame before a journey closes, for its FAIL screenshot.
+  const close = context.close.bind(context);
+  context.close = async () => {
+    lastFrame = await page.screenshot().catch(() => null);
+    return close();
+  };
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e.message || e)));
   // The home-screen offer may pop up during a long journey; dismiss it.
@@ -433,7 +440,7 @@ async function openZone(page, zoneName) {
 }
 
 function uiJourneys(device) {
-  const who = (s) => `test ${device.slice(0, 5)} ${s}`;
+  const who = (s) => `test${RUN} ${device.slice(0, 3)} ${s}`;
   return {
     async "first steps start at the beginning"({ browser, shot, note }) {
       const { page, context, errors } = await newPlayer(browser, device, who("first"));
@@ -683,12 +690,14 @@ async function runUi(report, deviceNames) {
       for (const [name, fn] of Object.entries(uiJourneys(device)).filter(([n]) => !arg("journey") || n.includes(arg("journey")))) {
         const notes = [];
         const t0 = Date.now();
+        lastFrame = null;
         console.log(`[${device}] ${name}`);
         try {
           await fn({ browser, shot, scout, note: (s) => (notes.push(s), console.log(`  ${s}`)) });
           report.push({ layer: "ui", device, journey: name, ok: true, notes, ms: Date.now() - t0 });
         } catch (error) {
           console.log(`  FAIL ${error.message.split("\n")[0]}`);
+          if (lastFrame) writeFileSync(join(dir, `FAIL-${name.replace(/[^a-z0-9]+/gi, "-")}.png`), lastFrame);
           report.push({ layer: "ui", device, journey: name, ok: false, error: error.message.split("\n")[0], notes, ms: Date.now() - t0 });
         }
       }
