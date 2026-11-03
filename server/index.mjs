@@ -433,6 +433,26 @@ const actorService =
     ? createActorService(db, { allDay: actorsAllDay(process.env, NETWORK) })
     : null;
 const actorRoutes = createActorRoutes(actorService);
+// Today's city plans are built off the request path after a restart, so the
+// first /api/actors call does not stall the server (docs/PERFORMANCE-BUDGET.md).
+if (actorService && !backgroundWorkersDisabled)
+  setTimeout(() => {
+    try {
+      actorService.warm();
+    } catch (e) {
+      console.error("Actor plan warm-up failed:", e.name);
+    }
+  }, 1000).unref();
+// A city world opened for the first time today gets its actor plan built
+// right after the response, before the client asks for the cast.
+function warmActorPlan(world) {
+  if (!actorService || !world?.cityId) return;
+  setImmediate(() => {
+    try {
+      actorService.planFor(world);
+    } catch {}
+  });
+}
 // NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
 // Ollama setup; the key stays in the runtime environment only.
 // NEAR → EUR reference for "Stake 2 NEAR (~5 €)" labels (server/near-price.mjs).
@@ -2032,6 +2052,7 @@ async function api(req, res, url) {
       });
     expireWorlds(db);
     const world = await ensureWorld(db, location, input.arena !== false);
+    warmActorPlan(world);
     // layerId is added to the response only, never to the stored manifest.
     return respond(res, {
       ...worldView(db, world.id, player, {

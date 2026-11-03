@@ -35,6 +35,11 @@ export const SEGMENT_HORIZON_MS = 2 * 3600_000;
 // of each walk (was the full 2 h: ~80 KB a minute on a phone, see
 // docs/PERFORMANCE-BUDGET.md). SEGMENT_HORIZON_MS still decides who is listed.
 export const LIST_HORIZON_MS = 20 * 60_000;
+// Day plans kept in memory. A cold city plan takes 0.4-0.6 s of synchronous
+// work, which stalls every other request, so the cache evicts least recently
+// used plans instead of clearing, and warm() builds today's city plans
+// outside the request path.
+export const PLAN_CACHE_SIZE = 128;
 export const ENCOUNTERS_PER_HOUR = 60;
 
 // Slices can add fields to an ActorView (the hunt slice adds boss HP and the
@@ -145,7 +150,14 @@ export function createActorService(db, options = {}) {
     const { cast: city, base } = source;
     const closed = closedPlaces(db, manifest.cityId),
       key = `${manifest.id}|${source.packKey}|${closed.map((c) => `${c.id}@${c.version}`).join(",")}`;
-    if (plans.has(key)) return plans.get(key);
+    if (plans.has(key)) {
+      // Least recently used goes first: a busy world (the Plzeň arena) stays
+      // warm however many street cells are visited (docs/PERFORMANCE-BUDGET.md).
+      const hit = plans.get(key);
+      plans.delete(key);
+      plans.set(key, hit);
+      return hit;
+    }
     const pack = source.cell ? base : effectiveCityPack(db, base),
       seed = worldSeed(manifest),
       dayStart = localDateStart(manifest.day, manifest.timezone),
@@ -182,8 +194,8 @@ export function createActorService(db, options = {}) {
       };
     });
     const plan = { seed, instances, center: pack.center, byId: new Map(instances.map((i) => [i.id, i])) };
-    if (plans.size > 32) plans.clear();
     plans.set(key, plan);
+    while (plans.size > PLAN_CACHE_SIZE) plans.delete(plans.keys().next().value);
     return plan;
   }
 
@@ -384,5 +396,32 @@ export function createActorService(db, options = {}) {
     };
   }
 
-  return { list, encounter, requireEncounter, planFor };
+  // Builds today's city plans (arena and reviewed cities) ahead of the first
+  // player, so no request pays for a cold plan. Street cells are cheap (~25 ms)
+  // and are left to the first visit. Returns how many plans were built.
+  function warm(now = clock()) {
+    let built = 0;
+    const rows = db
+      .prepare("SELECT manifest FROM worlds WHERE created_at >= ?")
+      .all(now - 2 * 86_400_000);
+    for (const row of rows) {
+      let manifest;
+      try {
+        manifest = JSON.parse(row.manifest);
+      } catch {
+        continue;
+      }
+      if (!manifest.cityId || !(manifest.endsAt > now)) continue;
+      const before = plans.size;
+      try {
+        planFor(manifest);
+      } catch {
+        continue;
+      }
+      if (plans.size > before) built++;
+    }
+    return built;
+  }
+
+  return { list, encounter, requireEncounter, planFor, warm };
 }
