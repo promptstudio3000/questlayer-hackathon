@@ -246,42 +246,67 @@ async function journey(browser, server, device, j, expected) {
         .filter(Boolean);
       assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
       result.cast = [...new Set(cast)];
-      // The coach names the nearest open POI quest…
-      const next = coach.getByRole("button", { name: /^Nearest quest/ });
-      await next.waitFor({ timeout: 15_000 });
-      const label = await next.innerText();
-      const quest = world.quests.find((q) => label.includes(q.title));
-      assert.ok(quest, `coach quest "${label}" is one of today's quests`);
-      const zone = poiZones.find((z) => z.id === quest.zone_id);
-      assert.ok(zone, "the coach points at a POI quest");
+      // The coach names the nearest open POI quest… Street coins next to
+      // the spawn point are picked up on their own, so the coach may already
+      // be on "Open your first chest". When that chest is the same POI quest
+      // the coach hides its "Nearest quest" line and its main action opens
+      // the quest instead, so either button counts.
+      await coach
+        .getByRole("button", {
+          name: /^(Nearest quest|Open the chest|Walk to the chest)/,
+        })
+        .first()
+        .waitFor({ timeout: 15_000 });
+      // Let the auto pick-up of spawn-side coins settle before reading it.
+      await page.waitForTimeout(2500);
+      const chestButton = coach.getByRole("button", {
+        name: /^(Open the chest|Walk to the chest)/,
+      });
+      const opener = (await chestButton.count())
+        ? chestButton.first()
+        : coach.getByRole("button", { name: /^Nearest quest/ });
       // …the map marks the same place…
       const pin = page.locator('.zone-map-pin[data-next="true"]');
       await pin.waitFor({ timeout: 15_000 });
       assert.equal(await pin.count(), 1, "exactly one next-quest marker");
-      assert.match(
-        (await pin.getAttribute("aria-label")) || "",
-        new RegExp(`^${zone.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} · `),
-        "the map's next-quest marker is the coach's quest",
-      );
+      const pinLabel = (await pin.getAttribute("aria-label")) || "";
+      const zone = poiZones.find((z) => pinLabel.startsWith(`${z.name} · `));
+      assert.ok(zone, `the next-quest marker "${pinLabel}" is a POI quest`);
+      const label = await opener.innerText();
+      let quest;
+      if (/^Nearest quest/.test(label)) {
+        quest = world.quests.find((q) => label.includes(q.title));
+        assert.ok(quest, `coach quest "${label}" is one of today's quests`);
+        assert.equal(
+          quest.zone_id,
+          zone.id,
+          "the map's next-quest marker is the coach's quest",
+        );
+      } else {
+        assert.match(
+          await coach.innerText(),
+          new RegExp(zone.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+          "the coach's chest is the map's next-quest marker",
+        );
+        quest = world.quests.find((q) => q.zone_id === zone.id);
+        assert.ok(quest, "the coach's chest is one of today's quests");
+      }
       await page.waitForTimeout(1200);
       await page.screenshot({ path: join(shots, `${j.id}-coach.png`) });
-      // …and the coach line opens it. Street coins near the spawn point are
-      // picked up on their own, so the coach can move on to "Open your first
-      // chest" meanwhile; when that chest is this same quest the coach hides
-      // the "Nearest quest" line and its main action opens the quest instead.
-      const opener = coach
-        .getByRole("button", {
-          name: /^(Nearest quest|Open the chest|Walk to the chest)/,
-        })
-        .first();
+      // …and the coach opens it.
       await opener.click();
       await page
         .getByRole("heading", { level: 1, name: zone.name })
         .waitFor({ timeout: 10_000 });
-      await page.locator(`[id="quest-${quest.id}"]`).waitFor({
-        state: "attached",
-        timeout: 10_000,
-      });
+      await page
+        .locator(
+          world.quests
+            .filter((q) => q.zone_id === zone.id)
+            .map((q) => `[id="quest-${q.id}"]`)
+            .join(", "),
+        )
+        .first()
+        .waitFor({ state: "attached", timeout: 10_000 });
       result.coachQuest = quest.title;
       result.coachQuestKind = quest.kind;
       await page.waitForTimeout(600);
