@@ -51,6 +51,15 @@ occasional 400–750 ms answers:
    to ~0.15 s to the requests that land in it. It stays under the budget
    and is not on any player's path.
 
+3. **Boot (left as is).** In the first seconds after a restart the loop
+   stalls for 1–3.7 s while startup work, the actor warm-up and the first
+   world builds run. Only requests that arrive during a deploy feel it.
+
+After #137 (3 Nov, 03:15 UTC, two runs of 30 samples each): every read was
+inside the budget. Server p95 was 4–46 ms (`wcoins` ≤ 19 ms is the largest
+`/api/world` phase), and total p95 was 126–207 ms. The rare answers around
+410 ms spent 1–3 ms in the server, so the extra time was network.
+
 Everything else is network: `/api/me`, `/api/presence` and the near world
 spend 1–20 ms in the server, and the rest is the round trip.
 
