@@ -137,6 +137,7 @@ async function beatLurker(name) {
   const w = await worldAt(scout, PLZEN);
   let lurker = null;
   for (const c of w.coins.slice(0, 200)) {
+    await sleep(300); // a live server: one gentle request at a time
     const near = await actorsIn(scout, w, c);
     lurker = near.find((a) => a.archetype === "lurker" && a.state === "active");
     if (lurker) break;
@@ -677,7 +678,7 @@ async function runUi(report, deviceNames) {
       report.push({ layer: "ui", device, journey: "engine", ok: true, notes: ["WebKit missing: Chromium emulation"] });
       browser = await chromium.launch();
     }
-    console.log(`\n== ${device} (${DEVICES[device].engine.name()} ${browser.version()}) ==`);
+    console.log(`\n== ${device} (${browser.browserType().name()} ${browser.version()}) ==`);
     try {
       for (const [name, fn] of Object.entries(uiJourneys(device)).filter(([n]) => !arg("journey") || n.includes(arg("journey")))) {
         const notes = [];
