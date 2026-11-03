@@ -19,6 +19,7 @@ export const ACTOR_MODELS = [
   "rune-warden",
   "pocket-wisp",
   "storm-golem",
+  "sun-beetle",
   // Official Gotchiverse models (Lickquidators and props), loaded at runtime through the pinned, digest-checked
   // server route /api/upstream-models/<key>.fbx (server/upstream-models.mjs). Never committed to this repository.
   "lick-soldier",
@@ -68,6 +69,7 @@ export const ACTOR_MODEL_INFO: Record<
   "rune-warden": { label: "Rune Warden", role: "Guardian monster", color: "#37f4f1" },
   "pocket-wisp": { label: "Pocket Wisp", role: "Lurker monster", color: "#7bd88f" },
   "storm-golem": { label: "Storm Golem", role: "Weekly boss", color: "#fffa65" },
+  "sun-beetle": { label: "Sun Beetle", role: "Daytime roamer monster", color: "#ffd01f" },
   "lick-soldier": { label: "Lickquidator", role: "Roamer monster (Gotchiverse)", color: "#16a78f" },
   "lick-brute": { label: "Lickquidator Brute", role: "Guardian monster (Gotchiverse)", color: "#8345ff" },
   "lick-speedy": { label: "Dire Tire", role: "Fast roamer (Gotchiverse)", color: "#cebcf1" },
@@ -488,6 +490,47 @@ function stormGolem(): Built {
   };
 }
 
+/** Daytime roamer: a round gold-shelled beetle with a sun disc on its back. */
+function sunBeetle(): Built {
+  const root = new THREE.Group(), body = new THREE.Group();
+  const shell = mesh(new THREE.SphereGeometry(0.34, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(C.gold, { roughness: 0.45 }));
+  shell.scale.set(1, 0.8, 1.2);
+  const seam = mesh(new THREE.BoxGeometry(0.02, 0.02, 0.8), mat(C.brown), 0, 0.27, 0);
+  const belly = mesh(new THREE.CylinderGeometry(0.33, 0.3, 0.08, 10), mat(C.brown), 0, -0.02, 0);
+  belly.scale.z = 1.2;
+  const head = mesh(new THREE.SphereGeometry(0.15, 10, 8), mat(C.purple750), 0, 0.06, 0.4);
+  const sun = mesh(new THREE.CircleGeometry(0.11, 12), glow(C.yellow, 1.8), 0, 0.29, -0.05);
+  sun.rotation.x = -Math.PI / 2;
+  body.add(shell, seam, belly, head, sun, eyes(0.1, 0.53, 0.06, 0.045, C.white));
+  const legs: THREE.Mesh[] = [];
+  for (const s of [-1, 1])
+    for (const z of [-0.2, 0, 0.2]) {
+      const leg = mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.22, 4), mat(C.ink), s * 0.3, -0.06, z);
+      leg.rotation.z = s * 0.9;
+      legs.push(leg);
+      body.add(leg);
+    }
+  const rays: THREE.Mesh[] = [];
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const ray = mesh(new THREE.ConeGeometry(0.025, 0.09, 4), glow(C.gold, 1.2), Math.cos(a) * 0.16, 0.29, -0.05 + Math.sin(a) * 0.16);
+    ray.rotation.set(Math.PI / 2, 0, -a + Math.PI / 2);
+    rays.push(ray);
+    body.add(ray);
+  }
+  root.add(body);
+  return {
+    root,
+    height: 0.75,
+    update: (t) => {
+      bob(body, t, 0.16, 0.025, 6);
+      legs.forEach((l, i) => (l.rotation.x = Math.sin(t * 10 + i * 1.7) * 0.4));
+      sun.rotation.z = t * 0.8;
+      rays.forEach((r) => ((r.material as THREE.MeshStandardMaterial).emissiveIntensity = 1 + Math.sin(t * 3) * 0.4));
+    },
+  };
+}
+
 const BUILDERS: Record<Exclude<ActorModel, UpstreamModel>, () => Built> = {
   chronicler,
   merchant,
@@ -498,6 +541,7 @@ const BUILDERS: Record<Exclude<ActorModel, UpstreamModel>, () => Built> = {
   "rune-warden": runeWarden,
   "pocket-wisp": pocketWisp,
   "storm-golem": stormGolem,
+  "sun-beetle": sunBeetle,
 };
 
 const upstreamCache = new Map<string, Promise<THREE.Group>>();

@@ -44,12 +44,19 @@ function cellWorld(db, { cached = true } = {}) {
 }
 
 test("the generic cast validates, stays inside the cell caps and has persona cards", () => {
-  const per = {};
-  for (const a of generic.actors) per[a.archetype] = (per[a.archetype] || 0) + (a.count || 1);
-  for (const [k, n] of Object.entries(per)) assert.ok(n <= DENSITY_CAP_PER_CELL[k], k);
-  assert.equal(per.quest_giver, 1);
-  assert.equal(per.roamer, 1);
-  assert.equal(per.wandering_rare, 1);
+  // Caps hold for the day cast and the night cast; "any" actors are in both.
+  const per = { day: {}, night: {} };
+  for (const a of generic.actors)
+    for (const p of (a.phase || "any") === "any" ? ["day", "night"] : [a.phase])
+      per[p][a.archetype] = (per[p][a.archetype] || 0) + (a.count || 1);
+  for (const p of ["day", "night"])
+    for (const [k, n] of Object.entries(per[p])) assert.ok(n <= DENSITY_CAP_PER_CELL[k], `${p} ${k}`);
+  for (const p of ["day", "night"]) {
+    assert.equal(per[p].quest_giver, 1, p);
+    assert.equal(per[p].roamer, 1, p);
+    assert.equal(per[p].storyteller, 1, p);
+  }
+  assert.equal(per.night.wandering_rare, 1);
   for (const a of generic.actors.filter((a) => a.kind === "npc"))
     assert.equal(personaFor(a).id, a.persona, `${a.id} has a reviewed card`);
   const file = (actors) => ({ version: 1, cityId: "_generic", hours: ["08:00", "20:00"], actors });
@@ -90,11 +97,15 @@ test("an active street cell gets at most one roamer and one wandering rare", asy
   const manifest = cellWorld(db);
   const plan = service.planFor(manifest);
   assert.ok(plan, "cell plan exists");
-  const count = (a) => plan.instances.filter((i) => i.def.archetype === a).length;
-  assert.ok(count("roamer") <= 1 && count("roamer") >= 1);
-  assert.ok(count("wandering_rare") <= 1);
-  assert.equal(count("quest_giver"), 1);
-  for (const [a, cap] of Object.entries(DENSITY_CAP_PER_CELL)) assert.ok(count(a) <= cap, a);
+  // At most `cap` of an archetype walk at once: day and night casts take turns.
+  const count = (a, phase) =>
+    plan.instances.filter((i) => i.def.archetype === a && [phase, "any", undefined].includes(i.def.phase)).length;
+  for (const phase of ["day", "night"]) {
+    assert.equal(count("roamer", phase), 1, phase);
+    assert.ok(count("wandering_rare", phase) <= 1);
+    assert.equal(count("quest_giver", phase), 1);
+    for (const [a, cap] of Object.entries(DENSITY_CAP_PER_CELL)) assert.ok(count(a, phase) <= cap, a);
+  }
   // Ids are per cell, and stay valid route ids.
   for (const i of plan.instances) assert.match(i.id, /^[a-z0-9-]{3,40}$/);
   assert.ok(plan.instances.every((i) => /-[0-9a-f]{6}$/.test(i.id)));

@@ -139,6 +139,11 @@ export function ActorSheet({
           </p>
           <h2>{actor.name}</h2>
           {actor.title && <p className="actor-title">{actor.title}</p>}
+          {actor.phase && (
+            <p className="actor-title actor-phase">
+              {actor.phase === "night" ? "Night creature · out until sunrise" : "Day creature · out until sunset"}
+            </p>
+          )}
         </header>
         {state.kind === "loading" && <p className="actor-status" role="status">Walking up…</p>}
         {state.kind === "error" && (
