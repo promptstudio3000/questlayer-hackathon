@@ -10,6 +10,7 @@ import { Dialog } from "./Dialog";
 import { ChallengePlay } from "./MonsterChallenge";
 import { retryLabel, type Challenge, type MonsterRef } from "./monster-challenge";
 import "./monster-challenge.css";
+import { tr } from "./i18n";
 
 type BossEvent = {
   id: string;
@@ -56,7 +57,7 @@ function recipeCost(r: Recipe) {
 const NEEDS: Record<string, string> = {
   shards: "more shards of that kind",
   guardian: "a guardian win",
-  "common-aura": "common Auras you are not wearing",
+  get "common-aura"() { return tr("common Auras you are not wearing"); },
   daily: "tomorrow (daily offerings used)",
 };
 
@@ -103,7 +104,7 @@ export function BossFight({
       setEvent(r.event);
       setHit({ ...r.hit, actorId: actor.id });
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "The boss is out of reach.");
+      setError(e instanceof ApiError ? e.message : tr("The boss is out of reach."));
     } finally {
       setBusy(false);
     }
@@ -119,7 +120,7 @@ export function BossFight({
       setHit(null);
       void loadPouch();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Your hit did not land.");
+      setError(e instanceof ApiError ? e.message : tr("Your hit did not land."));
       setHit(null);
     } finally {
       setBusy(false);
@@ -134,7 +135,7 @@ export function BossFight({
       setPouch(r);
       setCrafted(r.crafted.item.name);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "The altar did not answer.");
+      setError(e instanceof ApiError ? e.message : tr("The altar did not answer."));
     } finally {
       setBusy(false);
     }
@@ -144,23 +145,23 @@ export function BossFight({
   const nextAt = ev?.you?.nextHitAt ?? null;
   const waiting = !!nextAt && nextAt > Date.now();
   return (
-    <Dialog label={`Weekly boss ${actor.name}`} onClose={onClose}>
+    <Dialog label={tr("Weekly boss {0}", { 0: actor.name })} onClose={onClose}>
       <div className="monster-challenge monster-boss">
         <header className="monster-head">
           <span className="monster-sigil" aria-hidden="true" />
           <div>
             <h2>{actor.name}</h2>
-            <p className="monster-sub">Weekly boss at the Great Portal{ev ? ` · week ${ev.weekId.split("-W")[1]}` : ""}</p>
+            <p className="monster-sub">{tr("Weekly boss at the Great Portal")}{ev ? tr(" · week {0}", { 0: ev.weekId.split("-W")[1] }) : ""}</p>
           </div>
         </header>
         {ev && (
           <div className="boss-pool">
-            <div className="boss-bar" role="meter" aria-label="Boss health" aria-valuemin={0} aria-valuemax={ev.maxHp} aria-valuenow={ev.hp}>
+            <div className="boss-bar" role="meter" aria-label={tr("Boss health")} aria-valuemin={0} aria-valuemax={ev.maxHp} aria-valuenow={ev.hp}>
               <span style={{ width: `${(100 * ev.hp) / ev.maxHp}%` }} />
             </div>
             <p className="monster-sub">
-              {ev.hp} / {ev.maxHp} HP · {ev.participants} hunter{ev.participants === 1 ? "" : "s"}
-              {ev.you ? ` · your hits: ${ev.you.hits}` : ""}
+              {ev.hp} / {ev.maxHp} {" "}{tr("HP ·")}{" "}{ev.participants === 1 ? tr("1 hunter") : tr("{0} hunters", { 0: ev.participants })}
+              {ev.you ? tr(" · your hits: {0}", { 0: ev.you.hits }) : ""}
             </p>
           </div>
         )}
@@ -177,11 +178,9 @@ export function BossFight({
         ) : ev?.state === "defeated" ? (
           <div className="monster-result won" role="status">
             <Trophy size={40} weight="fill" aria-hidden="true" />
-            <h3>The boss is beaten this week!</h3>
+            <h3>{tr("The boss is beaten this week!")}</h3>
             <p>
-              Everyone who landed a hit earned XP and a roll ticket. Hunters with {ev.hitsForEdition}+ hits received the Bossbane
-              Fangring.
-            </p>
+              {tr("Everyone who landed a hit earned XP and a roll ticket. Hunters with")}{" "}{ev.hitsForEdition}{tr("+ hits received the Bossbane Fangring.")}</p>
           </div>
         ) : (
           <>
@@ -189,60 +188,57 @@ export function BossFight({
               <p className={`monster-rewards ${result.landed ? "" : "missed"}`} role="status">
                 {result.landed ? (
                   <>
-                    <Lightning size={18} weight="fill" aria-hidden="true" /> You dealt {result.damage} damage (score {result.score} of{" "}
-                    {result.max}).
+                    <Lightning size={18} weight="fill" aria-hidden="true" /> {" "}{tr("You dealt {0} damage (score {1} of {2}).", { 0: result.damage, 1: result.score, 2: result.max })}
                   </>
                 ) : (
-                  "Your strike missed. Try again after the cooldown."
+                  tr("Your strike missed. Try again after the cooldown.")
                 )}
               </p>
             )}
             <p className="monster-fair">
-              Everyone hits the same health bar. One hit every 10 minutes; damage comes from your level and skill only. Land{" "}
-              {ev?.hitsForEdition ?? 3} hits before it falls to earn the Bossbane Fangring.
-            </p>
+              {tr("Everyone hits the same health bar. One hit every 10 minutes; damage comes from your level and skill only. Land")}{" "}
+              {ev?.hitsForEdition ?? 3} {" "}{tr("hits before it falls to earn the Bossbane Fangring.")}</p>
             {waiting ? (
               <p className="monster-tell">
                 <Timer size={18} aria-hidden="true" /> {retryLabel(nextAt ?? undefined)}
               </p>
             ) : (
               <button type="button" className="monster-primary" disabled={busy} onClick={() => void strike()}>
-                Strike the boss
-              </button>
+                {tr("Strike the boss")}</button>
             )}
           </>
         )}
         {ev && ev.leaderboard.length > 0 && (
-          <section className="boss-board" aria-label="Hunters by hits">
-            <h3>Hunters by hits</h3>
+          <section className="boss-board" aria-label={tr("Hunters by hits")}>
+            <h3>{tr("Hunters by hits")}</h3>
             <ol>
               {ev.leaderboard.map((r) => (
                 <li key={r.rank} className={r.you ? "you" : undefined}>
                   <span>{r.name}</span>
-                  <span>{r.hits} hits</span>
+                  <span>{tr("{0} hits", { 0: r.hits })}</span>
                 </li>
               ))}
             </ol>
           </section>
         )}
         {pouch && (
-          <section className="hunt-pouch" aria-label="Hunt pouch">
-            <h3>Hunt pouch</h3>
+          <section className="hunt-pouch" aria-label={tr("Hunt pouch")}>
+            <h3>{tr("Hunt pouch")}</h3>
             <p className="monster-sub">
-              Shards:{" "}
+              {tr("Shards:")}{" "}
               {Object.entries(pouch.shards)
                 .map(([k, v]) => `${k} ${v}`)
                 .join(" · ")}{" "}
-              · roll tickets {pouch.rollTickets}
+              {tr("· roll tickets")}{" "}{pouch.rollTickets}
             </p>
             {pouch.rollTickets > 0 && (
-              <p className="monster-sub">Spend roll tickets at the wisp: Inventory, Secured tab.</p>
+              <p className="monster-sub">{tr("Spend roll tickets at the wisp: Inventory, Secured tab.")}</p>
             )}
-            {crafted && <p className="monster-rewards">The Golden Altar gave you {crafted}.</p>}
+            {crafted && <p className="monster-rewards">{tr("The Golden Altar gave you")}{" "}{crafted}.</p>}
             {pouch.altar ? (
               <>
                 <p className="monster-sub">
-                  Golden Altar · offerings today {pouch.altar.craftedToday}/{pouch.altar.perDay}
+                  {tr("Golden Altar · offerings today")}{" "}{pouch.altar.craftedToday}/{pouch.altar.perDay}
                 </p>
                 <ul className="altar-recipes">
                   {pouch.altar.recipes.map((r) => (
@@ -251,13 +247,12 @@ export function BossFight({
                         <strong>{r.name}</strong> <span className="monster-sub">({r.rarity})</span>
                         <p className="monster-sub">{recipeCost(r)}</p>
                         {!r.ready && (
-                          <p className="monster-sub">Still missing: {r.needs.map((n) => NEEDS[n] || n).join(", ")}.</p>
+                          <p className="monster-sub">{tr("Still missing:")}{" "}{r.needs.map((n) => NEEDS[n] || n).join(", ")}.</p>
                         )}
                       </div>
                       {r.ready && (
                         <button type="button" className="monster-primary" disabled={busy} onClick={() => void craft(r.id)}>
-                          Offer
-                        </button>
+                          {tr("Offer")}</button>
                       )}
                     </li>
                   ))}
@@ -265,11 +260,10 @@ export function BossFight({
               </>
             ) : pouch.craft.ready ? (
               <button type="button" className="monster-primary" disabled={busy} onClick={() => void craft()}>
-                Offer {pouch.craft.shards} shards and a common Aura for Wardbreaker Horns
-              </button>
+                {tr("Offer")}{" "}{pouch.craft.shards} {" "}{tr("shards and a common Aura for Wardbreaker Horns")}</button>
             ) : (
               <p className="monster-sub">
-                Wardbreaker Horns at the Golden Altar need {pouch.craft.shards} shards. Still missing:{" "}
+                {tr("Wardbreaker Horns at the Golden Altar need")}{" "}{pouch.craft.shards} {" "}{tr("shards. Still missing:")}{" "}
                 {pouch.craft.needs.map((n) => NEEDS[n] || n).join(", ")}.
               </p>
             )}
@@ -277,8 +271,7 @@ export function BossFight({
         )}
         {!hit && (
           <button type="button" className="monster-secondary" onClick={onClose}>
-            Back to the map
-          </button>
+            {tr("Back to the map")}</button>
         )}
       </div>
     </Dialog>

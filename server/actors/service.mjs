@@ -21,6 +21,7 @@ import { buildActorMenu, menuHash } from "./menu.mjs";
 import { ACTORS_SCHEMA } from "./schema.mjs";
 import { planDay, positionAt } from "./schedule.mjs";
 import { planSpawns } from "./spawns.mjs";
+import { skyAt } from "../sun.mjs";
 import { streetFindIds } from "../street-finds.mjs";
 
 export const ENCOUNTER_TTL_MS = 5 * 60_000;
@@ -30,6 +31,15 @@ export const MAX_GPS_ACCURACY_M = 30;
 export const MAX_FIX_AGE_MS = 15_000;
 export const MAX_SPEED_MPS = 15;
 export const SEGMENT_HORIZON_MS = 2 * 3600_000;
+// The map refetches every minute, so the list sends only the next 20 minutes
+// of each walk (was the full 2 h: ~80 KB a minute on a phone, see
+// docs/PERFORMANCE-BUDGET.md). SEGMENT_HORIZON_MS still decides who is listed.
+export const LIST_HORIZON_MS = 20 * 60_000;
+// Day plans kept in memory. A cold city plan takes 0.4-0.6 s of synchronous
+// work, which stalls every other request, so the cache evicts least recently
+// used plans instead of clearing, and warm() builds today's city plans
+// outside the request path.
+export const PLAN_CACHE_SIZE = 128;
 export const ENCOUNTERS_PER_HOUR = 60;
 
 // Slices can add fields to an ActorView (the hunt slice adds boss HP and the
@@ -50,6 +60,14 @@ function decorate(view, ctx) {
   return view;
 }
 
+/**
+ * ACTORS_ALL_DAY=1 is a test-only switch (e2e servers): every actor plays the
+ * whole local day instead of its opening hours. Ignored on mainnet.
+ */
+export function actorsAllDay(env = process.env, network = env.NEAR_NETWORK || "testnet") {
+  return env.ACTORS_ALL_DAY === "1" && network !== "mainnet";
+}
+
 export function actorsEnabled(env = process.env) {
   return env.ACTORS_ENABLED === "1";
 }
@@ -65,6 +83,11 @@ export function worldSeed(manifest) {
 export function createActorService(db, options = {}) {
   ensureModuleVersion(db, ACTORS_SCHEMA);
   const clock = options.clock || Date.now,
+    // Test hook: plan every actor across the whole local day, so e2e runs
+    // see a cast at any hour. Production never sets it (actorsAllDay below).
+    forceAllDay = options.allDay === true,
+    // The server's shared travel anchor (server/fair-play.mjs guardTravel).
+    travelGuard = options.travelGuard || null,
     cities = options.cityById || cityById,
     loadActors = options.loadCityActors || loadCityActors,
     loadGeneric = options.loadGenericActors || loadGenericActors,
@@ -129,7 +152,14 @@ export function createActorService(db, options = {}) {
     const { cast: city, base } = source;
     const closed = closedPlaces(db, manifest.cityId),
       key = `${manifest.id}|${source.packKey}|${closed.map((c) => `${c.id}@${c.version}`).join(",")}`;
-    if (plans.has(key)) return plans.get(key);
+    if (plans.has(key)) {
+      // Least recently used goes first: a busy world (the Plzeň arena) stays
+      // warm however many street cells are visited (docs/PERFORMANCE-BUDGET.md).
+      const hit = plans.get(key);
+      plans.delete(key);
+      plans.set(key, hit);
+      return hit;
+    }
     const pack = source.cell ? base : effectiveCityPack(db, base),
       seed = worldSeed(manifest),
       dayStart = localDateStart(manifest.day, manifest.timezone),
@@ -159,13 +189,15 @@ export function createActorService(db, options = {}) {
           dayStart,
           hours: city.hours,
           home: s.home,
-          allDay: !!manifest.arena,
+          allDay: forceAllDay || !!manifest.arena,
+          // Real local daylight at the world's centre picks the day or night cast.
+          sky: pack.center,
         }),
       };
     });
-    const plan = { seed, instances, byId: new Map(instances.map((i) => [i.id, i])) };
-    if (plans.size > 32) plans.clear();
+    const plan = { seed, instances, center: pack.center, byId: new Map(instances.map((i) => [i.id, i])) };
     plans.set(key, plan);
+    while (plans.size > PLAN_CACHE_SIZE) plans.delete(plans.keys().next().value);
     return plan;
   }
 
@@ -196,7 +228,7 @@ export function createActorService(db, options = {}) {
   function view(instance, now, progress, { trim = true } = {}) {
     const { def } = instance;
     const segments = (trim
-      ? instance.segments.filter((s) => s.to > now - 60_000 && s.from < now + SEGMENT_HORIZON_MS)
+      ? instance.segments.filter((s) => s.to > now - 60_000 && s.from < now + LIST_HORIZON_MS)
       : instance.segments
     ).map((s) => ({
       from: s.from,
@@ -215,6 +247,7 @@ export function createActorService(db, options = {}) {
       ...(def.title ? { title: def.title } : {}),
       model: def.model,
       ...(def.element ? { element: def.element } : {}),
+      ...(def.phase === "day" || def.phase === "night" ? { phase: def.phase } : {}),
       segments,
       ...(REVEAL_RADIUS_M[def.archetype] ? { revealRadiusM: REVEAL_RADIUS_M[def.archetype] } : {}),
       ...(instance.guards ? { guards: instance.guards } : {}),
@@ -247,7 +280,7 @@ export function createActorService(db, options = {}) {
       if (reveal && (!here || !pos || distance(here, pos) > reveal)) continue;
       actors.push(decorate(view(instance, now, progress), { instance, player, dayId: manifest.day, cityId: manifest.cityId, now }));
     }
-    return { ...empty, actors };
+    return { ...empty, ...(plan.center ? { sky: skyAt(now, plan.center) } : {}), actors };
   }
 
   function checkFix(player, fix, arena, now) {
@@ -281,6 +314,11 @@ export function createActorService(db, options = {}) {
       422,
       "IMPLAUSIBLE_MOVE",
     );
+    // Meetings share the travel anchor with coin and quest claims. Otherwise
+    // an errand could be handed in from across town: meet the NPC, claim the
+    // far place, and meet the NPC again a second later (each check only saw
+    // its own last fix).
+    travelGuard?.(player, fix, now);
     return p;
   }
 
@@ -365,5 +403,32 @@ export function createActorService(db, options = {}) {
     };
   }
 
-  return { list, encounter, requireEncounter, planFor };
+  // Builds today's city plans (arena and reviewed cities) ahead of the first
+  // player, so no request pays for a cold plan. Street cells are cheap (~25 ms)
+  // and are left to the first visit. Returns how many plans were built.
+  function warm(now = clock()) {
+    let built = 0;
+    const rows = db
+      .prepare("SELECT manifest FROM worlds WHERE created_at >= ?")
+      .all(now - 2 * 86_400_000);
+    for (const row of rows) {
+      let manifest;
+      try {
+        manifest = JSON.parse(row.manifest);
+      } catch {
+        continue;
+      }
+      if (!manifest.cityId || !(manifest.endsAt > now)) continue;
+      const before = plans.size;
+      try {
+        planFor(manifest);
+      } catch {
+        continue;
+      }
+      if (plans.size > before) built++;
+    }
+    return built;
+  }
+
+  return { list, encounter, requireEncounter, planFor, warm };
 }

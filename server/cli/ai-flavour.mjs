@@ -4,6 +4,9 @@
 // Runs one quest flavour batch by hand (docs/QUEST-FLAVOUR.md) against the
 // database in DATABASE_PATH (or .data/). Prints the audit row as JSON. The
 // provider and its key come from the environment; the key is never printed.
+// Load every module schema first: the live database holds tables that modules
+// create lazily, and preflight rejects tables it does not know.
+import "../schema-catalog.mjs";
 import { openDatabase } from "../database.mjs";
 import { flavourConfiguration, runFlavourBatch } from "../ai/flavour-batch.mjs";
 

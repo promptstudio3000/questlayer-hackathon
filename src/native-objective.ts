@@ -6,6 +6,7 @@ import type {
 import type { Point } from "./types";
 import { NEAR_NETWORK } from "./near-network.ts";
 import type { NearNetwork } from "./near-network.ts";
+import { tr } from "./i18n.ts";
 
 export type NativeObjective = {
   version: 1;
@@ -111,20 +112,20 @@ export function nativeVisitReadReason(
   now: number,
 ): string {
   if (!nativeSnapshotFresh(state, now) || !state)
-    return "Refresh the current testnet state before recording visits";
+    return tr("Refresh the current testnet state before recording visits");
   if (state.network !== NEAR_NETWORK || state.accountId !== accountId)
-    return "Refresh the selected testnet account before recording visits";
+    return tr("Refresh the selected testnet account before recording visits");
   if (
     state.status !== "ready" ||
     !state.day ||
     !Number.isFinite(state.day.startsAt) ||
     !Number.isFinite(state.day.endsAt)
   )
-    return "Waiting for the published testnet day";
-  if (now < state.day.startsAt) return "The testnet day is not open yet";
-  if (now >= state.day.endsAt) return "Today's native day has ended";
+    return tr("Waiting for the published testnet day");
+  if (now < state.day.startsAt) return tr("The testnet day is not open yet");
+  if (now >= state.day.endsAt) return tr("Today's native day has ended");
   if (!state.collection.available || state.collection.paused)
-    return "Native visits are paused or not yet available";
+    return tr("Native visits are paused or not yet available");
   return "";
 }
 export function makeNativeObjective(
@@ -176,7 +177,7 @@ export function resolveNativeObjective(
 ): NativeObjectiveView {
   const empty = { target: null, quest: null, receipt: null };
   const label =
-    reference?.kind === "coin" ? "Saved street coin" : "Saved testnet walk";
+    reference?.kind === "coin" ? tr("Saved street coin") : tr("Saved testnet walk");
   const view = (
     status: NativeObjectiveView["status"],
     message: string,
@@ -189,19 +190,19 @@ export function resolveNativeObjective(
   )
     return view(
       "unavailable",
-      "This selection belongs to another player or account. Choose a current adventure.",
+      tr("This selection belongs to another player or account. Choose a current adventure."),
     );
   if (error || !state)
     return view(
       "waiting",
       error
-        ? "Could not refresh this adventure. Your selection is saved; refresh to retry."
-        : "Loading the current testnet adventure…",
+        ? tr("Could not refresh this adventure. Your selection is saved; refresh to retry.")
+        : tr("Loading the current testnet adventure…"),
     );
   if (state.status === "not-configured")
     return view(
       "waiting",
-      "Testnet adventures are not configured. Your selection is saved.",
+      tr("Testnet adventures are not configured. Your selection is saved."),
     );
   if (
     state.network !== NEAR_NETWORK ||
@@ -210,18 +211,18 @@ export function resolveNativeObjective(
   )
     return view(
       "unavailable",
-      "The account or reward contract has changed. Choose a current adventure.",
+      tr("The account or reward contract has changed. Choose a current adventure."),
     );
   if (!nativeSnapshotFresh(state, now))
     return view(
       "waiting",
-      "The adventure data is out of date. Refresh before continuing.",
+      tr("The adventure data is out of date. Refresh before continuing."),
     );
   const day = state.day;
   if (day?.id === reference.dayId && day.hash !== reference.manifestHash)
     return view(
       "unavailable",
-      "The published adventure no longer matches this selection. Refresh or choose another.",
+      tr("The published adventure no longer matches this selection. Refresh or choose another."),
     );
   const quest =
     day?.id === reference.dayId && reference.kind === "quest"
@@ -241,10 +242,10 @@ export function resolveNativeObjective(
       ...view(
         receipt.state === "confirmed" ? "confirmed" : "pending",
         receipt.state === "confirmed"
-          ? "Reward confirmed. View the durable receipt in Wallet."
+          ? tr("Reward confirmed. View the durable receipt in Wallet.")
           : receipt.state === "retrying"
-            ? "Your visit is saved. Confirmation is retrying; check your receipt."
-            : "Your visit is saved. Waiting for chain confirmation.",
+            ? tr("Your visit is saved. Confirmation is retrying; check your receipt.")
+            : tr("Your visit is saved. Waiting for chain confirmation."),
       ),
       label: currentLabel,
       quest,
@@ -253,46 +254,46 @@ export function resolveNativeObjective(
   if (!day || state.status !== "ready")
     return view(
       "waiting",
-      "Waiting for the published testnet day. Your selection is saved.",
+      tr("Waiting for the published testnet day. Your selection is saved."),
     );
   if (day.id !== reference.dayId || day.endsAt <= now)
     return view(
       "expired",
-      "This adventure's day has ended. Existing receipts remain in Wallet; choose another discovery.",
+      tr("This adventure's day has ended. Existing receipts remain in Wallet; choose another discovery."),
     );
   if (reference.kind === "coin") {
     const coin = day.coins.find((c) => c.index === reference.index);
     if (!coin)
       return view(
         "not-nearby",
-        "This coin is absent from the current nearby view. It may be farther away or already collected.",
+        tr("This coin is absent from the current nearby view. It may be farther away or already collected."),
       );
     if (!validPoint(coin))
       return view(
         "unavailable",
-        "This coin's current location is unavailable. Refresh to retry.",
+        tr("This coin's current location is unavailable. Refresh to retry."),
       );
     return {
       ...view(
         "active",
         state.collection.paused || !state.collection.available
-          ? "Native visits are paused · Open coin"
-          : "NEAR testnet · Open coin",
+          ? tr("Native visits are paused · Open coin")
+          : tr("NEAR testnet · Open coin"),
       ),
-      label: "Street coin",
-      target: { lat: coin.lat, lng: coin.lng, label: "Street coin" },
+      label: tr("Street coin"),
+      target: { lat: coin.lat, lng: coin.lng, label: tr("Street coin") },
     };
   }
   if (!quest || !quest.targets.length || !validIndex(quest.checkpoint))
     return view(
       "unavailable",
-      "This walk is no longer in the published day. Choose another discovery.",
+      tr("This walk is no longer in the published day. Choose another discovery."),
     );
   if (quest.checkpoint >= quest.targets.length)
     return {
       ...view(
         "recorded",
-        "Walk recorded. Check Wallet for the reward's confirmation state.",
+        tr("Walk recorded. Check Wallet for the reward's confirmation state."),
       ),
       label: quest.title,
       quest,
@@ -301,7 +302,7 @@ export function resolveNativeObjective(
     return {
       ...view(
         "expired",
-        "This walk is closed. Existing receipts remain in Wallet; choose another discovery.",
+        tr("This walk is closed. Existing receipts remain in Wallet; choose another discovery."),
       ),
       label: quest.title,
       quest,
@@ -310,12 +311,12 @@ export function resolveNativeObjective(
   if (!validPoint(target))
     return view(
       "unavailable",
-      "The current checkpoint location is unavailable. Refresh to retry.",
+      tr("The current checkpoint location is unavailable. Refresh to retry."),
     );
   return {
     ...view(
       "active",
-      `Stop ${quest.checkpoint + 1} of ${quest.targets.length} · ${quest.opensAt > now ? "Opens later" : quest.tier > state.access.tier ? `Requires Tier ${quest.tier}` : state.collection.paused || !state.collection.available ? "Native visits are paused" : "NEAR testnet"}`,
+      `Stop ${quest.checkpoint + 1} of ${quest.targets.length} · ${quest.opensAt > now ? tr("Opens later") : quest.tier > state.access.tier ? `Requires Tier ${quest.tier}` : state.collection.paused || !state.collection.available ? tr("Native visits are paused") : "NEAR testnet"}`,
     ),
     label: quest.title,
     quest,

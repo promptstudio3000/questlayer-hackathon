@@ -49,17 +49,27 @@ published file (a few hundred ms on all of Czechia) and cached until `current.sq
 
 ## Journeys: `npm run e2e:world`
 
-Chromium at 390 × 844 starts a server on a throwaway database with the Czechia fixture as `POI_DB_PATH` and the two
-cells' path snapshots pre-seeded (no map network needed), then per journey: name an explorer, hide first steps, tap
-**Use GPS** at the spot, and require
+A newcomer's first session anywhere in Czechia. The script starts a server on a throwaway database with the Czechia
+fixture as `POI_DB_PATH` and the cells' path snapshots pre-seeded (no map network needed). POI quests open 08:00-20:00
+local and the NPC cast keeps play hours, so outside 09:00-18:00 Prague time the server (`--import
+scripts/lib/e2e-clock.mjs`, `E2E_CLOCK_OFFSET_MS`) and the browser clock are moved to 11:00 of the same day; the run
+gives the same answer at night. Per journey: name an explorer, keep the first-steps coach open, tap **Use GPS** at the
+spot, and require
 
-- a street world for the player's H3 cell (or, once W5 lands, a non-Plzeň city), with coins on mapped paths;
-- the GPS chip, the generic NPC/monster cast from `/api/actors`, no page errors;
-- `poiWorld.status = ready` with the fixture version, and POI quests available in that cell.
+- a street world for the player's H3 cell (or a non-Plzeň city), with coins on mapped paths, the GPS chip, no page
+  errors;
+- **Brno** (náměstí Svobody) and **village** (Holašovice green): `poiQuests.status = ready`, the generic NPC/monster
+  cast from `/api/actors`, the coach's **Nearest quest** line naming today's closest open POI quest, exactly one map
+  pin marked **Next quest** for that place, and tapping the coach line opens it;
+- **empty spot** (a forest cell with no checked places): `poiQuests.status = empty`, the coach says "No quests in this
+  spot today…", and no pin is marked.
 
-Journeys: **Play in Brno** (náměstí Svobody) and **Play in a village** (Holašovice green). Screenshots and
-`journeys.json` go to `output/qa/world-journeys/` (`E2E_SHOTS` overrides). CI runs it on the phone-390 row of
-the first-session job. When W6 adds POI quests to the world response, extend the journey to walk to one.
+Devices: `--device=phone-390` (Chromium 390 × 844, default), `pixel` (Pixel 7), `iphone` (WebKit iPhone 15) or
+`all`. Screenshots go to `output/qa/world-journeys/<device>/`, `journeys.json` to `output/qa/world-journeys/`
+(`E2E_SHOTS` overrides). CI runs it on every row of the first-session job.
+
+The same coach logic (`poiQuestOutlook` in `src/nearest-discovery.ts`) also says "Quests here open at 08:00" before
+play hours, and the chest hint (`guideHint`) names the opening time instead of "next day".
 
 ## Fixture
 

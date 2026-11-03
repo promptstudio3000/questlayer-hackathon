@@ -19,6 +19,7 @@ import {
   type SignedOrder,
 } from "./signed-order";
 import type { NativeItem, NativeMarketBalance, NativeMarketState } from "./types";
+import { tr } from "./i18n";
 
 export type MarketCall = {
   receiverId: string;
@@ -62,10 +63,10 @@ function expiresIn(deadline: string) {
   if (ms <= 0) return "expired";
   const h = Math.floor(ms / 3600000);
   return h >= 24
-    ? `expires in ${Math.floor(h / 24)} d`
+    ? tr("expires in {0} d", { 0: Math.floor(h / 24) })
     : h >= 1
-      ? `expires in ${h} h`
-      : `expires in ${Math.max(1, Math.floor(ms / 60000))} min`;
+      ? tr("expires in {0} h", { 0: h })
+      : tr("expires in {0} min", { 0: Math.max(1, Math.floor(ms / 60000)) });
 }
 
 export function SignedOrdersPanel({
@@ -159,7 +160,7 @@ export function SignedOrdersPanel({
     try {
       setMessage(await work());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The signed offer could not finish. Try again.");
+      setError(e instanceof Error ? e.message : tr("The signed offer could not finish. Try again."));
     } finally {
       setStep("");
       void refresh().catch(() => {});
@@ -205,7 +206,7 @@ export function SignedOrdersPanel({
   }
 
   const enable = () =>
-    run("Turning on signed offers…", async () => {
+    run(tr("Turning on signed offers…"), async () => {
       const publicKey = await signer!.publicKey(data.marketContract);
       if (!registry?.keys.includes(publicKey))
         await call({
@@ -215,15 +216,15 @@ export function SignedOrdersPanel({
           deposit: "1",
         });
       return wallet
-        ? "Signed offers are on. Your wallet asks you to approve each order you sign."
-        : "Signed offers are on. This device signs them for you, with no popup.";
+        ? tr("Signed offers are on. Your wallet asks you to approve each order you sign.")
+        : tr("Signed offers are on. This device signs them for you, with no popup.");
     });
   const sell = (price: string) =>
-    run("Signing your sell order…", async () => {
+    run(tr("Signing your sell order…"), async () => {
       const item = sellable.find((s) => s.tokenId === sellToken);
       if (!item) throw Error("Choose an Aura you own.");
       if (!item.escrowed) {
-        setStep("Handing the Aura to the market…");
+        setStep(tr("Handing the Aura to the market…"));
         await call({
           receiverId: data.nftContract,
           methodName: "nft_transfer_call",
@@ -235,32 +236,32 @@ export function SignedOrdersPanel({
           s.listings.some((l) => l.token_id === item.tokenId && l.state === "deposited" && l.seller === accountId),
         );
         if (!held) throw Error("The market has not confirmed the Aura yet. Refresh, then sign again.");
-        setStep("Signing your sell order…");
+        setStep(tr("Signing your sell order…"));
       }
       await publish("sell", item.tokenId, price);
-      return `Your sell order for ${formatNativeNear(price)} test NEAR is open. The Aura stays held by the market until someone buys it or you cancel.`;
+      return tr("Your sell order for {0} test NEAR is open. The Aura stays held by the market until someone buys it or you cancel.", { 0: formatNativeNear(price) });
     });
   const offer = (tokenId: string, price: string) =>
-    run("Signing your offer…", async () => {
+    run(tr("Signing your offer…"), async () => {
       const credit = BigInt(balance?.credit || "0"),
         need = BigInt(price);
       if (credit < need) {
-        setStep("Adding test NEAR to your market balance…");
+        setStep(tr("Adding test NEAR to your market balance…"));
         const top = need - credit < 10n ** 21n ? 10n ** 21n : need - credit;
         await call({ receiverId: data.marketContract, methodName: "deposit_near", args: {}, deposit: top.toString() });
       }
-      setStep("Signing your offer…");
+      setStep(tr("Signing your offer…"));
       await publish("buy", tokenId, price);
       setOfferFor("");
-      return `Your offer of ${formatNativeNear(price)} test NEAR is open. Your market balance pays only if the owner accepts.`;
+      return tr("Your offer of {0} test NEAR is open. Your market balance pays only if the owner accepts.", { 0: formatNativeNear(price) });
     });
   const fill = (o: RelayedOrder) =>
-    run(o.terms.kind === "sell" ? "Buying the Aura…" : "Accepting the offer…", async () => {
+    run(o.terms.kind === "sell" ? tr("Buying the Aura…") : tr("Accepting the offer…"), async () => {
       const sellOrder = o.terms.kind === "sell";
       // A buy order (for example from an NPC trader) names an Aura you still
       // hold in your wallet: hand it to the market first, then accept.
       if (!sellOrder && !escrowedByMe.some((l) => l.token_id === o.terms.token_id)) {
-        setStep("Handing the Aura to the market…");
+        setStep(tr("Handing the Aura to the market…"));
         await call({
           receiverId: data.nftContract,
           methodName: "nft_transfer_call",
@@ -272,7 +273,7 @@ export function SignedOrdersPanel({
           s.listings.some((l) => l.token_id === o.terms.token_id && l.state === "deposited" && l.seller === accountId),
         );
         if (!held) throw Error("The market has not confirmed the Aura yet. Refresh, then accept again.");
-        setStep("Accepting the offer…");
+        setStep(tr("Accepting the offer…"));
       }
       await call({
         receiverId: data.marketContract,
@@ -284,34 +285,34 @@ export function SignedOrdersPanel({
       const done = await waitFor((s) => !s.listings.some((l) => l.token_id === o.terms.token_id));
       return done
         ? sellOrder
-          ? "The Aura is yours. Find it in your Secured collection."
-          : "Offer accepted. The test NEAR is in your market balance."
-        : "Still settling. Refresh your collection and balance before retrying.";
+          ? tr("The Aura is yours. Find it in your Secured collection.")
+          : tr("Offer accepted. The test NEAR is in your market balance.")
+        : tr("Still settling. Refresh your collection and balance before retrying.");
     });
   const cancelOrder = (m: MyOrder) =>
-    run("Cancelling the order on chain…", async () => {
+    run(tr("Cancelling the order on chain…"), async () => {
       await call({ receiverId: data.marketContract, methodName: "cancel_order", args: { order: m.order }, deposit: "1" });
       const history = loadHistory(accountId!).map((h) =>
         h.order.nonce === m.order.nonce ? { ...h, cancelled: true, status: "cancelled" as OrderStatus } : h,
       );
       saveHistory(accountId!, history);
-      return "Order cancelled on chain. Nobody can accept it any more.";
+      return tr("Order cancelled on chain. Nobody can accept it any more.");
     });
   const cancelAll = () =>
-    run("Cancelling all your orders…", async () => {
+    run(tr("Cancelling all your orders…"), async () => {
       await call({ receiverId: data.marketContract, methodName: "cancel_all_orders", args: {}, deposit: "1" });
       const history = loadHistory(accountId!).map((h) =>
         h.status === "open" || h.status === "pending" ? { ...h, cancelled: true, status: "cancelled" as OrderStatus } : h,
       );
       saveHistory(accountId!, history);
-      return "Every order you signed before now is cancelled on chain.";
+      return tr("Every order you signed before now is cancelled on chain.");
     });
   const priceFrom = (value: string, input = priceInput) => {
     try {
       setPriceError("");
       return parseNearPrice(value);
     } catch (e) {
-      setPriceError(e instanceof Error ? e.message : "Choose a valid price.");
+      setPriceError(e instanceof Error ? e.message : tr("Choose a valid price."));
       input.current?.focus();
       return null;
     }
@@ -322,16 +323,13 @@ export function SignedOrdersPanel({
   const openMine = mine.filter((m) => m.status === "open" || m.status === "pending");
   return (
     <section className="signed-orders" aria-labelledby="signed-orders-title">
-      <h3 id="signed-orders-title">Signed offers</h3>
-      <p>Name an exact price in test NEAR and how long it stays open.</p>
+      <h3 id="signed-orders-title">{tr("Signed offers")}</h3>
       <Details>
         <p>
           {wallet
-            ? "Your wallet signs each order; approving it publishes the order but moves nothing."
-            : "Your explorer signs the order on this device, with no popup."}{" "}
-          Only an Aura held by the market can be traded, and the market checks
-          every signature before anything moves.
-        </p>
+            ? tr("Your wallet signs each order; approving it publishes the order but moves nothing.")
+            : tr("Your explorer signs the order on this device, with no popup.")}{" "}
+          {tr("Only an Aura held by the market can be traded, and the market checks every signature before anything moves.")}</p>
       </Details>
       {error && <p role="alert">{error}</p>}
       {step && <p role="status">{step}</p>}
@@ -342,14 +340,12 @@ export function SignedOrdersPanel({
       )}
       {!ready ? (
         <p>
-          Link a NEAR account or start your QuestLayer explorer to sign offers.
-        </p>
+          {tr("Link a NEAR account or start your QuestLayer explorer to sign offers.")}</p>
       ) : !registry ? (
-        <p role="status">Checking your signing key…</p>
+        <p role="status">{tr("Checking your signing key…")}</p>
       ) : !enabled ? (
         <button className="primary-button" disabled={working} onClick={() => void enable()}>
-          Turn on signed offers
-        </button>
+          {tr("Turn on signed offers")}</button>
       ) : (
         <>
           <form
@@ -360,25 +356,23 @@ export function SignedOrdersPanel({
               if (p) void sell(p);
             }}
           >
-            <h4>Sell with a signed order</h4>
+            <h4>{tr("Sell with a signed order")}</h4>
             {!sellable.length ? (
-              <p>You have no secured Aura to sell.</p>
+              <p>{tr("You have no secured Aura to sell.")}</p>
             ) : (
               <>
                 <label>
-                  Aura
-                  <select value={sellToken} onChange={(e) => setSellToken(e.target.value)}>
+                  {tr("Aura")}<select value={sellToken} onChange={(e) => setSellToken(e.target.value)}>
                     {sellable.map((s) => (
                       <option key={s.tokenId} value={s.tokenId}>
                         {s.title}
-                        {s.escrowed ? " (held by the market)" : ""}
+                        {s.escrowed ? tr(" (held by the market)") : ""}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  Sell price in test NEAR
-                  <input
+                  {tr("Sell price in test NEAR")}<input
                     ref={priceInput}
                     value={sellPrice}
                     inputMode="decimal"
@@ -397,8 +391,7 @@ export function SignedOrdersPanel({
                   </p>
                 )}
                 <label>
-                  Open for
-                  <select value={ttl} onChange={(e) => setTtl(Number(e.target.value))}>
+                  {tr("Open for")}<select value={ttl} onChange={(e) => setTtl(Number(e.target.value))}>
                     {ORDER_TTL_CHOICES.map((c) => (
                       <option key={c.ms} value={c.ms}>
                         {c.label}
@@ -407,20 +400,16 @@ export function SignedOrdersPanel({
                   </select>
                 </label>
                 <p>
-                  If the Aura is in your collection, the market holds it first.
-                  That step is free. A buyer pays exactly your price.
-                </p>
+                  {tr("If the Aura is in your collection, the market holds it first. That step is free. A buyer pays exactly your price.")}</p>
                 <button className="primary-button" disabled={working || data.stats.paused}>
-                  Sign sell order
-                </button>
+                  {tr("Sign sell order")}</button>
               </>
             )}
           </form>
-          <h4>Open orders</h4>
+          <h4>{tr("Open orders")}</h4>
           {!others.length ? (
-            <EmptyState art="coin" title="No open orders right now">
-              Signed orders from other explorers and traders show up here.
-            </EmptyState>
+            <EmptyState art="coin" title={tr("No open orders right now")}>
+              {tr("Signed orders from other explorers and traders show up here.")}</EmptyState>
           ) : (
             <div className="native-offers">
               {others.map((o) => {
@@ -431,27 +420,27 @@ export function SignedOrdersPanel({
                 return (
                   <article className="native-offer signed-order" key={o.id}>
                     <div>
-                      <h3>{sellOrder ? "For sale" : "Offer to buy"}</h3>
+                      <h3>{sellOrder ? tr("For sale") : tr("Offer to buy")}</h3>
                       <span className="native-address">{o.terms.token_id}</span>
-                      <strong className="native-price">{formatNativeNear(o.terms.price)} test NEAR</strong>
+                      <strong className="native-price">{formatNativeNear(o.terms.price)} {" "}{tr("test NEAR")}</strong>
                       <span className="native-address">
-                        {sellOrder ? "Seller" : "Buyer"}: {o.terms.maker}
+                        {sellOrder ? tr("Seller") : tr("Buyer")}: {o.terms.maker}
                       </span>
                       <span>{expiresIn(o.terms.deadline_ms)}</span>
                       {!canAct && (
                         <span>
                           {sellOrder
-                            ? "Not available: the Aura is not held by the market for this seller."
+                            ? tr("Not available: the Aura is not held by the market for this seller.")
                             : heldByMe
-                              ? "The buyer's market balance no longer covers this offer."
-                              : "Only the Aura's owner can accept, after the market holds it."}
+                              ? tr("The buyer's market balance no longer covers this offer.")
+                              : tr("Only the Aura's owner can accept, after the market holds it.")}
                         </span>
                       )}
                       {canAct && (
                         <span>
                           {sellOrder
-                            ? "Paid from your account: the exact price plus a small network fee."
-                            : "You receive the price in your market balance. Your account pays a small network fee."}
+                            ? tr("Paid from your account: the exact price plus a small network fee.")
+                            : tr("You receive the price in your market balance. Your account pays a small network fee.")}
                         </span>
                       )}
                     </div>
@@ -461,7 +450,7 @@ export function SignedOrdersPanel({
                         disabled={working || data.stats.paused || !canAct}
                         onClick={() => void fill(o)}
                       >
-                        {sellOrder ? `Buy for ${formatNativeNear(o.terms.price)} test NEAR` : heldByMe ? "Accept offer" : "Hand to the market and accept"}
+                        {sellOrder ? tr("Buy for {0} test NEAR", { 0: formatNativeNear(o.terms.price) }) : heldByMe ? tr("Accept offer") : tr("Hand to the market and accept")}
                       </button>
                     )}
                   </article>
@@ -471,17 +460,17 @@ export function SignedOrdersPanel({
           )}
           {data.listings.some((l) => l.state === "deposited" && l.seller !== accountId) && (
             <>
-              <h4>Make an offer</h4>
+              <h4>{tr("Make an offer")}</h4>
               <div className="native-offers">
                 {data.listings
                   .filter((l) => l.state === "deposited" && l.seller !== accountId)
                   .map((l) => (
                     <article className="native-offer signed-order" key={l.id}>
                       <div>
-                        <h3>{l.token?.title || "Native Aura"}</h3>
+                        <h3>{l.token?.title || tr("Native Aura")}</h3>
                         <span className="native-address">{l.token_id}</span>
-                        <span className="native-address">Owner: {l.seller}</span>
-                        <span>Held by the market for signed offers</span>
+                        <span className="native-address">{tr("Owner:")}{" "}{l.seller}</span>
+                        <span>{tr("Held by the market for signed offers")}</span>
                       </div>
                       {offerFor === l.token_id ? (
                         <form
@@ -493,8 +482,7 @@ export function SignedOrdersPanel({
                           }}
                         >
                           <label>
-                            Your offer in test NEAR
-                            <input
+                            {tr("Your offer in test NEAR")}<input
                               ref={offerInput}
                               value={offerPrice}
                               aria-invalid={!!priceError}
@@ -508,43 +496,36 @@ export function SignedOrdersPanel({
                           </label>
                           {priceError && <p role="alert">{priceError}</p>}
                           <p>
-                            Market balance: {formatNativeNear(balance?.credit || "0")} test NEAR.
-                            Anything missing is added from your account first.
-                          </p>
+                            {tr("Market balance:")}{" "}{formatNativeNear(balance?.credit || "0")} {" "}{tr("test NEAR. Anything missing is added from your account first.")}</p>
                           <button className="primary-button" disabled={working || data.stats.paused}>
-                            Sign offer
-                          </button>
+                            {tr("Sign offer")}</button>
                           <button type="button" className="button secondary" onClick={() => setOfferFor("")}>
-                            Not now
-                          </button>
+                            {tr("Not now")}</button>
                         </form>
                       ) : (
                         <button className="button secondary" disabled={working} onClick={() => setOfferFor(l.token_id)}>
-                          Make an offer
-                        </button>
+                          {tr("Make an offer")}</button>
                       )}
                     </article>
                   ))}
               </div>
             </>
           )}
-          <h4>Your signed orders</h4>
+          <h4>{tr("Your signed orders")}</h4>
           {!mine.length ? (
-            <p>You have not signed any orders on this device.</p>
+            <p>{tr("You have not signed any orders on this device.")}</p>
           ) : (
             <ul className="signed-order-history">
               {mine.map((m) => (
                 <li key={m.order.nonce} data-status={m.status}>
                   <span>
-                    {m.terms.kind === "sell" ? "Sell" : "Offer"} · {m.terms.token_id} ·{" "}
-                    {formatNativeNear(m.terms.price)} test NEAR
-                  </span>
+                    {m.terms.kind === "sell" ? tr("Sell") : tr("Offer")} · {m.terms.token_id} ·{" "}
+                    {formatNativeNear(m.terms.price)} {" "}{tr("test NEAR")}</span>
                   <span>{ORDER_STATUS_TEXT[m.status]}</span>
                   {m.status === "open" && <span>{expiresIn(m.terms.deadline_ms)}</span>}
                   {m.status === "open" && (
                     <button className="button secondary" disabled={working} onClick={() => void cancelOrder(m)}>
-                      Cancel order
-                    </button>
+                      {tr("Cancel order")}</button>
                   )}
                 </li>
               ))}
@@ -552,8 +533,7 @@ export function SignedOrdersPanel({
           )}
           {!!openMine.length && (
             <button className="button secondary" disabled={working} onClick={() => void cancelAll()}>
-              Cancel all my orders
-            </button>
+              {tr("Cancel all my orders")}</button>
           )}
         </>
       )}

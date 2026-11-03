@@ -1,3 +1,4 @@
+import { tr } from "./i18n.ts";
 import type { Fix } from "./types";
 import type { NativeGameState, NativeReceipt } from "./native-game-types";
 import { NEAR_NETWORK } from "./near-network.ts";
@@ -86,27 +87,27 @@ type Session = {
 };
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem">;
 const messages: Record<NativeAutoStatus, string> = {
-  off: "Collect as you walk is off",
-  inactive: "Return to the map to collect",
-  offline: "Waiting for a connection",
-  hidden: "Paused while the app is hidden",
-  wallet: "Link a NEAR wallet to collect",
-  unjoined: "Join native expeditions first",
-  loading: "Refreshing the native day",
-  unavailable: "Native collection is not available",
-  paused: "Native collection is paused",
-  expired: "Waiting for the next native day",
+  get off() { return tr("Collect as you walk is off"); },
+  get inactive() { return tr("Return to the map to collect"); },
+  get offline() { return tr("Waiting for a connection"); },
+  get hidden() { return tr("Paused while the app is hidden"); },
+  get wallet() { return tr("Link a NEAR wallet to collect"); },
+  get unjoined() { return tr("Join native expeditions first"); },
+  get loading() { return tr("Refreshing the native day"); },
+  get unavailable() { return tr("Native collection is not available"); },
+  get paused() { return tr("Native collection is paused"); },
+  get expired() { return tr("Waiting for the next native day"); },
   gps_required: "Enable GPS to collect",
-  gps_inaccurate: "Waiting for more accurate GPS",
-  gps_stale: "Waiting for a fresh GPS fix",
-  pending: "Waiting for coin confirmations",
-  collecting: "Recording a coin visit",
-  walking: "Walk closer to a street coin",
-  cooldown: "Waiting before the next visit",
+  get gps_inaccurate() { return tr("Waiting for more accurate GPS"); },
+  get gps_stale() { return tr("Waiting for a fresh GPS fix"); },
+  get pending() { return tr("Waiting for coin confirmations"); },
+  get collecting() { return tr("Recording a coin visit"); },
+  get walking() { return tr("Walk closer to a street coin"); },
+  get cooldown() { return tr("Waiting before the next visit"); },
   day_limit: "Today's native pilot is full",
   account_limit: "Today's 100-coin limit reached",
-  review: "Check your native receipts before continuing",
-  storage: "Automatic collection needs available browser storage",
+  get review() { return tr("Check your native receipts before continuing"); },
+  get storage() { return tr("Automatic collection needs available browser storage"); },
 };
 const integer = (n: unknown): n is number =>
   Number.isSafeInteger(n) && (n as number) >= 0;

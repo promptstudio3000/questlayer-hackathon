@@ -1,12 +1,14 @@
 // Map layer for roaming NPCs and monsters (docs/NPC-PLAN.md §9, §14).
 // Loaded on demand by GameMap, so it never enters the first-load bundle.
-// The server sends each actor's deterministic segments for the next 2 h; the
-// layer interpolates positions locally once a second and refetches every
-// minute or after the player moves 120 m.
+// The server sends each actor's deterministic segments for the next 20 min;
+// the layer interpolates positions locally once a second and refetches every
+// minute or after the player moves 120 m. Markers off screen or below street
+// zoom are taken off the map, so a phone only moves the ones it can see.
 import * as maplibregl from "maplibre-gl";
 import type { ActorSegment, ActorView, ActorsResponse } from "./actor-types";
 import { api, meters } from "./api";
 import "./actors.css";
+import { tr } from "./i18n.ts";
 
 type LngLat = { lng: number; lat: number };
 
@@ -45,18 +47,18 @@ export async function loadActorArt() {
 }
 
 const ARCHETYPE_LABEL: Record<string, string> = {
-  storyteller: "Storyteller",
-  trader: "Trader",
-  keeper: "Keeper",
-  quest_giver: "Quest giver",
-  wandering_rare: "Rare sighting",
-  roamer: "Roaming monster",
-  guardian: "Guardian",
-  lurker: "Lurker",
-  boss: "Boss",
+  get storyteller() { return tr("Storyteller"); },
+  get trader() { return tr("Trader"); },
+  get keeper() { return tr("Keeper"); },
+  get quest_giver() { return tr("Quest giver"); },
+  get wandering_rare() { return tr("Rare sighting"); },
+  get roamer() { return tr("Roaming monster"); },
+  get guardian() { return tr("Guardian"); },
+  get lurker() { return tr("Lurker"); },
+  get boss() { return tr("Boss"); },
 };
 export const actorRoleLabel = (a: Pick<ActorView, "archetype">) =>
-  ARCHETYPE_LABEL[a.archetype] || "Character";
+  ARCHETYPE_LABEL[a.archetype] || tr("Character");
 
 function markerNode(actor: ActorView, onSelect: (a: ActorView) => void) {
   const node = document.createElement("button");
@@ -197,16 +199,31 @@ export function attachActorsLayer(
     }
     tick();
   }
+  const MIN_ZOOM = 13;
+  function onScreen(p: LngLat) {
+    const b = map.getBounds(),
+      padLng = (b.getEast() - b.getWest()) * 0.25,
+      padLat = (b.getNorth() - b.getSouth()) * 0.25;
+    return (
+      p.lng >= b.getWest() - padLng &&
+      p.lng <= b.getEast() + padLng &&
+      p.lat >= b.getSouth() - padLat &&
+      p.lat <= b.getNorth() + padLat
+    );
+  }
   function tick() {
-    const now = Date.now() + skew;
+    const now = Date.now() + skew,
+      street = map.getZoom() >= MIN_ZOOM;
     for (const { marker } of arenas.values()) {
-      if (!visible) marker.remove();
+      if (!visible || !street) marker.remove();
       else if (!(marker as unknown as { _map?: unknown })._map) marker.addTo(map);
     }
     for (const { marker, actor, node } of markers.values()) {
       const p = visible ? actorPositionAt(actor.segments, now) : null;
       const hidden =
         !p ||
+        !street ||
+        !onScreen(p) ||
         (actor.revealRadiusM !== undefined &&
           (!position || meters(position, p) > actor.revealRadiusM));
       if (hidden) {
@@ -225,6 +242,7 @@ export function attachActorsLayer(
       void refresh();
   }
   const timer = window.setInterval(tick, 1000);
+  map.on("moveend", tick);
   return {
     update(input) {
       visible = input.visible;
@@ -242,6 +260,7 @@ export function attachActorsLayer(
       gone = true;
       loading?.abort();
       window.clearInterval(timer);
+      map.off("moveend", tick);
       for (const m of markers.values()) m.marker.remove();
       markers.clear();
       for (const a of arenas.values()) a.marker.remove();

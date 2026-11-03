@@ -255,6 +255,7 @@ export function fixture({
   fundYocto = NEAR / 10n,
   topupCapYocto = NEAR / 5n,
   maxJobsPerDay = 40,
+  maxDepositYoctoPerDay,
   factoryOptions,
 } = {}) {
   const db = openDatabase(":memory:"),
@@ -277,6 +278,7 @@ export function fixture({
     clock,
     blockTtl: 120,
     maxJobsPerDay,
+    ...(maxDepositYoctoPerDay === undefined ? {} : { maxDepositYoctoPerDay }),
   });
   return {
     db,

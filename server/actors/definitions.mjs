@@ -49,7 +49,13 @@ const ID = /^[a-z0-9-]{3,40}$/,
     "element",
     "count",
     "homeFrom",
+    "phase",
   ]);
+// When an actor walks: "day" between local sunrise and sunset, "night" after
+// sunset, "any" through the whole opening hours (server/sun.mjs).
+export const ACTOR_PHASES = Object.freeze(["day", "night", "any"]);
+/** Density-cap bucket: day and night casts never meet, "any" fills both. */
+export const phaseOf = (def) => def.phase || "any";
 
 // The generic cast (server/data/actors/_generic.json) runs in any city
 // without a reviewed file and in every active street cell. It may not hold
@@ -133,6 +139,7 @@ export function validateActorDefinition(def, where = "actor") {
     def.persona === undefined || ID.test(def.persona),
     `${where}: invalid persona.`,
   );
+  assert(def.phase === undefined || ACTOR_PHASES.includes(def.phase), `${where}: invalid phase.`);
   assert(typeof def.enabled === "boolean", `${where}: enabled must be a boolean.`);
   assert(
     def.element === undefined || ELEMENTS.includes(def.element),
@@ -177,10 +184,13 @@ export function validateActorFile(file, cityId) {
     for (const a of actors) {
       assert(!GENERIC_DENIED.includes(a.archetype), `Actor file: ${a.archetype} needs a reviewed city file.`);
       assert(!a.home, `Actor file: generic actor ${a.id} cannot have fixed coordinates.`);
-      per[a.archetype] = (per[a.archetype] || 0) + (a.count || 1);
+      // The cap holds at every moment: day and night casts each fit, and an
+      // "any" actor counts against both.
+      const row = (per[a.archetype] ||= { day: 0, night: 0 });
+      for (const p of phaseOf(a) === "any" ? ["day", "night"] : [phaseOf(a)]) row[p] += a.count || 1;
     }
     for (const [archetype, n] of Object.entries(per))
-      assert(n <= (DENSITY_CAP_PER_CELL[archetype] ?? 0), `Actor file: too many ${archetype} for one cell.`);
+      assert(Math.max(n.day, n.night) <= (DENSITY_CAP_PER_CELL[archetype] ?? 0), `Actor file: too many ${archetype} for one cell.`);
   } else assert(actors.every((a) => !a.homeFrom), "Actor file: homeFrom is for the generic cast.");
   return Object.freeze({
     cityId,

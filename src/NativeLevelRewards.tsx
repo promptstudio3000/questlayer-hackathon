@@ -5,6 +5,7 @@ import { AuraArt } from "./Ghost";
 import { catalogEdition } from "./aura-catalog";
 import type { Player } from "./types";
 import type { NearNetwork } from "./near-network.ts";
+import { tr } from "./i18n";
 export type NativeMilestone = {
   level: number;
   edition: string;
@@ -90,16 +91,15 @@ export function NativeLevelRewards({
   return (
     <section
       className="play-native native-level-rewards"
-      aria-label="Level rewards"
+      aria-label={tr("Level rewards")}
     >
       <div className="play-section-heading">
         <h3>
-          <Star size={22} /> Level rewards
-        </h3>
+          <Star size={22} /> {" "}{tr("Level rewards")}</h3>
         {account && (
           <button
             className="icon-button"
-            aria-label="Refresh confirmed XP"
+            aria-label={tr("Refresh confirmed XP")}
             disabled={loading || !!busy}
             onClick={() => void refresh()}
           >
@@ -110,19 +110,15 @@ export function NativeLevelRewards({
       {!account ? (
         <>
           <p className="play-hint">
-            Collect street coins and finish walks with a linked account. Each
-            level unlocks an Aura.
-          </p>
+            {tr("Collect street coins and finish walks with a linked account. Each level unlocks an Aura.")}</p>
           <button className="secondary-button" onClick={onConnect}>
-            Link NEAR account
-          </button>
+            {tr("Link NEAR account")}</button>
         </>
       ) : (
         <>
           {player.wallets.length > 1 && (
             <label>
-              Reward account
-              <select
+              {tr("Reward account")}<select
                 value={account}
                 onChange={(e) => onAccount(e.target.value)}
               >
@@ -140,34 +136,32 @@ export function NativeLevelRewards({
           {state && state.xp === null && (
             <p className="inline-error">
               {state.reason ||
-                "Your confirmed XP could not load. Refresh to try again."}
+                tr("Your confirmed XP could not load. Refresh to try again.")}
             </p>
           )}
-          {loading && !state && <p role="status">Checking confirmed XP…</p>}
+          {loading && !state && <p role="status">{tr("Checking confirmed XP…")}</p>}
           {state && state.xp !== null && (
             <>
               <div className="native-level-summary">
-                <strong>Level {state.level}</strong>
+                <strong>{tr("Level")}{" "}{state.level}</strong>
                 <span>
-                  {BigInt(state.xp).toLocaleString("en-US")} confirmed XP
-                </span>
+                  {BigInt(state.xp).toLocaleString("en-US")} {" "}{tr("confirmed XP")}</span>
               </div>
               <progress
-                aria-label="Confirmed XP toward next level"
+                aria-label={tr("Confirmed XP toward next level")}
                 value={Number(BigInt(state.xp) - BigInt(state.levelStartXp))}
                 max={Number(
                   BigInt(state.nextLevelXp) - BigInt(state.levelStartXp),
                 )}
               />
               <small>
-                {BigInt(state.xpToNextLevel).toLocaleString("en-US")} XP to
-                level {state.level + 1}
+                {BigInt(state.xpToNextLevel).toLocaleString("en-US")} {" "}{tr("XP to level")}{" "}{state.level + 1}
               </small>
               {state.status !== "available" && (
                 <p className="inline-error">
                   {state.reason ||
                     state.error ||
-                    "Rewards cannot be checked right now. Refresh before collecting."}
+                    tr("Rewards cannot be checked right now. Refresh before collecting.")}
                 </p>
               )}
               <div className="native-milestones">
@@ -198,16 +192,15 @@ export function NativeLevelRewards({
                           : (catalogEdition(m.edition)?.slot ?? "above")
                       }
                     />
-                    <strong>Level {m.level}</strong>
+                    <strong>{tr("Level")}{" "}{m.level}</strong>
                     <small>
                       {m.state === "minted" ? (
                         <>
-                          <Check size={16} /> Claimed
-                        </>
+                          <Check size={16} /> {" "}{tr("Claimed")}</>
                       ) : m.state === "sold_out" ? (
-                        "Sold out"
+                        tr("Sold out")
                       ) : m.claimable || m.state === "issued" ? (
-                        "Collect Aura"
+                        tr("Collect Aura")
                       ) : (
                         <>
                           <Lock size={14} />
@@ -219,16 +212,14 @@ export function NativeLevelRewards({
                 ))}
               </div>
               <p className="play-hint">
-                Secured XP is separate from practice progress. Level Auras are
-                limited; reaching a level does not reserve one.
-              </p>
+                {tr("Secured XP is separate from practice progress. Level Auras are limited; reaching a level does not reserve one.")}</p>
             </>
           )}
           {selected && valid && (
             <div className="session-review">
               <h4>{selected.name}</h4>
               <p>
-                Secure this Aura to <b className="session-account">{account}</b>
+                {tr("Secure this Aura to")}{" "}<b className="session-account">{account}</b>
                 .
               </p>
               <label className="play-consent">
@@ -237,9 +228,7 @@ export function NativeLevelRewards({
                   checked={ack}
                   onChange={(e) => setAck(e.target.checked)}
                 />{" "}
-                I understand this holds 0.05 test NEAR for storage, plus a small
-                network fee.
-              </label>
+                {tr("I understand this holds 0.05 test NEAR for storage, plus a small network fee.")}</label>
               <div className="play-task-actions">
                 <button
                   className="primary-button"
@@ -252,8 +241,8 @@ export function NativeLevelRewards({
                   }}
                 >
                   {busy === "native-level"
-                    ? "Waiting for your approval…"
-                    : "Secure this Aura"}
+                    ? tr("Waiting for your approval…")
+                    : tr("Secure this Aura")}
                 </button>
                 <button
                   className="secondary-button"
@@ -263,15 +252,13 @@ export function NativeLevelRewards({
                     await refresh();
                   }}
                 >
-                  Check claim
-                </button>
+                  {tr("Check claim")}</button>
                 <button
                   className="secondary-button"
                   disabled={!!busy}
                   onClick={() => setSelected(null)}
                 >
-                  Cancel
-                </button>
+                  {tr("Cancel")}</button>
               </div>
             </div>
           )}

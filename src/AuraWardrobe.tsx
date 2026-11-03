@@ -15,12 +15,13 @@ import {
   type WardrobeFilter,
 } from "./aura-wardrobe.ts";
 import type { Item } from "./types";
+import { tr } from "./i18n";
 
 const RARITY_LABEL: Record<string, string> = {
-  common: "Common",
-  rare: "Rare",
-  epic: "Epic",
-  legendary: "Legendary",
+  get common() { return tr("Common"); },
+  get rare() { return tr("Rare"); },
+  get epic() { return tr("Epic"); },
+  get legendary() { return tr("Legendary"); },
 };
 
 /** Slot/rarity/set filters for the Aura wardrobe. Native controls only. */
@@ -40,9 +41,8 @@ export function AuraWardrobeFilters({
   return (
     <fieldset className="aura-filters" disabled={disabled}>
       <legend>
-        <Funnel size={18} aria-hidden="true" /> Filter Auras
-      </legend>
-      <div className="aura-filter-slots" role="group" aria-label="Slot">
+        <Funnel size={18} aria-hidden="true" /> {" "}{tr("Filter Auras")}</legend>
+      <div className="aura-filter-slots" role="group" aria-label={tr("Slot")}>
         {(["all", "above", "below"] as const).map((slot) => (
           <button
             type="button"
@@ -50,13 +50,12 @@ export function AuraWardrobeFilters({
             aria-pressed={filter.slot === slot}
             onClick={() => onChange({ ...filter, slot })}
           >
-            {slot === "all" ? "All" : slot === "above" ? "Above" : "Below"}
+            {slot === "all" ? tr("All") : slot === "above" ? tr("Above") : tr("Below")}
           </button>
         ))}
       </div>
       <label>
-        Rarity
-        <select
+        {tr("Rarity")}<select
           value={filter.rarity}
           onChange={(e) =>
             onChange({
@@ -65,7 +64,7 @@ export function AuraWardrobeFilters({
             })
           }
         >
-          <option value="all">All rarities</option>
+          <option value="all">{tr("All rarities")}</option>
           {AURA_RARITIES.map((r) => (
             <option key={r} value={r}>
               {RARITY_LABEL[r]}
@@ -74,12 +73,11 @@ export function AuraWardrobeFilters({
         </select>
       </label>
       <label>
-        Set
-        <select
+        {tr("Set")}<select
           value={filter.set}
           onChange={(e) => onChange({ ...filter, set: e.target.value })}
         >
-          <option value="all">All sets</option>
+          <option value="all">{tr("All sets")}</option>
           {AURA_SETS.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -88,7 +86,7 @@ export function AuraWardrobeFilters({
         </select>
       </label>
       <p className="aura-filter-count" aria-live="polite">
-        {isFiltered(filter) ? `Showing ${shown} of ${total}` : `${total} Auras`}
+        {isFiltered(filter) ? tr("Showing {0} of {1}", { 0: shown, 1: total }) : tr("{0} Auras", { 0: total })}
         {isFiltered(filter) && (
           <button
             type="button"
@@ -97,8 +95,7 @@ export function AuraWardrobeFilters({
               onChange({ slot: "all", rarity: "all", set: "all" })
             }
           >
-            Clear filters
-          </button>
+            {tr("Clear filters")}</button>
         )}
       </p>
     </fieldset>
@@ -118,9 +115,7 @@ export function AuraSetStatus({ items }: { items: Item[] }) {
       >
         <Sparkle size={18} weight="fill" aria-hidden="true" />
         <span>
-          <strong>{set.name} set</strong> · {set.bonus}. Cosmetic only, no
-          gameplay effect.
-        </span>
+          <strong>{tr("{0} set", { 0: set.name })}</strong> · {set.bonus}</span>
       </p>
     );
   const worn = above || below,
@@ -133,9 +128,8 @@ export function AuraSetStatus({ items }: { items: Item[] }) {
     <p className="aura-set-status">
       <Sparkle size={18} aria-hidden="true" />
       <span>
-        Wear {hint.map((e) => e.demoName).join(" or ")} {worn?.slot === "above" ? "below" : "above"}{" "}
-        for a matching set glow. Cosmetic only.
-      </span>
+        {tr("Wear")}{" "}{hint.map((e) => e.demoName).join(" or ")} {worn?.slot === "above" ? "below" : "above"}{" "}
+        {tr("for a matching set glow. Cosmetic only.")}</span>
     </p>
   );
 }
@@ -146,7 +140,7 @@ export function AuraCatalog({ items }: { items: Item[] }) {
   return (
     <details className="aura-catalog">
       <summary>
-        Aura catalog · {progress.found} of {progress.total} found
+        {tr("Aura catalog · {0} of {1} found", { 0: progress.found, 1: progress.total })}
       </summary>
       <ul>
         {progress.entries.map(({ edition, owned }) => (
@@ -161,15 +155,15 @@ export function AuraCatalog({ items }: { items: Item[] }) {
               <strong>{edition.demoName}</strong>
               <span>
                 {RARITY_LABEL[edition.rarity]} ·{" "}
-                {edition.slot === "above" ? "Above" : "Below"} ·{" "}
-                {auraSet(edition.set)?.name} set
+                {edition.slot === "above" ? tr("Above") : tr("Below")} ·{" "}
+                {tr("{0} set", { 0: auraSet(edition.set)?.name })}
               </span>
               <small>
                 {editionSourceLabel(edition)}
-                {edition.native ? " · Can be secured on NEAR" : ""}
+                {edition.native ? tr(" · Can be secured on NEAR") : ""}
               </small>
             </div>
-            <em>{owned ? `×${owned}` : "Not found"}</em>
+            <em>{owned ? `×${owned}` : tr("Not found")}</em>
           </li>
         ))}
       </ul>

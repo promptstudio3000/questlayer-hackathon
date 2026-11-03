@@ -20,7 +20,7 @@ Encounter rules: distance ≤ 35 m (≤ 50 m while the actor dwells at a station
 15 s old, no movement faster than 15 m/s since the player's previous fix. Practice (arena) worlds skip the GPS checks
 like arena coins do. Tokens (`enc_…`) last 5 minutes and bind player, actor, day, segment and menu hash.
 
-Lurkers (60 m) and the wandering rare (300 m) are only listed for a player already within reveal range. `GET /api/actors` sends at most the next 2 h of segments (about 7 KB gzip for Plzeň).
+Lurkers (60 m) and the wandering rare (300 m) are only listed for a player already within reveal range. `GET /api/actors` sends at most the next 20 minutes of segments (the map refetches every minute; see docs/PERFORMANCE-BUDGET.md).
 
 ## Generic cast for every city and street cell (W7)
 

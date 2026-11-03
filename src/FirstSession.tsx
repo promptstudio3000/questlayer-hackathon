@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, Sparkle, X } from "@phosphor-icons/react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, Sparkle, X } from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { api } from "./api";
 import { cue } from "./feedback";
 import {
@@ -14,6 +15,7 @@ import {
 } from "./first-session";
 import type { Point } from "./types";
 import "./first-session.css";
+import { tr } from "./i18n";
 
 const HINT_REFRESH_MS = 8000;
 const HINT_MOVE_M = 40;
@@ -132,6 +134,7 @@ export function FirstSessionCoach({
   onAction,
   actionLabel,
   actionDisabled,
+  aside,
 }: {
   session: ReturnType<typeof useFirstSession>;
   worldId?: string;
@@ -141,6 +144,8 @@ export function FirstSessionCoach({
   /** Override for the current step's button, e.g. when nothing is open. */
   actionLabel?: string | null;
   actionDisabled?: boolean;
+  /** Extra line under the action, e.g. the nearest POI quest outside Plzeň. */
+  aside?: ReactNode;
 }) {
   const { progress, celebration } = session;
   const current = progress.current;
@@ -156,7 +161,7 @@ export function FirstSessionCoach({
     >
       <div className="first-session-head">
         <span className="first-session-count">
-          First steps · {progress.completed} of {progress.total}
+          {tr("First steps · {0} of {1}", { 0: progress.completed, 1: progress.total })}
         </span>
         <ol className="first-session-dots" aria-hidden="true">
           {progress.steps.map((s, i) => (
@@ -172,7 +177,7 @@ export function FirstSessionCoach({
           <button
             className="first-session-hide"
             onClick={session.hide}
-            aria-label="Hide first steps"
+            aria-label={tr("Hide first steps")}
           >
             <X size={18} aria-hidden="true" />
           </button>
@@ -186,7 +191,7 @@ export function FirstSessionCoach({
               <>
                 <Sparkle size={16} weight="fill" aria-hidden="true" />
                 <span>
-                  <span className="sr-only">Guide: </span>
+                  <span className="sr-only">{tr("Guide:")}{" "}</span>
                   {hint}
                 </span>
               </>
@@ -202,25 +207,21 @@ export function FirstSessionCoach({
             {actionLabel || current.action}
             <ArrowRight size={20} aria-hidden="true" />
           </button>
+          {aside}
         </>
       ) : (
         <>
           <h2 id="first-session-title">
-            <Check size={20} weight="bold" aria-hidden="true" /> You know the
-            loop
-          </h2>
+            <Check size={20} weight="bold" aria-hidden="true" /> {" "}{tr("You know the loop")}</h2>
           <p className="first-session-hint">
             <span>
-              Walk, pick up coins, open chests, wear what you find. New
-              discoveries open every day.
-            </span>
+              {tr("Walk, pick up coins, open chests, wear what you find. New discoveries open every day.")}</span>
           </p>
           <button
             className="secondary-button first-session-action"
             onClick={session.finish}
           >
-            Keep exploring
-          </button>
+            {tr("Keep exploring")}</button>
         </>
       )}
       <p className="sr-only" role="status" aria-live="polite">

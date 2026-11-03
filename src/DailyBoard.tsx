@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle, Circle, Target } from "@phosphor-icons/react";
+import { CheckCircle, Circle, Target, X } from "@phosphor-icons/react";
 import { api, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import "./daily-board.css";
+import { tr } from "./i18n";
 
 // Today's board (docs/DAILY-BOARD.md): three small goals from today's world and
 // a small XP bonus. No streak and nothing to lose by skipping a day.
@@ -63,7 +64,7 @@ export function DailyBoard({
       setBoard(await api<Board>("/daily-board/claim", { worldId }));
       onClaimed?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not claim the bonus.");
+      setError(e instanceof Error ? e.message : tr("Could not claim the bonus."));
     } finally {
       setBusy(false);
     }
@@ -79,20 +80,21 @@ export function DailyBoard({
       >
         <Target size={18} weight={board.complete ? "fill" : "regular"} aria-hidden="true" />
         {/* Visible text stays part of the accessible name (label-content-name-mismatch). */}
-        <span className="daily-board-sr">Today's board: </span>
+        <span className="daily-board-sr">{tr("Today's board:")}{" "}</span>
         <b>
           {board.done}/{board.total}
         </b>
-        <span className="daily-board-sr"> goals done</span>
+        <span className="daily-board-sr"> {" "}{tr("goals done")}</span>
       </button>
       {open && (
-        <Dialog label="Today's board" onClose={() => setOpen(false)}>
+        <Dialog label={tr("Today's board")} onClose={() => setOpen(false)}>
           <section className="daily-board-sheet">
-            <h2>Today's board</h2>
+            <button className="sheet-close" aria-label={tr("Close")} onClick={() => setOpen(false)}>
+              <X size={16} aria-hidden="true" />
+            </button>
+            <h2>{tr("Today's board")}</h2>
             <p className="daily-board-lead">
-              Three small goals from today's map. Finish them all for +{board.bonusXp} XP. No streak: skip a day and
-              you lose nothing.
-            </p>
+              {tr("All 3 goals: +{0} XP · no streaks", { 0: board.bonusXp })}</p>
             <ul>
               {board.goals.map((g) => (
                 <li key={g.kind} className={g.done ? "done" : ""}>
@@ -114,20 +116,17 @@ export function DailyBoard({
               ))}
             </ul>
             {board.claimed ? (
-              <p className="daily-board-done">Done for today. +{board.bonusXp} XP is yours.</p>
-            ) : (
-              <button className="primary-button" disabled={!board.complete || busy} onClick={() => void claim()}>
-                {board.complete ? `Claim +${board.bonusXp} XP` : `${board.done} of ${board.total} done`}
+              <p className="daily-board-done">{tr("Done for today. +")}{board.bonusXp} {" "}{tr("XP is yours.")}</p>
+            ) : board.complete ? (
+              <button className="primary-button" disabled={busy} onClick={() => void claim()}>
+                {tr("Claim +{0} XP", { 0: board.bonusXp })}
               </button>
-            )}
+            ) : null}
             {error && <p className="daily-board-error">{error}</p>}
             <p className="fine-print">
-              {board.finishedToday ? `${board.finishedToday} explorers finished today's board. ` : ""}
-              {board.resetsAt ? `New board in ${remaining(board.resetsAt)}.` : ""}
+              {board.finishedToday ? tr("{0} explorers finished today's board. ", { 0: board.finishedToday }) : ""}
+              {board.resetsAt ? tr("New board in {0}.", { 0: remaining(board.resetsAt) }) : ""}
             </p>
-            <button className="secondary-button" onClick={() => setOpen(false)}>
-              Close
-            </button>
           </section>
         </Dialog>
       )}

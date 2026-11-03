@@ -31,6 +31,9 @@ const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS_ROOT = resolve(
   process.env.E2E_SHOTS || join(ROOT, "output/qa/2026-11-first-session"),
 );
+// Against a live server (E2E_BASE_URL) every explorer the journey makes is
+// named "test ..." so bot accounts are easy to find and clean up.
+const TAG = process.env.E2E_NAME_PREFIX ?? (process.env.E2E_BASE_URL ? "test " : "");
 const CHAIN =
   /\b(wallet|testnet|transaction|NEAR|mint(ed)?|NFT|on-chain|contract|blockchain|demo GOLD)\b/i;
 const STEP_TITLES = {
@@ -137,6 +140,42 @@ async function waitForStep(page, title, timeout = 20_000) {
     title,
     { timeout },
   );
+}
+
+// The city demo has no tap-to-walk: an action turns the explorer toward its
+// target, then holding Shift + ArrowUp runs the way it faces. Read the
+// remaining distance from the demo pad and stop a few metres short.
+async function remainingMeters(page) {
+  const text = (await page.locator(".demo-pad-hint").first().textContent().catch(() => "")) || "";
+  const m = text.match(/([\d.]+) (km|m) /);
+  return m ? Number(m[1]) * (m[2] === "km" ? 1000 : 1) : 0;
+}
+async function stepForward(page, ms, run) {
+  if (run) await page.keyboard.down("Shift");
+  await page.keyboard.down("ArrowUp");
+  await page.waitForTimeout(ms);
+  await page.keyboard.up("ArrowUp");
+  if (run) await page.keyboard.up("Shift");
+}
+async function walkToTarget(page) {
+  // Let the pad show the new target first.
+  await page
+    .waitForFunction(() => / m |km /.test(document.querySelector(".demo-pad-hint")?.textContent || ""), null, { timeout: 2000 })
+    .catch(() => {});
+  for (let i = 0; i < 20; i++) {
+    // The pad drops the target within 3 m (zones can be thin path strips).
+    const left = await remainingMeters(page);
+    if (!left) return;
+    // Run (14 m/s) while far, then walk (5 m/s) the last metres;
+    // src/map-motion.ts DEMO_RUN_MPS / DEMO_WALK_MPS.
+    const run = left > 30;
+    await stepForward(
+      page,
+      Math.min(4000, Math.max(100, ((left - (run ? 15 : 1)) / (run ? 14 : 5)) * 1000)),
+      run,
+    );
+    await page.waitForTimeout(150);
+  }
 }
 
 // Toasts sit over the sheet for a few seconds; wait so screenshots show it.
@@ -357,7 +396,7 @@ async function runDevice(name, server) {
     assert.equal(await page.locator(".pwa-update").count(), 0, `false "New version ready" on ${screen}`);
     for (const v of await a11y(page, screen, report)) blocking.push({ screen, ...v });
   };
-  const explorer = `Mira ${name}`;
+  const explorer = `${TAG}Mira ${name}`;
   const browser = await engine.launch();
   console.log(`\n== ${name} (${engine.name()} ${browser.version()}) ==`);
   try {
@@ -394,15 +433,17 @@ async function runDevice(name, server) {
       const title = await coachTitle(page);
       if (title !== STEP_TITLES.find && title !== STEP_TITLES.coin) break;
       await page.locator(".first-session-action").click();
-      // The ghost walks (instantly with reduced motion), then the pickup
-      // loop claims coins within reach every 600 ms.
-      await page.waitForTimeout(2500);
+      // The action turns the explorer toward it; run there with the keys,
+      // then the pickup loop claims coins within reach every 600 ms.
+      await walkToTarget(page);
+      await page.waitForTimeout(1500);
     }
     await waitForStep(page, STEP_TITLES.chest);
     await capture(page, "coach-first-chest");
     await assertNoChainWords(page, "chest step");
 
     console.log("4. First chest");
+
     await page.locator(".first-session-action").click();
     const detail = page.locator(".quest-detail").first();
     await detail.waitFor();
@@ -414,9 +455,16 @@ async function runDevice(name, server) {
         await button.click();
         break;
       }
-      assert.match(label, /Walk/, `unexpected chest action: ${label}`);
+      assert.match(label, /Turn toward it/, `unexpected chest action: ${label}`);
       await button.click();
+      await walkToTarget(page);
       await page.waitForTimeout(400);
+      // "Turn toward it" folds the sheet so the pad is free; the folded
+      // sheet keeps the chosen place, one tap opens it again.
+      if (!(await detail.isVisible())) {
+        await page.locator(".compact-selection").click();
+        await detail.waitFor();
+      }
     }
     const reward = page.getByRole("dialog");
     await reward.waitFor({ timeout: 15_000 });
@@ -518,7 +566,7 @@ async function runDevice(name, server) {
     await dismissInstallOffer(buyer, layout);
     buyer.on("pageerror", (e) => console.error("buyer page error:", e.message));
     await buyer.goto(server.url);
-    await buyer.getByPlaceholder("Your explorer name").fill(`Buyer ${name}`);
+    await buyer.getByPlaceholder("Your explorer name").fill(`${TAG}Buyer ${name}`);
     await buyer.getByRole("button", { name: "Start exploring" }).click();
     await buyer.getByRole("button", { name: "Hide first steps" }).click();
     await buyer.getByRole("button", { name: "Profile", exact: true }).first().click();
@@ -575,7 +623,7 @@ async function runDevice(name, server) {
     const cardPage = await cardContext.newPage();
     await cardPage.clock.install();
     await cardPage.goto(server.url);
-    await cardPage.getByPlaceholder("Your explorer name").fill(`Card ${name}`);
+    await cardPage.getByPlaceholder("Your explorer name").fill(`${TAG}Card ${name}`);
     await cardPage.getByRole("button", { name: "Start exploring" }).click();
     await cardPage.getByRole("button", { name: "Hide first steps" }).click();
     await cardPage.clock.runFor(50_000);

@@ -11,14 +11,21 @@ AWARD="${AWARD_SIGNER_PATH:-.data/award-attestor-mainnet.pem}"
 for f in .data/player-factory-mainnet.json .data/relayer-mainnet.json "$AWARD" .data/runtime-mainnet.env; do
   [[ -f "$f" ]] || { echo "$f is missing." >&2; exit 1; }
 done
+# Optional keys of the contracts after the slice (docs/MAINNET-PLAN.md §6).
+TICKET="${NPC_TICKET_SIGNER_PATH:-.data/npc-games-ticket-signer-mainnet.pem}"
+OPTIONAL=()
+[[ -f .data/badges-minter-mainnet.json ]] && OPTIONAL+=(badges-minter-mainnet.json)
+[[ -f "$TICKET" ]] && OPTIONAL+=(npc-games-ticket-signer.pem)
 FACTORY_ACCOUNT="$(python3 -c 'import json;d=json.load(open(".data/player-factory-mainnet.json"));assert d["network"]=="mainnet";print(d["accountId"])')"
 STAGE=/opt/ps3000/apps/questlayer-mainnet/key-staging
 ssh -o BatchMode=yes "$HOST_TARGET" "install -d -m 700 /opt/ps3000/apps/questlayer-mainnet $STAGE"
 scp -q .data/player-factory-mainnet.json .data/relayer-mainnet.json .data/runtime-mainnet.env "$HOST_TARGET:$STAGE/"
 scp -q "$AWARD" "$HOST_TARGET:$STAGE/award-attestor.pem"
-ssh -o BatchMode=yes "$HOST_TARGET" python3 - "$FACTORY_ACCOUNT" <<'PY'
+[[ -f .data/badges-minter-mainnet.json ]] && scp -q .data/badges-minter-mainnet.json "$HOST_TARGET:$STAGE/"
+[[ -f "$TICKET" ]] && scp -q "$TICKET" "$HOST_TARGET:$STAGE/npc-games-ticket-signer.pem"
+ssh -o BatchMode=yes "$HOST_TARGET" python3 - "$FACTORY_ACCOUNT" ${OPTIONAL[@]+"${OPTIONAL[@]}"} <<'PY'
 import json, os, pathlib, sys
-factory = sys.argv[1]
+factory = sys.argv[1]; optional = sys.argv[2:]
 root = pathlib.Path('/opt/ps3000/apps/questlayer-mainnet'); stage = root / 'key-staging'
 # Same layout systemd creates for DynamicUser=yes; it chowns the tree on start.
 private = pathlib.Path('/var/lib/private/questlayer-mainnet'); link = pathlib.Path('/var/lib/questlayer-mainnet')
@@ -26,7 +33,7 @@ private.parent.mkdir(mode=0o700, exist_ok=True); private.mkdir(mode=0o700, exist
 if not link.exists(): link.symlink_to('private/questlayer-mainnet')
 assert link.resolve() == private.resolve(), 'Unexpected mainnet state directory layout'
 assert not pathlib.Path('/var/lib/questlayer-hackathon').resolve() == private.resolve()
-for name in ['player-factory-mainnet.json', 'relayer-mainnet.json', 'award-attestor.pem']:
+for name in ['player-factory-mainnet.json', 'relayer-mainnet.json', 'award-attestor.pem', *optional]:
     src = stage / name; target = private / name
     assert not src.is_symlink() and src.stat().st_size < 4096
     if name.endswith('.json'):

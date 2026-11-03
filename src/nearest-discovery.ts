@@ -64,3 +64,72 @@ export function nearestDiscovery({
   }
   return best;
 }
+
+export type NearestQuest = {
+  quest: Quest;
+  zone: Zone;
+  point: Point;
+  distance: number;
+};
+
+export type QuestOutlook =
+  | { state: "open"; nearest: NearestQuest }
+  /** Quests exist here today but none is open yet (before play hours). */
+  | { state: "later"; opensAt: number }
+  /** Nothing checked for quests here today (empty POI cell). */
+  | { state: "empty" }
+  /** Everything here is done or closed for today. */
+  | { state: "none" };
+
+// First session outside the reviewed city: the coach and the map point at
+// the closest open POI quest (W6 zones carry source "poi"), so a newcomer in
+// Brno or a village has one clear "go here" even before the chest step.
+export function poiQuestOutlook({
+  position,
+  quests,
+  zones,
+  tier,
+  now,
+  emptyCell = false,
+  questPoint = (q) => q.nextPoint || q,
+}: {
+  position: Point;
+  quests: Quest[];
+  zones: Zone[];
+  tier: number;
+  now: number;
+  emptyCell?: boolean;
+  questPoint?: (q: Quest) => Point;
+}): QuestOutlook {
+  const zoneById = new Map(
+    zones.filter((z) => z.source === "poi").map((z) => [z.id, z]),
+  );
+  let best: NearestQuest | null = null;
+  let opensAt = Infinity;
+  for (const quest of quests) {
+    const zone = quest.zone_id ? zoneById.get(quest.zone_id) : undefined;
+    if (
+      !zone ||
+      quest.completed ||
+      quest.tier > tier ||
+      zone.placeStatus === "closed" ||
+      quest.placeStatus === "closed" ||
+      quest.closes_at <= now ||
+      zone.closesAt <= now
+    )
+      continue;
+    if (quest.opens_at > now) {
+      opensAt = Math.min(opensAt, quest.opens_at);
+      continue;
+    }
+    const point = questPoint(quest);
+    const distance = meters(position, point);
+    if (!Number.isFinite(distance)) continue;
+    if (!best || distance < best.distance)
+      best = { quest, zone, point, distance };
+  }
+  if (best) return { state: "open", nearest: best };
+  if (Number.isFinite(opensAt)) return { state: "later", opensAt };
+  if (emptyCell || !zoneById.size) return { state: "empty" };
+  return { state: "none" };
+}

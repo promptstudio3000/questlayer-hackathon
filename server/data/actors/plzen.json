@@ -2,8 +2,8 @@
   "version": 1,
   "cityId": "plzen",
   "hours": [
-    "08:00",
-    "20:00"
+    "07:00",
+    "22:00"
   ],
   "actors": [
     {
@@ -24,7 +24,8 @@
         25
       ],
       "persona": "kronikarka-bela",
-      "enabled": true
+      "enabled": true,
+      "phase": "day"
     },
     {
       "id": "kupec-vojtech",
@@ -44,7 +45,8 @@
         20
       ],
       "persona": "kupec-vojtech",
-      "enabled": true
+      "enabled": true,
+      "phase": "any"
     },
     {
       "id": "strazce-brany",
@@ -64,7 +66,8 @@
         0
       ],
       "persona": "strazce-brany",
-      "enabled": true
+      "enabled": true,
+      "phase": "any"
     },
     {
       "id": "poutnice-rada",
@@ -84,7 +87,8 @@
         20
       ],
       "persona": "poutnice-rada",
-      "enabled": true
+      "enabled": true,
+      "phase": "day"
     },
     {
       "id": "bludicka",
@@ -101,7 +105,8 @@
       ],
       "windows": 3,
       "persona": "bludicka",
-      "enabled": true
+      "enabled": true,
+      "phase": "night"
     },
     {
       "id": "lickquidator",
@@ -117,7 +122,8 @@
         8
       ],
       "count": 4,
-      "enabled": true
+      "enabled": true,
+      "phase": "day"
     },
     {
       "id": "dire-tire",
@@ -133,7 +139,8 @@
         5
       ],
       "count": 2,
-      "enabled": true
+      "enabled": true,
+      "phase": "night"
     },
     {
       "id": "lick-brute",
@@ -149,7 +156,8 @@
         0
       ],
       "count": 4,
-      "enabled": true
+      "enabled": true,
+      "phase": "any"
     },
     {
       "id": "laser-beamer",
@@ -165,7 +173,8 @@
         0
       ],
       "count": 2,
-      "enabled": true
+      "enabled": true,
+      "phase": "any"
     },
     {
       "id": "pocket-wisp",
@@ -181,7 +190,8 @@
         0
       ],
       "count": 8,
-      "enabled": true
+      "enabled": true,
+      "phase": "any"
     },
     {
       "id": "lick-boss",
@@ -200,7 +210,8 @@
         0,
         0
       ],
-      "enabled": true
+      "enabled": true,
+      "phase": "any"
     }
   ]
 }

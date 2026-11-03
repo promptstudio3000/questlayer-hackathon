@@ -51,10 +51,9 @@ jobs:
         if: matrix.device == 'phone-390'
         env:
           E2E_SHOTS: ${{ runner.temp }}/first-session/bonus-vote
-      # "Play in Brno" and "play in a village" on the Czechia POI fixture
-      # (docs/WORLD-COVERAGE.md); Chromium-only, so it rides phone-390 too.
-      - run: npm run e2e:world
-        if: matrix.device == 'phone-390'
+      # First session in Brno, a village and an empty cell on the Czechia
+      # POI fixture (docs/WORLD-COVERAGE.md), on every device row.
+      - run: npm run e2e:world -- --device=${{ matrix.device }}
         env:
           E2E_SHOTS: ${{ runner.temp }}/first-session/world-journeys
       - uses: actions/upload-artifact@v4
@@ -62,6 +61,29 @@ jobs:
         with:
           name: first-session-${{ matrix.device }}
           path: ${{ runner.temp }}/first-session
+  languages:
+    # Every UI language on a 390 px phone: screenshots of the main screens
+    # and tabs, no sideways overflow or cut-off text, Arabic right-to-left,
+    # no English string left untranslated. Screenshots are the artifact.
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run e2e:languages
+        env:
+          E2E_SHOTS: ${{ runner.temp }}/languages
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: languages-phone-390
+          path: ${{ runner.temp }}/languages
   contracts:
     runs-on: ubuntu-latest
     timeout-minutes: 30

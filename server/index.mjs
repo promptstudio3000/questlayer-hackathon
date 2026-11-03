@@ -50,6 +50,8 @@ import {
   createBonusVoteRoutes,
 } from "./creators/bonus-vote.mjs";
 import { auditDistribution, auditSummary } from "./native/distribution.mjs";
+import { createPublicLedger } from "./native/public-ledger.mjs";
+import { readYieldBacking } from "./native/day-publication.mjs";
 import {
   NativeSocialRecords,
   createSocialRecordRoutes,
@@ -74,7 +76,7 @@ import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
-import { clientAddress } from "./http-security.mjs";
+import { clientAddress, pruneRateWindows } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -88,7 +90,10 @@ import {
 } from "./native/network.mjs";
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import { monitorEventLoopDelay, performance } from "node:perf_hooks";
+import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
+import { ensureHotPathIndexes } from "./hot-path-indexes.mjs";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -120,7 +125,7 @@ import {
 import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
 import { createActorRoutes } from "./actors/routes.mjs";
-import { actorsEnabled, createActorService } from "./actors/service.mjs";
+import { actorsAllDay, actorsEnabled, createActorService } from "./actors/service.mjs";
 import { testSeedMode as readTestSeedMode } from "./test-seed/config.mjs";
 import { createTestSeed } from "./test-seed/seed.mjs";
 import "./npc/menu-builder.mjs";
@@ -151,6 +156,7 @@ import { createBadgeRoutes } from "./badges/routes.mjs";
 import { seasonSettings } from "./season/config.mjs";
 import { createSeason } from "./season/service.mjs";
 import { createSeasonRoutes } from "./season/routes.mjs";
+import { ensureFairPlaySchema, guardTravel } from "./fair-play.mjs";
 import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
 import { poiWorldStatus } from "./poi/coverage.mjs";
 import {
@@ -170,6 +176,8 @@ const nativeAttestationsDisabled =
 const backgroundWorkersDisabled =
   process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
+ensureMapReadIndexes(db);
+ensureHotPathIndexes(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
 const adventureResults = createAdventureResults(db);
@@ -372,6 +380,7 @@ const relayer = managedAccounts
         },
         blockTtl: relayConfig.blockTtl,
         maxJobsPerDay: relayConfig.maxJobsPerDay,
+        maxDepositYoctoPerDay: relayConfig.maxDepositYoctoPerDay,
         maxGas: relayConfig.maxGas,
         vaults: nativeVaults,
         factorySetupDeposit: rewardsConfig?.factory?.setupDeposit ?? null,
@@ -426,8 +435,36 @@ const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
 // Roaming NPCs and monsters (docs/NPC-PLAN.md §14): off unless ACTORS_ENABLED=1.
 // The testnet test world turns them on too.
 const actorService =
-  actorsEnabled() || testSeedMode === "apply" ? createActorService(db) : null;
+  actorsEnabled() || testSeedMode === "apply"
+    ? createActorService(db, {
+        allDay: actorsAllDay(process.env, NETWORK),
+        travelGuard: (player, fix, now) => {
+          ensureFairPlaySchema(db);
+          guardTravel(db, player, fix, now);
+        },
+      })
+    : null;
 const actorRoutes = createActorRoutes(actorService);
+// Today's city plans are built off the request path after a restart, so the
+// first /api/actors call does not stall the server (docs/PERFORMANCE-BUDGET.md).
+if (actorService && !backgroundWorkersDisabled)
+  setTimeout(() => {
+    try {
+      actorService.warm();
+    } catch (e) {
+      console.error("Actor plan warm-up failed:", e.name);
+    }
+  }, 1000).unref();
+// A city world opened for the first time today gets its actor plan built
+// right after the response, before the client asks for the cast.
+function warmActorPlan(world) {
+  if (!actorService || !world?.cityId) return;
+  setImmediate(() => {
+    try {
+      actorService.planFor(world);
+    } catch {}
+  });
+}
 // NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
 // Ollama setup; the key stays in the runtime environment only.
 // NEAR → EUR reference for "Stake 2 NEAR (~5 €)" labels (server/near-price.mjs).
@@ -637,6 +674,17 @@ const creatorMoney = creatorsManifest
   : null;
 const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
+// Public economy ledger for the /economy page (docs/ECONOMY-PAGE.md).
+const yieldCycleProofPath = resolve(APP_ROOT, "public/native-yield-cycle-proof.json");
+const publicLedger = createPublicLedger({
+  native: nativeRewards,
+  treasury: stnearTreasury,
+  yieldBacking: readYieldBacking,
+  cycleProof: () =>
+    existsSync(yieldCycleProofPath)
+      ? JSON.parse(readFileSync(yieldCycleProofPath, "utf8"))
+      : null,
+});
 const tasksManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-tasks")}`),
   resolve(APP_ROOT, `dist/${manifestName("native-tasks")}`),
@@ -698,10 +746,35 @@ async function refreshOriginals(address) {
 }
 const listeners = new Set(),
   rates = new Map();
-function emit(type, data) {
-  const event = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
-  for (const client of listeners) client.write(event);
+// Per-minute counters: keys end with ":<minute>". `limit` throws 429 past `max`.
+function limit(scope, who, max, message) {
+  const key = `${scope}:${who}:${Math.floor(Date.now() / 60_000)}`,
+    n = (rates.get(key) || 0) + 1;
+  rates.set(key, n);
+  assert(n <= max, message, 429, "RATE_LIMITED");
 }
+// The world each explorer last loaded (POST/GET /api/world). Coin and quest
+// events only go to streams of explorers on that world: broadcasting every
+// pick-up in Czechia to every phone was most of the server's socket writes
+// with 500 walkers (npm run load:test). A stream whose explorer has not
+// loaded a world yet still gets everything.
+const viewing = new Map();
+function viewWorld(player, worldId) {
+  if (!worldId || viewing.get(player) === worldId) return;
+  viewing.delete(player);
+  if (viewing.size >= 100_000) viewing.delete(viewing.keys().next().value);
+  viewing.set(player, worldId);
+}
+function emit(type, data, worldId = null) {
+  const event = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const client of listeners) {
+    const at = worldId && viewing.get(client.questlayerPlayer);
+    if (!at || at === worldId) client.write(event);
+  }
+}
+const coinWorld = (coinId) => String(coinId).split(":coin:")[0] || null;
+const questWorld = (questId) =>
+  db.prepare("SELECT world_id FROM quests WHERE id=?").get(String(questId))?.world_id ?? null;
 function cookie(token) {
   return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
@@ -778,6 +851,28 @@ async function body(req) {
   } catch {
     assert(false, "Invalid request.");
   }
+}
+// GET reads the client polls (the map refreshes every 15 s): the phone's own
+// cache keeps the last body and the server answers 304 when nothing changed.
+// Private, so a shared proxy never stores one player's view.
+function respondCached(req, res, data) {
+  const body = JSON.stringify(data),
+    tag = `"${createHash("sha1").update(body).digest("base64url").slice(0, 27)}"`,
+    seen = String(req.headers["if-none-match"] || "")
+      .split(",")
+      .map((t) => t.trim().replace(/^W\//, ""));
+  const headers = {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "private, no-cache",
+    ETag: tag,
+    Vary: "Cookie",
+  };
+  if (seen.includes(tag)) {
+    res.writeHead(304, headers);
+    return res.end();
+  }
+  res.writeHead(200, headers);
+  res.end(body);
 }
 function respond(res, data, status = 200, headers = {}) {
   res.writeHead(status, {
@@ -907,6 +1002,10 @@ async function api(req, res, url) {
     if (fresh) nativeRewards.lastAudit = await auditDistribution(nativeRewards);
     return respond(res, nativeRewards.lastAudit);
   }
+  if (path === "/api/economy/ledger" && method === "GET")
+    return respond(res, await publicLedger(), 200, {
+      "Cache-Control": "public, max-age=60",
+    });
   if (path === "/api/native/economy" && method === "GET") {
     assert(nativeEconomy, "Native economy is not configured yet.", 503);
     return respond(res, await nativeEconomy.snapshot());
@@ -936,6 +1035,13 @@ async function api(req, res, url) {
       layers: WORLD_REGISTRY.liveLayers(process.env).map(layerSummary),
     });
   if (path === "/api/session" && method === "POST") {
+    // New guest explorers per network address: stops bulk alt accounts.
+    limit(
+      "new-guest",
+      clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      30,
+      "Too many new explorers from this network. Please wait a minute.",
+    );
     const input = await body(req);
     const result = game.session(db, input.name);
     identitySessions.record(result.token, "guest");
@@ -1961,6 +2067,10 @@ async function api(req, res, url) {
     return respond(res, { player: profile(player) });
   }
   if (path === "/api/events") {
+    // Each open stream holds a socket: a few per explorer is plenty.
+    const open = [...listeners].filter((r) => r.questlayerPlayer === player).length;
+    assert(open < 4, "Too many open live connections. Close another tab.", 429, "RATE_LIMITED");
+    res.questlayerPlayer = player;
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
@@ -1977,6 +2087,7 @@ async function api(req, res, url) {
     return;
   }
   if (path === "/api/world" && method === "POST") {
+    limit("world-open", player, 30, "Please wait before loading another area.");
     const input = await body(req),
       location = point(input.location || HOME),
       query = worldQuery({
@@ -1984,35 +2095,53 @@ async function api(req, res, url) {
         limit: input.limit,
         cursor: input.cursor,
       });
+    const spans = (res.timingSpans = {});
+    let at = performance.now();
     expireWorlds(db);
-    const world = await ensureWorld(db, location, input.arena !== false);
+    spans.wexpire = performance.now() - at;
+    at = performance.now();
+    // `explore`: a spot of the same city the player asked to search (map moved).
+    const world = await ensureWorld(db, location, input.arena !== false, Date.now(), {
+      cellAt: input.explore ? point(input.explore) : null,
+    });
+    spans.wensure = performance.now() - at;
+    viewWorld(player, world.id);
+    warmActorPlan(world);
     // layerId is added to the response only, never to the stored manifest.
     return respond(res, {
-      ...worldView(db, world.id, player, query),
+      ...worldView(db, world.id, player, {
+        timing: spans,
+        ...query,
+        near: input.near,
+        lang: input.lang === "cs" ? "cs" : "en",
+      }),
       layerId: DEFAULT_LAYER.id,
     });
   }
   if (path === "/api/world" && method === "GET") {
-    const w = worldView(
-      db,
-      url.searchParams.get("id"),
-      player,
-      worldQuery({
+    limit("world-read", player, 240, "Please wait before refreshing the map again.");
+    const w = worldView(db, url.searchParams.get("id"), player, {
+      timing: (res.timingSpans = {}),
+      near: url.searchParams.get("near") ?? undefined,
+      ...worldQuery({
         bounds: url.searchParams.get("bbox") ?? undefined,
         limit: url.searchParams.get("limit") ?? undefined,
         cursor: url.searchParams.get("cursor") ?? undefined,
       }),
-    );
+    });
     assert(w, "This area could not be found. Refresh the map.", 404);
-    return respond(res, { ...w, layerId: DEFAULT_LAYER.id });
+    viewWorld(player, w.id);
+    return respondCached(req, res, { ...w, layerId: DEFAULT_LAYER.id });
   }
   if (path === "/api/coins/claim" && method === "POST") {
+    limit("coin", player, 240, "Please slow down collecting coins.");
     const input = await body(req),
       result = game.claimCoin(db, player, input.coinId, input.fix);
-    if (!result.alreadyClaimed) emit("coin", { id: input.coinId });
+    if (!result.alreadyClaimed) emit("coin", { id: input.coinId }, coinWorld(input.coinId));
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/checkpoint" && method === "POST") {
+    limit("quest", player, 60, "Please wait before confirming another stop.");
     const input = await body(req),
       result = game.advanceRoute(
         db,
@@ -2021,15 +2150,18 @@ async function api(req, res, url) {
         input.fix,
         input.checkpoint,
       );
-    emit("quest", { id: input.questId });
+    emit("quest", { id: input.questId }, questWorld(input.questId));
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/claim" && method === "POST") {
+    limit("quest", player, 60, "Please wait before confirming another discovery.");
     const input = await body(req);
     // A guardian monster on duty locks its zone chest until you beat it.
     monsterHunt?.chests.assertOpen(player, input.questId);
-    const result = game.claimQuest(db, player, input.questId, input.fix);
-    emit("quest", { id: input.questId });
+    const result = game.claimQuest(db, player, input.questId, input.fix, undefined, {
+      answer: typeof input.answer === "string" ? input.answer.slice(0, 40) : null,
+    });
+    emit("quest", { id: input.questId }, questWorld(input.questId));
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/stake" && method === "POST") {
@@ -2155,6 +2287,7 @@ async function api(req, res, url) {
     );
   }
   if (path === "/api/presence" && method === "POST") {
+    limit("presence", player, 30, "Please wait before sharing your position again.");
     const input = await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
     return respond(res, updatePresence(db, player, input));
@@ -2770,6 +2903,46 @@ const types = {
   ".glb": "model/gltf-binary",
   ".json": "application/json; charset=utf-8",
 };
+// Server-side timing (docs/PERFORMANCE-BUDGET.md): every API answer carries
+// Server-Timing "app" (request start to headers) and "loop" (worst event-loop
+// stall in the last few seconds), so a slow phone request can be split into
+// network, handler and a blocked loop. Slow ones are logged by route only.
+const loopDelay = monitorEventLoopDelay({ resolution: 10 });
+loopDelay.enable();
+let loopWorstMs = 0;
+setInterval(() => {
+  loopWorstMs = loopDelay.max / 1e6;
+  loopDelay.reset();
+}, 5000).unref();
+const SLOW_API_MS = Number(process.env.SLOW_API_MS || 250);
+function timeApiRequest(req, res, path) {
+  const started = performance.now(),
+    writeHead = res.writeHead;
+  let done = false;
+  res.writeHead = function (...args) {
+    if (!done) {
+      done = true;
+      const ms = performance.now() - started,
+        loop = Math.max(loopWorstMs, loopDelay.max / 1e6);
+      if (!res.headersSent)
+        res.setHeader(
+          "Server-Timing",
+          [
+            `app;dur=${ms.toFixed(1)}`,
+            `loop;dur=${loop.toFixed(1)}`,
+            ...Object.entries(res.timingSpans || {}).map(
+              ([name, d]) => `${name};dur=${d.toFixed(1)}`,
+            ),
+          ].join(", "),
+        );
+      if (ms >= SLOW_API_MS)
+        console.warn(
+          `Slow API ${req.method} ${path.replace(/[0-9a-f-]{16,}|\d{4,}/g, ":id")} ${Math.round(ms)} ms (loop stall ${Math.round(loop)} ms)`,
+        );
+    }
+    return writeHead.apply(this, args);
+  };
+}
 const server = createServer(async (req, res) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -2779,7 +2952,10 @@ const server = createServer(async (req, res) => {
   );
   try {
     const url = new URL(req.url, "http://localhost");
-    if (url.pathname.startsWith("/api/")) return await api(req, res, url);
+    if (url.pathname.startsWith("/api/")) {
+      timeApiRequest(req, res, url.pathname);
+      return await api(req, res, url);
+    }
     const target = resolvePublicFile(
       resolve(APP_ROOT, "dist"),
       url.pathname,
@@ -2890,7 +3066,7 @@ const maintenance = setInterval(() => {
       Date.now(),
     );
     db.prepare("DELETE FROM sessions WHERE expires_at<?").run(Date.now());
-    if (rates.size > 1000) rates.clear();
+    pruneRateWindows(rates);
     if (Date.now() >= nextMediaPrune) {
       noteMedia.prune(db);
       taskEvidence.prune();

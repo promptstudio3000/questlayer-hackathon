@@ -1,0 +1,111 @@
+{
+  "network": "testnet",
+  "summary": "First realized staking yield funded the reward treasury without any manual step: three keyless vaults earned yield at the Aurora pool, the reward worker harvested the city's 50 % share at epoch 5401, advanced the unstake after it unlocked at epoch 5405, and flushed the cash into questlayer-rewards-20261101.testnet, which split it 50/50 into the coin and zone buckets.",
+  "rewardsContract": "questlayer-rewards-20261101.testnet",
+  "pool": "aurora.pool.f863973.m0",
+  "contributionBps": 5000,
+  "timeline": [
+    {
+      "step": "harvest",
+      "epoch": 5401,
+      "at": "2026-11-01T09:23Z (approx.)",
+      "detail": "worker called maintain_vault(harvest) on all three vaults; transaction hashes were not recorded before maintenance logging existed"
+    },
+    {
+      "step": "unlock",
+      "epoch": 5405,
+      "detail": "pool unstake period elapsed"
+    },
+    {
+      "step": "advance",
+      "at": "2026-11-03T12:02Z",
+      "detail": "worker called maintain_vault(advance) until the pool cash arrived; hashes not logged (logging enabled at 12:03)"
+    },
+    {
+      "step": "flush",
+      "flushes": [
+        {
+          "vault": "questlayer-vault-20261101.testnet",
+          "transactionHash": "CYsidYQZVycRWzL6WaAxbEjqCXsUf4G1spTBk1cndLue",
+          "gamePaidYocto": "176316808318321203511",
+          "at": "2026-11-03T12:33:21.020Z"
+        },
+        {
+          "vault": "v1.questlayer-vaults-20261101.testnet",
+          "transactionHash": "16Ui3Y89xNdHCrpdhXu8WB9rCAu3JT3Jik4JymhtgTZ",
+          "gamePaidYocto": "70526723327328481409",
+          "at": "2026-11-03T12:33:27.197Z"
+        },
+        {
+          "vault": "v3.questlayer-vaults-20261101.testnet",
+          "transactionHash": "BJ9qyeXk7t4nTiExhuRkvB8xMkMvGpurAHP7RwEot8Z1",
+          "gamePaidYocto": "17631680831832120358",
+          "at": "2026-11-03T12:33:33.191Z"
+        }
+      ]
+    }
+  ],
+  "realizedYieldYocto": "264475212477481805278",
+  "treasuryBefore": {
+    "coins": {
+      "available": "88000000000000000000000",
+      "reserved": "12000000000000000000000",
+      "awarded": "0"
+    },
+    "zones": {
+      "available": "88000000000000000000000",
+      "reserved": "12000000000000000000000",
+      "awarded": "0"
+    },
+    "funded": "200000000000000000000000",
+    "owed": "0",
+    "pending": "0",
+    "withdrawn": "0",
+    "policy": "50/50-v1",
+    "observedAt": "2026-11-03T12:01Z",
+    "openDays": [
+      "plzen-2026-11-01-v1",
+      "plzen-2026-11-02-v1"
+    ]
+  },
+  "treasuryAfter": {
+    "coins": {
+      "available": "82132237606238740902638",
+      "reserved": "18000000000000000000000",
+      "awarded": "0"
+    },
+    "zones": {
+      "available": "82132237606238740902640",
+      "reserved": "18000000000000000000000",
+      "awarded": "0"
+    },
+    "funded": "200264475212477481805278",
+    "owed": "0",
+    "pending": "0",
+    "withdrawn": "0",
+    "policy": "50/50-v1",
+    "observedAt": "2026-11-03T12:34Z",
+    "openDays": [
+      "plzen-2026-11-02-v1",
+      "plzen-2026-11-03-v1",
+      "plzen-2026-11-04-v1"
+    ]
+  },
+  "reconciliation": "after.funded - before.funded = sum of the three flushes = 264475212477481805278 yoctoNEAR; coin and zone buckets each received half (rounding 2 yocto to zones). Available also fell by 6000000000000000000000 per bucket because the worker published 2026-11-03 and 2026-11-04 and closed 2026-11-01 in the same period.",
+  "distributionAudit": {
+    "status": "verified",
+    "failed": [],
+    "checks": [
+      "ledger-conservation",
+      "coin-reservations-explained",
+      "zone-reservations-explained",
+      "open-days-match-manifests",
+      "receipts-within-chain-claims",
+      "date-totals-match-publications",
+      "account-covers-liabilities"
+    ],
+    "observedAt": 1793709222999
+  },
+  "verify": "Read get_state on each vault (game_paid) and get_treasury on the rewards contract; each flush hash is visible on https://testnet.nearblocks.io/txns/<hash>.",
+  "generation": "20261101 (operator questlayer-dev-20261031). On 1 November the public deployment rotated to generation 20261101b (operator questlayer-dev-20261101); the public host runs the same worker code path against that generation. This proof stays valid for the contracts it names."
+}

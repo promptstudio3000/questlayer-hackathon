@@ -17,6 +17,7 @@ import {
   type CreatorPaymentRequest,
   type CreatorQuestMoney,
 } from "./creator-money-quote";
+import { tr } from "./i18n";
 
 /** What the app hands the creator screens so they can pay without owning a signer. */
 export type CreatorMoneyBridge = {
@@ -58,8 +59,8 @@ function OutcomeLine({ outcome }: { outcome: Outcome }) {
 
 function paidLine(managed: boolean) {
   return managed
-    ? "Paid from your balance, no popup."
-    : "Paid from your balance; your NEAR wallet asks you to approve.";
+    ? tr("Paid from your balance, no popup.")
+    : tr("Paid from your balance; your NEAR wallet asks you to approve.");
 }
 
 const disabledError = (error: unknown) =>
@@ -125,18 +126,18 @@ export function CreatorSupport({
   if (state === "loading")
     return (
       <div className="creator-money" aria-busy="true">
-        <p className="creator-hint">Checking support for this quest…</p>
+        <p className="creator-hint">{tr("Checking support for this quest…")}</p>
       </div>
     );
   if (state === "error" || !snap)
     return (
       <div className="creator-money">
-        <p className="creator-hint">Support for this quest could not load.</p>
+        <p className="creator-hint">{tr("Support for this quest could not load.")}</p>
         <button
           className="text-button"
           onClick={() => setRefresh((n) => n + 1)}
         >
-          Try again <ArrowClockwise size={18} />
+          {tr("Try again")}{" "}<ArrowClockwise size={18} />
         </button>
       </div>
     );
@@ -156,57 +157,50 @@ export function CreatorSupport({
             kind: "done",
             text:
               request.kind === "buy"
-                ? "Access unlocked. 80% went to the creator."
-                : "Thank you. The whole gift went to the creator.",
+                ? tr("Access unlocked. 80% went to the creator.")
+                : tr("Thank you. The whole gift went to the creator."),
           }
-        : { kind: "failed", text: "Nothing was paid. You can try again." },
+        : { kind: "failed", text: tr("Nothing was paid. You can try again.") },
     );
     if (ok) setRefresh((n) => n + 1);
   }
   async function like() {
     if (busy) return;
-    setOutcome({ kind: "pending", text: "Saving your like…" });
+    setOutcome({ kind: "pending", text: tr("Saving your like…") });
     try {
       await api("/native/creators/like", { questId });
       setLiked(true);
       setOutcome({
         kind: "done",
-        text: "Liked. It counts toward today's creator round once.",
+        text: tr("Liked. It counts toward today's creator round once."),
       });
     } catch (error) {
       setOutcome({
         kind: "failed",
-        text: error instanceof Error ? error.message : "The like did not save.",
+        text: error instanceof Error ? error.message : tr("The like did not save."),
       });
     }
   }
   const price = chain ? BigInt(chain.price) : 0n;
   const treasuryPct = Number(snap.treasuryBps) / 100;
   return (
-    <section className="creator-money" aria-label="Support the creator">
+    <section className="creator-money" aria-label={tr("Support the creator")}>
       <h4>
-        <HandHeart size={20} aria-hidden="true" /> Support the creator
-      </h4>
+        <HandHeart size={20} aria-hidden="true" /> {" "}{tr("Support the creator")}</h4>
       {!chain ? (
         <p className="creator-hint">
-          Gifts open once this quest is listed for support. That happens shortly
-          after it is published.
-        </p>
+          {tr("Gifts open once this quest is listed for support. That happens shortly after it is published.")}</p>
       ) : (
         <>
           <p className="creator-money-facts">
-            {nearText(chain.donations)} NEAR in gifts
-            {chain.access_sold ? ` · ${chain.access_sold} unlocked` : ""}
+            {nearText(chain.donations)} {" "}{tr("NEAR in gifts")}{chain.access_sold ? ` · ${chain.access_sold} unlocked` : ""}
           </p>
           {ownQuest ? (
             <p className="creator-hint">
-              This is your quest. Earnings show in My creations.
-            </p>
+              {tr("This is your quest. Earnings show in My creations.")}</p>
           ) : noAccount ? (
             <p className="creator-hint">
-              Your explorer account is still being prepared. Gifts open when it
-              is ready.
-            </p>
+              {tr("Your explorer account is still being prepared. Gifts open when it is ready.")}</p>
           ) : (
             <>
               {price > 0n && !quest?.access && (
@@ -216,30 +210,26 @@ export function CreatorSupport({
                   onClick={() =>
                     void pay(
                       { kind: "buy", questId },
-                      `Unlocking for ${nearText(chain.price)} NEAR`,
+                      tr("Unlocking for {0} NEAR", { 0: nearText(chain.price) }),
                     )
                   }
                 >
-                  <LockKeyOpen size={20} /> Unlock for {nearText(chain.price)}{" "}
+                  <LockKeyOpen size={20} /> {" "}{tr("Unlock for")}{" "}{nearText(chain.price)}{" "}
                   NEAR
                 </button>
               )}
               {price > 0n && !quest?.access && (
                 <p className="creator-hint">
-                  {100 - treasuryPct}% to the creator, {treasuryPct}% to the
-                  global prize pool.
-                </p>
+                  {100 - treasuryPct}{tr("% to the creator,")}{" "}{treasuryPct}{tr("% to the global prize pool.")}</p>
               )}
               {quest?.access && (
                 <p className="creator-money-facts">
-                  <CheckCircle size={18} aria-hidden="true" /> You unlocked this
-                  quest.
-                </p>
+                  <CheckCircle size={18} aria-hidden="true" /> {" "}{tr("You unlocked this quest.")}</p>
               )}
               <div
                 className="creator-money-chips"
                 role="group"
-                aria-label="Gift amount"
+                aria-label={tr("Gift amount")}
               >
                 {DONATIONS.map((amount) => (
                   <button
@@ -253,11 +243,11 @@ export function CreatorSupport({
                           questId,
                           amount: parseDonation(amount),
                         },
-                        `Sending ${amount} NEAR`,
+                        tr("Sending {0} NEAR", { 0: amount }),
                       )
                     }
                   >
-                    Give {amount} NEAR
+                    {tr("Give")}{" "}{amount} NEAR
                   </button>
                 ))}
               </div>
@@ -269,7 +259,7 @@ export function CreatorSupport({
                     const amount = parseDonation(custom);
                     void pay(
                       { kind: "donate", questId, amount },
-                      `Sending ${custom} NEAR`,
+                      tr("Sending {0} NEAR", { 0: custom }),
                     );
                   } catch (error) {
                     setOutcome({
@@ -279,7 +269,7 @@ export function CreatorSupport({
                   }
                 }}
               >
-                <label htmlFor={`creator-gift-${questId}`}>Other amount</label>
+                <label htmlFor={`creator-gift-${questId}`}>{tr("Other amount")}</label>
                 <input
                   id={`creator-gift-${questId}`}
                   inputMode="decimal"
@@ -292,12 +282,10 @@ export function CreatorSupport({
                   type="submit"
                   disabled={busy || !custom || !chain.open}
                 >
-                  Give
-                </button>
+                  {tr("Give")}</button>
               </form>
               <p className="creator-hint">
-                {paidLine(money.managed)} Gifts go 100% to the creator.
-              </p>
+                {paidLine(money.managed)} {" "}{tr("Gifts go 100% to the creator.")}</p>
             </>
           )}
         </>
@@ -309,7 +297,7 @@ export function CreatorSupport({
           onClick={() => void like()}
         >
           <Heart size={20} weight={liked ? "fill" : "regular"} />
-          {liked ? "Liked" : "Like for free"}
+          {liked ? tr("Liked") : tr("Like for free")}
         </button>
       )}
       <OutcomeLine outcome={outcome} />
@@ -350,27 +338,26 @@ export function CreatorEarningsPanel({ money }: { money: CreatorMoneyBridge }) {
   const busy = outcome.kind === "pending";
   async function withdraw() {
     if (busy || !snap) return;
-    setOutcome({ kind: "pending", text: "Sending your earnings…" });
+    setOutcome({ kind: "pending", text: tr("Sending your earnings…") });
     const ok = await money.pay(
       { kind: "withdraw" },
       { contractId: snap.contractId },
     );
     setOutcome(
       ok
-        ? { kind: "done", text: `${nearText(c?.credit)} NEAR is on its way.` }
-        : { kind: "failed", text: "Nothing moved. You can try again." },
+        ? { kind: "done", text: tr("{0} NEAR is on its way.", { 0: nearText(c?.credit) }) }
+        : { kind: "failed", text: tr("Nothing moved. You can try again.") },
     );
     if (ok) setRefresh((n) => n + 1);
   }
   return (
-    <section className="creator-earnings" aria-label="Your creator earnings">
+    <section className="creator-earnings" aria-label={tr("Your creator earnings")}>
       <div className="creator-heading">
         <h4>
-          <Coins size={20} aria-hidden="true" /> Your earnings
-        </h4>
+          <Coins size={20} aria-hidden="true" /> {" "}{tr("Your earnings")}</h4>
         <button
           className="creator-icon"
-          aria-label="Refresh earnings"
+          aria-label={tr("Refresh earnings")}
           disabled={state === "loading" || busy}
           onClick={() => setRefresh((n) => n + 1)}
         >
@@ -378,56 +365,51 @@ export function CreatorEarningsPanel({ money }: { money: CreatorMoneyBridge }) {
         </button>
       </div>
       {state === "loading" ? (
-        <p className="creator-hint">Checking your earnings…</p>
+        <p className="creator-hint">{tr("Checking your earnings…")}</p>
       ) : state === "error" ? (
-        <p className="creator-hint">Earnings could not load right now.</p>
+        <p className="creator-hint">{tr("Earnings could not load right now.")}</p>
       ) : !money.accountId ? (
         <p className="creator-hint">
-          Your explorer account is still being prepared. Earnings appear once it
-          is ready.
-        </p>
+          {tr("Your explorer account is still being prepared. Earnings appear once it is ready.")}</p>
       ) : (
         <>
           <p className="creator-earnings-total">
-            <strong>{nearText(c?.credit)} NEAR</strong> ready to withdraw
-          </p>
+            <strong>{nearText(c?.credit)} NEAR</strong> {" "}{tr("ready to withdraw")}</p>
           <dl className="creator-earnings-grid">
             <div>
-              <dt>Gifts</dt>
+              <dt>{tr("Gifts")}</dt>
               <dd>{nearText(c?.earned_donations)} NEAR</dd>
             </div>
             <div>
-              <dt>Unlocks</dt>
+              <dt>{tr("Unlocks")}</dt>
               <dd>{nearText(c?.earned_access)} NEAR</dd>
             </div>
             <div>
-              <dt>Daily rounds</dt>
+              <dt>{tr("Daily rounds")}</dt>
               <dd>{nearText(c?.earned_rounds)} NEAR</dd>
             </div>
             <div>
-              <dt>Withdrawn</dt>
+              <dt>{tr("Withdrawn")}</dt>
               <dd>{nearText(c?.withdrawn)} NEAR</dd>
             </div>
           </dl>
           {pending > 0n && (
             <p className="creator-hint">
-              {nearText(c?.pending)} NEAR from today's round settles after the
-              round closes at midnight UTC. Withdraw opens then.
-            </p>
+              {nearText(c?.pending)} {" "}{tr("NEAR from today's round settles after the round closes at midnight UTC. Withdraw opens then.")}</p>
           )}
           <button
             className="primary-button"
             disabled={busy || credit === 0n || pending > 0n}
             onClick={() => void withdraw()}
           >
-            Withdraw {credit > 0n ? `${nearText(c?.credit)} NEAR` : ""}
+            {tr("Withdraw")}{" "}{credit > 0n ? `${nearText(c?.credit)} NEAR` : ""}
           </button>
           <p className="creator-hint">
             {credit === 0n
-              ? "Likes and finished quests earn a share of the daily creator round. Gifts and unlocks add up here."
+              ? tr("Likes and finished quests earn a share of the daily creator round. Gifts and unlocks add up here.")
               : money.managed
-                ? "No fee and no popup; we cover the network cost."
-                : "Your NEAR wallet asks you to approve."}
+                ? tr("No fee and no popup; we cover the network cost.")
+                : tr("Your NEAR wallet asks you to approve.")}
           </p>
         </>
       )}

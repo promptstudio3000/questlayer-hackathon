@@ -42,6 +42,13 @@ import {
   describePlan,
   runtimeEnvText,
 } from "./lib/mainnet-slice.mjs";
+import {
+  CONTRACTS,
+  selectedContracts,
+  readiness,
+  contractsPlan,
+  runContracts,
+} from "./lib/mainnet-contracts.mjs";
 
 const argv = process.argv.slice(2);
 const execute = argv.includes("--execute");
@@ -68,26 +75,44 @@ if (network === "mainnet" && !process.env.AWARD_SIGNER_PATH)
     "Mainnet requires AWARD_SIGNER_PATH (a mainnet-only Ed25519 PEM, never the testnet one).",
   );
 const awardPath = process.env.AWARD_SIGNER_PATH || ".data/award-attestor.pem";
+// The contracts after the minimal slice (docs/MAINNET-PLAN.md §6).
+const selected = selectedContracts(network, process.env.MAINNET_CONTRACTS);
+if (
+  network === "mainnet" &&
+  selected.includes("npc-games") &&
+  !process.env.NPC_TICKET_SIGNER_PATH
+)
+  throw new Error(
+    "Mainnet npc-games requires NPC_TICKET_SIGNER_PATH (a mainnet-only Ed25519 PEM, never the testnet one).",
+  );
+const ticketPath =
+  process.env.NPC_TICKET_SIGNER_PATH ||
+  `.data/npc-games-ticket-signer-${network}.pem`;
 
-// The award signer key: created once (exclusive, mode 600) when executing;
-// a plan never creates it.
-function awardPublicKey() {
-  if (!existsSync(awardPath)) {
-    if (!execute) return "A".repeat(43) + "="; // placeholder for the plan only
-    mkdirSync(dirname(awardPath), { recursive: true, mode: 0o700 });
+// Ed25519 signer keys: created once (exclusive, mode 600) when executing;
+// a plan never creates them and uses a placeholder.
+function signerPublicKey(path, what, placeholder) {
+  if (!existsSync(path)) {
+    if (!execute) return placeholder.repeat(43) + "=";
+    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     const pair = generateKeyPairSync("ed25519");
     writeFileSync(
-      awardPath,
+      path,
       pair.privateKey.export({ type: "pkcs8", format: "pem" }),
-      { flag: "wx", mode: 0o600 },
+      {
+        flag: "wx",
+        mode: 0o600,
+      },
     );
   }
-  privateFile(awardPath, "The award signer key");
-  return createPublicKey(createPrivateKey(readFileSync(awardPath)))
+  privateFile(path, what);
+  return createPublicKey(createPrivateKey(readFileSync(path)))
     .export({ type: "spki", format: "der" })
     .subarray(-32)
     .toString("base64");
 }
+const awardPublicKey = () =>
+  signerPublicKey(awardPath, "The award signer key", "A");
 
 const provider = new JsonRpcProvider({ url: rpcUrl });
 const signer = KeyPairSigner.fromSecretKey(operator.secretKey);
@@ -140,9 +165,67 @@ const plan = slicePlan({
   awardPublicKey: awardPublicKey(),
   stamp: new Date().toISOString().slice(0, 10).replaceAll("-", ""),
 });
+// New contracts: the Linux/CI WASM pinned in contracts/wasm-sha256.json.
+const wasmDir =
+  process.env.CONTRACTS_WASM_DIR ||
+  "contracts/target/wasm32-unknown-unknown/release";
+const pinned = JSON.parse(
+  readFileSync("contracts/wasm-sha256.json", "utf8"),
+).contracts;
+const wasms = {};
+for (const name of selected) {
+  const key = CONTRACTS[name].wasm;
+  const path = `${wasmDir}/${key}.wasm`;
+  if (key && name !== "editions" && existsSync(path))
+    wasms[key] = readFileSync(path);
+}
+// The editions the reviewed collectibles code lists, recorded when the same
+// build went live on testnet (public/native-editions-testnet.json).
+const editionsRecord = JSON.parse(
+  readFileSync("public/native-editions-testnet.json", "utf8"),
+);
+if (editionsRecord.wasmSha256 !== pinned.questlayer_collectibles)
+  throw new Error(
+    "public/native-editions-testnet.json is not the pinned collectibles build; refresh it from testnet first.",
+  );
+const minterFile = `.data/badges-minter-${network}.json`;
+const extras = contractsPlan({
+  network,
+  operatorId: operator.accountId,
+  env: process.env,
+  selected,
+  wasms,
+  pinned,
+  reviewedCollectibles: recorded,
+  awardPublicKey: plan.collectibles.awardPublicKey,
+  ticketPublicKey: selected.includes("npc-games")
+    ? signerPublicKey(ticketPath, "The npc ticket signer key", "B")
+    : null,
+  minterPublicKey: existsSync(minterFile)
+    ? JSON.parse(readFileSync(minterFile, "utf8")).publicKey
+    : null,
+  expectedEditions: editionsRecord.supportedEditions,
+});
 console.log(
   JSON.stringify(
-    { mode: execute ? "execute" : "plan", plan: describePlan(plan) },
+    {
+      mode: execute ? "execute" : "plan",
+      plan: describePlan(plan),
+      newContracts: describePlan({
+        ...extras,
+        contracts: Object.fromEntries(
+          Object.entries(extras.contracts).map(([k, v]) => [
+            k,
+            { ...v, wasm: undefined },
+          ]),
+        ),
+      }),
+      readiness: readiness({
+        network,
+        pinned,
+        reviewedCollectibles: recorded,
+      }),
+    },
     null,
     2,
   ),
@@ -203,6 +286,36 @@ const chain = {
         nearToTransfer: fund,
       }),
     ),
+  async accessKeys(accountId) {
+    const r = await provider.query({
+      request_type: "view_access_key_list",
+      account_id: accountId,
+      finality: "final",
+    });
+    return r.keys.map((k) => k.public_key);
+  },
+  // Signed by the contract account with the operator key the deploy added.
+  addFunctionCallKey: async ({
+    accountId,
+    publicKey,
+    receiverId,
+    methods,
+    allowance,
+  }) =>
+    hashOf(
+      await new Account(accountId, provider, signer).signAndSendTransaction({
+        receiverId: accountId,
+        actions: [
+          actions.addFunctionCallAccessKey(
+            PublicKey.fromString(publicKey),
+            receiverId,
+            methods,
+            allowance,
+          ),
+        ],
+        waitUntil: "FINAL",
+      }),
+    ),
   call: async (contractId, methodName, args, deposit) =>
     hashOf(
       await root.callFunctionRaw({
@@ -234,22 +347,68 @@ const keys = {
   },
 };
 
-const result = await runSlice({ plan, chain, keys, execute, wasm });
-console.log(
-  JSON.stringify({ status: result.status, steps: result.steps }, null, 2),
-);
-if (result.status !== "deployed") {
-  console.log("\nNothing was signed. Re-run with --execute to deploy.");
-  process.exit(0);
-}
 // Mainnet manifests go where the server reads them. A testnet rehearsal must
 // not replace the live testnet manifests, so it writes next to its output.
 const manifestDir =
   process.env.SLICE_MANIFEST_DIR ||
   (network === "mainnet" ? "public" : "output/mainnet-slice-testnet");
+keys.readRecord = (name) =>
+  existsSync(`${manifestDir}/${name}`)
+    ? JSON.parse(readFileSync(`${manifestDir}/${name}`, "utf8"))
+    : null;
+
+// Plan both parts first, so one balance check covers the whole run before
+// anything is signed.
+const slicePreview = await runSlice({
+  plan,
+  chain,
+  keys,
+  execute: false,
+  wasm,
+});
+const extrasPreview = await runContracts({
+  plan: extras,
+  chain,
+  keys,
+  execute: false,
+  collectiblesId: plan.collectibles.accountId,
+  reserved: slicePreview.needed,
+});
+if (!execute) {
+  console.log(
+    JSON.stringify(
+      {
+        status: "planned",
+        steps: [...slicePreview.steps, ...extrasPreview.steps],
+      },
+      null,
+      2,
+    ),
+  );
+  console.log("\nNothing was signed. Re-run with --execute to deploy.");
+  process.exit(0);
+}
+const result = await runSlice({ plan, chain, keys, execute, wasm });
+const extrasResult = await runContracts({
+  plan: extras,
+  chain,
+  keys,
+  execute,
+  collectiblesId: plan.collectibles.accountId,
+});
+console.log(
+  JSON.stringify(
+    { status: result.status, steps: [...result.steps, ...extrasResult.steps] },
+    null,
+    2,
+  ),
+);
 mkdirSync(manifestDir, { recursive: true });
 // A resumed run keeps the transactions recorded by the earlier one.
-for (const [name, body] of Object.entries(result.manifests)) {
+for (const [name, body] of Object.entries({
+  ...result.manifests,
+  ...extrasResult.manifests,
+})) {
   const path = `${manifestDir}/${name}`;
   const before = existsSync(path)
     ? JSON.parse(readFileSync(path, "utf8"))
@@ -273,6 +432,8 @@ for (const [name, body] of Object.entries(result.manifests)) {
   console.log(`wrote ${path}`);
 }
 const envFile = `.data/runtime-${network}.env`;
+// The badges minter and npc ticket keys need no env line: the installer puts
+// them in the mainnet state directory under the names the server looks for.
 writeFileSync(envFile, runtimeEnvText(result.runtimeEnv), { mode: 0o600 });
 console.log(
   `wrote ${envFile} (merge into the VPS runtime.env; key paths are the Mac paths)`,

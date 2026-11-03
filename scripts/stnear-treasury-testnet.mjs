@@ -27,6 +27,7 @@ import {
   quoteSell,
   planHarvest,
   fundingAttachment,
+  fundingAlreadyRecorded,
   sharesFor,
   YOCTO,
 } from "../server/native/stnear-treasury.mjs";
@@ -155,6 +156,8 @@ async function status() {
         account: settings.account,
         contract: settings.contract,
         stnear: near(live.balance),
+        vault: live.vault,
+        parkedInVaultNear: near(live.parked),
         price: near(live.price),
         valueNear: near(live.value),
         principalNear: near(principal),
@@ -354,20 +357,28 @@ async function liquidUnstake(shares, minExpected) {
 
 async function fund(entry) {
   const attached = fundingAttachment(BigInt(entry.received));
-  const r = await account.signAndSendTransaction({
-    receiverId: rewardsId,
-    actions: [
-      actions.functionCall(
-        "fund_rewards",
-        { source: "sponsor", receipt_id: entry.receiptId },
-        50n * 10n ** 12n,
-        attached,
-      ),
-    ],
-    waitUntil: "FINAL",
-  });
-  assert(!failed(r), "fund_rewards failed: " + JSON.stringify(r.status));
-  entry.fundTransaction = txOf(r);
+  let r, already = false;
+  try {
+    r = await account.signAndSendTransaction({
+      receiverId: rewardsId,
+      actions: [
+        actions.functionCall(
+          "fund_rewards",
+          { source: "sponsor", receipt_id: entry.receiptId },
+          50n * 10n ** 12n,
+          attached,
+        ),
+      ],
+      waitUntil: "FINAL",
+    });
+  } catch (error) {
+    if (!fundingAlreadyRecorded(error)) throw error;
+    already = true;
+  }
+  if (r && failed(r) && fundingAlreadyRecorded(r.status)) already = true;
+  assert(already || !failed(r), "fund_rewards failed: " + JSON.stringify(r?.status));
+  // An earlier attempt whose reply was lost already funded this receipt.
+  entry.fundTransaction = already ? "already-funded" : txOf(r);
   entry.rewardsContract = rewardsId;
   save();
   console.log(

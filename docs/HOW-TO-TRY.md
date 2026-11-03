@@ -32,9 +32,10 @@ What to check:
 
 1. Enter a name under "What should we call you?" and press **Start exploring**. The map of Plzeň appears with
    your explorer in the centre (city demo).
-2. Tap a coin near you (in the city demo, tap the map to walk). The coin disappears and the counter ticks.
-3. Press the **Nearest discovery** card (or **Nearest find** for a street find), press **Walk there** (it reads
-   **Walk … m closer** while far away, so press it again), then **Open chest** when in range. Zones that are not
+2. Walk over a coin near you (in the city demo, hold ↑ or W or use the **Demo walk** pad, ←/→ to turn, Shift to run;
+   real play moves only with the phone's GPS). The coin disappears and the counter ticks.
+3. Press the **Nearest discovery** card (or **Nearest find** for a street find), press **Turn toward it** and walk
+   there, then **Open chest** when in range. Zones that are not
    open yet say **Not open yet**; route quests use **Confirm stop N** and **Finish walk**.
 4. The result sheet ("Reward collected") shows the exact XP and item, or "No Aura this time. XP still counts." Press **Try it on**; the same Aura is now on your map character.
    **Share your Aura** opens the phone's share sheet with a PNG card (ghost, both Aura slots, name, edition line);

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import LockedChip from "./LockedChip";
 import "./stake-today.css";
+import { tr } from "./i18n";
 
 export interface StakeVault {
   vault: string;
@@ -111,12 +112,12 @@ const time = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digi
 function ceremonyText(c: StakeCeremony, card: StakeCard) {
   if (c.kind === "tier")
     return {
-      title: `Tier ${c.tier} is yours`,
-      text: `Your matured stake opened Tier ${c.tier} places on the map.${card.patron ? ` You now wear the "${card.patron.title}" title, and it stays yours.` : ""}`,
+      title: tr("Tier {0} is yours", { 0: c.tier }),
+      text: tr("Your matured stake opened Tier {0} places on the map.{1}", { 0: c.tier, 1: card.patron ? ` You now wear the "${card.patron.title}" title, and it stays yours.` : "" }),
     };
   return {
-    title: "Your fuel has matured",
-    text: `${gold(c.amount)} GOLD of new stake now fuels the prize pool${c.epoch != null ? ` (epoch ${c.epoch})` : ""}.`,
+    title: tr("Your fuel has matured"),
+    text: tr("{0} GOLD of new stake now fuels the prize pool{1}.", { 0: gold(c.amount), 1: c.epoch != null ? ` (epoch ${c.epoch})` : "" }),
   };
 }
 
@@ -133,7 +134,7 @@ export function StakeCeremonies({ card, onSeen }: { card: StakeCard; onSeen: (id
               <strong>{t.title}</strong>
               <p>{t.text}</p>
             </div>
-            <button type="button" onClick={() => onSeen(c.id)}>Thank the Keeper</button>
+            <button type="button" onClick={() => onSeen(c.id)}>{tr("Thank the Keeper")}</button>
           </div>
         );
       })}
@@ -146,22 +147,22 @@ function maturityLine(v: StakeVault, card: StakeCard) {
   switch (m.state) {
     case "pending":
       return m.byEpoch != null
-        ? `${gold(m.pending)} GOLD matures by epoch ${m.byEpoch} at the latest (now ${card.epoch}${m.epochsLeft ? `, ${m.epochsLeft} epoch${m.epochsLeft === 1 ? "" : "s"} ≈ ${m.hoursLeft} h` : ", any moment"}).`
-        : `${gold(m.pending)} GOLD is still maturing (E+${card.maturityEpochs}).`;
+        ? tr("{0} GOLD matures by epoch {1} at the latest (now {2}{3}).", { 0: gold(m.pending), 1: m.byEpoch, 2: card.epoch, 3: m.epochsLeft ? `, ${m.epochsLeft} epoch${m.epochsLeft === 1 ? "" : "s"} ≈ ${m.hoursLeft} h` : ", any moment" })
+        : tr("{0} GOLD is still maturing (E+{1}).", { 0: gold(m.pending), 1: card.maturityEpochs });
     case "mature":
-      return `All ${gold(v.principal)} GOLD has matured and fuels the prize pool.`;
+      return tr("All {0} GOLD has matured and fuels the prize pool.", { 0: gold(v.principal) });
     case "uncounted":
-      return "At 0 % prize pool share this stake earns only for you and does not count toward a tier. It still makes you a Staker once it has matured.";
+      return tr("At 0 % prize pool share this stake earns only for you and does not count toward a tier. It still makes you a Staker once it has matured.");
     case "refreshing":
-      return "The vault is waiting for its pool to be read again; maturity shows after the next refresh.";
+      return tr("The vault is waiting for its pool to be read again; maturity shows after the next refresh.");
     case "exiting":
-      return "Exit requested: this stake no longer counts toward a tier.";
+      return tr("Exit requested: this stake no longer counts toward a tier.");
     case "setup":
-      return "Vault setup is not finished yet.";
+      return tr("Vault setup is not finished yet.");
     case "failed":
-      return "Vault setup failed. Open Manage stakes to get the deposit back.";
+      return tr("Vault setup failed. Open Manage stakes to get the deposit back.");
     default:
-      return "No stake in this vault.";
+      return tr("No stake in this vault.");
   }
 }
 
@@ -174,12 +175,11 @@ function PatronRankUp({ rank, onSeen }: { rank: PatronRank; onSeen: () => void }
       <div className="stake-ceremony-item">
         <span className="stake-ceremony-seal" aria-hidden="true">{"✦".repeat(Math.min(rank.rankUp.rank, 3))}</span>
         <div>
-          <strong>Patron rank {rank.rankUp.rank}: {rank.rankUp.name}</strong>
+          <strong>{tr("Patron rank")}{" "}{rank.rankUp.rank}: {rank.rankUp.name}</strong>
           <p>
-            {rank.epochs} epoch{rank.epochs === 1 ? "" : "s"} of matured fuel kept the prize pool lit. The rank is yours to keep, even if you withdraw later.
-          </p>
+            {rank.epochs === 1 ? tr("1 epoch") : tr("{0} epochs", { 0: rank.epochs })} {" "}{tr("of matured fuel kept the prize pool lit. The rank is yours to keep, even if you withdraw later.")}</p>
         </div>
-        <button type="button" onClick={onSeen}>Thank the Keeper</button>
+        <button type="button" onClick={onSeen}>{tr("Thank the Keeper")}</button>
       </div>
     </div>
   );
@@ -189,23 +189,23 @@ function PatronRankUp({ rank, onSeen }: { rank: PatronRank; onSeen: () => void }
 export function PatronRankLadder({ rank }: { rank: PatronRank }) {
   const epochHint = (n: number) => `${n} epoch${n === 1 ? "" : "s"}`;
   return (
-    <div className="patron-rank" aria-label={`Patron rank ${rank.rank} of 5`}>
+    <div className="patron-rank" aria-label={tr("Patron rank {0} of 5", { 0: rank.rank })}>
       <ol className="patron-rank-pips">
         {rank.ladder.map((step) => (
           <li key={step.rank} className={step.rank <= rank.rank ? "on" : ""} title={`${step.name}: ${epochHint(step.epochs)}`}>
             <span aria-hidden="true">{step.rank}</span>
-            <span className="sr-only">{`${step.name}${step.rank <= rank.rank ? " (earned)" : ""}`}</span>
+            <span className="sr-only">{step.rank <= rank.rank ? tr("{0} (earned)", { 0: step.name }) : step.name}</span>
           </li>
         ))}
       </ol>
       <p className="stake-note">
-        {rank.rank ? `Patron rank ${rank.rank} · ${rank.name}. ` : rank.staker ? "Rank 0 · Staker. " : "No patron rank yet. "}
+        {rank.rank ? tr("Patron rank {0} · {1}. ", { 0: rank.rank, 1: rank.name }) : rank.staker ? tr("Rank 0 · Staker. ") : tr("No patron rank yet. ")}
         {rank.next
           ? rank.growing
-            ? `${epochHint(rank.next.left)} more of holding your matured stake makes you ${rank.next.name}.`
-            : `It grows with every epoch you hold matured stake${rank.step === "staker" ? "" : ` at ${rank.step === "tier2" ? "Tier 2" : "Tier 3"}`}; ${rank.next.name} needs ${epochHint(rank.next.epochs)} in all.`
-          : "The highest rank. It stays yours."}
-        {rank.rank > 0 && !rank.growing && rank.next ? " Your rank stays; it only pauses." : ""}
+            ? tr("{0} more of holding your matured stake makes you {1}.", { 0: epochHint(rank.next.left), 1: rank.next.name })
+            : tr("It grows with every epoch you hold matured stake{0}; {1} needs {2} in all.", { 0: rank.step === "staker" ? "" : ` at ${rank.step === "tier2" ? "Tier 2" : "Tier 3"}`, 1: rank.next.name, 2: epochHint(rank.next.epochs) })
+          : tr("The highest rank. It stays yours.")}
+        {rank.rank > 0 && !rank.growing && rank.next ? tr(" Your rank stays; it only pauses.") : ""}
       </p>
     </div>
   );
@@ -221,22 +221,22 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
       {onSeen && <StakeCeremonies card={card} onSeen={onSeen} />}
       {onRankSeen && card.rank && <PatronRankUp rank={card.rank} onSeen={onRankSeen} />}
       <header>
-        <h3 id="stake-today-title">Your stake today</h3>
+        <h3 id="stake-today-title">{tr("Your stake today")}</h3>
         {card.patron && <span className="stake-patron">✦ {card.patron.title}</span>}
         {card.rank && card.rank.name && (
           <span className="stake-patron stake-rank">
-            Rank {card.rank.rank} · {card.rank.name}
+            {tr("Rank")}{" "}{card.rank.rank} · {card.rank.name}
           </span>
         )}
       </header>
       {card.rank && (card.rank.rank > 0 || card.hasPosition) && <PatronRankLadder rank={card.rank} />}
       {!card.hasPosition ? (
         <>
-          <p>No stake yet. A small stake matures in {card.maturityEpochs} epochs (about {card.maturityEpochs * card.epochHours} h) and then fuels the prize pool.</p>
+          <p>{tr("No stake yet. A small stake matures in")}{" "}{card.maturityEpochs} {" "}{tr("epochs (about")}{" "}{card.maturityEpochs * card.epochHours} {" "}{tr("h) and then fuels the prize pool.")}</p>
           {card.stakeToday && !card.stakeToday.open && (
             <LockedChip
-              label="Your stake today"
-              perk="Daily numbers from your vault and the Keeper's inner vault"
+              label={tr("Your stake today")}
+              perk={tr("Daily numbers from your vault and the Keeper's inner vault")}
               gate={{ step: "staker", missing: card.stakeToday.missing, stakeNear: card.stakeToday.stakeNear }}
             />
           )}
@@ -245,36 +245,35 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
         <>
           {card.stakeToday && !card.stakeToday.open ? (
             <LockedChip
-              label="Today's numbers"
-              perk="What your vault kept for you and gave to the prize pool today"
+              label={tr("Today's numbers")}
+              perk={tr("What your vault kept for you and gave to the prize pool today")}
               gate={{ step: "staker", missing: card.stakeToday.missing, stakeNear: card.stakeToday.stakeNear }}
             />
           ) : (
           <>
           <dl className="stake-today-numbers">
             <div>
-              <dt>Kept for you</dt>
+              <dt>{tr("Kept for you")}</dt>
               <dd>+{gold(sumField(card, (v) => v.today?.retained))} GOLD</dd>
             </div>
             <div>
-              <dt>Given to the prize pool</dt>
+              <dt>{tr("Given to the prize pool")}</dt>
               <dd>+{gold(sumField(card, (v) => v.today?.given))} GOLD</dd>
             </div>
             <div>
-              <dt>Growing in the pool</dt>
+              <dt>{tr("Growing in the pool")}</dt>
               <dd>{gold(sumField(card, (v) => v.totals?.inPool))} GOLD</dd>
             </div>
           </dl>
           {since != null && (
             <p className="stake-note">
-              {fromYesterday ? `Since the Keeper's last reading (${new Date(since).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}).` : `Counting from ${time(since)}, the Keeper's first reading today.`} Yield arrives when the vault is harvested, so some days show 0.
-            </p>
+              {fromYesterday ? tr("Since the Keeper's last reading ({0}).", { 0: new Date(since).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" }) }) : tr("Counting from {0}, the Keeper's first reading today.", { 0: time(since) })} {" "}{tr("Yield arrives when the vault is harvested, so some days show 0.")}</p>
           )}
           {card.coins && (
             <p className="stake-coins">
               {card.coins.funding === "realized_yield"
-                ? `Your vaults have paid ${gold(card.coins.givenPaid)} GOLD into the global prize pool: the value of ${card.coins.backed} of today's ${card.coins.coinCount} coins. The coins stay shared, first come first served.`
-                : `Today's ${card.coins.coinCount} coins are sponsor-funded. The ${gold(card.coins.givenPaid)} GOLD your vaults paid in waits in the pot for coming days.`}
+                ? tr("Your vaults have paid {0} GOLD into the global prize pool: the value of {1} of today's {2} coins. The coins stay shared, first come first served.", { 0: gold(card.coins.givenPaid), 1: card.coins.backed, 2: card.coins.coinCount })
+                : tr("Today's {0} coins are sponsor-funded. The {1} GOLD your vaults paid in waits in the pot for coming days.", { 0: card.coins.coinCount, 1: gold(card.coins.givenPaid) })}
             </p>
           )}
           </>
@@ -290,8 +289,8 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
             ))}
           </ul>
           <p className="stake-note">
-            {card.tier > 1 ? `Tier ${card.tier}` : card.staker?.staker ? "Staker" : "Free explorer"}
-            {card.nextTier ? ` · ${gold(card.nextTier.missing, 0)} GOLD more matured fuel opens Tier ${card.nextTier.tier}.` : " · every place on the map is open to you."}
+            {card.tier > 1 ? tr("Tier {0}", { 0: card.tier }) : card.staker?.staker ? tr("Staker") : tr("Free explorer")}
+            {card.nextTier ? tr(" · {0} GOLD more matured fuel opens Tier {1}.", { 0: gold(card.nextTier.missing, 0), 1: card.nextTier.tier }) : tr(" · every place on the map is open to you.")}
           </p>
         </>
       )}
@@ -303,13 +302,13 @@ export function InnerVault({ card }: { card: StakeCard }) {
   const { inner } = card;
   return (
     <section className={`inner-vault${inner.open ? " open" : ""}`} aria-labelledby="inner-vault-title">
-      <h3 id="inner-vault-title">{inner.open ? "The inner vault" : "🔒 The inner vault"}</h3>
+      <h3 id="inner-vault-title">{inner.open ? tr("The inner vault") : tr("🔒 The inner vault")}</h3>
       {inner.open ? (
-        <p className="stake-note">Patrons only. Stories, never better odds.</p>
+        <p className="stake-note">{tr("Patrons only. Stories, never better odds.")}</p>
       ) : (
         <LockedChip
-          label="The inner vault"
-          perk="Patron story chapters"
+          label={tr("The inner vault")}
+          perk={tr("Patron story chapters")}
           gate={{ step: inner.gate?.step, level: inner.gate?.level, missing: inner.missing, stakeNear: inner.stakeNear }}
         />
       )}
@@ -328,23 +327,23 @@ export function InnerVault({ card }: { card: StakeCard }) {
 
 function PatronPath({ path, open }: { path: NonNullable<StakeCard["inner"]["path"]>; open: boolean }) {
   const reward = path.edition.earned
-    ? `You wear the ${path.edition.name} Aura.`
+    ? tr("You wear the {0} Aura.", { 0: path.edition.name })
     : path.edition.available
-      ? `Finish it for the ${path.edition.name} Aura (cosmetic, once per player).`
-      : "Finish it for the patron edition Aura (cosmetic, arrives with the next collectibles upgrade).";
+      ? tr("Finish it for the {0} Aura (cosmetic, once per player).", { 0: path.edition.name })
+      : tr("Finish it for the patron edition Aura (cosmetic, arrives with the next collectibles upgrade).");
   return (
-    <div className="patron-path" aria-label="Patron's Path">
+    <div className="patron-path" aria-label={tr("Patron's Path")}>
       <h4>
-        Patron's Path · {path.done}/{path.of}
+        {tr("Patron's Path ·")}{" "}{path.done}/{path.of}
       </h4>
       <p className="stake-note">
         {path.next && !path.next.open
-          ? `Next step needs: ${path.next.missing.join(" · ")}. `
+          ? tr("Next step needs: {0}. ", { 0: path.next.missing.join(" · ") })
           : open || path.next?.open
-            ? "Take a patron walk from a quest giver or a patron chapter from a storyteller, one each per day. "
-            : "Patron walks and chapters open for stakers. "}
+            ? tr("Take a patron walk from a quest giver or a patron chapter from a storyteller, one each per day. ")
+            : tr("Patron walks and chapters open for stakers. ")}
         {reward}
-        {path.auraGate && !path.auraGate.open && !path.edition.earned ? ` The Aura needs: ${path.auraGate.missing.join(" · ")}.` : ""}
+        {path.auraGate && !path.auraGate.open && !path.edition.earned ? tr(" The Aura needs: {0}.", { 0: path.auraGate.missing.join(" · ") }) : ""}
       </p>
       <ol>
         {path.story.map((c) => (

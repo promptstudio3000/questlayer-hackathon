@@ -107,7 +107,10 @@ import {
 } from "./native-vault-quote";
 import "./styles.css";
 import "./theme-accents.css";
+import "./compact-ui.css";
 import { HudXpRing } from "./HudXpRing";
+import { RewardBursts } from "./RewardBursts";
+import { pushBurst, type RewardBurst } from "./reward-burst";
 import type { NativeTradeRequest } from "./types";
 import type { NativeAuraClaim } from "./types";
 import { nativeAppearanceItems } from "./native-appearance";
@@ -137,7 +140,6 @@ import {
   Plus,
   Minus,
   X,
-  ArrowRight,
   ArrowUpRight,
   Sparkle,
   Coins,
@@ -145,7 +147,6 @@ import {
   Clock,
   Check,
   Leaf,
-  ArrowLeft,
   ChatCircle,
   PaperPlane,
   SignOut,
@@ -171,7 +172,10 @@ import {
   SpeakerHigh,
   PersonSimpleRun,
   BookOpen,
+  MagnifyingGlass,
 } from "@phosphor-icons/react";
+import { ArrowRight, ArrowLeft } from "./dir-icons";
+import { ArrowRight as PhArrowRight } from "@phosphor-icons/react";
 import { Details, ScreenTabPanel, ScreenTabs } from "./ScreenTabs";
 import {
   BAG_TABS,
@@ -181,6 +185,7 @@ import {
   ProfileHero,
   ProfileTile,
   SettingsSwitch,
+  LanguageSetting,
   communityTabOf,
   creatorSection,
   profileTabOf,
@@ -218,7 +223,7 @@ import {
   SOCIAL_CONTRACT_ID,
   onNearNetwork,
 } from "./near-network.ts";
-import { nearestDiscovery } from "./nearest-discovery.ts";
+import { nearestDiscovery, poiQuestOutlook } from "./nearest-discovery.ts";
 import { FirstSessionCoach, useFirstSession } from "./FirstSession";
 import type { FirstStepId } from "./first-session";
 import {
@@ -230,12 +235,11 @@ import {
   subscribeFeedback,
   type FeedbackPreferences,
 } from "./feedback";
-import {
-  WALK_CAP_M,
-  WALK_STEP_MS,
-  cappedWalkTarget,
-  walkSteps,
-} from "./map-motion.ts";
+import LandmarkClue from "./LandmarkClue";
+import { headingTo, metersBetween } from "./map-motion.ts";
+import { useDemoWalk } from "./useDemoWalk";
+import { DemoControls } from "./DemoControls";
+import { tr } from "./i18n";
 
 type Tab =
   | "explore"
@@ -251,11 +255,13 @@ type Tab =
   | "expeditions"
   | "fuel";
 const HOME = { lat: 49.74745, lng: 13.3774 };
+/** A searched spot stands for its H3 res-7 cell (≈1.2 km edge) on the server. */
+const SEARCH_SPACING_M = 650;
 const nav = [
-  { id: "explore", label: "Explore", icon: Compass },
-  { id: "inventory", label: "Inventory", icon: Backpack },
-  { id: "community", label: "Community", icon: UsersThree },
-  { id: "settings", label: "Profile", icon: UserCircle },
+  { id: "explore", get label() { return tr("Explore"); }, icon: Compass },
+  { id: "inventory", get label() { return tr("Inventory"); }, icon: Backpack },
+  { id: "community", get label() { return tr("Community"); }, icon: UsersThree },
+  { id: "settings", get label() { return tr("Profile"); }, icon: UserCircle },
 ] as const;
 function navigationActive(tab: Tab, id: string) {
   return (
@@ -267,15 +273,15 @@ function navigationActive(tab: Tab, id: string) {
   );
 }
 const rarityNames: Record<string, string> = {
-  common: "Common",
-  rare: "Rare",
-  epic: "Epic",
-  legendary: "Legendary",
+  get common() { return tr("Common"); },
+  get rare() { return tr("Rare"); },
+  get epic() { return tr("Epic"); },
+  get legendary() { return tr("Legendary"); },
 };
 function distanceLabel(m: number) {
   if (!Number.isFinite(m)) return "";
-  if (m < 1000) return `${Math.round(m / 10) * 10} m away`;
-  return `${(m / 1000).toFixed(m < 10000 ? 1 : 0)} km away`;
+  if (m < 1000) return tr("{0} m away", { 0: Math.round(m / 10) * 10 });
+  return tr("{0} km away", { 0: (m / 1000).toFixed(m < 10000 ? 1 : 0) });
 }
 function units(v: string) {
   const n = Number(v.replace(",", "."));
@@ -321,11 +327,14 @@ export default function App() {
   };
   const worldOwner = useRef<string | undefined>(undefined);
   const [player, setPlayer] = useState<Player | null>(null),
+    [clueChoice, setClueChoice] = useState<Record<string, string>>({}),
     [loaded, setLoaded] = useState(false),
     [meUnreachable, setMeUnreachable] = useState(false),
     [worldData, setWorld] = useState<World | null>(null),
     [position, setPosition] = useState<Point>(HOME),
     [fix, setFix] = useState<Fix | null>(null),
+    // Course over ground from the GPS, when the device reports one.
+    [gpsCourse, setGpsCourse] = useState<number | null>(null),
     [arena, setArena] = useState(true),
     [globe, setGlobe] = useState(false),
     [overview, setOverview] = useState(false),
@@ -451,7 +460,7 @@ export default function App() {
         setNativeError(
           error instanceof Error
             ? error.message
-            : "Your secured collection could not load. Try again in a moment.",
+            : tr("Your secured collection could not load. Try again in a moment."),
         );
       }
       throw error;
@@ -494,7 +503,7 @@ export default function App() {
     else
       pending?.reject(
         Object.assign(
-          new Error("Account link cancelled. You can keep exploring."),
+          new Error(tr("Account link cancelled. You can keep exploring.")),
           {
             code: "WALLET_CANCELLED",
           },
@@ -756,6 +765,28 @@ export default function App() {
   const levelTable = useLevelTable();
   const hudProgress =
     hudXp === null ? null : levelProgress(Number(hudXp), levelTable);
+  // Floating reward feedback over the map (src/RewardBursts.tsx).
+  const [bursts, setBursts] = useState<RewardBurst[]>([]);
+  const burst = (b: Omit<RewardBurst, "id" | "until">) =>
+    setBursts((list) => pushBurst(list, b, Date.now()));
+  useEffect(() => {
+    if (!bursts.length) return;
+    const t = setTimeout(
+      () => setBursts((list) => list.filter((b) => b.until > Date.now())),
+      Math.max(50, Math.min(...bursts.map((b) => b.until)) - Date.now()),
+    );
+    return () => clearTimeout(t);
+  }, [bursts]);
+  // Level ups get their own burst; the first read of a player never does.
+  const shownLevel = useRef<{ player?: string; level?: number }>({});
+  useEffect(() => {
+    const level = hudProgress?.level;
+    if (!player || level === undefined || nativePlay) return;
+    const seen = shownLevel.current;
+    if (seen.player === player.id && seen.level !== undefined && level > seen.level)
+      burst({ tone: "level", title: tr("Level {0}!", { 0: level }), detail: tr("Keep exploring") });
+    shownLevel.current = { player: player.id, level };
+  }, [hudProgress?.level, player?.id, nativePlay]);
   const nextWorldRefresh = useRef(0),
     collecting = useRef(new Set<string>()),
     collectionRun = useRef<AbortController | null>(null),
@@ -824,7 +855,7 @@ export default function App() {
       .then((r) => {
         if (!r.earned?.length) return;
         notify(
-          `Badge earned: ${r.earned.map((b) => `${b.icon} ${b.nameCs || b.name}`).join(", ")}`,
+          tr("Badge earned: {0}", { 0: r.earned.map((b) => `${b.icon} ${b.nameCs || b.name}`).join(", ") }),
         );
         window.dispatchEvent(new Event("questlayer:badges"));
       })
@@ -860,7 +891,7 @@ export default function App() {
         return undefined;
       cue("error");
       notify(
-        e instanceof Error ? e.message : "Something went wrong. Try again.",
+        e instanceof Error ? e.message : tr("Something went wrong. Try again."),
         true,
       );
     } finally {
@@ -898,7 +929,16 @@ export default function App() {
       if (playerReads.current.isCurrent(token, ownerContext())) setLoaded(true);
     }
   }
-  async function loadWorld(location: Point, asArena: boolean) {
+  // Spots of this city world already searched for quests (H3 cells, server).
+  const searchedSpots = useRef<{ worldId: string; points: Point[] }>({
+    worldId: "",
+    points: [],
+  });
+  async function loadWorld(
+    location: Point,
+    asArena: boolean,
+    explore?: Point,
+  ) {
     collectionRun.current?.abort();
     collectionRun.current = null;
     const token = worldReads.current.begin(
@@ -907,12 +947,36 @@ export default function App() {
     worldLoading.current = true;
     setBusy("world");
     try {
-      const w = await api<World>("/world", { location, arena: asArena });
+      const w = await api<World>("/world", {
+        location,
+        arena: asArena,
+        near: explore ? latest.current.position : location,
+        ...(explore ? { explore } : {}),
+      });
       if (
         worldReads.current.isCurrent(token, worldContext("replace")) &&
         w.arena === asArena
       ) {
         worldOwner.current = latest.current.player?.id;
+        const spots = searchedSpots.current;
+        if (spots.worldId !== w.id) {
+          spots.worldId = w.id;
+          spots.points = [];
+        }
+        spots.points.push(explore || location);
+        if (explore) {
+          const before = latest.current.world;
+          const added =
+            before?.id === w.id
+              ? w.zones.filter((z) => !before.zones.some((b) => b.id === z.id))
+                  .length
+              : 0;
+          notify(
+            added
+              ? tr("{0} new quest places found here.", { 0: added })
+              : tr("No new quests in this spot right now."),
+          );
+        }
         setWorld(w);
       }
     } catch (e) {
@@ -920,7 +984,7 @@ export default function App() {
         notify(
           e instanceof Error
             ? e.message
-            : "This area could not load. Try again in a moment.",
+            : tr("This area could not load. Try again in a moment."),
           true,
         );
     } finally {
@@ -941,8 +1005,10 @@ export default function App() {
       return;
     const token = worldReads.current.begin(worldContext("refresh"));
     try {
+      // Only the coins around the player (docs/PERFORMANCE-BUDGET.md).
+      const nearAt = `${state.position.lat.toFixed(5)},${state.position.lng.toFixed(5)}`;
       const w = await api<World>(
-        `/world?id=${encodeURIComponent(state.world.id)}`,
+        `/world?id=${encodeURIComponent(state.world.id)}&near=${nearAt}`,
       );
       if (
         worldReads.current.isCurrent(token, worldContext("refresh")) &&
@@ -1027,8 +1093,15 @@ export default function App() {
         w ? { ...w, coins: w.coins.filter((c) => c.id !== d.id) } : w,
       );
     });
+    // Every explorer's discovery is broadcast: coalesce bursts into one map
+    // refresh so a busy city does not multiply world reads per client.
+    let questRefresh: ReturnType<typeof setTimeout> | null = null;
     s.addEventListener("quest", () => {
-      if (latest.current.player?.id === owner) void refreshWorld();
+      if (latest.current.player?.id !== owner || questRefresh) return;
+      questRefresh = setTimeout(() => {
+        questRefresh = null;
+        if (latest.current.player?.id === owner) void refreshWorld();
+      }, 2500);
     });
     s.addEventListener("market", () => void me());
     const sync = setInterval(() => {
@@ -1039,8 +1112,46 @@ export default function App() {
     return () => {
       s.close();
       clearInterval(sync);
+      if (questRefresh) clearTimeout(questRefresh);
     };
   }, [player?.id]);
+  // City worlds add POI quests per area searched (server H3 cells). Walking
+  // far from every searched spot searches the new one; a moved map offers a
+  // "Search this area" button for the spot in the middle of the screen.
+  const [mapCenter, setMapCenter] = useState<Point | null>(null);
+  const exploreAt = useRef(0);
+  const searchedNear = (p: Point, within: number) =>
+    searchedSpots.current.worldId === world?.id &&
+    searchedSpots.current.points.some((s) => meters(s, p) < within);
+  useEffect(() => {
+    if (!player || !world?.cityId || nativePlay || busy === "world") return;
+    if (searchedNear(position, SEARCH_SPACING_M)) return;
+    if (Date.now() - exploreAt.current < 20_000) return;
+    exploreAt.current = Date.now();
+    void loadWorld(arena ? HOME : position, arena, position);
+  }, [player?.id, world?.id, position, nativePlay]);
+  const searchHere =
+    !!player &&
+    !!world?.cityId &&
+    !nativePlay &&
+    !globe &&
+    tab === "explore" &&
+    !!mapCenter &&
+    busy !== "world" &&
+    !searchedNear(mapCenter, SEARCH_SPACING_M)
+      ? mapCenter
+      : null;
+  // The world carries only nearby coins: fetch the next ring once the player
+  // has walked (or jumped) a third of the way to its edge.
+  const nearRefreshAt = useRef(0);
+  useEffect(() => {
+    const ring = world?.coinsNear;
+    if (!player || !ring) return;
+    if (meters(position, ring) < ring.radiusM / 3) return;
+    if (Date.now() - nearRefreshAt.current < 3000) return;
+    nearRefreshAt.current = Date.now();
+    void refreshWorld();
+  }, [player?.id, world?.coinsNear, position]);
   useEffect(() => {
     if (!player) return;
     const t = setInterval(() => {
@@ -1085,6 +1196,7 @@ export default function App() {
               player: Player;
               value: number;
               xp?: number;
+              find?: boolean;
               alreadyClaimed?: boolean;
             }>(
               "/coins/claim",
@@ -1107,6 +1219,12 @@ export default function App() {
             );
             if (!result.alreadyClaimed && !latest.current.nativePlay) {
               cue("coin");
+              const paid = `+${result.xp ?? 0} XP · +${gold(result.value, 2)} GOLD`;
+              burst(
+                result.find
+                  ? { tone: "find", title: tr("Street find!"), detail: paid }
+                  : { tone: "coin", title: paid },
+              );
               pickupFeedback.confirm(
                 demoPickupScope(state.player.id, state.world.id, state.arena),
                 {
@@ -1182,56 +1300,6 @@ export default function App() {
     };
   }, [player?.id]);
   useEffect(() => {
-    if (!arena || nativePlay || !player) return;
-    const key = (e: KeyboardEvent) => {
-      if (
-        e.defaultPrevented ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.altKey ||
-        document.querySelector("dialog[open]") ||
-        (e.target as HTMLElement).closest(
-          "button,a,main,form,[contenteditable=true]",
-        )
-      )
-        return;
-      if (
-        (e.target as HTMLElement).matches("input,textarea,select") ||
-        ![
-          "ArrowUp",
-          "ArrowDown",
-          "ArrowLeft",
-          "ArrowRight",
-          "w",
-          "a",
-          "s",
-          "d",
-        ].includes(e.key)
-      )
-        return;
-      e.preventDefault();
-      stopWalk();
-      setPosition((p) => ({
-        lat:
-          p.lat +
-          (["ArrowUp", "w"].includes(e.key)
-            ? 0.000065
-            : ["ArrowDown", "s"].includes(e.key)
-              ? -0.000065
-              : 0),
-        lng:
-          p.lng +
-          (["ArrowRight", "d"].includes(e.key)
-            ? 0.0001
-            : ["ArrowLeft", "a"].includes(e.key)
-              ? -0.0001
-              : 0),
-      }));
-    };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, [arena, nativePlay, player?.id]);
-  useEffect(() => {
     if (!presence || !player) return;
     if (document.visibilityState !== "visible") {
       setPresence(false);
@@ -1253,7 +1321,7 @@ export default function App() {
           if (!active) return;
           if (!r.enabled) {
             setPresence(false);
-            notify("Position sharing ended. Share again to stay visible.");
+            notify(tr("Position sharing ended. Share again to stay visible."));
           } else if (r.expiresAt) setPresenceUntil(r.expiresAt);
         })
         .catch(() => {
@@ -1262,7 +1330,7 @@ export default function App() {
           if (!active || !renew) return;
           setPresence(false);
           notify(
-            "Your position could not be shared. Check your connection and try again.",
+            tr("Your position could not be shared. Check your connection and try again."),
             true,
           );
         });
@@ -1301,19 +1369,53 @@ export default function App() {
     },
     [],
   );
-  const walkTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const stopWalk = () => {
-    if (walkTimer.current !== null) clearInterval(walkTimer.current);
-    walkTimer.current = null;
-  };
-  useEffect(() => stopWalk, []);
+  // City demo only: the pad / arrows / WASD walk the explorer the way it
+  // faces. Real play has no manual movement; the position is the GPS fix.
+  const demoWalk = useDemoWalk({
+    enabled: !!player && arena && !nativePlay,
+    setPosition,
+    onWalk: () => {
+      setOverview(false);
+      setFollow(true);
+    },
+  });
+  const [demoTarget, setDemoTarget] = useState<
+    (Point & { label: string; coinId?: string; questId?: string }) | null
+  >(null);
+  // A target that is gone (coin collected, quest done) stops being pointed at;
+  // before, the pad kept saying "Street find" after the pickup.
   useEffect(() => {
-    if (!arena || nativePlay) stopWalk();
+    if (!demoTarget || !world) return;
+    const gone =
+      (demoTarget.coinId &&
+        !world.coins.some((c) => c.id === demoTarget.coinId && !c.claimant)) ||
+      (demoTarget.questId &&
+        world.quests.find((q) => q.id === demoTarget.questId)?.completed);
+    if (gone) return setDemoTarget(null);
+    // A trail moves on to its next stop: point there.
+    const quest = demoTarget.questId
+      ? world.quests.find((q) => q.id === demoTarget.questId)
+      : null;
+    const at = quest ? quest.nextPoint || quest : null;
+    if (at && (at.lat !== demoTarget.lat || at.lng !== demoTarget.lng))
+      setDemoTarget({ ...demoTarget, lat: at.lat, lng: at.lng });
+  }, [world, demoTarget]);
+  useEffect(() => {
+    if (!arena || nativePlay) setDemoTarget(null);
   }, [arena, nativePlay]);
+  useEffect(() => {
+    // Arriving within a few metres settles the explorer on the spot, so thin
+    // path zones still count in the demo. GPS play never snaps.
+    if (demoTarget && metersBetween(position, demoTarget) < 3) {
+      if (arena && !nativePlay)
+        setPosition({ lat: demoTarget.lat, lng: demoTarget.lng });
+      setDemoTarget(null);
+    }
+  }, [position, demoTarget]);
   const [streetFindTarget, setStreetFindTarget] = useState<string | null>(null);
   function goToStreetFind(coin: { id: string; lat: number; lng: number }) {
     setStreetFindTarget(coin.id);
-    if (arena && !nativePlay) move(coin);
+    if (arena && !nativePlay) faceToward(coin, tr("Street find"), { coinId: coin.id });
     else {
       setFollow(false);
       setOverview(false);
@@ -1364,7 +1466,8 @@ export default function App() {
       }
       setSheetExpanded(false);
       if (coin.find) goToStreetFind(coin);
-      else if (arena) move(coin);
+      else if (arena)
+        faceToward(coin, coin.find ? tr("Street find") : tr("Coin"), { coinId: coin.id });
       else setFollow(false);
       return;
     }
@@ -1390,7 +1493,7 @@ export default function App() {
         updateOwnedPlayer(r.player);
         setSheetExpanded(false);
         setFollow(true);
-        notify(`Equipped ${aura.name}. Your new glow is on the map.`);
+        notify(tr("Equipped {0}. Your new glow is on the map.", { 0: aura.name }));
       });
       return;
     }
@@ -1402,21 +1505,19 @@ export default function App() {
       else setTab("inventory");
     }
   }
-  function move(p: Point) {
+  // Demo: turn the explorer toward a place; holding Forward walks there.
+  function faceToward(
+    p: Point,
+    label: string,
+    ref: { coinId?: string; questId?: string } = {},
+  ) {
     if (!arena || nativePlay) return;
-    stopWalk();
     setOverview(false);
     setFollow(true);
-    const from = latest.current.position,
-      { point } = cappedWalkTarget(from, p),
-      steps = prefersReducedMotion() ? [point] : walkSteps(from, point);
-    setPosition(steps.shift()!);
-    if (!steps.length) return;
-    walkTimer.current = setInterval(() => {
-      const next = steps.shift();
-      if (next) setPosition(next);
-      if (!steps.length) stopWalk();
-    }, WALK_STEP_MS);
+    // The pad lives on the map: fold the sheet so it is there to walk with.
+    setSheetExpanded(false);
+    demoWalk.face(headingTo(latest.current.position, p));
+    setDemoTarget({ lat: p.lat, lng: p.lng, label, ...ref });
   }
   function chooseNativeQuest(index: number) {
     const q = nativeGame.state?.day?.quests.find((q) => q.index === index);
@@ -1477,6 +1578,7 @@ export default function App() {
     if (gps.current !== null) navigator.geolocation.clearWatch(gps.current);
     gps.current = null;
     setFix(null);
+    setGpsCourse(null);
     setArena(true);
     setPosition(HOME);
     void loadWorld(HOME, true);
@@ -1484,7 +1586,7 @@ export default function App() {
   async function locate() {
     if (!navigator.geolocation) {
       notify(
-        "This browser cannot share your location. Keep exploring in the city demo.",
+        tr("This browser cannot share your location. Keep exploring in the city demo."),
         true,
       );
       return;
@@ -1521,11 +1623,18 @@ export default function App() {
             };
             setPosition(f);
             setFix(f);
+            const course = p.coords.heading;
+            if (
+              course !== null &&
+              Number.isFinite(course) &&
+              (p.coords.speed ?? 0) > 0.7
+            )
+              setGpsCourse(course);
           },
           () => {
             if (current())
               notify(
-                "Waiting for a fresh GPS fix. Step into the open or try again in a moment.",
+                tr("Waiting for a fresh GPS fix. Step into the open or try again in a moment."),
                 true,
               );
           },
@@ -1536,7 +1645,7 @@ export default function App() {
         if (!current()) return;
         setBusy("");
         notify(
-          "Allow location access, or keep exploring in the city demo.",
+          tr("Allow location access, or keep exploring in the city demo."),
           true,
         );
       },
@@ -1565,7 +1674,7 @@ export default function App() {
         response,
       });
       setPlayer(verified.player);
-      notify("Your explorer is secured with a passkey.");
+      notify(tr("Your explorer is secured with a passkey."));
     });
   }
   async function resolveSigner(): Promise<{
@@ -1600,7 +1709,7 @@ export default function App() {
           signInWithoutAddKey: true,
         },
         footerBranding: {
-          heading: `QuestLayer · ${NETWORK_LABEL}`,
+          heading: tr("QuestLayer · {0}", { 0: NETWORK_LABEL }),
           link: "https://near.org",
           linkText: "NEAR Protocol",
         },
@@ -1627,7 +1736,7 @@ export default function App() {
     const accounts = await wallet.getAccounts();
     if (!accounts[0])
       throw new Error(
-        "The wallet did not return an account. Try again or pick another wallet.",
+        tr("The wallet did not return an account. Try again or pick another wallet."),
       );
     return { wallet, accountId: accounts[0].accountId };
   }
@@ -1637,7 +1746,7 @@ export default function App() {
     if (options.signIn) {
       options.name = options.name?.trim() || "Explorer";
       if (options.name.length < 2 || options.name.length > 24) {
-        notify("Pick a name between 2 and 24 characters.", true);
+        notify(tr("Pick a name between 2 and 24 characters."), true);
         return;
       }
     }
@@ -1675,9 +1784,9 @@ export default function App() {
       notify(
         options.signIn
           ? r.returning
-            ? "Welcome back, explorer. Your account restored your progress."
-            : "Your explorer is ready. Practice GOLD stays separate from secured rewards."
-          : "Account linked. Practice GOLD stays separate from secured rewards.",
+            ? tr("Welcome back, explorer. Your account restored your progress.")
+            : tr("Your explorer is ready. Practice GOLD stays separate from secured rewards.")
+          : tr("Account linked. Practice GOLD stays separate from secured rewards."),
       );
     });
   }
@@ -1691,8 +1800,8 @@ export default function App() {
       if (account) await refreshNative(true);
       notify(
         account
-          ? "Your secured outfit is on the map."
-          : "Your practice outfit is on the map.",
+          ? tr("Your secured outfit is on the map.")
+          : tr("Your practice outfit is on the map."),
       );
     });
   }
@@ -2011,13 +2120,13 @@ export default function App() {
         );
         if (response.confirmed) {
           updateOwnedPlayer(response.player);
-          notify("Your explorer profile is now public.");
+          notify(tr("Your explorer profile is now public."));
           return true;
         }
         await new Promise((resolve) => setTimeout(resolve, 800));
       }
       notify(
-        "Profile update sent. Refresh your public profile to see it confirmed.",
+        tr("Profile update sent. Refresh your public profile to see it confirmed."),
       );
       return false;
     });
@@ -2045,9 +2154,9 @@ export default function App() {
       notify(
         confirmed
           ? kind === "note"
-            ? "Your note is now a public record."
-            : "Your public record is marked removed."
-          : "Record sent. Refresh in a moment to see it confirmed.",
+            ? tr("Your note is now a public record.")
+            : tr("Your public record is marked removed.")
+          : tr("Record sent. Refresh in a moment to see it confirmed."),
       );
       return confirmed;
     });
@@ -2069,7 +2178,7 @@ export default function App() {
         api,
       });
       await invisible.refresh();
-      notify("Recovery passkey saved. Use it to restore on a new device.");
+      notify(tr("Recovery passkey saved. Use it to restore on a new device."));
       return true;
     });
     return ok === true;
@@ -2092,7 +2201,7 @@ export default function App() {
         const r = await signOutOtherSessions({ deviceKey, accountId, api });
         signedOut = ` ${r.revokedSessions} other session(s) signed out.`;
       }
-      notify(`Device revoked.${signedOut}`);
+      notify(tr("Device revoked.{0}", { 0: signedOut }));
       return true;
     });
     return ok === true;
@@ -2110,7 +2219,7 @@ export default function App() {
       setPlayer(restored.player);
       setLoaded(true);
       await invisible.ensure();
-      notify("This device can now play with your explorer.");
+      notify(tr("This device can now play with your explorer."));
       return true;
     });
     return ok === true;
@@ -2148,7 +2257,7 @@ export default function App() {
       );
       if (!result.ok) throw Error("Sessions could not be updated. Try again.");
       notify(
-        `${result.revokedSessions} other session(s) signed out. This browser stays signed in.`,
+        tr("{0} other session(s) signed out. This browser stays signed in.", { 0: result.revokedSessions }),
       );
       return true;
     });
@@ -2165,7 +2274,7 @@ export default function App() {
           "This level reward is not confirmed yet. Check again in a moment.",
         );
       await refreshNative(true);
-      notify("Reward secured. Find it in your Secured collection.");
+      notify(tr("Reward secured. Find it in your Secured collection."));
       return true;
     });
     return ok === true;
@@ -2226,7 +2335,7 @@ export default function App() {
           );
           if (checked.state === "minted") {
             await refreshNative(true);
-            notify("Reward collected. Try it on from your Secured collection.");
+            notify(tr("Reward collected. Try it on from your Secured collection."));
             return true;
           }
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -2236,7 +2345,7 @@ export default function App() {
         );
       }
       await refreshNative(true);
-      notify("You already collected this level reward.");
+      notify(tr("You already collected this level reward."));
       return true;
     });
     return ok === true;
@@ -2325,7 +2434,7 @@ export default function App() {
             "Your Aura is still being secured. Use Check claim before retrying.",
           );
         await refreshNative(true);
-        notify("Your Aura is secured. Try it on from your Secured collection.");
+        notify(tr("Your Aura is secured. Try it on from your Secured collection."));
         return true;
       } finally {
         await me();
@@ -2343,8 +2452,8 @@ export default function App() {
       await refreshNative(true);
       notify(
         result.claim.state === "minted"
-          ? "Your Aura is secured."
-          : "Not secured yet. Finish the claim, or restore the practice Aura after it expires.",
+          ? tr("Your Aura is secured.")
+          : tr("Not secured yet. Finish the claim, or restore the practice Aura after it expires."),
       );
     });
   }
@@ -2354,7 +2463,7 @@ export default function App() {
         itemId: item.id,
       });
       updateOwnedPlayer(result.player);
-      notify("Your Aura is back in your practice collection.");
+      notify(tr("Your Aura is back in your practice collection."));
     });
   }
   async function nativeTransaction(
@@ -2424,10 +2533,10 @@ export default function App() {
       updateOwnedPlayer(r.player);
       notify(
         method === "mint_avatar"
-          ? "Your explorer is secured."
+          ? tr("Your explorer is secured.")
           : method === "unequip_aura"
-            ? "Aura taken off your secured outfit."
-            : "Equipped. Your secured Aura is glowing on the map.",
+            ? tr("Aura taken off your secured outfit.")
+            : tr("Equipped. Your secured Aura is glowing on the map."),
       );
     });
   }
@@ -2436,7 +2545,7 @@ export default function App() {
       const injected = (window as any).ethereum;
       if (!injected)
         throw new Error(
-          "Open QuestLayer in a browser with an Aavegotchi wallet to link an original.",
+          tr("Open QuestLayer in a browser with an Aavegotchi wallet to link an original."),
         );
       const { createWalletClient, custom } = await import("viem");
       const client = createWalletClient({ transport: custom(injected) });
@@ -2452,7 +2561,7 @@ export default function App() {
       await api("/evm/verify", { challengeId: c.challengeId, signature });
       await api("/aavegotchi");
       notify(
-        "Address linked. Your originals stay where they are; here you only wear them.",
+        tr("Address linked. Your originals stay where they are; here you only wear them."),
       );
     });
   }
@@ -2508,14 +2617,14 @@ export default function App() {
       );
       if (!confirmed?.equipped || response.player.nativeOutfit)
         throw new Error(
-          "Outfit change not confirmed yet. Check your collection before retrying.",
+          tr("Outfit change not confirmed yet. Check your collection before retrying."),
         );
       adventureResults.close();
       setSelected(null);
       setSheetExpanded(false);
       setFollow(true);
       setTab("explore");
-      notify("Equipped. Your new glow is on the map.");
+      notify(tr("Equipped. Your new glow is on the map."));
     });
   }
   async function complete(qId: string) {
@@ -2534,6 +2643,7 @@ export default function App() {
           result?: AdventureResult;
           replayed?: boolean;
           awaiting?: boolean;
+          clue?: { correct: boolean; xp: number; answer: string };
           progress?: { completed: number; total: number };
         }>(
           q?.kind === "route" && (q.checkpoint || 0) < (q.checkpointCount || 0)
@@ -2542,6 +2652,7 @@ export default function App() {
           {
             questId: qId,
             checkpoint: q?.checkpoint || 0,
+            ...(q?.clue ? { answer: clueChoice[qId] } : {}),
             fix: arena
               ? { ...position, accuracy: 0, timestamp: Date.now() }
               : fix,
@@ -2555,15 +2666,41 @@ export default function App() {
           navigationContext.current.revision === navigationRevision;
         if (sameView && r.result) adventureResults.accept(r.result);
         if (!r.replayed && !r.awaiting) cue(r.item ? "reward" : "step");
+        if (!r.replayed)
+          burst(
+            r.awaiting
+              ? {
+                  tone: "quest",
+                  title: tr("Stop {0} of {1}", { 0: r.progress?.completed, 1: r.progress?.total }),
+                  detail: q?.title,
+                }
+              : {
+                  tone: "quest",
+                  title: tr("Quest complete!"),
+                  detail: [
+                    `+${r.xp} XP`,
+                    r.reward ? `+${gold(r.reward)} GOLD` : "",
+                    r.item?.name || "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · "),
+                },
+          );
         if (sameView && r.awaiting)
           notify(
-            `Stop ${r.progress?.completed} of ${r.progress?.total} confirmed. Walk to the next stop.`,
+            tr("Stop {0} of {1} confirmed. Walk to the next stop.", { 0: r.progress?.completed, 1: r.progress?.total }),
+          );
+        else if (sameView && !r.replayed && r.clue)
+          notify(
+            r.clue.correct
+              ? tr("Right answer: +{0} XP.", { 0: r.xp })
+              : tr("Visit counted: +{0} XP. The right answer is now marked.", { 0: r.xp }),
           );
         else if (sameView && !r.replayed)
           notify(
             r.item
-              ? `Reward collected: ${r.item.name} is yours. Try it on!`
-              : `Reward collected: +${r.xp} XP${r.reward ? ` and ${gold(r.reward)} practice GOLD` : ""}.`,
+              ? tr("Reward collected: {0} is yours. Try it on!", { 0: r.item.name })
+              : tr("Reward collected: +{0} XP{1}.", { 0: r.xp, 1: r.reward ? ` and ${gold(r.reward)} practice GOLD` : "" }),
           );
         else if (sameView) setToast(null);
         await refreshWorld();
@@ -2627,12 +2764,63 @@ export default function App() {
     coachStep === "chest"
       ? coachChest
         ? coachChest.d > 25
-          ? "Walk to the chest"
-          : "Open the chest"
-        : "See what's open"
+          ? tr("Walk to the chest")
+          : tr("Open the chest")
+        : tr("See what's open")
       : coachStep === "find" && !nearestCoin(true)
-        ? "Walk to a coin"
+        ? tr("Walk to a coin")
         : null;
+  // Outside the reviewed city (H3 street cells, auto cities) the coach and
+  // the map point at the nearest open POI quest, or say honestly when quests
+  // open later today or this area has none.
+  const poiWorld =
+    !!world && !nativePlay && (!!world.poiQuests || world.cityStatus === "auto");
+  const poiOutlook =
+    poiWorld && world
+      ? poiQuestOutlook({
+          position,
+          quests: world.quests,
+          zones: world.zones,
+          tier: player?.tier || 1,
+          now,
+          emptyCell: world.poiQuests?.status === "empty",
+          questPoint,
+        })
+      : null;
+  const poiNext = poiOutlook?.state === "open" ? poiOutlook.nearest : null;
+  const coachAside =
+    !coachActive || !poiOutlook ? null : poiNext ? (
+      coachStep === "chest" &&
+      coachChest?.quest.id === poiNext.quest.id ? null : (
+        <button
+          className="first-session-next"
+          onClick={() => selectZone(poiNext.zone, poiNext.quest.id)}
+        >
+          <MapPin size={18} aria-hidden="true" />
+          <span>
+            <small>{tr("Nearest quest")}</small>
+            <strong>{poiNext.quest.title}</strong>
+            <span>{distanceLabel(poiNext.distance)}</span>
+          </span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </button>
+      )
+    ) : (
+      <p className="first-session-note" role="status">
+        {poiOutlook.state === "later"
+          ? tr("Quests here open at {0}. Street coins count already.", { 0: new Date(poiOutlook.opensAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: world?.timezone || undefined }) })
+          : poiOutlook.state === "empty"
+            ? tr("No quests in this spot today. Street coins still count; quests wait near parks, squares and landmarks.")
+            : tr("You've done every quest here today. New ones open tomorrow.")}
+      </p>
+    );
+  // The map marks one "next" place: the coach's POI quest, else the nearest
+  // recommended zone.
+  const nextZoneId = coachActive
+    ? coachStep === "chest" && coachChest
+      ? coachChest.zone.id
+      : poiNext?.zone.id || null
+    : recommendedZone?.id || null;
   const zoneQuests = (world?.quests || []).filter(
     (q) =>
       q.zone_id === selected?.id ||
@@ -2647,25 +2835,25 @@ export default function App() {
   const title =
     tab === "explore"
       ? nativePlay
-        ? "Nearby walks"
-        : "Nearby discoveries"
+        ? tr("Nearby walks")
+        : tr("Nearby discoveries")
       : showProfileTabs
-        ? "Profile"
+        ? tr("Profile")
         : showCommunityTabs
-          ? "Community"
+          ? tr("Community")
           : nav.find((n) => n.id === tab)?.label ||
         {
-          messages: "Map notes",
-          bounties: "Community tasks",
-          community: "Community",
-          settings: "Settings",
-          fund: "Game economy",
-          funding: "How rewards are funded",
-          fuel: "Fuel the prize pool",
-          expeditions: "Nearby walks",
-          inventory: "Inventory",
-          market: "Market",
-          wallet: "Wallet",
+          messages: tr("Map notes"),
+          bounties: tr("Community tasks"),
+          community: tr("Community"),
+          settings: tr("Settings"),
+          fund: tr("Game economy"),
+          funding: tr("How rewards are funded"),
+          fuel: tr("Fuel the prize pool"),
+          expeditions: tr("Nearby walks"),
+          inventory: tr("Inventory"),
+          market: tr("Market"),
+          wallet: tr("Wallet"),
         }[tab] ||
         "QuestLayer";
   return (
@@ -2700,13 +2888,14 @@ export default function App() {
           }
           overview={overview}
           focusZone={selected}
+          nextZoneId={selected ? null : nextZoneId}
           nativeTarget={
             nativeTarget ||
             (findTarget
               ? {
                   lat: findTarget.lat,
                   lng: findTarget.lng,
-                  label: `Street find · +${world?.streetFindXp ?? 15} XP`,
+                  label: tr("Street find · +{0} XP", { 0: world?.streetFindXp ?? 15 }),
                 }
               : null)
           }
@@ -2728,7 +2917,9 @@ export default function App() {
               ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
               : undefined
           }
-          onMove={move}
+          facing={
+            arena && !nativePlay ? demoWalk.heading : (gpsCourse ?? undefined)
+          }
           onZone={(z) =>
             nativePlay
               ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
@@ -2736,6 +2927,7 @@ export default function App() {
           }
           follow={follow}
           onPan={() => setFollow(false)}
+          onMoveEnd={(center, zoom) => setMapCenter(zoom >= 13 ? center : null)}
           creatorPlaces={creatorPlaces}
           onCreatorPlace={(questId) => {
             setTab("community");
@@ -2755,7 +2947,7 @@ export default function App() {
       <aside className="nav-rail">
         <button
           className="brand-mark"
-          aria-label="QuestLayer home"
+          aria-label={tr("QuestLayer home")}
           onClick={() => {
             setTab("explore");
           }}
@@ -2793,8 +2985,8 @@ export default function App() {
           <span className="status-dot" />
           <span>
             {nativePlay || !arena
-              ? world?.cityName || "Your surroundings"
-              : "Plzeň · city demo"}
+              ? world?.cityName || tr("Your surroundings")
+              : tr("Plzeň · city demo")}
           </span>
         </div>
         <div className="topbar-right">
@@ -2830,7 +3022,7 @@ export default function App() {
               <button
                 ref={profileButton}
                 className="profile-pill"
-                aria-label={hudProgress ? undefined : "Explorer profile"}
+                aria-label={hudProgress ? undefined : tr("Explorer profile")}
                 aria-expanded={menu}
                 aria-controls="explorer-profile"
                 onClick={() => setMenu((v) => !v)}
@@ -2848,7 +3040,7 @@ export default function App() {
                       originTokenId={player.appearance.originTokenId}
                       compact
                     />
-                    <span className="sr-only">, explorer profile</span>
+                    <span className="sr-only">{tr(", explorer profile")}</span>
                   </HudXpRing>
                 ) : (
                   <>
@@ -2859,7 +3051,7 @@ export default function App() {
                     />
                     <span>
                       <b>{player.name}</b>
-                      <small>Explorer</small>
+                      <small>{tr("Explorer")}</small>
                     </span>
                   </>
                 )}
@@ -2871,7 +3063,7 @@ export default function App() {
       {menu && player && (
         <div id="explorer-profile" className="profile-menu">
           <b>{player.name}</b>
-          <span>Your explorer and progress are saved on this device.</span>
+          <span>{tr("Your explorer and progress are saved on this device.")}</span>
           <button
             onClick={() => {
               setTab("settings");
@@ -2879,21 +3071,17 @@ export default function App() {
             }}
           >
             <GearSix />
-            Profile and settings
-          </button>
+            {tr("Profile and settings")}</button>
           <details className="presence-consent">
-            <summary>Location sharing</summary>
+            <summary>{tr("Location sharing")}</summary>
             <p>
-              Sharing shows your name, look and map position to nearby explorers
-              for up to 15 minutes while this tab is open. Players you blocked
-              never see you, and you never see them.
-            </p>
+              {tr("Sharing shows your name, look and map position to nearby explorers for up to 15 minutes while this tab is open. Players you blocked never see you, and you never see them.")}</p>
           </details>
           <button onClick={() => setPresence((x) => !x)}>
             {presence ? <EyeSlash /> : <Eye />}
             {presence
-              ? "Stop sharing my position"
-              : "Share my position for 15 min"}
+              ? tr("Stop sharing my position")
+              : tr("Share my position for 15 min")}
           </button>
           <button
             onClick={() =>
@@ -2906,8 +3094,7 @@ export default function App() {
               })
             }
           >
-            <SignOut /> Sign out
-          </button>
+            <SignOut /> {" "}{tr("Sign out")}</button>
         </div>
       )}
       {player && (
@@ -2916,16 +3103,6 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${tab === "explore" ? `explore-panel ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
-          {tab !== "explore" &&
-            (selected || (nativePlay && nativeObjective.reference)) && (
-              <button className="adventure-return" onClick={returnToAdventure}>
-                <ArrowLeft size={20} aria-hidden="true" />
-                <span>
-                  <strong>Back to adventure</strong>
-                  <small>{selected?.name || nativeObjective.view.label}</small>
-                </span>
-              </button>
-            )}
           {tab === "explore" && (
             <button
               className="sheet-toggle"
@@ -2933,12 +3110,12 @@ export default function App() {
               onClick={() => setSheetExpanded((v) => !v)}
             >
               <span className="sheet-toggle-label">
-                {sheetExpanded ? "Show map" : "Show discoveries"}
+                {sheetExpanded ? tr("Show map") : tr("Show discoveries")}
                 {!nativePlay && (
                   <PickupSummary totals={pickupFeedback.totals} />
                 )}
               </span>
-              <ArrowRight
+              <PhArrowRight
                 size={20}
                 style={{
                   transform: sheetExpanded ? "rotate(90deg)" : "rotate(-90deg)",
@@ -2964,7 +3141,7 @@ export default function App() {
             >
               <Compass size={24} aria-hidden="true" />
               <span>
-                <strong>Choose another discovery</strong>
+                <strong>{tr("Choose another discovery")}</strong>
                 <small role="status">{adventureNotice}</small>
               </span>
               <ArrowRight size={20} aria-hidden="true" />
@@ -2980,6 +3157,7 @@ export default function App() {
                 busy={!!busy}
                 onAction={runFirstStep}
                 actionLabel={coachLabel}
+                aside={coachAside}
               />
             )}
           {tab === "explore" && selected && (
@@ -2996,7 +3174,7 @@ export default function App() {
               />
               <span>
                 <strong>{selected.name}</strong>
-                <small>See what's here</small>
+                <small>{tr("See what's here")}</small>
               </span>
               <ArrowRight />
             </button>
@@ -3015,7 +3193,7 @@ export default function App() {
                 <ArrowRight size={18} />
               </button>
               <button
-                aria-label="Clear saved walk"
+                aria-label={tr("Clear saved walk")}
                 onClick={() => {
                   nativeObjective.clear();
                   returnToAdventure();
@@ -3026,6 +3204,28 @@ export default function App() {
             </div>
           )}
           <div className="panel-heading">
+            {tab === "fund" ? (
+              <button
+                className="panel-back"
+                onClick={() => setTab("settings")}
+                aria-label={tr("Back to profile")}
+                title={tr("Back to profile")}
+              >
+                <ArrowLeft size={20} aria-hidden="true" />
+              </button>
+            ) : (
+              tab !== "explore" &&
+              (selected || (nativePlay && nativeObjective.reference)) && (
+                <button
+                  className="panel-back"
+                  onClick={returnToAdventure}
+                  aria-label={`${tr("Back to adventure")}: ${selected?.name || nativeObjective.view.label}`}
+                  title={`${tr("Back to adventure")}: ${selected?.name || nativeObjective.view.label}`}
+                >
+                  <ArrowLeft size={20} aria-hidden="true" />
+                </button>
+              )
+            )}
             <div>
               <h1 tabIndex={-1}>
                 {tab === "explore" && selected ? selected.name : title}
@@ -3033,17 +3233,17 @@ export default function App() {
             </div>
             {tab !== "explore" && (
               <button
-                className="icon-button"
+                className="icon-button panel-close"
                 onClick={() => setTab("explore")}
-                aria-label="Close panel"
+                aria-label={tr("Close panel")}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             )}
           </div>
           {showProfileTabs && (
             <ScreenTabs
-              label="Profile"
+              label={tr("Profile")}
               idBase="profile"
               tabs={PROFILE_TABS}
               value={profileTab}
@@ -3053,7 +3253,7 @@ export default function App() {
           )}
           {showCommunityTabs && (
             <ScreenTabs
-              label="Community"
+              label={tr("Community")}
               idBase="community"
               tabs={COMMUNITY_TABS}
               value={communityTab}
@@ -3062,7 +3262,7 @@ export default function App() {
           )}
           {(tab === "inventory" || tab === "market") && (
             <ScreenTabs
-              label="Inventory"
+              label={tr("Inventory")}
               idBase="bag"
               tabs={BAG_TABS}
               value={tab === "market" ? "market" : "items"}
@@ -3075,29 +3275,23 @@ export default function App() {
                 !recommendation &&
                 world &&
                 world.poiQuests?.status === "empty" && (
-                  <EmptyState art="place" title="Nothing here yet" status>
-                    This area has no checked public places for quests today.
-                    Street coins still follow mapped paths.
-                  </EmptyState>
+                  <EmptyState art="place" title={tr("Nothing here yet")} status>
+                    {tr("This area has no checked public places for quests today. Street coins still follow mapped paths.")}</EmptyState>
                 )}
               {!world?.zones.length &&
                 !recommendation &&
                 world &&
                 world.poiQuests?.status !== "empty" && (
-                <EmptyState art="place" title="Nothing open right here yet" status>
-                  Today's discoveries are still being placed. Pull the map to
-                  look around, or check back in a few minutes.
-                </EmptyState>
+                <EmptyState art="place" title={tr("Nothing open right here yet")} status>
+                  {tr("Today's discoveries are still being placed. Pull the map to look around, or check back in a few minutes.")}</EmptyState>
               )}
               {world && world.zones.length > 0 && !recommendation && (
                 <EmptyState
                   art="ghost"
-                  title="You've done everything open for you today"
+                  title={tr("You've done everything open for you today")}
                   status
                 >
-                  New discoveries open with the next day. Coins on the streets
-                  still count while you walk.
-                </EmptyState>
+                  {tr("New discoveries open with the next day. Coins on the streets still count while you walk.")}</EmptyState>
               )}
               {!coachStep &&
                 recommendedFind &&
@@ -3111,16 +3305,13 @@ export default function App() {
                       <GameObjectArt kind="discovery" size={32} />
                     </span>
                     <span>
-                      <small>Nearest find</small>
+                      <small>{tr("Nearest find")}</small>
                       <strong>
-                        Street find · +{world?.streetFindXp ?? 15} XP
+                        {tr("Street find · +")}{world?.streetFindXp ?? 15} XP
                       </strong>
                       <span>
-                        On a mapped path ·{" "}
+                        {tr("On a mapped path ·")}{" "}
                         {distanceLabel(recommendedFind.distance)}
-                        {arena && recommendedFind.distance > WALK_CAP_M
-                          ? ` · walk in ${Math.ceil(recommendedFind.distance / WALK_CAP_M)} steps`
-                          : ""}
                       </span>
                     </span>
                     <ArrowRight size={20} />
@@ -3145,7 +3336,7 @@ export default function App() {
                       />
                     </span>
                     <span>
-                      <small>Nearest discovery</small>
+                      <small>{tr("Nearest discovery")}</small>
                       <strong>{recommended.title}</strong>
                       <span>
                         {recommendedZone.name} ·{" "}
@@ -3159,23 +3350,21 @@ export default function App() {
                 )}
               <div className="day-row">
                 <Badge tone="green">
-                  <Leaf size={12} /> {world?.cityName || "Your surroundings"}
+                  <Leaf size={12} /> {world?.cityName || tr("Your surroundings")}
                 </Badge>
                 {world?.cityStatus === "auto" && (
-                  <Badge tone="gold">Unverified map</Badge>
+                  <Badge tone="gold">{tr("Unverified map")}</Badge>
                 )}
                 <span>
-                  <Clock size={13} /> Refresh in{" "}
+                  <Clock size={13} /> {" "}{tr("Refresh in")}{" "}
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
               <TodaysPot practice onOpen={() => setTab("funding")} />
               <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               <div className="section-label">
-                <h2>Nearby discoveries</h2>
-                <span>
-                  {world?.cityZoneCount ?? activeZones.length} places today
-                </span>
+                <h2>{tr("Places today")}</h2>
+                <span>{world?.cityZoneCount ?? activeZones.length}</span>
               </div>
               {world?.quality && (
                 <details
@@ -3184,8 +3373,8 @@ export default function App() {
                 >
                   <summary>
                     {world.cityStatus === "auto"
-                      ? "Unverified map: generated automatically"
-                      : "About this map"}
+                      ? tr("Unverified map: generated automatically")
+                      : tr("About this map")}
                   </summary>
                   <p>{world.quality.notice}</p>
                 </details>
@@ -3225,10 +3414,10 @@ export default function App() {
                       <div className="zone-info">
                         <div>
                           <Badge tone={z.tier === 1 ? "green" : "purple"}>
-                            {z.tier === 1 ? "FREE" : `TIER ${z.tier}`}
+                            {z.tier === 1 ? tr("FREE") : tr("TIER {0}", { 0: z.tier })}
                           </Badge>
                           {z.opensAt > now && (
-                            <small>Opens in {remaining(z.opensAt)}</small>
+                            <small>{tr("Opens in")}{" "}{remaining(z.opensAt)}</small>
                           )}
                           <small>{distanceLabel(meters(position, z))}</small>
                         </div>
@@ -3238,9 +3427,9 @@ export default function App() {
                             <Sparkle size={12} />
                             {q
                               ? q.completed
-                                ? "Completed"
+                                ? tr("Completed")
                                 : `${q.xp} XP`
-                              : "See what's here"}
+                              : tr("See what's here")}
                           </span>
                           {q?.gold_u && !q.claimant ? (
                             <span>
@@ -3251,15 +3440,15 @@ export default function App() {
                             <span>
                               <GameObjectArt kind="discovery" size={20} />
                               {!q
-                                ? "Details"
+                                ? tr("Details")
                                 : activityArt?.state === "locked"
                                   ? activityArt.label
                                   : q.completed
-                                    ? "Completed"
+                                    ? tr("Completed")
                                     : q.kind === "chest" &&
                                         q.itemAvailable === true
-                                      ? "Aura chest"
-                                      : "XP visit"}
+                                      ? tr("Aura chest")
+                                      : tr("XP visit")}
                             </span>
                           )}
                           <ArrowUpRight size={15} />
@@ -3273,35 +3462,29 @@ export default function App() {
                 className="subtle-link"
                 onClick={() => setTab("bounties")}
               >
-                Community tasks <ArrowRight size={15} />
+                {tr("Community tasks")}{" "}<ArrowRight size={15} />
               </button>
             </>
           )}
           {tab === "explore" && selected && (
             <>
               <button className="back-link" onClick={() => setSelected(null)}>
-                <ArrowLeft size={15} /> All discoveries
-              </button>
+                <ArrowLeft size={15} /> {" "}{tr("All discoveries")}</button>
               <div className="zone-access">
                 <Badge tone={selected.tier === 1 ? "green" : "purple"}>
-                  {selected.tier === 1 ? "Free zone" : `Tier ${selected.tier}`}
+                  {selected.tier === 1 ? tr("Free zone") : tr("Tier {0}", { 0: selected.tier })}
                 </Badge>
-                <span>{zoneQuests.length} activities</span>
+                <span>{tr("{0} activities", { 0: zoneQuests.length })}</span>
               </div>
               {selected.tier > player.tier ? (
                 <div className="locked-panel">
                   <LockKey size={25} />
-                  <h3>Opens at Tier {selected.tier}</h3>
+                  <h3>{tr("Opens at Tier")}{" "}{selected.tier}</h3>
                   <p>
-                    This place needs{" "}
-                    {selected.tier === 2 ? "50 000" : "100 000"} GOLD of
-                    weighted practice stake. Free places nearby are open to
-                    everyone.
-                  </p>
+                    {tr("This place needs")}{" "}
+                    {selected.tier === 2 ? "50 000" : "100 000"} {" "}{tr("GOLD of weighted practice stake. Free places nearby are open to everyone.")}</p>
                   <p>
-                    Practice stake is play money you can withdraw. It does not
-                    promise a GOLD prize in every place.
-                  </p>
+                    {tr("Practice stake is play money you can withdraw. It does not promise a GOLD prize in every place.")}</p>
                   <button
                     className="primary-button"
                     onClick={() => {
@@ -3309,7 +3492,7 @@ export default function App() {
                       setTab("wallet");
                     }}
                   >
-                    Try practice staking <ArrowRight />
+                    {tr("Try practice staking")}{" "}<ArrowRight />
                   </button>
                 </div>
               ) : (
@@ -3326,15 +3509,25 @@ export default function App() {
                       <h2>{q.title}</h2>
                       <Badge tone="green">
                         {q.completed
-                          ? "COMPLETED"
+                          ? tr("COMPLETED")
                           : now < q.opens_at
-                            ? "OPENS LATER"
+                            ? tr("OPENS LATER")
                             : now >= q.closes_at
-                              ? "CLOSED"
-                              : "OPEN"}
+                              ? tr("CLOSED")
+                              : tr("OPEN")}
                       </Badge>
                     </div>
                     <p>{q.activity?.objective || q.description}</p>
+                    {q.clue && (
+                      <LandmarkClue
+                        clue={q.clue}
+                        choice={clueChoice[q.id]}
+                        disabled={!!busy || !!q.completed}
+                        onChoose={(choice) =>
+                          setClueChoice((all) => ({ ...all, [q.id]: choice }))
+                        }
+                      />
+                    )}
                     {q.activity && (
                       <div className="play-facts">
                         <span>
@@ -3378,25 +3571,25 @@ export default function App() {
                             size={24}
                           />
                           {q.completed
-                            ? "Completed"
+                            ? tr("Completed")
                             : q.itemAvailable === true
-                              ? "Aura chest"
+                              ? tr("Aura chest")
                               : q.itemAvailable === false
-                                ? "XP only · all Auras found"
-                                : "Aura not confirmed yet"}
+                                ? tr("XP only · all Auras found")
+                                : tr("Aura not confirmed yet")}
                         </span>
                       )}
                       {q.kind === "route" && (
                         <span>
                           <Flag />
-                          {q.checkpoint || 0}/{q.checkpointCount} stops
+                          {tr("{0}/{1} stops", { 0: q.checkpoint || 0, 1: q.checkpointCount })}
                         </span>
                       )}
                       {q.gold_u > 0 && (
                         <span>
                           <CoinIcon />
                           {q.claimant
-                            ? "GOLD already collected"
+                            ? tr("GOLD already collected")
                             : `${gold(q.gold_u)} GOLD`}
                         </span>
                       )}
@@ -3405,28 +3598,32 @@ export default function App() {
                       <MapPin size={16} />
                       {distanceLabel(meters(position, questPoint(q)))} ·{" "}
                       {q.opens_at > now
-                        ? `opens in ${remaining(q.opens_at)}`
-                        : `closes in ${remaining(q.closes_at)}`}
+                        ? tr("opens in {0}", { 0: remaining(q.opens_at) })
+                        : tr("closes in {0}", { 0: remaining(q.closes_at) })}
                     </div>
                     {q.completed ? (
                       <button className="primary-button" disabled>
-                        Reward collected <Check />
+                        {tr("Reward collected")}{" "}<Check />
                       </button>
                     ) : arena && meters(position, questPoint(q)) > 25 ? (
-                      <button
-                        className="primary-button"
-                        onClick={() => move(questPoint(q))}
-                      >
-                        {meters(position, questPoint(q)) > WALK_CAP_M
-                          ? `Walk ${WALK_CAP_M} m closer`
-                          : "Walk there"}{" "}
-                        <NavigationArrow />
-                      </button>
+                      <>
+                        <button
+                          className="primary-button"
+                          onClick={() =>
+                            faceToward(questPoint(q), q.title, { questId: q.id })
+                          }
+                        >
+                          {tr("Turn toward it")}{" "}<NavigationArrow />
+                        </button>
+                        <p className="fine-print">
+                          {tr("City demo: hold ↑ or W (or the pad) to walk, Shift to run. Real play moves only with your phone's GPS.")}</p>
+                      </>
                     ) : (
                       <button
                         className="primary-button"
                         disabled={
                           !!busy ||
+                          (!!q.clue && !clueChoice[q.id]) ||
                           meters(position, questPoint(q)) > 25 ||
                           q.opens_at > now ||
                           q.closes_at <= now
@@ -3434,29 +3631,27 @@ export default function App() {
                         onClick={() => void complete(q.id)}
                       >
                         {busy === "quest"
-                          ? "Checking visit…"
+                          ? tr("Checking visit…")
                           : q.opens_at > now
-                            ? "Not open yet"
+                            ? tr("Not open yet")
                             : q.closes_at <= now
-                              ? "Closed for today"
+                              ? tr("Closed for today")
                               : q.kind === "route"
                                 ? (q.checkpoint || 0) >=
                                   (q.checkpointCount || 0)
-                                  ? "Finish walk"
-                                  : `Confirm stop ${(q.checkpoint || 0) + 1}`
+                                  ? tr("Finish walk")
+                                  : tr("Confirm stop {0}", { 0: (q.checkpoint || 0) + 1 })
                                 : q.kind === "chest"
                                   ? q.itemAvailable === true
-                                    ? "Open chest"
-                                    : "Confirm visit"
-                                  : q.activity?.actionLabel || "Confirm visit"}
+                                    ? tr("Open chest")
+                                    : tr("Confirm visit")
+                                  : q.activity?.actionLabel || tr("Confirm visit")}
                         <ArrowRight />
                       </button>
                     )}
                     {q.gold_u > 0 && (
                       <p className="fine-print">
-                        The GOLD prize goes to the first explorer to finish.
-                        Your XP is always yours.
-                      </p>
+                        {tr("The GOLD prize goes to the first explorer to finish. Your XP is always yours.")}</p>
                     )}
                   </div>
                 ))
@@ -3465,7 +3660,7 @@ export default function App() {
                 <details className="play-details zone-activities">
                   <summary>
                     <Flag size={20} />
-                    Choose another activity <span>{zoneQuests.length - 1}</span>
+                    {tr("Choose another activity")}{" "}<span>{zoneQuests.length - 1}</span>
                   </summary>
                   <div className="walk-picker">
                     {zoneQuests
@@ -3488,7 +3683,7 @@ export default function App() {
                             <b>{q.title}</b>
                             <small>
                               {q.completed
-                                ? "Completed"
+                                ? tr("Completed")
                                 : `${q.xp} XP · ${q.kind === "route" ? `${q.checkpointCount} stops` : "1 stop"}`}
                             </small>
                           </span>
@@ -3623,7 +3818,7 @@ export default function App() {
                     );
                     if (latest.current.player?.id !== player.id) return;
                     updateOwnedPlayer(r.player);
-                    notify("New look equipped.");
+                    notify(tr("New look equipped."));
                   });
                 }}
                 onEquip={(item) =>
@@ -3635,8 +3830,8 @@ export default function App() {
                     updateOwnedPlayer(r.player);
                     notify(
                       item.equipped
-                        ? "Aura taken off."
-                        : "Equipped. Your new glow is on the map.",
+                        ? tr("Aura taken off.")
+                        : tr("Equipped. Your new glow is on the map."),
                     );
                   })
                 }
@@ -3646,7 +3841,7 @@ export default function App() {
                     if (latest.current.player?.id !== player.id) return false;
                     await me();
                     if (latest.current.player?.id !== player.id) return false;
-                    notify("Your Aura is on the market.");
+                    notify(tr("Your Aura is on the market."));
                     return true;
                   });
                   return result === true;
@@ -3752,8 +3947,8 @@ export default function App() {
             <button className="play-entry" onClick={() => setTab("fund")}>
               <ChartDonut size={22} />
               <span>
-                <b>Game economy</b>
-                <small>Where rewards come from</small>
+                <b>{tr("Game economy")}</b>
+                <small>{tr("Where rewards come from")}</small>
               </span>
               <ArrowRight size={20} />
             </button>
@@ -3763,27 +3958,15 @@ export default function App() {
               <div className="profile-tiles">
                 <ProfileTile
                   icon={Backpack}
-                  label="Wardrobe"
-                  hint="Items and Auras"
+                  label={tr("Wardrobe")}
+                  hint={tr("Items and Auras")}
                   onClick={() => setTab("inventory")}
                 />
                 <ProfileTile
                   icon={Storefront}
-                  label="Market"
-                  hint="Trade Auras"
+                  label={tr("Market")}
+                  hint={tr("Trade Auras")}
                   onClick={() => setTab("market")}
-                />
-                <ProfileTile
-                  icon={Flame}
-                  label="Stake"
-                  hint="Grow the pot · open Tier 2"
-                  onClick={() => setTab("fuel")}
-                />
-                <ProfileTile
-                  icon={Wallet}
-                  label="Rewards"
-                  hint="GOLD and receipts"
-                  onClick={() => setTab("wallet")}
                 />
               </div>
               <ProfileHero
@@ -3811,8 +3994,8 @@ export default function App() {
                 }
                 detail={
                   hudXp !== null && hudLevel !== null
-                    ? `${hudXp} / ${100 * hudLevel ** 2} XP to level ${hudLevel + 1}`
-                    : "Secure your explorer to keep progress"
+                    ? tr("{0} / {1} XP to level {2}", { 0: hudXp, 1: 100 * hudLevel ** 2, 2: hudLevel + 1 })
+                    : tr("Secure your explorer to keep progress")
                 }
               />
               <div className="play-menu">
@@ -3825,8 +4008,8 @@ export default function App() {
               </div>
               <p className="fine-print">
                 {nativePlay
-                  ? "You are playing on the test network. Test NEAR has no monetary value."
-                  : "You are playing with practice GOLD, which is play money."}
+                  ? tr("You are playing on the test network. Test NEAR has no monetary value.")
+                  : tr("You are playing with practice GOLD, which is play money.")}
               </p>
             </ScreenTabPanel>
           )}
@@ -3836,17 +4019,18 @@ export default function App() {
                 className="settings-group"
                 aria-labelledby="settings-game-title"
               >
-                <h2 id="settings-game-title">Game</h2>
+                <h2 id="settings-game-title">{tr("Game")}</h2>
+                <LanguageSetting />
                 <SettingsSwitch
                   icon={Cube}
-                  label="3D character"
-                  hint="Turn off for a lighter map"
+                  label={tr("3D character")}
+                  hint={tr("Turn off for a lighter map")}
                   checked={map3D}
                   onChange={() => toggleMap3D()}
                 />
                 <SettingsSwitch
                   icon={Vibrate}
-                  label="Vibration"
+                  label={tr("Vibration")}
                   checked={feedback.haptics}
                   onChange={(on) => {
                     setFeedbackPreferences({ haptics: on });
@@ -3855,7 +4039,7 @@ export default function App() {
                 />
                 <SettingsSwitch
                   icon={SpeakerHigh}
-                  label="Sound"
+                  label={tr("Sound")}
                   checked={feedback.sound}
                   onChange={(on) => {
                     setFeedbackPreferences({ sound: on });
@@ -3864,8 +4048,8 @@ export default function App() {
                 />
                 <SettingsSwitch
                   icon={PersonSimpleRun}
-                  label="Reduce motion"
-                  hint="Stops map flights, walking and sparkles"
+                  label={tr("Reduce motion")}
+                  hint={tr("Stops map flights, walking and sparkles")}
                   checked={feedback.motion === "reduce"}
                   onChange={(on) =>
                     setFeedbackPreferences({ motion: on ? "reduce" : "system" })
@@ -3876,21 +4060,20 @@ export default function App() {
                 className="settings-group"
                 aria-labelledby="settings-help-title"
               >
-                <h2 id="settings-help-title">Help</h2>
+                <h2 id="settings-help-title">{tr("Help")}</h2>
                 <button
                   type="button"
                   className="settings-row"
                   onClick={() => setShowNpc(true)}
                 >
                   <Question size={22} aria-hidden="true" />
-                  <span>Help & guide</span>
+                  <span>{tr("Help & guide")}</span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
 <a className="settings-row" href="/how-it-works">
                   <Sparkle size={22} aria-hidden="true" />
                   <span>
-                    How it works
-                    <small>The game in one page</small>
+                    {tr("How it works")}<small>{tr("The game in one page")}</small>
                   </span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </a>
@@ -3905,7 +4088,7 @@ export default function App() {
                     }}
                   >
                     <Compass size={22} aria-hidden="true" />
-                    <span>Show first steps again</span>
+                    <span>{tr("Show first steps again")}</span>
                     <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 )}
@@ -3916,8 +4099,7 @@ export default function App() {
                 >
                   <BookOpen size={22} aria-hidden="true" />
                   <span>
-                    Game economy
-                    <small>Where rewards come from</small>
+                    {tr("Game economy")}<small>{tr("Where rewards come from")}</small>
                   </span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
@@ -3926,7 +4108,7 @@ export default function App() {
                 className="settings-group"
                 aria-labelledby="settings-account-title"
               >
-                <h2 id="settings-account-title">Account and devices</h2>
+                <h2 id="settings-account-title">{tr("Account and devices")}</h2>
                 <div className="settings-pad">
                   <AccountSessions
                     player={player}
@@ -3948,31 +4130,26 @@ export default function App() {
                 </div>
               </section>
               <details className="advanced-settings settings-group">
-                <summary>Advanced: reward ledger</summary>
+                <summary>{tr("Advanced: reward ledger")}</summary>
                 <div className="settings-pad">
                   <div
                     className="play-mode-switch"
                     role="group"
-                    aria-label="Reward ledger"
+                    aria-label={tr("Reward ledger")}
                   >
                     <button
                       aria-pressed={!nativePlay}
                       onClick={() => chooseLedger(false)}
                     >
-                      Practice ledger
-                    </button>
+                      {tr("Practice ledger")}</button>
                     <button
                       aria-pressed={nativePlay}
                       onClick={() => chooseLedger(true)}
                     >
-                      Test network
-                    </button>
+                      {tr("Test network")}</button>
                   </div>
                   <p className="fine-print">
-                    Practice GOLD is play money. The test network uses NEAR
-                    testnet tokens. Neither has monetary value; receipts for
-                    both live in Profile · Rewards.
-                  </p>
+                    {tr("Practice GOLD is play money. The test network uses NEAR testnet tokens. Neither has monetary value; receipts for both live in Profile · Rewards.")}</p>
                 </div>
               </details>
             </ScreenTabPanel>
@@ -4008,8 +4185,8 @@ export default function App() {
               >
                 <Leaf size={22} />
                 <span>
-                  <b>Vault staking</b>
-                  <small>Your staked balance and practice staking</small>
+                  <b>{tr("Vault staking")}</b>
+                  <small>{tr("Your staked balance and practice staking")}</small>
                 </span>
                 <ArrowRight size={20} />
               </button>
@@ -4017,13 +4194,9 @@ export default function App() {
           )}
           {tab === "fund" && (
             <>
-              <button className="back-link" onClick={() => setTab("settings")}>
-                <ArrowLeft size={20} />
-                Profile
-              </button>
               <NativeEconomyPanel />
               <details className="play-details">
-                <summary>Practice economy simulation</summary>
+                <summary>{tr("Practice economy simulation")}</summary>
                 <FundPanel />
               </details>
             </>
@@ -4070,7 +4243,7 @@ export default function App() {
           {tab === "market" && (
             <ScreenTabPanel idBase="bag" value="market">
               <ScreenTabs
-                label="Market"
+                label={tr("Market")}
                 idBase="market"
                 variant="sub"
                 sticky={false}
@@ -4089,7 +4262,7 @@ export default function App() {
                     listingId: listing.id,
                   });
                   updateOwnedPlayer(r.player);
-                  notify("This Aura is yours. Find it in your collection.");
+                  notify(tr("This Aura is yours. Find it in your collection."));
                 })
               }
               onCancel={(listing) =>
@@ -4097,7 +4270,7 @@ export default function App() {
                   await api("/market/cancel", { listingId: listing.id });
                   await me();
                   notify(
-                    "Listing cancelled. The Aura is back in your collection.",
+                    tr("Listing cancelled. The Aura is back in your collection."),
                   );
                 })
               }
@@ -4143,20 +4316,18 @@ export default function App() {
               <div
                 className="play-mode-switch"
                 role="group"
-                aria-label="Task board"
+                aria-label={tr("Task board")}
               >
                 <button
                   aria-pressed={taskRealm === "near"}
                   onClick={() => setTaskRealm("near")}
                 >
-                  Sponsored tasks
-                </button>
+                  {tr("Sponsored tasks")}</button>
                 <button
                   aria-pressed={taskRealm === "demo"}
                   onClick={() => setTaskRealm("demo")}
                 >
-                  Practice tasks
-                </button>
+                  {tr("Practice tasks")}</button>
               </div>
               {taskRealm === "near" ? (
                 <NativeTasks
@@ -4184,28 +4355,26 @@ export default function App() {
             <span className="map-status-text">
               {nativePlay
                 ? arena
-                  ? "Turn on location"
+                  ? tr("Turn on location")
                   : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
                 : arena
-                  ? "City demo · tap to walk"
+                  ? tr("City demo · arrows or WASD")
                   : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`}
             </span>
             <button
               aria-label={
-                arena || nativePlay ? "Use GPS, my location" : "Demo, back to city demo"
+                arena || nativePlay ? tr("Use GPS, my location") : tr("Demo, back to city demo")
               }
               onClick={() => (arena || nativePlay ? locate() : returnToArena())}
             >
               {arena || nativePlay ? (
                 <>
                   <NavigationArrow size={14} weight="fill" />
-                  Use GPS
-                </>
+                  {tr("Use GPS")}</>
               ) : (
                 <>
                   <ArrowUpRight size={14} />
-                  Demo
-                </>
+                  {tr("Demo")}</>
               )}
             </button>
           </div>
@@ -4216,15 +4385,49 @@ export default function App() {
             >
               <Eye size={14} />{" "}
               {presenceUntil > Date.now()
-                ? `Visible · ${remaining(presenceUntil)}`
-                : "Going visible…"}{" "}
+                ? tr("Visible · {0}", { 0: remaining(presenceUntil) })
+                : tr("Going visible…")}{" "}
               <X size={12} />
             </button>
           )}
-          <div className="map-controls map-toolbar" role="toolbar" aria-label="Map tools" aria-orientation="vertical">
+          {searchHere && (
             <button
-              aria-label="City overview"
-              title="City overview"
+              className="map-search-here"
+              onClick={() => {
+                exploreAt.current = Date.now();
+                setMapCenter(null);
+                void loadWorld(arena ? HOME : position, arena, searchHere);
+              }}
+            >
+              <MagnifyingGlass size={16} weight="bold" aria-hidden="true" />
+              {tr("Search this area")}
+            </button>
+          )}
+          {arena && !nativePlay && !globe && tab === "explore" && (
+            <DemoControls
+              held={demoWalk.held}
+              running={demoWalk.running}
+              run={demoWalk.run}
+              setRun={demoWalk.setRun}
+              press={demoWalk.press}
+              release={demoWalk.release}
+              target={
+                demoTarget
+                  ? {
+                      label: demoTarget.label,
+                      meters: metersBetween(position, demoTarget),
+                      relative:
+                        (headingTo(position, demoTarget) ?? demoWalk.heading) -
+                        demoWalk.heading,
+                    }
+                  : null
+              }
+            />
+          )}
+          <div className="map-controls map-toolbar" role="toolbar" aria-label={tr("Map tools")} aria-orientation="vertical">
+            <button
+              aria-label={tr("City overview")}
+              title={tr("City overview")}
               onClick={() => {
                 setOverview((v) => !v);
                 setGlobe(false);
@@ -4235,8 +4438,8 @@ export default function App() {
               <Compass size={20} />
             </button>
             <button
-              aria-label="My location"
-              title="My location"
+              aria-label={tr("My location")}
+              title={tr("My location")}
               onClick={() => {
                 setFollow(true);
                 setOverview(false);
@@ -4248,9 +4451,9 @@ export default function App() {
               <Crosshair size={20} />
             </button>
             <button
-              aria-label="Globe"
+              aria-label={tr("Globe")}
               aria-pressed={globe}
-              title="Globe"
+              title={tr("Globe")}
               className={globe ? "active" : ""}
               onClick={() => {
                 if (!globe) {
@@ -4266,8 +4469,8 @@ export default function App() {
               <GlobeHemisphereWest size={20} />
             </button>
             <button
-              aria-label="Map notes"
-              title="Map notes"
+              aria-label={tr("Map notes")}
+              title={tr("Map notes")}
               onClick={() => setTab("messages")}
             >
               <ChatCircle size={20} />
@@ -4293,22 +4496,22 @@ export default function App() {
                 }
                 placeholder={
                   playAccount
-                    ? "Loading your progress…"
-                    : "Secure your explorer to keep progress"
+                    ? tr("Loading your progress…")
+                    : tr("Secure your explorer to keep progress")
                 }
               />
               {!nativePlay && <PickupSummary totals={pickupFeedback.totals} />}
             </div>
-            <button onClick={() => setTab("inventory")} aria-label="Inventory">
+            <button onClick={() => setTab("inventory")} aria-label={tr("Inventory")}>
               <Backpack size={23} />
             </button>
           </div>
         </>
       )}
+      <RewardBursts bursts={bursts} />
       {busy === "world" && (
         <div className="world-loading">
-          <span className="spinner" /> Finding trails and today’s treasures…
-        </div>
+          <span className="spinner" /> {" "}{tr("Finding trails and today’s treasures…")}</div>
       )}
       {toast && (
         <div
@@ -4327,27 +4530,25 @@ export default function App() {
       {!player && busy === "near" && (
         <div className="wallet-connecting" role="status">
           <Wallet size={24} />
-          <strong>Connecting your explorer…</strong>
-          <span>Approve the request in your wallet app.</span>
+          <strong>{tr("Connecting your explorer…")}</strong>
+          <span>{tr("Approve the request in your wallet app.")}</span>
         </div>
       )}
       {walletChoices && (
-        <Dialog label="Choose a NEAR wallet" onClose={() => chooseWallet(null)}>
+        <Dialog label={tr("Choose a NEAR wallet")} onClose={() => chooseWallet(null)}>
           <div className="wallet-select">
             <div className="panel-heading">
-              <h2>Choose a NEAR wallet</h2>
+              <h2>{tr("Choose a NEAR wallet")}</h2>
               <button
                 className="icon-button"
-                aria-label="Cancel wallet connection"
+                aria-label={tr("Cancel wallet connection")}
                 onClick={() => chooseWallet(null)}
               >
                 <X size={20} />
               </button>
             </div>
             <p>
-              Your wallet signs a short message to create or restore your
-              explorer. Nothing is paid.
-            </p>
+              {tr("Your wallet signs a short message to create or restore your explorer. Nothing is paid.")}</p>
             <div className="wallet-options">
               {walletChoices.map((w) => (
                 <button key={w.id} onClick={() => chooseWallet(w.id)}>
@@ -4363,29 +4564,24 @@ export default function App() {
               ))}
             </div>
             <p className="fine-print">
-              Your keys stay in your wallet. QuestLayer never asks for your
-              recovery phrase.
-            </p>
+              {tr("Your keys stay in your wallet. QuestLayer never asks for your recovery phrase.")}</p>
             <button
               className="secondary-button"
               onClick={() => chooseWallet(null)}
             >
-              Back
-            </button>
+              {tr("Back")}</button>
           </div>
         </Dialog>
       )}
       {loaded && !player && meUnreachable && (
-        <Dialog label="Can't reach QuestLayer" open onClose={() => {}}>
+        <Dialog label={tr("Can't reach QuestLayer")} open onClose={() => {}}>
           <section className="welcome-card offline-gate">
             <WifiSlash size={40} aria-hidden="true" />
-            <h2>{online ? "Can't reach QuestLayer" : "You're offline"}</h2>
+            <h2>{online ? tr("Can't reach QuestLayer") : tr("You're offline")}</h2>
             <p>
-              Your explorer and progress are saved. They'll be right here as
-              soon as you're back online.
-            </p>
+              {tr("Your explorer and progress are saved. They'll be right here as soon as you're back online.")}</p>
             <button className="primary-button" onClick={() => void me()}>
-              Try again <ArrowClockwise size={18} />
+              {tr("Try again")}{" "}<ArrowClockwise size={18} />
             </button>
           </section>
         </Dialog>
@@ -4490,7 +4686,7 @@ function Welcome({
     e?.preventDefault();
     await action("welcome", async () => {
       const r = await api<{ player: Player }>("/session", {
-        name: name || "Explorer",
+        name: name || tr("Explorer"),
       });
       onPlayer(r.player);
     });
@@ -4499,7 +4695,7 @@ function Welcome({
     await action("passkey", async () => {
       const r = await api<{ options: any; challengeId: string }>(
         "/passkey/options",
-        { action: existing ? "login" : "register", name: name || "Explorer" },
+        { action: existing ? "login" : "register", name: name || tr("Explorer") },
       );
       const response = existing
         ? await startAuthentication({ optionsJSON: r.options })
@@ -4513,7 +4709,7 @@ function Welcome({
   }
   return (
     <Dialog
-      label="Welcome to QuestLayer"
+      label={tr("Welcome to QuestLayer")}
       open={busy !== "near"}
       onClose={() => {}}
     >
@@ -4530,19 +4726,15 @@ function Welcome({
           <Leaf className="welcome-leaf" weight="duotone" />
         </div>
         <h1 tabIndex={-1} autoFocus>
-          Your city.
-          <br />
-          <em>Your haunt to explore.</em>
+          {tr("Your city.")}<br />
+          <em>{tr("Your haunt to explore.")}</em>
         </h1>
         <p>
-          Walk real streets and open chests.
-          <br />
-          Earn Auras, the glow your friendly ghost wears.
-        </p>
+          {tr("Walk real streets and open chests.")}<br />
+          {tr("Earn Auras, the glow your friendly ghost wears.")}</p>
         <a className="welcome-how" href="/how-it-works">
           <Sparkle size={16} weight="fill" aria-hidden="true" />
-          How it works
-          <ArrowRight size={16} aria-hidden="true" />
+          {tr("How it works")}<ArrowRight size={16} aria-hidden="true" />
         </a>
         {error && (
           <p className="inline-error" role="alert">
@@ -4556,10 +4748,10 @@ function Welcome({
             void start();
           }}
         >
-          <label htmlFor="nickname">What should we call you?</label>
+          <label htmlFor="nickname">{tr("What should we call you?")}</label>
           <input
             id="nickname"
-            placeholder="Your explorer name"
+            placeholder={tr("Your explorer name")}
             value={name}
             minLength={2}
             maxLength={24}
@@ -4569,8 +4761,8 @@ function Welcome({
           />
           <button className="primary-button" type="submit" disabled={!!busy}>
             {busy === "welcome"
-              ? "Preparing your explorer…"
-              : "Start exploring"}
+              ? tr("Preparing your explorer…")
+              : tr("Start exploring")}
             <ArrowRight size={20} />
           </button>
         </form>
@@ -4582,8 +4774,7 @@ function Welcome({
             void passkey();
           }}
         >
-          <Key size={16} /> I already have an explorer
-        </button>
+          <Key size={16} /> {" "}{tr("I already have an explorer")}</button>
         <button
           className="text-button"
           disabled={!!busy}
@@ -4591,11 +4782,11 @@ function Welcome({
         >
           <Key size={16} />
           {busy === "recovery-restore"
-            ? "Restoring your explorer…"
-            : "Restore with a recovery passkey"}
+            ? tr("Restoring your explorer…")
+            : tr("Restore with a recovery passkey")}
         </button>
         <details className="welcome-advanced">
-          <summary>Advanced</summary>
+          <summary>{tr("Advanced")}</summary>
           <button
             className="passkey-button"
             disabled={!!busy}
@@ -4604,8 +4795,7 @@ function Welcome({
               void passkey();
             }}
           >
-            <Key size={18} /> Create an explorer secured by a passkey
-          </button>
+            <Key size={18} /> {" "}{tr("Create an explorer secured by a passkey")}</button>
           <button
             className="passkey-button"
             disabled={!!busy}
@@ -4613,17 +4803,15 @@ function Welcome({
           >
             <Wallet size={18} />
             {busy === "near"
-              ? "Waiting for your wallet…"
-              : "Continue with an external NEAR wallet"}
+              ? tr("Waiting for your wallet…")
+              : tr("Continue with an external NEAR wallet")}
           </button>
           <p className="identity-note">
-            A wallet signs a message, not a payment. Returning wallets restore
-            the same explorer.
-          </p>
+            {tr("A wallet signs a message, not a payment. Returning wallets restore the same explorer.")}</p>
         </details>
         <div className="welcome-note">
           <ShieldCheck size={17} />
-          <span>No sign-up, no deposit. Play first, secure later.</span>
+          <span>{tr("No sign-up, no deposit. Play first, secure later.")}</span>
         </div>
       </section>
     </Dialog>
@@ -4637,12 +4825,12 @@ function WalletNavigation({
   onChange: (v: "rewards" | "staking" | "demo") => void;
 }) {
   return (
-    <div className="play-switch" role="group" aria-label="Rewards section">
+    <div className="play-switch" role="group" aria-label={tr("Rewards section")}>
       {(
         [
-          { id: "rewards", label: "Rewards", icon: Wallet },
-          { id: "staking", label: "Staking", icon: Leaf },
-          { id: "demo", label: "Practice", icon: Compass },
+          { id: "rewards", label: tr("Rewards"), icon: Wallet },
+          { id: "staking", label: tr("Staking"), icon: Leaf },
+          { id: "demo", label: tr("Practice"), icon: Compass },
         ] as const
       ).map((v) => (
         <button
@@ -4680,20 +4868,20 @@ function WalletPanel({
   const pools = [
     {
       id: "meadow",
-      name: "Meadow pool",
-      detail: "Practice pool",
+      name: tr("Meadow pool"),
+      detail: tr("Practice pool"),
       fee: "5% APR · simulation",
     },
     {
       id: "river",
-      name: "River pool",
-      detail: "Second practice pool",
+      name: tr("River pool"),
+      detail: tr("Second practice pool"),
       fee: "5% APR · simulation",
     },
     {
       id: "mountain",
-      name: "Mountain pool",
-      detail: "Third practice pool",
+      name: tr("Mountain pool"),
+      detail: tr("Third practice pool"),
       fee: "5% APR · simulation",
     },
   ];
@@ -4702,35 +4890,33 @@ function WalletPanel({
   return (
     <>
       <div className="wallet-hero">
-        <span>PRACTICE GOLD</span>
+        <span>{tr("PRACTICE GOLD")}</span>
         <div>
           <CoinIcon />
           <strong>{gold(player.gold_u)}</strong>
         </div>
         <small>
-          Play money · {near(player.gold_u)} NEAR equivalent · no monetary value
-        </small>
+          {tr("Play money ·")}{" "}{near(player.gold_u)} {" "}{tr("NEAR equivalent · no monetary value")}</small>
         <div>
-          <Badge tone="gold">TIER {player.tier}</Badge>
-          <Badge>50% coins / 50% zones</Badge>
+          <Badge tone="gold">{tr("TIER {0}", { 0: player.tier })}</Badge>
+          <Badge>{tr("50% coins / 50% zones")}</Badge>
         </div>
       </div>
       <div className="two-stats">
         <div>
-          <small>Practice stake</small>
+          <small>{tr("Practice stake")}</small>
           <b>{gold(staked)} GOLD</b>
         </div>
         <div>
-          <small>Weighted for tier</small>
+          <small>{tr("Weighted for tier")}</small>
           <b>{gold(player.weighted_u)} GOLD</b>
         </div>
       </div>
       <section className="form-section">
-        <h2>Try practice staking</h2>
-        <p>Staked GOLD helps fund rewards for everyone. Nothing real moves.</p>
+        <h2>{tr("Try practice staking")}</h2>
+        <p>{tr("Staked GOLD helps fund rewards for everyone. Nothing real moves.")}</p>
         <label>
-          How much practice GOLD to stake?
-          <div className="input-suffix">
+          {tr("How much practice GOLD to stake?")}<div className="input-suffix">
             <input
               value={deposit}
               onChange={(e) => setDeposit(e.target.value)}
@@ -4740,7 +4926,7 @@ function WalletPanel({
           </div>
         </label>
         <div className="range-heading">
-          <label>Yield contributed to the game</label>
+          <label>{tr("Yield contributed to the game")}</label>
           <b>{share} %</b>
         </div>
         <input
@@ -4751,23 +4937,23 @@ function WalletPanel({
           onChange={(e) => setShare(Number(e.target.value))}
         />
         <div className="range-endpoints">
-          <span>{100 - share} % for you</span>
-          <span>{share} % for the game</span>
+          <span>{100 - share} {" "}{tr("% for you")}</span>
+          <span>{share} {" "}{tr("% for the game")}</span>
         </div>
         <div className="contribution-preview">
           <Leaf />
           <span>
-            Weighted stake <b>{gold(weighted)} GOLD</b>
+            {tr("Weighted stake")}{" "}<b>{gold(weighted)} GOLD</b>
           </span>
           <Badge>
             {weighted >= 100_000 * GOLD
-              ? "TIER 3"
+              ? tr("TIER 3")
               : weighted >= 50_000 * GOLD
-                ? "TIER 2"
-                : "FREE"}
+                ? tr("TIER 2")
+                : tr("FREE")}
           </Badge>
         </div>
-        <label>Choose a pool</label>
+        <label>{tr("Choose a pool")}</label>
         <div className="pool-list">
           {pools.map((p) => (
             <button
@@ -4800,20 +4986,18 @@ function WalletPanel({
                 pool,
               });
               onPlayer(r.player);
-              notify("Stake placed. Your tier activates in 30 seconds.");
+              notify(tr("Stake placed. Your tier activates in 30 seconds."));
             })
           }
         >
-          Stake practice GOLD <ArrowRight />
+          {tr("Stake practice GOLD")}{" "}<ArrowRight />
         </button>
         <p className="fine-print">
-          Practice mode is fast: tiers activate in 30 seconds and withdrawals
-          unlock in 60. Real staking would take days.
-        </p>
+          {tr("Practice mode is fast: tiers activate in 30 seconds and withdrawals unlock in 60. Real staking would take days.")}</p>
       </section>
       <section className="form-section">
-        <h2>Your stake</h2>
-        {!staked && <p>You have no stake yet.</p>}
+        <h2>{tr("Your stake")}</h2>
+        {!staked && <p>{tr("You have no stake yet.")}</p>}
         {player.positions
           .filter((p) => p.active_u > 0)
           .map((p) => (
@@ -4821,14 +5005,14 @@ function WalletPanel({
               <div>
                 <b>{pools.find((x) => x.id === p.pool)?.name}</b>
                 <small>
-                  {p.contribution}% yield for the game{" "}
+                  {p.contribution}{tr("% yield for the game")}{" "}
                   {p.matures_at > Date.now()
-                    ? `· active in ${remaining(p.matures_at)}`
-                    : "· tier active"}
+                    ? tr("· active in {0}", { 0: remaining(p.matures_at) })
+                    : tr("· tier active")}
                 </small>
                 <strong>{gold(p.active_u)} GOLD</strong>
                 <label className="position-contribution">
-                  Game yield: {contributions[p.id] ?? p.contribution}%
+                  {tr("Game yield:")}{" "}{contributions[p.id] ?? p.contribution}%
                   <input
                     type="range"
                     min="0"
@@ -4858,13 +5042,12 @@ function WalletPanel({
                           );
                           onPlayer(r.player);
                           notify(
-                            "Contribution saved. Your current tier stays.",
+                            tr("Contribution saved. Your current tier stays."),
                           );
                         })
                       }
                     >
-                      Save contribution
-                    </button>
+                      {tr("Save contribution")}</button>
                   )}
               </div>
               <button
@@ -4877,13 +5060,12 @@ function WalletPanel({
                     });
                     onPlayer(r.player);
                     notify(
-                      "Withdrawal queued. Your GOLD unlocks in 60 seconds.",
+                      tr("Withdrawal queued. Your GOLD unlocks in 60 seconds."),
                     );
                   })
                 }
               >
-                Unstake
-              </button>
+                {tr("Unstake")}</button>
             </div>
           ))}
         {player.withdrawals
@@ -4891,11 +5073,11 @@ function WalletPanel({
           .map((w) => (
             <div className="position-row" key={w.id}>
               <div>
-                <b>Withdrawal {gold(w.amount_u)} GOLD</b>
+                <b>{tr("Withdrawal")}{" "}{gold(w.amount_u)} GOLD</b>
                 <small>
                   {w.ready_at > Date.now()
-                    ? `Ready in ${remaining(w.ready_at)}`
-                    : "Ready to collect"}
+                    ? tr("Ready in {0}", { 0: remaining(w.ready_at) })
+                    : tr("Ready to collect")}
                 </small>
               </div>
               <button
@@ -4907,21 +5089,20 @@ function WalletPanel({
                       withdrawalId: w.id,
                     });
                     onPlayer(r.player);
-                    notify("Your practice GOLD is back in your balance.");
+                    notify(tr("Your practice GOLD is back in your balance."));
                   })
                 }
               >
-                Collect
-              </button>
+                {tr("Collect")}</button>
             </div>
           ))}
       </section>
       <section className="form-section">
         <div className="section-label">
-          <h2>NEAR account</h2>
-          <Badge tone="green">TEST NETWORK</Badge>
+          <h2>{tr("NEAR account")}</h2>
+          <Badge tone="green">{tr("TEST NETWORK")}</Badge>
         </div>
-        <p>Link a NEAR test account by signing a message. Nothing is paid.</p>
+        <p>{tr("Link a NEAR test account by signing a message. Nothing is paid.")}</p>
         {player.wallets.map((w) => (
           <div className="connected-wallet" key={w.account_id}>
             <SealCheck weight="fill" />
@@ -4930,7 +5111,7 @@ function WalletPanel({
         ))}
         {balance && (
           <p>
-            Real balance: <b>{balance} testNEAR</b>
+            {tr("Real balance:")}{" "}<b>{balance} testNEAR</b>
           </p>
         )}
         <button
@@ -4939,7 +5120,7 @@ function WalletPanel({
           onClick={() => void onNear()}
         >
           <Wallet size={17} />
-          {player.wallets.length ? "Link another account" : "Link NEAR account"}
+          {player.wallets.length ? tr("Link another account") : tr("Link NEAR account")}
         </button>
         {player.wallets.length > 0 && (
           <button
@@ -4956,17 +5137,13 @@ function WalletPanel({
               })
             }
           >
-            Check NEAR balance
-          </button>
+            {tr("Check NEAR balance")}</button>
         )}
         <p className="fine-print">
-          Walks and Aura trading on the test network are a project pilot.
-          Practice GOLD never mixes with secured rewards. Never enter a recovery
-          phrase here.
-        </p>
+          {tr("Walks and Aura trading on the test network are a project pilot. Practice GOLD never mixes with secured rewards. Never enter a recovery phrase here.")}</p>
       </section>
       <section className="form-section">
-        <h2>Adventure history</h2>
+        <h2>{tr("Adventure history")}</h2>
         <div className="history-list">
           {player.history.slice(0, 20).map((h) => (
             <div key={h.id}>
@@ -4985,7 +5162,7 @@ function WalletPanel({
               <strong>
                 {h.gold_u
                   ? `${h.gold_u > 0 ? "+" : ""}${gold(h.gold_u)}`
-                  : "XP / item"}
+                  : tr("XP / item")}
               </strong>
             </div>
           ))}
@@ -5004,7 +5181,7 @@ function FundPanel() {
       .then(setProof)
       .catch(() => {});
   }, []);
-  if (!data) return <p>Loading fund…</p>;
+  if (!data) return <p>{tr("Loading fund…")}</p>;
   const total = data.buckets.reduce(
     (s, b) => s + b.available_u + b.reserved_u,
     0,
@@ -5012,41 +5189,38 @@ function FundPanel() {
   return (
     <>
       <p className="panel-subtitle">
-        Clear rules. Every reward has its backing.
-      </p>
+        {tr("Clear rules. Every reward has its backing.")}</p>
       <div className="fund-hero">
         <div className="fund-donut">
           <span>
             <b>50 / 50</b>
-            <small>GAME YIELD</small>
+            <small>{tr("GAME YIELD")}</small>
           </span>
         </div>
         <div>
-          <small>TOTAL PRACTICE FUND</small>
+          <small>{tr("TOTAL PRACTICE FUND")}</small>
           <h2>
             {gold(total)} <span>GOLD</span>
           </h2>
           <p>
-            The opening fund is a sponsor contribution for the demo. The 5% rate
-            is simulated.
-          </p>
+            {tr("The opening fund is a sponsor contribution for the demo. The 5% rate is simulated.")}</p>
         </div>
       </div>
       <div className="bucket-grid">
         {data.buckets.map((b) => (
           <div className={`bucket-card ${b.bucket}`} key={b.bucket}>
             <span>{b.bucket === "coins" ? <Coins /> : <Flag />}</span>
-            <h3>{b.bucket === "coins" ? "Street coins" : "Daily zones"}</h3>
+            <h3>{b.bucket === "coins" ? tr("Street coins") : tr("Daily zones")}</h3>
             <strong>
-              {gold(b.available_u)} <small>GOLD available</small>
+              {gold(b.available_u)} <small>{tr("GOLD available")}</small>
             </strong>
             <dl>
               <div>
-                <dt>Backed rewards</dt>
+                <dt>{tr("Backed rewards")}</dt>
                 <dd>{gold(b.reserved_u)}</dd>
               </div>
               <div>
-                <dt>Paid out</dt>
+                <dt>{tr("Paid out")}</dt>
                 <dd>{gold(b.paid_u)}</dd>
               </div>
             </dl>
@@ -5055,25 +5229,25 @@ function FundPanel() {
       </div>
       <div className="two-stats">
         <div>
-          <small>Staking accounts</small>
+          <small>{tr("Staking accounts")}</small>
           <b>{data.stakers}</b>
         </div>
         <div>
-          <small>Practice stake</small>
+          <small>{tr("Practice stake")}</small>
           <b>{gold(data.staked)} GOLD</b>
         </div>
       </div>
       <div className="section-label">
-        <h2>Reward outlook</h2>
-        <Badge>5% APR SIMULATION</Badge>
+        <h2>{tr("Reward outlook")}</h2>
+        <Badge>{tr("5% APR SIMULATION")}</Badge>
       </div>
       <div className="projections">
         {[
-          ["Day", 1],
-          ["Week", 7],
-          ["Month", 30],
-          ["Quarter", 90],
-          ["Year", 365],
+          [tr("Day"), 1],
+          [tr("Week"), 7],
+          [tr("Month"), 30],
+          [tr("Quarter"), 90],
+          [tr("Year"), 365],
         ].map(([label, days]) => (
           <div key={label}>
             <span>{label}</span>
@@ -5087,33 +5261,26 @@ function FundPanel() {
         ))}
       </div>
       <p className="fine-print">
-        Estimated yield at a simulated 5% APR, after contribution splits. The
-        horizons are alternatives, not separate funds or promised returns.
-      </p>
+        {tr("Estimated yield at a simulated 5% APR, after contribution splits. The horizons are alternatives, not separate funds or promised returns.")}</p>
       <div className="info-banner">
         <ShieldCheck />
         <span>
-          Unclaimed coins and prizes return to their fund. Your own stake never
-          pays for rewards.
-        </span>
+          {tr("Unclaimed coins and prizes return to their fund. Your own stake never pays for rewards.")}</span>
       </div>
       {proof && (
         <section className="native-proof">
           <div className="section-label">
-            <h2>Verified on NEAR</h2>
-            <Badge tone="green">TEST NETWORK</Badge>
+            <h2>{tr("Verified on NEAR")}</h2>
+            <Badge tone="green">{tr("TEST NETWORK")}</Badge>
           </div>
           <p>
-            Earned Auras can be secured to your NEAR account, traded in Market
-            and shown on a public profile. Staking and GOLD rewards stay
-            practice-only.
-          </p>
+            {tr("Earned Auras can be secured to your NEAR account, traded in Market and shown on a public profile. Staking and GOLD rewards stay practice-only.")}</p>
           <a
             href={`${EXPLORER_BASE}/address/${proof.gameContract}`}
             target="_blank"
             rel="noreferrer"
           >
-            Standalone settlement proof <ArrowUpRight size={14} />
+            {tr("Standalone settlement proof")}{" "}<ArrowUpRight size={14} />
             <small>{proof.gameContract}</small>
           </a>
           <a
@@ -5121,7 +5288,7 @@ function FundPanel() {
             target="_blank"
             rel="noreferrer"
           >
-            Aura NFT contract <ArrowUpRight size={14} />
+            {tr("Aura NFT contract")}{" "}<ArrowUpRight size={14} />
             <small>{proof.collectiblesContract}</small>
           </a>
           {proof.transactions
@@ -5142,25 +5309,25 @@ function FundPanel() {
               </a>
             ))}
           <a href="/testnet-deployment.json" target="_blank" rel="noreferrer">
-            All deployment proofs <ArrowUpRight size={14} />
+            {tr("All deployment proofs")}{" "}<ArrowUpRight size={14} />
           </a>
         </section>
       )}
       <div className="section-label">
-        <h2>This world in numbers</h2>
+        <h2>{tr("This world in numbers")}</h2>
       </div>
       <div className="three-stats">
         <div>
           <strong>{data.players}</strong>
-          <span>explorer accounts</span>
+          <span>{tr("explorer accounts")}</span>
         </div>
         <div>
           <strong>{data.coinsCollected}</strong>
-          <span>coins collected</span>
+          <span>{tr("coins collected")}</span>
         </div>
         <div>
           <strong>{data.worlds}</strong>
-          <span>daily worlds</span>
+          <span>{tr("daily worlds")}</span>
         </div>
       </div>
     </>
@@ -5192,31 +5359,23 @@ function Market({
   }, []);
   return (
     <>
-      <div className="section-label">
-        <h2>Practice GOLD market</h2>
-        <span className="badge purple">PRACTICE</span>
-      </div>
-      <p className="market-lead">
-        Fixed prices · 0% fee · practice GOLD is play money.
-      </p>
-      <div className="section-label">
-        <h2>On the market</h2>
+      <div className="section-label market-head">
+        <h2>{tr("On the market")}</h2>
+        <span className="badge purple" title={tr("Fixed prices · 0% fee · practice GOLD is play money.")}>{tr("PRACTICE")}</span>
         <button className="text-button" onClick={onInventory}>
-          Sell an Aura <Plus size={13} />
+          {tr("Sell an Aura")}{" "}<Plus size={13} />
         </button>
       </div>
       {loading ? (
-        <p>Loading listings…</p>
+        <p>{tr("Loading listings…")}</p>
       ) : !items.length ? (
         <div className="empty-state">
           <Storefront size={38} />
-          <h3>The first stall could be yours</h3>
+          <h3>{tr("The first stall could be yours")}</h3>
           <p>
-            Open a chest, find an Aura and list it here for another explorer.
-          </p>
+            {tr("Open a chest, find an Aura and list it here for another explorer.")}</p>
           <button className="secondary-button" onClick={onInventory}>
-            Open collection
-          </button>
+            {tr("Open collection")}</button>
         </div>
       ) : (
         <div className="item-grid">
@@ -5240,7 +5399,7 @@ function Market({
                   i.seller === player.id ? onCancel(i) : onBuy(i)
                 }
               >
-                {i.seller === player.id ? "Cancel listing" : "Buy Aura"}
+                {i.seller === player.id ? tr("Cancel listing") : tr("Buy Aura")}
                 <ArrowRight size={15} />
               </button>
             </article>
@@ -5249,10 +5408,7 @@ function Market({
       )}
       <Details>
         <p>
-          Find an Aura that feels like you, or pass your discovery along. These
-          offers use practice GOLD. Secured Auras trade for test NEAR in the
-          Secured and Offers tabs.
-        </p>
+          {tr("Find an Aura that feels like you, or pass your discovery along. These offers use practice GOLD. Secured Auras trade for test NEAR in the Secured and Offers tabs.")}</p>
       </Details>
     </>
   );
@@ -5285,18 +5441,13 @@ function Bounties({
   }, []);
   return (
     <>
-      <p className="panel-subtitle">
-        Someone has an idea. Someone else brings it to life.
-      </p>
       <div className="info-banner">
         <ShieldCheck />
         <span>
-          The reward is set aside before a task goes live. Anyone can join.
-        </span>
+          {tr("The reward is set aside before a task goes live. Anyone can join.")}</span>
       </div>
       <button className="secondary-button" onClick={() => setCreate((v) => !v)}>
-        <Plus /> New task
-      </button>
+        <Plus /> {" "}{tr("New task")}</button>
       {create && (
         <form
           className="inline-form"
@@ -5312,13 +5463,12 @@ function Bounties({
               onPlayer(r.player);
               setCreate(false);
               await load();
-              notify("Task published. Its reward is set aside.");
+              notify(tr("Task published. Its reward is set aside."));
             });
           }}
         >
           <label>
-            Title
-            <input
+            {tr("Title")}<input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               minLength={5}
@@ -5327,28 +5477,24 @@ function Bounties({
             />
           </label>
           <label>
-            What needs to be done?
-            <textarea
+            {tr("What needs to be done?")}<textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={1000}
             />
           </label>
           <label>
-            Reward in practice GOLD
-            <input
+            {tr("Reward in practice GOLD")}<input
               value={reward}
               onChange={(e) => setReward(e.target.value)}
               inputMode="decimal"
             />
           </label>
           <button className="primary-button">
-            Lock reward and publish <ArrowRight />
+            {tr("Lock reward and publish")}{" "}<ArrowRight />
           </button>
           <p className="fine-print">
-            Open for seven days. A submission sent in time keeps the reward
-            reserved until it is reviewed.
-          </p>
+            {tr("Open for seven days. A submission sent in time keeps the reward reserved until it is reviewed.")}</p>
         </form>
       )}
       <div className="bounty-list">
@@ -5357,10 +5503,10 @@ function Bounties({
             <div>
               <Badge tone={b.state === "open" ? "green" : "purple"}>
                 {b.state === "open"
-                  ? "OPEN"
+                  ? tr("OPEN")
                   : b.state === "paid"
-                    ? "COMPLETED"
-                    : "REFUNDED"}
+                    ? tr("COMPLETED")
+                    : tr("REFUNDED")}
               </Badge>
               <b>
                 <CoinIcon />
@@ -5386,8 +5532,7 @@ function Bounties({
                     })
                   }
                 >
-                  Review submissions
-                </button>
+                  {tr("Review submissions")}</button>
               ) : (
                 <button
                   className="text-button"
@@ -5396,8 +5541,7 @@ function Bounties({
                     setSubmissions([]);
                   }}
                 >
-                  Submit proof
-                </button>
+                  {tr("Submit proof")}</button>
               ))}
             {selected === b.id && b.creator !== player.id && (
               <form
@@ -5407,7 +5551,7 @@ function Bounties({
                     await api("/bounties/submit", { bountyId: b.id, evidence });
                     setSelected(null);
                     setEvidence("");
-                    notify("Proof sent. The creator will review it.");
+                    notify(tr("Proof sent. The creator will review it."));
                   });
                 }}
               >
@@ -5416,11 +5560,11 @@ function Bounties({
                   onChange={(e) => setEvidence(e.target.value)}
                   minLength={10}
                   maxLength={1000}
-                  placeholder="Describe how you completed the task…"
+                  placeholder={tr("Describe how you completed the task…")}
                   required
                 />
                 <button className="secondary-button">
-                  Submit proof <PaperPlane />
+                  {tr("Submit proof")}{" "}<PaperPlane />
                 </button>
               </form>
             )}
@@ -5441,17 +5585,16 @@ function Bounties({
                               });
                               await load();
                               setSelected(null);
-                              notify("Proof approved. Reward paid.");
+                              notify(tr("Proof approved. Reward paid."));
                             })
                           }
                         >
-                          Approve and pay
-                        </button>
+                          {tr("Approve and pay")}</button>
                       )}
                     </div>
                   ))
                 ) : (
-                  <p>No submissions yet.</p>
+                  <p>{tr("No submissions yet.")}</p>
                 )}
               </div>
             )}
@@ -5472,7 +5615,7 @@ function Npc({
 }) {
   const [q, setQ] = useState(""),
     [answer, setAnswer] = useState(
-      "Hello, explorer. Start with a free place nearby, pick up a few coins on the way and open a chest. Solo is fine; this haunt is yours to explore.",
+      () => tr("Hello, explorer. Start with a free place nearby, pick up a few coins on the way and open a chest. Solo is fine; this haunt is yours to explore."),
     ),
     [busy, setBusy] = useState(false),
     [source, setSource] = useState("rules");
@@ -5490,35 +5633,35 @@ function Npc({
       setQ("");
     } catch {
       setAnswer(
-        "The guide can't hear you right now. Keep exploring; your coins and visits still count.",
+        tr("The guide can't hear you right now. Keep exploring; your coins and visits still count."),
       );
     } finally {
       setBusy(false);
     }
   }
   return (
-    <Dialog label="Quest guide" onClose={onClose}>
+    <Dialog label={tr("Quest guide")} onClose={onClose}>
       <section className="npc-modal" onClick={(e) => e.stopPropagation()}>
         <button
           className="icon-button close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={tr("Close")}
         >
           <X />
         </button>
         <div className="npc-avatar">
           <Ghost color="#bc9b65" hat />
         </div>
-        <Badge tone="gold">EXPEDITION KEEPER</Badge>
-        <h2>Every trail leads somewhere.</h2>
+        <Badge tone="gold">{tr("EXPEDITION KEEPER")}</Badge>
+        <h2>{tr("Every trail leads somewhere.")}</h2>
         <p className="npc-answer">{answer}</p>
         <form onSubmit={ask}>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             maxLength={300}
-            aria-label="Question for the guide"
-            placeholder="Ask about places, chests or Auras…"
+            aria-label={tr("Question for the guide")}
+            placeholder={tr("Ask about places, chests or Auras…")}
             required
           />
           <button className="primary-button" disabled={busy}>
@@ -5527,10 +5670,10 @@ function Npc({
         </form>
         <small>
           {source === "near-ai"
-            ? "Answered by the AI guide from live game data"
+            ? tr("Answered by the AI guide from live game data")
             : source === "anthropic"
-              ? "Answered by Claude from live game data"
-              : "Answered from live game data"}
+              ? tr("Answered by Claude from live game data")
+              : tr("Answered from live game data")}
         </small>
       </section>
     </Dialog>

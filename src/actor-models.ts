@@ -8,6 +8,7 @@
 // The map uses one shared offscreen renderer to bake each model once into a cached PNG sprite, so N markers cost
 // no extra WebGL contexts. The encounter sheet uses createActorScene for one animated, rotatable view.
 import * as THREE from "three";
+import { tr } from "./i18n.ts";
 
 export const ACTOR_MODELS = [
   "chronicler",
@@ -19,6 +20,7 @@ export const ACTOR_MODELS = [
   "rune-warden",
   "pocket-wisp",
   "storm-golem",
+  "sun-beetle",
   // Official Gotchiverse models (Lickquidators and props), loaded at runtime through the pinned, digest-checked
   // server route /api/upstream-models/<key>.fbx (server/upstream-models.mjs). Never committed to this repository.
   "lick-soldier",
@@ -59,22 +61,23 @@ export const ACTOR_MODEL_INFO: Record<
   ActorModel,
   { label: string; role: string; color: string }
 > = {
-  chronicler: { label: "Chronicler", role: "Storyteller NPC", color: "#b9a6ff" },
-  merchant: { label: "Travelling merchant", role: "Trader NPC", color: "#81cdcf" },
-  keeper: { label: "Gate keeper", role: "Keeper (bank) NPC", color: "#8f88b8" },
-  pilgrim: { label: "Pilgrim", role: "Quest giver NPC", color: "#ff96ff" },
-  wisp: { label: "Will-o'-wisp", role: "Wandering rare NPC", color: "#51ffa8" },
-  "glitch-moth": { label: "Glitch Moth", role: "Roamer monster", color: "#fa34f3" },
-  "rune-warden": { label: "Rune Warden", role: "Guardian monster", color: "#37f4f1" },
-  "pocket-wisp": { label: "Pocket Wisp", role: "Lurker monster", color: "#7bd88f" },
-  "storm-golem": { label: "Storm Golem", role: "Weekly boss", color: "#fffa65" },
-  "lick-soldier": { label: "Lickquidator", role: "Roamer monster (Gotchiverse)", color: "#16a78f" },
-  "lick-brute": { label: "Lickquidator Brute", role: "Guardian monster (Gotchiverse)", color: "#8345ff" },
-  "lick-speedy": { label: "Dire Tire", role: "Fast roamer (Gotchiverse)", color: "#cebcf1" },
-  "lick-turret": { label: "Laser Beamer", role: "Zone guardian turret (Gotchiverse)", color: "#ffb800" },
-  "lick-boss": { label: "Lickquidator Boss", role: "Weekly boss (Gotchiverse)", color: "#fa34f3" },
-  "great-portal": { label: "Great Portal", role: "Boss arena / landmark prop (Gotchiverse)", color: "#dfabff" },
-  "golden-altar": { label: "Golden Altar", role: "Keeper station prop (Gotchiverse)", color: "#ffd01f" },
+  chronicler: { get label() { return tr("Chronicler"); }, role: "Storyteller NPC", color: "#b9a6ff" },
+  merchant: { get label() { return tr("Travelling merchant"); }, role: "Trader NPC", color: "#81cdcf" },
+  keeper: { get label() { return tr("Gate keeper"); }, role: "Keeper (bank) NPC", color: "#8f88b8" },
+  pilgrim: { get label() { return tr("Pilgrim"); }, get role() { return tr("Quest giver NPC"); }, color: "#ff96ff" },
+  wisp: { get label() { return tr("Will-o'-wisp"); }, get role() { return tr("Wandering rare NPC"); }, color: "#51ffa8" },
+  "glitch-moth": { get label() { return tr("Glitch Moth"); }, get role() { return tr("Roamer monster"); }, color: "#fa34f3" },
+  "rune-warden": { get label() { return tr("Rune Warden"); }, get role() { return tr("Guardian monster"); }, color: "#37f4f1" },
+  "pocket-wisp": { get label() { return tr("Pocket Wisp"); }, get role() { return tr("Lurker monster"); }, color: "#7bd88f" },
+  "storm-golem": { get label() { return tr("Storm Golem"); }, get role() { return tr("Weekly boss"); }, color: "#fffa65" },
+  "sun-beetle": { get label() { return tr("Sun Beetle"); }, get role() { return tr("Daytime roamer monster"); }, color: "#ffd01f" },
+  "lick-soldier": { label: "Lickquidator", get role() { return tr("Roamer monster (Gotchiverse)"); }, color: "#16a78f" },
+  "lick-brute": { label: "Lickquidator Brute", get role() { return tr("Guardian monster (Gotchiverse)"); }, color: "#8345ff" },
+  "lick-speedy": { label: "Dire Tire", get role() { return tr("Fast roamer (Gotchiverse)"); }, color: "#cebcf1" },
+  "lick-turret": { label: "Laser Beamer", get role() { return tr("Zone guardian turret (Gotchiverse)"); }, color: "#ffb800" },
+  "lick-boss": { label: "Lickquidator Boss", get role() { return tr("Weekly boss (Gotchiverse)"); }, color: "#fa34f3" },
+  "great-portal": { get label() { return tr("Great Portal"); }, get role() { return tr("Boss arena / landmark prop (Gotchiverse)"); }, color: "#dfabff" },
+  "golden-altar": { get label() { return tr("Golden Altar"); }, get role() { return tr("Keeper station prop (Gotchiverse)"); }, color: "#ffd01f" },
 };
 
 // Palette (docs/AAVEGOTCHI-REUSE.md §2/§5).
@@ -488,6 +491,47 @@ function stormGolem(): Built {
   };
 }
 
+/** Daytime roamer: a round gold-shelled beetle with a sun disc on its back. */
+function sunBeetle(): Built {
+  const root = new THREE.Group(), body = new THREE.Group();
+  const shell = mesh(new THREE.SphereGeometry(0.34, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(C.gold, { roughness: 0.45 }));
+  shell.scale.set(1, 0.8, 1.2);
+  const seam = mesh(new THREE.BoxGeometry(0.02, 0.02, 0.8), mat(C.brown), 0, 0.27, 0);
+  const belly = mesh(new THREE.CylinderGeometry(0.33, 0.3, 0.08, 10), mat(C.brown), 0, -0.02, 0);
+  belly.scale.z = 1.2;
+  const head = mesh(new THREE.SphereGeometry(0.15, 10, 8), mat(C.purple750), 0, 0.06, 0.4);
+  const sun = mesh(new THREE.CircleGeometry(0.11, 12), glow(C.yellow, 1.8), 0, 0.29, -0.05);
+  sun.rotation.x = -Math.PI / 2;
+  body.add(shell, seam, belly, head, sun, eyes(0.1, 0.53, 0.06, 0.045, C.white));
+  const legs: THREE.Mesh[] = [];
+  for (const s of [-1, 1])
+    for (const z of [-0.2, 0, 0.2]) {
+      const leg = mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.22, 4), mat(C.ink), s * 0.3, -0.06, z);
+      leg.rotation.z = s * 0.9;
+      legs.push(leg);
+      body.add(leg);
+    }
+  const rays: THREE.Mesh[] = [];
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const ray = mesh(new THREE.ConeGeometry(0.025, 0.09, 4), glow(C.gold, 1.2), Math.cos(a) * 0.16, 0.29, -0.05 + Math.sin(a) * 0.16);
+    ray.rotation.set(Math.PI / 2, 0, -a + Math.PI / 2);
+    rays.push(ray);
+    body.add(ray);
+  }
+  root.add(body);
+  return {
+    root,
+    height: 0.75,
+    update: (t) => {
+      bob(body, t, 0.16, 0.025, 6);
+      legs.forEach((l, i) => (l.rotation.x = Math.sin(t * 10 + i * 1.7) * 0.4));
+      sun.rotation.z = t * 0.8;
+      rays.forEach((r) => ((r.material as THREE.MeshStandardMaterial).emissiveIntensity = 1 + Math.sin(t * 3) * 0.4));
+    },
+  };
+}
+
 const BUILDERS: Record<Exclude<ActorModel, UpstreamModel>, () => Built> = {
   chronicler,
   merchant,
@@ -498,6 +542,7 @@ const BUILDERS: Record<Exclude<ActorModel, UpstreamModel>, () => Built> = {
   "rune-warden": runeWarden,
   "pocket-wisp": pocketWisp,
   "storm-golem": stormGolem,
+  "sun-beetle": sunBeetle,
 };
 
 const upstreamCache = new Map<string, Promise<THREE.Group>>();
@@ -651,7 +696,7 @@ export function createActorScene(host: HTMLElement, model: string, options: { la
   if (!isActorModel(model)) {
     const img = document.createElement("img");
     img.src = actorFallbackSprite(model);
-    img.alt = options.label || "Character";
+    img.alt = options.label || tr("Character");
     host.append(img);
     return { dispose: () => img.remove() };
   }

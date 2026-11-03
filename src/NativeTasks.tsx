@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
   ArrowClockwise,
-  CaretRight,
   CheckCircle,
   Clock,
   Flag,
@@ -11,6 +9,7 @@ import {
   Wallet,
   WarningCircle,
 } from "@phosphor-icons/react";
+import { ArrowLeft, CaretRight } from "./dir-icons";
 import { api } from "./api";
 import type { Player } from "./types";
 import { useFormDraft } from "./useFormDraft";
@@ -34,6 +33,7 @@ import {
 } from "./native-task-quote";
 import "./native-tasks.css";
 import { NEAR_NETWORK } from "./near-network.ts";
+import { tr } from "./i18n";
 
 export type NativeTask = {
   task_id: number;
@@ -172,7 +172,7 @@ function TaskReward({ value }: { value: string }) {
       <RewardCoin />
       <span>
         <strong>{exactTaskGold(value)} GOLD</strong>
-        <small>{exactTaskNear(value)} test NEAR</small>
+        <small>{exactTaskNear(value)} {" "}{tr("test NEAR")}</small>
       </span>
     </span>
   );
@@ -401,7 +401,7 @@ export function NativeTasks({
     if (!existing) return false;
     if (!matchingPublishedTask(request, account, existing)) {
       setError(
-        "This publication identity already has different task terms. Check the existing record before funding anything.",
+        tr("This publication identity already has different task terms. Check the existing record before funding anything."),
       );
       return true;
     }
@@ -412,7 +412,7 @@ export function NativeTasks({
     setCreateRequest(null);
     setPublicAck(false);
     setNotice(
-      "This exact task is already published. Its confirmed record is open; no new funding is needed.",
+      tr("This exact task is already published. Its confirmed record is open; no new funding is needed."),
     );
     return true;
   }
@@ -432,7 +432,7 @@ export function NativeTasks({
       (!reviewFunding || reviewBinding !== binding)
     ) {
       setError(
-        "The account, contract or policy changed. Review funding again before signing.",
+        tr("The account, contract or policy changed. Review funding again before signing."),
       );
       return;
     }
@@ -441,7 +441,7 @@ export function NativeTasks({
       (!publicAckValid || !latestAck.current)
     ) {
       setError(
-        "Review the public information and current cost before signing.",
+        tr("Review the public information and current cost before signing."),
       );
       return;
     }
@@ -471,7 +471,7 @@ export function NativeTasks({
         return;
       if (ok) {
         setNotice(
-          "Wallet transaction confirmed. Check the updated task record below.",
+          tr("Wallet transaction confirmed. Check the updated task record below."),
         );
         if (request.action === "create") {
           setCreating(false);
@@ -488,7 +488,7 @@ export function NativeTasks({
         await refresh();
       } else
         setNotice(
-          "No confirmed transaction. Your entries are kept; refresh before retrying.",
+          tr("No confirmed transaction. Your entries are kept; refresh before retrying."),
         );
     } catch (e) {
       if (
@@ -628,10 +628,7 @@ export function NativeTasks({
   const publicNotice = (
     <p className="task-public">
       <WarningCircle aria-hidden="true" />
-      This text, wallet and content reference become public chain records. They
-      cannot be erased. Do not include private details or exact GPS. A private
-      photo is never published; only its fingerprint is.
-    </p>
+      {tr("This text, wallet and content reference become public chain records. They cannot be erased. Do not include private details or exact GPS. A private photo is never published; only its fingerprint is.")}</p>
   );
   const acknowledgement = (
     <label className="task-check">
@@ -644,14 +641,14 @@ export function NativeTasks({
         }}
         disabled={busy}
       />
-      <span>I understand the public record and the cost shown.</span>
+      <span>{tr("I understand the public record and the cost shown.")}</span>
     </label>
   );
 
   return (
     <section
       className="native-tasks"
-      aria-label="Native sponsored tasks"
+      aria-label={tr("Native sponsored tasks")}
       aria-busy={loading || busy}
       onKeyDown={(event) => {
         if (
@@ -673,34 +670,28 @@ export function NativeTasks({
     >
       <div className="task-heading">
         <div>
-          <span className="task-eyebrow">NEAR testnet pilot</span>
           <h2 ref={heading} tabIndex={-1}>
             {creating
               ? reviewFunding
-                ? "Review funding"
-                : "Sponsor a task"
+                ? tr("Review funding")
+                : tr("Sponsor a task")
               : task
                 ? task.title
-                : "Community tasks"}
+                : tr("Community tasks")}
           </h2>
         </div>
         <button
           className="task-icon"
-          aria-label="Refresh native tasks"
+          aria-label={tr("Refresh native tasks")}
           onClick={() => void refresh()}
           disabled={busy || loading}
         >
           <ArrowClockwise />
         </button>
       </div>
-      <p className="task-intro">
-        A sponsor locks one reward. Share evidence, get reviewed, then withdraw
-        an approved award.
-      </p>
       {player.wallets.length > 0 ? (
         <label className="task-wallet">
-          Task wallet
-          <select
+          {tr("Task wallet")}<select
             value={account}
             disabled={busy}
             onChange={(e) => {
@@ -716,8 +707,7 @@ export function NativeTasks({
       ) : (
         <button className="secondary-button" onClick={onConnect}>
           <Wallet />
-          Connect NEAR wallet
-        </button>
+          {tr("Connect NEAR wallet")}</button>
       )}
       {error && (
         <p className="task-alert" role="alert">
@@ -730,7 +720,7 @@ export function NativeTasks({
           {notice}
         </p>
       )}
-      {loading && !data && <p role="status">Reading confirmed task records…</p>}
+      {loading && !data && <p role="status">{tr("Reading confirmed task records…")}</p>}
       {data?.status !== "available" && data && (
         <p className="task-alert" role="status">
           {data.reason}
@@ -738,8 +728,7 @@ export function NativeTasks({
       )}
       {busy && (
         <p className="task-notice" role="status">
-          Check your wallet. The result is not confirmed yet.
-        </p>
+          {tr("Check your wallet. The result is not confirmed yet.")}</p>
       )}
       {creating ? (
         <>
@@ -753,7 +742,7 @@ export function NativeTasks({
             }}
           >
             <ArrowLeft />
-            {reviewFunding ? "Edit task" : "Back to tasks"}
+            {reviewFunding ? tr("Edit task") : tr("Back to tasks")}
           </button>
           {!reviewFunding ? (
             <form
@@ -766,48 +755,42 @@ export function NativeTasks({
               {createDraft.hasDraft && (
                 <p className="task-secondary" role="status">
                   {createDraft.storageAvailable
-                    ? "Draft entries are kept on this device. Funding review and public consent are never restored."
-                    : "Entries remain in this tab; browser storage is unavailable. Keep this page open."}
+                    ? tr("Draft entries are kept on this device. Funding review and public consent are never restored.")
+                    : tr("Entries remain in this tab; browser storage is unavailable. Keep this page open.")}
                 </p>
               )}
               <label>
-                Task title
-                <input
+                {tr("Task title")}<input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={96}
                   required
-                  placeholder="Find the oldest public bridge plaque"
+                  placeholder={tr("Find the oldest public bridge plaque")}
                 />
               </label>
               <label>
-                Public area
-                <input
+                {tr("Public area")}<input
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
                   maxLength={80}
                   required
-                  placeholder="Plzeň · city centre"
+                  placeholder={tr("Plzeň · city centre")}
                 />
                 <small>
-                  Use a neighbourhood or public landmark, without precise
-                  coordinates.
-                </small>
+                  {tr("Use a neighbourhood or public landmark, without precise coordinates.")}</small>
               </label>
               <label>
-                Completion requirements
-                <textarea
+                {tr("Completion requirements")}<textarea
                   value={requirements}
                   onChange={(e) => setRequirements(e.target.value)}
                   maxLength={512}
                   required
                   rows={4}
-                  placeholder="Read the year on a public plaque and describe where it is. Stay on public paths."
+                  placeholder={tr("Read the year on a public plaque and describe where it is. Stay on public paths.")}
                 />
               </label>
               <label>
-                Reward in test NEAR
-                <input
+                {tr("Reward in test NEAR")}<input
                   value={reward}
                   onChange={(e) => setReward(e.target.value)}
                   inputMode="decimal"
@@ -815,28 +798,24 @@ export function NativeTasks({
                   aria-describedby="task-reward-help"
                 />
                 <small id="task-reward-help">
-                  0.001–1 test NEAR · 1 NEAR = 1,000 GOLD
-                </small>
+                  {tr("0.001–1 test NEAR · 1 NEAR = 1,000 GOLD")}</small>
               </label>
               <label>
-                Submit evidence by
-                <input
+                {tr("Submit evidence by")}<input
                   type="datetime-local"
                   value={due}
                   onChange={(e) => setDue(e.target.value)}
                   required
                 />
                 <small>
-                  Your local time. One hour to fourteen days from publication.
-                </small>
+                  {tr("Your local time. One hour to fourteen days from publication.")}</small>
               </label>
               <button
                 className="primary-button"
                 type="submit"
                 disabled={!canAct}
               >
-                Review funding
-                <CaretRight />
+                {tr("Review funding")}<CaretRight />
               </button>
               <button
                 type="button"
@@ -849,13 +828,12 @@ export function NativeTasks({
                   setPublicAck(false);
                   setNotice(
                     removed
-                      ? "Draft entries cleared. Any pending wallet transaction still requires recovery."
-                      : "Entries cleared from this view. Browser storage could not remove the saved draft; it may return. Any pending wallet transaction still requires recovery.",
+                      ? tr("Draft entries cleared. Any pending wallet transaction still requires recovery.")
+                      : tr("Entries cleared from this view. Browser storage could not remove the saved draft; it may return. Any pending wallet transaction still requires recovery."),
                   );
                 }}
               >
-                Discard task draft
-              </button>
+                {tr("Discard task draft")}</button>
             </form>
           ) : (
             createRequest && (
@@ -866,17 +844,16 @@ export function NativeTasks({
                 <TaskReward value={createRequest.rewardYocto!} />
                 <dl>
                   <div>
-                    <dt>Locked prize</dt>
+                    <dt>{tr("Locked prize")}</dt>
                     <dd>
-                      {exactTaskNear(createRequest.rewardYocto!)} test NEAR
-                    </dd>
+                      {exactTaskNear(createRequest.rewardYocto!)} {" "}{tr("test NEAR")}</dd>
                   </div>
                   <div>
-                    <dt>Non-refundable storage</dt>
-                    <dd>0.05 test NEAR</dd>
+                    <dt>{tr("Non-refundable storage")}</dt>
+                    <dd>{tr("0.05 test NEAR")}</dd>
                   </div>
                   <div>
-                    <dt>Total attached</dt>
+                    <dt>{tr("Total attached")}</dt>
                     <dd>
                       {exactTaskNear(
                         (
@@ -884,17 +861,13 @@ export function NativeTasks({
                           BigInt(TASK_STORAGE)
                         ).toString(),
                       )}{" "}
-                      test NEAR
-                    </dd>
+                      {tr("test NEAR")}</dd>
                   </div>
                 </dl>
                 <p>
-                  Network fee is extra. The prize stays locked through review
-                  and appeals; cancellation does not erase submitted claims. No
-                  XP or game-yield funds are used.
-                </p>
+                  {tr("Network fee is extra. The prize stays locked through review and appeals; cancellation does not erase submitted claims. No XP or game-yield funds are used.")}</p>
                 <p>
-                  Deadline: {time(createRequest.dueAtMs!)}. Fixed arbiter:{" "}
+                  {tr("Deadline:")}{" "}{time(createRequest.dueAtMs!)}{tr(". Fixed arbiter:")}{" "}
                   <span className="task-account">
                     {data?.config?.arbiter_id}
                   </span>
@@ -910,8 +883,7 @@ export function NativeTasks({
                   onClick={() => void run(createRequest)}
                 >
                   <ShieldCheck />
-                  Lock prize & publish
-                </button>
+                  {tr("Lock prize & publish")}</button>
               </div>
             )
           )}
@@ -928,8 +900,7 @@ export function NativeTasks({
             disabled={busy}
           >
             <ArrowLeft />
-            All tasks
-          </button>
+            {tr("All tasks")}</button>
           <article className="task-detail">
             <div className="task-detail-top">
               <TaskReward value={task.reward_yocto} />
@@ -942,30 +913,24 @@ export function NativeTasks({
             <p className="task-requirements">{task.description}</p>
             <p className="task-secondary">
               <Clock />
-              Evidence deadline {time(task.due_at_ms)}
+              {tr("Evidence deadline")}{" "}{time(task.due_at_ms)}
             </p>
             {task.status === "awarded" && (
               <p className="task-notice">
                 <CheckCircle />
-                Prize awarded to{" "}
-                <span className="task-account">{task.winner_id}</span>. Their
-                task wallet shows any remaining credit or pending withdrawal.
-              </p>
+                {tr("Prize awarded to")}{" "}
+                <span className="task-account">{task.winner_id}</span>{tr(". Their task wallet shows any remaining credit or pending withdrawal.")}</p>
             )}
             {task.status === "refunded" && (
               <p className="task-notice">
-                Prize returned to the sponsor’s task credit. The storage cost is
-                not refunded.
-              </p>
+                {tr("Prize returned to the sponsor’s task credit. The storage cost is not refunded.")}</p>
             )}
             {task.cancelled && task.status === "closing" && (
               <p className="task-notice">
-                Closed to new evidence. Earlier submissions keep their review
-                and appeal rights.
-              </p>
+                {tr("Closed to new evidence. Earlier submissions keep their review and appeal rights.")}</p>
             )}
             {!account && task.status === "open" && (
-              <p>Connect a NEAR wallet to submit evidence. Browsing is free.</p>
+              <p>{tr("Connect a NEAR wallet to submit evidence. Browsing is free.")}</p>
             )}
             {caps?.submit ||
             (caps?.appealSubmissionId !== null &&
@@ -980,19 +945,19 @@ export function NativeTasks({
                 {evidenceDraft.hasDraft && (
                   <p className="task-secondary" role="status">
                     {evidenceDraft.storageAvailable
-                      ? "Evidence draft kept for this wallet and task. Public consent must be confirmed again."
-                      : "Evidence remains in this tab; browser storage is unavailable."}
+                      ? tr("Evidence draft kept for this wallet and task. Public consent must be confirmed again.")
+                      : tr("Evidence remains in this tab; browser storage is unavailable.")}
                   </p>
                 )}
                 <h3>
                   {caps?.appealSubmissionId !== null
-                    ? "Appeal your evidence"
-                    : "Share your evidence"}
+                    ? tr("Appeal your evidence")
+                    : tr("Share your evidence")}
                 </h3>
                 <label>
                   {caps?.appealSubmissionId !== null
-                    ? "Why should this be reconsidered?"
-                    : "What did you find?"}
+                    ? tr("Why should this be reconsidered?")
+                    : tr("What did you find?")}
                   <textarea
                     value={evidence}
                     onChange={(e) => setEvidence(e.target.value)}
@@ -1003,10 +968,9 @@ export function NativeTasks({
                   />
                 </label>
                 <details>
-                  <summary>Optional content reference</summary>
+                  <summary>{tr("Optional content reference")}</summary>
                   <label>
-                    Public IPFS content address
-                    <input
+                    {tr("Public IPFS content address")}<input
                       value={reference}
                       onChange={(e) => setReference(e.target.value)}
                       maxLength={256}
@@ -1015,14 +979,12 @@ export function NativeTasks({
                     />
                   </label>
                   <p className="task-secondary">
-                    No upload is provided. Only use public, non-sensitive text
-                    content you have already published.
-                  </p>
+                    {tr("No upload is provided. Only use public, non-sensitive text content you have already published.")}</p>
                 </details>
                 <p className="task-secondary">
                   {caps?.appealSubmissionId !== null
-                    ? "Appeal cost: network fee only. The original 0.05 test NEAR storage cost is not refunded."
-                    : "Submitting costs 0.05 test NEAR for non-refundable storage, plus network fee. One submission per wallet; approval is not guaranteed."}
+                    ? tr("Appeal cost: network fee only. The original 0.05 test NEAR storage cost is not refunded.")
+                    : tr("Submitting costs 0.05 test NEAR for non-refundable storage, plus network fee. One submission per wallet; approval is not guaranteed.")}
                 </p>
                 {account && selectedId !== null && (
                   <EvidencePhotoPicker
@@ -1043,8 +1005,8 @@ export function NativeTasks({
                   disabled={!canAct || !publicAckValid || !evidence.trim()}
                 >
                   {caps?.appealSubmissionId !== null
-                    ? "Send appeal"
-                    : "Submit evidence"}
+                    ? tr("Send appeal")
+                    : tr("Submit evidence")}
                 </button>
                 <button
                   type="button"
@@ -1055,18 +1017,17 @@ export function NativeTasks({
                     setPublicAck(false);
                     setNotice(
                       removed
-                        ? "Evidence draft cleared. Any pending transaction or submitted claim is unchanged."
-                        : "Evidence cleared from this view. Browser storage could not remove the saved draft; it may return. Any pending transaction or submitted claim is unchanged.",
+                        ? tr("Evidence draft cleared. Any pending transaction or submitted claim is unchanged.")
+                        : tr("Evidence cleared from this view. Browser storage could not remove the saved draft; it may return. Any pending transaction or submitted claim is unchanged."),
                     );
                   }}
                 >
-                  Discard evidence draft
-                </button>
+                  {tr("Discard evidence draft")}</button>
               </form>
             ) : (
               ownSubmission && (
                 <div className="task-own-receipt">
-                  <h3>Your evidence · {ownSubmission.status}</h3>
+                  <h3>{tr("Your evidence ·")}{" "}{ownSubmission.status}</h3>
                   <p>{ownSubmission.evidence.text}</p>
                   <EvidencePhotoViewer
                     accountId={account}
@@ -1075,15 +1036,14 @@ export function NativeTasks({
                     canReport={false}
                   />
                   {ownSubmission.review_reason && (
-                    <p>Review: {ownSubmission.review_reason}</p>
+                    <p>{tr("Review:")}{" "}{ownSubmission.review_reason}</p>
                   )}
                   {ownSubmission.resolution_reason && (
-                    <p>Arbiter: {ownSubmission.resolution_reason}</p>
+                    <p>{tr("Arbiter:")}{" "}{ownSubmission.resolution_reason}</p>
                   )}
                   {ownSubmission.status === "pending" && (
                     <p className="task-secondary">
-                      The sponsor reviews in receipt order. If still unreviewed
-                      at {time(task.review_ends_at_ms)}, you may appeal before{" "}
+                      {tr("The sponsor reviews in receipt order. If still unreviewed at")}{" "}{time(task.review_ends_at_ms)}{tr(", you may appeal before")}{" "}
                       {time(task.appeal_ends_at_ms)}.
                     </p>
                   )}
@@ -1092,7 +1052,7 @@ export function NativeTasks({
             )}
             {reviewSubmission && (
               <div className="task-review">
-                <h3>Next evidence to review</h3>
+                <h3>{tr("Next evidence to review")}</h3>
                 <p className="task-account">{reviewSubmission.claimant_id}</p>
                 <p>{reviewSubmission.evidence.text}</p>
                 <EvidencePhotoViewer
@@ -1102,8 +1062,7 @@ export function NativeTasks({
                   canReport
                 />
                 <label>
-                  Decision reason
-                  <textarea
+                  {tr("Decision reason")}<textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     required
@@ -1113,9 +1072,7 @@ export function NativeTasks({
                   />
                 </label>
                 <p className="task-secondary">
-                  Your reason is public. Approving can credit the prize; earlier
-                  appeal rights must finish first.
-                </p>
+                  {tr("Your reason is public. Approving can credit the prize; earlier appeal rights must finish first.")}</p>
                 <div className="task-buttons">
                   <button
                     className="primary-button"
@@ -1130,8 +1087,7 @@ export function NativeTasks({
                       })
                     }
                   >
-                    Approve
-                  </button>
+                    {tr("Approve")}</button>
                   <button
                     className="secondary-button"
                     disabled={!canAct || !reason.trim()}
@@ -1145,17 +1101,15 @@ export function NativeTasks({
                       })
                     }
                   >
-                    Reject
-                  </button>
+                    {tr("Reject")}</button>
                 </div>
               </div>
             )}
             {!!caps?.resolveSubmissionIds.length && (
               <div className="task-review">
-                <h3>Arbiter review</h3>
+                <h3>{tr("Arbiter review")}</h3>
                 <label>
-                  Appealed evidence
-                  <select
+                  {tr("Appealed evidence")}<select
                     value={resolveId ?? ""}
                     onChange={(e) =>
                       setResolveId(
@@ -1163,10 +1117,10 @@ export function NativeTasks({
                       )
                     }
                   >
-                    <option value="">Choose evidence</option>
+                    <option value="">{tr("Choose evidence")}</option>
                     {caps.resolveSubmissionIds.map((id) => (
                       <option value={id} key={id}>
-                        Submission #{id + 1}
+                        {tr("Submission #")}{id + 1}
                       </option>
                     ))}
                   </select>
@@ -1180,10 +1134,9 @@ export function NativeTasks({
                       submissionId={resolving.submission_id}
                       canReport
                     />
-                    <p>Appeal: {resolving.appeal?.text}</p>
+                    <p>{tr("Appeal:")}{" "}{resolving.appeal?.text}</p>
                     <label>
-                      Public resolution reason
-                      <textarea
+                      {tr("Public resolution reason")}<textarea
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         maxLength={256}
@@ -1204,8 +1157,7 @@ export function NativeTasks({
                           })
                         }
                       >
-                        Uphold claim
-                      </button>
+                        {tr("Uphold claim")}</button>
                       <button
                         className="secondary-button"
                         disabled={!canAct || !reason.trim()}
@@ -1219,8 +1171,7 @@ export function NativeTasks({
                           })
                         }
                       >
-                        Dismiss claim
-                      </button>
+                        {tr("Dismiss claim")}</button>
                     </div>
                   </>
                 )}
@@ -1232,76 +1183,60 @@ export function NativeTasks({
               task.sponsor_id !== account &&
               !["awarded", "refunded"].includes(task.status) && (
                 <p className="task-secondary">
-                  New evidence is closed or this wallet is not eligible.
-                  Existing reviews and appeals retain their deadlines.
-                </p>
+                  {tr("New evidence is closed or this wallet is not eligible. Existing reviews and appeals retain their deadlines.")}</p>
               )}
             <details className="task-rules">
-              <summary>Review, appeals & locked funds</summary>
+              <summary>{tr("Review, appeals & locked funds")}</summary>
               <p>
-                One prize, awarded to the earliest approved eligible evidence.
-                Evidence is not a reservation. Later approval waits for earlier
-                appeal rights.
-              </p>
+                {tr("One prize, awarded to the earliest approved eligible evidence. Evidence is not a reservation. Later approval waits for earlier appeal rights.")}</p>
               <dl>
                 <div>
-                  <dt>Sponsor review ends</dt>
+                  <dt>{tr("Sponsor review ends")}</dt>
                   <dd>{time(task.review_ends_at_ms)}</dd>
                 </div>
                 <div>
-                  <dt>Latest appeal deadline</dt>
+                  <dt>{tr("Latest appeal deadline")}</dt>
                   <dd>{time(task.appeal_ends_at_ms)}</dd>
                 </div>
                 <div>
-                  <dt>Final resolution cutoff</dt>
+                  <dt>{tr("Final resolution cutoff")}</dt>
                   <dd>{time(task.resolve_ends_at_ms)}</dd>
                 </div>
               </dl>
               <p>
-                A rejected claim has up to 24 hours to appeal, capped by the
-                appeal deadline. Unreviewed evidence must be appealed after
-                review closes. Unresolved appeals expire at the final cutoff; no
-                guaranteed award.
-              </p>
+                {tr("A rejected claim has up to 24 hours to appeal, capped by the appeal deadline. Unreviewed evidence must be appealed after review closes. Unresolved appeals expire at the final cutoff; no guaranteed award.")}</p>
               <p>
-                Fixed arbiter:{" "}
+                {tr("Fixed arbiter:")}{" "}
                 <span className="task-account">{data?.config?.arbiter_id}</span>
-                . Non-refundable storage: 0.05 test NEAR per task and
-                submission. Other actions cost network fees; withdrawal attaches
-                1 yoctoNEAR.
+                {tr(". Non-refundable storage: 0.05 test NEAR per task and submission. Other actions cost network fees; withdrawal attaches 1 yoctoNEAR.")}</p>
+              <p>
+                {tr("Sponsor:")}{" "}<span className="task-account">{task.sponsor_id}</span>
               </p>
               <p>
-                Sponsor: <span className="task-account">{task.sponsor_id}</span>
-              </p>
-              <p>
-                Task #{task.task_id} · {task.submission_count} evidence receipts
-              </p>
+                {tr("Task #")}{task.task_id} · {task.submission_count} {" "}{tr("evidence receipts")}</p>
               {task.reference && <code>{task.reference}</code>}
               <p>
-                Submitted content SHA-256: <code>{task.content_hash}</code>
+                {tr("Submitted content SHA-256:")}{" "}<code>{task.content_hash}</code>
               </p>
               {data?.submissions.map((s) => (
                 <details key={s.submission_id}>
                   <summary>
-                    Evidence #{s.submission_id + 1} · {s.status}
+                    {tr("Evidence #")}{s.submission_id + 1} · {s.status}
                   </summary>
                   <p className="task-account">{s.claimant_id}</p>
                   <p>{s.evidence.text}</p>
                   {s.evidence.reference && <code>{s.evidence.reference}</code>}
-                  {s.appeal && <p>Appeal: {s.appeal.text}</p>}
-                  {s.review_reason && <p>Review: {s.review_reason}</p>}
+                  {s.appeal && <p>{tr("Appeal:")}{" "}{s.appeal.text}</p>}
+                  {s.review_reason && <p>{tr("Review:")}{" "}{s.review_reason}</p>}
                   {s.resolution_reason && (
-                    <p>Resolution: {s.resolution_reason}</p>
+                    <p>{tr("Resolution:")}{" "}{s.resolution_reason}</p>
                   )}
                 </details>
               ))}
               {caps?.cancel && (
                 <div className="task-cancel">
                   <p>
-                    Closing blocks new submissions. Timely evidence is still
-                    eligible; any unused prize becomes sponsor credit only after
-                    its rights end. Storage is not refunded.
-                  </p>
+                    {tr("Closing blocks new submissions. Timely evidence is still eligible; any unused prize becomes sponsor credit only after its rights end. Storage is not refunded.")}</p>
                   <button
                     className="secondary-button"
                     disabled={!canAct}
@@ -1309,18 +1244,14 @@ export function NativeTasks({
                       void run({ action: "cancel", taskId: task.task_id })
                     }
                   >
-                    Close to new evidence
-                  </button>
+                    {tr("Close to new evidence")}</button>
                 </div>
               )}
             </details>
             {caps?.finalize && (
               <div className="task-finalize">
                 <p>
-                  Check whether the prize can settle. Live review or appeal
-                  rights may keep it locked; an unchanged record means no payout
-                  yet.
-                </p>
+                  {tr("Check whether the prize can settle. Live review or appeal rights may keep it locked; an unchanged record means no payout yet.")}</p>
                 <button
                   className="secondary-button"
                   disabled={!canAct}
@@ -1328,8 +1259,7 @@ export function NativeTasks({
                     void run({ action: "finalize", taskId: task.task_id })
                   }
                 >
-                  Check settlement
-                </button>
+                  {tr("Check settlement")}</button>
               </div>
             )}
           </article>
@@ -1351,17 +1281,15 @@ export function NativeTasks({
               }}
             >
               <Plus />
-              {createDraft.hasDraft ? "Resume task draft" : "Sponsor a task"}
+              {createDraft.hasDraft ? tr("Resume task draft") : tr("Sponsor a task")}
             </button>
           )}
           {fresh && !data?.tasks.length && (
             <div className="task-empty">
               <Flag />
-              <h3>The noticeboard is ready</h3>
+              <h3>{tr("The noticeboard is ready")}</h3>
               <p>
-                Publish a small, verifiable public-place task. Its own test NEAR
-                prize stays separate from street coins and zones.
-              </p>
+                {tr("Publish a small, verifiable public-place task. Its own test NEAR prize stays separate from street coins and zones.")}</p>
             </div>
           )}
           <div className="task-list">
@@ -1382,7 +1310,7 @@ export function NativeTasks({
                   <span>
                     <span className="task-state">
                       {t.status}
-                      {t.sponsor_id === account ? " · yours" : ""}
+                      {t.sponsor_id === account ? tr(" · yours") : ""}
                     </span>
                     <strong>{t.title}</strong>
                     <small>{t.area}</small>
@@ -1400,55 +1328,44 @@ export function NativeTasks({
           <aside className="task-credit">
             <h3>
               <Wallet />
-              Your task credit
-            </h3>
+              {tr("Your task credit")}</h3>
             <TaskReward value={data.account.credit_yocto} />
             {data.account.pending_withdrawal ? (
               <p role="status">
                 {exactTaskNear(data.account.pending_withdrawal.amount_yocto)}{" "}
-                test NEAR withdrawal is pending. Refresh to check the result.
-              </p>
+                {tr("test NEAR withdrawal is pending. Refresh to check the result.")}</p>
             ) : (
               <>
                 <p className="task-secondary">
-                  Approved awards and sponsor refunds. Separate from your game
-                  wallet and staking funds. Withdrawal attaches 1 yoctoNEAR plus
-                  network fee.
-                </p>
+                  {tr("Approved awards and sponsor refunds. Separate from your game wallet and staking funds. Withdrawal attaches 1 yoctoNEAR plus network fee.")}</p>
                 <button
                   className="primary-button"
                   disabled={!canAct || data.account.credit_yocto === "0"}
                   onClick={() => void run({ action: "withdraw" })}
                 >
-                  Withdraw task credit
-                </button>
+                  {tr("Withdraw task credit")}</button>
               </>
             )}
           </aside>
         )}
       <details className="task-proof">
-        <summary>Testnet proof & limits</summary>
+        <summary>{tr("Testnet proof & limits")}</summary>
         <p>
-          Test tokens have no promised real-world value. Pilot limit: 128 tasks,
-          32 submissions per task and a maximum 1 test NEAR prize. No XP, paid
-          access, uploaded photos or GPS verification is included.
-        </p>
+          {tr("Test tokens have no promised real-world value. Pilot limit: 128 tasks, 32 submissions per task and a maximum 1 test NEAR prize. No XP, paid access, uploaded photos or GPS verification is included.")}</p>
         <p>
-          Contract:{" "}
+          {tr("Contract:")}{" "}
           <span className="task-account">
             {data?.contractId || "questlayer-tasks-20261031.testnet"}
           </span>
         </p>
         {data?.blockHeight && (
           <p>
-            Finalized block {data.blockHeight}.{" "}
-            {data.observedAt && <>Observed {time(data.observedAt)}.</>}
+            {tr("Finalized block")}{" "}{data.blockHeight}.{" "}
+            {data.observedAt && <>{tr("Observed")}{" "}{time(data.observedAt)}.</>}
           </p>
         )}
         <p>
-          Hiding a task in the application cannot erase its chain records. Only
-          publish appropriate public text.
-        </p>
+          {tr("Hiding a task in the application cannot erase its chain records. Only publish appropriate public text.")}</p>
       </details>
     </section>
   );

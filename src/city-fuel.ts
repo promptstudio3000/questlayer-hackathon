@@ -1,4 +1,5 @@
-// "Fuel the prize pool" (formerly "Fuel the city"): staking presented as a game decision. Pure helpers so the
+
+import { tr } from "./i18n.ts";// "Fuel the prize pool" (formerly "Fuel the city"): staking presented as a game decision. Pure helpers so the
 // tier and share numbers are testable. Amounts arrive as yoctoNEAR strings;
 // the player sees GOLD (1 NEAR = 1,000 GOLD) and test NEAR for deposits.
 
@@ -23,35 +24,35 @@ export type FuelTone = "pending" | "ready" | "failed" | "active" | "unlocking";
 export function fuelStatus(p: FuelPosition): { tone: FuelTone; label: string } {
   const s = p.position;
   if (!s) {
-    if (p.state === "failed") return { tone: "failed", label: "Setup failed" };
+    if (p.state === "failed") return { tone: "failed", label: tr("Setup failed") };
     if (p.state === "created")
-      return { tone: "pending", label: "Finish setup to add fuel" };
-    return { tone: "pending", label: "Setting up…" };
+      return { tone: "pending", label: tr("Finish setup to add fuel") };
+    return { tone: "pending", label: tr("Setting up…") };
   }
   if (s.owner_pending !== "0" || s.game_pending !== "0")
-    return { tone: "pending", label: "Transfer on its way" };
+    return { tone: "pending", label: tr("Transfer on its way") };
   const partial = BigInt(String(s.partial_exit ?? "0"));
   if (s.stage === "unlocking")
     return {
       tone: "unlocking",
-      label: partial > 0n ? "Part of your stake is coming back" : "Coming back to you",
+      label: partial > 0n ? tr("Part of your stake is coming back") : tr("Coming back to you"),
     };
   if (s.stage !== "idle")
     return {
       tone: "pending",
-      label: partial > 0n ? "Taking part of your stake out…" : "Pool is working…",
+      label: partial > 0n ? tr("Taking part of your stake out…") : tr("Pool is working…"),
     };
   if (s.owner_credit !== "0")
-    return { tone: "ready", label: "Ready to withdraw" };
-  if (s.exit_requested) return { tone: "unlocking", label: "Exit requested" };
+    return { tone: "ready", label: tr("Ready to withdraw") };
+  if (s.exit_requested) return { tone: "unlocking", label: tr("Exit requested") };
   if (typeof s.pending_contribution_bps === "number")
     return {
       tone: "pending",
-      label: `Switching to ${s.pending_contribution_bps / 100} % after settlement`,
+      label: tr("Switching to {0} % after settlement", { 0: s.pending_contribution_bps / 100 }),
     };
   return BigInt(String(s.principal || "0")) > 0n
-    ? { tone: "active", label: "Fueling the prize pool" }
-    : { tone: "ready", label: "Ready for fuel" };
+    ? { tone: "active", label: tr("Fueling the prize pool") }
+    : { tone: "ready", label: tr("Ready for fuel") };
 }
 
 function yoctoToGold(v: bigint): number {
@@ -111,17 +112,17 @@ export function quotePartialExit(
 ): PartialExitQuote {
   const s = p.position;
   if (!s || !isVaultV2(p))
-    return { ok: false, reason: "This stake predates partial withdrawals; use a full exit." };
+    return { ok: false, reason: tr("This stake predates partial withdrawals; use a full exit.") };
   if (s.stage !== "idle" || s.exit_requested)
-    return { ok: false, reason: "Wait until the current operation finishes." };
+    return { ok: false, reason: tr("Wait until the current operation finishes.") };
   if (big(s.partial_exit) > 0n)
-    return { ok: false, reason: "A partial withdrawal is already on its way." };
+    return { ok: false, reason: tr("A partial withdrawal is already on its way.") };
   const amount = BigInt(amountYocto),
     principal = big(s.principal);
   if (amount < MIN_POSITION || amount + MIN_POSITION > principal)
     return {
       ok: false,
-      reason: "Leave at least 0.001 test NEAR staked, or use a full exit.",
+      reason: tr("Leave at least 0.001 test NEAR staked, or use a full exit."),
     };
   const total = big(s.staked) + big(s.unstaked),
     gain = total > big(s.high_water_basis) ? total - big(s.high_water_basis) : 0n,
@@ -161,19 +162,19 @@ export function quoteContribution(
 ): ContributionQuote {
   const s = p.position;
   if (!s || !isVaultV2(p))
-    return { ok: false, reason: "This stake predates share changes; exit and start a new one." };
+    return { ok: false, reason: tr("This stake predates share changes; exit and start a new one.") };
   if (!Number.isInteger(newBps) || newBps < 0 || newBps > 10_000)
-    return { ok: false, reason: "Choose a share between 0 and 100 %." };
+    return { ok: false, reason: tr("Choose a share between 0 and 100 %.") };
   if (s.stage !== "idle" || s.exit_requested)
-    return { ok: false, reason: "Wait until the current operation finishes." };
+    return { ok: false, reason: tr("Wait until the current operation finishes.") };
   if (big(s.partial_exit) > 0n)
-    return { ok: false, reason: "Wait for the partial withdrawal to finish." };
+    return { ok: false, reason: tr("Wait for the partial withdrawal to finish.") };
   const current = contributionBps(p),
     waiting = typeof s.pending_contribution_bps === "number";
   if (newBps === current && !waiting)
-    return { ok: false, reason: "This is already your share." };
+    return { ok: false, reason: tr("This is already your share.") };
   if (waiting && newBps === s.pending_contribution_bps)
-    return { ok: false, reason: "This change is already waiting." };
+    return { ok: false, reason: tr("This change is already waiting.") };
   const total = big(s.staked) + big(s.unstaked),
     gain = total > big(s.high_water_basis) ? total - big(s.high_water_basis) : 0n,
     principal = big(s.principal);
@@ -256,7 +257,7 @@ export function previewFuel(
 }
 
 export const CONTRIBUTION_CHOICES = [
-  { pct: 25, label: "Light", hint: "Keep most of your yield" },
-  { pct: 50, label: "Balanced", hint: "Half fuels the prize pool" },
-  { pct: 100, label: "All in", hint: "All yield fuels the prize pool" },
+  { pct: 25, get label() { return tr("Light"); }, get hint() { return tr("Keep most of your yield"); } },
+  { pct: 50, get label() { return tr("Balanced"); }, get hint() { return tr("Half fuels the prize pool"); } },
+  { pct: 100, get label() { return tr("All in"); }, get hint() { return tr("All yield fuels the prize pool"); } },
 ] as const;

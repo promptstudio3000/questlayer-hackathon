@@ -27,6 +27,7 @@ import { STAKER_SUGGEST_NEAR, takeStakePrefill } from "./LockedChip";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import type { Player } from "./types";
 import "./fuel-the-city.css";
+import { tr } from "./i18n";
 
 type StakerGates = { minNear: string; suggestNear: string; priceEur: number | null; access: { step: string; staker: boolean } };
 
@@ -49,7 +50,7 @@ type CityStaking = {
 const fmt = (n: number, max = 0) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: max }).format(n);
 const fmtNear = (yocto: string) => fmt(Number(BigInt(yocto) / 10n ** 21n) / 1000, 3);
-const tierName = (t: number) => (t === 1 ? "Free" : `Tier ${t}`);
+const tierName = (t: number) => (t === 1 ? tr("Free") : tr("Tier {0}", { 0: t }));
 
 type Outcome =
   | { kind: "idle"; where?: undefined }
@@ -159,7 +160,7 @@ export function FuelTheCity({
           ? { kind: "done", text: done, where }
           : {
               kind: "failed",
-              text: "It didn't go through. Nothing was taken; try again.",
+              text: tr("It didn't go through. Nothing was taken; try again."),
               where,
             },
       );
@@ -181,26 +182,20 @@ export function FuelTheCity({
   return (
     <section className="fuel" aria-labelledby="fuel-title">
       <p className="fuel-intro">
-        Stake test NEAR and choose how much of its yield fuels the global prize
-        pool. Your stake stays yours; the yield you share grows tomorrow's
-        rewards wherever people play, and opens Tier 2 and Tier 3 places for
-        you.
-      </p>
+        {tr("Stake test NEAR. Its yield grows the prize pool and opens Tier 2 and 3 places. Your stake stays yours.")}</p>
 
       {readError && !vaults && (
         <div className="fuel-state fuel-failed" role="alert">
           <WarningCircle size={20} aria-hidden="true" />
-          <span>Staking can't be read right now. {readError}</span>
+          <span>{tr("Staking can't be read right now.")}{" "}{readError}</span>
           <button className="secondary-button" onClick={() => void refresh()}>
-            Try again
-          </button>
+            {tr("Try again")}</button>
         </div>
       )}
-      {!vaults && !readError && <p role="status">Reading the prize pool fuel…</p>}
+      {!vaults && !readError && <p role="status">{tr("Reading the prize pool fuel…")}</p>}
       {vaults?.status === "not-configured" && (
         <p className="fuel-state">
-          Fueling isn't open on this server yet. You can keep exploring for free.
-        </p>
+          {tr("Fueling isn't open on this server yet. You can keep exploring for free.")}</p>
       )}
 
       {vaults?.config && (
@@ -209,13 +204,11 @@ export function FuelTheCity({
             <div className="fuel-meter-head">
               <Flame size={28} weight="duotone" aria-hidden="true" />
               <div>
-                <h2 id="fuel-title">Prize pool fuel</h2>
+                <h2 id="fuel-title">{tr("Prize pool fuel")}</h2>
                 <p>
                   {summary.cityWeightedGold === null
-                    ? "Pool total not readable right now"
-                    : `${fmt(summary.cityWeightedGold)} GOLD of stake fueling the prize pool${
-                        summary.stakers ? ` · ${summary.stakers} explorers` : ""
-                      }`}
+                    ? tr("Pool total not readable right now")
+                    : tr("{0} GOLD of stake fueling the prize pool{1}", { 0: fmt(summary.cityWeightedGold), 1: summary.stakers ? ` · ${summary.stakers} explorers` : "" })}
                 </p>
               </div>
             </div>
@@ -224,8 +217,8 @@ export function FuelTheCity({
               role="img"
               aria-label={
                 summary.share === null
-                  ? "Prize pool fuel meter"
-                  : `You give ${fmt(summary.share * 100, 1)} % of the prize pool's fuel`
+                  ? tr("Prize pool fuel meter")
+                  : tr("You give {0} % of the prize pool's fuel", { 0: fmt(summary.share * 100, 1) })
               }
             >
               <span style={{ width: `${cityPct}%` }} />
@@ -235,18 +228,18 @@ export function FuelTheCity({
             </span>
             <dl className="fuel-numbers">
               <div>
-                <dt>Your fuel</dt>
+                <dt>{tr("Your fuel")}</dt>
                 <dd>{fmt(summary.myWeightedGold)} GOLD</dd>
               </div>
               <div>
-                <dt>Your share</dt>
+                <dt>{tr("Your share")}</dt>
                 <dd>
                   {summary.share === null ? "–" : `${fmt(summary.share * 100, 1)} %`}
                 </dd>
               </div>
               <div>
-                <dt>Your tier</dt>
-                <dd>{summary.tier === 1 ? "Free" : `Tier ${summary.tier}`}</dd>
+                <dt>{tr("Your tier")}</dt>
+                <dd>{summary.tier === 1 ? tr("Free") : tr("Tier {0}", { 0: summary.tier })}</dd>
               </div>
             </dl>
             <div className="fuel-tier">
@@ -256,14 +249,14 @@ export function FuelTheCity({
               <p>
                 <LockKeyOpen size={16} aria-hidden="true" />{" "}
                 {summary.next
-                  ? `${fmt(summary.next.missingGold)} GOLD more fuel opens Tier ${summary.next.tier} places.`
-                  : "Every place on the map is open to you."}
+                  ? tr("{0} GOLD more fuel opens Tier {1} places.", { 0: fmt(summary.next.missingGold), 1: summary.next.tier })
+                  : tr("Every place on the map is open to you.")}
               </p>
             </div>
           </div>
 
           {positions.length > 0 && (
-            <ul className="fuel-positions" aria-label="Your stakes">
+            <ul className="fuel-positions" aria-label={tr("Your stakes")}>
               {positions.map((p) => {
                 const st = fuelStatus(p);
                 return (
@@ -279,9 +272,8 @@ export function FuelTheCity({
                       {st.label}
                     </span>
                     <span>
-                      {contributionBps(p) / 100} % of yield to the prize pool ·{" "}
-                      {fmt(weightedGold(p))} GOLD fuel
-                    </span>
+                      {contributionBps(p) / 100} {" "}{tr("% of yield to the prize pool ·")}{" "}
+                      {fmt(weightedGold(p))} {" "}{tr("GOLD fuel")}</span>
                   </li>
                 );
               })}
@@ -291,18 +283,17 @@ export function FuelTheCity({
           <StakeToday />
 
           <div className="fuel-action">
-            <h2>{active ? "Add fuel" : "Start fueling"}</h2>
+            <h2>{active ? tr("Add fuel") : tr("Start fueling")}</h2>
             {!account ? (
               <>
-                <p>Your explorer account is still being prepared.</p>
+                <p>{tr("Your explorer account is still being prepared.")}</p>
                 <button className="secondary-button" onClick={onConnect}>
-                  Link a NEAR account instead
-                </button>
+                  {tr("Link a NEAR account instead")}</button>
               </>
             ) : (
               <>
                 {fixedContribution === null ? (
-                  <div className="fuel-choice" role="radiogroup" aria-label="How much yield fuels the prize pool">
+                  <div className="fuel-choice" role="radiogroup" aria-label={tr("How much yield fuels the prize pool")}>
                     {CONTRIBUTION_CHOICES.map((c) => (
                       <button
                         key={c.pct}
@@ -319,16 +310,15 @@ export function FuelTheCity({
                   </div>
                 ) : (
                   <p className="fuel-fixed">
-                    This stake gives <b>{fixedContribution} %</b> of its yield to
-                    the prize pool.{" "}
+                    {tr("This stake gives")}{" "}<b>{fixedContribution} %</b> {" "}{tr("of its yield to the prize pool.")}{" "}
                     {adjustable
-                      ? "You can change it below."
-                      : "To change it, exit and start a new one."}
+                      ? tr("You can change it below.")
+                      : tr("To change it, exit and start a new one.")}
                   </p>
                 )}
                 {active && (
                   <label className="fuel-amount">
-                    <span>Amount · test NEAR</span>
+                    <span>{tr("Amount · test NEAR")}</span>
                     <input
                       inputMode="decimal"
                       value={amount}
@@ -346,19 +336,17 @@ export function FuelTheCity({
                 {active && !amountError && (
                   <p className="fuel-suggest">
                     {gates && !gates.access.staker
-                      ? `${gates.suggestNear} NEAR${eurHint(Number(gates.suggestNear), gates.priceEur) ? ` (${eurHint(Number(gates.suggestNear), gates.priceEur)})` : ""} makes you a Staker after two epochs: the Keeper's inner vault and patron chapters open step by step with your level.`
+                      ? tr("{0} NEAR{1} makes you a Staker after two epochs: the Keeper's inner vault and patron chapters open step by step with your level.", { 0: gates.suggestNear, 1: eurHint(Number(gates.suggestNear), gates.priceEur) ? ` (${eurHint(Number(gates.suggestNear), gates.priceEur)})` : "" })
                       : eurHint(amountNear, gates?.priceEur)
-                        ? `${amount} NEAR is about ${eurHint(amountNear, gates?.priceEur)!.slice(1)} at today's mainnet price.`
+                        ? tr("{0} NEAR is about {1} at today's mainnet price.", { 0: amount, 1: eurHint(amountNear, gates?.priceEur)!.slice(1) })
                         : null}
                   </p>
                 )}
                 {active && !amountError && (
                   <p className="fuel-preview">
-                    +{fmt(preview.addedGold)} GOLD fuel →{" "}
-                    {preview.tierAfter === 1 ? "Free" : `Tier ${preview.tierAfter}`}
-                    {preview.tierAfter > summary.tier ? " unlocked" : ""}. It
-                    counts after about two pool epochs (1–2 days).
-                  </p>
+                    +{fmt(preview.addedGold)} {" "}{tr("GOLD fuel →")}{" "}
+                    {preview.tierAfter === 1 ? tr("Free") : tr("Tier {0}", { 0: preview.tierAfter })}
+                    {preview.tierAfter > summary.tier ? " unlocked" : ""}{tr(". It counts after about two pool epochs (1–2 days).")}</p>
                 )}
                 {!active && !setupPending && (
                   <label className="fuel-consent">
@@ -369,11 +357,9 @@ export function FuelTheCity({
                       onChange={(e) => setUnderstood(e.target.checked)}
                     />
                     <span>
-                      I understand the one-time setup of{" "}
+                      {tr("I understand the one-time setup of")}{" "}
                       {fmt(Number(BigInt(vaults.config.setup_deposit) / 10n ** 21n) / 1000, 3)}{" "}
-                      test NEAR is not withdrawable, and this is a test-network
-                      pilot.
-                    </span>
+                      {tr("test NEAR is not withdrawable, and this is a test-network pilot.")}</span>
                   </label>
                 )}
                 <button
@@ -395,8 +381,8 @@ export function FuelTheCity({
                             vaultId: active.account_id,
                             amount: parseTestNear(amount),
                           },
-                          "Adding your fuel…",
-                          "Fuel added. It starts counting after about two pool epochs.",
+                          tr("Adding your fuel…"),
+                          tr("Fuel added. It starts counting after about two pool epochs."),
                         )
                       : setupPending
                         ? void send(
@@ -405,8 +391,8 @@ export function FuelTheCity({
                               vaultId: setupPending.account_id,
                               positionId: setupPending.id,
                             },
-                            "Finishing setup…",
-                            "Setup finished. Now add your first fuel.",
+                            tr("Finishing setup…"),
+                            tr("Setup finished. Now add your first fuel."),
                           )
                         : void send(
                             {
@@ -415,36 +401,32 @@ export function FuelTheCity({
                               contributionBps: contribution * 100,
                               setupDeposit: vaults.config.setup_deposit,
                             },
-                            "Setting up your stake…",
-                            "Your stake is set up. Now add your first fuel.",
+                            tr("Setting up your stake…"),
+                            tr("Your stake is set up. Now add your first fuel."),
                           )
                   }
                 >
                   {busy
                     ? outcome.text
                     : active
-                      ? `Add ${amountError ? "" : `${amount} test NEAR `}fuel`
+                      ? tr("Add {0}fuel", { 0: amountError ? "" : `${amount} test NEAR ` })
                       : setupPending
-                        ? "Finish setup"
-                        : "Set up my stake"}
+                        ? tr("Finish setup")
+                        : tr("Set up my stake")}
                   <Flame size={20} />
                 </button>
                 <p className="fuel-paid">
                   {managed
-                    ? "Paid from your balance, no popup. "
-                    : "Paid from your balance; your NEAR wallet asks you to approve. "}
-                  The network fee is tiny and comes from your balance too.
-                  Withdraw any time; it takes about 1–7 days.
-                </p>
+                    ? tr("Paid from your balance, no popup. ")
+                    : tr("Paid from your balance; your NEAR wallet asks you to approve. ")}
+                  {tr("The network fee is tiny and comes from your balance too. Withdraw any time; it takes about 1–7 days.")}</p>
               </>
             )}
             {withdrawable && (
               <div className="fuel-state fuel-ready">
                 <CheckCircle size={20} aria-hidden="true" />
                 <span>
-                  {fmtNear(String(withdrawable.position!.owner_credit))} test NEAR
-                  is back and ready to withdraw.
-                </span>
+                  {fmtNear(String(withdrawable.position!.owner_credit))} {" "}{tr("test NEAR is back and ready to withdraw.")}</span>
                 <button
                   className="secondary-button"
                   disabled={busy}
@@ -452,12 +434,11 @@ export function FuelTheCity({
                     void send(
                       { action: "withdraw", vaultId: withdrawable.account_id },
                       "Withdrawing…",
-                      "Withdrawn to your balance.",
+                      tr("Withdrawn to your balance."),
                     )
                   }
                 >
-                  Withdraw
-                </button>
+                  {tr("Withdraw")}</button>
               </div>
             )}
             {outcome.kind === "done" && !outcome.where && (
@@ -486,9 +467,7 @@ export function FuelTheCity({
 
       <details className="play-details fuel-advanced">
         <summary>
-          <ArrowsClockwise size={18} aria-hidden="true" /> Manage stakes and
-          withdrawals
-        </summary>
+          <ArrowsClockwise size={18} aria-hidden="true" /> {" "}{tr("Manage stakes and withdrawals")}</summary>
         <NativeStaking
           player={player}
           onConnect={onConnect}
@@ -539,16 +518,14 @@ function FuelAdjust({
   const pending = position.position?.pending_contribution_bps;
   return (
     <div className="fuel-action fuel-adjust">
-      <h2>Change your stake</h2>
+      <h2>{tr("Change your stake")}</h2>
 
       <section aria-labelledby="fuel-partial-title" className="fuel-adjust-part">
-        <h3 id="fuel-partial-title">Take some out</h3>
+        <h3 id="fuel-partial-title">{tr("Take some out")}</h3>
         <p>
-          You have {fmtNear(String(position.position?.principal ?? "0"))} test
-          NEAR staked. The rest keeps fueling the prize pool.
-        </p>
+          {tr("You have")}{" "}{fmtNear(String(position.position?.principal ?? "0"))} {" "}{tr("test NEAR staked. The rest keeps fueling the prize pool.")}</p>
         <label className="fuel-amount">
-          <span>Amount · test NEAR</span>
+          <span>{tr("Amount · test NEAR")}</span>
           <input
             inputMode="decimal"
             value={takeOut}
@@ -570,14 +547,11 @@ function FuelAdjust({
         )}
         {exitQuote?.ok && (
           <p className="fuel-preview" data-testid="partial-quote">
-            You get back about {fmt(exitQuote.receiveNear, 3)} test NEAR
-            {exitQuote.cityFeeNear > 0
-              ? `; ${fmt(exitQuote.cityFeeNear, 3)} test NEAR of yield already earned goes to the prize pool at today's ${current} %`
+            {tr("You get back about")}{" "}{fmt(exitQuote.receiveNear, 3)} {" "}{tr("test NEAR")}{exitQuote.cityFeeNear > 0
+              ? tr("; {0} test NEAR of yield already earned goes to the prize pool at today's {1} %", { 0: fmt(exitQuote.cityFeeNear, 3), 1: current })
               : ""}
-            . {fmt(exitQuote.remainingNear, 3)} test NEAR stays staked →{" "}
-            {fmt(exitQuote.goldAfter)} GOLD fuel, {tierName(exitQuote.tierAfter)}.
-            It arrives after about 1–7 days of unstaking.
-          </p>
+            . {fmt(exitQuote.remainingNear, 3)} {" "}{tr("test NEAR stays staked →")}{" "}
+            {fmt(exitQuote.goldAfter)} {" "}{tr("GOLD fuel,")}{" "}{tierName(exitQuote.tierAfter)}{tr(". It arrives after about 1–7 days of unstaking.")}</p>
         )}
         <button
           className="secondary-button"
@@ -585,26 +559,26 @@ function FuelAdjust({
           onClick={() =>
             void send(
               { action: "partial", vaultId: position.account_id, amount: amountYocto },
-              "Taking part of your stake out…",
-              "Requested. Your test NEAR is unstaking; withdraw it here when it's back.",
+              tr("Taking part of your stake out…"),
+              tr("Requested. Your test NEAR is unstaking; withdraw it here when it's back."),
             ).then((ok) => ok && setTakeOut(""))
           }
         >
-          {busy ? "Working…" : `Take ${exitQuote?.ok ? takeOut + " test NEAR " : ""}out`}
+          {busy ? tr("Working…") : tr("Take {0}out", { 0: exitQuote?.ok ? takeOut + " test NEAR " : "" })}
         </button>
       </section>
 
       <section aria-labelledby="fuel-share-title" className="fuel-adjust-part">
-        <h3 id="fuel-share-title">Prize pool share of your yield</h3>
+        <h3 id="fuel-share-title">{tr("Prize pool share of your yield")}</h3>
         <p>
-          Now <b>{current} %</b>
+          {tr("Now")}{" "}<b>{current} %</b>
           {typeof pending === "number"
-            ? `, switching to ${pending / 100} % once earned yield settles`
+            ? tr(", switching to {0} % once earned yield settles", { 0: pending / 100 })
             : ""}
           .
         </p>
-        <div className="fuel-choice" role="radiogroup" aria-label="New prize pool share">
-          {[{ pct: 0, label: "None", hint: "Keep all yield" }, ...CONTRIBUTION_CHOICES].map(
+        <div className="fuel-choice" role="radiogroup" aria-label={tr("New prize pool share")}>
+          {[{ pct: 0, label: tr("None"), hint: tr("Keep all yield") }, ...CONTRIBUTION_CHOICES].map(
             (c) => (
               <button
                 key={c.pct}
@@ -628,9 +602,9 @@ function FuelAdjust({
         {shareQuote?.ok && (
           <p className="fuel-preview" data-testid="share-quote">
             {shareQuote.settlesFirst
-              ? `Yield already earned settles at ${shareQuote.oldPct} % first; ${shareQuote.newPct} % applies when that settlement arrives (about 1–7 days).`
-              : `${shareQuote.newPct} % applies right away, to yield earned from now on.`}{" "}
-            → {fmt(shareQuote.goldAfter)} GOLD fuel, {tierName(shareQuote.tierAfter)}.
+              ? tr("Yield already earned settles at {0} % first; {1} % applies when that settlement arrives (about 1–7 days).", { 0: shareQuote.oldPct, 1: shareQuote.newPct })
+              : tr("{0} % applies right away, to yield earned from now on.", { 0: shareQuote.newPct })}{" "}
+            → {fmt(shareQuote.goldAfter)} {" "}{tr("GOLD fuel,")}{" "}{tierName(shareQuote.tierAfter)}.
           </p>
         )}
         <button
@@ -643,14 +617,14 @@ function FuelAdjust({
                 vaultId: position.account_id,
                 contributionBps: share! * 100,
               },
-              "Changing the prize pool share…",
+              tr("Changing the prize pool share…"),
               shareQuote?.ok && shareQuote.settlesFirst
-                ? "Requested. The new share applies once earned yield settles."
-                : "Prize pool share changed.",
+                ? tr("Requested. The new share applies once earned yield settles.")
+                : tr("Prize pool share changed."),
             ).then((ok) => ok && setShare(null))
           }
         >
-          {busy ? "Working…" : "Change share"}
+          {busy ? tr("Working…") : tr("Change share")}
         </button>
       </section>
       {outcome.where === "adjust" && outcome.kind === "pending" && (

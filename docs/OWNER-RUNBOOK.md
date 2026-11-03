@@ -119,6 +119,31 @@ so it does not meet the live `nfts.` contract. Testnet key files are `*-testnet.
 dry run (fake chain, then the real server booted on `NEAR_NETWORK=mainnet` from the written manifests) is
 `node --test tests/mainnet-slice.test.mjs` and runs in CI.
 
+### New contracts in the same command (`docs/MAINNET-PLAN.md` §6)
+
+Badges, NPC games and an stNEAR treasury deposit are opt-in; the Aura editions check always runs; the yield vault
+is refused (testnet-only code). Build the WASM on Linux (`npm run contracts:docker`, the CI artifact
+`contract-wasm-linux-amd64`, or `bash scripts/build-contracts.sh` on Linux with Rust 1.97.0): a Mac build hashes
+differently and the script refuses it.
+
+```bash
+export MAINNET_CONTRACTS=badges,npc-games,stnear-treasury \
+  BADGES_FUND_NEAR=5 BADGES_MINTER_ALLOWANCE_NEAR=1 NPC_GAMES_FUND_NEAR=3.5 \
+  STNEAR_TREASURY_DEPOSIT_NEAR=2 NPC_TICKET_SIGNER_PATH=.data/npc-games-ticket-signer-mainnet.pem
+node scripts/deploy-mainnet-slice.mjs --network mainnet            # plan + readiness of every contract
+node scripts/deploy-mainnet-slice.mjs --network mainnet --execute  # deploys slice, then these
+```
+
+With the slice amounts above the operator needs 14.5 + 8.5 + 2 + 1 reserve = 26 NEAR (24 without the stNEAR
+deposit); the script checks the sum before signing anything. Badges must cover 291,076 bytes of code (3.41 NEAR
+minimum) plus the sponsored badge creations and claims it pays for; NPC games needs at least 2.95 NEAR. The
+minter allowance only caps the minter key's gas. New files: `.data/badges-minter-mainnet.json`,
+`.data/npc-games-ticket-signer-mainnet.pem` (created on the first `--execute`, mode 600), and in `public/`
+`native-badges-mainnet.json`, `native-npc-games-mainnet.json`, `native-editions-mainnet.json` and, after a deposit,
+`stnear-treasury-mainnet.json` (commit them). `scripts/install-mainnet-keys-vps.sh` copies the minter and ticket keys
+next to the slice keys when present. Rehearse on testnet with the same command without `--network` (defaults:
+all four, testnet amounts, output in `output/mainnet-slice-testnet/`).
+
 ### Mainnet service on the VPS
 
 The slice runs as a second service next to the testnet one and shares nothing with it:

@@ -16,6 +16,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { friendlyParkNames } from "./city-pack-builder.mjs";
 
 export const AUTO_CITY_INDEX_SCHEMA = "questlayer.auto-cities/1";
 export const AUTO_CITY_STATUS = "auto";
@@ -170,6 +171,8 @@ export function createAutoCities(
           );
       if (boxes.length && p.candidates.some(overlaps))
         p.candidates = p.candidates.filter((c) => !overlaps(c));
+      // Packs built before friendlyParkNames carry "Park <osm id>".
+      p.candidates = friendlyParkNames(p.candidates);
       loaded = Object.freeze(p);
     } catch (error) {
       // A broken file disables that city only; its area falls back to cells.

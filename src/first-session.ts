@@ -1,4 +1,5 @@
-// The guided first five minutes: name → nearest find → first coin → first
+
+import { tr } from "./i18n.ts";// The guided first five minutes: name → nearest find → first coin → first
 // chest → Aura → secure or share. Progress is derived from the player's
 // confirmed server state wherever possible (history, inventory, secured
 // state); only "shared" has no server trace, so it is a local mark. Nothing
@@ -20,50 +21,51 @@ export type FirstStep = {
 export const FIRST_STEPS: FirstStep[] = [
   {
     id: "name",
-    title: "Name your ghost",
-    hint: "Pick a name so other explorers know who found what.",
-    action: "Start exploring",
-    done: "Your ghost has a name.",
+    get title() { return tr("Name your ghost"); },
+    get hint() { return tr("Pick a name so other explorers know who found what."); },
+    get action() { return tr("Start exploring"); },
+    get done() { return tr("Your ghost has a name."); },
   },
   {
     id: "find",
-    title: "Reach the nearest find",
-    hint: "A street find waits nearby. Walk there and your ghost picks it up.",
-    action: "Walk there",
-    done: "First street find collected.",
+    get title() { return tr("Reach the nearest find"); },
+    get hint() { return tr("A street find waits nearby. Walk there and your ghost picks it up."); },
+    get action() { return tr("Point me there"); },
+    get done() { return tr("First street find collected."); },
   },
   {
     id: "coin",
-    title: "Pick up a coin",
-    hint: "Coins lie along the streets. Walk over one to pick it up.",
-    action: "Walk to a coin",
-    done: "First coin in your pocket.",
+    get title() { return tr("Pick up a coin"); },
+    get hint() { return tr("Coins lie along the streets. Walk over one to pick it up."); },
+    get action() { return tr("Point me to a coin"); },
+    get done() { return tr("First coin in your pocket."); },
   },
   {
     id: "chest",
-    title: "Open your first chest",
-    hint: "Chests hide in parks. Walk to the nearest one and open it.",
-    action: "Show the chest",
-    done: "Chest opened.",
+    get title() { return tr("Open your first chest"); },
+    get hint() { return tr("Chests hide in parks. Walk to the nearest one and open it."); },
+    get action() { return tr("Show the chest"); },
+    get done() { return tr("Chest opened."); },
   },
   {
     id: "aura",
-    title: "Wear your Aura",
-    hint: "An Aura is the glow your ghost wears. Try it on to see it on the map.",
-    action: "Try it on",
-    done: "Your ghost is glowing.",
+    get title() { return tr("Wear your Aura"); },
+    get hint() { return tr("An Aura is the glow your ghost wears. Try it on to see it on the map."); },
+    get action() { return tr("Try it on"); },
+    get done() { return tr("Your ghost is glowing."); },
   },
   {
     id: "secure",
-    title: "Secure or share it",
-    hint: "Keep your Aura for good, or share a card of it with a friend.",
-    action: "Secure or share",
-    done: "All set. The city is yours to explore.",
+    get title() { return tr("Secure or share it"); },
+    get hint() { return tr("Keep your Aura for good, or share a card of it with a friend."); },
+    get action() { return tr("Secure or share"); },
+    get done() { return tr("All set. The city is yours to explore."); },
   },
 ];
 
 type HistoryEntry = { kind: string; title: string };
 type InventoryItem = {
+  id?: string;
   kind: string;
   equipped: number | boolean;
   native_claim_state?: string | null;
@@ -96,7 +98,12 @@ export function provenSteps(player: FirstSessionPlayer | null): Set<FirstStepId>
     if (h.kind === "coin" && h.title === "Street find") proven.add("find");
     if (h.kind === "coin" && h.title === "Street coin") proven.add("coin");
   }
-  const auras = (player.inventory || []).filter((i) => i.kind === "aura");
+  // Testnet starter-kit Auras (TEST_SEED, ids "seed-kit-…") are handed out
+  // at sign-up; they must not tick off "open a chest" / "wear your Aura",
+  // or a newcomer on the test world skips the core loop.
+  const auras = (player.inventory || []).filter(
+    (i) => i.kind === "aura" && !String(i.id || "").startsWith("seed-kit-"),
+  );
   if (auras.length) proven.add("chest");
   if (player.nativeOutfit || auras.some((i) => !!i.equipped)) proven.add("aura");
   if (auras.some((i) => i.native_claim_state === "minted")) proven.add("secure");

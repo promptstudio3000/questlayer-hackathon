@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle, Star, Trophy } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
+import { tr } from "./i18n";
 
 export type BonusCandidate = {
   questId: string;
@@ -29,8 +30,8 @@ const HIDDEN_CODES = new Set(["BONUS_VOTE_DISABLED", "CREATORS_DISABLED"]);
 export function bonusVoteReason(ballot: BonusBallot): string | null {
   if (ballot.eligible) return null;
   return ballot.reason === "ACCOUNT_NOT_READY"
-    ? "Your explorer profile is still being set up. You can vote in a moment."
-    : "Play this week to vote: pick up a coin or join a community quest.";
+    ? tr("Your explorer profile is still being set up. You can vote in a moment.")
+    : tr("Play this week to vote: pick up a coin or join a community quest.");
 }
 
 export function closesLabel(closesAt: number, now = Date.now()): string {
@@ -38,8 +39,8 @@ export function closesLabel(closesAt: number, now = Date.now()): string {
   const h = Math.floor(minutes / 60),
     m = minutes % 60;
   return h > 0
-    ? `Voting closes in ${h} h ${m} min`
-    : `Voting closes in ${m} min`;
+    ? tr("Voting closes in {0} h {1} min", { 0: h, 1: m })
+    : tr("Voting closes in {0} min", { 0: m });
 }
 
 export function CommunityBonusVote({
@@ -84,12 +85,12 @@ export function CommunityBonusVote({
       setBallot(next);
       notify?.(
         c.mine
-          ? "Vote taken back."
-          : `Voted for ${c.title || "this quest"}. ${next.votesLeft} left.`,
+          ? tr("Vote taken back.")
+          : tr("Voted for {0}. {1} left.", { 0: c.title || "this quest", 1: next.votesLeft }),
       );
     } catch (error) {
       notify?.(
-        error instanceof Error ? error.message : "Could not save your vote.",
+        error instanceof Error ? error.message : tr("Could not save your vote."),
         true,
       );
       void load();
@@ -99,38 +100,34 @@ export function CommunityBonusVote({
   }
 
   return (
-    <section className="bonus-vote" aria-labelledby="bonus-vote-title">
-      <h2 id="bonus-vote-title">
-        <Trophy size={24} aria-hidden /> Tomorrow's creator bonus
-      </h2>
+    <details className="bonus-vote" aria-labelledby="bonus-vote-title">
+      <summary>
+        <h2 id="bonus-vote-title">
+          <Trophy size={20} aria-hidden /> {" "}{tr("Tomorrow's creator bonus")}</h2>
+        <p className="bonus-vote-meta">
+          <span>{closesLabel(ballot.closesAt)}</span>
+          {ballot.eligible && (
+            <span aria-live="polite">
+              {tr("{0} of {1} votes left", { 0: ballot.votesLeft, 1: ballot.policy.votesPerExplorer })}</span>
+          )}
+        </p>
+      </summary>
       <p>
-        Pick up to {ballot.policy.votesPerExplorer} community quests you
-        enjoyed. The top {ballot.policy.winners} share tomorrow's creator bonus.
-      </p>
-      <p className="bonus-vote-meta">
-        <span>{closesLabel(ballot.closesAt)}</span>
-        {ballot.eligible && (
-          <span aria-live="polite">
-            {ballot.votesLeft} of {ballot.policy.votesPerExplorer} votes left
-          </span>
-        )}
-      </p>
+        {tr("Pick up to")}{" "}{ballot.policy.votesPerExplorer} {" "}{tr("community quests you enjoyed. The top")}{" "}{ballot.policy.winners} {" "}{tr("share tomorrow's creator bonus.")}</p>
       {reason && <p className="bonus-vote-note">{reason}</p>}
       {winners.length > 0 && (
         <p className="bonus-vote-winners">
-          <Star size={18} weight="fill" aria-hidden /> Today's bonus quests:{" "}
-          {winners.map((id) => titles.get(id) || "Community quest").join(", ")}
+          <Star size={18} weight="fill" aria-hidden /> {" "}{tr("Today's bonus quests:")}{" "}
+          {winners.map((id) => titles.get(id) || tr("Community quest")).join(", ")}
         </p>
       )}
       {ballot.candidates.length === 0 ? (
         <p className="bonus-vote-note">
-          No community quests to vote on yet. Check back once creators publish
-          one.
-        </p>
+          {tr("No community quests to vote on yet. Check back once creators publish one.")}</p>
       ) : (
         <ul className="bonus-vote-list">
           {ballot.candidates.map((c) => {
-            const label = c.title || "Community quest";
+            const label = c.title || tr("Community quest");
             const disabled =
               busy !== null ||
               c.own ||
@@ -141,8 +138,8 @@ export function CommunityBonusVote({
                 <span className="bonus-vote-title">
                   <b>{label}</b>
                   <small>
-                    {c.votes === 1 ? "1 vote" : `${c.votes} votes`}
-                    {c.own ? " · Your quest" : ""}
+                    {c.votes === 1 ? tr("1 vote") : `${c.votes} votes`}
+                    {c.own ? tr(" · Your quest") : ""}
                   </small>
                 </span>
                 {!c.own && (
@@ -154,8 +151,8 @@ export function CommunityBonusVote({
                     aria-pressed={c.mine}
                     aria-label={
                       c.mine
-                        ? `Take back vote for ${label}`
-                        : `Vote for ${label}`
+                        ? tr("Take back vote for {0}", { 0: label })
+                        : tr("Vote for {0}", { 0: label })
                     }
                     disabled={disabled}
                     onClick={() => void toggle(c)}
@@ -163,10 +160,9 @@ export function CommunityBonusVote({
                     {c.mine ? (
                       <>
                         <CheckCircle size={18} weight="fill" aria-hidden />{" "}
-                        Voted
-                      </>
+                        {tr("Voted")}</>
                     ) : (
-                      "Vote"
+                      tr("Vote")
                     )}
                   </button>
                 )}
@@ -175,6 +171,6 @@ export function CommunityBonusVote({
           })}
         </ul>
       )}
-    </section>
+    </details>
   );
 }

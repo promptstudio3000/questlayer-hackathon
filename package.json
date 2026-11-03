@@ -16,6 +16,8 @@
     "test:mainnet": "node scripts/test-mainnet.mjs",
     "check": "npm run build && npm run budget && npm test && npm run test:mainnet",
     "budget": "node scripts/check-bundle-budget.mjs",
+    "perf:probe": "node scripts/perf-probe.mjs",
+    "load:test": "node scripts/load-test.mjs",
     "test:contracts": "bash scripts/build-contracts.sh --test",
     "contracts:docker": "bash scripts/build-contracts-docker.sh",
     "check:clean-clone": "bash scripts/clean-clone-check.sh",
@@ -28,13 +30,16 @@
     "e2e:first-session": "node scripts/e2e-first-session.mjs",
     "e2e:bonus-vote": "node scripts/e2e-bonus-vote.mjs",
     "e2e:world": "node scripts/e2e-world-journeys.mjs",
+    "e2e:live": "node scripts/e2e-live-journeys.mjs",
     "pilot:city": "node scripts/rehearse-city-pilot.mjs",
     "market:upgrade": "node scripts/upgrade-market-v2-testnet.mjs",
     "market:fixture": "node scripts/lib/signed-order-fixture.mjs",
     "seed:test": "node scripts/test-seed.mjs",
     "poi:classify": "node server/poi/cli.mjs",
     "world:coverage": "node scripts/world-coverage.mjs",
-    "ai:flavour": "node server/cli/ai-flavour.mjs"
+    "ai:flavour": "node server/cli/ai-flavour.mjs",
+    "i18n:keys": "node scripts/i18n-keys.mjs",
+    "e2e:languages": "node scripts/e2e-languages.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

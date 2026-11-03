@@ -30,14 +30,25 @@ npm run ai:flavour -- --since 7d [--dry-run] [--max-pois N] [--budget N] [--poi 
 2. **POIs**: up to 24 per cell from the W3 file (`POI_DB_PATH`, default `/var/lib/questlayer-poi/current.sqlite`),
    opened read-only, `safety='ok'` only, notable first. Already cached texts are skipped.
 3. **Model**: chunks of 4 POIs, all missing `(template, lang)` items in one structured call. Input is the POI's
-   names, category, Wikidata short description and the layer lore; place data is marked untrusted.
-4. **Validation** (`validateFlavour`): length limits, every rule of `server/ai/text-policy.mjs` (rewards, money,
+   names, category, Wikidata short description and the layer lore; place data is marked untrusted. The prompt
+   lists the exact words the text policy rejects (also used figuratively, such as "dive into history"). Items
+   that come back missing or rejected get **one follow-up call** per chunk that names each item's problem in plain
+   words; the rejected text itself is never sent back. Keys are matched ignoring spaces and case.
+4. **Validation** (`validateFlavour`): length limits (title 3-80, description 20-220; an over-long description
+   keeps its leading whole sentences when they fit), every rule of `server/ai/text-policy.mjs` (rewards, money,
    links, markup, unsafe advice, credentials, promises, prompt leaks), no numbers that are not in the POI's own
-   name or facts, and the right language. A rejected text is not stored; players keep the template text.
+   name or facts, and the right language. The word rules and the language check ignore the place's own names,
+   including Czech declined forms (`withoutNames`): "Plavecký stadion" or "Vyhlídka Skok" are names, not advice
+   to swim or jump. The language check counts Czech and English signal words and ignores capitalised proper
+   nouns, so English text may name Czech towns and streets. A rejected text is not stored; players keep the
+   template text.
 5. **Budget and audit**: the run stops before a call whose worst-case size would exceed `FLAVOUR_TOKEN_BUDGET`
    (estimated at 3.5 characters per token). One `ai_flavour_batches` row per run records counts, calls, failed
-   calls, tokens, outcome (`completed`, `budget`, `skipped`, `failed`) and reason. `/api/health` shows the last
-   batch as `questFlavour` (no texts, no POI ids).
+   calls, tokens, outcome (`completed`, `budget`, `skipped`, `failed`) and reason. `ai_flavour_rejections` counts
+   the final rejections per batch, reason (`missing`, `schema`, a policy rule, `invented-number`,
+   `wrong-language`, length) and language, with one short redacted sample each. `/api/health` shows the last
+   batch as `questFlavour.lastBatch` with `rejectionRate` (rejected / checked) and `topRejectionReasons` (no
+   texts, no POI ids).
 
 ## Settings
 
@@ -63,4 +74,23 @@ cache while players see template text. `AI_DEBUG_REJECTED=1` logs redacted sampl
 `tests/ai-flavour.test.mjs`: fixture POI file and a fake provider; template texts pass their own checks, every
 rejection reason, cache read after a batch, only missing items asked again, budget stop with no call, provider
 failure keeps templates, active-region window (arena ignored, city expanded), skips without provider or POI
-file, once-per-date timer, configuration, and a CLI dry run that never prints the key.
+file, once-per-date timer, configuration, a CLI dry run that never prints the key, the CLI on a database that
+already has every catalog module's tables, realistic model outputs from `tests/fixtures/flavour-model-outputs.json`
+(good text passes, unsafe text stays rejected) and the follow-up call with reasons in the health summary.
+
+## 3 Nov 2026 rejection fix
+
+The first VPS batch accepted 213 and rejected 779 texts (79 %). The audit then stored only counts, so the cause
+was found from the validator: it screened the place names themselves (sports grounds, viewpoints and streets with
+words like "plav", "skok", "tunel"), rejected English text that named a Czech town or district, rejected text one
+sentence over the limit, and counted items the model left out as rejected with no second chance. The fixture set
+goes from 5 of 10 good texts rejected to 0 with every unsafe sample still rejected. Prompt version stays
+`flavour-v1`: texts accepted before still pass the new checks.
+
+A server restart during a nightly batch used to leave its row on `running` with the date's `daily_jobs` claim
+taken, so the batch waited a day. When the worker starts it now marks such nightly rows `failed` with reason
+`interrupted` and releases today's claim, so the timer runs again and fills only the texts still missing
+(manual CLI runs are left alone).
+
+The CLIs in `server/cli/` load `server/schema-catalog.mjs` before opening the database, so tables that other
+modules create lazily no longer fail preflight with `SCHEMA_INCOMPATIBLE`.

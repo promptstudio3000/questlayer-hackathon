@@ -54,8 +54,8 @@
       "backstory": "A round, many-pocketed merchant creature who trades Auras from town to town.",
       "likes": ["trades", "markets", "shiny Auras"],
       "greeting": {
-        "cs": "Ahoj, příteli! Můj krámek se teprve vybaluje, brzy budu obchodovat.",
-        "en": "Hello, friend! My stall is still being unpacked; trading opens soon."
+        "cs": "Ahoj, příteli! Dnešní Aury jsou na tabuli, jen si vyber.",
+        "en": "Hello, friend! Today's Auras are on the board; take your pick."
       },
       "refusal": {
         "cs": "Ceny jsou na tabuli a jinak to nejde, příteli.",

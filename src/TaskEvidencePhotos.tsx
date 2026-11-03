@@ -10,6 +10,7 @@ import {
   uploadEvidencePhoto,
   type EvidencePhoto,
 } from "./task-evidence-photo";
+import { tr } from "./i18n";
 
 type PickerState =
   | { kind: "idle" }
@@ -86,9 +87,9 @@ export function EvidencePhotoPicker({
   async function choose(file: File | undefined) {
     if (!file) return;
     try {
-      setState({ kind: "working", label: "Removing location data…" });
+      setState({ kind: "working", label: tr("Removing location data…") });
       const data = await readPhotoFile(file);
-      setState({ kind: "working", label: "Uploading privately…" });
+      setState({ kind: "working", label: tr("Uploading privately…") });
       const uploaded = await uploadEvidencePhoto(accountId, taskId, data);
       setState({ kind: "ready", photo: uploaded });
       onPhoto(uploaded);
@@ -107,7 +108,7 @@ export function EvidencePhotoPicker({
   async function remove() {
     if (!photo) return;
     try {
-      setState({ kind: "working", label: "Erasing photo…" });
+      setState({ kind: "working", label: tr("Erasing photo…") });
       await removeEvidencePhoto(photo.id);
       setState({ kind: "idle" });
       onPhoto(null);
@@ -122,13 +123,9 @@ export function EvidencePhotoPicker({
   return (
     <fieldset className="task-photo" aria-live="polite">
       <legend>
-        <LockKey aria-hidden="true" /> Private photo (optional)
-      </legend>
+        <LockKey aria-hidden="true" /> {" "}{tr("Private photo (optional)")}</legend>
       <p className="task-secondary">
-        Only you, the sponsor and the arbiter can see it. Location data is
-        removed. Only its fingerprint goes on chain; the photo is erased 30 days
-        after the task settles, or within 24 hours if you do not submit.
-      </p>
+        {tr("Only you, the sponsor and the arbiter can see it. Location data is removed. Only its fingerprint goes on chain; the photo is erased 30 days after the task settles, or within 24 hours if you do not submit.")}</p>
       <input
         ref={input}
         type="file"
@@ -145,13 +142,13 @@ export function EvidencePhotoPicker({
       {state.kind === "error" && (
         <p className="task-photo-status task-alert" role="alert">
           {state.message}
-          {state.limited ? " Your text evidence can still be submitted." : ""}
+          {state.limited ? tr(" Your text evidence can still be submitted.") : ""}
         </p>
       )}
       {photo && (
         <div className="task-photo-ready">
           {preview && "url" in preview ? (
-            <img src={preview.url} alt="Your private evidence photo" />
+            <img src={preview.url} alt={tr("Your private evidence photo")} />
           ) : (
             <span className="task-photo-placeholder" aria-hidden="true">
               <Camera />
@@ -164,8 +161,7 @@ export function EvidencePhotoPicker({
             onClick={() => void remove()}
             disabled={disabled}
           >
-            <Trash aria-hidden="true" /> Erase photo
-          </button>
+            <Trash aria-hidden="true" /> {" "}{tr("Erase photo")}</button>
         </div>
       )}
       {!photo && state.kind !== "working" && (
@@ -176,7 +172,7 @@ export function EvidencePhotoPicker({
           onClick={() => input.current?.click()}
         >
           <Camera aria-hidden="true" />{" "}
-          {state.kind === "error" ? "Try another photo" : "Add private photo"}
+          {state.kind === "error" ? tr("Try another photo") : tr("Add private photo")}
         </button>
       )}
     </fieldset>
@@ -224,14 +220,13 @@ export function EvidencePhotoViewer({
   if (error)
     return (
       <p className="task-photo-status task-secondary" role="status">
-        Private photo status is unavailable: {error}
+        {tr("Private photo status is unavailable:")}{" "}{error}
       </p>
     );
   if (photo === undefined)
     return (
       <p className="task-photo-status task-secondary" role="status">
-        Checking for a private photo…
-      </p>
+        {tr("Checking for a private photo…")}</p>
     );
   if (photo === null) return null;
   return (
@@ -239,7 +234,7 @@ export function EvidencePhotoViewer({
       {image && "url" in image ? (
         <img
           src={image.url}
-          alt={`Private photo for evidence #${submissionId + 1}`}
+          alt={tr("Private photo for evidence #{0}", { 0: submissionId + 1 })}
         />
       ) : image && "error" in image ? (
         <p className="task-secondary" role="status">
@@ -247,8 +242,7 @@ export function EvidencePhotoViewer({
         </p>
       ) : ["staged", "committed"].includes(photo.state) ? (
         <p className="task-secondary" role="status">
-          Loading private photo…
-        </p>
+          {tr("Loading private photo…")}</p>
       ) : null}
       <p className="task-secondary">{evidencePhotoStatus(photo)}</p>
       {canReport && photo.role !== "owner" && photo.state === "committed" && (
@@ -263,7 +257,7 @@ export function EvidencePhotoViewer({
           }
         >
           <Flag aria-hidden="true" />{" "}
-          {reported ? "Reported to moderation" : "Report this photo"}
+          {reported ? tr("Reported to moderation") : tr("Report this photo")}
         </button>
       )}
     </div>

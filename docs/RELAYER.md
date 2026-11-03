@@ -78,7 +78,7 @@ gas above `RELAY_MAX_GAS`, JSON arguments above 8 KiB, purchase prices, mainnet.
   sender. Errors: `RELAY_NONCE`, `RELAY_EXPIRED`, `RELAY_SIGNATURE`,
   `RELAY_INSUFFICIENT_BALANCE` (one margin-funded retry for state storage), `RELAY_SELF_PAID`, `RELAY_CONTRACT_FAILED`,
   `RELAY_OUTCOME`; network errors retry with `min(300 s, 5 s·2^min(attempts,6))`.
-- Daily budgets: `RELAY_MAX_JOBS_PER_DAY` submissions and `RELAY_TOPUP_CAP_YOCTO` per account.
+- Daily budgets: `RELAY_MAX_JOBS_PER_DAY` submissions, `RELAY_MAX_DEPOSIT_YOCTO_PER_DAY` of attached storage deposits and `RELAY_TOPUP_CAP_YOCTO` per account. The deposit budget matters because a relayed call that fails refunds its deposit to the player's account, not to the relayer.
 
 ## Provisioning
 
@@ -93,6 +93,7 @@ mode `0600`; both keys must be full-access keys of their account on testnet.
 | `RELAYER_KEY_PATH`            | Gas payer full-access key file                           | required for relaying |
 | `RELAY_TOPUP_CAP_YOCTO`       | Max sponsored top-up per account per day                 | `2e23`                |
 | `RELAY_MAX_JOBS_PER_DAY`      | Max submissions per account per day                      | `40`                  |
+| `RELAY_MAX_DEPOSIT_YOCTO_PER_DAY` | Max attached deposits the relayer carries per account per UTC day | `0.5 NEAR` |
 | `RELAY_MAX_GAS`               | Max gas per delegated action                             | `300000000000000`     |
 | `RELAY_BLOCK_TTL`             | Max blocks a delegate may stay valid                     | `120`                 |
 | `DISABLE_RELAYER`             | `1` disables accounts and relaying                       | unset                 |

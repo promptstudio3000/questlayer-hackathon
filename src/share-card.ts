@@ -11,6 +11,7 @@ import {
   type AuraSlot,
 } from "./aura-art-data.ts";
 import type { Item } from "./types.ts";
+import { tr } from "./i18n.ts";
 
 export const SHARE_CARD = { width: 1080, height: 1350 } as const;
 
@@ -31,7 +32,7 @@ export function editionLine(item: ShareCardInput["item"]): string {
   const parts = [
     edition
       ? AURA_EDITION_NAMES[edition] === item.name
-        ? "Limited edition"
+        ? tr("Limited edition")
         : `${AURA_EDITION_NAMES[edition]} edition`
       : "Explorer Aura",
     item.serial === null || item.serial === undefined ? null : `#${item.serial}`,
@@ -41,9 +42,7 @@ export function editionLine(item: ShareCardInput["item"]): string {
 }
 
 export function shareText(input: ShareCardInput): string {
-  return `${input.explorer} found ${input.item.name} on a QuestLayer walk${
-    input.place ? ` in ${input.place}` : ""
-  }.`;
+  return tr("{0} found {1} on a QuestLayer walk{2}.", { 0: input.explorer, 1: input.item.name, 2: input.place ? ` in ${input.place}` : "" });
 }
 
 export function shareFileName(item: { name: string; serial: number | null }) {
@@ -179,7 +178,7 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
   );
 
   // Status pill.
-  const pill = input.secured ? "Secured · yours outside the game" : "Earned on a real walk";
+  const pill = input.secured ? "Secured · yours outside the game" : tr("Earned on a real walk");
   ctx.font = "600 32px Kanit, system-ui, sans-serif";
   const pw = ctx.measureText(pill).width + 64;
   ctx.fillStyle = input.secured ? "#e3f6ee" : "#f2ebff";

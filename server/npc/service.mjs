@@ -102,6 +102,7 @@ export function createNpcService(
         })),
         xp: r.terms.xp,
         aura: !!r.terms.aura,
+        ...(r.terms.errand ? { errand: { returnRequired: true, clueBonusXp: r.terms.errand.clueBonusXp || 0 } } : {}),
         ...(r.terms.patron ? { patron: { pathLine: r.terms.pathLine, pathOf: r.terms.pathOf } } : {}),
       }));
   }
@@ -109,7 +110,7 @@ export function createNpcService(
   // Greeting + menu for a fresh encounter (no model call: cheap and instant).
   function greet({ player, actor, world, encounter = null }) {
     const { persona, menu, locked, rows } = context(player, actor, world, encounter?.menu);
-    const reply = templateReply(persona, menu, { lang: "cs" });
+    const reply = templateReply(persona, menu, { lang: "en" });
     return {
       npc: { id: actor.id, name: persona.name, title: persona.title || null, archetype: persona.archetype },
       say: reply.say,
@@ -236,7 +237,7 @@ export function createNpcService(
 
   // Turn in a finished line at the NPC. Each step must have a quest claim made
   // after the line was accepted, in the same world (day).
-  function complete({ player, actor, world, offerId }) {
+  function complete({ player, actor, world, offerId, encounter = null }) {
     const id = rowId(offerId, player);
     const row = store.offer(id, player);
     assert(row && row.actor_id === actor.id, "You have no such task from this character.", 404, "NPC_OFFER");
@@ -247,10 +248,38 @@ export function createNpcService(
     const missing = row.terms.steps.filter((s) => !claimed(s.questId));
     if (missing.length)
       throw new GameError(`Finish ${missing.map((s) => s.title).join(" and ")} first.`, 409, "NPC_STEPS_LEFT");
+    // An errand ends with a return: the player must meet this NPC again after
+    // the place's quest was done (a fresh encounter, which checks GPS anew).
+    let clueBonus = 0;
+    if (row.terms.errand) {
+      const doneAt = Math.max(
+        ...row.terms.steps.map(
+          (s) => db.prepare("SELECT created_at FROM quest_claims WHERE quest_id=? AND player_id=?").get(s.questId, player)?.created_at || 0,
+        ),
+      );
+      const metAt = encounter?.encounterId
+        ? db.prepare("SELECT created_at FROM actor_encounters WHERE id=? AND player_id=? AND actor_id=?").get(encounter.encounterId, player, row.actor_id)?.created_at
+        : null;
+      if (!(metAt > doneAt))
+        throw new GameError(
+          `Walk back to ${personaOf(actor).name} and meet them again to report.`,
+          409,
+          "NPC_ERRAND_RETURN",
+        );
+      if (row.terms.errand.clue && row.terms.errand.clueBonusXp)
+        try {
+          const right = row.terms.steps.some(
+            (s) => db.prepare("SELECT correct FROM landmark_clue_answers WHERE quest_id=? AND player_id=?").get(s.questId, player)?.correct === 1,
+          );
+          if (right) clueBonus = row.terms.errand.clueBonusXp;
+        } catch {
+          /* No clue answers stored on this host yet. */
+        }
+    }
     const now = clock();
     return atomic(db, () => {
       assert(store.completeOffer(id, player) === 1, "This task was already turned in.", 409, "NPC_OFFER");
-      const xp = row.terms.xp;
+      const xp = row.terms.xp + clueBonus;
       db.prepare("UPDATE players SET xp=xp+? WHERE id=?").run(xp, player);
       let aura = null,
         edition = null;
@@ -298,6 +327,7 @@ export function createNpcService(
         ...(patron ? { patron } : {}),
         ...(row.terms.aura && !aura && !edition ? { note: "No Aura edition you are entitled to has supply left today; the XP still counts." } : {}),
         ...(row.kind === "chapter" ? { chapter: row.terms.chapter, setSize: STORY_SET_SIZE } : {}),
+        ...(row.terms.errand ? { errand: { clueBonusXp: clueBonus } } : {}),
       };
     });
   }

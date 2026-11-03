@@ -1,43 +1,124 @@
 # QuestLayer: 3-minute demo video
 
-Script and shot list for the submission video. Everything is recorded against the live testnet host
-**https://questlayer.promptstudio3000.com/** with a fresh explorer (private window, no wallet). Nothing in the video
-has monetary value; say "testnet" on screen at least once.
+Storyboard, shot list and voice-over for the submission video and the demo post on X. Track: **Games With Real
+Economies** ("judged on the game loop, not the token; bonus if players never notice the chain"). The slide deck that
+goes with it is linked from [SUBMISSION.md](SUBMISSION.md); the step-by-step guide for judges is
+[JUDGE-WALKTHROUGH.md](JUDGE-WALKTHROUGH.md).
 
-Checked on 1 November 2026 against `GET /api/health` (`network: testnet`, features `collectibles, market, rewards,
-vaults, relayer, social, creators, tasks`, relayer `relay-20261101.questlayer-dev-20261101.testnet`,
-`distribution.status: verified`) and the manifests in `public/native-*-testnet.json`. Re-check both on recording day.
+**When:** the video is recorded only after the phone verification with the owner (planned 6–7 November 2026), so the
+phone shots show the build that passed it. Everything is recorded against the live testnet host
+**https://questlayer.promptstudio3000.com/**. Nothing in the video has monetary value; the caption "NEAR testnet" is on
+screen from 0:20 to the end.
 
-## Before recording
+**The story in one line:** you go for a walk, the city gives you something to do, what you win is really yours, and
+you never see a wallet. Three acts: **play** (0:00–1:10), **own** (1:10–1:55), **economy** (1:55–2:50), then the end
+card.
 
-- Desktop browser at 1440×900 (or a phone mirrored at 390×844), private window, sound off, zoom 100 %.
-- Open a second tab at `https://testnet.nearblocks.io/` for shot 7 and a third at `/api/health`.
-- Pick a fresh name (e.g. "Demo Nov 3"); a reused explorer may have already opened today's chest.
-- Record in Plzeň city-demo mode: tapping the map moves the explorer. Label it as city demo, not GPS proof.
-- Do not reset the published world or the database for the recording.
+Last checked on 3 November 2026 against `GET /api/health` (build `b6568f1`, `network: testnet`, `poiWorld.status: ready`
+with 197,999 quest-ready places, `autoCities.status: on` with 85 unfunded cities, `distribution.status: verified`,
+relayer with 12 confirmed jobs, `yieldBackedDays: true`). Re-check on recording day (see "Recording-day checks").
 
-## Script and shot list
+## Rules for the whole video
 
-| # | Time | Shot (what is on screen) | Action | Voice-over |
-| --- | --- | --- | --- | --- |
-| 1 | 0:00–0:15 | Title card, then the first-run page | Type the name under "What should we call you?" | "QuestLayer turns a walk into a small adventure on the real map. To start, you only type a name." |
-| 2 | 0:15–0:30 | Plzeň map, ghost explorer in the centre | Press **Start exploring**; slow pan of the map | "No wallet, no seed phrase, no gas prompt. A NEAR account for this player is being created in the background." |
-| 3 | 0:30–0:50 | Close-up of a gold coin on a path | Tap next to the coin; coin disappears, XP ticks | "Coins sit on real OpenStreetMap paths. Each one is backed before it is published, and the first valid claim wins." |
-| 4 | 0:50–1:20 | **Nearest discovery** card → zone chest | **Walk there** until in range, then **Open chest** | "Six zones a day in Plzeň hold a chest. Opening it pays exact XP and an Aura." Hold on the "Reward collected" sheet. |
-| 5 | 1:20–1:35 | Result sheet → map character | Press **Try it on** | "The Aura is worn by your character right away." |
-| 6 | 1:35–2:00 | Secure and share panel | **Secure this Aura**, then **Share your Aura** | "Securing mints it as a NEP-171 NFT to the player's own account. The device key signs, our relayer only pays gas. Sharing makes a PNG card." |
-| 7 | 2:00–2:25 | Profile → **Advanced**, then NearBlocks tab | Copy the NEAR account id, paste into NearBlocks testnet; show the mint from `nfts.questlayer-dev-20261101.testnet` | "This is the only place the chain is named. Here is the account and the NFT on testnet." |
-| 8 | 2:25–2:45 | **Today's pot** card → "How rewards are funded", then `/api/health` tab | Scroll to "Books checked"; highlight `distribution.status: verified` | "Rewards come from a treasury contract with separate coin and zone buckets, and the books are checked live against the chain." |
-| 9 | 2:45–3:00 | Architecture diagram from the README, then the URL | Static | "Real map, real ownership, invisible chain. Try it now at questlayer.promptstudio3000.com. Repo link below." |
+- **Real play is GPS only.** There is no tap-to-walk. On the phone, record while actually walking. On desktop, the
+  Plzeň city demo moves with the **Demo walk** pad (arrows or WASD, Shift runs); keep the chip "City demo · arrows or
+  WASD" visible in the frame so nobody mistakes it for GPS proof.
+- **Say "testnet" once out loud** (shot 7) and keep the caption on screen.
+- **Yield honestly:** the yield cycle is proven on testnet, but the amount is tiny (the first realized yield into the
+  treasury was about 0.0000036 test NEAR). Never say rewards "are funded by yield" in general; say what the
+  **Today's pot** card shows on that day (see shot 10).
+- **Mainnet is not live.** Say "testnet today, mainnet after launch checks" if it comes up; never imply mainnet.
+- English everywhere: the UI language is English by default (Settings → language stays on English for the recording).
+- Lead with the player's problem, show one complete moment, name NEAR's role concretely, end with a next step and a
+  question (organizer guidance in HACKATHON.md, "A good demo post").
 
-Optional cut-ins if time allows (replace part of shot 8): Profile → **Market** showing a listed Aura in escrow at
-`questlayer-market-20261101b.testnet`; reload the page to show that name, XP and the worn Aura persist.
+## Recording kit
+
+| Item | Setting |
+| --- | --- |
+| Phone A (main) | Real GPS in Plzeň, near Šafaříkovy sady or another of the day's zones; screen recording on, 390-wide UI, notifications off, brightness max |
+| Phone B or a camera | Street B-roll: hand holding phone A, feet walking, the zone's real place. Vertical and 16:9 both fine; the edit is 16:9 with the phone screen as a picture-in-picture |
+| Desktop (fallback and shots 7, 9, 10) | 1440×900 private window, zoom 100 %. Tabs: the game, `https://testnet.nearblocks.io/`, `/api/health` |
+| Explorer for shots 1–7 | A fresh name on phone A (e.g. "Demo Nov 6"); a reused explorer may have opened today's chest already |
+| Prepared explorer for shot 9 | An explorer with at least one secured Aura, so the market and Vojtěch's offers are not empty |
+| Second location for shot 11 | Brno náměstí Svobody `49.1952, 16.6080` (DevTools → Sensors on desktop), or wherever the owner really is outside Plzeň |
+| Audio | Voice-over recorded separately, quiet room; light music under it at −20 dB |
+
+Do not reset the published world or the database for the recording.
+
+## Storyboard and shot list (3:00)
+
+Columns: **Source** says what records the shot (P = phone A screen recording, B = B-roll camera, D = desktop screen
+recording). Voice-over is about 380 words, which fits 3:00 at a calm pace.
+
+| # | Time | Source | On screen | Action | Voice-over | Caption |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 0:00–0:08 | B | A street in Plzeň, a hand takes out a phone | none | "Walking games give you nothing you own. Crypto games lose you at the wallet. We wanted neither." | QuestLayer |
+| 2 | 0:08–0:20 | P | First-run page, then the map with the ghost | Type the name under "What should we call you?", press **Start exploring** | "QuestLayer starts with a name. No wallet, no seed phrase, no gas. A NEAR account is made for you in the background." | Name only |
+| 3 | 0:20–0:35 | P + B | Map in GPS mode, coins on the paths around **YOU**; B-roll of feet walking | Walk over a coin; it disappears, XP ticks; the daily board moves to 1/3 | "Then you just walk. Coins sit on real paths from OpenStreetMap. Each one is backed before it appears, and the first valid claim wins." | NEAR testnet (stays on) |
+| 4 | 0:35–0:50 | P | A zone: the 3D totem, the translucent wall, the loot icons and the "Open now" countdown | Walk into the zone; the totem grows as you approach | "Zones open for a while every day. Rarer zones open for a shorter time, and everyone sees the countdown." | Zones open daily |
+| 5 | 0:50–1:10 | P | "Brute Lickquidator guards this chest" → **Answer its riddles** → win → **Open chest** → "Reward collected" | Answer three questions, open the chest, hold on the result sheet | "Some chests have a guardian. You beat it with skill: riddles about the place, a rhythm or a duel. Losing costs nothing but time. Then the chest pays exact XP and an Aura." | Skill, never money |
+| 6 | 1:10–1:20 | P | Result sheet → map | Press **Try it on**; the ghost wears the Aura | "The Aura is yours to wear right away." | |
+| 7 | 1:20–1:40 | P, then D | **Secure this Aura** → secured state; desktop: NearBlocks testnet tab with the player's account and the mint from `nfts.questlayer-dev-20261101.testnet` | Press **Secure this Aura**; on desktop paste the account id from Profile → **Advanced** into NearBlocks | "Securing it mints a real NFT to your own NEAR account. Your phone holds the key and signs; our relayer only pays the gas. This is NEAR testnet, and this is the only place you ever see the chain." | NEP-171 · gas sponsored |
+| 8 | 1:40–1:55 | P | Ráda the Pilgrim's dialog: portrait, short speech, action buttons | Tap Ráda, ask "Do you have an errand for me?", accept a two-stop errand | "The city has residents. They give you errands across today's zones. The AI only words the reply; the offer itself comes from the game server." | NPCs |
+| 9 | 1:55–2:15 | D (prepared explorer) | Vojtěch the Merchant's sheet with offers, then Inventory → **Market** → **Offers** | Show one of Vojtěch's offers and the signed-offer form; do not complete a trade on camera unless rehearsed | "Vojtěch is an NPC with his own NEAR account. He trades Auras on the player market with signed orders. His prices must leave a margin, and his surplus flows back into the game's treasury." | NPC with a wallet |
+| 10 | 2:15–2:35 | D | Explore → **Today's pot** card → **How rewards are funded** → **Books checked**; then `/api/health` with `distribution.status: verified` highlighted | Scroll slowly, highlight the source line | "All rewards come from one global treasury, split each day between coins and zone prizes. The books are checked against the chain all the time. Part of the money comes from staking yield; on testnet that yield is still tiny, but the full cycle runs." | One treasury · books verified |
+| 11 | 2:35–2:50 | P (or D with Brno) | Another town: coins, an NPC or monster marker, a place quest card, the "Unverified map" badge if it is an auto city | Tap **Use GPS** (or switch location); open a place quest card | "And it is not one city. Open it anywhere in Czechia: almost two hundred thousand public places, filtered for safety, become quests. Outside our showcase city it pays XP and collectibles, never money." | 198k places in Czechia |
+| 12 | 2:50–3:00 | static | End card: logo, URL, repo, "Which city should we map next?" | none | "Real map, real ownership, invisible chain. Try it now. Which city should we map next?" | questlayer.promptstudio3000.com · github.com/promptstudio3000/questlayer-hackathon |
+
+### Shot 10: what to say about yield on the day
+
+Open **Today's pot** and read its source line before recording, then pick one:
+
+| What the card shows | Say |
+| --- | --- |
+| A Plzeň day labelled as funded **from yield** (the first one, `plzen-2026-11-05-v2`, was scheduled to publish from yield on 3 November at 23:00 UTC) | "Today's prizes were paid from staking yield. On testnet the amount is tiny, but the cycle is real." |
+| Sponsor funding only | "Today's prizes come from sponsor funding. Staking yield flows into the same treasury; on testnet it is still tiny." |
+| **Practice** | Cut the yield sentence; say "Practice GOLD is play money; funded days show their source here." |
+
+### Phone fallback (desktop-only cut)
+
+If the phone recording fails, record shots 2–6 and 8 on desktop in the Plzeň city demo with the **Demo walk** pad
+(hold ↑ or W to walk, Shift to run; the quest buttons only turn you toward the target). Keep the chip "City demo ·
+arrows or WASD" in frame and change the voice-over in shot 3 to "On a phone you walk for real; here we use the demo
+pad." Shot 1 becomes a still of the map.
+
+### Pickup shots (record extra, use if time allows)
+
+- Night: the map's real local night sky and the night cast of characters (actors appear 07:00–22:00 local time; night
+  shows different ones).
+- The Aura on the character turning with the map rotation.
+- Profile → badges after a place visit; the season card "Hackathon Pennant".
+- A reload showing that name, XP and the worn Aura persist.
+
+## Edit and export
+
+- 16:9, 1920×1080, 30 fps, under 3:00 (X accepts longer videos only on some account types; also export a 2:20 cut that
+  drops shots 8 and 11 in case the owner's account needs it).
+- Phone screen as picture-in-picture on the right two thirds over B-roll, or full height centred on a dark
+  background (`#1C1433`).
+- Burn in captions (many people watch muted).
+- The X post text is in [SUBMISSION.md](SUBMISSION.md).
+
+## Recording-day checks
+
+| Check | Expected |
+| --- | --- |
+| `GET /api/health` → `network` | `testnet` |
+| `GET /api/health` → `relayer.enabled` and `lease.lastError` | `true`, `null` (otherwise use the fallback for shot 7 below) |
+| `GET /api/health` → `distribution.status` | `verified` |
+| `GET /api/health` → `poiWorld.status` | `ready`; `cellsWithQuests` close to `countryCells` |
+| `GET /api/health` → `autoCities` | `on` with a city count (then show the **Unverified map** badge in shot 11), or `off` (then towns play as street cells; skip the badge) |
+| `GET /api/health` → `yieldBackedDays` and **Today's pot** | decides the shot 10 line (table above) |
+| `GET /api/npc/traders` (with the prepared explorer's cookie; it answers 401 without one) | Vojtěch listed with market credit; a prepared explorer sees at least one offer |
+| Rehearsal | One full run 30 minutes before recording, on a different monster than the one you record (one try per hour per monster) |
+| Time of day | Not in the last 30 minutes before Prague midnight (Ráda has no errands then); daylight for the B-roll |
 
 ## NPC and monster segment (about 90 s, optional cut)
 
 An extra segment for a longer cut, or as its own clip after shot 5. The characters only exist in the Plzeň practice
-world (`demo:arena-city-plzen:<day>:v2`), which plans them all day, so it records at any hour. Tap-to-move still
-applies: walk up by tapping next to the marker (encounters need ≤ 35 m, ≤ 50 m while the character stands at a stop).
+world (`demo:arena-city-plzen:<day>:v2`), which plans them all day, so it records at any hour. Walk up with the **Demo walk** pad
+(there is no tap-to-walk since 3 November; encounters need ≤ 35 m, ≤ 50 m while the character stands at a stop).
 
 Checked on 1 November 2026 (22:37–23:05 UTC, across the Prague day change) against build `9973c7a` (`/api/health` → `source.buildId`, module `actors: 1`,
 `npc-trader: 1`): `GET /api/actors?worldId=…` returned **16 actors** (4 NPCs: Běla the Chronicler, Vojtěch the
@@ -110,12 +191,28 @@ Fresh explorers via `POST /api/session`, world from `POST /api/world` (`demo:are
 To repeat the checks on recording day, replay the calls above with a cookie jar (`curl -c jar -b jar`); arena worlds skip
 GPS accuracy checks, so `location: {lat, lng}` at the character's current point is enough.
 
+## Czechia shot (shot 11) details
+
+| Check | Expected |
+| --- | --- |
+| `GET /api/health` → `poiWorld.status` | `ready` (version `cz-…`); `cellsWithQuests` close to `countryCells` |
+| `GET /api/health` → `autoCities` | `on` with a city count, or `off` (then skip the auto city line) |
+| `GET /api/health` → `questFlavour.cached` | above 0 means place quests show the nightly flavour titles; at 0 they show rule titles, which is fine |
+| Rehearsal in Brno | at least one place quest card and one NPC or monster within the visible map; otherwise pick another spot from `npm run world:coverage` "Checked places" |
+
+Since 3 November a fresh explorer outside Plzeň starts in their own cell with a **Nearest quest** line in the coach
+and a **Next quest** pin on the map, so shot 11 can also be recorded by a second person who really is in another town.
+
 ## What not to claim
 
 - Not mainnet, not real money. GOLD on the map is practice GOLD unless **Today's pot** shows a funded day.
-- Do not say rewards are already funded by staking yield; the vault (`questlayer-vault-20261101b.testnet`) is live
-  but a full yield cycle is still being proven ([STATUS.md](STATUS.md)).
-- City-demo tap-to-move is not proof of physical presence; browser GPS can be spoofed.
+- Do not say rewards are generally funded by staking yield. The harvest → unlock → flush cycle is proven on testnet
+  (`public/native-yield-cycle-proof.json`), but the amounts are tiny (about 0.0000036 test NEAR for the first
+  realized yield of generation `20261101b`), and testnet liquid-staking prices are frozen. Use the shot 10 table.
+- The city-demo walking pad is not proof of physical presence; browser GPS can be spoofed.
+- Mainnet is not live; do not show or name mainnet accounts.
+- Outside Plzeň: no funded rewards, no GOLD or NEAR; auto city zones are unverified map data. Do not say "the whole
+  world" or "Europe": coverage is Czechia.
 - No claim of original Aavegotchi art ownership, NEAR Intents settlement or completed iOS acceptance.
 - NPCs: no "private AI" or attestation claim (replies come from Ollama today); no claim that Ráda's quest Aura is an
   NPC-exclusive edition; the npc-games roll on screen is the operator's proof roll, not a player's roll; Vojtěch's
@@ -123,9 +220,11 @@ GPS accuracy checks, so `location: {lat, lng}` at the character's current point 
 
 ## Fallbacks
 
-- If the relayer is slow on shot 6, cut to the recorded proof `public/native-invisible-account-proof.json`
+- If the relayer is slow on shot 7, cut to the recorded proof `public/native-invisible-account-proof.json`
   (name → sponsored sub-account → relayed mint) and label it "recorded on an earlier testnet generation".
 - If the chest is already opened for the day, use another zone from **Nearest discovery**.
+- If no guardian stands at the chosen chest in shot 5, film the riddles on any roamer and the chest separately.
+- If Vojtěch shows no offers in shot 9, show his greeting and the market's **Offers** tab only, and keep the voice-over.
 
 The account list with explorer links and the architecture diagram are in the [README](../README.md#what-is-on-chain-and-where-to-see-it).
 The 280-character post and the submission payload are in [SUBMISSION.md](SUBMISSION.md).

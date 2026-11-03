@@ -1,6 +1,7 @@
 // Client types and pure helpers for monster challenges. The server decides
 // every outcome (server/actors/challenges); the client only records inputs.
 import type { ActorView } from "./actor-types";
+import { tr } from "./i18n.ts";
 
 export type ChallengeFormat = "quiz" | "rhythm" | "trace" | "memory" | "duel";
 export type Stance = "strike" | "guard" | "trick";
@@ -43,24 +44,24 @@ export type DuelRoundLog = { stance: Stance; monster: Stance; outcome: "win" | "
 export type DuelRoundResponse = { duel: { round: number; playerHp: number; monsterHp: number; last: DuelRoundLog; ringMs?: number } } & Partial<ChallengeResult>;
 
 export const FORMAT_COPY: Record<ChallengeFormat, { label: string; hint: string }> = {
-  quiz: { label: "Answer its riddles", hint: "3 questions about this place and the game. Get 2 right." },
-  rhythm: { label: "Match its rhythm", hint: "Tap when each glowing beat reaches the ring." },
-  trace: { label: "Trace its rune path", hint: "Drag through the runes in order without leaving the glow." },
-  memory: { label: "Repeat its rune song", hint: "Watch the runes light up, then tap them in the same order." },
-  duel: { label: "Duel it", hint: "3 rounds. Pick Strike, Guard or Trick as the ring closes." },
+  quiz: { get label() { return tr("Answer its riddles"); }, get hint() { return tr("3 questions about this place and the game. Get 2 right."); } },
+  rhythm: { get label() { return tr("Match its rhythm"); }, get hint() { return tr("Tap when each glowing beat reaches the ring."); } },
+  trace: { get label() { return tr("Trace its rune path"); }, get hint() { return tr("Drag through the runes in order without leaving the glow."); } },
+  memory: { get label() { return tr("Repeat its rune song"); }, get hint() { return tr("Watch the runes light up, then tap them in the same order."); } },
+  duel: { get label() { return tr("Duel it"); }, get hint() { return tr("3 rounds. Pick Strike, Guard or Trick as the ring closes."); } },
 };
 
 export const STANCE_COPY: Record<Stance, { label: string; beats: Stance }> = {
-  strike: { label: "Strike", beats: "trick" },
-  guard: { label: "Guard", beats: "strike" },
-  trick: { label: "Trick", beats: "guard" },
+  strike: { get label() { return tr("Strike"); }, beats: "trick" },
+  guard: { get label() { return tr("Guard"); }, beats: "strike" },
+  trick: { get label() { return tr("Trick"); }, beats: "guard" },
 };
 
 export const REASON_COPY: Record<string, string> = {
-  "too-fast": "That was faster than a person can play, so it didn't count.",
-  "too-early": "You tapped before the runes finished.",
-  time: "Time ran out.",
-  input: "Your moves didn't reach the monster. Try again later.",
+  get "too-fast"() { return tr("That was faster than a person can play, so it didn't count."); },
+  get "too-early"() { return tr("You tapped before the runes finished."); },
+  get time() { return tr("Time ran out."); },
+  get input() { return tr("Your moves didn't reach the monster. Try again later."); },
 };
 
 // Pointer position inside an element, as unit-square coordinates.
@@ -82,5 +83,5 @@ export function addSample(samples: [number, number, number][], p: [number, numbe
 export function retryLabel(retryAt: number | undefined, now = Date.now()) {
   if (!retryAt) return "";
   const min = Math.max(1, Math.ceil((retryAt - now) / 60000));
-  return `You can try this monster again in ${min} min.`;
+  return tr("You can try this monster again in {0} min.", { 0: min });
 }

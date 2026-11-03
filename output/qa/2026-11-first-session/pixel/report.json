@@ -1,0 +1,52 @@
+{
+  "device": "pixel",
+  "browser": "chromium",
+  "profile": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.8010.12 Mobile Safari/537.36",
+    "viewport": {
+      "width": 412,
+      "height": 839
+    },
+    "screen": {
+      "width": 412,
+      "height": 915
+    },
+    "deviceScaleFactor": 2.625,
+    "isMobile": true,
+    "hasTouch": true
+  },
+  "a11y": {
+    "welcome": [],
+    "map-coach": [],
+    "chest-reward": [],
+    "secure-share": [],
+    "settings": [],
+    "inventory": [],
+    "market-listing-form": [],
+    "market": [],
+    "creator-feed": []
+  },
+  "cardLayout": {
+    "checks": 0,
+    "problems": []
+  },
+  "performance": {
+    "scriptRawKb": 687,
+    "scriptGzipKb": 205,
+    "scripts": 7,
+    "requests": 14,
+    "firstContentfulPaintMs": 192,
+    "domContentLoadedMs": 107,
+    "nameFieldReadyMs": 250,
+    "layoutShift": 0,
+    "budget": {
+      "scriptGzipKb": 220,
+      "scriptRawKb": 700,
+      "requests": 30,
+      "firstContentfulPaintMs": 4000,
+      "nameFieldReadyMs": 6000,
+      "layoutShift": 0.1
+    },
+    "over": []
+  }
+}

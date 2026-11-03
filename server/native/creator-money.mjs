@@ -494,6 +494,26 @@ export class CreatorMoney {
       return this.enqueue("finalize_round", { day: open.day }, now);
     }
     if (open) return null;
+    // A round the chain has open but this host does not know about (an
+    // open_round whose reply was lost, then refused as "already open" and
+    // forgotten) would block every later round and never pay out. Adopt it,
+    // so it is finalized like any other.
+    const config = await this.reader.view("get_config", {}, true);
+    const chainOpen = config?.open_round;
+    if (typeof chainOpen === "string" && /^\d{4}-\d{2}-\d{2}$/.test(chainOpen)) {
+      const round = await this.reader
+        .view("get_round", { day: chainOpen }, true)
+        .catch(() => null);
+      const budget = /^\d{1,39}$/.test(String(round?.budget ?? ""))
+        ? String(round.budget)
+        : "0";
+      this.db
+        .prepare(
+          "INSERT INTO creator_money_rounds(day,budget_yocto,state,updated_at) VALUES(?,?,'open',?) ON CONFLICT(day) DO UPDATE SET state='open',budget_yocto=excluded.budget_yocto,updated_at=excluded.updated_at",
+        )
+        .run(chainOpen, budget, now);
+      return this.rounds(now);
+    }
     if (
       this.db
         .prepare("SELECT day FROM creator_money_rounds WHERE day=?")

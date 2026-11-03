@@ -14,6 +14,35 @@ export const SECTORS = [
   "west",
 ];
 const CLOSED_ACCESS = new Set(["private", "no"]);
+const SECTOR_LABEL = {
+  central: "Central",
+  north: "North",
+  east: "East",
+  southeast: "Southeast",
+  southwest: "Southwest",
+  west: "West",
+};
+// Placeholder names of unnamed parks: "Park 5558350" (the OSM way id) is
+// what older auto-city packs carry.
+const PLACEHOLDER_PARK = /^Park \d+$/;
+
+/**
+ * Players see zone names on the map, in quests and in NPC lines, so an
+ * unnamed park gets "North park", "North park 2", … from its sector instead
+ * of a raw OSM id. Named parks keep their name. Pure: returns new objects
+ * only for the renamed candidates.
+ */
+export function friendlyParkNames(candidates) {
+  const taken = new Set(candidates.map((c) => c.name).filter((n) => n && !PLACEHOLDER_PARK.test(n)));
+  return candidates.map((c) => {
+    if (c.name && !PLACEHOLDER_PARK.test(c.name)) return c;
+    const base = `${SECTOR_LABEL[c.sector] || "City"} park`;
+    let name = base;
+    for (let n = 2; taken.has(name); n++) name = `${base} ${n}`;
+    taken.add(name);
+    return { ...c, name };
+  });
+}
 
 // Outer sectors by compass bearing from the city centre (degrees).
 export function sectorFor(center, p, centralRadiusM = 1200) {
@@ -124,7 +153,7 @@ export function buildCityPack({
     candidates.push({
       id: cid,
       sector: sectorFor(center, { lat, lng }, centralRadiusM),
-      name: way.tags?.name || `Park ${way.id}`,
+      name: way.tags?.name || null,
       geometry: { type: "Polygon", coordinates: [ring] },
       access: way.tags?.access || "not-specified",
       targets,
@@ -146,11 +175,11 @@ export function buildCityPack({
     fieldReview,
     pathQueryLimit,
     pathCoverage: "partial-bounded-snapshot",
-    candidates,
+    candidates: friendlyParkNames(candidates),
     paths: walkable,
   };
   const bySector = Object.fromEntries(SECTORS.map((s) => [s, 0]));
-  for (const c of candidates) bySector[c.sector]++;
+  for (const c of pack.candidates) bySector[c.sector]++;
   return {
     pack,
     report: {

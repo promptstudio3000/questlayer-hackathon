@@ -1,4 +1,5 @@
 import type { Quest, Zone } from "./types.ts";
+import { tr } from "./i18n.ts";
 
 // Authored for QuestLayer on a 32x32 grid. Light falls from the upper left.
 // This object family is independent of the verified Aavegotchi character art.
@@ -289,7 +290,7 @@ export function questObjectPresentation(
     return {
       kind,
       state: "completed",
-      label: "Visited · personal activity complete",
+      label: tr("Visited · personal activity complete"),
     };
   if (
     !Number.isFinite(now) ||
@@ -299,27 +300,27 @@ export function questObjectPresentation(
     return {
       kind: "place",
       state: "locked",
-      label: "Activity status unavailable · refresh details",
+      label: tr("Activity status unavailable · refresh details"),
     };
   if (q.closes_at <= now)
-    return { kind, state: "locked", label: "Closed · activity ended" };
-  if (q.opens_at > now) return { kind, state: "locked", label: "Opens later" };
+    return { kind, state: "locked", label: tr("Closed · activity ended") };
+  if (q.opens_at > now) return { kind, state: "locked", label: tr("Opens later") };
   if (Number.isFinite(playerTier) && q.tier > playerTier!)
-    return { kind, state: "locked", label: `Requires Tier ${q.tier}` };
+    return { kind, state: "locked", label: tr("Requires Tier {0}", { 0: q.tier }) };
   return {
     kind,
     state: "ready",
     label: chest
       ? q.itemAvailable === true
-        ? "Chest activity · item available in current data"
+        ? tr("Chest activity · item available in current data")
         : q.itemAvailable === false
-          ? "Chest activity · no item remaining"
-          : "Chest activity · item availability unknown"
+          ? tr("Chest activity · no item remaining")
+          : tr("Chest activity · item availability unknown")
       : route
-        ? "Walk activity · follow its published requirements"
+        ? tr("Walk activity · follow its published requirements")
         : discovery
-          ? "Discovery activity · read its requirements"
-          : "Place activity · read its requirements",
+          ? tr("Discovery activity · read its requirements")
+          : tr("Place activity · read its requirements"),
   };
 }
 function linkedZoneQuests(zone: Zone, quests: readonly Quest[]) {
@@ -376,7 +377,7 @@ export function zoneObjectPresentation(
     return {
       kind: linked.length === 1 ? art[0].kind : "place",
       state: "completed",
-      label: "Visited · all loaded activities complete",
+      label: tr("Visited · all loaded activities complete"),
     };
   if (
     !Number.isFinite(context.now) ||
@@ -386,27 +387,27 @@ export function zoneObjectPresentation(
     return {
       kind: "place",
       state: "locked",
-      label: "Place status unavailable · refresh details",
+      label: tr("Place status unavailable · refresh details"),
     };
   if (zone.closesAt <= context.now)
     return {
       kind: "place",
       state: "locked",
-      label: "Place closed · opening period ended",
+      label: tr("Place closed · opening period ended"),
     };
   if (zone.opensAt > context.now)
-    return { kind: "place", state: "locked", label: "Place opens later" };
+    return { kind: "place", state: "locked", label: tr("Place opens later") };
   if (Number.isFinite(context.playerTier) && zone.tier > context.playerTier!)
     return {
       kind: "place",
       state: "locked",
-      label: `Place requires Tier ${zone.tier}`,
+      label: tr("Place requires Tier {0}", { 0: zone.tier }),
     };
   if (!linked.length)
     return {
       kind: "place",
       state: "ready",
-      label: "Place · activity details not loaded",
+      label: tr("Place · activity details not loaded"),
     };
   const active = linked.filter((_, i) => art[i].state === "ready");
   if (active.length) {
@@ -421,6 +422,6 @@ export function zoneObjectPresentation(
   return {
     kind: "place",
     state: "locked",
-    label: "Place · remaining activities are closed or locked",
+    label: tr("Place · remaining activities are closed or locked"),
   };
 }

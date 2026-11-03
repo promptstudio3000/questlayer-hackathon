@@ -5,13 +5,24 @@ import {
 } from "./character-art";
 import { auraEdition } from "./aura-art-data.ts";
 import { loadCharacterModel } from "./character-model-client";
-import { moveMapMarker } from "./map-motion";
+import { DEMO_TICK_MS, moveMapMarker } from "./map-motion";
 import {
   gameObjectMarkup,
   rasterizeGameObject,
   questObjectPresentation,
   zoneObjectPresentation,
 } from "./game-object-art";
+import {
+  zoneCountdown,
+  zoneLandmarkLabel,
+  zoneLoot,
+  zoneLootFeatures,
+  totemHeight,
+  zoneTotemFeatures,
+  zoneWallFeatures,
+  zoneBeamSpots,
+  beamFeatures,
+} from "./zone-landmarks";
 import type { NearbyExplorer } from "./types";
 import type { ActorView } from "./actor-types";
 import type { ActorsLayer } from "./actors-layer";
@@ -23,6 +34,10 @@ import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Point, World, Zone, Item } from "./types";
 import { prefersReducedMotion } from "./feedback";
+import { paintMapSky, skyFor, skyLabel } from "./map-sky";
+import { MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
+import "./map-sky.css";
+import { tr } from "./i18n";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
@@ -33,6 +48,8 @@ export type GameMapProps = {
   onCoin?: (coinId: string) => void;
   overview: boolean;
   focusZone: Zone | null;
+  /** The one place the player should head to next (coach / nearest quest). */
+  nextZoneId?: string | null;
   nativeTarget?: (Point & { label: string }) | null;
   nativeTargetKind?: "coin" | "route" | "discovery";
   playerTier?: number;
@@ -45,10 +62,17 @@ export type GameMapProps = {
   others: NearbyExplorer[];
   skinUrl?: string;
   map3D?: boolean;
-  onMove: (p: Point) => void;
+  /**
+   * Compass heading the explorer faces. The city demo pad sets it; real play
+   * passes the GPS course when the device reports one. Without it the
+   * character turns toward its last step.
+   */
+  facing?: number;
   onZone: (z: Zone) => void;
   follow: boolean;
   onPan: () => void;
+  /** Map centre after a player pan or zoom ends (not after follow moves). */
+  onMoveEnd?: (center: Point, zoom: number) => void;
   /** Places creators pinned (visit, trail start, chest); tap opens the quest. */
   creatorPlaces?: CreatorMapPlace[];
   onCreatorPlace?: (questId: string) => void;
@@ -69,15 +93,71 @@ const CREATOR_PIN_KIND = {
   chest: "chest",
 } as const;
 const CREATOR_PIN_NAME = {
-  visit: "Creator place",
-  trail: "Creator trail",
-  chest: "Creator chest",
+  get visit() { return tr("Creator place"); },
+  get trail() { return tr("Creator trail"); },
+  get chest() { return tr("Creator chest"); },
 };
 function phoneLayout() {
   return (
     window.innerWidth < 760 ||
     (window.innerWidth <= 1000 && window.innerHeight <= 500)
   );
+}
+// Aura art is loaded once per edition and drawn as a loot token (a rarity
+// ring around the item) so it reads as something to pick up, not an explorer.
+const LOOT_RING = {
+  common: "#7f9a86",
+  rare: "#3f8cff",
+  epic: "#9b4dff",
+  legendary: "#f3bd54",
+} as Record<string, string>;
+const lootImageLoads = new WeakMap<maplibregl.Map, Map<string, Promise<void>>>();
+function ensureLootImages(
+  m: maplibregl.Map,
+  loot: { image: string; src?: string; rarity?: string }[],
+) {
+  let loads = lootImageLoads.get(m);
+  if (!loads) lootImageLoads.set(m, (loads = new Map()));
+  const pending: Promise<void>[] = [];
+  for (const item of loot) {
+    if (!item.src || m.hasImage(item.image)) continue;
+    let load = loads.get(item.image);
+    if (!load) {
+      load = new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const ratio = Math.min(2, window.devicePixelRatio || 1),
+              size = 56,
+              canvas = document.createElement("canvas");
+            canvas.width = canvas.height = Math.round(size * ratio);
+            const g = canvas.getContext("2d")!;
+            g.scale(ratio, ratio);
+            g.beginPath();
+            g.arc(size / 2, size / 2, size / 2 - 3, 0, Math.PI * 2);
+            g.fillStyle = "#fcfaffee";
+            g.fill();
+            g.lineWidth = 4;
+            g.strokeStyle = LOOT_RING[item.rarity || ""] || LOOT_RING.common;
+            g.stroke();
+            g.drawImage(img, 12, 8, 32, 37);
+            if (!m.hasImage(item.image))
+              m.addImage(
+                item.image,
+                g.getImageData(0, 0, canvas.width, canvas.height),
+                { pixelRatio: ratio },
+              );
+          } catch {}
+          resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = item.src!;
+      });
+      loads.set(item.image, load);
+    }
+    pending.push(load);
+  }
+  return Promise.all(pending);
 }
 function skinFallback(node: HTMLElement, _color?: string) {
   const image = node.querySelector("img");
@@ -86,7 +166,7 @@ function skinFallback(node: HTMLElement, _color?: string) {
     () => {
       image.src = STARTER_SPRITE;
       image.className = "starter-player";
-      image.alt = "Aavegotchi starter appearance";
+      image.alt = tr("Aavegotchi starter appearance");
       node.setAttribute(
         "aria-label",
         (node.getAttribute("aria-label") || "Explorer") +
@@ -100,7 +180,8 @@ export function GameMap(props: GameMapProps) {
   const el = useRef<HTMLDivElement>(null),
     map = useRef<maplibregl.Map | null>(null),
     avatar = useRef<maplibregl.Marker | null>(null),
-    labels = useRef<maplibregl.Marker[]>([]);
+    labels = useRef<maplibregl.Marker[]>([]),
+    lootRevision = useRef(0);
   const pawn = useRef<PawnScene | null>(null),
     heading = useRef(180);
   const latest = useRef(props);
@@ -119,6 +200,19 @@ export function GameMap(props: GameMapProps) {
   );
   const [ready, setReady] = useState(false),
     [error, setError] = useState(false);
+  // Real day and night at the player's position; re-checked every minute.
+  const [skyTick, setSkyTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setSkyTick(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const sky = skyFor(props.position, props.now ?? skyTick);
+  const skyRef = useRef(sky);
+  skyRef.current = sky;
+  useEffect(() => {
+    if (ready && map.current) paintMapSky(map.current, sky.phase);
+  }, [ready, sky.phase]);
+  const skyText = skyLabel(sky, props.now ?? skyTick);
   const [viewportRevision, setViewportRevision] = useState(0);
   useEffect(() => {
     let frame = 0;
@@ -199,6 +293,14 @@ export function GameMap(props: GameMapProps) {
       }),
       "bottom-right",
     );
+    // Start the notice collapsed to its (i) button so it never covers the
+    // map or the sheet; one tap opens it.
+    m.once("load", () =>
+      m
+        .getContainer()
+        .querySelector(".maplibregl-ctrl-attrib")
+        ?.classList.remove("maplibregl-compact-show"),
+    );
     const marker = document.createElement("div");
     marker.className = "player-marker";
     marker.innerHTML = starterMarkerMarkup();
@@ -209,6 +311,32 @@ export function GameMap(props: GameMapProps) {
       .setLngLat([props.position.lng, props.position.lat])
       .addTo(m);
     m.on("dragstart", () => latest.current.onPan());
+    // Only moves the player made (drag, pinch, wheel), not camera follow.
+    // Read the centre once a drag's inertia has settled.
+    let settle: ReturnType<typeof setTimeout> | undefined;
+    const ended = (e: { originalEvent?: unknown }) => {
+      if (!e.originalEvent) return;
+      clearTimeout(settle);
+      settle = setTimeout(() => {
+        if (map.current !== m) return;
+        const c = m.getCenter();
+        latest.current.onMoveEnd?.({ lat: c.lat, lng: c.lng }, m.getZoom());
+      }, 700);
+    };
+    m.on("dragend", ended);
+    m.on("zoomend", ended);
+    // Screen pixels per metre of height, so zone pins sit on their totems.
+    const totemScale = () => {
+      const metresPerPixel =
+        (40075016.686 * Math.cos((m.getCenter().lat * Math.PI) / 180)) /
+        (512 * 2 ** m.getZoom());
+      el.current?.style.setProperty(
+        "--zone-px-per-m",
+        ((Math.sin((m.getPitch() * Math.PI) / 180) / metresPerPixel) * 1.08).toFixed(3) + "px",
+      );
+    };
+    totemScale();
+    m.on("move", totemScale);
     m.on("click", (e) => {
       if (
         latest.current.onCoin &&
@@ -243,8 +371,7 @@ export function GameMap(props: GameMapProps) {
           return;
         }
       }
-      if (latest.current.arena && !latest.current.globe)
-        latest.current.onMove({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+      // No tap-to-walk: real play moves with GPS, the demo with its pad.
     });
     m.on("error", () => {
       if (!gone) setError(true);
@@ -254,44 +381,13 @@ export function GameMap(props: GameMapProps) {
       const style = m.getStyle();
       for (const layer of style.layers as any[]) {
         try {
-          if (layer.type === "background")
-            m.setPaintProperty(layer.id, "background-color", "#e9eadb");
-          if (layer.type === "fill") {
-            if (layer["source-layer"] === "water")
-              m.setPaintProperty(layer.id, "fill-color", "#b5d6d8");
-            else if (
-              layer["source-layer"] === "park" ||
-              layer.id.includes("wood")
-            )
-              m.setPaintProperty(layer.id, "fill-color", "#bdcea6");
-            else if (layer["source-layer"] === "building")
-              m.setPaintProperty(layer.id, "fill-color", "#dad2da");
-            else if (layer["source-layer"] === "landcover")
-              m.setPaintProperty(layer.id, "fill-color", "#d4ddbd");
-          }
           if (
-            layer.type === "line" &&
-            layer["source-layer"] === "transportation"
-          ) {
-            m.setPaintProperty(
-              layer.id,
-              "line-color",
-              layer.id.includes("casing")
-                ? "#cec5c0"
-                : layer.id.includes("path")
-                  ? "#e4d4ae"
-                  : "#fffaf0",
-            );
-          }
-          if (layer.type === "symbol") {
-            if (
-              !["transportation_name", "water_name", "place"].includes(
-                layer["source-layer"],
-              )
+            layer.type === "symbol" &&
+            !["transportation_name", "water_name", "place"].includes(
+              layer["source-layer"],
             )
-              m.setLayoutProperty(layer.id, "visibility", "none");
-            m.setPaintProperty(layer.id, "text-color", "#8d827f");
-          }
+          )
+            m.setLayoutProperty(layer.id, "visibility", "none");
         } catch {}
       }
       const building = style.layers.find(
@@ -314,6 +410,8 @@ export function GameMap(props: GameMapProps) {
             "fill-extrusion-opacity": 0.68,
           },
         });
+      // Day, dusk or night from the real sun at the player (src/map-sky.ts).
+      paintMapSky(m, skyRef.current.phase);
       m.addImage("gold-coin", rasterizeGameObject({ kind: "coin" }));
       m.addImage("street-find", rasterizeGameObject({ kind: "discovery" }));
       m.addSource("zones", {
@@ -324,7 +422,22 @@ export function GameMap(props: GameMapProps) {
         id: "zones-fill",
         type: "fill",
         source: "zones",
-        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.15 },
+        paint: {
+          "fill-color": ["get", "color"],
+          "fill-opacity": ["case", ["get", "lit"], 0.24, 0.12],
+        },
+      });
+      // Ground aura: a soft glow along the edge, under the dashed outline.
+      m.addLayer({
+        id: "zones-glow",
+        type: "line",
+        source: "zones",
+        paint: {
+          "line-color": ["get", "color"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 14, 6, 18, 22],
+          "line-blur": ["interpolate", ["linear"], ["zoom"], 14, 5, 18, 18],
+          "line-opacity": ["case", ["get", "lit"], 0.55, 0.18],
+        },
       });
       m.addLayer({
         id: "zones-line",
@@ -335,6 +448,95 @@ export function GameMap(props: GameMapProps) {
           "line-width": 2,
           "line-dasharray": [3, 2],
         },
+      });
+      // Zone landmarks (src/zone-landmarks.ts): wall, totem and the items inside.
+      for (const id of ["zone-walls", "zone-totems", "zone-loot", "sky-beams", "find-beams"])
+        m.addSource(id, {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: [] },
+        });
+      m.addLayer({
+        id: "zone-walls",
+        type: "fill-extrusion",
+        source: "zone-walls",
+        minzoom: 14,
+        paint: {
+          "fill-extrusion-color": ["get", "color"],
+          "fill-extrusion-height": ["get", "height"],
+          "fill-extrusion-base": 0,
+          "fill-extrusion-opacity": 0.45,
+        },
+      });
+      // The aura keeps rising above the wall as a fainter band.
+      m.addLayer({
+        id: "zone-walls-halo",
+        type: "fill-extrusion",
+        source: "zone-walls",
+        minzoom: 13,
+        paint: {
+          "fill-extrusion-color": ["get", "color"],
+          "fill-extrusion-height": ["get", "halo"],
+          "fill-extrusion-base": ["get", "height"],
+          "fill-extrusion-opacity": 0.16,
+        },
+      });
+      m.addLayer({
+        id: "zone-totems",
+        type: "fill-extrusion",
+        source: "zone-totems",
+        minzoom: 13,
+        paint: {
+          "fill-extrusion-color": ["get", "color"],
+          "fill-extrusion-height": ["get", "height"],
+          "fill-extrusion-base": ["get", "base"],
+          "fill-extrusion-opacity": 0.92,
+        },
+      });
+      // Sky beams (src/zone-landmarks.ts beamFeatures): a faint wide halo and
+      // a bright core, for open zones, rare events and street finds.
+      for (const [source, minzoom] of [
+        ["sky-beams", 11],
+        ["find-beams", 13],
+      ] as const)
+        for (const part of ["halo", "core"] as const)
+          m.addLayer({
+            id: `${source}-${part}`,
+            type: "fill-extrusion",
+            source,
+            minzoom,
+            filter: ["==", ["get", "part"], part],
+            paint: {
+              "fill-extrusion-color": ["get", "color"],
+              "fill-extrusion-height": ["get", "height"],
+              "fill-extrusion-base": ["get", "base"],
+              "fill-extrusion-opacity": part === "core" ? 0.78 : 0.22,
+              "fill-extrusion-vertical-gradient": false,
+            },
+          });
+      m.addLayer({
+        id: "zone-loot",
+        type: "symbol",
+        source: "zone-loot",
+        minzoom: 14,
+        layout: {
+          "icon-image": ["get", "image"],
+          "icon-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            14,
+            0.55,
+            16,
+            0.9,
+            18,
+            1.2,
+            19,
+            1.35,
+          ],
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+        },
+        paint: { "icon-opacity": ["case", ["get", "dim"], 0.5, 1] },
       });
       m.addSource("coins", {
         type: "geojson",
@@ -378,22 +580,42 @@ export function GameMap(props: GameMapProps) {
       setReady(false);
     };
   }, []);
+  // Coins get their own effect: re-sending them on every zone or overview
+  // change was the map's heaviest upload on a phone.
+  const coins = props.world?.coins;
   useEffect(() => {
     const m = map.current;
-    if (!m || !ready || !props.world) return;
+    if (!m || !ready || !coins) return;
     (m.getSource("coins") as GeoJSONSource)?.setData({
       type: "FeatureCollection",
-      features: props.world.coins.map((c) => ({
+      features: coins.map((c) => ({
         type: "Feature",
         properties: { id: c.id, find: !!c.find },
         geometry: { type: "Point", coordinates: [c.lng, c.lat] },
       })),
     });
+    (m.getSource("find-beams") as GeoJSONSource)?.setData({
+      type: "FeatureCollection",
+      features: beamFeatures(
+        coins
+          .filter((c) => c.find && !c.claimant)
+          .map((c) => ({ id: c.id, lat: c.lat, lng: c.lng, color: "#ff1dff", kind: "find" as const })),
+      ),
+    } as Parameters<GeoJSONSource["setData"]>[0]);
+  }, [coins, ready]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !props.world) return;
+    const zoneNow = objectContext.now,
+      zoneQuests = props.world.quests;
     (m.getSource("zones") as GeoJSONSource)?.setData({
       type: "FeatureCollection",
       features: props.world.zones.map((z) => ({
         type: "Feature",
-        properties: { color: z.color },
+        properties: {
+          color: z.color,
+          lit: zoneCountdown(z, zoneQuests, zoneNow).phase === "open",
+        },
         geometry: z.geometry || {
           type: "Polygon",
           coordinates: [
@@ -410,23 +632,73 @@ export function GameMap(props: GameMapProps) {
         },
       })),
     });
+    const collection = (features: unknown[]) =>
+      ({ type: "FeatureCollection", features }) as Parameters<GeoJSONSource["setData"]>[0];
+    (m.getSource("zone-walls") as GeoJSONSource)?.setData(
+      collection(zoneWallFeatures(props.world.zones, zoneQuests, zoneNow)),
+    );
+    (m.getSource("zone-totems") as GeoJSONSource)?.setData(
+      collection(zoneTotemFeatures(props.world.zones, zoneQuests, objectContext)),
+    );
+    (m.getSource("sky-beams") as GeoJSONSource)?.setData(
+      collection(beamFeatures(zoneBeamSpots(props.world.zones, zoneQuests, zoneNow))),
+    );
+    const lootFeatures = zoneLootFeatures(
+      props.world.zones,
+      zoneQuests,
+      zoneNow,
+    );
+    const lootRun = ++lootRevision.current;
+    void ensureLootImages(
+      m,
+      props.world.zones.flatMap((z) => zoneLoot(z, zoneQuests)),
+    ).then(() => {
+      if (lootRun !== lootRevision.current || map.current !== m) return;
+      (m.getSource("zone-loot") as GeoJSONSource | undefined)?.setData(
+        collection(lootFeatures),
+      );
+    });
     labels.current.forEach((x) => x.remove());
     labels.current = [];
     for (const z of props.world.zones) {
+      const wrap = document.createElement("div");
       const node = document.createElement("button");
       const art = zoneObjectPresentation(z, props.world.quests, objectContext);
       const selected = props.focusZone?.id === z.id;
-      node.className = `zone-map-pin game-object-map-pin tier-${z.tier}${props.overview ? " map-overview-pin" : ""}${props.globe ? " hidden" : ""}`;
-      node.title = `${z.name} · ${art.label}`;
-      node.setAttribute("aria-label", node.title);
+      const next = !selected && props.nextZoneId === z.id;
+      const countdown = zoneCountdown(z, zoneQuests, zoneNow);
+      wrap.className = `zone-totem-marker tier-${z.tier} phase-${countdown.phase}${props.overview ? " map-overview" : ""}${props.globe ? " hidden" : ""}`;
+      node.className = `zone-map-pin game-object-map-pin tier-${z.tier}${next ? " zone-map-pin-next" : ""}${props.overview ? " map-overview-pin" : ""}`;
+      node.title = `${z.name} · ${art.label}${next ? " · next quest" : ""}`;
+      const detail = zoneLandmarkLabel(z, zoneQuests, zoneNow);
+      node.setAttribute("aria-label", `${node.title}${detail ? ` · ${detail}` : ""}`);
       node.setAttribute("aria-pressed", String(selected));
       node.innerHTML = gameObjectMarkup({ ...art, selected });
+      if (next) {
+        node.dataset.next = "true";
+        const tag = document.createElement("i");
+        tag.className = "zone-map-pin-next-label";
+        tag.setAttribute("aria-hidden", "true");
+        tag.textContent = tr("Next quest");
+        node.append(tag);
+      }
       node.addEventListener("click", (e) => {
         e.stopPropagation();
         latest.current.onZone(z);
       });
+      const chip = document.createElement("span");
+      chip.className = "zone-countdown";
+      chip.setAttribute("aria-hidden", "true");
+      chip.dataset.zoneId = z.id;
+      chip.textContent = countdown.text;
+      chip.hidden = !countdown.text;
+      const stem = document.createElement("span");
+      stem.className = "zone-totem-stem";
+      stem.setAttribute("aria-hidden", "true");
+      wrap.style.setProperty("--totem-h", String(totemHeight(z.tier)));
+      wrap.append(node, stem, chip);
       labels.current.push(
-        new maplibregl.Marker({ element: node, anchor: "bottom" })
+        new maplibregl.Marker({ element: wrap, anchor: "bottom" })
           .setLngLat([z.lng, z.lat])
           .addTo(m),
       );
@@ -437,8 +709,25 @@ export function GameMap(props: GameMapProps) {
     props.overview,
     props.globe,
     props.focusZone?.id,
+    props.nextZoneId,
     zoneArtKey,
   ]);
+  // Countdown chips tick with the app clock; only their text changes.
+  useEffect(() => {
+    const world = props.world;
+    if (!world || !ready) return;
+    const now = props.now ?? Date.now();
+    for (const marker of labels.current) {
+      const chip = marker
+        .getElement()
+        .querySelector<HTMLElement>(".zone-countdown");
+      const zone = chip && world.zones.find((z) => z.id === chip.dataset.zoneId);
+      if (!chip || !zone) continue;
+      const text = zoneCountdown(zone, world.quests, now).text;
+      if (chip.textContent !== text) chip.textContent = text;
+      chip.hidden = !text;
+    }
+  }, [props.now, props.world, ready]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
@@ -532,17 +821,28 @@ export function GameMap(props: GameMapProps) {
         (props.position.lng - previous.lng) *
         Math.cos((props.position.lat * Math.PI) / 180),
       travelled = Math.hypot(north, east) * 111320;
-    if (travelled >= 2 && travelled <= 80)
+    if (props.facing !== undefined) heading.current = props.facing;
+    else if (travelled >= 2 && travelled <= 80)
       heading.current = (Math.atan2(east, north) * 180) / Math.PI;
     const m = map.current;
     if (m && !props.globe)
       pawn.current?.setMapView(m.getBearing(), m.getPitch(), heading.current);
     return moveMapMarker(avatar.current, props.position, {
       reducedMotion: prefersReducedMotion(),
+      // Demo pad steps arrive every tick; glide one tick so they join up.
+      duration: props.arena && props.facing !== undefined ? DEMO_TICK_MS + 30 : 450,
     });
   }, [props.position, ready]);
   useEffect(() => {
+    if (props.facing === undefined) return;
+    heading.current = props.facing;
+    const m = map.current;
+    if (m && !props.globe)
+      pawn.current?.setMapView(m.getBearing(), m.getPitch(), heading.current);
+  }, [props.facing, ready]);
+  useEffect(() => {
     if (!map.current) return;
+    const demoGlide = props.arena && props.facing !== undefined;
     if (props.follow && !props.globe && !props.overview)
       map.current.easeTo({
         center: [props.position.lng, props.position.lat],
@@ -550,7 +850,10 @@ export function GameMap(props: GameMapProps) {
         padding: { top: 0, bottom: 0, left: 0, right: 0 },
         duration: prefersReducedMotion()
           ? 0
-          : 450,
+          : demoGlide
+            ? DEMO_TICK_MS + 30
+            : 450,
+        ...(demoGlide ? { easing: (t: number) => t } : {}),
       });
   }, [
     props.position,
@@ -571,7 +874,7 @@ export function GameMap(props: GameMapProps) {
     element.setAttribute("role", "img");
     element.setAttribute(
       "aria-label",
-      `${props.skinUrl ? "Your linked Aavegotchi" : "Your Aavegotchi starter"}${top ? `; ${top.name} above` : ""}${bottom ? `; ${bottom.name} below` : ""}`,
+      `${props.skinUrl ? tr("Your linked Aavegotchi") : tr("Your Aavegotchi starter")}${top ? `; ${top.name} above` : ""}${bottom ? `; ${bottom.name} below` : ""}`,
     );
     element.innerHTML =
       characterMarkerMarkup({
@@ -582,7 +885,7 @@ export function GameMap(props: GameMapProps) {
         belowEdition: bottom && auraEdition(bottom),
         scale: 2,
         skinUrl: props.skinUrl,
-      }) + '<span class="you-label">YOU</span>';
+      }) + `<span class="you-label">${tr("YOU")}</span>`;
     if (modelHost) element.append(modelHost);
     skinFallback(element, color);
   }, [equipmentKey, props.skinUrl, ready]);
@@ -826,18 +1129,31 @@ export function GameMap(props: GameMapProps) {
     <>
       <div
         ref={el}
-        className={
-          props.globe
-            ? "game-map maplibregl-map globe-view"
-            : "game-map maplibregl-map"
-        }
-        aria-label="Real OpenStreetMap world"
+        className={`game-map maplibregl-map sky-${sky.phase}${props.globe ? " globe-view" : ""}`}
+        aria-label={tr("Real OpenStreetMap world")}
       />
+      {!props.globe && (
+        <div
+          className={`map-sky-chip sky-${sky.phase}`}
+          role="status"
+          aria-label={skyText.long}
+          title={skyText.long}
+        >
+          {sky.phase === "day" ? (
+            <Sun size={14} weight="fill" aria-hidden />
+          ) : sky.phase === "night" ? (
+            <MoonStars size={14} weight="fill" aria-hidden />
+          ) : (
+            <SunHorizon size={14} weight="fill" aria-hidden />
+          )}
+          <span aria-hidden>{skyText.short}</span>
+        </div>
+      )}
       {!ready && (
         <div className="map-loading" role="status">
           {error
-            ? "Map loading is taking longer. Your game panels are still available."
-            : "Preparing your corner of the world…"}
+            ? tr("Map loading is taking longer. Your game panels are still available.")
+            : tr("Preparing your corner of the world…")}
         </div>
       )}
     </>

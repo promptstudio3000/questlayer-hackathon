@@ -22,6 +22,7 @@ import { localDateBounds, shiftDate } from "./spatial/calendar.mjs";
 import { poiQuestActivity } from "./quest-templates.mjs";
 import { flavourText } from "./ai/flavour.mjs";
 import { DEFAULT_LAYER } from "./worlds/registry.mjs";
+import { CLUE_XP, MAX_CLUES_PER_CELL, buildLandmarkClue, clueReady } from "./landmark-clue.mjs";
 import {
   ensureModuleVersion,
   registerModuleSchema,
@@ -36,7 +37,7 @@ export const MIN_POI_GAP_M = 250;
 export const POI_ROTATION_DAYS = 3; // 72 h
 export const HUNT_STOPS = 3;
 export const POI_TARGET_RADIUS_M = 40;
-export const POI_XP = Object.freeze({ visit: 40, hunt: 90, chest: 60 });
+export const POI_XP = Object.freeze({ visit: 40, hunt: 90, chest: 60, clue: CLUE_XP.correct });
 const MAX_CELL_POIS = 2000;
 const REOPEN_CHECK_MS = 60_000;
 
@@ -99,11 +100,24 @@ function cleanName(value) {
   return text ? text.slice(0, 80) : null;
 }
 
-/** Rows are { id, category, name, notability, lat, lng } with lat/lng = the path target. */
+function parseFacts(value) {
+  if (!value) return null;
+  try {
+    const facts = JSON.parse(value);
+    return facts && typeof facts === "object" && !Array.isArray(facts) ? facts : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Rows are { id, category, name, notability, lat, lng, wikidata, facts } with
+ * lat/lng = the path target; facts are the Wikidata ones (landmark clues).
+ */
 export function poiRowsFromFile(db, cell) {
   const rows = db
     .prepare(
-      "SELECT id,category,name,notability,path_ref FROM poi WHERE h3r5=? AND h3r7=? AND safety='ok' AND path_ref IS NOT NULL ORDER BY id LIMIT ?",
+      "SELECT id,category,name,notability,path_ref,wikidata,facts FROM poi WHERE h3r5=? AND h3r7=? AND safety='ok' AND path_ref IS NOT NULL ORDER BY id LIMIT ?",
     )
     .all(cellToParent(cell, 5), cell, MAX_CELL_POIS);
   const out = [];
@@ -128,9 +142,22 @@ export function poiRowsFromFile(db, cell) {
       notability: Math.max(0, Number(r.notability) || 0),
       lat: target.lat,
       lng: target.lng,
+      wikidata: /^Q\d+$/.test(r.wikidata || "") ? r.wikidata : null,
+      facts: parseFacts(r.facts),
     });
   }
   return out;
+}
+
+/** Wrong-answer pool for landmark clues: places with Wikidata facts in the res-5 area. */
+export function cluePoolFromFile(db, cell) {
+  return db
+    .prepare(
+      "SELECT id,category,facts FROM poi WHERE h3r5=? AND safety='ok' AND facts IS NOT NULL ORDER BY id LIMIT 400",
+    )
+    .all(cellToParent(cell, 5))
+    .map((r) => ({ id: String(r.id), category: String(r.category), facts: parseFacts(r.facts) }))
+    .filter((r) => r.facts);
 }
 
 /**
@@ -193,6 +220,15 @@ export function openPoiFileSource(path = process.env.POI_DB_PATH || DEFAULT_POI_
         return null;
       }
     },
+    cluePool(cell) {
+      const handle = refresh();
+      if (!handle) return [];
+      try {
+        return cluePoolFromFile(handle, cell);
+      } catch {
+        return [];
+      }
+    },
     close() {
       try {
         db?.close();
@@ -209,6 +245,7 @@ export function staticPoiSource(rows, { version = "static" } = {}) {
     available: () => true,
     version: () => version,
     cellPois: (cell) => rows.filter((r) => r.h3r7 === cell).map((r) => ({ ...r })),
+    cluePool: () => rows.filter((r) => r.facts).map((r) => ({ ...r })),
   };
 }
 
@@ -233,7 +270,9 @@ const unit = (seed, id) => parseInt(hash(`${seed}:${id}`).slice(0, 13), 16) / 2 
  * - POIs used in this cell in the previous 72 h only when nothing else fits;
  * - notable places (Wikidata sitelinks) get a slightly higher chance;
  * - at most MAX_POI_QUESTS_PER_CELL quests, of which at most
- *   MAX_POI_HUNTS_PER_CELL category hunts and one chest.
+ *   MAX_POI_HUNTS_PER_CELL category hunts and one chest;
+ * - up to MAX_CLUES_PER_CELL single visits to named places with Wikidata
+ *   facts become landmark clues (most notable first, never the chest).
  */
 export function planCellPoiQuests({
   layerId = DEFAULT_LAYER.id,
@@ -243,6 +282,8 @@ export function planCellPoiQuests({
   recent = new Set(),
   policy = POI_QUEST_POLICY,
   avoid = [],
+  pool = null,
+  nowYear,
 }) {
   assert(isValidCell(cell) && getResolution(cell) === 7, "A POI plan needs an H3 res-7 cell.");
   assert(/^\d{4}-\d{2}-\d{2}$/.test(day), "A POI plan needs a local date.");
@@ -298,6 +339,22 @@ export function planCellPoiQuests({
     if (chest < 0 || q.pois[0].notability > quests[chest].pois[0].notability) chest = i;
   });
   if (chest >= 0 && MAX_POI_CHESTS_PER_CELL > 0) quests[chest].chest = true;
+  // Landmark clues: the answer is a Wikidata fact, the wrong options come
+  // from other kinds of places nearby (or neighbouring centuries).
+  const wrongPool = pool || pois || [];
+  let clues = 0;
+  quests
+    .map((q, i) => ({ q, i }))
+    .filter(({ q }) => q.template === "poi-visit" && !q.chest && clueReady(q.pois[0]))
+    .sort((a, b) => b.q.pois[0].notability - a.q.pois[0].notability || a.i - b.i)
+    .forEach(({ q }) => {
+      if (clues >= MAX_CLUES_PER_CELL) return;
+      const clue = buildLandmarkClue({ poi: q.pois[0], pool: wrongPool, seed, nowYear });
+      if (!clue) return;
+      q.template = "landmark-clue";
+      q.clue = clue;
+      clues++;
+    });
   return {
     seed,
     quests: quests.map((q) => ({
@@ -328,6 +385,19 @@ export function isStreetWorld(manifest) {
 /** Auto cities (W5, unreviewed map data): POI quests per H3 cell inside the city. */
 export function isAutoCityWorld(manifest) {
   return !!manifest && !manifest.arena && !!manifest.cityId && manifest.cityStatus === "auto";
+}
+/**
+ * Reviewed cities (Plzeň), GPS world and city demo alike, keep their own
+ * zones and add POI quests per H3 cell around them, so a walk anywhere in the
+ * city finds something nearby. POI_QUESTS_REVIEWED_CITIES=off turns it off.
+ */
+export function isReviewedCityWorld(manifest) {
+  return (
+    process.env.POI_QUESTS_REVIEWED_CITIES !== "off" &&
+    !!manifest &&
+    !!manifest.cityId &&
+    manifest.cityStatus !== "auto"
+  );
 }
 
 /** World ids of the same cell on the previous POI_ROTATION_DAYS local days. */
@@ -373,11 +443,11 @@ const EMPTY_NOTICE =
  * city world (the cell the player loads from), once. Two parallel calls create
  * one set: the job key and the quest rows are written in one transaction.
  * Returns the (possibly updated) manifest. Never throws for a missing POI file.
- * Reviewed cities (Plzeň) never get POI quests.
+ * Reviewed cities (Plzeň) get them per cell too, next to their own zones.
  */
 export function materializePoiQuests(db, manifest, { source = defaultPoiSource(), now = Date.now(), layerId = DEFAULT_LAYER.id, cell = null } = {}) {
   const street = isStreetWorld(manifest),
-    auto = !street && isAutoCityWorld(manifest);
+    auto = !street && (isAutoCityWorld(manifest) || isReviewedCityWorld(manifest));
   if ((!street && !auto) || now >= manifest.endsAt) return manifest;
   const target = street ? manifest.region : cell;
   if (!target || !isValidCell(target) || getResolution(target) !== 7) return manifest;
@@ -404,6 +474,8 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
       pois,
       recent: recentPoiIds(db, current, target),
       avoid: (current.zones || []).flatMap((z) => (z.targets?.length ? z.targets : [z])),
+      pool: [...pois, ...((typeof source.cluePool === "function" && source.cluePool(target)) || [])],
+      nowYear: new Date(now).getUTCFullYear(),
     });
     const { opensAt, closesAt } = playWindow(current.day, current.timezone);
     const zones = [];
@@ -414,7 +486,8 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
         questId = `${current.id}:quest:poi-${tag}${i}:0`,
         first = q.pois[0],
         targets = q.pois.map((p) => ({ lat: p.lat, lng: p.lng }));
-      const hunt = q.template === "poi-category-hunt";
+      const hunt = q.template === "poi-category-hunt",
+        clue = q.template === "landmark-clue";
       const name = hunt
         ? `${label(q.category, true)[0].toUpperCase()}${label(q.category, true).slice(1)} hunt`
         : first.name || `${label(q.category)[0].toUpperCase()}${label(q.category).slice(1)}`;
@@ -445,12 +518,16 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
         ? `Find ${HUNT_STOPS} ${label(q.category, true)}`
         : q.chest
           ? `Chest at ${name}`
-          : `Visit ${name}`;
+          : clue
+            ? `Clue at ${name}`
+            : `Visit ${name}`;
       const objective = hunt
         ? `Visit ${HUNT_STOPS} ${label(q.category, true)} in this area today, in any order.`
         : q.chest
           ? `Reach the chest next to ${name} and open it. An Aura may remain in its edition.`
-          : `Reach the marked public spot next to ${name} and confirm your visit.`;
+          : clue
+            ? `Reach the marked public spot next to ${name}, then answer one question about it. The answer comes from Wikidata.`
+            : `Reach the marked public spot next to ${name} and confirm your visit.`;
       const activity = poiQuestActivity(
         q.chest ? "cosmetic-chest" : q.template,
         targets,
@@ -460,6 +537,8 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
         activity.steps.forEach((s, n) => {
           s.label = q.pois[n].name ? `${q.pois[n].name}` : `${label(q.category)} ${n + 1}`;
         });
+      if (clue)
+        activity.rewardConstraint = `Personal XP once: ${CLUE_XP.correct} for the right answer, ${CLUE_XP.miss} for the visit. One answer. No GOLD or NEAR prize.`;
       if (q.chest)
         activity.rewardConstraint =
           "Personal XP once; a cosmetic Aura only while edition supply remains. No GOLD or NEAR prize.";
@@ -474,7 +553,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
         targets.at(-1).lng,
         1,
         0,
-        q.chest ? POI_XP.chest : hunt ? POI_XP.hunt : POI_XP.visit,
+        q.chest ? POI_XP.chest : hunt ? POI_XP.hunt : clue ? POI_XP.clue : POI_XP.visit,
         kind,
         opensAt,
         closesAt,
@@ -483,6 +562,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
           zoneId,
           checkpoints: hunt ? targets : [],
           ...(hunt ? { unordered: true } : {}),
+          ...(clue ? { clue: q.clue } : {}),
           activity,
           poi: {
             policy: POI_QUEST_POLICY,
@@ -568,7 +648,10 @@ export function recordHuntStop(db, questId, player, stop, fixAt, now) {
  */
 export function poiQuestText(db, quest, meta, { lang = "en", layerId = DEFAULT_LAYER.id } = {}) {
   const poi = meta?.poi;
-  if (!poi || quest.kind === "chest" || !Array.isArray(poi.ids) || !poi.ids.length) return null;
+  // A landmark clue keeps its rule text too: flavour built from the Wikidata
+  // description could give the answer away.
+  if (!poi || quest.kind === "chest" || poi.template === "landmark-clue" || !Array.isArray(poi.ids) || !poi.ids.length)
+    return null;
   try {
     const text = flavourText(db, {
       poi: { id: poi.ids[0], category: poi.category, name: poi.names?.[0] || null },

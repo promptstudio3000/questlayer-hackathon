@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import {
   ArrowDown,
   ArrowUp,
-  ArrowRight,
   BookOpen,
   Buildings,
   CalendarBlank,
@@ -35,6 +34,7 @@ import {
   UserCircle,
   Vault,
 } from "@phosphor-icons/react";
+import { ArrowRight } from "../dir-icons";
 import { Ghost } from "../Ghost";
 import { GameObjectArt } from "../game-object-art";
 import { AuraSprite } from "../aura-art";
@@ -54,6 +54,7 @@ import {
   type ChapterId,
 } from "./content";
 import "./how-it-works.css";
+import { tr } from "../i18n";
 
 const PLAY_URL = "/";
 const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
@@ -274,7 +275,7 @@ function ZonesScene() {
         {DAILY_ZONES.map((z, i) => (
           <span key={z.id} className={`hiw-zone t${z.tier}`} style={stagger(i)}>
             {z.tier === 1 ? <MapPin size={18} weight="fill" /> : <LockSimple size={16} weight="bold" />}
-            <b>{z.tier === 1 ? "Free" : `Tier ${z.tier}`}</b>
+            <b>{z.tier === 1 ? tr("Free") : tr("Tier {0}", { 0: z.tier })}</b>
           </span>
         ))}
         <div className="hiw-chest">
@@ -291,14 +292,11 @@ function ZonesScene() {
       </div>
       <ol className="hiw-zone-steps">
         <li style={stagger(0)}>
-          <Footprints size={18} /> Trail
-        </li>
+          <Footprints size={18} /> {" "}{tr("Trail")}</li>
         <li style={stagger(1)}>
-          <Flag size={18} /> Visit
-        </li>
+          <Flag size={18} /> {" "}{tr("Visit")}</li>
         <li style={stagger(2)}>
-          <Sparkle size={18} weight="fill" /> Chest
-        </li>
+          <Sparkle size={18} weight="fill" /> {" "}{tr("Chest")}</li>
       </ol>
     </div>
   );
@@ -323,7 +321,7 @@ function LevelsScene({ active, reduce }: { active: boolean; reduce: boolean }) {
           />
         </svg>
         <span className="hiw-ring-label">
-          <small>Level</small>
+          <small>{tr("Level")}</small>
           <b>
             <Counter to={MAX_LEVEL} active={active} reduce={reduce} duration={2600} />
           </b>
@@ -363,9 +361,9 @@ function CollectiblesScene() {
               {i === 3 && (
                 <div className="hiw-card-face back">
                   <ShieldCheck size={28} weight="duotone" />
-                  <b>Edition</b>
-                  <small>Max {AURA_SUPPLY} ever</small>
-                  <small>Secured on NEAR</small>
+                  <b>{tr("Edition")}</b>
+                  <small>{tr("Max {0} ever", { 0: AURA_SUPPLY })}</small>
+                  <small>{tr("Secured on NEAR")}</small>
                 </div>
               )}
             </div>
@@ -378,8 +376,8 @@ function CollectiblesScene() {
         </span>
         <Ghost className="hiw-wear-ghost" />
         <span className="hiw-switch">
-          <span>Practice</span>
-          <span>Secured</span>
+          <span>{tr("Practice")}</span>
+          <span>{tr("Secured")}</span>
           <i />
         </span>
       </div>
@@ -421,14 +419,11 @@ function BadgesScene() {
       </div>
       <ul className="hiw-badge-kinds">
         <li style={stagger(0)}>
-          <MapPin size={18} weight="fill" /> Place
-        </li>
+          <MapPin size={18} weight="fill" /> {" "}{tr("Place")}</li>
         <li style={stagger(1)}>
-          <CalendarBlank size={18} weight="fill" /> Event
-        </li>
+          <CalendarBlank size={18} weight="fill" /> {" "}{tr("Event")}</li>
         <li style={stagger(2)}>
-          <Scroll size={18} weight="fill" /> Quest
-        </li>
+          <Scroll size={18} weight="fill" /> {" "}{tr("Quest")}</li>
       </ul>
     </div>
   );
@@ -436,10 +431,10 @@ function BadgesScene() {
 
 // 06 NPCs: cards slide in and speak; the trader merges three Auras into one.
 const NPCS = [
-  { id: "story", name: "Storyteller", line: "Want to hear chapter one?", icon: BookOpen, aura: "comet" },
-  { id: "quest", name: "Quest giver", line: "Three stops, one chest.", icon: Scroll, aura: "polar" },
-  { id: "trader", name: "Trader", line: "Three commons for a rare?", icon: Storefront, aura: "gold" },
-  { id: "keeper", name: "Keeper", line: "The inner vault opens for stakers.", icon: Vault, aura: "moon" },
+  { id: "story", get name() { return tr("Storyteller"); }, get line() { return tr("Want to hear chapter one?"); }, icon: BookOpen, aura: "comet" },
+  { id: "quest", get name() { return tr("Quest giver"); }, get line() { return tr("Three stops, one chest."); }, icon: Scroll, aura: "polar" },
+  { id: "trader", get name() { return tr("Trader"); }, get line() { return tr("Three commons for a rare?"); }, icon: Storefront, aura: "gold" },
+  { id: "keeper", get name() { return tr("Keeper"); }, get line() { return tr("The inner vault opens for stakers."); }, icon: Vault, aura: "moon" },
 ] as const;
 function NpcScene() {
   return (
@@ -464,8 +459,8 @@ function NpcScene() {
         <div className="hiw-monster">
           <Sword size={26} weight="duotone" />
           <span>
-            <b>Monster duel</b>
-            <small>Win shards, XP and roll tickets</small>
+            <b>{tr("Monster duel")}</b>
+            <small>{tr("Win shards, XP and roll tickets")}</small>
           </span>
         </div>
         <div className="hiw-tradeup">
@@ -501,7 +496,7 @@ function StakingScene({ active, reduce }: { active: boolean; reduce: boolean }) 
           <Vault size={64} weight="duotone" />
         </div>
         <ol className="hiw-epochs">
-          {["Deposit", "E+1", "E+2"].map((e, i) => (
+          {[tr("Deposit"), "E+1", "E+2"].map((e, i) => (
             <li key={e} style={stagger(i)}>
               <span />
               {e}
@@ -509,8 +504,7 @@ function StakingScene({ active, reduce }: { active: boolean; reduce: boolean }) 
           ))}
         </ol>
         <div className="hiw-staker-badge">
-          <Crown size={22} weight="fill" /> Staker
-        </div>
+          <Crown size={22} weight="fill" /> {" "}{tr("Staker")}</div>
       </div>
       <ol className="hiw-gates">
         {STAKER_LADDER.map((r, i) => (
@@ -528,14 +522,12 @@ function StakingScene({ active, reduce }: { active: boolean; reduce: boolean }) 
       </ol>
       <div className="hiw-pot">
         <span className="hiw-pot-label">
-          <HandCoins size={18} weight="fill" /> One global prize pool, filled by yield
-        </span>
+          <HandCoins size={18} weight="fill" /> {" "}{tr("One global prize pool, filled by yield")}</span>
         <span className="hiw-pot-bar">
           <i />
         </span>
         <span className="hiw-pot-note">
-          Your principal: <Counter to={STAKER_MIN_NEAR} decimals={2} active={active} reduce={reduce} /> NEAR, still yours
-        </span>
+          {tr("Your principal:")}{" "}<Counter to={STAKER_MIN_NEAR} decimals={2} active={active} reduce={reduce} /> {" "}{tr("NEAR, still yours")}</span>
       </div>
     </div>
   );
@@ -557,8 +549,7 @@ function SeasonScene({ active, reduce }: { active: boolean; reduce: boolean }) {
           <b>
             <Counter to={SEASON.goal} active={active} reduce={reduce} duration={2200} /> / {SEASON.goal}
           </b>{" "}
-          season points
-        </span>
+          {tr("season points")}</span>
       </div>
       <div className="hiw-season-bar">
         {mix.map((m, i) => (
@@ -582,7 +573,7 @@ function SeasonScene({ active, reduce }: { active: boolean; reduce: boolean }) {
         {SEASON.ranks.map((r, i) => (
           <li key={r} style={stagger(i)}>
             {r}
-            <small>{i === 0 ? "any points" : i === 1 ? "the goal" : `${i}× the goal`}</small>
+            <small>{i === 0 ? tr("any points") : i === 1 ? tr("the goal") : tr("{0}× the goal", { 0: i })}</small>
           </li>
         ))}
       </ol>
@@ -591,10 +582,10 @@ function SeasonScene({ active, reduce }: { active: boolean; reduce: boolean }) {
 }
 
 const PRINCIPLES = [
-  { icon: Eye, title: "Looks, not power", text: "Auras and badges change how you look, never your odds, damage or payouts." },
-  { icon: Scales, title: "No betting", text: "Nothing to wager. Rolls and rewards are earned by playing." },
-  { icon: Coins, title: "Prizes from real yield", text: "Prizes come from received staking yield or sponsors, never from deposits." },
-  { icon: Compass, title: "Free first", text: "The first adventure works solo, with no wallet and no deposit." },
+  { icon: Eye, get title() { return tr("Looks, not power"); }, get text() { return tr("Auras and badges change how you look, never your odds, damage or payouts."); } },
+  { icon: Scales, get title() { return tr("No betting"); }, get text() { return tr("Nothing to wager. Rolls and rewards are earned by playing."); } },
+  { icon: Coins, get title() { return tr("Prizes from real yield"); }, get text() { return tr("Prizes come from received staking yield or sponsors, never from deposits."); } },
+  { icon: Compass, get title() { return tr("Free first"); }, get text() { return tr("The first adventure works solo, with no wallet and no deposit."); } },
 ] as const;
 function FairScene() {
   return (
@@ -611,11 +602,11 @@ function FairScene() {
 }
 
 const JOIN_STEPS = [
-  { icon: UserCircle, title: "Pick a name", text: "No sign-up, no e-mail, no deposit." },
-  { icon: Footprints, title: "Walk to your first coin", text: "The coach shows the nearest find on the map." },
-  { icon: Sparkle, title: "Open a chest, wear your Aura", text: "Your ghost changes on the map right away." },
-  { icon: ShieldCheck, title: "Secure it on NEAR", text: "A passkey keeps your game account safe.", optional: true },
-  { icon: Crown, title: `Stake ${STAKER_MIN_NEAR} NEAR, become a Staker`, text: "Opens the inner vault and patron lines.", optional: true },
+  { icon: UserCircle, get title() { return tr("Pick a name"); }, get text() { return tr("No sign-up, no e-mail, no deposit."); } },
+  { icon: Footprints, get title() { return tr("Walk to your first coin"); }, get text() { return tr("The coach shows the nearest find on the map."); } },
+  { icon: Sparkle, get title() { return tr("Open a chest, wear your Aura"); }, get text() { return tr("Your ghost changes on the map right away."); } },
+  { icon: ShieldCheck, get title() { return tr("Secure it on NEAR"); }, get text() { return tr("A passkey keeps your game account safe."); }, optional: true },
+  { icon: Crown, get title() { return tr("Stake {0} NEAR, become a Staker", { 0: STAKER_MIN_NEAR }); }, get text() { return tr("Opens the inner vault and patron lines."); }, optional: true },
 ] as const;
 
 export default function HowItWorks() {
@@ -631,7 +622,7 @@ export default function HowItWorks() {
     const root = document.documentElement;
     root.classList.add("hiw-root");
     const previousTitle = document.title;
-    document.title = "How QuestLayer works";
+    document.title = tr("How QuestLayer works");
     return () => {
       root.classList.remove("hiw-root");
       document.title = previousTitle;
@@ -704,11 +695,11 @@ export default function HowItWorks() {
           <span>QuestLayer</span>
         </a>
         <a className="hiw-top-play" href={PLAY_URL}>
-          Play now <ArrowRight size={18} weight="bold" />
+          {tr("Play now")}{" "}<ArrowRight size={18} weight="bold" />
         </a>
       </header>
 
-      <nav className="hiw-rail" aria-label="Chapters">
+      <nav className="hiw-rail" aria-label={tr("Chapters")}>
         <ol>
           {CHAPTERS.map((c) => (
             <li key={c.id}>
@@ -743,26 +734,24 @@ export default function HowItWorks() {
             ))}
           </div>
           <div className="hiw-hero-copy">
-            <p className="hiw-eyebrow">How QuestLayer works</p>
+            <p className="hiw-eyebrow">{tr("How QuestLayer works")}</p>
             <h1 id="start-title">
-              Your city is <em>the game board.</em>
+              {tr("Your city is")}{" "}<em>{tr("the game board.")}</em>
             </h1>
             <p className="hiw-lead">
-              Walk real streets, collect coins, open chests and dress your ghost in Auras that are truly yours. Stake a
-              little NEAR when you want more, and its yield grows one prize pool shared by every city.
-            </p>
+              {tr("Walk real streets, collect coins, open chests and dress your ghost in Auras that are truly yours. Stake a little NEAR when you want more, and its yield grows one prize pool shared by every city.")}</p>
             <div className="hiw-actions">
               <a className="hiw-button primary" href={PLAY_URL}>
-                Start exploring <ArrowRight size={20} weight="bold" />
+                {tr("Start exploring")}{" "}<ArrowRight size={20} weight="bold" />
               </a>
               <a className="hiw-button ghost" href="#walk">
-                See how it works <ArrowDown size={20} weight="bold" />
+                {tr("See how it works")}{" "}<ArrowDown size={20} weight="bold" />
               </a>
             </div>
             <ul className="hiw-chips">
-              <li style={stagger(0)}>Free to start</li>
-              <li style={stagger(1)}>No wallet needed</li>
-              <li style={stagger(2)}>Works on your phone</li>
+              <li style={stagger(0)}>{tr("Free to start")}</li>
+              <li style={stagger(1)}>{tr("No wallet needed")}</li>
+              <li style={stagger(2)}>{tr("Works on your phone")}</li>
             </ul>
           </div>
         </section>
@@ -770,10 +759,10 @@ export default function HowItWorks() {
         <Chapter
           id="walk"
           seen={seen}
-          eyebrow="Walk and collect"
-          title="Walk. Every street hides something."
-          lead="Your phone's GPS moves your ghost on a real map. Street coins and sparkling finds appear along the way: walk up to them and they are yours."
-          chips={["Street coins", "Sparkle finds", "Honest GPS distance"]}
+          eyebrow={tr("Walk and collect")}
+          title={tr("Walk. Every street hides something.")}
+          lead={tr("Your phone's GPS moves your ghost on a real map. Street coins and sparkling finds appear along the way: walk up to them and they are yours.")}
+          chips={[tr("Street coins"), tr("Sparkle finds"), tr("Honest GPS distance")]}
           scene={<WalkScene active={is("walk")} reduce={reduce} />}
         />
 
@@ -781,20 +770,20 @@ export default function HowItWorks() {
           id="zones"
           seen={seen}
           flip
-          eyebrow="Daily zones"
-          title="Six new zones every day."
-          lead="Each day every live city gets six zones with trails, visits and chests, all paid from the same global prize pool. Three are open to everyone; the others open as you stake. Chests hold Auras."
-          chips={["3 free", "2 for Tier 2", "1 for Tier 3"]}
+          eyebrow={tr("Daily zones")}
+          title={tr("Six new zones every day.")}
+          lead={tr("Each day every live city gets six zones with trails, visits and chests, all paid from the same global prize pool. Three are open to everyone; the others open as you stake. Chests hold Auras.")}
+          chips={[tr("3 free"), tr("2 for Tier 2"), tr("1 for Tier 3")]}
           scene={<ZonesScene />}
         />
 
         <Chapter
           id="levels"
           seen={seen}
-          eyebrow="Levels"
-          title={`Level up to ${MAX_LEVEL}. Every level opens something.`}
-          lead="Everything you do earns XP. Each level unlocks something to do or to wear: new Auras, rings, quest lines, a title. Never better odds."
-          chips={["Level n at 100·(n−1)² XP", "Something new every level"]}
+          eyebrow={tr("Levels")}
+          title={tr("Level up to {0}. Every level opens something.", { 0: MAX_LEVEL })}
+          lead={tr("Everything you do earns XP. Each level unlocks something to do or to wear: new Auras, rings, quest lines, a title. Never better odds.")}
+          chips={[tr("Level n at 100·(n−1)² XP"), tr("Something new every level")]}
           scene={<LevelsScene active={is("levels")} reduce={reduce} />}
         />
 
@@ -802,20 +791,20 @@ export default function HowItWorks() {
           id="collectibles"
           seen={seen}
           flip
-          eyebrow="Collectibles and editions"
-          title="Wear what you earn. Own it on NEAR."
-          lead={`Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most ${AURA_SUPPLY}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.`}
-          chips={["Limited editions", "Above and below slots", "Market and traders"]}
+          eyebrow={tr("Collectibles and editions")}
+          title={tr("Wear what you earn. Own it on NEAR.")}
+          lead={tr("Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.", { 0: AURA_SUPPLY })}
+          chips={[tr("Limited editions"), tr("Above and below slots"), tr("Market and traders")]}
           scene={<CollectiblesScene />}
         />
 
         <Chapter
           id="badges"
           seen={seen}
-          eyebrow="Badges"
-          title="Collect the places you have really been."
-          lead={`Stand on a summit, at a viewpoint or a landmark and a badge is yours. ${PLACE_BADGE_COUNT} notable places to start, and players can design their own place, event and quest badges, like a POAP.`}
-          chips={["Real GPS check", "POAP-like player badges", "Soulbound, never sold"]}
+          eyebrow={tr("Badges")}
+          title={tr("Collect the places you have really been.")}
+          lead={tr("Stand on a summit, at a viewpoint or a landmark and a badge is yours. {0} notable places to start, and players can design their own place, event and quest badges, like a POAP.", { 0: PLACE_BADGE_COUNT })}
+          chips={[tr("Real GPS check"), tr("POAP-like player badges"), tr("Soulbound, never sold")]}
           scene={<BadgesScene />}
         />
 
@@ -823,32 +812,28 @@ export default function HowItWorks() {
           id="npcs"
           seen={seen}
           flip
-          eyebrow="NPCs, monsters and traders"
-          title="The city is alive."
-          lead="Friendly ghosts roam the map. Storytellers and quest givers hand out quest lines, monsters wait for a duel, a weekly boss calls everyone out, and traders swap three Auras for a better one."
-          chips={["Quest lines", "Monster duels", "Weekly boss", "Trade-ups"]}
+          eyebrow={tr("NPCs, monsters and traders")}
+          title={tr("The city is alive.")}
+          lead={tr("Friendly ghosts roam the map. Storytellers and quest givers hand out quest lines, monsters wait for a duel, a weekly boss calls everyone out, and traders swap three Auras for a better one.")}
+          chips={[tr("Quest lines"), tr("Monster duels"), tr("Weekly boss"), tr("Trade-ups")]}
           scene={<NpcScene />}
         />
 
         <Chapter
           id="staking"
           seen={seen}
-          eyebrow="Staking"
-          title="Stake a little. Unlock a lot more."
+          eyebrow={tr("Staking")}
+          title={tr("Stake a little. Unlock a lot more.")}
           lead={
             <>
-              From {STAKER_MIN_NEAR} NEAR (about 5 €) you become a <b>Staker</b>. Your NEAR stays yours and keeps
-              earning staking yield; you choose how much of that yield goes to the global prize pool. There is one pool for the whole game, and each
-              day's rewards land where people actually play. After two epochs
-              your stake matures and new things open step by step, together with your level.
-            </>
+              {tr("From")}{" "}{STAKER_MIN_NEAR} {" "}{tr("NEAR (about 5 €) you become a")}{" "}<b>{tr("Staker")}</b>{tr(". Your NEAR stays yours and keeps earning staking yield; you choose how much of that yield goes to the global prize pool. There is one pool for the whole game, and each day's rewards land where people actually play. After two epochs your stake matures and new things open step by step, together with your level.")}</>
           }
           chips={[
-            `Staker from ${STAKER_MIN_NEAR} NEAR`,
-            `Tier 2 from ${TIER_NEAR.tier2} NEAR, Tier 3 from ${TIER_NEAR.tier3}`,
-            "One global prize pool",
-            "Withdraw any time",
-            "Unlocks to do and wear, never odds",
+            tr("Staker from {0} NEAR", { 0: STAKER_MIN_NEAR }),
+            tr("Tier 2 from {0} NEAR, Tier 3 from {1}", { 0: TIER_NEAR.tier2, 1: TIER_NEAR.tier3 }),
+            tr("One global prize pool"),
+            tr("Withdraw any time"),
+            tr("Unlocks to do and wear, never odds"),
           ]}
           scene={<StakingScene active={is("staking")} reduce={reduce} />}
         />
@@ -857,28 +842,27 @@ export default function HowItWorks() {
           id="seasons"
           seen={seen}
           flip
-          eyebrow="Seasons"
-          title="Seasons give every week a goal."
-          lead={`A season runs about ${SEASON.lengthDays} days. Hunts, zone visits and NPC lines earn points, never money. Reach the goal for the season mark and the season Aura; go further for cosmetic ranks on the board.`}
-          chips={["Points for play only", "Cosmetic ranks", "Season Aura for finishers", "No streaks"]}
+          eyebrow={tr("Seasons")}
+          title={tr("Seasons give every week a goal.")}
+          lead={tr("A season runs about {0} days. Hunts, zone visits and NPC lines earn points, never money. Reach the goal for the season mark and the season Aura; go further for cosmetic ranks on the board.", { 0: SEASON.lengthDays })}
+          chips={[tr("Points for play only"), tr("Cosmetic ranks"), tr("Season Aura for finishers"), tr("No streaks")]}
           scene={<SeasonScene active={is("seasons")} reduce={reduce} />}
         />
 
         <Chapter
           id="fair-play"
           seen={seen}
-          eyebrow="Fair play"
-          title="Fair by design."
-          lead="Skill and walking win here. What you own makes you look good, and money never buys a better chance."
+          eyebrow={tr("Fair play")}
+          title={tr("Fair by design.")}
+          lead={tr("Skill and walking win here. What you own makes you look good, and money never buys a better chance.")}
           scene={<FairScene />}
         />
 
         <section id="join" className="hiw-chapter hiw-join" data-inview={is("join")} aria-labelledby="join-title">
           <div className="hiw-copy">
             <p className="hiw-eyebrow">
-              <span>{String(CHAPTERS.length - 1).padStart(2, "0")}</span> How to join
-            </p>
-            <h2 id="join-title">Start in under a minute.</h2>
+              <span>{String(CHAPTERS.length - 1).padStart(2, "0")}</span> {" "}{tr("How to join")}</p>
+            <h2 id="join-title">{tr("Start in under a minute.")}</h2>
             <ol className="hiw-steps">
               {JOIN_STEPS.map((s, i) => (
                 <li key={s.title} style={stagger(i)} className={"optional" in s ? "optional" : undefined}>
@@ -888,7 +872,7 @@ export default function HowItWorks() {
                   <span>
                     <b>
                       {s.title}
-                      {"optional" in s && <small> Optional</small>}
+                      {"optional" in s && <small> {" "}{tr("Optional")}</small>}
                     </b>
                     <span>{s.text}</span>
                   </span>
@@ -898,15 +882,15 @@ export default function HowItWorks() {
             </ol>
             <div className="hiw-actions">
               <a className="hiw-button primary" href={PLAY_URL}>
-                Start exploring <ArrowRight size={20} weight="bold" />
+                {tr("Start exploring")}{" "}<ArrowRight size={20} weight="bold" />
               </a>
               <a className="hiw-button ghost" href="#start">
-                <ArrowUp size={20} weight="bold" /> Back to the top
-              </a>
+                <ArrowUp size={20} weight="bold" /> {" "}{tr("Back to the top")}</a>
             </div>
             <p className="hiw-fine">
-              <Key size={16} /> QuestLayer never asks for your recovery phrase.
-            </p>
+              <Key size={16} /> {" "}{tr("QuestLayer never asks for your recovery phrase.")}</p>
+            <p className="hiw-fine">
+              <HandCoins size={16} /> {" "}<a href="/economy">{tr("See the prize pool ledger")}</a></p>
           </div>
         </section>
       </main>

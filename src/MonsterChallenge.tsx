@@ -28,6 +28,7 @@ import {
   type TraceChallenge,
 } from "./monster-challenge";
 import "./monster-challenge.css";
+import { tr } from "./i18n";
 
 type Props = {
   /** The monster's ActorView from the encounter. */
@@ -50,7 +51,7 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
   useEffect(() => {
     api<ChallengeMenu>(`${path(monster)}?encounter=${encodeURIComponent(encounter)}`)
       .then(setMenu)
-      .catch((e) => setError(e instanceof ApiError ? e.message : "Could not reach the monster."));
+      .catch((e) => setError(e instanceof ApiError ? e.message : tr("Could not reach the monster.")));
   }, [monster, encounter]);
 
   async function start(format: ChallengeFormat) {
@@ -60,7 +61,7 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
       const out = await api<{ challenge: Challenge }>(path(monster), { encounter, format });
       setChallenge(out.challenge);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not start the challenge.");
+      setError(e instanceof ApiError ? e.message : tr("Could not start the challenge."));
     } finally {
       setBusy(false);
     }
@@ -72,7 +73,7 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
     try {
       done(await api<ChallengeResult>(`${path(monster)}/${challenge.id}/submit`, input));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Your moves did not reach the monster.");
+      setError(e instanceof ApiError ? e.message : tr("Your moves did not reach the monster."));
     } finally {
       setBusy(false);
     }
@@ -84,7 +85,7 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
   }
 
   return (
-    <Dialog label={`Challenge ${monster.name}`} onClose={onClose}>
+    <Dialog label={tr("Challenge {0}", { 0: monster.name })} onClose={onClose}>
       <div className={`monster-challenge monster-${monster.archetype}`}>
         <header className="monster-head">
           <span className="monster-sigil" aria-hidden="true" />
@@ -92,13 +93,13 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
             <h2>{monster.name}</h2>
             <p className="monster-sub">
               {monster.archetype === "guardian"
-                ? "Guardian"
+                ? tr("Guardian")
                 : monster.archetype === "lurker"
-                  ? "Lurker"
+                  ? tr("Lurker")
                   : monster.archetype === "boss"
-                    ? "Weekly boss"
-                    : "Roamer"}
-              {menu ? ` · you are level ${menu.level}` : ""}
+                    ? tr("Weekly boss")
+                    : tr("Roamer")}
+              {menu ? tr(" · you are level {0}", { 0: menu.level }) : ""}
             </p>
           </div>
         </header>
@@ -110,11 +111,11 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
         ) : menu ? (
           <Menu menu={menu} busy={busy} start={start} />
         ) : (
-          !error && <p aria-live="polite">The monster is sizing you up…</p>
+          !error && <p aria-live="polite">{tr("The monster is sizing you up…")}</p>
         )}
         {!result && (
           <button type="button" className="monster-secondary" onClick={onClose}>
-            {challenge ? "Run away (counts as your try)" : "Leave it"}
+            {challenge ? tr("Run away (counts as your try)") : tr("Leave it")}
           </button>
         )}
       </div>
@@ -123,17 +124,15 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
 }
 
 function Menu({ menu, busy, start }: { menu: ChallengeMenu; busy: boolean; start: (f: ChallengeFormat) => void }) {
-  if (menu.status.state === "defeated") return <p>You already beat this monster today. It will be back tomorrow.</p>;
+  if (menu.status.state === "defeated") return <p>{tr("You already beat this monster today. It will be back tomorrow.")}</p>;
   if (menu.status.state === "cooldown") return <p>{retryLabel(menu.status.retryAt)}</p>;
   return (
     <>
       <p className="monster-fair">
-        Your level and your skill decide this fight. Auras only change how it looks. You get one try per hour, and losing
-        costs nothing.
-      </p>
+        {tr("Your level and your skill decide this fight. Auras only change how it looks. You get one try per hour, and losing costs nothing.")}</p>
       {menu.tendency && (
         <p className="monster-tell">
-          <Sparkle size={18} weight="fill" aria-hidden="true" /> Word on the street: it likes to{" "}
+          <Sparkle size={18} weight="fill" aria-hidden="true" /> {" "}{tr("Word on the street: it likes to")}{" "}
           <strong>{STANCE_COPY[menu.tendency].label}</strong>.
         </p>
       )}
@@ -157,20 +156,19 @@ function ResultView({ result, onClose }: { result: ChallengeResult; onClose: () 
   return (
     <div className={`monster-result ${won ? "won" : "lost"}`} role="status">
       {won ? <Trophy size={40} weight="fill" aria-hidden="true" /> : <Shield size={40} aria-hidden="true" />}
-      <h3>{won ? "You beat it!" : "It got away this time"}</h3>
+      <h3>{won ? tr("You beat it!") : tr("It got away this time")}</h3>
       <p>
-        Score {result.result.score} of {result.result.max}.{" "}
-        {won ? "It won't bother this street again today." : reason || retryLabel(result.retryAt)}
+        {tr("Score {0} of {1}.", { 0: result.result.score, 1: result.result.max })}{" "}
+        {won ? tr("It won't bother this street again today.") : reason || retryLabel(result.retryAt)}
       </p>
       {won && result.rewards && <RewardLine rewards={result.rewards} />}
       {result.detail.reveal && (
         <p className="monster-reveal">
-          Its moves were fixed before you started: {result.detail.reveal.picks.map((s) => STANCE_COPY[s].label).join(", ")}.
+          {tr("Its moves were fixed before you started:")}{" "}{result.detail.reveal.picks.map((s) => STANCE_COPY[s].label).join(", ")}.
         </p>
       )}
       <button type="button" className="monster-primary" onClick={onClose}>
-        Back to the map
-      </button>
+        {tr("Back to the map")}</button>
     </div>
   );
 }
@@ -183,12 +181,11 @@ function RewardLine({ rewards }: { rewards: NonNullable<ChallengeResult["rewards
   ].filter(Boolean);
   return (
     <>
-      {parts.length > 0 && <p className="monster-rewards">You earned {parts.join(", ")}.</p>}
-      {rewards.unlocks && <p className="monster-rewards">The zone chest it guarded is open for you now.</p>}
+      {parts.length > 0 && <p className="monster-rewards">{tr("You earned")}{" "}{parts.join(", ")}.</p>}
+      {rewards.unlocks && <p className="monster-rewards">{tr("The zone chest it guarded is open for you now.")}</p>}
       {rewards.edition && (
         <p className="monster-rewards">
-          First win: {rewards.edition.name} ({rewards.edition.rarity}) is in your wardrobe. Secure it on NEAR from there.
-        </p>
+          {tr("First win:")}{" "}{rewards.edition.name} ({rewards.edition.rarity}{tr(") is in your wardrobe. Secure it on NEAR from there.")}</p>
       )}
     </>
   );
@@ -256,11 +253,11 @@ function Quiz({ c, busy, submit }: PlayProps & { c: QuizChallenge }) {
     if (left === 0 && !busy) answer(-1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [left]);
-  if (!q) return <p aria-live="polite">Checking your answers…</p>;
+  if (!q) return <p aria-live="polite">{tr("Checking your answers…")}</p>;
   return (
     <div className="monster-quiz">
       <p className="monster-progress">
-        Question {index + 1} of {c.questions.length}
+        {tr("Question {0} of {1}", { 0: index + 1, 1: c.questions.length })}
         <span>
           <Timer size={16} aria-hidden="true" /> {left} s
         </span>
@@ -300,7 +297,7 @@ function Rhythm({ c, busy, submit }: PlayProps & { c: RhythmChallenge }) {
   const lead = 1200;
   return (
     <div className="monster-rhythm">
-      <p>{now < c.beats[0] - 600 ? "Get ready…" : "Tap as each beat reaches the ring."}</p>
+      <p>{now < c.beats[0] - 600 ? tr("Get ready…") : tr("Tap as each beat reaches the ring.")}</p>
       <div className="rhythm-lane" aria-hidden="true">
         <span className="rhythm-ring" />
         {c.beats.map((b) => {
@@ -323,7 +320,7 @@ function Rhythm({ c, busy, submit }: PlayProps & { c: RhythmChallenge }) {
           }
         }}
       >
-        Tap ({count})
+        {tr("Tap (")}{count})
       </button>
     </div>
   );
@@ -341,12 +338,12 @@ function Trace({ c, busy, submit }: PlayProps & { c: TraceChallenge }) {
   }
   return (
     <div className="monster-trace">
-      <p>Start on rune 1 and drag through every rune in order, then let go.</p>
+      <p>{tr("Start on rune 1 and drag through every rune in order, then let go.")}</p>
       <svg
         viewBox="0 0 1 1"
         className="trace-board"
         role="img"
-        aria-label={`Rune path with ${c.points.length} runes`}
+        aria-label={tr("Rune path with {0} runes", { 0: c.points.length })}
         onPointerDown={(e) => {
           if (busy) return;
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -396,7 +393,7 @@ function Memory({ c, busy, submit }: PlayProps & { c: MemoryChallenge }) {
   return (
     <div className="monster-memory">
       <p aria-live="polite">
-        {showing ? "Watch the runes…" : `Your turn: ${count} of ${c.sequence.length}`}
+        {showing ? tr("Watch the runes…") : tr("Your turn: {0} of {1}", { 0: count, 1: c.sequence.length })}
       </p>
       <div className="memory-pads">
         {Array.from({ length: c.pads }, (_, i) => (
@@ -405,7 +402,7 @@ function Memory({ c, busy, submit }: PlayProps & { c: MemoryChallenge }) {
             key={i}
             className={`memory-pad pad-${i}${lit === i ? " lit" : ""}`}
             disabled={showing || busy}
-            aria-label={`Rune ${i + 1}`}
+            aria-label={tr("Rune {0}", { 0: i + 1 })}
             onClick={() => tap(i)}
           />
         ))}
@@ -446,23 +443,23 @@ function Duel({ c, monster, onDone, onError }: PlayProps & { c: DuelChallenge })
   return (
     <div className="monster-duel">
       <div className="duel-bars">
-        <Bar label="You" value={hp.player} max={c.playerHp} />
+        <Bar label={tr("You")} value={hp.player} max={c.playerHp} />
         <Bar label={monster.name} value={hp.monster} max={c.monsterHp} />
       </div>
       <p className="monster-progress">
-        Round {Math.min(round + 1, c.rounds)} of {c.rounds} · power {c.power} from level {c.level}
+        {tr("Round {0} of {1} · power {2} from level {3}", { 0: Math.min(round + 1, c.rounds), 1: c.rounds, 2: c.power, 3: c.level })}
       </p>
       {last && (
         <p className="duel-last" aria-live="polite">
-          You {STANCE_COPY[last.stance].label.toLowerCase()}, it {STANCE_COPY[last.monster].label.toLowerCase()}s:{" "}
-          {last.outcome === "win" ? `you hit for ${last.dealt}` : last.outcome === "lose" ? `it hits you for ${last.taken}` : `a clash, ${last.dealt} each way`}.
+          {tr("You: {0} · it: {1}.", { 0: STANCE_COPY[last.stance].label, 1: STANCE_COPY[last.monster].label })}{" "}
+          {last.outcome === "win" ? tr("you hit for {0}", { 0: last.dealt }) : last.outcome === "lose" ? tr("it hits you for {0}", { 0: last.taken }) : tr("a clash, {0} each way", { 0: last.dealt })}.
         </p>
       )}
       <div className="duel-ring" aria-hidden="true">
         <span className="duel-target" />
         <span className="duel-closing" style={{ transform: `scale(${1 + closing * 1.6})`, opacity: closing > 0 ? 1 : 0.4 }} />
       </div>
-      <p className="duel-hint">Pick your stance as the ring meets the circle. Strike beats Trick, Trick beats Guard, Guard beats Strike.</p>
+      <p className="duel-hint">{tr("Pick your stance as the ring meets the circle. Strike beats Trick, Trick beats Guard, Guard beats Strike.")}</p>
       <div className="duel-stances">
         {(["strike", "guard", "trick"] as Stance[]).map((s) => (
           <button type="button" key={s} disabled={busy} onClick={() => pick(s)}>

@@ -31,6 +31,10 @@ import {
   readQueryCursor,
   queryCursor,
   zoneInBounds,
+  nearQuery,
+  nearBox,
+  NEAR_RADIUS_M,
+  NEAR_COIN_LIMIT,
 } from "./spatial/world-query.mjs";
 import {
   effectiveCityPack,
@@ -45,6 +49,7 @@ import {
   materializePoiQuests,
   poiQuestText,
 } from "./poi-quests.mjs";
+import { clueView } from "./landmark-clue.mjs";
 export const HOME = DEFAULT_CITY.center;
 export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
@@ -170,23 +175,28 @@ function publicManifest(db, w) {
 }
 
 // Street worlds get today's POI quests on first load (docs/WORLDS-PLAN.md C.3,
-// task W6), from the local POI file only; city worlds and the arena never do.
+// task W6), from the local POI file only. City worlds (auto and reviewed, the
+// city demo too) get them per H3 cell: the player's cell, or `cellAt` when the
+// player asks to search another spot of the same city ("Search this area").
 export async function ensureWorld(
   db,
   location = HOME,
   arena = true,
   now = Date.now(),
-  { mapData = {}, poiSource } = {},
+  { mapData = {}, poiSource, cellAt = null } = {},
 ) {
   const world = await ensureBaseWorld(db, location, arena, now, { mapData });
-  // Reviewed cities keep their own plan; auto cities get POI quests in the
-  // player's H3 cell (W6 + W5), street cells in the whole cell world.
-  if (arena || (world.cityId && world.cityStatus !== "auto")) return world;
+  if (!world.cityId && arena) return world;
+  // A searched spot must lie in the same city; otherwise the player's own cell.
+  const at =
+    world.cityId && cellAt && cityFor(cellAt)?.id === world.cityId
+      ? cellAt
+      : location;
   try {
     return materializePoiQuests(db, world, {
       source: poiSource === undefined ? defaultPoiSource() : poiSource,
       now,
-      cell: world.cityId ? latLngToCell(location.lat, location.lng, 7) : null,
+      cell: world.cityId ? latLngToCell(at.lat, at.lng, 7) : null,
     });
   } catch (error) {
     // POI quests are an addition: a broken POI file never hides the street world.
@@ -405,13 +415,26 @@ async function ensureBaseWorld(
   return job;
 }
 export function worldView(db, id, player = null, options = {}) {
+  // options.timing (an object) collects ms per phase for Server-Timing.
+  const spans = options.timing,
+    mark = (() => {
+      let last = performance.now();
+      return (name) => {
+        if (!spans) return;
+        const at = performance.now();
+        spans[name] = (spans[name] || 0) + (at - last);
+        last = at;
+      };
+    })();
   const row = db.prepare("SELECT manifest FROM worlds WHERE id=?").get(id);
   if (!row) return null;
   const query = worldQuery(options),
+    near = query.limit ? null : nearQuery(options.near),
     now = options.now ?? Date.now(),
     manifest = publicManifest(db, JSON.parse(row.manifest)),
     closed = closedPlaces(db, manifest.cityId),
     paused = pauseState(db, manifest.cityId, manifest.day);
+  mark("wmanifest");
   const quests = db
     .prepare(
       "SELECT q.*,EXISTS(SELECT 1 FROM quest_claims c WHERE c.quest_id=q.id AND c.player_id=?) AS completed,COALESCE((SELECT checkpoint FROM quest_progress p WHERE p.quest_id=q.id AND p.player_id=?),0) AS checkpoint FROM quests q WHERE q.world_id=? ORDER BY q.tier,q.id",
@@ -432,6 +455,7 @@ export function worldView(db, id, player = null, options = {}) {
           : cps[q.checkpoint] || null,
         ...(visited ? { visitedStops: [...visited].sort((a, b) => a - b) } : {}),
         activity: describeStoredQuest(q, meta),
+        ...(meta.clue ? { clue: clueView(db, q.id, meta.clue, player, options.lang) } : {}),
       };
     });
   const level = levelFor(
@@ -476,6 +500,7 @@ export function worldView(db, id, player = null, options = {}) {
       )
       .map((q) => q.zone_id),
   );
+  mark("wquests");
   let rows;
   if (query.limit) {
     const after = readQueryCursor(id, query),
@@ -489,16 +514,32 @@ export function worldView(db, id, player = null, options = {}) {
         `SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL AND id>?${bounds} ORDER BY id LIMIT ?`,
       )
       .all(...params, query.limit + 1);
+  } else if (near) {
+    const [w, south, e, north] = nearBox(near),
+      cosLat = Math.cos((near.lat * Math.PI) / 180),
+      away = (c) =>
+        ((c.lat - near.lat) * 111320) ** 2 +
+        ((c.lng - near.lng) * 111320 * cosLat) ** 2;
+    rows = db
+      .prepare(
+        "SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL AND lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?",
+      )
+      .all(id, south, north, w, e)
+      .filter((c) => away(c) <= NEAR_RADIUS_M ** 2);
+    if (rows.length > NEAR_COIN_LIMIT)
+      rows = rows.sort((a, b) => away(a) - away(b)).slice(0, NEAR_COIN_LIMIT);
   } else
     rows = db
       .prepare(
         "SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL",
       )
       .all(id);
+  mark("wcoins");
   const finds = streetFindIds(db, id);
+  mark("wfinds");
   const more = !!query.limit && rows.length > query.limit,
     page = query.limit ? rows.slice(0, query.limit) : rows;
-  return {
+  const view = {
     ...manifest,
     zones: visibleZones,
     cityZoneCount: zones.length,
@@ -510,6 +551,9 @@ export function worldView(db, id, player = null, options = {}) {
       .filter((p) => !pointClosed(closed, p))
       .map((c) => (finds.has(c.id) ? { ...c, find: true } : c)),
     streetFindXp: STREET_FIND_XP,
+    ...(near
+      ? { coinsNear: { lat: near.lat, lng: near.lng, radiusM: NEAR_RADIUS_M } }
+      : {}),
     ...(query.limit
       ? {
           page: {
@@ -528,10 +572,18 @@ export function worldView(db, id, player = null, options = {}) {
           q.kind === "chest" && (chestStock.get(q.tier) ?? false),
       })),
   };
+  mark("wrest");
+  return view;
 }
 export function expireWorlds(db, now = Date.now()) {
   return atomic(db, () => {
-    for (const row of db.prepare("SELECT id,manifest FROM worlds").all()) {
+    // Worlds already closed out are skipped in SQL, so this stays cheap as
+    // past days pile up (it runs on every POST /api/world).
+    for (const row of db
+      .prepare(
+        "SELECT id,manifest FROM worlds w WHERE NOT EXISTS (SELECT 1 FROM daily_jobs j WHERE j.job_key='expire:'||w.id)",
+      )
+      .all()) {
       const w = JSON.parse(row.manifest);
       if (w.endsAt > now) continue;
       const key = `expire:${row.id}`;

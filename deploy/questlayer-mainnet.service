@@ -26,6 +26,10 @@ Environment=MAINNET_FEATURES=collectibles,relayer,social
 Environment=AWARD_SIGNER_PATH=/var/lib/questlayer-mainnet/award-attestor.pem
 Environment=PLAYER_FACTORY_KEY_PATH=/var/lib/questlayer-mainnet/player-factory-mainnet.json
 Environment=RELAYER_KEY_PATH=/var/lib/questlayer-mainnet/relayer-mainnet.json
+# Optional (docs/MAINNET-PLAN.md §6): badges and npc rolls stay off until the
+# matching public/native-*-mainnet.json manifest and these keys are installed.
+Environment=BADGES_MINTER_KEY_PATH=/var/lib/questlayer-mainnet/badges-minter-mainnet.json
+Environment=NPC_TICKET_SIGNER_PATH=/var/lib/questlayer-mainnet/npc-games-ticket-signer.pem
 Environment=PLAYER_FACTORY_FUND_YOCTO=20000000000000000000000
 Environment=RELAY_TOPUP_CAP_YOCTO=50000000000000000000000
 Environment=RELAY_MAX_JOBS_PER_DAY=40

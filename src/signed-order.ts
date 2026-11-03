@@ -3,12 +3,13 @@
 // The terms match server/native/signed-orders.mjs and the market contract
 // byte for byte; the contract re-verifies every order before it moves assets.
 import { signerFor, type PlayerKeyRecord } from "./player-key.ts";
+import { tr } from "./i18n.ts";
 
 export const ORDER_STANDARD = "questlayer_aura_order";
 export const ORDER_TTL_CHOICES = [
-  { label: "1 hour", ms: 60 * 60 * 1000 },
-  { label: "1 day", ms: 24 * 60 * 60 * 1000 },
-  { label: "7 days", ms: 7 * 24 * 60 * 60 * 1000 },
+  { get label() { return tr("1 hour"); }, ms: 60 * 60 * 1000 },
+  { get label() { return tr("1 day"); }, ms: 24 * 60 * 60 * 1000 },
+  { get label() { return tr("7 days"); }, ms: 7 * 24 * 60 * 60 * 1000 },
 ] as const;
 
 export type OrderKind = "sell" | "buy";
@@ -115,10 +116,10 @@ export function statusFromCheck(
 }
 
 export const ORDER_STATUS_TEXT: Record<OrderStatus, string> = {
-  pending: "Confirming with the market",
+  get pending() { return tr("Confirming with the market"); },
   open: "Open: anyone can accept it until it expires",
-  filled: "Accepted on chain. Check your collection and market balance.",
-  cancelled: "Cancelled on chain: it can no longer be accepted",
+  get filled() { return tr("Accepted on chain. Check your collection and market balance."); },
+  get cancelled() { return tr("Cancelled on chain: it can no longer be accepted"); },
   expired: "Expired: it can no longer be accepted",
-  rejected: "Not accepted by the market",
+  get rejected() { return tr("Not accepted by the market"); },
 };
