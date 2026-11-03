@@ -11,6 +11,9 @@ import { loadLocale } from "./i18n";
 // so the welcome screen's first load does not grow.
 const HowItWorks = lazy(() => import("./how-it-works/HowItWorks"));
 const HOW_IT_WORKS_PATH = /^\/how-it-works\/?$/;
+// Public prize pool ledger (docs/ECONOMY-PAGE.md): read-only, own lazy chunk.
+const EconomyPage = lazy(() => import("./economy/EconomyPage"));
+const ECONOMY_PATH = /^\/economy\/?$/;
 
 void loadLocale().then(() =>
   createRoot(document.getElementById("root")!).render(
@@ -18,6 +21,10 @@ void loadLocale().then(() =>
     {HOW_IT_WORKS_PATH.test(location.pathname) ? (
       <Suspense fallback={null}>
         <HowItWorks />
+      </Suspense>
+    ) : ECONOMY_PATH.test(location.pathname) ? (
+      <Suspense fallback={null}>
+        <EconomyPage />
       </Suspense>
     ) : (
       <>

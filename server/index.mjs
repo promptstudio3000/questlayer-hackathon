@@ -50,6 +50,8 @@ import {
   createBonusVoteRoutes,
 } from "./creators/bonus-vote.mjs";
 import { auditDistribution, auditSummary } from "./native/distribution.mjs";
+import { createPublicLedger } from "./native/public-ledger.mjs";
+import { readYieldBacking } from "./native/day-publication.mjs";
 import {
   NativeSocialRecords,
   createSocialRecordRoutes,
@@ -662,6 +664,17 @@ const creatorMoney = creatorsManifest
   : null;
 const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
+// Public economy ledger for the /economy page (docs/ECONOMY-PAGE.md).
+const yieldCycleProofPath = resolve(APP_ROOT, "public/native-yield-cycle-proof.json");
+const publicLedger = createPublicLedger({
+  native: nativeRewards,
+  treasury: stnearTreasury,
+  yieldBacking: readYieldBacking,
+  cycleProof: () =>
+    existsSync(yieldCycleProofPath)
+      ? JSON.parse(readFileSync(yieldCycleProofPath, "utf8"))
+      : null,
+});
 const tasksManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-tasks")}`),
   resolve(APP_ROOT, `dist/${manifestName("native-tasks")}`),
@@ -961,6 +974,10 @@ async function api(req, res, url) {
     if (fresh) nativeRewards.lastAudit = await auditDistribution(nativeRewards);
     return respond(res, nativeRewards.lastAudit);
   }
+  if (path === "/api/economy/ledger" && method === "GET")
+    return respond(res, await publicLedger(), 200, {
+      "Cache-Control": "public, max-age=60",
+    });
   if (path === "/api/native/economy" && method === "GET") {
     assert(nativeEconomy, "Native economy is not configured yet.", 503);
     return respond(res, await nativeEconomy.snapshot());
