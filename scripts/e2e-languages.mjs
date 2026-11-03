@@ -125,7 +125,14 @@ function layoutProblems() {
 // Runs in the page: visible text that equals an English key whose
 // translation differs, i.e. a string that skipped tr().
 function untranslated(dict) {
-  const keys = new Map(Object.entries(dict).filter(([en, t]) => en !== t).map(([en]) => [en.trim(), en]));
+  // Skip English keys that read the same as some translation (French
+  // "Explorer" is the translation of "Explore", not the English "Explorer").
+  const translated = new Set(Object.values(dict).map((t) => t.trim()));
+  const keys = new Map(
+    Object.entries(dict)
+      .filter(([en, t]) => en !== t && !translated.has(en.trim()))
+      .map(([en]) => [en.trim(), en]),
+  );
   const found = new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
