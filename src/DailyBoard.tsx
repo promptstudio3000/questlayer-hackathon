@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle, Circle, Target } from "@phosphor-icons/react";
+import { CheckCircle, Circle, Target, X } from "@phosphor-icons/react";
 import { api, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import "./daily-board.css";
@@ -89,9 +89,12 @@ export function DailyBoard({
       {open && (
         <Dialog label={tr("Today's board")} onClose={() => setOpen(false)}>
           <section className="daily-board-sheet">
+            <button className="sheet-close" aria-label={tr("Close")} onClick={() => setOpen(false)}>
+              <X size={16} aria-hidden="true" />
+            </button>
             <h2>{tr("Today's board")}</h2>
             <p className="daily-board-lead">
-              {tr("Three small goals from today's map. Finish them all for +")}{board.bonusXp} {" "}{tr("XP. No streak: skip a day and you lose nothing.")}</p>
+              {tr("All 3 goals: +{0} XP · no streaks", { 0: board.bonusXp })}</p>
             <ul>
               {board.goals.map((g) => (
                 <li key={g.kind} className={g.done ? "done" : ""}>
@@ -114,18 +117,16 @@ export function DailyBoard({
             </ul>
             {board.claimed ? (
               <p className="daily-board-done">{tr("Done for today. +")}{board.bonusXp} {" "}{tr("XP is yours.")}</p>
-            ) : (
-              <button className="primary-button" disabled={!board.complete || busy} onClick={() => void claim()}>
-                {board.complete ? tr("Claim +{0} XP", { 0: board.bonusXp }) : tr("{0} of {1} done", { 0: board.done, 1: board.total })}
+            ) : board.complete ? (
+              <button className="primary-button" disabled={busy} onClick={() => void claim()}>
+                {tr("Claim +{0} XP", { 0: board.bonusXp })}
               </button>
-            )}
+            ) : null}
             {error && <p className="daily-board-error">{error}</p>}
             <p className="fine-print">
               {board.finishedToday ? tr("{0} explorers finished today's board. ", { 0: board.finishedToday }) : ""}
               {board.resetsAt ? tr("New board in {0}.", { 0: remaining(board.resetsAt) }) : ""}
             </p>
-            <button className="secondary-button" onClick={() => setOpen(false)}>
-              {tr("Close")}</button>
           </section>
         </Dialog>
       )}

@@ -7,6 +7,7 @@ import { formatNativeNear, parseNearPrice } from "./native-amounts";
 import type { OrderSigner } from "./order-signers";
 import { SignedOrdersPanel } from "./SignedOrdersPanel";
 import { Details } from "./ScreenTabs";
+import { ArrowClockwise } from "@phosphor-icons/react";
 import type {
   Player,
   NativeWardrobeState,
@@ -163,31 +164,26 @@ export function NativeMarketPanel({
   };
   return (
     <section className="native-market">
-      <div className="section-label">
+      <div className="section-label market-head">
         <h2>
           {tr("Secured Aura market")}</h2>
-        <span className="badge purple">{tr("TEST NETWORK")}</span>
+        <span className="badge purple" title={tr("Secured Auras trade for test NEAR, which has no monetary value.")}>{tr("TEST NETWORK")}</span>
+        <button
+          className="market-refresh"
+          aria-label={tr("Refresh market")}
+          title={tr("Refresh market")}
+          disabled={!!busy}
+          onClick={() => void load(true).catch(() => {})}
+        >
+          <ArrowClockwise size={20} aria-hidden="true" />
+        </button>
       </div>
-      <p className="native-market-lead">
-        {tr("Secured Auras trade for test NEAR, which has no monetary value.")}</p>
-      {showListings && (
-        <Details>
-          <p>
-            {tr("A listed Aura is held by the market until it sells or you cancel. Sale proceeds land in your market balance.")}</p>
-        </Details>
-      )}
       {error && <p role="alert">{error}</p>}
       {message && (
         <p role="status" className="native-market-message">
           {message}
         </p>
       )}
-      <button
-        className="button secondary"
-        disabled={!!busy}
-        onClick={() => void load(true).catch(() => {})}
-      >
-        {tr("Refresh market")}</button>
       {loading ? (
         <p role="status">{tr("Loading the market…")}</p>
       ) : data?.status !== "available" ? (

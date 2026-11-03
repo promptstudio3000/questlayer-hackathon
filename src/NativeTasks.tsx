@@ -670,7 +670,6 @@ export function NativeTasks({
     >
       <div className="task-heading">
         <div>
-          <span className="task-eyebrow">{tr("NEAR testnet pilot")}</span>
           <h2 ref={heading} tabIndex={-1}>
             {creating
               ? reviewFunding
@@ -690,8 +689,6 @@ export function NativeTasks({
           <ArrowClockwise />
         </button>
       </div>
-      <p className="task-intro">
-        {tr("A sponsor locks one reward. Share evidence, get reviewed, then withdraw an approved award.")}</p>
       {player.wallets.length > 0 ? (
         <label className="task-wallet">
           {tr("Task wallet")}<select

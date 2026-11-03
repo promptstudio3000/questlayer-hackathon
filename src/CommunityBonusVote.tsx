@@ -100,18 +100,20 @@ export function CommunityBonusVote({
   }
 
   return (
-    <section className="bonus-vote" aria-labelledby="bonus-vote-title">
-      <h2 id="bonus-vote-title">
-        <Trophy size={24} aria-hidden /> {" "}{tr("Tomorrow's creator bonus")}</h2>
+    <details className="bonus-vote" aria-labelledby="bonus-vote-title">
+      <summary>
+        <h2 id="bonus-vote-title">
+          <Trophy size={20} aria-hidden /> {" "}{tr("Tomorrow's creator bonus")}</h2>
+        <p className="bonus-vote-meta">
+          <span>{closesLabel(ballot.closesAt)}</span>
+          {ballot.eligible && (
+            <span aria-live="polite">
+              {tr("{0} of {1} votes left", { 0: ballot.votesLeft, 1: ballot.policy.votesPerExplorer })}</span>
+          )}
+        </p>
+      </summary>
       <p>
         {tr("Pick up to")}{" "}{ballot.policy.votesPerExplorer} {" "}{tr("community quests you enjoyed. The top")}{" "}{ballot.policy.winners} {" "}{tr("share tomorrow's creator bonus.")}</p>
-      <p className="bonus-vote-meta">
-        <span>{closesLabel(ballot.closesAt)}</span>
-        {ballot.eligible && (
-          <span aria-live="polite">
-            {tr("{0} of {1} votes left", { 0: ballot.votesLeft, 1: ballot.policy.votesPerExplorer })}</span>
-        )}
-      </p>
       {reason && <p className="bonus-vote-note">{reason}</p>}
       {winners.length > 0 && (
         <p className="bonus-vote-winners">
@@ -169,6 +171,6 @@ export function CommunityBonusVote({
           })}
         </ul>
       )}
-    </section>
+    </details>
   );
 }

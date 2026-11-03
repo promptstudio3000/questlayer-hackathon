@@ -182,7 +182,7 @@ export function FuelTheCity({
   return (
     <section className="fuel" aria-labelledby="fuel-title">
       <p className="fuel-intro">
-        {tr("Stake test NEAR and choose how much of its yield fuels the global prize pool. Your stake stays yours; the yield you share grows tomorrow's rewards wherever people play, and opens Tier 2 and Tier 3 places for you.")}</p>
+        {tr("Stake test NEAR. Its yield grows the prize pool and opens Tier 2 and 3 places. Your stake stays yours.")}</p>
 
       {readError && !vaults && (
         <div className="fuel-state fuel-failed" role="alert">
