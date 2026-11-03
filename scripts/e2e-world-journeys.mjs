@@ -12,7 +12,7 @@
 // Screenshots and journeys.json land in output/qa/world-journeys/ (override
 // with E2E_SHOTS). E2E_BASE_URL is not supported: the journey owns its data.
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -169,7 +169,20 @@ async function journey(browser, server, j, expected) {
     const cast = (actors.actors || [])
       .map((a) => a.role || a.kind)
       .filter(Boolean);
-    assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
+    // The generic cast walks only within its local hours (server/data/actors/
+    // _generic.json); outside them an empty street is correct.
+    const [open, close] = JSON.parse(
+        readFileSync(join(ROOT, "server/data/actors/_generic.json"), "utf8"),
+      ).hours,
+      local = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Prague",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).format(new Date());
+    if (local >= open && local < close)
+      assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
+    else console.log(`  (cast off duty at ${local}; hours ${open}-${close})`);
     // POI quests for this cell, from the database the server reads.
     assert.ok(
       expected.questsInCell > 0,
