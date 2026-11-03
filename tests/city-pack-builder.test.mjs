@@ -91,3 +91,15 @@ test("builder refuses a centre outside coverage", () => {
     }),
   );
 });
+
+test("unnamed parks get sector names, never a raw OSM id", async () => {
+  const { friendlyParkNames } = await import("../server/spatial/city-pack-builder.mjs");
+  const out = friendlyParkNames([
+    { id: "a", sector: "north", name: "Park 5558350" },
+    { id: "b", sector: "north", name: null },
+    { id: "c", sector: "east", name: "Lužánky" },
+    { id: "d", sector: "central", name: "Park 1288894268" },
+  ]);
+  assert.deepEqual(out.map((c) => c.name), ["North park", "North park 2", "Lužánky", "Central park"]);
+  assert.ok(out.every((c) => !/^Park \d+$/.test(c.name)));
+});
