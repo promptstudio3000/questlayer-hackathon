@@ -21,9 +21,9 @@ Open **https://questlayer.promptstudio3000.com/** on a phone or desktop. No wall
 
 | # | Do | See |
 | --- | --- | --- |
-| 1 | Type a name under "What should we call you?", press **Start exploring** | The Plzeň map with your ghost explorer in the city centre. You are in the city demo: tapping the map moves you. |
-| 2 | Tap the map next to a gold coin on a path | The coin disappears for every player, the counter ticks and you get XP. |
-| 3 | Press the **Nearest discovery** card, then **Walk there** (repeat until in range), then **Open chest** | The result sheet: exact XP and the Aura you received ("Reward collected"). |
+| 1 | Type a name under "What should we call you?", press **Start exploring** | The Plzeň map with your ghost explorer in the city centre and the chip "City demo · arrows or WASD". On desktop you move with the **Demo walk** pad (hold ↑ or W, ←/→ to turn, Shift runs); real play moves only with a phone's GPS. |
+| 2 | Walk over a gold coin on a path | The coin disappears for every player, the counter ticks and you get XP. |
+| 3 | Press the **Nearest discovery** card, then **Turn toward it** and walk there, then **Open chest** (beat the guardian first if one guards it) | The result sheet: exact XP and the Aura you received ("Reward collected"). |
 | 4 | Press **Try it on** | The same Aura is now worn by your character on the map. |
 | 5 | Press **Secure this Aura**, then **Share your Aura** | The Aura is minted as an NFT to your own NEAR account in the background (no popup, gas is sponsored); sharing opens the share sheet with a PNG card (downloads on desktop). |
 | 6 | Reload the page | Name, XP, Aura and equipment are still there. |
@@ -74,7 +74,7 @@ Every account below is on NEAR **testnet**, existed on 3 November 2026 (checked 
 
 [`GET /api/health`](https://questlayer.promptstudio3000.com/api/health) shows `"network":"testnet"`, the enabled features
 (collectibles, market, rewards, vaults, relayer, social, creators, tasks), the relayer account, the creator-money
-contract and `distribution.status: verified`. The 3-minute demo script is [docs/HACKATHON-DEMO.md](docs/HACKATHON-DEMO.md). Transaction proofs with hashes (no keys) are in `public/`; some were recorded on earlier testnet
+contract and `distribution.status: verified`. The 3-minute demo script is [docs/HACKATHON-DEMO.md](docs/HACKATHON-DEMO.md); the longer guided tour for judges, with terminal checks of the economy, is [docs/JUDGE-WALKTHROUGH.md](docs/JUDGE-WALKTHROUGH.md). Transaction proofs with hashes (no keys) are in `public/`; some were recorded on earlier testnet
 generations (`questlayer-dev-20261031`, `auratrail-dev-20261030`), so their account names differ from the table:
 
 - `native-invisible-account-proof.json`: name → sponsored sub-account → relayed avatar mint, no wallet.

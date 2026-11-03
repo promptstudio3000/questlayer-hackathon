@@ -14,9 +14,16 @@ Draft (≤ 280 characters, attach the demo video):
 
 Optional tags: @NearLegion @NearBuilders. End with a question, e.g. "Which city should we map next?"
 
-## Demo video script
+## Demo video, pitch deck and judge walkthrough
 
-The 3-minute script with shot list, voice-over and fallbacks is [HACKATHON-DEMO.md](HACKATHON-DEMO.md).
+- Video: the 3-minute storyboard with shot list, voice-over, recording kit and fallbacks is
+  [HACKATHON-DEMO.md](HACKATHON-DEMO.md). It is recorded after the phone verification (planned 6–7 November 2026).
+- Pitch deck (13 slides, track "Games With Real Economies"): https://claude.ai/artifact/VPSfVp6AF1vTfGqmi4bDrs
+  (private until the owner shares it; export as PDF or PPTX from the deck's Share menu). Outline: problem, product,
+  the world, the game loop, invisible chain, NPCs with wallets, one treasury, the honest state, on chain, safe and
+  fair, what comes next, try it.
+- Judge walkthrough: [JUDGE-WALKTHROUGH.md](JUDGE-WALKTHROUGH.md), which maps the track criteria to "do X, see Y"
+  steps and terminal checks of the economy.
 
 ## Submission payload (fill in, then the owner runs the curl from HACKATHON.md)
 
