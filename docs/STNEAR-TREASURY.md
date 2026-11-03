@@ -33,6 +33,19 @@ The receipt is a **sponsor** receipt, not `realized_yield`: `realized_yield`
 is reserved for approved vault contracts. The `stnear-yield-` label makes the
 source visible on chain and in the public record.
 
+Treasury stNEAR the operator parks in the yield vault
+(`questlayer-yield-20261102.testnet`, setting `STNEAR_TREASURY_VAULT`, `off`
+disables) counts toward value at its `get_position` withdrawable NEAR value,
+but growth is only ever sold from wallet stNEAR (skip reason
+`growth-not-in-wallet`).
+
+`GET /api/treasury/stnear` reports `yieldStatus`: `growing` when the price is
+above the first deposit's price, `waiting` in the first 24 h, `price-flat`
+after that with no growth. On testnet the Meta Pool and LiNEAR prices have not
+moved since at least 1 November 2026 (archival RPC), so testnet shows
+`price-flat` and harvests nothing; testnet yield comes from the native staking
+vaults instead.
+
 Price risk: stNEAR's price in NEAR only rises in normal operation. If it ever
 fell (slashing), value < principal means no growth and no harvest until it
 recovers; principal is never sold by `harvest`.
