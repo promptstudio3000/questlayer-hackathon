@@ -581,39 +581,30 @@ function CreatorCommunitySession({
       aria-label={tr("Creator community")}
       aria-busy={state.loading || busy}
     >
-      <div className="creator-heading">
-        <div>
-          <small className="creator-mode">{tr("Demo creator quests · free")}</small>
-          <h2 data-creator-heading tabIndex={-1}>
-            {tr("Stories from explorers")}</h2>
-        </div>
+      <h2 className="sr-only" data-creator-heading tabIndex={-1}>
+        {tr("Stories from explorers")}</h2>
+      <div className="creator-toolbar">
+        <nav className="creator-tabs" aria-label={tr("Creator community section")}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.page}
+              aria-current={active === tab.page ? "page" : undefined}
+              onClick={() => navigate({ page: tab.page })}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
         <button
           className="creator-icon"
           aria-label={tr("Refresh creator quests")}
+          title={tr("Refresh creator quests")}
           disabled={busy || state.loading}
           onClick={() => setRefresh((n) => n + 1)}
         >
-          <ArrowClockwise size={22} />
+          <ArrowClockwise size={20} />
         </button>
       </div>
-      <details className="screen-details creator-intro-details">
-        <summary>{tr("Details")}</summary>
-        <div className="screen-details-body">
-          <p className="creator-intro">
-            {tr("Find a free quest or write one of your own. Creator quest rewards are not configured yet.")}</p>
-        </div>
-      </details>
-      <nav className="creator-tabs" aria-label={tr("Creator community section")}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.page}
-            aria-current={active === tab.page ? "page" : undefined}
-            onClick={() => navigate({ page: tab.page })}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
       {!screenSection && (
         <button
           className="creator-started"

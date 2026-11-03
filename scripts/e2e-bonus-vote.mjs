@@ -185,6 +185,8 @@ async function main() {
     const panel = page.locator(".bonus-vote");
     await panel.waitFor({ timeout: 10_000 });
     await panel.scrollIntoViewIfNeeded();
+    // The ballot is a one-line summary until the explorer opens it.
+    await panel.locator("summary").click();
     await panel.getByText("Today's bonus quests: Castle stairs").waitFor();
     assert.match(await panel.innerText(), /3 of 3 votes left/);
     assert.match(await panel.innerText(), /Voting closes in \d+ h/);

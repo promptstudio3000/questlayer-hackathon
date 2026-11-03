@@ -539,42 +539,50 @@ export function MapNotes({
   return (
     <section className="map-notes" aria-label={tr("Map notes")}>
       <div className="map-notes-heading">
-        <div>
-          <span className="map-notes-mode">
-            {arena ? tr("Demo arena") : tr("Real-world map")}
-          </span>
-          <h2 ref={heading} tabIndex={-1}>
-            {view === "compose"
-              ? tr("Leave a note")
-              : view === "blocked"
-                ? tr("Blocked players")
-                : tr("Around you")}
-          </h2>
-        </div>
-        {view === "browse" ? (
+        {view !== "browse" && (
           <button
-            className="map-notes-primary"
-            disabled={locked}
-            onClick={() => {
-              if (!text && !image) setAnchor({ ...position });
-              setConsent(false);
-              setShareGps(false);
-              setView("compose");
-              setError("");
-            }}
-          >
-            <Plus size={20} />
-            {draft.hasDraft ? tr("Resume draft") : tr("Write a note")}
-          </button>
-        ) : (
-          <button
-            className="map-notes-icon"
+            className="panel-back"
             aria-label={tr("Back to nearby notes")}
+            title={tr("Back to nearby notes")}
             disabled={busy}
             onClick={() => setView("browse")}
           >
-            <ArrowLeft size={22} />
+            <ArrowLeft size={20} />
           </button>
+        )}
+        <h2 ref={heading} tabIndex={-1} title={arena ? tr("Demo arena") : tr("Real-world map")}>
+          {view === "compose"
+            ? tr("Leave a note")
+            : view === "blocked"
+              ? tr("Blocked players")
+              : tr("Around you")}
+        </h2>
+        {view === "browse" && (
+          <>
+            <button
+              className="map-notes-icon"
+              aria-label={tr("Refresh nearby notes")}
+              title={tr("Refresh nearby notes")}
+              disabled={busy || loading}
+              onClick={() => void load()}
+            >
+              <ArrowClockwise size={20} />
+            </button>
+            <button
+              className="map-notes-primary"
+              disabled={locked}
+              onClick={() => {
+                if (!text && !image) setAnchor({ ...position });
+                setConsent(false);
+                setShareGps(false);
+                setView("compose");
+                setError("");
+              }}
+            >
+              <Plus size={20} />
+              {draft.hasDraft ? tr("Resume draft") : tr("Write a note")}
+            </button>
+          </>
         )}
       </div>
       {notice && (
@@ -786,17 +794,6 @@ export function MapNotes({
       )}
       {view === "browse" && (
         <>
-          <div className="map-notes-toolbar">
-            <span className="map-notes-secondary">{tr("Notes near you")}</span>
-            <button
-              className="map-notes-icon"
-              aria-label={tr("Refresh nearby notes")}
-              disabled={busy || loading}
-              onClick={() => void load()}
-            >
-              <ArrowClockwise size={21} />
-            </button>
-          </div>
           {loading ? (
             <p role="status">{tr("Looking for nearby notes…")}</p>
           ) : notes.length ? (

@@ -65,11 +65,7 @@ function PotLines({ view, practice }: { view: PotView; practice: boolean }) {
     return <span className="pot-line">{tr("Checking today's pot…")}</span>;
   if (view.kind === "practice")
     return (
-      <>
-        <span className="pot-line">
-          {tr("Practice GOLD is play money with no value.")}</span>
-        <small className="pot-note">{tr("See how real rewards are funded")}</small>
-      </>
+      <small className="pot-note">{tr("Play money · how rewards work")}</small>
     );
   if (view.kind === "failed")
     return (

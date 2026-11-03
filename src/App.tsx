@@ -107,6 +107,7 @@ import {
 } from "./native-vault-quote";
 import "./styles.css";
 import "./theme-accents.css";
+import "./compact-ui.css";
 import { HudXpRing } from "./HudXpRing";
 import type { NativeTradeRequest } from "./types";
 import type { NativeAuraClaim } from "./types";
@@ -2967,16 +2968,6 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${tab === "explore" ? `explore-panel ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
-          {tab !== "explore" &&
-            (selected || (nativePlay && nativeObjective.reference)) && (
-              <button className="adventure-return" onClick={returnToAdventure}>
-                <ArrowLeft size={20} aria-hidden="true" />
-                <span>
-                  <strong>{tr("Back to adventure")}</strong>
-                  <small>{selected?.name || nativeObjective.view.label}</small>
-                </span>
-              </button>
-            )}
           {tab === "explore" && (
             <button
               className="sheet-toggle"
@@ -3078,6 +3069,28 @@ export default function App() {
             </div>
           )}
           <div className="panel-heading">
+            {tab === "fund" ? (
+              <button
+                className="panel-back"
+                onClick={() => setTab("settings")}
+                aria-label={tr("Back to profile")}
+                title={tr("Back to profile")}
+              >
+                <ArrowLeft size={20} aria-hidden="true" />
+              </button>
+            ) : (
+              tab !== "explore" &&
+              (selected || (nativePlay && nativeObjective.reference)) && (
+                <button
+                  className="panel-back"
+                  onClick={returnToAdventure}
+                  aria-label={`${tr("Back to adventure")}: ${selected?.name || nativeObjective.view.label}`}
+                  title={`${tr("Back to adventure")}: ${selected?.name || nativeObjective.view.label}`}
+                >
+                  <ArrowLeft size={20} aria-hidden="true" />
+                </button>
+              )
+            )}
             <div>
               <h1 tabIndex={-1}>
                 {tab === "explore" && selected ? selected.name : title}
@@ -3085,11 +3098,11 @@ export default function App() {
             </div>
             {tab !== "explore" && (
               <button
-                className="icon-button"
+                className="icon-button panel-close"
                 onClick={() => setTab("explore")}
                 aria-label={tr("Close panel")}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             )}
           </div>
@@ -3819,18 +3832,6 @@ export default function App() {
                   hint={tr("Trade Auras")}
                   onClick={() => setTab("market")}
                 />
-                <ProfileTile
-                  icon={Flame}
-                  label={tr("Stake")}
-                  hint={tr("Grow the pot · open Tier 2")}
-                  onClick={() => setTab("fuel")}
-                />
-                <ProfileTile
-                  icon={Wallet}
-                  label={tr("Rewards")}
-                  hint={tr("GOLD and receipts")}
-                  onClick={() => setTab("wallet")}
-                />
               </div>
               <ProfileHero
                 avatar={
@@ -4057,9 +4058,6 @@ export default function App() {
           )}
           {tab === "fund" && (
             <>
-              <button className="back-link" onClick={() => setTab("settings")}>
-                <ArrowLeft size={20} />
-                {tr("Profile")}</button>
               <NativeEconomyPanel />
               <details className="play-details">
                 <summary>{tr("Practice economy simulation")}</summary>
@@ -5211,14 +5209,9 @@ function Market({
   }, []);
   return (
     <>
-      <div className="section-label">
-        <h2>{tr("Practice GOLD market")}</h2>
-        <span className="badge purple">PRACTICE</span>
-      </div>
-      <p className="market-lead">
-        {tr("Fixed prices · 0% fee · practice GOLD is play money.")}</p>
-      <div className="section-label">
+      <div className="section-label market-head">
         <h2>{tr("On the market")}</h2>
+        <span className="badge purple" title={tr("Fixed prices · 0% fee · practice GOLD is play money.")}>PRACTICE</span>
         <button className="text-button" onClick={onInventory}>
           {tr("Sell an Aura")}{" "}<Plus size={13} />
         </button>
@@ -5298,8 +5291,6 @@ function Bounties({
   }, []);
   return (
     <>
-      <p className="panel-subtitle">
-        {tr("Someone has an idea. Someone else brings it to life.")}</p>
       <div className="info-banner">
         <ShieldCheck />
         <span>

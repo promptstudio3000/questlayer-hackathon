@@ -23,7 +23,7 @@ import {
   Wallet,
   X,
 } from "@phosphor-icons/react";
-import { ArrowRight } from "./dir-icons";
+import { ArrowLeft, ArrowRight } from "./dir-icons";
 import { api, GOLD } from "./api";
 import { Character } from "./Character";
 import { Character3D } from "./Character3D";
@@ -547,103 +547,89 @@ export function Inventory({
         </div>
       </header>
 
-      <div className="inv-tabs" role="tablist" aria-label={tr("Inventory sections")}>
-        {TABS.map(({ id, label, Icon }) => (
+      {tab === "items" ? (
+        <div className="inv-actions" aria-label={tr("Inventory sections")}>
+          {TABS.filter(({ id }) => id !== "items").map(({ id, label, Icon }) => (
+            <button key={id} className="inv-action-button" onClick={() => setTab(id)}>
+              <Icon size={18} aria-hidden="true" />
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="inv-subhead">
           <button
-            key={id}
-            role="tab"
-            id={`inv-tab-${id}`}
-            aria-controls={`inv-panel-${id}`}
-            aria-selected={tab === id}
-            tabIndex={tab === id ? 0 : -1}
-            onClick={() => setTab(id)}
-            onKeyDown={(event) => {
-              if (event.key !== "ArrowRight" && event.key !== "ArrowLeft")
-                return;
-              const index = TABS.findIndex((entry) => entry.id === tab);
-              const next =
-                TABS[
-                  (index + (event.key === "ArrowRight" ? 1 : -1) + TABS.length) %
-                    TABS.length
-                ];
-              setTab(next.id);
-              document.getElementById(`inv-tab-${next.id}`)?.focus();
-            }}
+            className="panel-back"
+            aria-label={tr("Back to backpack")}
+            title={tr("Back to backpack")}
+            onClick={() => setTab("items")}
           >
-            <Icon size={18} aria-hidden="true" />
-            {label}
+            <ArrowLeft size={20} aria-hidden="true" />
           </button>
-        ))}
-      </div>
+          <h3 id={`inv-tab-${tab}`}>{TABS.find(({ id }) => id === tab)?.label}</h3>
+        </div>
+      )}
 
       {tab === "items" && (
-        <section
-          className="inv-panel"
-          role="tabpanel"
-          id="inv-panel-items"
-          aria-labelledby="inv-tab-items"
-        >
-          <div className="inv-toolbar">
-            <p className="inv-toolbar-title" aria-live="polite">
-              <strong>{tr("Backpack")}</strong>
-              <small>
-                {collection === "near"
-                  ? tr("Secured on NEAR")
-                  : isFiltered(wardrobeFilter)
-                    ? tr("Showing {0} of {1}", { 0: shownAuras.length, 1: auras.length })
-                    : lockedEditions.length
-                      ? tr("{0} still to find", { 0: lockedEditions.length })
-                      : tr("Catalog complete")}
-              </small>
-            </p>
-            <div className="inv-segment" role="group" aria-label={tr("Collection")}>
+        <section className="inv-panel" id="inv-panel-items" aria-label={tr("Backpack")}>
+          <p className="sr-only" aria-live="polite">
+            {collection === "near"
+              ? tr("Secured on NEAR")
+              : isFiltered(wardrobeFilter)
+                ? tr("Showing {0} of {1}", { 0: shownAuras.length, 1: auras.length })
+                : lockedEditions.length
+                  ? tr("{0} still to find", { 0: lockedEditions.length })
+                  : tr("Catalog complete")}
+          </p>
+          <div className="inv-chips" role="group" aria-label={tr("Filter Auras")}>
+            {(["all", "above", "below"] as const).map((slot) => (
               <button
-                aria-pressed={collection === "demo"}
-                onClick={() => setCollection("demo")}
+                key={slot}
+                className="inv-chip"
+                aria-pressed={collection === "demo" && wardrobeFilter.slot === slot}
                 disabled={locked}
+                onClick={() => {
+                  setCollection("demo");
+                  setWardrobeFilter({ ...wardrobeFilter, slot });
+                }}
               >
-                {tr("Practice")}{" "}<span>{auras.length}</span>
+                {slot === "all" ? (
+                  <>
+                    {tr("All")} <span className="inv-chip-count">{auras.length}</span>
+                  </>
+                ) : (
+                  slotName(slot)
+                )}
               </button>
+            ))}
+            <button
+              className="inv-chip"
+              aria-pressed={collection === "near"}
+              disabled={locked}
+              onClick={() => setCollection("near")}
+            >
+              <Wallet size={16} aria-hidden="true" /> {tr("Secured")}
+            </button>
+            {collection === "demo" && (
               <button
-                aria-pressed={collection === "near"}
-                onClick={() => setCollection("near")}
+                className="inv-chip inv-chip-icon"
+                aria-label={tr("More filters{0}", { 0: extraFilters ? `, ${extraFilters} active` : "" })}
+                aria-expanded={filterOpen}
+                aria-controls="inv-filter-more"
                 disabled={locked}
+                onClick={() => setFilterOpen((open) => !open)}
               >
-                <Wallet size={16} aria-hidden="true" /> {" "}{tr("Secured")}</button>
-            </div>
+                <Funnel
+                  size={18}
+                  weight={extraFilters ? "fill" : "regular"}
+                  aria-hidden="true"
+                />
+                {!!extraFilters && <em>{extraFilters}</em>}
+              </button>
+            )}
           </div>
           {collection === "demo" ? (
             <>
-              <div className="inv-chips" role="group" aria-label={tr("Filter Auras")}>
-                {(["all", "above", "below"] as const).map((slot) => (
-                  <button
-                    key={slot}
-                    className="inv-chip"
-                    aria-pressed={wardrobeFilter.slot === slot}
-                    disabled={locked}
-                    onClick={() =>
-                      setWardrobeFilter({ ...wardrobeFilter, slot })
-                    }
-                  >
-                    {slot === "all" ? tr("All") : slotName(slot)}
-                  </button>
-                ))}
-                <button
-                  className="inv-chip inv-chip-icon"
-                  aria-label={tr("More filters{0}", { 0: extraFilters ? `, ${extraFilters} active` : "" })}
-                  aria-expanded={filterOpen}
-                  aria-controls="inv-filter-more"
-                  disabled={locked}
-                  onClick={() => setFilterOpen((open) => !open)}
-                >
-                  <Funnel
-                    size={18}
-                    weight={extraFilters ? "fill" : "regular"}
-                    aria-hidden="true"
-                  />
-                  {!!extraFilters && <em>{extraFilters}</em>}
-                </button>
-              </div>
               {filterOpen && (
                 <div className="inv-filter-more" id="inv-filter-more">
                   <label>
@@ -796,7 +782,6 @@ export function Inventory({
       {tab === "wardrobe" && (
         <section
           className="inv-panel"
-          role="tabpanel"
           id="inv-panel-wardrobe"
           aria-labelledby="inv-tab-wardrobe"
         >
@@ -969,7 +954,6 @@ export function Inventory({
       {tab === "history" && (
         <section
           className="inv-panel"
-          role="tabpanel"
           id="inv-panel-history"
           aria-labelledby="inv-tab-history"
         >
@@ -1013,11 +997,11 @@ export function Inventory({
                 </p>
               </div>
               <button
-                className="inventory-icon-button"
+                className="inventory-icon-button sheet-close"
                 aria-label={tr("Close")}
                 onClick={() => setLockedId(null)}
               >
-                <X size={22} />
+                <X size={16} />
               </button>
             </header>
             <p className="inventory-notice">
@@ -1037,11 +1021,11 @@ export function Inventory({
                 <header className="inv-detail-head">
                   <h2>{tr("Your Aura")}</h2>
                   <button
-                    className="inventory-icon-button"
+                    className="inventory-icon-button sheet-close"
                     aria-label={tr("Close item details")}
                     onClick={closeItem}
                   >
-                    <X size={22} />
+                    <X size={16} />
                   </button>
                 </header>
                 <p>{tr("This Aura is no longer in your collection.")}</p>
@@ -1080,11 +1064,11 @@ export function Inventory({
                     </span>
                   </div>
                   <button
-                    className="inventory-icon-button"
+                    className="inventory-icon-button sheet-close"
                     aria-label={tr("Close item details")}
                     onClick={closeItem}
                   >
-                    <X size={22} />
+                    <X size={16} />
                   </button>
                 </header>
                 {selected.native_claim_state === "issued" && (
@@ -1186,7 +1170,7 @@ export function Inventory({
                     <p className="inventory-sale-note" role="status">
                       {selected.equipped
                         ? tr("Equipped. It glows on your map ghost.")
-                        : tr("Try it on to wear it on the map.")}
+                        : ""}
                       {player.nativeOutfit
                         ? tr(" Your map ghost wears the secured outfit right now.")
                         : ""}
