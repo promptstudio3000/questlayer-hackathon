@@ -12,7 +12,7 @@
 // Screenshots and journeys.json land in output/qa/world-journeys/ (override
 // with E2E_SHOTS). E2E_BASE_URL is not supported: the journey owns its data.
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -29,6 +29,9 @@ import {
 import { coverageReport, openPoiDb } from "../server/poi/coverage.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
+const genericHours = JSON.parse(
+  readFileSync(join(ROOT, "server/data/actors/_generic.json"), "utf8"),
+).hours;
 const SHOTS = resolve(
   process.env.E2E_SHOTS || join(ROOT, "output/qa/world-journeys"),
 );
@@ -169,7 +172,26 @@ async function journey(browser, server, j, expected) {
     const cast = (actors.actors || [])
       .map((a) => a.role || a.kind)
       .filter(Boolean);
-    assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
+    // The generic cast walks 08:00-20:00 local (server/data/actors/_generic.json),
+    // so a night-time run must see an empty street instead.
+    const [open, close] = genericHours.map((t) => {
+      const [h, m] = t.split(":").map(Number);
+      return h * 60 + m;
+    });
+    const [hh, mm] = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Prague",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .format(new Date())
+      .split(":")
+      .map(Number);
+    const local = hh * 60 + mm;
+    if (local >= open + 1 && local < close - 1)
+      assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
+    else if (local < open - 1 || local > close + 1)
+      assert.equal(cast.length, 0, "the generic cast rests outside its hours");
     // POI quests for this cell, from the database the server reads.
     assert.ok(
       expected.questsInCell > 0,
