@@ -118,3 +118,23 @@ test("loot points sit inside the zone and dim before it opens", () => {
   }
   assert.match(zoneLandmarkLabel(z, [quest({ tier: 2 })], now), /opens at .* find: /);
 });
+
+test("sky beams rise over open zones and dimly over rare zones opening later", async () => {
+  const { zoneBeamSpots, beamFeatures, BEAM_HEIGHT } = await import("../src/zone-landmarks.ts");
+  const open = zone(),
+    later = zone({ id: "w:zone:2", tier: 3, opensAt: now + 2 * H }),
+    plainLater = zone({ id: "w:zone:3", tier: 1, opensAt: now + 2 * H });
+  const qs = [quest(), quest({ id: "w:quest:2", zone_id: "w:zone:2", opens_at: now + 2 * H }), quest({ id: "w:quest:3", zone_id: "w:zone:3", opens_at: now + 2 * H })];
+  const spots = zoneBeamSpots([open, later, plainLater], qs, now);
+  assert.deepEqual(spots.map((s) => [s.id, s.kind, !!s.dim]), [["w:zone:1", "zone", false], ["w:zone:2", "event", true]]);
+  const f = beamFeatures(spots);
+  assert.equal(f.length, 4, "a core and a halo per beam");
+  assert.equal(Math.max(...f.map((x) => x.properties.height)), BEAM_HEIGHT.zone);
+  assert.ok(f.every((x) => x.properties.base < x.properties.height));
+});
+
+test("zone walls carry a taller halo band above them", () => {
+  const [w] = zoneWallFeatures([zone()], [quest()], now);
+  assert.ok(w.properties.height >= 30);
+  assert.ok(w.properties.halo > w.properties.height);
+});

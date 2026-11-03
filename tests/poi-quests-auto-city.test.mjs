@@ -1,6 +1,6 @@
 // POI quests inside auto cities (W6 + W5): per H3 cell the player loads,
-// XP and cosmetics only, the "unverified map" notice kept, reviewed Plzeň
-// unchanged. Own process: the server reads AUTO_CITIES_DIR on import.
+// XP and cosmetics only, the "unverified map" notice kept; reviewed Plzeň
+// adds them per cell around its own zones. Own process: the server reads AUTO_CITIES_DIR on import.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { latLngToCell, cellToLatLng } from "h3-js";
@@ -93,14 +93,59 @@ test("a second cell of the same auto city gets its own set", { skip: !cellB && "
   db.close();
 });
 
-test("reviewed Plzeň never gets POI quests", async () => {
+test("reviewed Plzeň adds POI quests per cell next to its own zones", async () => {
   const db = openDatabase(":memory:");
   const cell = latLngToCell(cityPack.PLZEN.center.lat, cityPack.PLZEN.center.lng, 7);
-  const w = await ensureWorld(db, cityPack.PLZEN.center, false, now, {
-    poiSource: staticPoiSource(grid(cell, "osm:p")),
-  });
+  const poiSource = staticPoiSource(grid(cell, "osm:p"));
+  const w = await ensureWorld(db, cityPack.PLZEN.center, false, now, { poiSource });
   assert.equal(w.cityStatus, "reviewed");
-  assert.equal(w.poiQuests, undefined);
-  assert.equal(db.prepare("SELECT count(*) n FROM quests WHERE id LIKE '%:quest:poi-%'").get().n, 0);
+  const own = w.zones.filter((z) => z.source !== "poi");
+  assert.ok(own.length > 0, "the reviewed plan keeps its zones");
+  const poi = w.zones.filter((z) => z.source === "poi");
+  assert.ok(poi.length > 0);
+  assert.deepEqual(Object.keys(w.poiQuests.cells), [cell]);
+  for (const z of poi)
+    for (const t of z.targets)
+      for (const c of own.flatMap((z) => z.targets || [z]))
+        assert.ok(distance(t, c) >= MIN_POI_GAP_M);
+  const rows = db.prepare("SELECT * FROM quests WHERE id LIKE '%:quest:poi-%'").all();
+  assert.ok(rows.every((q) => q.gold_u === 0 && q.tier === 1));
+  // The city demo gets its own set too.
+  const demo = await ensureWorld(db, cityPack.PLZEN.center, true, now, { poiSource });
+  assert.ok(demo.arena && demo.zones.some((z) => z.source === "poi"));
   db.close();
+});
+
+test("a searched spot of the same city adds that cell; another city's spot does not", async () => {
+  const db = openDatabase(":memory:");
+  const poiSource = staticPoiSource(POIS);
+  const w = await ensureWorld(db, brno, false, now, { poiSource });
+  // Far outside the city: falls back to the player's own (done) cell.
+  const away = await ensureWorld(db, brno, false, now, {
+    poiSource,
+    cellAt: { lat: 50.08, lng: 14.42 },
+  });
+  assert.deepEqual(Object.keys(away.poiQuests.cells), [cellA]);
+  if (cellB) {
+    const there = await ensureWorld(db, brno, false, now, { poiSource, cellAt: neighbour });
+    assert.deepEqual(Object.keys(there.poiQuests.cells).sort(), [cellA, cellB].sort());
+  }
+  assert.equal(w.cityStatus, "auto");
+  db.close();
+});
+
+test("POI_QUESTS_REVIEWED_CITIES=off keeps Plzeň to its own plan", async () => {
+  process.env.POI_QUESTS_REVIEWED_CITIES = "off";
+  try {
+    const db = openDatabase(":memory:");
+    const cell = latLngToCell(cityPack.PLZEN.center.lat, cityPack.PLZEN.center.lng, 7);
+    const w = await ensureWorld(db, cityPack.PLZEN.center, false, now, {
+      poiSource: staticPoiSource(grid(cell, "osm:p")),
+    });
+    assert.equal(w.poiQuests, undefined);
+    assert.equal(db.prepare("SELECT count(*) n FROM quests WHERE id LIKE '%:quest:poi-%'").get().n, 0);
+    db.close();
+  } finally {
+    delete process.env.POI_QUESTS_REVIEWED_CITIES;
+  }
 });

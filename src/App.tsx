@@ -109,6 +109,8 @@ import "./styles.css";
 import "./theme-accents.css";
 import "./compact-ui.css";
 import { HudXpRing } from "./HudXpRing";
+import { RewardBursts } from "./RewardBursts";
+import { pushBurst, type RewardBurst } from "./reward-burst";
 import type { NativeTradeRequest } from "./types";
 import type { NativeAuraClaim } from "./types";
 import { nativeAppearanceItems } from "./native-appearance";
@@ -170,6 +172,7 @@ import {
   SpeakerHigh,
   PersonSimpleRun,
   BookOpen,
+  MagnifyingGlass,
 } from "@phosphor-icons/react";
 import { ArrowRight, ArrowLeft } from "./dir-icons";
 import { ArrowRight as PhArrowRight } from "@phosphor-icons/react";
@@ -252,6 +255,8 @@ type Tab =
   | "expeditions"
   | "fuel";
 const HOME = { lat: 49.74745, lng: 13.3774 };
+/** A searched spot stands for its H3 res-7 cell (≈1.2 km edge) on the server. */
+const SEARCH_SPACING_M = 650;
 const nav = [
   { id: "explore", get label() { return tr("Explore"); }, icon: Compass },
   { id: "inventory", get label() { return tr("Inventory"); }, icon: Backpack },
@@ -760,6 +765,28 @@ export default function App() {
   const levelTable = useLevelTable();
   const hudProgress =
     hudXp === null ? null : levelProgress(Number(hudXp), levelTable);
+  // Floating reward feedback over the map (src/RewardBursts.tsx).
+  const [bursts, setBursts] = useState<RewardBurst[]>([]);
+  const burst = (b: Omit<RewardBurst, "id" | "until">) =>
+    setBursts((list) => pushBurst(list, b, Date.now()));
+  useEffect(() => {
+    if (!bursts.length) return;
+    const t = setTimeout(
+      () => setBursts((list) => list.filter((b) => b.until > Date.now())),
+      Math.max(50, Math.min(...bursts.map((b) => b.until)) - Date.now()),
+    );
+    return () => clearTimeout(t);
+  }, [bursts]);
+  // Level ups get their own burst; the first read of a player never does.
+  const shownLevel = useRef<{ player?: string; level?: number }>({});
+  useEffect(() => {
+    const level = hudProgress?.level;
+    if (!player || level === undefined || nativePlay) return;
+    const seen = shownLevel.current;
+    if (seen.player === player.id && seen.level !== undefined && level > seen.level)
+      burst({ tone: "level", title: tr("Level {0}!", { 0: level }), detail: tr("Keep exploring") });
+    shownLevel.current = { player: player.id, level };
+  }, [hudProgress?.level, player?.id, nativePlay]);
   const nextWorldRefresh = useRef(0),
     collecting = useRef(new Set<string>()),
     collectionRun = useRef<AbortController | null>(null),
@@ -902,7 +929,16 @@ export default function App() {
       if (playerReads.current.isCurrent(token, ownerContext())) setLoaded(true);
     }
   }
-  async function loadWorld(location: Point, asArena: boolean) {
+  // Spots of this city world already searched for quests (H3 cells, server).
+  const searchedSpots = useRef<{ worldId: string; points: Point[] }>({
+    worldId: "",
+    points: [],
+  });
+  async function loadWorld(
+    location: Point,
+    asArena: boolean,
+    explore?: Point,
+  ) {
     collectionRun.current?.abort();
     collectionRun.current = null;
     const token = worldReads.current.begin(
@@ -914,13 +950,33 @@ export default function App() {
       const w = await api<World>("/world", {
         location,
         arena: asArena,
-        near: location,
+        near: explore ? latest.current.position : location,
+        ...(explore ? { explore } : {}),
       });
       if (
         worldReads.current.isCurrent(token, worldContext("replace")) &&
         w.arena === asArena
       ) {
         worldOwner.current = latest.current.player?.id;
+        const spots = searchedSpots.current;
+        if (spots.worldId !== w.id) {
+          spots.worldId = w.id;
+          spots.points = [];
+        }
+        spots.points.push(explore || location);
+        if (explore) {
+          const before = latest.current.world;
+          const added =
+            before?.id === w.id
+              ? w.zones.filter((z) => !before.zones.some((b) => b.id === z.id))
+                  .length
+              : 0;
+          notify(
+            added
+              ? tr("{0} new quest places found here.", { 0: added })
+              : tr("No new quests in this spot right now."),
+          );
+        }
         setWorld(w);
       }
     } catch (e) {
@@ -1059,6 +1115,32 @@ export default function App() {
       if (questRefresh) clearTimeout(questRefresh);
     };
   }, [player?.id]);
+  // City worlds add POI quests per area searched (server H3 cells). Walking
+  // far from every searched spot searches the new one; a moved map offers a
+  // "Search this area" button for the spot in the middle of the screen.
+  const [mapCenter, setMapCenter] = useState<Point | null>(null);
+  const exploreAt = useRef(0);
+  const searchedNear = (p: Point, within: number) =>
+    searchedSpots.current.worldId === world?.id &&
+    searchedSpots.current.points.some((s) => meters(s, p) < within);
+  useEffect(() => {
+    if (!player || !world?.cityId || nativePlay || busy === "world") return;
+    if (searchedNear(position, SEARCH_SPACING_M)) return;
+    if (Date.now() - exploreAt.current < 20_000) return;
+    exploreAt.current = Date.now();
+    void loadWorld(arena ? HOME : position, arena, position);
+  }, [player?.id, world?.id, position, nativePlay]);
+  const searchHere =
+    !!player &&
+    !!world?.cityId &&
+    !nativePlay &&
+    !globe &&
+    tab === "explore" &&
+    !!mapCenter &&
+    busy !== "world" &&
+    !searchedNear(mapCenter, SEARCH_SPACING_M)
+      ? mapCenter
+      : null;
   // The world carries only nearby coins: fetch the next ring once the player
   // has walked (or jumped) a third of the way to its edge.
   const nearRefreshAt = useRef(0);
@@ -1114,6 +1196,7 @@ export default function App() {
               player: Player;
               value: number;
               xp?: number;
+              find?: boolean;
               alreadyClaimed?: boolean;
             }>(
               "/coins/claim",
@@ -1136,6 +1219,12 @@ export default function App() {
             );
             if (!result.alreadyClaimed && !latest.current.nativePlay) {
               cue("coin");
+              const paid = `+${result.xp ?? 0} XP · +${gold(result.value, 2)} GOLD`;
+              burst(
+                result.find
+                  ? { tone: "find", title: tr("Street find!"), detail: paid }
+                  : { tone: "coin", title: paid },
+              );
               pickupFeedback.confirm(
                 demoPickupScope(state.player.id, state.world.id, state.arena),
                 {
@@ -1291,8 +1380,26 @@ export default function App() {
     },
   });
   const [demoTarget, setDemoTarget] = useState<
-    (Point & { label: string }) | null
+    (Point & { label: string; coinId?: string; questId?: string }) | null
   >(null);
+  // A target that is gone (coin collected, quest done) stops being pointed at;
+  // before, the pad kept saying "Street find" after the pickup.
+  useEffect(() => {
+    if (!demoTarget || !world) return;
+    const gone =
+      (demoTarget.coinId &&
+        !world.coins.some((c) => c.id === demoTarget.coinId && !c.claimant)) ||
+      (demoTarget.questId &&
+        world.quests.find((q) => q.id === demoTarget.questId)?.completed);
+    if (gone) return setDemoTarget(null);
+    // A trail moves on to its next stop: point there.
+    const quest = demoTarget.questId
+      ? world.quests.find((q) => q.id === demoTarget.questId)
+      : null;
+    const at = quest ? quest.nextPoint || quest : null;
+    if (at && (at.lat !== demoTarget.lat || at.lng !== demoTarget.lng))
+      setDemoTarget({ ...demoTarget, lat: at.lat, lng: at.lng });
+  }, [world, demoTarget]);
   useEffect(() => {
     if (!arena || nativePlay) setDemoTarget(null);
   }, [arena, nativePlay]);
@@ -1308,7 +1415,7 @@ export default function App() {
   const [streetFindTarget, setStreetFindTarget] = useState<string | null>(null);
   function goToStreetFind(coin: { id: string; lat: number; lng: number }) {
     setStreetFindTarget(coin.id);
-    if (arena && !nativePlay) faceToward(coin, tr("Street find"));
+    if (arena && !nativePlay) faceToward(coin, tr("Street find"), { coinId: coin.id });
     else {
       setFollow(false);
       setOverview(false);
@@ -1359,7 +1466,8 @@ export default function App() {
       }
       setSheetExpanded(false);
       if (coin.find) goToStreetFind(coin);
-      else if (arena) faceToward(coin, coin.find ? tr("Street find") : tr("Coin"));
+      else if (arena)
+        faceToward(coin, coin.find ? tr("Street find") : tr("Coin"), { coinId: coin.id });
       else setFollow(false);
       return;
     }
@@ -1398,12 +1506,18 @@ export default function App() {
     }
   }
   // Demo: turn the explorer toward a place; holding Forward walks there.
-  function faceToward(p: Point, label: string) {
+  function faceToward(
+    p: Point,
+    label: string,
+    ref: { coinId?: string; questId?: string } = {},
+  ) {
     if (!arena || nativePlay) return;
     setOverview(false);
     setFollow(true);
+    // The pad lives on the map: fold the sheet so it is there to walk with.
+    setSheetExpanded(false);
     demoWalk.face(headingTo(latest.current.position, p));
-    setDemoTarget({ lat: p.lat, lng: p.lng, label });
+    setDemoTarget({ lat: p.lat, lng: p.lng, label, ...ref });
   }
   function chooseNativeQuest(index: number) {
     const q = nativeGame.state?.day?.quests.find((q) => q.index === index);
@@ -2552,6 +2666,26 @@ export default function App() {
           navigationContext.current.revision === navigationRevision;
         if (sameView && r.result) adventureResults.accept(r.result);
         if (!r.replayed && !r.awaiting) cue(r.item ? "reward" : "step");
+        if (!r.replayed)
+          burst(
+            r.awaiting
+              ? {
+                  tone: "quest",
+                  title: tr("Stop {0} of {1}", { 0: r.progress?.completed, 1: r.progress?.total }),
+                  detail: q?.title,
+                }
+              : {
+                  tone: "quest",
+                  title: tr("Quest complete!"),
+                  detail: [
+                    `+${r.xp} XP`,
+                    r.reward ? `+${gold(r.reward)} GOLD` : "",
+                    r.item?.name || "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · "),
+                },
+          );
         if (sameView && r.awaiting)
           notify(
             tr("Stop {0} of {1} confirmed. Walk to the next stop.", { 0: r.progress?.completed, 1: r.progress?.total }),
@@ -2793,6 +2927,7 @@ export default function App() {
           }
           follow={follow}
           onPan={() => setFollow(false)}
+          onMoveEnd={(center, zoom) => setMapCenter(zoom >= 13 ? center : null)}
           creatorPlaces={creatorPlaces}
           onCreatorPlace={(questId) => {
             setTab("community");
@@ -3474,7 +3609,9 @@ export default function App() {
                       <>
                         <button
                           className="primary-button"
-                          onClick={() => faceToward(questPoint(q), q.title)}
+                          onClick={() =>
+                            faceToward(questPoint(q), q.title, { questId: q.id })
+                          }
                         >
                           {tr("Turn toward it")}{" "}<NavigationArrow />
                         </button>
@@ -4253,6 +4390,19 @@ export default function App() {
               <X size={12} />
             </button>
           )}
+          {searchHere && (
+            <button
+              className="map-search-here"
+              onClick={() => {
+                exploreAt.current = Date.now();
+                setMapCenter(null);
+                void loadWorld(arena ? HOME : position, arena, searchHere);
+              }}
+            >
+              <MagnifyingGlass size={16} weight="bold" aria-hidden="true" />
+              {tr("Search this area")}
+            </button>
+          )}
           {arena && !nativePlay && !globe && tab === "explore" && (
             <DemoControls
               held={demoWalk.held}
@@ -4358,6 +4508,7 @@ export default function App() {
           </div>
         </>
       )}
+      <RewardBursts bursts={bursts} />
       {busy === "world" && (
         <div className="world-loading">
           <span className="spinner" /> {" "}{tr("Finding trails and today’s treasures…")}</div>

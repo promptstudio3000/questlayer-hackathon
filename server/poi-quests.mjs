@@ -386,6 +386,19 @@ export function isStreetWorld(manifest) {
 export function isAutoCityWorld(manifest) {
   return !!manifest && !manifest.arena && !!manifest.cityId && manifest.cityStatus === "auto";
 }
+/**
+ * Reviewed cities (Plzeň), GPS world and city demo alike, keep their own
+ * zones and add POI quests per H3 cell around them, so a walk anywhere in the
+ * city finds something nearby. POI_QUESTS_REVIEWED_CITIES=off turns it off.
+ */
+export function isReviewedCityWorld(manifest) {
+  return (
+    process.env.POI_QUESTS_REVIEWED_CITIES !== "off" &&
+    !!manifest &&
+    !!manifest.cityId &&
+    manifest.cityStatus !== "auto"
+  );
+}
 
 /** World ids of the same cell on the previous POI_ROTATION_DAYS local days. */
 function recentPoiIds(db, manifest, cell) {
@@ -430,11 +443,11 @@ const EMPTY_NOTICE =
  * city world (the cell the player loads from), once. Two parallel calls create
  * one set: the job key and the quest rows are written in one transaction.
  * Returns the (possibly updated) manifest. Never throws for a missing POI file.
- * Reviewed cities (Plzeň) never get POI quests.
+ * Reviewed cities (Plzeň) get them per cell too, next to their own zones.
  */
 export function materializePoiQuests(db, manifest, { source = defaultPoiSource(), now = Date.now(), layerId = DEFAULT_LAYER.id, cell = null } = {}) {
   const street = isStreetWorld(manifest),
-    auto = !street && isAutoCityWorld(manifest);
+    auto = !street && (isAutoCityWorld(manifest) || isReviewedCityWorld(manifest));
   if ((!street && !auto) || now >= manifest.endsAt) return manifest;
   const target = street ? manifest.region : cell;
   if (!target || !isValidCell(target) || getResolution(target) !== 7) return manifest;

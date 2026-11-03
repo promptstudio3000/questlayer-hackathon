@@ -288,3 +288,29 @@
   right: 4px;
   bottom: 4px;
 }
+/* "Search this area": shown after the map was moved to an unsearched spot. */
+.map-search-here {
+  /* Below the demo pad and the day chip, above the folded sheet. */
+  position: fixed;
+  left: 50%;
+  top: calc(env(safe-area-inset-top, 0px) + 336px);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px;
+  transform: translateX(-50%);
+  border: 2px solid var(--ink, #1a0335);
+  border-radius: 20px;
+  background: var(--surface-raised, #fff);
+  color: var(--action, #672eeb);
+  font: 700 14px/1 var(--font-body);
+  box-shadow: 0 3px 0 var(--ink, #1a0335);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.map-search-here:active {
+  transform: translateX(-50%) translateY(2px);
+  box-shadow: 0 1px 0 var(--ink, #1a0335);
+}
