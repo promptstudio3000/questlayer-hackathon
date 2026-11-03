@@ -1,16 +1,70 @@
 # QuestLayer status
 
-Updated 1 November 2026. This is the single start page for the current state of the project. Older status
+Updated 3 November 2026. This is the single start page for the current state of the project. Older status
 documents (`DEVELOPMENT-STATUS.md`, `V1-REMAINING.md`, `NEXT-DEVELOPMENT-PLAN.md`, `NEAR-INTEGRATION-STATUS.md`,
 `PROJECT-REVIEW-*`) are kept as dated history and are superseded by this page.
 
 ## Goal for 14 November 2026 (NEAR Hackathon, track "Games With Real Economies")
 
-A playable mobile exploration game on real Plzeň geography where a new player enters with a name only, collects
-coins, opens a zone chest, receives an Aura and wears it, while the NEAR account, rewards and NFTs are created,
-funded and signed in the background. The blockchain is a property of the items, not a screen the player visits.
+A playable mobile exploration game on real geography across Czechia. A new player enters with a name only and finds
+something to do wherever they stand: street coins, quests at real public places, NPCs and monsters. Plzeň is the
+reviewed, funded showcase where the player opens a zone chest, receives an Aura and wears it. The NEAR account,
+rewards and NFTs are created, funded and signed in the background. The blockchain is a property of the items, not a
+screen the player visits. Coverage is Czechia only before the deadline (owner decision, 2 November); Europe and
+beyond come after.
 
-## What works now (verified in this checkpoint)
+## Live on the public testnet host (3 November 2026)
+
+Checked against `GET https://questlayer.promptstudio3000.com/api/health` (build `c1f8fc5`, `network: testnet`) and
+`view_account` on `rpc.testnet.near.org`.
+
+| Area | State | Evidence |
+| --- | --- | --- |
+| Name-only start, invisible account, gas sponsor | live; relayer `relay-20261101.questlayer-dev-20261101.testnet`, 9 confirmed jobs | `/api/health` → `relayer`, `docs/RELAYER.md` |
+| Plzeň loop (map → coin → zone chest → Aura → equip → secure) | live, six zones a day ready two days ahead | `/api/health` → `worldPreparation` |
+| Czechia place database (W3/W4) | `cz-20261102-6620c3bf`: 290,817 places, 197,999 quest-ready, 5,867 under review, 30 % excluded by the safety filter | `/api/health` → `poiWorld`, `docs/POI-PIPELINE.md`, `docs/POI-SAFETY.md` |
+| Place quests in every street cell (W6) | live; quests possible in 14,999 of ~15,282 country cells (98 %); XP and cosmetics only | `server/poi-quests.mjs`, `docs/WORLD-COVERAGE.md` |
+| Generic NPCs and monsters everywhere (W7) | live in every city and street cell | `docs/ACTORS-API.md` |
+| Auto cities (W5), towns ≥ 15,000 people | code merged; **not on yet** on the public host (`autoCities.status: off`): the first `scripts/poi/auto-cities.mjs` run on the VPS is pending. Until then towns play as street cells | `docs/POI-PIPELINE.md` "Auto cities (W5)" |
+| Nightly quest flavour text (W8) | merged; last nightly batch skipped (`poi-file-missing`, before the import finished), cache empty, quests show rule titles | `/api/health` → `questFlavour`, `docs/QUEST-FLAVOUR.md` |
+| Coverage QA (W12) | `npm run world:coverage`, `npm run e2e:world` (Brno and village journeys at 390 px) in CI | `docs/WORLD-COVERAGE.md` |
+| Rewards treasury and books | `questlayer-rewards-20261101b.testnet`, `distribution.status: verified`, no foreign days | `/api/health` → `distribution`, `nativeRewards` |
+| Yield | treasury stake in stNEAR (`meta-v2.pool.testnet`), yield vault `questlayer-yield-20261102.testnet` (stNEAR, LiNEAR, USDC, USDT; deposit = Staker). `yieldBackedDays: false`: no day is labelled yield-backed yet | `docs/YIELD-VAULT.md`, `docs/STNEAR-TREASURY.md` |
+| Auras, editions, market, creators, tasks, social | live on testnet (collectibles with patron and season editions, signed-order market, creator money, NEAR Social notes) | `public/native-*-testnet.json` |
+| NPC economy | trader Vojtěch with his own funded account and auto-restock; earned roll tickets on `questlayer-npc-games-20261101.testnet` | `docs/NPC-TRADERS.md`, `docs/NPC-GAMES.md` |
+| Progression | levels to L10, daily board (3 goals, no streaks), patron rank, Staker gates at 2 NEAR, season to 14 Nov 23:59:59 UTC | `docs/LEVELS.md`, `docs/DAILY-BOARD.md`, `docs/SEASON.md` |
+| Badges | `questlayer-badges-20261102.testnet`, 69 place badges, minting on | `/api/health` → `badges`, `docs/BADGES.md` |
+| Test world | seeded bots, notes, listings and quests (`TEST_SEED=1`, testnet only) | `docs/TEST-SEED.md` |
+
+## In progress (wave 3, 3 November)
+
+- First session anywhere in Czechia: a new player outside Plzeň starts in their own cell instead of the Plzeň demo.
+- Landmark and errand quest types on top of place quests; Czech UI; phone performance; hardening and a secret scan.
+- Mainnet dry run for the contracts added since the mainnet plan (`docs/MAINNET-PLAN.md`); no mainnet deploy without
+  the owner's go.
+- Proving a yield-funded reward day end to end.
+- Phone verification (iOS Safari, Android Chrome) after wave 3; the demo video is recorded after that.
+
+## Not in scope before the hackathon deadline
+
+NEAR Intents market, iOS store distribution, coverage outside Czechia, public player-made worlds. Mainnet is the last
+step, after phone testing, and needs the owner's explicit go; see `docs/MAINNET-PLAN.md`.
+
+## Known limitations
+
+- Browser GPS can be spoofed; the location validator is trusted for physical evidence.
+- Places outside Plzeň come from map data nobody walked; they carry an "Unverified map" notice and never pay money.
+- Real-device checks (iOS Safari, Android Chrome) are still outstanding.
+- NPC replies use a private Ollama model; there is no attested "private AI" yet.
+
+---
+
+# Log, 1 November 2026 (history)
+
+The sections below are the 1 November checkpoint, kept as written. Account names with `20261031` or without the
+`b` suffix are earlier testnet generations; the live set is in the README.
+
+### What works now (verified in this checkpoint)
 
 | Area | State | Evidence |
 | --- | --- | --- |
@@ -24,7 +78,7 @@ funded and signed in the background. The blockchain is a property of the items, 
 | Aura sprites | authored pixel sprites for both slots on character, inventory and map marker | `output/qa/2026-11-aura-art/` |
 | Aavegotchi research | palette, rendering, Baazaar model and rights notes for reuse on NEAR | `docs/AAVEGOTCHI-REUSE.md` |
 
-## In progress
+### In progress
 
 Latest local map/backend delivery: all five follow-up capabilities are implemented—resilient cached street data/background recovery, original-node pedestrian graph import/routing and configured-pack validation, audited operator place closures, compatible viewport/page reads, and a repeatable three-day integration pilot. [Claude handoff and interfaces](MAP-BACKEND-CONTINUATION-2026-11-01.md) · [566-test evidence](../output/qa/2026-11-map-backend/README.md). No UI or contract changes, additional city activation or deployment occurred. Reviewed Plzeň topology/entries and physical access remain open; optional viewport fields have not been adopted by the unchanged frontend.
 
@@ -40,7 +94,7 @@ Local continuation, 1 November: the zone/map worker now rejects malformed candid
   `auratrail-dev-*` contracts are history only. Rewards/vault/tasks pilots still run under their 2026-10-31 accounts.
 - **VPS migration** from the former installation name: `docs/VPS-MIGRATION.md`, `scripts/migrate-vps-legacy.sh`.
 
-## Economy motor on testnet (1 November 2026, evening)
+### Economy motor on testnet (1 November 2026, evening)
 
 - Rewards treasury generation 2026-11-01 publishes today and tomorrow from funded buckets; the vault holds 5 test
   NEAR at the Aurora pool with a 50 % contribution. The worker harvests gain and flushes realized yield to the
@@ -77,15 +131,3 @@ chain; see `public/native-public-record-proof.json`. UI: Notes → own note → 
 - Network configuration: `server/native/network.mjs` is the single source for the NEAR network (`NEAR_NETWORK`,
   testnet by default); server modules no longer spell "testnet". Mainnet stays unsupported until the remaining
   steps in `docs/MAINNET-PLAN.md` land.
-
-## Not in scope before the hackathon deadline
-
-NEAR Intents market (W07), AI authoring (W11), iOS store distribution (W12/W14). Mainnet is planned as a minimal
-flagged path (collectibles, relayer, social) with a 9 November go/no-go gate; see `docs/MAINNET-PLAN.md`. The
-roadmap (`ROADMAP.md`) keeps the gates.
-
-## Known limitations
-
-- Browser GPS can be spoofed; the location validator is trusted for physical evidence.
-- Real-device checks (iOS Safari, Android Chrome) are still outstanding for the new shell.
-- The public host still runs the pre-rename release until the migration and a new deployment are done.

@@ -51,6 +51,7 @@ test("catalog exposes enforceable mechanics, capability gaps and no invented dur
       "cosmetic-chest",
       "poi-visit",
       "poi-category-hunt",
+      "landmark-clue",
     ],
   );
   assert.ok(
@@ -324,9 +325,10 @@ test("physical return rejects reusing the starting GPS fix and preserves progres
         db,
         player,
         q.id,
-        { ...points[i], accuracy: 5, timestamp: NOW + i * 1000 },
+        // Walking pace between stops (the fair-play travel guard).
+        { ...points[i], accuracy: 5, timestamp: NOW + i * 600_000 },
         i,
-        NOW + i * 1000,
+        NOW + i * 600_000,
       );
     assert.throws(
       () =>
@@ -334,9 +336,9 @@ test("physical return rejects reusing the starting GPS fix and preserves progres
           db,
           player,
           q.id,
-          { ...points[0], accuracy: 5, timestamp: NOW },
+          { ...points[0], accuracy: 5, timestamp: NOW + 1_200_000 },
           3,
-          NOW + 3000,
+          NOW + 1_203_000,
         ),
       (e) => e.code === "GPS_REPLAY",
     );
@@ -349,9 +351,9 @@ test("physical return rejects reusing the starting GPS fix and preserves progres
       db,
       player,
       q.id,
-      { ...points[0], accuracy: 5, timestamp: NOW + 4000 },
+      { ...points[0], accuracy: 5, timestamp: NOW + 1_800_000 },
       3,
-      NOW + 4000,
+      NOW + 1_800_000,
     );
     assert.equal(result.xp, 100);
   } finally {
