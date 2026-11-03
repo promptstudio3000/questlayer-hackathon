@@ -166,6 +166,10 @@ test("a guardian on duty locks its zone chest until you beat it", () => {
   const guardian = { id: "lick-brute-1", def: { archetype: "guardian", name: "Brute Lickquidator", model: "lick-brute" }, guards: { zoneId: "z1" }, segments: [{ from: t - 10, to: t + 10, path: [[13.37, 49.74]], dwell: true }] };
   const actors = { planFor: () => ({ instances: [guardian] }) };
   const chests = createChestGuard(db, actors, { clock: () => t });
+  // A newcomer's first chest is free, guarded or not.
+  chests.assertOpen("p1", "chest1");
+  chests.assertOpen("p2", "chest1");
+  db.prepare("INSERT INTO quest_claims VALUES('chest2','p1',1),('chest2','p2',1)").run();
   assert.throws(() => chests.assertOpen("p1", "chest1"), (e) => e.code === "GUARDED" && e.status === 423);
   chests.assertOpen("p1", "visit1");
   chests.assertOpen("p1", "chest2");

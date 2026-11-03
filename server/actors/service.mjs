@@ -86,6 +86,8 @@ export function createActorService(db, options = {}) {
     // Test hook: plan every actor across the whole local day, so e2e runs
     // see a cast at any hour. Production never sets it (actorsAllDay below).
     forceAllDay = options.allDay === true,
+    // The server's shared travel anchor (server/fair-play.mjs guardTravel).
+    travelGuard = options.travelGuard || null,
     cities = options.cityById || cityById,
     loadActors = options.loadCityActors || loadCityActors,
     loadGeneric = options.loadGenericActors || loadGenericActors,
@@ -312,6 +314,11 @@ export function createActorService(db, options = {}) {
       422,
       "IMPLAUSIBLE_MOVE",
     );
+    // Meetings share the travel anchor with coin and quest claims. Otherwise
+    // an errand could be handed in from across town: meet the NPC, claim the
+    // far place, and meet the NPC again a second later (each check only saw
+    // its own last fix).
+    travelGuard?.(player, fix, now);
     return p;
   }
 

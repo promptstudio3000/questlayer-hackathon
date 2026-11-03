@@ -155,6 +155,7 @@ import { createBadgeRoutes } from "./badges/routes.mjs";
 import { seasonSettings } from "./season/config.mjs";
 import { createSeason } from "./season/service.mjs";
 import { createSeasonRoutes } from "./season/routes.mjs";
+import { ensureFairPlaySchema, guardTravel } from "./fair-play.mjs";
 import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
 import { poiWorldStatus } from "./poi/coverage.mjs";
 import {
@@ -433,7 +434,13 @@ const creatorBonusVoteRoutes = createBonusVoteRoutes(creatorBonusVote);
 // The testnet test world turns them on too.
 const actorService =
   actorsEnabled() || testSeedMode === "apply"
-    ? createActorService(db, { allDay: actorsAllDay(process.env, NETWORK) })
+    ? createActorService(db, {
+        allDay: actorsAllDay(process.env, NETWORK),
+        travelGuard: (player, fix, now) => {
+          ensureFairPlaySchema(db);
+          guardTravel(db, player, fix, now);
+        },
+      })
     : null;
 const actorRoutes = createActorRoutes(actorService);
 // Today's city plans are built off the request path after a restart, so the
