@@ -2233,6 +2233,7 @@
  "{0} (explorer account)": "{0} (حساب مستكشف)",
  "{0} (not found yet)": "{0} (لم يُعثر عليه بعد)",
  "{0} ({1}) is yours; secure it on NEAR from your wardrobe.": "{0} ({1}) أصبح لك؛ احمِه على NEAR من خزانة ملابسك.",
+ "{0} / {1} XP to level {2}": "{0}/{1} XP للمستوى {2}",
  "{0} Auras": "{0} هالات",
  "{0} GOLD is still maturing (E+{1}).": "{0} GOLD ما زال ينضج (E+{1}).",
  "{0} GOLD matures by epoch {1} at the latest (now {2}{3}).": "{0} GOLD ينضج بحلول الحقبة {1} كحد أقصى (الآن {2}{3}).",

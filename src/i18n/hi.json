@@ -2233,6 +2233,7 @@
  "{0} (explorer account)": "{0} (खोजी अकाउंट)",
  "{0} (not found yet)": "{0} (अभी तक नहीं मिला)",
  "{0} ({1}) is yours; secure it on NEAR from your wardrobe.": "{0} ({1}) अब तुम्हारा है; इसे अपनी वॉर्डरोब से NEAR पर सुरक्षित करो।",
+ "{0} / {1} XP to level {2}": "लेवल {2} तक {0}/{1} XP",
  "{0} Auras": "{0} ऑरा",
  "{0} GOLD is still maturing (E+{1}).": "{0} GOLD अभी मैच्योर हो रहा है (E+{1})।",
  "{0} GOLD matures by epoch {1} at the latest (now {2}{3}).": "{0} GOLD ज़्यादा से ज़्यादा एपॉक {1} तक मैच्योर होगा (अभी {2}{3})।",

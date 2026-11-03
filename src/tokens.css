@@ -38,6 +38,20 @@
   --gold: #d8a849;
   --green: var(--success);
 }
+
+/* Kanit has no Chinese or Japanese glyphs. For those languages the system
+ * CJK font comes right after Kanit, so Latin text (numbers, GOLD, NEAR)
+ * keeps Kanit and Han/kana glyphs get the regional system font instead of
+ * a random fallback. <html lang> is set by src/i18n.ts. */
+:root:lang(zh) {
+  --font-body: "Kanit", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
+}
+:root:lang(ja) {
+  --font-body: "Kanit", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
+    "Yu Gothic", "Meiryo", "Noto Sans JP", "Noto Sans CJK JP", "Source Han Sans JP",
+    system-ui, sans-serif;
+}
 @media (prefers-reduced-motion: reduce) {
   :root {
     --motion-press: 0ms;
