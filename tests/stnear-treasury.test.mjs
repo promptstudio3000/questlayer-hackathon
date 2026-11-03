@@ -195,3 +195,42 @@ test("stNEAR parked in the yield vault counts as treasury value, but only wallet
   });
   assert.equal(safe.parked, 0n);
 });
+
+test("public view says honestly when the stNEAR price has not grown", async () => {
+  const enc = (v) => [...Buffer.from(JSON.stringify(v))];
+  const price = 3n * N;
+  const provider = {
+    async query(q) {
+      if (q.method_name === "ft_balance_of")
+        return { result: enc(N.toString()) };
+      if (q.method_name === "get_st_near_price")
+        return { result: enc(price.toString()) };
+      throw new Error(q.method_name);
+    },
+  };
+  const at = Date.parse("2026-11-02T01:00:00Z");
+  const record = (near) => () => ({
+    network: "testnet",
+    account: "op.testnet",
+    contract: "meta-v2.pool.testnet",
+    principal: (3n * N).toString(),
+    deposits: [
+      {
+        at: new Date(at).toISOString(),
+        near: near.toString(),
+        stnear: N.toString(),
+      },
+    ],
+  });
+  const view = (near, hours) =>
+    createTreasuryView({
+      provider,
+      record: record(near),
+      clock: () => at + hours * 3600_000,
+      cacheMs: 0,
+    })();
+  assert.equal((await view(3n * N, 30)).yieldStatus, "price-flat");
+  assert.equal((await view(3n * N, 2)).yieldStatus, "waiting");
+  assert.equal((await view((29n * N) / 10n, 30)).yieldStatus, "growing");
+  assert.equal((await view(3n * N, 30)).depositPrice, price.toString());
+});

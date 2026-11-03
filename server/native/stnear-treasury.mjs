@@ -243,6 +243,26 @@ export function createTreasuryView({
       vault: r.vault ?? TREASURY_TOKENS[r.network]?.vault ?? null,
     });
     const principal = BigInt(r.principal || "0");
+    // Honest yield status: has stNEAR gained against NEAR since the first
+    // deposit? (Testnet Meta Pool has kept one price for days, so there is
+    // nothing to harvest there however long we wait.)
+    const first = (r.deposits || []).find(
+      (d) => BigInt(d.stnear || "0") > 0n && BigInt(d.near || "0") > 0n,
+    );
+    const depositPrice = first
+      ? (BigInt(first.near) * YOCTO) / BigInt(first.stnear)
+      : null;
+    const sinceMs = first ? clock() - Date.parse(first.at) : 0;
+    const priceGrowing =
+      depositPrice == null ? null : live.price > depositPrice;
+    const yieldStatus =
+      depositPrice == null
+        ? "no-deposit"
+        : priceGrowing
+          ? "growing"
+          : sinceMs > 24 * 3600_000
+            ? "price-flat"
+            : "waiting";
     const value = {
       network: r.network,
       account: r.account,
@@ -254,6 +274,8 @@ export function createTreasuryView({
       value: s(live.value),
       principal: s(principal),
       growth: s(live.value > principal ? live.value - principal : 0n),
+      depositPrice: depositPrice == null ? null : s(depositPrice),
+      yieldStatus,
       harvested: s(
         (r.harvests || []).reduce((a, h) => a + BigInt(h.received || "0"), 0n),
       ),
