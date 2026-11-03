@@ -36,7 +36,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const pct = (x: number) => `${Math.round(x * 1000) / 10} %`;
 function rewardText(r: RollView) {
   if (!r.reward) return tr("Rolling…");
-  const what = r.reward.kind === "aura" ? `${r.reward.name} (${r.reward.rarity})` : `${r.reward.xp} XP (that Aura has run out)`;
+  const what = r.reward.kind === "aura" ? `${r.reward.name} (${r.reward.rarity})` : tr("{0} XP (that Aura has run out)", { 0: r.reward.xp });
   return r.outcome === "TimedOut" ? tr("{0}, the guaranteed prize", { 0: what }) : what;
 }
 
@@ -72,7 +72,7 @@ export function WispRolls({
       if (step.next === "ticket") step = await api<Step>("/npc-rolls", { accountId });
       if (step.next === "start" || step.next === "resolve" || step.next === "timeout") {
         if (!step.call) throw Error("The wisp lost track of this roll. Try again.");
-        setBusy(step.next === "start" ? "Starting your roll…" : step.next === "resolve" ? "The wisp is drawing…" : "Claiming the guaranteed prize…");
+        setBusy(step.next === "start" ? tr("Starting your roll…") : step.next === "resolve" ? tr("The wisp is drawing…") : tr("Claiming the guaranteed prize…"));
         await send(step.call);
       } else await sleep(1500);
       step = await api<Step>(`/npc-rolls/${encodeURIComponent(step.roll.rollId)}`, {});
@@ -83,7 +83,7 @@ export function WispRolls({
   async function roll(pending?: RollView) {
     setError(null);
     setWon(null);
-    setBusy("Asking the wisp…");
+    setBusy(tr("Asking the wisp…"));
     try {
       const first = pending
         ? await api<Step>(`/npc-rolls/${encodeURIComponent(pending.rollId)}`, {})

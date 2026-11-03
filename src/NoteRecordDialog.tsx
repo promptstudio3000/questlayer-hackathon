@@ -11,11 +11,11 @@ import { tr } from "./i18n";
 
 type Account = { accountId: string; managed: boolean };
 const PIN_COPY: Record<string, string> = {
-  computed: "Photo address ready, waiting to be pinned.",
-  pinning: "Photo is being pinned.",
-  pinned: "Photo pinned.",
-  mismatch: "Photo pin returned a different address; we keep retrying.",
-  unavailable: "Photo pinning is not set up on this server yet.",
+  get computed() { return tr("Photo address ready, waiting to be pinned."); },
+  get pinning() { return tr("Photo is being pinned."); },
+  get pinned() { return tr("Photo pinned."); },
+  get mismatch() { return tr("Photo pin returned a different address; we keep retrying."); },
+  get unavailable() { return tr("Photo pinning is not set up on this server yet."); },
 };
 
 async function readStatus(noteId: string, accountId: string) {
@@ -103,7 +103,7 @@ export function NoteRecordDialog({
     }
   }
   const title =
-    view === "published" ? "Public record" : "Keep this note on NEAR Social";
+    view === "published" ? tr("Public record") : tr("Keep this note on NEAR Social");
   return (
     <Dialog label={title} onClose={() => !busy && onClose()}>
       <form

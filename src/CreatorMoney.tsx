@@ -210,7 +210,7 @@ export function CreatorSupport({
                   onClick={() =>
                     void pay(
                       { kind: "buy", questId },
-                      `Unlocking for ${nearText(chain.price)} NEAR`,
+                      tr("Unlocking for {0} NEAR", { 0: nearText(chain.price) }),
                     )
                   }
                 >
@@ -243,7 +243,7 @@ export function CreatorSupport({
                           questId,
                           amount: parseDonation(amount),
                         },
-                        `Sending ${amount} NEAR`,
+                        tr("Sending {0} NEAR", { 0: amount }),
                       )
                     }
                   >
@@ -259,7 +259,7 @@ export function CreatorSupport({
                     const amount = parseDonation(custom);
                     void pay(
                       { kind: "donate", questId, amount },
-                      `Sending ${custom} NEAR`,
+                      tr("Sending {0} NEAR", { 0: custom }),
                     );
                   } catch (error) {
                     setOutcome({

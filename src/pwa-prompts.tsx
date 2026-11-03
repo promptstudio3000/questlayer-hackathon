@@ -263,9 +263,9 @@ export function PwaPrompts() {
   };
 
   const announcement = !online
-    ? "You're offline. New map areas and rewards need a connection. Nothing is collected until you're back online."
+    ? tr("You're offline. New map areas and rewards need a connection. Nothing is collected until you're back online.")
     : showUpdate
-      ? "New version ready. Reload to get the latest QuestLayer."
+      ? tr("New version ready. Reload to get the latest QuestLayer.")
       : backOnline
         ? "You're back online."
         : "";

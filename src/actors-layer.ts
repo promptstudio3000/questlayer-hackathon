@@ -47,15 +47,15 @@ export async function loadActorArt() {
 }
 
 const ARCHETYPE_LABEL: Record<string, string> = {
-  storyteller: "Storyteller",
-  trader: "Trader",
-  keeper: "Keeper",
-  quest_giver: "Quest giver",
-  wandering_rare: "Rare sighting",
-  roamer: "Roaming monster",
-  guardian: "Guardian",
-  lurker: "Lurker",
-  boss: "Boss",
+  get storyteller() { return tr("Storyteller"); },
+  get trader() { return tr("Trader"); },
+  get keeper() { return tr("Keeper"); },
+  get quest_giver() { return tr("Quest giver"); },
+  get wandering_rare() { return tr("Rare sighting"); },
+  get roamer() { return tr("Roaming monster"); },
+  get guardian() { return tr("Guardian"); },
+  get lurker() { return tr("Lurker"); },
+  get boss() { return tr("Boss"); },
 };
 export const actorRoleLabel = (a: Pick<ActorView, "archetype">) =>
   ARCHETYPE_LABEL[a.archetype] || tr("Character");

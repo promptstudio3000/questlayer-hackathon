@@ -20,6 +20,10 @@
 
 /* ---- Panel header -------------------------------------------------- */
 .main-panel .panel-heading {
+  /* Above the sticky tab bar's surface-coloured mask (screen-tabs.css): with
+     the compact gap the mask reached up over the close button and title. */
+  position: relative;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -33,7 +37,9 @@
 .main-panel .panel-heading h1 {
   margin: 0;
   font-size: 22px;
-  line-height: 1.2;
+  /* Room for Devanagari/Arabic marks and tall CJK glyphs: the title is one
+     clipped line, so a tighter box cuts their tops and bottoms off. */
+  line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

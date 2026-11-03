@@ -206,7 +206,7 @@ export function SignedOrdersPanel({
   }
 
   const enable = () =>
-    run("Turning on signed offers…", async () => {
+    run(tr("Turning on signed offers…"), async () => {
       const publicKey = await signer!.publicKey(data.marketContract);
       if (!registry?.keys.includes(publicKey))
         await call({
@@ -220,11 +220,11 @@ export function SignedOrdersPanel({
         : tr("Signed offers are on. This device signs them for you, with no popup.");
     });
   const sell = (price: string) =>
-    run("Signing your sell order…", async () => {
+    run(tr("Signing your sell order…"), async () => {
       const item = sellable.find((s) => s.tokenId === sellToken);
       if (!item) throw Error("Choose an Aura you own.");
       if (!item.escrowed) {
-        setStep("Handing the Aura to the market…");
+        setStep(tr("Handing the Aura to the market…"));
         await call({
           receiverId: data.nftContract,
           methodName: "nft_transfer_call",
@@ -236,32 +236,32 @@ export function SignedOrdersPanel({
           s.listings.some((l) => l.token_id === item.tokenId && l.state === "deposited" && l.seller === accountId),
         );
         if (!held) throw Error("The market has not confirmed the Aura yet. Refresh, then sign again.");
-        setStep("Signing your sell order…");
+        setStep(tr("Signing your sell order…"));
       }
       await publish("sell", item.tokenId, price);
       return tr("Your sell order for {0} test NEAR is open. The Aura stays held by the market until someone buys it or you cancel.", { 0: formatNativeNear(price) });
     });
   const offer = (tokenId: string, price: string) =>
-    run("Signing your offer…", async () => {
+    run(tr("Signing your offer…"), async () => {
       const credit = BigInt(balance?.credit || "0"),
         need = BigInt(price);
       if (credit < need) {
-        setStep("Adding test NEAR to your market balance…");
+        setStep(tr("Adding test NEAR to your market balance…"));
         const top = need - credit < 10n ** 21n ? 10n ** 21n : need - credit;
         await call({ receiverId: data.marketContract, methodName: "deposit_near", args: {}, deposit: top.toString() });
       }
-      setStep("Signing your offer…");
+      setStep(tr("Signing your offer…"));
       await publish("buy", tokenId, price);
       setOfferFor("");
       return tr("Your offer of {0} test NEAR is open. Your market balance pays only if the owner accepts.", { 0: formatNativeNear(price) });
     });
   const fill = (o: RelayedOrder) =>
-    run(o.terms.kind === "sell" ? "Buying the Aura…" : "Accepting the offer…", async () => {
+    run(o.terms.kind === "sell" ? tr("Buying the Aura…") : tr("Accepting the offer…"), async () => {
       const sellOrder = o.terms.kind === "sell";
       // A buy order (for example from an NPC trader) names an Aura you still
       // hold in your wallet: hand it to the market first, then accept.
       if (!sellOrder && !escrowedByMe.some((l) => l.token_id === o.terms.token_id)) {
-        setStep("Handing the Aura to the market…");
+        setStep(tr("Handing the Aura to the market…"));
         await call({
           receiverId: data.nftContract,
           methodName: "nft_transfer_call",
@@ -273,7 +273,7 @@ export function SignedOrdersPanel({
           s.listings.some((l) => l.token_id === o.terms.token_id && l.state === "deposited" && l.seller === accountId),
         );
         if (!held) throw Error("The market has not confirmed the Aura yet. Refresh, then accept again.");
-        setStep("Accepting the offer…");
+        setStep(tr("Accepting the offer…"));
       }
       await call({
         receiverId: data.marketContract,
@@ -290,7 +290,7 @@ export function SignedOrdersPanel({
         : tr("Still settling. Refresh your collection and balance before retrying.");
     });
   const cancelOrder = (m: MyOrder) =>
-    run("Cancelling the order on chain…", async () => {
+    run(tr("Cancelling the order on chain…"), async () => {
       await call({ receiverId: data.marketContract, methodName: "cancel_order", args: { order: m.order }, deposit: "1" });
       const history = loadHistory(accountId!).map((h) =>
         h.order.nonce === m.order.nonce ? { ...h, cancelled: true, status: "cancelled" as OrderStatus } : h,
@@ -299,7 +299,7 @@ export function SignedOrdersPanel({
       return tr("Order cancelled on chain. Nobody can accept it any more.");
     });
   const cancelAll = () =>
-    run("Cancelling all your orders…", async () => {
+    run(tr("Cancelling all your orders…"), async () => {
       await call({ receiverId: data.marketContract, methodName: "cancel_all_orders", args: {}, deposit: "1" });
       const history = loadHistory(accountId!).map((h) =>
         h.status === "open" || h.status === "pending" ? { ...h, cancelled: true, status: "cancelled" as OrderStatus } : h,

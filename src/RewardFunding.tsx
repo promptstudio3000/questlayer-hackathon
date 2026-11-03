@@ -273,10 +273,10 @@ export function RewardFundingPage({
                     <GameObjectArt kind="coin" size={24} />
                     {tr("Street coins")}</dt>
                   <dd>
-                    <Amount value={ready.today.coinsLeft} /> left
+                    <Amount value={ready.today.coinsLeft} /> {tr("left")}
                     {ready.today.coinsFunded && (
                       <small>
-                        of <Amount value={ready.today.coinsFunded} /> {" "}{tr("funded today")}</small>
+                        {tr("of")} <Amount value={ready.today.coinsFunded} /> {" "}{tr("funded today")}</small>
                     )}
                   </dd>
                 </div>
@@ -285,10 +285,10 @@ export function RewardFundingPage({
                     <GameObjectArt kind="place" size={24} />
                     {tr("Zone prizes")}</dt>
                   <dd>
-                    <Amount value={ready.today.prizesLeft} /> left
+                    <Amount value={ready.today.prizesLeft} /> {tr("left")}
                     {ready.today.prizesFunded && (
                       <small>
-                        of <Amount value={ready.today.prizesFunded} /> {" "}{tr("funded today")}</small>
+                        {tr("of")} <Amount value={ready.today.prizesFunded} /> {" "}{tr("funded today")}</small>
                     )}
                   </dd>
                 </div>
@@ -383,8 +383,8 @@ export function RewardFundingPage({
             <div className="pot-buckets">
               {(
                 [
-                  ["coins", "Street coins", "coin"],
-                  ["zones", "Zone prizes", "place"],
+                  ["coins", tr("Street coins"), "coin"],
+                  ["zones", tr("Zone prizes"), "place"],
                 ] as const
               ).map(([key, label, art]) => (
                 <div className="pot-bucket" key={key}>

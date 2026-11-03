@@ -1,3 +1,4 @@
+import { tr } from "./i18n.ts";
 import type { SignAndSendTransactionParams } from "@hot-labs/near-connect";
 import { NEAR_NETWORK } from "./near-network.ts";
 import type { NearNetwork } from "./near-network.ts";
@@ -507,7 +508,7 @@ async function verify(
     result = await response.json();
   } catch {
     const message =
-      "Confirmation is unavailable. Your transaction may already be complete; check it in Wallet before trying another action.";
+      tr("Confirmation is unavailable. Your transaction may already be complete; check it in Wallet before trying another action.");
     await mutate(context, entry, (current) => ({ ...current, error: message }));
     throw new NativeConfirmationError(message, { ...entry, transactionHash });
   }
@@ -519,7 +520,7 @@ async function verify(
     const terminalVerified = status === 409 && TERMINAL.has(code);
     const message = String(
       result.error ||
-        "The transaction has not been confirmed. Check it in Wallet before retrying.",
+        tr("The transaction has not been confirmed. Check it in Wallet before retrying."),
     ).slice(0, 400);
     await mutate(context, entry, (current) => ({
       ...current,
@@ -544,7 +545,7 @@ async function verify(
     result.transactionHash !== transactionHash
   ) {
     const message =
-      "The confirmation did not match this transaction. Check the saved receipt in Wallet before retrying.";
+      tr("The confirmation did not match this transaction. Check the saved receipt in Wallet before retrying.");
     await mutate(context, entry, (current) => ({ ...current, error: message }));
     throw new NativeConfirmationError(message, { ...entry, transactionHash });
   }
@@ -737,7 +738,7 @@ export async function sendConfirmedNative(
       throw Error("The wallet request was cancelled. Your entries are kept.");
     }
     const message =
-      "The wallet did not provide a receipt. Check its history in Wallet before trying again; the operation may already have been sent.";
+      tr("The wallet did not provide a receipt. Check its history in Wallet before trying again; the operation may already have been sent.");
     await mutate(context, entry, (current) => ({ ...current, error: message }));
     throw new NativeConfirmationError(message, entry);
   }

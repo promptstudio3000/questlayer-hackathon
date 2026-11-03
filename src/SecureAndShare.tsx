@@ -105,7 +105,7 @@ export function SecureAndShare({
         place,
         secured,
       });
-      if (outcome === "downloaded") setShareNote("Card saved to your downloads.");
+      if (outcome === "downloaded") setShareNote(tr("Card saved to your downloads."));
       if (outcome !== "cancelled") onDone?.();
     } catch (e) {
       setShareNote((e as Error).message);

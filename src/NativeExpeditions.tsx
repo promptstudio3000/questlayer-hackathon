@@ -239,17 +239,17 @@ export function NativeExpeditions({
       q.index !== selected?.index,
   );
   const readyReason = !account
-    ? "Link a NEAR account to confirm visits"
+    ? tr("Link a NEAR account to confirm visits")
     : readReason
       ? readReason
       : !state?.enrolled
-        ? "Join the walks below"
+        ? tr("Join the walks below")
         : !gpsReady
           ? arena
-            ? "Turn on GPS to confirm visits"
-            : "Waiting for a fresh, accurate GPS fix"
+            ? tr("Turn on GPS to confirm visits")
+            : tr("Waiting for a fresh, accurate GPS fix")
           : state.day && state.day.claimsAccepted >= state.day.claimsLimit
-            ? "Today's walks are full. Come back tomorrow"
+            ? tr("Today's walks are full. Come back tomorrow")
             : "";
   // v2 days publish a template per walk; v1 walks are three ordered stops.
   function questArt(q: Quest, size: number) {
@@ -278,15 +278,15 @@ export function NativeExpeditions({
     const future = Date.now() < q.opensAt;
     const locked = q.tier > (state?.access.tier || 1);
     const reason = done
-      ? "Walk complete"
+      ? tr("Walk complete")
       : locked
-        ? `Opens at Tier ${q.tier}`
+        ? tr("Opens at Tier {0}", { 0: q.tier })
         : future
-          ? "Opens later today"
+          ? tr("Opens later today")
           : closed
-            ? "Closed for today"
+            ? tr("Closed for today")
             : readyReason ||
-              (distance > 35 ? "Get within 35 m of the stop" : "");
+              (distance > 35 ? tr("Get within 35 m of the stop") : "");
     return (
       <article className="walk-card" key={q.index}>
         <div className="walk-art" aria-hidden="true">
@@ -633,7 +633,7 @@ export function NativeExpeditions({
                 <summary>
                   <Coins size={20} />
                   {tr("Street coins")}{" "}
-                  <span>{state.day?.coins.length || 0} nearby</span>
+                  <span>{tr("{0} nearby", { 0: state.day?.coins.length || 0 })}</span>
                 </summary>
                 <p>
                   {state.day ? nativeGold(state.day.coinUnit) : "0"} {" "}{tr("GOLD per coin · first explorer takes it · up to 100 a day.")}{state.day?.findCount

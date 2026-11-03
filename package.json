@@ -37,7 +37,8 @@
     "poi:classify": "node server/poi/cli.mjs",
     "world:coverage": "node scripts/world-coverage.mjs",
     "ai:flavour": "node server/cli/ai-flavour.mjs",
-    "i18n:keys": "node scripts/i18n-keys.mjs"
+    "i18n:keys": "node scripts/i18n-keys.mjs",
+    "e2e:languages": "node scripts/e2e-languages.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

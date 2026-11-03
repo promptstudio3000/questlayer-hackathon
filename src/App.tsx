@@ -268,10 +268,10 @@ function navigationActive(tab: Tab, id: string) {
   );
 }
 const rarityNames: Record<string, string> = {
-  common: "Common",
-  rare: "Rare",
-  epic: "Epic",
-  legendary: "Legendary",
+  get common() { return tr("Common"); },
+  get rare() { return tr("Rare"); },
+  get epic() { return tr("Epic"); },
+  get legendary() { return tr("Legendary"); },
 };
 function distanceLabel(m: number) {
   if (!Number.isFinite(m)) return "";
@@ -1308,7 +1308,7 @@ export default function App() {
   const [streetFindTarget, setStreetFindTarget] = useState<string | null>(null);
   function goToStreetFind(coin: { id: string; lat: number; lng: number }) {
     setStreetFindTarget(coin.id);
-    if (arena && !nativePlay) faceToward(coin, "Street find");
+    if (arena && !nativePlay) faceToward(coin, tr("Street find"));
     else {
       setFollow(false);
       setOverview(false);
@@ -1359,7 +1359,7 @@ export default function App() {
       }
       setSheetExpanded(false);
       if (coin.find) goToStreetFind(coin);
-      else if (arena) faceToward(coin, coin.find ? "Street find" : "Coin");
+      else if (arena) faceToward(coin, coin.find ? tr("Street find") : tr("Coin"));
       else setFollow(false);
       return;
     }
@@ -2630,11 +2630,11 @@ export default function App() {
     coachStep === "chest"
       ? coachChest
         ? coachChest.d > 25
-          ? "Walk to the chest"
-          : "Open the chest"
-        : "See what's open"
+          ? tr("Walk to the chest")
+          : tr("Open the chest")
+        : tr("See what's open")
       : coachStep === "find" && !nearestCoin(true)
-        ? "Walk to a coin"
+        ? tr("Walk to a coin")
         : null;
   // Outside the reviewed city (H3 street cells, auto cities) the coach and
   // the map point at the nearest open POI quest, or say honestly when quests
@@ -2664,7 +2664,7 @@ export default function App() {
         >
           <MapPin size={18} aria-hidden="true" />
           <span>
-            <small>Nearest quest</small>
+            <small>{tr("Nearest quest")}</small>
             <strong>{poiNext.quest.title}</strong>
             <span>{distanceLabel(poiNext.distance)}</span>
           </span>
@@ -2674,10 +2674,10 @@ export default function App() {
     ) : (
       <p className="first-session-note" role="status">
         {poiOutlook.state === "later"
-          ? `Quests here open at ${new Date(poiOutlook.opensAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: world?.timezone || undefined })}. Street coins count already.`
+          ? tr("Quests here open at {0}. Street coins count already.", { 0: new Date(poiOutlook.opensAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: world?.timezone || undefined }) })
           : poiOutlook.state === "empty"
-            ? "No quests in this spot today. Street coins still count; quests wait near parks, squares and landmarks."
-            : "You've done every quest here today. New ones open tomorrow."}
+            ? tr("No quests in this spot today. Street coins still count; quests wait near parks, squares and landmarks.")
+            : tr("You've done every quest here today. New ones open tomorrow.")}
       </p>
     );
   // The map marks one "next" place: the coach's POI quest, else the nearest
@@ -2701,8 +2701,8 @@ export default function App() {
   const title =
     tab === "explore"
       ? nativePlay
-        ? "Nearby walks"
-        : "Nearby discoveries"
+        ? tr("Nearby walks")
+        : tr("Nearby discoveries")
       : showProfileTabs
         ? tr("Profile")
         : showCommunityTabs
@@ -3279,7 +3279,7 @@ export default function App() {
                       <div className="zone-info">
                         <div>
                           <Badge tone={z.tier === 1 ? "green" : "purple"}>
-                            {z.tier === 1 ? "FREE" : `TIER ${z.tier}`}
+                            {z.tier === 1 ? tr("FREE") : tr("TIER {0}", { 0: z.tier })}
                           </Badge>
                           {z.opensAt > now && (
                             <small>{tr("Opens in")}{" "}{remaining(z.opensAt)}</small>
@@ -3339,7 +3339,7 @@ export default function App() {
                 <Badge tone={selected.tier === 1 ? "green" : "purple"}>
                   {selected.tier === 1 ? tr("Free zone") : tr("Tier {0}", { 0: selected.tier })}
                 </Badge>
-                <span>{zoneQuests.length} activities</span>
+                <span>{tr("{0} activities", { 0: zoneQuests.length })}</span>
               </div>
               {selected.tier > player.tier ? (
                 <div className="locked-panel">
@@ -3374,12 +3374,12 @@ export default function App() {
                       <h2>{q.title}</h2>
                       <Badge tone="green">
                         {q.completed
-                          ? "COMPLETED"
+                          ? tr("COMPLETED")
                           : now < q.opens_at
                             ? tr("OPENS LATER")
                             : now >= q.closes_at
-                              ? "CLOSED"
-                              : "OPEN"}
+                              ? tr("CLOSED")
+                              : tr("OPEN")}
                       </Badge>
                     </div>
                     <p>{q.activity?.objective || q.description}</p>
@@ -3447,7 +3447,7 @@ export default function App() {
                       {q.kind === "route" && (
                         <span>
                           <Flag />
-                          {q.checkpoint || 0}/{q.checkpointCount} stops
+                          {tr("{0}/{1} stops", { 0: q.checkpoint || 0, 1: q.checkpointCount })}
                         </span>
                       )}
                       {q.gold_u > 0 && (
@@ -4747,7 +4747,7 @@ function WalletPanel({
         <small>
           {tr("Play money ·")}{" "}{near(player.gold_u)} {" "}{tr("NEAR equivalent · no monetary value")}</small>
         <div>
-          <Badge tone="gold">TIER {player.tier}</Badge>
+          <Badge tone="gold">{tr("TIER {0}", { 0: player.tier })}</Badge>
           <Badge>{tr("50% coins / 50% zones")}</Badge>
         </div>
       </div>
@@ -4799,7 +4799,7 @@ function WalletPanel({
               ? tr("TIER 3")
               : weighted >= 50_000 * GOLD
                 ? tr("TIER 2")
-                : "FREE"}
+                : tr("FREE")}
           </Badge>
         </div>
         <label>{tr("Choose a pool")}</label>
@@ -5092,11 +5092,11 @@ function FundPanel() {
       </div>
       <div className="projections">
         {[
-          ["Day", 1],
-          ["Week", 7],
-          ["Month", 30],
-          ["Quarter", 90],
-          ["Year", 365],
+          [tr("Day"), 1],
+          [tr("Week"), 7],
+          [tr("Month"), 30],
+          [tr("Quarter"), 90],
+          [tr("Year"), 365],
         ].map(([label, days]) => (
           <div key={label}>
             <span>{label}</span>
@@ -5210,7 +5210,7 @@ function Market({
     <>
       <div className="section-label market-head">
         <h2>{tr("On the market")}</h2>
-        <span className="badge purple" title={tr("Fixed prices · 0% fee · practice GOLD is play money.")}>PRACTICE</span>
+        <span className="badge purple" title={tr("Fixed prices · 0% fee · practice GOLD is play money.")}>{tr("PRACTICE")}</span>
         <button className="text-button" onClick={onInventory}>
           {tr("Sell an Aura")}{" "}<Plus size={13} />
         </button>
@@ -5352,10 +5352,10 @@ function Bounties({
             <div>
               <Badge tone={b.state === "open" ? "green" : "purple"}>
                 {b.state === "open"
-                  ? "OPEN"
+                  ? tr("OPEN")
                   : b.state === "paid"
-                    ? "COMPLETED"
-                    : "REFUNDED"}
+                    ? tr("COMPLETED")
+                    : tr("REFUNDED")}
               </Badge>
               <b>
                 <CoinIcon />
@@ -5464,7 +5464,7 @@ function Npc({
 }) {
   const [q, setQ] = useState(""),
     [answer, setAnswer] = useState(
-      "Hello, explorer. Start with a free place nearby, pick up a few coins on the way and open a chest. Solo is fine; this haunt is yours to explore.",
+      () => tr("Hello, explorer. Start with a free place nearby, pick up a few coins on the way and open a chest. Solo is fine; this haunt is yours to explore."),
     ),
     [busy, setBusy] = useState(false),
     [source, setSource] = useState("rules");
@@ -5482,7 +5482,7 @@ function Npc({
       setQ("");
     } catch {
       setAnswer(
-        "The guide can't hear you right now. Keep exploring; your coins and visits still count.",
+        tr("The guide can't hear you right now. Keep exploring; your coins and visits still count."),
       );
     } finally {
       setBusy(false);

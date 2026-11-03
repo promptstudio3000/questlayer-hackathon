@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 // Shared screen tabs for panels (Profile, Market, Community, Inventory).
 // WAI-ARIA tabs pattern: role=tablist/tab/tabpanel, roving tabindex,
 // Arrow/Home/End move focus and select (automatic activation).
@@ -87,7 +88,9 @@ export function ScreenTabs<T extends string>({
             className={tab.locked ? "is-locked" : undefined}
             aria-label={
               tab.locked
-                ? `${tab.label}, locked${tab.lockedHint ? `: ${tab.lockedHint}` : ""}`
+                ? tab.lockedHint
+                  ? tr("{0}, locked: {1}", { 0: tab.label, 1: tab.lockedHint })
+                  : tr("{0}, locked", { 0: tab.label })
                 : undefined
             }
             onClick={() => onChange(tab.id)}
@@ -103,7 +106,7 @@ export function ScreenTabs<T extends string>({
             {!!tab.count && (
               <span className="screen-tab-count">
                 {tab.count > 99 ? "99+" : tab.count}
-                <span className="sr-only"> new</span>
+                <span className="sr-only"> {tr("new")}</span>
               </span>
             )}
           </button>
@@ -136,7 +139,7 @@ export function ScreenTabPanel({
 
 /** One compact disclosure for policy and explanatory prose. */
 export function Details({
-  summary = "Details",
+  summary = tr("Details"),
   children,
 }: {
   summary?: string;

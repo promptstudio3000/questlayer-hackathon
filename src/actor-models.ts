@@ -64,20 +64,20 @@ export const ACTOR_MODEL_INFO: Record<
   chronicler: { get label() { return tr("Chronicler"); }, role: "Storyteller NPC", color: "#b9a6ff" },
   merchant: { get label() { return tr("Travelling merchant"); }, role: "Trader NPC", color: "#81cdcf" },
   keeper: { get label() { return tr("Gate keeper"); }, role: "Keeper (bank) NPC", color: "#8f88b8" },
-  pilgrim: { get label() { return tr("Pilgrim"); }, role: "Quest giver NPC", color: "#ff96ff" },
-  wisp: { get label() { return tr("Will-o'-wisp"); }, role: "Wandering rare NPC", color: "#51ffa8" },
-  "glitch-moth": { get label() { return tr("Glitch Moth"); }, role: "Roamer monster", color: "#fa34f3" },
-  "rune-warden": { get label() { return tr("Rune Warden"); }, role: "Guardian monster", color: "#37f4f1" },
-  "pocket-wisp": { get label() { return tr("Pocket Wisp"); }, role: "Lurker monster", color: "#7bd88f" },
-  "storm-golem": { get label() { return tr("Storm Golem"); }, role: "Weekly boss", color: "#fffa65" },
-  "sun-beetle": { get label() { return tr("Sun Beetle"); }, role: "Daytime roamer monster", color: "#ffd01f" },
-  "lick-soldier": { label: "Lickquidator", role: "Roamer monster (Gotchiverse)", color: "#16a78f" },
-  "lick-brute": { label: "Lickquidator Brute", role: "Guardian monster (Gotchiverse)", color: "#8345ff" },
-  "lick-speedy": { label: "Dire Tire", role: "Fast roamer (Gotchiverse)", color: "#cebcf1" },
-  "lick-turret": { label: "Laser Beamer", role: "Zone guardian turret (Gotchiverse)", color: "#ffb800" },
-  "lick-boss": { label: "Lickquidator Boss", role: "Weekly boss (Gotchiverse)", color: "#fa34f3" },
-  "great-portal": { get label() { return tr("Great Portal"); }, role: "Boss arena / landmark prop (Gotchiverse)", color: "#dfabff" },
-  "golden-altar": { get label() { return tr("Golden Altar"); }, role: "Keeper station prop (Gotchiverse)", color: "#ffd01f" },
+  pilgrim: { get label() { return tr("Pilgrim"); }, get role() { return tr("Quest giver NPC"); }, color: "#ff96ff" },
+  wisp: { get label() { return tr("Will-o'-wisp"); }, get role() { return tr("Wandering rare NPC"); }, color: "#51ffa8" },
+  "glitch-moth": { get label() { return tr("Glitch Moth"); }, get role() { return tr("Roamer monster"); }, color: "#fa34f3" },
+  "rune-warden": { get label() { return tr("Rune Warden"); }, get role() { return tr("Guardian monster"); }, color: "#37f4f1" },
+  "pocket-wisp": { get label() { return tr("Pocket Wisp"); }, get role() { return tr("Lurker monster"); }, color: "#7bd88f" },
+  "storm-golem": { get label() { return tr("Storm Golem"); }, get role() { return tr("Weekly boss"); }, color: "#fffa65" },
+  "sun-beetle": { get label() { return tr("Sun Beetle"); }, get role() { return tr("Daytime roamer monster"); }, color: "#ffd01f" },
+  "lick-soldier": { label: "Lickquidator", get role() { return tr("Roamer monster (Gotchiverse)"); }, color: "#16a78f" },
+  "lick-brute": { label: "Lickquidator Brute", get role() { return tr("Guardian monster (Gotchiverse)"); }, color: "#8345ff" },
+  "lick-speedy": { label: "Dire Tire", get role() { return tr("Fast roamer (Gotchiverse)"); }, color: "#cebcf1" },
+  "lick-turret": { label: "Laser Beamer", get role() { return tr("Zone guardian turret (Gotchiverse)"); }, color: "#ffb800" },
+  "lick-boss": { label: "Lickquidator Boss", get role() { return tr("Weekly boss (Gotchiverse)"); }, color: "#fa34f3" },
+  "great-portal": { get label() { return tr("Great Portal"); }, get role() { return tr("Boss arena / landmark prop (Gotchiverse)"); }, color: "#dfabff" },
+  "golden-altar": { get label() { return tr("Golden Altar"); }, get role() { return tr("Keeper station prop (Gotchiverse)"); }, color: "#ffd01f" },
 };
 
 // Palette (docs/AAVEGOTCHI-REUSE.md §2/§5).
@@ -696,7 +696,7 @@ export function createActorScene(host: HTMLElement, model: string, options: { la
   if (!isActorModel(model)) {
     const img = document.createElement("img");
     img.src = actorFallbackSprite(model);
-    img.alt = options.label || "Character";
+    img.alt = options.label || tr("Character");
     host.append(img);
     return { dispose: () => img.remove() };
   }

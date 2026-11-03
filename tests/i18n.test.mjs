@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { dictionaries, usedKeys } from "../scripts/i18n-keys.mjs";
+import { dictionaries, untranslatedJsx, usedKeys } from "../scripts/i18n-keys.mjs";
 import { lang, tr } from "../src/i18n.ts";
 
 const placeholders = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
@@ -27,4 +27,16 @@ test("dictionaries only hold strings the app still uses", () => {
     const unused = Object.keys(entries).filter((key) => !used.has(key));
     assert.deepEqual(unused, [], `${id} has unused keys`);
   }
+});
+
+test("every language translates every English string", () => {
+  const keys = usedKeys();
+  for (const { id, entries } of dictionaries()) {
+    const missing = keys.filter((key) => !(key in entries));
+    assert.deepEqual(missing, [], `${id} is missing ${missing.length} strings (npm run i18n:keys)`);
+  }
+});
+
+test("text players read goes through tr()", () => {
+  assert.deepEqual(untranslatedJsx(), [], "wrap these in tr() and add them to every dictionary");
 });

@@ -1,3 +1,4 @@
+import { tr } from "./i18n.ts";
 import { useSyncExternalStore } from "react";
 import { ApiError } from "./api";
 
@@ -267,20 +268,19 @@ export function potView(
 
 // Plain names for the six checks in server/native/distribution.mjs.
 export const CHECK_NAMES: Record<string, string> = {
-  "ledger-conservation": "Every funded GOLD is accounted for",
-  "coin-reservations-explained": "Coins set aside match the open days",
-  "zone-reservations-explained": "Prizes set aside match the open days",
-  "open-days-match-manifests": "Open days match their published plan",
-  "receipts-within-chain-claims": "Receipts never exceed accepted claims",
-  "account-covers-liabilities": "The reward account holds enough to pay",
-  "date-totals-match-publications":
-    "Each day's funded total matches what was published",
+  get "ledger-conservation"() { return tr("Every funded GOLD is accounted for"); },
+  get "coin-reservations-explained"() { return tr("Coins set aside match the open days"); },
+  get "zone-reservations-explained"() { return tr("Prizes set aside match the open days"); },
+  get "open-days-match-manifests"() { return tr("Open days match their published plan"); },
+  get "receipts-within-chain-claims"() { return tr("Receipts never exceed accepted claims"); },
+  get "account-covers-liabilities"() { return tr("The reward account holds enough to pay"); },
+  get "date-totals-match-publications"() { return tr("Each day's funded total matches what was published"); },
 };
 // Plain names for treasury.excludes in server/native/economy.mjs.
 export const EXCLUDED_NAMES: Record<string, string> = {
   "player principal": "Explorers' own staked deposits",
-  "operating top-ups": "Money that keeps the game running",
-  "receipt storage fees": "Fees for storing reward receipts",
+  get "operating top-ups"() { return tr("Money that keeps the game running"); },
+  get "receipt storage fees"() { return tr("Fees for storing reward receipts"); },
 };
 
 // One shared store so the Explore element and the page read the same answer.

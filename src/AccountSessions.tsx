@@ -150,8 +150,7 @@ export function AccountSessions({
                   {s.accountId && <small>{s.accountId}</small>}
                   <small>
                     {s.lastSeenAt
-                      ? "Last active " +
-                        new Date(s.lastSeenAt).toLocaleString("en-US")
+                      ? tr("Last active {0}", { 0: new Date(s.lastSeenAt).toLocaleString("en-US") })
                       : tr("Last activity unknown")}
                   </small>
                 </li>

@@ -1,3 +1,4 @@
+import { tr } from "./i18n.ts";
 // Recovering the invisible NEAR account on a new device without the server ever
 // holding a player key.
 //
@@ -345,7 +346,7 @@ export function deviceLabel(userAgent = "") {
             ? "Windows"
             : /Linux|CrOS/.test(userAgent)
               ? "Linux"
-              : "Device";
+              : tr("Device");
   const browser = /Edg\//.test(userAgent)
     ? "Edge"
     : /Firefox\//.test(userAgent)
@@ -550,22 +551,22 @@ export function deviceRows(
       const current = k.publicKey === localPublicKey;
       const recovery = k.kind === "recovery";
       const title = current
-        ? "This device"
+        ? tr("This device")
         : recovery
           ? RECOVERY_LABEL
           : k.label && k.label !== "first device"
             ? k.label
-            : "Another device";
+            : tr("Another device");
       const state =
         k.state === "pending"
-          ? "Waiting for confirmation"
+          ? tr("Waiting for confirmation")
           : k.state === "removing"
-            ? "Being revoked"
+            ? tr("Being revoked")
             : recovery
-              ? "Restores your explorer on a new device"
+              ? tr("Restores your explorer on a new device")
               : current
-                ? "Signs your game actions here"
-                : "Can sign your game actions";
+                ? tr("Signs your game actions here")
+                : tr("Can sign your game actions");
       const added = k.createdAt
         ? ` · added ${new Date(k.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
         : "";

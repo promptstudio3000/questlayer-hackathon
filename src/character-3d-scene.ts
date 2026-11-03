@@ -1,3 +1,4 @@
+import { tr } from "./i18n.ts";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -56,7 +57,7 @@ export function createCharacterScene(
   canvas.setAttribute("role", "img");
   canvas.setAttribute(
     "aria-label",
-    "Your 3D appearance. Use left and right arrows to rotate, plus and minus to zoom, or Home to reset.",
+    tr("Your 3D appearance. Use left and right arrows to rotate, plus and minus to zoom, or Home to reset."),
   );
   host.append(canvas);
   const controls = new OrbitControls(camera, canvas);

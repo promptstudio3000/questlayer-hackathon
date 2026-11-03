@@ -229,7 +229,7 @@ export function AdventureResultDialog({
                         )}
                         <strong>{item.name}</strong>
                         <span>
-                          {item.slot === "above" ? tr("Above") : tr("Below")} character
+                          {item.slot === "above" ? tr("Above character") : tr("Below character")}
                           {item.serial === null ? "" : ` · #${item.serial}`}
                         </span>
                         <p>

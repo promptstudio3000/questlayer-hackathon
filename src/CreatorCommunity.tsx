@@ -118,16 +118,16 @@ const count = (n: number) => new Intl.NumberFormat("en-US").format(n);
 const idPath = (value: string) => encodeURIComponent(value);
 const statusName = (state: string) =>
   ({
-    pending_review: "In review",
-    published: "Published",
-    draft: "Draft",
-    rejected: "Review rejected",
-    closing: "Closing",
-    closed: "Closed",
-    withdrawn: "Review withdrawn",
-    approved: "Approved",
-    open: "In progress",
-    resolved: "Review complete",
+    pending_review: tr("In review"),
+    published: tr("Published"),
+    draft: tr("Draft"),
+    rejected: tr("Review rejected"),
+    closing: tr("Closing"),
+    closed: tr("Closed"),
+    withdrawn: tr("Review withdrawn"),
+    approved: tr("Approved"),
+    open: tr("In progress"),
+    resolved: tr("Review complete"),
   })[state] || state;
 
 export const PLACE_TEMPLATES: Record<
@@ -136,21 +136,21 @@ export const PLACE_TEMPLATES: Record<
 > = {
   visit: {
     get name() { return tr("Visit a place"); },
-    badge: "Visit",
+    get badge() { return tr("Visit"); },
     get hint() { return tr("Pin one spot. Explorers go there and tell what they found."); },
     min: 1,
     max: 1,
   },
   trail: {
     get name() { return tr("Walk a trail"); },
-    badge: "Trail",
+    get badge() { return tr("Trail"); },
     get hint() { return tr("Pin 2 to 6 stops in walking order, under 5 km in total."); },
     min: 2,
     max: 6,
   },
   chest: {
     get name() { return tr("Hide a chest"); },
-    badge: "Chest",
+    get badge() { return tr("Chest"); },
     get hint() { return tr("Pin where your chest waits. Explorers open it on the spot."); },
     min: 1,
     max: 1,
@@ -643,7 +643,7 @@ function CreatorCommunitySession({
                   `/creators/${idPath(view.creatorId)}/follow`,
                   "PUT",
                   { following: false },
-                  "Following preference confirmed.",
+                  tr("Following preference confirmed."),
                 )
               }
             >
@@ -742,7 +742,7 @@ function CreatorCommunitySession({
                         `/creators/${idPath(data.creator!.id)}/follow`,
                         "PUT",
                         { following: !data.creator!.following },
-                        "Following preference confirmed.",
+                        tr("Following preference confirmed."),
                       )
                     }
                   >
@@ -1240,7 +1240,7 @@ function QuestDetail({
   const quest = data.quest,
     part = data.participation;
   const place = part?.content.place || quest?.place;
-  const title = part?.content.title || quest?.title || "Your quest";
+  const title = part?.content.title || quest?.title || tr("Your quest");
   const reportTarget = creatorReportTarget(quest, part);
   const creator = part?.creator || quest?.creator;
   // A paid quest starts only after the unlock below; the server enforces it too.
@@ -1326,7 +1326,7 @@ function QuestDetail({
                     `/quests/${idPath(quest.id)}/participation`,
                     "POST",
                     {},
-                    "Your start is confirmed. The accepted instructions are saved.",
+                    tr("Your start is confirmed. The accepted instructions are saved."),
                   )
                 }
               >
@@ -1402,7 +1402,7 @@ function PlaceSummary({ place, from }: { place: CreatorPlace; from?: Point }) {
       <strong>{template.name}</strong>
       <span>
         {place.template === "trail"
-          ? `${place.points.length} stops · ${distanceText(trailLength(place.points))} walk`
+          ? tr("{0} stops · {1} walk", { 0: place.points.length, 1: distanceText(trailLength(place.points)) })
           : tr("One pinned spot")}
         {distance !== null ? tr(" · start {0} away", { 0: distanceText(distance) }) : ""}
       </span>
@@ -1615,7 +1615,7 @@ function CreatorEvidenceDialog({
         evidence: draft.values.evidence,
         privateConsent: true,
       },
-      "Your private observation was received. Independent review is pending; no reward or completion is confirmed yet.",
+      tr("Your private observation was received. Independent review is pending; no reward or completion is confirmed yet."),
       () => {
         draft.discard(revision);
         onClose();
@@ -1738,7 +1738,7 @@ function CreatorReportForm({
       `/quests/${idPath(target.questId)}/reports`,
       "POST",
       { revision: target.revision, reason, detail: draft.values.detail },
-      "Your report has been received privately. It has not closed the quest or cancelled your participation.",
+      tr("Your report has been received privately. It has not closed the quest or cancelled your participation."),
       (stillHere) => {
         draft.discard(revision);
         onConfirmed(stillHere);
@@ -1864,8 +1864,8 @@ function CreatorBlockForm({
       "PUT",
       { blocked: action.blocked },
       action.blocked
-        ? "Creator block confirmed. Public content is hidden between you; your accepted quest instructions remain available."
-        : "Your block was removed. Current public content may appear again; a block set by the other creator is unchanged.",
+        ? tr("Creator block confirmed. Public content is hidden between you; your accepted quest instructions remain available.")
+        : tr("Your block was removed. Current public content may appear again; a block set by the other creator is unchanged."),
       onConfirmed,
       (e) => setError(e.message),
     );
@@ -1950,7 +1950,7 @@ function ProfileEditor({
         profile: { ...draft.values, public: visible },
         publicConsent: visible && consent,
       },
-      "Your profile change is confirmed.",
+      tr("Your profile change is confirmed."),
       () => draft.discard(revision),
     );
   }
@@ -2101,7 +2101,7 @@ function QuestEditor({
   try {
     priceValue = paid ? parseAccessPrice(priceText) : "0";
     if (paid && priceValue === "0")
-      priceProblem = "Enter a price, or keep it free.";
+      priceProblem = tr("Enter a price, or keep it free.");
   } catch (error) {
     priceProblem = (error as Error).message;
   }
@@ -2222,7 +2222,7 @@ function QuestEditor({
       quest
         ? { expectedVersion: quest.version, draft: savedDraft }
         : { questId, draft: savedDraft },
-      "Your draft is confirmed. It is not public until independently approved.",
+      tr("Your draft is confirmed. It is not public until independently approved."),
       (stillHere) => {
         draft.discard(revision);
         requirementDraft.discard(requirementRevision);
@@ -2588,7 +2588,7 @@ function QuestEditor({
                     `/quests/${idPath(quest.id)}/withdraw-review`,
                     "POST",
                     { expectedVersion: quest.version },
-                    "Review withdrawal confirmed. Save a new revision before resubmitting.",
+                    tr("Review withdrawal confirmed. Save a new revision before resubmitting."),
                   )
                 }
               >
@@ -2663,7 +2663,7 @@ function QuestEditor({
                       expectedVersion: quote.expectedVersion,
                       expectedPolicyVersion: quote.policyVersion,
                     },
-                    "Review submission confirmed. The current publication state is shown below.",
+                    tr("Review submission confirmed. The current publication state is shown below."),
                     () => {
                       setQuote(null);
                       setAccepted(false);
@@ -2692,7 +2692,7 @@ function QuestEditor({
                     `/quests/${idPath(quest.id)}/close`,
                     "POST",
                     { expectedVersion: quest.version },
-                    "Quest closure confirmed. Existing participants keep their accepted revision.",
+                    tr("Quest closure confirmed. Existing participants keep their accepted revision."),
                   )
                 }
               >
@@ -2717,7 +2717,7 @@ function QuestEditor({
                     `/quests/${idPath(quest.id)}/finalize`,
                     "POST",
                     { expectedVersion: quest.version },
-                    "Final closure confirmed. Current available XP is refreshed; no new earning or level reward is created.",
+                    tr("Final closure confirmed. Current available XP is refreshed; no new earning or level reward is created."),
                   )
                 }
               >

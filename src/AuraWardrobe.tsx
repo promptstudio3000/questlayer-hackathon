@@ -18,10 +18,10 @@ import type { Item } from "./types";
 import { tr } from "./i18n";
 
 const RARITY_LABEL: Record<string, string> = {
-  common: "Common",
-  rare: "Rare",
-  epic: "Epic",
-  legendary: "Legendary",
+  get common() { return tr("Common"); },
+  get rare() { return tr("Rare"); },
+  get epic() { return tr("Epic"); },
+  get legendary() { return tr("Legendary"); },
 };
 
 /** Slot/rarity/set filters for the Aura wardrobe. Native controls only. */
@@ -115,7 +115,7 @@ export function AuraSetStatus({ items }: { items: Item[] }) {
       >
         <Sparkle size={18} weight="fill" aria-hidden="true" />
         <span>
-          <strong>{set.name} set</strong> · {set.bonus}</span>
+          <strong>{tr("{0} set", { 0: set.name })}</strong> · {set.bonus}</span>
       </p>
     );
   const worn = above || below,
@@ -156,7 +156,7 @@ export function AuraCatalog({ items }: { items: Item[] }) {
               <span>
                 {RARITY_LABEL[edition.rarity]} ·{" "}
                 {edition.slot === "above" ? tr("Above") : tr("Below")} ·{" "}
-                {auraSet(edition.set)?.name} set
+                {tr("{0} set", { 0: auraSet(edition.set)?.name })}
               </span>
               <small>
                 {editionSourceLabel(edition)}

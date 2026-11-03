@@ -43,7 +43,7 @@ export const TIER_NEAR = Object.freeze({ tier2: 50, tier3: 100 });
 
 type Step = "staker" | "tier2" | "tier3";
 const STEP_LABEL: Record<Step, string> = {
-  staker: "Staker",
+  get staker() { return tr("Staker"); },
   tier2: "Tier 2",
   tier3: "Tier 3",
 };

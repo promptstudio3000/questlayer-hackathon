@@ -139,8 +139,7 @@ export function NativeWardrobe({
               >
                 <strong className="native-address">{account.accountId}</strong>
                 <span>
-                  {account.supply} secured{" "}
-                  {account.supply === "1" ? "item" : "items"}
+                  {account.supply === "1" ? tr("1 secured item") : tr("{0} secured items", { 0: account.supply })}
                   {wearing ? tr(" · On the map now") : ""}
                 </span>
                 {!!account.items.length && (
@@ -330,7 +329,7 @@ export function NativeWardrobe({
                         }
                       >
                         <Icon size={20} aria-hidden="true" />
-                        {equipped ? "Take off " + slot : "Wear " + slot}
+                        {equipped ? tr("Take off {0}", { 0: slot }) : tr("Wear {0}", { 0: slot })}
                       </button>
                     );
                   })}
