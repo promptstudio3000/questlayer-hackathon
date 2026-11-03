@@ -60,7 +60,7 @@ h1,
 h2,
 h3,
 .wordmark {
-  font-family: "Kanit", system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 h1 {
   font-size: 29px;
@@ -441,7 +441,7 @@ svg {
   padding-left: 19px;
 }
 .daily-summary strong {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 21px;
   font-weight: 500;
   display: block;
@@ -942,6 +942,7 @@ svg {
   color: #fff5ff;
   font-size: 7px;
   letter-spacing: 1px;
+  white-space: nowrap;
   border: 2px solid #faf4ef;
   padding: 3px 6px;
   border-radius: 5px;
@@ -1352,7 +1353,7 @@ input[type="range"] {
   font-size: 30px;
 }
 .wallet-hero strong {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 37px;
   letter-spacing: -1px;
   color: #72617f;
@@ -1741,7 +1742,7 @@ input[type="range"] {
   text-align: center;
 }
 .fund-donut b {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 23px;
   font-weight: 500;
   color: #96869c;
@@ -1789,7 +1790,7 @@ input[type="range"] {
   margin: 13px 0;
 }
 .bucket-card strong {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 20px;
   font-weight: 500;
   color: #9b8254;
@@ -1802,7 +1803,7 @@ input[type="range"] {
   font-size: 8px;
   color: #ad9b9f;
   margin-top: 3px;
-  font-family: "Kanit";
+  font-family: var(--font-body);
 }
 .bucket-card dl {
   font-size: 8px;
@@ -1870,7 +1871,7 @@ input[type="range"] {
   display: block;
   color: #a88bb6;
   font-size: 23px;
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-weight: 500;
 }
 .three-stats span {
@@ -1907,7 +1908,7 @@ input[type="range"] {
   margin: 15px 0;
 }
 .listing-price strong {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 23px;
   color: #a88e60;
   font-weight: 500;

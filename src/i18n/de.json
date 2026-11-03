@@ -2233,6 +2233,7 @@
  "{0} (explorer account)": "{0} (Entdeckerkonto)",
  "{0} (not found yet)": "{0} (noch nicht gefunden)",
  "{0} ({1}) is yours; secure it on NEAR from your wardrobe.": "{0} ({1}) gehört dir; sichere sie in deiner Garderobe auf NEAR.",
+ "{0} / {1} XP to level {2}": "{0} / {1} XP bis Level {2}",
  "{0} Auras": "{0} Auras",
  "{0} GOLD is still maturing (E+{1}).": "{0} GOLD reift noch (E+{1}).",
  "{0} GOLD matures by epoch {1} at the latest (now {2}{3}).": "{0} GOLD reift spätestens bis Epoche {1} (jetzt {2}{3}).",

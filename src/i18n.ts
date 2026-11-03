@@ -22,9 +22,12 @@ const LANGUAGES = {
   en: { label: "English" },
   cs: { label: "Čeština", load: () => import("./i18n/cs.json") },
   de: { label: "Deutsch", load: () => import("./i18n/de.json") },
+  zh: { label: "简体中文", load: () => import("./i18n/zh.json") },
+  ja: { label: "日本語", load: () => import("./i18n/ja.json") },
   es: { label: "Español", load: () => import("./i18n/es.json") },
   fr: { label: "Français", load: () => import("./i18n/fr.json") },
   pt: { label: "Português", load: () => import("./i18n/pt.json") },
+  ru: { label: "Русский", load: () => import("./i18n/ru.json") },
 } satisfies Record<string, Language>;
 
 export type Lang = keyof typeof LANGUAGES;
