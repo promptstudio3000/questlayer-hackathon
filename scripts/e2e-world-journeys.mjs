@@ -54,18 +54,6 @@ async function freePort() {
   });
 }
 
-/** Minutes after midnight in Europe/Prague, the layer's local time. */
-function pragueMinute(at = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Prague",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(at);
-  const get = (t) => Number(parts.find((p) => p.type === t).value);
-  return get("hour") * 60 + get("minute");
-}
-
 async function startServer(dir, poiDbPath) {
   const port = await freePort();
   const url = `http://127.0.0.1:${port}`;
@@ -81,6 +69,8 @@ async function startServer(dir, poiDbPath) {
       DISABLE_RELAYER: "1",
       POI_DB_PATH: poiDbPath,
       ACTORS_ENABLED: "1",
+      // Generic actors keep 08:00-20:00 hours; the e2e runs at any hour.
+      ACTORS_ALL_DAY: "1",
     },
     stdio: ["ignore", "inherit", "inherit"],
   });
@@ -181,17 +171,9 @@ async function journey(browser, server, j, expected) {
     const cast = (actors.actors || [])
       .map((a) => a.role || a.kind)
       .filter(Boolean);
-    // The generic cast walks during the layer hours (08:00–20:00 local,
-    // server/data/actors/_generic.json), so a run at night sees nobody.
-    // Require the cast well inside the hours; near the edges and at night
-    // only report it (unit tests cover the schedule itself).
-    const minute = pragueMinute();
-    if (minute >= 8 * 60 + 15 && minute <= 19 * 60 + 45)
-      assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
-    else
-      console.log(
-        `  outside the cast hours (${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")} Prague): ${cast.length} actors, not required`,
-      );
+    // The e2e server plans the cast all day (ACTORS_ALL_DAY), so this holds
+    // at any hour; the 08:00-20:00 schedule itself is unit-tested.
+    assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
     // POI quests for this cell, from the database the server reads.
     assert.ok(
       expected.questsInCell > 0,
