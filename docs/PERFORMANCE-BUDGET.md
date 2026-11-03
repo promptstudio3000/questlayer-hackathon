@@ -15,6 +15,7 @@ is crossed; raise a number only on purpose, in the same change that needs it.
 | `/api/actors` | ≤ 40 KB raw, 20 min of segments | `tests/perf-budget.test.mjs`, `npm run perf:probe` |
 | API p95 (world, actors, me, presence) | ≤ 400 ms from outside the VPS | `npm run perf:probe` |
 | API p95 inside the server (`Server-Timing: app`) | ≤ 100 ms | `npm run perf:probe` |
+| 500 walkers at once, polled reads p95 | ≤ 400 ms round trip, ≤ 100 ms in the server, no 5xx | `npm run load:test` (local only) |
 | Lighthouse mobile, welcome screen | performance ≥ 0.85, LCP ≤ 3 s | manual, see below |
 
 `npm run perf:probe -- https://questlayer.promptstudio3000.com 20` signs up
@@ -62,6 +63,85 @@ inside the budget. Server p95 was 4–46 ms (`wcoins` ≤ 19 ms is the largest
 
 Everything else is network: `/api/me`, `/api/presence` and the near world
 spend 1–20 ms in the server, and the rest is the round trip.
+
+## Load: 500 walkers (`npm run load:test`)
+
+```sh
+npm run build
+npm run load:test -- --walkers=500 --duration=150 --ramp=90 \
+  --poi=/path/to/current.sqlite --cities=/path/to/city-packs
+```
+
+`scripts/load-test.mjs` starts its own server on a throwaway database
+(`TRUST_PROXY=loopback`, so each walker has its own address for the guest
+limit; actors on; clock moved into play hours like `e2e:world`) and runs N
+walkers spread over 19 Czech spots (Praha 30 %, Brno 14 %, Plzeň arena and
+street, Ostrava, regional towns, Telč, Holašovice, a Šumava forest cell).
+Each walker does what a phone in play does: guest sign-up, `POST /world`,
+one SSE stream, `GET /me` + `GET /world` (ETag) every 15 s, `GET /presence`
+every 8 s, presence share every 10 s (a third of them), `GET /actors` every
+60 s, the daily board and a badge check every 30 s, and it jogs at 4 m/s to
+the nearest coin or POI quest and claims it with a fresh fix. Each walker
+ticks at its own point in the second, as phones do. It writes
+`output/qa/load-test/latest/report.json` (p50/p95/p99 per route, server time,
+loop stall, server CPU and RSS, the walkers' own CPU) and fails over budget.
+`LOAD_PROFILE=dir` writes a V8 CPU profile of the server. `--url` accepts
+localhost only: never load-test the VPS.
+
+The POI file used on 3 Nov was a full local build of Czechia from the
+OpenStreetMap extract (290,562 places, 196,432 ok, 17,310 path cells, 85 auto
+cities; no Overture or Wikidata, which only change names and notability).
+
+### What it found (3 Nov 2026, 4-core cloud container, Node 24)
+
+Before: the server topped out at ~150 requests/s on one core and 500
+walkers need ~210/s, so queues grew without end: p95 10–70 s on every read,
+0.5 % errors. CPU profile:
+
+1. **`coins` had no index on `world_id` or `claimant`** (only the partial
+   open-coins index). Street finds counted a world's coins on every pick-up
+   and every world read, and the profile counted a player's coins on every
+   `/api/me` and pick-up: both scanned every coin of every world of every
+   day (~50 % of server CPU).
+2. **Player rows without an index.** `history`, `inventory`, `positions`,
+   `withdrawals`, `wallet_links` and `quest_claims` were read by
+   `player_id` with a full scan on every `/api/me` and pick-up.
+3. **Every coin and quest event went to every SSE stream in the country.**
+   With 500 streams that was ~30,000 socket writes a second (~18 % of CPU).
+   Events now go only to streams of explorers whose last loaded world is the
+   coin's or quest's world (streams of explorers with no world yet still get
+   all; market and note events stay global).
+4. **Street-find cache cleared itself at 64 worlds**; 500 walkers hold a few
+   hundred. It is now least-recently-used with 1024 entries.
+5. **SQL compiled again on every call** (`db.prepare` inline, ~10 µs each,
+   dozens per request). The main connection now reuses one statement per
+   SQL text (`cachePreparedStatements` in `server/database.mjs`).
+
+The indexes ship as the `hot-path-indexes` schema module
+(`server/hot-path-indexes.mjs`), like `map-read-indexes`; `coins_near` makes
+the nearby-coins read of `/api/world` index-only.
+
+| 500 walkers, 150 s | Before | After |
+| --- | --- | --- |
+| Requests/s served | 151 (queues growing) | 210 (all) |
+| `GET /world` p50 / p95 / server p95 | 263 ms / 52.8 s / 26 ms | 16 / 48 / 18 ms |
+| `GET /me` p95 / server p95 | 1.2 s / 8.6 ms | 36 / 0.6 ms |
+| `GET /presence` p95 | 10.5 s | 38 ms |
+| `GET /actors` p95 | 66.5 s | 58 ms |
+| `POST /coins/claim` p95 / server p95 | 836 ms / 18.7 ms | 39 / 3.3 ms |
+| `POST /world` p95 / server p95 | 30.5 s / 37 ms | 59 / 30 ms |
+| Errors | 0.54 % | 0 |
+| Worst loop stall | 767 ms | 370 ms |
+| Server CPU | 1.06 cores (saturated) | 0.76 cores |
+
+Ceiling: at 1000 walkers (~350 requests/s) the one Node process is
+saturated again (p95 0.5–9 s on some reads), so this machine holds about
+700–800 active phones. Raw reports: `output/qa/load-test/`.
+
+Left as is: building a new street world or auto-city day plan is synchronous
+(the first `POST /world` in a new cell, 150–270 ms) and is the worst loop
+stall under load. Beyond ~800 players the next steps are moving world
+building to a worker thread and running more than one Node process.
 
 ## Map rules
 

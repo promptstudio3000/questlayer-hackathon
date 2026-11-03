@@ -1,0 +1,194 @@
+{
+  "schema": "questlayer.load-test/1",
+  "at": "2026-11-03T17:23:07.878Z",
+  "walkers": 500,
+  "started": 500,
+  "failedStarts": 0,
+  "durationS": 150,
+  "rampS": 90,
+  "poiWorld": {
+    "status": "ready",
+    "version": "cz-local-loadtest",
+    "pois": 290562
+  },
+  "requests": 31446,
+  "rps": 209.6,
+  "errorShare": 0,
+  "coins": 8644,
+  "quests": 25,
+  "worstLoopStallMs": 370,
+  "serverCpuCoresP95": 0.76,
+  "serverPeakRssMb": 848,
+  "clientCpuCores": 0.31,
+  "budget": {
+    "serverP95Ms": 100,
+    "p95Ms": 400,
+    "loopStallMs": 1000,
+    "errorShare": 0.01
+  },
+  "routes": [
+    {
+      "route": "POST /coins/claim",
+      "requests": 10736,
+      "p50": 7,
+      "p95": 39,
+      "p99": 75,
+      "serverP95": 3.3,
+      "serverMax": 78,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 8644,
+        "409": 2092
+      }
+    },
+    {
+      "route": "GET /presence",
+      "requests": 6534,
+      "p50": 6,
+      "p95": 38,
+      "p99": 71,
+      "serverP95": 0.5,
+      "serverMax": 14,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 6534
+      }
+    },
+    {
+      "route": "GET /me",
+      "requests": 3484,
+      "p50": 4,
+      "p95": 36,
+      "p99": 63,
+      "serverP95": 0.6,
+      "serverMax": 9,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 3484
+      }
+    },
+    {
+      "route": "GET /world",
+      "requests": 3484,
+      "p50": 16,
+      "p95": 48,
+      "p99": 79,
+      "serverP95": 17.7,
+      "serverMax": 66,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 3484
+      }
+    },
+    {
+      "route": "POST /presence",
+      "requests": 1745,
+      "p50": 13,
+      "p95": 44,
+      "p99": 84,
+      "serverP95": 0.5,
+      "serverMax": 3,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 1745
+      }
+    },
+    {
+      "route": "GET /daily-board",
+      "requests": 1742,
+      "p50": 18,
+      "p95": 53,
+      "p99": 97,
+      "serverP95": 0.9,
+      "serverMax": 2,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 1742
+      }
+    },
+    {
+      "route": "POST /badges/check",
+      "requests": 1742,
+      "p50": 19,
+      "p95": 55,
+      "p99": 111,
+      "serverP95": 0.9,
+      "serverMax": 8,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 1742
+      }
+    },
+    {
+      "route": "GET /actors",
+      "requests": 863,
+      "p50": 18,
+      "p95": 58,
+      "p99": 101,
+      "serverP95": 1.2,
+      "serverMax": 7,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 863
+      }
+    },
+    {
+      "route": "POST /session",
+      "requests": 500,
+      "p50": 3,
+      "p95": 42,
+      "p99": 212,
+      "serverP95": 2.4,
+      "serverMax": 11,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "201": 500
+      }
+    },
+    {
+      "route": "POST /world",
+      "requests": 500,
+      "p50": 19,
+      "p95": 59,
+      "p99": 150,
+      "serverP95": 29.6,
+      "serverMax": 167,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 500
+      }
+    },
+    {
+      "route": "POST /quests/claim",
+      "requests": 116,
+      "p50": 8,
+      "p95": 44,
+      "p99": 58,
+      "serverP95": 4.3,
+      "serverMax": 7,
+      "errors": 0,
+      "limited": 0,
+      "status": {
+        "200": 25,
+        "409": 73,
+        "410": 2,
+        "422": 6,
+        "423": 10
+      }
+    }
+  ],
+  "slow": [],
+  "slowLog": [
+    "Slow API GET /api/health 364 ms (loop stall 11 ms)"
+  ]
+}
