@@ -68,6 +68,9 @@ export function createActorService(db, options = {}) {
     cities = options.cityById || cityById,
     loadActors = options.loadCityActors || loadCityActors,
     loadGeneric = options.loadGenericActors || loadGenericActors,
+    // QA only: ACTORS_ALL_DAY=1 keeps the cast out at any hour, so journeys
+    // run at night the same as by day. Live worlds keep their opening hours.
+    allDayEverywhere = options.allDay ?? process.env.ACTORS_ALL_DAY === "1",
     plans = new Map();
 
   // Street cells walk the cell's cached public-path snapshot (the same one
@@ -159,7 +162,7 @@ export function createActorService(db, options = {}) {
           dayStart,
           hours: city.hours,
           home: s.home,
-          allDay: !!manifest.arena,
+          allDay: !!manifest.arena || allDayEverywhere,
         }),
       };
     });

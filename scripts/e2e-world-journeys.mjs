@@ -69,6 +69,9 @@ async function startServer(dir, poiDbPath) {
       DISABLE_RELAYER: "1",
       POI_DB_PATH: poiDbPath,
       ACTORS_ENABLED: "1",
+      // NPC hours are 08:00-20:00 local; keep the cast out so the journey
+      // checks the same thing whatever time CI runs.
+      ACTORS_ALL_DAY: "1",
     },
     stdio: ["ignore", "inherit", "inherit"],
   });
