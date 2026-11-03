@@ -340,7 +340,7 @@ export function beamFeatures(spots: readonly BeamSpot[]): Feature[] {
         properties: {
           id: `${b.id}:${part}`,
           part,
-          color: part === "core" ? "#fffbe6" : b.color,
+          color: b.color,
           base,
           height,
           dim: !!b.dim,

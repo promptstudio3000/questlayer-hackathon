@@ -509,7 +509,7 @@ export function GameMap(props: GameMapProps) {
               "fill-extrusion-color": ["get", "color"],
               "fill-extrusion-height": ["get", "height"],
               "fill-extrusion-base": ["get", "base"],
-              "fill-extrusion-opacity": part === "core" ? 0.62 : 0.2,
+              "fill-extrusion-opacity": part === "core" ? 0.78 : 0.22,
               "fill-extrusion-vertical-gradient": false,
             },
           });
