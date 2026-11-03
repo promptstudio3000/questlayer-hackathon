@@ -9,6 +9,8 @@ const BASE = (process.argv[2] || "https://questlayer.promptstudio3000.com").repl
 const N = Number(process.argv[3] || 20);
 export const BUDGET = {
   p95Ms: Number(process.env.PERF_P95_MS || 400),
+  // Time inside the server (Server-Timing app), without the network.
+  serverP95Ms: Number(process.env.PERF_SERVER_P95_MS || 100),
   worldKb: Number(process.env.PERF_WORLD_KB || 220),
   actorsKb: Number(process.env.PERF_ACTORS_KB || 40),
 };
@@ -23,7 +25,11 @@ async function call(path, body) {
   const set = r.headers.get("set-cookie");
   if (set) cookie = set.split(";")[0];
   const text = await r.text();
-  return { ms: performance.now() - t, status: r.status, kb: Buffer.byteLength(text) / 1024, text };
+  // Server-Timing "app" = time inside the server, "loop" = recent event-loop stall.
+  const timing = Object.fromEntries(
+    [...(r.headers.get("server-timing") || "").matchAll(/(\w+);dur=([\d.]+)/g)].map((m) => [m[1], Number(m[2])]),
+  );
+  return { ms: performance.now() - t, status: r.status, kb: Buffer.byteLength(text) / 1024, text, app: timing.app, loop: timing.loop };
 }
 const problems = [];
 const session = await call("/session", { name: "PerfProbe" });
@@ -41,24 +47,33 @@ for (const arena of [true, false]) {
     ["me", "/me"],
     ["presence", `/presence?lat=${at.lat}&lng=${at.lng}`],
   ];
-  rows.push([`${arena ? "arena" : "street"} POST /world`, post.status, Math.round(post.ms), "-", post.kb.toFixed(1), world.coins?.length]);
+  rows.push([`${arena ? "arena" : "street"} POST /world`, post.status, Math.round(post.ms), "-", post.app ?? "-", post.kb.toFixed(1), world.coins?.length]);
   for (const [name, path, kbBudget] of reads) {
-    const times = [];
+    const times = [],
+      apps = [],
+      slow = [];
     let last;
     for (let i = 0; i < N; i++) {
       last = await call(path);
       times.push(last.ms);
+      if (last.app !== undefined) apps.push(last.app);
+      if (last.ms > BUDGET.p95Ms) slow.push(`${Math.round(last.ms)} ms (server ${last.app ?? "?"} ms, loop stall ${last.loop ?? "?"} ms)`);
     }
     times.sort((a, b) => a - b);
-    const q = (x) => Math.round(times[Math.min(times.length - 1, Math.floor(x * times.length))]);
+    apps.sort((a, b) => a - b);
+    const pick = (list, x) => list[Math.min(list.length - 1, Math.floor(x * list.length))];
+    const q = (x) => Math.round(pick(times, x));
+    if (slow.length) console.log(`  ${name}: slow answers ${slow.join(", ")}`);
     const coins = name === "world" ? JSON.parse(last.text).coins?.length : "";
-    rows.push([`${arena ? "arena" : "street"} ${name}`, last.status, q(0.5), q(0.95), last.kb.toFixed(1), coins]);
+    rows.push([`${arena ? "arena" : "street"} ${name}`, last.status, q(0.5), q(0.95), apps.length ? Math.round(pick(apps, 0.95)) : "-", last.kb.toFixed(1), coins]);
+    if (apps.length && pick(apps, 0.95) > BUDGET.serverP95Ms)
+      problems.push(`${name} server p95 ${Math.round(pick(apps, 0.95))} ms > ${BUDGET.serverP95Ms} ms`);
     if (last.status >= 400) problems.push(`${name} answered ${last.status}`);
     if (q(0.95) > BUDGET.p95Ms) problems.push(`${name} p95 ${q(0.95)} ms > ${BUDGET.p95Ms} ms`);
     if (kbBudget && last.kb > kbBudget) problems.push(`${name} ${last.kb.toFixed(0)} KB > ${kbBudget} KB`);
   }
 }
-console.log("read                 status  p50ms  p95ms  KB(raw)  coins");
+console.log("read                 status p50ms  p95ms  srv95  KB(raw)coins");
 for (const r of rows) console.log(r.map((x, i) => String(x ?? "").padEnd(i ? 7 : 21)).join(""));
 if (problems.length) {
   console.error("\nPerformance budget failed:\n  " + problems.join("\n  "));
