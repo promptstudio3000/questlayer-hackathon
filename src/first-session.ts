@@ -29,14 +29,14 @@ export const FIRST_STEPS: FirstStep[] = [
     id: "find",
     title: "Reach the nearest find",
     hint: "A street find waits nearby. Walk there and your ghost picks it up.",
-    action: "Walk there",
+    action: "Point me there",
     done: "First street find collected.",
   },
   {
     id: "coin",
     title: "Pick up a coin",
     hint: "Coins lie along the streets. Walk over one to pick it up.",
-    action: "Walk to a coin",
+    action: "Point me to a coin",
     done: "First coin in your pocket.",
   },
   {

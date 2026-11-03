@@ -81,19 +81,45 @@ test("cancelled movement cannot overwrite a newer location even if a queued call
   assert.equal(f.frames.size, 0);
 });
 
-test("walk there is capped and stepped", async () => {
-  const { cappedWalkTarget, walkSteps, WALK_CAP_M } = await import(
-    "../src/map-motion.ts"
-  );
-  const from = { lat: 49.74, lng: 13.37 },
-    far = { lat: 49.75, lng: 13.37 }; // ~1.1 km
-  const capped = cappedWalkTarget(from, far);
-  assert.equal(capped.capped, true);
-  assert.equal(capped.distance, WALK_CAP_M);
-  assert.ok(capped.point.lat > from.lat && capped.point.lat < far.lat);
-  const near = { lat: 49.7405, lng: 13.37 };
-  assert.deepEqual(cappedWalkTarget(from, near).point, near);
-  const steps = walkSteps(from, capped.point);
-  assert.ok(steps.length >= 40);
-  assert.deepEqual(steps.at(-1), capped.point);
+test("demo pad walks the way the explorer faces", async () => {
+  const { demoTick, stepFrom, headingTo, metersBetween, DEMO_WALK_MPS, DEMO_RUN_MPS } =
+    await import("../src/map-motion.ts");
+  const from = { lat: 49.74, lng: 13.37 };
+  const idle = { forward: false, back: false, left: false, right: false, run: false };
+  // Facing east, forward goes east (not along a fixed map axis).
+  const east = demoTick(from, 90, { ...idle, forward: true }, 1);
+  assert.ok(east.position.lng > from.lng);
+  assert.ok(Math.abs(east.position.lat - from.lat) < 1e-9);
+  assert.ok(Math.abs(metersBetween(from, east.position) - DEMO_WALK_MPS) < 0.05);
+  // Shift / Run is faster.
+  const ran = demoTick(from, 90, { ...idle, forward: true, run: true }, 1);
+  assert.ok(Math.abs(metersBetween(from, ran.position) - DEMO_RUN_MPS) < 0.1);
+  // Back steps away from the facing, without turning around.
+  const back = demoTick(from, 0, { ...idle, back: true }, 1);
+  assert.ok(back.position.lat < from.lat);
+  assert.equal(back.heading, 0);
+  // Left / right turn in place.
+  const turned = demoTick(from, 10, { ...idle, left: true }, 0.1);
+  assert.deepEqual(turned.position, from);
+  assert.equal(turned.moved, false);
+  assert.ok(turned.heading > 340);
+  // Facing a target and walking forward reaches it.
+  const target = stepFrom(from, 233, 40);
+  assert.ok(Math.abs(headingTo(from, target) - 233) < 0.5);
+  let p = from;
+  for (let i = 0; i < 80; i++)
+    p = demoTick(p, headingTo(from, target), { ...idle, forward: true }, 0.1).position;
+  assert.ok(metersBetween(p, target) < 0.5);
+});
+
+test("map character shows the side that faces the screen bottom", async () => {
+  const { characterYaw } = await import("../src/map-motion.ts");
+  // Facing the screen bottom: camera sees the face (yaw 0).
+  assert.equal(characterYaw(0, 180), 0);
+  // Walking east on a north-up map: camera sits on the character's right
+  // side (-X for a model facing +Z), so it looks to the right on screen.
+  assert.equal(characterYaw(0, 90), 270);
+  // Rotating the map by the same amount as the heading changes nothing.
+  assert.equal(characterYaw(90, 180), characterYaw(0, 90));
+  assert.equal(characterYaw(-14, 166), 0);
 });
