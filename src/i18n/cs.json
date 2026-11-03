@@ -2190,6 +2190,7 @@
  "{0} % applies right away, to yield earned from now on.": "{0} % platí hned, pro výnos získaný od teď.",
  "{0} (explorer account)": "{0} (účet průzkumníka)",
  "{0} (not found yet)": "{0} (zatím nenalezeno)",
+ "{0} / {1} XP to level {2}": "{0} / {1} XP do úrovně {2}",
  "{0} Auras": "Aury: {0}",
  "{0} GOLD is still maturing (E+{1}).": "{0} GOLD ještě zraje (E+{1}).",
  "{0} GOLD matures by epoch {1} at the latest (now {2}{3}).": "{0} GOLD dozraje nejpozději v epoše {1} (teď {2}{3}).",
