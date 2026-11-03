@@ -3,7 +3,7 @@
 // instances. NPCs with a home stay there; planned archetypes get a seeded home
 // on the walkable graph; guardians stand at today's open zones.
 import { distance } from "../domain.mjs";
-import { instanceId } from "./definitions.mjs";
+import { instanceId, phaseOf } from "./definitions.mjs";
 import { nearestNode, pathGraph, seededRandom } from "./schedule.mjs";
 
 // At most one monster per this many metres (§13.1 density cap).
@@ -26,8 +26,11 @@ export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = 
     monsters = [],
     npcHomes = [],
     used = {};
-  // `cap` (DENSITY_CAP_PER_CELL) limits instances per archetype in one cell.
-  const room = (def) => (cap ? Math.max(0, Math.min(def.count || 1, (cap[def.archetype] ?? 0) - (used[def.archetype] || 0))) : def.count || 1);
+  // `cap` (DENSITY_CAP_PER_CELL) limits instances per archetype in one cell at
+  // any moment: day and night casts are counted apart, "any" counts in both.
+  const phases = (def) => (phaseOf(def) === "any" ? ["day", "night"] : [phaseOf(def)]);
+  const taken = (def) => Math.max(...phases(def).map((p) => used[`${def.archetype}|${p}`] || 0));
+  const room = (def) => (cap ? Math.max(0, Math.min(def.count || 1, (cap[def.archetype] ?? 0) - taken(def))) : def.count || 1);
   const node = (i) => ({ lat: g.lat[i], lng: g.lng[i] });
   const spaced = (p, min, list) => list.every((q) => distance(p, q) >= min);
   for (const def of city.actors) {
@@ -35,7 +38,7 @@ export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = 
     const rng = seededRandom(worldSeed, "spawn", def.id, dayId),
       count = room(def);
     if (!count) continue;
-    used[def.archetype] = (used[def.archetype] || 0) + count;
+    for (const p of phases(def)) used[`${def.archetype}|${p}`] = (used[`${def.archetype}|${p}`] || 0) + count;
     if (def.homeFrom === "poi") {
       // Generic NPCs live at a seeded safe POI on the path graph, apart from
       // each other; with no usable POI they fall back to a seeded path point.

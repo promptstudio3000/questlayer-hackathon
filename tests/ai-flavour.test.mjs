@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -248,4 +248,134 @@ test("the CLI dry run lists the work without calling a model and never prints a 
   assert.equal(row.reason, "dry-run");
   assert.equal(row.pois, 3);
   assert.equal(row.calls, 0);
+});
+
+// The VPS database holds tables that other modules create lazily. The CLI must
+// load the schema catalog before opening it, or preflight rejects those tables.
+test("the CLI opens a database that already has lazily created module tables", async (t) => {
+  const { ensureModuleVersion } = await import("../server/schema-compatibility.mjs");
+  const dir = mkdtempSync(join(tmpdir(), "flavour-cli-lazy-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const dbPath = join(dir, "game.sqlite");
+  const db = openDatabase(dbPath);
+  // Create the tables of every module in the catalog, like a live server does.
+  const catalog = readFileSync(new URL("../server/schema-catalog.mjs", import.meta.url), "utf8");
+  let created = 0;
+  for (const [, rel] of catalog.matchAll(/"\.\/([^"]+\.mjs)"/g)) {
+    const mod = await import(new URL(`../server/${rel}`, import.meta.url).href);
+    for (const value of Object.values(mod))
+      if (value && typeof value === "object" && typeof value.name === "string" && Number.isSafeInteger(value.version) && value.tables) {
+        ensureModuleVersion(db, value);
+        created++;
+      }
+  }
+  assert.ok(created > 10, `created ${created} module schemas`);
+  db.prepare("INSERT INTO worlds VALUES (?,?,?,?,?,?)").run(`demo:${CELL}:d:v2`, "d", CELL, "Europe/Prague", "{}", Date.now());
+  db.close();
+  const out = execFileSync(process.execPath, ["server/cli/ai-flavour.mjs", "--since", "7d", "--dry-run"], {
+    env: { ...process.env, DATABASE_PATH: dbPath, POI_DB_PATH: poiFile(t), FLAVOUR_AI_PROVIDER: "ollama", OLLAMA_API_KEY: "sk-test", OLLAMA_BASE_URL: "http://127.0.0.1:9" },
+    encoding: "utf8",
+  });
+  assert.equal(JSON.parse(out).reason, "dry-run");
+});
+
+// W8 follow-up (3 Nov 2026): the first VPS batch rejected 779 of 992 texts.
+// Realistic outputs for real-looking Czech places: names such as "Plavecký
+// stadion" or "Vyhlídka Skok", Czech towns in English text and one sentence
+// too many must not reject good text, while every safety rule still holds.
+test("realistic model texts pass at least 75 % and unsafe ones stay rejected", () => {
+  const fixture = JSON.parse(readFileSync(new URL("./fixtures/flavour-model-outputs.json", import.meta.url), "utf8"));
+  const check = (x) => validateFlavour(x, { poi: flavourPoi(fixture.pois[x.poi]), lang: x.lang });
+  const rejected = fixture.ok.filter((x) => !check(x).value);
+  assert.ok(rejected.length / fixture.ok.length < 0.25, `rejected ${rejected.map((x) => `${x.poi}/${x.lang}:${check(x).reason}`)}`);
+  assert.deepEqual(rejected, []);
+  for (const x of fixture.bad) assert.equal(check(x).reason, x.reason, `${x.poi}/${x.lang}`);
+  // Over-long text keeps its leading whole sentences; quotes around a title go.
+  const long = fixture.ok.at(-1);
+  const fitted = check(long).value.description;
+  assert.ok(fitted.length <= 220 && long.description.startsWith(fitted) && /[.!?]$/.test(fitted));
+  assert.equal(check(fixture.ok.find((x) => x.title.startsWith('"'))).value.title, "The Song of Parnassus");
+});
+
+test("missing or rejected items get one follow-up call with the reason, and reasons reach the health summary", async (t) => {
+  const { db } = gameDb(t);
+  const poiReader = openPoiReader(poiFile(t));
+  t.after(() => poiReader.close());
+  const calls = [];
+  const provider = {
+    name: "fake",
+    model: "fake-1",
+    async generate(request) {
+      calls.push(request);
+      const good = (item) => ({
+        key: ` ${item.key.toUpperCase()} `, // keys come back with spaces and another case
+        title: item.language === "cs" ? "Zastávka u vody" : "A stop by the water",
+        description: item.language === "cs" ? "Projdi se po veřejné cestě a užij si klidné místo u vody." : "Stroll along the public path and enjoy a calm spot by the water.",
+      });
+      if (!request.retry)
+        // First answer: drops two items, writes one with a reward and one in the wrong language.
+        return {
+          items: request.items
+            .filter((item) => !item.key.startsWith("p2|"))
+            .map((item) =>
+              item.key === "p0|poi-visit|en"
+                ? { ...good(item), description: "Walk to the fountain and win a shiny prize for your visit today." }
+                : item.key === "p1|poi-visit|en"
+                  ? { ...good(item), description: "Projdi se parkem a užij si klidné odpoledne na lavičce u cesty." }
+                  : good(item),
+            ),
+        };
+      // Follow-up: fixes everything except the reward text.
+      return {
+        items: request.items.map((item) =>
+          item.key === "p0|poi-visit|en" ? { ...good(item), description: "Walk over and collect your reward money at the fountain today." } : good(item),
+        ),
+      };
+    },
+  };
+  const result = await runFlavourBatch(db, { config: CONFIG(), provider, poiReader, clock: () => NOW });
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].items.length, 6, "only the four missing and two rejected items are asked again");
+  assert.match(calls[1].user, /could not be used/);
+  assert.match(calls[1].user, /missing from your answer/);
+  assert.doesNotMatch(calls[1].user, /shiny prize|odpoledne na lavičce/, "rejected text is never echoed back");
+  assert.equal(result.generated, 11);
+  assert.equal(result.rejected, 1);
+  const row = db.prepare("SELECT reason,lang,count,sample FROM ai_flavour_rejections").get();
+  assert.deepEqual({ ...row, sample: undefined }, { reason: "reward-claim", lang: "en", count: 1, sample: undefined });
+  assert.match(row.sample, /reward money/);
+  const status = flavourStatus(db);
+  assert.equal(status.lastBatch.rejectionRate, 0.083);
+  assert.deepEqual(status.lastBatch.topRejectionReasons, [{ reason: "reward-claim", count: 1 }]);
+  assert.equal(status.lastBatch.id, undefined, "no batch ids in health");
+});
+
+test("a restart marks a killed nightly batch interrupted and frees today's run", async (t) => {
+  const { db } = gameDb(t);
+  const { recoverInterruptedBatches } = await import("../server/ai/flavour-batch.mjs");
+  flavourStatus(db);
+  const now = Date.parse("2026-11-03T01:10:00Z");
+  const row = (id, trigger, started) =>
+    db.prepare("INSERT INTO ai_flavour_batches(id,trigger,provider,prompt_version,layer_id,since_ms,generated,rejected,token_budget,outcome,started_at) VALUES (?,?,'ollama','flavour-v1','aavegotchi',0,213,779,120000,'running',?)").run(id, trigger, started);
+  row("killed", "nightly", Date.parse("2026-11-03T01:00:30Z"));
+  row("old", "nightly", Date.parse("2026-11-01T01:00:30Z"));
+  row("cli", "manual", Date.parse("2026-11-03T01:05:00Z"));
+  db.prepare("INSERT INTO daily_jobs(job_key,created_at) VALUES (?,?)").run("flavour:2026-11-03", now - 600_000);
+  db.prepare("INSERT INTO daily_jobs(job_key,created_at) VALUES (?,?)").run("flavour:2026-11-01", now - 2 * 86_400_000);
+  const runs = [];
+  const worker = startFlavourWorker(db, {
+    env: { FLAVOUR_AI_PROVIDER: "ollama", OLLAMA_API_KEY: "k" },
+    clock: () => now,
+    log: () => {},
+    run: async () => (runs.push(1), { id: "f", outcome: "completed" }),
+  });
+  t.after(() => worker.stop());
+  const outcome = (id) => db.prepare("SELECT outcome,reason,finished_at FROM ai_flavour_batches WHERE id=?").get(id);
+  assert.deepEqual({ ...outcome("killed") }, { outcome: "failed", reason: "interrupted", finished_at: now });
+  assert.equal(outcome("old").reason, "interrupted");
+  assert.equal(outcome("cli").outcome, "running", "manual runs may be alive in another process");
+  assert.equal(db.prepare("SELECT count(*) n FROM daily_jobs WHERE job_key='flavour:2026-11-01'").get().n, 1, "only today's claim is released");
+  assert.equal((await worker.tick()).outcome, "completed", "today's batch runs again");
+  assert.equal(runs.length, 1);
+  assert.deepEqual(recoverInterruptedBatches(db, { clock: () => now }), { interrupted: 0, released: [] });
 });

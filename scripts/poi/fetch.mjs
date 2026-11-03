@@ -216,13 +216,26 @@ export async function collectWikidataIds(paths) {
 export function wikidataQuery(ids) {
   for (const id of ids)
     if (!/^Q\d+$/.test(id)) throw new Error(`Bad Wikidata id ${id}`);
-  return `SELECT ?item ?sitelinks ?lang ?label ?description WHERE {
+  return `SELECT ?item ?sitelinks ?inception ?lang ?label ?description WHERE {
   VALUES ?item { ${ids.map((id) => `wd:${id}`).join(" ")} }
   ?item wikibase:sitelinks ?sitelinks.
+  OPTIONAL { ?item wdt:P571 ?inception }
   OPTIONAL { VALUES ?lang { "cs" "en" "de" "sk" "pl" }
     ?item rdfs:label ?label. FILTER(LANG(?label) = ?lang)
     OPTIONAL { ?item schema:description ?description. FILTER(LANG(?description) = ?lang) } }
 }`;
+}
+
+// Cache version: v2 adds the inception year (P571) used by landmark-clue
+// quests. Cached items of an older version are fetched again once.
+export const WIKIDATA_CACHE_VERSION = 2;
+
+/** Year of a Wikidata time value ("1350-01-01T00:00:00Z", "-0500-…"), or null. */
+export function wikidataYear(value) {
+  const m = /^([+-]?)(\d{1,6})-/.exec(String(value || ""));
+  if (!m) return null;
+  const year = Number(m[2]) * (m[1] === "-" ? -1 : 1);
+  return Number.isInteger(year) && year > -3000 && year <= 2100 ? year : null;
 }
 
 export function parseWikidataBindings(json) {
@@ -236,11 +249,15 @@ export function parseWikidataBindings(json) {
         id,
         (item = {
           id,
+          v: WIKIDATA_CACHE_VERSION,
           sitelinks: Number(b.sitelinks?.value) || 0,
           labels: {},
           descriptions: {},
         }),
       );
+    // Several inception statements: the earliest year is kept.
+    const year = wikidataYear(b.inception?.value);
+    if (year !== null && (item.inception === undefined || year < item.inception)) item.inception = year;
     const lang = b.lang?.value;
     if (lang && b.label?.value) item.labels[lang] = b.label.value;
     if (lang && b.description?.value)
@@ -259,7 +276,8 @@ export async function fetchWikidata({
   pauseMs = 1000,
 }) {
   const done = new Set();
-  for await (const item of readJsonLines(cachePath)) done.add(item.id);
+  for await (const item of readJsonLines(cachePath))
+    if ((item.v || 1) >= WIKIDATA_CACHE_VERSION) done.add(item.id);
   const missing = ids.filter((id) => !done.has(id));
   log(`wikidata: ${ids.length} ids, ${missing.length} to fetch`);
   for (let i = 0; i < missing.length; i += batch) {
@@ -287,7 +305,7 @@ export async function fetchWikidata({
       ...found,
       ...chunk
         .filter((id) => !seen.has(id))
-        .map((id) => ({ id, sitelinks: 0, labels: {}, descriptions: {} })),
+        .map((id) => ({ id, v: WIKIDATA_CACHE_VERSION, sitelinks: 0, labels: {}, descriptions: {} })),
     ]
       .map((item) => JSON.stringify(item))
       .join("\n");

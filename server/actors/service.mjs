@@ -21,6 +21,7 @@ import { buildActorMenu, menuHash } from "./menu.mjs";
 import { ACTORS_SCHEMA } from "./schema.mjs";
 import { planDay, positionAt } from "./schedule.mjs";
 import { planSpawns } from "./spawns.mjs";
+import { skyAt } from "../sun.mjs";
 import { streetFindIds } from "../street-finds.mjs";
 
 export const ENCOUNTER_TTL_MS = 5 * 60_000;
@@ -50,6 +51,14 @@ function decorate(view, ctx) {
   return view;
 }
 
+/**
+ * ACTORS_ALL_DAY=1 is a test-only switch (e2e servers): every actor plays the
+ * whole local day instead of its opening hours. Ignored on mainnet.
+ */
+export function actorsAllDay(env = process.env, network = env.NEAR_NETWORK || "testnet") {
+  return env.ACTORS_ALL_DAY === "1" && network !== "mainnet";
+}
+
 export function actorsEnabled(env = process.env) {
   return env.ACTORS_ENABLED === "1";
 }
@@ -65,6 +74,9 @@ export function worldSeed(manifest) {
 export function createActorService(db, options = {}) {
   ensureModuleVersion(db, ACTORS_SCHEMA);
   const clock = options.clock || Date.now,
+    // Test hook: plan every actor across the whole local day, so e2e runs
+    // see a cast at any hour. Production never sets it (actorsAllDay below).
+    forceAllDay = options.allDay === true,
     cities = options.cityById || cityById,
     loadActors = options.loadCityActors || loadCityActors,
     loadGeneric = options.loadGenericActors || loadGenericActors,
@@ -159,11 +171,13 @@ export function createActorService(db, options = {}) {
           dayStart,
           hours: city.hours,
           home: s.home,
-          allDay: !!manifest.arena,
+          allDay: forceAllDay || !!manifest.arena,
+          // Real local daylight at the world's centre picks the day or night cast.
+          sky: pack.center,
         }),
       };
     });
-    const plan = { seed, instances, byId: new Map(instances.map((i) => [i.id, i])) };
+    const plan = { seed, instances, center: pack.center, byId: new Map(instances.map((i) => [i.id, i])) };
     if (plans.size > 32) plans.clear();
     plans.set(key, plan);
     return plan;
@@ -215,6 +229,7 @@ export function createActorService(db, options = {}) {
       ...(def.title ? { title: def.title } : {}),
       model: def.model,
       ...(def.element ? { element: def.element } : {}),
+      ...(def.phase === "day" || def.phase === "night" ? { phase: def.phase } : {}),
       segments,
       ...(REVEAL_RADIUS_M[def.archetype] ? { revealRadiusM: REVEAL_RADIUS_M[def.archetype] } : {}),
       ...(instance.guards ? { guards: instance.guards } : {}),
@@ -247,7 +262,7 @@ export function createActorService(db, options = {}) {
       if (reveal && (!here || !pos || distance(here, pos) > reveal)) continue;
       actors.push(decorate(view(instance, now, progress), { instance, player, dayId: manifest.day, cityId: manifest.cityId, now }));
     }
-    return { ...empty, actors };
+    return { ...empty, ...(plan.center ? { sky: skyAt(now, plan.center) } : {}), actors };
   }
 
   function checkFix(player, fix, arena, now) {

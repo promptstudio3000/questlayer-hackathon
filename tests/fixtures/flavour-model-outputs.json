@@ -1,0 +1,188 @@
+{
+  "note": "Realistic model outputs for real-looking Czech places (W8 rejection fix, 3 Nov 2026). 'ok' items are acceptable flavour text and must pass; 'bad' items must stay rejected.",
+  "pois": {
+    "plav": {
+      "id": "osm:w1",
+      "category": "sports_ground",
+      "name": "Plavecký stadion Lužánky",
+      "names": {
+        "cs": "Plavecký stadion Lužánky"
+      },
+      "facts": null
+    },
+    "skok": {
+      "id": "osm:n2",
+      "category": "viewpoint",
+      "name": "Vyhlídka Skok",
+      "names": {
+        "cs": "Vyhlídka Skok"
+      },
+      "facts": {
+        "en": "viewpoint in Žďár nad Sázavou District",
+        "cs": "vyhlídka v okrese Žďár nad Sázavou"
+      }
+    },
+    "kasna": {
+      "id": "osm:n3",
+      "category": "fountain",
+      "name": "Kašna Parnas",
+      "names": {
+        "cs": "Kašna Parnas",
+        "en": "Parnassus Fountain"
+      },
+      "facts": {
+        "en": "baroque fountain in Brno",
+        "cs": "barokní kašna v Brně"
+      }
+    },
+    "kostel": {
+      "id": "osm:w4",
+      "category": "historic_building",
+      "name": "Kostel svatého Jakuba Většího",
+      "names": {
+        "cs": "Kostel svatého Jakuba Většího"
+      },
+      "facts": {
+        "en": "church in Plzeň-Bolevec",
+        "cs": "kostel v Plzni"
+      }
+    },
+    "pomnik": {
+      "id": "osm:n5",
+      "category": "memorial",
+      "name": "Pomník obětem 1. světové války",
+      "names": {
+        "cs": "Pomník obětem 1. světové války"
+      },
+      "facts": null
+    },
+    "tunel": {
+      "id": "osm:n6",
+      "category": "other_named",
+      "name": "Žlutý tunel",
+      "names": {
+        "cs": "Žlutý tunel"
+      },
+      "facts": null
+    }
+  },
+  "ok": [
+    {
+      "poi": "plav",
+      "lang": "cs",
+      "title": "U Plaveckého stadionu",
+      "description": "Dojdi po chodníku k Plaveckému stadionu Lužánky a rozhlédni se po okolí. Značka čeká u cesty."
+    },
+    {
+      "poi": "plav",
+      "lang": "en",
+      "title": "Plavecký stadion Lužánky",
+      "description": "Walk the public path to Plavecký stadion Lužánky, take in the lively sports ground and check in at the marker."
+    },
+    {
+      "poi": "skok",
+      "lang": "cs",
+      "title": "Výhled z Vyhlídky Skok",
+      "description": "Vydej se po značené cestě na Vyhlídku Skok a užij si pohled do krajiny."
+    },
+    {
+      "poi": "skok",
+      "lang": "en",
+      "title": "Vyhlídka Skok",
+      "description": "Follow the trail near Žďár nad Sázavou to Vyhlídka Skok and enjoy the wide view over the countryside."
+    },
+    {
+      "poi": "kasna",
+      "lang": "cs",
+      "title": "Kašna Parnas zpívá",
+      "description": "Zastav se u Kašny Parnas, poslouchej šumění vody a hledej detaily barokní výzdoby. Pak se odbav u značky u cesty, kde na tebe čeká další kousek příběhu dnešní zóny."
+    },
+    {
+      "poi": "kasna",
+      "lang": "en",
+      "title": "\"The Song of Parnassus\"",
+      "description": "Stroll to Parnassus Fountain, the baroque fountain in Brno, and listen to the water for a while."
+    },
+    {
+      "poi": "kostel",
+      "lang": "en",
+      "title": "Visit Kostel svatého Jakuba Většího",
+      "description": "Head to the church in Plzeň-Bolevec along the public path and admire its walls from the square."
+    },
+    {
+      "poi": "kostel",
+      "lang": "cs",
+      "title": "U kostela svatého Jakuba",
+      "description": "Projdi se ke Kostelu svatého Jakuba Většího a prohlédni si ho z náměstí."
+    },
+    {
+      "poi": "pomnik",
+      "lang": "cs",
+      "title": "Tiché místo vzpomínky",
+      "description": "Zastav se u Pomníku obětem 1. světové války a chvíli v klidu postůj."
+    },
+    {
+      "poi": "tunel",
+      "lang": "en",
+      "title": "The Yellow Landmark",
+      "description": "Find Žlutý tunel from the open path and look at its bright colours from outside."
+    },
+    {
+      "poi": "kasna",
+      "lang": "cs",
+      "title": "Příběh barokní kašny",
+      "description": "Vydej se po veřejné cestě ke Kašně Parnas v srdci Brna. Poslouchej šumění vody a prohlédni si barokní sochy, které ji zdobí ze všech stran. Pak se odbav u značky u cesty a pokračuj dál v průzkumu dnešní zóny mezi parky a náměstími."
+    }
+  ],
+  "bad": [
+    {
+      "poi": "kasna",
+      "lang": "en",
+      "title": "Fountain riches",
+      "description": "Walk to Parnassus Fountain and win a big reward for checking in today.",
+      "reason": "reward-claim"
+    },
+    {
+      "poi": "kasna",
+      "lang": "en",
+      "title": "Old fountain",
+      "description": "Parnassus Fountain was built in 1693 and still sings on the square.",
+      "reason": "invented-number"
+    },
+    {
+      "poi": "plav",
+      "lang": "cs",
+      "title": "Skok do vody",
+      "description": "Skoč do bazénu u Plaveckého stadionu Lužánky a zaplav si.",
+      "reason": "unsafe-instruction"
+    },
+    {
+      "poi": "tunel",
+      "lang": "en",
+      "title": "Through the tunnel",
+      "description": "Walk deep into the tunnel and explore every corner of it.",
+      "reason": "unsafe-instruction"
+    },
+    {
+      "poi": "skok",
+      "lang": "en",
+      "title": "Vyhlídka Skok",
+      "description": "Dojdi na Vyhlídku Skok a podívej se do krajiny, je tu krásně.",
+      "reason": "wrong-language"
+    },
+    {
+      "poi": "kostel",
+      "lang": "cs",
+      "title": "The church",
+      "description": "Walk to the church and look at the old walls from the square.",
+      "reason": "wrong-language"
+    },
+    {
+      "poi": "kasna",
+      "lang": "en",
+      "title": "Fountain",
+      "description": "Visit Parnassus Fountain and earn GOLD and NEAR for every visit you make.",
+      "reason": "reward-claim"
+    }
+  ]
+}

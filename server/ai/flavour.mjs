@@ -9,15 +9,17 @@
 // Flavour text is decoration. It never sets rewards, places, targets or rules,
 // and the shared text policy rejects anything that mentions money or prizes.
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
-import { FLAVOUR_SCHEMA } from "./schema.mjs";
+import { FLAVOUR_REJECTIONS_SCHEMA, FLAVOUR_SCHEMA } from "./schema.mjs";
 import { clean, screenText } from "./text-policy.mjs";
 
-export { FLAVOUR_SCHEMA };
+export { FLAVOUR_REJECTIONS_SCHEMA, FLAVOUR_SCHEMA };
 export const FLAVOUR_PROMPT_VERSION = "flavour-v1";
 export const FLAVOUR_TEMPLATES = Object.freeze(["poi-visit", "poi-category-hunt"]);
 export const FLAVOUR_LANGS = Object.freeze(["en", "cs"]);
 export const DEFAULT_FLAVOUR_LAYER = "aavegotchi";
-export const FLAVOUR_LIMITS = Object.freeze({ title: [3, 60], description: [20, 220] });
+// Titles may carry a full place name (names are cut at 60 characters), so the
+// title limit leaves room for a short verb in front of it.
+export const FLAVOUR_LIMITS = Object.freeze({ title: [3, 80], description: [20, 220] });
 
 // Every rule of the shared policy applies: flavour text is shown to all
 // players without a human review.
@@ -144,24 +146,100 @@ export function templateFlavour({ poi, template, lang }) {
 }
 
 const digitsIn = (s) => String(s || "").match(/\d+/g) || [];
+const WORD = /[\p{L}\p{M}]+(?:['’][\p{L}]+)?/gu;
+
+// Every name of the place, longest first, for removing from the checked text.
+const allNames = (poi) =>
+  [...new Set([poi.name, ...Object.values(poi.names || {})].filter((n) => typeof n === "string" && n.trim()))]
+    .map((n) => clean(n))
+    .sort((a, b) => b.length - a.length);
+
+/**
+ * The text with the place's own names taken out, including Czech declined
+ * forms ("Kašna Parnas" also removes "Kašnu", "Kašně"). Place names are data
+ * the safety filter (W4) already accepted and players see them in the template
+ * text anyway, so the word rules must not reject a text for repeating them:
+ * "Plavecký stadion" or "Vyhlídka Skok" are names, not advice to swim or jump.
+ */
+export function withoutNames(text, poi) {
+  let out = String(text);
+  for (const name of allNames(poi)) out = out.split(name).join(" ");
+  const stems = new Set();
+  const exact = new Set();
+  for (const name of allNames(poi))
+    for (const w of name.match(WORD) || []) {
+      const lower = w.toLowerCase();
+      if (w.length >= 4) exact.add(lower);
+      // Declined forms of longer words: "Plaveckého" for "Plavecký".
+      if (w.length >= 6) stems.add(lower.slice(0, Math.max(5, w.length - 3)));
+    }
+  if (!exact.size) return out;
+  return out.replace(WORD, (w) => {
+    const lower = w.toLowerCase();
+    return exact.has(lower) || [...stems].some((s) => lower.startsWith(s)) ? " " : w;
+  });
+}
+
+// Language signals. Proper nouns (capitalised words) never count, so an
+// English text may name Czech streets, towns or districts ("Žabovřesky").
+const CS_LETTERS = /[ěščřžůťďň]/iu;
+const ANY_CS_ACCENT = /[áéíóúůýěščřžťďň]/iu;
+const CS_WORDS = new Set([
+  "je", "jsou", "se", "si", "na", "ke", "ve", "ze", "u", "k", "v", "z", "s", "po", "při", "pro", "nebo", "jen",
+  "tu", "tady", "tam", "kde", "jak", "který", "která", "které", "dnes", "místo", "místa", "cesta", "cesty", "cestě",
+  "najdi", "dojdi", "navštiv", "projdi", "zastav", "rozhlédni", "odbav", "značky", "značce", "značka", "kolem",
+]);
+const EN_WORDS = new Set([
+  "the", "and", "of", "to", "your", "you", "a", "an", "at", "by", "this", "that", "with", "for", "from", "in",
+  "on", "is", "it", "its", "here", "find", "walk", "look", "path", "see", "around", "start", "check", "marker",
+  "where", "today", "take", "along", "visit", "hunt",
+]);
+function languageSignals(text) {
+  let cs = 0,
+    en = 0;
+  for (const w of text.match(WORD) || []) {
+    const lower = w.toLowerCase();
+    const proper = w[0] !== lower[0];
+    if (CS_WORDS.has(lower)) cs++;
+    else if (!proper && ANY_CS_ACCENT.test(w)) cs++;
+    if (EN_WORDS.has(lower)) en++;
+  }
+  return { cs, en };
+}
+
+// A model often writes one sentence too many. Keep the leading whole
+// sentences when they fit; never cut inside a sentence.
+function fitDescription(description, [min, max]) {
+  if (description.length <= max) return description;
+  const sentences = description.match(/[^.!?…]+[.!?…]+["“”»]?\s*/gu) || [];
+  let out = "";
+  for (const s of sentences) {
+    if ((out + s).trim().length > max) break;
+    out += s;
+  }
+  out = out.trim();
+  return out.length >= min ? out : description;
+}
 
 /**
  * Checks one model-written text. Returns { value } or { reason }.
  * Numbers are allowed only when they occur in the POI's own name or facts,
- * so a model cannot invent dates, distances or amounts.
+ * so a model cannot invent dates, distances or amounts. The safety and
+ * language rules look at the text without the place's own names.
  */
 export function validateFlavour(output, { poi, lang }) {
   if (!output || typeof output !== "object") return { reason: "schema" };
   if (typeof output.title !== "string" || typeof output.description !== "string")
     return { reason: "schema" };
-  const title = clean(output.title);
-  const description = clean(output.description);
+  const title = clean(output.title).replace(/^["“„'](.*)["”“']$/u, "$1").trim();
+  const description = fitDescription(clean(output.description), FLAVOUR_LIMITS.description);
   const [tMin, tMax] = FLAVOUR_LIMITS.title;
   const [dMin, dMax] = FLAVOUR_LIMITS.description;
   if (title.length < tMin || title.length > tMax) return { reason: "title-length" };
   if (description.length < dMin || description.length > dMax) return { reason: "description-length" };
   const both = `${title} ${description}`;
-  const broken = screenText(both, FLAVOUR_RULES);
+  const nameless = withoutNames(both, poi);
+  const broken = screenText(nameless, FLAVOUR_RULES);
   if (broken) return { reason: broken };
   const known = new Set([
     ...digitsIn(poi.name),
@@ -169,13 +247,11 @@ export function validateFlavour(output, { poi, lang }) {
     ...Object.values(poi.facts || {}).flatMap(digitsIn),
   ]);
   if (digitsIn(both).some((d) => !known.has(d))) return { reason: "invented-number" };
-  // English text must not drift into Czech and vice versa (names excepted).
-  const nameless = Object.values({ ...poi.names, n: poi.name || "" }).reduce(
-    (s, n) => (n ? s.split(n).join(" ") : s),
-    both,
-  );
-  if (lang === "en" && /[ěščřžůťďň]/iu.test(nameless)) return { reason: "wrong-language" };
-  if (lang === "cs" && !/[áéíóúůýěščřžťďň]/iu.test(nameless)) return { reason: "wrong-language" };
+  // English text must not drift into Czech and vice versa. Names and other
+  // proper nouns are ignored; the other language must not outweigh this one.
+  const { cs, en } = languageSignals(nameless);
+  if (lang === "en" && (cs > en || (cs > 0 && CS_LETTERS.test(nameless) && cs >= 3))) return { reason: "wrong-language" };
+  if (lang === "cs" && (en > cs || (cs === 0 && !ANY_CS_ACCENT.test(nameless)))) return { reason: "wrong-language" };
   return { value: { title, description } };
 }
 
@@ -210,16 +286,30 @@ export function flavourText(
   return { ...templateFlavour({ poi: p, template, lang: language }), source: "template" };
 }
 
-/** Last batch summary for /api/health (no texts, no POI ids). */
+/**
+ * Last batch summary for /api/health (no texts, no POI ids): counts, the share
+ * of texts the checks rejected and the most common rejection reasons.
+ */
 export function flavourStatus(db) {
   ensureModuleVersion(db, FLAVOUR_SCHEMA);
+  ensureModuleVersion(db, FLAVOUR_REJECTIONS_SCHEMA);
   const last = db
     .prepare(
-      "SELECT trigger,provider,model,outcome,reason,generated,rejected,requested,tokens_used,token_budget,started_at,finished_at FROM ai_flavour_batches ORDER BY started_at DESC LIMIT 1",
+      "SELECT id,trigger,provider,model,outcome,reason,generated,rejected,requested,failed_calls,calls,tokens_used,token_budget,started_at,finished_at FROM ai_flavour_batches ORDER BY started_at DESC LIMIT 1",
     )
     .get();
   const cached = db
     .prepare("SELECT count(*) AS n FROM ai_flavour_cache WHERE prompt_version=?")
     .get(FLAVOUR_PROMPT_VERSION).n;
-  return { promptVersion: FLAVOUR_PROMPT_VERSION, cached, lastBatch: last || null };
+  if (!last) return { promptVersion: FLAVOUR_PROMPT_VERSION, cached, lastBatch: null };
+  const { id: batchId, ...lastBatch } = last;
+  const checked = last.generated + last.rejected;
+  lastBatch.rejectionRate = checked ? Math.round((last.rejected / checked) * 1000) / 1000 : null;
+  lastBatch.topRejectionReasons = db
+    .prepare(
+      "SELECT reason, sum(count) AS count FROM ai_flavour_rejections WHERE batch_id=? GROUP BY reason ORDER BY count DESC, reason LIMIT 5",
+    )
+    .all(batchId)
+    .map((r) => ({ reason: r.reason, count: r.count }));
+  return { promptVersion: FLAVOUR_PROMPT_VERSION, cached, lastBatch };
 }

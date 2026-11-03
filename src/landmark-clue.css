@@ -1,0 +1,38 @@
+.landmark-clue {
+  border: 0;
+  margin: 8px 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.landmark-clue legend {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.landmark-clue .clue-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line, #d8d4c8);
+  border-radius: 10px;
+  background: var(--panel, #fff);
+  cursor: pointer;
+}
+.landmark-clue .clue-option input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+.landmark-clue .clue-option.right {
+  border-color: #258b73;
+  background: color-mix(in srgb, #258b73 12%, transparent);
+}
+.landmark-clue .clue-option.wrong {
+  border-color: #c2410c;
+  background: color-mix(in srgb, #c2410c 10%, transparent);
+}
+.landmark-clue:disabled .clue-option {
+  cursor: default;
+}
