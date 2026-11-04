@@ -507,13 +507,30 @@ impl Rewards {
         self.pending += amount;
         self.players.insert(&account_id, &p);
         self.check();
-        Promise::new(account_id.clone())
-            .transfer(NearToken::from_yoctonear(amount))
+        // Coin and zone rewards become QGOLD: the NEAR goes into the QGOLD
+        // vault, which mints its share at R (no fee) to the player.
+        Promise::new(qgold_vault().expect("QGOLD vault not set"))
+            .function_call(
+                "mint_for",
+                near_sdk::serde_json::json!({"account_id": account_id, "memo": "rewards claim"})
+                    .to_string()
+                    .into_bytes(),
+                NearToken::from_yoctonear(amount),
+                Gas::from_tgas(30),
+            )
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_static_gas(Gas::from_tgas(15))
                     .on_withdraw(account_id, U128(amount)),
             )
+    }
+    /// Owner, once: the QGOLD vault that rewards are paid into. It can never be
+    /// changed afterwards, so no one can redirect players' rewards.
+    pub fn set_qgold_vault(&mut self, account_id: AccountId) {
+        self.owner();
+        assert!(qgold_vault().is_none(), "QGOLD vault is already set");
+        env::storage_write(QGOLD_VAULT_KEY, account_id.as_bytes());
+        event("qgold_vault_set", near_sdk::serde_json::json!({"account_id": account_id}));
     }
     #[private]
     pub fn on_withdraw(&mut self, account_id: AccountId, amount: U128) -> bool {
@@ -547,7 +564,7 @@ impl Rewards {
         self.days.get(&day_id).map(|d| near_sdk::serde_json::json!({"manifest_hash":d.hash,"starts_at":d.starts.to_string(),"ends_at":d.ends.to_string(),"coin_count":d.count,"coin_unit":d.unit.to_string(),"remaining":d.remaining.to_string(),"quests":d.quests,"winners":d.winners,"closed":d.closed,"claims_accepted":storage_slots().get(&format!("count:{day_id}")).unwrap_or(0),"finds":day_finds().get(&day_id).unwrap_or_default(),"find_xp":FIND_XP,"coin_xp":COIN_XP,"claims_limit":CLAIM_LIMIT,"storage_reserved":storage_slots().get(&format!("day:{day_id}")).is_some()}))
     }
     pub fn get_config(&self) -> near_sdk::serde_json::Value {
-        near_sdk::serde_json::json!({"version":2,"network":"testnet","owner":self.owner,"coin_xp":COIN_XP,"find_xp":FIND_XP,"max_finds":MAX_FINDS,"publisher":self.publisher,"attestor":Base64VecU8(self.signer.clone()),"paused":self.paused,"sponsor_storage_fee":SPONSOR_STORAGE_FEE.to_string()})
+        near_sdk::serde_json::json!({"version":2,"network":"testnet","owner":self.owner,"coin_xp":COIN_XP,"find_xp":FIND_XP,"max_finds":MAX_FINDS,"publisher":self.publisher,"attestor":Base64VecU8(self.signer.clone()),"paused":self.paused,"sponsor_storage_fee":SPONSOR_STORAGE_FEE.to_string(),"qgold_vault":qgold_vault()})
     }
     pub fn get_treasury(&self) -> near_sdk::serde_json::Value {
         let bucket = |b: &Bucket| near_sdk::serde_json::json!({"available":b.available.to_string(),"reserved":b.reserved.to_string(),"awarded":b.awarded.to_string()});
@@ -665,6 +682,10 @@ fn normalize_finds(mut finds: Vec<u16>, coin_count: u16) -> Vec<u16> {
     );
     finds
 }
+const QGOLD_VAULT_KEY: &[u8] = b"native-qgold-vault-v1";
+fn qgold_vault() -> Option<AccountId> {
+    env::storage_read(QGOLD_VAULT_KEY).map(|b| String::from_utf8(b).unwrap().parse().unwrap())
+}
 fn storage_slots() -> LookupMap<String, u64> {
     LookupMap::new(b"native-storage-v1".to_vec())
 }
@@ -734,6 +755,7 @@ mod tests {
                     .to_vec(),
             ),
         );
+        r.set_qgold_vault(a("qgold.testnet"));
         context("sponsor.testnet", 1, 1001 + SPONSOR_STORAGE_FEE, None);
         r.fund_rewards("sponsor".into(), "fund-1".into());
         context("publisher.testnet", 1, 0, None);
@@ -862,6 +884,29 @@ mod tests {
         let mut r = setup();
         context("sponsor.testnet", 2, 1001, None);
         r.fund_rewards("sponsor".into(), "fund-1".into());
+    }
+    #[test]
+    #[should_panic(expected = "QGOLD vault is already set")]
+    fn qgold_vault_is_set_once() {
+        let mut r = setup();
+        context("owner.testnet", 2, 0, None);
+        r.set_qgold_vault(a("owner.testnet"));
+    }
+    #[test]
+    fn withdraw_pays_the_qgold_vault_not_the_player() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "a");
+        let s = signed(&r, &c);
+        r.claim(c, s);
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        let receipts = near_sdk::test_utils::get_created_receipts();
+        let to_vault = receipts.iter().find(|x| x.receiver_id.as_str() == "qgold.testnet").expect("vault call");
+        let s = format!("{:?}", to_vault.actions);
+        assert!(s.contains("method_name: [109, 105, 110, 116, 95, 102, 111, 114]") && s.contains("attached_deposit: NearToken { inner: 10 }"), "{s}");
+        assert!(!receipts.iter().any(|x| x.receiver_id.as_str() == "alice.testnet"));
+        assert_eq!(r.pending, 10);
     }
     #[test]
     fn failed_withdrawal_restores_exact_credit_even_while_paused() {

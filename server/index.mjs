@@ -144,6 +144,7 @@ import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mj
 import { createTreasuryView } from "./native/stnear-treasury.mjs";
 import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
 import { combineStakeReaders, createYieldVaultReader, yieldVaultSettings } from "./native/yield-vault-reader.mjs";
+import { createQgoldVaultReader, qgoldVaultSettings } from "./native/qgold-vault.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
@@ -626,6 +627,20 @@ const yieldVaultConfig = yieldVaultSettings(
 const yieldVaultReader = yieldVaultConfig.enabled
   ? createYieldVaultReader({ provider, settings: yieldVaultConfig, priceEur: () => nearPrice.eur() })
   : null;
+// QGOLD vault (docs/QGOLD-VAULT.md): backing, R, exits and the invariant monitor.
+// Contract from QGOLD_VAULT_ACCOUNT or public/native-qgold-vault-<network>.json.
+const qgoldManifestPath = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+const qgoldConfig = qgoldVaultSettings(
+  process.env,
+  existsSync(qgoldManifestPath) ? JSON.parse(readFileSync(qgoldManifestPath, "utf8")) : null,
+);
+const qgoldVault = qgoldConfig.enabled
+  ? createQgoldVaultReader({ provider, settings: qgoldConfig, log: (event, data) => console.warn(JSON.stringify({ event, ...data })) })
+  : null;
+if (qgoldVault) {
+  void qgoldVault.read().catch(() => {});
+  setInterval(() => void qgoldVault.read({ fresh: true }).catch(() => {}), 60_000).unref();
+}
 // Every Staker source besides the native vault, summed for the Keeper's reading.
 const stakerReaders = combineStakeReaders([liquidStake, yieldVaultReader]);
 // Rhea Lend markets (docs/YIELD-VAULT-PLAN.md): read-only rates and utilization.
@@ -1082,6 +1097,7 @@ async function api(req, res, url) {
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
       season: season ? season.status() : { status: "off" },
       badges: badgeService ? badgeService.status() : { status: "off" },
+      qgoldVault: qgoldVault ? qgoldVault.status() : { status: "not-configured" },
       chainLedger: chainLedger
         ? { ...chainLedger.status(), contract: ledgerChain.contractId, recorder: ledgerChain.ready ? "ready" : ledgerChain.error }
         : { mode: "off" },
@@ -1490,6 +1506,20 @@ async function api(req, res, url) {
   if (url.pathname === "/api/yield/markets" && req.method === "GET") {
     assert(rheaMarkets, "Rhea Lend markets are not open here.", 503, "RHEA_DISABLED");
     return respond(res, await rheaMarkets.read());
+  }
+  if (url.pathname === "/api/qgold" && req.method === "GET") {
+    assert(qgoldVault, "The QGOLD vault is not open here.", 503, "QGOLD_DISABLED");
+    const m = qgoldConfig.manifest || {};
+    return respond(res, {
+      ...(await qgoldVault.read()),
+      token: { contract: m.tokenContract || qgoldConfig.contract, symbol: "QGOLD", decimals: 6 },
+      methods: m.methods || null,
+      exitPaths: m.exitPaths || ["near_instant", "near_queue"],
+    });
+  }
+  if (url.pathname === "/api/qgold/account" && req.method === "GET") {
+    assert(qgoldVault, "The QGOLD vault is not open here.", 503, "QGOLD_DISABLED");
+    return respond(res, await qgoldVault.account(url.searchParams.get("account") || ""));
   }
   if (url.pathname === "/api/yield/position" && req.method === "GET") {
     assert(yieldVaultReader, "The yield vault is not open here.", 503, "YIELD_VAULT_DISABLED");
