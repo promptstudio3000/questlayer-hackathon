@@ -49,10 +49,6 @@
     "public/native-wardrobe-testnet.json:wasmSha256": {
       "contract": "questlayer_collectibles",
       "sha256": "1cb649afccc9ccfb7ef2a99e29bf346e312b94915feb17fdd1c4fdfb8bf07488"
-    },
-    "public/native-ledger-testnet.json:wasmSha256": {
-      "contract": "questlayer_ledger",
-      "sha256": "3d532a66f4e735d2ac234e4e7cdc288cfcf6e4bac123fb20019af71e15a2a5a1"
     }
   }
 }
