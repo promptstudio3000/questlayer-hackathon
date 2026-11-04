@@ -100,19 +100,20 @@ test("a GPS coin claim far from the last accepted fix is refused; arena coins sk
   const db = openDatabase(":memory:");
   try {
     const player = createPlayer(db, "Spoofer");
-    const gps = await ensureWorld(db, HOME, false, Date.now());
-    const coins = worldView(db, gps.id, player).coins;
+    // Pinned clock: the generated world depends on the local date.
+    const gps = await ensureWorld(db, HOME, false, NOW);
+    const coins = worldView(db, gps.id, player, { now: NOW }).coins;
     const a = coins[0];
     const b = coins.find((c) => distance(c, a) > 500);
     assert.ok(b, "fixture needs two coins at least 500 m apart");
-    const t = Date.now();
+    const t = NOW;
     claimCoin(db, player, a.id, fix(a, t), t);
     assert.throws(
       () => claimCoin(db, player, b.id, fix(b, t + 2000), t + 2000),
       (e) => e.code === "IMPLAUSIBLE_MOVE",
     );
-    const arena = await ensureWorld(db, HOME, true, Date.now());
-    const coin = worldView(db, arena.id, player).coins[0];
+    const arena = await ensureWorld(db, HOME, true, NOW);
+    const coin = worldView(db, arena.id, player, { now: NOW }).coins[0];
     const r = claimCoin(db, player, coin.id, fix(coin, t + 3000, 0), t + 3000);
     assert.ok(r.value > 0);
   } finally {
