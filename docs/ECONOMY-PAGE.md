@@ -26,6 +26,11 @@ moves through it. No sign-in, no actions, no player ids.
     written by `scripts/intents-fees-testnet.mjs`: the 2 % P2P fee on the
     NEAR Intents verifier and each sweep into the prize pool (withdraw and
     `fund_rewards` transactions). Only finished sweeps count in `swept`.
+  - **Aura royalty** (`auraRoyalties`) from `public/native-royalties-testnet.json`,
+    written by `scripts/collectibles-royalty-testnet.mjs`: the 2 % NEP-199
+    royalty on Aura resales through other marketplaces (Mintbase), its payee,
+    the sweeps into the prize pool and the Mintbase proof sale. Hidden until
+    the royalty is set.
 - Every amount is a yoctoNEAR string; the page formats with BigInt-safe string
   math (`src/economy/format.ts`) and never rounds small yield to zero.
 - Each source fails on its own: a host without native rewards or with RPC
