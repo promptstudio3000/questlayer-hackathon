@@ -101,6 +101,9 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
         },
         nft_supply_for_owner: args.account_id === "alice.testnet" ? "2" : "0",
         nft_token: args.token_id === "avatar:alice.testnet" ? avatar : null,
+        // The QGOLD vault reader polls these once its manifest exists.
+        get_state: null,
+        audit: null,
       };
       res.setHeader("content-type", "application/json");
       res.end(
