@@ -7,6 +7,7 @@ import { NativeRewards } from "../server/native/rewards.mjs";
 import { nativeManifest } from "../server/native/reward-manifest.mjs";
 import { manifestCost } from "../server/native/allocation.mjs";
 import {
+  auraRoyalties,
   budgetByDate,
   confirmedPayouts,
   createPublicLedger,
@@ -137,6 +138,7 @@ test("ledger answers on a host without native rewards", async () => {
   assert.deepEqual(l.days, []);
   assert.equal(l.yieldCycle, null);
   assert.equal(l.tradeFees, null);
+  assert.equal(l.auraRoyalties, null);
 });
 
 test("trade fees count only sweeps that reached the prize pool", () => {
@@ -157,6 +159,34 @@ test("trade fees count only sweeps that reached the prize pool", () => {
   assert.equal(t.sweeps[0].fundUrl, `${EXPLORER_BASE}/txns/${hash("C")}`);
   assert.equal(t.sweeps[1].fundUrl, null);
   assert.equal(tradeFees(null), null);
+});
+
+test("Aura royalties count only funded sweeps and show the Mintbase proof sale", () => {
+  const hash = (c) => c.repeat(44);
+  const r = auraRoyalties({
+    network: "testnet",
+    contract: "nfts.questlayer-dev-20261101.testnet",
+    royalty: { account_id: "royalties.questlayer-dev-20261101.testnet", bps: 200 },
+    sweeps: [
+      { receiptId: "aura-royalties-2026-11-05", amount: "15000000000000000000000", fundTransaction: hash("E"), finishedAt: "2026-11-05T05:40:00Z" },
+      { receiptId: "aura-royalties-2026-11-06", amount: "12000000000000000000000", startedAt: "2026-11-06T05:40:00Z" },
+    ],
+    mintbaseProof: {
+      market: "market-v2-beta.mintspace2.testnet",
+      tokenId: "aura:polar:9",
+      price: "100000000000000000000000",
+      royaltyReceived: "1980000000000000000000",
+      transactions: [{ label: "Mint a proof Aura to the operator", transaction: hash("F") }, { label: "Buy aura:polar:9 on Mintbase", transaction: hash("G") }],
+    },
+  });
+  assert.equal(r.bps, 200);
+  assert.equal(r.payee, "royalties.questlayer-dev-20261101.testnet");
+  assert.equal(r.swept, "15000000000000000000000");
+  assert.deepEqual(r.sweeps.map((s) => s.funded), [true, false]);
+  assert.equal(r.mintbaseProof.buyUrl, `${EXPLORER_BASE}/txns/${hash("G")}`);
+  // No royalty set yet: nothing to show.
+  assert.equal(auraRoyalties({ contract: "nfts.x.testnet", royalty: null, sweeps: [] }), null);
+  assert.equal(auraRoyalties(null), null);
 });
 
 test("the cycle proof flushes add up to the realized yield it claims", () => {

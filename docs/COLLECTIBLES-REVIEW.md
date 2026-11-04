@@ -166,6 +166,65 @@ Reviewer did not write this change. Scope: `git diff 1f23d9c 9ad3e3d -- contract
 
 Reproduced on Linux x86_64 in Docker `rust:1.97.0` (`linux/amd64`) with `bash scripts/build-contracts.sh --no-check`: `questlayer_collectibles.wasm` 376,458 bytes, matching `contracts/collectibles/WASM_SHA256` and `contracts/wasm-sha256.json`. All 41 collectibles contract tests pass, and `tests/aura-catalog`, `award-vouchers`, `npc-editions` and `season` pass (25/25). Reviewed sha256 **`e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9`**.
 
+## NEP-199 royalties (2026-11-04)
+
+The contract changed after the patron and season review. Diff: `git diff e2be467 <this PR head> -- contracts/collectibles`
+(source and `WASM_SHA256`). Owner approval: Lubos approved the QGOLD tokenomics on 4 Nov 2026 12:58, including
+Mintbase/Paras integration and 2 % on P2P trades to the treasury (thread "Put every trade on chain"); testnet only.
+
+- New owner-only `set_royalty(royalty: Option<Royalty>)`: 1 yocto, predecessor must be `tokens.owner_id`, `bps` in
+  1..=1000 (at most 10 %); `None` removes it. `get_royalty()` reads it.
+- The royalty is stored with `env::storage_write` under the raw key `b"royalty"`, outside the Borsh `Collectibles`
+  struct, so the state layout and schema 3 are unchanged and the upgrade has no migration. No collection prefix in
+  this contract starts with `royalty`.
+- New NEP-199 views and calls: `nft_payout(token_id, balance, max_len_payout)` and
+  `nft_transfer_payout(receiver_id, token_id, approval_id, memo, balance, max_len_payout)`. The split is computed for
+  the current owner before the transfer, then the contract's own `NonFungibleTokenCore::nft_transfer` runs, so every
+  existing transfer rule holds (1 yocto, owner or approved account with the matching approval id, equipment cleared,
+  events).
+- Split: `cut = balance / 10_000 * bps + balance % 10_000 * bps / 10_000` (no overflow for any u128), the owner gets
+  `balance - cut`, so the parts always sum to `balance`. No royalty entry when the cut is 0 or when the payee is the
+  seller. More receivers than `max_len_payout` panics ("Too many payout receivers"); there are at most 2.
+- Tests: `royalty_payout_pays_the_treasury_share_and_the_rest_to_the_owner` (split, rounding, `u128::MAX`, a market
+  `nft_transfer_payout` after `nft_approve`, payee selling its own Aura, off again), `royalty_payout_respects_max_len`,
+  `only_the_owner_sets_the_royalty`, `royalty_is_capped_at_ten_percent`. All 45 collectibles contract tests pass.
+
+Build (rust 1.97.0 on linux x86_64, `bash scripts/build-contracts.sh --no-check`, the same command the Docker build
+runs; every other contract reproduced its pinned hash byte for byte): `questlayer_collectibles.wasm` 398,418 bytes,
+sha256 `52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16`, recorded in `contracts/collectibles/WASM_SHA256` and
+`contracts/wasm-sha256.json`. Code storage rises by about 0.22 NEAR (22 KB). Until the testnet upgrade runs,
+`public/native-claims-testnet.json` and `public/native-editions-testnet.json` still describe the deployed `e2a41b19…`
+build and are listed under `testnetDeploymentsNotFromThisBuild`; the upgrade script removes them.
+
+### Independent re-review (2026-11-04)
+
+Reviewer: a separate review agent that did not write this change, given the diff and the Mintbase facts but not the
+author's conclusions. Scope: `git diff e2be467 -- contracts/collectibles/src/lib.rs`. Result: **confirmed, no changes
+needed.**
+
+- **Access.** Only `tokens.owner_id` can set or clear the royalty (1 yocto enforced); no other path writes the
+  `royalty` key. The 1..=1000 bps cap holds.
+- **Exact split.** With `balance = q·10_000 + r`, the cut `q·bps + r·bps/10_000` equals `floor(balance·bps/10_000)`,
+  never exceeds `balance` and no product overflows u128 (also with overflow checks on), so the parts sum to `balance`
+  exactly. The JSON is the NEP-199 shape `{"payout": {"<account>": "<u128 string>"}}`.
+- **Transfer rules.** `nft_transfer_payout` reads the owner, computes the split and calls the contract's own
+  `nft_transfer` (equipment cleared, 1 yocto, owner or approved sender with a matching approval id, owner ≠ receiver,
+  `NftTransfer` event) in the same receipt, so a payout is never returned without the transfer. There is no
+  transfer-time soulbound rule in this contract; claim-only editions limit minting only.
+- **Storage.** No collision: the existing prefixes are `t`/`tv`/`tn`, `m`, `e`, `a`, `an`, `c`, `s`, `w`, `w2`, `q2`
+  and `STATE`; `migrate`/`migrate_v3` touch only `STATE`. The ~100-byte record costs the contract about 0.001 NEAR.
+- **Gas.** Estimated about 4 TGas (a real equipment-clearing `nft_transfer` on this contract plus one storage read
+  and the JSON result), well within the 15 TGas Mintbase attaches. Estimate, not measured on the market.
+- **Mintbase ban risks.** None found: the payee selling drops the royalty entry (no duplicate keys), a zero cut is
+  skipped, at most 2 entries against Mintbase's 50. Informational: the payee account must exist or Mintbase's
+  transfer to it bounces; the royalty script creates it before `set_royalty`. Informational: `set_royalty({})`
+  without an argument also clears the royalty (serde reads a missing `Option` as `None`); owner-only, so left as is.
+
+Reproduced on Linux x86_64 with rust 1.97.0 (`bash scripts/build-contracts.sh --no-check`, and again from a clean
+target directory): `questlayer_collectibles.wasm` 398,418 bytes, matching `contracts/collectibles/WASM_SHA256` and
+`contracts/wasm-sha256.json`. All 45 collectibles contract tests pass. Reviewed sha256
+**`52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16`**.
+
 ## Reproducible builds in CI
 
 The `reproducible-contracts` CI job builds every contract with `scripts/build-contracts-docker.sh` (Docker `rust:1.97.0`, `linux/amd64`), uploads the WASM files and `SHA256SUMS` as the `contract-wasm-linux-amd64` artifact, and runs `scripts/check-wasm-hashes.mjs`. It fails when any WASM differs from `contracts/wasm-sha256.json`, when the collectibles WASM differs from `contracts/collectibles/WASM_SHA256` or the last reviewed hash above, or when a `wasmSha256` in `public/native-*-testnet.json` is neither a current build nor listed with its exact hash under `testnetDeploymentsNotFromThisBuild` (older testnet deployments built before path remapping). A `codeHash` next to it must be the base58 of the same sha256. On macOS run `npm run contracts:docker`; after an intended contract change, `npm run contracts:docker -- --write` (or copy the hashes from the CI job summary). Deploy only the Docker or CI artifact.

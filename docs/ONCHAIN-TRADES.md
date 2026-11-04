@@ -21,6 +21,36 @@ moves what was collected into the prize pool with `fund_rewards` (receipt `inten
 sales settle on the same verifier and pay the same fee on the buyer's side; trade-ups move no wNEAR and pay none. Details: docs/NEAR-INTENTS-MARKET.md,
 "Trade fee to the treasury".
 
+## Aura resales on other marketplaces (NEP-199 royalty)
+
+Auras are NEP-171 tokens, so players can also resell them on NEAR marketplaces outside the game. The collectibles
+contract implements NEP-199 (`nft_payout`, `nft_transfer_payout`), so a marketplace that honours royalties pays the
+treasury **2 % (200 bps)** of each resale, the same rate as the P2P fee. The royalty goes to a dedicated account,
+`royalties.<operator>`, that receives nothing else; `scripts/collectibles-royalty-testnet.mjs sweep` moves what
+arrived into the prize pool with `fund_rewards` (receipt `aura-royalties-<date>`), and the /economy page shows the
+payee, the swept total and the proof sale. The owner sets the royalty with `set_royalty` (1 yocto, at most 10 %,
+`None` turns it off); it is stored under its own storage key, so the upgrade has no state migration. Contract review:
+docs/COLLECTIBLES-REVIEW.md, "NEP-199 royalties".
+
+Marketplaces checked on testnet (4 Nov 2026, read from the chain):
+
+| Marketplace | Testnet contract | Can list Auras? |
+| --- | --- | --- |
+| Mintbase interop market | `market-v2-beta.mintspace2.testnet` (owner `mintspace2.testnet`) | **Yes**, any NEP-171 contract. The seller pays 0.01 NEAR listing storage (`deposit_storage`), then `nft_approve` with msg `{"price": "<yocto>", "ft_contract": null}`; the buyer calls `buy`. Mintbase keeps 1 % without a referrer and asks `nft_transfer_payout` to split the rest (max 50 receivers, 15 TGas). A payout that is unparseable, too long or larger than the balance gets the NFT contract **banned**, so the payout always sums exactly to the balance. |
+| Paras marketplace | `paras-marketplace-v2.testnet` | **Not without Paras.** It accepts only allow-listed NFT contracts (`approved_nft_contract_ids` = `paras-token-v2.testnet` only) and takes 5 %. Listing Auras needs the Paras team to add our contract; the royalty would then work the same way. |
+
+Mac steps after the collectibles upgrade (`scripts/upgrade-collectibles-editions-testnet.mjs --execute`):
+
+1. `node scripts/collectibles-royalty-testnet.mjs set`, then `set --execute`: creates `royalties.<operator>` (0.05 NEAR)
+   and calls `set_royalty` with 200 bps. Commit `public/native-royalties-testnet.json`.
+2. `node scripts/collectibles-royalty-testnet.mjs mintbase-proof`, then `--execute`: mints one fresh `polar` Aura to the
+   operator, lists it on Mintbase for 0.1 test NEAR, buys it from a throwaway `mb-buyer.<operator>` account and
+   checks that the royalties account received exactly what `nft_payout` promised (0.00198 NEAR). No player's Aura moves.
+3. `node scripts/collectibles-royalty-testnet.mjs sweep` whenever the royalties account holds at least 0.01 NEAR
+   above its 0.05 NEAR reserve (it can run next to the daily fee sweep).
+
+Mainnet needs the same upgrade and `set_royalty` with Lubos's go; nothing here touches mainnet.
+
 ## On-chain proof (for the explorer link)
 
 - `NpcTrade` views (accept, complete, `GET /api/npc/trades`) carry `txHash` (the fill, or the last hand-over) and
@@ -43,6 +73,8 @@ sales settle on the same verifier and pay the same fee on the buyer's side; trad
 | Database market closed | `server/index.mjs` (`PRACTICE_MARKET_ON_CHAIN`) |
 | Client on-chain steps | `src/chain-trades.ts`, `src/NpcSheet.tsx`, registration in `src/App.tsx` |
 | Sell from the collection on NEAR | `src/Inventory.tsx`, `onSell` in `src/App.tsx`, `sellAuraOnIntents` in `src/intents-order.ts` |
+| NEP-199 royalty, payout split | `contracts/collectibles/src/lib.rs` (`set_royalty`, `nft_payout`, `nft_transfer_payout`) |
+| Royalty payee, sweep, Mintbase proof | `scripts/collectibles-royalty-testnet.mjs`, record `public/native-royalties-testnet.json`, `auraRoyalties` in `server/native/public-ledger.mjs` |
 
 ## Not yet on chain
 

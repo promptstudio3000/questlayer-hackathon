@@ -1,7 +1,9 @@
 // Code-only testnet upgrade of the collectibles Aura editions: catalog v2
 // (PR #32), the NPC/monster-only editions (N5), the L5-L10 level editions and
 // the patron + hackathon season editions, whose CLAIM_ONLY_EDITIONS mint only
-// for earned:npc: / earned:monster: / earned:level: / earned:season: claims.
+// for earned:npc: / earned:monster: / earned:level: / earned:season: claims,
+// and NEP-199 royalties (nft_payout, nft_transfer_payout, owner-only
+// set_royalty; off until scripts/collectibles-royalty-testnet.mjs set).
 // No state migration: schema stays 3, every token, minted counter, equipment
 // slot and the award signer are compared before and after. Only the project's
 // own testnet operator key in .data/near-operator.json signs.
@@ -180,7 +182,7 @@ if (topUp > 0n)
     }),
   );
 if (!alreadyDeployed)
-  await record("deploy Aura editions collectibles code (no state migration)", () =>
+  await record("deploy reviewed collectibles code (no state migration)", () =>
     contract.signAndSendTransaction({
       receiverId: contractId,
       actions: [actions.deployContract(wasm)],
@@ -218,15 +220,17 @@ const proof = {
   tokensPreserved: Number(before.supply),
   equipmentPreserved: Object.keys(before.equipment).length,
   awardSignerPreserved: before.awardSigner === after.awardSigner,
+  // NEP-199 is live but off until the owner calls set_royalty.
+  royalty: await view("get_royalty"),
   transactions,
 };
-mkdirSync("output/qa/patron-season-editions", { recursive: true });
+mkdirSync("output/qa/collectibles-royalties", { recursive: true });
 writeFileSync(
   "public/native-editions-testnet.json",
   JSON.stringify(proof, null, 2) + "\n",
 );
 writeFileSync(
-  "output/qa/patron-season-editions/testnet-upgrade-proof.json",
+  "output/qa/collectibles-royalties/testnet-upgrade-proof.json",
   JSON.stringify(proof, null, 2) + "\n",
 );
 // The claims manifest carries the code fingerprint the server verifies.
@@ -234,7 +238,7 @@ const claims = JSON.parse(readFileSync("public/native-claims-testnet.json", "utf
 assert.equal(claims.contractId, contractId);
 claims.wasmSha256 = wasmSha256;
 claims.codeUpgrade =
-  "Code-only Aura editions upgrade (N5 NPC/monster editions, the L5-L10 level editions, the patron edition and the hackathon season edition); award signer, tokens and equipment unchanged. See public/native-editions-testnet.json.";
+  "Code-only collectibles upgrade: the Aura editions (N5 NPC/monster, L5-L10 levels, patron, hackathon season) plus NEP-199 royalties (off until set_royalty); award signer, tokens and equipment unchanged. See public/native-editions-testnet.json and docs/COLLECTIBLES-REVIEW.md.";
 writeFileSync("public/native-claims-testnet.json", JSON.stringify(claims, null, 2) + "\n");
 // Both records now match the reproducible build, so they leave the allowlist.
 for (const file of ["native-claims-testnet.json", "native-editions-testnet.json"])
