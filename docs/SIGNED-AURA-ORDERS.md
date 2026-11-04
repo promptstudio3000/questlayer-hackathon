@@ -136,9 +136,11 @@ Sources: [Verifier introduction](https://docs.near-intents.org/integration/verif
 | Message body | `questlayer_aura_order` terms | `{signer_id, deadline (ISO 8601), intents:[…]}` | **No.** The Verifier would not accept a QuestLayer order. `intentsTokenDiffSketch()` shows the equivalent `token_diff` shape, labelled `unverified-sketch`. |
 | Nonce | 32 random bytes, kept until the deadline, then prunable | 32 bytes as `[4-byte salt][28 bytes]`, with a rotating contract salt | Same size. The structure differs. |
 | Settlement asset | Native NEAR attached or deposited in the market | Balances held inside the Verifier, with wNEAR as an NEP-141 token | **No.** An Intents path needs wNEAR wrapping and Verifier deposits. |
-| NFT support | Escrowed NEP-171 Auras | `nft_withdraw` exists. The docs do not show the NEP-171 token-id format or NFTs inside `token_diff`. | **Unproven.** It must be confirmed against the pinned Verifier source. |
+| NFT support | Escrowed NEP-171 Auras | `nep171:<contract>:<token id>` balances; `token_diff` moves NFTs with no fee (verifier v0.4.5 source, 4 Nov 2026) | **Supported by the source.** See [NEAR-INTENTS-MARKET.md](NEAR-INTENTS-MARKET.md) for the experimental testnet market. |
 | Matching | Taker fills one maker order on chain | A solver bundles opposite `token_diff` intents in `execute_intents` | Different. |
 | Deployment | Our testnet contract | The canonical Verifier is mainnet-only (rule I10) | There is **no official testnet Intents endpoint**. |
+
+**Update 4 Nov 2026:** an experimental Aura ↔ wNEAR market on a self-deployed testnet verifier now exists; see [NEAR-INTENTS-MARKET.md](NEAR-INTENTS-MARKET.md).
 
 **Conclusion.** QuestLayer orders use the Intents **signing standard and key model**. They are not executable NEAR Intents, and no Intents verifier, testnet or mainnet, has executed any of them. The canonical NFT/wNEAR exchange through `intents.near` is still the separate W14 mainnet gate (rule I10), and it needs explicit approval. A self-deployed Verifier on testnet would only be an experimental compatibility test.
 
