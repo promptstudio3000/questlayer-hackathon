@@ -24,7 +24,7 @@ import { join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
-import { openScreen } from "./lib/e2e-nav.mjs";
+import { closeOpenSheet, openScreen } from "./lib/e2e-nav.mjs";
 
 const require = createRequire(import.meta.url);
 const AXE_SOURCE = require("axe-core").source;
@@ -649,6 +649,9 @@ async function runDevice(name, server) {
       await cardPage.locator(".profile-tiles button").filter({ hasText: /^Market/ }).waitFor();
       await check("Profile screen");
       await capture(cardPage, "home-screen-card-profile-screen");
+      // The offer waits while a sheet owns the bottom; it returns on close.
+      await closeOpenSheet(cardPage);
+      await card.waitFor({ state: "visible" });
       await card.getByRole("button", { name: /Got it|Not now/ }).click();
       await card.waitFor({ state: "detached" });
     } else console.log("  no home-screen card on this device");
