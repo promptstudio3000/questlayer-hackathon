@@ -1,5 +1,5 @@
 [workspace]
-members = ["game", "collectibles", "market", "rewards", "vault", "vault-factory", "tasks", "creators", "npc-games", "badges", "yield-vault", "ledger", "soulbound-ft", "qgold-escrow"]
+members = ["game", "collectibles", "market", "rewards", "vault", "vault-factory", "tasks", "creators", "npc-games", "badges", "yield-vault", "ledger", "soulbound-ft", "qgold", "qgold-escrow"]
 resolver = "2"
 
 [workspace.dependencies]

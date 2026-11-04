@@ -15,6 +15,7 @@ for (const relative of [
   "./fair-play.mjs",
   "./map-read-indexes.mjs",
   "./hot-path-indexes.mjs",
+  "./identity/schema.mjs",
   "./creators/completion.mjs",
   "./moderation.mjs",
   "./native/creator-money.mjs",

@@ -1852,6 +1852,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "questlayer-qgold"
+version = "0.1.0"
+dependencies = [
+ "near-sdk",
+ "primitive-types",
+]
+
+[[package]]
 name = "questlayer-qgold-escrow"
 version = "0.1.0"
 dependencies = [

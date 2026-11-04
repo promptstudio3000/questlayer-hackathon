@@ -480,6 +480,7 @@ export default function App() {
   const [walletChoices, setWalletChoices] = useState<
     { id: string; name: string; icon: string; website: string }[] | null
   >(null);
+  const [walletChoiceKind, setWalletChoiceKind] = useState<"near" | "evm">("near");
   const walletChoice = useRef<{
     resolve: (id: string) => void;
     reject: (error: Error) => void;
@@ -1799,6 +1800,7 @@ export default function App() {
       );
     const walletId = await new Promise<string>((resolve, reject) => {
       walletChoice.current = { resolve, reject };
+      setWalletChoiceKind("near");
       setWalletChoices(choices);
     });
     await new Promise<void>((resolve) =>
@@ -1859,6 +1861,40 @@ export default function App() {
             ? tr("Welcome back, explorer. Your account restored your progress.")
             : tr("Your explorer is ready. Practice GOLD stays separate from secured rewards.")
           : tr("Account linked. Practice GOLD stays separate from secured rewards."),
+      );
+    });
+  }
+  // Ethereum wallets (MetaMask, Rabby): sign in, or link to this explorer.
+  // The wallet signs readable text only; the module loads on demand.
+  async function connectEthereum(options: { signIn?: boolean; name?: string } = {}) {
+    const name = options.name?.trim() || "Explorer";
+    if (options.signIn && (name.length < 2 || name.length > 24)) {
+      notify(tr("Pick a name between 2 and 24 characters."), true);
+      return;
+    }
+    await action("evm-wallet", async () => {
+      const evm = await import("./evm-wallet");
+      const wallets = await evm.discoverEvmWallets();
+      if (!wallets.length)
+        throw Error(tr("No Ethereum wallet was found in this browser. Install MetaMask or Rabby, or keep exploring without one."));
+      let choice = wallets[0];
+      if (wallets.length > 1) {
+        const id = await new Promise<string>((resolve, reject) => {
+          walletChoice.current = { resolve, reject };
+          setWalletChoiceKind("evm");
+          setWalletChoices(wallets.map(({ id, name, icon, website }) => ({ id, name, icon, website })));
+        });
+        choice = wallets.find((w) => w.id === id) || choice;
+      }
+      const r = await evm.signInWithEthereum(choice, { name, link: !options.signIn });
+      setPlayer(r.player);
+      if (options.signIn) setNativePlay(true);
+      notify(
+        options.signIn
+          ? r.returning
+            ? tr("Welcome back, explorer. Your account restored your progress.")
+            : tr("Your explorer is ready. Practice GOLD stays separate from secured rewards.")
+          : tr("Ethereum wallet linked. It can sign NEAR Intents trades for your explorer."),
       );
     });
   }
@@ -4307,6 +4343,7 @@ export default function App() {
                   <AccountSessions
                     player={player}
                     onConnect={connectNear}
+                    onConnectEthereum={() => connectEthereum()}
                     onSecure={() => void attachPasskey()}
                     onRevoke={revokeGameSessions}
                     busy={busy}
@@ -4706,10 +4743,10 @@ export default function App() {
         </div>
       )}
       {walletChoices && (
-        <Dialog label={tr("Choose a NEAR wallet")} onClose={() => chooseWallet(null)}>
+        <Dialog label={walletChoiceKind === "evm" ? tr("Choose an Ethereum wallet") : tr("Choose a NEAR wallet")} onClose={() => chooseWallet(null)}>
           <div className="wallet-select">
             <div className="panel-heading">
-              <h2>{tr("Choose a NEAR wallet")}</h2>
+              <h2>{walletChoiceKind === "evm" ? tr("Choose an Ethereum wallet") : tr("Choose a NEAR wallet")}</h2>
               <button
                 className="icon-button"
                 aria-label={tr("Cancel wallet connection")}
@@ -4761,6 +4798,7 @@ export default function App() {
         <Welcome
           error={toast?.error ? toast.text : undefined}
           onNear={(name) => connectNear({ signIn: true, name })}
+          onEthereum={(name) => connectEthereum({ signIn: true, name })}
           busy={busy}
           action={action}
           onPlayer={(p) => {
@@ -4840,6 +4878,7 @@ function Welcome({
   busy,
   error,
   onNear,
+  onEthereum,
   action,
   onPlayer,
   onRestore,
@@ -4848,6 +4887,7 @@ function Welcome({
   error?: string;
   onRestore: () => Promise<boolean>;
   onNear: (name: string) => Promise<void>;
+  onEthereum: (name: string) => Promise<void>;
   action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
   onPlayer: (p: Player) => void;
 }) {
@@ -4976,6 +5016,16 @@ function Welcome({
             {busy === "near"
               ? tr("Waiting for your wallet…")
               : tr("Continue with an external NEAR wallet")}
+          </button>
+          <button
+            className="passkey-button"
+            disabled={!!busy}
+            onClick={() => void onEthereum(name || "Explorer")}
+          >
+            <Wallet size={18} />
+            {busy === "evm-wallet"
+              ? tr("Waiting for your wallet…")
+              : tr("Continue with MetaMask or Rabby")}
           </button>
           <p className="identity-note">
             {tr("A wallet signs a message, not a payment. Returning wallets restore the same explorer.")}</p>

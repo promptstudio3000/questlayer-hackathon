@@ -5,6 +5,7 @@ import {
   ArrowClockwise,
   SignOut,
   Devices,
+  Wallet,
 } from "@phosphor-icons/react";
 import { api } from "./api";
 import type { Player } from "./types";
@@ -13,6 +14,7 @@ import { tr } from "./i18n";
 export type SessionView = {
   network: NearNetwork;
   activeSessionCount: number;
+  evmWallets?: { address: string; wallet: string | null }[];
   hasMoreSessions: boolean;
   sessions: {
     id: string;
@@ -34,6 +36,7 @@ const readCurrentSessions = () => api<SessionView>("/identity/sessions");
 export function AccountSessions({
   player,
   onConnect,
+  onConnectEthereum,
   onSecure,
   onRevoke,
   busy,
@@ -42,6 +45,7 @@ export function AccountSessions({
   readSessions?: () => Promise<SessionView>;
   player: Player;
   onConnect: () => void;
+  onConnectEthereum?: () => Promise<void> | void;
   onSecure?: () => void;
   onRevoke: (account: string) => Promise<boolean>;
   busy: string;
@@ -141,6 +145,8 @@ export function AccountSessions({
                   <span>
                     {s.kind === "near-wallet"
                       ? tr("NEAR account")
+                      : s.kind === "evm-wallet"
+                        ? tr("Ethereum wallet")
                       : s.kind === "demo-passkey"
                         ? tr("Passkey")
                         : s.kind === "legacy"
@@ -157,6 +163,30 @@ export function AccountSessions({
               ))}
             </ul>
           </details>
+          {onConnectEthereum && (
+            <details className="native-extras">
+              <summary>
+                <Wallet size={20} /> {" "}{tr("Ethereum wallets")}</summary>
+              <p className="play-hint">
+                {tr("MetaMask or Rabby signs readable messages only: it brings this explorer back and can sign NEAR Intents trades. No Ethereum transaction is sent.")}</p>
+              {(state.evmWallets || []).map((w) => (
+                <p className="session-account" key={w.address}>
+                  <Wallet size={18} />
+                  {w.wallet ? `${w.wallet} ` : ""}
+                  {w.address.slice(0, 6)}…{w.address.slice(-4)}
+                </p>
+              ))}
+              <button
+                className="secondary-button"
+                onClick={async () => {
+                  await onConnectEthereum();
+                  await refresh();
+                }}
+                disabled={!!busy}
+              >
+                <Wallet size={20} /> {" "}{tr("Link MetaMask or Rabby")}</button>
+            </details>
+          )}
           <details className="native-extras">
             <summary>{tr("Ways back in")}</summary>
             <p className="play-hint">
