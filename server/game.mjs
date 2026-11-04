@@ -34,6 +34,7 @@ import {
   streetFindIds,
 } from "./street-finds.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
+import { recordChainAction, fixEvidence } from "./chain-ledger/service.mjs";
 import {
   XP_CAP_NOTES,
   capLocationXp,
@@ -149,17 +150,28 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       xp,
       player,
     );
+    const chain = recordChainAction(db, {
+      player,
+      kind: find ? "find" : "coin",
+      xp,
+      gold: coin.value_u,
+      at: coin,
+      ref: coinId,
+      evidence: { world: coin.world_id, fix: fixEvidence(fix), arena: !!world.arena },
+      now,
+    });
     history(
       db,
       player,
       "coin",
       find ? "Street find" : "Street coin",
       coin.value_u,
-      { coin: coinId, ...(find ? { find: true } : {}), ...(cap ? { xpCap: cap } : {}) },
+      { coin: coinId, ...(find ? { find: true } : {}), ...(cap ? { xpCap: cap } : {}), ...(chain ? { chain: { id: chain.id, status: chain.status, tx: null } } : {}) },
     );
     return {
       value: coin.value_u,
       xp,
+      ...(chain ? { chain } : {}),
       ...(find ? { find: true } : {}),
       ...(cap ? { xpCap: cap, note: XP_CAP_NOTES[cap] } : {}),
     };
@@ -241,11 +253,22 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
     item,
     now,
   });
+  const chain = recordChainAction(db, {
+    player,
+    kind: clue ? "clue" : q.kind === "chest" ? "chest" : "quest",
+    xp,
+    gold: reward,
+    at: target || q,
+    ref: q.id,
+    evidence: { world: q.world_id, fix: fixEvidence(fix), result: resultId, ...(item?.id ? { item: item.id } : {}) },
+    now,
+  });
   history(db, player, "quest", q.title, reward, {
     quest: q.id,
     xp,
     item: item?.name,
     resultId,
+    ...(chain ? { chain: { id: chain.id, status: chain.status, tx: null } } : {}),
     ...(clue ? { clue: clue.correct } : {}),
     ...(cap ? { xpCap: cap } : {}),
   });
@@ -253,6 +276,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
     reward,
     xp,
     item,
+    ...(chain ? { chain } : {}),
     ...(clue ? { clue } : {}),
     result: results.get(player, resultId),
     replayed: false,

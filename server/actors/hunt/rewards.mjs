@@ -8,6 +8,7 @@ import { assert, id, levelFor } from "../../domain.mjs";
 import { altarOfferingsPerDay } from "../../levels.mjs";
 import { AURA_CATALOG, AURA_SUPPLY } from "../../aura-catalog.mjs";
 import { atomic, history } from "../../database.mjs";
+import { recordChainAction } from "../../chain-ledger/service.mjs";
 import { ensureModuleVersion } from "../../schema-compatibility.mjs";
 import { HUNT_SCHEMA } from "./schema.mjs";
 import { awardEditionOnce, ensureEarnedEditions } from "../../earned-editions.mjs";
@@ -76,10 +77,21 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
     return insert.run(player, source, kind, amount, dayId, JSON.stringify(data), at).changes === 1;
   }
 
+  let lastChain = null;
   function addXp(player, source, xp, dayId, title, at, data = {}) {
+    lastChain = null;
     if (!xp || !grant(player, source, "xp", xp, dayId, data, at)) return 0;
     db.prepare("UPDATE players SET xp=xp+? WHERE id=?").run(xp, player);
-    history(db, player, "monster", title, 0, { source, xp });
+    lastChain = recordChainAction(db, {
+      player,
+      kind: source.startsWith("boss") ? "boss" : "monster",
+      xp,
+      at: data.where || null,
+      ref: source,
+      evidence: { source, title, archetype: data.archetype || null },
+      now: at ?? now(),
+    });
+    history(db, player, "monster", title, 0, { source, xp, ...(lastChain ? { chain: { id: lastChain.id, status: lastChain.status, tx: null } } : {}) });
     return xp;
   }
 
@@ -92,7 +104,8 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
     if (!db.prepare("SELECT 1 FROM players WHERE id=?").get(player)) return null;
     return atomic(db, () => {
       const out = { xp: 0, shards: null, rollTicket: false, unlocks: null, edition: null };
-      out.xp = addXp(player, source, WIN_XP[archetype], dayId, `Beat ${result.name || "a monster"}`, at, { archetype });
+      out.xp = addXp(player, source, WIN_XP[archetype], dayId, `Beat ${result.name || "a monster"}`, at, { archetype, where: result.where });
+      if (lastChain) out.chain = lastChain;
       const element = ELEMENTS.includes(result.element) ? result.element : "void";
       const room = Math.max(0, DAILY_SHARD_CAP - shardsToday.get(player, dayId).n),
         shards = Math.min(room, WIN_SHARDS[archetype]);

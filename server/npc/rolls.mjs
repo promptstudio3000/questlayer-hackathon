@@ -16,6 +16,7 @@ import { createHash, createPrivateKey, createPublicKey, randomBytes, sign } from
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { assert, GameError } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
+import { recordChainAction } from "../chain-ledger/service.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { NPC_ROLLS_SCHEMA } from "./rolls-schema.mjs";
 
@@ -294,6 +295,7 @@ export class NpcRolls {
         reward = { kind: "aura", itemId: item.id, name: item.name, rarity: item.rarity, edition: item.edition, serial: item.serial };
       } else {
         db.prepare("UPDATE players SET xp=xp+? WHERE id=?").run(CONSOLATION_XP, row.player_id);
+        recordChainAction(db, { player: row.player_id, kind: "roll", xp: CONSOLATION_XP, ref: rollId, evidence: { rollId, prize }, now: at });
         reward = { kind: "xp", xp: CONSOLATION_XP, reason: editions.length ? "sold-out" : "unknown-prize" };
       }
       db.prepare(
