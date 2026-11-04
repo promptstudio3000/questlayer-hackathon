@@ -252,3 +252,10 @@ test("token page copy stays on the public-page rules", async () => {
   assert.doesNotMatch(page, /lottery|jackpot|guaranteed return|profit/i);
   assert.match(page, /not an investment/);
 });
+
+test("vault state reads the vault contract's nested exit fields (PR #174 shape)", () => {
+  const s = vaultState({ supply: "1000000", backing: "1000000000000000000000", exit: { account_cap_24h: "7", safe_window_ms: 86400000, paths: ["near_instant", "near_queue"] }, lsts: [] });
+  assert.equal(s.exit.accountCap24h, 7n);
+  assert.equal(s.exit.safeWindowMs, 86400000);
+  assert.equal(exitPaths(s).find((p) => p.id === "lst").available, false);
+});
