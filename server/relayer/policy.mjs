@@ -516,9 +516,13 @@ export function validateDelegate(decoded, context) {
     depositIs(1n, "Intents key registration");
     demand(
       keysOf(args, ["public_key"]) &&
-        /^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(args.public_key)),
+        // ed25519 = the device key; secp256k1 (64-byte uncompressed point) =
+        // a linked Ethereum wallet that signs ERC-191 intents.
+        /^(ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}|secp256k1:[1-9A-HJ-NP-Za-km-z]{80,90})$/.test(
+          String(args.public_key),
+        ),
       "RELAY_ARGS",
-      "Register one ed25519 key.",
+      "Register one ed25519 or secp256k1 key.",
     );
   } else if (c.intents != null && c.wnear != null && receiverId === c.wnear) {
     // Moving wNEAR the player already holds into their own verifier account.

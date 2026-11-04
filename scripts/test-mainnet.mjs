@@ -7,7 +7,7 @@
 // - they boot the full server from the repository, which on mainnet needs
 //   public/mainnet-deployment.json (written only by a real slice deploy;
 //   tests/mainnet-slice.test.mjs boots a copy instead): http, http-social,
-//   near-auth, creator-runtime, original-art-http, world-pilot;
+//   near-auth, evm-auth-http, creator-runtime, original-art-http, world-pilot;
 // - they need rewards, market, tasks or creators manifests, which are outside
 //   the mainnet slice: creator-money, native-economy, native-market,
 //   native-progression, native-rewards, native-tasks,
@@ -21,6 +21,7 @@ import { spawnSync } from "node:child_process";
 export const TESTNET_FIXTURE_FILES = [
   "creator-money",
   "creator-runtime",
+  "evm-auth-http",
   "http-social",
   "http",
   "native-economy",

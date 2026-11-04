@@ -87,3 +87,15 @@ test("deposits for someone else, other methods and missing manifest are refused"
   );
   await rejects(delegate(wnear, "ft_transfer_call", { receiver_id: intents, amount: "1", msg: "" }, 1n), "RELAY_RECEIVER", ctx(withoutIntents));
 });
+
+test("a linked Ethereum wallet's secp256k1 key can be registered for ERC-191 intents", async () => {
+  // 64-byte uncompressed point, base58, as the verifier prints secp256k1 keys.
+  const evmKey = `secp256k1:${"2".repeat(87)}`;
+  const key = validateDelegate(
+    await delegate(CONTRACTS.intents, "add_public_key", { public_key: evmKey }, 1n),
+    ctx(),
+  );
+  assert.equal(key.args.public_key, evmKey);
+  await rejects(delegate(CONTRACTS.intents, "add_public_key", { public_key: "secp256k1:abc" }, 1n), "RELAY_ARGS");
+  await rejects(delegate(CONTRACTS.intents, "add_public_key", { public_key: evmKey, extra: 1 }, 1n), "RELAY_ARGS");
+});
