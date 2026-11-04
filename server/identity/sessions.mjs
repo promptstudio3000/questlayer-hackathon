@@ -3,6 +3,7 @@ import { assert, hash, id } from "../domain.mjs";
 import { atomic } from "../database.mjs";
 import { nearAccountId, verifyNearIdentity } from "./near.mjs";
 import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
+import { initializeIdentity } from "./schema.mjs";
 
 const RECOVERY_PURPOSE = "revoke-other-sessions";
 const CHALLENGE_TTL = 300_000;
@@ -18,26 +19,7 @@ export class IdentitySessions {
     this.provider = provider;
     this.now = now;
     this.verifyIdentity = verifyIdentity;
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS identity_sessions(
-        token_hash TEXT PRIMARY KEY REFERENCES sessions(token_hash) ON DELETE CASCADE,
-        public_id TEXT NOT NULL UNIQUE,
-        kind TEXT NOT NULL CHECK(kind IN ('guest','near-wallet','demo-passkey','legacy')),
-        account_id TEXT,
-        created_at INTEGER,
-        last_seen_at INTEGER,
-        verified_at INTEGER
-      );
-      CREATE TABLE IF NOT EXISTS identity_recovery_events(
-        id TEXT PRIMARY KEY,
-        player_id TEXT NOT NULL REFERENCES players(id),
-        session_id TEXT NOT NULL,
-        account_id TEXT NOT NULL,
-        revoked_sessions INTEGER NOT NULL,
-        created_at INTEGER NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS sessions_player ON sessions(player_id);
-    `);
+    initializeIdentity(db);
   }
 
   record(token, kind = "guest", accountId = null) {
@@ -58,7 +40,9 @@ export class IdentitySessions {
         accountId,
         this.now(),
         this.now(),
-        kind === "near-wallet" || kind === "demo-passkey" ? this.now() : null,
+        kind === "near-wallet" || kind === "evm-wallet" || kind === "demo-passkey"
+          ? this.now()
+          : null,
       );
   }
 
@@ -143,6 +127,11 @@ export class IdentitySessions {
       network: NETWORK,
       currentSessionId: current.sessionId,
       activeSessionCount,
+      evmWallets: this.db
+        .prepare(
+          "SELECT address,public_key AS publicKey,wallet,verified_at AS verifiedAt FROM evm_links WHERE player_id=? ORDER BY address",
+        )
+        .all(current.playerId),
       hasMoreSessions: activeSessionCount > sessions.length,
       sessions,
       recovery: {

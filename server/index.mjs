@@ -111,6 +111,14 @@ import {
 import { createNearProvider } from "./near-provider.mjs";
 import { IdentitySessions } from "./identity/sessions.mjs";
 import {
+  evmAddress,
+  evmChainId,
+  signInMessage,
+  siweNonce,
+  verifyEvmSignature,
+  walletLabel,
+} from "./identity/evm.mjs";
+import {
   openDatabase,
   atomic,
   playerView,
@@ -1372,6 +1380,127 @@ async function api(req, res, url) {
       200,
       { "Set-Cookie": cookie(result.token) },
     );
+  }
+  if (path === "/api/auth/evm/challenge" && method === "POST") {
+    // Sign-In with Ethereum (MetaMask, Rabby, ...). link=true adds the wallet
+    // to the signed-in explorer instead of signing in.
+    const input = await body(req),
+      address = evmAddress(input.address),
+      chainId = evmChainId(input.chainId),
+      link = input.link === true,
+      name = String(input.name || "Explorer").trim();
+    assert(
+      name.length >= 2 && name.length <= 24,
+      "Your name must be 2–24 characters.",
+    );
+    const current = link
+      ? identitySessions.authenticate(sessionToken(req))
+      : null;
+    const address_ = clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      key = `evm-auth:${address_}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 30,
+      "Please wait before starting another wallet sign-in.",
+      429,
+    );
+    const issuedAt = Date.now(),
+      expiresAt = issuedAt + 300_000,
+      nonce = siweNonce(randomBytes(16));
+    const message = signInMessage({
+      origin,
+      address,
+      chainId,
+      nonce,
+      issuedAt,
+      expiresAt,
+    });
+    const c = challenge("evm_signin", {
+      purpose: link ? "evm-link" : "evm-sign-in",
+      address,
+      name,
+      wallet: walletLabel(input.wallet),
+      message,
+      player: current?.playerId ?? null,
+      sessionId: current?.sessionId ?? null,
+    });
+    return respond(res, { challengeId: c.id, message, address, chainId });
+  }
+  if (path === "/api/auth/evm/verify" && method === "POST") {
+    const input = await body(req),
+      c = readChallenge(input.challengeId);
+    assert(
+      c.purpose === "evm-sign-in" || c.purpose === "evm-link",
+      "This challenge cannot sign in an explorer.",
+      401,
+    );
+    const link = c.purpose === "evm-link";
+    if (link)
+      assert(
+        identitySessions.authenticate(sessionToken(req)).sessionId ===
+          c.sessionId,
+        "Finish linking in the browser where it was started.",
+        403,
+      );
+    const key = await verifyEvmSignature({
+      message: c.message,
+      signature: input.signature,
+      address: c.address,
+    });
+    const result = atomic(db, () => {
+      consumeChallenge(input.challengeId);
+      const existing = db
+        .prepare("SELECT player_id FROM evm_links WHERE address=?")
+        .get(key.address);
+      if (link)
+        assert(
+          !existing || existing.player_id === c.player,
+          "This wallet is linked to another explorer.",
+          409,
+        );
+      const player = link
+        ? c.player
+        : existing?.player_id || createPlayer(db, c.name);
+      const now = Date.now();
+      db.prepare(
+        `INSERT INTO evm_links(address,player_id,public_key,wallet,created_at,verified_at) VALUES(?,?,?,?,?,?)
+         ON CONFLICT(address) DO UPDATE SET verified_at=excluded.verified_at, wallet=COALESCE(excluded.wallet,evm_links.wallet)`,
+      ).run(key.address, player, key.intentsPublicKey, c.wallet, now, now);
+      // The same signature proves the address for wearing Aavegotchi
+      // originals, unless another explorer already uses it.
+      db.prepare(
+        "INSERT OR IGNORE INTO external_links VALUES (?,?,?,?)",
+      ).run(key.address, player, "{}", 0);
+      return {
+        player,
+        token: link ? null : newSession(player, "evm-wallet", key.address),
+        returning: !!existing,
+      };
+    });
+    return respond(
+      res,
+      {
+        player: profile(result.player),
+        returning: result.returning,
+        identity: "evm-wallet",
+        address: key.address,
+        intentsPublicKey: key.intentsPublicKey,
+        network: NETWORK,
+      },
+      200,
+      result.token ? { "Set-Cookie": cookie(result.token) } : {},
+    );
+  }
+  if (path === "/api/identity/evm" && method === "GET") {
+    const current = identitySessions.authenticate(sessionToken(req));
+    return respond(res, {
+      wallets: db
+        .prepare(
+          "SELECT address,public_key AS intentsPublicKey,wallet,verified_at AS verifiedAt FROM evm_links WHERE player_id=? ORDER BY verified_at DESC",
+        )
+        .all(current.playerId),
+    });
   }
   if (path === "/api/identity/sessions" && method === "GET")
     return respond(res, identitySessions.view(sessionToken(req)));
