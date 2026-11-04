@@ -262,6 +262,56 @@ test("a trade-up turns three handed-over commons into one rare Aura", { skip }, 
   assert.equal(db.prepare("SELECT count(*) n FROM inventory WHERE player_id=? AND name=?").get(alice, done.aura.name).n, 1);
 });
 
+test("trader trades carry their on-chain proof: hand-over hashes and the fill", { skip }, async (t) => {
+  const { c, service, player, encounter, db, index } = setup(t);
+  const alice = player("Alice", "alice.testnet");
+  for (const id of ["aura:ember:1", "aura:ember:2", "aura:dew:3"]) c.s.owner.set(id, "alice.testnet");
+  const enc = await encounter(alice);
+  const offer = enc.menu.find((o) => o.kind === "trade_up");
+  const trade = await service.accept({ player: alice, actor: ACTOR, encounter: enc, offerId: offer.id });
+  // The relayer may sponsor exactly these three hand-overs to the trader.
+  assert.deepEqual(service.handoversFor(alice), [{ accountId: "alice.testnet", receiver: NPC, tokens: trade.tokens }]);
+  // Relayed nft_transfer jobs (as the relayer records them) become the proof.
+  db.exec(`CREATE TABLE IF NOT EXISTS relay_jobs(account_id TEXT, receiver_id TEXT, method_name TEXT, transaction_hash TEXT, call TEXT, state TEXT, created_at INTEGER)`);
+  const hashes = ["4Wn3n9sZ7nK5YbYdH1Wf3pX6c8fQx2mKjv9JQw7sCq1a", "5Wn3n9sZ7nK5YbYdH1Wf3pX6c8fQx2mKjv9JQw7sCq1b", "6Wn3n9sZ7nK5YbYdH1Wf3pX6c8fQx2mKjv9JQw7sCq1c"];
+  trade.tokens.forEach((token, i) => {
+    db.prepare("INSERT INTO relay_jobs VALUES(?,?,?,?,?,?,?)").run(
+      "alice.testnet",
+      NFTS,
+      "nft_transfer",
+      hashes[i],
+      JSON.stringify({ args: { receiver_id: NPC, token_id: token } }),
+      "confirmed",
+      Date.now() + 1,
+    );
+    c.s.owner.set(token, NPC);
+  });
+  const done = await service.completeTradeUp({ player: alice, actor: ACTOR, offerId: offer.id });
+  assert.deepEqual([...done.txHashes].sort(), [...hashes].sort());
+  assert.ok(done.txHash && done.secureItemId === done.aura.id);
+  assert.deepEqual(service.handoversFor(alice), []);
+  const meta = JSON.parse(db.prepare("SELECT meta FROM history WHERE player_id=? AND kind='npc-trade'").get(alice).meta);
+  assert.equal(meta.txHashes.length, 3);
+  // A sale settles with the fill transaction from the order index.
+  const lot = "aura:polar:4";
+  c.s.listings.set(lot, { seller: NPC, state: "deposited" });
+  c.s.owner.set(lot, MARKET);
+  service.ledger.addLot({ trader: ACTOR.id, tokenId: lot, cost: 0n, source: "trade_up" });
+  const enc2 = await encounter(alice);
+  const sellOffer = enc2.menu.find((o) => o.kind === "trade_sell" && o.terms.tokenId === lot);
+  const sale = await service.accept({ player: alice, actor: ACTOR, encounter: enc2, offerId: sellOffer.id });
+  const fill = "7Wn3n9sZ7nK5YbYdH1Wf3pX6c8fQx2mKjv9JQw7sCq1d";
+  index.close(`${NPC}:${sale.order.nonce}`, "filled", { tx: fill });
+  c.s.listings.delete(lot);
+  c.s.owner.set(lot, "alice.testnet");
+  await service.reconcile();
+  const mine = service.myTrades(alice);
+  const sold = mine.find((x) => x.tradeId === sale.tradeId);
+  assert.equal(sold.state, "filled");
+  assert.equal(sold.txHash, fill);
+  await assert.rejects(service.recordTx({ player: alice, tradeId: sale.tradeId, transactionHash: "nope" }), /Invalid transaction hash/);
+});
+
 test("the keeper sweeps only the surplus above the float, and only with no open buy", { skip }, async (t) => {
   const { c, service } = setup(t);
   const provider = { query: async () => ({ amount: String(YOCTO), storage_usage: 1000 }) };

@@ -95,6 +95,13 @@ export function createTraderLedger(db, { clock = Date.now } = {}) {
       );
       return tradeId;
     },
+    /** Merge fields into a trade's data (on-chain transaction hashes). */
+    mergeData(tradeId, patch) {
+      return q("UPDATE npc_trader_trades SET data=json_patch(data,?) WHERE id=?").run(JSON.stringify(patch), tradeId).changes;
+    },
+    /** A player's recent trades with every trader, newest first. */
+    playerTrades: (player, limit = 20) =>
+      q("SELECT * FROM npc_trader_trades WHERE player_id=? ORDER BY created_at DESC LIMIT ?").all(player, limit).map(parse),
     settle(tradeId, state) {
       return q("UPDATE npc_trader_trades SET state=?,settled_at=? WHERE id=? AND state='issued'").run(state, clock(), tradeId)
         .changes;

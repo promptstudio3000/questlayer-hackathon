@@ -4,6 +4,8 @@
 //   POST /api/actors/:id/offers/trade_up:<hex>/complete                       {encounter}
 //   POST /api/actors/:id/keeper                                               {encounter}
 //   GET  /api/npc/traders     public books: float, 7-day P&L, premiums, sweeps
+//   GET  /api/npc/trades      the player's trader trades with their tx hashes
+//   POST /api/npc/trades/tx   {tradeId, transactionHash} records an on-chain step
 //   GET  /api/keeper/stake                       "your stake today" card (Profile → Stake)
 //   POST /api/keeper/ceremonies/:id/seen         closes an E+2 / tier ceremony
 //   POST /api/keeper/rank/:rank/seen             closes a patron rank-up ceremony
@@ -150,6 +152,19 @@ export function createTraderRoutes({ traders, actors, db, market, vaults, keeper
       if (path === "/api/npc/traders" && method === "GET") {
         assert(traders, "NPC traders are not open here.", 503, "NPC_TRADERS_DISABLED");
         respond(res, await traders.books());
+        return true;
+      }
+      if (path === "/api/npc/trades" && method === "GET") {
+        assert(traders, "NPC traders are not open here.", 503, "NPC_TRADERS_DISABLED");
+        assert(player, "Sign in first.", 401);
+        respond(res, { network: "testnet", trades: traders.myTrades(player) });
+        return true;
+      }
+      if (path === "/api/npc/trades/tx" && method === "POST") {
+        assert(traders, "NPC traders are not open here.", 503, "NPC_TRADERS_DISABLED");
+        assert(player, "Sign in first.", 401);
+        const input = await body(req);
+        respond(res, await traders.recordTx({ player, tradeId: input.tradeId, transactionHash: input.transactionHash }));
         return true;
       }
       if (path === "/api/staker/gates" && method === "GET") {

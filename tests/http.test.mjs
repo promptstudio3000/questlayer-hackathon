@@ -305,18 +305,21 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     { itemId: item.id, price: 10_000_000 },
     a.cookie,
   );
-  assert.equal(list.status, 200);
+  // Aura trades happen on NEAR now: the database practice market is closed.
+  assert.equal(list.status, 410);
+  assert.equal(list.data.code, "MARKET_ON_CHAIN");
   assert.equal(
-    (await request("/market/buy", { listingId: list.data.listing }, b.cookie))
+    (await request("/market/buy", { listingId: "listing_x" }, b.cookie))
       .status,
-    200,
+    410,
   );
+  assert.deepEqual((await request("/market", undefined, b.cookie)).data.listings, []);
   assert.equal(
-    (await request("/equip", { itemId: item.id }, a.cookie)).status,
+    (await request("/equip", { itemId: item.id }, b.cookie)).status,
     403,
   );
   assert.equal(
-    (await request("/equip", { itemId: item.id }, b.cookie)).status,
+    (await request("/equip", { itemId: item.id }, a.cookie)).status,
     200,
   );
   const route = w.data.quests.find((q) => q.kind === "route" && q.tier === 1);

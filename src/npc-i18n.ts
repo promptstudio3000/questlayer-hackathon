@@ -40,6 +40,9 @@ const strings = () => ({
       ? tr("Errand done: +{0} XP. Your right answer earned {1} of it.", { 0: xp, 1: bonus })
       : tr("Errand done: +{0} XP.", { 0: xp }),
   checkHandOver: tr("Check hand-over"),
+  handingOver: tr("Handing your Auras to the trader on NEAR…"),
+  settlingOnChain: tr("Settling the trade on NEAR…"),
+  onChainProof: tr("On NEAR:"),
   noActions: tr("Nothing to offer right now. Ask me something!"),
   noTasks: tr("No tasks from this character yet."),
   moreTasks: (n: number) =>
@@ -79,10 +82,16 @@ const strings = () => ({
     if (r.note) text += ` ${r.note}`;
     return text;
   },
+  tradeOnChain: (t: NpcTrade, who: string) =>
+    t.state === "filled" || t.txHash
+      ? t.kind === "trade_buy"
+        ? tr("Sold to {0} on NEAR: {1} test NEAR is in your market balance.", { 0: who, 1: near(t.price) })
+        : tr("Bought from {0} on NEAR: {1} is in your Secured collection.", { 0: who, 1: t.tokenId })
+      : tr("Sent to NEAR. It settles in a few seconds; check Market → Signed offers if it does not show up."),
   trade: (t: NpcTrade, who: string) => {
     if (t.kind === "trade_up")
       return t.state === "completed"
-        ? `${tr("Done.")}${t.aura ? ` ${tr("{0} ({1}) is yours; secure it on NEAR from your wardrobe.", { 0: t.aura.name, 1: t.aura.rarity })}` : ""}${t.ledgerAura ? ` ${tr("{0} also hands you the {1}.", { 0: who, 1: t.ledgerAura.name })}` : ""}`
+        ? `${tr("Done.")}${t.aura ? ` ${tr("{0} ({1}) is yours and is being secured on NEAR.", { 0: t.aura.name, 1: t.aura.rarity })}` : ""}${t.ledgerAura ? ` ${tr("{0} also hands you the {1}.", { 0: who, 1: t.ledgerAura.name })}` : ""}`
         : tr('Send {0} to {1} (wardrobe → transfer), then tap "Check hand-over". The deal stays open 30 minutes.', { 0: t.tokens?.join(", "), 1: t.receiver });
     const minutes = Math.max(1, Math.round((t.deadlineMs - Date.now()) / 60000));
     return t.kind === "trade_buy"

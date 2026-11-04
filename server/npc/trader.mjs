@@ -48,6 +48,7 @@ import {
 const DAY = 86_400_000;
 const TRADEUP_TTL_MS = 30 * 60_000;
 const TRADE_KINDS = new Set(["trade_buy", "trade_sell", "trade_up"]);
+const TX_HASH = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/;
 const editionName = (edition) => AURA_CATALOG.find((e) => e.id === edition)?.name || edition;
 const tokenLabel = (tokenId) => `${editionName(editionOf(tokenId))} #${tokenId.split(":")[2]}`;
 const offerId = (kind, parts) => `${kind}:${hash(parts.join("|")).slice(0, 16)}`;
@@ -313,18 +314,58 @@ export function createTraderService({
     );
   }
 
-  const tradeView = (t) => ({
-    tradeId: t.id,
-    kind: t.kind,
-    state: t.state,
-    tokenId: t.token_id,
-    price: t.price,
-    deadlineMs: t.deadline_ms,
-    ...(t.data.order ? { order: t.data.order, market: marketId, nftContract: nftId } : {}),
-    ...(t.kind === "trade_up"
-      ? { tokens: t.data.tokens, receiver: t.data.receiver, edition: t.data.edition, nftContract: nftId }
-      : {}),
-  });
+  /** The fill transaction of a trader order, from the trade or the order index. */
+  const settlementTx = (t) =>
+    t.data.txHash ||
+    (t.order_id ? db.prepare("SELECT settlement_tx FROM signed_market_orders WHERE id=?").get(t.order_id)?.settlement_tx : null) ||
+    null;
+
+  /**
+   * Hand-over transactions of a trade-up: hashes the player reported (checked
+   * on chain) plus relayed nft_transfer jobs of the explorer account, which
+   * the relayer itself recorded.
+   */
+  function handoverTxs(t) {
+    const out = { ...(t.data.handoverTxs || {}) };
+    try {
+      const rows = db
+        .prepare(
+          "SELECT transaction_hash,call FROM relay_jobs WHERE account_id=? AND receiver_id=? AND method_name='nft_transfer' AND transaction_hash IS NOT NULL AND state!='failed' AND created_at>=?",
+        )
+        .all(t.account_id, nftId, t.created_at);
+      for (const r of rows) {
+        const args = JSON.parse(r.call)?.args || {};
+        if (args.receiver_id === t.data.receiver && t.data.tokens.includes(args.token_id) && !out[args.token_id])
+          out[args.token_id] = r.transaction_hash;
+      }
+    } catch {
+      // No relayer on this host: only reported hashes count.
+    }
+    return out;
+  }
+
+  const tradeView = (t) => {
+    const handovers = t.kind === "trade_up" ? handoverTxs(t) : null;
+    const txHash = t.kind === "trade_up" ? null : settlementTx(t);
+    const txHashes = handovers ? [...new Set(Object.values(handovers))] : txHash ? [txHash] : [];
+    return {
+      tradeId: t.id,
+      kind: t.kind,
+      state: t.state,
+      tokenId: t.token_id,
+      price: t.price,
+      deadlineMs: t.deadline_ms,
+      accountId: t.account_id,
+      // On-chain proof for the explorer link: the fill, or the hand-overs.
+      txHash: txHash || txHashes[txHashes.length - 1] || null,
+      txHashes,
+      ...(t.data.order ? { order: t.data.order, market: marketId, nftContract: nftId } : {}),
+      ...(t.kind === "trade_up"
+        ? { tokens: t.data.tokens, receiver: t.data.receiver, edition: t.data.edition, nftContract: nftId, handovers }
+        : {}),
+      ...(t.data.auraItemId ? { secureItemId: t.data.auraItemId } : {}),
+    };
+  };
 
   /** Accept a trade offer from the encounter's bound menu. */
   async function accept({ player, actor, encounter, offerId: wanted }) {
@@ -458,10 +499,19 @@ export function createTraderService({
       for (const tokenId of t.data.tokens) ledger.addLot({ trader: actor.id, tokenId, cost: 0n, source: "trade_up", tradeId: t.id });
       const aura = mintEdition(db, player, t.data.edition, clock());
       if (!aura) throw new GameError("That edition ran out of supply; your commons stay with the trade record.", 409, "NPC_TRADE_SUPPLY");
+      const handovers = handoverTxs(t);
+      // The received Aura is secured on NEAR right away (the client redeems
+      // the award claim for this item), so the whole trade-up is on chain.
+      ledger.mergeData(t.id, { handoverTxs: handovers, auraItemId: aura.id });
+      const txHashes = [...new Set(Object.values(handovers))];
       history(db, player, "npc-trade", `Trade-up with ${actor.name || actor.id}`, 0, {
         actor: actor.id,
         tokens: t.data.tokens,
         aura: aura.name,
+        itemId: aura.id,
+        txHash: txHashes[txHashes.length - 1] || null,
+        txHashes,
+        network: "testnet",
         policy: NPC_TRADER_POLICY,
       });
       const ledgerAura = grantLedgerAura(actor.id, player);
@@ -501,15 +551,20 @@ export function createTraderService({
         if (t.deadline_ms <= now) settled += ledger.settle(t.id, "expired");
         continue;
       }
+      const txHash = settlementTx(t);
       atomic(db, () => {
         if (ledger.settle(t.id, "filled") !== 1) return;
         settled++;
+        if (txHash) ledger.mergeData(t.id, { txHash });
         if (t.kind === "trade_buy")
           ledger.addLot({ trader: t.trader, tokenId: t.token_id, cost: BigInt(t.price), source: "buy", tradeId: t.id });
         else ledger.sellLot(t.trader, t.token_id, BigInt(t.price));
         history(db, t.player_id, "npc-trade", t.kind === "trade_buy" ? `Sold ${tokenLabel(t.token_id)} to a trader` : `Bought ${tokenLabel(t.token_id)} from a trader`, 0, {
           actor: t.trader,
           price: t.price,
+          tokenId: t.token_id,
+          txHash,
+          network: "testnet",
           policy: NPC_TRADER_POLICY,
         });
         grantLedgerAura(t.trader, t.player_id);
@@ -517,6 +572,56 @@ export function createTraderService({
     }
     return { settled };
   }
+
+  /**
+   * The player reports the hash of an on-chain step of their trade (a fill
+   * from the NPC sheet, or a wallet-signed hand-over). Nothing is trusted from
+   * the client: fills are read from the final receipt by the order index,
+   * hand-overs are checked against the transaction itself.
+   */
+  async function recordTx({ player, tradeId, transactionHash }) {
+    assert(typeof tradeId === "string" && tradeId.length <= 64, "Choose a trade.", 400, "NPC_OFFER");
+    assert(TX_HASH.test(String(transactionHash)), "Invalid transaction hash.", 400, "NPC_TX");
+    const t = ledger.trade(tradeId);
+    assert(t && t.player_id === player, "You have no such trade with this character.", 404, "NPC_OFFER");
+    if (t.kind === "trade_up") {
+      const provider = nfts.provider;
+      assert(provider?.viewTransactionStatus, "Hand-over checks are not available here.", 503, "NPC_TX");
+      const outcome = await provider.viewTransactionStatus({ txHash: transactionHash, accountId: t.account_id, waitUntil: "FINAL" });
+      const tx = outcome?.transaction;
+      assert(tx?.hash === transactionHash && tx.signer_id === t.account_id && tx.receiver_id === nftId, "That transaction is not this hand-over.", 409, "NPC_TX");
+      const failed = (outcome.receipts_outcome || []).some((r) => r?.outcome?.status && Object.hasOwn(r.outcome.status, "Failure"));
+      assert(!failed, "That hand-over failed on chain.", 409, "NPC_TX");
+      const found = {};
+      for (const a of tx.actions || []) {
+        const call = a?.FunctionCall;
+        if (call?.method_name !== "nft_transfer") continue;
+        let args = {};
+        try {
+          args = JSON.parse(Buffer.from(call.args, "base64").toString("utf8"));
+        } catch {}
+        if (args.receiver_id === t.data.receiver && t.data.tokens.includes(args.token_id)) found[args.token_id] = transactionHash;
+      }
+      assert(Object.keys(found).length, "That transaction hands no Aura of this trade to the trader.", 409, "NPC_TX");
+      ledger.mergeData(t.id, { handoverTxs: found });
+      return tradeView(ledger.trade(t.id));
+    }
+    await orderIndex.recordTransaction(transactionHash, t.account_id);
+    await reconcile({ trader: t.trader });
+    return tradeView(ledger.trade(t.id));
+  }
+
+  /** Issued trade-ups: the relayer may sponsor these exact hand-overs to the trader. */
+  function handoversFor(player) {
+    const now = clock();
+    return ledger
+      .openTrades("trade_up")
+      .filter((t) => t.player_id === player && t.deadline_ms > now)
+      .map((t) => ({ accountId: t.account_id, receiver: t.data.receiver, tokens: [...t.data.tokens] }));
+  }
+
+  /** The player's trades with every trader, with their on-chain proof. */
+  const myTrades = (player, limit = 20) => ledger.playerTrades(player, limit).map((t) => ({ ...tradeView(t), trader: t.trader, createdAt: t.created_at, settledAt: t.settled_at }));
 
   /** Public books: float, 7-day P&L, premiums and swept total per trader. */
   async function books() {
@@ -561,6 +666,9 @@ export function createTraderService({
     accept,
     completeTradeUp,
     reconcile,
+    recordTx,
+    handoversFor,
+    myTrades,
     books,
   };
 }

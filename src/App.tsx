@@ -113,7 +113,7 @@ import { HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
 import { pushBurst, type RewardBurst } from "./reward-burst";
 import type { NativeTradeRequest } from "./types";
-import type { NativeAuraClaim } from "./types";
+import type { NativeAuraClaim, NativeMarketState } from "./types";
 import { nativeAppearanceItems } from "./native-appearance";
 import { publishNoteRecord, type NoteRecordKind } from "./note-record";
 import type { NativeProfileQuote } from "./types";
@@ -240,6 +240,7 @@ import LandmarkClue from "./LandmarkClue";
 import { headingTo, metersBetween } from "./map-motion.ts";
 import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
+import { registerChainTrades } from "./chain-trades";
 import { tr } from "./i18n";
 
 type Tab =
@@ -1948,6 +1949,34 @@ export default function App() {
               }, player!.wallets[0].account_id),
           )
         : null;
+  // NPC trades settle on NEAR from the NPC sheet (src/chain-trades.ts): the
+  // explorer account signs without a popup, a linked wallet confirms each step.
+  useEffect(() => {
+    if (!player) {
+      registerChainTrades(null);
+      return;
+    }
+    registerChainTrades({
+      async send(accountId, call) {
+        const managed = invisible.signer;
+        if (managed && managed.accountId === accountId)
+          return (
+            (await managed.send(marketTransaction(accountId, call), {
+              playerId: player.id,
+            })) || null
+          );
+        const { wallet, accountId: chosen } = await chooseNearAccount();
+        if (chosen !== accountId)
+          throw Error(`Choose the wallet for ${accountId} to sign this trade.`);
+        await walletSigner(wallet, chosen).send(marketTransaction(chosen, call), {
+          playerId: player.id,
+        });
+        return null;
+      },
+      secureItem: (itemId) =>
+        mintEarnedAura({ id: itemId } as Item).then((ok) => ok === true),
+    });
+  });
   async function withdrawNativeReward(
     expectedAccount: string,
     contractId: string,
@@ -3845,16 +3874,31 @@ export default function App() {
                     );
                   })
                 }
-                onSell={async (item, price) => {
-                  const result = await action("listing", async () => {
-                    await api("/market/list", { itemId: item.id, price });
-                    if (latest.current.player?.id !== player.id) return false;
-                    await me();
-                    if (latest.current.player?.id !== player.id) return false;
-                    notify(tr("Your Aura is on the market."));
-                    return true;
+                onSell={async (item, priceYocto) => {
+                  // Every Aura trade is on NEAR: secure the Aura as an NFT
+                  // (relayed, no fee), then list it on the market contract.
+                  if (!(await mintEarnedAura(item))) return false;
+                  const [claim, market] = await Promise.all([
+                    api<{ claim: NativeAuraClaim }>("/native/claims/confirm", {
+                      itemId: item.id,
+                    }),
+                    api<NativeMarketState>("/native/market"),
+                  ]);
+                  if (!claim.claim.token_id || !market.marketContract)
+                    return false;
+                  const listed = await tradeNative({
+                    kind: "list",
+                    accountId: claim.claim.receiver_id,
+                    marketId: market.marketContract,
+                    nftContractId: market.nftContract,
+                    tokenId: claim.claim.token_id,
+                    price: priceYocto,
                   });
-                  return result === true;
+                  if (listed) {
+                    await me();
+                    notify(tr("Your Aura is listed on NEAR. Find it in Market → Secured."));
+                  }
+                  return listed;
                 }}
               />
             </ScreenTabPanel>
@@ -4262,31 +4306,6 @@ export default function App() {
                 onChange={setMarketView}
               />
               <ScreenTabPanel idBase="market" value={marketView}>
-                {marketView === "practice" ? (
-            <Market
-              player={player}
-              busy={busy}
-              onBuy={(listing) =>
-                void action("buy", async () => {
-                  const r = await api<{ player: Player }>("/market/buy", {
-                    listingId: listing.id,
-                  });
-                  updateOwnedPlayer(r.player);
-                  notify(tr("This Aura is yours. Find it in your collection."));
-                })
-              }
-              onCancel={(listing) =>
-                void action("cancel", async () => {
-                  await api("/market/cancel", { listingId: listing.id });
-                  await me();
-                  notify(
-                    tr("Listing cancelled. The Aura is back in your collection."),
-                  );
-                })
-              }
-              onInventory={() => setTab("inventory")}
-            />
-                ) : (
                   <NativeMarketPanel
                     key={marketView}
                     section={marketView}
@@ -4297,7 +4316,6 @@ export default function App() {
                     onTrade={tradeNative}
                     orderSigner={orderSigner}
                   />
-                )}
               </ScreenTabPanel>
             </ScreenTabPanel>
           )}
@@ -5340,86 +5358,6 @@ function FundPanel() {
           <span>{tr("daily worlds")}</span>
         </div>
       </div>
-    </>
-  );
-}
-function Market({
-  player,
-  busy,
-  onBuy,
-  onCancel,
-  onInventory,
-}: {
-  player: Player;
-  busy: string;
-  onBuy: (l: Listing) => void;
-  onCancel: (l: Listing) => void;
-  onInventory: () => void;
-}) {
-  const [items, setItems] = useState<Listing[]>([]),
-    [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const load = () =>
-      api<{ listings: Listing[] }>("/market")
-        .then((r) => setItems(r.listings))
-        .finally(() => setLoading(false));
-    void load();
-    const t = setInterval(load, 4000);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <>
-      <div className="section-label market-head">
-        <h2>{tr("On the market")}</h2>
-        <span className="badge purple" title={tr("Fixed prices · 0% fee · practice GOLD is play money.")}>{tr("PRACTICE")}</span>
-        <button className="text-button" onClick={onInventory}>
-          {tr("Sell an Aura")}{" "}<Plus size={13} />
-        </button>
-      </div>
-      {loading ? (
-        <p>{tr("Loading listings…")}</p>
-      ) : !items.length ? (
-        <div className="empty-state">
-          <Storefront size={38} />
-          <h3>{tr("The first stall could be yours")}</h3>
-          <p>
-            {tr("Open a chest, find an Aura and list it here for another explorer.")}</p>
-          <button className="secondary-button" onClick={onInventory}>
-            {tr("Open collection")}</button>
-        </div>
-      ) : (
-        <div className="item-grid">
-          {items.map((i) => (
-            <article className={`item-card rarity-${i.rarity}`} key={i.id}>
-              <AuraArt color={i.color} slot={i.slot} name={i.name} />
-              <Badge>{rarityNames[i.rarity]}</Badge>
-              <h3>{i.name}</h3>
-              <small>
-                #{i.serial} · {i.seller_name}
-              </small>
-              <div className="listing-price">
-                <CoinIcon />
-                <strong>{gold(i.price_u)}</strong>
-                <span>GOLD</span>
-              </div>
-              <button
-                className="secondary-button"
-                disabled={!!busy}
-                onClick={() =>
-                  i.seller === player.id ? onCancel(i) : onBuy(i)
-                }
-              >
-                {i.seller === player.id ? tr("Cancel listing") : tr("Buy Aura")}
-                <ArrowRight size={15} />
-              </button>
-            </article>
-          ))}
-        </div>
-      )}
-      <Details>
-        <p>
-          {tr("Find an Aura that feels like you, or pass your discovery along. These offers use practice GOLD. Secured Auras trade for test NEAR in the Secured and Offers tabs.")}</p>
-      </Details>
     </>
   );
 }
