@@ -1,6 +1,8 @@
 import { EmptyState } from "./EmptyState";
 import { NativePicture } from "./NativeWardrobe";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+// The experimental Intents panel loads only when the Offers tab opens.
+const IntentsPanel = lazy(async () => ({ default: (await import("./IntentsPanel")).IntentsPanel }));
 import { api } from "./api";
 import { AuraArt } from "./Ghost";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
@@ -36,6 +38,7 @@ export function NativeMarketPanel({
 }) {
   const showListings = section !== "offers",
     showOffers = section !== "secured";
+  const [intentsOn, setIntentsOn] = useState(false);
   const [data, setData] = useState<NativeMarketState | null>(null),
     [balances, setBalances] = useState<NativeMarketBalance[]>([]),
     [error, setError] = useState(""),
@@ -405,6 +408,21 @@ export function NativeMarketPanel({
             </>
           )}
           {showOffers && (
+          <Suspense fallback={null}>
+          <IntentsPanel
+            signer={orderSigner}
+            onEnabled={setIntentsOn}
+            owned={
+              wardrobe?.accounts
+                .find((a) => a.accountId === orderSigner?.accountId)
+                ?.items.filter((i) => i.kind === "aura") || []
+            }
+          />
+          </Suspense>
+          )}
+          {/* NEAR Intents is the market; the v2 signed offers show only on a
+              host without the verifier manifest. */}
+          {showOffers && !intentsOn && (
           <SignedOrdersPanel
             data={data}
             signer={orderSigner}

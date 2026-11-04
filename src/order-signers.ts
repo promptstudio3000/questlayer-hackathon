@@ -16,6 +16,8 @@ export type OrderSigner = {
   sign(terms: OrderTerms): Promise<SignedOrder>;
   /** Sends one market call; resolves with its hash when known. */
   call(call: MarketCall): Promise<string | null>;
+  /** The device key, which also signs NEAR Intents (IntentsPanel). */
+  key?: PlayerKeyRecord;
 };
 
 export function deviceOrderSigner(
@@ -28,6 +30,7 @@ export function deviceOrderSigner(
     publicKey: async () => key.publicKey,
     knownPublicKey: () => key.publicKey,
     sign: (terms) => signOrder(key, terms),
+    key,
     call,
   };
 }

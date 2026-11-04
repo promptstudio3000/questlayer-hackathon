@@ -78,10 +78,17 @@ function useBarAnchors(active: boolean) {
       const next: Record<string, string> = {};
       const bar = document.querySelector(".topbar")?.getBoundingClientRect();
       if (bar?.height) next["--pwa-top"] = `${Math.round(bar.bottom) + 8}px`;
-      const rail = document.querySelector(".nav-rail")?.getBoundingClientRect();
-      if (rail && rail.width > rail.height && rail.top > window.innerHeight / 2)
+      const railEl = document.querySelector(".nav-rail");
+      const rail = railEl?.getBoundingClientRect();
+      // An open sheet slides the tab bar off screen with a transform, which
+      // no observer reports; measure where the bar rests, not where it is.
+      const shift = railEl
+        ? new DOMMatrix(getComputedStyle(railEl).transform === "none" ? undefined : getComputedStyle(railEl).transform).m42
+        : 0;
+      const railTop = rail ? rail.top - shift : 0;
+      if (rail && rail.width > rail.height && railTop > window.innerHeight / 2)
         next["--pwa-bottom"] =
-          `${Math.max(0, Math.round(window.innerHeight - rail.top)) + 8}px`;
+          `${Math.max(0, Math.round(window.innerHeight - railTop)) + 8}px`;
       setVars((prev) =>
         JSON.stringify(prev) === JSON.stringify(next) ? prev : next,
       );
