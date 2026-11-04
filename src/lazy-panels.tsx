@@ -134,4 +134,6 @@ export const ActorSheet = lazyNamed(
   () => import("./ActorSheet"),
   "ActorSheet",
 );
-export const ChainFeed = lazyNamed(() => import("./ChainFeed"), "ChainFeed");
+export const ChainSettings = lazyNamed(() => import("./ChainFeed"), "ChainSettings");
+// The proof icon loads with the first panel that shows one, not with the map.
+export const ChainLink = lazyNamed(() => import("./ChainLink"), "ChainLink");

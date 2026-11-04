@@ -6,7 +6,8 @@ import {
   AdventureResultResume,
   AdventureResultHistoryButton,
   PendingNativeTransactions,
-  ChainFeed,
+  ChainSettings,
+  ChainLink,
   CreatorCommunity,
   CommunityBonusVote,
   MapNotes,
@@ -114,14 +115,12 @@ import { HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
 import { pushBurst, type RewardBurst } from "./reward-burst";
 import type { ChainRef } from "./chain-proof";
-import { ChainLink } from "./ChainLink";
 import type { NativeTradeRequest } from "./types";
 import type { NativeAuraClaim } from "./types";
 import { nativeAppearanceItems } from "./native-appearance";
 import { publishNoteRecord, type NoteRecordKind } from "./note-record";
 import type { NativeProfileQuote } from "./types";
 import { assertProfileQuote } from "./native-profile-quote";
-import { autoPublishProfile } from "./auto-social-profile";
 import type { NativeWardrobeState, NativeItem } from "./types";
 import {
   useEffect,
@@ -559,18 +558,17 @@ export default function App() {
     if (!player.wallets.some((w) => w.account_id === accountId)) return;
     if (autoProfileTried.current === accountId) return;
     autoProfileTried.current = accountId;
-    let storage: Storage | null = null;
-    try {
-      storage = localStorage;
-    } catch {}
-    void autoPublishProfile({
-      accountId,
-      playerId: player.id,
-      name: player.name,
-      signer,
-      call: (path, data) => api(path, data),
-      storage,
-    }).catch(() => {});
+    void import("./auto-social-profile")
+      .then(({ autoPublishProfile }) =>
+        autoPublishProfile({
+          accountId,
+          playerId: player.id,
+          name: player.name,
+          signer,
+          call: api,
+        }),
+      )
+      .catch(() => {});
   }, [invisibleStatus, invisible.accountId, player?.id, player?.wallets.length]);
   useEffect(() => {
     // Prepare the invisible account in the background; play never waits for it.
@@ -796,7 +794,6 @@ export default function App() {
     hudXp === null ? null : levelProgress(Number(hudXp), levelTable);
   // Floating reward feedback over the map (src/RewardBursts.tsx).
   const [bursts, setBursts] = useState<RewardBurst[]>([]);
-  const [showChainFeed, setShowChainFeed] = useState(false);
   const burst = (b: Omit<RewardBurst, "id" | "until">) =>
     setBursts((list) => pushBurst(list, b, Date.now()));
   useEffect(() => {
@@ -4146,30 +4143,7 @@ export default function App() {
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
               </section>
-              <section
-                className="settings-group"
-                aria-labelledby="settings-chain-title"
-              >
-                <h2 id="settings-chain-title">{tr("On chain")}</h2>
-                <button
-                  type="button"
-                  className="settings-row"
-                  aria-expanded={showChainFeed}
-                  onClick={() => setShowChainFeed((open) => !open)}
-                >
-                  <Cube size={22} aria-hidden="true" />
-                  <span>
-                    {tr("On-chain feed")}
-                    <small>{tr("Every action saved on NEAR, with explorer links")}</small>
-                  </span>
-                  <ArrowRight size={18} aria-hidden="true" />
-                </button>
-                {showChainFeed && (
-                  <div className="settings-pad">
-                    <ChainFeed accountId={invisible.accountId} />
-                  </div>
-                )}
-              </section>
+              <ChainSettings accountId={invisible.accountId} />
               <section
                 className="settings-group"
                 aria-labelledby="settings-account-title"

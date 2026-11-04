@@ -20,6 +20,13 @@ export type AutoProfileOutcome =
 type Call = <T>(path: string, data?: unknown) => Promise<T>;
 type Store = Pick<Storage, "getItem" | "setItem">;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const defaultStorage = (): Store | null => {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+};
 
 export async function autoPublishProfile({
   accountId,
@@ -27,7 +34,7 @@ export async function autoPublishProfile({
   name,
   signer,
   call,
-  storage,
+  storage = defaultStorage(),
   wait = sleep,
 }: {
   accountId: string;

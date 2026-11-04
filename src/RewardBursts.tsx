@@ -1,6 +1,6 @@
 import { Coins, Sparkle, Trophy, Star } from "@phosphor-icons/react";
 import { lifetime, type RewardBurst } from "./reward-burst";
-import { ChainLink } from "./ChainLink";
+import { ChainLink } from "./lazy-panels";
 import "./reward-burst.css";
 
 const ICON = { coin: Coins, find: Sparkle, quest: Trophy, level: Star };

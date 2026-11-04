@@ -6,6 +6,7 @@
 //                       (optional: older servers answer 404)
 import { useCallback, useEffect, useState } from "react";
 import { ArrowClockwise, ArrowSquareOut, Cube } from "@phosphor-icons/react";
+import { ArrowRight } from "./dir-icons";
 import { api, gold } from "./api";
 import { tr } from "./i18n";
 import { EXPLORER_BASE } from "./near-network.ts";
@@ -165,5 +166,33 @@ export function ChainFeed({ accountId }: { accountId: string | null }) {
         </ol>
       )}
     </div>
+  );
+}
+
+/** Settings → On chain: one row that opens the feed. */
+export function ChainSettings({ accountId }: { accountId: string | null }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="settings-group" aria-labelledby="settings-chain-title">
+      <h2 id="settings-chain-title">{tr("On chain")}</h2>
+      <button
+        type="button"
+        className="settings-row"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Cube size={22} aria-hidden="true" />
+        <span>
+          {tr("On-chain feed")}
+          <small>{tr("Every action saved on NEAR, with explorer links")}</small>
+        </span>
+        <ArrowRight size={18} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="settings-pad">
+          <ChainFeed accountId={accountId} />
+        </div>
+      )}
+    </section>
   );
 }
