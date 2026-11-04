@@ -1,12 +1,13 @@
 import { EmptyState } from "./EmptyState";
 import { NativePicture } from "./NativeWardrobe";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+// The experimental Intents panel loads only when the Offers tab opens.
+const IntentsPanel = lazy(async () => ({ default: (await import("./IntentsPanel")).IntentsPanel }));
 import { api } from "./api";
 import { AuraArt } from "./Ghost";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
 import type { OrderSigner } from "./order-signers";
 import { SignedOrdersPanel } from "./SignedOrdersPanel";
-import { IntentsPanel } from "./IntentsPanel";
 import { Details } from "./ScreenTabs";
 import { ArrowClockwise } from "@phosphor-icons/react";
 import type {
@@ -422,6 +423,7 @@ export function NativeMarketPanel({
           />
           )}
           {showOffers && (
+          <Suspense fallback={null}>
           <IntentsPanel
             signer={orderSigner}
             owned={
@@ -430,6 +432,7 @@ export function NativeMarketPanel({
                 ?.items.filter((i) => i.kind === "aura") || []
             }
           />
+          </Suspense>
           )}
           {showListings && (
           <div className="native-market-pages">

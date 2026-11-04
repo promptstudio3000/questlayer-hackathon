@@ -5,7 +5,7 @@
 // order) and sends market calls through the reviewed wallet flow.
 import { signOrder, type OrderTerms, type SignedOrder } from "./signed-order.ts";
 import type { PlayerKeyRecord } from "./player-key.ts";
-import { signIntents, type IntentsConfig, type SignedIntent } from "./intents-order.ts";
+import type { IntentsConfig, SignedIntent } from "./intents-order.ts";
 import type { MarketCall } from "./SignedOrdersPanel.tsx";
 
 export type OrderSigner = {
@@ -31,7 +31,8 @@ export function deviceOrderSigner(
     publicKey: async () => key.publicKey,
     knownPublicKey: () => key.publicKey,
     sign: (terms) => signOrder(key, terms),
-    signIntents: (config, intents) => signIntents(key, config, intents),
+    // Loaded on first use so the Intents builders stay out of the start bundle.
+    signIntents: async (config, intents) => (await import("./intents-order.ts")).signIntents(key, config, intents),
     call,
   };
 }
