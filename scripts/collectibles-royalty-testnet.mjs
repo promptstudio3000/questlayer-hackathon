@@ -21,7 +21,7 @@
 import { readFileSync, writeFileSync, statSync, existsSync } from "node:fs";
 import assert from "node:assert/strict";
 import { Account, KeyPair, KeyPairSigner, actions } from "near-api-js";
-import { createNearProvider } from "../server/near-provider.mjs";
+import { createNearProvider, rpcErrorText } from "../server/near-provider.mjs";
 import { fundingAttachment, fundingAlreadyRecorded } from "../server/native/stnear-treasury.mjs";
 
 const [command = "status", ...rest] = process.argv.slice(2);
@@ -70,7 +70,7 @@ const accountOf = async (account_id) => {
   try {
     return await provider.query({ request_type: "view_account", account_id, finality: "final" });
   } catch (e) {
-    if (/does not exist|UNKNOWN_ACCOUNT/i.test(String(e?.message || e))) return null;
+    if (/does not exist|UNKNOWN_ACCOUNT/i.test(rpcErrorText(e))) return null;
     throw e;
   }
 };

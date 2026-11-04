@@ -1,0 +1,23 @@
+{
+  "network": "testnet",
+  "contract": "nfts.questlayer-dev-20261101.testnet",
+  "royalty": {
+    "account_id": "royalties.questlayer-dev-20261101.testnet",
+    "bps": 200
+  },
+  "rewardsContract": "questlayer-rewards-20261101b.testnet",
+  "receiptPrefix": "aura-royalties-",
+  "transactions": [
+    {
+      "label": "Create royalties.questlayer-dev-20261101.testnet (royalty payee)",
+      "transaction": "BBdN4YNtFzqLjQ8gj2js839jFPhFzG9dztWzY8BF9D39"
+    },
+    {
+      "label": "set_royalty 200 bps to royalties.questlayer-dev-20261101.testnet",
+      "transaction": "7GuhyB1yfkcGmf99BR6ZJCaiSzmgLdxPS99dRA8iRqnq"
+    }
+  ],
+  "sweeps": [],
+  "mintbaseProof": null,
+  "updatedAt": "2026-11-04T15:16:47.605Z"
+}
