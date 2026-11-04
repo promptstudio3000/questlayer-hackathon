@@ -1,8 +1,8 @@
 // Automated journey through a newcomer's first session on phone-sized
 // viewports: name → nearest find → first coin → first chest → Aura →
 // secure/share, the sound/vibration/motion settings, then the rest of the
-// loop: equip from the collection, a practice market order that a second
-// explorer fills, and the creator feed. Every key screen gets an axe
+// loop: equip from the collection, the on-chain sale form and market, and
+// the creator feed. Every key screen gets an axe
 // accessibility scan and the first load is held to a performance budget.
 //
 // Usage:  npm run build && npm run e2e:first-session [-- --device=<name>]
@@ -554,49 +554,25 @@ async function runDevice(name, server) {
     await quietToast(page);
     await capture(page, "inventory-equipped");
 
-    console.log("9. Practice market order");
+    console.log("9. Sell on NEAR");
+    // Aura trades happen on NEAR only (docs/ONCHAIN-TRADES.md): the sale form
+    // prices in test NEAR and secures the Aura before listing it. The offline
+    // CI server has no chain, so the journey checks the form and backs out.
     await itemActions.getByRole("button", { name: "Sell" }).click();
-    await page.locator("#inventory-list-price").fill("25");
+    await page.getByText("Price in test NEAR").waitFor();
+    await page.locator("#inventory-list-price").fill("0.05");
     await scan(page, "market-listing-form");
-    await page.locator(".inv-detail-actions").getByRole("button", { name: "List", exact: true }).click();
-    await page.getByText("Your Aura is on the market.").waitFor({ timeout: 10_000 });
+    await page.locator(".inventory-sale-form").getByRole("button", { name: "Back" }).click();
     await quietToast(page);
-    // A second explorer, on the same device, fills the order.
-    const buyerContext = await newExplorerContext(browser, profile);
-    const buyer = await buyerContext.newPage();
-    await dismissInstallOffer(buyer, layout);
-    buyer.on("pageerror", (e) => console.error("buyer page error:", e.message));
-    await buyer.goto(server.url);
-    await buyer.getByPlaceholder("Your explorer name").fill(`${TAG}Buyer ${name}`);
-    await buyer.getByRole("button", { name: "Start exploring" }).click();
-    await buyer.getByRole("button", { name: "Hide first steps" }).click();
-    await openScreen(buyer, "Profile");
-    await buyer.getByRole("button", { name: /^Market/ }).click();
-    const offer = buyer.locator(".listing-card, li, article").filter({ hasText: explorer }).filter({
-      has: buyer.getByRole("button", { name: "Buy Aura" }),
-    }).first();
-    await offer.waitFor({ timeout: 15_000 });
-    await capture(buyer, "market-buyer");
-    await scan(buyer, "market");
-    await offer.getByRole("button", { name: "Buy Aura" }).click();
-    await buyer.getByText("This Aura is yours.", { exact: false }).waitFor({ timeout: 10_000 });
-    await buyerContext.close();
-    // The seller sees the sale: the Aura has left the collection.
-    await openScreen(page, "Inventory");
-    await page.waitForFunction(
-      (n) => ![...document.querySelectorAll(".inv-grid .inv-cell:not(.locked):not(.empty)")].some((e) => (e.getAttribute("aria-label") || "").split(",")[0].trim() === n),
-      auraName,
-      { timeout: 15_000 },
-    ).catch(async () => {
-      await page.reload();
-      await openScreen(page, "Inventory");
-      await page.waitForFunction(
-        (n) => ![...document.querySelectorAll(".inv-grid .inv-cell:not(.locked):not(.empty)")].some((e) => (e.getAttribute("aria-label") || "").split(",")[0].trim() === n),
-        auraName,
-        { timeout: 15_000 },
-      );
-    });
-    console.log(`  ${auraName} sold for 25 practice GOLD`);
+    await page.getByRole("button", { name: "Close item details" }).click();
+    await page.locator('dialog[aria-label="Aura details"]').waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+    await page.getByRole("tab", { name: "Market", exact: true }).click();
+    const marketTabs = page.getByRole("tablist", { name: "Market" });
+    await marketTabs.getByRole("tab", { name: "Secured" }).waitFor({ timeout: 10_000 });
+    assert.equal(await marketTabs.getByRole("tab", { name: "Practice" }).count(), 0, "no database market tab");
+    await capture(page, "market-secured");
+    await scan(page, "market");
+    console.log(`  ${auraName}: sale form in test NEAR, market is on chain`);
 
     console.log("10. Creator feed");
     await openScreen(page, "Community");
