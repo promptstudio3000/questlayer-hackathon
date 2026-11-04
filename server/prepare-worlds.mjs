@@ -6,6 +6,7 @@ import {
   worldPreparationStatus,
 } from "./world-planner.mjs";
 import { openDatabase } from "./database.mjs";
+import "./schema-catalog.mjs";
 import { readFileSync, statSync } from "node:fs";
 if (process.argv.includes("--preview")) {
   const index = process.argv.indexOf("--preview"),

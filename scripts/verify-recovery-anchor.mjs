@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createNearProvider } from "../server/near-provider.mjs";
 import { openDatabase, createPlayer } from "../server/database.mjs";
+import "../server/schema-catalog.mjs";
 import { NativeTransactionConfirmation } from "../server/native/transaction-confirmation.mjs";
 const load = (name) => JSON.parse(readFileSync(`public/${name}.json`));
 const trades = load("native-market-trades-testnet"),

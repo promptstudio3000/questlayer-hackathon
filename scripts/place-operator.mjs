@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { openDatabase } from "../server/database.mjs";
+import "../server/schema-catalog.mjs";
 import { PLZEN } from "../server/spatial/city-pack.mjs";
 import { assert } from "../server/domain.mjs";
 import {

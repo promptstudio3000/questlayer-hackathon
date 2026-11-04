@@ -11,6 +11,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute } from "node:path";
 import { randomBytes } from "node:crypto";
 import { openDatabase } from "../server/database.mjs";
+import "../server/schema-catalog.mjs";
 import { assert } from "../server/domain.mjs";
 import { Moderation } from "../server/moderation.mjs";
 import { TaskEvidence } from "../server/task-evidence.mjs";
