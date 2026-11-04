@@ -15,6 +15,7 @@ import {
 import { buildCityPlan } from "../server/world-planner.mjs";
 import { PLZEN } from "../server/spatial/city-pack.mjs";
 import { ACCOUNT_SUFFIX } from "../server/native/network.mjs";
+import { ensureMapChainSchema } from "../server/map-rewards/chain.mjs";
 
 const NEAR = 10n ** 24n;
 const CONTRACT = `rewards${ACCOUNT_SUFFIX}`;
@@ -28,6 +29,7 @@ function chain({ funded = NEAR / 5n } = {}) {
     pending: 0n,
     withdrawn: 0n,
     days: new Map(),
+    mapDays: new Map(),
     dateTotals: new Map(),
     balance: funded + 3n * NEAR, // liquidity plus storage stake
     storageUsage: 200000, // bytes → 2 NEAR locked for storage
@@ -78,6 +80,7 @@ function chain({ funded = NEAR / 5n } = {}) {
         policy: "50/50-v1",
       };
     if (method === "get_day") return c.days.get(args.day_id) ?? null;
+    if (method === "get_map_day") return c.mapDays.get(args.day_id) ?? null;
     if (method === "get_date_totals") {
       const t = c.dateTotals.get(args.date) ?? { coins: 0n, zones: 0n };
       return {
@@ -242,4 +245,39 @@ test("a commitment on a date that this server did not publish is drift", async (
     .dates[0];
   assert.equal(row.date, date);
   assert.equal(BigInt(row.chainCoins) - BigInt(row.ourCoins), 5n);
+});
+
+test("a published map day explains its reservations and its date total", async () => {
+  const f = fixture();
+  await f.publish("2026-11-04");
+  ensureMapChainSchema(f.db);
+  const coins = 5n * 10n ** 22n,
+    zones = 17n * 10n ** 21n;
+  f.c.coins.available -= coins;
+  f.c.coins.reserved += coins;
+  f.c.zones.available -= zones;
+  f.c.zones.reserved += zones;
+  const t = f.c.dateTotals.get("2026-11-04");
+  f.c.dateTotals.set("2026-11-04", { coins: t.coins + coins, zones: t.zones + zones });
+  // One claim paid 1000 yocto from the coin reservation.
+  f.c.coins.reserved -= 1000n;
+  f.c.coins.awarded += 1000n;
+  f.c.owed += 1000n;
+  f.c.mapDays.set("map-2026-11-04-v1", {
+    date: "2026-11-04",
+    coins_reserved: coins.toString(),
+    zones_reserved: zones.toString(),
+    coins_left: (coins - 1000n).toString(),
+    zones_left: zones.toString(),
+    claims: 1,
+    closed: false,
+  });
+  const before = await auditDistribution(f.native);
+  assert.equal(before.status, "drift", "a map day this server does not know is drift");
+  f.db
+    .prepare("INSERT INTO map_chain_days VALUES(?,?,?,'published','tx',NULL,NULL,0)")
+    .run("map-2026-11-04-v1", "2026-11-04", "{}");
+  const a = await auditDistribution(f.native);
+  assert.equal(a.status, "verified", JSON.stringify(a.failed));
+  assert.ok(a.days.some((d) => d.kind === "map" && d.chain === "open"));
 });
