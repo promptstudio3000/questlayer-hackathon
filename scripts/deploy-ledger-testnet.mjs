@@ -7,6 +7,8 @@
 // Testnet only. Deploys the Linux/Docker WASM pinned in contracts/wasm-sha256.json.
 //
 //   node scripts/deploy-ledger-testnet.mjs
+//   LEDGER_UPGRADE=1 node scripts/deploy-ledger-testnet.mjs   (code-only upgrade of
+//   the ledger account, state kept; then repairs GOLD held by the 4 Nov callback bug)
 //   then: bash scripts/install-ledger-recorder-vps.sh, commit public/native-ledger-testnet.json, deploy
 import {
   readFileSync,
@@ -151,10 +153,21 @@ async function deployOnce(accountId, wasm, initArgs) {
       account_id: accountId,
       finality: "final",
     });
-    assert(
-      Buffer.from(code.code_base64, "base64").equals(wasm.bytes),
-      `${accountId}: deployed code differs; refusing an implicit upgrade.`,
-    );
+    if (!Buffer.from(code.code_base64, "base64").equals(wasm.bytes)) {
+      // Only the ledger may be upgraded, and only when asked: its state layout
+      // is unchanged, so new code is deployed without a migration.
+      assert(
+        process.env.LEDGER_UPGRADE === "1" && accountId === ledgerId,
+        `${accountId}: deployed code differs; refusing an implicit upgrade (LEDGER_UPGRADE=1 upgrades the ledger).`,
+      );
+      await record("Upgrade code of " + accountId + " (state kept)", () =>
+        account.signAndSendTransaction({
+          receiverId: accountId,
+          actions: [actions.deployContract(wasm.bytes)],
+          waitUntil: "FINAL",
+        }),
+      );
+    }
   }
   return account;
 }
@@ -257,7 +270,30 @@ if (!smoke) {
   );
   smoke = await view(ledgerId, "profile", { account_id: operator.accountId });
 }
+// Before the 4 Nov fix the GOLD callback held a mint that had landed. Clear a
+// held amount that QGOLD already shows, so retry_gold cannot mint it twice.
+if (smoke.gold_pending !== "0") {
+  const minted = BigInt(
+    await view(goldId, "ft_balance_of", { account_id: operator.accountId }),
+  );
+  assert(
+    minted >= BigInt(smoke.gold),
+    "Held GOLD was not minted on QGOLD; investigate before clearing it.",
+  );
+  await record("Clear GOLD held by the callback bug (already minted)", () =>
+    root.callFunctionRaw({
+      contractId: ledgerId,
+      methodName: "set_gold_pending",
+      args: { account_id: operator.accountId, amount: "0" },
+      deposit: 1n,
+      gas: 30n * 10n ** 12n,
+      waitUntil: "FINAL",
+    }),
+  );
+  smoke = await view(ledgerId, "profile", { account_id: operator.accountId });
+}
 assert.equal(smoke.xp, "1");
+assert.equal(smoke.gold_pending, "0", "a landed QGOLD mint must not be held");
 assert.equal(
   await view(ledgerId, "ft_balance_of", { account_id: operator.accountId }),
   "1",
@@ -278,7 +314,12 @@ try {
   });
   refused = !!r.status?.Failure;
 } catch (e) {
-  refused = /soulbound/i.test(String(e?.message || e));
+  // The release WASM aborts without its panic text ("unreachable" trap), so
+  // any contract execution failure counts as the refusal.
+  refused =
+    /soulbound/i.test(rpcErrorText(e)) ||
+    e?.name === "ContractExecutionError" ||
+    e?.constructor?.name === "ContractExecutionError";
 }
 assert(refused, "QXP ft_transfer must fail");
 

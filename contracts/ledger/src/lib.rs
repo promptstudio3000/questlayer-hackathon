@@ -413,7 +413,9 @@ impl Ledger {
 
     #[private]
     pub fn on_gold_minted(&mut self, mints: Vec<GoldMint>) -> bool {
-        if env::promise_result_checked(0, 0).is_ok() {
+        // Only an execution failure holds the GOLD. ft_mint_batch returns the
+        // minted total ("1000000"), so a size-bounded read must not count as one.
+        if !matches!(env::promise_result_checked(0, 64), Err(near_sdk::PromiseError::Failed)) {
             return true;
         }
         self.hold_gold(&mints);
@@ -422,6 +424,18 @@ impl Ledger {
             near_sdk::serde_json::json!({ "standard": "questlayer_ledger", "version": "1.0.0", "event": "gold_held", "data": [{ "accounts": mints.iter().map(|m| m.account_id.to_string()).collect::<Vec<_>>() }] })
         ));
         false
+    }
+
+    /// Owner repair: sets an account's held GOLD (fixes a mint that did land
+    /// but was held by mistake, before `retry_gold` could mint it twice).
+    #[payable]
+    pub fn set_gold_pending(&mut self, account_id: AccountId, amount: U128) {
+        self.assert_owner();
+        if amount.0 == 0 {
+            self.gold_pending.remove(&account_id);
+        } else {
+            self.gold_pending.insert(&account_id, &amount.0);
+        }
     }
 
     /// Sends GOLD whose earlier mint failed again. Recorder only.
