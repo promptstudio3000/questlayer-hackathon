@@ -108,6 +108,7 @@ import {
 import "./styles.css";
 import "./theme-accents.css";
 import "./compact-ui.css";
+import "./mobile-sheets.css";
 import { HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
 import { pushBurst, type RewardBurst } from "./reward-burst";
@@ -2857,7 +2858,9 @@ export default function App() {
         }[tab] ||
         "QuestLayer";
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell${player && (tab !== "explore" || sheetExpanded) ? " sheet-open" : ""}`}
+    >
       {player ? (
         <GameMap
           playerTier={
@@ -2977,6 +2980,7 @@ export default function App() {
       </aside>
       <header className="topbar">
         <div className="wordmark" onClick={() => setTab("explore")}>
+          <img className="wordmark-logo" src="/icon.svg" alt="" width={36} height={36} />
           <span>
             QUEST<span>LAYER</span>
           </span>
@@ -3109,18 +3113,24 @@ export default function App() {
               aria-expanded={sheetExpanded}
               onClick={() => setSheetExpanded((v) => !v)}
             >
+              {sheetExpanded && (
+                <span className="sheet-toggle-back" aria-hidden="true">
+                  <ArrowLeft size={20} />
+                </span>
+              )}
               <span className="sheet-toggle-label">
                 {sheetExpanded ? tr("Show map") : tr("Show discoveries")}
                 {!nativePlay && (
                   <PickupSummary totals={pickupFeedback.totals} />
                 )}
               </span>
-              <PhArrowRight
-                size={20}
-                style={{
-                  transform: sheetExpanded ? "rotate(90deg)" : "rotate(-90deg)",
-                }}
-              />
+              {!sheetExpanded && (
+                <PhArrowRight
+                  size={20}
+                  aria-hidden="true"
+                  style={{ transform: "rotate(-90deg)" }}
+                />
+              )}
             </button>
           )}
           {tab === "explore" && !nativePlay && adventureResults.unread && (

@@ -48,3 +48,24 @@ Screen changes:
 - Removed repeated disclaimers: "Test rewards · no monetary value" under
   the Test network chip, the Signed offers lead line, "Cosmetic only" on
   the set card, the "originals still being added" note in Wardrobe.
+
+## Wave 3: phone shell (4 Nov 2026)
+
+Styles in `src/mobile-sheets.css` (imported after `compact-ui.css`).
+
+- Header: 56 px, the QuestLayer logo at the top left, then the HUD pills
+  (Today's board, GOLD, level ring). The "650/900 XP" line is gone on
+  phones; the ring shows progress.
+- An open sheet owns the bottom of the screen: while Discoveries is
+  expanded or a screen (Inventory, Community, Profile) is open, the bottom
+  menu and the header slide away and come back when the sheet closes. The
+  app shell carries `sheet-open` for this. Journeys switch screens by
+  closing the sheet first (`scripts/lib/e2e-nav.mjs`).
+- Back is always an arrow pointing left: the expanded Discoveries sheet
+  shows "← Show map"; only the closed peek keeps the up arrow that opens it.
+- Dialogs have one frame and one padding (14-16 px on phones), not the
+  dialog padding plus the section padding. Badges gets the corner ✕ and its
+  kind filter scrolls in one row.
+- NPC dialogs: grid tracks may shrink (`minmax(0, 1fr)`) and locked chips
+  wrap their gate text under the label, so long gates ("Reach Tier 2 …")
+  no longer push the dialog past the right edge.
