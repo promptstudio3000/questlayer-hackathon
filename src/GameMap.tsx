@@ -27,6 +27,7 @@ import {
 import type { NearbyExplorer } from "./types";
 import type { ActorView } from "./actor-types";
 import type { ActorsLayer } from "./actors-layer";
+import type { MapRewardsLayer } from "./map-rewards-layer";
 import { useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -37,7 +38,7 @@ import "./art-world";
 import type { Point, World, Zone, Item } from "./types";
 import { prefersReducedMotion } from "./feedback";
 import { paintMapSky, skyFor, skyLabel } from "./map-sky";
-import { MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
+import { Coins, MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
 import "./map-sky.css";
 import { tr } from "./i18n";
 type PawnScene = ReturnType<
@@ -99,6 +100,7 @@ const CREATOR_PIN_NAME = {
   get trail() { return tr("Creator trail"); },
   get chest() { return tr("Creator chest"); },
 };
+const COIN_TIER_SCALE = ["match", ["get", "tier"], "rare", 1.45, "medium", 1.2, 1];
 function phoneLayout() {
   return (
     window.innerWidth < 760 ||
@@ -239,6 +241,16 @@ export function GameMap(props: GameMapProps) {
     if (ready && map.current) paintMapSky(map.current, sky.phase);
   }, [ready, sky.phase]);
   const skyText = skyLabel(sky, props.now ?? skyTick);
+  // Map rewards: the next coin wave in this world, in its local time.
+  const nextWaveAt = props.world?.mapRewards?.nextWaveAt;
+  const nextWaveText =
+    nextWaveAt && nextWaveAt > (props.now ?? skyTick)
+      ? new Intl.DateTimeFormat(undefined, {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: props.world?.timezone || undefined,
+        }).format(nextWaveAt)
+      : null;
   const [viewportRevision, setViewportRevision] = useState(0);
   useEffect(() => {
     let frame = 0;
@@ -580,17 +592,19 @@ export function GameMap(props: GameMapProps) {
             "street-find",
             "gold-coin",
           ],
+          // Medium and rare coins (map rewards) are drawn bigger. Zoom must
+          // stay the top-level interpolate input.
           "icon-size": [
             "interpolate",
             ["linear"],
             ["zoom"],
             14,
-            0.45,
+            ["*", 0.45, COIN_TIER_SCALE],
             17,
-            0.8,
+            ["*", 0.8, COIN_TIER_SCALE],
             19,
-            1.05,
-          ],
+            ["*", 1.05, COIN_TIER_SCALE],
+          ] as any,
           "icon-allow-overlap": true,
         },
       });
@@ -616,7 +630,7 @@ export function GameMap(props: GameMapProps) {
       type: "FeatureCollection",
       features: coins.map((c) => ({
         type: "Feature",
-        properties: { id: c.id, find: !!c.find },
+        properties: { id: c.id, find: !!c.find, tier: c.tier || "small" },
         geometry: { type: "Point", coordinates: [c.lng, c.lat] },
       })),
     });
@@ -787,6 +801,24 @@ export function GameMap(props: GameMapProps) {
     });
     return () => markers.forEach((m) => m.remove());
   }, [props.others, ready]);
+  // Today's coins per area (heatmap, counts, pioneer gold fog): own chunk.
+  const rewardsLayer = useRef<MapRewardsLayer | null>(null);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    let gone = false;
+    import("./map-rewards-layer")
+      .then(({ attachMapRewardsLayer }) => {
+        if (gone || rewardsLayer.current) return;
+        rewardsLayer.current = attachMapRewardsLayer(m);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+      rewardsLayer.current?.destroy();
+      rewardsLayer.current = null;
+    };
+  }, [ready]);
   // Roaming NPCs and monsters: a separate chunk, loaded once the map is up.
   const actorsLayer = useRef<ActorsLayer | null>(null);
   const actorsEnabled = !!props.onActor && !!props.actorsWorldId;
@@ -1173,6 +1205,12 @@ export function GameMap(props: GameMapProps) {
             <SunHorizon size={14} weight="fill" aria-hidden />
           )}
           <span aria-hidden>{skyText.short}</span>
+          {nextWaveText && (
+            <span className="map-wave-hint" title={tr("More coins appear in this area at {time}.", { time: nextWaveText })}>
+              <Coins size={14} weight="fill" aria-hidden />
+              {nextWaveText}
+            </span>
+          )}
         </div>
       )}
       {!ready && (

@@ -88,6 +88,8 @@ export type Coin = Point & {
   claimant: string | null;
   // A street find is a coin seed that also pays extra XP (server-chosen).
   find?: boolean;
+  /** Map rewards: medium or rare coins (small is the default). */
+  tier?: "medium" | "rare";
 };
 export type QuestActivity = {
   templateId: string;
@@ -171,6 +173,13 @@ export type World = {
   coins: Coin[];
   /** Set when the server sent only the coins within radiusM of this point. */
   coinsNear?: Point & { radiusM: number };
+  /** Map rewards (docs/MAP-REWARDS.md): today's cell drops and the next coin wave. */
+  mapRewards?: {
+    policy: string;
+    cells: Record<string, { coins: number; valueU: number; pioneer: boolean; zones: number; waves: number[] }>;
+    nextWaveAt: number | null;
+    hiddenCoins: number;
+  };
   quests: Quest[];
 };
 export type Listing = {

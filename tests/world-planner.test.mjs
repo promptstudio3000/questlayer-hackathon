@@ -142,13 +142,12 @@ test("a new local day immediately recovers uncollected backing before publishing
     const next = await ensureWorld(db, HOME, true, today.endsAt + 1);
     assert.equal(next.day, "2026-11-01");
     assert.notEqual(next.id, today.id);
-    assert.deepEqual(balances(db), first);
-    assert.equal(
-      db
-        .prepare("SELECT count(*) AS n FROM coins WHERE world_id=?")
-        .get(next.id).n,
-      6000,
-    );
+    // Yesterday's coins went back before today's cell drop reserved its own.
+    const coins = (id) =>
+      db.prepare("SELECT count(*) n,COALESCE(SUM(value_u),0) v FROM coins WHERE world_id=?").get(id);
+    assert.ok(coins(next.id).n > 0);
+    assert.equal(balances(db).find((b) => b.bucket === "coins").reserved_u, coins(next.id).v);
+    assert.equal(balances(db).find((b) => b.bucket === "zones").reserved_u, first.find((b) => b.bucket === "zones").reserved_u);
     for (const row of balances(db)) {
       const original = before.find((b) => b.bucket === row.bucket);
       assert.equal(

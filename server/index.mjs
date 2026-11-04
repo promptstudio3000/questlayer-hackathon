@@ -1,4 +1,9 @@
 import { defaultDatabasePath } from "./state-path.mjs";
+import {
+  cellProof,
+  mapRewardsDay,
+  mapRewardsView,
+} from "./map-rewards/service.mjs";
 import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
@@ -1098,6 +1103,38 @@ async function api(req, res, url) {
       url.searchParams.get("refresh") === "1" || !nativeRewards.lastAudit;
     if (fresh) nativeRewards.lastAudit = await auditDistribution(nativeRewards);
     return respond(res, nativeRewards.lastAudit);
+  }
+  if (path === "/api/map/rewards" && method === "GET") {
+    // Coin counts and value per area for the map overlay and heatmap.
+    const bbox = String(url.searchParams.get("bbox") || "")
+      .split(",")
+      .map(Number);
+    assert(
+      bbox.length === 4 &&
+        bbox.every(Number.isFinite) &&
+        bbox[0] < bbox[2] &&
+        bbox[1] < bbox[3] &&
+        bbox[2] - bbox[0] <= 12 &&
+        bbox[3] - bbox[1] <= 8,
+      "Use bbox=west,south,east,north (at most 12 x 8 degrees).",
+      400,
+    );
+    const r = Number(url.searchParams.get("res") || 7);
+    assert([4, 5, 6, 7].includes(r), "Use res 4, 5, 6 or 7.", 400);
+    return respond(res, mapRewardsView(db, { bounds: bbox, res: r }), 200, {
+      "Cache-Control": "public, max-age=30",
+    });
+  }
+  if (path === "/api/map/rewards/day" && method === "GET") {
+    const day = mapRewardsDay(db);
+    return respond(res, day, 200, { "Cache-Control": "public, max-age=60" });
+  }
+  if (path === "/api/map/rewards/proof" && method === "GET") {
+    const cell = String(url.searchParams.get("cell") || "");
+    const day = mapRewardsDay(db).day;
+    const proof = cellProof(db, String(url.searchParams.get("day") || day), cell);
+    assert(proof, "This cell has no reward leaf on that day.", 404);
+    return respond(res, proof);
   }
   if (path === "/api/economy/ledger" && method === "GET")
     return respond(res, await publicLedger(), 200, {

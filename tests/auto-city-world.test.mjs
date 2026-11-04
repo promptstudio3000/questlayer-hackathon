@@ -43,7 +43,8 @@ test("an auto city world has zones, the unverified notice and no zone prize", as
   assert.equal(w.quality.funded, false);
   assert.equal(w.quality.notice, AUTO_CITY_NOTICE);
   assert.match(w.quality.notice, /^Unverified map/);
-  assert.ok(w.zones.length > 0 && w.zones.length <= 6);
+  const own = w.zones.filter((z) => z.source !== "pioneer");
+  assert.ok(own.length > 0 && own.length <= 6);
   const view = worldView(db, w.id, player);
   assert.ok(view.quests.length > 0);
   assert.ok(
