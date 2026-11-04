@@ -66,7 +66,6 @@ import {
 import { makeNativeObjective } from "./native-objective";
 import { useAdventureSelection } from "./useAdventureSelection";
 import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
-import { sendConfirmedNative } from "./confirmed-native-transaction";
 import { walletSigner, type NativeSigner } from "./native-signer";
 import { useInvisibleAccount } from "./useInvisibleAccount";
 import "./map-notes.css";
