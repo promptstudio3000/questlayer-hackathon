@@ -36,6 +36,7 @@
     "market:fixture": "node scripts/lib/signed-order-fixture.mjs",
     "seed:test": "node scripts/test-seed.mjs",
     "poi:classify": "node server/poi/cli.mjs",
+    "poi:validate": "node scripts/poi/validate-release.mjs",
     "world:coverage": "node scripts/world-coverage.mjs",
     "ai:flavour": "node server/cli/ai-flavour.mjs",
     "i18n:keys": "node scripts/i18n-keys.mjs",

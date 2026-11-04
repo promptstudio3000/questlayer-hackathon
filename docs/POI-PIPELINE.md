@@ -133,6 +133,11 @@ stage and the error; SIGTERM counts as failed). A failed run keeps the previous 
 both as `poiWorld` (see `docs/WORLD-COVERAGE.md`), and `npm run world:coverage` turns the file into a coverage
 report and map.
 
+## Worldwide build by an external worker
+
+The spec for a worker that builds the database for the whole world (schema contract, sharding, validation with
+`npm run poi:validate`, hand-over and swap-in) is `docs/POI-WORKER-BRIEF.md`.
+
 ## Tests
 
 `tests/poi-pipeline.test.mjs` runs the whole build on `tests/fixtures/poi/` without network: merge and fold rules,
