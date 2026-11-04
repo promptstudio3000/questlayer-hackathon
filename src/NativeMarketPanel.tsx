@@ -38,6 +38,7 @@ export function NativeMarketPanel({
 }) {
   const showListings = section !== "offers",
     showOffers = section !== "secured";
+  const [intentsOn, setIntentsOn] = useState(false);
   const [data, setData] = useState<NativeMarketState | null>(null),
     [balances, setBalances] = useState<NativeMarketBalance[]>([]),
     [error, setError] = useState(""),
@@ -407,6 +408,22 @@ export function NativeMarketPanel({
             </>
           )}
           {showOffers && (
+          <Suspense fallback={null}>
+          <IntentsPanel
+            signer={orderSigner}
+            onEnabled={setIntentsOn}
+            owned={
+              wardrobe?.accounts
+                .find((a) => a.accountId === orderSigner?.accountId)
+                ?.items.filter((i) => i.kind === "aura") || []
+            }
+          />
+          </Suspense>
+          )}
+          {showOffers && (intentsOn ? (
+          // NEAR Intents is the default market; older ways stay reachable so
+          // Auras already escrowed there can be traded or taken back.
+          <Details summary={tr("Older market")}>
           <SignedOrdersPanel
             data={data}
             signer={orderSigner}
@@ -421,19 +438,23 @@ export function NativeMarketPanel({
             busy={busy}
             onChanged={async () => (await load(true)).state}
           />
-          )}
-          {showOffers && (
-          <Suspense fallback={null}>
-          <IntentsPanel
+          </Details>
+          ) : (
+          <SignedOrdersPanel
+            data={data}
             signer={orderSigner}
             owned={
               wardrobe?.accounts
                 .find((a) => a.accountId === orderSigner?.accountId)
                 ?.items.filter((i) => i.kind === "aura") || []
             }
+            balance={balances.find(
+              (a) => a.accountId === orderSigner?.accountId,
+            )}
+            busy={busy}
+            onChanged={async () => (await load(true)).state}
           />
-          </Suspense>
-          )}
+          ))}
           {showListings && (
           <div className="native-market-pages">
             <button

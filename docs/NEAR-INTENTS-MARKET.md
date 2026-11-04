@@ -82,8 +82,14 @@ Routes: `GET /api/native/intents`, `GET /api/native/intents/account?account=&pub
 
 ### Player UI
 
-Market → Offers shows a **NEAR Intents (test)** panel under Signed offers,
-labelled experimental. Turn on → list an Aura for a wNEAR price → others buy
+NEAR Intents is the **default market** (Lubos, 4 Nov): once the verifier
+manifest exists, Market → Offers opens with the **NEAR Intents (test)** panel
+and the older signed offers fold into an "Older market" section, so Auras
+already escrowed there can still be traded or taken back. Without the manifest
+the old market shows as before. The collection's Sell button switches to an
+Intents sell in a follow-up from the "Put every trade on chain" thread (PR #161).
+It is P2P: both players sign their own side and the verifier settles both legs
+in one transaction; the server only pairs orders and pays gas. Turn on → list an Aura for a wNEAR price → others buy
 with one tap (the panel wraps and deposits missing wNEAR first) → withdraw
 back to the account. Only the invisible explorer's device key can sign intents
 for now; a linked external wallet would need one more reviewed flow.

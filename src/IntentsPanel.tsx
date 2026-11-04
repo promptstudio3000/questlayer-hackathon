@@ -18,7 +18,7 @@ const GAS = "100000000000000",
   NFT_GAS = "200000000000000",
   WNEAR_STORAGE = "1250000000000000000000"; // 0.00125 NEAR, refunded if registered
 
-export function IntentsPanel({ signer, owned }: { signer: OrderSigner | null; owned: NativeItem[] }) {
+export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner | null; owned: NativeItem[]; onEnabled?: (on: boolean) => void }) {
   const [config, setConfig] = useState<IntentsConfig | null>(null),
     [mine, setMine] = useState<IntentsAccount | null>(null),
     [sellToken, setSellToken] = useState(""),
@@ -32,6 +32,7 @@ export function IntentsPanel({ signer, owned }: { signer: OrderSigner | null; ow
   async function refresh() {
     const c = await api<IntentsConfig>("/native/intents");
     setConfig(c);
+    onEnabled?.(!!c.enabled);
     if (c.enabled && accountId && signer)
       setMine(
         await api<IntentsAccount>(
