@@ -50,9 +50,10 @@
       "contract": "questlayer_collectibles",
       "sha256": "1cb649afccc9ccfb7ef2a99e29bf346e312b94915feb17fdd1c4fdfb8bf07488"
     },
-    "public/native-ledger-testnet.json:wasmSha256": {
-      "contract": "questlayer_ledger",
-      "sha256": "3d532a66f4e735d2ac234e4e7cdc288cfcf6e4bac123fb20019af71e15a2a5a1"
+    "public/native-intents-testnet.json:wasmSha256": {
+      "contract": "near_intents_defuse",
+      "sha256": "1098ca2fecdfdb4dbc21e9fdfc513351816d85ed75f88144abb0c78a64ac1d60",
+      "note": "External code, not ours: near/intents defuse v0.4.5 (commit 16d04f6), built by scripts/intents-verifier-testnet.mjs --build in its own pinned image sourcescan/cargo-near:0.22.0-rust-1.97.1. Experimental testnet verifier only."
     }
   }
 }

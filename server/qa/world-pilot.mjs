@@ -6,6 +6,7 @@ import { backup } from "node:sqlite";
 import { generateKeyPairSync, sign, verify } from "node:crypto";
 import { cellToLatLng, latLngToCell } from "h3-js";
 import { openDatabase, createPlayer } from "../database.mjs";
+import "../schema-catalog.mjs";
 import { hash } from "../domain.mjs";
 import { ensureWorld, worldView, expireWorlds, HOME } from "../world.mjs";
 import { claimCoin, claimQuest, equip } from "../game.mjs";
