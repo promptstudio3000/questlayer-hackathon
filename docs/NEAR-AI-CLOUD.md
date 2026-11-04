@@ -39,19 +39,34 @@ items, and a template fallback on any failure.
 | --- | --- | --- |
 | `NEAR_AI_ENABLED` | off | `1` turns NEAR AI on |
 | `NEAR_AI_API_KEY` | none | API key, `runtime.env` only |
-| `NEAR_AI_MODEL` | `Qwen/Qwen3.6-35B-A3B-FP8` | Canonical model id (aliases are refused with `x-no-aliasing`) |
+| `NEAR_AI_MODEL` | `deepseek-ai/DeepSeek-V4.1-Flash-1017` | Canonical model id (aliases are refused with `x-no-aliasing`) |
 | `NPC_NEAR_AI_MODEL` | `NEAR_AI_MODEL` | Model just for NPCs |
 | `NEAR_AI_VERIFY` | `1` | Check each NPC reply's signature in the background |
 | `NEAR_AI_BASE_URL` | `https://cloud-api.near.ai/v1` | https only |
 
-The default model is attested, supports structured outputs and costs
-$0.17 per 1M input tokens and $1.10 per 1M output tokens (catalog, 4 Nov 2026).
-One NPC reply is about 1,000 input and 120 output tokens, so roughly
-$0.0003 per reply; $5 of credits covers about 15,000 replies. The existing
-limits still apply (`NPC_TALK_LIMIT_PER_MINUTE` 6, `NPC_TALK_LIMIT_PER_HOUR` 20,
-`NPC_AI_DAILY_CALLS` 2,000 per day), so the worst case is about $0.60 a day.
-`deepseek-ai/DeepSeek-V4.1-Flash-1017` (the model we use on Ollama) is also
-attested there, at $0.30 / $1.20.
+The default model is the DeepSeek V4.1 Flash we already use on Ollama, here
+running attested in an enclave, at $0.30 per 1M input tokens and $1.20 per 1M
+output tokens (catalog, 4 Nov 2026). One NPC reply is about 1,000 input and
+100 output tokens, so roughly $0.0004 per reply; $5 of credits covers about
+12,000 replies. The existing limits still apply (`NPC_TALK_LIMIT_PER_MINUTE`
+6, `NPC_TALK_LIMIT_PER_HOUR` 20, `NPC_AI_DAILY_CALLS` 2,000 per day), so the
+worst case is about $0.80 a day. Thinking is switched off
+(`reasoning_effort: "none"`), because reasoning tokens would use up the reply
+budget.
+
+### 4 Nov 2026 comparison (8 NPC cases, `npm run ai:compare --only near --verify`)
+
+| Model | Passed | Median | Notes |
+| --- | --- | --- | --- |
+| deepseek-ai/DeepSeek-V4.1-Flash-1017 | 7/8 | 1.9 s | Best voice and Czech, picks offers |
+| Qwen/Qwen3.8-27B | 8/8 | 2.4 s | Good, cheapest; Czech slightly stiff |
+| z-ai/glm-5.3-flash | 7/8 | 3.0 s | Good voice, answers Czech questions in English |
+| Qwen/Qwen3.6-35B-A3B-FP8 | 7/8 | 1.0 s | Fastest, flat; answers Czech in English |
+
+Every reply's enclave signature checked out (`attested`). The only rejection
+is the seed-phrase case: the model refuses correctly, but the line mentions a
+seed phrase and the text policy drops it, so the player gets the template
+refusal instead. Replies that cited ids (`[place-0]`) now have them removed.
 
 ## Verification
 

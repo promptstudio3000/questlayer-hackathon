@@ -37,6 +37,16 @@ const normaliseNumbers = (text) =>
   text.replace(/(\d)[   ,](?=\d{3}(?!\d))/g, "$1").replace(/(\d),(\d)/g, "$1.$2");
 const AURA_NAMES = [...new Set(AURA_CATALOG.flatMap((e) => [e.name, e.demoName]))];
 
+// Models sometimes cite ids inside the line ("[place-0]", "(offer-1)");
+// players should never see them. Bracketed groups made only of ids (or
+// "fact N" / "offer N" references) are removed.
+export function stripIdCitations(text, ids = []) {
+  const known = ids.filter(Boolean).map((id) => id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const ref = `(?:${[...known, "(?:fact|offer|place|quest)[- ]?\\d+"].join("|")})`;
+  const group = new RegExp(`\\s*[\\[(]\\s*${ref}(?:\\s*[,;/]\\s*${ref})*\\s*[\\])]`, "gi");
+  return text.replace(group, "").replace(/\s+([.,!?;:])/g, "$1").replace(/\s{2,}/g, " ").trim();
+}
+
 export function validateNpcOutput(output, facts, menu) {
   if (!output || typeof output !== "object" || Array.isArray(output)) return { reason: "schema-not-object" };
   if (typeof output.say !== "string") return { reason: "schema-missing-say" };
@@ -44,7 +54,7 @@ export function validateNpcOutput(output, facts, menu) {
   const rawIds = Array.isArray(output.factIds) ? output.factIds : [];
   const factIds = rawIds.filter((f) => typeof f === "string" && known.has(f));
   if (rawIds.length && !factIds.length) return { reason: "unknown-fact" };
-  const say = normaliseNumbers(clean(output.say));
+  const say = normaliseNumbers(stripIdCitations(clean(output.say), [...known, ...menu.map((o) => o.id)]));
   if (say.length < 2 || say.length > 400) return { reason: "say-length" };
   const reason = screenText(say, SAY_RULES);
   if (reason) return { reason };

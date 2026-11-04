@@ -203,3 +203,13 @@ test("NPC talk on NEAR AI returns a chat id and records the attestation", async 
   const row = db.prepare("SELECT provider,attested,signature_hash FROM ai_npc_requests").get();
   assert.deepEqual({ ...row }, { provider: "near-ai", attested: 1, signature_hash: "f".repeat(64) });
 });
+
+test("NPC lines lose bracketed id citations", async () => {
+  const { stripIdCitations, validateNpcOutput } = await import("../server/npc/talk.mjs");
+  assert.equal(stripIdCitations("Go 140 m north. [place-0]", ["place-0"]), "Go 140 m north.");
+  assert.equal(stripIdCitations("Walk (offer-0) or listen (offer 1).", []), "Walk or listen.");
+  assert.equal(stripIdCitations("Keep (this) and [that].", ["place-0"]), "Keep (this) and [that].");
+  const facts = [{ id: "place-0", text: "The square is 140 m away." }];
+  const v = validateNpcOutput({ say: "The square is 140 m away (place-0).", factIds: ["place-0"], offer: null, emote: "wave" }, facts, []);
+  assert.equal(v.value.say, "The square is 140 m away.");
+});

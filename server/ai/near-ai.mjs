@@ -13,8 +13,10 @@ import { createHash, createPublicKey, randomBytes, verify } from "node:crypto";
 import { extractJsonObject, ProviderOutputError } from "./ollama.mjs";
 
 export const DEFAULT_NEAR_AI_URL = "https://cloud-api.near.ai/v1";
-// Attested, structured outputs, $0.17 in / $1.10 out per 1M tokens (Nov 2026).
-export const DEFAULT_NEAR_AI_MODEL = "Qwen/Qwen3.6-35B-A3B-FP8";
+// Same model family as our Ollama setup, attested, $0.30 in / $1.20 out per
+// 1M tokens (Nov 2026). Best Czech and in-character voice in the 4 Nov
+// comparison (docs/NEAR-AI-CLOUD.md).
+export const DEFAULT_NEAR_AI_MODEL = "deepseek-ai/DeepSeek-V4.1-Flash-1017";
 export const NEAR_AI_VERIFY_URL = "https://cloud.near.ai/verify";
 const REPORT_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -103,7 +105,9 @@ export async function nearAiJson(
     { role: "system", content: system },
     { role: "user", content: user },
   ];
-  const common = { max_tokens: maxTokens, temperature, messages };
+  // Thinking off: NPC lines are short and reasoning tokens would eat the
+  // max_tokens budget (Qwen3.6 truncates otherwise).
+  const common = { max_tokens: maxTokens, temperature, reasoning_effort: "none", messages };
   let first;
   try {
     first = await complete(connection, {
