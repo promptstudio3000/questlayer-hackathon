@@ -10,6 +10,16 @@ Badges reward exploring the real world. They are decorations only: no GOLD, XP, 
 - Stored in `place_badge_awards` (schema module `badges` v1). Not inventory, so the market cannot see them.
 - UI: Profile → **Badges** (`src/BadgeBook.tsx`): earned/total per kind, nearest new badges, medal grid by kind and a detail sheet with a map link. A toast appears when a badge is earned.
 
+## 1a. Place badges on NEAR (soulbound NFTs)
+
+Every earned place badge is also minted to the player's NEAR account on the `questlayer_badges` contract, with no click.
+
+- The first time anyone earns a place, the server creates one **sponsored** design for it: id `place-<badge id>` (shortened with a hash past 48 characters), creator = the badge contract itself, kind `Place` with the catalog point and radius, supply 10,000, colour by rarity.
+- Each award then queues a claim in `place_badge_mints` (schema module `place-badge-mints` v1). The badge worker (every 15 s) signs it with the award signer and mints it to the account linked at that moment (the invisible explorer account or a wallet). A player without an account waits and is retried every 10 minutes, so badges earned before linking still arrive.
+- Badges earned before this existed are backfilled from `place_badge_awards` on start.
+- `GET /api/badges` shows `places.onChain` and, per badge, `chain: {state, accountId, tx, tokenId}`; the Badge book links the mint transaction on the explorer. `/api/health` → `badges.placeMints` shows the queue.
+- `PLACE_BADGES_ONCHAIN` defaults to on for testnet and off for mainnet (each design and mint is paid by the contract account).
+
 ## 2. Player badges (NEAR, POAP-like)
 
 Any explorer with a linked NEAR account (wallet or the invisible game account) can design a badge:

@@ -37,7 +37,6 @@ export function profileTabOf(tab: string, view: ProfileView): ProfileTab {
 }
 
 export const MARKET_TABS: readonly ScreenTab<MarketView>[] = [
-  { id: "practice", get label() { return tr("Practice"); }, icon: Coins },
   { id: "secured", get label() { return tr("Secured"); }, icon: ShieldCheck },
   { id: "offers", get label() { return tr("Offers"); }, icon: Signature },
 ];

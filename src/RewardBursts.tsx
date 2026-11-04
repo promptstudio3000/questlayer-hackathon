@@ -1,5 +1,5 @@
 import { Coins, Sparkle, Trophy, Star } from "@phosphor-icons/react";
-import { lifetime, type RewardBurst } from "./reward-burst";
+import type { RewardBurst } from "./reward-burst";
 import { ChainLink } from "./lazy-panels";
 import "./reward-burst.css";
 
@@ -13,11 +13,7 @@ export function RewardBursts({ bursts }: { bursts: readonly RewardBurst[] }) {
       {bursts.map((b) => {
         const Icon = ICON[b.tone];
         return (
-          <div
-            key={b.id}
-            className={`reward-burst tone-${b.tone}`}
-            style={b.chain ? { animationDuration: `${lifetime(b)}ms` } : undefined}
-          >
+          <div key={b.id} className={`reward-burst tone-${b.tone}`}>
             <Icon size={b.tone === "coin" ? 18 : 26} weight="fill" />
             <span>
               <strong>{b.title}</strong>

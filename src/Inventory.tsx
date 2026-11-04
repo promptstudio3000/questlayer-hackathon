@@ -26,6 +26,7 @@ import {
 } from "@phosphor-icons/react";
 import { ArrowLeft, ArrowRight } from "./dir-icons";
 import { api, GOLD } from "./api";
+import { parseNearPrice } from "./native-amounts";
 import { Character } from "./Character";
 import { Character3D } from "./Character3D";
 import { Dialog } from "./Dialog";
@@ -168,7 +169,8 @@ export function Inventory({
   onEvm: () => Promise<void>;
   onSkin: (id: string | null) => Promise<void>;
   onEquip: (item: Item) => void;
-  onSell: (item: Item, price: number) => Promise<boolean>;
+  /** Secures the Aura on NEAR and lists it on the market; price in yoctoNEAR. */
+  onSell: (item: Item, priceYocto: string) => Promise<boolean>;
   onExplore?: () => void;
   initialCollection?: "demo" | "near";
   /** XP shown in the level bar; defaults to the practice XP on `player`. */
@@ -193,7 +195,7 @@ export function Inventory({
     form: "demo-aura-listing",
     realm: `demo:${selectedId || "none"}`,
     fields: PRICE_DRAFT_FIELDS,
-    initial: { price: "10" },
+    initial: { price: "0.05" },
   });
   const price = priceDraft.values.price;
   const setPrice = (value: string) => priceDraft.setField("price", value);
@@ -339,19 +341,13 @@ export function Inventory({
       currentSelection.current !== JSON.stringify([player.id, selectedId])
     )
       return;
-    const parsedPrice = Number(price.replace(",", "."));
-    const amount = Number.isFinite(parsedPrice)
-      ? Math.round(parsedPrice * GOLD)
-      : 0;
     if (!selected || selected.native_claim_state === "issued" || locked) return;
-    if (
-      !Number.isSafeInteger(amount) ||
-      amount < 1 ||
-      amount > 1000000 * GOLD
-    ) {
-      setListingError(
-        tr("Enter a price from 0.000001 to 1,000,000 practice GOLD."),
-      );
+    // Aura trades settle on NEAR, so the price is in test NEAR (yocto).
+    let amount: string;
+    try {
+      amount = parseNearPrice(price.replace(",", "."));
+    } catch {
+      setListingError(tr("Choose a price between 0.001 and 1,000 test NEAR."));
       return;
     }
     setListingPending(true);
@@ -1093,9 +1089,9 @@ export function Inventory({
                     }}
                   >
                     <p>
-                      {tr("Listing moves this Aura to the market. You get practice GOLD when another explorer buys it.")}</p>
+                      {tr("Selling secures this Aura on NEAR and lists it on the market. You get test NEAR when another explorer buys it.")}</p>
                     <label htmlFor="inventory-list-price">
-                      {tr("Price in practice GOLD")}</label>
+                      {tr("Price in test NEAR")}</label>
                     <div className="inventory-price-input">
                       <Coins size={22} aria-hidden="true" />
                       <input
@@ -1109,7 +1105,7 @@ export function Inventory({
                       />
                     </div>
                     <p className="inventory-sale-note">
-                      {tr("Practice market only. Secured Auras and originals stay put.")}</p>
+                      {tr("Every trade settles on NEAR. Cancel the listing any time in Market → Secured.")}</p>
                     {priceDraft.hasDraft && (
                       <p className="inventory-sale-note" role="status">
                         {priceDraft.storageAvailable

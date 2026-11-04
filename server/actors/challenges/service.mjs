@@ -85,6 +85,7 @@ export function createChallengeService({
       name: c.name,
       element: c.element,
       ...(c.guards ? { guards: c.guards } : {}),
+      ...(c.where ? { where: c.where } : {}),
       format: c.format,
       outcome: verdict.won ? "won" : "lost",
       score: verdict.score,
@@ -176,6 +177,8 @@ export function createChallengeService({
         name: actor.name,
         element: actor.element,
         guards: actor.guards,
+        // Where the monster stood (the chain ledger records its geohash-7 cell).
+        where: Number.isFinite(actor.lat) && Number.isFinite(actor.lng) ? { lat: actor.lat, lng: actor.lng } : null,
         format,
         dayId: enc.dayId,
         seedCommitment: sha256(seed),

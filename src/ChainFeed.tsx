@@ -13,6 +13,8 @@ import { EXPLORER_BASE } from "./near-network.ts";
 import { ChainLink } from "./ChainLink";
 import type { ChainRef } from "./chain-proof";
 import "./chain-feed.css";
+export { ChainLink };
+export { AutoSocialProfile } from "./AutoSocialProfile";
 
 export type ChainFeedItem = ChainRef & {
   id: string;

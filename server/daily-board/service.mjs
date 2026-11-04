@@ -12,6 +12,7 @@
 //   boss    landed hits on the weekly boss today
 import { assert } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
+import { recordChainAction } from "../chain-ledger/service.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { streetFindIds } from "../street-finds.mjs";
 import { DAILY_BOARD_SCHEMA } from "./schema.mjs";
@@ -180,6 +181,7 @@ export function createDailyBoard(db, settings, { actorsOn = () => false, now = (
         at,
       );
       if (settings.bonusXp) db.prepare("UPDATE players SET xp=xp+? WHERE id=?").run(settings.bonusXp, player);
+      recordChainAction(db, { player, kind: "board", xp: settings.bonusXp, ref: `board:${manifest.day}`, evidence: { day: manifest.day, goals }, now: at });
       history(db, player, "daily-board", "Today's board complete", 0, { day: manifest.day, xp: settings.bonusXp });
       return view(player, manifest);
     });

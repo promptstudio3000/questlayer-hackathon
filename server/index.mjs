@@ -154,6 +154,9 @@ import { loadPlaceBadges } from "./badges/place-catalog.mjs";
 import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
 import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
 import { createBadgeRoutes } from "./badges/routes.mjs";
+import { chainLedgerSettings, createChainLedger } from "./chain-ledger/service.mjs";
+import { createLedgerChain, startLedgerWorker } from "./chain-ledger/chain.mjs";
+import { createChainLedgerRoutes } from "./chain-ledger/routes.mjs";
 import { seasonSettings } from "./season/config.mjs";
 import { createSeason } from "./season/service.mjs";
 import { createSeasonRoutes } from "./season/routes.mjs";
@@ -502,6 +505,40 @@ try {
 } catch (error) {
   console.error("NPC traders disabled:", error?.message || error);
 }
+// Every Aura trade happens on NEAR (owner decision 4 Nov 2026): the old
+// practice-GOLD market in the game database takes no new listings or
+// purchases, and open listings are closed at boot (the Auras never left their
+// owners' collections). Players secure an Aura, then sell it on market v2.
+// PRACTICE_MARKET=db brings the database market back (local tests only).
+const PRACTICE_MARKET_ON_CHAIN = process.env.PRACTICE_MARKET !== "db";
+if (PRACTICE_MARKET_ON_CHAIN) {
+  const closed = db
+    .prepare("UPDATE listings SET state='cancelled' WHERE state='open'")
+    .run().changes;
+  if (closed) console.log(`Practice market moved on chain: closed ${closed} database listing(s).`);
+}
+function assertPracticeMarketOpen() {
+  assert(
+    !PRACTICE_MARKET_ON_CHAIN,
+    "Aura trades now happen on NEAR. Secure the Aura, then sell it in Market → Secured.",
+    410,
+    "MARKET_ON_CHAIN",
+  );
+}
+// Trade-up hand-overs are on-chain nft_transfers to the trader account; the
+// relayer sponsors exactly the Auras of the player's issued trade-ups.
+if (npcTraders && relayer) {
+  const previousContext = relayer.customContext;
+  relayer.customContext = async (base, extra) => {
+    const ctx = previousContext ? await previousContext(base, extra) : base;
+    return {
+      ...ctx,
+      tradeUpHandovers: npcTraders
+        .handoversFor(extra.playerId)
+        .filter((h) => h.accountId === ctx.accountId),
+    };
+  };
+}
 if (npcTraders)
   registerMenuBuilder("trader", async (context) => {
     try {
@@ -624,6 +661,34 @@ const badgeService =
         chain: () => badgeChain,
       });
 const badgeRoutes = createBadgeRoutes(badgeService);
+// On-chain ledger (docs/CHAIN-LEDGER.md): every coin, XP, street find, quest
+// and monster win as a soulbound QXP/QGOLD mint with what it was for. The
+// contract id comes from public/native-ledger-<network>.json (or
+// NEAR_LEDGER_CONTRACT); the recorder key from <state dir>/ledger-recorder.json
+// (or LEDGER_RECORDER_KEY_PATH). CHAIN_RECORD_MODE=each|daily|off.
+const ledgerManifestPath = [
+  resolve(APP_ROOT, `public/${manifestName("native-ledger")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-ledger")}`),
+].find((p) => existsSync(p));
+const ledgerContractId =
+  process.env.NEAR_LEDGER_CONTRACT ||
+  (ledgerManifestPath ? JSON.parse(readFileSync(ledgerManifestPath, "utf8")).contractId : null);
+const chainLedgerConfig = chainLedgerSettings(process.env, NETWORK);
+const ledgerChain = createLedgerChain({
+  provider,
+  contractId: ledgerContractId,
+  keyPath:
+    process.env.LEDGER_RECORDER_KEY_PATH ||
+    resolve(dirname(defaultDatabasePath()), "ledger-recorder.json"),
+});
+const chainLedger =
+  ledgerContractId && chainLedgerConfig.mode !== "off"
+    ? createChainLedger(db, { settings: chainLedgerConfig, linkedAccount: (player) => linkedAccount(player) })
+    : null;
+const chainLedgerRoutes = createChainLedgerRoutes(chainLedger, {
+  chain: () => ledgerChain,
+  linkedAccount: (player) => linkedAccount(player),
+});
 // Hackathon season (docs/SEASON.md): cosmetic leaderboard of hunts, visits and
 // NPC lines, season mark + Aura at the goal, pot meter. Off by default on
 // mainnet; SEASON_* settings change the window, goal and points.
@@ -989,6 +1054,9 @@ async function api(req, res, url) {
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
       season: season ? season.status() : { status: "off" },
       badges: badgeService ? badgeService.status() : { status: "off" },
+      chainLedger: chainLedger
+        ? { ...chainLedger.status(), contract: ledgerChain.contractId, recorder: ledgerChain.ready ? "ready" : ledgerChain.error }
+        : { mode: "off" },
       now: Date.now(),
     });
   if (path === "/api/levels" && method === "GET")
@@ -1298,7 +1366,8 @@ async function api(req, res, url) {
   if (path === "/api/dashboard") return respond(res, game.dashboard(db));
   if (path === "/api/market")
     return respond(res, {
-      listings: db
+      onChain: PRACTICE_MARKET_ON_CHAIN,
+      listings: PRACTICE_MARKET_ON_CHAIN ? [] : db
         .prepare(
           "SELECT l.*,i.name,i.rarity,i.color,i.slot,i.serial,p.name AS seller_name FROM listings l JOIN inventory i ON i.id=l.item_id JOIN players p ON p.id=l.seller WHERE l.state='open' ORDER BY l.created_at DESC LIMIT 100",
         )
@@ -1369,6 +1438,8 @@ async function api(req, res, url) {
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await badgeRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await chainLedgerRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await seasonRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
@@ -2219,12 +2290,14 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/market/list" && method === "POST") {
+    assertPracticeMarketOpen();
     const i = await body(req);
     const r = game.listItem(db, player, i.itemId, i.price);
     emit("market", {});
     return respond(res, { ...r, player: profile(player) });
   }
   if (path === "/api/market/buy" && method === "POST") {
+    assertPracticeMarketOpen();
     const i = await body(req),
       r = game.buyItem(db, player, i.listingId);
     emit("market", {});
@@ -3017,8 +3090,12 @@ const rewardWorker =
         keyPath: process.env.REWARD_WORKER_KEY_PATH,
       })
     : null;
+const chainLedgerWorker =
+  !backgroundWorkersDisabled && chainLedger
+    ? startLedgerWorker(chainLedger, ledgerChain, { intervalMs: chainLedgerConfig.batchMs })
+    : null;
 const badgeWorker =
-  !backgroundWorkersDisabled && badgeService && badgeService.settings.enabled
+  !backgroundWorkersDisabled && badgeService && (badgeService.settings.enabled || badgeService.settings.placeMints)
     ? startBadgeWorker(badgeService, badgeChain)
     : null;
 const relayWorker =
@@ -3115,6 +3192,7 @@ async function close() {
   npcRollWorker?.stop();
   traderKeeper?.stop();
   badgeWorker?.stop();
+  chainLedgerWorker?.stop();
   await pinWorker?.stop?.();
   for (const r of listeners) r.end();
   server.close(() => {

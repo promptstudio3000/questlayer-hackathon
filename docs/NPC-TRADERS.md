@@ -88,8 +88,9 @@ only reports what it would do.
 
 ## Known limits
 
-- Trade-up hand-over is a plain `nft_transfer` to the trader account; the in-app transfer button is a follow-up
-  (today the sheet names the tokens and the receiver).
+- Since 4 Nov 2026 the NPC sheet does the trade-up hand-over (three relayed `nft_transfer`s), fills trader
+  buy and sell orders in one tap and secures the trade-up payout as an NFT. Every trade carries its tx hashes;
+  see `docs/ONCHAIN-TRADES.md`.
 - v2 sell orders can be filled by anyone who sees them, and the order appears in the public order book so the player
   can fill it from Market → Signed offers. The 3-minute deadline keeps the gap small; the price never breaks the
   margin floor whoever fills it. The optional v3 `taker` field (§6.4) would bind it to one player.

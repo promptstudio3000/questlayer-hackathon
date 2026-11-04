@@ -209,6 +209,19 @@ export function history(db, player, kind, title, gold = 0, meta = {}) {
     Date.now(),
   );
 }
+// The redeem_aura transaction of a secured Aura, for the explorer link. Relayed
+// claims are in relay_jobs (managed-accounts module) when the relayer is on.
+const relayJobsTables = new WeakMap();
+function nativeClaimTxColumn(db) {
+  let has = relayJobsTables.get(db);
+  if (!has) {
+    has = !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='relay_jobs'").get();
+    if (has) relayJobsTables.set(db, true);
+  }
+  return has
+    ? ",CASE WHEN a.state='minted' THEN (SELECT r.transaction_hash FROM relay_jobs r WHERE r.player_id=i.player_id AND r.method_name='redeem_aura' AND r.state='confirmed' AND json_extract(r.call,'$.args.claim_id')=a.claim_id ORDER BY r.seq DESC LIMIT 1) END AS native_claim_tx"
+    : "";
+}
 export function playerView(db, playerId) {
   const player = db.prepare("SELECT * FROM players WHERE id=?").get(playerId);
   const progression = demoProgression(db, playerId, player);
@@ -226,7 +239,7 @@ export function playerView(db, playerId) {
       .all(playerId),
     inventory: db
       .prepare(
-        "SELECT i.*,a.claim_id AS native_claim_id,a.receiver_id AS native_claim_receiver,a.state AS native_claim_state,a.expires_at AS native_claim_expires_at,a.token_id AS native_token_id FROM inventory i LEFT JOIN native_awards a ON a.item_id=i.id WHERE i.player_id=? ORDER BY i.created_at",
+        `SELECT i.*,a.claim_id AS native_claim_id,a.receiver_id AS native_claim_receiver,a.state AS native_claim_state,a.expires_at AS native_claim_expires_at,a.token_id AS native_token_id${nativeClaimTxColumn(db)} FROM inventory i LEFT JOIN native_awards a ON a.item_id=i.id WHERE i.player_id=? ORDER BY i.created_at`,
       )
       .all(playerId),
     history: withChain(

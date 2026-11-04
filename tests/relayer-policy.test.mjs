@@ -648,3 +648,41 @@ test("signed-order market calls: key and cancellation changes are relayed, fills
   await rejects(market("cancel_order", { order: "x" }, 1n), "RELAY_ARGS");
   await rejects(market("add_signing_key", { public_key: deviceKey }, 0n), "RELAY_DEPOSIT");
 });
+
+test("an accepted NPC trade-up sponsors exactly its Auras to that trader", async () => {
+  const TRADER = "npc-kupec-vojtech.op.testnet";
+  const withTrade = {
+    ...ctx(),
+    tradeUpHandovers: [
+      { accountId: SENDER, receiver: TRADER, tokens: ["aura:ember:1", "aura:ember:2", "aura:dew:3"] },
+    ],
+  };
+  const ok = validateDelegate(
+    await decoded({
+      action: call("nft_transfer", { receiver_id: TRADER, token_id: "aura:ember:2" }, 1n),
+    }),
+    withTrade,
+  );
+  assert.equal(ok.methodName, "nft_transfer");
+  // Another Aura, another trader, or no issued trade: refused.
+  await rejects(
+    decoded({ action: call("nft_transfer", { receiver_id: TRADER, token_id: "aura:polar:9" }, 1n) }),
+    "RELAY_TRANSFER_TARGET",
+    withTrade,
+  );
+  await rejects(
+    decoded({ action: call("nft_transfer", { receiver_id: "npc-other.op.testnet", token_id: "aura:ember:2" }, 1n) }),
+    "RELAY_TRANSFER_TARGET",
+    withTrade,
+  );
+  await rejects(
+    decoded({ action: call("nft_transfer", { receiver_id: TRADER, token_id: "aura:ember:2" }, 1n) }),
+    "RELAY_TRANSFER_TARGET",
+  );
+  // A hand-over listed for a different account does not count.
+  await rejects(
+    decoded({ action: call("nft_transfer", { receiver_id: TRADER, token_id: "aura:ember:2" }, 1n) }),
+    "RELAY_TRANSFER_TARGET",
+    { ...withTrade, tradeUpHandovers: [{ ...withTrade.tradeUpHandovers[0], accountId: "bob.players.questlayer.testnet" }] },
+  );
+});
