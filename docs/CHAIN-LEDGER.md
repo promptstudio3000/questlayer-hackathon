@@ -113,3 +113,17 @@ git add public/native-ledger-testnet.json && commit, then bash scripts/deploy-vp
 The deploy script creates both accounts through the testnet helper, deploys and
 initialises them, installs the recorder key, records one smoke action for the operator
 and checks QXP + QGOLD balances and that `ft_transfer` fails.
+
+### Upgrade and the 4 November callback fix
+
+The first testnet deploy (WASM `3d532a66…`) held every QGOLD mint as `gold_pending`
+although the mint had landed: the callback read the mint's return value with a
+0-byte limit and took "too long" for a failure. Nothing was minted twice
+(`retry_gold` was never called). The fixed ledger treats only an execution failure
+as a failed mint and adds the owner repair `set_gold_pending`.
+
+`LEDGER_UPGRADE=1 node scripts/deploy-ledger-testnet.mjs` deploys the new code on the
+ledger account (state kept), clears the smoke account's wrongly held GOLD after
+checking QGOLD shows it, and rewrites the manifest with the new hash. Any other
+account held this way can be cleared with `set_gold_pending(account, "0")` after the
+same check.
