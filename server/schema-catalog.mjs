@@ -7,6 +7,7 @@ for (const relative of [
   "./adventure-results.mjs",
   "./ai/schema.mjs",
   "./badges/schema.mjs",
+  "./gold-spend/schema.mjs",
   "./chain-ledger/schema.mjs",
   "./creators/bonus-vote.mjs",
   "./daily-board/schema.mjs",

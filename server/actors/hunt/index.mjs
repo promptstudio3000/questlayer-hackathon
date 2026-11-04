@@ -13,9 +13,9 @@ import { createBossService } from "./boss.mjs";
 export const BOSS_ARENA_MODEL = "great-portal";
 export const CRAFT_ALTAR_MODEL = "golden-altar";
 
-export function createMonsterHunt(db, actorService, { levelOf, now = () => Date.now(), bossHp, secret } = {}) {
+export function createMonsterHunt(db, actorService, { levelOf, now = () => Date.now(), bossHp, secret, altarFees = false } = {}) {
   if (!actorService) return null;
-  const rewards = createHuntRewards(db, { now });
+  const rewards = createHuntRewards(db, { now, altarFees });
   const chests = createChestGuard(db, actorService, { clock: now });
   const cityOf = (worldId) => {
     const row = db.prepare("SELECT manifest FROM worlds WHERE id=?").get(worldId);

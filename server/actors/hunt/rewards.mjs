@@ -12,6 +12,7 @@ import { recordChainAction } from "../../chain-ledger/service.mjs";
 import { ensureModuleVersion } from "../../schema-compatibility.mjs";
 import { HUNT_SCHEMA } from "./schema.mjs";
 import { awardEditionOnce, ensureEarnedEditions } from "../../earned-editions.mjs";
+import { altarFee, burnGold, priceU } from "../../gold-spend/ledger.mjs";
 
 // First win per player against these archetypes pays an NPC/monster-only
 // edition once (server/earned-editions.mjs). Pocket Wisps are the
@@ -59,7 +60,10 @@ export function grantEdition(db, player, editionId, now) {
   return item;
 }
 
-export function createHuntRewards(db, { now = () => Date.now() } = {}) {
+// altarFees: the Golden Altar takes a small GOLD fee per offering, burned
+// (QGOLD stream 4, server/data/gold-spend.json). The server turns it on;
+// unit tests of the recipes leave it off.
+export function createHuntRewards(db, { now = () => Date.now(), altarFees = false } = {}) {
   ensureModuleVersion(db, HUNT_SCHEMA);
   ensureEarnedEditions(db);
   const insert = db.prepare(
@@ -140,6 +144,7 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
       ...(r.guardian && !ctx.guardianWins ? ["guardian"] : []),
       ...(ctx.commons < r.commons ? ["common-aura"] : []),
       ...(ctx.craftedToday < ctx.perDay ? [] : ["daily"]),
+      ...(altarFees && ctx.goldU < priceU(altarFee(r.id)) ? ["gold"] : []),
     ];
     return {
       id: r.id,
@@ -151,6 +156,7 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
       shards: r.shards,
       commons: r.commons,
       guardian: r.guardian,
+      gold: altarFees ? altarFee(r.id) : 0,
       ready: needs.length === 0,
       needs,
     };
@@ -170,7 +176,8 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
       commons = commonAuras(player, 2).length,
       // L6 unlock (server/data/level-table.json): a second offering per day.
       perDay = altarOfferingsPerDay(levelFor(db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp || 0), CRAFTS_PER_DAY);
-    const ctx = { shards, shardTotal: total, guardianWins, craftedToday, commons, perDay };
+    const goldU = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player)?.gold_u ?? 0;
+    const ctx = { shards, shardTotal: total, guardianWins, craftedToday, commons, perDay, goldU };
     const recipes = ALTAR_RECIPES.map((r) => recipeView(r, ctx));
     const first = recipes[0];
     return {
@@ -223,9 +230,11 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
         409,
         "CRAFT_AURA",
       );
+      assert(!v.needs.includes("gold"), `The altar asks ${altarFee(r.id)} GOLD for this offering.`, 402, "CRAFT_GOLD");
       db.prepare("INSERT OR IGNORE INTO players(id,name,gold_u,created_at) VALUES(?,?,0,?)").run(ALTAR_ACCOUNT, "Golden Altar", at);
       const item = grantEdition(db, player, r.edition, at);
       assert(item, "This edition is fully crafted. Your shards are safe.", 409, "CRAFT_SOLD_OUT");
+      const fee = altarFees ? burnGold(db, { player, kind: "altar", ref: `${r.id}:${item.id}`, amountU: priceU(altarFee(r.id)), title: `Altar offering: ${item.name}`, now: at }) : null;
       let left = r.shards;
       const spent = {};
       const piles = r.element ? [[r.element, s.shards[r.element]]] : Object.entries(s.shards).sort((a, b) => b[1] - a[1]);
@@ -245,6 +254,7 @@ export function createHuntRewards(db, { now = () => Date.now() } = {}) {
         spent,
         offered: { id: auras[0].id, name: auras[0].name },
         offeredAll: auras.map((a) => ({ id: a.id, name: a.name })),
+        ...(fee ? { gold: { burned: fee.amountU, balanceU: fee.balanceU } } : {}),
       };
     });
   }
