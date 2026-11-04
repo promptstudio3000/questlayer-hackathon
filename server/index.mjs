@@ -166,6 +166,11 @@ import { loadPlaceBadges } from "./badges/place-catalog.mjs";
 import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
 import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
 import { createBadgeRoutes } from "./badges/routes.mjs";
+import { createGoldSpend } from "./gold-spend/service.mjs";
+import { createPlaces } from "./gold-spend/places.mjs";
+import { createPlaceSocial } from "./gold-spend/social.mjs";
+import { createGoldSpendRoutes } from "./gold-spend/routes.mjs";
+import { defaultPoiSource } from "./poi-quests.mjs";
 import { chainLedgerSettings, createChainLedger } from "./chain-ledger/service.mjs";
 import { createLedgerChain, startLedgerWorker } from "./chain-ledger/chain.mjs";
 import { createChainLedgerRoutes } from "./chain-ledger/routes.mjs";
@@ -695,8 +700,28 @@ const traderRoutes = createTraderRoutes({
 const monsterHunt = createMonsterHunt(db, actorService, {
   levelOf: (player) => demoProgression(db, player).level,
   bossHp: Number(process.env.BOSS_HP) || undefined,
+  // The Golden Altar fee in GOLD (QGOLD stream 4); GOLD_ALTAR_FEE=0 turns it off.
+  altarFees: process.env.GOLD_ALTAR_FEE !== "0",
 });
 const huntRoutes = createHuntRoutes(monsterHunt, actorService, db);
+// GOLD spending (QGOLD stream 4, docs/GOLD-SPENDING.md): emotes, cosmetics,
+// trader premium gear, lures and place messages. Every spend burns practice
+// GOLD until the QGOLD vault is live. GOLD_LURE_DEMO=1 (never on mainnet)
+// lets the demo walk set lures for testing.
+const goldSpend = createGoldSpend(db, {
+  actors: actorService,
+  poiSource: defaultPoiSource(),
+  allowArenaLures: process.env.GOLD_LURE_DEMO === "1" && NETWORK !== "mainnet",
+});
+const placeMessages = createPlaces(db, {
+  levelOf: (player) => demoProgression(db, player).level,
+});
+const goldSpendRoutes = createGoldSpendRoutes({
+  gold: goldSpend,
+  places: placeMessages,
+  social: createPlaceSocial(db, featureEnabled("social") ? socialRecords : null),
+  linkedAccount,
+});
 // Daily board of three goals (docs/DAILY-BOARD.md): on by default except on
 // mainnet; DAILY_BOARD_* settings change the goals and bonus. No streak.
 const dailyBoardConfig = dailyBoardSettings(process.env, NETWORK);
@@ -1638,6 +1663,8 @@ async function api(req, res, url) {
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await badgeRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await goldSpendRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await chainLedgerRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
@@ -2616,8 +2643,13 @@ async function api(req, res, url) {
         { lat, lng },
         url.searchParams.get("arena") !== "0",
         {
-          appearanceReader: (players) =>
-            publicAppearances(db, players, nativeCollectibles),
+          appearanceReader: async (players) =>
+            (await publicAppearances(db, players, nativeCollectibles)).map(
+              (look, i) => {
+                const gold = look && goldSpend.lookOf(players[i].id);
+                return gold ? { ...look, gold } : look;
+              },
+            ),
           assertSession: () =>
             assert(auth(req) === player, "Please sign in again.", 401),
         },

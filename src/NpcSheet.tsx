@@ -2,6 +2,7 @@
 // with the NPC's line in a speech bubble, the actions the server computed
 // (they always work without AI) and a box to write to them. Everything else
 // (open tasks, the keeper's vault, the character profile) lives in tabs.
+import { NpcGear } from "./NpcGear";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   BookOpen,
@@ -276,7 +277,8 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
                   }}
                 />
               ))}
-              {reply && !reply.menu.length && !ready.length && !reply.locked?.length && <p className="npc-empty">{t.noActions}</p>}
+              {archetype === "trader" && <NpcGear actorId={actorId} encounter={token} />}
+              {reply && !reply.menu.length && !ready.length && !reply.locked?.length && archetype !== "trader" && <p className="npc-empty">{t.noActions}</p>}
               {active.length > ready.length && (
                 <button type="button" className="npc-link" onClick={() => setTab("tasks")}>
                   {t.moreTasks(active.length - ready.length)} →

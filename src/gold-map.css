@@ -1,0 +1,90 @@
+/* GOLD cosmetics on map markers and the lure / place-message layer. */
+.gold-emote-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
+  font-size: 26px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 14px;
+  background: var(--surface-raised, #fff);
+  box-shadow: 0 2px 8px rgb(26 3 53 / 0.25);
+  pointer-events: none;
+  animation: gold-emote-pop 240ms var(--ease-out, ease-out);
+  z-index: 3;
+}
+@keyframes gold-emote-pop {
+  from {
+    transform: translateX(-50%) scale(0.4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gold-emote-bubble {
+    animation: none;
+  }
+}
+.gold-framed::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 46px;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  border: 4px solid var(--gold-frame);
+  box-shadow: 0 0 10px var(--gold-frame);
+  pointer-events: none;
+}
+.gold-lure-marker {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.gold-lure-pillar {
+  width: 14px;
+  height: 64px;
+  border-radius: 7px;
+  background: linear-gradient(to top, rgb(255 29 255 / 0.85), rgb(255 29 255 / 0));
+  box-shadow: 0 0 18px rgb(255 29 255 / 0.7);
+}
+.gold-lure-marker.kind-beacon .gold-lure-pillar {
+  background: linear-gradient(to top, rgb(254 248 125 / 0.95), rgb(254 248 125 / 0));
+  box-shadow: 0 0 18px rgb(242 194 48 / 0.8);
+}
+.gold-lure-marker span {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--shell, #1a0335);
+  color: #fff;
+  white-space: nowrap;
+}
+.gold-place-pin {
+  max-width: 180px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 14px 14px 14px 2px;
+  border: 0;
+  background: var(--surface-raised, #fff);
+  color: var(--ink, #1a0335);
+  box-shadow: 0 2px 8px rgb(26 3 53 / 0.25);
+  font: 600 13px/1.25 var(--font-body, sans-serif);
+  text-align: left;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+.gold-place-pin.kind-shout {
+  background: var(--coin, #fef87d);
+  color: var(--on-coin, #1a0335);
+}
+.gold-place-pin.kind-topic::before {
+  content: "💬 ";
+}

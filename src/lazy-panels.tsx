@@ -145,3 +145,12 @@ const walletScreens = () => import("./WalletScreens");
 export const WalletPanel = lazyNamed(walletScreens, "WalletPanel");
 export const FundPanel = lazyNamed(walletScreens, "FundPanel");
 export const Bounties = lazyNamed(walletScreens, "Bounties");
+export const GoldShop = lazyNamed(() => import("./GoldShop"), "GoldShop");
+export const PlaceMessages = lazyNamed(
+  () => import("./PlaceMessages"),
+  "PlaceMessages",
+);
+export const EmotePicker = lazyNamed(
+  () => import("./EmotePicker"),
+  "EmotePicker",
+);
