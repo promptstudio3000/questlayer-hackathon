@@ -56,7 +56,13 @@ approved doc "QGOLD: návrh ekonomiky". Testnet only.
    and the dry-run keeper starts recording after the next VPS deploy.
 2. Mac: `node scripts/qgold-rhea-pool-testnet.mjs` (plan), then `--create --near 5`. Commit the pool manifest and
    deploy the VPS.
-3. Optional, to let the keeper act on a small testnet pool:
-   - set `QGOLD_KEEPER_MIN_POOL_NEAR=5` in runtime.env;
-   - create a keeper account and key file;
-   - set `QGOLD_KEEPER_EXECUTE=1` and `QGOLD_KEEPER_KEY_PATH`.
+3. Keeper trading (Lubos approved on 4 Nov):
+   - `QGOLD_KEEPER_MIN_POOL_NEAR=5` in runtime.env, so the keeper is active on the 5 NEAR testnet pool.
+   - On the Mac, `node scripts/qgold-keeper-testnet.mjs` prints the plan; `--create` sets up the keeper.
+     - It creates `qgold-keeper.<operator>.testnet` with 3 NEAR and a full-access key in `.data/qgold-keeper.json`.
+     - It registers the keeper on wNEAR, QGOLD and Rhea.
+   - `bash scripts/install-qgold-keeper-vps.sh` copies the key to `/var/lib/questlayer-hackathon/qgold-keeper.json`.
+     Restart or deploy afterwards.
+   - With the key in place the keeper trades. `QGOLD_KEEPER_EXECUTE=0` turns trading off and keeps the record.
+   - Inverse buys spend the keeper's own NEAR above a 1 NEAR reserve unless `QGOLD_INVERSE_BUDGET_YOCTO` is set.
+   - The keeper never touches treasury or player money.
