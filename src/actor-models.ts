@@ -9,6 +9,12 @@
 // no extra WebGL contexts. The encounter sheet uses createActorScene for one animated, rotatable view.
 import * as THREE from "three";
 import { tr } from "./i18n.ts";
+import { artUrl } from "./art-registry.ts";
+
+/** Dropped-in art for an NPC/monster (art/actors/<model>, docs/ART-LIST.md), or null for the 3D bake. */
+export const actorArtUrl = (model: string) => artUrl(`actors/${model}`);
+/** Dropped-in dialog portrait (art/portraits/<model>), falling back to the full-body actor image. */
+export const actorPortraitUrl = (model: string) => artUrl(`portraits/${model}`, `actors/${model}`);
 
 export const ACTOR_MODELS = [
   "chronicler",
@@ -658,6 +664,8 @@ export function actorSprite(model: string, size = 96): Promise<string> {
   const cached = spriteCache.get(key);
   if (cached) return cached;
   const job = Promise.resolve().then(async () => {
+    const art = actorArtUrl(model);
+    if (art) return art;
     if (!isActorModel(model)) return actorFallbackSprite(model);
     const built = await loadActorModel(model);
     try {
@@ -693,9 +701,11 @@ export function actorSprite(model: string, size = 96): Promise<string> {
  * hidden or reduced motion is requested, and full disposal of the WebGL context on close.
  */
 export function createActorScene(host: HTMLElement, model: string, options: { label?: string } = {}) {
-  if (!isActorModel(model)) {
+  const art = actorPortraitUrl(model);
+  if (art || !isActorModel(model)) {
     const img = document.createElement("img");
-    img.src = actorFallbackSprite(model);
+    img.src = art || actorFallbackSprite(model);
+    img.className = "actor-scene-art";
     img.alt = options.label || tr("Character");
     host.append(img);
     return { dispose: () => img.remove() };

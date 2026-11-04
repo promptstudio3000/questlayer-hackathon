@@ -1,5 +1,6 @@
 import {
   AURA_GRIDS,
+  auraArtUrl,
   auraRects,
   auraScale,
   auraSlot,
@@ -34,7 +35,22 @@ export function AuraSprite({
   const resolvedSlot = auraSlot(slot),
     grid = AURA_GRIDS[resolvedSlot],
     scale = auraScale(size),
-    rects = auraRects({ edition, slot: resolvedSlot, color });
+    rects = auraRects({ edition, slot: resolvedSlot, color }),
+    art = auraArtUrl(edition, resolvedSlot);
+  if (art)
+    return (
+      <img
+        className={`aura-sprite aura-sprite-${resolvedSlot} aura-sprite-art ${animated ? "animated" : ""} ${className}`}
+        src={art}
+        width={grid.width * scale}
+        height={grid.height * scale}
+        alt={label || ""}
+        aria-hidden={label ? undefined : true}
+        draggable={false}
+        data-aura-edition={edition || "generic"}
+        data-aura-slot={resolvedSlot}
+      />
+    );
   const paint = (frame?: "a" | "b") =>
     rects
       .filter((r) => r.frame === frame)

@@ -7,6 +7,7 @@ import { api } from "./api";
 import { Dialog } from "./Dialog";
 import type { Fix } from "./types";
 import "./badges.css";
+import { artUrl } from "./art-registry";
 import { tr } from "./i18n";
 
 // Badge book (docs/BADGES.md). Place badges: one per notable place, earned by
@@ -154,7 +155,7 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
                         return (
                           <li key={n.id}>
                             <button onClick={() => setDetail(b)}>
-                              <span aria-hidden="true">{b.icon}</span> {b.nameCs}
+                              <span aria-hidden="true"><PlaceIcon b={b} /></span> {b.nameCs}
                               <small>{n.toEdgeM === 0 ? tr("You are here") : km(n.toEdgeM)}</small>
                             </button>
                           </li>
@@ -185,7 +186,7 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
                         aria-label={b.earnedAt ? tr("{0}, earned", { 0: b.nameCs }) : tr("{0}, not yet", { 0: b.nameCs })}
                       >
                         <span className="badge-medal-face" aria-hidden="true">
-                          {b.icon}
+                          <PlaceIcon b={b} />
                         </span>
                         <span className="badge-medal-name">{b.nameCs}</span>
                       </button>
@@ -205,7 +206,7 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
         <Dialog label={detail.nameCs} onClose={() => setDetail(null)}>
           <section className={`badge-detail rarity-${detail.rarity}`}>
             <span className={`badge-medal-face big${detail.earnedAt ? "" : " is-locked"}`} aria-hidden="true">
-              {detail.icon}
+              <PlaceIcon b={detail} />
             </span>
             <h2>{detail.nameCs}</h2>
             {detail.nameCs !== detail.name && <p className="badge-sub">{detail.name}</p>}
@@ -235,6 +236,11 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
   );
 }
 
+/** Place badge face: dropped-in art/badges/<badge id> or art/badges/<kind> (docs/ART-LIST.md), else the emoji. */
+function PlaceIcon({ b }: { b: PlaceBadge }) {
+  const art = artUrl(`badges/${b.id}`, `badges/${b.kind}`);
+  return art ? <img className="badge-art" src={art} alt="" draggable={false} /> : <>{b.icon}</>;
+}
 function UserMedal({ b }: { b: UserBadge }) {
   return (
     <span className="badge-medal-face user" style={{ background: b.color }} aria-hidden="true">

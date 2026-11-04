@@ -19,6 +19,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
+import { artUrl } from "./art-registry";
 import LockedChip, { openStakeScreen } from "./LockedChip";
 import type { ActorEncounter, ActorOffer } from "./actor-types";
 import {
@@ -54,15 +55,17 @@ const BAKED = new Set(["chronicler", "merchant", "keeper", "pilgrim", "wisp"]);
 type Tab = "talk" | "tasks" | "vault" | "about";
 
 function Portrait({ model, label, emote }: { model: string; label: string; emote: string }) {
-  const [src, setSrc] = useState(BAKED.has(model) ? `/art/npc/${model}.png` : "");
+  // A dropped-in portrait (art/portraits/<model>, then art/actors/<model>) wins over the baked one.
+  const dropped = artUrl(`portraits/${model}`, `actors/${model}`);
+  const [src, setSrc] = useState(dropped || (BAKED.has(model) ? `/art/npc/${model}.png` : ""));
   useEffect(() => {
-    if (BAKED.has(model)) return;
+    if (dropped || BAKED.has(model)) return;
     let gone = false;
     import("./actor-models").then(({ actorSprite }) => actorSprite(model, 384)).then((url) => !gone && setSrc(url), () => {});
     return () => {
       gone = true;
     };
-  }, [model]);
+  }, [model, dropped]);
   return (
     <div className="npc-portrait">
       {src && <img src={src} alt={label} width={384} height={384} />}

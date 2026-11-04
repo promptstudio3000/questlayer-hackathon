@@ -199,3 +199,7 @@
 .actor-defeated::before {
   display: none;
 }
+/* Dropped-in NPC/monster art (art/actors/, art/portraits/) in the encounter stage. */
+.actor-stage > img.actor-scene-art {
+  object-fit: contain;
+}

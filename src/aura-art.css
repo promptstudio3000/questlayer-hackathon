@@ -137,3 +137,8 @@
     opacity: 0.75;
   }
 }
+/* Dropped-in Aura images (art/auras/, docs/ART-LIST.md) fill the same box as the pixel grid. */
+img.aura-sprite-art {
+  object-fit: contain;
+  image-rendering: auto;
+}
