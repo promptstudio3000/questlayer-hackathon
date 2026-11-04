@@ -10,6 +10,7 @@ import type { Fix } from "./types";
 import "./badges.css";
 import { artUrl } from "./art-registry";
 import { tr } from "./i18n";
+import { EXPLORER_BASE } from "./near-network";
 
 // Badge book (docs/BADGES.md). Place badges: one per notable place, earned by
 // reaching it with GPS; cosmetic, never sellable. Player badges: POAP-like
@@ -30,6 +31,8 @@ type PlaceBadge = {
   lat: number;
   lng: number;
   earnedAt: number | null;
+  // Every earned place badge is minted as a soulbound NFT (docs/BADGES.md §1a).
+  chain?: { state: "queued" | "minted" | "failed"; accountId: string | null; tx: string | null; tokenId: string | null } | null;
 };
 type UserBadge = {
   id: string;
@@ -222,6 +225,29 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
                 ? tr("Earned {0}.", { 0: date(detail.earnedAt) })
                 : tr("Get within {0} of it with GPS on to earn it.", { 0: km(detail.radiusM) })}
             </p>
+            {detail.earnedAt && detail.chain && (
+              <p className="badge-chain">
+                {detail.chain.state === "minted"
+                  ? tr("On NEAR")
+                  : detail.chain.state === "failed"
+                    ? tr("Could not mint")
+                    : detail.chain.accountId
+                      ? tr("Minting on NEAR…")
+                      : tr("Mints on NEAR once your explorer account is ready.")}
+                {detail.chain.state === "minted" && detail.chain.tx && (
+                  <>
+                    {" · "}
+                    <a
+                      href={`${EXPLORER_BASE}/txns/${encodeURIComponent(detail.chain.tx)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {tr("View the NFT on NEAR")}
+                    </a>
+                  </>
+                )}
+              </p>
+            )}
             <a
               className="secondary-button"
               href={`https://www.openstreetmap.org/?mlat=${detail.lat}&mlon=${detail.lng}#map=15/${detail.lat}/${detail.lng}`}

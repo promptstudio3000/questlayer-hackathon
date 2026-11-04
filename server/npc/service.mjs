@@ -5,6 +5,7 @@
 // module never sees raw coordinates in a prompt.
 import { GameError, assert, hash, levelFor } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
+import { recordChainAction } from "../chain-ledger/service.mjs";
 import { mintAura } from "../game.mjs";
 import { clean } from "../ai/text-policy.mjs";
 import { debugRejected } from "../ai/text-policy.mjs";
@@ -340,6 +341,15 @@ export function createNpcService(
         patron = { pathLine: Math.min(step, PATRON_PATH_LINES), pathOf: PATRON_PATH_LINES, story: patronStoryFor(step), edition: seal };
       }
       store.remember(player, actor.id, null, 1);
+      const chain = recordChainAction(db, {
+        player,
+        kind: "errand",
+        xp,
+        at: Number.isFinite(actor.lat) && Number.isFinite(actor.lng) ? { lat: actor.lat, lng: actor.lng } : null,
+        ref: offerId,
+        evidence: { actor: actor.id, offerId, kind: row.kind },
+        now,
+      });
       history(db, player, "npc-quest", `Task from ${personaOf(actor).name}`, 0, {
         actor: actor.id,
         offerId,
@@ -354,6 +364,7 @@ export function createNpcService(
         state: "completed",
         xp,
         aura,
+        ...(chain ? { chain } : {}),
         ...(edition ? { edition } : {}),
         ...(patron ? { patron } : {}),
         ...(row.terms.aura && !aura && !edition ? { note: "No Aura edition you are entitled to has supply left today; the XP still counts." } : {}),

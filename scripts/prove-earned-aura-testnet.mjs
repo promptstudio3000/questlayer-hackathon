@@ -89,7 +89,8 @@ const claim = await api("/native/claims", {
 });
 assert.equal(claim.receiver_id, operator.accountId);
 assert.ok(claim.contractId.endsWith(".testnet"));
-await api("/market/list", { itemId: item.id, price: 1000000 }, 409);
+// The database market is closed: every Aura trade happens on NEAR.
+await api("/market/list", { itemId: item.id, price: 1000000 }, 410);
 const view = async (method, args = {}) => {
   const r = await provider.query({
     request_type: "call_function",
@@ -135,7 +136,8 @@ const afterFirst = await view("nft_total_supply");
 await redeem("Idempotent retry of the same signed claim");
 assert.equal(await view("nft_total_supply"), afterFirst);
 await api("/native/claims/confirm", { itemId: item.id });
-await api("/market/list", { itemId: item.id, price: 1000000 }, 409);
+// The database market is closed: every Aura trade happens on NEAR.
+await api("/market/list", { itemId: item.id, price: 1000000 }, 410);
 const equip = await account.callFunctionRaw({
   contractId: claim.contractId,
   methodName: "equip_aura",

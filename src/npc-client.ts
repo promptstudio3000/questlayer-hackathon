@@ -85,6 +85,14 @@ export interface NpcTrade {
   aura?: { id: string; name: string; rarity: string } | null;
   ledgerAura?: { id: string; name: string; rarity: string } | null;
   replay?: boolean;
+  /** NEAR account that trades (the explorer account or a linked wallet). */
+  accountId?: string;
+  /** On-chain proof: the fill, or the trade-up hand-overs. */
+  txHash?: string | null;
+  txHashes?: string[];
+  handovers?: Record<string, string>;
+  /** Trade-up payout to secure on NEAR right away. */
+  secureItemId?: string;
 }
 export interface KeeperView {
   accounts: { accountId: string }[];

@@ -94,6 +94,13 @@ function checkContext(ctx) {
         typeof ctx.contracts.npcGames === "string"
           ? ctx.contracts.npcGames
           : null,
+      // Experimental self-deployed NEAR Intents verifier and its wNEAR token.
+      intents:
+        typeof ctx.contracts.intents === "string"
+          ? ctx.contracts.intents
+          : null,
+      wnear:
+        typeof ctx.contracts.wnear === "string" ? ctx.contracts.wnear : null,
     },
     factorySetupDeposit:
       ctx.factorySetupDeposit === undefined || ctx.factorySetupDeposit === null
@@ -101,6 +108,17 @@ function checkContext(ctx) {
         : yocto(ctx.factorySetupDeposit),
     factoryPools: Array.isArray(ctx.factoryPools) ? ctx.factoryPools : [],
     ownedVaults: Array.isArray(ctx.ownedVaults) ? ctx.ownedVaults : [],
+    // Issued NPC trade-ups (server/npc/trader.mjs): the exact Auras this
+    // account may hand to that trader account, so the hand-over is sponsored.
+    tradeUpHandovers: Array.isArray(ctx.tradeUpHandovers)
+      ? ctx.tradeUpHandovers.filter(
+          (h) =>
+            plainObject(h) &&
+            typeof h.receiver === "string" &&
+            Array.isArray(h.tokens) &&
+            (h.accountId === undefined || h.accountId === ctx.accountId),
+        )
+      : [],
   };
 }
 function parseArgs(bytes) {
@@ -320,7 +338,11 @@ export function validateDelegate(decoded, context) {
     else if (method === "nft_transfer_call") {
       depositIs(1n, "Listing");
       demand(
-        args.receiver_id === c.market,
+        args.receiver_id === c.market ||
+          (c.intents != null &&
+            args.receiver_id === c.intents &&
+            // Deposit to the signer's own verifier account only.
+            (args.msg === "" || args.msg === senderId)),
         "RELAY_TRANSFER_TARGET",
         "Listings go only to the reviewed market.",
       );
@@ -328,9 +350,14 @@ export function validateDelegate(decoded, context) {
       depositIs(1n, "Transfer");
       demand(
         typeof args.receiver_id === "string" &&
-          ctx.linkedWallets.includes(args.receiver_id),
+          (ctx.linkedWallets.includes(args.receiver_id) ||
+            ctx.tradeUpHandovers.some(
+              (h) =>
+                h.receiver === args.receiver_id &&
+                h.tokens.includes(args.token_id),
+            )),
         "RELAY_TRANSFER_TARGET",
-        "Collectibles can be moved only to a wallet linked to your explorer.",
+        "Collectibles can be moved only to a wallet linked to your explorer, or to the trader of an accepted trade-up.",
       );
     } else unsupported();
   } else if (receiverId === c.market) {
@@ -478,6 +505,38 @@ export function validateDelegate(decoded, context) {
         "A timeout claim takes one roll id.",
       );
     else unsupported();
+  } else if (c.intents != null && receiverId === c.intents) {
+    // Registering or removing the key that signs intents; trades and
+    // withdrawals are signed intents the solver submits, never relayed calls.
+    demand(
+      method === "add_public_key" || method === "remove_public_key",
+      "RELAY_METHOD",
+      `${method} on ${receiverId} is not sponsored.`,
+    );
+    depositIs(1n, "Intents key registration");
+    demand(
+      keysOf(args, ["public_key"]) &&
+        /^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(args.public_key)),
+      "RELAY_ARGS",
+      "Register one ed25519 key.",
+    );
+  } else if (c.intents != null && c.wnear != null && receiverId === c.wnear) {
+    // Moving wNEAR the player already holds into their own verifier account.
+    // Wrapping NEAR (near_deposit) and storage are self-paid.
+    demand(
+      method === "ft_transfer_call",
+      "RELAY_METHOD",
+      `${method} on ${receiverId} is not sponsored.`,
+    );
+    depositIs(1n, "wNEAR deposit");
+    demand(
+      keysOf(args, ["receiver_id", "amount", "msg"]) &&
+        args.receiver_id === c.intents &&
+        /^[1-9]\d{0,38}$/.test(String(args.amount)) &&
+        (args.msg === "" || args.msg === senderId),
+      "RELAY_ARGS",
+      "wNEAR goes only to your own verifier account.",
+    );
   } else if (receiverId === c.social) {
     demand(
       method === "set",

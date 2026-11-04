@@ -11,8 +11,8 @@
 import { createHash, randomBytes } from "node:crypto";
 import { assert, distance, point } from "../domain.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
-import { BADGES_SCHEMA } from "./schema.mjs";
-export { BADGES_SCHEMA };
+import { BADGES_SCHEMA, PLACE_BADGE_MINTS_SCHEMA } from "./schema.mjs";
+export { BADGES_SCHEMA, PLACE_BADGE_MINTS_SCHEMA };
 import { placesAt, nearestPlaces, PLACE_KINDS } from "./place-catalog.mjs";
 
 
@@ -23,6 +23,40 @@ export const USER_KINDS = Object.freeze(["place", "event", "quest"]);
 export const USER_ICONS = Object.freeze(["🏅", "⭐", "🗺️", "⛰️", "🔭", "🏛️", "🌲", "🌊", "🏰", "🎉", "🎵", "🍺", "☕", "🚲", "🥾", "📸", "🧭", "🔥", "💎", "👻"]);
 export const USER_COLORS = Object.freeze(["#c08a2b", "#2b7bc0", "#3a9d5d", "#b8432f", "#7d4cc0", "#d06b9c", "#4a5568", "#0f8b8d"]);
 export const MAX_CLAIM_ATTEMPTS = 5;
+/** Place-badge mints wait this long before looking for a linked account again. */
+export const NO_ACCOUNT_RETRY_MS = 10 * 60_000;
+/** Supply of one place design on chain (the contract's maximum). */
+export const PLACE_SUPPLY = 10_000;
+const RARITY_COLORS = Object.freeze({ common: "#3a9d5d", rare: "#2b7bc0", epic: "#7d4cc0", legendary: "#c08a2b" });
+
+/** The on-chain id of a place badge design: a-z, 0-9 and dashes, at most 48. */
+export function placeChainId(badgeId) {
+  const full = `place-${badgeId}`;
+  if (full.length <= 48) return full;
+  const h = createHash("sha256").update(badgeId).digest("hex").slice(0, 8);
+  return `${full.slice(0, 39).replace(/-+$/g, "")}-${h}`;
+}
+
+/** A user_badges-shaped row for createArgs: a sponsored Place design. */
+export function placeDesignRow(badge, contractId) {
+  const where = [badge.region, badge.country].filter(Boolean).join(", ");
+  const title = badge.name.replace(/\s+/g, " ").trim().slice(0, 48).trim();
+  return {
+    id: placeChainId(badge.id),
+    creator_account: contractId,
+    title: title.length >= 3 ? title : `${title} ${badge.kind}`.slice(0, 48),
+    description: `QuestLayer place badge: reached ${badge.name} (${badge.kind}${where ? `, ${where}` : ""}) in person with live GPS.`.slice(0, 280),
+    icon: badge.icon,
+    color: RARITY_COLORS[badge.rarity] || RARITY_COLORS.common,
+    kind: "place",
+    lat: badge.lat,
+    lng: badge.lng,
+    radius_m: Math.max(25, Math.min(50_000, Math.round(badge.radiusM))),
+    max_supply: PLACE_SUPPLY,
+    starts_at: null,
+    ends_at: null,
+  };
+}
 
 export function userBadgeSettings(env = process.env, network = "testnet") {
   const int = (v, d, min, max) => {
@@ -33,6 +67,8 @@ export function userBadgeSettings(env = process.env, network = "testnet") {
     // Player badges are sponsored by the game on testnet; mainnet needs an
     // explicit switch and its own funding decision.
     enabled: env.USER_BADGES_ENABLED ? env.USER_BADGES_ENABLED === "1" : network === "testnet",
+    // Earned place badges minted as soulbound NFTs (sponsored by the game).
+    placeMints: env.PLACE_BADGES_ONCHAIN ? env.PLACE_BADGES_ONCHAIN === "1" : network === "testnet",
     maxActivePerPlayer: int(env.USER_BADGES_MAX_ACTIVE, 5, 1, 100),
     maxPerDay: int(env.USER_BADGES_MAX_PER_DAY, 3, 1, 50),
     maxSupply: int(env.USER_BADGES_MAX_SUPPLY, 200, 1, 10_000),
@@ -76,7 +112,13 @@ const codeHash = (badgeId, code) => createHash("sha256").update(`${badgeId}:${co
 
 export function createBadgeService(db, { catalog, linkedAccount, settings = userBadgeSettings(), chain = () => null, now = Date.now } = {}) {
   ensureModuleVersion(db, BADGES_SCHEMA);
+  ensureModuleVersion(db, PLACE_BADGE_MINTS_SCHEMA);
   const lastFix = new Map();
+  // Badges earned before on-chain minting existed are minted too.
+  db.prepare(
+    "INSERT OR IGNORE INTO place_badge_mints(player_id,badge_id,state,created_at,updated_at) SELECT player_id,badge_id,'queued',created_at,created_at FROM place_badge_awards",
+  ).run();
+  const queueMint = db.prepare("INSERT OR IGNORE INTO place_badge_mints(player_id,badge_id,state,created_at,updated_at) VALUES(?,?,'queued',?,?)");
 
   function earnedPlaces(player) {
     return db
@@ -100,20 +142,32 @@ export function createBadgeService(db, { catalog, linkedAccount, settings = user
     for (const { badge } of placesAt(catalog, at)) {
       const maxAccuracy = Math.max(35, Math.min(150, badge.radiusM / 3));
       if (at.accuracy > maxAccuracy) continue;
-      if (insert.run(player, badge.id, at.lat, at.lng, at.accuracy, t).changes === 1)
-        earned.push({ ...badge, earnedAt: t });
+      if (insert.run(player, badge.id, at.lat, at.lng, at.accuracy, t).changes === 1) {
+        queueMint.run(player, badge.id, t, t);
+        earned.push({ ...badge, earnedAt: t, chain: { state: "queued", tx: null, tokenId: null } });
+      }
     }
     return { earned, suspicious: false };
   }
 
+  function placeMints(player) {
+    const rows = db
+      .prepare("SELECT badge_id AS badgeId,state,account_id AS accountId,chain_tx AS tx,token_id AS tokenId FROM place_badge_mints WHERE player_id=?")
+      .all(player);
+    // A queued mint goes to the account linked when it is sent.
+    const linked = rows.some((r) => !r.accountId) ? linkedAccount(player) : null;
+    return new Map(rows.map((r) => [r.badgeId, { state: r.state, accountId: r.accountId ?? linked, tx: r.tx, tokenId: r.tokenId }]));
+  }
+
   function placesView(player, at) {
     const earned = new Map(earnedPlaces(player).map((r) => [r.badgeId, r.earnedAt]));
+    const mints = placeMints(player);
     const byKind = Object.fromEntries(PLACE_KINDS.map((k) => [k, { earned: 0, total: 0 }]));
     for (const b of catalog.badges) {
       byKind[b.kind].total++;
       if (earned.has(b.id)) byKind[b.kind].earned++;
     }
-    const list = catalog.badges.map((b) => ({ ...b, earnedAt: earned.get(b.id) ?? null }));
+    const list = catalog.badges.map((b) => ({ ...b, earnedAt: earned.get(b.id) ?? null, chain: mints.get(b.id) ?? null }));
     // Earned badges first (newest first), then the rest in catalog order.
     list.sort((a, b) => (b.earnedAt ?? 0) - (a.earnedAt ?? 0));
     let next = [];
@@ -128,6 +182,7 @@ export function createBadgeService(db, { catalog, linkedAccount, settings = user
       version: catalog.version,
       total: catalog.badges.length,
       earned: earned.size,
+      onChain: [...mints.values()].filter((m) => m.state === "minted").length,
       byKind,
       badges: list,
       next,
@@ -359,6 +414,83 @@ export function createBadgeService(db, { catalog, linkedAccount, settings = user
       player,
     );
   }
+  // ------------------------------------------------------------ place mints
+
+  /** Place designs some queued mint needs that are not live on chain yet. */
+  function pendingPlaceDesigns(contractId, limit = 3) {
+    const ids = db
+      .prepare(
+        "SELECT DISTINCT m.badge_id AS id FROM place_badge_mints m LEFT JOIN place_badge_designs d ON d.badge_id=m.badge_id WHERE m.state='queued' AND (d.badge_id IS NULL OR d.state='queued') ORDER BY m.created_at LIMIT ?",
+      )
+      .all(limit * 4);
+    const out = [];
+    for (const { id } of ids) {
+      const badge = catalog.byId.get(id);
+      if (!badge) continue;
+      out.push({ badgeId: id, row: placeDesignRow(badge, contractId) });
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+  function markPlaceDesign(badgeId, chainId, { tx = null, error = null } = {}) {
+    const t = now();
+    const prev = db.prepare("SELECT attempts FROM place_badge_designs WHERE badge_id=?").get(badgeId);
+    const attempts = (prev?.attempts ?? 0) + (error ? 1 : 0);
+    const state = error ? (attempts >= MAX_CLAIM_ATTEMPTS ? "failed" : "queued") : "live";
+    db.prepare(
+      "INSERT INTO place_badge_designs(badge_id,chain_id,state,attempts,chain_tx,error,updated_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(badge_id) DO UPDATE SET state=excluded.state,attempts=excluded.attempts,chain_tx=COALESCE(excluded.chain_tx,chain_tx),error=excluded.error,updated_at=excluded.updated_at",
+    ).run(badgeId, chainId, state, attempts, tx, error ? String(error).slice(0, 300) : null, t);
+    if (state === "failed")
+      db.prepare("UPDATE place_badge_mints SET state='failed',error=?,updated_at=? WHERE badge_id=? AND state='queued'").run("The place design could not be created on NEAR.", t, badgeId);
+  }
+  /**
+   * Queued mints whose design is live, with the account resolved now. A player
+   * without a linked account is skipped for NO_ACCOUNT_RETRY_MS.
+   */
+  function pendingPlaceMints(limit = 10) {
+    const t = now();
+    const rows = db
+      .prepare(
+        "SELECT m.player_id,m.badge_id,d.chain_id FROM place_badge_mints m JOIN place_badge_designs d ON d.badge_id=m.badge_id AND d.state='live' WHERE m.state='queued' AND m.next_at<=? ORDER BY m.next_at,m.created_at LIMIT ?",
+      )
+      .all(t, limit * 3);
+    const out = [];
+    for (const r of rows) {
+      const account = linkedAccount(r.player_id);
+      if (!account) {
+        db.prepare("UPDATE place_badge_mints SET next_at=?,updated_at=? WHERE player_id=? AND badge_id=?").run(t + NO_ACCOUNT_RETRY_MS, t, r.player_id, r.badge_id);
+        continue;
+      }
+      out.push({ playerId: r.player_id, badgeId: r.badge_id, chainId: r.chain_id, accountId: account });
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+  function markPlaceMinted(player, badgeId, accountId, tx, tokenId) {
+    db.prepare("UPDATE place_badge_mints SET state='minted',account_id=?,chain_tx=COALESCE(?,chain_tx),token_id=?,error=NULL,updated_at=? WHERE player_id=? AND badge_id=?").run(
+      accountId,
+      tx,
+      tokenId,
+      now(),
+      player,
+      badgeId,
+    );
+  }
+  function markPlaceMintFailed(player, badgeId, error, final = false) {
+    const t = now();
+    const r = db.prepare("SELECT attempts FROM place_badge_mints WHERE player_id=? AND badge_id=?").get(player, badgeId);
+    const attempts = (r?.attempts ?? 0) + 1;
+    db.prepare("UPDATE place_badge_mints SET attempts=?,error=?,state=?,next_at=?,updated_at=? WHERE player_id=? AND badge_id=?").run(
+      attempts,
+      String(error).slice(0, 300),
+      final || attempts >= MAX_CLAIM_ATTEMPTS ? "failed" : "queued",
+      t + 30_000 * 2 ** attempts,
+      t,
+      player,
+      badgeId,
+    );
+  }
+
   /** Operator moderation: hides a design here (chain pause is separate). */
   function hide(id) {
     return db.prepare("UPDATE user_badges SET state='hidden',updated_at=? WHERE id=?").run(now(), id).changes === 1;
@@ -374,6 +506,7 @@ export function createBadgeService(db, { catalog, linkedAccount, settings = user
       placeVersion: catalog.version,
       placeAwards: q("SELECT count(*) AS n FROM place_badge_awards"),
       userBadges: settings.enabled ? "on" : "off",
+      placeMinting: settings.placeMints ? "on" : "off",
       contractId: c?.contractId ?? null,
       minting: !!c?.ready,
       minterError: c?.ready ? null : (c?.error ?? null),
@@ -381,6 +514,12 @@ export function createBadgeService(db, { catalog, linkedAccount, settings = user
         designs: q("SELECT count(*) AS n FROM user_badges WHERE state='queued'"),
         claims: q("SELECT count(*) AS n FROM user_badge_claims WHERE state='queued'"),
         failed: q("SELECT count(*) AS n FROM user_badge_claims WHERE state='failed'"),
+      },
+      placeMints: {
+        designsLive: q("SELECT count(*) AS n FROM place_badge_designs WHERE state='live'"),
+        queued: q("SELECT count(*) AS n FROM place_badge_mints WHERE state='queued'"),
+        minted: q("SELECT count(*) AS n FROM place_badge_mints WHERE state='minted'"),
+        failed: q("SELECT count(*) AS n FROM place_badge_mints WHERE state='failed'"),
       },
     };
   }
@@ -400,6 +539,11 @@ export function createBadgeService(db, { catalog, linkedAccount, settings = user
     markCreateFailed,
     markMinted,
     markClaimFailed,
+    pendingPlaceDesigns,
+    markPlaceDesign,
+    pendingPlaceMints,
+    markPlaceMinted,
+    markPlaceMintFailed,
     hide,
   };
 }

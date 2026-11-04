@@ -36,6 +36,8 @@ import {
   type NpcTrade,
 } from "./npc-client";
 import { npcStrings } from "./npc-i18n";
+import { ApiError } from "./api";
+import { chainTradesReady, explorerTxUrl, fillOnChain, handOverOnChain, secureTradeAura } from "./chain-trades";
 import { InnerVault, StakeTodayCard, seenCeremony, seenRank } from "./StakeToday";
 import "./npc-sheet.css";
 
@@ -107,12 +109,42 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   }, [actorId, token]);
   const name = reply?.npc?.name || encounter.actor.name;
   const refresh = async () => setReply(await npcGreet(actorId, token));
+  const keep = (offerId: string, trade: NpcTrade) => setTrades((all) => ({ ...all, [offerId]: trade }));
+  /** Trade-up: hand the Auras over on NEAR, then let the trader check and pay out. */
+  const settleTradeUp = async (offerId: string, trade: NpcTrade) => {
+    if (chainTradesReady() && trade.state === "issued") {
+      setNotice(t.handingOver);
+      await handOverOnChain(trade);
+    }
+    let done: NpcTrade | null = null;
+    for (let attempt = 0; attempt < 6 && !done; attempt++) {
+      try {
+        done = await tradeUpComplete(actorId, token, offerId);
+      } catch (e) {
+        if (!(e instanceof ApiError && e.code === "NPC_TRADE_PENDING") || attempt === 5) throw e;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+    keep(offerId, done!);
+    setNotice(t.trade(done!, name));
+    // The payout becomes an NFT on the player's account straight away.
+    if (done!.secureItemId && !done!.replay) await secureTradeAura(done!.secureItemId).catch(() => false);
+  };
   const accept = (offer: ActorOffer) =>
     run(async () => {
       if (isTrade(offer)) {
         const trade = await tradeAccept(actorId, token, offer.id);
-        setTrades((all) => ({ ...all, [offer.id]: trade }));
-        setNotice(t.trade(trade, name));
+        keep(offer.id, trade);
+        if (!chainTradesReady() || trade.state !== "issued") {
+          setNotice(t.trade(trade, name));
+          return;
+        }
+        if (trade.kind === "trade_up") return settleTradeUp(offer.id, trade);
+        // Buy and sell orders are filled on NEAR right here, in one tap.
+        setNotice(t.settlingOnChain);
+        const filled = await fillOnChain(trade, { escrowed: !!(offer.terms as { escrowed?: boolean }).escrowed });
+        keep(offer.id, filled);
+        setNotice(t.tradeOnChain(filled, name));
         return;
       }
       await npcAccept(actorId, token, offer.id);
@@ -125,12 +157,8 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
       setNotice(r.replay ? t.already : line.errand ? t.errandDone(r.xp, r.errand?.clueBonusXp) : t.turnedIn(r));
       await refresh();
     });
-  const handOver = (offerId: string) =>
-    run(async () => {
-      const trade = await tradeUpComplete(actorId, token, offerId);
-      setTrades((all) => ({ ...all, [offerId]: trade }));
-      setNotice(t.trade(trade, name));
-    });
+  const handOver = (offerId: string) => run(() => settleTradeUp(offerId, trades[offerId]));
+  const proofs = Object.values(trades).flatMap((x) => x.txHashes || (x.txHash ? [x.txHash] : []));
   const send = (event: React.FormEvent) => {
     event.preventDefault();
     const text = message.trim();
@@ -347,6 +375,17 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
           <button type="button" className="npc-notice" role="status" onClick={() => setNotice("")}>
             {notice}
           </button>
+        )}
+        {proofs.length > 0 && (
+          <p className="npc-fine npc-proof">
+            {t.onChainProof}{" "}
+            {[...new Set(proofs)].map((hash, i) => (
+              <a key={hash} href={explorerTxUrl(hash)} target="_blank" rel="noreferrer" data-tx={hash}>
+                {i ? " · " : ""}
+                {hash.slice(0, 6)}…
+              </a>
+            ))}
+          </p>
         )}
         {error && (
           <p className="npc-error" role="alert">
