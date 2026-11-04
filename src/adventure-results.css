@@ -149,8 +149,7 @@
   flex-shrink: 0;
 }
 @media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
-  .sheet-compact:has(.adventure-result-resume) > .recommended-quest,
-  .sheet-compact:has(.adventure-result-resume) > .compact-selection,
+  .sheet-compact:has(.adventure-result-resume) > .sheet-peek,
   .sheet-compact:has(.adventure-result-resume)
     > .adventure-notice:not(.adventure-result-resume) {
     display: none;

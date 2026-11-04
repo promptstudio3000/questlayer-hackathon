@@ -25,7 +25,7 @@ const OWN_KEYS =
 
 /**
  * City demo movement. Arrows / WASD (or the on-screen pad) turn the explorer
- * and walk it the way it faces; Shift or the Run toggle runs. Real play never
+ * and run it the way it faces; Shift or the Run toggle walks instead. Real play never
  * uses this: there the position comes only from the device GPS.
  */
 export function useDemoWalk({
@@ -40,10 +40,13 @@ export function useDemoWalk({
 }) {
   const [heading, setHeading] = useState(DEMO_START_HEADING),
     [held, setHeld] = useState<Set<DemoControl>>(() => new Set()),
-    [run, setRun] = useState(false),
+    // Running is the default so the demo crosses a city quickly; Shift (or
+    // the toggle) walks for the last few metres.
+    [run, setRun] = useState(true),
     [shift, setShift] = useState(false);
-  const live = useRef({ heading, held, run: run || shift, onWalk });
-  live.current = { heading, held, run: run || shift, onWalk };
+  const running = shift ? !run : run;
+  const live = useRef({ heading, held, run: running, onWalk });
+  live.current = { heading, held, run: running, onWalk };
 
   const press = useCallback((control: DemoControl, down: boolean) => {
     setHeld((current) => {
@@ -146,5 +149,5 @@ export function useDemoWalk({
     if (heading !== null) setHeading(heading);
   }, []);
 
-  return { heading, held, run, setRun, running: run || shift, press, release, face };
+  return { heading, held, run, setRun, running, press, release, face };
 }

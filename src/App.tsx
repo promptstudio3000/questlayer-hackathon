@@ -120,6 +120,7 @@ import "./styles.css";
 import "./theme-accents.css";
 import "./compact-ui.css";
 import "./mobile-sheets.css";
+import { activeQuestRoute } from "./quest-route";
 import { HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
 import { pushBurst, type RewardBurst } from "./reward-burst";
@@ -188,6 +189,9 @@ import {
   PersonSimpleRun,
   BookOpen,
   MagnifyingGlass,
+  ArrowsOut,
+  ArrowsIn,
+  SlidersHorizontal,
 } from "@phosphor-icons/react";
 import { ArrowRight, ArrowLeft } from "./dir-icons";
 import { ArrowRight as PhArrowRight } from "@phosphor-icons/react";
@@ -350,6 +354,17 @@ export default function App() {
     [goldMapData, setGoldMapData] = useState<GoldMap | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
     [emotePicker, setEmotePicker] = useState(false),
+    // Phones: the map tools fold into one button; "Full map" hides the
+    // header, menu and sheet so the map takes the whole screen.
+    [mapTools, setMapTools] = useState(false),
+    [mapFull, setMapFull] = useState(() => {
+      try {
+        return localStorage.getItem("questlayer.mapFull") === "1";
+      } catch {
+        return false;
+      }
+    }),
+    [peekHidden, setPeekHidden] = useState(false),
     [now, setNow] = useState(Date.now()),
     [menu, setMenu] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackPreferences>(() =>
@@ -1544,6 +1559,33 @@ export default function App() {
       setDemoTarget(null);
     }
   }, [position, demoTarget]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("questlayer.mapFull", mapFull ? "1" : "0");
+    } catch {
+      /* private mode: full map just starts off next time */
+    }
+  }, [mapFull]);
+  // Map overlays that sit above the bottom sheet (the demo pad) read how much
+  // of the screen bottom the sheet and menu take, as --sheet-gap.
+  useEffect(() => {
+    const panel = mainPanel.current;
+    if (!panel || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    const update = () => {
+      const box = panel.getBoundingClientRect();
+      const gap = box.height > 0 ? Math.max(0, window.innerHeight - box.top) : 0;
+      root.style.setProperty("--sheet-gap", `${Math.round(gap)}px`);
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(panel);
+    window.addEventListener("resize", update);
+    update();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [player, tab, sheetExpanded, mapFull]);
   const [streetFindTarget, setStreetFindTarget] = useState<string | null>(null);
   function goToStreetFind(coin: { id: string; lat: number; lng: number }) {
     setStreetFindTarget(coin.id);
@@ -3043,6 +3085,16 @@ export default function App() {
       (q) => !q.completed && q.opens_at <= now && q.closes_at > now,
     ) ||
     zoneQuests[0];
+  const questRoute =
+    world && !nativePlay
+      ? activeQuestRoute(world.quests, {
+          position,
+          now,
+          questId: demoTarget?.questId || selectedQuestId,
+          zoneId: selected?.id,
+        })
+      : null;
+  const mapFullOn = mapFull && tab === "explore" && !sheetExpanded && !globe;
   const title =
     tab === "explore"
       ? nativePlay
@@ -3071,7 +3123,7 @@ export default function App() {
         "QuestLayer";
   return (
     <div
-      className={`app-shell${player && (tab !== "explore" || sheetExpanded) ? " sheet-open" : ""}`}
+      className={`app-shell${player && (tab !== "explore" || sheetExpanded) ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}`}
     >
       {player ? (
         <GameMap
@@ -3155,6 +3207,7 @@ export default function App() {
           emote={myEmote && myEmote.until > now ? myEmote.id : null}
           frame={myFrame}
           goldMap={goldMapData}
+          route={questRoute}
           onPlacePin={(id) => {
             setPlaceOpenId(id);
             setTab("places");
@@ -3397,6 +3450,7 @@ export default function App() {
               />
             )}
           {tab === "explore" && selected && (
+            <div className="sheet-peek sheet-peek-selection">
             <button
               className="compact-selection"
               onClick={() => setSheetExpanded(true)}
@@ -3414,6 +3468,15 @@ export default function App() {
               </span>
               <ArrowRight />
             </button>
+            <button
+              className="sheet-peek-hide"
+              aria-label={tr("Close")}
+              title={tr("Close")}
+              onClick={() => setSelected(null)}
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+            </div>
           )}
           {tab === "explore" && nativePlay && nativeObjective.reference && (
             <div className="native-objective">
@@ -3595,7 +3658,9 @@ export default function App() {
               {!coachStep &&
                 recommendedFind &&
                 !nativeTarget &&
-                !adventureNotice && (
+                !adventureNotice &&
+                (sheetExpanded || !peekHidden) && (
+                  <div className="sheet-peek">
                   <button
                     className="recommended-quest"
                     onClick={() => goToStreetFind(recommendedFind.coin)}
@@ -3615,12 +3680,23 @@ export default function App() {
                     </span>
                     <ArrowRight size={20} />
                   </button>
+                  <button
+                    className="sheet-peek-hide"
+                    aria-label={tr("Hide this tip")}
+                    title={tr("Hide this tip")}
+                    onClick={() => setPeekHidden(true)}
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                  </div>
                 )}
               {!coachStep &&
                 recommended &&
                 recommendedZone &&
                 !nativeTarget &&
-                !adventureNotice && (
+                !adventureNotice &&
+                (sheetExpanded || !peekHidden) && (
+                  <div className="sheet-peek">
                   <button
                     className="recommended-quest"
                     onClick={() => selectZone(recommendedZone, recommended.id)}
@@ -3646,6 +3722,15 @@ export default function App() {
                     </span>
                     <ArrowRight size={20} />
                   </button>
+                  <button
+                    className="sheet-peek-hide"
+                    aria-label={tr("Hide this tip")}
+                    title={tr("Hide this tip")}
+                    onClick={() => setPeekHidden(true)}
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                  </div>
                 )}
               <div className="day-row">
                 <Badge tone="green">
@@ -3915,7 +4000,7 @@ export default function App() {
                           {tr("Turn toward it")}{" "}<NavigationArrow />
                         </button>
                         <p className="fine-print">
-                          {tr("City demo: hold ↑ or W (or the pad) to walk, Shift to run. Real play moves only with your phone's GPS.")}</p>
+                          {tr("City demo: hold ↑ or W (or the pad) to run, Shift to walk. Real play moves only with your phone's GPS.")}</p>
                       </>
                     ) : (
                       <button
@@ -4663,7 +4748,7 @@ export default function App() {
       )}
       {player && (
         <>
-          <div className="map-top-chip map-status-chip">
+          <div className={`map-top-chip map-status-chip${arena && !nativePlay ? " demo" : ""}`}>
             <span className="status-dot" />
             <span className="map-status-text">
               {nativePlay
@@ -4737,7 +4822,51 @@ export default function App() {
               }
             />
           )}
-          <div className="map-controls map-toolbar" role="toolbar" aria-label={tr("Map tools")} aria-orientation="vertical">
+          {mapFullOn && (
+            <button
+              className="map-full-exit"
+              aria-label={tr("Exit full map")}
+              title={tr("Exit full map")}
+              onClick={() => {
+                setMapFull(false);
+                requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+              }}
+            >
+              <ArrowsIn size={22} weight="bold" />
+            </button>
+          )}
+          <div
+            className={`map-controls map-toolbar${mapTools ? " tools-open" : ""}`}
+            role="toolbar"
+            aria-label={tr("Map tools")}
+            aria-orientation="vertical"
+          >
+            <button
+              className="map-tools-toggle"
+              aria-label={tr("Map tools")}
+              title={tr("Map tools")}
+              aria-expanded={mapTools}
+              onClick={() => setMapTools((v) => !v)}
+            >
+              {mapTools ? <X size={20} /> : <SlidersHorizontal size={20} />}
+            </button>
+            {tab === "explore" && (
+              <button
+                className="map-full-toggle"
+                aria-label={tr("Full map")}
+                title={tr("Full map")}
+                aria-pressed={mapFullOn}
+                onClick={() => {
+                  setSheetExpanded(false);
+                  setMapTools(false);
+                  setMapFull((v) => !v);
+                  // The camera re-centres the explorer in the bigger view.
+                  requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+                }}
+              >
+                <ArrowsOut size={20} />
+              </button>
+            )}
             <button
               aria-label={tr("City overview")}
               title={tr("City overview")}

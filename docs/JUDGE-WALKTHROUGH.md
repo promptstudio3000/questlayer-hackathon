@@ -20,7 +20,7 @@ Repository: https://github.com/promptstudio3000/questlayer-hackathon. Pitch deck
 
 ## Path A: the core loop in a browser (about 3 minutes, no install)
 
-Desktop shows the Plzeň **city demo**: you move with the **Demo walk** pad (arrows or WASD, Shift runs). Real play
+Desktop shows the Plzeň **city demo**: you move with the **Demo walk** pad (arrows or WASD run, Shift walks). Real play
 moves only with a phone's GPS (Path D); there is no tap-to-walk.
 
 | # | Do | See | Proves |

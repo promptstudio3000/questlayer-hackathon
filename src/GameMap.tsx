@@ -42,7 +42,10 @@ import { prefersReducedMotion } from "./feedback";
 import { paintMapSky, skyFor, skyLabel } from "./map-sky";
 import { Coins, MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
 import "./map-sky.css";
+// Phone map-first layout; lazy with the map, so the welcome screen skips it.
+import "./phone-map.css";
 import { tr } from "./i18n";
+import type { QuestRoute } from "./quest-route";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
@@ -89,6 +92,8 @@ export type GameMapProps = {
   frame?: string | null;
   goldMap?: GoldMap | null;
   onPlacePin?: (id: string) => void;
+  /** A multi-stop walk: drawn from the explorer to the next stop and on. */
+  route?: QuestRoute | null;
 };
 export type CreatorMapPlace = {
   questId: string;
@@ -492,6 +497,36 @@ export function GameMap(props: GameMapProps) {
           "line-color": ["get", "color"],
           "line-width": 2,
           "line-dasharray": [3, 2],
+        },
+      });
+      // Multi-stop walks (src/quest-route.ts): a glowing dashed path from the
+      // explorer to the next stop and on, so the way onward is always shown.
+      m.addSource("quest-route", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      m.addLayer({
+        id: "quest-route-glow",
+        type: "line",
+        source: "quest-route",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": "#ff1dff",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 13, 8, 18, 22],
+          "line-blur": 6,
+          "line-opacity": ["case", ["get", "next"], 0.8, 0.4],
+        },
+      });
+      m.addLayer({
+        id: "quest-route-line",
+        type: "line",
+        source: "quest-route",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["case", ["get", "next"], "#ffffff", "#ffd6ff"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 13, 3.5, 18, 8],
+          "line-dasharray": [1.2, 1.6],
+          "line-opacity": ["case", ["get", "next"], 1, 0.7],
         },
       });
       // Zone landmarks (src/zone-landmarks.ts): wall, totem and the items inside.
@@ -1168,6 +1203,51 @@ export function GameMap(props: GameMapProps) {
     props.panelMode,
     viewportRevision,
   ]);
+  const routeKey = props.route
+    ? `${props.route.questId}:${props.route.points
+        .map((p) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)
+        .join(";")}`
+    : "";
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    const points = props.globe ? [] : props.route?.points || [];
+    (m.getSource("quest-route") as GeoJSONSource | undefined)?.setData({
+      type: "FeatureCollection",
+      features: points.slice(1).map((p, i) => ({
+        type: "Feature",
+        properties: { next: i === 0 },
+        geometry: {
+          type: "LineString",
+          coordinates: [
+            [points[i].lng, points[i].lat],
+            [p.lng, p.lat],
+          ],
+        },
+      })),
+    } as Parameters<GeoJSONSource["setData"]>[0]);
+  }, [ready, routeKey, props.globe]);
+  // Numbered stop badges; the stops only change when one is confirmed.
+  const stopsKey = props.route
+    ? `${props.route.questId}:${props.route.points
+        .slice(1)
+        .map((p) => `${p.lat},${p.lng}`)
+        .join(";")}`
+    : "";
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || props.globe || !props.route) return;
+    const markers = props.route.points.slice(1).map((p, i) => {
+      const node = document.createElement("div");
+      node.className = `quest-route-stop${i === 0 ? " next" : ""}`;
+      node.textContent = String(i + 1);
+      node.setAttribute("aria-hidden", "true");
+      return new maplibregl.Marker({ element: node, anchor: "center" })
+        .setLngLat([p.lng, p.lat])
+        .addTo(m);
+    });
+    return () => markers.forEach((x) => x.remove());
+  }, [ready, stopsKey, props.globe]);
   const creatorPlaceKey = JSON.stringify(props.creatorPlaces || []);
   useEffect(() => {
     const m = map.current;

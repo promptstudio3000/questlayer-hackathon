@@ -1,0 +1,263 @@
+/* Phone map first (Lubos, 4 Nov 2026): on a phone the map is the game, so
+   everything around it folds away. Loaded after mobile-sheets.css; rules use
+   an .app-shell prefix so they also beat lazily loaded stylesheets. */
+
+/* ---- Multi-stop walk: numbered stops on the map (GameMap route) ---- */
+.quest-route-stop {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ff1dff;
+  border: 2px solid #fff;
+  color: #fff;
+  font: 800 12px/1 var(--font-ui, system-ui, sans-serif);
+  box-shadow: 0 0 0 2px #1a033566, 0 0 14px #ff1dffaa;
+  pointer-events: none;
+}
+.quest-route-stop.next {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  animation: quest-route-pulse 1.6s ease-in-out infinite;
+}
+@keyframes quest-route-pulse {
+  50% {
+    box-shadow: 0 0 0 2px #1a033566, 0 0 0 8px #ff1dff33, 0 0 22px #ff1dffcc;
+  }
+}
+
+/* ---- Map tools: one button opens the column on phones ------------- */
+.map-controls.map-toolbar > .map-tools-toggle {
+  display: none;
+}
+/* ---- Full map --------------------------------------------------------- */
+.map-full-exit {
+  position: fixed;
+  z-index: 40;
+  top: calc(10px + env(safe-area-inset-top));
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--ink, #1a0335);
+  background: #fbf9f2f2;
+  color: var(--action, #672eeb);
+  box-shadow: 3px 3px 0 #1a033540;
+}
+.map-full-exit:focus-visible {
+  outline: 3px solid var(--discovery, #ff1dff);
+  outline-offset: 2px;
+}
+.app-shell.map-full .topbar,
+.app-shell.map-full .nav-rail,
+.app-shell.map-full .main-panel,
+.app-shell.map-full .map-status-chip,
+.app-shell.map-full .map-sky-chip,
+.app-shell.map-full .map-controls.map-toolbar,
+.app-shell.map-full .player-bottom,
+.app-shell.map-full .presence-chip,
+body:has(.app-shell.map-full) .pwa-install {
+  display: none !important;
+}
+.app-shell.map-full .map-search-here {
+  top: calc(10px + env(safe-area-inset-top));
+}
+
+/* ---- Peek cards under "Show discoveries" can be hidden ------------- */
+.sheet-peek {
+  position: relative;
+}
+.sheet-peek-hide {
+  display: none;
+}
+
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  /* Map tools fold into one button; it opens the full column. */
+  .app-shell .map-controls.map-toolbar > .map-tools-toggle {
+    display: grid;
+    place-items: center;
+  }
+  .app-shell .map-controls.map-toolbar:not(.tools-open) > button:not(.map-tools-toggle) {
+    display: none;
+  }
+  .app-shell .map-controls.map-toolbar:not(.tools-open) {
+    border-radius: 50%;
+  }
+  .app-shell .map-controls.map-toolbar.tools-open {
+    z-index: 30;
+  }
+  /* Discoveries open: a little more map above the sheet. */
+  .app-shell.sheet-open .main-panel.explore-panel.sheet-expanded {
+    height: min(58dvh, calc(100dvh - 160px));
+  }
+
+  /* The location chip in the demo keeps only its dot and "Use GPS". */
+  .app-shell .map-status-chip.demo .map-status-text {
+    display: none;
+  }
+  .app-shell .map-status-chip.demo {
+    padding-left: 10px;
+  }
+
+  /* Day/night chip: one small icon under the location chip. */
+  .app-shell .map-sky-chip {
+    top: calc(114px + env(safe-area-inset-top));
+    left: 14px;
+    right: auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .app-shell .map-sky-chip > span {
+    display: none;
+  }
+  .app-shell.sheet-open .map-sky-chip {
+    top: calc(58px + env(safe-area-inset-top));
+  }
+
+  /* The bottom sheet when folded: one slim row and at most one card. */
+  .app-shell .main-panel.explore-panel.sheet-compact {
+    height: auto;
+    max-height: min(46dvh, 330px);
+    padding: 2px 10px 10px;
+    overflow-y: auto;
+  }
+  .app-shell .sheet-compact .sheet-toggle {
+    min-height: 40px;
+    margin-bottom: 6px;
+    top: -2px;
+  }
+  .app-shell .sheet-compact .sheet-peek-hide {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: #ffffffcc;
+    color: #5a4b6e;
+  }
+  .app-shell .sheet-compact .sheet-peek-hide:focus-visible {
+    outline: 3px solid var(--discovery, #ff1dff);
+    outline-offset: 1px;
+  }
+  .app-shell .sheet-compact .recommended-quest,
+  .app-shell .sheet-compact .compact-selection {
+    min-height: 56px;
+    margin: 0;
+    padding: 8px 46px 8px 10px;
+    gap: 10px;
+  }
+  .app-shell .sheet-compact .recommended-quest > svg:last-child,
+  .app-shell .sheet-compact .compact-selection > svg:last-child {
+    display: none;
+  }
+  .app-shell .sheet-compact .recommended-quest small {
+    display: none;
+  }
+  .app-shell .sheet-compact .recommended-quest strong {
+    font-size: 15px;
+  }
+  .app-shell .sheet-compact .recommended-quest > span:nth-child(2) > span,
+  .app-shell .sheet-compact .compact-selection small {
+    font-size: 13px;
+  }
+  .app-shell .sheet-compact .recommended-art {
+    width: 40px;
+    height: 40px;
+  }
+  .app-shell .sheet-compact .sheet-peek + .sheet-peek {
+    margin-top: 6px;
+  }
+  /* First steps: title, two lines of hint and the action. */
+  .app-shell .sheet-compact .first-session {
+    padding: 8px 10px 10px;
+    gap: 4px;
+  }
+  .app-shell .sheet-compact .first-session h2 {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .app-shell .sheet-compact .first-session-hint {
+    display: none;
+  }
+  .app-shell .sheet-compact .first-session .first-session-action {
+    min-height: 44px;
+    padding-block: 6px;
+    margin-top: 4px;
+  }
+
+  /* Demo pad: bottom right above the sheet, under the thumb and clear of
+     the explorer in the middle. --sheet-gap comes from App.tsx. */
+  .app-shell .demo-pad,
+  .app-shell .demo-pad-open {
+    top: auto;
+    left: auto;
+    right: 10px;
+    bottom: calc(var(--sheet-gap, 280px) + 10px);
+  }
+  .app-shell .demo-pad {
+    width: auto;
+    padding: 6px;
+    background: #fbf9f2d9;
+    backdrop-filter: blur(6px);
+  }
+  .app-shell .demo-pad header {
+    position: absolute;
+    top: -14px;
+    left: -14px;
+  }
+  .app-shell .demo-pad header > span {
+    display: none;
+  }
+  .app-shell .demo-pad .demo-pad-min {
+    width: 30px;
+    height: 30px;
+    background: #fbf9f2;
+    border: 2px solid var(--ink, #1a0335);
+  }
+  .app-shell .demo-pad-grid {
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(3, 42px);
+  }
+  .app-shell .demo-pad:not([data-target]) .demo-pad-hint {
+    display: none;
+  }
+  .app-shell .demo-pad .demo-pad-hint {
+    max-width: 140px;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .app-shell.map-full .demo-pad,
+  .app-shell.map-full .demo-pad-open {
+    bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-height: 500px) and (max-width: 1000px) {
+  /* Landscape phones: the sheet sits on the right, the pad bottom left. */
+  .app-shell .demo-pad,
+  .app-shell .demo-pad-open {
+    left: 12px;
+    right: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quest-route-stop.next {
+    animation: none;
+  }
+}

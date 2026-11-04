@@ -21,7 +21,7 @@ Open **https://questlayer.promptstudio3000.com/** on a phone or desktop. No wall
 
 | # | Do | See |
 | --- | --- | --- |
-| 1 | Type a name under "What should we call you?", press **Start exploring** | The Plzeň map with your ghost explorer in the city centre and the chip "City demo · arrows or WASD". On desktop you move with the **Demo walk** pad (hold ↑ or W, ←/→ to turn, Shift runs); real play moves only with a phone's GPS. |
+| 1 | Type a name under "What should we call you?", press **Start exploring** | The Plzeň map with your ghost explorer in the city centre and the chip "City demo · arrows or WASD". On desktop you move with the **Demo walk** pad (hold ↑ or W to run, ←/→ to turn, Shift walks); real play moves only with a phone's GPS. |
 | 2 | Walk over a gold coin on a path | The coin disappears for every player, the counter ticks and you get XP. |
 | 3 | Press the **Nearest discovery** card, then **Turn toward it** and walk there, then **Open chest** (beat the guardian first if one guards it) | The result sheet: exact XP and the Aura you received ("Reward collected"). |
 | 4 | Press **Try it on** | The same Aura is now worn by your character on the map. |

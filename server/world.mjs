@@ -509,6 +509,16 @@ export function worldView(db, id, player = null, options = {}) {
           ? cps.find((_, i) => !visited.has(i)) || null
           : cps[q.checkpoint] || null,
         ...(visited ? { visitedStops: [...visited].sort((a, b) => a - b) } : {}),
+        // Stops still ahead, so the map can draw the walk to the next one and
+        // beyond (ordered walks in order; hunts list every unvisited stop).
+        ...(cps.length > 1
+          ? {
+              stops: (visited
+                ? cps.filter((_, i) => !visited.has(i))
+                : cps.slice(q.checkpoint)
+              ).map((p) => ({ lat: p.lat, lng: p.lng })),
+            }
+          : {}),
         activity: describeStoredQuest(q, meta),
         ...(meta.clue ? { clue: clueView(db, q.id, meta.clue, player, options.lang) } : {}),
       };

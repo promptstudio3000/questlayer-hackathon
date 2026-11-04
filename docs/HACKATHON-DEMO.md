@@ -21,7 +21,7 @@ relayer with 12 confirmed jobs, `yieldBackedDays: true`). Re-check on recording 
 ## Rules for the whole video
 
 - **Real play is GPS only.** There is no tap-to-walk. On the phone, record while actually walking. On desktop, the
-  Plzeň city demo moves with the **Demo walk** pad (arrows or WASD, Shift runs); keep the chip "City demo · arrows or
+  Plzeň city demo moves with the **Demo walk** pad (arrows or WASD run, Shift walks); keep the chip "City demo · arrows or
   WASD" visible in the frame so nobody mistakes it for GPS proof.
 - **Say "testnet" once out loud** (shot 7) and keep the caption on screen.
 - **Yield honestly:** the yield cycle is proven on testnet, but the amount is tiny (the first realized yield into the
