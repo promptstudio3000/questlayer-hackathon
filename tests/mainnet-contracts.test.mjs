@@ -436,9 +436,8 @@ test("refuses wrong chain, foreign code, another signer and missing editions", a
 });
 
 test("the real pins: every new contract has a Linux/CI hash and the editions are reviewed", () => {
-  const pins = JSON.parse(
-    readFileSync("contracts/wasm-sha256.json", "utf8"),
-  ).contracts;
+  const pinFile = JSON.parse(readFileSync("contracts/wasm-sha256.json", "utf8"));
+  const pins = pinFile.contracts;
   for (const key of [
     "questlayer_badges",
     "questlayer_npc_games",
@@ -453,6 +452,12 @@ test("the real pins: every new contract has a Linux/CI hash and the editions are
   const editions = JSON.parse(
     readFileSync("public/native-editions-testnet.json", "utf8"),
   );
-  assert.equal(editions.wasmSha256, pins.questlayer_collectibles);
+  // Testnet runs the reviewed build, or an older one listed on purpose until
+  // scripts/upgrade-collectibles-editions-testnet.mjs deploys the new build.
+  const pending = pinFile.testnetDeploymentsNotFromThisBuild?.["public/native-editions-testnet.json:wasmSha256"];
+  if (editions.wasmSha256 !== pins.questlayer_collectibles) {
+    assert.equal(pending?.contract, "questlayer_collectibles");
+    assert.equal(pending?.sha256, editions.wasmSha256);
+  }
   assert.ok(editions.supportedEditions.includes("season"));
 });

@@ -1,0 +1,30 @@
+{
+  "network": "testnet",
+  "dex": "ref-finance-101.testnet",
+  "poolId": 2895,
+  "wnear": "wrap.testnet",
+  "qgold": "questlayer-qgold-vault-20261104.testnet",
+  "feeBps": 30,
+  "openPrice": "1030824742478521021182",
+  "createdAt": "2026-11-04T14:19:23.511Z",
+  "reserves": {
+    "near": "4998750000000000000000000",
+    "qgold": "4849272426",
+    "price": "1030824742532210954815"
+  },
+  "swapUrl": "https://testnet.rhea.finance/#wrap.testnet|questlayer-qgold-vault-20261104.testnet",
+  "transactions": [
+    {
+      "label": "Deposit wNEAR on Rhea",
+      "transaction": "BgaM3d5pVbMJenEvSKe5WuJReniXDrnz6RX7eDVtZ5oK"
+    },
+    {
+      "label": "Deposit QGOLD on Rhea",
+      "transaction": "DyrtmT2n7WW69Ds4k7j6P5KP7q1JRSSFWiR9RQMzMJBz"
+    },
+    {
+      "label": "Add liquidity",
+      "transaction": "12fr1vwHD1yqZ1mBUbVQcn2d6pAW3xDEJRZp5g9KavQV"
+    }
+  ]
+}

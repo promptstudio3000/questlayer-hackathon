@@ -3,7 +3,7 @@
   "toolchain": "rust:1.97.0 linux/amd64",
   "contracts": {
     "questlayer_badges": "23cc54a71915bac02d595b6880363491f9a341fc54756a77f7d5d4e1fd72797a",
-    "questlayer_collectibles": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
+    "questlayer_collectibles": "52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16",
     "questlayer_creators": "df12b5f9f544ebbfa545df7d80d0a7834fafc22605da366664472b063360c40b",
     "questlayer_game": "c7ab37be026f1aa1ec0441b3fbf0ea40af4dcfd70f31197d2e0046ddccdba34f",
     "questlayer_ledger": "3c4df45cdfa8854dc37553fc13be261fef09acd00a283d4c7fac0aa26704ffa5",
@@ -52,6 +52,16 @@
       "contract": "near_intents_defuse",
       "sha256": "1098ca2fecdfdb4dbc21e9fdfc513351816d85ed75f88144abb0c78a64ac1d60",
       "note": "External code, not ours: near/intents defuse v0.4.5 (commit 16d04f6), built by scripts/intents-verifier-testnet.mjs --build in its own pinned image sourcescan/cargo-near:0.22.0-rust-1.97.1. Experimental testnet verifier only."
+    },
+    "public/native-claims-testnet.json:wasmSha256": {
+      "contract": "questlayer_collectibles",
+      "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
+      "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
+    },
+    "public/native-editions-testnet.json:wasmSha256": {
+      "contract": "questlayer_collectibles",
+      "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
+      "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
     }
   }
 }

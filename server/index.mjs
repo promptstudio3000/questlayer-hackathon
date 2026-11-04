@@ -871,6 +871,7 @@ const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 // Public economy ledger for the /economy page (docs/ECONOMY-PAGE.md).
 const yieldCycleProofPath = resolve(APP_ROOT, "public/native-yield-cycle-proof.json");
 const intentsFeesRecordPath = resolve(APP_ROOT, "public/native-intents-fees-testnet.json");
+const royaltiesRecordPath = resolve(APP_ROOT, "public/native-royalties-testnet.json");
 const publicLedger = createPublicLedger({
   native: nativeRewards,
   treasury: stnearTreasury,
@@ -883,6 +884,11 @@ const publicLedger = createPublicLedger({
   feeRecord: () =>
     existsSync(intentsFeesRecordPath)
       ? JSON.parse(readFileSync(intentsFeesRecordPath, "utf8"))
+      : null,
+  // 2 % NEP-199 royalty on Aura resales elsewhere (scripts/collectibles-royalty-testnet.mjs).
+  royaltyRecord: () =>
+    existsSync(royaltiesRecordPath)
+      ? JSON.parse(readFileSync(royaltiesRecordPath, "utf8"))
       : null,
 });
 // QGOLD token page and market keeper (docs/QGOLD-MARKET.md). The vault

@@ -88,7 +88,7 @@ Owner prerequisites on the Mac, all mode 600, none of them in git or chat:
 | --- | --- |
 | `.data/near-operator-mainnet.json` | `{"network":"mainnet","accountId":"<operator>.near","secretKey":"ed25519:…"}` with a full-access key |
 | `.data/award-attestor-mainnet.pem` | created by the first `--execute` if absent; never reuse the testnet PEM |
-| reviewed WASM | `bash scripts/build-contracts.sh` (pinned Rust 1.97.0, reproducible); it must match `contracts/collectibles/WASM_SHA256` (`e2a41b19…31e9` since the patron and hackathon season editions; `0edba150…59b9` for the L5–L10 level editions; `176f1b07…dee9` for the NPC/monster editions; before that `b2684b58…36f7` for the catalog v2 editions and `491183e3…7287`, see `docs/COLLECTIBLES-REVIEW.md`), which the script reads by itself. Needs the review PR #19 merged: before it the contract refused `redeem_aura` on mainnet |
+| reviewed WASM | `bash scripts/build-contracts.sh` (pinned Rust 1.97.0, reproducible); it must match `contracts/collectibles/WASM_SHA256` (`52edcff4…6a16` since NEP-199 royalties; `e2a41b19…31e9` for the patron and hackathon season editions; `0edba150…59b9` for the L5–L10 level editions; `176f1b07…dee9` for the NPC/monster editions; before that `b2684b58…36f7` for the catalog v2 editions and `491183e3…7287`, see `docs/COLLECTIBLES-REVIEW.md`), which the script reads by itself. Needs the review PR #19 merged: before it the contract refused `redeem_aura` on mainnet |
 
 ```bash
 export NEAR_NETWORK=mainnet NEAR_MAINNET_CONFIRM=<operator>.near \

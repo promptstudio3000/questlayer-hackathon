@@ -88,6 +88,17 @@ type Ledger = {
     swept: string;
     sweeps: { receiptId: string; amount: string; at: string | null; funded: boolean; withdrawUrl: string | null; fundUrl: string | null }[];
   };
+  /** NEP-199 royalty on Aura resales through other marketplaces (Mintbase). */
+  auraRoyalties?: null | {
+    contract: string;
+    contractUrl: string | null;
+    payee: string;
+    payeeUrl: string | null;
+    bps: number;
+    swept: string;
+    sweeps: { receiptId: string; amount: string; at: string | null; funded: boolean; fundUrl: string | null }[];
+    mintbaseProof: null | { market: string; tokenId: string; price: string; royaltyReceived: string; buyUrl: string | null };
+  };
 };
 
 export const CHECK_LABELS: Record<string, string> = {
@@ -339,6 +350,38 @@ export default function EconomyPage() {
                 {data.tradeFees.sweeps.map((s) => (
                   <li key={s.receiptId}>
                     Sweep {when(s.at)} · <Amount yocto={s.amount} digits={6} /> · withdrawn <Tx url={s.withdrawUrl} /> · {s.funded ? <>funded <Tx url={s.fundUrl} /></> : <span className="eco-muted">in progress</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {data.auraRoyalties ? (
+            <section className="eco-card" aria-labelledby="eco-royalties">
+              <h2 id="eco-royalties">Royalty on Aura resales</h2>
+              <p>
+                Auras can also be resold on NEAR marketplaces that pay royalties, such as Mintbase. Each such sale pays {data.auraRoyalties.bps / 100} % to
+                the treasury, which moves it into the prize pool like the trade fee.
+              </p>
+              <dl className="eco-dl">
+                <dt>Paid to</dt>
+                <dd>{data.auraRoyalties.payeeUrl ? <a href={data.auraRoyalties.payeeUrl} target="_blank" rel="noreferrer">{data.auraRoyalties.payee} ↗</a> : data.auraRoyalties.payee}</dd>
+                <dt>In the prize pool</dt>
+                <dd><Amount yocto={data.auraRoyalties.swept} digits={6} /></dd>
+                {data.auraRoyalties.mintbaseProof ? (
+                  <>
+                    <dt>Proof sale</dt>
+                    <dd>
+                      {data.auraRoyalties.mintbaseProof.tokenId} for <Amount yocto={data.auraRoyalties.mintbaseProof.price} digits={2} />, royalty{" "}
+                      <Amount yocto={data.auraRoyalties.mintbaseProof.royaltyReceived} digits={6} /> <Tx url={data.auraRoyalties.mintbaseProof.buyUrl} />
+                    </dd>
+                  </>
+                ) : null}
+              </dl>
+              <ul className="eco-list">
+                {data.auraRoyalties.sweeps.map((s) => (
+                  <li key={s.receiptId}>
+                    Sweep {when(s.at)} · <Amount yocto={s.amount} digits={6} /> · {s.funded ? <>funded <Tx url={s.fundUrl} /></> : <span className="eco-muted">in progress</span>}
                   </li>
                 ))}
               </ul>

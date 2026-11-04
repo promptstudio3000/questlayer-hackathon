@@ -189,6 +189,42 @@ export function tradeFees(record) {
   };
 }
 
+/**
+ * NEP-199 royalty on Aura resales through other marketplaces (Mintbase): the
+ * public record written by scripts/collectibles-royalty-testnet.mjs. Only
+ * sweeps with a finished fund_rewards count as "in the prize pool".
+ */
+export function auraRoyalties(record) {
+  if (!record?.contract || !record.royalty) return null;
+  const sweeps = (record.sweeps || []).map((s) => ({
+    receiptId: s.receiptId,
+    amount: s.amount,
+    at: s.finishedAt ?? s.startedAt ?? null,
+    funded: typeof s.fundTransaction === "string" && Boolean(s.finishedAt),
+    fundUrl: txUrl(s.fundTransaction),
+  }));
+  const swept = sweeps.filter((s) => s.funded).reduce((sum, s) => sum + BigInt(s.amount || 0), 0n);
+  const proof = record.mintbaseProof;
+  return {
+    contract: record.contract,
+    contractUrl: accountUrl(record.contract),
+    payee: record.royalty.account_id,
+    payeeUrl: accountUrl(record.royalty.account_id),
+    bps: record.royalty.bps,
+    swept: swept.toString(),
+    sweeps,
+    mintbaseProof: proof
+      ? {
+          market: proof.market,
+          tokenId: proof.tokenId,
+          price: proof.price,
+          royaltyReceived: proof.royaltyReceived,
+          buyUrl: txUrl(proof.transactions?.find((t) => /^Buy /.test(t.label))?.transaction),
+        }
+      : null,
+  };
+}
+
 async function settle(fn) {
   try {
     return { status: "observed", data: await fn() };
@@ -210,6 +246,7 @@ export function createPublicLedger({
   yieldBacking = null,
   cycleProof = () => null,
   feeRecord = () => null,
+  royaltyRecord = () => null,
   clock = Date.now,
   cacheMs = 60_000,
 }) {
@@ -310,6 +347,7 @@ export function createPublicLedger({
         : { count: 0, total: "0", byKind: {}, recent: [] },
       yieldCycle: yieldCycle(cycleProof()),
       tradeFees: tradeFees(feeRecord()),
+      auraRoyalties: auraRoyalties(royaltyRecord()),
     };
   }
   return async function read() {
