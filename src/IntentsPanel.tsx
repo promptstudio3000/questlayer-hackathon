@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { Details } from "./ScreenTabs";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
-import { auraTokenDiff, type IntentsAccount, type IntentsConfig } from "./intents-order";
+import { auraTokenDiff, signIntents, type IntentsAccount, type IntentsConfig } from "./intents-order";
 import type { OrderSigner } from "./order-signers";
 import type { NativeItem } from "./types";
 import { EXPLORER_BASE } from "./near-network";
@@ -27,7 +27,7 @@ export function IntentsPanel({ signer, owned }: { signer: OrderSigner | null; ow
     [error, setError] = useState(""),
     [done, setDone] = useState<{ text: string; tx?: string } | null>(null);
   const accountId = signer?.accountId ?? null;
-  const canSign = !!signer?.signIntents;
+  const canSign = !!signer?.key;
 
   async function refresh() {
     const c = await api<IntentsConfig>("/native/intents");
@@ -64,7 +64,7 @@ export function IntentsPanel({ signer, owned }: { signer: OrderSigner | null; ow
   }
   const call = (receiverId: string, methodName: string, args: Record<string, unknown>, deposit: string, gas = GAS) =>
     signer!.call({ receiverId, methodName, args, deposit, gas });
-  const sign = (intents: unknown[]) => signer!.signIntents!(c, intents);
+  const sign = (intents: unknown[]) => signIntents(signer!.key!, c, intents);
 
   const enable = () =>
     run(async () => {
@@ -80,7 +80,10 @@ export function IntentsPanel({ signer, owned }: { signer: OrderSigner | null; ow
     });
   const buy = (orderId: string, tokenId: string, yocto: string) =>
     run(async () => {
-      const missing = BigInt(yocto) - BigInt(mine?.wnear || "0");
+      let missing = BigInt(yocto) - BigInt(mine?.wnear || "0");
+      // A 0.05 NEAR deposit would look like a storage deposit and be routed
+      // to the relayer, which refuses wrapping; wrap 1 yocto more instead.
+      if (missing === 50000000000000000000000n) missing += 1n;
       if (missing > 0n) {
         await call(c.wnear, "storage_deposit", { account_id: accountId, registration_only: true }, WNEAR_STORAGE);
         await call(c.wnear, "near_deposit", {}, missing.toString());
