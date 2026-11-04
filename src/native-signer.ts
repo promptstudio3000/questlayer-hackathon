@@ -1,9 +1,9 @@
 // One signing interface for the eight native flows: either the player's
 // external wallet (popup) or the invisible managed account (relayed, no popup).
-import {
+import type {
   sendConfirmedNative,
-  type NativeConfirmationContext,
-  type ReviewedNativeTransaction,
+  NativeConfirmationContext,
+  ReviewedNativeTransaction,
 } from "./confirmed-native-transaction";
 import { sendRelayed } from "./relayed-native-transaction";
 import { isRelayedDeposit, sendSelfPaid } from "./self-paid-native-transaction";
@@ -28,7 +28,9 @@ export function walletSigner(wallet: Wallet, accountId: string): NativeSigner {
     async send(transaction, context) {
       if (wallet.manifest && !wallet.manifest.features?.signAndSendTransaction)
         throw Error("Choose a wallet that supports NEAR transactions.");
-      await sendConfirmedNative(wallet, transaction, context);
+      // The wallet review flow loads on first use, off the first screen.
+      const { sendConfirmedNative: send } = await import("./confirmed-native-transaction");
+      await send(wallet, transaction, context);
     },
   };
 }

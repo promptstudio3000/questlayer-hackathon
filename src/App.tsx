@@ -70,7 +70,6 @@ import {
 import { makeNativeObjective } from "./native-objective";
 import { useAdventureSelection } from "./useAdventureSelection";
 import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
-import { sendConfirmedNative } from "./confirmed-native-transaction";
 import { walletSigner, type NativeSigner } from "./native-signer";
 import { useInvisibleAccount } from "./useInvisibleAccount";
 import "./map-notes.css";
@@ -3959,8 +3958,31 @@ export default function App() {
                     }),
                     api<NativeMarketState>("/native/market"),
                   ]);
-                  if (!claim.claim.token_id || !market.marketContract)
-                    return false;
+                  if (!claim.claim.token_id) return false;
+                  // NEAR Intents is the default market: the device key lists
+                  // the Aura there. Only a host without a deployed verifier
+                  // falls back to the market contract.
+                  if (
+                    orderSigner?.key &&
+                    orderSigner.accountId === claim.claim.receiver_id
+                  ) {
+                    // Loaded on demand to keep the first bundle small.
+                    const { sellAuraOnIntents } = await import("./intents-order");
+                    const viaIntents = await action("intents-sell", () =>
+                      sellAuraOnIntents(
+                        orderSigner,
+                        claim.claim.token_id!,
+                        priceYocto,
+                      ),
+                    );
+                    if (viaIntents === undefined) return false;
+                    if (viaIntents === "listed") {
+                      await me();
+                      notify(tr("Your Aura is listed through NEAR Intents. Find it in Market → Offers."));
+                      return true;
+                    }
+                  }
+                  if (!market.marketContract) return false;
                   const listed = await tradeNative({
                     kind: "list",
                     accountId: claim.claim.receiver_id,
