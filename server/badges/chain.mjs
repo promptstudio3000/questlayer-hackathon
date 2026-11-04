@@ -166,6 +166,57 @@ export async function runBadgeQueue(service, chain, { maxCreates = 3, maxClaims 
   return done;
 }
 
+/**
+ * One pass over place-badge mints (docs/BADGES.md §1a): create the sponsored
+ * design for each place on first use (creator = the badge contract), then mint
+ * each earned place badge to the player's linked account.
+ */
+export async function runPlaceBadgeQueue(service, chain, { maxCreates = 3, maxClaims = 10 } = {}) {
+  const done = { designs: 0, minted: 0, failed: 0 };
+  if (!chain?.ready || !service?.pendingPlaceMints || service.settings?.placeMints === false) return done;
+  const contractId = chain.contractId;
+  for (const { badgeId, row } of service.pendingPlaceDesigns(contractId, maxCreates)) {
+    try {
+      service.markPlaceDesign(badgeId, row.id, { tx: await chain.createBadge(row) });
+      done.designs++;
+    } catch (e) {
+      const text = String(e?.message || e);
+      if (/already taken/i.test(text)) {
+        const onChain = await chain.view("get_badge", { badge_id: row.id }).catch(() => null);
+        if (onChain?.creator_id === contractId) {
+          service.markPlaceDesign(badgeId, row.id, { tx: e.tx || null });
+          done.designs++;
+          continue;
+        }
+      }
+      service.markPlaceDesign(badgeId, row.id, { error: text });
+      done.failed++;
+    }
+  }
+  for (const m of service.pendingPlaceMints(maxClaims)) {
+    const serialOf = async () => {
+      const serial = await chain.view("has_badge", { badge_id: m.chainId, account_id: m.accountId }).catch(() => null);
+      return serial ? `${m.chainId}:${serial}` : null;
+    };
+    try {
+      const tx = await chain.claim(m.chainId, m.accountId);
+      service.markPlaceMinted(m.playerId, m.badgeId, m.accountId, tx, await serialOf());
+      done.minted++;
+    } catch (e) {
+      const text = String(e?.message || e);
+      if (/Already holds this badge/i.test(text)) {
+        service.markPlaceMinted(m.playerId, m.badgeId, m.accountId, e.tx || null, await serialOf());
+        done.minted++;
+        continue;
+      }
+      const final = /All badges are given out|Badge has ended|not accepting holders|maximum number of badges/i.test(text);
+      service.markPlaceMintFailed(m.playerId, m.badgeId, text, final);
+      done.failed++;
+    }
+  }
+  return done;
+}
+
 /** Background worker: reconnects lazily and drains the queue every interval. */
 export function startBadgeWorker(service, chain, { intervalMs = 15_000, log = console } = {}) {
   let stopped = false,
@@ -180,6 +231,8 @@ export function startBadgeWorker(service, chain, { intervalMs = 15_000, log = co
       }
       const r = await runBadgeQueue(service, chain);
       if (r.created || r.minted || r.failed) log.info?.(JSON.stringify({ badges: r }));
+      const p = await runPlaceBadgeQueue(service, chain);
+      if (p.designs || p.minted || p.failed) log.info?.(JSON.stringify({ placeBadges: p }));
     } catch (e) {
       log.warn?.(JSON.stringify({ badges: "queue error", error: String(e?.message || e).slice(0, 200) }));
     }

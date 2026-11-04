@@ -7,6 +7,7 @@ export type Item = {
   native_claim_state?: "issued" | "minted" | null;
   native_claim_expires_at?: number | null;
   native_token_id?: string | null;
+  native_claim_tx?: string | null;
   id: string;
   kind: string;
   name: string;
