@@ -71,5 +71,12 @@ bigger. The sky chip shows the time of the next coin wave.
 - `MAP_DAILY_SHARE_BPS`, `MAP_ZONE_SHARE_BPS` (0–5000).
 - `MAP_COIN_WAVES` (1–12, `off` = all at once).
 - `MAP_REWARDS_SEED`: secret mixed into the day seed.
+- `MAP_CHAIN=1` (off by default): the reward worker also publishes each day's root with
+  `publish_map_day`, sends the coins and cell-zone prizes that players with a linked NEAR wallet
+  collected in GPS worlds as `claim_map` (leaf fields, proof, coin or zone index, attestor signature;
+  at most 240 a day), and closes the day after one day of grace (`server/map-rewards/chain.mjs`).
+  It needs the rewards upgrade with `map_days.rs` and a worker key that allows the three map
+  methods next to the four native ones. The demo arena stays practice. Status:
+  `chain` in `GET /api/map/rewards/day`.
 
 Worlds created before the deploy keep their coins until midnight; the next day uses map rewards.

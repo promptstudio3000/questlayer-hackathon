@@ -19,7 +19,23 @@ import {
   quarantineForeignDay,
   recordCurrentDay,
 } from "./day-contracts.mjs";
+import {
+  MAP_CHAIN_METHODS,
+  mapChainEnabled,
+  runMapChainWorker,
+} from "../map-rewards/chain.mjs";
 const METHODS = ["publish_day", "close_day", "claim", "maintain_vault"];
+// The key is either the native set alone or the native set plus the map-day
+// methods (contracts/rewards map_days.rs); nothing else.
+export function allowedWorkerMethods(names) {
+  if (!Array.isArray(names) || new Set(names).size !== names.length) return null;
+  const withMap = [...METHODS, ...MAP_CHAIN_METHODS];
+  if (names.length === METHODS.length && names.every((m) => METHODS.includes(m)))
+    return METHODS;
+  if (names.length === withMap.length && names.every((m) => withMap.includes(m)))
+    return withMap;
+  return null;
+}
 export async function rewardTransport(
   provider,
   contractId,
@@ -57,19 +73,19 @@ export async function rewardTransport(
     finality: "final",
   });
   const p = access.permission?.FunctionCall;
+  const allowed = allowedWorkerMethods(p?.method_names);
   assert(
     p &&
       p.receiver_id === contractId &&
       p.allowance !== null &&
       BigInt(p.allowance) <= 10n ** 24n &&
-      p.method_names.length === METHODS.length &&
-      p.method_names.every((m) => METHODS.includes(m)),
+      allowed,
     "Worker key must have only bounded reward methods.",
     503,
   );
   const account = new Account(contractId, provider, signer);
-  return async (method, args) => {
-    assert(METHODS.includes(method), "Unsupported worker method.");
+  const send = async (method, args) => {
+    assert(allowed.includes(method), "Unsupported worker method.");
     const result = await account.callFunctionRaw({
       contractId,
       methodName: method,
@@ -85,6 +101,8 @@ export async function rewardTransport(
     );
     return result.transaction?.hash || result.transaction_outcome?.id;
   };
+  send.mapDays = allowed.length > METHODS.length;
+  return send;
 }
 export async function runRewardWorker(
   native,
@@ -439,6 +457,15 @@ export function startRewardWorker(
         );
         enteredWorker = true;
         await runRewardWorker(native, send);
+        // Map days ride on the same key once it allows the map methods.
+        if (mapChainEnabled() && send.mapDays)
+          await runMapChainWorker(native.db, {
+            call: send,
+            signer: native.signer,
+            contractId: native.contractId,
+          }).catch((error) =>
+            console.error("Map chain worker:", String(error.message).slice(0, 200)),
+          );
       } catch (error) {
         console.error(
           "Native reward worker:",
