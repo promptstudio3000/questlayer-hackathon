@@ -36,7 +36,11 @@ import {
   preloadPanels,
   ActorSheet,
   BadgeBook,
+  GoldShop,
+  PlaceMessages,
+  EmotePicker,
 } from "./lazy-panels";
+import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
 import type { RollCall } from "./WispRolls";
 // Styles of the split-off screens stay in the main stylesheet, in their old
 // order, so nothing shifts while a screen's script is still loading.
@@ -127,6 +131,7 @@ import type { NativeProfileQuote } from "./types";
 import { assertProfileQuote } from "./native-profile-quote";
 import type { NativeWardrobeState, NativeItem } from "./types";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -156,6 +161,7 @@ import {
   Check,
   Leaf,
   ChatCircle,
+  Smiley,
   PaperPlane,
   SignOut,
   ShieldCheck,
@@ -261,7 +267,9 @@ type Tab =
   | "community"
   | "settings"
   | "expeditions"
-  | "fuel";
+  | "fuel"
+  | "shop"
+  | "places";
 const HOME = { lat: 49.74745, lng: 13.3774 };
 /** A searched spot stands for its H3 res-7 cell (≈1.2 km edge) on the server. */
 const SEARCH_SPACING_M = 650;
@@ -274,9 +282,9 @@ const nav = [
 function navigationActive(tab: Tab, id: string) {
   return (
     tab === id ||
-    (id === "community" && ["messages", "bounties"].includes(tab)) ||
+    (id === "community" && ["messages", "bounties", "places"].includes(tab)) ||
     (id === "explore" && ["expeditions", "funding"].includes(tab)) ||
-    (id === "inventory" && tab === "market") ||
+    (id === "inventory" && (tab === "market" || tab === "shop")) ||
     (id === "settings" && ["wallet", "fund", "fuel"].includes(tab))
   );
 }
@@ -329,6 +337,12 @@ export default function App() {
     [others, setOthers] = useState<NearbyExplorer[]>([]),
     [showNpc, setShowNpc] = useState(false),
     [actorOpen, setActorOpen] = useState<ActorView | null>(null),
+    // GOLD spending (QGOLD stream 4): own emote and frame, lures and place pins.
+    [myEmote, setMyEmote] = useState<{ id: string; until: number } | null>(null),
+    [myFrame, setMyFrame] = useState<string | null>(null),
+    [goldMapData, setGoldMapData] = useState<GoldMap | null>(null),
+    [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
+    [emotePicker, setEmotePicker] = useState(false),
     [now, setNow] = useState(Date.now()),
     [menu, setMenu] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackPreferences>(() =>
@@ -402,10 +416,14 @@ export default function App() {
   }
   const communityTab = communityTabOf(tab, creatorView);
   const showCommunityTabs =
-    tab === "community" || tab === "bounties" || tab === "messages";
+    tab === "community" ||
+    tab === "bounties" ||
+    tab === "messages" ||
+    tab === "places";
   function chooseCommunityTab(next: CommunityTab) {
     if (next === "tasks") setTab("bounties");
     else if (next === "notes") setTab("messages");
+    else if (next === "places") setTab("places");
     else
       navigation.update({
         tab: "community",
@@ -473,6 +491,7 @@ export default function App() {
   const [walletChoices, setWalletChoices] = useState<
     { id: string; name: string; icon: string; website: string }[] | null
   >(null);
+  const [walletChoiceKind, setWalletChoiceKind] = useState<"near" | "evm">("near");
   const walletChoice = useRef<{
     resolve: (id: string) => void;
     reject: (error: Error) => void;
@@ -970,6 +989,48 @@ export default function App() {
         });
       }
     }
+  }
+  // GOLD spending: lures and place pins near the player, refreshed every 30 s.
+  const goldSpot = `${Math.round(position.lat * 500)}:${Math.round(position.lng * 500)}`;
+  async function refreshGoldMap() {
+    if (!player) return;
+    try {
+      setGoldMapData(await readGoldMap(position.lat, position.lng));
+    } catch {
+      /* The map keeps the last pins; the next tick retries. */
+    }
+  }
+  async function readGoldLook() {
+    if (!player) return;
+    try {
+      setMyFrame((await goldShop()).look?.frame ?? null);
+    } catch {
+      /* No frame shown until the shop answers. */
+    }
+  }
+  const clearPlaceOpen = useCallback(() => setPlaceOpenId(null), []);
+  useEffect(() => {
+    if (!player?.id) return;
+    void refreshGoldMap();
+    const timer = setInterval(() => void refreshGoldMap(), 30_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id, goldSpot]);
+  useEffect(() => {
+    if (player?.id) void readGoldLook();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id]);
+  async function publishPlace(targetId: string): Promise<boolean> {
+    const account = recordAccount?.accountId;
+    const result = await action("place-record", async () => {
+      if (!account || !player) throw Error("Your explorer account is not ready yet.");
+      const { signer, accountId } = await signerForAccount(account);
+      const { publishPlaceRecord } = await import("./place-record");
+      const confirmed = await publishPlaceRecord({ call: api, signer, accountId, playerId: player.id, targetId });
+      notify(confirmed ? tr("Your message is now a public record on NEAR Social.") : tr("Record sent. Refresh in a moment to see it confirmed."));
+      return confirmed;
+    });
+    return result === true;
   }
   async function me() {
     const token = playerReads.current.begin(ownerContext());
@@ -1792,6 +1853,7 @@ export default function App() {
       );
     const walletId = await new Promise<string>((resolve, reject) => {
       walletChoice.current = { resolve, reject };
+      setWalletChoiceKind("near");
       setWalletChoices(choices);
     });
     await new Promise<void>((resolve) =>
@@ -1852,6 +1914,40 @@ export default function App() {
             ? tr("Welcome back, explorer. Your account restored your progress.")
             : tr("Your explorer is ready. Practice GOLD stays separate from secured rewards.")
           : tr("Account linked. Practice GOLD stays separate from secured rewards."),
+      );
+    });
+  }
+  // Ethereum wallets (MetaMask, Rabby): sign in, or link to this explorer.
+  // The wallet signs readable text only; the module loads on demand.
+  async function connectEthereum(options: { signIn?: boolean; name?: string } = {}) {
+    const name = options.name?.trim() || "Explorer";
+    if (options.signIn && (name.length < 2 || name.length > 24)) {
+      notify(tr("Pick a name between 2 and 24 characters."), true);
+      return;
+    }
+    await action("evm-wallet", async () => {
+      const evm = await import("./evm-wallet");
+      const wallets = await evm.discoverEvmWallets();
+      if (!wallets.length)
+        throw Error(tr("No Ethereum wallet was found in this browser. Install MetaMask or Rabby, or keep exploring without one."));
+      let choice = wallets[0];
+      if (wallets.length > 1) {
+        const id = await new Promise<string>((resolve, reject) => {
+          walletChoice.current = { resolve, reject };
+          setWalletChoiceKind("evm");
+          setWalletChoices(wallets.map(({ id, name, icon, website }) => ({ id, name, icon, website })));
+        });
+        choice = wallets.find((w) => w.id === id) || choice;
+      }
+      const r = await evm.signInWithEthereum(choice, { name, link: !options.signIn });
+      setPlayer(r.player);
+      if (options.signIn) setNativePlay(true);
+      notify(
+        options.signIn
+          ? r.returning
+            ? tr("Welcome back, explorer. Your account restored your progress.")
+            : tr("Your explorer is ready. Practice GOLD stays separate from secured rewards.")
+          : tr("Ethereum wallet linked. It can sign NEAR Intents trades for your explorer."),
       );
     });
   }
@@ -2949,6 +3045,8 @@ export default function App() {
           : nav.find((n) => n.id === tab)?.label ||
         {
           messages: tr("Map notes"),
+          shop: tr("Inventory"),
+          places: tr("Community"),
           bounties: tr("Community tasks"),
           community: tr("Community"),
           settings: tr("Settings"),
@@ -3044,6 +3142,14 @@ export default function App() {
           }}
           actorsWorldId={world?.id || null}
           onActor={setActorOpen}
+          emote={myEmote && myEmote.until > now ? myEmote.id : null}
+          frame={myFrame}
+          goldMap={goldMapData}
+          onPlacePin={(id) => {
+            setPlaceOpenId(id);
+            setTab("places");
+            setSheetExpanded(true);
+          }}
         />
       ) : (
         // MapLibre and the map style load only after the name step, so the
@@ -3380,14 +3486,49 @@ export default function App() {
               onChange={chooseCommunityTab}
             />
           )}
-          {(tab === "inventory" || tab === "market") && (
+          {(tab === "inventory" || tab === "market" || tab === "shop") && (
             <ScreenTabs
               label={tr("Inventory")}
               idBase="bag"
               tabs={BAG_TABS}
-              value={tab === "market" ? "market" : "items"}
-              onChange={(next) => setTab(next === "market" ? "market" : "inventory")}
+              value={tab === "market" ? "market" : tab === "shop" ? "shop" : "items"}
+              onChange={(next) => setTab(next === "market" ? "market" : next === "shop" ? "shop" : "inventory")}
             />
+          )}
+          {tab === "shop" && (
+            <ScreenTabPanel idBase="bag" value="shop">
+              <GoldShop
+                key={player.id}
+                worldId={world?.id || null}
+                fix={fix}
+                arena={arena && !nativePlay}
+                notify={notify}
+                onSpent={() => {
+                  void me();
+                  void refreshGoldMap();
+                  void readGoldLook();
+                }}
+                onEmote={(id: string, until: number) => setMyEmote({ id, until })}
+              />
+            </ScreenTabPanel>
+          )}
+          {tab === "places" && (
+            <ScreenTabPanel idBase="community" value="places">
+              <PlaceMessages
+                key={player.id}
+                position={position}
+                fix={fix}
+                arena={arena && !nativePlay}
+                notify={notify}
+                onSpent={() => {
+                  void me();
+                  void refreshGoldMap();
+                }}
+                openId={placeOpenId}
+                onOpened={clearPlaceOpen}
+                onPublish={recordAccount ? publishPlace : undefined}
+              />
+            </ScreenTabPanel>
           )}
           {tab === "explore" && !selected && !nativePlay && (
             <>
@@ -4272,6 +4413,7 @@ export default function App() {
                   <AccountSessions
                     player={player}
                     onConnect={connectNear}
+                    onConnectEthereum={() => connectEthereum()}
                     onSecure={() => void attachPasskey()}
                     onRevoke={revokeGameSessions}
                     busy={busy}
@@ -4608,6 +4750,26 @@ export default function App() {
             >
               <ChatCircle size={20} />
             </button>
+            <button
+              aria-label={tr("Emotes")}
+              title={tr("Emotes")}
+              aria-expanded={emotePicker}
+              className={emotePicker ? "active" : ""}
+              onClick={() => setEmotePicker((v) => !v)}
+            >
+              <Smiley size={20} />
+            </button>
+            {emotePicker && (
+              <EmotePicker
+                onEmote={(id: string, until: number) => setMyEmote({ id, until })}
+                onShop={() => {
+                  setEmotePicker(false);
+                  setTab("shop");
+                  setSheetExpanded(true);
+                }}
+                onClose={() => setEmotePicker(false)}
+              />
+            )}
           </div>
           <div className="player-bottom">
             <div className="mini-avatar">
@@ -4671,10 +4833,10 @@ export default function App() {
         </div>
       )}
       {walletChoices && (
-        <Dialog label={tr("Choose a NEAR wallet")} onClose={() => chooseWallet(null)}>
+        <Dialog label={walletChoiceKind === "evm" ? tr("Choose an Ethereum wallet") : tr("Choose a NEAR wallet")} onClose={() => chooseWallet(null)}>
           <div className="wallet-select">
             <div className="panel-heading">
-              <h2>{tr("Choose a NEAR wallet")}</h2>
+              <h2>{walletChoiceKind === "evm" ? tr("Choose an Ethereum wallet") : tr("Choose a NEAR wallet")}</h2>
               <button
                 className="icon-button"
                 aria-label={tr("Cancel wallet connection")}
@@ -4726,6 +4888,7 @@ export default function App() {
         <Welcome
           error={toast?.error ? toast.text : undefined}
           onNear={(name) => connectNear({ signIn: true, name })}
+          onEthereum={(name) => connectEthereum({ signIn: true, name })}
           busy={busy}
           action={action}
           onPlayer={(p) => {
@@ -4805,6 +4968,7 @@ function Welcome({
   busy,
   error,
   onNear,
+  onEthereum,
   action,
   onPlayer,
   onRestore,
@@ -4813,6 +4977,7 @@ function Welcome({
   error?: string;
   onRestore: () => Promise<boolean>;
   onNear: (name: string) => Promise<void>;
+  onEthereum: (name: string) => Promise<void>;
   action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
   onPlayer: (p: Player) => void;
 }) {
@@ -4941,6 +5106,16 @@ function Welcome({
             {busy === "near"
               ? tr("Waiting for your wallet…")
               : tr("Continue with an external NEAR wallet")}
+          </button>
+          <button
+            className="passkey-button"
+            disabled={!!busy}
+            onClick={() => void onEthereum(name || "Explorer")}
+          >
+            <Wallet size={18} />
+            {busy === "evm-wallet"
+              ? tr("Waiting for your wallet…")
+              : tr("Continue with MetaMask or Rabby")}
           </button>
           <p className="identity-note">
             {tr("A wallet signs a message, not a payment. Returning wallets restore the same explorer.")}</p>

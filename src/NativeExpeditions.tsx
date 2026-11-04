@@ -705,15 +705,15 @@ export function NativeExpeditions({
                       void act(async () => {
                         if (await onWithdraw(account, state.contractId))
                           setNotice(
-                            tr("Withdrawal sent. Waiting for confirmation."),
+                            tr("Sent. Your QGOLD arrives after confirmation."),
                           );
                       })
                     }
                   >
-                    {tr("Withdraw to my account")}<ArrowRight size={20} />
+                    {tr("Claim as QGOLD")}<ArrowRight size={20} />
                   </button>
                   <p className="play-hint">
-                    {tr("A network fee applies, so let small rewards add up before withdrawing.")}</p>
+                    {tr("Your reward goes into the QGOLD vault and comes back as QGOLD at today's rate. You can sell QGOLD for NEAR at any time.")}</p>
                   {state.balance.pending !== "0" && (
                     <p role="status">
                       <Clock size={18} /> {" "}{tr("Withdrawal pending")}</p>

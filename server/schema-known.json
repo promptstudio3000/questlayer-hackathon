@@ -247,6 +247,18 @@
       }
     },
     {
+      "name": "identity",
+      "version": 2,
+      "source": "server/identity/schema.mjs",
+      "tables": {
+        "identity_recovery_events": "CREATE TABLE identity_recovery_events(\n        id TEXT PRIMARY KEY,\n        player_id TEXT NOT NULL REFERENCES players(id),\n        session_id TEXT NOT NULL,\n        account_id TEXT NOT NULL,\n        revoked_sessions INTEGER NOT NULL,\n        created_at INTEGER NOT NULL\n      )",
+        "identity_sessions": "CREATE TABLE identity_sessions(\n        token_hash TEXT PRIMARY KEY REFERENCES sessions(token_hash) ON DELETE CASCADE,\n        public_id TEXT NOT NULL UNIQUE,\n        kind TEXT NOT NULL CHECK(kind IN ('guest','near-wallet','evm-wallet','demo-passkey','legacy')),\n        account_id TEXT,\n        created_at INTEGER,\n        last_seen_at INTEGER,\n        verified_at INTEGER\n      )"
+      },
+      "indexes": {
+        "sessions_player": "CREATE INDEX IF NOT EXISTS sessions_player ON sessions(player_id);"
+      }
+    },
+    {
       "name": "native-rewards",
       "version": 1,
       "source": "server/native/rewards.mjs",

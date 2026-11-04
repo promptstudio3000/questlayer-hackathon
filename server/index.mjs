@@ -116,6 +116,14 @@ import {
 import { createNearProvider } from "./near-provider.mjs";
 import { IdentitySessions } from "./identity/sessions.mjs";
 import {
+  evmAddress,
+  evmChainId,
+  signInMessage,
+  siweNonce,
+  verifyEvmSignature,
+  walletLabel,
+} from "./identity/evm.mjs";
+import {
   openDatabase,
   atomic,
   playerView,
@@ -147,8 +155,10 @@ import { createNearPrice } from "./near-price.mjs";
 import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mjs";
 import { createTreasuryView } from "./native/stnear-treasury.mjs";
+import { createTreasuryMixView, mixSettings } from "./native/treasury-mix.mjs";
 import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
 import { combineStakeReaders, createYieldVaultReader, yieldVaultSettings } from "./native/yield-vault-reader.mjs";
+import { createQgoldVaultReader, qgoldVaultSettings } from "./native/qgold-vault.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
 import { createMonsterChallenges } from "./actors/challenges/index.mjs";
 import { createChallengeRoutes } from "./actors/challenges/routes.mjs";
@@ -161,6 +171,11 @@ import { loadPlaceBadges } from "./badges/place-catalog.mjs";
 import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
 import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
 import { createBadgeRoutes } from "./badges/routes.mjs";
+import { createGoldSpend } from "./gold-spend/service.mjs";
+import { createPlaces } from "./gold-spend/places.mjs";
+import { createPlaceSocial } from "./gold-spend/social.mjs";
+import { createGoldSpendRoutes } from "./gold-spend/routes.mjs";
+import { defaultPoiSource } from "./poi-quests.mjs";
 import { chainLedgerSettings, createChainLedger } from "./chain-ledger/service.mjs";
 import { createLedgerChain, startLedgerWorker } from "./chain-ledger/chain.mjs";
 import { createChainLedgerRoutes } from "./chain-ledger/routes.mjs";
@@ -616,6 +631,28 @@ const stnearTreasury = createTreasuryView({
     return p ? JSON.parse(readFileSync(p, "utf8")) : null;
   },
 });
+// Treasury mix 50 % LST / 40 % stablecoins on Rhea Lend / 10 % NEAR
+// (docs/TREASURY-MIX.md): live holdings, targets and the next run's plan. The
+// Mac worker writes the public record of runs; this never signs.
+const treasuryMixRecordPaths = [
+  process.env.TREASURY_MIX_RECORD,
+  resolve(dirname(defaultDatabasePath()), manifestName("treasury-mix")),
+  resolve(APP_ROOT, `public/${manifestName("treasury-mix")}`),
+  resolve(APP_ROOT, `dist/${manifestName("treasury-mix")}`),
+].filter(Boolean);
+const readJsonRecord = (paths) => {
+  const p = paths.find((f) => existsSync(f));
+  return p ? JSON.parse(readFileSync(p, "utf8")) : null;
+};
+const treasuryMixConfig = mixSettings(process.env, NETWORK);
+const treasuryMix = treasuryMixConfig.enabled
+  ? createTreasuryMixView({
+      provider,
+      settings: treasuryMixConfig,
+      record: () => readJsonRecord(treasuryMixRecordPaths),
+      account: () => readJsonRecord(treasuryRecordPaths)?.account || null,
+    })
+  : null;
 const liquidStakeConfig = liquidStakeSettings(process.env, NETWORK);
 const liquidStake =
   liquidStakeConfig.enabled && liquidStakeConfig.tokens.length
@@ -631,6 +668,20 @@ const yieldVaultConfig = yieldVaultSettings(
 const yieldVaultReader = yieldVaultConfig.enabled
   ? createYieldVaultReader({ provider, settings: yieldVaultConfig, priceEur: () => nearPrice.eur() })
   : null;
+// QGOLD vault (docs/QGOLD-VAULT.md): backing, R, exits and the invariant monitor.
+// Contract from QGOLD_VAULT_ACCOUNT or public/native-qgold-vault-<network>.json.
+const qgoldManifestPath = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+const qgoldConfig = qgoldVaultSettings(
+  process.env,
+  existsSync(qgoldManifestPath) ? JSON.parse(readFileSync(qgoldManifestPath, "utf8")) : null,
+);
+const qgoldVault = qgoldConfig.enabled
+  ? createQgoldVaultReader({ provider, settings: qgoldConfig, log: (event, data) => console.warn(JSON.stringify({ event, ...data })) })
+  : null;
+if (qgoldVault) {
+  void qgoldVault.read().catch(() => {});
+  setInterval(() => void qgoldVault.read({ fresh: true }).catch(() => {}), 60_000).unref();
+}
 // Every Staker source besides the native vault, summed for the Keeper's reading.
 const stakerReaders = combineStakeReaders([liquidStake, yieldVaultReader]);
 // Rhea Lend markets (docs/YIELD-VAULT-PLAN.md): read-only rates and utilization.
@@ -654,8 +705,28 @@ const traderRoutes = createTraderRoutes({
 const monsterHunt = createMonsterHunt(db, actorService, {
   levelOf: (player) => demoProgression(db, player).level,
   bossHp: Number(process.env.BOSS_HP) || undefined,
+  // The Golden Altar fee in GOLD (QGOLD stream 4); GOLD_ALTAR_FEE=0 turns it off.
+  altarFees: process.env.GOLD_ALTAR_FEE !== "0",
 });
 const huntRoutes = createHuntRoutes(monsterHunt, actorService, db);
+// GOLD spending (QGOLD stream 4, docs/GOLD-SPENDING.md): emotes, cosmetics,
+// trader premium gear, lures and place messages. Every spend burns practice
+// GOLD until the QGOLD vault is live. GOLD_LURE_DEMO=1 (never on mainnet)
+// lets the demo walk set lures for testing.
+const goldSpend = createGoldSpend(db, {
+  actors: actorService,
+  poiSource: defaultPoiSource(),
+  allowArenaLures: process.env.GOLD_LURE_DEMO === "1" && NETWORK !== "mainnet",
+});
+const placeMessages = createPlaces(db, {
+  levelOf: (player) => demoProgression(db, player).level,
+});
+const goldSpendRoutes = createGoldSpendRoutes({
+  gold: goldSpend,
+  places: placeMessages,
+  social: createPlaceSocial(db, featureEnabled("social") ? socialRecords : null),
+  linkedAccount,
+});
 // Daily board of three goals (docs/DAILY-BOARD.md): on by default except on
 // mainnet; DAILY_BOARD_* settings change the goals and bonus. No streak.
 const dailyBoardConfig = dailyBoardSettings(process.env, NETWORK);
@@ -1087,6 +1158,7 @@ async function api(req, res, url) {
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
       season: season ? season.status() : { status: "off" },
       badges: badgeService ? badgeService.status() : { status: "off" },
+      qgoldVault: qgoldVault ? qgoldVault.status() : { status: "not-configured" },
       chainLedger: chainLedger
         ? { ...chainLedger.status(), contract: ledgerChain.contractId, recorder: ledgerChain.ready ? "ready" : ledgerChain.error }
         : { mode: "off" },
@@ -1135,6 +1207,10 @@ async function api(req, res, url) {
     const proof = cellProof(db, String(url.searchParams.get("day") || day), cell);
     assert(proof, "This cell has no reward leaf on that day.", 404);
     return respond(res, proof);
+  }
+  if (path === "/api/treasury/mix" && method === "GET") {
+    assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
+    return respond(res, await treasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
   }
   if (path === "/api/economy/ledger" && method === "GET")
     return respond(res, await publicLedger(), 200, {
@@ -1410,6 +1486,127 @@ async function api(req, res, url) {
       { "Set-Cookie": cookie(result.token) },
     );
   }
+  if (path === "/api/auth/evm/challenge" && method === "POST") {
+    // Sign-In with Ethereum (MetaMask, Rabby, ...). link=true adds the wallet
+    // to the signed-in explorer instead of signing in.
+    const input = await body(req),
+      address = evmAddress(input.address),
+      chainId = evmChainId(input.chainId),
+      link = input.link === true,
+      name = String(input.name || "Explorer").trim();
+    assert(
+      name.length >= 2 && name.length <= 24,
+      "Your name must be 2–24 characters.",
+    );
+    const current = link
+      ? identitySessions.authenticate(sessionToken(req))
+      : null;
+    const address_ = clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      key = `evm-auth:${address_}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(
+      count <= 30,
+      "Please wait before starting another wallet sign-in.",
+      429,
+    );
+    const issuedAt = Date.now(),
+      expiresAt = issuedAt + 300_000,
+      nonce = siweNonce(randomBytes(16));
+    const message = signInMessage({
+      origin,
+      address,
+      chainId,
+      nonce,
+      issuedAt,
+      expiresAt,
+    });
+    const c = challenge("evm_signin", {
+      purpose: link ? "evm-link" : "evm-sign-in",
+      address,
+      name,
+      wallet: walletLabel(input.wallet),
+      message,
+      player: current?.playerId ?? null,
+      sessionId: current?.sessionId ?? null,
+    });
+    return respond(res, { challengeId: c.id, message, address, chainId });
+  }
+  if (path === "/api/auth/evm/verify" && method === "POST") {
+    const input = await body(req),
+      c = readChallenge(input.challengeId);
+    assert(
+      c.purpose === "evm-sign-in" || c.purpose === "evm-link",
+      "This challenge cannot sign in an explorer.",
+      401,
+    );
+    const link = c.purpose === "evm-link";
+    if (link)
+      assert(
+        identitySessions.authenticate(sessionToken(req)).sessionId ===
+          c.sessionId,
+        "Finish linking in the browser where it was started.",
+        403,
+      );
+    const key = await verifyEvmSignature({
+      message: c.message,
+      signature: input.signature,
+      address: c.address,
+    });
+    const result = atomic(db, () => {
+      consumeChallenge(input.challengeId);
+      const existing = db
+        .prepare("SELECT player_id FROM evm_links WHERE address=?")
+        .get(key.address);
+      if (link)
+        assert(
+          !existing || existing.player_id === c.player,
+          "This wallet is linked to another explorer.",
+          409,
+        );
+      const player = link
+        ? c.player
+        : existing?.player_id || createPlayer(db, c.name);
+      const now = Date.now();
+      db.prepare(
+        `INSERT INTO evm_links(address,player_id,public_key,wallet,created_at,verified_at) VALUES(?,?,?,?,?,?)
+         ON CONFLICT(address) DO UPDATE SET verified_at=excluded.verified_at, wallet=COALESCE(excluded.wallet,evm_links.wallet)`,
+      ).run(key.address, player, key.intentsPublicKey, c.wallet, now, now);
+      // The same signature proves the address for wearing Aavegotchi
+      // originals, unless another explorer already uses it.
+      db.prepare(
+        "INSERT OR IGNORE INTO external_links VALUES (?,?,?,?)",
+      ).run(key.address, player, "{}", 0);
+      return {
+        player,
+        token: link ? null : newSession(player, "evm-wallet", key.address),
+        returning: !!existing,
+      };
+    });
+    return respond(
+      res,
+      {
+        player: profile(result.player),
+        returning: result.returning,
+        identity: "evm-wallet",
+        address: key.address,
+        intentsPublicKey: key.intentsPublicKey,
+        network: NETWORK,
+      },
+      200,
+      result.token ? { "Set-Cookie": cookie(result.token) } : {},
+    );
+  }
+  if (path === "/api/identity/evm" && method === "GET") {
+    const current = identitySessions.authenticate(sessionToken(req));
+    return respond(res, {
+      wallets: db
+        .prepare(
+          "SELECT address,public_key AS intentsPublicKey,wallet,verified_at AS verifiedAt FROM evm_links WHERE player_id=? ORDER BY verified_at DESC",
+        )
+        .all(current.playerId),
+    });
+  }
   if (path === "/api/identity/sessions" && method === "GET")
     return respond(res, identitySessions.view(sessionToken(req)));
   if (path === "/api/identity/recovery/challenge" && method === "POST") {
@@ -1504,6 +1701,8 @@ async function api(req, res, url) {
     return;
   if (await badgeRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
+  if (await goldSpendRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
   if (await chainLedgerRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await seasonRoutes.handle(req, res, url, { player, body, respond, assert }))
@@ -1527,6 +1726,20 @@ async function api(req, res, url) {
   if (url.pathname === "/api/yield/markets" && req.method === "GET") {
     assert(rheaMarkets, "Rhea Lend markets are not open here.", 503, "RHEA_DISABLED");
     return respond(res, await rheaMarkets.read());
+  }
+  if (url.pathname === "/api/qgold" && req.method === "GET") {
+    assert(qgoldVault, "The QGOLD vault is not open here.", 503, "QGOLD_DISABLED");
+    const m = qgoldConfig.manifest || {};
+    return respond(res, {
+      ...(await qgoldVault.read()),
+      token: { contract: m.tokenContract || qgoldConfig.contract, symbol: "QGOLD", decimals: 6 },
+      methods: m.methods || null,
+      exitPaths: m.exitPaths || ["near_instant", "near_queue"],
+    });
+  }
+  if (url.pathname === "/api/qgold/account" && req.method === "GET") {
+    assert(qgoldVault, "The QGOLD vault is not open here.", 503, "QGOLD_DISABLED");
+    return respond(res, await qgoldVault.account(url.searchParams.get("account") || ""));
   }
   if (url.pathname === "/api/yield/position" && req.method === "GET") {
     assert(yieldVaultReader, "The yield vault is not open here.", 503, "YIELD_VAULT_DISABLED");
@@ -2467,8 +2680,13 @@ async function api(req, res, url) {
         { lat, lng },
         url.searchParams.get("arena") !== "0",
         {
-          appearanceReader: (players) =>
-            publicAppearances(db, players, nativeCollectibles),
+          appearanceReader: async (players) =>
+            (await publicAppearances(db, players, nativeCollectibles)).map(
+              (look, i) => {
+                const gold = look && goldSpend.lookOf(players[i].id);
+                return gold ? { ...look, gold } : look;
+              },
+            ),
           assertSession: () =>
             assert(auth(req) === player, "Please sign in again.", 401),
         },
