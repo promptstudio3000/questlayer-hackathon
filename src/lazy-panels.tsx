@@ -140,3 +140,8 @@ const chainProof = () => import("./ChainFeed");
 export const ChainLink = lazyNamed(chainProof, "ChainLink");
 export const ChainSettings = lazyNamed(chainProof, "ChainSettings");
 export const AutoSocialProfile = lazyNamed(chainProof, "AutoSocialProfile");
+// Practice wallet, fund and bounty screens (split from App.tsx).
+const walletScreens = () => import("./WalletScreens");
+export const WalletPanel = lazyNamed(walletScreens, "WalletPanel");
+export const FundPanel = lazyNamed(walletScreens, "FundPanel");
+export const Bounties = lazyNamed(walletScreens, "Bounties");
