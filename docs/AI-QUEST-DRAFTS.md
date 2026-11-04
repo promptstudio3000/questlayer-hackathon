@@ -84,8 +84,7 @@ facts. Per-player hourly limit `GUIDE_AI_LIMIT_PER_HOUR` (30). Every request is
 audited in `ai_guide_requests` with fact/answer hashes; questions are not stored.
 
 `GUIDE_AI_PROVIDER`: `template` (default), `ollama`, `anthropic`, `near-ai`
-(the earlier integration; chosen automatically when `NEAR_AI_API_KEY` and
-`NEAR_AI_MODEL` are set) or `off`. `GUIDE_AI_MODEL` overrides the model.
+(only with `NEAR_AI_ENABLED=1` and a key, see docs/NEAR-AI-CLOUD.md) or `off`. `GUIDE_AI_MODEL` overrides the model.
 
 # Operator previews
 
