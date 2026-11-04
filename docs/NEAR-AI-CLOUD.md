@@ -82,3 +82,18 @@ Credits, then create a key under API Keys. Each key can have its own spend
 cap; give the VPS key a small cap. During the NEAR hackathon (1 to 14 November
 2026) approved builders on nearbuilders.org can claim one key with a $5 spend
 limit from their dashboard.
+
+## Comparing with Ollama
+
+`npm run ai:compare` sends eight fixed NPC cases (greeting, Czech and English
+questions, a story, a price question, a jailbreak, a seed-phrase request and
+an off-topic question) to Ollama and to NEAR AI with the production prompt.
+It runs every reply through `validateNpcOutput` and prints a Markdown table
+with the pass rate, latency and reply text. `--near-model <id>` tries another
+NEAR model, `--only near|ollama` runs one side, and `--verify` also checks
+the enclave signatures. It needs `OLLAMA_API_KEY` and/or `NEAR_AI_API_KEY` in
+the environment, but not `NEAR_AI_ENABLED`, so it can run on the VPS while
+players stay on Ollama.
+
+A NEAR AI key without credits answers `402 no_limit_configured`. Credits and
+a spend limit have to be set at cloud.near.ai first.
