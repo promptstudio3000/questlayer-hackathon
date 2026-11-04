@@ -2997,7 +2997,7 @@ const rewardWorker =
       })
     : null;
 const badgeWorker =
-  !backgroundWorkersDisabled && badgeService && badgeService.settings.enabled
+  !backgroundWorkersDisabled && badgeService && (badgeService.settings.enabled || badgeService.settings.placeMints)
     ? startBadgeWorker(badgeService, badgeChain)
     : null;
 const relayWorker =
