@@ -10,6 +10,7 @@
 export const AURA_SLOTS = ["above", "below"] as const;
 export type AuraSlot = (typeof AURA_SLOTS)[number];
 import { AURA_CATALOG, catalogEditionFor } from "./aura-catalog.ts";
+import { artUrl } from "./art-registry.ts";
 
 export const AURA_EDITIONS = [
   "ember",
@@ -1807,6 +1808,10 @@ export function auraScale(size: unknown) {
     ? size
     : 1;
 }
+/** A dropped-in Aura image (art/auras/<edition>-<slot> or art/auras/<edition>), or null for the pixel sprite. */
+export function auraArtUrl(edition: string | null | undefined, slot: AuraSlot) {
+  return isAuraEdition(edition) ? artUrl(`auras/${edition}-${slot}`, `auras/${edition}`) : null;
+}
 const rectMarkup = (r: AuraPixelRect) =>
   `<rect x="${r.x}" y="${r.y}" width="${r.width}" height="${r.height}" fill="${r.color}"${r.opacity !== undefined ? ` fill-opacity="${r.opacity}"` : ""}/>`;
 /**
@@ -1826,6 +1831,9 @@ export function auraMarkup(
     base = rects.filter((r) => !r.frame).map(rectMarkup).join(""),
     a = rects.filter((r) => r.frame === "a").map(rectMarkup).join(""),
     b = rects.filter((r) => r.frame === "b").map(rectMarkup).join(""),
-    resolved = isAuraEdition(edition) ? edition : "generic";
+    resolved = isAuraEdition(edition) ? edition : "generic",
+    art = auraArtUrl(edition, resolvedSlot);
+  if (art)
+    return `<img class="aura-sprite aura-sprite-${resolvedSlot} aura-sprite-art" src="${art}" width="${grid.width * scale}" height="${grid.height * scale}" alt="" aria-hidden="true" draggable="false" data-aura-edition="${resolved}" data-aura-slot="${resolvedSlot}"/>`;
   return `<svg class="aura-sprite aura-sprite-${resolvedSlot}" width="${grid.width * scale}" height="${grid.height * scale}" viewBox="0 0 ${grid.width} ${grid.height}" shape-rendering="crispEdges" aria-hidden="true" focusable="false" data-aura-edition="${resolved}" data-aura-slot="${resolvedSlot}">${base}<g class="aura-frame aura-frame-a">${a}</g><g class="aura-frame aura-frame-b">${b}</g></svg>`;
 }

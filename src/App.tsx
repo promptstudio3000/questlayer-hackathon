@@ -203,7 +203,7 @@ import { SeasonCard } from "./Season";
 import { Character } from "./Character";
 import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
-import { Ghost, AuraArt } from "./Ghost";
+import { Ghost, AuraArt, BrandLogo } from "./Ghost";
 import type {
   Player,
   World,
@@ -2952,7 +2952,7 @@ export default function App() {
             setTab("explore");
           }}
         >
-          <Ghost />
+          <BrandLogo />
         </button>
         <div className="rail-links">
           {nav.map((n) => (

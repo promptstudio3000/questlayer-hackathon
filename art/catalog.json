@@ -1,0 +1,944 @@
+{
+ "version": "art-catalog-v1",
+ "about": "Every visual asset QuestLayer can take as a drop-in file. Source for docs/ART-LIST.md (npm run art:list) and the file check (npm run art:check).",
+ "style": {
+  "name": "QuestLayer house style",
+  "prompt": "QuestLayer game art: cute, friendly 2D fantasy-adventure illustration for a mobile map game. Chunky, instantly readable silhouette, thick dark plum outline (#1A0335), soft cel shading with two tones per colour, light from the upper left, a thin warm rim light. Palette: lavender #B9A6FF, hot pink #FA34F3, teal #37F4F1, mint #51FFA8, gold #FFD01F, deep purple #230E4F, cream #FFFAF0. Characters are QuestLayer's own round ghost folk with big glossy eyes and small pink cheeks. Single subject, centred, fully visible with a little empty margin, isolated on a transparent background, no text, no frame, no ground shadow.",
+  "negative": "photorealistic, realistic 3D render, noise, text, letters, logo text, watermark, signature, busy background, scenery, floor, cast shadow on background, cropped limbs, cut-off edges, tiny details that disappear at 48 px, thin outlines, characters or logos from existing games or brands",
+  "palette": {
+   "ink": "#1A0335",
+   "deepPurple": "#230E4F",
+   "lavender": "#B9A6FF",
+   "hotPink": "#FA34F3",
+   "teal": "#37F4F1",
+   "mint": "#51FFA8",
+   "gold": "#FFD01F",
+   "cream": "#FFFAF0"
+  },
+  "rarityColours": {
+   "common": "#9A8CAB",
+   "rare": "#37F4F1",
+   "epic": "#B48CFF",
+   "legendary": "#FFD01F"
+  }
+ },
+ "groups": [
+  {
+   "id": "brand",
+   "title": "Logo and app icon",
+   "folder": "art/brand",
+   "size": "512×512 (SVG preferred)",
+   "formats": [
+    "svg",
+    "png",
+    "webp"
+   ],
+   "minPx": 256,
+   "aspect": 1,
+   "maxKB": 120,
+   "how": "Square mark that still reads at 32 px. Shown in the top-left logo button and on the 'Install the app' card; the compact phone header will use it too.",
+   "items": [
+    {
+     "key": "brand/logo",
+     "name": "QuestLayer logo mark",
+     "priority": 1,
+     "hooked": true,
+     "use": "Top-left logo / home button; install card.",
+     "now": "The player's starter ghost is used as a stand-in logo.",
+     "prompt": "App logo mark for QuestLayer, a real-world map adventure game: a friendly round cream ghost peeking out of a glowing map pin, the pin in hot pink to lavender gradient with a small gold sparkle on top, bold simple shapes, flat vector style, thick #1A0335 outline, centred, transparent background, no text."
+    },
+    {
+     "key": "brand/app-icon",
+     "name": "App icon (install card)",
+     "priority": 3,
+     "hooked": true,
+     "use": "Picture on the 'Install QuestLayer' card. Falls back to brand/logo.",
+     "now": "/icon.svg (a small cream ghost on a purple rounded square).",
+     "prompt": "The QuestLayer logo mark from brand/logo placed on a deep purple (#230E4F) rounded square with a soft lavender inner glow, 512×512, flat vector, no text."
+    },
+    {
+     "key": "brand/wordmark",
+     "name": "Wordmark",
+     "priority": 2,
+     "hooked": false,
+     "use": "'QuestLayer' lettering for the phone header, welcome screen and how-it-works page. Needs a small hook in the header once the compact header lands.",
+     "now": "Plain text.",
+     "size": "1200×300, SVG preferred",
+     "aspect": 4,
+     "prompt": "Wordmark 'QuestLayer' (exact spelling) in a rounded, chunky, playful game font, cream letters with a thick #1A0335 outline, a small hot-pink map pin after the last letter, transparent background. Simple enough to redraw as SVG."
+    }
+   ]
+  },
+  {
+   "id": "app-icons",
+   "title": "PWA / home-screen icons (replace in public/)",
+   "folder": "public",
+   "size": "see each",
+   "formats": [
+    "png",
+    "svg"
+   ],
+   "replaceInPublic": true,
+   "how": "These are read by the phone when the game is installed, so they are not in art/. Overwrite the files in public/ with the same name and size. Maskable: keep the mark inside the centre 80 % circle; apple-touch: no transparency.",
+   "items": [
+    {
+     "key": "public/icon.svg",
+     "name": "Browser tab icon",
+     "priority": 2,
+     "hooked": true,
+     "size": "SVG, 64×64 viewBox",
+     "use": "Browser tab and bookmarks.",
+     "now": "Small cream ghost on purple.",
+     "prompt": "Same as brand/app-icon, simplified for 16-32 px: only the ghost-in-pin silhouette on a purple rounded square."
+    },
+    {
+     "key": "public/icon-192.png",
+     "name": "App icon 192",
+     "priority": 2,
+     "hooked": true,
+     "size": "192×192 PNG",
+     "use": "Android home screen.",
+     "now": "Placeholder ghost.",
+     "prompt": "Export of brand/app-icon at 192×192."
+    },
+    {
+     "key": "public/icon-512.png",
+     "name": "App icon 512",
+     "priority": 2,
+     "hooked": true,
+     "size": "512×512 PNG",
+     "use": "Android splash and store-like surfaces.",
+     "now": "Placeholder ghost.",
+     "prompt": "Export of brand/app-icon at 512×512."
+    },
+    {
+     "key": "public/icons/maskable-512.png",
+     "name": "Maskable icon",
+     "priority": 2,
+     "hooked": true,
+     "size": "512×512 PNG, no transparency",
+     "use": "Android adaptive icon (gets cropped to a circle or squircle).",
+     "now": "Placeholder.",
+     "prompt": "brand/logo centred inside the middle 80 % (410 px circle) on a full-bleed deep purple #230E4F background."
+    },
+    {
+     "key": "public/icons/apple-touch-180.png",
+     "name": "Apple touch icon",
+     "priority": 2,
+     "hooked": true,
+     "size": "180×180 PNG, no transparency",
+     "use": "iPhone home screen.",
+     "now": "Placeholder.",
+     "prompt": "brand/app-icon at 180×180 with an opaque purple background (iOS rounds the corners itself)."
+    }
+   ]
+  },
+  {
+   "id": "player",
+   "title": "Player character",
+   "folder": "art/player",
+   "size": "384×448 (or SVG)",
+   "formats": [
+    "png",
+    "webp",
+    "svg"
+   ],
+   "minPx": 192,
+   "aspect": 0.857,
+   "maxKB": 150,
+   "how": "Replaces the default explorer everywhere in 2D (map pawn, profile, inventory, wardrobe, notes, welcome). The optional 3D map body (Settings → 3D) keeps the Aavegotchi GLB. Auras float above the head and glow under the hem, so leave ~10 % empty space above and below.",
+   "items": [
+    {
+     "key": "player/explorer",
+     "name": "Default explorer",
+     "priority": 3,
+     "hooked": true,
+     "use": "Every new player's look until they connect an original Aavegotchi.",
+     "now": "Official Aavegotchi starter template SVG (allowed, but not QuestLayer's own).",
+     "prompt": "Full-body QuestLayer explorer: a small round cream ghost (#FFFAF0) with big glossy dark eyes, pink cheeks, tiny stubby hands, a teal scarf and a little brown satchel, wavy hem at the bottom, front view facing the viewer, cheerful and curious. QuestLayer house style, transparent background."
+    }
+   ]
+  },
+  {
+   "id": "actors",
+   "title": "NPCs and monsters on the map",
+   "folder": "art/actors",
+   "size": "512×512",
+   "formats": [
+    "png",
+    "webp"
+   ],
+   "minPx": 256,
+   "aspect": 1,
+   "maxKB": 150,
+   "how": "One still image per character. No frames needed: the game already bobs, steps, shimmers and mirrors the sprite (it flips it when walking west), so draw it facing RIGHT. Keep ~6 % margin, bottom of the character at the bottom edge. Also used in the encounter sheet when there is no portrait.",
+   "items": [
+    {
+     "key": "actors/chronicler",
+     "name": "Chronicler",
+     "priority": 1,
+     "hooked": true,
+     "use": "Storyteller NPC (tells local stories, gives chapter quests). Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: lavender ghost, purple hood, open book, quill, sparkles.",
+     "prompt": "Full-body game sprite of a lavender (#B9A6FF) ghost storyteller wearing a deep-purple hooded cape, holding an open glowing book in both hands with a quill tucked behind, three tiny gold sparkles floating around the book, wise gentle smile. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/merchant",
+     "name": "Travelling merchant",
+     "priority": 1,
+     "hooked": true,
+     "use": "Trader NPC (buys and sells Auras, trade-ups). Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: teal ghost, brown hat, lantern, coins.",
+     "prompt": "Full-body game sprite of a teal-cyan (#81CDCF) ghost travelling merchant with a wide brown hat with a hot-pink band, a warm gold lantern hanging from a short staff, a small stack of gold coins in the other hand and a bulging backpack of wares, sly friendly grin. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/keeper",
+     "name": "Gate keeper",
+     "priority": 1,
+     "hooked": true,
+     "use": "Keeper (bank) NPC: guards the inner vault for stakers. Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: stone tower with keyhole door, golden key.",
+     "prompt": "Full-body game sprite of a living little stone watchtower (#8F88B8) with battlements, a glowing gold keyhole door on its belly, two calm teal eyes, a big golden key floating at its side, steady and trustworthy. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/pilgrim",
+     "name": "Pilgrim",
+     "priority": 1,
+     "hooked": true,
+     "use": "Quest giver NPC (hands out errands). Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: pink ghost, straw hat, staff.",
+     "prompt": "Full-body game sprite of a pink (#FF96FF) ghost pilgrim with a straw conical hat with a purple band, a long wooden walking staff topped with a small teal crystal, a cream scarf blowing in the wind, eager mid-step pose. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/wisp",
+     "name": "Will-o'-wisp",
+     "priority": 1,
+     "hooked": true,
+     "use": "Wandering rare NPC (appears rarely, gives special rewards). Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: mint glowing orb with halo.",
+     "prompt": "Full-body game sprite of a small mint-green (#51FFA8) will-o'-wisp spirit: a glowing translucent orb with big friendly eyes, a soft halo ring and a trailing tail of tiny sparkles, airy and magical. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/glitch-moth",
+     "name": "Glitch Moth",
+     "priority": 1,
+     "hooked": true,
+     "use": "Roamer monster (night; tap to start a challenge). Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: magenta moth.",
+     "prompt": "Full-body game sprite of a mischievous hot-pink (#FA34F3) moth monster with big wings broken into pixel-glitch blocks of magenta, teal and purple, curled antennae, one wing edge slightly 'corrupted' like a digital glitch, playful, not scary. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/rune-warden",
+     "name": "Rune Warden",
+     "priority": 1,
+     "hooked": true,
+     "use": "Guardian monster (guards zones; quiz/rune challenge). Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: floating standing stone with one eye and two teal rings.",
+     "prompt": "Full-body game sprite of a floating ancient standing stone with one large watchful eye, carved glowing teal (#37F4F1) runes, two thin teal rune rings orbiting it at angles, mossy top, stern but fair. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/pocket-wisp",
+     "name": "Pocket Wisp",
+     "priority": 1,
+     "hooked": true,
+     "use": "Lurker monster (hides, appears close by). Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: tiny green ghost.",
+     "prompt": "Full-body game sprite of a tiny green (#7BD88F) ghost peeking out of a leafy bush, only head and little hands visible, cheeky wink, mischievous. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/storm-golem",
+     "name": "Storm Golem",
+     "priority": 1,
+     "hooked": true,
+     "use": "Weekly boss (big shared fight). Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: rock golem with storm crown.",
+     "prompt": "Full-body game sprite of a big boss golem made of stacked purple-grey rocks, a crown of dark thundercloud with yellow (#FFFA65) lightning bolts, glowing yellow eyes and cracks, heavy fists, imposing but still cartoony and fun. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/sun-beetle",
+     "name": "Sun Beetle",
+     "priority": 1,
+     "hooked": true,
+     "use": "Daytime roamer monster. Map marker (shown ~56 px) and fallback for the dialog portrait.",
+     "now": "Baked 3D: gold-shelled beetle with sun disc.",
+     "prompt": "Full-body game sprite of a round beetle with a shiny gold (#FFD01F) shell, a radiant sun disc on its back, six short legs, sleepy happy face, warm daytime glow. Three-quarter view facing RIGHT, whole body visible, feet/hem at the bottom centre. QuestLayer house style, bold silhouette readable at 56 px, transparent background."
+    },
+    {
+     "key": "actors/lick-soldier",
+     "name": "Sludge Trooper (Roamer (Gotchiverse slot))",
+     "priority": 3,
+     "hooked": true,
+     "use": "Optional. Today this slot loads the official Gotchiverse model (allowed by the Aavegotchi invitation). Drop a file only if you want a QuestLayer original instead.",
+     "now": "Official Gotchiverse 3D model, baked to a sprite.",
+     "prompt": "Full-body game sprite of an original slime trooper: a squat purple goo creature in a cracked teal visor helmet, carrying a small scoop, wobbly and silly. Three-quarter view facing RIGHT, whole body visible. QuestLayer house style, must NOT resemble Aavegotchi Lickquidators or any existing game character, transparent background."
+    },
+    {
+     "key": "actors/lick-brute",
+     "name": "Sludge Brute (Guardian (Gotchiverse slot))",
+     "priority": 3,
+     "hooked": true,
+     "use": "Optional. Today this slot loads the official Gotchiverse model (allowed by the Aavegotchi invitation). Drop a file only if you want a QuestLayer original instead.",
+     "now": "Official Gotchiverse 3D model, baked to a sprite.",
+     "prompt": "Full-body game sprite of an original big goo brute: a hulking purple slime with chunky armour plates and a teal visor, arms crossed. Three-quarter view facing RIGHT, whole body visible. QuestLayer house style, must NOT resemble Aavegotchi Lickquidators or any existing game character, transparent background."
+    },
+    {
+     "key": "actors/lick-speedy",
+     "name": "Rolling Rascal (Fast roamer (Gotchiverse slot))",
+     "priority": 3,
+     "hooked": true,
+     "use": "Optional. Today this slot loads the official Gotchiverse model (allowed by the Aavegotchi invitation). Drop a file only if you want a QuestLayer original instead.",
+     "now": "Official Gotchiverse 3D model, baked to a sprite.",
+     "prompt": "Full-body game sprite of an original speedy critter riding a single spiked lavender wheel, motion streaks, goggles, grinning. Three-quarter view facing RIGHT, whole body visible. QuestLayer house style, must NOT resemble Aavegotchi Lickquidators or any existing game character, transparent background."
+    },
+    {
+     "key": "actors/lick-turret",
+     "name": "Beam Sentinel (Zone guardian turret (Gotchiverse slot))",
+     "priority": 3,
+     "hooked": true,
+     "use": "Optional. Today this slot loads the official Gotchiverse model (allowed by the Aavegotchi invitation). Drop a file only if you want a QuestLayer original instead.",
+     "now": "Official Gotchiverse 3D model, baked to a sprite.",
+     "prompt": "Full-body game sprite of an original crystal turret on a short tripod: an amber (#FFB800) crystal eye that charges a beam, stone base, alert. Three-quarter view facing RIGHT, whole body visible. QuestLayer house style, must NOT resemble Aavegotchi Lickquidators or any existing game character, transparent background."
+    },
+    {
+     "key": "actors/lick-boss",
+     "name": "Sludge King (Weekly boss (Gotchiverse slot))",
+     "priority": 3,
+     "hooked": true,
+     "use": "Optional. Today this slot loads the official Gotchiverse model (allowed by the Aavegotchi invitation). Drop a file only if you want a QuestLayer original instead.",
+     "now": "Official Gotchiverse 3D model, baked to a sprite.",
+     "prompt": "Full-body game sprite of an original boss: an enormous deep-purple goo king with a gold crown, glowing hot-pink core, teal glass visor, many small goo minions dripping off. Three-quarter view facing RIGHT, whole body visible. QuestLayer house style, must NOT resemble Aavegotchi Lickquidators or any existing game character, transparent background."
+    },
+    {
+     "key": "actors/great-portal",
+     "name": "Great Portal (Boss arena landmark prop)",
+     "priority": 3,
+     "hooked": true,
+     "use": "Optional. Today this slot loads the official Gotchiverse model (allowed by the Aavegotchi invitation). Drop a file only if you want a QuestLayer original instead.",
+     "now": "Official Gotchiverse 3D model, baked to a sprite.",
+     "prompt": "Full-body game sprite of a stone ring arch covered in glowing lilac runes with a swirling violet vortex inside, a few floating stones around it. Three-quarter view facing RIGHT, whole body visible. QuestLayer house style, must NOT resemble Aavegotchi Lickquidators or any existing game character, transparent background."
+    },
+    {
+     "key": "actors/golden-altar",
+     "name": "Golden Altar (Keeper station prop)",
+     "priority": 3,
+     "hooked": true,
+     "use": "Optional. Today this slot loads the official Gotchiverse model (allowed by the Aavegotchi invitation). Drop a file only if you want a QuestLayer original instead.",
+     "now": "Official Gotchiverse 3D model, baked to a sprite.",
+     "prompt": "Full-body game sprite of a small golden shrine altar with a glowing flame bowl on top, purple cloth, carved ghost motifs. Three-quarter view facing RIGHT, whole body visible. QuestLayer house style, must NOT resemble Aavegotchi Lickquidators or any existing game character, transparent background."
+    }
+   ]
+  },
+  {
+   "id": "portraits",
+   "title": "Dialog portraits",
+   "folder": "art/portraits",
+   "size": "768×768",
+   "formats": [
+    "png",
+    "webp"
+   ],
+   "minPx": 384,
+   "aspect": 1,
+   "maxKB": 250,
+   "how": "Shown large on the dark purple dialog header (about 300 px tall on a phone). Bust or upper body, looking at the player. Same character design as the map sprite. Gotchiverse slots can use the same file names here too.",
+   "items": [
+    {
+     "key": "portraits/chronicler",
+     "name": "Chronicler",
+     "priority": 1,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Baked 384 px PNG in public/art/npc/",
+     "prompt": "Character portrait, head and upper body, of a lavender (#B9A6FF) ghost storyteller wearing a deep-purple hooded cape, holding an open glowing book in both hands with a quill tucked behind, three tiny gold sparkles floating around the book, wise gentle smile. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "portraits/merchant",
+     "name": "Travelling merchant",
+     "priority": 1,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Baked 384 px PNG in public/art/npc/",
+     "prompt": "Character portrait, head and upper body, of a teal-cyan (#81CDCF) ghost travelling merchant with a wide brown hat with a hot-pink band, a warm gold lantern hanging from a short staff, a small stack of gold coins in the other hand and a bulging backpack of wares, sly friendly grin. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "portraits/keeper",
+     "name": "Gate keeper",
+     "priority": 1,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Baked 384 px PNG in public/art/npc/",
+     "prompt": "Character portrait, head and upper body, of a living little stone watchtower (#8F88B8) with battlements, a glowing gold keyhole door on its belly, two calm teal eyes, a big golden key floating at its side, steady and trustworthy. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "portraits/pilgrim",
+     "name": "Pilgrim",
+     "priority": 1,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Baked 384 px PNG in public/art/npc/",
+     "prompt": "Character portrait, head and upper body, of a pink (#FF96FF) ghost pilgrim with a straw conical hat with a purple band, a long wooden walking staff topped with a small teal crystal, a cream scarf blowing in the wind, eager mid-step pose. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "portraits/wisp",
+     "name": "Will-o'-wisp",
+     "priority": 1,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Baked 384 px PNG in public/art/npc/",
+     "prompt": "Character portrait, head and upper body, of a small mint-green (#51FFA8) will-o'-wisp spirit: a glowing translucent orb with big friendly eyes, a soft halo ring and a trailing tail of tiny sparkles, airy and magical. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "portraits/glitch-moth",
+     "name": "Glitch Moth",
+     "priority": 2,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Live 3D model in the sheet.",
+     "prompt": "Character portrait, head and upper body, of a mischievous hot-pink (#FA34F3) moth monster with big wings broken into pixel-glitch blocks of magenta, teal and purple, curled antennae, one wing edge slightly 'corrupted' like a digital glitch, playful, not scary. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "portraits/rune-warden",
+     "name": "Rune Warden",
+     "priority": 2,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Live 3D model in the sheet.",
+     "prompt": "Character portrait, head and upper body, of a floating ancient standing stone with one large watchful eye, carved glowing teal (#37F4F1) runes, two thin teal rune rings orbiting it at angles, mossy top, stern but fair. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "portraits/pocket-wisp",
+     "name": "Pocket Wisp",
+     "priority": 2,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Live 3D model in the sheet.",
+     "prompt": "Character portrait, head and upper body, of a tiny green (#7BD88F) ghost peeking out of a leafy bush, only head and little hands visible, cheeky wink, mischievous. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "portraits/storm-golem",
+     "name": "Storm Golem",
+     "priority": 2,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Live 3D model in the sheet.",
+     "prompt": "Character portrait, head and upper body, of a big boss golem made of stacked purple-grey rocks, a crown of dark thundercloud with yellow (#FFFA65) lightning bolts, glowing yellow eyes and cracks, heavy fists, imposing but still cartoony and fun. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "portraits/sun-beetle",
+     "name": "Sun Beetle",
+     "priority": 2,
+     "hooked": true,
+     "use": "Big picture at the top of the conversation / challenge sheet.",
+     "now": "Live 3D model in the sheet.",
+     "prompt": "Character portrait, head and upper body, of a round beetle with a shiny gold (#FFD01F) shell, a radiant sun disc on its back, six short legs, sleepy happy face, warm daytime glow. Slight three-quarter view looking at the viewer, expressive face, more detail than the map sprite. QuestLayer house style, transparent background."
+    }
+   ]
+  },
+  {
+   "id": "objects",
+   "title": "Map and list objects",
+   "folder": "art/objects",
+   "size": "128×128",
+   "formats": [
+    "png",
+    "webp",
+    "svg"
+   ],
+   "minPx": 64,
+   "aspect": 1,
+   "maxKB": 60,
+   "how": "Shown at 32 px inside the white 48 px map pins, as map icons (coins, street finds) and in lists. Name a state-specific file <kind>-<state> (states: ready, open, completed, locked); otherwise <kind> is used for every state.",
+   "items": [
+    {
+     "key": "objects/coin",
+     "name": "Gold coin",
+     "priority": 1,
+     "hooked": true,
+     "use": "Gold to pick up on the map and in reward lists.",
+     "now": "32 px pixel coin, pale gold face, purple ink outline.",
+     "prompt": "Game icon of a chunky gold coin seen slightly from the side, thick bevelled edge, a small embossed ghost-face emblem in the middle, a single white glint top-left. Simple shapes, at most four main colours, readable at 32 px. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "objects/chest",
+     "name": "Treasure chest",
+     "priority": 1,
+     "hooked": true,
+     "use": "Chest quests and zones with Aura loot.",
+     "now": "32 px pixel chest (closed / open / empty).",
+     "prompt": "Game icon of a small treasure chest of deep purple wood with gold bands and a gold lock plate, lid closed, tiny lavender glow leaking from the seam. Simple shapes, at most four main colours, readable at 32 px. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "objects/discovery",
+     "name": "Discovery crystal",
+     "priority": 1,
+     "hooked": true,
+     "use": "Visit/discovery quests and street finds.",
+     "now": "32 px pink crystal facets.",
+     "prompt": "Game icon of a floating hot-pink and lavender crystal shard with sharp facets, a small sparkle at the tip and a soft pink glow. Simple shapes, at most four main colours, readable at 32 px. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "objects/route",
+     "name": "Route flag",
+     "priority": 1,
+     "hooked": true,
+     "use": "Walking route / trail / return quests.",
+     "now": "32 px waymarker flag.",
+     "prompt": "Game icon of a small trail waymarker: a wooden post with a teal pennant flag and a painted arrow sign, cheerful. Simple shapes, at most four main colours, readable at 32 px. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "objects/place",
+     "name": "Place marker",
+     "priority": 1,
+     "hooked": true,
+     "use": "Zones and places whose activity is unknown or not loot.",
+     "now": "32 px generic place sign.",
+     "prompt": "Game icon of a tiny stone signpost shrine with a lavender roof and a glowing gold dot, generic 'interesting place' marker. Simple shapes, at most four main colours, readable at 32 px. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "objects/chest-open",
+     "name": "Chest, open",
+     "priority": 2,
+     "hooked": true,
+     "use": "Chest that can be opened right now (zone open).",
+     "now": "Pixel chest with lid up.",
+     "prompt": "The same treasure chest as objects/chest with the lid open and a bright gold-lavender glow and sparkles rising out, contents not visible. Transparent background."
+    },
+    {
+     "key": "objects/chest-completed",
+     "name": "Chest, done",
+     "priority": 3,
+     "hooked": true,
+     "use": "Chest you already opened.",
+     "now": "Open chest + check.",
+     "prompt": "The same treasure chest, open and empty, with a small mint-green check-mark badge in the top-right corner. Transparent background."
+    },
+    {
+     "key": "objects/chest-locked",
+     "name": "Chest, locked",
+     "priority": 3,
+     "hooked": true,
+     "use": "Chest not open yet (countdown) or tier too high.",
+     "now": "Chest + padlock.",
+     "prompt": "The same treasure chest, closed, desaturated, with a chunky grey padlock badge in the top-right corner. Transparent background."
+    },
+    {
+     "key": "objects/<kind>-completed / -locked",
+     "name": "Other states (optional)",
+     "priority": 3,
+     "hooked": true,
+     "pattern": true,
+     "use": "Same idea for coin, discovery, route, place. Without these files the base image is greyed (locked) or faded (completed) automatically.",
+     "now": "Check / padlock overlay on the pixel art.",
+     "prompt": "Base object + small mint check badge (completed) or grey padlock badge (locked) top-right."
+    }
+   ]
+  },
+  {
+   "id": "auras",
+   "title": "Auras (wearables)",
+   "folder": "art/auras",
+   "size": "above 192×96 (2:1), below 224×80 (2.8:1)",
+   "formats": [
+    "png",
+    "webp",
+    "svg"
+   ],
+   "minPx": 64,
+   "maxKB": 60,
+   "how": "Only the effect, without the ghost. The game places 'above' Auras over the head and 'below' Auras on the ground. If a player wears an edition in the other slot, add <id>-above or <id>-below; otherwise the same file is fitted into the box. The game adds a gentle bob; no frames needed. NFT media on NEAR (public/aura-*.svg) stay unchanged on purpose: minted media must not change.",
+   "items": [
+    {
+     "key": "auras/ember",
+     "name": "Ember Wisp",
+     "priority": 2,
+     "hooked": true,
+     "use": "Common Aura (zone chests), above slot: floats above the explorer's head. Set: First Light.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a small flickering ember flame halo of orange sparks, main colour #ff8a4c, seen from the front, floating, wide and short, common rarity. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/dew",
+     "name": "Dewfall Ring",
+     "priority": 2,
+     "hooked": true,
+     "use": "Common Aura (zone chests), below slot: glows on the ground under the explorer. Set: First Light.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a ring of glistening blue dew drops on the ground, main colour #8fd3ff, flat ellipse seen at a low angle, wide and short, common rarity. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/polar",
+     "name": "Northern Lights",
+     "priority": 2,
+     "hooked": true,
+     "use": "Rare Aura (zone chests), above slot: floats above the explorer's head. Set: Night Sky.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a ribbon of green-teal northern lights arching like a halo, main colour #9edfc5, seen from the front, floating, wide and short, rare rarity. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/bloom",
+     "name": "Meadow Bloom",
+     "priority": 2,
+     "hooked": true,
+     "use": "Rare Aura (zone chests), below slot: glows on the ground under the explorer. Set: First Light.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a ground ring of pink meadow flowers and small leaves, main colour #ff9fc8, flat ellipse seen at a low angle, wide and short, rare rarity. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/storm",
+     "name": "Stormcrown",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (zone chests), above slot: floats above the explorer's head. Set: Tempest.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a crown of tiny storm clouds with blue lightning sparks, main colour #8fa6ff, seen from the front, floating, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/moon",
+     "name": "Moonwake Aura",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (zone chests), below slot: glows on the ground under the explorer. Set: Night Sky.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a lilac crescent-moon wake on the ground with drifting stars, main colour #c2a0df, flat ellipse seen at a low angle, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/comet",
+     "name": "Comet Trail",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (zone chests), below slot: glows on the ground under the explorer. Set: Tempest.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a pale white-blue comet trail circling the ground, main colour #e6ecff, flat ellipse seen at a low angle, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/gold",
+     "name": "Sunlit Aura",
+     "priority": 2,
+     "hooked": true,
+     "use": "Legendary Aura (zone chests), above slot: floats above the explorer's head. Set: Solar Crown.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a warm sunlit golden halo with soft rays, main colour #e7c35f, seen from the front, floating, wide and short, legendary rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/nova",
+     "name": "Nova Bloom",
+     "priority": 2,
+     "hooked": true,
+     "use": "Legendary Aura (zone chests), below slot: glows on the ground under the explorer. Set: Solar Crown.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a ground burst of hot-pink star petals like a nova, main colour #ff5fa8, flat ellipse seen at a low angle, wide and short, legendary rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/pilgrim",
+     "name": "Pilgrim's Path",
+     "priority": 2,
+     "hooked": true,
+     "use": "Rare Aura (NPC reward), below slot: glows on the ground under the explorer. Set: Wayfarers.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a dusty green path ring of small footprints and leaves on the ground, main colour #9bd17a, flat ellipse seen at a low angle, wide and short, rare rarity. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/chronicle",
+     "name": "Chronicle Crown",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (NPC reward), above slot: floats above the explorer's head. Set: Wayfarers.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a violet crown of floating open-book pages and a quill, main colour #b48cff, seen from the front, floating, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/ledger",
+     "name": "Merchant's Ledger",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (NPC reward), below slot: glows on the ground under the explorer. Set: Wayfarers.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a ground ring of amber ledger pages and stacked coins, main colour #e0a94a, flat ellipse seen at a low angle, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/wardbreaker",
+     "name": "Wardbreaker Horns",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (monster reward), above slot: floats above the explorer's head. Set: Night Hunt.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: glowing mint-green spectral horns above the head, main colour #7cf0b0, seen from the front, floating, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/wisp",
+     "name": "Will-o'-Wisp Halo",
+     "priority": 2,
+     "hooked": true,
+     "use": "Legendary Aura (NPC reward), above slot: floats above the explorer's head. Set: Night Hunt.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a halo of tiny cyan will-o'-wisp lights circling, main colour #9ff6ff, seen from the front, floating, wide and short, legendary rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/bossbane",
+     "name": "Bossbane Fangring",
+     "priority": 2,
+     "hooked": true,
+     "use": "Legendary Aura (monster reward), below slot: glows on the ground under the explorer. Set: Night Hunt.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a red fang ring on the ground, like a trophy from a boss, main colour #ff6b6b, flat ellipse seen at a low angle, wide and short, legendary rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/stride",
+     "name": "Silver Stride",
+     "priority": 2,
+     "hooked": true,
+     "use": "Rare Aura (level reward), below slot: glows on the ground under the explorer. Set: Level Path.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a silver wind-streak ring at the feet, main colour #c9d3e0, flat ellipse seen at a low angle, wide and short, rare rarity. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/kindle",
+     "name": "Altar Kindle",
+     "priority": 2,
+     "hooked": true,
+     "use": "Rare Aura (level reward), above slot: floats above the explorer's head. Set: Level Path.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a small orange altar flame floating above the head, main colour #ff9f43, seen from the front, floating, wide and short, rare rarity. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/compass",
+     "name": "Wayfarer's Compass",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (level reward), below slot: glows on the ground under the explorer. Set: Level Path.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a teal-green compass rose glowing on the ground, main colour #5fd3a8, flat ellipse seen at a low angle, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/quill",
+     "name": "Storyteller's Quill",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (level reward), above slot: floats above the explorer's head. Set: Level Path.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a blue floating quill writing glowing lines above the head, main colour #8fa8ff, seen from the front, floating, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/laurel",
+     "name": "Pathfinder Laurel",
+     "priority": 2,
+     "hooked": true,
+     "use": "Legendary Aura (level reward), below slot: glows on the ground under the explorer. Set: Level Path.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "224×80",
+     "aspect": 2.8,
+     "prompt": "Wearable aura effect: a green laurel wreath ring on the ground with light, main colour #9be36b, flat ellipse seen at a low angle, wide and short, legendary rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/summit",
+     "name": "Summit Crown",
+     "priority": 2,
+     "hooked": true,
+     "use": "Legendary Aura (level reward), above slot: floats above the explorer's head. Set: Level Path.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a pale-gold mountain-peak crown with a tiny flag, main colour #ffe08a, seen from the front, floating, wide and short, legendary rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/patron",
+     "name": "Patron's Lantern",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (NPC reward), above slot: floats above the explorer's head. Set: Wayfarers.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a floating gold lantern with warm light rays, main colour #ffd01f, seen from the front, floating, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    },
+    {
+     "key": "auras/season",
+     "name": "Hackathon Pennant",
+     "priority": 2,
+     "hooked": true,
+     "use": "Epic Aura (season reward), above slot: floats above the explorer's head. Set: Wayfarers.",
+     "now": "Pixel sprite in code (2 sparkle frames).",
+     "size": "192×96",
+     "aspect": 2,
+     "prompt": "Wearable aura effect: a small sky-blue pennant banner floating above the head, main colour #4fc3ff, seen from the front, floating, wide and short, epic rarity with extra sparkle. Only the effect, no character. QuestLayer house style, transparent background."
+    }
+   ]
+  },
+  {
+   "id": "badges",
+   "title": "Place badges",
+   "folder": "art/badges",
+   "size": "256×256",
+   "formats": [
+    "png",
+    "webp",
+    "svg"
+   ],
+   "minPx": 128,
+   "aspect": 1,
+   "maxKB": 60,
+   "how": "Round medal face shown at 52 px in the badge book and 96 px in the detail. Draw a full circle; the ring colour around it still shows the rarity. Player-made badges keep their emoji (players pick them).",
+   "items": [
+    {
+     "key": "badges/peak",
+     "name": "Peak badge",
+     "priority": 2,
+     "hooked": true,
+     "use": "All mountain-peak place badges (13).",
+     "now": "⛰️ emoji in a ring.",
+     "prompt": "Round enamel pin badge: a snowy mountain peak with a tiny flag on top, lavender sky, gold rim. QuestLayer house style, transparent outside the circle, no text."
+    },
+    {
+     "key": "badges/viewpoint",
+     "name": "Viewpoint badge",
+     "priority": 2,
+     "hooked": true,
+     "use": "Viewpoint badges (6).",
+     "now": "🔭 emoji.",
+     "prompt": "Round enamel pin badge: a small brass telescope on a rocky ledge looking at a sunset valley, gold rim. QuestLayer house style, transparent outside the circle, no text."
+    },
+    {
+     "key": "badges/landmark",
+     "name": "Landmark badge",
+     "priority": 2,
+     "hooked": true,
+     "use": "Landmark badges (28).",
+     "now": "🏛️ emoji.",
+     "prompt": "Round enamel pin badge: a classic columned monument with a glowing map pin above it, gold rim. QuestLayer house style, transparent outside the circle, no text."
+    },
+    {
+     "key": "badges/city",
+     "name": "City badge",
+     "priority": 2,
+     "hooked": true,
+     "use": "Bigger-city badges (22).",
+     "now": "🏙️ emoji.",
+     "prompt": "Round enamel pin badge: a cosy skyline of rooftops, a church tower and a castle, night sky with stars, gold rim. QuestLayer house style, transparent outside the circle, no text."
+    },
+    {
+     "key": "badges/<badge-id>",
+     "name": "Unique badge for one place (optional)",
+     "priority": 3,
+     "hooked": true,
+     "pattern": true,
+     "use": "Any id from server/data/place-badges.json, e.g. peak-snezka, view-pravcicka-brana, city-plzen. Wins over the kind badge.",
+     "now": "Kind emoji.",
+     "prompt": "Round enamel pin badge showing <the place's real silhouette, e.g. Sněžka's summit chapel>, gold rim, no text."
+    }
+   ]
+  },
+  {
+   "id": "later",
+   "title": "Next wave (folder ready, needs a small code hook)",
+   "folder": "art/…",
+   "size": "see each",
+   "formats": [
+    "png",
+    "webp",
+    "svg"
+   ],
+   "later": true,
+   "how": "Not wired yet. If you generate these, drop them in with these names and ask for the hook; the loader already picks them up.",
+   "items": [
+    {
+     "key": "zones/totem-tier-1 … tier-3",
+     "name": "Zone totem tops",
+     "priority": 3,
+     "hooked": false,
+     "pattern": true,
+     "use": "Picture on top of the 3D zone totem, by rarity tier (common / rare / legendary window).",
+     "now": "Coloured 3D column + object pin.",
+     "prompt": "Ornate floating emblem for a quest zone: tier 1 a lavender stone rune, tier 2 a teal crystal, tier 3 a gold star crystal with rays, 256×256."
+    },
+    {
+     "key": "challenges/quiz | rhythm | duel | trace",
+     "name": "Monster challenge icons",
+     "priority": 3,
+     "hooked": false,
+     "pattern": true,
+     "use": "Header icon for each challenge type in the monster sheet.",
+     "now": "Phosphor line icons.",
+     "prompt": "Set of four round game icons: question-mark scroll (quiz), music drum (rhythm), crossed swords (duel), glowing rune path (trace), 256×256 each."
+    },
+    {
+     "key": "currency/gold | xp | ticket | near",
+     "name": "Currency icons",
+     "priority": 3,
+     "hooked": false,
+     "pattern": true,
+     "use": "Gold, XP, Wisp roll ticket and NEAR in rewards, HUD and the shop.",
+     "now": "Phosphor icons and text.",
+     "prompt": "Matching set of four 128×128 icons: gold coin pile, purple XP star, pink raffle ticket with a ghost, teal NEAR-style token (no NEAR logo)."
+    },
+    {
+     "key": "emotes/wave | think | laugh | shrug",
+     "name": "NPC emotes",
+     "priority": 3,
+     "hooked": false,
+     "pattern": true,
+     "use": "Small bubble next to the NPC portrait while talking.",
+     "now": "System emoji 👋🤔😄🤷.",
+     "prompt": "Four 128×128 speech-bubble icons with a tiny ghost hand waving, thinking, laughing, shrugging."
+    },
+    {
+     "key": "quests/visit | trail | return | chest",
+     "name": "Quest type icons",
+     "priority": 3,
+     "hooked": false,
+     "pattern": true,
+     "use": "Icons in quest lists and the daily board.",
+     "now": "Phosphor icons.",
+     "prompt": "Four 128×128 icons: footprint at a pin, dotted trail, round-trip arrow, small chest."
+    },
+    {
+     "key": "ui/empty-state-*",
+     "name": "Empty-state illustrations",
+     "priority": 3,
+     "hooked": false,
+     "pattern": true,
+     "use": "Pictures for empty inventory, no quests nearby, no notes.",
+     "now": "Ghost + pixel coin.",
+     "prompt": "Wide 600×400 scenes with the explorer ghost: looking into an empty bag, holding a map with nothing nearby, writing in a blank notebook."
+    }
+   ]
+  }
+ ]
+}

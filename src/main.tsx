@@ -1,3 +1,5 @@
+// Drop-in art (art/README.md) must register before any module reads it.
+import "./art-overrides";
 import { currentRelease } from "./pwa-boot";
 import "./style.css";
 import React, { Suspense, lazy } from "react";

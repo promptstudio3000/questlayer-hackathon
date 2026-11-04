@@ -9,6 +9,7 @@ import { DEMO_TICK_MS, moveMapMarker } from "./map-motion";
 import {
   gameObjectMarkup,
   rasterizeGameObject,
+  gameObjectArtUrl,
   questObjectPresentation,
   zoneObjectPresentation,
 } from "./game-object-art";
@@ -111,6 +112,30 @@ const LOOT_RING = {
   epic: "#9b4dff",
   legendary: "#f3bd54",
 } as Record<string, string>;
+/**
+ * Adds a map icon for a game object: the dropped-in art/objects/<kind> image
+ * when there is one (drawn at 32 CSS px), else the authored pixel raster.
+ */
+function addObjectImage(m: maplibregl.Map, name: string, kind: "coin" | "discovery") {
+  const url = gameObjectArtUrl(kind);
+  const fallback = () => !m.hasImage(name) && m.addImage(name, rasterizeGameObject({ kind }));
+  if (!url) return void fallback();
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const ratio = 4,
+        canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 32 * ratio;
+      const g = canvas.getContext("2d")!;
+      g.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (!m.hasImage(name)) m.addImage(name, g.getImageData(0, 0, canvas.width, canvas.height), { pixelRatio: ratio });
+    } catch {
+      fallback();
+    }
+  };
+  img.onerror = fallback;
+  img.src = url;
+}
 const lootImageLoads = new WeakMap<maplibregl.Map, Map<string, Promise<void>>>();
 function ensureLootImages(
   m: maplibregl.Map,
@@ -412,8 +437,8 @@ export function GameMap(props: GameMapProps) {
         });
       // Day, dusk or night from the real sun at the player (src/map-sky.ts).
       paintMapSky(m, skyRef.current.phase);
-      m.addImage("gold-coin", rasterizeGameObject({ kind: "coin" }));
-      m.addImage("street-find", rasterizeGameObject({ kind: "discovery" }));
+      addObjectImage(m, "gold-coin", "coin");
+      addObjectImage(m, "street-find", "discovery");
       m.addSource("zones", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },

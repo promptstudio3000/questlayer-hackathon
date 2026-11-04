@@ -2,6 +2,7 @@
    a one-time install offer after the player has started playing, a
    "New version ready" notice and an honest offline state. Mounted from
    main.tsx next to <App />; it reads the app only through the DOM. */
+import { artUrl } from "./art-registry";
 import {
   useCallback,
   useEffect,
@@ -364,7 +365,7 @@ export function PwaPrompts() {
             >
               <img
                 className="pwa-app-icon"
-                src="/icon.svg"
+                src={artUrl("brand/app-icon", "brand/logo") || "/icon.svg"}
                 alt=""
                 width={40}
                 height={40}

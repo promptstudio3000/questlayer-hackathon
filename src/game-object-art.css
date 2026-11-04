@@ -153,3 +153,16 @@
       0 0 0 8px #672eeb22;
   }
 }
+/* Dropped-in object images (art/objects/, docs/ART-LIST.md). Without a
+   state-specific file the base image is dimmed for locked/completed. */
+img.game-object-art-img {
+  object-fit: contain;
+  image-rendering: auto;
+}
+img.game-object-art-img.shared-state[data-object-state="locked"] {
+  filter: grayscale(1) brightness(0.8);
+  opacity: 0.7;
+}
+img.game-object-art-img.shared-state[data-object-state="completed"] {
+  opacity: 0.55;
+}

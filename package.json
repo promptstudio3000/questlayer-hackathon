@@ -39,7 +39,9 @@
     "world:coverage": "node scripts/world-coverage.mjs",
     "ai:flavour": "node server/cli/ai-flavour.mjs",
     "i18n:keys": "node scripts/i18n-keys.mjs",
-    "e2e:languages": "node scripts/e2e-languages.mjs"
+    "e2e:languages": "node scripts/e2e-languages.mjs",
+    "art:list": "node scripts/art.mjs list",
+    "art:check": "node scripts/art.mjs check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

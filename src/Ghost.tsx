@@ -1,5 +1,6 @@
 import { AuraSprite, auraEdition } from "./aura-art";
 import { STARTER_SPRITE } from "./character-art";
+import { artUrl } from "./art-registry";
 export { ghostSvg } from "./character-art";
 export function Ghost({
   className = "",
@@ -11,6 +12,19 @@ export function Ghost({
   return (
     <span className={`ghost-art ${className}`} aria-hidden="true">
       <img src={STARTER_SPRITE} alt="" draggable={false} />
+    </span>
+  );
+}
+/**
+ * The QuestLayer logo mark: a dropped-in art/brand/logo.(svg|png|webp)
+ * (docs/ART-LIST.md), else the player ghost as before.
+ */
+export function BrandLogo({ className = "" }: { className?: string }) {
+  const logo = artUrl("brand/logo");
+  if (!logo) return <Ghost className={className} />;
+  return (
+    <span className={`brand-logo ${className}`} aria-hidden="true">
+      <img src={logo} alt="" draggable={false} />
     </span>
   );
 }

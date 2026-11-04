@@ -1,4 +1,5 @@
 import { auraEdition, auraMarkup } from "./aura-art-data.ts";
+import { artUrl } from "./art-registry.ts";
 // Legacy, self-authored NFT cover art. Never replace minted media with third-party art.
 export function ghostSvg(color = "#b6a1df", hat = false) {
   const safe = /^#[a-fA-F0-9]{6}$/.test(color) ? color : "#b6a1df";
@@ -13,7 +14,8 @@ export function auraSvg(color: string) {
   );
 }
 
-export const STARTER_SPRITE = "/assets/aavegotchi-starter-1278fb922f4e.svg";
+/** Default player look; a dropped-in art/player/explorer.(png|webp|svg) replaces it in 2D (art/README.md). */
+export const STARTER_SPRITE = artUrl("player/explorer") || "/assets/aavegotchi-starter-1278fb922f4e.svg";
 export const starterMarkerMarkup = () =>
   `<img class="starter-player" src="${STARTER_SPRITE}" alt="Aavegotchi starter appearance" draggable="false"/>`;
 

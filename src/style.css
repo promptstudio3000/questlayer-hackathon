@@ -4121,3 +4121,15 @@ a.settings-row {
 a.settings-row:hover {
   background: var(--surface-soft);
 }
+/* Dropped-in logo mark (art/brand/logo, docs/ART-LIST.md). */
+.brand-logo {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
