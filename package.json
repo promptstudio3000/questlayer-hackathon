@@ -39,6 +39,7 @@
     "poi:validate": "node scripts/poi/validate-release.mjs",
     "world:coverage": "node scripts/world-coverage.mjs",
     "ai:flavour": "node server/cli/ai-flavour.mjs",
+    "ai:compare": "node server/cli/ai-compare.mjs",
     "i18n:keys": "node scripts/i18n-keys.mjs",
     "e2e:languages": "node scripts/e2e-languages.mjs",
     "art:list": "node scripts/art.mjs list",
