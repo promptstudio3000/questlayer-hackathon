@@ -514,7 +514,7 @@ export const CHAPTERS: Chapter[] = [
     summary: "The treasury holds liquid staking tokens, lent stablecoins and a NEAR reserve, and only the yield is ever spent.",
     status: "live",
     updated: "2026-11-04",
-    sources: ["docs/STNEAR-TREASURY.md", "docs/TREASURY-MIX.md", "docs/YIELD-VAULT.md", "docs/YIELD-VAULT-PLAN.md", "docs/NATIVE-REWARDS-AND-VAULT.md", "docs/LIQUID-STAKE.md", "server/native/treasury-mix.mjs"],
+    sources: ["docs/STNEAR-TREASURY.md", "docs/TREASURY-MIX.md", "docs/TREASURY-PAGE.md", "docs/YIELD-VAULT.md", "docs/YIELD-VAULT-PLAN.md", "docs/NATIVE-REWARDS-AND-VAULT.md", "docs/LIQUID-STAKE.md", "server/native/treasury-mix.mjs"],
     blocks: [
       {
         p: "The treasury targets **50 % liquid staking tokens, 40 % stablecoins lent on Rhea and 10 % NEAR**. A daily job on the operator machine first harvests stNEAR growth above the principal, then rebalances towards the target, then keeps the reserve. The live split below comes from `/api/treasury/mix`.",
@@ -543,6 +543,9 @@ export const CHAPTERS: Chapter[] = [
         ],
       },
       { viz: "staking-vault" },
+      {
+        p: "The [Treasury](/treasury) dashboard shows all of this live: the money flow, the mix, the daily budget, QGOLD backing and its own model.",
+      },
       {
         p: "The first prize day paid entirely from realized staking yield was proven on testnet (day `plzen-2026-11-05-v2`, proof `public/native-yield-day-proof.json`). Testnet LST prices are frozen, so stNEAR growth there is zero; mainnet LSTs earn about 4 %.",
       },

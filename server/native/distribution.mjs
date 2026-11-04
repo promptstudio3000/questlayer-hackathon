@@ -165,6 +165,40 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
         localConfirmed,
       });
     }
+    // Map days (contracts/rewards map_days.rs) reserve from the same buckets
+    // and count in the same per-date totals as city days.
+    const mapDays = [];
+    let mapRows = [];
+    try {
+      mapRows = native.db
+        .prepare("SELECT day_id FROM map_chain_days ORDER BY day_id")
+        .all();
+    } catch {
+      mapRows = []; // map chain schema not created on this host
+    }
+    for (const { day_id } of mapRows) {
+      const chain = await native.view("get_map_day", { day_id }, true);
+      if (!chain) continue;
+      const coinsLeft = chain.closed ? 0n : big(String(chain.coins_left)),
+        zonesLeft = chain.closed ? 0n : big(String(chain.zones_left));
+      coinOwed += coinsLeft;
+      zoneOwed += zonesLeft;
+      mapDays.push({
+        id: day_id,
+        date: chain.date,
+        chain: chain.closed ? "closed" : "open",
+        coinsReserved: big(String(chain.coins_reserved)),
+        zonesReserved: big(String(chain.zones_reserved)),
+      });
+      days.push({
+        id: day_id,
+        kind: "map",
+        chain: chain.closed ? "closed" : "open",
+        unclaimedCoins: coinsLeft.toString(),
+        unwonPrizes: zonesLeft.toString(),
+        claimsAccepted: chain.claims,
+      });
+    }
     check("coin-reservations-explained", coins.reserved === coinOwed, {
       reserved: coins.reserved.toString(),
       openDaysOwe: coinOwed.toString(),
@@ -180,7 +214,7 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
     const dates = [
       ...new Set(
         days
-          .filter((d) => d.chain === "open")
+          .filter((d) => d.chain === "open" && d.kind !== "map")
           .map((d) => d.id.match(/(\d{4}-\d{2}-\d{2})-v\d+$/)?.[1])
           .filter(Boolean),
       ),
@@ -199,6 +233,11 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
         coinsOurs += big(args.coin_unit) * BigInt(args.coin_count);
         zonesOurs += sum(args.quests.map((q) => big(String(q.reward))));
       }
+      for (const m of mapDays)
+        if (m.date === date) {
+          coinsOurs += m.coinsReserved;
+          zonesOurs += m.zonesReserved;
+        }
       const ok =
         big(chainTotal.coins) === coinsOurs &&
         big(chainTotal.zones) === zonesOurs &&
