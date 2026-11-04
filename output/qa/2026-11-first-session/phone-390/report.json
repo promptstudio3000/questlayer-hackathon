@@ -26,13 +26,13 @@
     "problems": []
   },
   "performance": {
-    "scriptRawKb": 602,
-    "scriptGzipKb": 180,
-    "scripts": 5,
-    "requests": 13,
-    "firstContentfulPaintMs": 528,
-    "domContentLoadedMs": 459,
-    "nameFieldReadyMs": 605,
+    "scriptRawKb": 700,
+    "scriptGzipKb": 209,
+    "scripts": 8,
+    "requests": 16,
+    "firstContentfulPaintMs": 360,
+    "domContentLoadedMs": 163,
+    "nameFieldReadyMs": 479,
     "layoutShift": 0,
     "budget": {
       "scriptGzipKb": 220,

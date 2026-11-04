@@ -241,7 +241,6 @@ import { headingTo, metersBetween } from "./map-motion.ts";
 import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
 import { registerChainTrades } from "./chain-trades";
-import { sellAuraOnIntents } from "./intents-order";
 import { tr } from "./i18n";
 
 type Tab =
@@ -3984,6 +3983,8 @@ export default function App() {
                     orderSigner?.key &&
                     orderSigner.accountId === claim.claim.receiver_id
                   ) {
+                    // Loaded on demand to keep the first bundle small.
+                    const { sellAuraOnIntents } = await import("./intents-order");
                     const viaIntents = await action("intents-sell", () =>
                       sellAuraOnIntents(
                         orderSigner,
