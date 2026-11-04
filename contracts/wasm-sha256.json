@@ -28,6 +28,11 @@
       "contract": "questlayer_market",
       "sha256": "bd1f74d2858e468b354c2bb174ca95d921e933898adb9738fced8b817a0439ee"
     },
+    "public/native-rewards-testnet.json:wasmSha256": {
+      "contract": "questlayer_rewards",
+      "sha256": "b22f7ceecf260ab1760c444c189d93a998b18c0f1468df1fdf93fcd009207a81",
+      "note": "Rewards with QGOLD withdrawals (PR #174), live since 4 Nov. The map-day build (PR #181) replaces it on the next run of scripts/deploy-qgold-testnet.mjs, which drops this entry."
+    },
     "public/native-rewards-testnet.json:factory.wasmSha256": {
       "contract": "questlayer_vault_factory",
       "sha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9"
