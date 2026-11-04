@@ -197,10 +197,8 @@ import {
   type CommunityTab,
   type ProfileTab,
 } from "./screens";
-import {
-  startRegistration,
-  startAuthentication,
-} from "@simplewebauthn/browser";
+// Passkey helpers load on first use, outside the welcome screen's first load.
+const webauthn = () => import("@simplewebauthn/browser");
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import { DailyBoard } from "./DailyBoard";
@@ -1756,6 +1754,7 @@ export default function App() {
         "/passkey/options",
         { action: "register", attach: true },
       );
+      const { startRegistration } = await webauthn();
       const response = await startRegistration({ optionsJSON: r.options });
       const verified = await api<{ player: Player }>("/passkey/verify", {
         challengeId: r.challengeId,
@@ -4828,8 +4827,8 @@ function Welcome({
         { action: existing ? "login" : "register", name: name || tr("Explorer") },
       );
       const response = existing
-        ? await startAuthentication({ optionsJSON: r.options })
-        : await startRegistration({ optionsJSON: r.options });
+        ? await (await webauthn()).startAuthentication({ optionsJSON: r.options })
+        : await (await webauthn()).startRegistration({ optionsJSON: r.options });
       const verified = await api<{ player: Player }>("/passkey/verify", {
         challengeId: r.challengeId,
         response,
