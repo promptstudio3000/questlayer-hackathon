@@ -199,3 +199,36 @@ fn failed_gold_mint_is_held_and_retried() {
     assert_eq!(l.retry_gold(vec![a("alice.testnet")]).0, 9);
     assert_eq!(l.profile(a("alice.testnet")).unwrap().gold_pending.0, 0);
 }
+
+#[test]
+fn a_successful_gold_mint_is_not_held() {
+    let mut l = fresh(true);
+    let mut b = VMContextBuilder::new();
+    b.current_account_id(a(CONTRACT)).predecessor_account_id(a(CONTRACT)).account_balance(NearToken::from_near(50));
+    // ft_mint_batch returns the minted total as a JSON string.
+    near_sdk::test_utils::testing_env_with_promise_results(b.build(), near_sdk::PromiseResult::Successful(b"\"1000000\"".to_vec()));
+    let mints = vec![GoldMint { account_id: a("alice.testnet"), amount: U128(1_000_000), memo: None }];
+    assert!(l.on_gold_minted(mints));
+    ctx(CONTRACT, 0, 1_000_000);
+    l.record_batch(vec![act("alice.testnet", 1, "coin", 1, 0)]);
+    assert_eq!(l.profile(a("alice.testnet")).unwrap().gold_pending.0, 0);
+}
+
+#[test]
+fn owner_repairs_held_gold() {
+    let mut l = fresh(false);
+    ctx(CONTRACT, 0, 1_000_000);
+    l.record_batch(vec![act("alice.testnet", 1, "coin", 1, 7)]);
+    assert_eq!(l.profile(a("alice.testnet")).unwrap().gold_pending.0, 7);
+    ctx("owner.testnet", 1, 1_000_000);
+    l.set_gold_pending(a("alice.testnet"), U128(0));
+    assert_eq!(l.profile(a("alice.testnet")).unwrap().gold_pending.0, 0);
+}
+
+#[test]
+#[should_panic(expected = "Owner only")]
+fn only_the_owner_repairs_held_gold() {
+    let mut l = fresh(false);
+    ctx("alice.testnet", 1, 1_000_000);
+    l.set_gold_pending(a("alice.testnet"), U128(0));
+}

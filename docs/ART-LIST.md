@@ -36,7 +36,7 @@ Square mark that still reads at 32 px. Shown in the top-left logo button and on 
 | --- | --- | --- | --- | --- | --- |
 | `art/brand/logo.png` | QuestLayer logo mark | Top-left logo / home button; install card. | The player's starter ghost is used as a stand-in logo. | 1 | App logo mark for QuestLayer, a real-world map adventure game: a friendly round cream ghost peeking out of a glowing map pin, the pin in hot pink to lavender gradient with a small gold sparkle on top, bold simple shapes, flat vector style, thick #1A0335 outline, centred, transparent background, no text. |
 | `art/brand/app-icon.png` | App icon (install card) | Picture on the 'Install QuestLayer' card. Falls back to brand/logo. | /icon.svg (a small cream ghost on a purple rounded square). | 3 | The QuestLayer logo mark from brand/logo placed on a deep purple (#230E4F) rounded square with a soft lavender inner glow, 512×512, flat vector, no text. |
-| `art/brand/wordmark.png` | Wordmark (1200×300, SVG preferred) · *needs hook* | 'QuestLayer' lettering for the phone header, welcome screen and how-it-works page. Needs a small hook in the header once the compact header lands. | Plain text. | 2 | Wordmark 'QuestLayer' (exact spelling) in a rounded, chunky, playful game font, cream letters with a thick #1A0335 outline, a small hot-pink map pin after the last letter, transparent background. Simple enough to redraw as SVG. |
+| `art/brand/wordmark.png` | Wordmark (about 900×280 (trimmed), SVG preferred) · *needs hook* | 'QuestLayer' lettering for the phone header, welcome screen and how-it-works page. Needs a small hook in the header once the compact header lands. | Plain text. | 2 | Wordmark 'QuestLayer' (exact spelling) in a rounded, chunky, playful game font, cream letters with a thick #1A0335 outline, a small hot-pink map pin after the last letter, transparent background. Simple enough to redraw as SVG. |
 
 ## PWA / home-screen icons (replace in public/)
 
@@ -188,7 +188,7 @@ Not wired yet. If you generate these, drop them in with these names and ask for 
 
 ## How it works in code
 
-- `src/art-overrides.ts` collects `art/**/*.{png,webp,svg}` at build time (Vite `import.meta.glob`) and registers them in `src/art-registry.ts`.
+- At build time (Vite `import.meta.glob`) `src/art-overrides.ts` registers the welcome-screen art (logo, coin, player) and `src/art-world.ts`, which rides the map chunk, registers the rest in `src/art-registry.ts`. This keeps the welcome screen inside its JS budget.
 - Each placeholder asks `artUrl(key)` first: logo (`BrandLogo`), player (`STARTER_SPRITE`), NPC/monster map sprites and sheets (`actorSprite`, `createActorScene`), dialog portraits (`NpcSheet`), Auras (`AuraSprite`, `auraMarkup`), map/list objects (`GameObjectArt`, `gameObjectMarkup`, map coin and street-find icons) and place badges (`BadgeBook`).
 - Missing file = current art. NFT media already minted on NEAR (`public/aura-*.svg`, explorer cover) never change.
 - `tests/art-catalog.test.mjs` keeps the catalog in step with the game data and this file in step with the catalog.

@@ -272,3 +272,7 @@
   height: 1.4em;
   vertical-align: middle;
 }
+.badge-medal-face:has(> .badge-art) {
+  background: none;
+  overflow: hidden;
+}

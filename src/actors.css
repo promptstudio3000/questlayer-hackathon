@@ -107,6 +107,8 @@
 }
 .actor-stage {
   height: 180px;
+  /* A definite row, so a dropped-in portrait image scales into the stage too. */
+  grid-template-rows: minmax(0, 1fr);
   display: grid;
   place-items: center;
   margin: 0 auto 8px;

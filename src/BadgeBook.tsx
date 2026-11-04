@@ -10,6 +10,7 @@ import { Dialog } from "./Dialog";
 import type { Fix } from "./types";
 import "./badges.css";
 import { artUrl } from "./art-registry";
+import "./art-world";
 import { tr } from "./i18n";
 
 // Badge book (docs/BADGES.md). Place badges: one per notable place, earned by
