@@ -251,3 +251,61 @@ html.eco-root body {
   font-size: 14px;
   margin-top: 24px;
 }
+/* Treasury mix bars: fill = now, tick = target. */
+.eco-mix-bars {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+.eco-mix-row {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+}
+.eco-mix-name {
+  font-size: 14px;
+}
+.eco-mix-track {
+  position: relative;
+  height: 12px;
+  border: 1px solid var(--eco-line);
+  background: var(--eco-bg);
+}
+.eco-mix-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+}
+.eco-mix-lst {
+  background: var(--eco-accent);
+}
+.eco-mix-stable {
+  background: var(--eco-mint);
+}
+.eco-mix-near {
+  background: var(--eco-coin);
+}
+.eco-mix-goal {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--eco-text);
+}
+.eco-mix-num {
+  grid-column: 2;
+  font-size: 14px;
+  color: var(--eco-muted);
+}
+.eco-bad {
+  color: var(--eco-bad);
+}
+@media (max-width: 560px) {
+  .eco-mix-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eco-mix-num {
+    grid-column: 1;
+  }
+}
