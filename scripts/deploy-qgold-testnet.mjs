@@ -8,7 +8,8 @@
 //      through propose -> 48 h timelock -> apply_upgrade, and nobody can move
 //      the backing (there is no admin withdraw),
 //   5. upgrades the rewards contract in place (state kept; backup of the old
-//      WASM in .data/contract-backups/) and sets its QGOLD vault once,
+//      WASM in .data/contract-backups/) and sets its QGOLD vault once; lets the
+//      reward worker key also call publish_map_day, claim_map, close_map_day,
 //   6. smoke test from the operator: deposit 0.05 NEAR -> QGOLD, ft_burn 1 QGOLD,
 //      redeem 1 QGOLD instantly, audit ok, R not below its start,
 //   7. writes public/native-qgold-vault-testnet.json and the new rewards code hash
@@ -157,6 +158,31 @@ if (sha(Buffer.from(rewardsCode.code_base64, "base64")) !== rewardsWasm.sha) {
 const rcfg = await view(rewardsId, "get_config");
 if (!rcfg.qgold_vault) await call("Set the rewards QGOLD vault (once)", rewardsId, "set_qgold_vault", { account_id: vaultId });
 assert.equal((await view(rewardsId, "get_config")).qgold_vault, vaultId);
+
+// 5b. The reward worker key (same key pair, so the VPS key file stays) may also
+// publish, claim and close map days (docs/MAP-REWARDS.md §5). Swapped in one
+// transaction: delete the old function-call key, add it back with 7 methods.
+const WORKER_METHODS = ["publish_day", "close_day", "claim", "maintain_vault", "publish_map_day", "claim_map", "close_map_day"];
+const workerKey = rewardsManifest.workerPublicKey;
+const rewardsKeys = (await provider.query({ request_type: "view_access_key_list", account_id: rewardsId, finality: "final" })).keys;
+const current = rewardsKeys.find((k) => k.public_key === workerKey);
+assert(current, `Reward worker key ${workerKey} is not on ${rewardsId}`);
+const fc = current.access_key.permission?.FunctionCall;
+assert(fc && fc.receiver_id === rewardsId, "The reward worker key must be a function-call key on the rewards contract");
+if (!WORKER_METHODS.every((m) => fc.method_names.includes(m))) {
+  const allowance = fc.allowance ? BigInt(fc.allowance) : 4n * 10n ** 23n;
+  await record("Let the reward worker key publish, claim and close map days", () =>
+    rewardsAccount.signAndSendTransaction({
+      receiverId: rewardsId,
+      actions: [
+        actions.deleteKey(PublicKey.from(workerKey)),
+        actions.addFunctionCallAccessKey(PublicKey.from(workerKey), rewardsId, WORKER_METHODS, allowance > 0n ? allowance : 4n * 10n ** 23n),
+      ],
+      waitUntil: "FINAL",
+    }),
+  );
+}
+rewardsManifest.workerMethods = WORKER_METHODS;
 rewardsManifest.codeHash = (await provider.viewAccount({ accountId: rewardsId })).code_hash;
 rewardsManifest.wasmSha256 = rewardsWasm.sha;
 rewardsManifest.qgoldVault = vaultId;
