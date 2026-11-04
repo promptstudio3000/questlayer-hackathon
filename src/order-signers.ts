@@ -5,6 +5,7 @@
 // order) and sends market calls through the reviewed wallet flow.
 import { signOrder, type OrderTerms, type SignedOrder } from "./signed-order.ts";
 import type { PlayerKeyRecord } from "./player-key.ts";
+import { signIntents, type IntentsConfig, type SignedIntent } from "./intents-order.ts";
 import type { MarketCall } from "./SignedOrdersPanel.tsx";
 
 export type OrderSigner = {
@@ -16,6 +17,8 @@ export type OrderSigner = {
   sign(terms: OrderTerms): Promise<SignedOrder>;
   /** Sends one market call; resolves with its hash when known. */
   call(call: MarketCall): Promise<string | null>;
+  /** Signs NEAR Intents silently; only the explorer's device key can. */
+  signIntents?(config: Pick<IntentsConfig, "verifier" | "salt">, intents: unknown[]): Promise<SignedIntent>;
 };
 
 export function deviceOrderSigner(
@@ -28,6 +31,7 @@ export function deviceOrderSigner(
     publicKey: async () => key.publicKey,
     knownPublicKey: () => key.publicKey,
     sign: (terms) => signOrder(key, terms),
+    signIntents: (config, intents) => signIntents(key, config, intents),
     call,
   };
 }

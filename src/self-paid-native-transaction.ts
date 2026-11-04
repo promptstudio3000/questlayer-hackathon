@@ -25,6 +25,8 @@ export const SELF_PAID_METHODS = [
   "fill_sell_order",
   "fill_buy_order",
   "deposit_near",
+  // Wrapping NEAR for the Intents market moves the player's own money.
+  "near_deposit",
 ];
 export function isRelayedDeposit(transaction: ReviewedNativeTransaction) {
   const action = transaction.actions[0];

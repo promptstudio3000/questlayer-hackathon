@@ -6,6 +6,7 @@ import { AuraArt } from "./Ghost";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
 import type { OrderSigner } from "./order-signers";
 import { SignedOrdersPanel } from "./SignedOrdersPanel";
+import { IntentsPanel } from "./IntentsPanel";
 import { Details } from "./ScreenTabs";
 import { ArrowClockwise } from "@phosphor-icons/react";
 import type {
@@ -418,6 +419,16 @@ export function NativeMarketPanel({
             )}
             busy={busy}
             onChanged={async () => (await load(true)).state}
+          />
+          )}
+          {showOffers && (
+          <IntentsPanel
+            signer={orderSigner}
+            owned={
+              wardrobe?.accounts
+                .find((a) => a.accountId === orderSigner?.accountId)
+                ?.items.filter((i) => i.kind === "aura") || []
+            }
           />
           )}
           {showListings && (
