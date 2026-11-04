@@ -2,8 +2,8 @@
   "network": "testnet",
   "verifiedAt": "2026-11-01T12:31:34.699Z",
   "contractId": "questlayer-rewards-20261101b.testnet",
-  "codeHash": "CzZZzbibSzt2JqmReJFVsLxYEpPYPSjQsBmCiNwbeBWY",
-  "wasmSha256": "b22f7ceecf260ab1760c444c189d93a998b18c0f1468df1fdf93fcd009207a81",
+  "codeHash": "2J92qoTyY2DkBGx5bD1u3hzXYgxCCUvmKXVZSSYiwr5F",
+  "wasmSha256": "133fa467b316af1a67a4bc3ccd83f1d06e56e721eae0acad41bc43c9a73a81fa",
   "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
   "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
   "factory": {
@@ -115,5 +115,14 @@
     "view": "get_day(day_id).finds",
     "backfill": []
   },
-  "qgoldVault": "questlayer-qgold-vault-20261104.testnet"
+  "qgoldVault": "questlayer-qgold-vault-20261104.testnet",
+  "workerMethods": [
+    "publish_day",
+    "close_day",
+    "claim",
+    "maintain_vault",
+    "publish_map_day",
+    "claim_map",
+    "close_map_day"
+  ]
 }

@@ -1,6 +1,6 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-11-04T14:10:28.689Z",
+  "verifiedAt": "2026-11-04T15:20:16.169Z",
   "vaultContract": "questlayer-qgold-vault-20261104.testnet",
   "tokenContract": "questlayer-qgold-vault-20261104.testnet",
   "symbol": "QGOLD",
@@ -32,9 +32,9 @@
     "near_queue"
   ],
   "smoke": {
-    "rate": "1020618556701030927835",
-    "supply": "47500000",
-    "backing": "48479381443298969072165"
+    "rate": "1020824900564815759573",
+    "supply": "4945212498",
+    "backing": "5048196056542734153312592"
   },
   "transactions": [
     {
@@ -64,6 +64,26 @@
     {
       "label": "Smoke: redeem 1 QGOLD instantly",
       "transaction": "GavZrZSV1hJhP6HsUroy8JFZzJFcpB5TtXgidrri8BGw"
+    },
+    {
+      "label": "Upgrade rewards: claims pay into the QGOLD vault",
+      "transaction": "EMCGA1qwYk9nBTBj8aqtZb5933nafsSBx8eByzgzuFN5"
+    },
+    {
+      "label": "Let the reward worker key publish, claim and close map days",
+      "transaction": "aFQshFL5iF7uuEJii54Qb2VzmycGfCpYhMvUUBXnD1h"
+    },
+    {
+      "label": "Smoke: deposit 0.05 NEAR for QGOLD",
+      "transaction": "BiuYFeCCUCxYfrhvAtfsfKzuFNEK7wgnu4CBjuaUEva5"
+    },
+    {
+      "label": "Smoke: burn 1 QGOLD (in-game spend)",
+      "transaction": "7GDDa952MoqtkfGC9fLUEqCNAY8NXiMYHewFRTEZibSm"
+    },
+    {
+      "label": "Smoke: redeem 1 QGOLD instantly",
+      "transaction": "GaPyj58E88c1TaoBmo862Mbvz5KFNs14yajhE5QvfyLz"
     }
   ]
 }

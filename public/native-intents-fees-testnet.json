@@ -1,0 +1,10 @@
+{
+  "network": "testnet",
+  "verifier": "intents.questlayer-dev-20261101.testnet",
+  "feePips": 20000,
+  "collector": "questlayer-dev-20261101.testnet",
+  "rewardsContract": "questlayer-rewards-20261101b.testnet",
+  "receiptPrefix": "intents-fees-",
+  "sweeps": [],
+  "updatedAt": "2026-11-04T15:00:33.877Z"
+}

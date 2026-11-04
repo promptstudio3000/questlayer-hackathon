@@ -1,10 +1,10 @@
 {
-  "verifiedAt": "2026-11-02T00:45:41.963Z",
+  "verifiedAt": "2026-11-04T15:05:56.530Z",
   "network": "testnet",
   "contractId": "nfts.questlayer-dev-20261101.testnet",
   "schemaVersion": 3,
-  "codeHash": "GFiGzcWZ7XGd7se3721nn2h75rUkk4mkCyRhLSJCu8D6",
-  "wasmSha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
+  "codeHash": "6aikiFP7kJ6fTAqNrTdvuAX3WxuhSjKwwj12s6eC9bP3",
+  "wasmSha256": "52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16",
   "supportedEditions": [
     "ember",
     "dew",
@@ -46,13 +46,18 @@
     "wardbreaker": "earned:monster:",
     "wisp": "earned:npc:"
   },
-  "tokensPreserved": 4,
-  "equipmentPreserved": 2,
+  "tokensPreserved": 8,
+  "equipmentPreserved": 4,
   "awardSignerPreserved": true,
+  "royalty": null,
   "transactions": [
     {
-      "step": "deploy Aura editions collectibles code (no state migration)",
-      "transaction": "39CjTMt896VSFKZF3A1KqukUJxpNrijRtUMAePTz1uCA"
+      "step": "top up contract storage for the larger code",
+      "transaction": "4cz4BL2gSiS2ogt3HgMjG7b74zuXTJD8EdR3NktoUqH5"
+    },
+    {
+      "step": "deploy reviewed collectibles code (no state migration)",
+      "transaction": "24b2UBgPaRZzukajgRzU4sBEdAAnc8jQ1Xx96VueKquJ"
     }
   ]
 }

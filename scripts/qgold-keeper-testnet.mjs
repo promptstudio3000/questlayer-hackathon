@@ -27,7 +27,7 @@ const NEAR = 10n ** 24n,
 const [w, f = ""] = nearArg.split(".");
 const FUND = BigInt(w) * NEAR + BigInt(f.padEnd(24, "0"));
 const keyPath = ".data/qgold-keeper.json";
-const log = (o) => console.log(JSON.stringify(o));
+const log = (o) => console.log(JSON.stringify(o, (_, v) => (typeof v === "bigint" ? v.toString() : v)));
 
 const operator = JSON.parse(readFileSync(".data/near-operator.json"));
 assert.equal(operator.network, "testnet", "Testnet only");

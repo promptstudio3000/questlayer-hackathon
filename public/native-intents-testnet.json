@@ -6,7 +6,7 @@
   "nftContract": "nfts.questlayer-dev-20261101.testnet",
   "wnear": "wrap.testnet",
   "owner": "questlayer-dev-20261101.testnet",
-  "fee": 0,
+  "fee": 20000,
   "source": {
     "repository": "https://github.com/near/intents",
     "tag": "defuse/v0.4.5",
@@ -71,6 +71,10 @@
     {
       "label": "Withdraw wNEAR as native NEAR (native_withdraw intent)",
       "transaction": "9VmrJurTxhTR75Rzb7Fjeoe2enEszCqezyirhtNRnjhA"
+    },
+    {
+      "label": "Set the verifier fee to 2 % (paid to the treasury)",
+      "transaction": "46DcbPNvnHcJuEpZw2FREEWYdWsN1fVjEavRURgabos4"
     }
   ],
   "proof": {
@@ -128,5 +132,6 @@
         "transaction": "9VmrJurTxhTR75Rzb7Fjeoe2enEszCqezyirhtNRnjhA"
       }
     ]
-  }
+  },
+  "feeCollector": "questlayer-dev-20261101.testnet"
 }
