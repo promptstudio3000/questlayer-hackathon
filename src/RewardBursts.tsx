@@ -1,5 +1,6 @@
 import { Coins, Sparkle, Trophy, Star } from "@phosphor-icons/react";
 import type { RewardBurst } from "./reward-burst";
+import { ChainLink } from "./lazy-panels";
 import "./reward-burst.css";
 
 const ICON = { coin: Coins, find: Sparkle, quest: Trophy, level: Star };
@@ -18,6 +19,7 @@ export function RewardBursts({ bursts }: { bursts: readonly RewardBurst[] }) {
               <strong>{b.title}</strong>
               {b.detail && <small>{b.detail}</small>}
             </span>
+            {b.chain && <ChainLink chain={b.chain} interactive={false} />}
           </div>
         );
       })}

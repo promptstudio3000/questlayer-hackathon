@@ -15,6 +15,8 @@ export type AdventureResult = {
   title: string;
   completedAt: number;
   viewedAt: number | null;
+  /** On-chain proof of this reward, when it was recorded on NEAR. */
+  chain?: import("./chain-proof").ChainRef | null;
   reward: {
     xp: number;
     goldU: number;
