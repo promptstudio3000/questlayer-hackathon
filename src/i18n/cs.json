@@ -1336,6 +1336,7 @@
  "Price in NEAR (0.01 to 10)": "Cena v NEAR (0,01 až 10)",
  "Price in test NEAR": "Cena v testovacích NEAR",
  "Price in wNEAR": "Cena ve wNEAR",
+ "Prices include {0} % for the prize pool.": "Ceny zahrnují {0} % do fondu výher.",
  "Private AI on NEAR · runs in a sealed enclave, answers only from game data": "Soukromá AI na NEAR · běží v uzavřené enklávě, odpovídá jen z herních dat",
  "Private completion progress": "Soukromý postup splnění",
  "Private information": "Soukromé údaje",

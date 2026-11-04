@@ -1336,6 +1336,7 @@
  "Price in NEAR (0.01 to 10)": "Preis in NEAR (0,01 bis 10)",
  "Price in test NEAR": "Preis in Test-NEAR",
  "Price in wNEAR": "Preis in wNEAR",
+ "Prices include {0} % for the prize pool.": "Die Preise enthalten {0} % für den Preispool.",
  "Private AI on NEAR · runs in a sealed enclave, answers only from game data": "Private KI auf NEAR · läuft in einer versiegelten Enklave, antwortet nur aus Spieldaten",
  "Private completion progress": "Privater Abschlussfortschritt",
  "Private information": "Private Informationen",

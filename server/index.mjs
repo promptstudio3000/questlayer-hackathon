@@ -770,6 +770,7 @@ const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 // Public economy ledger for the /economy page (docs/ECONOMY-PAGE.md).
 const yieldCycleProofPath = resolve(APP_ROOT, "public/native-yield-cycle-proof.json");
+const intentsFeesRecordPath = resolve(APP_ROOT, "public/native-intents-fees-testnet.json");
 const publicLedger = createPublicLedger({
   native: nativeRewards,
   treasury: stnearTreasury,
@@ -777,6 +778,11 @@ const publicLedger = createPublicLedger({
   cycleProof: () =>
     existsSync(yieldCycleProofPath)
       ? JSON.parse(readFileSync(yieldCycleProofPath, "utf8"))
+      : null,
+  // 2 % P2P trade fee swept into the prize pool (scripts/intents-fees-testnet.mjs).
+  feeRecord: () =>
+    existsSync(intentsFeesRecordPath)
+      ? JSON.parse(readFileSync(intentsFeesRecordPath, "utf8"))
       : null,
 });
 const tasksManifestPath = [

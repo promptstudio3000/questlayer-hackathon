@@ -1336,6 +1336,7 @@
  "Price in NEAR (0.01 to 10)": "السعر بـ NEAR (من 0.01 إلى 10)",
  "Price in test NEAR": "السعر بـ NEAR التجريبي",
  "Price in wNEAR": "السعر بـ wNEAR",
+ "Prices include {0} % for the prize pool.": "تشمل الأسعار {0} % لصندوق الجوائز.",
  "Private AI on NEAR · runs in a sealed enclave, answers only from game data": "ذكاء اصطناعي خاص على NEAR · يعمل داخل بيئة معزولة ويجيب من بيانات اللعبة فقط",
  "Private completion progress": "تقدّم الإكمال الخاص",
  "Private information": "معلومات خاصة",

@@ -123,6 +123,63 @@ Then deploy the VPS as usual; the server enables the panel from the manifest.
 The relayer account needs a little extra gas budget for `execute_intents`
 (~0.002 NEAR per trade on testnet).
 
+## Trade fee to the treasury (2 %)
+
+Lubos, 4 Nov 2026 (QGOLD tokenomics, `/mnt/project-files/tokenomics/QGOLD-BUILD-PLAN.md`):
+every P2P trade pays **2 %** into the treasury, which funds more map rewards.
+Plain sends and conditional escrow sends stay free.
+
+How the verifier takes it (checked in `contracts/defuse/core/src/intents/token_diff.rs`
+and `crates/primitives/fees`, v0.4.5):
+
+- `fee` is in pips (1/1,000,000), so 2 % = **20,000 pips** (`TREASURY_FEE_PIPS`).
+- It is taken only from **negative fungible deltas**. NFT legs pay nothing, so the
+  seller (Aura −1, wNEAR +p) pays no fee and the buyer's wNEAR leg pays it.
+- From a buyer's `−a`, the verifier keeps `ceil(a · fee / 1e6)` for the fee
+  collector and `floor(a · (1e6 − fee) / 1e6)` goes to the trade.
+- So the order price is always **what the seller receives**, and the buyer signs
+  `−grossForNet(p) = −ceil(p · 1e6 / (1e6 − fee))`. For 0.01 NEAR that is
+  0.010204… NEAR. `netForGross(grossForNet(p)) === p` exactly (tests pin this).
+- The fee collector is the operator account (`fee_collector` view). The fee sits
+  there as wNEAR inside the verifier until it is swept.
+
+In the app:
+
+- `GET /api/native/intents` returns `fee`. Orders carry `price` (seller gets) and
+  `buyerPays` (price + fee). The panel shows the buyer's price and the line
+  "Prices include 2 % for the prize pool."
+- The server matches orders with the fee (`auraOrderTerms(..., {feePips})`,
+  `netDeltas(bodies, feePips)`), checks the buyer holds the gross amount, and
+  stores the fee in each settlement's `detail.fee`.
+- A buy offer signed before a fee change no longer matches its stored price, so
+  `reconcile` closes it ("Verifier fee changed; sign the order again"). Sell
+  listings do not depend on the fee and stay open.
+- `/economy` shows "Trade fee to the prize pool" from
+  `public/native-intents-fees-testnet.json` (each sweep with its transactions).
+
+Mac steps (operator key, testnet only):
+
+```bash
+node scripts/intents-fees-testnet.mjs                  # status, sends nothing
+node scripts/intents-fees-testnet.mjs set-fee          # fee -> 20,000 pips, once
+node scripts/intents-fees-testnet.mjs sweep --dry-run  # what a sweep would move
+node scripts/intents-fees-testnet.mjs sweep            # daily
+```
+
+- `set-fee` calls `set_fee` (1 yocto, DAO role), records the transaction in
+  `public/native-intents-testnet.json`, and stores the operator's current
+  verifier wNEAR as the **baseline**. Only what the collector gains above the
+  baseline is ever swept, so the operator's own test wNEAR from the proofs never
+  reaches the prize pool. Commit the manifest and deploy the VPS afterwards.
+- `sweep` (minimum 0.01 NEAR, once a day) runs `ft_withdraw` from the verifier,
+  `near_withdraw` on wNEAR, then `fund_rewards({source: "sponsor", receipt_id:
+  "intents-fees-<date>"})` on the rewards contract. Each step is written to
+  `.data/intents-fees.json` before the next one, so a rerun continues where it
+  stopped, and a receipt the rewards contract already has is not paid twice.
+  It fits next to the 06:30 stNEAR harvest LaunchAgent.
+- The insurance-fund share (10 % of fees) and the buyback share (20 %) from the
+  tokenomics wait for the QGOLD vault; until then the whole fee goes to the prize pool.
+
 ## Mainnet proof (planned, NOT run, needs Lubos's go)
 
 Checked read-only on mainnet RPC on 4 Nov 2026: `intents.near` has
@@ -138,8 +195,8 @@ Plan for one small trade between two project accounts:
    deltas or rejects NFT deposits.
 3. Fee: NFT legs pay nothing; the buyer's wNEAR leg must cover the 1-pip fee,
    so the buyer signs `−ceil(p / (1 − 0.000001))` while the seller receives
-   `+p` (the verifier's `closure` rule). `auraTokenDiff` gets a `feePips`
-   option before this runs; the simulation confirms the exact amount.
+   `+p` (the verifier's `closure` rule). `auraTokenDiff({..., feePips: 1})`
+   builds that leg; the simulation confirms the exact amount.
 4. Send: `add_public_key` (both), `nft_transfer_call` of the Aura to
    `intents.near`, `near_deposit` + `ft_transfer_call` of wNEAR, then one
    `execute_intents` from the operator, then `nft_withdraw` / `native_withdraw`.

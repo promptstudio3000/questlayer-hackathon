@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { Details } from "./ScreenTabs";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
-import { auraTokenDiff, signIntents, type IntentsAccount, type IntentsConfig } from "./intents-order";
+import { auraTokenDiff, grossForNet, signIntents, type IntentsAccount, type IntentsConfig } from "./intents-order";
 import type { OrderSigner } from "./order-signers";
 import type { NativeItem } from "./types";
 import { EXPLORER_BASE } from "./near-network";
@@ -81,7 +81,8 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
     });
   const buy = (orderId: string, tokenId: string, yocto: string) =>
     run(async () => {
-      let missing = BigInt(yocto) - BigInt(mine?.wnear || "0");
+      // The buyer pays the seller's price plus the verifier fee (to the treasury).
+      let missing = BigInt(grossForNet(yocto, c.fee || 0)) - BigInt(mine?.wnear || "0");
       // A 0.05 NEAR deposit would look like a storage deposit and be routed
       // to the relayer, which refuses wrapping; wrap 1 yocto more instead.
       if (missing === 50000000000000000000000n) missing += 1n;
@@ -92,7 +93,7 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
       }
       const r = await api<{ transactionHash: string }>("/native/intents/fill", {
         orderId,
-        signed: await sign([auraTokenDiff("buy", c.nftContract, tokenId, yocto, c.wnear)]),
+        signed: await sign([auraTokenDiff("buy", c.nftContract, tokenId, yocto, c.wnear, c.fee || 0)]),
       });
       return { text: tr("Done. Settled on chain."), tx: r.transactionHash };
     });
@@ -162,6 +163,9 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
               <button className="primary-button" disabled={!!step || !sellToken}>{tr("List for sale")}</button>
             </form>
           )}
+          {c.fee ? (
+            <p className="fine-print">{tr("Prices include {0} % for the prize pool.", { 0: String(c.fee / 10_000) })}</p>
+          ) : null}
           {!others.length ? (
             <p>{tr("No Intents offers yet.")}</p>
           ) : (
@@ -170,7 +174,7 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
                 <li key={o.id}>
                   <span>{o.tokenId}</span>{" "}
                   <button className="primary-button" disabled={!!step} onClick={() => void buy(o.id, o.tokenId, o.price)}>
-                    {tr("Buy for {0} wNEAR", { 0: formatNativeNear(o.price) })}
+                    {tr("Buy for {0} wNEAR", { 0: formatNativeNear(grossForNet(o.price, c.fee || 0)) })}
                   </button>
                 </li>
               ))}
