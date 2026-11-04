@@ -108,6 +108,17 @@ function checkContext(ctx) {
         : yocto(ctx.factorySetupDeposit),
     factoryPools: Array.isArray(ctx.factoryPools) ? ctx.factoryPools : [],
     ownedVaults: Array.isArray(ctx.ownedVaults) ? ctx.ownedVaults : [],
+    // Issued NPC trade-ups (server/npc/trader.mjs): the exact Auras this
+    // account may hand to that trader account, so the hand-over is sponsored.
+    tradeUpHandovers: Array.isArray(ctx.tradeUpHandovers)
+      ? ctx.tradeUpHandovers.filter(
+          (h) =>
+            plainObject(h) &&
+            typeof h.receiver === "string" &&
+            Array.isArray(h.tokens) &&
+            (h.accountId === undefined || h.accountId === ctx.accountId),
+        )
+      : [],
   };
 }
 function parseArgs(bytes) {
@@ -339,9 +350,14 @@ export function validateDelegate(decoded, context) {
       depositIs(1n, "Transfer");
       demand(
         typeof args.receiver_id === "string" &&
-          ctx.linkedWallets.includes(args.receiver_id),
+          (ctx.linkedWallets.includes(args.receiver_id) ||
+            ctx.tradeUpHandovers.some(
+              (h) =>
+                h.receiver === args.receiver_id &&
+                h.tokens.includes(args.token_id),
+            )),
         "RELAY_TRANSFER_TARGET",
-        "Collectibles can be moved only to a wallet linked to your explorer.",
+        "Collectibles can be moved only to a wallet linked to your explorer, or to the trader of an accepted trade-up.",
       );
     } else unsupported();
   } else if (receiverId === c.market) {

@@ -528,6 +528,40 @@ try {
 } catch (error) {
   console.error("NPC traders disabled:", error?.message || error);
 }
+// Every Aura trade happens on NEAR (owner decision 4 Nov 2026): the old
+// practice-GOLD market in the game database takes no new listings or
+// purchases, and open listings are closed at boot (the Auras never left their
+// owners' collections). Players secure an Aura, then sell it on market v2.
+// PRACTICE_MARKET=db brings the database market back (local tests only).
+const PRACTICE_MARKET_ON_CHAIN = process.env.PRACTICE_MARKET !== "db";
+if (PRACTICE_MARKET_ON_CHAIN) {
+  const closed = db
+    .prepare("UPDATE listings SET state='cancelled' WHERE state='open'")
+    .run().changes;
+  if (closed) console.log(`Practice market moved on chain: closed ${closed} database listing(s).`);
+}
+function assertPracticeMarketOpen() {
+  assert(
+    !PRACTICE_MARKET_ON_CHAIN,
+    "Aura trades now happen on NEAR. Secure the Aura, then sell it in Market → Secured.",
+    410,
+    "MARKET_ON_CHAIN",
+  );
+}
+// Trade-up hand-overs are on-chain nft_transfers to the trader account; the
+// relayer sponsors exactly the Auras of the player's issued trade-ups.
+if (npcTraders && relayer) {
+  const previousContext = relayer.customContext;
+  relayer.customContext = async (base, extra) => {
+    const ctx = previousContext ? await previousContext(base, extra) : base;
+    return {
+      ...ctx,
+      tradeUpHandovers: npcTraders
+        .handoversFor(extra.playerId)
+        .filter((h) => h.accountId === ctx.accountId),
+    };
+  };
+}
 if (npcTraders)
   registerMenuBuilder("trader", async (context) => {
     try {
@@ -1324,7 +1358,8 @@ async function api(req, res, url) {
   if (path === "/api/dashboard") return respond(res, game.dashboard(db));
   if (path === "/api/market")
     return respond(res, {
-      listings: db
+      onChain: PRACTICE_MARKET_ON_CHAIN,
+      listings: PRACTICE_MARKET_ON_CHAIN ? [] : db
         .prepare(
           "SELECT l.*,i.name,i.rarity,i.color,i.slot,i.serial,p.name AS seller_name FROM listings l JOIN inventory i ON i.id=l.item_id JOIN players p ON p.id=l.seller WHERE l.state='open' ORDER BY l.created_at DESC LIMIT 100",
         )
@@ -2229,12 +2264,14 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/market/list" && method === "POST") {
+    assertPracticeMarketOpen();
     const i = await body(req);
     const r = game.listItem(db, player, i.itemId, i.price);
     emit("market", {});
     return respond(res, { ...r, player: profile(player) });
   }
   if (path === "/api/market/buy" && method === "POST") {
+    assertPracticeMarketOpen();
     const i = await body(req),
       r = game.buyItem(db, player, i.listingId);
     emit("market", {});
@@ -3028,7 +3065,7 @@ const rewardWorker =
       })
     : null;
 const badgeWorker =
-  !backgroundWorkersDisabled && badgeService && badgeService.settings.enabled
+  !backgroundWorkersDisabled && badgeService && (badgeService.settings.enabled || badgeService.settings.placeMints)
     ? startBadgeWorker(badgeService, badgeChain)
     : null;
 const relayWorker =
