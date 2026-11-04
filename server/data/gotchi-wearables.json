@@ -3,6 +3,14 @@
  "contract": "0xA99c4B08201F2913Db8D28e71d020c4298F29dBF",
  "note": "Names and placement from the official contract. Item artwork is read from getItemSvg(itemId) at runtime and is not stored here.",
  "generatedAt": "2026-11-04",
+ "dropWeights": {
+  "common": 40,
+  "uncommon": 26,
+  "rare": 18,
+  "legendary": 10,
+  "mythical": 5,
+  "godlike": 1
+ },
  "items": [
   {
    "id": 1,

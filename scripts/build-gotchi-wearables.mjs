@@ -53,6 +53,8 @@ const out = {
   contract: AAVEGOTCHI,
   note: "Names and placement from the official contract. Item artwork is read from getItemSvg(itemId) at runtime and is not stored here.",
   generatedAt: new Date().toISOString().slice(0, 10),
+  // Percent of wearable finds per rarity (game tuning, not contract data).
+  dropWeights: { common: 40, uncommon: 26, rare: 18, legendary: 10, mythical: 5, godlike: 1 },
   items,
 };
 writeFileSync(new URL("../server/data/gotchi-wearables.json", import.meta.url), JSON.stringify(out, null, 1) + "\n");

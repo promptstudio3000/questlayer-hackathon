@@ -14,6 +14,7 @@ import goldSpend from "../../server/data/gold-spend.json" with { type: "json" };
 import auraCatalog from "../../server/data/aura-catalog.json" with { type: "json" };
 import placeBadges from "../../server/data/place-badges.json" with { type: "json" };
 import cities from "../../server/data/cities.json" with { type: "json" };
+import gotchiWearables from "../../server/data/gotchi-wearables.json" with { type: "json" };
 
 export type VizId =
   | "architecture"
@@ -111,6 +112,12 @@ export const GOLD = goldSpend;
 type Edition = { id: string; rarity: string; source?: string };
 export const EDITIONS = (auraCatalog.editions as Edition[]).map((e) => ({ id: e.id, rarity: e.rarity, source: e.source ?? "chest" }));
 export const SUPPLY_PER_EDITION = Number((auraCatalog as { supplyPerEdition?: number }).supplyPerEdition ?? 256);
+
+export const WEARABLE_COUNT = gotchiWearables.items.length;
+const WEARABLE_DROP_ROWS = Object.entries(gotchiWearables.dropWeights).map(([rarity, pct]) => [
+  rarity[0].toUpperCase() + rarity.slice(1),
+  `${pct} %`,
+]);
 
 const levelRows = LEVELS.map((l) => [`L${l.level}`, l.xp.toLocaleString("en-US"), l.unlock, l.item ?? "–"]);
 const gateRows = STAKER_GATES.map((g) => [
@@ -393,6 +400,51 @@ export const CHAPTERS: Chapter[] = [
           "Collection Sell lists the Aura on NEAR Intents (see the Intents chapter). A 2 % NEP-199 royalty goes to the treasury on outside marketplaces such as Mintbase.",
         ],
       },
+    ],
+  },
+  {
+    id: "wearables-and-explorers",
+    group: "play",
+    title: "Aavegotchi wearables and other explorers",
+    summary: `${WEARABLE_COUNT} official Aavegotchi wearables to find as clones; a gold check when your wallet holds the original; tap explorers to see what they wear and wave.`,
+    status: "live",
+    updated: "2026-11-04",
+    sources: ["docs/PLAYER-CARDS.md", "docs/PEER-APPEARANCES.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/data/gotchi-wearables.json", "src/PlayerCard.tsx", "src/GotchiWardrobe.tsx"],
+    blocks: [
+      {
+        p: "The wearable catalogue is read from the Aavegotchi contract on Base (`getItemType`): name, slot, rarity and where the item sits on the 64×64 gotchi canvas. Item art is read from the same contract (`getItemSvg`) at runtime and cached for a day; nothing is redrawn or copied.",
+      },
+      { h: "Finding and wearing clones" },
+      {
+        list: [
+          "About one street find in three holds a wearable (at most 12 per world). The map shows the real item floating in a rarity ring; walking over it collects it through the normal coin claim (GPS check, travel guard, XP caps).",
+          "Each find adds a **clone** to the Wardrobe: a cosmetic copy, not an NFT, not tradable, no GOLD value. A second copy of the same item is a duplicate.",
+          "One item per slot (head, face, eyes, body, hand, pet). Worn items are drawn on the starter Aavegotchi at their official place and layer order, on your marker and on what nearby explorers see.",
+        ],
+      },
+      {
+        table: {
+          head: ["Rarity", "Share of wearable finds"],
+          rows: WEARABLE_DROP_ROWS,
+        },
+      },
+      { h: "Verified originals" },
+      {
+        list: [
+          "Link a Base address (Wardrobe → Link wallet, or MetaMask/Rabby sign-in). The server reads `itemBalances` and each owned gotchi's items.",
+          "An item found in a snapshot younger than **24 hours** gets a gold check everywhere it is shown. Owned originals join the Wardrobe already verified. After a day the check waits for a new ownership check; the clone stays.",
+          "Other players only ever see “verified” per item, never the wallet address.",
+        ],
+      },
+      { h: "Explorer cards and waves" },
+      {
+        list: [
+          "Tap an explorer on the map to see their level, worn wearables, verified items and Auras. Only while they share their position (15-minute opt-in) and neither side has blocked the other.",
+          "Waves are six ready phrases, no free text, so no personal details can be passed. Both explorers must be sharing in the same realm. Limits: 1 per pair per minute, 20 sent and 30 received per hour; unread waves vanish after an hour.",
+          "Block on the card uses the same two-way block as notes and presence.",
+        ],
+      },
+      { note: "Free-text chat between explorers is only a proposal (mutual wave first, short messages, AI filter, reports); see docs/PLAYER-CARDS.md.", tone: "info" },
     ],
   },
   // ----------------------------------------------------------------- world

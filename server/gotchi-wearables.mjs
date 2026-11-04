@@ -27,14 +27,7 @@ const data = JSON.parse(
 export const WEARABLES = new Map(data.items.map((item) => [item.id, item]));
 export const WEARABLE_SLOTS = ["head", "face", "eyes", "body", "hand", "pet"];
 /** How often each rarity drops, in percent of wearable finds. */
-export const WEARABLE_DROP_WEIGHTS = Object.freeze({
-  common: 40,
-  uncommon: 26,
-  rare: 18,
-  legendary: 10,
-  mythical: 5,
-  godlike: 1,
-});
+export const WEARABLE_DROP_WEIGHTS = Object.freeze({ ...data.dropWeights });
 /** About one street find in three holds a wearable, at most this many per world. */
 export const WEARABLE_FINDS_PER_WORLD = 12;
 /** An ownership check older than this no longer shows the gold check. */
