@@ -177,6 +177,7 @@ export default function EconomyPage() {
       <header className="eco-top">
         <a className="eco-brand" href="/">QuestLayer</a>
         <nav>
+          <a href="/treasury">Treasury</a>
           <a href="/how-it-works">How it works</a>
           <a className="eco-play" href="/">Play</a>
         </nav>
