@@ -12,6 +12,7 @@ import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { AI_OPERATIONS_SCHEMA } from "./schema.mjs";
 import { clean, debugRejected, screenText } from "./text-policy.mjs";
 import { ollamaConfiguration, ollamaJson } from "./ollama.mjs";
+import { nearAiConfiguration, nearAiJson } from "./near-ai.mjs";
 
 export const GUIDE_POLICY = "guide-v1";
 export { AI_OPERATIONS_SCHEMA };
@@ -354,46 +355,38 @@ export function createOllamaGuideProvider(config) {
   };
 }
 
-// Existing NEAR AI chat-completions integration, kept behind the same checks.
-// It returns free text, so it cites every fact it was given.
-export function createNearAiGuideProvider({ apiKey, model, fetcher = fetch }) {
+// NEAR AI Cloud (private inference), same JSON contract as Ollama. Only
+// built when NEAR_AI_ENABLED=1 and a key exists.
+export function createNearAiGuideProvider(config) {
   return {
     name: "near-ai",
-    model,
-    async answer(question, facts) {
-      const r = await fetcher("https://cloud-api.near.ai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          max_tokens: 250,
-          messages: [
-            { role: "system", content: `${SYSTEM}\nReply with the answer text only.\nFacts:\n${facts.map((f) => `${f.id}: ${f.text}`).join("\n")}` },
-            { role: "user", content: question },
-          ],
-        }),
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (!r.ok) throw Error("provider-unavailable");
-      const j = await r.json();
-      return { answer: String(j.choices?.[0]?.message?.content || ""), factIds: facts.map((f) => f.id) };
-    },
+    model: config.model,
+    answer: async (question, facts) =>
+      (
+        await nearAiJson(
+          { ...config, timeoutMs: 20_000 },
+          { system: SYSTEM, user: guideUserMessage(question, facts), schema: GUIDE_SCHEMA, maxTokens: 300, name: "guide_answer" },
+        )
+      ).value,
   };
 }
 
 export function guideConfiguration(env = process.env) {
-  const legacy = env.NEAR_AI_API_KEY && env.NEAR_AI_MODEL ? "near-ai" : "template";
-  const provider = (env.GUIDE_AI_PROVIDER || legacy).trim();
+  const nearAi = nearAiConfiguration(env);
+  let provider = (env.GUIDE_AI_PROVIDER || "template").trim();
   if (!["template", "anthropic", "ollama", "near-ai", "off"].includes(provider))
     throw Error("GUIDE_AI_PROVIDER must be template, anthropic, ollama, near-ai or off.");
+  // NEAR AI stays off until NEAR_AI_ENABLED=1, whatever else is set.
+  if (provider === "near-ai" && !nearAi.enabled) provider = "template";
   const perHour = env.GUIDE_AI_LIMIT_PER_HOUR;
   if (perHour !== undefined && perHour !== "" && !/^[0-9]{1,5}$/.test(perHour))
     throw Error("GUIDE_AI_LIMIT_PER_HOUR must be a whole number.");
   return {
     provider,
-    model: (env.GUIDE_AI_MODEL || (provider === "near-ai" ? env.NEAR_AI_MODEL : DEFAULT_GUIDE_MODEL) || "").trim(),
+    model: (env.GUIDE_AI_MODEL || (provider === "near-ai" ? nearAi.model : DEFAULT_GUIDE_MODEL) || "").trim(),
     perHour: perHour ? Number(perHour) : 30,
     ...(provider === "ollama" ? { ollama: ollamaConfiguration(env) } : {}),
+    ...(provider === "near-ai" ? { nearAi } : {}),
   };
 }
 
@@ -402,8 +395,8 @@ function providerFor(config, env) {
     return createOllamaGuideProvider(config.ollama);
   if (config.provider === "anthropic" && env.ANTHROPIC_API_KEY)
     return createAnthropicGuideProvider({ apiKey: env.ANTHROPIC_API_KEY, model: config.model });
-  if (config.provider === "near-ai" && env.NEAR_AI_API_KEY && config.model)
-    return createNearAiGuideProvider({ apiKey: env.NEAR_AI_API_KEY, model: config.model });
+  if (config.provider === "near-ai" && config.nearAi?.active)
+    return createNearAiGuideProvider({ ...config.nearAi, model: config.model });
   return null;
 }
 
