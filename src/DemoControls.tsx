@@ -93,6 +93,7 @@ export function DemoControls({
       className="demo-pad"
       aria-label={tr("Demo controls")}
       data-running={running || undefined}
+      data-target={target ? "" : undefined}
     >
       <header>
         <span>
@@ -117,7 +118,7 @@ export function DemoControls({
           className="demo-run"
           aria-label={tr("Run")}
           aria-pressed={run}
-          title={tr("Run (hold Shift)")}
+          title={tr("Run on or off (Shift walks)")}
           onClick={() => setRun(!run)}
         >
           <PersonSimpleRun size={22} weight={running ? "fill" : "regular"} />
@@ -132,7 +133,7 @@ export function DemoControls({
       <p className="demo-pad-hint">
         {target
           ? `${target.label} · ${target.meters < 1000 ? `${Math.round(target.meters)} m` : `${(target.meters / 1000).toFixed(1)} km`} ${direction(target.relative)}`
-          : tr("Arrows or WASD · Shift runs")}
+          : tr("Arrows or WASD · Shift walks")}
       </p>
     </section>
   );

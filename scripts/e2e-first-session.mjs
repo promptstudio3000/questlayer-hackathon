@@ -147,7 +147,7 @@ async function waitForStep(page, title, timeout = 20_000) {
 }
 
 // The city demo has no tap-to-walk: an action turns the explorer toward its
-// target, then holding Shift + ArrowUp runs the way it faces. Read the
+// target, then holding ArrowUp runs the way it faces (Shift walks). Read the
 // remaining distance from the demo pad and stop a few metres short.
 async function remainingMeters(page) {
   const text = (await page.locator(".demo-pad-hint").first().textContent().catch(() => "")) || "";
@@ -155,11 +155,12 @@ async function remainingMeters(page) {
   return m ? Number(m[1]) * (m[2] === "km" ? 1000 : 1) : 0;
 }
 async function stepForward(page, ms, run) {
-  if (run) await page.keyboard.down("Shift");
+  // Running is the default; Shift walks.
+  if (!run) await page.keyboard.down("Shift");
   await page.keyboard.down("ArrowUp");
   await page.waitForTimeout(ms);
   await page.keyboard.up("ArrowUp");
-  if (run) await page.keyboard.up("Shift");
+  if (!run) await page.keyboard.up("Shift");
 }
 async function walkToTarget(page) {
   // Let the pad show the new target first.

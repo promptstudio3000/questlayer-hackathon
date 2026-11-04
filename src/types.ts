@@ -132,6 +132,10 @@ export type Quest = Point & {
   checkpoint?: number;
   checkpointCount?: number;
   nextPoint?: Point | null;
+  /** Stops still ahead on a multi-stop walk (next one first for ordered walks). */
+  stops?: Point[];
+  /** Hunts (any order): stops already visited. */
+  visitedStops?: number[];
   itemAvailable?: boolean;
   placeStatus?: "open" | "closed";
   opens_at: number;

@@ -3077,7 +3077,7 @@ select {
     z-index: 3;
   }
   .sheet-compact
-    > :not(.sheet-toggle):not(.recommended-quest):not(.compact-selection):not(.native-objective):not(.adventure-notice):not(.first-session) {
+    > :not(.sheet-toggle):not(.recommended-quest):not(.sheet-peek):not(.compact-selection):not(.native-objective):not(.adventure-notice):not(.first-session) {
     display: none !important;
   }
   .main-panel.explore-panel.sheet-compact:has(.first-session) {

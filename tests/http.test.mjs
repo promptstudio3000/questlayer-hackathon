@@ -331,6 +331,9 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
         a.cookie,
       )
     ).data.quests.find((q) => q.id === route.id);
+    // The map draws the walk ahead: the next stop first, then the rest.
+    assert.equal(current.stops.length, current.checkpointCount - checkpoint);
+    assert.deepEqual(current.stops[0], { lat: current.nextPoint.lat, lng: current.nextPoint.lng });
     const r = await request(
       "/quests/checkpoint",
       { questId: route.id, checkpoint, fix: current.nextPoint },
