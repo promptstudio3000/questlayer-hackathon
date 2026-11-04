@@ -911,7 +911,10 @@ const qgoldRhea =
   qgoldPoolManifest?.network === NETWORK && RHEA_DEX[NETWORK]
     ? new NativeContractReader(provider, qgoldPoolManifest.dex || RHEA_DEX[NETWORK])
     : null;
-const qgoldKeeperSettings = keeperSettings(process.env);
+const qgoldKeeperSettings = keeperSettings(process.env, {
+  defaultKeyPath: resolve(dirname(defaultDatabasePath()), "qgold-keeper.json"),
+  exists: existsSync,
+});
 let qgoldKeeperAccount = null;
 if (qgoldVaultReader && qgoldKeeperSettings.execute && qgoldKeeperSettings.keyPath) {
   try {

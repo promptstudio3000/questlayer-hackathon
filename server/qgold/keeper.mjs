@@ -86,13 +86,20 @@ const hashOf = (r) => r?.transaction?.hash || r?.transaction_outcome?.id || null
 const failed = (r) =>
   Boolean(r?.status?.Failure) || (r?.receipts_outcome || []).some((o) => o.outcome?.status?.Failure);
 
-export function keeperSettings(env = process.env) {
+/**
+ * The keeper executes when its key file exists (QGOLD_KEEPER_KEY_PATH, or
+ * <state dir>/qgold-keeper.json installed by scripts/install-qgold-keeper-vps.sh)
+ * unless QGOLD_KEEPER_EXECUTE=0. Without a key it only records.
+ */
+export function keeperSettings(env = process.env, { defaultKeyPath = null, exists = () => false } = {}) {
   const minPool = env.QGOLD_KEEPER_MIN_POOL_NEAR;
+  const keyPath = env.QGOLD_KEEPER_KEY_PATH || (defaultKeyPath && exists(defaultKeyPath) ? defaultKeyPath : null);
   return {
     enabled: env.QGOLD_KEEPER_ENABLED !== "0",
-    execute: env.QGOLD_KEEPER_EXECUTE === "1",
-    keyPath: env.QGOLD_KEEPER_KEY_PATH || null,
-    inverseBudgetYocto: big(env.QGOLD_INVERSE_BUDGET_YOCTO || "0"),
+    execute: env.QGOLD_KEEPER_EXECUTE === "1" || (env.QGOLD_KEEPER_EXECUTE !== "0" && Boolean(keyPath)),
+    keyPath,
+    // Inverse buys spend at most this; unset = the keeper's own NEAR above a 1 NEAR reserve.
+    inverseBudgetYocto: env.QGOLD_INVERSE_BUDGET_YOCTO ? big(env.QGOLD_INVERSE_BUDGET_YOCTO) : null,
     policy: {
       ...POLICY,
       minPoolNear:
@@ -292,7 +299,7 @@ export class QgoldKeeper {
         avgPrice24h: this.avgPrice(now),
         soldToday: sums.soldToday,
         inverseSpentToday: sums.inverseToday,
-        inverseBudget: this.settings.inverseBudgetYocto,
+        inverseBudget: await this.inverseBudget(),
         buyback: buybackBudget({ feesTotal: state.fees, spent: sums.buybackSpent }),
         saleDue: true,
         policy: this.settings.policy,
@@ -324,6 +331,19 @@ export class QgoldKeeper {
       return null;
     } finally {
       this.running = false;
+    }
+  }
+
+  /** Configured budget, else the keeper account's NEAR above a 1 NEAR reserve, else 0. */
+  async inverseBudget() {
+    if (this.settings.inverseBudgetYocto != null) return this.settings.inverseBudgetYocto;
+    if (!this.account || !this.settings.execute) return 0n;
+    try {
+      const a = await this.provider.viewAccount({ accountId: this.account.accountId });
+      const free = big(a.amount) - 10n ** 24n;
+      return free > 0n ? free : 0n;
+    } catch {
+      return 0n;
     }
   }
 

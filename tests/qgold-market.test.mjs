@@ -272,3 +272,14 @@ test("two due slots: the older is recorded as missed, never silently dropped", a
   const rows = k.db.prepare("SELECT slot,state,reason FROM qgold_keeper_actions WHERE day='2026-11-05' ORDER BY slot").all();
   assert.deepEqual(rows.map((r) => [r.slot, r.state, r.reason]), [[0, "missed", "superseded"], [1, "skipped", "pool-below-minimum"]]);
 });
+
+test("keeper trades only when its key file exists, and QGOLD_KEEPER_EXECUTE=0 stops it", () => {
+  const key = "/state/qgold-keeper.json";
+  assert.equal(keeperSettings({}, { defaultKeyPath: key, exists: () => false }).execute, false);
+  const on = keeperSettings({}, { defaultKeyPath: key, exists: () => true });
+  assert.equal(on.execute, true);
+  assert.equal(on.keyPath, key);
+  assert.equal(keeperSettings({ QGOLD_KEEPER_EXECUTE: "0" }, { defaultKeyPath: key, exists: () => true }).execute, false);
+  assert.equal(keeperSettings({ QGOLD_KEEPER_MIN_POOL_NEAR: "5" }).policy.minPoolNear, 5n * 10n ** 24n);
+  assert.equal(keeperSettings({}).inverseBudgetYocto, null);
+});
