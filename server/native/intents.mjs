@@ -1,7 +1,8 @@
 // NEAR Intents (Verifier contract from github.com/near/intents, v0.4.5) for
 // Aura <-> wNEAR trades. Pure helpers shared by the server, the Mac proof
 // script and the tests: token ids, versioned salted nonces, the NEP-413
-// intent envelope (MultiPayload "nep413"), trade intents and local checks.
+// intent envelope (MultiPayload "nep413"), the Ethereum wallet envelope
+// (MultiPayload "erc191"), trade intents and local checks.
 //
 // Formats were read from the pinned verifier source (see INTENTS_SOURCE):
 //   - token ids: "nep171:<nft contract>:<token id>", "nep141:<ft contract>"
@@ -21,6 +22,8 @@ import {
   verify as verifySignature,
 } from "node:crypto";
 import { baseDecode, baseEncode } from "near-api-js";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { keccak_256 } from "@noble/hashes/sha3.js";
 import { assert } from "../domain.mjs";
 import { nep413Digest, ed25519KeyBytes } from "./signed-orders.mjs";
 
@@ -210,15 +213,52 @@ export function signIntentWithKeyPair(keyPair, { message, nonce, recipient }) {
   });
 }
 
+/** The signed message an envelope carries: {nonce (base64), body JSON text}. */
+export function intentEnvelope(signed) {
+  if (signed?.standard === "erc191") {
+    let body;
+    try {
+      body = JSON.parse(signed.payload);
+    } catch {
+      assert(false, "Malformed intent message.");
+    }
+    return { nonce: String(body?.nonce || ""), message: signed.payload, body };
+  }
+  const p = signed?.payload || {};
+  return { nonce: String(p.nonce || ""), message: p.message, body: null };
+}
+
+/** The intents a stored signed payload carries (either standard). */
+export function intentsOf(signed) {
+  const { message, body } = intentEnvelope(signed);
+  return (body || JSON.parse(message)).intents;
+}
+
+function checkBody(body, nonce, nowMs) {
+  account(body.signer_id, "signer");
+  const deadlineMs = Date.parse(body.deadline);
+  assert(Number.isFinite(deadlineMs) && deadlineMs > nowMs, "The intent has expired.");
+  assert(deadlineMs <= nowMs + MAX_INTENT_TTL_MS, "The intent deadline is too far away.");
+  const versioned = parseNonce(nonce);
+  assert(versioned, "Use a versioned nonce from the verifier salt.");
+  assert(deadlineMs <= versioned.deadlineMs, "The intent outlives its nonce.");
+  return { deadlineMs, salt: versioned.salt };
+}
+
 /**
  * Stateless checks mirroring the verifier: standard, recipient, signature,
  * deadline vs. nonce deadline. Registered keys, used nonces, balances and
  * the current salt are verifier state: confirm them with its views
  * (has_public_key, is_nonce_used, mt_balance_of, is_valid_salt) or with
  * simulate_intents before relying on a payload.
+ *
+ * Two standards are accepted: "nep413" (the device key) and "erc191"
+ * (an Ethereum wallet's personal_sign; the verifier recovers the secp256k1
+ * key, see crates/signatures/erc191 and core/src/payload/erc191.rs).
  */
 export function verifyIntentLocally(signed, { verifier, nowMs = Date.now() }) {
-  assert(signed && signed.standard === "nep413", "Only NEP-413 intents are accepted.");
+  if (signed?.standard === "erc191") return verifyErc191Locally(signed, { verifier, nowMs });
+  assert(signed && signed.standard === "nep413", "Only NEP-413 and ERC-191 intents are accepted.");
   const p = signed.payload || {};
   assert(typeof p.message === "string" && p.message.length <= 4096, "Malformed intent.");
   assert(p.recipient === verifier, "The intent was signed for another verifier.");
@@ -243,13 +283,7 @@ export function verifyIntentLocally(signed, { verifier, nowMs = Date.now() }) {
     body && Object.keys(body).join(",") === "signer_id,deadline,intents",
     "Unexpected intent message fields.",
   );
-  account(body.signer_id, "signer");
-  const deadlineMs = Date.parse(body.deadline);
-  assert(Number.isFinite(deadlineMs) && deadlineMs > nowMs, "The intent has expired.");
-  assert(deadlineMs <= nowMs + MAX_INTENT_TTL_MS, "The intent deadline is too far away.");
-  const versioned = parseNonce(nonce);
-  assert(versioned, "Use a versioned nonce from the verifier salt.");
-  assert(deadlineMs <= versioned.deadlineMs, "The intent outlives its nonce.");
+  const { deadlineMs, salt } = checkBody(body, nonce, nowMs);
   const key = createPublicKey({
     key: Buffer.concat([SPKI_PREFIX, ed25519KeyBytes(signed.public_key)]),
     format: "der",
@@ -262,9 +296,89 @@ export function verifyIntentLocally(signed, { verifier, nowMs = Date.now() }) {
     deadlineMs,
     intents: body.intents,
     nonce: p.nonce,
-    salt: versioned.salt,
+    salt,
     publicKey: signed.public_key,
   };
+}
+
+/** ERC-191 payload text: exact key order, no whitespace (what the wallet shows). */
+export function erc191Payload({ signerId, verifier, deadlineMs, nonce, intents }) {
+  account(signerId, "signer");
+  account(verifier, "verifier");
+  assert(Array.isArray(intents) && intents.length > 0, "No intents to sign.");
+  return JSON.stringify({
+    signer_id: signerId,
+    verifying_contract: verifier,
+    deadline: new Date(deadlineMs).toISOString(),
+    nonce: b64(nonce),
+    intents,
+  });
+}
+
+/** MultiPayload {standard:"erc191"} from a personal_sign signature (0x… 65 bytes). */
+export function signedErc191Intent({ payload, signature }) {
+  assert(typeof signature === "string" && /^0x[0-9a-fA-F]{130}$/.test(signature), "Signature must be 65 bytes.");
+  const sig = Buffer.from(signature.slice(2), "hex");
+  if (sig[64] >= 27) sig[64] -= 27;
+  assert(sig[64] <= 1, "Invalid signature recovery id.");
+  return { standard: "erc191", payload, signature: `secp256k1:${baseEncode(sig)}` };
+}
+
+function verifyErc191Locally(signed, { verifier, nowMs }) {
+  assert(typeof signed.payload === "string" && signed.payload.length <= 4096, "Malformed intent.");
+  assert(
+    Object.keys(signed).sort().join(",") === "payload,signature,standard",
+    "Unexpected intent fields.",
+  );
+  assert(
+    typeof signed.signature === "string" &&
+      signed.signature.startsWith("secp256k1:") &&
+      B58.test(signed.signature.slice(10)),
+    "Invalid signature format.",
+  );
+  const sig = Buffer.from(baseDecode(signed.signature.slice(10)));
+  assert(sig.length === 65 && sig[64] <= 1, "Signature must be 65 bytes with recovery id 0 or 1.");
+  let body;
+  try {
+    body = JSON.parse(signed.payload);
+  } catch {
+    assert(false, "Malformed intent message.");
+  }
+  assert(
+    body &&
+      Object.keys(body).sort().join(",") === "deadline,intents,nonce,signer_id,verifying_contract",
+    "Unexpected intent message fields.",
+  );
+  assert(body.verifying_contract === verifier, "The intent was signed for another verifier.");
+  const nonce = Buffer.from(String(body.nonce || ""), "base64");
+  assert(nonce.length === 32, "Nonce must be 32 bytes.");
+  assert(Array.isArray(body.intents) && body.intents.length > 0, "No intents.");
+  const { deadlineMs, salt } = checkBody(body, nonce, nowMs);
+  let point;
+  try {
+    point = secp256k1.Signature.fromBytes(sig.subarray(0, 64), "compact")
+      .addRecoveryBit(sig[64])
+      .recoverPublicKey(erc191Prehash(signed.payload));
+  } catch {
+    assert(false, "Invalid intent signature.");
+  }
+  const raw = Buffer.from(point.toBytes(false)).subarray(1);
+  return {
+    signerId: body.signer_id,
+    deadlineMs,
+    intents: body.intents,
+    nonce: body.nonce,
+    salt,
+    publicKey: `secp256k1:${baseEncode(raw)}`,
+  };
+}
+
+/** keccak256("\x19Ethereum Signed Message:\n" + len + message), as the verifier hashes it. */
+export function erc191Prehash(message) {
+  const bytes = Buffer.from(message, "utf8");
+  return keccak_256(
+    Buffer.concat([Buffer.from(`\x19Ethereum Signed Message:\n${bytes.length}`, "utf8"), bytes]),
+  );
 }
 
 /**

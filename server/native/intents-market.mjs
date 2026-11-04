@@ -21,6 +21,8 @@ import {
   netDeltas,
   parseNonce,
   verifyIntentLocally,
+  intentEnvelope,
+  intentsOf,
 } from "./intents.mjs";
 
 export const INTENTS_MARKET_SCHEMA = registerModuleSchema({
@@ -334,7 +336,7 @@ export class IntentsMarket {
         reason = null;
       if (r.deadline_ms <= now) [state, reason] = ["expired", "Deadline passed"];
       else {
-        const nonce = signed.payload.nonce;
+        const nonce = intentEnvelope(signed).nonce;
         const salt = parseNonce(Buffer.from(nonce, "base64"))?.salt;
         const [used, saltOk] = await Promise.all([
           this.verifier.view("is_nonce_used", { account_id: r.maker, nonce }, true),
@@ -343,7 +345,7 @@ export class IntentsMarket {
         if (used) [state, reason] = ["closed", "Intent used on chain"];
         else if (!saltOk) [state, reason] = ["closed", "Verifier salt rotated"];
         else {
-          const terms = auraOrderTerms(JSON.parse(signed.payload.message).intents, await this.terms());
+          const terms = auraOrderTerms(intentsOf(signed), await this.terms());
           if (terms.price !== r.price) [state, reason] = ["closed", "Verifier fee changed; sign the order again"];
           else if (!(await this.fundedFor(r.maker, terms))) [state, reason] = ["closed", "No longer funded in the verifier"];
         }

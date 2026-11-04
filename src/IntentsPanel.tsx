@@ -10,6 +10,7 @@ import { Details } from "./ScreenTabs";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
 import { auraTokenDiff, grossForNet, signIntents, type IntentsAccount, type IntentsConfig } from "./intents-order";
 import type { OrderSigner } from "./order-signers";
+import type { LinkedEvmWallet } from "./evm-wallet";
 import type { NativeItem } from "./types";
 import { EXPLORER_BASE } from "./near-network";
 import { tr } from "./i18n";
@@ -25,9 +26,15 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
     [price, setPrice] = useState("0.01"),
     [step, setStep] = useState(""),
     [error, setError] = useState(""),
-    [done, setDone] = useState<{ text: string; tx?: string } | null>(null);
+    [done, setDone] = useState<{ text: string; tx?: string } | null>(null),
+    [evmWallets, setEvmWallets] = useState<LinkedEvmWallet[]>([]),
+    [signWith, setSignWith] = useState("device");
   const accountId = signer?.accountId ?? null;
   const canSign = !!signer?.key;
+  // A linked Ethereum wallet (MetaMask, Rabby) can sign the same intents
+  // with ERC-191 once its key is registered for this explorer's account.
+  const evm = evmWallets.find((w) => w.address === signWith) ?? null;
+  const signingKey = () => (evm ? evm.intentsPublicKey : signer?.knownPublicKey() || "");
 
   async function refresh() {
     const c = await api<IntentsConfig>("/native/intents");
@@ -36,13 +43,20 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
     if (c.enabled && accountId && signer)
       setMine(
         await api<IntentsAccount>(
-          `/native/intents/account?account=${encodeURIComponent(accountId)}&publicKey=${encodeURIComponent(signer.knownPublicKey() || "")}`,
+          `/native/intents/account?account=${encodeURIComponent(accountId)}&publicKey=${encodeURIComponent(signingKey())}`,
         ),
       );
   }
   useEffect(() => {
     void refresh().catch(() => {});
-  }, [accountId]);
+  }, [accountId, signWith]);
+  useEffect(() => {
+    if (!config?.enabled || !accountId) return;
+    void import("./evm-wallet")
+      .then((m) => m.linkedEvmWallets())
+      .then(setEvmWallets)
+      .catch(() => setEvmWallets([]));
+  }, [config?.enabled, accountId]);
   const sellable = [...(mine?.auras || []), ...owned.map((i) => i.tokenId)].filter((t, i, all) => all.indexOf(t) === i);
   useEffect(() => {
     if (!sellable.includes(sellToken)) setSellToken(sellable[0] || "");
@@ -65,11 +79,14 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
   }
   const call = (receiverId: string, methodName: string, args: Record<string, unknown>, deposit: string, gas = GAS) =>
     signer!.call({ receiverId, methodName, args, deposit, gas });
-  const sign = (intents: unknown[]) => signIntents(signer!.key!, c, intents);
+  const sign = async (intents: unknown[]) =>
+    evm
+      ? (await import("./evm-wallet")).signIntentsWithEthereum(evm, accountId!, c, intents)
+      : signIntents(signer!.key!, c, intents);
 
   const enable = () =>
     run(async () => {
-      await call(c.verifier, "add_public_key", { public_key: signer!.knownPublicKey() }, "1");
+      await call(c.verifier, "add_public_key", { public_key: signingKey() }, "1");
       return { text: tr("Done. Settled on chain.") };
     });
   const list = (tokenId: string, yocto: string) =>
@@ -124,6 +141,19 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
             </a>
           )}
         </p>
+      )}
+      {canSign && evmWallets.length > 0 && (
+        <label className="intents-sign-with">
+          {tr("Sign trades with")}{" "}
+          <select value={signWith} onChange={(e) => setSignWith(e.target.value)} disabled={!!step}>
+            <option value="device">{tr("This device")}</option>
+            {evmWallets.map((w) => (
+              <option key={w.address} value={w.address}>
+                {(w.wallet || "Ethereum") + " " + w.address.slice(0, 6) + "…" + w.address.slice(-4)}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
       {!canSign ? (
         <p>{tr("Trades through Intents need the explorer's device key.")}</p>

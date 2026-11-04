@@ -5,6 +5,7 @@
 import React, { useEffect, useState } from "react";
 import { exactNear, priceLabel, shortAccount, shortHash, shortNear } from "./format";
 import "./economy.css";
+import TreasuryMix from "./TreasuryMix";
 
 type Link = { explorerUrl: string | null };
 type Ledger = {
@@ -341,6 +342,8 @@ export default function EconomyPage() {
             </section>
           ) : null}
 
+          <TreasuryMix />
+
           <section className="eco-card" aria-labelledby="eco-budget">
             <h2 id="eco-budget">Daily prize budget</h2>
             <p className="eco-muted">One budget per day for the whole map, split between live cities by player demand.</p>
@@ -475,6 +478,7 @@ export default function EconomyPage() {
               Raw data: <a href="/api/economy/ledger">/api/economy/ledger</a> ·{" "}
               <a href="/api/native/distribution">/api/native/distribution</a> ·{" "}
               <a href="/api/treasury/stnear">/api/treasury/stnear</a> ·{" "}
+              <a href="/api/treasury/mix">/api/treasury/mix</a> ·{" "}
               <a href="/native-yield-cycle-proof.json">yield cycle proof</a>
             </p>
             {data.audit.scope ? <p className="eco-small">{data.audit.scope}</p> : null}

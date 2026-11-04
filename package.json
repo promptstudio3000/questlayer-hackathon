@@ -50,6 +50,8 @@
     "@gltf-transform/core": "4.5.1",
     "@gltf-transform/extensions": "4.5.1",
     "@hot-labs/near-connect": "0.12.0",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
     "@phosphor-icons/react": "^2.1.10",
     "@simplewebauthn/browser": "^14.0.0",
     "@simplewebauthn/server": "^14.0.3",
