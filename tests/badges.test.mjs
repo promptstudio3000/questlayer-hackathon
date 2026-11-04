@@ -265,3 +265,87 @@ test("health status reports the catalog, chain readiness and the queue", () => {
   assert.equal(s.minting, false);
   assert.deepEqual(s.queue, { designs: 1, claims: 0, failed: 0 });
 });
+
+test("place badges are minted on NEAR: one sponsored design per place, then a claim per player", async () => {
+  const { db, badges, alice, bob, accounts, now, advance } = setup();
+  const { runPlaceBadgeQueue } = await import("../server/badges/chain.mjs");
+  const { placeChainId } = await import("../server/badges/service.mjs");
+  accounts.delete(bob);
+  badges.check(alice, fix(SNEZKA, now()));
+  badges.check(bob, fix(SNEZKA, now()));
+  const view = badges.overview(alice).places;
+  const snezka = view.badges.find((b) => b.id === "peak-snezka");
+  assert.deepEqual(snezka.chain, { state: "queued", accountId: "alice.testnet", tx: null, tokenId: null });
+  const calls = [];
+  const chain = {
+    ready: true,
+    contractId: "badges.testnet",
+    async createBadge(row) {
+      calls.push(["create", row.id, row.creator_account, row.max_supply, row.kind]);
+      return "txDesign";
+    },
+    async claim(id, account) {
+      calls.push(["claim", id, account]);
+      return "txMint";
+    },
+    async view(method, args) {
+      return method === "has_badge" ? 1 : null;
+    },
+  };
+  const r = await runPlaceBadgeQueue(badges, chain);
+  assert.deepEqual(r, { designs: 1, minted: 1, failed: 0 });
+  assert.deepEqual(calls, [
+    ["create", "place-peak-snezka", "badges.testnet", 10_000, "place"],
+    ["claim", "place-peak-snezka", "alice.testnet"],
+  ]);
+  const minted = badges.overview(alice).places;
+  assert.equal(minted.onChain, 1);
+  assert.deepEqual(minted.badges.find((b) => b.id === "peak-snezka").chain, {
+    state: "minted",
+    accountId: "alice.testnet",
+    tx: "txMint",
+    tokenId: "place-peak-snezka:1",
+  });
+  // Bob has no account yet: he waits, then gets the badge once he links one.
+  assert.equal(db.prepare("SELECT state FROM place_badge_mints WHERE player_id=?").get(bob).state, "queued");
+  accounts.set(bob, "bob.testnet");
+  assert.deepEqual(await runPlaceBadgeQueue(badges, chain), { designs: 0, minted: 0, failed: 0 }, "back-off");
+  advance(11 * 60_000);
+  assert.deepEqual(await runPlaceBadgeQueue(badges, chain), { designs: 0, minted: 1, failed: 0 });
+  assert.equal(calls.at(-1)[2], "bob.testnet");
+  assert.equal(badges.status().placeMints.minted, 2);
+  assert.equal(placeChainId("x".repeat(64)).length, 48);
+});
+
+test("place badges earned before minting existed are backfilled, and a lost reply is reconciled", async () => {
+  const { db, badges, alice, now } = setup();
+  const { runPlaceBadgeQueue } = await import("../server/badges/chain.mjs");
+  const { createBadgeService, userBadgeSettings: settings } = await import("../server/badges/service.mjs");
+  badges.check(alice, fix(SNEZKA, now()));
+  db.exec("DELETE FROM place_badge_mints");
+  const again = createBadgeService(db, {
+    catalog: loadPlaceBadges(),
+    linkedAccount: () => "alice.testnet",
+    settings: settings({}, "testnet"),
+    now,
+  });
+  assert.equal(db.prepare("SELECT count(*) AS n FROM place_badge_mints").get().n, 1);
+  const chain = {
+    ready: true,
+    contractId: "badges.testnet",
+    async createBadge() {
+      throw Object.assign(new Error("Badge id already taken"), { tx: "txLost" });
+    },
+    async claim() {
+      throw new Error("Already holds this badge");
+    },
+    async view(method) {
+      return method === "get_badge" ? { creator_id: "badges.testnet" } : 3;
+    },
+  };
+  assert.deepEqual(await runPlaceBadgeQueue(again, chain), { designs: 1, minted: 1, failed: 0 });
+  assert.equal(db.prepare("SELECT token_id FROM place_badge_mints").get().token_id, "place-peak-snezka:3");
+  // Mainnet keeps place minting off unless switched on.
+  assert.equal(settings({}, "mainnet").placeMints, false);
+  assert.equal(settings({ PLACE_BADGES_ONCHAIN: "1" }, "mainnet").placeMints, true);
+});

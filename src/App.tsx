@@ -81,7 +81,7 @@ import type { NearbyExplorer } from "./types";
 import type { ActorView } from "./actor-types";
 import "./inventory.css";
 import { indexedDbKeyStore } from "./player-key";
-import type { NativeMilestone } from "./NativeLevelRewards";
+import type { NativeMilestone, Progress } from "./NativeLevelRewards";
 import {
   assertNativeLevelClaim,
   type NativeLevelClaim,
@@ -870,6 +870,87 @@ export default function App() {
     playerReads.current.invalidate();
     setPlayer((current) => (current?.id === next.id ? next : current));
   }
+  // Auras from chests, levels and Wisp rolls are secured on NEAR on their own:
+  // the explorer account signs silently and the relayer pays. An Aura the
+  // player is wearing waits until it is taken off, so their look never changes
+  // under them. One at a time, with a back-off per Aura so a full edition or a
+  // spent daily relay budget never loops. localStorage
+  // questlayer-auto-secure=0 turns it off on this device.
+  const autoSecure = useRef({
+    running: false,
+    retryAt: new Map<string, number>(),
+    levelsAt: 0,
+  });
+  const [autoSecureTick, setAutoSecureTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setAutoSecureTick((t) => t + 1), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const autoSecureSigner = invisible.signer;
+  const autoSecureClaims = !!nativeWardrobe?.claimsEnabled;
+  useEffect(() => {
+    let off = false;
+    try {
+      off = localStorage.getItem("questlayer-auto-secure") === "0";
+    } catch {}
+    const managed = autoSecureSigner;
+    const state = autoSecure.current;
+    if (off || state.running || !player || !managed) return;
+    if (!player.wallets.some((w) => w.account_id === managed.accountId)) return;
+    const now = Date.now();
+    const item = autoSecureClaims
+      ? player.inventory.find(
+          (i) =>
+            i.kind === "aura" &&
+            !i.equipped &&
+            i.native_claim_state !== "minted" &&
+            (!i.native_claim_state ||
+              i.native_claim_receiver === managed.accountId) &&
+            (state.retryAt.get(i.id) ?? 0) <= now,
+        )
+      : undefined;
+    const levels = state.levelsAt <= now;
+    if (!item && !levels) return;
+    state.running = true;
+    void (async () => {
+      let secured = 0;
+      try {
+        if (item) {
+          try {
+            if (await secureAuraOnChain(item, managed, managed.accountId)) {
+              secured++;
+              state.retryAt.delete(item.id);
+            } else state.retryAt.set(item.id, Date.now() + 2 * 60_000);
+          } catch {
+            state.retryAt.set(item.id, Date.now() + 15 * 60_000);
+          }
+        } else {
+          state.levelsAt = Date.now() + 10 * 60_000;
+          try {
+            const progress = await api<Progress>("/native/progression", {
+              accountId: managed.accountId,
+            });
+            for (const m of progress.milestones || []) {
+              if (!m.claimable && m.state !== "issued") continue;
+              if ((await secureLevelOnChain(m, managed, managed.accountId)) === "minted")
+                secured++;
+            }
+          } catch {
+            // Level rewards need the native rewards ledger; try again later.
+          }
+        }
+        if (secured) {
+          await refreshNative(true).catch(() => {});
+          notify(tr("Your Aura is secured."));
+        }
+      } finally {
+        state.running = false;
+        await me().catch(() => {});
+        setAutoSecureTick((t) => t + 1);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player, autoSecureSigner, autoSecureClaims, autoSecureTick]);
   async function action<T>(
     name: string,
     fn: () => Promise<T>,
@@ -2280,6 +2361,55 @@ export default function App() {
     });
     return ok === true;
   }
+  // Level-reward Aura: voucher, relayed redeem_aura, then the server confirms.
+  async function secureLevelOnChain(
+    milestone: NativeMilestone,
+    signer: NativeSigner,
+    accountId: string,
+  ): Promise<"minted" | "already" | "pending"> {
+    const claim = await api<NativeLevelClaim>("/native/progression/claim", {
+      accountId,
+      level: milestone.level,
+    });
+    assertNativeLevelClaim(claim, accountId, milestone.level, milestone.edition);
+    if (claim.claim_id !== milestone.claimId)
+      throw Error("The level reward changed. Refresh, then try again.");
+    if (claim.state === "minted") return "already";
+    await signer.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: accountId,
+        receiverId: claim.contractId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: "redeem_aura",
+              args: {
+                claim_id: claim.claim_id,
+                edition: claim.edition,
+                receiver_id: claim.receiver_id,
+                expires_at_ms: claim.expires_at,
+                signature: claim.signature,
+              },
+              gas: "100000000000000",
+              deposit: (5n * 10n ** 22n).toString(),
+            },
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
+    for (let i = 0; i < 4; i++) {
+      const checked = await api<NativeLevelClaim>(
+        "/native/progression/confirm",
+        { accountId, level: milestone.level },
+      );
+      if (checked.state === "minted") return "minted";
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    return "pending";
+  }
   async function mintNativeLevel(
     expectedAccount: string,
     milestone: NativeMilestone,
@@ -2291,62 +2421,17 @@ export default function App() {
         !player?.wallets.some((w) => w.account_id === accountId)
       )
         throw Error("Choose the linked account shown for this level reward.");
-      const claim = await api<NativeLevelClaim>("/native/progression/claim", {
-        accountId,
-        level: milestone.level,
-      });
-      assertNativeLevelClaim(
-        claim,
-        accountId,
-        milestone.level,
-        milestone.edition,
-      );
-      if (claim.claim_id !== milestone.claimId)
-        throw Error("The level reward changed. Refresh, then try again.");
-      if (claim.state !== "minted") {
-        await signer.send(
-          {
-            network: NEAR_NETWORK,
-            signerId: accountId,
-            receiverId: claim.contractId,
-            actions: [
-              {
-                type: "FunctionCall",
-                params: {
-                  methodName: "redeem_aura",
-                  args: {
-                    claim_id: claim.claim_id,
-                    edition: claim.edition,
-                    receiver_id: claim.receiver_id,
-                    expires_at_ms: claim.expires_at,
-                    signature: claim.signature,
-                  },
-                  gas: "100000000000000",
-                  deposit: (5n * 10n ** 22n).toString(),
-                },
-              },
-            ],
-          },
-          { playerId: player!.id },
-        );
-        for (let i = 0; i < 4; i++) {
-          const checked = await api<NativeLevelClaim>(
-            "/native/progression/confirm",
-            { accountId, level: milestone.level },
-          );
-          if (checked.state === "minted") {
-            await refreshNative(true);
-            notify(tr("Reward collected. Try it on from your Secured collection."));
-            return true;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
+      const result = await secureLevelOnChain(milestone, signer, accountId);
+      if (result === "pending")
         throw Error(
           "Your level reward is still confirming. Use Check claim before trying again.",
         );
-      }
       await refreshNative(true);
-      notify(tr("You already collected this level reward."));
+      notify(
+        result === "minted"
+          ? tr("Reward collected. Try it on from your Secured collection.")
+          : tr("You already collected this level reward."),
+      );
       return true;
     });
     return ok === true;
@@ -2377,59 +2462,65 @@ export default function App() {
       { playerId: player!.id },
     );
   }
+  // Requests the award voucher, relays redeem_aura from the signing account and
+  // waits for the server to confirm the mint. Shared by the Secure button and
+  // the automatic background securing below.
+  async function secureAuraOnChain(
+    item: Item,
+    signer: NativeSigner,
+    accountId: string,
+  ): Promise<boolean> {
+    const claim = await api<NativeAuraClaim>("/native/claims", {
+      itemId: item.id,
+      accountId,
+    });
+    if (claim.state !== "minted") {
+      if (!onNearNetwork(claim.contractId))
+        throw Error("Securing Auras is not available on this network.");
+      await signer.send(
+        {
+          network: NEAR_NETWORK,
+          signerId: accountId,
+          receiverId: claim.contractId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: "redeem_aura",
+                args: {
+                  claim_id: claim.claim_id,
+                  edition: claim.edition,
+                  receiver_id: claim.receiver_id,
+                  expires_at_ms: claim.expires_at,
+                  signature: claim.signature,
+                },
+                gas: "100000000000000",
+                deposit: (5n * 10n ** 22n).toString(),
+              },
+            },
+          ],
+        },
+        { playerId: player!.id },
+      );
+    }
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const result = await api<{ claim: NativeAuraClaim; player: Player }>(
+        "/native/claims/confirm",
+        { itemId: item.id },
+      );
+      updateOwnedPlayer(result.player);
+      if (result.claim.state === "minted") return true;
+      await new Promise((resolve) => setTimeout(resolve, 800));
+    }
+    return false;
+  }
   async function mintEarnedAura(item: Item): Promise<boolean> {
     const done = await action("native-claim", async () => {
       try {
         const { signer, accountId } = await resolveSigner();
         if (!player?.wallets.some((w) => w.account_id === accountId))
           throw Error("Choose the linked account that receives this Aura.");
-        const claim = await api<NativeAuraClaim>("/native/claims", {
-          itemId: item.id,
-          accountId,
-        });
-        await me();
-        if (claim.state !== "minted") {
-          if (!onNearNetwork(claim.contractId))
-            throw Error("Securing Auras is not available on this network.");
-          await signer.send(
-            {
-              network: NEAR_NETWORK,
-              signerId: accountId,
-              receiverId: claim.contractId,
-              actions: [
-                {
-                  type: "FunctionCall",
-                  params: {
-                    methodName: "redeem_aura",
-                    args: {
-                      claim_id: claim.claim_id,
-                      edition: claim.edition,
-                      receiver_id: claim.receiver_id,
-                      expires_at_ms: claim.expires_at,
-                      signature: claim.signature,
-                    },
-                    gas: "100000000000000",
-                    deposit: (5n * 10n ** 22n).toString(),
-                  },
-                },
-              ],
-            },
-            { playerId: player!.id },
-          );
-        }
-        let minted = false;
-        for (let attempt = 0; attempt < 5; attempt++) {
-          const result = await api<{ claim: NativeAuraClaim; player: Player }>(
-            "/native/claims/confirm",
-            { itemId: item.id },
-          );
-          updateOwnedPlayer(result.player);
-          if (result.claim.state === "minted") {
-            minted = true;
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 800));
-        }
+        const minted = await secureAuraOnChain(item, signer, accountId);
         if (!minted)
           throw Error(
             "Your Aura is still being secured. Use Check claim before retrying.",
