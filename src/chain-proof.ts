@@ -44,6 +44,22 @@ export function chainState(ref: ChainRef | null | undefined): ChainState {
 const trusted = (url: string | null | undefined) =>
   typeof url === "string" && url.startsWith(`${EXPLORER_BASE}/`) ? url : null;
 
+/**
+ * The finer stage the one icon shows (its colour and motion):
+ * sending  queued at the game server, no transaction yet (grey, pulsing)
+ * received the transaction is on NEAR and executing (blue, spinning ring)
+ * final    executed and final on NEAR (green)
+ * failed   (red)
+ */
+export type ChainStage = "sending" | "received" | "final" | "failed" | "hidden";
+export function chainStage(ref: ChainRef | null | undefined): ChainStage {
+  const state = chainState(ref);
+  if (state === "confirmed") return "final";
+  if (state !== "pending") return state;
+  const s = String(ref?.status || "").toLowerCase();
+  return (ref?.tx && TX.test(ref.tx)) || s === "sent" ? "received" : "sending";
+}
+
 /** Where the icon links: the transaction, else the NFT, else the account. */
 export function chainHref(ref: ChainRef | null | undefined): string | null {
   if (!ref) return null;

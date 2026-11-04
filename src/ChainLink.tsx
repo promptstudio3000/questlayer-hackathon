@@ -2,11 +2,12 @@
 // on its way to NEAR, a sealed check linking the transaction on the explorer
 // once confirmed, a warning (linking the account page) when it failed.
 import { useEffect, useState } from "react";
-import { CircleNotch, SealCheck, WarningCircle } from "@phosphor-icons/react";
+import { Cube } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
 import { tr } from "./i18n";
 import {
   chainHref,
+  chainStage,
   chainState,
   fromPoll,
   pollPath,
@@ -40,6 +41,8 @@ export function useChainRef(chain: ChainRef | null | undefined) {
         // nothing rather than a spinner that never ends.
         if (!next) return setLive(gone(live));
         if (chainState(next) !== "pending") return setLive(next);
+        // Still pending, but the transaction may now be on NEAR.
+        if (chainStage(next) !== chainStage(live)) setLive(next);
       } catch (e) {
         if (stop) return;
         if (e instanceof ApiError && e.status === 404)
@@ -65,47 +68,41 @@ export function ChainLink({
   className = "",
 }: {
   chain: ChainRef | null | undefined;
-  /** Show a short word next to the icon ("On NEAR", "Saving…"). */
+  /** Show the stage word next to the icon (Sending, Received, Final). */
   label?: boolean;
   /** False inside decorations (reward bursts) that cannot be tapped. */
   interactive?: boolean;
   className?: string;
 }) {
   const live = useChainRef(chain);
-  const state = chainState(live);
-  if (state === "hidden") return null;
+  const stage = chainStage(live);
+  if (stage === "hidden") return null;
   const href = chainHref(live);
+  const word =
+    stage === "sending"
+      ? tr("Sending")
+      : stage === "received"
+        ? tr("Received")
+        : stage === "failed"
+          ? tr("Not saved")
+          : tr("Final");
   const text =
-    state === "pending"
-      ? tr("Saving on NEAR…")
-      : state === "failed"
-        ? tr("Not saved on NEAR")
-        : live?.tx || live?.explorer
-          ? tr("See on NEAR explorer")
-          : tr("On NEAR");
-  const Icon =
-    state === "pending" ? CircleNotch : state === "failed" ? WarningCircle : SealCheck;
+    stage === "sending"
+      ? tr("Sending to NEAR…")
+      : stage === "received"
+        ? tr("Received by NEAR, finalizing…")
+        : stage === "failed"
+          ? tr("Not saved on NEAR")
+          : tr("Final on NEAR");
+  // One icon for every stage: only its colour and motion change.
   const body = (
     <>
-      <Icon
-        className={state === "pending" ? "chain-link-spin" : undefined}
-        size={16}
-        weight={state === "pending" ? "bold" : "fill"}
-        aria-hidden="true"
-      />
-      {label && (
-        <span>
-          {state === "pending"
-            ? tr("Saving…")
-            : state === "failed"
-              ? tr("Not saved")
-              : tr("On NEAR")}
-        </span>
-      )}
+      <Cube size={16} weight="fill" aria-hidden="true" />
+      {label && <span>{word}</span>}
     </>
   );
-  const classes = `chain-link is-${state}${label ? " has-label" : ""} ${className}`.trim();
-  if (!interactive || !href || state === "pending")
+  const classes = `chain-link is-${stage}${label ? " has-label" : ""} ${className}`.trim();
+  if (!interactive || !href)
     return (
       <span
         className={classes}

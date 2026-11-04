@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   chainHref,
+  chainStage,
   chainState,
   fromPoll,
   pollPath,
@@ -159,4 +160,14 @@ test("an existing profile is never overwritten and a wallet signer is refused", 
     "paused",
   );
   assert.equal(store.m.size, 0, "a paused contract is retried on a later visit");
+});
+
+test("one icon walks through sending, received and final", () => {
+  assert.equal(chainStage({ id: "a", status: "queued" }), "sending");
+  assert.equal(chainStage({ id: "a", status: "retrying" }), "sending");
+  assert.equal(chainStage({ id: "a", status: "sent" }), "received");
+  assert.equal(chainStage({ id: "a", status: "queued", tx: TX }), "received");
+  assert.equal(chainStage({ id: "a", status: "confirmed", tx: TX }), "final");
+  assert.equal(chainStage({ status: "failed" }), "failed");
+  assert.equal(chainStage({ status: "off" }), "hidden");
 });

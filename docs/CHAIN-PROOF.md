@@ -3,12 +3,16 @@
 One icon everywhere a game action is on NEAR (testnet now, explorer from
 `EXPLORER_BASE`):
 
-| State | Icon | Link |
-| --- | --- | --- |
-| pending (queued, sent, retrying, issued) | spinner | none, polls until settled |
-| confirmed (confirmed, minted, settled) | sealed check | the transaction, else the NFT token page, else the account page |
-| failed | warning | the account page when known |
-| no-account, off | hidden | — |
+One icon (a cube) for every stage; only its colour and motion change:
+
+| Stage | Look | From | Link |
+| --- | --- | --- | --- |
+| Sending | grey, pulsing | queued, retrying, issued (no tx yet) | none |
+| Received | blue, spinning ring | `sent`, or a tx hash while still pending | the transaction |
+| Final | green | confirmed, minted, settled (relayer and reward worker wait for FINAL) | the transaction, else the NFT token page, else the account page |
+| Not saved | red | failed | the account page when known |
+
+`no-account` and `off` hide the icon. A pending icon keeps polling until Final.
 
 ## Using it
 

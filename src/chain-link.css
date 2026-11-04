@@ -17,10 +17,6 @@
   text-decoration: none;
   vertical-align: middle;
 }
-a.chain-link {
-  /* A larger tap target than the drawn chip. */
-  position: relative;
-}
 a.chain-link::after {
   content: "";
   position: absolute;
@@ -30,31 +26,67 @@ a.chain-link:focus-visible {
   outline: 2px solid var(--action, #672eeb);
   outline-offset: 2px;
 }
+.chain-link:not(.has-label) {
+  width: 24px;
+  padding: 0;
+}
 .chain-link.has-label {
   padding: 0 8px 0 6px;
 }
-.chain-link.is-pending {
-  color: var(--ink-secondary, #665577);
-  background: rgba(103, 46, 235, 0.1);
+/* One icon, four stages: only colour and motion change. */
+.chain-link.is-sending {
+  color: #6b6478;
+  background: #ece9f1;
+}
+.chain-link.is-sending svg {
+  animation: chain-link-pulse 1s ease-in-out infinite;
+}
+.chain-link.is-received {
+  color: #1d5fd1;
+  background: #e2ecfd;
+  box-shadow: inset 0 0 0 2px rgba(29, 95, 209, 0.25);
+}
+.chain-link.is-received:not(.has-label)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid transparent;
+  border-top-color: #1d5fd1;
+  animation: chain-link-spin 0.9s linear infinite;
+}
+.chain-link.is-received.has-label svg {
+  animation: chain-link-pulse 0.8s ease-in-out infinite;
+}
+.chain-link.is-final {
+  color: var(--success, #176553);
+  background: var(--success-surface, #e3f6ee);
 }
 .chain-link.is-failed {
   color: #9a2a1a;
   background: #fde8e3;
 }
-.chain-link-spin {
-  animation: chain-link-spin 0.9s linear infinite;
+.chain-link {
+  position: relative;
+  transition: background-color 0.3s, color 0.3s;
 }
 @keyframes chain-link-spin {
   to {
     transform: rotate(360deg);
   }
 }
+@keyframes chain-link-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  .chain-link-spin {
+  .chain-link.is-sending svg,
+  .chain-link.is-received:not(.has-label)::before {
     animation: none;
   }
 }
-/* Inside a reward burst the chip sits on the burst colour. */
+/* Inside a reward burst the chip keeps a light ring on the burst colour. */
 .reward-burst .chain-link {
-  background: rgba(255, 255, 255, 0.85);
+  outline: 2px solid rgba(255, 255, 255, 0.85);
 }
