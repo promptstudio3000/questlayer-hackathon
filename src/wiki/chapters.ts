@@ -395,6 +395,41 @@ export const CHAPTERS: Chapter[] = [
       },
     ],
   },
+  {
+    id: "wearables-and-explorers",
+    group: "play",
+    title: "Wearables and explorer cards",
+    summary: "Free Aavegotchi wearable clones on the map, a gold check for owned originals, and explorer cards with waves.",
+    status: "live",
+    updated: "2026-11-04",
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs"],
+    blocks: [
+      {
+        p: "About one street find in three becomes a **wearable find** (at most 12 per world): a free in-game clone of one of 301 official Aavegotchi wearables. The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. Picking one up is a normal street coin claim (GPS check, travel guard, XP caps).",
+      },
+      {
+        table: {
+          head: ["Rarity", "Share of wearable finds"],
+          rows: [["Common", "40 %"], ["Uncommon", "26 %"], ["Rare", "18 %"], ["Legendary", "10 %"], ["Mythical", "5 %"], ["Godlike", "1 %"]],
+        },
+      },
+      {
+        list: [
+          "A clone is a cosmetic row: not an NFT, not tradable, no GOLD value. Rewards, XP and the economy do not change.",
+          "One item per slot (head, face, eyes, body, hand, pet), drawn on the character at its official canvas place.",
+          "**Verified originals:** a player who links a Base wallet with a signed message gets a gold check on every clone whose original sits in that wallet. The check lasts 24 hours after the last wallet read. Other players see only \"verified\", never the address.",
+        ],
+      },
+      { h: "Explorer cards and waves" },
+      {
+        list: [
+          "Tapping another explorer opens a card with name, level, worn wearables, verified flags and Aura colours. It works only while that explorer shares their position and neither side blocked the other.",
+          "Waves are six ready phrases, no free text. Limits: one per pair per minute, 20 sent and 30 received per hour; delivered by the presence poll and deleted after an hour.",
+          "Block hides presence, notes, waves and the card both ways. Free-text chat is only a proposal and is not built.",
+        ],
+      },
+    ],
+  },
   // ----------------------------------------------------------------- world
   {
     id: "world-and-places",
@@ -474,6 +509,14 @@ export const CHAPTERS: Chapter[] = [
           "One leaf per funded cell, sorted, hashed with sha256. `GET /api/map/rewards/day` shows the root, `GET /api/map/rewards/proof?cell=` the leaf and its proof.",
           "The reward worker calls `publish_map_day`, `claim_map` and `close_map_day` on the rewards contract, which verifies every claim against the root. Only GPS-world coins and cell zones of players with a linked NEAR account, max 240 claims a day; the arena stays practice.",
           "Each published day holds 256 storage slots (≈ 2.6 NEAR) until it is closed.",
+        ],
+      },
+      { h: "Caps grow with the treasury" },
+      {
+        list: [
+          "The rewards contract caps each date at **max(0.1 NEAR, 10 % of each bucket's funding)**.",
+          "City days together take at most max(0.006 NEAR, 4 % of a bucket's funding); a map day at most half of the date cap, within what the city days left.",
+          "With 0.2 NEAR funded nothing changes. With 1,000 NEAR a date may commit 50 NEAR per bucket: 20 to cities, 25 to the map.",
         ],
       },
       { h: "Plzeň's native days" },
