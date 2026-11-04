@@ -2,8 +2,8 @@
   "network": "testnet",
   "verifiedAt": "2026-11-01T12:31:34.699Z",
   "contractId": "questlayer-rewards-20261101b.testnet",
-  "codeHash": "2cQwQ3RvxWYRRzgrKJZHYnYxQxgJWMSdSNtLHY8NKTzD",
-  "wasmSha256": "17ee14f71ea34b215d9c6fbc97d16f0a4d97a1fd05afffa2e3f8016295a1e9de",
+  "codeHash": "CzZZzbibSzt2JqmReJFVsLxYEpPYPSjQsBmCiNwbeBWY",
+  "wasmSha256": "b22f7ceecf260ab1760c444c189d93a998b18c0f1468df1fdf93fcd009207a81",
   "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
   "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
   "factory": {
@@ -114,5 +114,6 @@
     "findXp": 15,
     "view": "get_day(day_id).finds",
     "backfill": []
-  }
+  },
+  "qgoldVault": "questlayer-qgold-vault-20261104.testnet"
 }

@@ -92,7 +92,8 @@ export function createQgoldVaultReader({ provider, settings, clock = Date.now, l
   }
   function status() {
     if (!last) return { status: lastError ? "unreadable" : "starting", contract: settings.contract, error: lastError || undefined };
-    const { state, assessment } = last.value;
+    const { assessment } = last.value;
+    const state = last.value.state || {};
     return {
       status: assessment.status,
       issues: assessment.issues,

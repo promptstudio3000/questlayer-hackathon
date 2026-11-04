@@ -19,7 +19,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { Account, KeyPairSigner, actions } from "near-api-js";
+import { Account, KeyPairSigner, PublicKey, actions } from "near-api-js";
 import { createNearProvider, rpcErrorText } from "../server/near-provider.mjs";
 
 assert(process.argv.includes("--reviewed"), "Pass --reviewed after reviewing contracts/qgold and the rewards diff.");
@@ -135,7 +135,7 @@ if (BigInt(audit0.slack) < NEAR) {
 const keys = (await provider.query({ request_type: "view_access_key_list", account_id: vaultId, finality: "final" })).keys;
 for (const k of keys) {
   await record("Delete vault access key " + k.public_key, () =>
-    vault.signAndSendTransaction({ receiverId: vaultId, actions: [actions.deleteKey(k.public_key)], waitUntil: "FINAL" }),
+    vault.signAndSendTransaction({ receiverId: vaultId, actions: [actions.deleteKey(PublicKey.from(k.public_key))], waitUntil: "FINAL" }),
   );
 }
 assert.equal((await provider.query({ request_type: "view_access_key_list", account_id: vaultId, finality: "final" })).keys.length, 0, "The vault must have no access keys");

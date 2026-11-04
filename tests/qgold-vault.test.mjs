@@ -83,3 +83,11 @@ test("reader keeps the last good reading when the RPC fails", async () => {
   assert.equal(v.stale, true);
   assert.equal(r.status().error, "rpc down");
 });
+
+test("an unreadable or empty reply never breaks the health block", async () => {
+  const provider = { async query() { return { result: [...Buffer.from("null")] }; } };
+  const r = createQgoldVaultReader({ provider, settings: { contract: "q.testnet", cacheMs: 0 } });
+  const v = await r.read();
+  assert.equal(v.assessment.status, "unknown");
+  assert.equal(r.status().status, "unknown");
+});

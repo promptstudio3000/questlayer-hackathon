@@ -94,7 +94,7 @@ async function call(label, contractId, methodName, args, deposit = 0n, gas = 100
     const r = await account.callFunctionRaw({ contractId, methodName, args, deposit, gas, waitUntil: "FINAL" });
     const hash = r?.transaction?.hash || r?.transaction_outcome?.id;
     const bad = r?.status?.Failure || (r?.receipts_outcome || []).find((o) => o.outcome?.status?.Failure);
-    assert.ok(!bad, `${label} failed: ${JSON.stringify(bad).slice(0, 400)}`);
+    assert.ok(!bad, `${label} failed: ${String(JSON.stringify(bad)).slice(0, 400)}`);
     txs.push({ label, transaction: hash });
     log({ step: label, transaction: hash });
     return r;
@@ -107,20 +107,36 @@ const returned = (r) => {
   return v ? JSON.parse(Buffer.from(v, "base64").toString()) : null;
 };
 
-// 1. Storage on the exchange and the tokens.
-await call("Register the operator on Rhea", DEX, "storage_deposit", { account_id: operator.accountId, registration_only: false }, NEAR / 10n);
-await call("Register Rhea on QGOLD", QGOLD, "storage_deposit", { account_id: DEX, registration_only: true }, NEAR / 100n);
-// 2. Pool.
-const created = await call("Create the QGOLD/wNEAR simple pool", DEX, "add_simple_pool", { tokens: [WNEAR, QGOLD], fee: FEE_BPS }, NEAR / 10n);
-const poolId = Number(returned(created));
-assert.ok(Number.isInteger(poolId) && poolId >= 0, "No pool id returned");
-await call("Register both tokens for the operator on Rhea", DEX, "register_tokens", { token_ids: [WNEAR, QGOLD] }, 1n);
+// --pool <id> resumes an empty pool this script already created, without a second one.
+const resumePool = argv.includes("--pool") ? Number(argv[argv.indexOf("--pool") + 1]) : null;
+let poolId;
+if (resumePool === null) {
+  // 1. Storage on the exchange and the tokens.
+  await call("Register the operator on Rhea", DEX, "storage_deposit", { account_id: operator.accountId, registration_only: false }, NEAR / 10n);
+  await call("Register Rhea on QGOLD", QGOLD, "storage_deposit", { account_id: DEX, registration_only: true }, NEAR / 100n);
+  // 2. Pool.
+  const created = await call("Create the QGOLD/wNEAR simple pool", DEX, "add_simple_pool", { tokens: [WNEAR, QGOLD], fee: FEE_BPS }, NEAR / 10n);
+  poolId = Number(returned(created));
+  assert.ok(Number.isInteger(poolId) && poolId >= 0, "No pool id returned");
+  await call("Register both tokens for the operator on Rhea", DEX, "register_tokens", { token_ids: [WNEAR, QGOLD] }, 1n);
+} else {
+  const existing = await view(DEX, "get_pool", { pool_id: resumePool });
+  assert.deepEqual(existing.token_account_ids, [WNEAR, QGOLD], "--pool is not the QGOLD/wNEAR pool");
+  assert.ok(existing.amounts.every((a) => a === "0"), "--pool already has liquidity");
+  poolId = resumePool;
+}
 // 3. Liquidity: QGOLD from the vault at R + 1 % (fully backed), wNEAR by wrapping.
-await call("Buy QGOLD from the vault for the pool", QGOLD, "deposit", { min_out: ((BigInt(seed.qgold) * 99n) / 100n).toString() }, SEED_NEAR, 100n * TGAS);
-await call("Wrap NEAR", WNEAR, "near_deposit", {}, poolNear, 30n * TGAS);
-await call("Deposit wNEAR on Rhea", WNEAR, "ft_transfer_call", { receiver_id: DEX, amount: poolNear.toString(), msg: "" }, 1n, 100n * TGAS);
-await call("Deposit QGOLD on Rhea", QGOLD, "ft_transfer_call", { receiver_id: DEX, amount: poolQgold.toString(), msg: "" }, 1n, 100n * TGAS);
-await call("Add liquidity", DEX, "add_liquidity", { pool_id: poolId, amounts: [poolNear.toString(), poolQgold.toString()] }, NEAR / 100n, 100n * TGAS);
+// Wrapping the first time also pays wrap.testnet storage out of the deposit, so
+// the pool takes the wNEAR actually held, not the amount sent.
+const held = async (token) => BigInt(await view(token, "ft_balance_of", { account_id: operator.accountId }));
+if ((await held(QGOLD)) < poolQgold)
+  await call("Buy QGOLD from the vault for the pool", QGOLD, "deposit", { min_out: ((BigInt(seed.qgold) * 99n) / 100n).toString() }, SEED_NEAR, 100n * TGAS);
+if ((await held(WNEAR)) < (poolNear * 99n) / 100n) await call("Wrap NEAR", WNEAR, "near_deposit", {}, poolNear, 30n * TGAS);
+const wnearIn = [poolNear, await held(WNEAR)].reduce((a, b) => (a < b ? a : b));
+const qgoldIn = (wnearIn * QGOLD_ONE) / price;
+await call("Deposit wNEAR on Rhea", WNEAR, "ft_transfer_call", { receiver_id: DEX, amount: wnearIn.toString(), msg: "" }, 1n, 100n * TGAS);
+await call("Deposit QGOLD on Rhea", QGOLD, "ft_transfer_call", { receiver_id: DEX, amount: qgoldIn.toString(), msg: "" }, 1n, 100n * TGAS);
+await call("Add liquidity", DEX, "add_liquidity", { pool_id: poolId, amounts: [wnearIn.toString(), qgoldIn.toString()] }, NEAR / 100n, 100n * TGAS);
 
 const pool = await view(DEX, "get_pool", { pool_id: poolId });
 const near = BigInt(pool.amounts[pool.token_account_ids.indexOf(WNEAR)]),
