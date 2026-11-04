@@ -1,0 +1,15 @@
+[package]
+name = "questlayer-qgold-escrow"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "questlayer_qgold_escrow"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk.workspace = true
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

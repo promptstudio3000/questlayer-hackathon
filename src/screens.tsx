@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   Coins,
   Translate,
+  Compass,
+  MapPinArea,
   type Icon,
 } from "@phosphor-icons/react";
 import type { ScreenTab } from "./ScreenTabs";
@@ -41,6 +43,12 @@ export function profileTabOf(tab: string, view: ProfileView): ProfileTab {
 export const MARKET_TABS: readonly ScreenTab<MarketView>[] = [
   { id: "secured", get label() { return tr("Secured"); }, icon: ShieldCheck },
   { id: "offers", get label() { return tr("Offers"); }, icon: Signature },
+];
+
+export type ExploreTab = "discoveries" | "nearby";
+export const EXPLORE_TABS: readonly ScreenTab<ExploreTab>[] = [
+  { id: "discoveries", get label() { return tr("Discoveries"); }, icon: Compass },
+  { id: "nearby", get label() { return tr("Nearby"); }, icon: MapPinArea },
 ];
 
 export type BagTab = "items" | "shop" | "market";
