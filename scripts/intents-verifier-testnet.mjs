@@ -22,7 +22,9 @@ import { Account, KeyPair, KeyPairSigner, actions } from "near-api-js";
 import { createNearProvider, rpcErrorText } from "../server/near-provider.mjs";
 import {
   INTENTS_SOURCE,
+  TREASURY_FEE_PIPS,
   auraTokenDiff,
+  grossForNet,
   auraTransferPair,
   intentMessage,
   signIntentWithKeyPair,
@@ -177,7 +179,10 @@ if (DEPLOY && !deployed) {
   log({ step: "Verifier already runs the pinned build" });
 }
 if (deployed || DEPLOY) {
-  assert.equal(await view(verifierId, "fee"), 0, "The experimental verifier must have a zero fee");
+  // The fee is 0 at deploy; scripts/intents-fees-testnet.mjs later sets the
+  // treasury fee (2 %), which the proof below then pays on the buyer's leg.
+  const fee = await view(verifierId, "fee");
+  assert.ok(fee === 0 || fee === TREASURY_FEE_PIPS, `Unexpected verifier fee ${fee}`);
   log({ step: "Verifier state", salt: await view(verifierId, "current_salt") });
 }
 if (DEPLOY) writeManifest();
@@ -225,14 +230,20 @@ async function proveTrades() {
   assert.equal(await bal(seller, nftToken), 1n);
   const storage = await view(WNEAR, "storage_balance_of", { account_id: buyer });
   if (!storage) await call(`Register ${buyer} with wNEAR`, buyer, WNEAR, "storage_deposit", { account_id: buyer, registration_only: true }, 125n * 10n ** 19n);
-  await call("Wrap 0.01 NEAR", buyer, WNEAR, "near_deposit", {}, price);
-  await call("Deposit 0.01 wNEAR into the verifier", buyer, WNEAR, "ft_transfer_call",
-    { receiver_id: verifierId, amount: price.toString(), msg: "" }, 1n, { gas: 100n * TGAS });
+  // With the treasury fee on, the buyer's leg is the price plus the fee.
+  const feePips = await view(verifierId, "fee");
+  const gross = grossForNet(price, feePips);
+  // The operator is the fee collector, so its verifier wNEAR also holds trade
+  // fees for the prize pool. The proof only ever takes back its own amount.
+  const wnearBefore = await bal(buyer, ftToken);
+  await call("Wrap the price (plus fee) in NEAR", buyer, WNEAR, "near_deposit", {}, gross);
+  await call("Deposit the wNEAR into the verifier", buyer, WNEAR, "ft_transfer_call",
+    { receiver_id: verifierId, amount: gross.toString(), msg: "" }, 1n, { gas: 100n * TGAS });
   const buyerWnear = await bal(buyer, ftToken);
-  assert.ok(buyerWnear >= price);
+  assert.ok(buyerWnear >= gross);
   // 3. Primary path: two opposite token_diff intents settled by one execute_intents.
   const sellIntent = sign(seller, [auraTokenDiff({ side: "sell", nftContract: nftId, tokenId: token, price, wnear: WNEAR })]);
-  const buyIntent = sign(buyer, [auraTokenDiff({ side: "buy", nftContract: nftId, tokenId: token, price, wnear: WNEAR })]);
+  const buyIntent = sign(buyer, [auraTokenDiff({ side: "buy", nftContract: nftId, tokenId: token, price, wnear: WNEAR, feePips })]);
   const sim = await view(verifierId, "simulate_intents", { signed: [sellIntent, buyIntent] });
   assert.ok(!sim.invariant_violated, JSON.stringify(sim.invariant_violated));
   await call("Aura -> wNEAR via token_diff (execute_intents)", operatorId, verifierId, "execute_intents", { signed: [sellIntent, buyIntent] }, 0n);
@@ -248,7 +259,8 @@ async function proveTrades() {
   // 6. Withdrawals signed as intents and submitted by the solver (no player gas).
   await call("Withdraw the Aura back to its owner (nft_withdraw intent)", operatorId, verifierId, "execute_intents",
     { signed: [sign(seller, [{ intent: "nft_withdraw", token: nftId, token_id: token, receiver_id: seller }])] }, 0n, { gas: 250n * TGAS });
-  const left = await bal(buyer, ftToken);
+  const gained = (await bal(buyer, ftToken)) - wnearBefore;
+  const left = gained < price ? gained : price;
   if (left > 0n)
     await call("Withdraw wNEAR as native NEAR (native_withdraw intent)", operatorId, verifierId, "execute_intents",
       { signed: [sign(buyer, [{ intent: "native_withdraw", receiver_id: buyer, amount: left.toString() }])] }, 0n, { gas: 250n * TGAS });

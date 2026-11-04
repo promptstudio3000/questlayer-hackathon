@@ -1383,6 +1383,7 @@
  "Price in NEAR (0.01 to 10)": "NEAR में कीमत (0.01 से 10)",
  "Price in test NEAR": "टेस्ट NEAR में कीमत",
  "Price in wNEAR": "wNEAR में कीमत",
+ "Prices include {0} % for the prize pool.": "कीमतों में पुरस्कार पूल के लिए {0} % शामिल है।",
  "Private AI on NEAR · runs in a sealed enclave, answers only from game data": "NEAR पर निजी AI · सील्ड एन्क्लेव में चलता है, केवल गेम डेटा से जवाब देता है",
  "Private completion progress": "निजी पूरा होने की प्रगति",
  "Private information": "निजी जानकारी",

@@ -19,6 +19,8 @@ export type IntentsConfig = {
   nftContract: string;
   wnear: string;
   salt: string;
+  /** Verifier fee in pips (1/1,000,000), paid by the buyer to the treasury. */
+  fee?: number | null;
   solver: string | null;
   orders: IntentOrder[];
   settlements: { transactionHash: string; kind: string; accounts: string[] }[];
@@ -28,7 +30,10 @@ export type IntentOrder = {
   maker: string;
   side: "sell" | "buy";
   tokenId: string;
+  /** What the seller receives. */
   price: string;
+  /** What the buyer gives: price plus the verifier fee. */
+  buyerPays?: string;
   deadlineMs: number;
   state: string;
   settlementTx: string | null;
@@ -66,12 +71,21 @@ export function intentMessage(signerId: string, deadlineMs: number, intents: unk
   return JSON.stringify({ signer_id: signerId, deadline: new Date(deadlineMs).toISOString(), intents });
 }
 
-export function auraTokenDiff(side: "sell" | "buy", nftContract: string, tokenId: string, price: string, wnear: string) {
+// Same rule as the verifier (server/native/intents.mjs): the fee is taken
+// from the buyer's wNEAR leg, so the buyer gives ceil(p * 1e6 / (1e6 - fee)).
+const PIPS_MAX = 1_000_000n;
+export function grossForNet(price: string, feePips = 0) {
+  const d = PIPS_MAX - BigInt(feePips || 0);
+  return ((BigInt(price) * PIPS_MAX + d - 1n) / d).toString();
+}
+
+/** `price` is what the seller receives; a buy leg adds the verifier fee. */
+export function auraTokenDiff(side: "sell" | "buy", nftContract: string, tokenId: string, price: string, wnear: string, feePips = 0) {
   const nft = `nep171:${nftContract}:${tokenId}`,
     ft = `nep141:${wnear}`;
   return {
     intent: "token_diff",
-    diff: side === "sell" ? { [nft]: "-1", [ft]: price } : { [nft]: "1", [ft]: `-${price}` },
+    diff: side === "sell" ? { [nft]: "-1", [ft]: price } : { [nft]: "1", [ft]: `-${grossForNet(price, feePips)}` },
   };
 }
 
