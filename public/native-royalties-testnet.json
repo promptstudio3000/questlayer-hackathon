@@ -1,0 +1,43 @@
+{
+  "network": "testnet",
+  "contract": "nfts.questlayer-dev-20261101.testnet",
+  "royalty": {
+    "account_id": "royalties.questlayer-dev-20261101.testnet",
+    "bps": 200
+  },
+  "rewardsContract": "questlayer-rewards-20261101b.testnet",
+  "receiptPrefix": "aura-royalties-",
+  "transactions": [
+    {
+      "label": "Create royalties.questlayer-dev-20261101.testnet (royalty payee)",
+      "transaction": "BBdN4YNtFzqLjQ8gj2js839jFPhFzG9dztWzY8BF9D39"
+    },
+    {
+      "label": "set_royalty 200 bps to royalties.questlayer-dev-20261101.testnet",
+      "transaction": "7GuhyB1yfkcGmf99BR6ZJCaiSzmgLdxPS99dRA8iRqnq"
+    }
+  ],
+  "sweeps": [],
+  "mintbaseProof": {
+    "verifiedAt": "2026-11-04T15:38:01.719Z",
+    "market": "market-v2-beta.mintspace2.testnet",
+    "tokenId": "aura:polar:3",
+    "price": "100000000000000000000000",
+    "mintbaseCutBps": 100,
+    "royaltyBps": 200,
+    "royaltyReceived": "1980000000000000000000",
+    "seller": "questlayer-dev-20261101.testnet",
+    "buyer": "mb-buyer.questlayer-dev-20261101.testnet",
+    "transactions": [
+      {
+        "label": "Top up mb-buyer.questlayer-dev-20261101.testnet by 0.350000 NEAR for price and gas",
+        "transaction": "HnLihJUeEUe2M5R9oDPgPHbSXfJcPtzF5LR143BzX1mL"
+      },
+      {
+        "label": "Buy aura:polar:3 on Mintbase",
+        "transaction": "6qxuB1jvX27T8juJ5YGc6AdpcWpyWm7NehemRZ2VPsDi"
+      }
+    ]
+  },
+  "updatedAt": "2026-11-04T15:38:01.719Z"
+}

@@ -1,9 +1,46 @@
+// Drop-in art (art/README.md) must register before any module reads it.
+import "./art-overrides";
+import { currentRelease } from "./pwa-boot";
 import "./style.css";
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
-createRoot(document.getElementById("root")!).render(
+import { PwaPrompts } from "./pwa-prompts";
+import { registerServiceWorker } from "./pwa-state";
+import { loadLocale } from "./i18n";
+
+// "How it works" one-pager (docs/HOW-IT-WORKS-PLAN.md): its own lazy chunk,
+// so the welcome screen's first load does not grow.
+const HowItWorks = lazy(() => import("./how-it-works/HowItWorks"));
+const HOW_IT_WORKS_PATH = /^\/how-it-works\/?$/;
+// Public prize pool ledger (docs/ECONOMY-PAGE.md): read-only, own lazy chunk.
+const EconomyPage = lazy(() => import("./economy/EconomyPage"));
+const ECONOMY_PATH = /^\/economy\/?$/;
+
+void loadLocale().then(() =>
+  createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    {HOW_IT_WORKS_PATH.test(location.pathname) ? (
+      <Suspense fallback={null}>
+        <HowItWorks />
+      </Suspense>
+    ) : ECONOMY_PATH.test(location.pathname) ? (
+      <Suspense fallback={null}>
+        <EconomyPage />
+      </Suspense>
+    ) : (
+      <>
+        <App />
+        <PwaPrompts />
+      </>
+    )}
   </React.StrictMode>,
+  ),
 );
+
+// Offline-capable app shell, production builds only. A new version waits
+// until the player chooses Reload in the "New version ready" notice, which
+// also appears when the published shell names other assets.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => registerServiceWorker(currentRelease));
+}

@@ -1,0 +1,207 @@
+{
+  "schema": "questlayer.load-test/1",
+  "at": "2026-11-03T17:13:26.445Z",
+  "walkers": 500,
+  "started": 499,
+  "failedStarts": 1,
+  "durationS": 120,
+  "rampS": 60,
+  "poiWorld": {
+    "status": "ready",
+    "version": "cz-local-loadtest",
+    "pois": 290562
+  },
+  "requests": 18159,
+  "rps": 151.3,
+  "errorShare": 0.005396772950052316,
+  "coins": 5006,
+  "quests": 18,
+  "worstLoopStallMs": 767,
+  "serverCpuCoresP95": 1.06,
+  "serverPeakRssMb": 871,
+  "clientCpuCores": 0.41,
+  "budget": {
+    "serverP95Ms": 100,
+    "p95Ms": 400,
+    "loopStallMs": 1000,
+    "errorShare": 0.01
+  },
+  "routes": [
+    {
+      "route": "POST /coins/claim",
+      "requests": 6023,
+      "p50": 211,
+      "p95": 836,
+      "p99": 61046,
+      "serverP95": 18.7,
+      "serverMax": 95,
+      "errors": 18,
+      "limited": 0,
+      "status": {
+        "200": 5006,
+        "409": 890,
+        "422": 109,
+        "net": 18
+      }
+    },
+    {
+      "route": "GET /presence",
+      "requests": 3632,
+      "p50": 226,
+      "p95": 10472,
+      "p99": 65464,
+      "serverP95": 1,
+      "serverMax": 10,
+      "errors": 11,
+      "limited": 0,
+      "status": {
+        "200": 3621,
+        "net": 11
+      }
+    },
+    {
+      "route": "GET /me",
+      "requests": 2031,
+      "p50": 222,
+      "p95": 1206,
+      "p99": 70120,
+      "serverP95": 8.6,
+      "serverMax": 15,
+      "errors": 8,
+      "limited": 0,
+      "status": {
+        "200": 2023,
+        "net": 8
+      }
+    },
+    {
+      "route": "GET /world",
+      "requests": 1994,
+      "p50": 263,
+      "p95": 52782,
+      "p99": 73750,
+      "serverP95": 26.4,
+      "serverMax": 75,
+      "errors": 14,
+      "limited": 0,
+      "status": {
+        "200": 1980,
+        "net": 14
+      }
+    },
+    {
+      "route": "POST /badges/check",
+      "requests": 987,
+      "p50": 352,
+      "p95": 69111,
+      "p99": 73946,
+      "serverP95": 1.2,
+      "serverMax": 6,
+      "errors": 17,
+      "limited": 0,
+      "status": {
+        "200": 779,
+        "422": 191,
+        "net": 17
+      }
+    },
+    {
+      "route": "GET /daily-board",
+      "requests": 982,
+      "p50": 329,
+      "p95": 68307,
+      "p99": 87474,
+      "serverP95": 12.3,
+      "serverMax": 21,
+      "errors": 12,
+      "limited": 0,
+      "status": {
+        "200": 970,
+        "net": 12
+      }
+    },
+    {
+      "route": "POST /presence",
+      "requests": 959,
+      "p50": 256,
+      "p95": 57843,
+      "p99": 71469,
+      "serverP95": 0.8,
+      "serverMax": 2,
+      "errors": 7,
+      "limited": 0,
+      "status": {
+        "200": 952,
+        "net": 7
+      }
+    },
+    {
+      "route": "POST /session",
+      "requests": 500,
+      "p50": 157,
+      "p95": 20936,
+      "p99": 69268,
+      "serverP95": 10.2,
+      "serverMax": 17,
+      "errors": 1,
+      "limited": 0,
+      "status": {
+        "201": 499,
+        "net": 1
+      }
+    },
+    {
+      "route": "POST /world",
+      "requests": 499,
+      "p50": 170,
+      "p95": 30528,
+      "p99": 70347,
+      "serverP95": 37.1,
+      "serverMax": 218,
+      "errors": 2,
+      "limited": 0,
+      "status": {
+        "200": 497,
+        "net": 2
+      }
+    },
+    {
+      "route": "GET /actors",
+      "requests": 491,
+      "p50": 315,
+      "p95": 66534,
+      "p99": 109067,
+      "serverP95": 1.6,
+      "serverMax": 15,
+      "errors": 7,
+      "limited": 0,
+      "status": {
+        "200": 484,
+        "net": 7
+      }
+    },
+    {
+      "route": "POST /quests/claim",
+      "requests": 61,
+      "p50": 258,
+      "p95": 605,
+      "p99": 10475,
+      "serverP95": 11.3,
+      "serverMax": 13,
+      "errors": 1,
+      "limited": 0,
+      "status": {
+        "200": 18,
+        "409": 27,
+        "410": 2,
+        "422": 6,
+        "423": 7,
+        "net": 1
+      }
+    }
+  ],
+  "slow": [],
+  "slowLog": [
+    "Slow API GET /api/health 357 ms (loop stall 10 ms)"
+  ]
+}

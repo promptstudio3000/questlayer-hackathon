@@ -1,0 +1,144 @@
+/* Aura sprites: integer pixel scales, two sparkle frames, subtle idle motion. */
+.aura-sprite {
+  display: block;
+  flex: none;
+  image-rendering: pixelated;
+  overflow: visible;
+}
+.aura-sprite .aura-frame-b {
+  opacity: 0;
+}
+.aura-sprite.animated .aura-frame-a {
+  animation: aura-twinkle-a 1.6s steps(1, end) infinite;
+}
+.aura-sprite.animated .aura-frame-b {
+  animation: aura-twinkle-b 1.6s steps(1, end) infinite;
+}
+.aura-sprite-above.animated {
+  animation: aura-bob 1.6s ease-in-out infinite;
+}
+.aura-sprite-below.animated {
+  animation: aura-pulse 2.4s ease-in-out infinite;
+}
+@keyframes aura-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes aura-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scaleX(1.03);
+  }
+}
+@keyframes aura-twinkle-a {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes aura-twinkle-b {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aura-sprite,
+  .aura-sprite .aura-frame {
+    animation: none;
+  }
+}
+
+/* Authored sprite inside the item card (AuraArt). */
+.aura-art.authored .aura-art-sprite {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+}
+.aura-art.authored .aura-art-sprite.below {
+  top: auto;
+  bottom: 6px;
+  z-index: 0;
+}
+.aura-art.small.authored .aura-art-sprite {
+  top: 2px;
+}
+.aura-art.small.authored .aura-art-sprite.below {
+  top: auto;
+  bottom: 2px;
+}
+
+/* Cosmetic set bonus: a soft glow behind a matching pair. No gameplay effect. */
+.character-composition.aura-set {
+  isolation: isolate;
+}
+.character-composition.aura-set::before {
+  content: "";
+  position: absolute;
+  inset: 12% 18%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--aura-set-glow) 55%, transparent),
+    transparent
+  );
+  pointer-events: none;
+  animation: aura-set-glow 3.2s ease-in-out infinite;
+}
+.character-composition.aura-set-tempest::before {
+  animation: aura-set-flicker 2.4s steps(1, end) infinite;
+}
+@keyframes aura-set-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+@keyframes aura-set-flicker {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  45% {
+    opacity: 0.95;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  55% {
+    opacity: 0.9;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .character-composition.aura-set::before {
+    animation: none;
+    opacity: 0.75;
+  }
+}
+/* Dropped-in Aura images (art/auras/, docs/ART-LIST.md) fill the same box as the pixel grid. */
+img.aura-sprite-art {
+  object-fit: contain;
+  image-rendering: auto;
+}

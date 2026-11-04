@@ -1,0 +1,37 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-04T15:20:48.385Z",
+  "contractId": "questlayer-ledger-20261104.testnet",
+  "codeHash": "54QQWHggU5khqUj1fdnkCve2Aw3kbM5AU2h8MmkaQz1S",
+  "wasmSha256": "3c4df45cdfa8854dc37553fc13be261fef09acd00a283d4c7fac0aa26704ffa5",
+  "token": {
+    "symbol": "QXP",
+    "decimals": 0
+  },
+  "goldToken": {
+    "contractId": "questlayer-qgold-20261104.testnet",
+    "symbol": "QGOLD",
+    "decimals": 6,
+    "codeHash": "3eKPTb9VWcAo6JC4yBQ2HocZxJJefE6Az3LQu4qxaK46",
+    "wasmSha256": "2746a77ec1de90c9b9a8054769922d0a2027cec8c15f743fcd66b89b3c572293"
+  },
+  "recorderPublicKey": "ed25519:6qumceV2fLHk4Y4AVSHwarvqvEdqAAipPcJAoGAgPDod",
+  "recorderMethods": [
+    "record_batch",
+    "commit_day",
+    "retry_gold"
+  ],
+  "levelBaseXp": 100,
+  "maxLevel": 10,
+  "cellPrecision": 7,
+  "transferable": false,
+  "capabilities": [
+    "soulbound-nep141",
+    "action-memos",
+    "batched-records",
+    "seq-idempotent",
+    "profile-view",
+    "daily-merkle-root",
+    "verify-proof"
+  ]
+}

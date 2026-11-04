@@ -15,7 +15,101 @@ use near_sdk::{
     near_bindgen, AccountId, PanicOnDefault, Promise, PromiseOrValue,
 };
 const EXPLORER_MEDIA: &str = include_str!("../assets/explorer-uri.txt");
+/// Aura editions this contract can mint: (edition id, title, cover media).
+/// Mirrors the `native` entries of server/data/aura-catalog.json (a Node test
+/// keeps them equal). Code-only: adding an edition needs no state migration,
+/// and token ids stay `aura:<edition>:<serial>` with a 256 cap per edition.
+const AURA_EDITIONS: [(&str, &str, &str); 23] = [
+    ("polar", "Northern Lights", include_str!("../assets/aura-polar-uri.txt")),
+    ("moon", "Moonwake Aura", include_str!("../assets/aura-moon-uri.txt")),
+    ("gold", "Sunlit Aura", include_str!("../assets/aura-gold-uri.txt")),
+    ("ember", "Ember Wisp", include_str!("../assets/aura-ember-uri.txt")),
+    ("dew", "Dewfall Ring", include_str!("../assets/aura-dew-uri.txt")),
+    ("bloom", "Meadow Bloom", include_str!("../assets/aura-bloom-uri.txt")),
+    ("storm", "Stormcrown", include_str!("../assets/aura-storm-uri.txt")),
+    ("comet", "Comet Trail", include_str!("../assets/aura-comet-uri.txt")),
+    ("nova", "Nova Bloom", include_str!("../assets/aura-nova-uri.txt")),
+    ("pilgrim", "Pilgrim's Path", include_str!("../assets/aura-pilgrim-uri.txt")),
+    ("chronicle", "Chronicle Crown", include_str!("../assets/aura-chronicle-uri.txt")),
+    ("ledger", "Merchant's Ledger", include_str!("../assets/aura-ledger-uri.txt")),
+    ("wardbreaker", "Wardbreaker Horns", include_str!("../assets/aura-wardbreaker-uri.txt")),
+    ("wisp", "Will-o'-Wisp Halo", include_str!("../assets/aura-wisp-uri.txt")),
+    ("bossbane", "Bossbane Fangring", include_str!("../assets/aura-bossbane-uri.txt")),
+    ("stride", "Silver Stride", include_str!("../assets/aura-stride-uri.txt")),
+    ("kindle", "Altar Kindle", include_str!("../assets/aura-kindle-uri.txt")),
+    ("compass", "Wayfarer's Compass", include_str!("../assets/aura-compass-uri.txt")),
+    ("quill", "Storyteller's Quill", include_str!("../assets/aura-quill-uri.txt")),
+    ("laurel", "Pathfinder Laurel", include_str!("../assets/aura-laurel-uri.txt")),
+    ("summit", "Summit Crown", include_str!("../assets/aura-summit-uri.txt")),
+    ("patron", "Patron's Lantern", include_str!("../assets/aura-patron-uri.txt")),
+    ("season", "Hackathon Pennant", include_str!("../assets/aura-season-uri.txt")),
+];
+/// NPC-, monster-, level- and season-only editions: (edition id, required claim id prefix,
+/// token description). They are minted only through a claim whose id carries
+/// the prefix (signed award claims via `redeem_aura`, or the oracle's
+/// `mint_aura_once`), never by the claim-less oracle `mint_aura`. Anyone can
+/// audit where every such token came from with `get_claim`. Mirrors the
+/// `source` field of server/data/aura-catalog.json (a Node test keeps them equal).
+const CLAIM_ONLY_EDITIONS: [(&str, &str, &str); 14] = [
+    ("pilgrim", "earned:npc:", "Earned from a QuestLayer NPC."),
+    ("chronicle", "earned:npc:", "Earned from a QuestLayer NPC."),
+    ("ledger", "earned:npc:", "Earned from a QuestLayer NPC."),
+    ("wisp", "earned:npc:", "Earned from a QuestLayer NPC."),
+    ("wardbreaker", "earned:monster:", "Earned by beating a QuestLayer monster."),
+    ("bossbane", "earned:monster:", "Earned by beating a QuestLayer monster."),
+    ("stride", "earned:level:", "Earned by reaching QuestLayer level 5."),
+    ("kindle", "earned:level:", "Earned by reaching QuestLayer level 6."),
+    ("compass", "earned:level:", "Earned by reaching QuestLayer level 7."),
+    ("quill", "earned:level:", "Earned by reaching QuestLayer level 8."),
+    ("laurel", "earned:level:", "Earned by reaching QuestLayer level 9."),
+    ("summit", "earned:level:", "Earned by reaching QuestLayer level 10."),
+    ("patron", "earned:npc:", "Earned from a QuestLayer NPC."),
+    ("season", "earned:season:", "Earned in a QuestLayer season."),
+];
+fn claim_only(edition: &str) -> Option<(&'static str, &'static str)> {
+    CLAIM_ONLY_EDITIONS
+        .iter()
+        .find(|(id, _, _)| *id == edition)
+        .map(|(_, prefix, description)| (*prefix, *description))
+}
+fn aura_edition(edition: &str) -> Option<(&'static str, &'static str)> {
+    AURA_EDITIONS
+        .iter()
+        .find(|(id, _, _)| *id == edition)
+        .map(|(_, name, media)| (*name, *media))
+}
 
+/// The chain this deployment lives on, from its own account suffix. A voucher
+/// signed for one network can never verify on the other, and only `.testnet`
+/// deployments label their tokens as testnet collectibles.
+fn network() -> &'static str {
+    if env::current_account_id().as_str().ends_with(".testnet") {
+        "testnet"
+    } else {
+        "mainnet"
+    }
+}
+
+/// NEP-199 royalty: marketplaces that call `nft_transfer_payout` (Mintbase,
+/// Paras) pay this share of every resale to the game treasury account. It is
+/// stored under its own key, so adding it needs no state migration (schema 3).
+const ROYALTY_KEY: &[u8] = b"royalty";
+/// At most 10 % of a sale.
+const MAX_ROYALTY_BPS: u16 = 1_000;
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[borsh(crate = "near_sdk::borsh")]
+#[serde(crate = "near_sdk::serde")]
+pub struct Royalty {
+    pub account_id: AccountId,
+    /// Basis points of the sale price (100 = 1 %).
+    pub bps: u16,
+}
+/// NEP-199 payout: who receives what from a sale of `balance`.
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct Payout {
+    pub payout: std::collections::HashMap<AccountId, U128>,
+}
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(crate = "near_sdk::serde", rename_all = "snake_case")]
 pub enum AuraSlot {
@@ -176,6 +270,18 @@ impl Collectibles {
                 .expect("An Ed25519 public key has 32 bytes"),
         );
     }
+    /// Emergency stop for earned claims (for example a leaked voucher key).
+    /// Already redeemed claims keep their tokens; `set_award_signer` re-enables.
+    #[payable]
+    pub fn clear_award_signer(&mut self) {
+        near_sdk::assert_one_yocto();
+        assert_eq!(
+            env::predecessor_account_id(),
+            self.tokens.owner_id,
+            "Owner only"
+        );
+        self.award_signer = None;
+    }
     pub fn get_award_signer(&self) -> Option<Base64VecU8> {
         self.award_signer.map(|key| Base64VecU8(key.to_vec()))
     }
@@ -186,7 +292,7 @@ impl Collectibles {
         receiver_id: AccountId,
         expires_at_ms: u64,
     ) -> String {
-        format!("QuestLayer Aura claim v1\nContract: {}\nNetwork: testnet\nClaim: {}\nReceiver: {}\nEdition: {}\nExpires: {}",env::current_account_id(),claim_id,receiver_id,edition,expires_at_ms)
+        format!("QuestLayer Aura claim v1\nContract: {}\nNetwork: {}\nClaim: {}\nReceiver: {}\nEdition: {}\nExpires: {}",env::current_account_id(),network(),claim_id,receiver_id,edition,expires_at_ms)
     }
     #[payable]
     pub fn redeem_aura(
@@ -197,17 +303,15 @@ impl Collectibles {
         expires_at_ms: u64,
         signature: Base64VecU8,
     ) -> Token {
-        assert!(
-            env::current_account_id().as_str().ends_with(".testnet"),
-            "Claims are testnet-only"
-        );
         assert_eq!(
             env::predecessor_account_id(),
             receiver_id,
             "Claim belongs to a different wallet"
         );
         assert!(
-            claim_id.starts_with("earned:") && claim_id.len() <= 160,
+            claim_id.starts_with("earned:")
+                && claim_id.len() <= 160
+                && claim_id.bytes().all(|b| b.is_ascii_graphic()),
             "Invalid earned claim"
         );
         let key = self.award_signer.expect("Earned claims are not enabled");
@@ -231,24 +335,22 @@ impl Collectibles {
                 "Award claim expired"
             );
         }
-        let (name, media) = match edition.as_str() {
-            "polar" => (
-                "Northern Lights",
-                include_str!("../assets/aura-polar-uri.txt"),
-            ),
-            "moon" => ("Moonwake Aura", include_str!("../assets/aura-moon-uri.txt")),
-            "gold" => ("Sunlit Aura", include_str!("../assets/aura-gold-uri.txt")),
-            _ => env::panic_str("Unknown edition"),
-        };
+        let (name, media) =
+            aura_edition(&edition).unwrap_or_else(|| env::panic_str("Unknown edition"));
+        let description = claim_only(&edition)
+            .map(|(_, d)| d)
+            .unwrap_or("Earned through a QuestLayer adventure.");
         self.mint_claim(
             claim_id,
             edition,
             receiver_id,
             TokenMetadata {
                 title: Some(name.into()),
-                description: Some(
-                    "Earned through a QuestLayer adventure. Testnet collectible.".into(),
-                ),
+                description: Some(if network() == "testnet" {
+                    format!("{description} Testnet collectible.")
+                } else {
+                    description.into()
+                }),
                 media: Some(media.trim().into()),
                 copies: Some(256),
                 ..Default::default()
@@ -257,6 +359,69 @@ impl Collectibles {
     }
     pub fn get_version(&self) -> u32 {
         self.schema_version
+    }
+    /// Owner only: the treasury account and share that marketplaces pay on
+    /// resales (NEP-199). `None` turns royalties off.
+    #[payable]
+    pub fn set_royalty(&mut self, royalty: Option<Royalty>) {
+        near_sdk::assert_one_yocto();
+        assert_eq!(
+            env::predecessor_account_id(),
+            self.tokens.owner_id,
+            "Owner only"
+        );
+        match royalty {
+            Some(r) => {
+                assert!(
+                    r.bps > 0 && r.bps <= MAX_ROYALTY_BPS,
+                    "Royalty must be between 0.01 % and 10 %"
+                );
+                env::storage_write(ROYALTY_KEY, &near_sdk::borsh::to_vec(&r).unwrap());
+            }
+            None => {
+                env::storage_remove(ROYALTY_KEY);
+            }
+        }
+    }
+    pub fn get_royalty(&self) -> Option<Royalty> {
+        env::storage_read(ROYALTY_KEY)
+            .map(|bytes| Royalty::try_from_slice(&bytes).expect("Royalty state is corrupt"))
+    }
+    /// NEP-199: how a sale of `balance` splits for this token right now.
+    pub fn nft_payout(
+        &self,
+        token_id: TokenId,
+        balance: U128,
+        max_len_payout: Option<u32>,
+    ) -> Payout {
+        let owner = self
+            .tokens
+            .owner_by_id
+            .get(&token_id)
+            .expect("Token not found");
+        self.payout_for(&owner, balance.0, max_len_payout)
+    }
+    /// NEP-199: a marketplace transfer for a sale; returns the split the
+    /// marketplace must pay. The usual transfer rules apply (1 yocto, owner or
+    /// approved account, equipment cleared).
+    #[payable]
+    pub fn nft_transfer_payout(
+        &mut self,
+        receiver_id: AccountId,
+        token_id: TokenId,
+        approval_id: Option<u64>,
+        memo: Option<String>,
+        balance: U128,
+        max_len_payout: Option<u32>,
+    ) -> Payout {
+        let owner = self
+            .tokens
+            .owner_by_id
+            .get(&token_id)
+            .expect("Token not found");
+        let payout = self.payout_for(&owner, balance.0, max_len_payout);
+        NonFungibleTokenCore::nft_transfer(self, receiver_id, token_id, approval_id, memo);
+        payout
     }
     #[payable]
     pub fn mint_avatar(&mut self) -> Token {
@@ -288,6 +453,10 @@ impl Collectibles {
         metadata: TokenMetadata,
     ) -> Token {
         self.assert_oracle();
+        assert!(
+            claim_only(&edition).is_none(),
+            "This Aura is only earned from NPCs, monsters, levels or seasons"
+        );
         let initial = env::storage_usage();
         let token_id = self.next_aura(&edition);
         self.finish_mint(token_id, receiver_id, metadata, initial)
@@ -314,6 +483,12 @@ impl Collectibles {
             !claim_id.is_empty() && claim_id.len() <= 160,
             "Invalid claim ID"
         );
+        if let Some((prefix, _)) = claim_only(&edition) {
+            assert!(
+                claim_id.starts_with(prefix),
+                "This Aura is only earned from NPCs, monsters, levels or seasons"
+            );
+        }
         if let Some(old) = self.claims.get(&claim_id) {
             assert!(
                 old.receiver_id == receiver_id && old.edition == edition,
@@ -342,6 +517,17 @@ impl Collectibles {
     }
     pub fn get_claim_token(&self, claim_id: String) -> Option<TokenId> {
         self.claims.get(&claim_id).map(|c| c.token_id)
+    }
+    /// Edition ids this deployment can mint, in catalog order.
+    pub fn supported_editions(&self) -> Vec<String> {
+        AURA_EDITIONS.iter().map(|(id, _, _)| id.to_string()).collect()
+    }
+    /// NPC- and monster-only editions and the claim id prefix each requires.
+    pub fn claim_only_editions(&self) -> Vec<(String, String)> {
+        CLAIM_ONLY_EDITIONS
+            .iter()
+            .map(|(id, prefix, _)| (id.to_string(), prefix.to_string()))
+            .collect()
     }
     pub fn edition_minted(&self, edition: String) -> u32 {
         self.minted.get(&edition).unwrap_or(0)
@@ -379,14 +565,30 @@ impl Collectibles {
         let e = self.get_equipment(account_id);
         e.above.or(e.below)
     }
+    fn payout_for(&self, owner: &AccountId, balance: u128, max_len_payout: Option<u32>) -> Payout {
+        let mut payout = std::collections::HashMap::new();
+        // No royalty when the treasury itself sells; split without overflow.
+        let royalty = self.get_royalty().filter(|r| &r.account_id != owner);
+        let cut = royalty.as_ref().map_or(0, |r| {
+            let bps = u128::from(r.bps);
+            balance / 10_000 * bps + balance % 10_000 * bps / 10_000
+        });
+        if let Some(r) = royalty {
+            if cut > 0 {
+                payout.insert(r.account_id, U128(cut));
+            }
+        }
+        payout.insert(owner.clone(), U128(balance - cut));
+        if let Some(max) = max_len_payout {
+            assert!(payout.len() as u32 <= max, "Too many payout receivers");
+        }
+        Payout { payout }
+    }
     fn assert_oracle(&self) {
         assert_eq!(env::predecessor_account_id(), self.oracle, "Oracle only");
     }
     fn next_aura(&mut self, edition: &String) -> TokenId {
-        assert!(
-            ["polar", "moon", "gold"].contains(&edition.as_str()),
-            "Unknown edition"
-        );
+        assert!(aura_edition(edition).is_some(), "Unknown edition");
         let n = self.minted.get(edition).unwrap_or(0);
         assert!(n < 256, "Edition exhausted");
         self.minted.insert(edition, &(n + 1));
@@ -564,6 +766,7 @@ impl NonFungibleTokenMetadataProvider for Collectibles {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use near_contract_standards::non_fungible_token::approval::NonFungibleTokenApproval;
     use near_sdk::{test_utils::VMContextBuilder, testing_env, NearToken};
     fn a(s: &str) -> AccountId {
         s.parse().unwrap()
@@ -591,6 +794,67 @@ mod tests {
                 ..Default::default()
             },
         )
+    }
+    #[test]
+    fn royalty_payout_pays_the_treasury_share_and_the_rest_to_the_owner() {
+        let mut c = fresh();
+        let t = mint(&mut c, "polar");
+        // Without a royalty the owner gets everything.
+        let none = c.nft_payout(t.token_id.clone(), U128(1_000_000), Some(10));
+        assert_eq!(none.payout.len(), 1);
+        assert_eq!(none.payout[&a("alice.testnet")], U128(1_000_000));
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(Some(Royalty { account_id: a("treasury.testnet"), bps: 200 }));
+        assert_eq!(c.get_royalty().unwrap().bps, 200);
+        let p = c.nft_payout(t.token_id.clone(), U128(1_000_001), Some(10));
+        assert_eq!(p.payout[&a("treasury.testnet")], U128(20_000));
+        assert_eq!(p.payout[&a("alice.testnet")], U128(980_001));
+        // Huge balances do not overflow, and the parts always add up.
+        let big = c.nft_payout(t.token_id.clone(), U128(u128::MAX), None);
+        assert_eq!(
+            big.payout.values().map(|v| v.0).fold(0u128, |a, b| a.wrapping_add(b)),
+            u128::MAX
+        );
+        // A marketplace sale transfers the token and returns the same split.
+        context("alice.testnet", NearToken::from_millinear(10));
+        c.nft_approve(t.token_id.clone(), a("market.testnet"), None);
+        context("market.testnet", NearToken::from_yoctonear(1));
+        let sold = c.nft_transfer_payout(a("bob.testnet"), t.token_id.clone(), Some(1), None, U128(1_000_000), Some(10));
+        assert_eq!(sold.payout[&a("treasury.testnet")], U128(20_000));
+        assert_eq!(sold.payout[&a("alice.testnet")], U128(980_000));
+        assert_eq!(c.nft_token(t.token_id.clone()).unwrap().owner_id, a("bob.testnet"));
+        // The treasury selling its own Aura pays no royalty to itself.
+        context("bob.testnet", NearToken::from_yoctonear(1));
+        c.nft_transfer(a("treasury.testnet"), t.token_id.clone(), None, None);
+        let own = c.nft_payout(t.token_id.clone(), U128(500), Some(1));
+        assert_eq!(own.payout[&a("treasury.testnet")], U128(500));
+        // Off again.
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(None);
+        assert_eq!(c.get_royalty(), None);
+    }
+    #[test]
+    #[should_panic(expected = "Too many payout receivers")]
+    fn royalty_payout_respects_max_len() {
+        let mut c = fresh();
+        let t = mint(&mut c, "polar");
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(Some(Royalty { account_id: a("treasury.testnet"), bps: 200 }));
+        c.nft_payout(t.token_id, U128(1_000_000), Some(1));
+    }
+    #[test]
+    #[should_panic(expected = "Owner only")]
+    fn only_the_owner_sets_the_royalty() {
+        let mut c = fresh();
+        context("alice.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(Some(Royalty { account_id: a("alice.testnet"), bps: 1_000 }));
+    }
+    #[test]
+    #[should_panic(expected = "between 0.01 % and 10 %")]
+    fn royalty_is_capped_at_ten_percent() {
+        let mut c = fresh();
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(Some(Royalty { account_id: a("treasury.testnet"), bps: 1_001 }));
     }
     #[test]
     fn transfer_removes_old_equipment_and_changes_owner() {
@@ -883,6 +1147,208 @@ mod tests {
         assert_eq!(c.edition_minted("polar".into()), 1);
     }
     #[test]
+    fn catalog_editions_redeem_with_their_own_title_and_media() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        assert_eq!(
+            c.supported_editions(),
+            [
+                "polar", "moon", "gold", "ember", "dew", "bloom", "storm", "comet", "nova",
+                "pilgrim", "chronicle", "ledger", "wardbreaker", "wisp", "bossbane",
+                "stride", "kindle", "compass", "quill", "laurel", "summit", "patron", "season"
+            ]
+        );
+        let mut covers = std::collections::HashSet::new();
+        for (i, (edition, title)) in [
+            ("ember", "Ember Wisp"),
+            ("dew", "Dewfall Ring"),
+            ("bloom", "Meadow Bloom"),
+            ("storm", "Stormcrown"),
+            ("comet", "Comet Trail"),
+            ("nova", "Nova Bloom"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let claim = format!("earned:new{i}");
+            let signature =
+                award_signature(&c, &key, &claim, edition, "alice.testnet", 1000);
+            context("alice.testnet", NearToken::from_near(1));
+            let token = c.redeem_aura(
+                claim,
+                edition.into(),
+                a("alice.testnet"),
+                1000,
+                signature,
+            );
+            assert_eq!(token.token_id, format!("aura:{edition}:1"));
+            let meta = token.metadata.unwrap();
+            assert_eq!(meta.title.as_deref(), Some(title));
+            let media = meta.media.unwrap();
+            assert!(media.starts_with("data:image/svg+xml;base64,"));
+            assert!(covers.insert(media));
+            assert_eq!(c.edition_minted(edition.into()), 1);
+        }
+        // Existing editions keep their own counters.
+        assert_eq!(c.edition_minted("polar".into()), 0);
+    }
+    #[test]
+    fn npc_and_monster_editions_redeem_only_with_their_claim_prefix() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let mut covers = std::collections::HashSet::new();
+        for (i, (edition, title, prefix, description)) in [
+            ("pilgrim", "Pilgrim's Path", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
+            ("chronicle", "Chronicle Crown", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
+            ("ledger", "Merchant's Ledger", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
+            ("wisp", "Will-o'-Wisp Halo", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
+            ("wardbreaker", "Wardbreaker Horns", "earned:monster:", "Earned by beating a QuestLayer monster. Testnet collectible."),
+            ("bossbane", "Bossbane Fangring", "earned:monster:", "Earned by beating a QuestLayer monster. Testnet collectible."),
+            ("stride", "Silver Stride", "earned:level:", "Earned by reaching QuestLayer level 5. Testnet collectible."),
+            ("kindle", "Altar Kindle", "earned:level:", "Earned by reaching QuestLayer level 6. Testnet collectible."),
+            ("compass", "Wayfarer's Compass", "earned:level:", "Earned by reaching QuestLayer level 7. Testnet collectible."),
+            ("quill", "Storyteller's Quill", "earned:level:", "Earned by reaching QuestLayer level 8. Testnet collectible."),
+            ("laurel", "Pathfinder Laurel", "earned:level:", "Earned by reaching QuestLayer level 9. Testnet collectible."),
+            ("summit", "Summit Crown", "earned:level:", "Earned by reaching QuestLayer level 10. Testnet collectible."),
+            ("patron", "Patron's Lantern", "earned:npc:", "Earned from a QuestLayer NPC. Testnet collectible."),
+            ("season", "Hackathon Pennant", "earned:season:", "Earned in a QuestLayer season. Testnet collectible."),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let claim = format!("{prefix}plzen:x{i}");
+            let signature = award_signature(&c, &key, &claim, edition, "alice.testnet", 1000);
+            context("alice.testnet", NearToken::from_near(1));
+            let token = c.redeem_aura(
+                claim.clone(),
+                edition.into(),
+                a("alice.testnet"),
+                1000,
+                signature.clone(),
+            );
+            assert_eq!(token.token_id, format!("aura:{edition}:1"));
+            let meta = token.metadata.unwrap();
+            assert_eq!(meta.title.as_deref(), Some(title));
+            assert_eq!(meta.description.as_deref(), Some(description));
+            assert!(covers.insert(meta.media.unwrap()));
+            // Replays return the same token.
+            context("alice.testnet", NearToken::from_near(1));
+            let again = c.redeem_aura(claim, edition.into(), a("alice.testnet"), 1000, signature);
+            assert_eq!(again.token_id, token.token_id);
+            assert_eq!(c.edition_minted(edition.into()), 1);
+        }
+        assert_eq!(c.claim_only_editions().len(), 14);
+        assert!(c
+            .claim_only_editions()
+            .iter()
+            .all(|(id, _)| c.supported_editions().contains(id)));
+        // Chest editions keep their plain description.
+        let signature = award_signature(&c, &key, "earned:chest1", "ember", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        let ember = c.redeem_aura("earned:chest1".into(), "ember".into(), a("alice.testnet"), 1000, signature);
+        assert_eq!(
+            ember.metadata.unwrap().description.as_deref(),
+            Some("Earned through a QuestLayer adventure. Testnet collectible.")
+        );
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters, levels or seasons")]
+    fn npc_edition_rejects_a_plain_earned_claim() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:chest9", "wisp", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:chest9".into(), "wisp".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters, levels or seasons")]
+    fn level_edition_rejects_an_npc_claim() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature =
+            award_signature(&c, &key, "earned:npc:plzen:2", "summit", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:npc:plzen:2".into(), "summit".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters, levels or seasons")]
+    fn season_edition_rejects_a_level_claim() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature =
+            award_signature(&c, &key, "earned:level:abc", "season", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:level:abc".into(), "season".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters, levels or seasons")]
+    fn oracle_cannot_mint_season_or_patron_editions_without_a_claim() {
+        let mut c = fresh();
+        mint(&mut c, "season");
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters, levels or seasons")]
+    fn patron_edition_rejects_a_season_claim() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature =
+            award_signature(&c, &key, "earned:season:hackathon-2026:x", "patron", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:season:hackathon-2026:x".into(), "patron".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters, levels or seasons")]
+    fn oracle_cannot_mint_level_editions_without_a_claim() {
+        let mut c = fresh();
+        mint(&mut c, "laurel");
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters, levels or seasons")]
+    fn monster_edition_rejects_an_npc_claim() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature =
+            award_signature(&c, &key, "earned:npc:plzen:1", "bossbane", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:npc:plzen:1".into(), "bossbane".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters, levels or seasons")]
+    fn oracle_cannot_mint_npc_editions_without_a_claim() {
+        let mut c = fresh();
+        mint(&mut c, "wardbreaker");
+    }
+    #[test]
+    #[should_panic(expected = "This Aura is only earned from NPCs, monsters, levels or seasons")]
+    fn oracle_claim_mint_needs_the_prefix_too() {
+        let mut c = fresh();
+        context("oracle.testnet", NearToken::from_near(1));
+        c.mint_aura_once(
+            "chest:1".into(),
+            "ledger".into(),
+            a("alice.testnet"),
+            TokenMetadata::default(),
+        );
+    }
+    #[test]
+    fn oracle_claim_mint_with_the_prefix_works() {
+        let mut c = fresh();
+        context("oracle.testnet", NearToken::from_near(1));
+        let t = c.mint_aura_once(
+            "earned:npc:trader:1".into(),
+            "ledger".into(),
+            a("alice.testnet"),
+            TokenMetadata::default(),
+        );
+        assert_eq!(t.token_id, "aura:ledger:1");
+    }
+    #[test]
+    #[should_panic(expected = "Unknown edition")]
+    fn unknown_edition_is_still_rejected() {
+        let mut c = fresh();
+        mint(&mut c, "festival");
+    }
+    #[test]
     #[should_panic(expected = "Invalid award signature")]
     fn award_signature_cannot_change_edition() {
         let mut c = fresh();
@@ -987,5 +1453,132 @@ mod tests {
             Some(token.token_id)
         );
         assert!(migrated.get_award_signer().is_none());
+    }
+    // Mainnet review (docs/COLLECTIBLES-REVIEW.md): the same code must work on a
+    // `.near` deployment, and a voucher must never cross networks.
+    fn on(contract: &str, who: &str, deposit: NearToken) {
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(a(contract))
+            .predecessor_account_id(a(who))
+            .signer_account_id(a(who))
+            .account_balance(NearToken::from_near(100))
+            .attached_deposit(deposit);
+        testing_env!(b.build());
+    }
+    fn mainnet() -> (Collectibles, ed25519_dalek::SigningKey) {
+        on("nfts.questlayer.near", "owner.near", NearToken::from_near(0));
+        let mut c = Collectibles::new(a("owner.near"), a("owner.near"));
+        let key = ed25519_dalek::SigningKey::from_bytes(&[9u8; 32]);
+        on("nfts.questlayer.near", "owner.near", NearToken::from_yoctonear(1));
+        c.set_award_signer(Base64VecU8(key.verifying_key().to_bytes().to_vec()));
+        (c, key)
+    }
+    #[test]
+    fn mainnet_deployment_redeems_with_a_mainnet_voucher() {
+        let (mut c, key) = mainnet();
+        let message = c.award_message("earned:m1".into(), "gold".into(), a("bob.near"), 1000);
+        assert!(message.contains("\nNetwork: mainnet\n"), "{message}");
+        let signature = award_signature(&c, &key, "earned:m1", "gold", "bob.near", 1000);
+        on("nfts.questlayer.near", "bob.near", NearToken::from_millinear(50));
+        let token = c.redeem_aura(
+            "earned:m1".into(),
+            "gold".into(),
+            a("bob.near"),
+            1000,
+            signature,
+        );
+        assert_eq!(token.owner_id, a("bob.near"));
+        let description = token.metadata.unwrap().description.unwrap();
+        assert!(!description.contains("Testnet"), "{description}");
+    }
+    #[test]
+    #[should_panic(expected = "Invalid award signature")]
+    fn testnet_voucher_cannot_redeem_on_mainnet() {
+        use ed25519_dalek::Signer;
+        let (mut c, key) = mainnet();
+        let message = c
+            .award_message("earned:m2".into(), "gold".into(), a("bob.near"), 1000)
+            .replace("Network: mainnet", "Network: testnet");
+        let signature = Base64VecU8(key.sign(message.as_bytes()).to_bytes().to_vec());
+        on("nfts.questlayer.near", "bob.near", NearToken::from_near(1));
+        c.redeem_aura("earned:m2".into(), "gold".into(), a("bob.near"), 1000, signature);
+    }
+    #[test]
+    fn testnet_message_and_description_are_unchanged() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        assert_eq!(
+            c.award_message("earned:t".into(), "moon".into(), a("alice.testnet"), 7),
+            "QuestLayer Aura claim v1\nContract: nfts.testnet\nNetwork: testnet\nClaim: earned:t\nReceiver: alice.testnet\nEdition: moon\nExpires: 7"
+        );
+        let signature = award_signature(&c, &key, "earned:t", "moon", "alice.testnet", 7);
+        context("alice.testnet", NearToken::from_near(1));
+        let token = c.redeem_aura("earned:t".into(), "moon".into(), a("alice.testnet"), 7, signature);
+        assert_eq!(
+            token.metadata.unwrap().description.as_deref(),
+            Some("Earned through a QuestLayer adventure. Testnet collectible.")
+        );
+    }
+    #[test]
+    #[should_panic(expected = "Invalid earned claim")]
+    fn claim_id_cannot_carry_line_breaks() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let claim = "earned:x\nReceiver: mallory.testnet";
+        let signature = award_signature(&c, &key, claim, "polar", "alice.testnet", 1000);
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura(claim.into(), "polar".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "Earned claims are not enabled")]
+    fn cleared_award_signer_stops_new_claims() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:9", "polar", "alice.testnet", 1000);
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.clear_award_signer();
+        assert!(c.get_award_signer().is_none());
+        context("alice.testnet", NearToken::from_near(1));
+        c.redeem_aura("earned:9".into(), "polar".into(), a("alice.testnet"), 1000, signature);
+    }
+    #[test]
+    #[should_panic(expected = "Owner only")]
+    fn stranger_cannot_clear_award_signer() {
+        let mut c = fresh();
+        award_key(&mut c);
+        context("oracle.testnet", NearToken::from_yoctonear(1));
+        c.clear_award_signer();
+    }
+    #[test]
+    #[should_panic(expected = "Owner only")]
+    fn oracle_cannot_replace_award_signer() {
+        let mut c = fresh();
+        context("oracle.testnet", NearToken::from_yoctonear(1));
+        c.set_award_signer(Base64VecU8(vec![1u8; 32]));
+    }
+    #[test]
+    #[should_panic(expected = "Must attach")]
+    fn mint_without_storage_deposit_is_rejected() {
+        let mut c = fresh();
+        context("alice.testnet", NearToken::from_yoctonear(0));
+        c.mint_avatar();
+    }
+    #[test]
+    fn retried_redeem_after_expiry_returns_the_same_token() {
+        let mut c = fresh();
+        let key = award_key(&mut c);
+        let signature = award_signature(&c, &key, "earned:r", "gold", "alice.testnet", 1);
+        context("alice.testnet", NearToken::from_near(1));
+        let first = c.redeem_aura("earned:r".into(), "gold".into(), a("alice.testnet"), 1, signature.clone());
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(a("nfts.testnet"))
+            .predecessor_account_id(a("alice.testnet"))
+            .account_balance(NearToken::from_near(100))
+            .attached_deposit(NearToken::from_near(1))
+            .block_timestamp(2_000_000_000);
+        testing_env!(b.build());
+        let again = c.redeem_aura("earned:r".into(), "gold".into(), a("alice.testnet"), 1, signature);
+        assert_eq!(first.token_id, again.token_id);
+        assert_eq!(c.edition_minted("gold".into()), 1);
     }
 }

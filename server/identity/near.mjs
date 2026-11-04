@@ -1,6 +1,7 @@
 import { rpcErrorText } from "../near-provider.mjs";
 import { verifyMessage } from "near-api-js/nep413";
 import { assert } from "../domain.mjs";
+import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
 
 export function nearAccountId(value) {
   assert(
@@ -25,20 +26,20 @@ export async function assertTestnetRpc(provider) {
     } catch {
       assert(
         false,
-        "The NEAR testnet verification service is unavailable.",
+        `The ${NETWORK_LABEL} verification service is unavailable.`,
         503,
         "RPC_UNAVAILABLE",
       );
     }
     assert(
-      status.chain_id === "testnet",
-      "The verification service is not connected to NEAR testnet.",
+      status.chain_id === NETWORK,
+      `The verification service is not connected to ${NETWORK_LABEL}.`,
       503,
       "WRONG_NETWORK",
     );
     assert(
       !status.sync_info?.syncing,
-      "The NEAR testnet node is still synchronizing.",
+      `The ${NETWORK_LABEL} node is still synchronizing.`,
       503,
       "RPC_UNAVAILABLE",
     );
@@ -55,7 +56,7 @@ export async function assertTestnetRpc(provider) {
 // NEP-413 proves current FullAccess-key ownership; no transaction or player key is stored.
 export async function verifyNearIdentity(challenge, response, provider) {
   assert(
-    challenge.network === "testnet",
+    challenge.network === NETWORK,
     "This challenge is for a different network.",
     401,
   );

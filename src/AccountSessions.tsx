@@ -5,12 +5,16 @@ import {
   ArrowClockwise,
   SignOut,
   Devices,
+  Wallet,
 } from "@phosphor-icons/react";
 import { api } from "./api";
 import type { Player } from "./types";
+import type { NearNetwork } from "./near-network.ts";
+import { tr } from "./i18n";
 export type SessionView = {
-  network: "testnet";
+  network: NearNetwork;
   activeSessionCount: number;
+  evmWallets?: { address: string; wallet: string | null }[];
   hasMoreSessions: boolean;
   sessions: {
     id: string;
@@ -32,6 +36,8 @@ const readCurrentSessions = () => api<SessionView>("/identity/sessions");
 export function AccountSessions({
   player,
   onConnect,
+  onConnectEthereum,
+  onSecure,
   onRevoke,
   busy,
   readSessions = readCurrentSessions,
@@ -39,6 +45,8 @@ export function AccountSessions({
   readSessions?: () => Promise<SessionView>;
   player: Player;
   onConnect: () => void;
+  onConnectEthereum?: () => Promise<void> | void;
+  onSecure?: () => void;
   onRevoke: (account: string) => Promise<boolean>;
   busy: string;
 }) {
@@ -71,15 +79,14 @@ export function AccountSessions({
   return (
     <section
       className="play-native account-sessions"
-      aria-label="Sign-in and recovery"
+      aria-label={tr("Sign-in and recovery")}
     >
       <div className="play-section-heading">
         <h2>
-          <ShieldCheck size={22} /> Sign-in & recovery
-        </h2>
+          <ShieldCheck size={22} /> {" "}{tr("Sign-in & coming back")}</h2>
         <button
           className="icon-button"
-          aria-label="Refresh game sessions"
+          aria-label={tr("Refresh sessions")}
           disabled={loading}
           onClick={() => void refresh()}
         >
@@ -91,61 +98,99 @@ export function AccountSessions({
           {error}
         </p>
       )}
-      {!state && !error && <p role="status">Loading game sessions…</p>}
+      {!state && !error && <p role="status">{tr("Loading sessions…")}</p>}
       {state && (
         <>
           <p className="play-hint">
             {state.recovery.nearAccounts.length
-              ? "Sign in with the same linked NEAR wallet to restore this explorer."
-              : "This guest explorer is saved in this browser. Link a NEAR wallet to return from another browser."}
+              ? tr("Your linked account brings this explorer back on any device.")
+              : state.recovery.demoPasskeys
+                ? tr("Your passkey brings this explorer back on this device or any device that syncs it.")
+                : tr("This explorer lives in this browser. Add a passkey to come back from another device.")}
           </p>
-          {!state.recovery.nearAccounts.length && (
+          {!state.recovery.demoPasskeys && onSecure && (
             <button
               className="secondary-button"
-              onClick={onConnect}
+              onClick={onSecure}
               disabled={!!busy}
             >
-              <Key size={20} /> Link NEAR wallet
-            </button>
+              <ShieldCheck size={20} /> {" "}{tr("Secure with a passkey")}</button>
+          )}
+          {!state.recovery.nearAccounts.length && (
+            <details className="native-extras">
+              <summary>
+                <Key size={20} /> {" "}{tr("Link a NEAR account")}</summary>
+              <p className="play-hint">
+                {tr("Optional. Your account signs a short message, pays nothing, and brings the same explorer back in any browser.")}</p>
+              <button
+                className="secondary-button"
+                onClick={onConnect}
+                disabled={!!busy}
+              >
+                <Key size={20} /> {" "}{tr("Link NEAR account")}</button>
+            </details>
           )}
           <details className="native-extras">
             <summary>
-              <Devices size={20} /> {state.activeSessionCount} active game{" "}
-              {state.activeSessionCount === 1 ? "session" : "sessions"}
+              <Devices size={20} /> {" "}{tr("Signed in on")}{" "}{state.activeSessionCount}{" "}
+              {state.activeSessionCount === 1 ? "device" : "devices"}
               {state.hasMoreSessions ? " +" : ""}
             </summary>
             <ul className="session-list">
               {state.sessions.map((s) => (
                 <li key={s.id}>
                   <strong>
-                    {s.current ? "This browser" : "Other session"}
+                    {s.current ? tr("This browser") : tr("Another device")}
                   </strong>
                   <span>
                     {s.kind === "near-wallet"
-                      ? "NEAR wallet"
+                      ? tr("NEAR account")
+                      : s.kind === "evm-wallet"
+                        ? tr("Ethereum wallet")
                       : s.kind === "demo-passkey"
-                        ? "Demo passkey"
+                        ? tr("Passkey")
                         : s.kind === "legacy"
-                          ? "Earlier session"
-                          : "Guest"}
+                          ? tr("Earlier session")
+                          : tr("Guest")}
                   </span>
                   {s.accountId && <small>{s.accountId}</small>}
                   <small>
                     {s.lastSeenAt
-                      ? "Last active " +
-                        new Date(s.lastSeenAt).toLocaleString("en-US")
-                      : "Activity time unavailable"}
+                      ? tr("Last active {0}", { 0: new Date(s.lastSeenAt).toLocaleString("en-US") })
+                      : tr("Last activity unknown")}
                   </small>
                 </li>
               ))}
             </ul>
           </details>
+          {onConnectEthereum && (
+            <details className="native-extras">
+              <summary>
+                <Wallet size={20} /> {" "}{tr("Ethereum wallets")}</summary>
+              <p className="play-hint">
+                {tr("MetaMask or Rabby signs readable messages only: it brings this explorer back and can sign NEAR Intents trades. No Ethereum transaction is sent.")}</p>
+              {(state.evmWallets || []).map((w) => (
+                <p className="session-account" key={w.address}>
+                  <Wallet size={18} />
+                  {w.wallet ? `${w.wallet} ` : ""}
+                  {w.address.slice(0, 6)}…{w.address.slice(-4)}
+                </p>
+              ))}
+              <button
+                className="secondary-button"
+                onClick={async () => {
+                  await onConnectEthereum();
+                  await refresh();
+                }}
+                disabled={!!busy}
+              >
+                <Wallet size={20} /> {" "}{tr("Link MetaMask or Rabby")}</button>
+            </details>
+          )}
           <details className="native-extras">
-            <summary>Recovery options</summary>
+            <summary>{tr("Ways back in")}</summary>
             <p className="play-hint">
-              Your wallet holds its keys and recovery phrase. QuestLayer cannot
-              reset a lost wallet.
-            </p>
+              {tr("A linked NEAR account is yours alone; QuestLayer cannot reset it if you lose access.")}</p>
             {state.recovery.nearAccounts.map((a) => (
               <p className="session-account" key={a}>
                 <Key size={18} />
@@ -154,8 +199,8 @@ export function AccountSessions({
             ))}
             <p className="play-hint">
               {state.recovery.demoPasskeys
-                ? `${state.recovery.demoPasskeys} browser passkey(s) can restore demo progress. They do not sign NEAR transactions.`
-                : "No demo passkey is saved for this explorer."}
+                ? tr("{0} passkey(s) can bring this explorer back. They never spend anything.", { 0: state.recovery.demoPasskeys })
+                : tr("No passkey is saved for this explorer yet.")}
             </p>
           </details>
           {(state.activeSessionCount > 1 ||
@@ -168,19 +213,18 @@ export function AccountSessions({
               >
                 <SignOut size={20} />{" "}
                 {state.activeSessionCount > 1
-                  ? "Sign out other sessions"
-                  : "Renew browser sign-in"}
+                  ? tr("Sign out other devices")
+                  : tr("Renew this sign-in")}
               </button>
               {!state.recovery.canRevokeOtherSessions && (
-                <small>Link a NEAR wallet to verify this change.</small>
+                <small>{tr("Link a NEAR account to confirm this change.")}</small>
               )}
             </>
           )}
           {review && (
             <div className="session-review">
               <label>
-                Verify with your linked wallet
-                <select
+                {tr("Confirm with your linked account")}<select
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
                 >
@@ -190,11 +234,7 @@ export function AccountSessions({
                 </select>
               </label>
               <p>
-                This renews this browser’s sign-in and expires its previous
-                sign-in, including any copies. Other game sessions are signed
-                out. Your wallet keys and saved passkeys stay usable for signing
-                in again.
-              </p>
+                {tr("This browser gets a fresh sign-in and every other device is signed out. Your account and passkeys still work to sign in again.")}</p>
               <div className="play-task-actions">
                 <button
                   className="primary-button"
@@ -207,18 +247,17 @@ export function AccountSessions({
                   }}
                 >
                   {busy === "session-recovery"
-                    ? "Waiting for wallet…"
+                    ? tr("Waiting for your approval…")
                     : state.activeSessionCount > 1
-                      ? "Verify & sign out others"
-                      : "Verify & renew sign-in"}
+                      ? tr("Confirm & sign out others")
+                      : tr("Confirm & renew sign-in")}
                 </button>
                 <button
                   className="secondary-button"
                   disabled={!!busy}
                   onClick={() => setReview(false)}
                 >
-                  Cancel
-                </button>
+                  {tr("Cancel")}</button>
               </div>
             </div>
           )}

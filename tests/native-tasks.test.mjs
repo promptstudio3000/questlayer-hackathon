@@ -697,7 +697,7 @@ test("confirmation still pins current finalized network/code/keyless policy and 
   const f = confirmationFixture();
   f.native.timeoutMs = 5;
   f.provider.viewTransactionStatus = () => new Promise(() => {});
-  await assert.rejects(() => f.native.confirm(f.player, f.input), /timeout/);
+  await assert.rejects(() => f.native.confirm(f.player, f.input), /time(d )?out/);
 });
 
 test("shared recovery confirms task terms and rejects changed receipt arguments", async () => {

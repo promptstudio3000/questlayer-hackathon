@@ -9,6 +9,7 @@ import {
 import { api } from "./api";
 import { formatNativeNear } from "./native-amounts";
 import "./play-ui.css";
+import { tr } from "./i18n";
 type Bucket = { available: string; reserved: string };
 type Read<T> = { status: string; observedAt: string | null; data: T | null };
 type Economy = {
@@ -51,11 +52,11 @@ type Economy = {
   };
 };
 const amount = (s: string | null | undefined) => {
-  if (s == null) return "Unavailable";
+  if (s == null) return tr("Unavailable");
   const n = BigInt(s),
     scale = 10n ** 18n,
     rounded = ((n + scale / 2n) / scale) * scale;
-  return `${rounded !== n ? "≈ " : ""}${formatNativeNear(rounded.toString())} test NEAR`;
+  return tr("{0}{1} test NEAR", { 0: rounded !== n ? "≈ " : "", 1: formatNativeNear(rounded.toString()) });
 };
 export function NativeEconomyPanel() {
   const [data, setData] = useState<Economy | null>(null),
@@ -78,146 +79,130 @@ export function NativeEconomyPanel() {
   const treasury = data?.treasury.data,
     staking = data?.staking.data;
   return (
-    <section className="play-economy" aria-label="NEAR game economy">
+    <section className="play-economy" aria-label={tr("NEAR game economy")}>
       <div className="play-toolbar">
         <span className="play-chip">
           <ChartDonut size={18} />
-          NEAR testnet
-        </span>
+          {tr("NEAR testnet")}</span>
         <button
           className="play-icon"
-          aria-label="Refresh game economy"
+          aria-label={tr("Refresh game economy")}
           disabled={busy}
           onClick={() => void refresh()}
         >
           <ArrowClockwise size={22} />
         </button>
       </div>
-      <p className="play-hint">Test tokens have no monetary value.</p>
+      <p className="play-hint">{tr("Test tokens have no monetary value.")}</p>
       {error && (
         <p role="alert" className="play-error">
           {error}
         </p>
       )}
-      {!data && busy && <p role="status">Reading confirmed funds…</p>}
+      {!data && busy && <p role="status">{tr("Reading confirmed funds…")}</p>}
       {data && (
         <>
           {(data.treasury.status !== "observed" ||
             data.staking.status !== "observed") && (
             <p role="status" className="play-hint">
-              Some observations are {data.status}. Unavailable values are not
-              counted as zero.
-            </p>
+              {tr("Some observations are")}{" "}{data.status}{tr(". Unavailable values are not counted as zero.")}</p>
           )}
-          <h2>Rewards for the next adventure</h2>
+          <h2>{tr("Rewards for the next adventure")}</h2>
           {data.treasury.status === "stale" && (
             <p className="play-hint">
-              Last observed{" "}
+              {tr("Last observed")}{" "}
               {data.treasury.observedAt
                 ? new Date(data.treasury.observedAt).toLocaleString("en-GB")
-                : "at an unknown time"}
-              ; current funding could not be verified.
-            </p>
+                : tr("at an unknown time")}
+              {tr("; current funding could not be verified.")}</p>
           )}
           <div className="economy-grid">
             <div>
               <Coins size={25} />
-              <small>Street coins · 50%</small>
+              <small>{tr("Street coins · 50%")}</small>
               <strong>{amount(treasury?.buckets.coins.available)}</strong>
             </div>
             <div>
               <Flag size={25} />
-              <small>Zone quests · 50%</small>
+              <small>{tr("Zone quests · 50%")}</small>
               <strong>{amount(treasury?.buckets.zones.available)}</strong>
             </div>
           </div>
           <p className="play-hint">
-            Unclaimed funds stay in their own bucket for later days.
-          </p>
+            {tr("Unclaimed funds stay in their own bucket for later days.")}</p>
           <details className="play-details">
             <summary>
               <Leaf size={20} />
-              Staking & validator pools
-            </summary>
+              {tr("Staking & validator pools")}</summary>
             {data.staking.status === "stale" && (
               <p className="play-hint">
-                Last observed{" "}
+                {tr("Last observed")}{" "}
                 {data.staking.observedAt
                   ? new Date(data.staking.observedAt).toLocaleString("en-GB")
-                  : "at an unknown time"}
-                ; these are not current balances.
-              </p>
+                  : tr("at an unknown time")}
+                {tr("; these are not current balances.")}</p>
             )}
             <p>
-              Observed pooled stake:{" "}
+              {tr("Observed pooled stake:")}{" "}
               <b>{amount(staking?.poolBalances?.staked)}</b>
             </p>
             <p>
-              Eligible weighted stake:{" "}
+              {tr("Eligible weighted stake:")}{" "}
               <b>{amount(staking?.totals?.weightedStake)}</b>
             </p>
             <p>
-              Contributing to rewards:{" "}
-              <b>{amount(staking?.totals?.realizedGameYieldPaid)}</b> realized
-              yield paid by these vaults.
-            </p>
+              {tr("Contributing to rewards:")}{" "}
+              <b>{amount(staking?.totals?.realizedGameYieldPaid)}</b> {" "}{tr("realized yield paid by these vaults.")}</p>
             {staking?.pools.map((p) => (
               <div className="economy-pool" key={p.id}>
                 <b>{p.name}</b>
-                <span>{amount(p.staked)} staked</span>
+                <span>{tr("{0} staked", { 0: amount(p.staked) })}</span>
                 <small>
-                  {p.status} · {amount(p.unstaked)} unstaked
+                  {p.status} · {tr("{0} unstaked", { 0: amount(p.unstaked) })}
                 </small>
               </div>
             ))}
             <p>
-              {staking?.outlook.reason || "Yield forecasts are unavailable."}
+              {staking?.outlook.reason || tr("Yield forecasts are unavailable.")}
             </p>
           </details>
           <details className="play-details">
             <summary>
               <ChartDonut size={20} />
-              Accounting & worker
-            </summary>
+              {tr("Accounting & worker")}</summary>
             {treasury && (
               <details className="play-details">
-                <summary>Exact confirmed amounts</summary>
+                <summary>{tr("Exact confirmed amounts")}</summary>
                 <p>
-                  Funded: {formatNativeNear(treasury.funded)} test NEAR
-                  <br />
-                  Street coins available:{" "}
-                  {formatNativeNear(treasury.buckets.coins.available)} test NEAR
-                  <br />
-                  Zone rewards available:{" "}
-                  {formatNativeNear(treasury.buckets.zones.available)} test NEAR
-                </p>
+                  {tr("Funded:")}{" "}{formatNativeNear(treasury.funded)} {" "}{tr("test NEAR")}<br />
+                  {tr("Street coins available:")}{" "}
+                  {formatNativeNear(treasury.buckets.coins.available)} {" "}{tr("test NEAR")}<br />
+                  {tr("Zone rewards available:")}{" "}
+                  {formatNativeNear(treasury.buckets.zones.available)} {" "}{tr("test NEAR")}</p>
               </details>
             )}
             <p>
-              Total funded: {amount(treasury?.funded)}
+              {tr("Total funded:")}{" "}{amount(treasury?.funded)}
               <br />
-              Reserved for published days: {amount(treasury?.reserved)}
+              {tr("Reserved for published days:")}{" "}{amount(treasury?.reserved)}
               <br />
-              Earned player credit: {amount(treasury?.owed)}
+              {tr("Earned player credit:")}{" "}{amount(treasury?.owed)}
               <br />
-              Withdrawals pending: {amount(treasury?.pending)}
+              {tr("Withdrawals pending:")}{" "}{amount(treasury?.pending)}
               <br />
-              Withdrawn: {amount(treasury?.withdrawn)}
+              {tr("Withdrawn:")}{" "}{amount(treasury?.withdrawn)}
             </p>
             <p>
-              Worker: {data.worker.status} · {data.worker.queued ?? "unknown"}{" "}
-              queued receipts.
-            </p>
+              {tr("Worker:")}{" "}{data.worker.status} · {data.worker.queued ?? "unknown"}{" "}
+              {tr("queued receipts.")}</p>
             {data.treasury.observedAt && (
               <p>
-                Observed{" "}
+                {tr("Observed")}{" "}
                 {new Date(data.treasury.observedAt).toLocaleString("en-GB")}
               </p>
             )}
             <p>
-              Sponsored funds and realized staking yield are separate sources.
-              Neither principal nor projected returns are a spendable reward.
-            </p>
+              {tr("Sponsored funds and realized staking yield are separate sources. Neither principal nor projected returns are a spendable reward.")}</p>
           </details>
         </>
       )}

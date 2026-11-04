@@ -7,13 +7,15 @@ import {
   nativeManifest,
   rewardMessage,
   publicationArgs,
+  nativePublicationMatches,
 } from "../server/native/reward-manifest.mjs";
 import { runRewardWorker } from "../server/native/reward-worker.mjs";
 import { buildCityPlan } from "../server/world-planner.mjs";
 import { PLZEN } from "../server/spatial/city-pack.mjs";
+import { changeSystemPlace } from "../server/spatial/place-safety.mjs";
 const NOW = Date.parse("2026-10-31T10:00:00Z"),
   plan = buildCityPlan(PLZEN, "2026-10-31");
-function fixture() {
+function fixture({ city = PLZEN } = {}) {
   const db = openDatabase(":memory:"),
     player = createPlayer(db, "Native test explorer", NOW),
     accountId = "alice.testnet",
@@ -40,6 +42,7 @@ function fixture() {
     signer,
     {
       clock: () => now,
+      city,
     },
   );
   const state = { days: new Map(), receipts: new Map(), sent: [] };
@@ -105,6 +108,92 @@ async function ready(f) {
   f.n.enroll(f.player, f.accountId, true);
   return f.n.day("plzen-2026-10-31-v1");
 }
+test("operator closure blocks new native visits but accepted receipts still settle and remain recoverable", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f),
+      q = m.quests.find((q) => q.tier === 1);
+    let accepted;
+    for (let checkpoint = 0; checkpoint < 3; checkpoint++) {
+      f.setNow(f.clock() + 90000);
+      accepted = await f.n.submit(f.player, {
+        accountId: f.accountId,
+        dayId: m.id,
+        kind: "quest",
+        index: q.index,
+        checkpoint,
+        mode: "gps",
+        fix: f.fix(q.targets[checkpoint]),
+      });
+    }
+    const blueprint = JSON.parse(
+      f.db
+        .prepare(
+          "SELECT body FROM world_blueprints WHERE city_id=? AND day=? AND source_hash=?",
+        )
+        .get(m.cityId, m.day, m.sourceHash).body,
+    );
+    changeSystemPlace(
+      f.db,
+      PLZEN,
+      {
+        actor: "qa-operator",
+        operationId: "close-native-place",
+        candidateId: blueprint.zones[q.index].sourceId,
+        action: "close",
+        reason: "Temporary public access closure",
+        expectedVersion: 0,
+      },
+      { isOperator: () => true, clock: f.clock },
+    );
+    const bob = createPlayer(f.db, "Another native explorer", f.clock());
+    f.db
+      .prepare("INSERT INTO wallet_links VALUES(?,?,?)")
+      .run("bob.testnet", bob, f.clock());
+    f.n.enroll(bob, "bob.testnet", true);
+    await assert.rejects(
+      f.n.submit(bob, {
+        accountId: "bob.testnet",
+        dayId: m.id,
+        kind: "quest",
+        index: q.index,
+        checkpoint: 0,
+        mode: "gps",
+        fix: f.fix(q.targets[0]),
+      }),
+      (e) => e.code === "PLACE_CLOSED",
+    );
+    assert.equal(
+      (await f.n.snapshot(f.player, { accountId: f.accountId })).day.quests[
+        q.index
+      ].placeStatus,
+      "closed",
+    );
+    assert.equal(
+      (
+        await f.n.submit(f.player, {
+          accountId: f.accountId,
+          dayId: m.id,
+          kind: "quest",
+          index: q.index,
+          checkpoint: 2,
+          mode: "gps",
+          fix: f.fix(q.targets[2]),
+        })
+      ).id,
+      accepted.id,
+    );
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(
+      f.db
+        .prepare("SELECT state FROM native_reward_claims WHERE id=?")
+        .get(accepted.id).state,
+      "confirmed",
+    );
+  } finally {
+    f.db.close();
+  }
+});
 function input(f, m, p = {}) {
   return {
     accountId: f.accountId,
@@ -153,6 +242,286 @@ function maintenanceVault(f) {
   };
   return probe;
 }
+test("publication survives a lost acknowledgement without repricing a funded day from new source or treasury data", async () => {
+  const f = fixture();
+  try {
+    let lost = false;
+    const send = async (method, args) => {
+      const tx = await f.send(method, args);
+      if (method === "publish_day" && !lost) {
+        lost = true;
+        throw Error("lost publication acknowledgement");
+      }
+      return tx;
+    };
+    await assert.rejects(
+      runRewardWorker(f.n, send, { clock: f.clock }),
+      /lost publication/,
+    );
+    const before = f.db
+      .prepare("SELECT * FROM native_days ORDER BY day LIMIT 1")
+      .get();
+    assert.equal(before.state, "prepared");
+    f.n.city = { ...PLZEN, version: "changed-after-publication" };
+    const view = f.n.view;
+    f.n.view = async (method, args, fresh) =>
+      method === "get_treasury"
+        ? { coins: { available: "0" }, zones: { available: "0" } }
+        : view(method, args, fresh);
+    await runRewardWorker(f.n, send, { clock: f.clock });
+    const recovered = f.db
+      .prepare("SELECT * FROM native_days WHERE id=?")
+      .get(before.id);
+    assert.equal(recovered.state, "published");
+    assert.equal(recovered.body, before.body);
+    assert.equal(recovered.hash, before.hash);
+    assert.equal(
+      f.state.sent.filter((s) => s.method === "publish_day").length,
+      1,
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("a missing local publication intent never reconstructs a chain commitment from the remaining money", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    f.db.prepare("DELETE FROM native_days WHERE id=?").run(m.id);
+    f.state.sent.length = 0;
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /Restore its exact publication intent/,
+    );
+    assert.equal(f.state.sent.length, 0);
+    assert.equal(
+      f.db.prepare("SELECT 1 FROM native_days WHERE id=?").get(m.id),
+      undefined,
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("publication checks exact chain windows, prices, XP, tiers and receipt storage rather than a matching hash alone", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f),
+      original = structuredClone(f.state.days.get(m.id));
+    const changes = [
+      (d) => {
+        d.starts_at = String(Number(d.starts_at) + 1);
+      },
+      (d) => {
+        d.coin_count--;
+      },
+      (d) => {
+        d.coin_unit = "1";
+      },
+      (d) => {
+        d.quests[0].xp++;
+      },
+      (d) => {
+        d.quests[0].reward = "123";
+      },
+      (d) => {
+        d.quests[0].tier = 3;
+      },
+      (d) => {
+        d.storage_reserved = false;
+      },
+      (d) => {
+        d.claims_accepted = d.claims_limit + 1;
+      },
+      (d) => {
+        // A v2 contract holding street finds the manifest does not list.
+        d.finds = [0];
+      },
+    ];
+    for (const change of changes) {
+      f.db
+        .prepare("UPDATE native_days SET state='published' WHERE id=?")
+        .run(m.id);
+      const broken = structuredClone(original);
+      change(broken);
+      assert.equal(nativePublicationMatches(m, broken), false);
+      f.state.days.set(m.id, broken);
+      assert.equal(
+        (
+          await f.n.snapshot(f.player, {
+            accountId: f.accountId,
+            location: m.coins[0],
+          })
+        ).collection.available,
+        false,
+      );
+      await assert.rejects(
+        f.n.submit(f.player, input(f, m)),
+        /publication or storage backing/,
+      );
+      f.db
+        .prepare("UPDATE native_days SET state='prepared' WHERE id=?")
+        .run(m.id);
+      f.state.sent.length = 0;
+      await assert.rejects(
+        runRewardWorker(f.n, f.send, { clock: f.clock }),
+        /differs from the durable manifest/,
+      );
+      assert.equal(f.state.sent.length, 0);
+    }
+    assert.equal(
+      f.db.prepare("SELECT count(*) n FROM native_reward_claims").get().n,
+      0,
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("corrupt prepared bodies are rejected before another publication transaction", async () => {
+  const f = fixture();
+  try {
+    await ready(f);
+    f.db
+      .prepare(
+        "UPDATE native_days SET state='prepared',body=json_set(body,'$.coinUnit','1')",
+      )
+      .run();
+    f.state.sent.length = 0;
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /manifest integrity/,
+    );
+    assert.equal(f.state.sent.length, 0);
+  } finally {
+    f.db.close();
+  }
+});
+
+test("an explicitly supplied pack owns its paths, city id and local midnight without changing legacy Plzen ids", async () => {
+  // These coordinates are QA fixtures, not an approved additional city.
+  const city = { ...PLZEN, id: "qa-city", timezone: "America/New_York" };
+  const f = fixture({ city });
+  try {
+    f.setNow(Date.parse("2026-11-01T01:00:00Z"));
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    const ids = f.db
+      .prepare("SELECT id FROM native_days ORDER BY day")
+      .all()
+      .map((r) => r.id);
+    assert.deepEqual(ids, ["qa-city-2026-10-31-v1", "qa-city-2026-11-01-v1"]);
+    const m = f.n.day(ids[0]);
+    assert.equal(m.cityId, city.id);
+    assert.equal(m.timezone, city.timezone);
+    assert.equal(m.startsAt, Date.parse("2026-10-31T04:00:00Z"));
+    assert.equal((await f.n.snapshot(f.player)).day.id, ids[0]);
+    assert.throws(
+      () =>
+        nativeManifest(
+          { ...plan, cityId: "qa-city" },
+          { coins: { available: "1000" }, zones: { available: "1000" } },
+        ),
+      /Supply bounded public-path/,
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("native v1 refuses a map-only shortfall before sending and without changing the contract's six-slot rule", async () => {
+  const city = {
+    ...PLZEN,
+    candidates: PLZEN.candidates.filter((c) => c.sector !== "west"),
+  };
+  const f = fixture({ city });
+  try {
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /Native v1 requires six/,
+    );
+    assert.equal(f.state.sent.length, 0);
+    assert.equal(f.db.prepare("SELECT count(*) n FROM native_days").get().n, 0);
+    assert.equal(
+      JSON.parse(f.db.prepare("SELECT body FROM world_blueprints").get().body)
+        .zones.length,
+      5,
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("an already published day is audited again and mismatched terms cannot be closed or republished", async () => {
+  for (const atClosure of [false, true]) {
+    const f = fixture();
+    try {
+      const m = await ready(f);
+      f.state.days.get(m.id).coin_unit = "1";
+      if (atClosure) f.setNow(m.endsAt + 86400001);
+      f.state.sent.length = 0;
+      await assert.rejects(
+        runRewardWorker(f.n, f.send, { clock: f.clock }),
+        /no longer matches|before closure/,
+      );
+      assert.equal(f.state.sent.length, 0);
+      assert.equal(
+        f.db.prepare("SELECT state FROM native_days WHERE id=?").get(m.id)
+          .state,
+        "published",
+      );
+      assert.equal(f.state.days.get(m.id).closed, false);
+    } finally {
+      f.db.close();
+    }
+  }
+});
+
+test("crossing midnight during preparation keeps expired intent and publishes only the still-valid date", async () => {
+  const f = fixture();
+  try {
+    f.setNow(plan.endsAt - 100);
+    const view = f.n.view;
+    let advanced = false;
+    f.n.view = async (method, args, fresh) => {
+      const result = await view(method, args, fresh);
+      // The distribution audit reads the treasury first; advance on the read
+      // made while preparing publication, after the audit has completed.
+      if (method === "get_treasury" && f.n.lastAudit && !advanced) {
+        advanced = true;
+        f.setNow(plan.endsAt + 1);
+      }
+      return result;
+    };
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.deepEqual(
+      f.state.sent
+        .filter((s) => s.method === "publish_day")
+        .map((s) => s.args.day_id),
+      ["plzen-2026-11-01-v1"],
+    );
+    assert.equal(
+      f.db
+        .prepare("SELECT state FROM native_days WHERE id='plzen-2026-10-31-v1'")
+        .get().state,
+      "prepared",
+    );
+    assert.equal(f.state.days.has("plzen-2026-10-31-v1"), false);
+  } finally {
+    f.db.close();
+  }
+});
+
+test("a pack without public path samples cannot publish unbacked or foreign-city coins", async () => {
+  const f = fixture({ city: { ...PLZEN, paths: [] } });
+  try {
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(f.state.sent.length, 0);
+    assert.equal(f.db.prepare("SELECT count(*) n FROM native_days").get().n, 0);
+  } finally {
+    f.db.close();
+  }
+});
 test("native funding uses finite actual buckets, six city slots, free XP and small shared coins", () => {
   const m = nativeManifest(plan, {
     coins: { available: "6000000000000000000000" },
@@ -202,7 +571,7 @@ test("arena, absent consent, unlinked wallet and wrong GPS cannot issue native r
         f.player,
         input(f, m, { fix: { ...f.fix(m.coins[0]), accuracy: 100 } }),
       ),
-      /accurate/,
+      /not precise enough/,
     );
     await assert.rejects(
       f.n.submit(
@@ -359,6 +728,12 @@ test("native receipt capacity includes accepted pending rights before another ex
   try {
     const m = await ready(f);
     f.state.days.get(m.id).claims_accepted = 255;
+    // The chain only counts claims this server attested, so mirror them locally.
+    const settled = f.db.prepare(
+      "INSERT INTO native_reward_claims(id,day_id,kind,item_index,account_id,player_id,body,signature,state,run_after,created_at) VALUES(?,?,'quest',0,?,?,'{}','','confirmed',0,0)",
+    );
+    for (let i = 0; i < 255; i++)
+      settled.run(`settled-${i}`, m.id, `explorer${i}.testnet`, f.player);
     await f.n.submit(f.player, input(f, m));
     f.setNow(NOW + 5000);
     await assert.rejects(
@@ -367,7 +742,7 @@ test("native receipt capacity includes accepted pending rights before another ex
     );
     assert.equal(
       f.db.prepare("SELECT COUNT(*) n FROM native_reward_claims").get().n,
-      1,
+      256,
     );
   } finally {
     f.db.close();
@@ -700,10 +1075,7 @@ test("publication fences a late chain lookup before any new transaction", async 
       /lease expired/,
     );
     assert.equal(f.state.sent.length, 0);
-    assert.equal(
-      f.db.prepare("SELECT state FROM native_days").get().state,
-      "prepared",
-    );
+    assert.equal(f.db.prepare("SELECT count(*) n FROM native_days").get().n, 0);
     assertSuccessorUntouched(f);
   } finally {
     f.db.close();
@@ -788,5 +1160,164 @@ test("a late vault observation cannot replace another keeper's state or failure"
     } finally {
       f.db.close();
     }
+  }
+});
+
+test("distribution drift stops new day publication and is recorded for health", async () => {
+  const f = fixture();
+  try {
+    const view = f.n.view;
+    // Readable, conserved treasury whose reservation no known day explains.
+    f.n.view = async (method, args, fresh) =>
+      method === "get_treasury"
+        ? {
+            coins: { available: "90000", reserved: "10000", awarded: "0" },
+            zones: { available: "100000", reserved: "0", awarded: "0" },
+            funded: "200000",
+            owed: "0",
+            pending: "0",
+            withdrawn: "0",
+            policy: "50/50-v1",
+          }
+        : view(method, args, fresh);
+    f.n.provider = {
+      query: async () => ({
+        code_hash: "reviewed-test-code",
+        amount: "1000000000000000000000000",
+        storage_usage: 0,
+      }),
+    };
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /Distribution audit found drift \(coin-reservations-explained\)/,
+    );
+    assert.equal(
+      f.state.sent.filter((s) => s.method === "publish_day").length,
+      0,
+    );
+    assert.equal(f.n.lastAudit.status, "drift");
+    assert.match(f.n.workerStatus().last_error, /drift/);
+  } finally {
+    f.db.close();
+  }
+});
+
+test("published days record the rewards contract they were confirmed on", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    const row = f.db
+      .prepare("SELECT * FROM native_day_contracts WHERE day_id=?")
+      .get(m.id);
+    assert.equal(row.state, "current");
+    assert.equal(row.contract_id, "rewards.testnet");
+  } finally {
+    f.db.close();
+  }
+});
+
+test("a published day of an earlier rewards contract is quarantined and never blocks later publication", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    // Legacy host state: the row predates contract tracking, and the current
+    // contract (a new generation) has never seen the day.
+    f.db.prepare("DELETE FROM native_day_contracts").run();
+    f.state.days.delete(m.id);
+    f.setNow(m.endsAt + 86400001);
+    f.state.sent.length = 0;
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(
+      f.state.sent.some((s) => s.method === "close_day"),
+      false,
+    );
+    assert.ok(
+      f.state.sent.some(
+        (s) => s.method === "publish_day" && s.args.day_id !== m.id,
+      ),
+      "later days still publish",
+    );
+    assert.equal(
+      f.db.prepare("SELECT state FROM native_days WHERE id=?").get(m.id).state,
+      "published",
+      "the row is kept, not closed or rewritten",
+    );
+    const q = f.db
+      .prepare("SELECT * FROM native_day_contracts WHERE day_id=?")
+      .get(m.id);
+    assert.equal(q.state, "foreign");
+    assert.equal(q.contract_id, null);
+    const status = f.n.workerStatus();
+    assert.deepEqual(status.foreignDays, [m.id]);
+    assert.equal(status.last_error, null);
+    // Later runs skip the quarantined day without reading it again.
+    const view = f.n.view,
+      read = [];
+    f.n.view = async (method, args, fresh) => {
+      if (method === "get_day") read.push(args.day_id);
+      return view(method, args, fresh);
+    };
+    f.state.sent.length = 0;
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(f.state.sent.filter((s) => s.args?.day_id === m.id).length, 0);
+    assert.equal(f.n.workerStatus().last_error, null);
+    f.n.view = view;
+  } finally {
+    f.db.close();
+  }
+});
+
+test("a day recorded on another contract is skipped; a legacy day on this contract is backfilled and closed", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    f.setNow(m.endsAt + 86400001);
+    f.db
+      .prepare(
+        "UPDATE native_day_contracts SET contract_id='rewards-old.testnet' WHERE day_id=?",
+      )
+      .run(m.id);
+    f.state.sent.length = 0;
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(f.state.days.get(m.id).closed, false);
+    assert.equal(
+      f.state.sent.some((s) => s.method === "close_day"),
+      false,
+    );
+    // Legacy (unrecorded) row that the current contract does know.
+    f.db.prepare("DELETE FROM native_day_contracts WHERE day_id=?").run(m.id);
+    await runRewardWorker(f.n, f.send, { clock: f.clock });
+    assert.equal(f.state.days.get(m.id).closed, true);
+    assert.equal(
+      f.db.prepare("SELECT state FROM native_days WHERE id=?").get(m.id).state,
+      "closed",
+    );
+    assert.equal(
+      f.db
+        .prepare("SELECT contract_id FROM native_day_contracts WHERE day_id=?")
+        .get(m.id).contract_id,
+      "rewards.testnet",
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
+test("a mismatched day of this contract does not stop other closures or the audit, but withholds publication", async () => {
+  const f = fixture();
+  try {
+    const m = await ready(f);
+    f.state.days.get(m.id).coin_unit = "1";
+    f.setNow(m.endsAt + 86400001);
+    f.n.lastAudit = null;
+    f.state.sent.length = 0;
+    await assert.rejects(
+      runRewardWorker(f.n, f.send, { clock: f.clock }),
+      /before closure\. \(day plzen-2026-10-31-v1\)/,
+    );
+    assert.ok(f.n.lastAudit, "the audit still ran");
+    assert.equal(f.state.sent.length, 0);
+  } finally {
+    f.db.close();
   }
 });

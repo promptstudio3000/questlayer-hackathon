@@ -100,7 +100,7 @@ function assertion(key, challenge) {
   };
 }
 test("HTTP integration: accounts, coins, market, escrow, signatures and passkey recovery", async (t) => {
-  const dir = mkdtempSync(join(tmpdir(), "auratrail-http-"));
+  const dir = mkdtempSync(join(tmpdir(), "questlayer-http-"));
   const child = spawn(process.execPath, ["server/index.mjs"], {
     env: {
       ...process.env,
@@ -221,6 +221,53 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     a.cookie,
   );
   assert.equal(w.status, 200);
+  const page = await request(
+    "/world?id=" + encodeURIComponent(w.data.id) + "&limit=7",
+    undefined,
+    a.cookie,
+  );
+  assert.equal(page.status, 200);
+  // World layers: the default theme is named in responses only.
+  assert.equal(w.data.layerId, "aavegotchi");
+  assert.equal(page.data.layerId, "aavegotchi");
+  const config = await request("/config");
+  assert.equal(config.data.layerId, "aavegotchi");
+  assert.deepEqual(config.data.layers.map((l) => l.id), ["aavegotchi"]);
+  assert.equal(page.data.coins.length, 7);
+  assert.equal(page.data.cityZoneCount, 6);
+  assert.ok(page.data.page.nextCursor);
+  const nextPage = await request(
+    "/world?id=" +
+      encodeURIComponent(w.data.id) +
+      "&limit=7&cursor=" +
+      encodeURIComponent(page.data.page.nextCursor),
+    undefined,
+    a.cookie,
+  );
+  assert.equal(nextPage.status, 200);
+  assert.ok(
+    nextPage.data.coins.every(
+      (c) => !page.data.coins.some((p) => p.id === c.id),
+    ),
+  );
+  const badViewport = await request(
+    "/world",
+    {
+      location: { lat: 50.08, lng: 14.42 },
+      arena: false,
+      bounds: [1, 1, 0, 0],
+    },
+    a.cookie,
+  );
+  assert.equal(badViewport.status, 400);
+  const emptyViewport = await request(
+    "/world?id=" + encodeURIComponent(w.data.id) + "&bbox=0,0,0.1,0.1",
+    undefined,
+    a.cookie,
+  );
+  assert.equal(emptyViewport.status, 200);
+  assert.equal(emptyViewport.data.visibleZoneCount, 0);
+  assert.equal(emptyViewport.data.cityZoneCount, 6);
   const coin = w.data.coins[0];
   const race = await Promise.all([
     request("/coins/claim", { coinId: coin.id, fix: coin }, a.cookie),
@@ -258,18 +305,21 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     { itemId: item.id, price: 10_000_000 },
     a.cookie,
   );
-  assert.equal(list.status, 200);
+  // Aura trades happen on NEAR now: the database practice market is closed.
+  assert.equal(list.status, 410);
+  assert.equal(list.data.code, "MARKET_ON_CHAIN");
   assert.equal(
-    (await request("/market/buy", { listingId: list.data.listing }, b.cookie))
+    (await request("/market/buy", { listingId: "listing_x" }, b.cookie))
       .status,
-    200,
+    410,
   );
+  assert.deepEqual((await request("/market", undefined, b.cookie)).data.listings, []);
   assert.equal(
-    (await request("/equip", { itemId: item.id }, a.cookie)).status,
+    (await request("/equip", { itemId: item.id }, b.cookie)).status,
     403,
   );
   assert.equal(
-    (await request("/equip", { itemId: item.id }, b.cookie)).status,
+    (await request("/equip", { itemId: item.id }, a.cookie)).status,
     200,
   );
   const route = w.data.quests.find((q) => q.kind === "route" && q.tier === 1);
@@ -428,6 +478,55 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     ).status,
     401,
   );
+  // Play first, secure later: a guest attaches a passkey to the same explorer.
+  const guest = await request("/session", { name: "Guest Securing" });
+  assert.equal(guest.status, 201);
+  assert.equal(
+    (await request("/passkey/options", { action: "register", attach: true }))
+      .status,
+    401,
+    "attaching needs a signed-in explorer",
+  );
+  const attachOptions = await request(
+    "/passkey/options",
+    { action: "register", attach: true },
+    guest.cookie,
+  );
+  assert.equal(attachOptions.status, 200, JSON.stringify(attachOptions.data));
+  const attachKey = credential(attachOptions.data.options.challenge);
+  assert.equal(
+    (
+      await request("/passkey/verify", {
+        challengeId: attachOptions.data.challengeId,
+        response: attachKey.registration,
+      })
+    ).status,
+    401,
+    "the same session must finish the attachment",
+  );
+  const attachOptions2 = await request(
+    "/passkey/options",
+    { action: "register", attach: true },
+    guest.cookie,
+  );
+  const attachKey2 = credential(attachOptions2.data.options.challenge);
+  const attached = await request(
+    "/passkey/verify",
+    {
+      challengeId: attachOptions2.data.challengeId,
+      response: attachKey2.registration,
+    },
+    guest.cookie,
+  );
+  assert.equal(attached.status, 200, JSON.stringify(attached.data));
+  assert.equal(attached.data.player.id, guest.data.player.id);
+  assert.equal(attached.data.player.name, "Guest Securing");
+  const attachedLogin = await request("/passkey/options", { action: "login" });
+  const attachedRecovered = await request("/passkey/verify", {
+    challengeId: attachedLogin.data.challengeId,
+    response: assertion(attachKey2, attachedLogin.data.options.challenge),
+  });
+  assert.equal(attachedRecovered.data.player.id, guest.data.player.id);
   const wrong = await request("/passkey/options", {
     action: "register",
     name: "Wrong Origin",

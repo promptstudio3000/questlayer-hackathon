@@ -19,6 +19,12 @@ Environment=DATABASE_PATH=/var/lib/questlayer-hackathon/questlayer-hackathon.sql
 Environment=STATIC_ASSET_DIR=/opt/ps3000/apps/questlayer-hackathon/assets
 Environment=NEAR_NETWORK=testnet
 Environment=NEAR_RPC_URL=https://test.rpc.fastnear.com
+# Testnet test world (docs/TEST-SEED.md). Delete this line (or set TEST_SEED=0
+# in runtime.env) and the next start removes everything it seeded.
+Environment=TEST_SEED=1
+# Level item editions L5-L10 (docs/LEVELS.md, owner-approved 1 Nov). Testnet only;
+# each stays unavailable until the deployed collectibles contract lists it.
+Environment=LEVEL_ITEM_EDITIONS=1
 EnvironmentFile=-/opt/ps3000/apps/questlayer-hackathon/runtime.env
 Restart=on-failure
 RestartSec=3

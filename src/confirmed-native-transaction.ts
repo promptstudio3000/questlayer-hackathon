@@ -1,4 +1,7 @@
+import { tr } from "./i18n.ts";
 import type { SignAndSendTransactionParams } from "@hot-labs/near-connect";
+import { NEAR_NETWORK } from "./near-network.ts";
+import type { NearNetwork } from "./near-network.ts";
 
 type Call = {
   methodName: string;
@@ -7,7 +10,7 @@ type Call = {
   deposit: string;
 };
 export type ReviewedNativeTransaction = {
-  network: "testnet";
+  network: NearNetwork;
   signerId: string;
   receiverId: string;
   actions: [{ type: "FunctionCall"; params: Call }];
@@ -16,7 +19,7 @@ type Wallet = {
   signAndSendTransaction(input: SignAndSendTransactionParams): Promise<unknown>;
 };
 type Quote = Call & {
-  network: "testnet";
+  network: NearNetwork;
   signerId: string;
   receiverId: string;
 };
@@ -80,7 +83,7 @@ function validQuote(value: unknown): value is Quote {
         "deposit",
       ].includes(k),
     ) &&
-    q.network === "testnet" &&
+    q.network === NEAR_NETWORK &&
     typeof q.signerId === "string" &&
     /^[a-z0-9._-]{2,64}$/.test(q.signerId) &&
     typeof q.receiverId === "string" &&
@@ -337,7 +340,7 @@ export async function exportPendingNativeTransactions(
       {
         format: "questlayer-native-receipts",
         version: 1,
-        network: "testnet",
+        network: NEAR_NETWORK,
         playerId: context.playerId,
         exportedAt: Date.now(),
         entries,
@@ -372,7 +375,7 @@ export async function importPendingNativeTransactions(
     !file ||
     file.format !== "questlayer-native-receipts" ||
     file.version !== 1 ||
-    file.network !== "testnet" ||
+    file.network !== NEAR_NETWORK ||
     file.playerId !== context.playerId ||
     !Number.isSafeInteger(file.exportedAt) ||
     file.exportedAt <= 0 ||
@@ -505,7 +508,7 @@ async function verify(
     result = await response.json();
   } catch {
     const message =
-      "Confirmation is unavailable. Your transaction may already be complete; check it in Wallet before trying another action.";
+      tr("Confirmation is unavailable. Your transaction may already be complete; check it in Wallet before trying another action.");
     await mutate(context, entry, (current) => ({ ...current, error: message }));
     throw new NativeConfirmationError(message, { ...entry, transactionHash });
   }
@@ -517,7 +520,7 @@ async function verify(
     const terminalVerified = status === 409 && TERMINAL.has(code);
     const message = String(
       result.error ||
-        "The transaction has not been confirmed. Check it in Wallet before retrying.",
+        tr("The transaction has not been confirmed. Check it in Wallet before retrying."),
     ).slice(0, 400);
     await mutate(context, entry, (current) => ({
       ...current,
@@ -536,13 +539,13 @@ async function verify(
   }
   if (
     result.confirmed !== true ||
-    result.network !== "testnet" ||
+    result.network !== NEAR_NETWORK ||
     result.accountId !== entry.accountId ||
     result.contractId !== entry.quote.receiverId ||
     result.transactionHash !== transactionHash
   ) {
     const message =
-      "The confirmation did not match this transaction. Check the saved receipt in Wallet before retrying.";
+      tr("The confirmation did not match this transaction. Check the saved receipt in Wallet before retrying.");
     await mutate(context, entry, (current) => ({ ...current, error: message }));
     throw new NativeConfirmationError(message, { ...entry, transactionHash });
   }
@@ -606,7 +609,7 @@ export async function sendConfirmedNative(
   context: NativeConfirmationContext,
 ) {
   if (
-    transaction.network !== "testnet" ||
+    transaction.network !== NEAR_NETWORK ||
     transaction.actions.length !== 1 ||
     transaction.actions[0].type !== "FunctionCall"
   )
@@ -671,7 +674,7 @@ export async function sendConfirmedNative(
       const anchor = await response.json();
       if (
         !response.ok ||
-        anchor.network !== "testnet" ||
+        anchor.network !== NEAR_NETWORK ||
         anchor.accountId !== entry.accountId
       )
         throw Error(
@@ -735,7 +738,7 @@ export async function sendConfirmedNative(
       throw Error("The wallet request was cancelled. Your entries are kept.");
     }
     const message =
-      "The wallet did not provide a receipt. Check its history in Wallet before trying again; the operation may already have been sent.";
+      tr("The wallet did not provide a receipt. Check its history in Wallet before trying again; the operation may already have been sent.");
     await mutate(context, entry, (current) => ({ ...current, error: message }));
     throw new NativeConfirmationError(message, entry);
   }

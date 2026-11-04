@@ -70,21 +70,7 @@
     overflow-y: auto;
   }
 }
-:root {
-  --ink: #1a0335;
-  --ink-secondary: #665577;
-  --surface: #fcfaff;
-  --surface-raised: #fff;
-  --surface-soft: #f2ebff;
-  --action: #672eeb;
-  --on-action: #fff;
-  --control-border: #806a99;
-  --decorative-border: #d7cbe9;
-  --purple: #672eeb;
-  --muted: #665577;
-  --cream: #fcfaff;
-  --dark: #1a0335;
-}
+/* Tokens are defined once in src/tokens.css. */
 .play-native,
 .play-economy {
   color: var(--ink);
@@ -541,9 +527,13 @@
 .main-panel .recommended-quest {
   margin-top: 0;
 }
+.coverage-note.unverified {
+  border-left: 4px solid var(--gold, #c29222);
+  padding-left: 12px;
+}
 @media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
   .main-panel.explore-panel.sheet-compact .play-entry,
-  .main-panel.explore-panel.sheet-compact .coverage-note {
+  .main-panel.explore-panel.sheet-compact .coverage-note:not(.unverified) {
     display: none;
   }
   .walk-card {

@@ -17,15 +17,18 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--state", required=True)
 parser.add_argument("--destination", required=True)
 parser.add_argument("--retention-days", type=int, default=14)
+# The mainnet slice service keeps questlayer-mainnet.sqlite in its own state directory.
+parser.add_argument("--database-name", default="questlayer-hackathon.sqlite")
 parser.add_argument("--build-id", default="development-unrecorded")
 parser.add_argument("--config-sha256")
 args = parser.parse_args()
 assert 2 <= args.retention_days <= 90, "Invalid retention window"
+assert args.database_name in ("questlayer-hackathon.sqlite", "questlayer-mainnet.sqlite"), "Unknown state database"
 assert re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,95}", args.build_id), "Invalid reviewed build identifier"
 assert args.config_sha256 is None or re.fullmatch(r"[a-f0-9]{64}", args.config_sha256), "Invalid public configuration digest"
 os.umask(0o077)
 state = Path(args.state).resolve()
-database = state / "questlayer-hackathon.sqlite"
+database = state / args.database_name
 legacy_database = state / "auratrail.sqlite"
 assert not (database.exists() and legacy_database.exists()), "Ambiguous state databases"
 if not database.exists() and legacy_database.exists():

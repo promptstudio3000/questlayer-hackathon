@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-10-31",
+  "updated": "2026-11-01",
   "currentRuntimeStage": "city_alpha_demo",
   "nextMilestone": "W01",
   "statusVocabulary": [
@@ -199,10 +199,13 @@
         "docs/WORLD-WORKER.md",
         "output/qa/W01-worker/checks.txt",
         "output/qa/W01-worker/operator-preview.geojson",
-        "docs/QUEST-TEMPLATES.md"
+        "docs/QUEST-TEMPLATES.md",
+        "docs/MAP-BACKEND-CONTINUATION-2026-11-01.md",
+        "output/qa/2026-11-map-backend/README.md"
       ],
       "completedAt": null,
-      "evidenceDirectory": "output/qa/W01/"
+      "evidenceDirectory": "output/qa/W01/",
+      "implementationNote": "Local 1 November map/backend follow-up adds resilient street-data recovery, graph import/routing for explicitly configured node-based packs, audited place closures, compatible viewport/page reads and a three-day integration pilot. 566 application tests and build pass. Active Plzen topology remains unverified pending reviewed node data/entries and field access; UI/contracts/deployment and full milestone status remain unchanged."
     },
     {
       "id": "W02",
@@ -935,11 +938,14 @@
         "output/qa/W03-W13-durable-recovery/README.md",
         "output/qa/W02-W10-next/README.md",
         "output/qa/W02-W10-next/tests.txt",
-        "output/qa/W02-W10-next/build.txt"
+        "output/qa/W02-W10-next/build.txt",
+        "docs/MODERATION-AND-EVIDENCE.md",
+        "tests/moderation.test.mjs",
+        "tests/task-evidence.test.mjs"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W10/",
-      "implementationNote": "Bounded immutable public-text sponsored escrow: ordered review, rejection, appeal, disclosed trusted arbiter, cancellation preserving timely rights, timeout settlement and guarded withdrawal. Three project-owned synthetic testnet flows withdrew all 0.003 test NEAR; 0.25 test NEAR storage funding and 3 yoctoNEAR operating funding are separate. Policy: 48h sponsor review, up to 24h appeal capped at deadline+72h, resolution cutoff deadline+120h; 128 lifetime tasks, 32 submissions/task, max1 test NEAR prize, non-refundable 0.05 test NEAR each creation/submission. Public notes now have reports/blocks/local moderation. Private/photo task evidence, operational moderation coverage, independent governance, physical/device journeys and live elapsed timeout/failure proofs remain open. Local creator safety extends public-note moderation with bounded private quest reports, block controls and trusted report review/suspension CLI. Suspension preserves admitted revisions, pending obligations and locks and prevents publication bypass. RealHTTP lost response, two SQLite races, old-schema additive initialization and actualWAL restore/CLI retries pass. This does not complete private task media, social adapters, physical-place safety or staffed governance."
+      "implementationNote": "Bounded immutable public-text sponsored escrow: ordered review, rejection, appeal, disclosed trusted arbiter, cancellation preserving timely rights, timeout settlement and guarded withdrawal. Three project-owned synthetic testnet flows withdrew all 0.003 test NEAR; 0.25 test NEAR storage funding and 3 yoctoNEAR operating funding are separate. Policy: 48h sponsor review, up to 24h appeal capped at deadline+72h, resolution cutoff deadline+120h; 128 lifetime tasks, 32 submissions/task, max1 test NEAR prize, non-refundable 0.05 test NEAR each creation/submission. Public notes now have reports/blocks/local moderation. Private/photo task evidence, operational moderation coverage, independent governance, physical/device journeys and live elapsed timeout/failure proofs remain open. Local creator safety extends public-note moderation with bounded private quest reports, block controls and trusted report review/suspension CLI. Suspension preserves admitted revisions, pending obligations and locks and prevents publication bypass. RealHTTP lost response, two SQLite races, old-schema additive initialization and actualWAL restore/CLI retries pass. Unified operator moderation queue (notes, NEAR Social records, creator quests, private evidence) with report, review, hide/restore/dismiss/tombstone and a hash-chained audit, plus private sponsored-task photo evidence bound to the on-chain content hash with retention, rate limits and UI states: docs/MODERATION-AND-EVIDENCE.md. Social adapters, physical-place safety and staffed governance remain."
     },
     {
       "id": "W11",
@@ -1290,11 +1296,13 @@
         "output/qa/W08-runtime/restore/README.md",
         "output/qa/W02-W08-parallel/README.md",
         "output/qa/W02-W08-parallel/tests-final.txt",
-        "output/qa/W02-W08-parallel/build-final.txt"
+        "output/qa/W02-W08-parallel/build-final.txt",
+        "docs/RELEASE-CANDIDATE-CHECKLIST.md",
+        "output/qa/W13-city-pilot/report.json"
       ],
       "completedAt": null,
       "evidenceDirectory": "output/qa/W13-recovery/",
-      "implementationNote": "Existing private SQLite backup tooling was exercised against a live-WAL creator fixture and reopened through actual database/runtime factories. Schema/all rows, public/private profiles, follows, admitted revisions, closing obligations, XP locks and historical receipts match exactly. Premature release fails; independent resolution permits one exact release; a second restore/retry preserves remaining rights and unchanged inventory/treasury. Six focused backup/recovery tests pass. Full-host/offsite restoration, native-chain reconciliation, physical devices, live financial cycles and multi-day city pilot remain open. No deployment."
+      "implementationNote": "Existing private SQLite backup tooling was exercised against a live-WAL creator fixture and reopened through actual database/runtime factories. Schema/all rows, public/private profiles, follows, admitted revisions, closing obligations, XP locks and historical receipts match exactly. Premature release fails; independent resolution permits one exact release; a second restore/retry preserves remaining rights and unchanged inventory/treasury. Six focused backup/recovery tests pass. Full-host/offsite restoration, native-chain reconciliation, physical devices, live financial cycles and multi-day city pilot remain open. No deployment. 1 Nov: npm run pilot:city rehearses three local days with backup, restore, post-restore native reconciliation (NATIVE_RECONCILING freeze) and worker lease takeover against a contract double; no testnet transaction."
     },
     {
       "id": "W14",

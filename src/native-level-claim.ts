@@ -1,5 +1,6 @@
 import claims from "../public/native-claims-testnet.json" with { type: "json" };
 import rewards from "../public/native-rewards-testnet.json" with { type: "json" };
+import { NEAR_NETWORK } from "./near-network.ts";
 export const NATIVE_LEVEL_POLICY = "native-xp-level-v1";
 export type NativeLevelClaim = {
   network: string;
@@ -25,7 +26,7 @@ export function assertNativeLevelClaim(
 ) {
   if (
     !["issued", "minted"].includes(c.state) ||
-    c.network !== "testnet" ||
+    c.network !== NEAR_NETWORK ||
     c.contractId !== claims.contractId ||
     c.sourceContractId !== rewards.contractId ||
     c.receiver_id !== account ||

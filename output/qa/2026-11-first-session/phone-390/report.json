@@ -1,0 +1,47 @@
+{
+  "device": "phone-390",
+  "browser": "chromium",
+  "profile": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "deviceScaleFactor": 2,
+    "isMobile": true,
+    "hasTouch": true
+  },
+  "a11y": {
+    "welcome": [],
+    "map-coach": [],
+    "chest-reward": [],
+    "secure-share": [],
+    "settings": [],
+    "inventory": [],
+    "market-listing-form": [],
+    "market": [],
+    "creator-feed": []
+  },
+  "cardLayout": {
+    "checks": 0,
+    "problems": []
+  },
+  "performance": {
+    "scriptRawKb": 700,
+    "scriptGzipKb": 209,
+    "scripts": 8,
+    "requests": 16,
+    "firstContentfulPaintMs": 360,
+    "domContentLoadedMs": 163,
+    "nameFieldReadyMs": 479,
+    "layoutShift": 0,
+    "budget": {
+      "scriptGzipKb": 220,
+      "scriptRawKb": 700,
+      "requests": 30,
+      "firstContentfulPaintMs": 4000,
+      "nameFieldReadyMs": 6000,
+      "layoutShift": 0.1
+    },
+    "over": []
+  }
+}

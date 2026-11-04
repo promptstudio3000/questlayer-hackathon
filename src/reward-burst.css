@@ -1,0 +1,87 @@
+/* Floating reward feedback above the explorer (src/RewardBursts.tsx). */
+.reward-bursts {
+  position: fixed;
+  left: 50%;
+  top: 22%;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  width: min(92vw, 360px);
+}
+.reward-burst {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border: 2px solid var(--ink, #1a0335);
+  border-radius: 999px;
+  background: var(--coin, #fef87d);
+  color: var(--ink, #1a0335);
+  box-shadow: 0 4px 0 var(--ink, #1a0335), 0 0 24px rgba(254, 248, 125, 0.7);
+  font-weight: 800;
+  animation: reward-float 1.4s ease-out forwards;
+}
+.reward-burst span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.reward-burst small {
+  font-size: 13px;
+  font-weight: 700;
+}
+.reward-burst.tone-coin {
+  font-size: 14px;
+  padding: 5px 12px;
+}
+.reward-burst.tone-find {
+  background: var(--discovery, #ff1dff);
+  color: var(--ink, #1a0335);
+  font-size: 17px;
+  box-shadow: 0 4px 0 var(--ink, #1a0335), 0 0 32px rgba(255, 29, 255, 0.7);
+  animation-duration: 2.4s;
+}
+.reward-burst.tone-quest,
+.reward-burst.tone-level {
+  border-radius: 18px;
+  padding: 12px 18px;
+  font-size: 19px;
+  background: var(--action, #672eeb);
+  color: #fff;
+  box-shadow: 0 5px 0 var(--ink, #1a0335), 0 0 40px rgba(103, 46, 235, 0.75);
+  animation: reward-pop 3.2s ease-out forwards;
+}
+.reward-burst.tone-level {
+  background: linear-gradient(135deg, #f3bd54, #ff7a1d);
+  color: var(--ink, #1a0335);
+  animation-duration: 3.6s;
+}
+@keyframes reward-float {
+  0% { opacity: 0; transform: translateY(18px) scale(0.85); }
+  12% { opacity: 1; transform: translateY(0) scale(1.06); }
+  25% { transform: translateY(0) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-36px); }
+}
+@keyframes reward-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  10% { opacity: 1; transform: scale(1.12); }
+  18% { transform: scale(1); }
+  82% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-24px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reward-burst,
+  .reward-burst.tone-quest,
+  .reward-burst.tone-level {
+    animation-name: reward-fade;
+  }
+  @keyframes reward-fade {
+    0%, 85% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "cityId": "plzen",
+  "localDays": ["2026-11-01", "2026-11-02"],
+  "repeat": "idempotent",
+  "treasury": "unchanged",
+  "worldsCreated": 0,
+  "coinsCreated": 0,
+  "previewZones": 6,
+  "previewRouting": "not-verified"
+}

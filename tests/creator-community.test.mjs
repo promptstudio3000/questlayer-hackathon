@@ -477,3 +477,22 @@ test("Community initialization and reads require the actual existing player boun
     "CREATOR_INPUT",
   );
 });
+
+test("a pinned template place is public with the approved quest", (t) => {
+  const f = fixture(t);
+  f.profile();
+  const place = {
+    template: "trail",
+    points: [
+      { lat: 49.74745, lng: 13.3774 },
+      { lat: 49.7484, lng: 13.3784 },
+    ],
+  };
+  f.publish("river-trail", { ...DRAFT, place });
+  const [quest] = f.community.listQuests(f.viewer).items;
+  assert.deepEqual(quest.place, place);
+  assert.deepEqual(
+    f.community.publicQuest(f.viewer, "river-trail").place,
+    place,
+  );
+});

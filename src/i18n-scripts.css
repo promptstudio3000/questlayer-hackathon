@@ -1,0 +1,45 @@
+/* Fonts and direction for non-Latin UI languages (src/i18n.ts sets
+ * <html lang> and <html dir>). Kanit has no Devanagari or Arabic glyphs, so
+ * those scripts get a named system font instead of whatever the browser
+ * falls back to: Noto on Android/ChromeOS, Kohinoor/Geeza on Apple, Nirmala
+ * and Segoe on Windows. Latin text (numbers, NEAR, XP) stays in Kanit. */
+html:lang(hi) {
+  --font-body: "Kanit", "Noto Sans Devanagari", "Kohinoor Devanagari", "Nirmala UI", "Mangal", system-ui, sans-serif;
+}
+html:lang(ar) {
+  --font-body: "Kanit", "Noto Sans Arabic", "Noto Naskh Arabic", "Geeza Pro", "Segoe UI", "Tahoma", system-ui, sans-serif;
+}
+/* Several headings name "Kanit" directly; route them through the stack. */
+html:is(:lang(hi), :lang(ar)) body :not(code, pre, kbd, samp, svg, svg *) {
+  font-family: var(--font-body);
+}
+/* Tracking breaks Arabic joining and crowds Devanagari matras. */
+html:is(:lang(hi), :lang(ar)) body * {
+  letter-spacing: 0 !important;
+}
+html:lang(hi) body {
+  line-height: 1.5;
+}
+/* Spatial controls are not text: arrows, turn left/right and the walk pad
+ * keep their real-world layout in a right-to-left language. */
+[dir="rtl"] .demo-pad-grid,
+[dir="rtl"] .model-controls {
+  direction: ltr;
+}
+/* Location chip: longer translations must not slide under the map rail. */
+.map-top-chip.map-status-chip .map-status-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 760px) {
+  .map-top-chip.map-status-chip {
+    max-width: calc(100vw - 100px);
+  }
+}
+[dir="rtl"] .map-top-chip.map-status-chip {
+  padding: 0 12px 0 0;
+}
+[dir="rtl"] .map-top-chip.map-status-chip > button {
+  margin: 0 0 0 2px;
+}

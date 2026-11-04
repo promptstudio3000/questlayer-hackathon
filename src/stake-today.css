@@ -1,0 +1,37 @@
+.stake-today, .inner-vault { display: grid; gap: 8px; padding: 12px; border-radius: 12px; border: 2px solid #8348ff; }
+.stake-today header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stake-today h3, .inner-vault h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stake-patron { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #ffd01f; color: #2a1650; font-weight: 700; }
+.stake-today-numbers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.stake-today-numbers div { padding: 8px; border-radius: 10px; background: rgba(131, 72, 255, 0.12); }
+.stake-today-numbers dt { font-size: 11px; opacity: 0.8; }
+.stake-today-numbers dd { margin: 2px 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stake-note, .stake-coins { margin: 0; font-size: 13px; opacity: 0.85; }
+.stake-coins { opacity: 1; }
+.stake-maturity { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
+.stake-maturity li { display: flex; gap: 8px; align-items: center; }
+.stake-countdown { flex: none; min-width: 44px; text-align: center; padding: 4px 6px; border-radius: 8px; background: #672eeb; color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stake-mature::before { content: "✓"; color: #219497; font-weight: 700; }
+.stake-ceremony { display: grid; gap: 8px; }
+.stake-ceremony-item { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; padding: 12px; border-radius: 12px; background: radial-gradient(circle at 20% 30%, #ffd01f55, transparent 60%), #3d0981; color: #fff; animation: stake-glow 1.6s ease-out 1; }
+.stake-ceremony-item p { margin: 2px 0 0; font-size: 13px; }
+.stake-ceremony-item button { grid-column: 1 / -1; min-height: 44px; border-radius: 10px; border: 0; background: #ffd01f; color: #2a1650; font-weight: 700; cursor: pointer; }
+.stake-ceremony-seal { font-size: 28px; color: #ffd01f; }
+.inner-vault.open { border-color: #ffd01f; }
+.inner-vault ol { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.inner-vault li p { margin: 2px 0 0; font-size: 14px; }
+.inner-vault li.locked { opacity: 0.55; }
+.stake-chip { margin: 0; font-size: 13px; padding: 6px 10px; border-radius: 999px; border: 1px dashed #8348ff; justify-self: start; }
+@keyframes stake-glow { from { box-shadow: 0 0 0 0 #ffd01f; transform: scale(0.97); } to { box-shadow: 0 0 0 12px transparent; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .stake-ceremony-item { animation: none; } }
+@media (max-width: 360px) { .stake-today-numbers { grid-template-columns: 1fr; } }
+.stake-rank { background: #3d0981; color: #ffd01f; }
+.patron-rank { display: grid; gap: 6px; }
+.patron-rank-pips { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.patron-rank-pips li { flex: 1; display: grid; place-items: center; min-height: 28px; border-radius: 8px; border: 2px solid #8348ff; font-weight: 700; font-variant-numeric: tabular-nums; opacity: 0.55; }
+.patron-rank-pips li.on { background: #ffd01f; border-color: #ffd01f; color: #2a1650; opacity: 1; }
+.patron-rank .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.patron-path { display: grid; gap: 6px; border-top: 1px dashed #8348ff; padding-top: 8px; }
+.patron-path h4 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+.npc-offer.patron, .npc-task.patron { border-color: #ffd01f; }
+.patron-tag { display: inline-block; padding: 0 6px; border-radius: 8px; background: #ffd01f; color: #1b1030; font-size: 12px; font-weight: 700; }

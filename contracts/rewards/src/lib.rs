@@ -7,11 +7,19 @@ use near_sdk::{
     serde::{Deserialize, Serialize},
     AccountId, Gas, NearToken, PanicOnDefault, Promise,
 };
+mod map_days;
 const NEAR: u128 = 10u128.pow(24);
 const DAY_MS: u64 = 86_400_000;
 const CLAIM_LIMIT: u16 = 256;
 const CLAIM_STORAGE: u64 = 1024;
 const SPONSOR_STORAGE_FEE: u128 = 5 * 10u128.pow(21);
+/// Plain street coin XP (unchanged since v1).
+const COIN_XP: u16 = 2;
+/// A street find is a published coin index that pays this XP instead of COIN_XP.
+/// Same coin unit, same reservation: a find adds XP, never new money.
+const FIND_XP: u16 = 15;
+/// Manifest v2 spaces finds about 150 m apart and lists at most 60.
+const MAX_FINDS: usize = 60;
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Default)]
 #[borsh(crate = "near_sdk::borsh")]
 #[serde(crate = "near_sdk::serde")]
@@ -190,7 +198,15 @@ impl Rewards {
     }
     /// Only the pinned factory can register its successfully initialized children.
     pub fn register_factory_vault(&mut self, account_id: AccountId) {
-        let factory = "questlayer-vaults-20261031.testnet";
+        // The factory of the same testnet generation: questlayer-rewards-<gen>
+        // trusts exactly questlayer-vaults-<gen>. Both ids are published in the
+        // manifest; no caller-supplied factory is accepted.
+        let own = env::current_account_id();
+        let generation = own
+            .as_str()
+            .strip_prefix("questlayer-rewards-")
+            .expect("Pinned reward contract only");
+        let factory = format!("questlayer-vaults-{generation}");
         assert_eq!(
             env::predecessor_account_id().as_str(),
             factory,
@@ -229,6 +245,7 @@ impl Rewards {
         coin_count: u16,
         coin_unit: U128,
         quests: Vec<QuestSpec>,
+        finds: Option<Vec<u16>>,
     ) {
         self.publisher();
         assert!(!self.paused, "Publication paused");
@@ -250,6 +267,7 @@ impl Rewards {
             "Invalid coins"
         );
         assert!(quests.len() == 6, "Six city slots required");
+        let finds = normalize_finds(finds.unwrap_or_default(), coin_count);
         let coin_cost = coin_unit
             .0
             .checked_mul(coin_count as u128)
@@ -276,6 +294,10 @@ impl Rewards {
             coin_cost <= self.coins.available && zone_cost <= self.zones.available,
             "Insufficient liquid funding"
         );
+        // Every city publishes under `<city>-YYYY-MM-DD-v<n>`. The cap above is per
+        // publication; this one is per local date across all cities, so adding a
+        // city can never multiply what the treasury commits in one day.
+        self.add_to_date_total(&day_id, coin_cost, zone_cost);
         self.coins.available -= coin_cost;
         self.coins.reserved += coin_cost;
         self.zones.available -= zone_cost;
@@ -295,10 +317,13 @@ impl Rewards {
                 closed: false,
             },
         );
+        if !finds.is_empty() {
+            day_finds().insert(&day_id, &finds);
+        }
         self.check();
         event(
             "day_published",
-            near_sdk::serde_json::json!({"day_id":day_id,"coins":coin_cost.to_string(),"zones":zone_cost.to_string()}),
+            near_sdk::serde_json::json!({"day_id":day_id,"coins":coin_cost.to_string(),"zones":zone_cost.to_string(),"finds":finds.len()}),
         );
     }
     /// The attestor validates consent, fresh location, tier and receipt order off chain.
@@ -347,7 +372,10 @@ impl Rewards {
             day.remaining -= day.unit;
             self.coins.reserved -= day.unit;
             self.coins.awarded += day.unit;
-            (day.unit, 2)
+            let find = day_finds()
+                .get(&claim.day_id)
+                .is_some_and(|f| f.binary_search(&claim.index).is_ok());
+            (day.unit, if find { FIND_XP } else { COIN_XP })
         } else {
             assert_eq!(claim.kind, "quest", "Invalid claim kind");
             let i = claim.index as usize;
@@ -429,6 +457,30 @@ impl Rewards {
         }
         self.check();
     }
+    /// Records the street finds of a day published before finds were on chain
+    /// (a v2 manifest relayed to the v1 contract). Publisher only, once per
+    /// day, and only for coins nobody has collected yet, so no earlier receipt
+    /// is re-priced. Changes no balances: a find is XP only.
+    pub fn record_day_finds(&mut self, day_id: String, finds: Vec<u16>) {
+        self.publisher();
+        let day = self.days.get(&day_id).expect("Unknown day");
+        assert!(!day.closed, "Day closed");
+        let mut map = day_finds();
+        assert!(map.get(&day_id).is_none(), "Finds already recorded");
+        let finds = normalize_finds(finds, day.count);
+        assert!(!finds.is_empty(), "No finds");
+        for i in &finds {
+            assert!(
+                day.coins[*i as usize / 8] & (1 << (i % 8)) == 0,
+                "Find already collected"
+            );
+        }
+        map.insert(&day_id, &finds);
+        event(
+            "finds_recorded",
+            near_sdk::serde_json::json!({"day_id":day_id,"finds":finds.len()}),
+        );
+    }
     /// Compatible backfill for the two unclaimed pilot manifests published before
     /// storage budgeting was activated. No economic rights or state layout change.
     pub fn reserve_day_storage(&mut self, day_id: String) {
@@ -456,13 +508,30 @@ impl Rewards {
         self.pending += amount;
         self.players.insert(&account_id, &p);
         self.check();
-        Promise::new(account_id.clone())
-            .transfer(NearToken::from_yoctonear(amount))
+        // Coin and zone rewards become QGOLD: the NEAR goes into the QGOLD
+        // vault, which mints its share at R (no fee) to the player.
+        Promise::new(qgold_vault().expect("QGOLD vault not set"))
+            .function_call(
+                "mint_for",
+                near_sdk::serde_json::json!({"account_id": account_id, "memo": "rewards claim"})
+                    .to_string()
+                    .into_bytes(),
+                NearToken::from_yoctonear(amount),
+                Gas::from_tgas(30),
+            )
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_static_gas(Gas::from_tgas(15))
                     .on_withdraw(account_id, U128(amount)),
             )
+    }
+    /// Owner, once: the QGOLD vault that rewards are paid into. It can never be
+    /// changed afterwards, so no one can redirect players' rewards.
+    pub fn set_qgold_vault(&mut self, account_id: AccountId) {
+        self.owner();
+        assert!(qgold_vault().is_none(), "QGOLD vault is already set");
+        env::storage_write(QGOLD_VAULT_KEY, account_id.as_bytes());
+        event("qgold_vault_set", near_sdk::serde_json::json!({"account_id": account_id}));
     }
     #[private]
     pub fn on_withdraw(&mut self, account_id: AccountId, amount: U128) -> bool {
@@ -493,14 +562,41 @@ impl Rewards {
         near_sdk::serde_json::json!({"credit":p.credit.to_string(),"pending":p.pending.to_string(),"withdrawn":p.withdrawn.to_string(),"xp":p.xp})
     }
     pub fn get_day(&self, day_id: String) -> Option<near_sdk::serde_json::Value> {
-        self.days.get(&day_id).map(|d| near_sdk::serde_json::json!({"manifest_hash":d.hash,"starts_at":d.starts.to_string(),"ends_at":d.ends.to_string(),"coin_count":d.count,"coin_unit":d.unit.to_string(),"remaining":d.remaining.to_string(),"quests":d.quests,"winners":d.winners,"closed":d.closed,"claims_accepted":storage_slots().get(&format!("count:{day_id}")).unwrap_or(0),"claims_limit":CLAIM_LIMIT,"storage_reserved":storage_slots().get(&format!("day:{day_id}")).is_some()}))
+        self.days.get(&day_id).map(|d| near_sdk::serde_json::json!({"manifest_hash":d.hash,"starts_at":d.starts.to_string(),"ends_at":d.ends.to_string(),"coin_count":d.count,"coin_unit":d.unit.to_string(),"remaining":d.remaining.to_string(),"quests":d.quests,"winners":d.winners,"closed":d.closed,"claims_accepted":storage_slots().get(&format!("count:{day_id}")).unwrap_or(0),"finds":day_finds().get(&day_id).unwrap_or_default(),"find_xp":FIND_XP,"coin_xp":COIN_XP,"claims_limit":CLAIM_LIMIT,"storage_reserved":storage_slots().get(&format!("day:{day_id}")).is_some()}))
     }
     pub fn get_config(&self) -> near_sdk::serde_json::Value {
-        near_sdk::serde_json::json!({"version":1,"network":"testnet","owner":self.owner,"publisher":self.publisher,"attestor":Base64VecU8(self.signer.clone()),"paused":self.paused,"sponsor_storage_fee":SPONSOR_STORAGE_FEE.to_string()})
+        near_sdk::serde_json::json!({"version":2,"network":"testnet","owner":self.owner,"coin_xp":COIN_XP,"find_xp":FIND_XP,"max_finds":MAX_FINDS,"publisher":self.publisher,"attestor":Base64VecU8(self.signer.clone()),"paused":self.paused,"sponsor_storage_fee":SPONSOR_STORAGE_FEE.to_string(),"qgold_vault":qgold_vault()})
     }
     pub fn get_treasury(&self) -> near_sdk::serde_json::Value {
         let bucket = |b: &Bucket| near_sdk::serde_json::json!({"available":b.available.to_string(),"reserved":b.reserved.to_string(),"awarded":b.awarded.to_string()});
         near_sdk::serde_json::json!({"coins":bucket(&self.coins),"zones":bucket(&self.zones),"funded":self.funded.to_string(),"owed":self.owed.to_string(),"pending":self.pending.to_string(),"withdrawn":self.withdrawn.to_string(),"policy":"50/50-v1"})
+    }
+    /// Records an already-published day (before date totals existed) in its
+    /// date's total exactly once. Owner only; it changes no balances.
+    pub fn record_existing_day(&mut self, day_id: String) {
+        self.owner();
+        let d = self.days.get(&day_id).expect("Unknown day");
+        let zone_cost: u128 = d.quests.iter().map(|q| q.reward.0).sum();
+        let coin_cost = d.unit.checked_mul(d.count as u128).expect("Overflow");
+        self.add_to_date_total(&day_id, coin_cost, zone_cost);
+    }
+    pub fn get_date_totals(&self, date: String) -> near_sdk::serde_json::Value {
+        let (coins, zones) = date_totals().get(&date).unwrap_or((0, 0));
+        near_sdk::serde_json::json!({"date":date,"coins":coins.to_string(),"zones":zones.to_string(),"cap":(NEAR / 10).to_string()})
+    }
+    fn add_to_date_total(&self, day_id: &str, coin_cost: u128, zone_cost: u128) {
+        let date = day_date(day_id);
+        let mut seen = date_seen();
+        assert!(seen.get(&day_id.to_string()).is_none(), "Day already counted");
+        let mut totals = date_totals();
+        let (coins, zones) = totals.get(&date).unwrap_or((0, 0));
+        let (coins, zones) = (coins + coin_cost, zones + zone_cost);
+        assert!(
+            coins <= NEAR / 10 && zones <= NEAR / 10,
+            "Daily cap across cities"
+        );
+        totals.insert(&date, &(coins, zones));
+        seen.insert(&day_id.to_string(), &true);
     }
     fn publisher(&self) {
         assert_eq!(
@@ -549,6 +645,48 @@ impl Rewards {
     }
 }
 // New namespaced storage preserves the already deployed V1 state layout.
+fn date_totals() -> LookupMap<String, (u128, u128)> {
+    LookupMap::new(b"native-date-total-v1".to_vec())
+}
+fn date_seen() -> LookupMap<String, bool> {
+    LookupMap::new(b"native-date-seen-v1".to_vec())
+}
+/// `<city>-YYYY-MM-DD-v<n>` → `YYYY-MM-DD`; anything else is rejected.
+fn day_date(day_id: &str) -> String {
+    let parts: Vec<&str> = day_id.split('-').collect();
+    let n = parts.len();
+    let digits = |p: &str, len: usize| p.len() == len && p.bytes().all(|b| b.is_ascii_digit());
+    assert!(
+        n >= 5
+            && parts[..n - 4].iter().all(|p| !p.is_empty())
+            && digits(parts[n - 4], 4)
+            && digits(parts[n - 3], 2)
+            && digits(parts[n - 2], 2)
+            && parts[n - 1].len() >= 2
+            && parts[n - 1].starts_with('v')
+            && parts[n - 1][1..].bytes().all(|b| b.is_ascii_digit()),
+        "Day id must be <city>-YYYY-MM-DD-v<n>"
+    );
+    format!("{}-{}-{}", parts[n - 4], parts[n - 3], parts[n - 2])
+}
+/// day id → sorted street-find coin indexes (added in v2, namespaced so the
+/// deployed v1 state layout is untouched and no migration call is needed).
+fn day_finds() -> LookupMap<String, Vec<u16>> {
+    LookupMap::new(b"native-finds-v1".to_vec())
+}
+fn normalize_finds(mut finds: Vec<u16>, coin_count: u16) -> Vec<u16> {
+    assert!(finds.len() <= MAX_FINDS, "Too many street finds");
+    finds.sort_unstable();
+    assert!(
+        finds.windows(2).all(|w| w[0] != w[1]) && finds.last().is_none_or(|i| *i < coin_count),
+        "Invalid street finds"
+    );
+    finds
+}
+const QGOLD_VAULT_KEY: &[u8] = b"native-qgold-vault-v1";
+fn qgold_vault() -> Option<AccountId> {
+    env::storage_read(QGOLD_VAULT_KEY).map(|b| String::from_utf8(b).unwrap().parse().unwrap())
+}
 fn storage_slots() -> LookupMap<String, u64> {
     LookupMap::new(b"native-storage-v1".to_vec())
 }
@@ -618,11 +756,12 @@ mod tests {
                     .to_vec(),
             ),
         );
+        r.set_qgold_vault(a("qgold.testnet"));
         context("sponsor.testnet", 1, 1001 + SPONSOR_STORAGE_FEE, None);
         r.fund_rewards("sponsor".into(), "fund-1".into());
         context("publisher.testnet", 1, 0, None);
         r.publish_day(
-            "day-1".into(),
+            "plzen-2026-11-01-v1".into(),
             U64(1),
             U64(1000),
             "a".repeat(64),
@@ -637,13 +776,14 @@ mod tests {
                     tier: if i < 3 { 1 } else { 2 },
                 })
                 .collect(),
+            None,
         );
         r
     }
     fn claim(kind: &str, index: u16, receiver: &str, id: &str) -> Claim {
         Claim {
             receipt_id: id.into(),
-            day_id: "day-1".into(),
+            day_id: "plzen-2026-11-01-v1".into(),
             kind: kind.into(),
             index,
             receiver_id: a(receiver),
@@ -703,8 +843,8 @@ mod tests {
         let s = signed(&r, &c);
         r.claim(c, s);
         context("publisher.testnet", 1000 + DAY_MS, 0, None);
-        r.close_day("day-1".into());
-        r.close_day("day-1".into());
+        r.close_day("plzen-2026-11-01-v1".into());
+        r.close_day("plzen-2026-11-01-v1".into());
         assert_eq!(r.coins.available, 490);
         assert_eq!(r.zones.available, 501);
         assert_eq!(r.funded, 1001);
@@ -747,6 +887,29 @@ mod tests {
         r.fund_rewards("sponsor".into(), "fund-1".into());
     }
     #[test]
+    #[should_panic(expected = "QGOLD vault is already set")]
+    fn qgold_vault_is_set_once() {
+        let mut r = setup();
+        context("owner.testnet", 2, 0, None);
+        r.set_qgold_vault(a("owner.testnet"));
+    }
+    #[test]
+    fn withdraw_pays_the_qgold_vault_not_the_player() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "a");
+        let s = signed(&r, &c);
+        r.claim(c, s);
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        let receipts = near_sdk::test_utils::get_created_receipts();
+        let to_vault = receipts.iter().find(|x| x.receiver_id.as_str() == "qgold.testnet").expect("vault call");
+        let s = format!("{:?}", to_vault.actions);
+        assert!(s.contains("method_name: [109, 105, 110, 116, 95, 102, 111, 114]") && s.contains("attached_deposit: NearToken { inner: 10 }"), "{s}");
+        assert!(!receipts.iter().any(|x| x.receiver_id.as_str() == "alice.testnet"));
+        assert_eq!(r.pending, 10);
+    }
+    #[test]
     fn failed_withdrawal_restores_exact_credit_even_while_paused() {
         let mut r = setup();
         context("relayer.testnet", 3, 0, None);
@@ -774,7 +937,7 @@ mod tests {
     #[test]
     fn maximum_pilot_receipt_fits_its_sponsored_storage() {
         let mut r = setup();
-        let day = "d".repeat(40);
+        let day = format!("{}-2026-11-01-v12", "a".repeat(25));
         context("publisher.testnet", 1, 0, None);
         r.publish_day(
             day.clone(),
@@ -792,6 +955,7 @@ mod tests {
                     tier: 1,
                 })
                 .collect(),
+            None,
         );
         context("relayer.testnet", 3, 0, None);
         let mut c = claim(
@@ -810,7 +974,7 @@ mod tests {
     #[should_panic(expected = "Daily native receipt capacity reached")]
     fn exhausted_storage_capacity_cannot_promise_another_receipt() {
         let mut r = setup();
-        storage_slots().insert(&"day:day-1".into(), &0);
+        storage_slots().insert(&"day:plzen-2026-11-01-v1".into(), &0);
         context("relayer.testnet", 3, 0, None);
         let c = claim("coin", 0, "alice.testnet", "a");
         let signature = signed(&r, &c);
@@ -826,7 +990,7 @@ mod tests {
             .account_balance(NearToken::from_millinear(100));
         testing_env!(b.build());
         r.publish_day(
-            "new-day".into(),
+            "plzen-2026-11-02-v1".into(),
             U64(1),
             U64(1000),
             "c".repeat(64),
@@ -841,6 +1005,7 @@ mod tests {
                     tier: 1,
                 })
                 .collect(),
+            None,
         );
     }
     #[test]
@@ -877,5 +1042,247 @@ mod tests {
             .account_balance(NearToken::from_millinear(10));
         testing_env!(b.build());
         r.fund_rewards("realized_yield".into(), "vault-1".into());
+    }
+
+    fn publish(r: &mut Rewards, day: &str, unit: u128, reward: u128) {
+        context("publisher.testnet", 1, 0, None);
+        r.publish_day(
+            day.into(),
+            U64(1),
+            U64(1000),
+            "e".repeat(64),
+            10,
+            U128(unit),
+            (0..6)
+                .map(|i| QuestSpec {
+                    reward: U128(if i < 3 { 0 } else { reward }),
+                    xp: 50,
+                    opens_at: U64(1),
+                    closes_at: U64(1000),
+                    tier: if i < 3 { 1 } else { 2 },
+                })
+                .collect(),
+            None,
+        );
+    }
+    fn big_funding() -> Rewards {
+        let mut r = setup();
+        context("sponsor.testnet", 1, NEAR + SPONSOR_STORAGE_FEE, None);
+        r.fund_rewards("sponsor".into(), "fund-big".into());
+        r
+    }
+    #[test]
+    fn date_totals_add_up_across_cities_and_report_the_cap() {
+        let mut r = big_funding();
+        publish(&mut r, "brno-2026-11-01-v1", NEAR / 1000, 0);
+        let t = r.get_date_totals("2026-11-01".into());
+        // setup() already published plzen-2026-11-01-v1: 10 coins × 10 and 3 × 100.
+        assert_eq!(t["coins"], (100 + 10 * (NEAR / 1000)).to_string());
+        assert_eq!(t["zones"], "300");
+        assert_eq!(t["cap"], (NEAR / 10).to_string());
+        assert_eq!(r.get_date_totals("2026-11-02".into())["coins"], "0");
+        r.check();
+    }
+    #[test]
+    #[should_panic(expected = "Daily cap across cities")]
+    fn a_second_city_cannot_exceed_the_shared_daily_cap() {
+        let mut r = big_funding();
+        // Each publication alone is within the 0.1 NEAR cap; together they are not.
+        publish(&mut r, "brno-2026-11-01-v1", NEAR / 200, 0);
+        publish(&mut r, "ostrava-2026-11-01-v1", NEAR / 200, 0);
+    }
+    #[test]
+    fn other_dates_have_their_own_cap() {
+        let mut r = big_funding();
+        publish(&mut r, "brno-2026-11-02-v1", NEAR / 100, 0);
+        publish(&mut r, "brno-2026-11-03-v1", NEAR / 100, 0);
+        assert_eq!(r.get_date_totals("2026-11-03".into())["coins"], (NEAR / 10).to_string());
+    }
+    #[test]
+    #[should_panic(expected = "Day id must be <city>-YYYY-MM-DD-v<n>")]
+    fn day_ids_must_name_a_city_and_date() {
+        let mut r = big_funding();
+        publish(&mut r, "day-2", 1, 0);
+    }
+    #[test]
+    fn existing_days_are_backfilled_once_by_the_owner() {
+        let mut r = setup();
+        // Simulate a day published before totals existed.
+        date_totals().remove(&"2026-11-01".to_string());
+        date_seen().remove(&"plzen-2026-11-01-v1".to_string());
+        context("owner.testnet", 2, 0, None);
+        r.record_existing_day("plzen-2026-11-01-v1".into());
+        assert_eq!(r.get_date_totals("2026-11-01".into())["coins"], "100");
+        assert_eq!(r.get_date_totals("2026-11-01".into())["zones"], "300");
+    }
+    #[test]
+    #[should_panic(expected = "Day already counted")]
+    fn a_day_is_never_counted_twice() {
+        let mut r = setup();
+        context("owner.testnet", 2, 0, None);
+        r.record_existing_day("plzen-2026-11-01-v1".into());
+    }
+    #[test]
+    #[should_panic(expected = "Owner only")]
+    fn only_the_owner_backfills() {
+        let mut r = setup();
+        context("publisher.testnet", 2, 0, None);
+        r.record_existing_day("plzen-2026-11-01-v1".into());
+    }
+
+    fn publish_with_finds(r: &mut Rewards, day: &str, finds: Option<Vec<u16>>) {
+        context("publisher.testnet", 1, 0, None);
+        r.publish_day(
+            day.into(),
+            U64(1),
+            U64(1000),
+            "f".repeat(64),
+            10,
+            U128(1),
+            (0..6)
+                .map(|_| QuestSpec {
+                    reward: U128(0),
+                    xp: 40,
+                    opens_at: U64(1),
+                    closes_at: U64(1000),
+                    tier: 1,
+                })
+                .collect(),
+            finds,
+        );
+    }
+    fn collect(r: &mut Rewards, day: &str, index: u16, id: &str) -> Receipt {
+        context("relayer.testnet", 3, 0, None);
+        let mut c = claim("coin", index, "alice.testnet", id);
+        c.day_id = day.into();
+        let s = signed(r, &c);
+        r.claim(c, s)
+    }
+    #[test]
+    fn street_find_pays_bonus_xp_but_the_same_coin_unit() {
+        let mut r = setup();
+        let day = "plzen-2026-11-03-v2";
+        publish_with_finds(&mut r, day, Some(vec![7, 2]));
+        let find = collect(&mut r, day, 2, "find-2");
+        let plain = collect(&mut r, day, 3, "coin-3");
+        assert_eq!((find.amount.0, find.xp), (1, FIND_XP));
+        assert_eq!((plain.amount.0, plain.xp), (1, COIN_XP));
+        assert_eq!(r.players.get(&a("alice.testnet")).unwrap().xp, 17);
+        assert_eq!(r.get_day(day.into()).unwrap()["finds"], near_sdk::serde_json::json!([2, 7]));
+        r.check();
+    }
+    #[test]
+    fn days_without_finds_keep_v1_coin_xp() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "a");
+        let s = signed(&r, &c);
+        assert_eq!(r.claim(c, s).xp, COIN_XP);
+        assert_eq!(r.get_day("plzen-2026-11-01-v1".into()).unwrap()["finds"], near_sdk::serde_json::json!([]));
+    }
+    #[test]
+    #[should_panic(expected = "Invalid street finds")]
+    fn finds_must_be_published_coins() {
+        let mut r = setup();
+        publish_with_finds(&mut r, "plzen-2026-11-03-v2", Some(vec![10]));
+    }
+    #[test]
+    #[should_panic(expected = "Invalid street finds")]
+    fn duplicate_finds_rejected() {
+        let mut r = setup();
+        publish_with_finds(&mut r, "plzen-2026-11-03-v2", Some(vec![1, 1]));
+    }
+    #[test]
+    #[should_panic(expected = "Too many street finds")]
+    fn find_count_is_bounded() {
+        let mut r = setup();
+        publish_with_finds(&mut r, "plzen-2026-11-03-v2", Some((0..61).collect()));
+    }
+    #[test]
+    fn finds_backfill_only_for_uncollected_coins_and_only_once() {
+        let mut r = setup();
+        let day = "plzen-2026-11-03-v2";
+        publish_with_finds(&mut r, day, None);
+        assert_eq!(collect(&mut r, day, 1, "early").xp, COIN_XP);
+        context("publisher.testnet", 4, 0, None);
+        r.record_day_finds(day.into(), vec![4]);
+        assert_eq!(collect(&mut r, day, 4, "late").xp, FIND_XP);
+        // A repeat of the earlier receipt is still the same receipt.
+        assert_eq!(collect(&mut r, day, 1, "early").xp, COIN_XP);
+    }
+    #[test]
+    #[should_panic(expected = "Find already collected")]
+    fn backfill_cannot_reprice_a_collected_coin() {
+        let mut r = setup();
+        let day = "plzen-2026-11-03-v2";
+        publish_with_finds(&mut r, day, None);
+        collect(&mut r, day, 1, "early");
+        context("publisher.testnet", 4, 0, None);
+        r.record_day_finds(day.into(), vec![1]);
+    }
+    #[test]
+    #[should_panic(expected = "Finds already recorded")]
+    fn published_finds_cannot_be_rewritten() {
+        let mut r = setup();
+        let day = "plzen-2026-11-03-v2";
+        publish_with_finds(&mut r, day, Some(vec![1]));
+        context("publisher.testnet", 4, 0, None);
+        r.record_day_finds(day.into(), vec![2]);
+    }
+    #[test]
+    #[should_panic(expected = "Publisher only")]
+    fn only_the_publisher_records_finds() {
+        let mut r = setup();
+        context("owner.testnet", 4, 0, None);
+        r.record_day_finds("plzen-2026-11-01-v1".into(), vec![2]);
+    }
+    /// Frozen copy of the deployed v1 contract state. The upgrade is a plain
+    /// code deploy (no migrate call), so the live layout must read unchanged.
+    #[derive(BorshSerialize)]
+    #[borsh(crate = "near_sdk::borsh")]
+    struct RewardsV1 {
+        owner: AccountId,
+        publisher: AccountId,
+        signer: Vec<u8>,
+        paused: bool,
+        coins: Bucket,
+        zones: Bucket,
+        funded: u128,
+        owed: u128,
+        pending: u128,
+        withdrawn: u128,
+        days: LookupMap<String, Day>,
+        receipts: LookupMap<String, Receipt>,
+        players: LookupMap<AccountId, Player>,
+        personal: UnorderedSet<String>,
+        funding: UnorderedSet<String>,
+        vaults: UnorderedSet<AccountId>,
+    }
+    #[test]
+    fn v1_state_reads_without_migration() {
+        let r = setup();
+        let v1 = RewardsV1 {
+            owner: r.owner.clone(),
+            publisher: r.publisher.clone(),
+            signer: r.signer.clone(),
+            paused: r.paused,
+            coins: Bucket { available: r.coins.available, reserved: r.coins.reserved, awarded: 0 },
+            zones: Bucket { available: r.zones.available, reserved: r.zones.reserved, awarded: 0 },
+            funded: r.funded,
+            owed: 0,
+            pending: 0,
+            withdrawn: 0,
+            days: LookupMap::new(b"d"),
+            receipts: LookupMap::new(b"r"),
+            players: LookupMap::new(b"p"),
+            personal: UnorderedSet::new(b"x"),
+            funding: UnorderedSet::new(b"f"),
+            vaults: UnorderedSet::new(b"v"),
+        };
+        let bytes = near_sdk::borsh::to_vec(&v1).unwrap();
+        let read = Rewards::try_from_slice(&bytes).expect("v1 layout");
+        assert_eq!(near_sdk::borsh::to_vec(&read).unwrap(), bytes);
+        // The day published under v1 is still claimable and pays v1 XP.
+        read.check();
     }
 }

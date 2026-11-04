@@ -58,6 +58,33 @@ quests remains optional. No reward requires an unimplemented observation check.
   persisted or hashed v1 manifest. Native template variety needs an explicit future
   publication policy and migration, not a change under existing v1 day IDs.
 
+## Native manifest v2 (`native-city-v2`, built 1 November)
+
+- New, not-yet-prepared native dates from **3 November 2026** (`NATIVE_V2_START_DAY`) are
+  prepared as manifest `version: 2` under the day id `<city>-YYYY-MM-DD-v2`.
+  `NATIVE_MANIFEST_V2_FROM=YYYY-MM-DD` moves the date; `NATIVE_MANIFEST_V2_FROM=off` keeps
+  every new date on v1. A date that already has a stored manifest of either version keeps
+  it, and a date that is already on chain without its durable manifest still stops the
+  publisher, under either id, so a date is never published twice.
+- Each of the six slots names a `template`: `path-visit` (1 stop, 40 XP), `ordered-trail`
+  (3 stops, 80 XP), `return-trail` (3 stops and back to the first, 100 XP) and
+  `cosmetic-chest` (1 stop, 50 XP). The rotation comes from the city/day hash, so every
+  day carries all four. Stops are always the zone's own published targets; a zone that
+  cannot carry its template keeps the v1 three-stop walk.
+- Attestation is unchanged: the attestor accepts the checkpoints in order and signs the
+  same reward message; the on-chain quest rules are unchanged (six quests, XP at most 500 each).
+- Payout exposure is identical to v1 for the same budget: the same coins, coin unit and
+  tier-weighted zone prizes, still bounded by the city allocation, the per-publication cap
+  and the contract's per-date total. A native chest grants no item; the first opener takes
+  any funded zone prize.
+- `finds` lists up to 60 coin indexes spaced about 150 m apart. A street find is a
+  highlighted coin: same unit and reservation, no new GOLD. Rewards contract v2
+  stores the list at `publish_day` (optional `finds` argument) and pays 15 XP for a
+  find instead of the coin's 2 XP; on the v1 contract the argument is ignored and a
+  find pays 2 XP. Days published before the upgrade are backfilled once with
+  `record_day_finds`, only for coins nobody has collected yet.
+- v1 days, their hashes and golden tests are untouched. Tests: `tests/native-manifest-v2.test.mjs`.
+
 Do not rewrite this policy's semantics in place after publication. A future mechanic
 needs a new version, honest evidence capabilities and an activation decision that
 preserves prepared worlds and outstanding claims.
@@ -126,11 +153,16 @@ supply, tier calculations and the 50/50 treasury split are unchanged. Completed
 quests continue to reject duplicate completion; existing history is the durable
 receipt. A completed response must not be recreated as a second reward celebration.
 
+## Landmark clues and NPC errands (street cells, 3 November)
+
+See `docs/LANDMARK-ERRANDS.md`. `landmark-clue` is a POI visit plus one
+multiple-choice answer taken from Wikidata facts; `npc-errand` is a quest-giver
+offer that sends the player to one of today's POI quests and back. Both are XP only.
+
 ## Planned capabilities and remaining gates
 
 | Capability | Required work before enabling it |
 | --- | --- |
-| Landmark clue | Reviewed facts and permissions, authored clue/answer pairs, accessibility alternatives, replay policy |
 | Geocaching interaction | Approved and accessible cache sites, owner permission, environmental constraints, maintained cache evidence, lost-cache recovery |
 | Photo observation | Private upload handling and EXIF removal, retention/consent, review and appeals, clear limits on automated judgment |
 | A route with walking time | Licensed pedestrian graph, barrier/access checking, actual route lengths, accessible alternatives and field timing |

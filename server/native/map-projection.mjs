@@ -1,6 +1,18 @@
 import { hash } from "../domain.mjs";
 // Display geometry is accepted only from the immutable blueprint that published
 // these exact checkpoints/windows. It never changes a native manifest or right.
+// v1 publishes the zone's stops exactly; v2 publishes a template's subset of
+// them (a return trail repeats its first stop), never a new coordinate.
+function targetsFromZone(manifest, q, z) {
+  if (manifest.version !== 2)
+    return JSON.stringify(q.targets) === JSON.stringify(z.targets);
+  const known = new Set(z.targets.map((p) => `${p.lat},${p.lng}`));
+  return (
+    Array.isArray(q.targets) &&
+    q.targets.length > 0 &&
+    q.targets.every((p) => known.has(`${p.lat},${p.lng}`))
+  );
+}
 export function nativeMapProjection(db, manifest) {
   const unavailable = {
     status: "unavailable",
@@ -30,7 +42,7 @@ export function nativeMapProjection(db, manifest) {
         q.tier !== z.tier ||
         q.opensAt !== z.opensAt ||
         q.closesAt !== z.closesAt ||
-        JSON.stringify(q.targets) !== JSON.stringify(z.targets) ||
+        !targetsFromZone(manifest, q, z) ||
         z.geometry?.type !== "Polygon"
       )
         throw Error("Published geometry mismatch");

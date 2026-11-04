@@ -10,6 +10,7 @@ import {
   type AdventureRealm,
   type AdventureResult,
 } from "./adventure-results";
+import { tr } from "./i18n.ts";
 
 type Request = typeof api;
 type Selection = {
@@ -111,10 +112,10 @@ export function useAdventureResults({
           setError({
             scope,
             text: controller.signal.aborted
-              ? "Results took too long to load. Try again."
+              ? tr("Results took too long to load. Try again.")
               : e instanceof Error
                 ? e.message
-                : "Adventure results are unavailable. Try again.",
+                : tr("Adventure results are unavailable. Try again."),
           });
       } finally {
         clearTimeout(timeout);
@@ -213,7 +214,7 @@ export function useAdventureResults({
     if (!latest.current.online) {
       setDetailError({
         scope,
-        text: "You are offline. Reconnect to check this result and current ownership.",
+        text: tr("You are offline. Reconnect to check this result and current ownership."),
       });
       return;
     }
@@ -242,10 +243,10 @@ export function useAdventureResults({
         setDetailError({
           scope,
           text: controller.signal.aborted
-            ? "Result took too long to load. Try again."
+            ? tr("Result took too long to load. Try again.")
             : e instanceof Error
               ? e.message
-              : "Could not check this result. Try again.",
+              : tr("Could not check this result. Try again."),
         });
     } finally {
       clearTimeout(timeout);

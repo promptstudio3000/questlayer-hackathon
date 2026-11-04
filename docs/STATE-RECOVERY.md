@@ -4,7 +4,7 @@
 
 QuestLayer has a dedicated daily `questlayer-state-backup.timer`, scheduled at 03:20 UTC with up to ten minutes of jitter. The oneshot job has no network access, a private temporary directory, a 256 MiB memory limit, 25% CPU quota and a 120-second service timeout. It reads the game's state and writes only its own private snapshot directory. It does not restart the game or connect to a chain.
 
-Snapshots live under `/opt/ps3000/apps/auratrail/state-backups`. The directory and each snapshot are mode 0700; snapshot files are mode 0600. They are outside every public static directory and are not copied into releases or local evidence files.
+Snapshots live under `/opt/ps3000/apps/questlayer-hackathon/state-backups`. The directory and each snapshot are mode 0700; snapshot files are mode 0600. They are outside every public static directory and are not copied into releases or local evidence files.
 
 A snapshot contains:
 
@@ -44,3 +44,9 @@ Remaining operations work includes offsite storage chosen by the operator, actio
 After native settlement, snapshot `20261031T125419Z-0ff09c92` included two funded-day manifests, two confirmed native receipts, the player's checkpoint progress, consent and two vault-maintenance records. `deploy/rehearse-restore.mjs ... --native` verified the restored attestor against the deployed public key and checked the worker's actual restricted FunctionCall permission. On an isolated database copy it reset one project pilot receipt to queued with no stored result or transaction hash, then ran the actual reconciler with a sender that cannot transmit. The existing chain receipt restored its original amount and XP: one recovery, zero transmissions, no live database mutation. Evidence: `output/qa/W05-W06-native/restore-rehearsal.txt`.
 
 This closes a bounded crash-before-ack rehearsal. It does not establish offsite availability, full host replacement, personal-wallet recovery or reconciliation of every possible financial incident. Code rollback now preserves the current database so finalized chain effects cannot be silently erased by restoring an older application snapshot.
+
+## Three-day pilot with restore and worker takeover, 1 November 2026
+
+`npm run pilot:city` (`server/qa/city-pilot.mjs`) rehearses three local days on a fresh clone without keys or network: the real worker, audit, `deploy/backup-state.py` and `restorePreflight` against a stateful double of the rewards contract. A stalled worker whose claim already reached the chain is taken over after its lease expires, with no second transmission, and its late reply is fenced out. The live database is then lost and the night snapshot restored.
+
+The pilot found that claims the chain accepted after the snapshot were accepted again by the restored server; the contract refuses them and the oldest-first queue then blocked every later claim. A day whose chain accepted count exceeds its local rows now refuses new native claims (`NATIVE_RECONCILING`) and is listed under `reconciling` in the distribution audit until it closes. Accepted but unsent claims are lost with the host. Steps and the release-candidate gates: [RELEASE-CANDIDATE-CHECKLIST.md](RELEASE-CANDIDATE-CHECKLIST.md). Evidence: `output/qa/W13-city-pilot/report.json`.

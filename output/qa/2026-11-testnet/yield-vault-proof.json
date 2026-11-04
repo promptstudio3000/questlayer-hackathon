@@ -1,0 +1,149 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-02T03:22:21.720Z",
+  "contractId": "questlayer-yield-20261102.testnet",
+  "codeHash": "Hy9RJ8LxDzzLMwWtp2c4MuFq26xi6DQYz4K6Su6S6xUo",
+  "wasmSha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
+  "ownerId": "questlayer-dev-20261101.testnet",
+  "treasuryId": "questlayer-dev-20261101.testnet",
+  "rheaId": "contract.burrow.testnet",
+  "lockMs": "86400000",
+  "tokens": [
+    {
+      "token_id": "meta-v2.pool.testnet",
+      "kind": "lst",
+      "value_unit": "yoctoNEAR",
+      "price_source": {
+        "contract": "meta-v2.pool.testnet",
+        "method": "get_st_near_price",
+        "scale": "1000000000000000000000000"
+      },
+      "strategy": "hold",
+      "cap": "100000000000000000000000000",
+      "account_cap": "10000000000000000000000000",
+      "min_deposit": "100000000000000000000000",
+      "buffer_bps": 2000,
+      "max_util_bps": 9500,
+      "safety_bps": 10
+    },
+    {
+      "token_id": "linear-protocol.testnet",
+      "kind": "lst",
+      "value_unit": "yoctoNEAR",
+      "price_source": {
+        "contract": "linear-protocol.testnet",
+        "method": "ft_price",
+        "scale": "1000000000000000000000000"
+      },
+      "strategy": "hold",
+      "cap": "100000000000000000000000000",
+      "account_cap": "10000000000000000000000000",
+      "min_deposit": "100000000000000000000000",
+      "buffer_bps": 2000,
+      "max_util_bps": 9500,
+      "safety_bps": 10
+    },
+    {
+      "token_id": "usdc.fakes.testnet",
+      "kind": "stable",
+      "value_unit": "token",
+      "price_source": null,
+      "strategy": "rhea",
+      "cap": "10000000000",
+      "account_cap": "1000000000",
+      "min_deposit": "100000",
+      "buffer_bps": 2000,
+      "max_util_bps": 9500,
+      "safety_bps": 10
+    },
+    {
+      "token_id": "usdt.fakes.testnet",
+      "kind": "stable",
+      "value_unit": "token",
+      "price_source": null,
+      "strategy": "rhea",
+      "cap": "10000000000",
+      "account_cap": "1000000000",
+      "min_deposit": "100000",
+      "buffer_bps": 2000,
+      "max_util_bps": 9500,
+      "safety_bps": 10
+    }
+  ],
+  "audited": false,
+  "smoke": {
+    "account": "questlayer-dev-20261101.testnet",
+    "position": {
+      "token_id": "meta-v2.pool.testnet",
+      "kind": "lst",
+      "value_unit": "yoctoNEAR",
+      "principal": "639750451847467410039795",
+      "withdrawable": "0",
+      "tranches": [
+        {
+          "amount": "639750451847467410039795",
+          "locked_until_ms": "1793676138149"
+        }
+      ],
+      "queued": "0"
+    }
+  },
+  "transactions": [
+    {
+      "label": "Deploy and initialize questlayer-yield-20261102.testnet",
+      "transaction": "Dzen5Y5qn2Gakq5hEZvtYY7HFZ7rC86mrmcJCvfQ8TrM"
+    },
+    {
+      "label": "Allowlist meta-v2.pool.testnet",
+      "transaction": "3VmJksBu3Vo38NrqRxNqKaJ9kP8cvgrvRm6K6fVTcUPn"
+    },
+    {
+      "label": "Register questlayer-yield-20261102.testnet on meta-v2.pool.testnet",
+      "transaction": "ByA4339dffwNaLYKBV6RmoAR8qVVLcLyAoiLFkwLGQMv"
+    },
+    {
+      "label": "Allowlist linear-protocol.testnet",
+      "transaction": "HYbSgTPLRFMC2LrHmqE4KhGPzXgR5TaPETx3yesFXg8A"
+    },
+    {
+      "label": "Register questlayer-yield-20261102.testnet on linear-protocol.testnet",
+      "transaction": "EgiG1WSY8f8JmUDNzxY5D4oGU8moMD4JkefBs2kHGhnf"
+    },
+    {
+      "label": "Register questlayer-dev-20261101.testnet on linear-protocol.testnet",
+      "transaction": "AXVeBL8hycT4ERjAZ5xDFtXqCeWFpAUQ7jfWRfpcDFUA"
+    },
+    {
+      "label": "Allowlist usdc.fakes.testnet",
+      "transaction": "CdFpx4zhKTPCJ9DLS1BGHQf9np9TXNXEfqBdWAmG69mP"
+    },
+    {
+      "label": "Register questlayer-yield-20261102.testnet on usdc.fakes.testnet",
+      "transaction": "H7MpfbVJw7XhjhfQoqjSqDWkjEW6zmkHV6TTgBFrkf8w"
+    },
+    {
+      "label": "Register questlayer-dev-20261101.testnet on usdc.fakes.testnet",
+      "transaction": "C5apZfgu2weeh3hCzSPCPciid4W2hnSwAH5hfkpp9f79"
+    },
+    {
+      "label": "Allowlist usdt.fakes.testnet",
+      "transaction": "8H3i9nyPFpMfR2UFhG3K7A5sKRn7czMMzUkDPvHPHMy1"
+    },
+    {
+      "label": "Register questlayer-yield-20261102.testnet on usdt.fakes.testnet",
+      "transaction": "CPgfenZTR7oUJdTFxc1W9gfci1Y3Ems7BuXhg3hRaJzz"
+    },
+    {
+      "label": "Register questlayer-dev-20261101.testnet on usdt.fakes.testnet",
+      "transaction": "2Uws6DStdUQZTTPQosv3SeA3R4axX2DFDsApwFN3ytWd"
+    },
+    {
+      "label": "Register the vault on Rhea Lend",
+      "transaction": "KXtRQUzbB1a3BTbnbfEKKfR68SBrZ57uZC319zQesSU"
+    },
+    {
+      "label": "Deposit stNEAR into the yield vault",
+      "transaction": "FkRRWwsfF31pT4pRkHMegKJpL2FbnaMRvbCQi4qNp19L"
+    }
+  ]
+}

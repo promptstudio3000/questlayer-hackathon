@@ -8,8 +8,6 @@ import {
 } from "react";
 import {
   ArrowClockwise,
-  ArrowLeft,
-  ArrowRight,
   BookmarkSimple,
   Check,
   Eye,
@@ -21,9 +19,19 @@ import {
   Flag,
   ShieldSlash,
 } from "@phosphor-icons/react";
+import { ArrowRight, ArrowLeft } from "./dir-icons";
 import { Ghost } from "./Ghost";
+import {
+  CreatorEarningsPanel,
+  CreatorSupport,
+  type CreatorMoneyBridge,
+} from "./CreatorMoney";
+import { meters } from "./api";
+import { parseAccessPrice, nearText } from "./creator-money-quote";
+import { formatNativeNear } from "./native-amounts";
 import { Dialog } from "./Dialog";
 import { useFormDraft } from "./useFormDraft";
+import { AiQuestDraft } from "./AiQuestDraft";
 import {
   createCreatorClient,
   creatorDraftIdentity,
@@ -43,6 +51,8 @@ import {
   type CreatorMe,
   type CreatorPage,
   type CreatorParticipation,
+  type CreatorPlace,
+  type CreatorPlaceTemplate,
   type CreatorProfile,
   type CreatorPublicationQuote,
   type OwnedCreatorQuest,
@@ -50,6 +60,7 @@ import {
 } from "./creator-community-types";
 import type { Player } from "./types";
 import "./creator-community.css";
+import { tr } from "./i18n";
 
 export type { CreatorCommunityView } from "./creator-community-types";
 type Props = {
@@ -60,10 +71,21 @@ type Props = {
   onPlayerChange?: () => void | Promise<void>;
   onCapabilityChange?: (enabled: boolean) => void;
   client?: CreatorClient;
+  /** Where the explorer stands now, for "Near you". Never sent to the server. */
+  position?: { lat: number; lng: number };
+  money?: CreatorMoneyBridge;
+  /**
+   * Community screen tab hosting this component. "quests" shows quest browsing
+   * and started quests; "creators" shows creators and your own creations.
+   * Omitted, every section is reachable from the inner navigation.
+   */
+  section?: "quests" | "creators";
 };
+type Point = { lat: number; lng: number };
 type Loaded = {
   me: CreatorMe;
   quests?: CreatorPage<PublicCreatorQuest>;
+  following?: CreatorPage<PublicCreatorQuest>;
   creators?: CreatorPage<CreatorProfile>;
   mine?: CreatorPage<OwnedCreatorQuest>;
   participations?: CreatorPage<CreatorParticipation>;
@@ -96,17 +118,71 @@ const count = (n: number) => new Intl.NumberFormat("en-US").format(n);
 const idPath = (value: string) => encodeURIComponent(value);
 const statusName = (state: string) =>
   ({
-    pending_review: "In review",
-    published: "Published",
-    draft: "Draft",
-    rejected: "Review rejected",
-    closing: "Closing",
-    closed: "Closed",
-    withdrawn: "Review withdrawn",
-    approved: "Approved",
-    open: "In progress",
-    resolved: "Review complete",
+    pending_review: tr("In review"),
+    published: tr("Published"),
+    draft: tr("Draft"),
+    rejected: tr("Review rejected"),
+    closing: tr("Closing"),
+    closed: tr("Closed"),
+    withdrawn: tr("Review withdrawn"),
+    approved: tr("Approved"),
+    open: tr("In progress"),
+    resolved: tr("Review complete"),
   })[state] || state;
+
+export const PLACE_TEMPLATES: Record<
+  CreatorPlaceTemplate,
+  { name: string; badge: string; hint: string; max: number; min: number }
+> = {
+  visit: {
+    get name() { return tr("Visit a place"); },
+    get badge() { return tr("Visit"); },
+    get hint() { return tr("Pin one spot. Explorers go there and tell what they found."); },
+    min: 1,
+    max: 1,
+  },
+  trail: {
+    get name() { return tr("Walk a trail"); },
+    get badge() { return tr("Trail"); },
+    get hint() { return tr("Pin 2 to 6 stops in walking order, under 5 km in total."); },
+    min: 2,
+    max: 6,
+  },
+  chest: {
+    get name() { return tr("Hide a chest"); },
+    get badge() { return tr("Chest"); },
+    get hint() { return tr("Pin where your chest waits. Explorers open it on the spot."); },
+    min: 1,
+    max: 1,
+  },
+};
+const NEARBY_METERS = 5000;
+export const distanceText = (m: number) =>
+  m < 950
+    ? `${Math.max(10, Math.round(m / 10) * 10)} m`
+    : `${(m / 1000).toFixed(m < 9950 ? 1 : 0)} km`;
+const placeDistance = (place: CreatorPlace | undefined, from?: Point) =>
+  place && from && place.points[0] ? meters(from, place.points[0]) : null;
+function trailLength(points: Point[]) {
+  let total = 0;
+  for (let i = 1; i < points.length; i++)
+    total += meters(points[i - 1], points[i]);
+  return total;
+}
+/** Quests with a pinned place within 5 km, nearest first. */
+export function nearbyQuests(
+  quests: PublicCreatorQuest[],
+  from?: Point,
+): Array<{ quest: PublicCreatorQuest; distance: number }> {
+  if (!from) return [];
+  return quests
+    .map((quest) => ({ quest, distance: placeDistance(quest.place, from) }))
+    .filter(
+      (x): x is { quest: PublicCreatorQuest; distance: number } =>
+        x.distance !== null && x.distance <= NEARBY_METERS,
+    )
+    .sort((a, b) => a.distance - b.distance);
+}
 
 async function maybeRead<T>(
   client: CreatorClient,
@@ -132,8 +208,19 @@ async function load(
       "The current creator session could not be verified. Refresh before continuing.",
     );
   switch (view.page) {
-    case "community":
-      return { me, quests: await client.read("/quests?limit=20", signal) };
+    case "community": {
+      const [quests, following] = await Promise.all([
+        client.read<CreatorPage<PublicCreatorQuest>>(
+          "/quests?limit=50",
+          signal,
+        ),
+        client.read<CreatorPage<PublicCreatorQuest>>(
+          "/quests?following=true&limit=5",
+          signal,
+        ),
+      ]);
+      return { me, quests, following };
+    }
     case "following":
       return {
         me,
@@ -231,6 +318,9 @@ function CreatorCommunitySession({
   onPlayerChange,
   onCapabilityChange,
   client: injected,
+  position,
+  money,
+  section: screenSection,
 }: Props) {
   const client = useMemo(
     () => injected || createCreatorClient({ playerId: player.id }),
@@ -382,14 +472,14 @@ function CreatorCommunitySession({
           error instanceof Error
             ? error
             : new Error(
-                "The action could not be confirmed. Retry the same terms.",
+                tr("The action could not be confirmed. Retry the same terms."),
               ),
         );
       if (alive.current)
         setMessage(
           error instanceof Error
             ? error.message
-            : "The action has not been confirmed. Refresh, then retry the same terms.",
+            : tr("The action has not been confirmed. Refresh, then retry the same terms."),
         );
       return false;
     } finally {
@@ -437,7 +527,7 @@ function CreatorCommunitySession({
         setMessage(
           error instanceof Error
             ? error.message
-            : "Could not load more quests.",
+            : tr("Could not load more quests."),
         );
     } finally {
       actionLock.current = false;
@@ -448,31 +538,36 @@ function CreatorCommunitySession({
     return (
       <details className="creator-feature">
         <summary>
-          <UsersThree size={22} /> Creator quests
-        </summary>
+          <UsersThree size={22} /> {" "}{tr("Creator quests")}</summary>
         <p>
           {state.loading
-            ? "Checking creator quests…"
+            ? tr("Checking creator quests…")
             : state.error ||
-              "Creator quests are not enabled on this host yet. Map notes and sponsored tasks remain available above."}
+              tr("Creator quests are not enabled on this host yet. Map notes and sponsored tasks remain available in the Notes and Tasks tabs.")}
         </p>
         {!state.loading && (
           <button
             className="secondary-button"
             onClick={() => setRefresh((n) => n + 1)}
           >
-            Check availability <ArrowClockwise size={20} />
+            {tr("Check availability")}{" "}<ArrowClockwise size={20} />
           </button>
         )}
       </details>
     );
   const data = state.data;
-  const tabs = [
-    { page: "community", label: "Community" },
-    { page: "following", label: "Following" },
-    { page: "creators", label: "Creators" },
-    { page: "mine", label: "My creations" },
+  const allTabs = [
+    { page: "community", label: tr("Community"), section: "quests" },
+    { page: "following", label: tr("Following"), section: "quests" },
+    { page: "participations", label: tr("Started"), section: "quests" },
+    { page: "creators", label: tr("Creators"), section: "creators" },
+    { page: "mine", label: tr("My creations"), section: "creators" },
   ] as const;
+  const tabs = allTabs.filter((tab) =>
+    screenSection
+      ? tab.section === screenSection
+      : tab.page !== "participations",
+  );
   const active =
     view.page === "edit" || view.page === "profile" || view.page === "blocked"
       ? "mine"
@@ -483,47 +578,42 @@ function CreatorCommunitySession({
     <section
       ref={section}
       className="creator-community"
-      aria-label="Creator community"
+      aria-label={tr("Creator community")}
       aria-busy={state.loading || busy}
     >
-      <div className="creator-heading">
-        <div>
-          <small className="creator-mode">Demo creator quests · free</small>
-          <h2 data-creator-heading tabIndex={-1}>
-            Stories from explorers
-          </h2>
-        </div>
+      <h2 className="sr-only" data-creator-heading tabIndex={-1}>
+        {tr("Stories from explorers")}</h2>
+      <div className="creator-toolbar">
+        <nav className="creator-tabs" aria-label={tr("Creator community section")}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.page}
+              aria-current={active === tab.page ? "page" : undefined}
+              onClick={() => navigate({ page: tab.page })}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
         <button
           className="creator-icon"
-          aria-label="Refresh creator quests"
+          aria-label={tr("Refresh creator quests")}
+          title={tr("Refresh creator quests")}
           disabled={busy || state.loading}
           onClick={() => setRefresh((n) => n + 1)}
         >
-          <ArrowClockwise size={22} />
+          <ArrowClockwise size={20} />
         </button>
       </div>
-      <p className="creator-intro">
-        Find a free quest or write one of your own. Creator quest rewards are
-        not configured yet.
-      </p>
-      <nav className="creator-tabs" aria-label="Creator community section">
-        {tabs.map((tab) => (
-          <button
-            key={tab.page}
-            aria-current={active === tab.page ? "page" : undefined}
-            onClick={() => navigate({ page: tab.page })}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
-      <button
-        className="creator-started"
-        onClick={() => navigate({ page: "participations" })}
-      >
-        <BookmarkSimple size={20} /> Your started quests{" "}
-        <ArrowRight size={20} />
-      </button>
+      {!screenSection && (
+        <button
+          className="creator-started"
+          onClick={() => navigate({ page: "participations" })}
+        >
+          <BookmarkSimple size={20} /> {" "}{tr("Your started quests")}{" "}
+          <ArrowRight size={20} />
+        </button>
+      )}
       {message && (
         <p className="creator-message" role="status">
           {message}
@@ -531,12 +621,10 @@ function CreatorCommunitySession({
       )}
       {!client.durable && (
         <p className="creator-hint">
-          Browser storage is unavailable. Keep this tab open until an action is
-          confirmed.
-        </p>
+          {tr("Browser storage is unavailable. Keep this tab open until an action is confirmed.")}</p>
       )}
       {state.loading ? (
-        <p role="status">Loading creator quests…</p>
+        <p role="status">{tr("Loading creator quests…")}</p>
       ) : state.error ? (
         <div className="creator-error" role="alert">
           <p>{state.error}</p>
@@ -544,7 +632,7 @@ function CreatorCommunitySession({
             className="secondary-button"
             onClick={() => setRefresh((n) => n + 1)}
           >
-            Try again <ArrowClockwise size={20} />
+            {tr("Try again")}{" "}<ArrowClockwise size={20} />
           </button>
           {view.page === "creator" && (
             <button
@@ -555,31 +643,38 @@ function CreatorCommunitySession({
                   `/creators/${idPath(view.creatorId)}/follow`,
                   "PUT",
                   { following: false },
-                  "Following preference confirmed.",
+                  tr("Following preference confirmed."),
                 )
               }
             >
-              Stop following this creator
-            </button>
+              {tr("Stop following this creator")}</button>
           )}
         </div>
       ) : (
         data && (
           <>
+            {view.page === "community" && (
+              <CommunityHome
+                data={data}
+                position={position}
+                navigate={navigate}
+              />
+            )}
             {(view.page === "community" || view.page === "following") && (
               <>
                 <h3>
                   {view.page === "following"
-                    ? "From creators you follow"
-                    : "Free creator quests"}
+                    ? tr("From creators you follow")
+                    : tr("All creator quests")}
                 </h3>
                 <QuestList
                   page={data.quests}
+                  from={position}
                   navigate={navigate}
                   empty={
                     view.page === "following"
-                      ? "Follow a creator to see their published quests here. Following is free and does not share your location."
-                      : "No reviewed creator quests are published yet. Explore the map, or start a draft in My creations."
+                      ? tr("Follow a creator to see their published quests here. Following is free and does not share your location.")
+                      : tr("No reviewed creator quests are published yet. Explore the map, or start a draft in My creations.")
                   }
                 />
                 {data.quests?.nextCursor && (
@@ -599,12 +694,10 @@ function CreatorCommunitySession({
             )}
             {view.page === "creators" && (
               <>
-                <h3>Meet the creators</h3>
+                <h3>{tr("Meet the creators")}</h3>
                 {!data.creators?.items.length ? (
                   <Empty>
-                    Creators appear here after they deliberately publish a
-                    profile.
-                  </Empty>
+                    {tr("Creators appear here after they deliberately publish a profile.")}</Empty>
                 ) : (
                   data.creators.items.map((creator) => (
                     <article className="creator-row" key={creator.id}>
@@ -612,7 +705,7 @@ function CreatorCommunitySession({
                       <div>
                         <h4>{creator.displayName}</h4>
                         <p>
-                          {creator.bio || "Free quests from this explorer."}
+                          {creator.bio || tr("Free quests from this explorer.")}
                         </p>
                         <button
                           className="text-button"
@@ -620,7 +713,7 @@ function CreatorCommunitySession({
                             navigate({ page: "creator", creatorId: creator.id })
                           }
                         >
-                          View creator <ArrowRight size={20} />
+                          {tr("View creator")}{" "}<ArrowRight size={20} />
                         </button>
                       </div>
                     </article>
@@ -637,8 +730,7 @@ function CreatorCommunitySession({
             {view.page === "creator" && data.creator && (
               <>
                 <Back onClick={() => navigate({ page: "creators" })}>
-                  Creators
-                </Back>
+                  {tr("Creators")}</Back>
                 <h3>{data.creator.displayName}</h3>
                 <p>{data.creator.bio}</p>
                 {data.creator.id !== player.id && (
@@ -650,24 +742,21 @@ function CreatorCommunitySession({
                         `/creators/${idPath(data.creator!.id)}/follow`,
                         "PUT",
                         { following: !data.creator!.following },
-                        "Following preference confirmed.",
+                        tr("Following preference confirmed."),
                       )
                     }
                   >
                     <UsersThree size={20} />
-                    {data.creator.following ? "Unfollow" : "Follow for free"}
+                    {data.creator.following ? tr("Unfollow") : tr("Follow for free")}
                   </button>
                 )}
                 <p className="creator-hint">
-                  Following neither pays the creator nor shares your location.
-                </p>
+                  {tr("Following neither pays the creator nor shares your location.")}</p>
                 {data.creator.id !== player.id && (
                   <details className="creator-safety-tools">
-                    <summary>Creator safety</summary>
+                    <summary>{tr("Creator safety")}</summary>
                     <p className="creator-hint">
-                      Blocking hides public content between you. Your started
-                      quest instructions remain available.
-                    </p>
+                      {tr("Blocking hides public content between you. Your started quest instructions remain available.")}</p>
                     <button
                       className="secondary-button"
                       disabled={busy}
@@ -680,14 +769,14 @@ function CreatorCommunitySession({
                       }
                     >
                       <ShieldSlash size={20} />
-                      Block creator…
-                    </button>
+                      {tr("Block creator…")}</button>
                   </details>
                 )}
                 <QuestList
                   page={data.quests}
+                  from={position}
                   navigate={navigate}
-                  empty="This creator has no published free quests at the moment."
+                  empty={tr("This creator has no published free quests at the moment.")}
                 />
                 {data.quests?.nextCursor && (
                   <More
@@ -704,15 +793,12 @@ function CreatorCommunitySession({
             )}
             {view.page === "participations" && (
               <>
-                <h3>Your started quests</h3>
+                <h3>{tr("Your started quests")}</h3>
                 <p className="creator-hint">
-                  Your accepted instructions remain available after edits or
-                  closure.
-                </p>
+                  {tr("Your accepted instructions remain available after edits or closure.")}</p>
                 {!data.participations?.items.length ? (
                   <Empty>
-                    Start a reviewed free quest to keep its instructions here.
-                  </Empty>
+                    {tr("Start a reviewed free quest to keep its instructions here.")}</Empty>
                 ) : (
                   data.participations.items.map((part) => (
                     <article className="creator-quest-row" key={part.questId}>
@@ -727,7 +813,7 @@ function CreatorCommunitySession({
                         </span>
                         <h4>{part.content.title}</h4>
                         <small>
-                          Accepted revision {part.revision} ·{" "}
+                          {tr("Accepted revision")}{" "}{part.revision} ·{" "}
                           {statusName(part.questState)}
                         </small>
                         <ArrowRight size={22} />
@@ -753,19 +839,21 @@ function CreatorCommunitySession({
                 act={act}
                 navigate={navigate}
                 onSafety={setSafety}
+                money={money}
+                position={position}
               />
             )}
             {view.page === "mine" && (
               <>
                 <div className="creator-heading">
-                  <h3>My creations</h3>
+                  <h3>{tr("My creations")}</h3>
                   <button
                     className="primary-button"
                     onClick={() => navigate({ page: "edit", questId: null })}
                   >
-                    <Plus size={20} /> New quest
-                  </button>
+                    <Plus size={20} /> {" "}{tr("New quest")}</button>
                 </div>
+                {money && <CreatorEarningsPanel money={money} />}
                 <Progression me={data.me} />
                 <button
                   className="creator-profile-entry"
@@ -779,12 +867,12 @@ function CreatorCommunitySession({
                   <span>
                     <strong>
                       {data.me.profile.displayName ||
-                        "Set up your creator profile"}
+                        tr("Set up your creator profile")}
                     </strong>
                     <small>
                       {data.me.profile.public
-                        ? "Public profile"
-                        : "Profile is private"}
+                        ? tr("Public profile")
+                        : tr("Profile is private")}
                     </small>
                   </span>
                   <ArrowRight size={22} />
@@ -794,14 +882,11 @@ function CreatorCommunitySession({
                   onClick={() => navigate({ page: "blocked" })}
                 >
                   <ShieldSlash size={20} />
-                  Blocked creators
-                  <ArrowRight size={20} />
+                  {tr("Blocked creators")}<ArrowRight size={20} />
                 </button>
                 {!data.mine?.items.length ? (
                   <Empty>
-                    Write a title and clear instructions. Drafts do not lock XP
-                    or become public.
-                  </Empty>
+                    {tr("Write a title and clear instructions. Drafts do not lock XP or become public.")}</Empty>
                 ) : (
                   data.mine.items.map((quest) => (
                     <article className="creator-quest-row" key={quest.id}>
@@ -816,12 +901,12 @@ function CreatorCommunitySession({
                         </span>
                         <h4>{quest.draft.title}</h4>
                         <small>
-                          Revision {quest.latestRevision} ·{" "}
+                          {tr("Revision")}{" "}{quest.latestRevision} ·{" "}
                           {quest.lockedXp
-                            ? `${count(quest.lockedXp)} XP committed`
-                            : "No XP committed"}
+                            ? tr("{0} XP committed", { 0: count(quest.lockedXp) })
+                            : tr("No XP committed")}
                           {quest.openParticipations
-                            ? ` · ${quest.openParticipations} in progress`
+                            ? tr(" · {0} in progress", { 0: quest.openParticipations })
                             : ""}
                         </small>
                         <ArrowRight size={22} />
@@ -849,26 +934,20 @@ function CreatorCommunitySession({
             {view.page === "blocked" && (
               <>
                 <Back onClick={() => navigate({ page: "mine" })}>
-                  My creations
-                </Back>
-                <h3>Blocked creators</h3>
+                  {tr("My creations")}</Back>
+                <h3>{tr("Blocked creators")}</h3>
                 <p className="creator-hint">
-                  This private list includes shared player blocks you set,
-                  including explorers without a public creator profile. Blocks
-                  also affect public notes, profiles, follows and presence in
-                  both directions. They do not erase your accepted quest
-                  instructions or resolve participant obligations.
-                </p>
+                  {tr("This private list includes shared player blocks you set, including explorers without a public creator profile. Blocks also affect public notes, profiles, follows and presence in both directions. They do not erase your accepted quest instructions or resolve participant obligations.")}</p>
                 {!data.blocks?.items.length ? (
-                  <Empty>You have not blocked any creators.</Empty>
+                  <Empty>{tr("You have not blocked any creators.")}</Empty>
                 ) : (
                   data.blocks.items.map((creator) => (
                     <article className="creator-row" key={creator.id}>
                       <ShieldSlash size={28} />
                       <div>
-                        <h4>{creator.displayName || "Blocked explorer"}</h4>
+                        <h4>{creator.displayName || tr("Blocked explorer")}</h4>
                         {!creator.displayName && (
-                          <small>Creator ID: {creator.id}</small>
+                          <small>{tr("Creator ID:")}{" "}{creator.id}</small>
                         )}
                         <button
                           className="secondary-button"
@@ -881,8 +960,7 @@ function CreatorCommunitySession({
                             })
                           }
                         >
-                          Review unblock…
-                        </button>
+                          {tr("Review unblock…")}</button>
                       </div>
                     </article>
                   ))
@@ -903,6 +981,7 @@ function CreatorCommunitySession({
                 me={data.me}
                 capability={state.capability}
                 client={client}
+                position={position}
                 busy={busy}
                 act={act}
                 navigate={navigate}
@@ -968,17 +1047,112 @@ function More({ busy, onClick }: { busy: boolean; onClick: () => void }) {
       disabled={busy}
       onClick={onClick}
     >
-      {busy ? "Loading…" : "Load more"}
+      {busy ? tr("Loading…") : tr("Load more")}
       <ArrowRight size={20} />
     </button>
   );
 }
+function CommunityHome({
+  data,
+  position,
+  navigate,
+}: {
+  data: Loaded;
+  position?: Point;
+  navigate: (view: CreatorCommunityView) => void;
+}) {
+  const near = nearbyQuests(data.quests?.items || [], position).slice(0, 5);
+  const followed = data.following?.items.slice(0, 3) || [];
+  return (
+    <>
+      <h3>{tr("Near you")}</h3>
+      {!position ? (
+        <Empty>{tr("Turn on location on the map to see creator places nearby.")}</Empty>
+      ) : !near.length ? (
+        <Empty>
+          {tr("No creator places within 5 km yet. Pin the first one in My creations.")}</Empty>
+      ) : (
+        <div className="creator-nearby">
+          {near.map(({ quest, distance }) => (
+            <QuestRow
+              key={quest.id}
+              quest={quest}
+              distance={distance}
+              navigate={navigate}
+            />
+          ))}
+        </div>
+      )}
+      <div className="creator-heading">
+        <h3>{tr("Creators you follow")}</h3>
+        {followed.length > 0 && (
+          <button
+            className="text-button"
+            onClick={() => navigate({ page: "following" })}
+          >
+            {tr("See all")}{" "}<ArrowRight size={18} />
+          </button>
+        )}
+      </div>
+      {!followed.length ? (
+        <Empty>
+          {tr("Follow a creator to see their new places here.")}{" "}
+          <button
+            className="text-button"
+            onClick={() => navigate({ page: "creators" })}
+          >
+            {tr("Meet the creators")}{" "}<ArrowRight size={18} />
+          </button>
+        </Empty>
+      ) : (
+        followed.map((quest) => (
+          <QuestRow
+            key={quest.id}
+            quest={quest}
+            distance={placeDistance(quest.place, position)}
+            navigate={navigate}
+          />
+        ))
+      )}
+    </>
+  );
+}
+function QuestRow({
+  quest,
+  distance,
+  navigate,
+}: {
+  quest: PublicCreatorQuest;
+  distance: number | null;
+  navigate: (view: CreatorCommunityView) => void;
+}) {
+  const template = quest.place ? PLACE_TEMPLATES[quest.place.template] : null;
+  return (
+    <article className="creator-quest-row">
+      <button
+        className="creator-quest-open"
+        onClick={() => navigate({ page: "quest", questId: quest.id })}
+      >
+        <span className="creator-state">
+          {template ? template.badge : tr("Quest")}
+          {quest.price ? ` · ${nearText(quest.price)} NEAR` : tr(" · Free")}
+          {distance !== null ? ` · ${distanceText(distance)}` : ""}
+        </span>
+        <h4>{quest.title}</h4>
+        <small>{tr("By")}{" "}{quest.creator.displayName}</small>
+        <ArrowRight size={22} />
+      </button>
+    </article>
+  );
+}
 function QuestList({
   page,
+  from,
   navigate,
   empty,
 }: {
   page?: CreatorPage<PublicCreatorQuest>;
+  from?: Point;
   navigate: (view: CreatorCommunityView) => void;
   empty: string;
 }) {
@@ -986,27 +1160,35 @@ function QuestList({
     <Empty>{empty}</Empty>
   ) : (
     <div>
-      {page.items.map((quest) => (
-        <article className="creator-quest-row" key={quest.id}>
-          <button
-            className="creator-quest-open"
-            onClick={() => navigate({ page: "quest", questId: quest.id })}
-          >
-            <span className="creator-state">Free · demo</span>
-            <h4>{quest.title}</h4>
-            <p>
-              {quest.description.length > 180
-                ? quest.description.slice(0, 180) + "…"
-                : quest.description}
-            </p>
-            <small>
-              By {quest.creator.displayName} · reviewed revision{" "}
-              {quest.revision}
-            </small>
-            <ArrowRight size={22} />
-          </button>
-        </article>
-      ))}
+      {page.items.map((quest) => {
+        const distance = placeDistance(quest.place, from);
+        return (
+          <article className="creator-quest-row" key={quest.id}>
+            <button
+              className="creator-quest-open"
+              onClick={() => navigate({ page: "quest", questId: quest.id })}
+            >
+              <span className="creator-state">
+                {quest.place
+                  ? PLACE_TEMPLATES[quest.place.template].badge
+                  : tr("Free")}
+                {distance !== null ? ` · ${distanceText(distance)}` : ""}
+              </span>
+              <h4>{quest.title}</h4>
+              <p>
+                {quest.description.length > 180
+                  ? quest.description.slice(0, 180) + "…"
+                  : quest.description}
+              </p>
+              <small>
+                {tr("By")}{" "}{quest.creator.displayName} {" "}{tr("· reviewed revision")}{" "}
+                {quest.revision}
+              </small>
+              <ArrowRight size={22} />
+            </button>
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -1014,28 +1196,25 @@ function Progression({ me }: { me: CreatorMe }) {
   return (
     <details className="creator-xp">
       <summary>
-        {count(me.progression.availableXp)} available demo XP · Level{" "}
+        {count(me.progression.availableXp)} {" "}{tr("available demo XP · Level")}{" "}
         {me.progression.level}
       </summary>
       <dl>
         <div>
-          <dt>Earned</dt>
+          <dt>{tr("Earned")}</dt>
           <dd>{count(me.progression.earnedXp)} XP</dd>
         </div>
         <div>
-          <dt>Committed</dt>
+          <dt>{tr("Committed")}</dt>
           <dd>{count(me.progression.lockedXp)} XP</dd>
         </div>
         <div>
-          <dt>Available for your current level</dt>
+          <dt>{tr("Available for your current level")}</dt>
           <dd>{count(me.progression.availableXp)} XP</dd>
         </div>
       </dl>
       <p>
-        Publication commitments lower available XP. Closing returns the same XP
-        after existing participants are resolved; it does not earn XP or repeat
-        level rewards.
-      </p>
+        {tr("Publication commitments lower available XP. Closing returns the same XP after existing participants are resolved; it does not earn XP or repeat level rewards.")}</p>
     </details>
   );
 }
@@ -1046,6 +1225,8 @@ function QuestDetail({
   act,
   navigate,
   onSafety,
+  money,
+  position,
 }: {
   playerId: string;
   data: Loaded;
@@ -1053,12 +1234,18 @@ function QuestDetail({
   act: Action;
   navigate: (view: CreatorCommunityView) => void;
   onSafety: (action: SafetyAction) => void;
+  money?: CreatorMoneyBridge;
+  position?: Point;
 }) {
   const quest = data.quest,
     part = data.participation;
-  const title = part?.content.title || quest?.title || "Your quest";
+  const place = part?.content.place || quest?.place;
+  const title = part?.content.title || quest?.title || tr("Your quest");
   const reportTarget = creatorReportTarget(quest, part);
   const creator = part?.creator || quest?.creator;
+  // A paid quest starts only after the unlock below; the server enforces it too.
+  const [unlocked, setUnlocked] = useState<boolean | null>(null);
+  const needsUnlock = !!quest?.price && !!money && unlocked !== true;
   return (
     <>
       <Back
@@ -1066,7 +1253,7 @@ function QuestDetail({
           navigate({ page: part ? "participations" : "community" })
         }
       >
-        {part ? "Your started quests" : "Creator quests"}
+        {part ? tr("Your started quests") : tr("Creator quests")}
       </Back>
       <h3>{title}</h3>
       {quest && (
@@ -1076,19 +1263,20 @@ function QuestDetail({
             navigate({ page: "creator", creatorId: quest.creator.id })
           }
         >
-          By {quest.creator.displayName}
+          {tr("By")}{" "}{quest.creator.displayName}
           <ArrowRight size={20} />
         </button>
       )}
+      {place && <PlaceSummary place={place} from={position} />}
       {part ? (
         <article className="creator-accepted">
           <span className="creator-state">{statusName(part.state)}</span>
-          <h4>Your accepted instructions</h4>
+          <h4>{tr("Your accepted instructions")}</h4>
           <p className="creator-instructions">{part.content.description}</p>
           <p className="creator-hint">
-            Revision {part.revision} · {statusName(part.questState)}
+            {tr("Revision")}{" "}{part.revision} · {statusName(part.questState)}
             {quest && quest.revision !== part.revision
-              ? ` · Current public revision is ${quest.revision}; your accepted version stays unchanged.`
+              ? tr(" · Current public revision is {0}; your accepted version stays unchanged.", { 0: quest.revision })
               : ""}
           </p>
           {data.completion && (
@@ -1101,8 +1289,8 @@ function QuestDetail({
           )}
           <p>
             {part.state === "resolved"
-              ? "Independent completion review is recorded. No XP, item or GOLD reward is configured for this quest."
-              : "Your start is saved. Completion needs independent review; the author cannot confirm it for you. No XP, item or GOLD reward is configured."}
+              ? tr("Independent completion review is recorded. No XP, item or GOLD reward is configured for this quest.")
+              : tr("Your start is saved. Completion needs independent review; the author cannot confirm it for you. No XP, item or GOLD reward is configured.")}
           </p>
         </article>
       ) : (
@@ -1110,22 +1298,16 @@ function QuestDetail({
           <>
             <p className="creator-instructions">{quest.description}</p>
             <p className="creator-hint">
-              Free demo quest · reviewed revision {quest.revision}. No XP, item
-              or GOLD reward is configured. Starting saves these instructions;
-              it does not prove a physical visit.
-            </p>
+              {quest.price
+                ? tr("Paid unlock {0} NEAR, supports the creator", { 0: nearText(quest.price) })
+                : tr("Free quest")}{" "}
+              {tr("· reviewed revision")}{" "}{quest.revision}{tr(". No XP, item or GOLD reward is configured. Starting saves these instructions; it does not prove a physical visit.")}</p>
             {quest.requirement && (
               <div className="creator-quote">
-                <h4>Declared observation requirement</h4>
+                <h4>{tr("Declared observation requirement")}</h4>
                 <p>{quest.requirement.prompt}</p>
                 <p className="creator-hint">
-                  Policy {quest.requirement.policyVersion}: submit private text
-                  for independent review, with up to 3 attempts. A third
-                  rejection resolves participation as not completed. No GPS or
-                  physical visit is verified. No reward is configured. Accepted
-                  requirements and evidence stay available after closure or
-                  blocking.
-                </p>
+                  {tr("Policy")}{" "}{quest.requirement.policyVersion}{tr(": submit private text for independent review, with up to 3 attempts. A third rejection resolves participation as not completed. No GPS or physical visit is verified. No reward is configured. Accepted requirements and evidence stay available after closure or blocking.")}</p>
               </div>
             )}
             {quest.creator.id === playerId ? (
@@ -1133,42 +1315,55 @@ function QuestDetail({
                 className="secondary-button"
                 onClick={() => navigate({ page: "edit", questId: quest.id })}
               >
-                Manage your quest <PencilSimple size={20} />
+                {tr("Manage your quest")}{" "}<PencilSimple size={20} />
               </button>
             ) : (
               <button
                 className="primary-button"
-                disabled={busy}
+                disabled={busy || needsUnlock}
                 onClick={() =>
                   void act(
                     `/quests/${idPath(quest.id)}/participation`,
                     "POST",
                     {},
-                    "Your start is confirmed. The accepted instructions are saved.",
+                    tr("Your start is confirmed. The accepted instructions are saved."),
                   )
                 }
               >
-                Start free quest <ArrowRight size={20} />
+                {quest.price ? tr("Start quest") : tr("Start free quest")}{" "}
+                <ArrowRight size={20} />
               </button>
+            )}
+            {quest.creator.id !== playerId && needsUnlock && (
+              <p className="creator-hint" role="status">
+                {unlocked === null
+                  ? tr("Checking your unlock…")
+                  : tr("Unlock this quest below to start it.")}
+              </p>
             )}
           </>
         )
       )}
+      {money && quest && (
+        <CreatorSupport
+          questId={quest.id}
+          ownQuest={quest.creator.id === playerId}
+          money={money}
+          onAccess={setUnlocked}
+        />
+      )}
       {reportTarget && (
         <details className="creator-safety-tools">
-          <summary>Quest safety</summary>
+          <summary>{tr("Quest safety")}</summary>
           <p className="creator-hint">
-            If a place feels unsafe, stop. Reporting requests private review;
-            blocking hides public content. Neither action completes or cancels
-            an existing quest.
-          </p>
+            {tr("If a place feels unsafe, stop. Reporting requests private review; blocking hides public content. Neither action completes or cancels an existing quest.")}</p>
           <button
             className="secondary-button"
             disabled={busy}
             onClick={() => onSafety({ kind: "report", target: reportTarget })}
           >
             <Flag size={20} />
-            Report revision {reportTarget.revision}…
+            {tr("Report revision")}{" "}{reportTarget.revision}…
           </button>
           {creator && creator.id !== playerId && (
             <button
@@ -1184,15 +1379,13 @@ function QuestDetail({
               }
             >
               <ShieldSlash size={20} />
-              Block creator…
-            </button>
+              {tr("Block creator…")}</button>
           )}
           <button
             className="text-button"
             onClick={() => navigate({ page: "blocked" })}
           >
-            Manage blocked creators
-            <ArrowRight size={20} />
+            {tr("Manage blocked creators")}<ArrowRight size={20} />
           </button>
         </details>
       )}
@@ -1200,6 +1393,32 @@ function QuestDetail({
   );
 }
 
+function PlaceSummary({ place, from }: { place: CreatorPlace; from?: Point }) {
+  const template = PLACE_TEMPLATES[place.template];
+  const first = place.points[0];
+  const distance = placeDistance(place, from);
+  return (
+    <div className="creator-place">
+      <strong>{template.name}</strong>
+      <span>
+        {place.template === "trail"
+          ? tr("{0} stops · {1} walk", { 0: place.points.length, 1: distanceText(trailLength(place.points)) })
+          : tr("One pinned spot")}
+        {distance !== null ? tr(" · start {0} away", { 0: distanceText(distance) }) : ""}
+      </span>
+      {first && (
+        <a
+          className="text-button"
+          href={`https://www.openstreetmap.org/?mlat=${first.lat}&mlon=${first.lng}#map=18/${first.lat}/${first.lng}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {tr("Open the start on a map")}{" "}<ArrowRight size={18} />
+        </a>
+      )}
+    </div>
+  );
+}
 function CreatorSafetyDialog({
   action,
   playerId,
@@ -1219,10 +1438,10 @@ function CreatorSafetyDialog({
     <Dialog
       label={
         action.kind === "report"
-          ? "Report quest revision"
+          ? tr("Report quest revision")
           : action.blocked
-            ? "Block creator"
-            : "Unblock creator"
+            ? tr("Block creator")
+            : tr("Unblock creator")
       }
       onClose={onClose}
     >
@@ -1264,61 +1483,46 @@ function CreatorCompletionSection({
   return (
     <section
       className="creator-completion"
-      aria-label="Private completion progress"
+      aria-label={tr("Private completion progress")}
     >
       <h4>
-        {state.receipt ? "Observation completed" : "Your completion progress"}
+        {state.receipt ? tr("Observation completed") : tr("Your completion progress")}
       </h4>
       {state.legacy ? (
         <p>
           {state.state === "legacy-resolved"
-            ? "This legacy participation has been resolved. It has no observation completion receipt and no configured reward. Your instructions remain available."
-            : "This accepted revision has no declared observation requirement. A later author edit cannot add one to your existing start. Ask the host’s completion operator to review this legacy participation; your instructions remain available."}
+            ? tr("This legacy participation has been resolved. It has no observation completion receipt and no configured reward. Your instructions remain available.")
+            : tr("This accepted revision has no declared observation requirement. A later author edit cannot add one to your existing start. Ask the host’s completion operator to review this legacy participation; your instructions remain available.")}
         </p>
       ) : (
         <>
           <p>
-            <strong>Accepted requirement · revision {state.revision}</strong>
+            <strong>{tr("Accepted requirement · revision")}{" "}{state.revision}</strong>
           </p>
           <p className="creator-instructions">{state.requirement?.prompt}</p>
           <p className="creator-hint">
-            Policy {state.policy?.version}: private text up to{" "}
-            {state.policy?.maxEvidenceChars} characters, one pending review at a
-            time, up to {state.policy?.maxAttempts} attempts. An independent
-            third rejection resolves the obligation as NOT completed. No
-            evidence expires automatically. Review checks text against the
-            prompt; it does not prove GPS, a physical visit or the path walked.
-            No XP, GOLD or item reward is configured.
-          </p>
+            {tr("Policy")}{" "}{state.policy?.version}{tr(": private text up to")}{" "}
+            {state.policy?.maxEvidenceChars} {" "}{tr("characters, one pending review at a time, up to")}{" "}{state.policy?.maxAttempts} {" "}{tr("attempts. An independent third rejection resolves the obligation as NOT completed. No evidence expires automatically. Review checks text against the prompt; it does not prove GPS, a physical visit or the path walked. No XP, GOLD or item reward is configured.")}</p>
           {state.state === "pending" && (
             <p role="status">
-              Your observation is awaiting independent review. Do not send
-              another copy.
-            </p>
+              {tr("Your observation is awaiting independent review. Do not send another copy.")}</p>
           )}
           {state.state === "rejected" && (
             <p>
-              The reviewer requested a correction. Read the private feedback
-              before another attempt.
-            </p>
+              {tr("The reviewer requested a correction. Read the private feedback before another attempt.")}</p>
           )}
           {state.state === "rejected-final" && (
             <p>
-              The third review was rejected. Participation is resolved as NOT
-              completed, with no completion receipt or reward. All submitted
-              text and feedback remain below.
-            </p>
+              {tr("The third review was rejected. Participation is resolved as NOT completed, with no completion receipt or reward. All submitted text and feedback remain below.")}</p>
           )}
           {state.receipt && (
             <div className="creator-quote">
-              <strong>Completion confirmed · no reward configured</strong>
+              <strong>{tr("Completion confirmed · no reward configured")}</strong>
               <p>
-                Reviewed observation completed for accepted revision{" "}
-                {state.receipt.revision}. {count(state.receipt.reward.xp)} XP ·{" "}
-                {count(state.receipt.reward.gold)} GOLD · no item. This receipt
-                does not establish a physical visit.
-              </p>
-              <small>Receipt: {state.receipt.id}</small>
+                {tr("Reviewed observation completed for accepted revision")}{" "}
+                {state.receipt.revision}. {count(state.receipt.reward.xp)} {" "}{tr("XP ·")}{" "}
+                {count(state.receipt.reward.gold)} {" "}{tr("GOLD · no item. This receipt does not establish a physical visit.")}</p>
+              <small>{tr("Receipt:")}{" "}{state.receipt.id}</small>
             </div>
           )}
           {state.canSubmit && (
@@ -1327,23 +1531,23 @@ function CreatorCompletionSection({
               disabled={busy}
               onClick={() => setOpen(true)}
             >
-              Write private observation <PencilSimple size={20} />
+              {tr("Write private observation")}{" "}<PencilSimple size={20} />
             </button>
           )}
           {state.attempts.map((a) => (
             <details className="creator-safety-tools" key={a.id}>
               <summary>
-                Attempt {a.attempt} ·{" "}
+                {tr("Attempt")}{" "}{a.attempt} ·{" "}
                 {a.state === "pending"
-                  ? "Awaiting review"
+                  ? tr("Awaiting review")
                   : a.state === "accepted"
-                    ? "Accepted"
-                    : "Rejected"}
+                    ? tr("Accepted")
+                    : tr("Rejected")}
               </summary>
               <p className="creator-instructions">{a.evidence}</p>
               {a.feedback && (
                 <>
-                  <strong>Private review feedback</strong>
+                  <strong>{tr("Private review feedback")}</strong>
                   <p className="creator-instructions">{a.feedback}</p>
                 </>
               )}
@@ -1352,19 +1556,15 @@ function CreatorCompletionSection({
         </>
       )}
       <details className="creator-safety-tools">
-        <summary>Help with this participation</summary>
+        <summary>{tr("Help with this participation")}</summary>
         <p>
-          For a pending, legacy or disputed review, give the host's completion
-          operator this reference. No public support or appeal channel is
-          configured in this local slice; this reference does not send a message
-          or settle your participation.
-        </p>
+          {tr("For a pending, legacy or disputed review, give the host's completion operator this reference. No public support or appeal channel is configured in this local slice; this reference does not send a message or settle your participation.")}</p>
         <p className="creator-instructions">
-          Quest: {state.questId}
+          {tr("Quest:")}{" "}{state.questId}
           <br />
-          Accepted revision: {state.revision}
+          {tr("Accepted revision:")}{" "}{state.revision}
           <br />
-          Explorer: {playerId}
+          {tr("Explorer:")}{" "}{playerId}
         </p>
       </details>
       {open && (
@@ -1415,7 +1615,7 @@ function CreatorEvidenceDialog({
         evidence: draft.values.evidence,
         privateConsent: true,
       },
-      "Your private observation was received. Independent review is pending; no reward or completion is confirmed yet.",
+      tr("Your private observation was received. Independent review is pending; no reward or completion is confirmed yet."),
       () => {
         draft.discard(revision);
         onClose();
@@ -1424,32 +1624,23 @@ function CreatorEvidenceDialog({
     );
   }
   return (
-    <Dialog label="Submit private observation" onClose={onClose}>
+    <Dialog label={tr("Submit private observation")} onClose={onClose}>
       <div className="creator-safety-dialog">
-        <h2>Your observation</h2>
+        <h2>{tr("Your observation")}</h2>
         <p>
-          Accepted revision {state.revision} · attempt {attempt}/
+          {tr("Accepted revision")}{" "}{state.revision} {" "}{tr("· attempt")}{" "}{attempt}/
           {state.policy?.maxAttempts}
         </p>
         <p className="creator-instructions">{state.requirement?.prompt}</p>
         <p className="creator-hint">
-          Text is private to you and authorized reviewers. Do not include
-          contact details, precise location or other private information. No
-          GPS, photo or file is attached. Acceptance confirms reviewed text, not
-          physical presence. No reward is configured.
-        </p>
+          {tr("Text is private to you and authorized reviewers. Do not include contact details, precise location or other private information. No GPS, photo or file is attached. Acceptance confirms reviewed text, not physical presence. No reward is configured.")}</p>
         {attempt === state.policy?.maxAttempts && (
           <p>
-            This is the final permitted attempt. A third independent rejection
-            resolves this participation as NOT completed; it creates no
-            completion receipt or reward. Evidence and feedback remain
-            available.
-          </p>
+            {tr("This is the final permitted attempt. A third independent rejection resolves this participation as NOT completed; it creates no completion receipt or reward. Evidence and feedback remain available.")}</p>
         )}
         <form className="creator-form" onSubmit={submit}>
           <label htmlFor="creator-observation-evidence">
-            Observation text
-            <textarea
+            {tr("Observation text")}<textarea
               id="creator-observation-evidence"
               required
               maxLength={1000}
@@ -1462,13 +1653,13 @@ function CreatorEvidenceDialog({
               }}
             />
           </label>
-          <small>{draft.values.evidence.length}/1,000 characters</small>
+          <small>{draft.values.evidence.length}{tr("/1,000 characters")}</small>
           <p className="creator-hint">
             {draft.storageAvailable
               ? draft.restored
-                ? "Your text was restored. Submission consent was not restored."
-                : "Text stays in this browser until submitted or discarded; consent is never stored."
-              : "Browser storage is unavailable. Keep this dialog open to retain your text."}
+                ? tr("Your text was restored. Submission consent was not restored.")
+                : tr("Text stays in this browser until submitted or discarded; consent is never stored.")
+              : tr("Browser storage is unavailable. Keep this dialog open to retain your text.")}
           </p>
           <label className="creator-check">
             <input
@@ -1478,8 +1669,7 @@ function CreatorEvidenceDialog({
               onChange={(e) => setConsent(e.target.checked)}
             />
             <span>
-              Send this text privately for independent completion review.
-            </span>
+              {tr("Send this text privately for independent completion review.")}</span>
           </label>
           {error && (
             <p className="creator-error" role="alert">
@@ -1491,7 +1681,7 @@ function CreatorEvidenceDialog({
             className="primary-button"
             disabled={busy || !consent || !draft.values.evidence.trim()}
           >
-            {busy ? "Sending observation…" : "Submit for independent review"}
+            {busy ? tr("Sending observation…") : tr("Submit for independent review")}
             <ArrowRight size={20} />
           </button>
           {draft.hasDraft && (
@@ -1504,11 +1694,10 @@ function CreatorEvidenceDialog({
                 setConsent(false);
               }}
             >
-              Discard local observation text
-            </button>
+              {tr("Discard local observation text")}</button>
           )}
           <button className="secondary-button" type="button" onClick={onClose}>
-            {busy ? "Close · request may still finish" : "Cancel"}
+            {busy ? tr("Close · request may still finish") : tr("Cancel")}
           </button>
         </form>
       </div>
@@ -1549,7 +1738,7 @@ function CreatorReportForm({
       `/quests/${idPath(target.questId)}/reports`,
       "POST",
       { revision: target.revision, reason, detail: draft.values.detail },
-      "Your report has been received privately. It has not closed the quest or cancelled your participation.",
+      tr("Your report has been received privately. It has not closed the quest or cancelled your participation."),
       (stillHere) => {
         draft.discard(revision);
         onConfirmed(stillHere);
@@ -1559,27 +1748,19 @@ function CreatorReportForm({
   }
   return (
     <>
-      <h2>Report this quest</h2>
+      <h2>{tr("Report this quest")}</h2>
       <p>
         <strong>{target.title}</strong>
         <br />
-        Revision {target.revision} · {"demo quest"}
+        {tr("Revision")}{" "}{target.revision} · {tr("demo quest")}
       </p>
       <p className="creator-hint">
-        Your reason and optional text are stored privately for authorized
-        review. They are not shown to the creator or other explorers. Do not
-        include your location, contact details or other private information. No
-        GPS, photo or file is attached.
-      </p>
+        {tr("Your reason and optional text are stored privately for authorized review. They are not shown to the creator or other explorers. Do not include your location, contact details or other private information. No GPS, photo or file is attached.")}</p>
       <p className="creator-hint">
-        A report requests review. It does not hide the quest, cancel your start,
-        prove completion or guarantee a response time. Stop if a place feels
-        unsafe. Only one report per quest is accepted.
-      </p>
+        {tr("A report requests review. It does not hide the quest, cancel your start, prove completion or guarantee a response time. Stop if a place feels unsafe. Only one report per quest is accepted.")}</p>
       <form className="creator-form" onSubmit={submit}>
         <label htmlFor="creator-report-reason">
-          Reason
-          <select
+          {tr("Reason")}<select
             id="creator-report-reason"
             required
             value={reason}
@@ -1589,16 +1770,15 @@ function CreatorReportForm({
               setConfirmed(false);
             }}
           >
-            <option value="">Choose a reason</option>
-            <option value="unsafe-place">Unsafe place or instructions</option>
-            <option value="abuse">Abuse or harassment</option>
-            <option value="misleading">Misleading quest</option>
-            <option value="other">Other concern</option>
+            <option value="">{tr("Choose a reason")}</option>
+            <option value="unsafe-place">{tr("Unsafe place or instructions")}</option>
+            <option value="abuse">{tr("Abuse or harassment")}</option>
+            <option value="misleading">{tr("Misleading quest")}</option>
+            <option value="other">{tr("Other concern")}</option>
           </select>
         </label>
         <label htmlFor="creator-report-detail">
-          Optional context
-          <textarea
+          {tr("Optional context")}<textarea
             id="creator-report-detail"
             rows={4}
             maxLength={1000}
@@ -1610,13 +1790,13 @@ function CreatorReportForm({
             }}
           />
         </label>
-        <small>{draft.values.detail.length}/1,000 characters</small>
+        <small>{draft.values.detail.length}{tr("/1,000 characters")}</small>
         <p className="creator-hint">
           {!draft.storageAvailable
-            ? "Browser storage is unavailable. Keep this dialog open to retain your text."
+            ? tr("Browser storage is unavailable. Keep this dialog open to retain your text.")
             : draft.restored
-              ? "Your optional text was restored. Choose a reason and confirm again."
-              : "Only optional text is retained in this browser until sent or discarded. Reason and confirmation are never restored."}
+              ? tr("Your optional text was restored. Choose a reason and confirm again.")
+              : tr("Only optional text is retained in this browser until sent or discarded. Reason and confirmation are never restored.")}
         </p>
         <label className="creator-check">
           <input
@@ -1626,8 +1806,7 @@ function CreatorReportForm({
             onChange={(e) => setConfirmed(e.target.checked)}
           />
           <span>
-            Send this revision and selected reason for private review.
-          </span>
+            {tr("Send this revision and selected reason for private review.")}</span>
         </label>
         {error && (
           <p className="creator-error" role="alert">
@@ -1639,7 +1818,7 @@ function CreatorReportForm({
           type="submit"
           disabled={busy || !reason || !confirmed}
         >
-          {busy ? "Sending report…" : "Send private report"}
+          {busy ? tr("Sending report…") : tr("Send private report")}
           <Flag size={20} />
         </button>
         {draft.hasDraft && (
@@ -1652,11 +1831,10 @@ function CreatorReportForm({
               setConfirmed(false);
             }}
           >
-            Discard local report text
-          </button>
+            {tr("Discard local report text")}</button>
         )}
         <button className="secondary-button" type="button" onClick={onClose}>
-          {busy ? "Close · request may still finish" : "Cancel"}
+          {busy ? tr("Close · request may still finish") : tr("Cancel")}
         </button>
       </form>
     </>
@@ -1686,28 +1864,25 @@ function CreatorBlockForm({
       "PUT",
       { blocked: action.blocked },
       action.blocked
-        ? "Creator block confirmed. Public content is hidden between you; your accepted quest instructions remain available."
-        : "Your block was removed. Current public content may appear again; a block set by the other creator is unchanged.",
+        ? tr("Creator block confirmed. Public content is hidden between you; your accepted quest instructions remain available.")
+        : tr("Your block was removed. Current public content may appear again; a block set by the other creator is unchanged."),
       onConfirmed,
       (e) => setError(e.message),
     );
   }
   return (
     <>
-      <h2>{action.blocked ? "Block creator?" : "Remove your block?"}</h2>
+      <h2>{action.blocked ? tr("Block creator?") : tr("Remove your block?")}</h2>
       <p>
-        <strong>{action.creator.displayName || "This creator"}</strong>
+        <strong>{action.creator.displayName || tr("This creator")}</strong>
       </p>
       <p>
         {action.blocked
-          ? "This uses the same block as map notes. Public notes, profiles, follows, creator discovery and presence are hidden between you in both directions. Existing follow records are not deleted."
-          : "Removing your block may make current public content visible again. It cannot remove a block set by the other creator or restore content that is private, removed or closed."}
+          ? tr("This uses the same block as map notes. Public notes, profiles, follows, creator discovery and presence are hidden between you in both directions. Existing follow records are not deleted.")
+          : tr("Removing your block may make current public content visible again. It cannot remove a block set by the other creator or restore content that is private, removed or closed.")}
       </p>
       <p>
-        Your accepted quest instructions stay in Your started quests. Blocking
-        or unblocking does not quit a quest, complete it, resolve obligations or
-        create a reward.
-      </p>
+        {tr("Your accepted quest instructions stay in Your started quests. Blocking or unblocking does not quit a quest, complete it, resolve obligations or create a reward.")}</p>
       <form className="creator-form" onSubmit={submit}>
         <label className="creator-check">
           <input
@@ -1716,7 +1891,7 @@ function CreatorBlockForm({
             disabled={busy}
             onChange={(e) => setConfirmed(e.target.checked)}
           />
-          <span>I understand this changes public visibility between us.</span>
+          <span>{tr("I understand this changes public visibility between us.")}</span>
         </label>
         {error && (
           <p className="creator-error" role="alert">
@@ -1729,14 +1904,14 @@ function CreatorBlockForm({
           type="submit"
         >
           {busy
-            ? "Confirming…"
+            ? tr("Confirming…")
             : action.blocked
-              ? "Confirm creator block"
-              : "Remove my block"}
+              ? tr("Confirm creator block")
+              : tr("Remove my block")}
           <ShieldSlash size={20} />
         </button>
         <button className="secondary-button" type="button" onClick={onClose}>
-          {busy ? "Close · request may still finish" : "Cancel"}
+          {busy ? tr("Close · request may still finish") : tr("Cancel")}
         </button>
       </form>
     </>
@@ -1775,22 +1950,19 @@ function ProfileEditor({
         profile: { ...draft.values, public: visible },
         publicConsent: visible && consent,
       },
-      "Your profile change is confirmed.",
+      tr("Your profile change is confirmed."),
       () => draft.discard(revision),
     );
   }
   return (
     <>
-      <Back onClick={() => navigate({ page: "mine" })}>My creations</Back>
-      <h3>Your creator profile</h3>
+      <Back onClick={() => navigate({ page: "mine" })}>{tr("My creations")}</Back>
+      <h3>{tr("Your creator profile")}</h3>
       <p>
-        Choose the name and bio other explorers may see. Your private account
-        name is not copied here.
-      </p>
+        {tr("Choose the name and bio other explorers may see. Your private account name is not copied here.")}</p>
       <form className="creator-form" onSubmit={submit}>
         <label htmlFor="creator-display-name">
-          Public display name
-          <input
+          {tr("Public display name")}<input
             id="creator-display-name"
             value={draft.values.displayName}
             onChange={(event) =>
@@ -1803,8 +1975,7 @@ function ProfileEditor({
           />
         </label>
         <label htmlFor="creator-bio">
-          About your quests
-          <textarea
+          {tr("About your quests")}<textarea
             id="creator-bio"
             value={draft.values.bio}
             onChange={(event) => draft.setField("bio", event.target.value)}
@@ -1823,15 +1994,12 @@ function ProfileEditor({
               setConsent(false);
             }}
           />
-          <span>Make my creator profile public</span>
+          <span>{tr("Make my creator profile public")}</span>
         </label>
         {visible && (
           <>
             <p className="creator-hint">
-              Your display name, bio and approved quests will be visible to
-              other explorers. This demo profile is stored by QuestLayer; it is
-              not an on-chain profile.
-            </p>
+              {tr("Your display name, bio and approved quests will be visible to other explorers. This demo profile is stored by QuestLayer; it is not an on-chain profile.")}</p>
             <label className="creator-check">
               <input
                 type="checkbox"
@@ -1839,7 +2007,7 @@ function ProfileEditor({
                 disabled={busy}
                 onChange={(event) => setConsent(event.target.checked)}
               />
-              <span>I agree to publish this profile text publicly.</span>
+              <span>{tr("I agree to publish this profile text publicly.")}</span>
             </label>
           </>
         )}
@@ -1854,10 +2022,10 @@ function ProfileEditor({
           type="submit"
         >
           {busy
-            ? "Saving…"
+            ? tr("Saving…")
             : visible
-              ? "Save public profile"
-              : "Save private profile"}
+              ? tr("Save public profile")
+              : tr("Save private profile")}
           <Check size={20} />
         </button>
         {draft.hasDraft && (
@@ -1867,8 +2035,7 @@ function ProfileEditor({
             disabled={busy}
             onClick={() => draft.discard()}
           >
-            Discard local text changes
-          </button>
+            {tr("Discard local text changes")}</button>
         )}
       </form>
     </>
@@ -1886,12 +2053,12 @@ function DraftHint({
   return (
     <p className="creator-hint">
       {!available
-        ? "Browser storage is unavailable. Keep this tab open to retain this text."
+        ? tr("Browser storage is unavailable. Keep this tab open to retain this text.")
         : restored
-          ? "Your local text draft was restored. Review it before saving; consent is never restored."
+          ? tr("Your local text draft was restored. Review it before saving; consent is never restored.")
           : profile
-            ? "Text changes stay in this browser until you save or discard them. Public visibility requires your explicit consent."
-            : "Text changes stay in this browser until you save or discard them. They are private until a publication is approved."}
+            ? tr("Text changes stay in this browser until you save or discard them. Public visibility requires your explicit consent.")
+            : tr("Text changes stay in this browser until you save or discard them. They are private until a publication is approved.")}
     </p>
   );
 }
@@ -1905,6 +2072,7 @@ function QuestEditor({
   busy,
   act,
   navigate,
+  position,
 }: {
   playerId: string;
   quest?: OwnedCreatorQuest;
@@ -1914,7 +2082,33 @@ function QuestEditor({
   busy: boolean;
   act: Action;
   navigate: (view: CreatorCommunityView) => void;
+  position?: Point;
 }) {
+  const savedPlace = quest?.draft.place;
+  const [template, setTemplate] = useState<CreatorPlaceTemplate | null>(
+    savedPlace?.template ?? (quest ? null : "visit"),
+  );
+  const [points, setPoints] = useState<Point[]>(savedPlace?.points ?? []);
+  const [placeError, setPlaceError] = useState("");
+  const savedPrice =
+    quest?.draft.price && quest.draft.price !== "0" ? quest.draft.price : "";
+  const [paid, setPaid] = useState(!!savedPrice);
+  const [priceText, setPriceText] = useState(
+    savedPrice ? formatNativeNear(savedPrice) : "",
+  );
+  let priceValue = "0",
+    priceProblem = "";
+  try {
+    priceValue = paid ? parseAccessPrice(priceText) : "0";
+    if (paid && priceValue === "0")
+      priceProblem = tr("Enter a price, or keep it free.");
+  } catch (error) {
+    priceProblem = (error as Error).message;
+  }
+  const priceChanged = priceValue !== (savedPrice || "0");
+  const placeChanged =
+    JSON.stringify(template ? { template, points } : null) !==
+    JSON.stringify(savedPlace ?? null);
   const draft = useFormDraft({
     playerId,
     form: "creator-quest",
@@ -1938,6 +2132,8 @@ function QuestEditor({
   const hasChanges =
     draft.hasDraft ||
     requirementDraft.hasDraft ||
+    placeChanged ||
+    priceChanged ||
     observation !== !!quest?.draft.requirement;
   const newIdentity = useMemo(
     () => (quest ? null : creatorDraftIdentity(playerId)),
@@ -1977,7 +2173,7 @@ function QuestEditor({
         setQuoteError(
           error instanceof Error
             ? error.message
-            : "Could not load the publication quote.",
+            : tr("Could not load the publication quote."),
         );
     } finally {
       if (mounted.current) setQuoteBusy(false);
@@ -1985,6 +2181,23 @@ function QuestEditor({
   }
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (template) {
+      const rule = PLACE_TEMPLATES[template];
+      if (points.length < rule.min || points.length > rule.max) {
+        setPlaceError(
+          template === "trail"
+            ? tr("Pin at least 2 stops for a trail.")
+            : tr("Pin the place first."),
+        );
+        return;
+      }
+      if (trailLength(points) > 5000) {
+        setPlaceError(tr("Keep a trail under 5 km."));
+        return;
+      }
+    }
+    setPlaceError("");
+    if (priceProblem) return;
     const revision = draft.revision;
     const requirementRevision = requirementDraft.revision;
     const questId = quest?.id || newIdentity!.id;
@@ -2000,6 +2213,8 @@ function QuestEditor({
             },
           }
         : {}),
+      ...(template ? { place: { template, points } } : {}),
+      ...(priceValue !== "0" ? { price: priceValue } : {}),
     };
     const saved = await act(
       quest ? `/quests/${idPath(quest.id)}/revisions` : "/quests",
@@ -2007,7 +2222,7 @@ function QuestEditor({
       quest
         ? { expectedVersion: quest.version, draft: savedDraft }
         : { questId, draft: savedDraft },
-      "Your draft is confirmed. It is not public until independently approved.",
+      tr("Your draft is confirmed. It is not public until independently approved."),
       (stillHere) => {
         draft.discard(revision);
         requirementDraft.discard(requirementRevision);
@@ -2034,7 +2249,7 @@ function QuestEditor({
         setRecoveryError(
           error instanceof Error
             ? error.message
-            : "The prior save could not be found. Your text is retained.",
+            : tr("The prior save could not be found. Your text is retained."),
         );
     } finally {
       if (mounted.current) setRecovering(false);
@@ -2042,32 +2257,184 @@ function QuestEditor({
   }
   return (
     <>
-      <Back onClick={() => navigate({ page: "mine" })}>My creations</Back>
+      <Back onClick={() => navigate({ page: "mine" })}>{tr("My creations")}</Back>
       <div className="creator-heading">
-        <h3>{quest ? quest.draft.title : "Write a free quest"}</h3>
+        <h3>{quest ? quest.draft.title : tr("Write a free quest")}</h3>
         {quest && (
           <span className="creator-state">{statusName(quest.state)}</span>
         )}
       </div>
       <p className="creator-hint">
-        Use a clear title and safe, complete instructions. No location, walking
-        route, reward or access price is invented from this text.
-      </p>
+        {tr("Pick a template, pin it where you stand, then write clear and safe instructions. Only places you pin are shown; your live location is never shared.")}</p>
       {quest && hasChanges && !editable && (
         <details className="creator-saved-version">
-          <summary>View saved revision {quest.latestRevision}</summary>
+          <summary>{tr("View saved revision")}{" "}{quest.latestRevision}</summary>
           <p>
-            Your text fields below contain retained local changes. Review and
-            public readers use saved revisions.
-          </p>
+            {tr("Your text fields below contain retained local changes. Review and public readers use saved revisions.")}</p>
           <h4>{quest.draft.title}</h4>
           <p className="creator-instructions">{quest.draft.description}</p>
         </details>
       )}
       <form className="creator-form" onSubmit={save}>
+        {editable && (
+          <AiQuestDraft
+            template={template}
+            disabled={busy}
+            onSuggestion={(suggestion) => {
+              draft.setField("title", suggestion.draft.title.slice(0, 100));
+              draft.setField(
+                "description",
+                suggestion.draft.description.slice(0, 4000),
+              );
+              setTemplate(suggestion.draft.place.template);
+              setPoints(suggestion.draft.place.points);
+              setPlaceError("");
+              setQuote(null);
+              setAccepted(false);
+            }}
+          />
+        )}
+        <fieldset className="creator-templates" disabled={!editable || busy}>
+          <legend>{tr("Template")}</legend>
+          {(Object.keys(PLACE_TEMPLATES) as CreatorPlaceTemplate[]).map(
+            (key) => (
+              <label key={key} className="creator-template">
+                <input
+                  type="radio"
+                  name="creator-template"
+                  checked={template === key}
+                  onChange={() => {
+                    setTemplate(key);
+                    setPoints((old) => old.slice(0, PLACE_TEMPLATES[key].max));
+                    setPlaceError("");
+                    setQuote(null);
+                    setAccepted(false);
+                  }}
+                />
+                <span>
+                  <strong>{PLACE_TEMPLATES[key].name}</strong>
+                  <small>{PLACE_TEMPLATES[key].hint}</small>
+                </span>
+              </label>
+            ),
+          )}
+        </fieldset>
+        {template && (
+          <div className="creator-pins">
+            {points.length > 0 && (
+              <ol>
+                {points.map((p, i) => (
+                  <li key={`${p.lat},${p.lng},${i}`}>
+                    {template === "trail" ? tr("Stop {0}", { 0: i + 1 }) : tr("Pinned spot")}
+                    {position
+                      ? tr(" · {0} from you", { 0: distanceText(meters(position, p)) })
+                      : ""}
+                    {editable && (
+                      <button
+                        type="button"
+                        className="text-button"
+                        disabled={busy}
+                        onClick={() => {
+                          setPoints((old) => old.filter((_, j) => j !== i));
+                          setQuote(null);
+                          setAccepted(false);
+                        }}
+                      >
+                        {tr("Remove")}</button>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            )}
+            {template === "trail" && points.length > 1 && (
+              <p className="creator-hint">
+                {tr("Trail length")}{" "}{distanceText(trailLength(points))}.
+              </p>
+            )}
+            {editable && points.length < PLACE_TEMPLATES[template].max && (
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy || !position}
+                onClick={() => {
+                  if (!position) return;
+                  const next = {
+                    lat: Math.round(position.lat * 1e5) / 1e5,
+                    lng: Math.round(position.lng * 1e5) / 1e5,
+                  };
+                  setPoints((old) =>
+                    PLACE_TEMPLATES[template].max === 1
+                      ? [next]
+                      : [...old, next],
+                  );
+                  setPlaceError("");
+                  setQuote(null);
+                  setAccepted(false);
+                }}
+              >
+                <Plus size={20} />
+                {template === "trail"
+                  ? tr("Pin stop {0} where I stand", { 0: points.length + 1 })
+                  : tr("Pin it where I stand")}
+              </button>
+            )}
+            {!position && (
+              <p className="creator-hint">
+                {tr("Turn on location on the map to pin a place.")}</p>
+            )}
+            {placeError && <p role="alert">{placeError}</p>}
+          </div>
+        )}
+        <fieldset className="creator-templates" disabled={!editable || busy}>
+          <legend>{tr("Access")}</legend>
+          <label className="creator-template">
+            <input
+              type="radio"
+              name="creator-access"
+              checked={!paid}
+              onChange={() => setPaid(false)}
+            />
+            <span>
+              <strong>{tr("Free")}</strong>
+              <small>
+                {tr("Anyone can start it. Explorers can still send gifts.")}</small>
+            </span>
+          </label>
+          <label className="creator-template">
+            <input
+              type="radio"
+              name="creator-access"
+              checked={paid}
+              onChange={() => setPaid(true)}
+            />
+            <span>
+              <strong>{tr("Paid unlock")}</strong>
+              <small>
+                {tr("Explorers pay once to unlock: 80% to you, 20% to the global prize pool.")}</small>
+            </span>
+          </label>
+          {paid && (
+            <label htmlFor="creator-quest-price">
+              {tr("Price in NEAR (0.01 to 10)")}<input
+                id="creator-quest-price"
+                inputMode="decimal"
+                placeholder="0.5"
+                value={priceText}
+                onChange={(e) => setPriceText(e.target.value)}
+                aria-invalid={!!priceProblem}
+              />
+            </label>
+          )}
+          {paid && priceProblem && priceText && (
+            <p role="alert">{priceProblem}</p>
+          )}
+          {paid && !priceProblem && (
+            <p className="creator-hint">
+              {nearText(priceValue)} {" "}{tr("NEAR. The price goes live after review; people who already unlocked keep access.")}</p>
+          )}
+        </fieldset>
         <label htmlFor="creator-quest-title">
-          Quest title
-          <input
+          {tr("Quest title")}<input
             id="creator-quest-title"
             value={draft.values.title}
             onChange={(event) => {
@@ -2081,8 +2448,7 @@ function QuestEditor({
           />
         </label>
         <label htmlFor="creator-quest-description">
-          Instructions
-          <textarea
+          {tr("Instructions")}<textarea
             id="creator-quest-description"
             value={draft.values.description}
             onChange={(event) => {
@@ -2108,14 +2474,12 @@ function QuestEditor({
             }}
           />
           <span>
-            Declare a private observation for independent completion review
-          </span>
+            {tr("Declare a private observation for independent completion review")}</span>
         </label>
         {observation && (
           <>
             <label htmlFor="creator-observation-prompt">
-              Observation requirement
-              <textarea
+              {tr("Observation requirement")}<textarea
                 id="creator-observation-prompt"
                 maxLength={500}
                 required
@@ -2130,13 +2494,7 @@ function QuestEditor({
               />
             </label>
             <p className="creator-hint">
-              Operational policy creator-observation-v1: private text up to
-              1,000 characters, up to 3 attempts, one pending review. A third
-              independent rejection resolves as NOT completed. No automatic
-              expiry, GPS verification or reward. Only new starts on an
-              independently approved structured revision use this requirement;
-              existing plain starts stay legacy.
-            </p>
+              {tr("Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.")}</p>
           </>
         )}
         <DraftHint
@@ -2148,17 +2506,17 @@ function QuestEditor({
         {editable ? (
           <button className="primary-button" type="submit" disabled={busy}>
             {busy
-              ? "Saving…"
+              ? tr("Saving…")
               : quest
-                ? "Save new revision"
-                : "Save private draft"}
+                ? tr("Save new revision")
+                : tr("Save private draft")}
             <Check size={20} />
           </button>
         ) : (
           <p>
             {pendingReview
-              ? "This revision is in review. Withdraw it before editing."
-              : "This quest is closing or closed; the accepted versions remain protected."}
+              ? tr("This revision is in review. Withdraw it before editing.")
+              : tr("This quest is closing or closed; the accepted versions remain protected.")}
           </p>
         )}
         {hasChanges && (
@@ -2170,27 +2528,28 @@ function QuestEditor({
               draft.discard();
               requirementDraft.discard();
               setObservation(!!quest?.draft.requirement);
+              setTemplate(savedPlace?.template ?? (quest ? null : "visit"));
+              setPoints(savedPlace?.points ?? []);
+              setPlaceError("");
+              setPaid(!!savedPrice);
+              setPriceText(savedPrice ? formatNativeNear(savedPrice) : "");
               setQuote(null);
               setAccepted(false);
             }}
           >
-            Discard local text changes
-          </button>
+            {tr("Discard local text changes")}</button>
         )}
       </form>
       {createUncertain && !quest && (
         <div className="creator-quote">
           <p>
-            A save may already have reached the server. Retry the same text or
-            recover the saved quest before starting a new one. Your local text
-            stays in New quest until you discard it.
-          </p>
+            {tr("A save may already have reached the server. Retry the same text or recover the saved quest before starting a new one. Your local text stays in New quest until you discard it.")}</p>
           <button
             className="secondary-button"
             disabled={busy || recovering}
             onClick={() => void recoverCreate()}
           >
-            {recovering ? "Checking saved quest…" : "Recover previous save"}
+            {recovering ? tr("Checking saved quest…") : tr("Recover previous save")}
             <ArrowClockwise size={20} />
           </button>
           {recoveryError && <p role="alert">{recoveryError}</p>}
@@ -2199,33 +2558,28 @@ function QuestEditor({
       {quest && (
         <section
           className="creator-publication"
-          aria-label="Publication and closure"
+          aria-label={tr("Publication and closure")}
         >
-          <h4>Publication</h4>
+          <h4>{tr("Publication")}</h4>
           <p className="creator-hint">
-            Revision {quest.latestRevision} ·{" "}
+            {tr("Revision")}{" "}{quest.latestRevision} ·{" "}
             {statusName(quest.latestState || quest.state)} ·{" "}
-            {count(quest.lockedXp)} XP committed · {quest.openParticipations}{" "}
-            participants in progress
-          </p>
+            {count(quest.lockedXp)} {" "}{tr("XP committed ·")}{" "}{quest.openParticipations}{" "}
+            {tr("participants in progress")}</p>
           {quest.publishedRevision !== null && (
             <p>
-              Revision {quest.publishedRevision} is the approved version.
-              Participants keep the version they accepted.
-            </p>
+              {tr("Revision")}{" "}{quest.publishedRevision} {" "}{tr("is the approved version. Participants keep the version they accepted.")}</p>
           )}
           {quest.latestReviewReason && (
             <div className="creator-review-note">
-              <h4>Review feedback</h4>
+              <h4>{tr("Review feedback")}</h4>
               <p>{quest.latestReviewReason}</p>
             </div>
           )}
           {pendingReview ? (
             <>
               <p>
-                Independent review is pending. Submitting a draft does not
-                reserve XP; availability is checked again at approval.
-              </p>
+                {tr("Independent review is pending. Submitting a draft does not reserve XP; availability is checked again at approval.")}</p>
               <button
                 className="secondary-button"
                 disabled={busy}
@@ -2234,12 +2588,11 @@ function QuestEditor({
                     `/quests/${idPath(quest.id)}/withdraw-review`,
                     "POST",
                     { expectedVersion: quest.version },
-                    "Review withdrawal confirmed. Save a new revision before resubmitting.",
+                    tr("Review withdrawal confirmed. Save a new revision before resubmitting."),
                   )
                 }
               >
-                Withdraw review
-              </button>
+                {tr("Withdraw review")}</button>
             </>
           ) : (
             quest.latestState === "draft" &&
@@ -2251,15 +2604,13 @@ function QuestEditor({
                   onClick={() => void reviewQuote()}
                 >
                   {quoteBusy
-                    ? "Loading quote…"
-                    : "Review publication commitment"}
+                    ? tr("Loading quote…")
+                    : tr("Review publication commitment")}
                   <ArrowRight size={20} />
                 </button>
                 {hasChanges && (
                   <p className="creator-hint">
-                    Save or discard local text changes before reviewing
-                    publication.
-                  </p>
+                    {tr("Save or discard local text changes before reviewing publication.")}</p>
                 )}
               </>
             )
@@ -2271,29 +2622,19 @@ function QuestEditor({
           )}
           {quote && (
             <div className="creator-quote">
-              <h4>Review before submission</h4>
+              <h4>{tr("Review before submission")}</h4>
               <p>
                 <strong>
-                  {count(quote.additionalLockedXp)} additional demo XP
-                </strong>{" "}
-                will be committed if an independent reviewer approves this
-                version.
-              </p>
+                  {count(quote.additionalLockedXp)} {" "}{tr("additional demo XP")}</strong>{" "}
+                {tr("will be committed if an independent reviewer approves this version.")}</p>
               <p>
-                Policy {quote.policyVersion} ·{" "}
-                {count(quote.progression.availableXp)} XP currently available.
-                Total quest commitment: {count(quote.xpCommitment)} XP.
-              </p>
+                {tr("Policy")}{" "}{quote.policyVersion} ·{" "}
+                {count(quote.progression.availableXp)} {" "}{tr("XP currently available. Total quest commitment:")}{" "}{count(quote.xpCommitment)} {" "}{tr("XP.")}</p>
               <p>
-                Committed XP does not count toward your current demo level. It
-                returns after closure and existing participant obligations;
-                returning it earns no extra XP or level grant.
-              </p>
+                {tr("Committed XP does not count toward your current demo level. It returns after closure and existing participant obligations; returning it earns no extra XP or level grant.")}</p>
               {!me.profile.public && (
                 <p className="creator-hint">
-                  Your profile is private. This quest will not appear in public
-                  discovery until you publish your creator profile.
-                </p>
+                  {tr("Your profile is private. This quest will not appear in public discovery until you publish your creator profile.")}</p>
               )}
               <label className="creator-check">
                 <input
@@ -2303,9 +2644,7 @@ function QuestEditor({
                   onChange={(event) => setAccepted(event.target.checked)}
                 />
                 <span>
-                  I accept this quoted publication commitment. Submission is not
-                  publication.
-                </span>
+                  {tr("I accept this quoted publication commitment. Submission is not publication.")}</span>
               </label>
               <button
                 className="primary-button"
@@ -2324,7 +2663,7 @@ function QuestEditor({
                       expectedVersion: quote.expectedVersion,
                       expectedPolicyVersion: quote.policyVersion,
                     },
-                    "Review submission confirmed. The current publication state is shown below.",
+                    tr("Review submission confirmed. The current publication state is shown below."),
                     () => {
                       setQuote(null);
                       setAccepted(false);
@@ -2332,23 +2671,19 @@ function QuestEditor({
                   )
                 }
               >
-                Submit for independent review <ArrowRight size={20} />
+                {tr("Submit for independent review")}{" "}<ArrowRight size={20} />
               </button>
               {capability.reviewConfigured === false && (
                 <p className="creator-hint">
-                  Publication waits for independent review to be configured.
-                </p>
+                  {tr("Publication waits for independent review to be configured.")}</p>
               )}
             </div>
           )}
           {!["closing", "closed"].includes(quest.state) && (
             <details className="creator-close">
-              <summary>Close this quest</summary>
+              <summary>{tr("Close this quest")}</summary>
               <p>
-                New starts stop immediately. Accepted participant instructions
-                remain available. Committed XP is released only after their
-                obligations are independently resolved.
-              </p>
+                {tr("New starts stop immediately. Accepted participant instructions remain available. Committed XP is released only after their obligations are independently resolved.")}</p>
               <button
                 className="secondary-button"
                 disabled={busy}
@@ -2357,13 +2692,13 @@ function QuestEditor({
                     `/quests/${idPath(quest.id)}/close`,
                     "POST",
                     { expectedVersion: quest.version },
-                    "Quest closure confirmed. Existing participants keep their accepted revision.",
+                    tr("Quest closure confirmed. Existing participants keep their accepted revision."),
                   )
                 }
               >
                 {quest.publishedRevision === null
-                  ? "Close this draft"
-                  : "Stop new starts"}
+                  ? tr("Close this draft")
+                  : tr("Stop new starts")}
               </button>
             </details>
           )}
@@ -2371,8 +2706,8 @@ function QuestEditor({
             <>
               <p>
                 {quest.openParticipations
-                  ? `${quest.openParticipations} participant obligations must be independently resolved before XP can return.`
-                  : "All recorded participant obligations are resolved. You can close this quest and return its commitment."}
+                  ? tr("{0} participant obligations must be independently resolved before XP can return.", { 0: quest.openParticipations })
+                  : tr("All recorded participant obligations are resolved. You can close this quest and return its commitment.")}
               </p>
               <button
                 className="primary-button"
@@ -2382,19 +2717,17 @@ function QuestEditor({
                     `/quests/${idPath(quest.id)}/finalize`,
                     "POST",
                     { expectedVersion: quest.version },
-                    "Final closure confirmed. Current available XP is refreshed; no new earning or level reward is created.",
+                    tr("Final closure confirmed. Current available XP is refreshed; no new earning or level reward is created."),
                   )
                 }
               >
-                Finalize closure and return XP <ArrowRight size={20} />
+                {tr("Finalize closure and return XP")}{" "}<ArrowRight size={20} />
               </button>
             </>
           )}
           {quest.state === "closed" && (
             <p>
-              This stable quest identity is closed. Its existing instructions
-              and receipts are retained.
-            </p>
+              {tr("This stable quest identity is closed. Its existing instructions and receipts are retained.")}</p>
           )}
         </section>
       )}

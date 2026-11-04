@@ -425,3 +425,147 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* Slice 5: places, support and earnings */
+.creator-place,
+.creator-money,
+.creator-earnings,
+.creator-pins {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--creator-line);
+  border-radius: 16px;
+  background: var(--surface-raised, #fff);
+}
+.creator-place {
+  display: grid;
+  gap: 4px;
+}
+.creator-money h4,
+.creator-earnings h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.creator-money-facts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.creator-money-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.creator-money-chips button {
+  flex: 1 1 120px;
+}
+.creator-money-custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.creator-money-custom label {
+  flex-basis: 100%;
+}
+.creator-money-custom input {
+  flex: 1 1 120px;
+  min-height: 48px;
+  padding: 0 12px;
+  font: inherit;
+  border: 1px solid var(--creator-line);
+  border-radius: 12px;
+}
+.creator-money-outcome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.creator-money-outcome.is-failed {
+  color: var(--creator-error-ink);
+}
+.creator-earnings-total strong {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+.creator-earnings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 8px 0 16px;
+}
+.creator-earnings-grid dt {
+  font-size: 14px;
+}
+.creator-earnings-grid dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.creator-templates {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  border: 0;
+}
+.creator-templates legend {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.creator-template {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid var(--creator-line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.creator-template:has(input:checked) {
+  border-color: currentColor;
+}
+.creator-template span {
+  display: grid;
+}
+.creator-pins ol {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+.creator-pins li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.creator-ai-draft {
+  border: 1px solid var(--creator-line, #d7cbe9);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+.creator-ai-draft > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.creator-ai-fields {
+  display: grid;
+  gap: 12px;
+}
+.creator-ai-fields label {
+  display: grid;
+  gap: 4px;
+}
+.creator-ai-fields select,
+.creator-ai-fields input {
+  min-height: 48px;
+  font-size: 16px;
+}

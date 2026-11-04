@@ -1,0 +1,23 @@
+{
+  "verifiedAt": "2026-11-01T13:26:20.502Z",
+  "network": "testnet",
+  "contractId": "nfts.questlayer-dev-20261101.testnet",
+  "schemaVersion": 3,
+  "codeHash": "D1RouETQnghXFZYCQ3QNZoawTkeH41hXqdXeeo9fqeXQ",
+  "wasmSha256": "b2684b58ce5a3920091f377fc6a364de96ded0dd65af3add744c9105a73c36f7",
+  "supportedEditions": [
+    "ember",
+    "dew",
+    "polar",
+    "bloom",
+    "storm",
+    "moon",
+    "comet",
+    "gold",
+    "nova"
+  ],
+  "tokensPreserved": 1,
+  "equipmentPreserved": 1,
+  "awardSignerPreserved": true,
+  "transactions": []
+}

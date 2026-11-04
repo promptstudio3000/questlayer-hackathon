@@ -1,8 +1,17 @@
+import { EmptyState } from "./EmptyState";
 import { NativePicture } from "./NativeWardrobe";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+// The experimental Intents panel loads only when the Offers tab opens.
+const IntentsPanel = lazy(async () => ({ default: (await import("./IntentsPanel")).IntentsPanel }));
 import { api } from "./api";
 import { AuraArt } from "./Ghost";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
+import type { OrderSigner } from "./order-signers";
+import { ChainLink } from "./ChainLink";
+import type { ChainRef } from "./chain-proof";
+import { SignedOrdersPanel } from "./SignedOrdersPanel";
+import { Details } from "./ScreenTabs";
+import { ArrowClockwise } from "@phosphor-icons/react";
 import type {
   Player,
   NativeWardrobeState,
@@ -10,23 +19,33 @@ import type {
   NativeMarketBalance,
   NativeTradeRequest,
 } from "./types";
+import { tr } from "./i18n";
 export function NativeMarketPanel({
   player,
   wardrobe,
   busy,
   onConnect,
   onTrade,
+  orderSigner = null,
+  section = "all",
 }: {
   player: Player;
   wardrobe: NativeWardrobeState | null;
   busy: string;
   onConnect: () => Promise<void>;
   onTrade: (request: NativeTradeRequest) => Promise<boolean>;
+  orderSigner?: OrderSigner | null;
+  /** Market screen tab: fixed-price listings, signed offers, or both. */
+  section?: "all" | "secured" | "offers";
 }) {
+  const showListings = section !== "offers",
+    showOffers = section !== "secured";
+  const [intentsOn, setIntentsOn] = useState(false);
   const [data, setData] = useState<NativeMarketState | null>(null),
     [balances, setBalances] = useState<NativeMarketBalance[]>([]),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
+    [proof, setProof] = useState<ChainRef | null>(null),
     [page, setPage] = useState(0),
     [loading, setLoading] = useState(true),
     [accountId, setAccount] = useState(
@@ -76,7 +95,9 @@ export function NativeMarketPanel({
     } catch (e) {
       if (request === generation.current) {
         setError(
-          e instanceof Error ? e.message : "Native market is unavailable.",
+          e instanceof Error
+            ? e.message
+            : tr("The secured market could not load. Try again in a moment."),
         );
         setLoading(false);
       }
@@ -94,8 +115,13 @@ export function NativeMarketPanel({
   async function perform(request: NativeTradeRequest) {
     setMessage("");
     setError("");
+    setProof(null);
+    // Server and phone clocks may differ by a little; a minute is plenty.
+    const since = Date.now() - 60_000;
     try {
       const submitted = await onTrade(request);
+      if (submitted)
+        setProof({ id: `latest:market:${since}`, account: request.accountId });
       if (!submitted) {
         await load(true, request.tokenId);
         return;
@@ -125,19 +151,19 @@ export function NativeMarketPanel({
       setMessage(
         confirmed
           ? request.kind === "list"
-            ? "Your Aura is listed and held in market escrow."
+            ? tr("Your Aura is on the market. It stays held until sold or cancelled.")
             : request.kind === "buy"
-              ? "Your native Aura is in your wallet."
+              ? tr("The Aura is yours. Find it in your Secured collection.")
               : request.kind === "cancel"
-                ? "Your Aura has returned to your wallet."
-                : "Your market balance was withdrawn."
-          : "Confirmation is still pending. Refresh ownership and market balance before retrying.",
+                ? tr("Your Aura is back in your Secured collection.")
+                : tr("Your market balance was withdrawn.")
+          : tr("Still confirming. Refresh your collection and balance before retrying."),
       );
     } catch (e) {
       setError(
         e instanceof Error
           ? e.message
-          : "The native market action could not finish.",
+          : tr("The market action could not finish. Try again."),
       );
     }
   }
@@ -149,47 +175,49 @@ export function NativeMarketPanel({
   };
   return (
     <section className="native-market">
-      <div className="section-label">
-        <h2>Native Aura market</h2>
-        <span className="badge purple">NEAR TESTNET</span>
+      <div className="section-label market-head">
+        <h2>
+          {tr("Secured Aura market")}</h2>
+        <span className="badge purple" title={tr("Secured Auras trade for test NEAR, which has no monetary value.")}>{tr("TEST NETWORK")}</span>
+        <button
+          className="market-refresh"
+          aria-label={tr("Refresh market")}
+          title={tr("Refresh market")}
+          disabled={!!busy}
+          onClick={() => void load(true).catch(() => {})}
+        >
+          <ArrowClockwise size={20} aria-hidden="true" />
+        </button>
       </div>
-      <p>
-        Trade your wallet-owned Aura NFTs for NEAR. Listed NFTs stay in market
-        escrow until sold or cancelled. Sale proceeds and refunds are withdrawn
-        by your wallet.
-      </p>
       {error && <p role="alert">{error}</p>}
       {message && (
         <p role="status" className="native-market-message">
-          {message}
+          {message}{" "}
+          {proof && <ChainLink label chain={proof} />}
         </p>
       )}
-      <button
-        className="button secondary"
-        disabled={!!busy}
-        onClick={() => void load(true).catch(() => {})}
-      >
-        Refresh native market
-      </button>
       {loading ? (
-        <p role="status">Loading the native market…</p>
+        <p role="status">{tr("Loading the market…")}</p>
       ) : data?.status !== "available" ? (
-        <p>The native market is not available on this deployment yet.</p>
+        <p>{tr("The secured market is not available here yet.")}</p>
       ) : (
         <>
+          {showOffers && data.stats.version !== 2 && section === "offers" && (
+            <p>{tr("Signed offers are not available on this market yet.")}</p>
+          )}
+          {showListings && (
+            <>
           {!player.wallets.length ? (
             <button
               className="primary-button"
               disabled={!!busy}
               onClick={() => void onConnect()}
             >
-              Connect NEAR to trade
-            </button>
+              {tr("Link a NEAR account to trade")}</button>
           ) : (
             <div className="native-market-wallet">
               <label>
-                Trading wallet
-                <select
+                {tr("Trading account")}<select
                   value={accountId}
                   onChange={(e) => setAccount(e.target.value)}
                 >
@@ -202,15 +230,15 @@ export function NativeMarketPanel({
               </label>
               <span className="native-address">{accountId}</span>
               <p>
-                Available to withdraw:{" "}
+                {tr("Available to withdraw:")}{" "}
                 <strong>
                   {balance
                     ? formatNativeNear(balance.credit) + " test NEAR"
-                    : "not available"}
+                    : tr("not available")}
                 </strong>
                 {balance?.withdrawing !== "0" &&
                   balance?.withdrawing &&
-                  " · withdrawal pending"}
+                  tr(" · withdrawal pending")}
               </p>
               <button
                 className="button secondary"
@@ -224,15 +252,12 @@ export function NativeMarketPanel({
                   void perform({ ...requestBase, kind: "withdraw" })
                 }
               >
-                Withdraw market balance
-              </button>
+                {tr("Withdraw market balance")}</button>
             </div>
           )}
           {data.stats.paused && (
             <p role="status">
-              New trades are paused. You can still cancel active listings and
-              withdraw confirmed balances.
-            </p>
+              {tr("Trading is paused. You can still cancel your listings and withdraw your balance.")}</p>
           )}
           {!!player.wallets.length && (
             <form
@@ -251,23 +276,20 @@ export function NativeMarketPanel({
                   });
                 } catch (e) {
                   setPriceError(
-                    e instanceof Error ? e.message : "Choose a valid price.",
+                    e instanceof Error ? e.message : tr("Choose a valid price."),
                   );
                   priceInput.current?.focus();
                 }
               }}
             >
-              <h3>List an Aura you own</h3>
+              <h3>{tr("List an Aura you own")}</h3>
               {!owned.length ? (
                 <p>
-                  Your NEAR wallet has no available Aura NFT to list. Claim one
-                  from a park chest or cancel an existing listing.
-                </p>
+                  {tr("You have no secured Aura to list. Secure one you earned, or cancel an existing listing.")}</p>
               ) : (
                 <>
                   <label>
-                    Aura
-                    <select
+                    {tr("Aura")}<select
                       value={tokenId}
                       onChange={(e) => setToken(e.target.value)}
                     >
@@ -279,8 +301,7 @@ export function NativeMarketPanel({
                     </select>
                   </label>
                   <label>
-                    Price in test NEAR
-                    <input
+                    {tr("Price in test NEAR")}<input
                       ref={priceInput}
                       aria-invalid={!!priceError}
                       aria-describedby={
@@ -301,23 +322,22 @@ export function NativeMarketPanel({
                       {priceError}
                     </p>
                   )}
-                  <p>
-                    You can list up to three Auras. Your wallet approves the NFT
-                    transfer into escrow. Testnet market storage is sponsored by
-                    the project.
-                  </p>
+                  <Details>
+                    <p>
+                      {tr("You can list up to three Auras. You approve handing the Aura to the market; storage is covered by the project.")}</p>
+                  </Details>
                   <button
                     className="primary-button"
                     disabled={unavailable || data.stats.paused || !tokenId}
                   >
-                    List on NEAR
-                  </button>
+                    {tr("List Aura")}</button>
                 </>
               )}
             </form>
           )}
           {!data.listings.length ? (
-            <p>No native Auras are listed on this page yet.</p>
+            <EmptyState art="chest" title={tr("No Auras on the market yet")}>
+              {tr("Secure an Aura from a chest and list it for other explorers.")}</EmptyState>
           ) : (
             <div className="native-offers">
               {data.listings.map((offer) => (
@@ -328,28 +348,37 @@ export function NativeMarketPanel({
                     <AuraArt small />
                   )}
                   <div>
-                    <h3>{offer.token?.title || "Native Aura"}</h3>
+                    <h3>{offer.token?.title || tr("Native Aura")}</h3>
                     <span className="native-address">{offer.token_id}</span>
-                    <strong className="native-price">
-                      {formatNativeNear(offer.price)} test NEAR
-                    </strong>
+                    {offer.state === "deposited" ? (
+                      <strong className="native-price">
+                        {tr("Signed offers only")}</strong>
+                    ) : (
+                      <strong className="native-price">
+                        {formatNativeNear(offer.price)} {" "}{tr("test NEAR")}</strong>
+                    )}
                     <span className="native-address">
-                      Seller: {offer.seller}
+                      {tr("Seller:")}{" "}{offer.seller}
                     </span>
                     <span>
-                      {offer.state === "buying"
-                        ? "Purchase confirming"
+                      {offer.state === "buying" || offer.state === "filling"
+                        ? tr("Sale confirming")
+                        : offer.state === "deposited"
+                          ? tr("Held by the market for signed offers")
                         : offer.state === "returning"
-                          ? "Returning to owner"
+                          ? tr("Returning to owner")
                           : offer.available
-                            ? "NFT held in market escrow"
-                            : "Ownership confirmation unavailable"}
+                            ? tr("Held by the market")
+                            : tr("Ownership not confirmed")}
                     </span>
                   </div>
                   {offer.seller === accountId ? (
                     <button
                       className="button secondary"
-                      disabled={unavailable || offer.state !== "active"}
+                      disabled={
+                        unavailable ||
+                        (offer.state !== "active" && offer.state !== "deposited")
+                      }
                       onClick={() =>
                         void perform({
                           ...requestBase,
@@ -359,9 +388,11 @@ export function NativeMarketPanel({
                         })
                       }
                     >
-                      Cancel listing
+                      {offer.state === "deposited"
+                        ? tr("Return to collection")
+                        : tr("Cancel listing")}
                     </button>
-                  ) : (
+                  ) : offer.state === "deposited" ? null : (
                     <button
                       className="primary-button"
                       disabled={
@@ -377,29 +408,61 @@ export function NativeMarketPanel({
                         })
                       }
                     >
-                      Buy Aura
-                    </button>
+                      {tr("Buy Aura")}</button>
                   )}
                 </article>
               ))}
             </div>
           )}
+            </>
+          )}
+          {showOffers && (
+          <Suspense fallback={null}>
+          <IntentsPanel
+            signer={orderSigner}
+            onEnabled={setIntentsOn}
+            owned={
+              wardrobe?.accounts
+                .find((a) => a.accountId === orderSigner?.accountId)
+                ?.items.filter((i) => i.kind === "aura") || []
+            }
+          />
+          </Suspense>
+          )}
+          {/* NEAR Intents is the market; the v2 signed offers show only on a
+              host without the verifier manifest. */}
+          {showOffers && !intentsOn && (
+          <SignedOrdersPanel
+            data={data}
+            signer={orderSigner}
+            owned={
+              wardrobe?.accounts
+                .find((a) => a.accountId === orderSigner?.accountId)
+                ?.items.filter((i) => i.kind === "aura") || []
+            }
+            balance={balances.find(
+              (a) => a.accountId === orderSigner?.accountId,
+            )}
+            busy={busy}
+            onChanged={async () => (await load(true)).state}
+          />
+          )}
+          {showListings && (
           <div className="native-market-pages">
             <button
               className="button secondary"
               disabled={!!busy || page === 0}
               onClick={() => setPage(Math.max(0, page - 24))}
             >
-              Previous offers
-            </button>
+              {tr("Previous offers")}</button>
             <button
               className="button secondary"
               disabled={!!busy || !data.truncated}
               onClick={() => setPage(page + 24)}
             >
-              Next offers
-            </button>
+              {tr("Next offers")}</button>
           </div>
+          )}
         </>
       )}
     </section>

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { openDatabase, createPlayer } from "../server/database.mjs";
 import { createCreatorServices } from "../server/creators/services.mjs";
 import { createCreatorApi } from "../server/creators/api.mjs";
+import { GameError } from "../server/domain.mjs";
 
 const ORIGIN = "https://questlayer.example";
 const ROOT = ORIGIN + "/api/creator-community";
@@ -188,6 +189,30 @@ test("the player route journey creates, quotes, submits, follows, starts and saf
       .items[0].title,
     DRAFT.title,
   );
+  // The host's paid-access gate runs before a start and its refusal is relayed.
+  const gated = [];
+  const lockedApi = createCreatorApi({
+    ...f.options,
+    authenticate: () => f.viewer,
+    async admitStart(actor, questId, quest) {
+      gated.push([actor, questId, quest.title]);
+      throw new GameError(
+        "Unlock this quest before starting it.",
+        402,
+        "CREATOR_ACCESS_REQUIRED",
+      );
+    },
+  });
+  const locked = await lockedApi(
+    new Request(ROOT + "/quests/river/participation", {
+      method: "POST",
+      headers: { origin: ORIGIN, "content-type": "application/json" },
+      body: JSON.stringify({ operationId: f.op() }),
+    }),
+  );
+  assert.equal(locked.status, 402);
+  assert.equal((await locked.json()).code, "CREATOR_ACCESS_REQUIRED");
+  assert.deepEqual(gated, [[f.viewer, "river", DRAFT.title]]);
   const start = { operationId: f.op() };
   const receipt = await f.request("/quests/river/participation", {
     method: "POST",

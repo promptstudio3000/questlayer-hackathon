@@ -5,6 +5,7 @@ import {
 import { assert } from "../domain.mjs";
 import { nearAccountId } from "../identity/near.mjs";
 import { isDeepStrictEqual } from "node:util";
+import { NETWORK } from "./network.mjs";
 
 export const TASK_CONTRACT = "questlayer-tasks-20261031.testnet";
 export const TASK_POLICY = "sponsored-tasks-testnet-v1";
@@ -12,7 +13,7 @@ export const TASK_STORAGE = "50000000000000000000000";
 const GAS = "100000000000000";
 const EXPECTED = {
   policy_version: TASK_POLICY,
-  network: "testnet",
+  network: NETWORK,
   max_tasks: 128,
   max_submissions: 32,
   max_reward_yocto: "1000000000000000000000000",
@@ -242,7 +243,7 @@ export class NativeTasks {
     assert(
       m &&
         m.schema === 1 &&
-        m.network === "testnet" &&
+        m.network === NETWORK &&
         m.contractId === TASK_CONTRACT &&
         typeof m.codeHash === "string" &&
         m.codeHash.length > 10 &&
@@ -284,8 +285,8 @@ export class NativeTasks {
       deadline,
     );
     assert(
-      status.chain_id === "testnet" && !status.sync_info?.syncing,
-      "Task RPC is not a synchronized testnet node.",
+      status.chain_id === NETWORK && !status.sync_info?.syncing,
+      `Task RPC is not a synchronized ${NETWORK} node.`,
       503,
     );
     const h = block?.header;
@@ -451,7 +452,7 @@ export class NativeTasks {
     }
     return {
       status: "available",
-      network: "testnet",
+      network: NETWORK,
       contractId: TASK_CONTRACT,
       codeHash: m.codeHash,
       policy: TASK_POLICY,
@@ -499,7 +500,7 @@ export class NativeTasks {
               }
             : {
                 status: "unavailable",
-                network: "testnet",
+                network: NETWORK,
                 contractId: TASK_CONTRACT,
                 accountId: account,
                 selectedTaskId: taskId,
@@ -678,7 +679,7 @@ export class NativeTasks {
     }
     this.linked(player, account);
     return {
-      network: "testnet",
+      network: NETWORK,
       contractId: TASK_CONTRACT,
       receiverId: TASK_CONTRACT,
       signerId: account,
@@ -737,7 +738,7 @@ export class NativeTasks {
     );
     assert(
       quote &&
-        quote.network === "testnet" &&
+        quote.network === NETWORK &&
         quote.receiverId === TASK_CONTRACT &&
         quote.contractId === TASK_CONTRACT &&
         quote.codeHash === manifest.codeHash &&
@@ -881,7 +882,7 @@ export class NativeTasks {
     this.pending.clear();
     return {
       confirmed: true,
-      network: "testnet",
+      network: NETWORK,
       contractId: TASK_CONTRACT,
       accountId,
       transactionHash,

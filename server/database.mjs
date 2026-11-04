@@ -7,15 +7,46 @@ import {
   recordSchemaVersions,
 } from "./schema-compatibility.mjs";
 import { dirname } from "node:path";
+import "./ai/schema.mjs";
+// Created at server start by default, so every tool that opens the database must know it.
+import "./daily-board/schema.mjs";
+import "./badges/schema.mjs";
+import "./chain-ledger/schema.mjs";
+import "./season/schema.mjs";
+import "./map-read-indexes.mjs";
+import "./hot-path-indexes.mjs";
 import { GOLD, id, hash, dayKey, levelFor, assert } from "./domain.mjs";
+import { withChain } from "./native/chain-feed.mjs";
 
+// Request handlers call db.prepare(sql) inline, so SQLite compiled the same
+// SQL again on every request (~10 µs each, dozens per request; load test,
+// 3 Nov). Reuse one statement per SQL text. all/get/run reset the statement,
+// and SQLite re-prepares it on its own after a schema change. Do not nest two
+// iterate() calls over the same SQL text on this connection.
+export const STATEMENT_CACHE_SIZE = 4000;
+export function cachePreparedStatements(db) {
+  const prepare = db.prepare.bind(db),
+    cache = new Map();
+  db.prepare = (sql, ...rest) => {
+    if (rest.length || typeof sql !== "string") return prepare(sql, ...rest);
+    let statement = cache.get(sql);
+    if (!statement) {
+      statement = prepare(sql);
+      if (cache.size >= STATEMENT_CACHE_SIZE)
+        cache.delete(cache.keys().next().value);
+      cache.set(sql, statement);
+    }
+    return statement;
+  };
+  return db;
+}
 export function openDatabase(
   path = defaultDatabasePath(),
 ) {
   if (path !== ":memory:" && existsSync(path)) preflightDatabase(path);
   if (path !== ":memory:")
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-  const db = new DatabaseSync(path);
+  const db = cachePreparedStatements(new DatabaseSync(path));
   try {
     db.exec(
       "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; BEGIN IMMEDIATE",
@@ -179,6 +210,19 @@ export function history(db, player, kind, title, gold = 0, meta = {}) {
     Date.now(),
   );
 }
+// The redeem_aura transaction of a secured Aura, for the explorer link. Relayed
+// claims are in relay_jobs (managed-accounts module) when the relayer is on.
+const relayJobsTables = new WeakMap();
+function nativeClaimTxColumn(db) {
+  let has = relayJobsTables.get(db);
+  if (!has) {
+    has = !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='relay_jobs'").get();
+    if (has) relayJobsTables.set(db, true);
+  }
+  return has
+    ? ",CASE WHEN a.state='minted' THEN (SELECT r.transaction_hash FROM relay_jobs r WHERE r.player_id=i.player_id AND r.method_name='redeem_aura' AND r.state='confirmed' AND json_extract(r.call,'$.args.claim_id')=a.claim_id ORDER BY r.seq DESC LIMIT 1) END AS native_claim_tx"
+    : "";
+}
 export function playerView(db, playerId) {
   const player = db.prepare("SELECT * FROM players WHERE id=?").get(playerId);
   const progression = demoProgression(db, playerId, player);
@@ -196,14 +240,18 @@ export function playerView(db, playerId) {
       .all(playerId),
     inventory: db
       .prepare(
-        "SELECT i.*,a.claim_id AS native_claim_id,a.receiver_id AS native_claim_receiver,a.state AS native_claim_state,a.expires_at AS native_claim_expires_at,a.token_id AS native_token_id FROM inventory i LEFT JOIN native_awards a ON a.item_id=i.id WHERE i.player_id=? ORDER BY i.created_at",
+        `SELECT i.*,a.claim_id AS native_claim_id,a.receiver_id AS native_claim_receiver,a.state AS native_claim_state,a.expires_at AS native_claim_expires_at,a.token_id AS native_token_id${nativeClaimTxColumn(db)} FROM inventory i LEFT JOIN native_awards a ON a.item_id=i.id WHERE i.player_id=? ORDER BY i.created_at`,
       )
       .all(playerId),
-    history: db
-      .prepare(
-        "SELECT * FROM history WHERE player_id=? ORDER BY created_at DESC LIMIT 80",
-      )
-      .all(playerId),
+    history: withChain(
+      db,
+      playerId,
+      db
+        .prepare(
+          "SELECT * FROM history WHERE player_id=? ORDER BY created_at DESC LIMIT 80",
+        )
+        .all(playerId),
+    ),
     wallets: db
       .prepare(
         "SELECT account_id,verified_at FROM wallet_links WHERE player_id=?",

@@ -121,6 +121,9 @@ export type CreatorMe = {
 };
 export type PublicCreatorQuest = {
   requirement?: CreatorObservationRequirement;
+  place?: CreatorPlace;
+  /** Paid access price in yoctoNEAR; absent means free. */
+  price?: string;
   id: string;
   revision: number;
   title: string;
@@ -148,6 +151,8 @@ export type OwnedCreatorQuest = {
     title: string;
     description: string;
     requirement?: CreatorObservationRequirement;
+    place?: CreatorPlace;
+    price?: string;
   };
   lockedXp: number;
   openParticipations: number;
@@ -163,9 +168,15 @@ export type CreatorParticipation = {
     title: string;
     description: string;
     requirement?: CreatorObservationRequirement;
+    place?: CreatorPlace;
   };
   rewardStatus: "not-configured";
   creator?: { id: string; displayName: string | null };
+};
+export type CreatorPlaceTemplate = "visit" | "trail" | "chest";
+export type CreatorPlace = {
+  template: CreatorPlaceTemplate;
+  points: Array<{ lat: number; lng: number }>;
 };
 export type CreatorObservationRequirement = {
   template: "observation-v1";

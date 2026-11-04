@@ -1,19 +1,41 @@
 import { readFileSync, statSync } from "node:fs";
 import { Account, KeyPairSigner } from "near-api-js";
 import { atomic } from "../database.mjs";
-import { assert, id, dayKey, hash } from "../domain.mjs";
-import { PLZEN } from "../spatial/city-pack.mjs";
-import { shiftDate } from "../spatial/calendar.mjs";
-import { getOrPrepareCityPlan } from "../world-planner.mjs";
+import { assert, id, hash } from "../domain.mjs";
+import { publishNativeDays } from "./day-publication.mjs";
+import { auditDistribution } from "./distribution.mjs";
 import {
-  nativeManifest,
-  publicationArgs,
+  nativePublicationMatches,
+  storedNativeManifest,
   rewardMessage,
 } from "./reward-manifest.mjs";
 import { assertTestnetRpc } from "../identity/near.mjs";
 import { NativeContractReader } from "./reader.mjs";
 import { VAULT_POOLS } from "./vaults.mjs";
+import { NETWORK } from "./network.mjs";
+import {
+  nativeDayContract,
+  onContractSql,
+  quarantineForeignDay,
+  recordCurrentDay,
+} from "./day-contracts.mjs";
+import {
+  MAP_CHAIN_METHODS,
+  mapChainEnabled,
+  runMapChainWorker,
+} from "../map-rewards/chain.mjs";
 const METHODS = ["publish_day", "close_day", "claim", "maintain_vault"];
+// The key is either the native set alone or the native set plus the map-day
+// methods (contracts/rewards map_days.rs); nothing else.
+export function allowedWorkerMethods(names) {
+  if (!Array.isArray(names) || new Set(names).size !== names.length) return null;
+  const withMap = [...METHODS, ...MAP_CHAIN_METHODS];
+  if (names.length === METHODS.length && names.every((m) => METHODS.includes(m)))
+    return METHODS;
+  if (names.length === withMap.length && names.every((m) => withMap.includes(m)))
+    return withMap;
+  return null;
+}
 export async function rewardTransport(
   provider,
   contractId,
@@ -27,7 +49,7 @@ export async function rewardTransport(
   );
   const config = JSON.parse(readFileSync(keyPath));
   assert(
-    config.network === "testnet" && config.accountId === contractId,
+    config.network === NETWORK && config.accountId === contractId,
     "Wrong worker identity.",
     503,
   );
@@ -51,19 +73,19 @@ export async function rewardTransport(
     finality: "final",
   });
   const p = access.permission?.FunctionCall;
+  const allowed = allowedWorkerMethods(p?.method_names);
   assert(
     p &&
       p.receiver_id === contractId &&
       p.allowance !== null &&
       BigInt(p.allowance) <= 10n ** 24n &&
-      p.method_names.length === METHODS.length &&
-      p.method_names.every((m) => METHODS.includes(m)),
+      allowed,
     "Worker key must have only bounded reward methods.",
     503,
   );
   const account = new Account(contractId, provider, signer);
-  return async (method, args) => {
-    assert(METHODS.includes(method), "Unsupported worker method.");
+  const send = async (method, args) => {
+    assert(allowed.includes(method), "Unsupported worker method.");
     const result = await account.callFunctionRaw({
       contractId,
       methodName: method,
@@ -79,6 +101,8 @@ export async function rewardTransport(
     );
     return result.transaction?.hash || result.transaction_outcome?.id;
   };
+  send.mapDays = allowed.length > METHODS.length;
+  return send;
 }
 export async function runRewardWorker(
   native,
@@ -198,76 +222,86 @@ export async function runRewardWorker(
         }
       }
       // Retire only after every accepted receipt for that day is authoritative.
+      // Days of another rewards contract (an older generation) are quarantined
+      // and skipped, so they never stop the audit or publication. A failing day
+      // of this contract does not stop the other closures or the audit, but it
+      // still withholds new publication: the chain then differs from what we
+      // committed, which is a reason to stop, not to carry on.
+      let retireError = null;
+      const contractId = native.contractId;
+      const onContract = onContractSql(db);
       for (const row of db
         .prepare(
-          "SELECT id,body FROM native_days WHERE state='published' ORDER BY day LIMIT 10",
+          `SELECT * FROM native_days d WHERE state='published'${onContract} ORDER BY day LIMIT 10`,
         )
-        .all()) {
-        const m = JSON.parse(row.body);
-        if (
-          clock() < m.endsAt + 86400000 ||
-          db
-            .prepare(
-              "SELECT 1 FROM native_reward_claims WHERE day_id=? AND state!='confirmed'",
-            )
-            .get(row.id)
-        )
-          continue;
-        renew();
-        let day = await native.view("get_day", { day_id: row.id }, true);
-        if (!day?.closed) await sendOwned("close_day", { day_id: row.id });
-        day = await native.view("get_day", { day_id: row.id }, true);
-        assert(day?.closed, "Day closure has not confirmed.", 503);
-        writeOwned(
-          "UPDATE native_days SET state='closed',updated_at=? WHERE id=?",
-          clock(),
-          row.id,
-        );
-      }
-      for (const day of [dayKey(clock()), shiftDate(dayKey(clock()))]) {
-        renew();
-        const dayId = `plzen-${day}-v1`;
-        let row = db.prepare("SELECT * FROM native_days WHERE id=?").get(dayId);
-        if (!row) {
-          const plan = getOrPrepareCityPlan(db, PLZEN, day, clock()),
-            treasury = await native.view("get_treasury", {}, true),
-            m = nativeManifest(plan, treasury);
-          if (!m) continue;
+        .all(...(onContract ? [contractId] : []))) {
+        try {
+          const m = storedNativeManifest(row);
+          if (
+            clock() < m.endsAt + 86400000 ||
+            db
+              .prepare(
+                "SELECT 1 FROM native_reward_claims WHERE day_id=? AND state!='confirmed'",
+              )
+              .get(row.id)
+          )
+            continue;
+          renew();
+          let day = await native.view("get_day", { day_id: row.id }, true);
+          const owner = nativeDayContract(db, row.id);
+          if (!owner) {
+            // Legacy row with no recorded contract: a published day that the
+            // current contract does not know was published on an older one.
+            if (!day) {
+              quarantineForeignDay(
+                writeOwned,
+                row.id,
+                `Published day is absent from ${contractId}; it belongs to an earlier rewards contract.`,
+                clock(),
+              );
+              continue;
+            }
+            recordCurrentDay(writeOwned, row.id, contractId, clock());
+          }
+          assert(
+            nativePublicationMatches(m, day, { closed: day?.closed === true }),
+            "Native day differs from the durable manifest before closure.",
+            503,
+          );
+          if (!day?.closed) await sendOwned("close_day", { day_id: row.id });
+          day = await native.view("get_day", { day_id: row.id }, true);
+          assert(
+            nativePublicationMatches(m, day, { closed: true }),
+            "Day closure has not confirmed against its original publication.",
+            503,
+          );
           writeOwned(
-            "INSERT OR IGNORE INTO native_days(id,day,body,hash,updated_at) VALUES(?,?,?,?,?)",
-            m.id,
-            m.day,
-            JSON.stringify(m),
-            m.hash,
+            "UPDATE native_days SET state='closed',updated_at=? WHERE id=?",
             clock(),
+            row.id,
           );
-          row = db.prepare("SELECT * FROM native_days WHERE id=?").get(dayId);
-        }
-        if (row.state !== "prepared") continue;
-        const m = JSON.parse(row.body);
-        let confirmed = await native.view("get_day", { day_id: m.id }, true),
-          tx = row.transaction_hash;
-        if (!confirmed) {
-          tx = await sendOwned("publish_day", publicationArgs(m));
-          writeOwned(
-            "UPDATE native_days SET transaction_hash=? WHERE id=?",
-            tx,
-            m.id,
+        } catch (error) {
+          if (/lease expired/i.test(String(error.message))) throw error;
+          retireError ||= new Error(
+            `${String(error.message).slice(0, 160)} (day ${row.id})`,
           );
-          confirmed = await native.view("get_day", { day_id: m.id }, true);
+          retireError.status ||= error.status;
         }
-        assert(
-          confirmed?.manifest_hash === m.hash && !confirmed.closed,
-          "Native day differs from the durable manifest.",
-          503,
-        );
-        writeOwned(
-          "UPDATE native_days SET state='published',updated_at=?,transaction_hash=? WHERE id=?",
-          clock(),
-          tx,
-          m.id,
-        );
       }
+      // Settled claims and closures first; then prove the treasury still adds
+      // up before reserving anything new. Drift stops publication only.
+      const audit = await auditDistribution(native, { clock });
+      native.lastAudit = audit;
+      renew();
+      // The audit result is stored either way; the day's own error is the
+      // more specific report.
+      if (retireError) throw retireError;
+      assert(
+        audit.status !== "drift",
+        `Distribution audit found drift (${(audit.failed || []).join(", ")}); new days are not published.`,
+        503,
+      );
+      await publishNativeDays(native, { clock, renew, writeOwned, sendOwned });
     } catch (error) {
       settlementError = error;
     }
@@ -341,11 +375,24 @@ export async function runRewardWorker(
                   : "refresh";
           }
           if (action) {
-            await sendOwned("maintain_vault", {
+            const transactionHash = await sendOwned("maintain_vault", {
               vault_id: v.accountId,
               action,
             });
             state = await reader.view("get_state", {}, true);
+            // One line per maintenance call so yield-cycle steps stay auditable.
+            console.log(
+              JSON.stringify({
+                event: "vault-maintenance",
+                vault: v.accountId,
+                action,
+                transactionHash,
+                stage: state.stage,
+                gameCredit: state.game_credit,
+                gamePaid: state.game_paid,
+                at: new Date(clock()).toISOString(),
+              }),
+            );
           }
           writeOwned(
             "INSERT INTO native_vault_jobs VALUES(?,?,?,?,NULL) ON CONFLICT(account_id) DO UPDATE SET next_check=excluded.next_check,last_action=excluded.last_action,last_state=excluded.last_state,last_error=NULL",
@@ -410,6 +457,15 @@ export function startRewardWorker(
         );
         enteredWorker = true;
         await runRewardWorker(native, send);
+        // Map days ride on the same key once it allows the map methods.
+        if (mapChainEnabled() && send.mapDays)
+          await runMapChainWorker(native.db, {
+            call: send,
+            signer: native.signer,
+            contractId: native.contractId,
+          }).catch((error) =>
+            console.error("Map chain worker:", String(error.message).slice(0, 200)),
+          );
       } catch (error) {
         console.error(
           "Native reward worker:",

@@ -16,7 +16,7 @@ Evidence is in `output/qa/W12-startup/`, including the actual previous public en
 
 ## Open tabs across deployments
 
-Lazy wallet, EVM and 3D modules may be requested long after the initial page load. An open page can still refer to a previous release's hashed filename. Deployment therefore retains public build assets under `/opt/ps3000/apps/auratrail/assets` and configures the server's `STATIC_ASSET_DIR` to use this pool as a narrowly scoped fallback.
+Lazy wallet, EVM and 3D modules may be requested long after the initial page load. An open page can still refer to a previous release's hashed filename. Deployment therefore retains public build assets under `/opt/ps3000/apps/questlayer-hackathon/assets` and configures the server's `STATIC_ASSET_DIR` to use this pool as a narrowly scoped fallback.
 
 `deploy/retain-static-assets.py` copies only regular, hash-named public assets from release `dist/assets` directories. It never copies `.data`, account credentials, runtime settings, databases, upload folders or application source. Publication uses atomic replacement for new files; an existing hash with different contents aborts deployment. The pool has a 256 MiB budget and 32 MiB single-file limit. Current and five recent releases are protected; unreferenced files expire after seven days. A failed application activation retains the previous release and its referenced files.
 

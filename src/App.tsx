@@ -1,21 +1,71 @@
+import { EmptyState } from "./EmptyState";
+import { XpBar, useLevelTable } from "./XpBar";
+import { levelProgress } from "./levels";
 import {
   AdventureResultDialog,
   AdventureResultResume,
   AdventureResultHistoryButton,
-} from "./AdventureResults";
+  PendingNativeTransactions,
+  ChainSettings,
+  WalletPanel,
+  FundPanel,
+  Bounties,
+  AutoSocialProfile,
+  ChainLink,
+  CreatorCommunity,
+  CommunityBonusVote,
+  MapNotes,
+  NativeCollectionControl,
+  NativeTasks,
+  Inventory,
+  AccountSessions,
+  DeviceKeys,
+  NativeLevelRewards,
+  NativeMarketPanel,
+  NativeExpeditions,
+  NativeEconomyPanel,
+  RewardFundingPage,
+  TodaysPot,
+  SecureAndShare,
+  FuelTheCity,
+  NativeStaking,
+  AuraClaims,
+  WispRolls,
+  NativeWardrobe,
+  NativeProfilePanel,
+  preloadPanels,
+  ActorSheet,
+  BadgeBook,
+  NearbyMarket,
+  GoldShop,
+  PlaceMessages,
+  EmotePicker,
+} from "./lazy-panels";
+import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
+import type { RollCall } from "./WispRolls";
+// Styles of the split-off screens stay in the main stylesheet, in their old
+// order, so nothing shifts while a screen's script is still loading.
+import "./adventure-results.css";
+import "./pending-native-transactions.css";
+import "./creator-community.css";
+import "./community-bonus-vote.css";
 import { useAdventureResults } from "./useAdventureResults";
 import {
   adventureItemForEquip,
   type AdventureResult,
 } from "./adventure-results";
-import { PendingNativeTransactions } from "./PendingNativeTransactions";
-import { CreatorCommunity } from "./CreatorCommunity";
+import {
+  assertCreatorQuote,
+  type CreatorPaymentQuote,
+  type CreatorPaymentRequest,
+} from "./creator-money-quote";
 import { useAppNavigation } from "./useAppNavigation";
 import { createReadEpoch } from "./read-epoch";
 import { usePickupFeedback } from "./usePickupFeedback";
 import { demoPickupScope } from "./pickup-feedback";
 import { canContinueDemoCollection } from "./demo-collection";
 import { PickupSummary, PickupAnnouncement } from "./PickupSummary";
+import { distanceLabel, units, CoinIcon, Badge } from "./app-bits";
 import {
   GameObjectArt,
   questObjectPresentation,
@@ -25,12 +75,13 @@ import {
 import { makeNativeObjective } from "./native-objective";
 import { useAdventureSelection } from "./useAdventureSelection";
 import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
-import { sendConfirmedNative } from "./confirmed-native-transaction";
-import { MapNotes } from "./MapNotes";
+import { walletSigner, type NativeSigner } from "./native-signer";
+import { useInvisibleAccount } from "./useInvisibleAccount";
+import "./map-notes.css";
 import { useNativeGame } from "./useNativeGame";
 import { useNativeAutoCollect } from "./useNativeAutoCollect";
-import { NativeCollectionControl } from "./NativeCollectionControl";
-import { NativeTasks } from "./NativeTasks";
+import "./native-collection.css";
+import "./native-tasks.css";
 import {
   assertTaskQuote,
   type TaskRequest,
@@ -38,32 +89,50 @@ import {
 } from "./native-task-quote";
 import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
-import { Inventory } from "./Inventory";
-import { AccountSessions } from "./AccountSessions";
-import { NativeLevelRewards, type NativeMilestone } from "./NativeLevelRewards";
+import type { ActorView } from "./actor-types";
+import "./inventory.css";
+import { indexedDbKeyStore } from "./player-key";
+import type { NativeMilestone, Progress } from "./NativeLevelRewards";
 import {
   assertNativeLevelClaim,
   type NativeLevelClaim,
 } from "./native-level-claim";
-import { NativeMarketPanel } from "./NativeMarketPanel";
-import { NativeExpeditions } from "./NativeExpeditions";
-import { NativeEconomyPanel } from "./NativeEconomyPanel";
-import { NativeStaking } from "./NativeStaking";
+import type { MarketCall } from "./SignedOrdersPanel";
+import type { ReviewedNativeTransaction } from "./confirmed-native-transaction";
+import {
+  deviceOrderSigner,
+  walletOrderSigner,
+  type MessageWallet,
+  type OrderSigner,
+} from "./order-signers";
+import "./play-ui.css";
+import "./reward-funding.css";
+import "./secure-share.css";
+import "./offline-gate.css";
+import "./fuel-the-city.css";
+import "./native-staking.css";
 import {
   assertVaultQuote,
   type VaultQuote,
   type VaultRequest,
 } from "./native-vault-quote";
 import "./styles.css";
+import "./theme-accents.css";
+import "./compact-ui.css";
+import "./mobile-sheets.css";
+import { HudXpRing } from "./HudXpRing";
+import { RewardBursts } from "./RewardBursts";
+import { pushBurst, type RewardBurst } from "./reward-burst";
+import type { ChainRef } from "./chain-proof";
 import type { NativeTradeRequest } from "./types";
-import { AuraClaims } from "./AuraClaims";
-import type { NativeAuraClaim } from "./types";
-import { NativeWardrobe, nativeAppearanceItems } from "./NativeWardrobe";
-import { NativeProfilePanel, SOCIAL_TESTNET } from "./NativeProfile";
+import type { NativeAuraClaim, NativeMarketState } from "./types";
+import { nativeAppearanceItems } from "./native-appearance";
+import { publishNoteRecord, type NoteRecordKind } from "./note-record";
 import type { NativeProfileQuote } from "./types";
 import { assertProfileQuote } from "./native-profile-quote";
 import type { NativeWardrobeState, NativeItem } from "./types";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -85,7 +154,6 @@ import {
   Plus,
   Minus,
   X,
-  ArrowRight,
   ArrowUpRight,
   Sparkle,
   Coins,
@@ -93,8 +161,8 @@ import {
   Clock,
   Check,
   Leaf,
-  ArrowLeft,
   ChatCircle,
+  Smiley,
   PaperPlane,
   SignOut,
   ShieldCheck,
@@ -109,18 +177,48 @@ import {
   GearSix,
   UsersThree,
   Footprints,
+  UserCircle,
   Path,
   ArrowUUpLeft,
+  ArrowClockwise,
+  WifiSlash,
+  Flame,
+  Vibrate,
+  SpeakerHigh,
+  PersonSimpleRun,
+  BookOpen,
+  MagnifyingGlass,
 } from "@phosphor-icons/react";
+import { ArrowRight, ArrowLeft } from "./dir-icons";
+import { ArrowRight as PhArrowRight } from "@phosphor-icons/react";
+import { Details, ScreenTabPanel, ScreenTabs } from "./ScreenTabs";
 import {
-  startRegistration,
-  startAuthentication,
-} from "@simplewebauthn/browser";
+  BAG_TABS,
+  COMMUNITY_TABS,
+  MARKET_TABS,
+  PROFILE_TABS,
+  ProfileHero,
+  ProfileTile,
+  SettingsSwitch,
+  LanguageSetting,
+  communityTabOf,
+  creatorSection,
+  profileTabOf,
+  type CommunityTab,
+  type ProfileTab,
+  EXPLORE_TABS,
+} from "./screens";
+// Passkey helpers load on first use, outside the welcome screen's first load.
+const webauthn = () => import("@simplewebauthn/browser");
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
+import { DailyBoard } from "./DailyBoard";
+import { SeasonCard } from "./Season";
 import { Character } from "./Character";
-import { DeferredGameMap as GameMap } from "./DeferredGameMap";
-import { Ghost, AuraArt } from "./Ghost";
+import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
+import { useCreatorPlaces } from "./useCreatorPlaces";
+import { Ghost, AuraArt, BrandLogo } from "./Ghost";
+import { artUrl } from "./art-registry";
 import type {
   Player,
   World,
@@ -133,60 +231,71 @@ import type {
   Bounty,
   Quest,
 } from "./types";
+import {
+  EXPLORER_BASE,
+  NEAR_NETWORK,
+  NETWORK_LABEL,
+  SOCIAL_CONTRACT_ID,
+  onNearNetwork,
+} from "./near-network.ts";
+import { nearestDiscovery, poiQuestOutlook } from "./nearest-discovery.ts";
+import { FirstSessionCoach, useFirstSession } from "./FirstSession";
+import type { FirstStepId } from "./first-session";
+import {
+  cue,
+  loadFeedbackPreferences,
+  prefersReducedMotion,
+  previewSound,
+  setFeedbackPreferences,
+  subscribeFeedback,
+  type FeedbackPreferences,
+} from "./feedback";
+import LandmarkClue from "./LandmarkClue";
+import { headingTo, metersBetween } from "./map-motion.ts";
+import { useDemoWalk } from "./useDemoWalk";
+import { DemoControls } from "./DemoControls";
+import { registerChainTrades } from "./chain-trades";
+import { tr } from "./i18n";
 
 type Tab =
   | "explore"
   | "inventory"
   | "market"
   | "fund"
+  | "funding"
   | "wallet"
   | "messages"
   | "bounties"
   | "community"
   | "settings"
-  | "expeditions";
+  | "expeditions"
+  | "fuel"
+  | "shop"
+  | "places";
 const HOME = { lat: 49.74745, lng: 13.3774 };
+/** A searched spot stands for its H3 res-7 cell (≈1.2 km edge) on the server. */
+const SEARCH_SPACING_M = 650;
 const nav = [
-  { id: "explore", label: "Explore", icon: Compass },
-  { id: "inventory", label: "Inventory", icon: Backpack },
-  { id: "market", label: "Market", icon: Storefront },
-  { id: "community", label: "Community", icon: UsersThree },
-  { id: "wallet", label: "Wallet", icon: Wallet },
+  { id: "explore", get label() { return tr("Explore"); }, icon: Compass },
+  { id: "inventory", get label() { return tr("Inventory"); }, icon: Backpack },
+  { id: "community", get label() { return tr("Community"); }, icon: UsersThree },
+  { id: "settings", get label() { return tr("Profile"); }, icon: UserCircle },
 ] as const;
 function navigationActive(tab: Tab, id: string) {
   return (
     tab === id ||
-    (id === "community" && ["messages", "bounties"].includes(tab)) ||
-    (id === "explore" && tab === "expeditions")
+    (id === "community" && ["messages", "bounties", "places"].includes(tab)) ||
+    (id === "explore" && ["expeditions", "funding"].includes(tab)) ||
+    (id === "inventory" && (tab === "market" || tab === "shop")) ||
+    (id === "settings" && ["wallet", "fund", "fuel"].includes(tab))
   );
 }
 const rarityNames: Record<string, string> = {
-  common: "Common",
-  rare: "Rare",
-  epic: "Epic",
-  legendary: "Legendary",
+  get common() { return tr("Common"); },
+  get rare() { return tr("Rare"); },
+  get epic() { return tr("Epic"); },
+  get legendary() { return tr("Legendary"); },
 };
-function units(v: string) {
-  const n = Number(v.replace(",", "."));
-  return Number.isFinite(n) ? Math.round(n * GOLD) : 0;
-}
-function CoinIcon() {
-  return (
-    <span className="gold-icon" aria-hidden="true">
-      <GameObjectArt kind="coin" size={20} />
-    </span>
-  );
-}
-function Badge({
-  children,
-  tone = "purple",
-}: {
-  children: ReactNode;
-  tone?: string;
-}) {
-  return <span className={`badge ${tone}`}>{children}</span>;
-}
-
 export default function App() {
   const [map3D, setMap3D] = useState(() => {
     try {
@@ -210,10 +319,19 @@ export default function App() {
   };
   const worldOwner = useRef<string | undefined>(undefined);
   const [player, setPlayer] = useState<Player | null>(null),
+    [clueChoice, setClueChoice] = useState<Record<string, string>>({}),
     [loaded, setLoaded] = useState(false),
+    [meUnreachable, setMeUnreachable] = useState(false),
     [worldData, setWorld] = useState<World | null>(null),
     [position, setPosition] = useState<Point>(HOME),
     [fix, setFix] = useState<Fix | null>(null),
+    // Explorer sheet: today's discoveries, or player tasks and Secrets nearby.
+    // A #task= / #secret= share link opens Nearby directly.
+    [exploreView, setExploreView] = useState<"discoveries" | "nearby">(() =>
+      /^#(task|secret)=/.test(location.hash) ? "nearby" : "discoveries",
+    ),
+    // Course over ground from the GPS, when the device reports one.
+    [gpsCourse, setGpsCourse] = useState<number | null>(null),
     [arena, setArena] = useState(true),
     [globe, setGlobe] = useState(false),
     [overview, setOverview] = useState(false),
@@ -225,8 +343,31 @@ export default function App() {
     [presenceUntil, setPresenceUntil] = useState(0),
     [others, setOthers] = useState<NearbyExplorer[]>([]),
     [showNpc, setShowNpc] = useState(false),
+    [actorOpen, setActorOpen] = useState<ActorView | null>(null),
+    // GOLD spending (QGOLD stream 4): own emote and frame, lures and place pins.
+    [myEmote, setMyEmote] = useState<{ id: string; until: number } | null>(null),
+    [myFrame, setMyFrame] = useState<string | null>(null),
+    [goldMapData, setGoldMapData] = useState<GoldMap | null>(null),
+    [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
+    [emotePicker, setEmotePicker] = useState(false),
     [now, setNow] = useState(Date.now()),
     [menu, setMenu] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackPreferences>(() =>
+    loadFeedbackPreferences(),
+  );
+  useEffect(() => subscribeFeedback(setFeedback), []);
+  // Once there is a player, fetch the map and the split-off screens in the
+  // background so later taps do not wait for the network.
+  const hasPlayer = !!player;
+  useEffect(() => {
+    if (!hasPlayer) return;
+    void preloadGameMap().catch(() => {});
+    const idle =
+      window.requestIdleCallback ??
+      ((f: () => void) => window.setTimeout(f, 200));
+    idle(() => preloadPanels());
+  }, [hasPlayer]);
+  const firstSession = useFirstSession(player);
   const world =
     worldOwner.current === player?.id && worldData?.arena === arena
       ? worldData
@@ -239,8 +380,17 @@ export default function App() {
   const creatorsEnabled =
     creatorCapability?.playerId === player?.id &&
     creatorCapability?.enabled === true;
-  const { tab, walletView, sheetExpanded, taskRealm, notesView, creatorView } =
-    navigation;
+  const creatorPlaces = useCreatorPlaces(player?.id ?? null);
+  const {
+    tab,
+    walletView,
+    sheetExpanded,
+    taskRealm,
+    notesView,
+    creatorView,
+    profileView,
+    marketView,
+  } = navigation;
   const navigationContext = useRef({ signature: "", revision: 0 });
   const navigationSignature = JSON.stringify([
     tab,
@@ -249,6 +399,8 @@ export default function App() {
     taskRealm,
     notesView,
     creatorView,
+    profileView,
+    marketView,
   ]);
   if (navigationContext.current.signature !== navigationSignature)
     navigationContext.current = {
@@ -260,7 +412,40 @@ export default function App() {
     setSheetExpanded = navigation.setter("sheetExpanded"),
     setTaskRealm = navigation.setter("taskRealm"),
     setNotesView = navigation.setter("notesView"),
-    setCreatorView = navigation.setter("creatorView");
+    setCreatorView = navigation.setter("creatorView"),
+    setMarketView = navigation.setter("marketView");
+  const profileTab = profileTabOf(tab, profileView);
+  const showProfileTabs = tab === "settings" || tab === "fuel" || tab === "wallet";
+  function chooseProfileTab(next: ProfileTab) {
+    if (next === "stake") setTab("fuel");
+    else if (next === "rewards") setTab("wallet");
+    else navigation.update({ tab: "settings", profileView: next });
+  }
+  const communityTab = communityTabOf(tab, creatorView);
+  const showCommunityTabs =
+    tab === "community" ||
+    tab === "bounties" ||
+    tab === "messages" ||
+    tab === "places";
+  function chooseCommunityTab(next: CommunityTab) {
+    if (next === "tasks") setTab("bounties");
+    else if (next === "notes") setTab("messages");
+    else if (next === "places") setTab("places");
+    else
+      navigation.update({
+        tab: "community",
+        creatorView:
+          creatorSection(creatorView) === next
+            ? creatorView
+            : { page: next === "creators" ? "creators" : "community" },
+      });
+  }
+  // Locked staker chips (src/LockedChip.tsx) open the stake screen.
+  useEffect(() => {
+    const open = () => setTab("fuel");
+    window.addEventListener("questlayer:open-stake", open);
+    return () => window.removeEventListener("questlayer:open-stake", open);
+  }, [setTab]);
   const [nativeWardrobe, setNativeWardrobe] =
       useState<NativeWardrobeState | null>(null),
     [nativeError, setNativeError] = useState("");
@@ -282,7 +467,7 @@ export default function App() {
         setNativeError(
           error instanceof Error
             ? error.message
-            : "NEAR inventory is unavailable.",
+            : tr("Your secured collection could not load. Try again in a moment."),
         );
       }
       throw error;
@@ -313,6 +498,7 @@ export default function App() {
   const [walletChoices, setWalletChoices] = useState<
     { id: string; name: string; icon: string; website: string }[] | null
   >(null);
+  const [walletChoiceKind, setWalletChoiceKind] = useState<"near" | "evm">("near");
   const walletChoice = useRef<{
     resolve: (id: string) => void;
     reject: (error: Error) => void;
@@ -324,9 +510,12 @@ export default function App() {
     if (walletId) pending?.resolve(walletId);
     else
       pending?.reject(
-        Object.assign(new Error("Wallet connection cancelled."), {
-          code: "WALLET_CANCELLED",
-        }),
+        Object.assign(
+          new Error(tr("Account link cancelled. You can keep exploring.")),
+          {
+            code: "WALLET_CANCELLED",
+          },
+        ),
       );
   }
   const [nativePlay, setNativePlay] = useState(() => {
@@ -353,6 +542,42 @@ export default function App() {
   const discovery = adventureResults.selection;
   const nativeAccount = useNativePlayAccount(player);
   const playAccount = nativeAccount.account;
+  const invisible = useInvisibleAccount(player?.id);
+  const recordAccount =
+    invisible.status === "ready" && invisible.accountId
+      ? { accountId: invisible.accountId, managed: true }
+      : player?.wallets[0]?.account_id
+        ? { accountId: player.wallets[0].account_id, managed: false }
+        : null;
+  const invisibleEnsure = invisible.ensure,
+    invisibleStatus = invisible.status;
+  useEffect(() => {
+    // Prepare the invisible account in the background; play never waits for it.
+    if (player?.id) void invisibleEnsure();
+  }, [player?.id, invisibleEnsure]);
+  useEffect(() => {
+    // The managed account appears in the player's linked accounts once ready.
+    // When the host also attests native rewards, play moves to the real
+    // ledger automatically unless the player chose a ledger in Advanced.
+    if (invisibleStatus !== "ready") return;
+    void me();
+    let chosen = false;
+    try {
+      chosen = localStorage.getItem("questlayer-play-mode-chosen") === "1";
+    } catch {}
+    if (chosen) return;
+    void fetch("/api/health", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((h) => {
+        if (
+          h?.nativeRewards?.status &&
+          h.nativeRewards.status !== "not-configured"
+        )
+          setNativePlay(true);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invisibleStatus]);
   const setPlayAccount = nativeAccount.select;
   const demoObjective = useAdventureSelection(
     player?.id,
@@ -545,6 +770,31 @@ export default function App() {
     : (player?.availableXp ?? player?.xp ?? null);
   const hudLevel =
     hudXp === null ? null : 1 + Math.floor(Math.sqrt(Number(hudXp) / 100));
+  const levelTable = useLevelTable();
+  const hudProgress =
+    hudXp === null ? null : levelProgress(Number(hudXp), levelTable);
+  // Floating reward feedback over the map (src/RewardBursts.tsx).
+  const [bursts, setBursts] = useState<RewardBurst[]>([]);
+  const burst = (b: Omit<RewardBurst, "id" | "until">) =>
+    setBursts((list) => pushBurst(list, b, Date.now()));
+  useEffect(() => {
+    if (!bursts.length) return;
+    const t = setTimeout(
+      () => setBursts((list) => list.filter((b) => b.until > Date.now())),
+      Math.max(50, Math.min(...bursts.map((b) => b.until)) - Date.now()),
+    );
+    return () => clearTimeout(t);
+  }, [bursts]);
+  // Level ups get their own burst; the first read of a player never does.
+  const shownLevel = useRef<{ player?: string; level?: number }>({});
+  useEffect(() => {
+    const level = hudProgress?.level;
+    if (!player || level === undefined || nativePlay) return;
+    const seen = shownLevel.current;
+    if (seen.player === player.id && seen.level !== undefined && level > seen.level)
+      burst({ tone: "level", title: tr("Level {0}!", { 0: level }), detail: tr("Keep exploring") });
+    shownLevel.current = { player: player.id, level };
+  }, [hudProgress?.level, player?.id, nativePlay]);
   const nextWorldRefresh = useRef(0),
     collecting = useRef(new Set<string>()),
     collectionRun = useRef<AbortController | null>(null),
@@ -589,11 +839,125 @@ export default function App() {
   function notify(text: string, error = false) {
     setToast({ text, error });
   }
+  // Place badges (docs/BADGES.md): with real GPS on, check the fix against
+  // the notable places every 30 s or after ~40 m of movement. Cosmetic only.
+  const badgeCheck = useRef<{ at: number; lat: number; lng: number } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!player || arena || !fix) return;
+    const last = badgeCheck.current;
+    const moved = last
+      ? Math.hypot(
+          (fix.lat - last.lat) * 111_000,
+          (fix.lng - last.lng) * 111_000 * Math.cos((fix.lat * Math.PI) / 180),
+        )
+      : Infinity;
+    if (last && Date.now() - last.at < 30_000 && moved < 40) return;
+    if (last && Date.now() - last.at < 8_000) return;
+    badgeCheck.current = { at: Date.now(), lat: fix.lat, lng: fix.lng };
+    api<{ earned: { name: string; nameCs: string; icon: string }[] }>(
+      "/badges/check",
+      { fix },
+    )
+      .then((r) => {
+        if (!r.earned?.length) return;
+        notify(
+          tr("Badge earned: {0}", { 0: r.earned.map((b) => `${b.icon} ${b.nameCs || b.name}`).join(", ") }),
+        );
+        window.dispatchEvent(new Event("questlayer:badges"));
+      })
+      .catch(() => {
+        /* Badges are optional; a weak fix just tries again later. */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fix, arena, player?.id]);
   function updateOwnedPlayer(next: Player) {
     if (latest.current.player?.id !== next.id) return;
     playerReads.current.invalidate();
     setPlayer((current) => (current?.id === next.id ? next : current));
   }
+  // Auras from chests, levels and Wisp rolls are secured on NEAR on their own:
+  // the explorer account signs silently and the relayer pays. An Aura the
+  // player is wearing waits until it is taken off, so their look never changes
+  // under them. One at a time, with a back-off per Aura so a full edition or a
+  // spent daily relay budget never loops. localStorage
+  // questlayer-auto-secure=0 turns it off on this device.
+  const autoSecure = useRef({
+    running: false,
+    retryAt: new Map<string, number>(),
+    levelsAt: 0,
+  });
+  const [autoSecureTick, setAutoSecureTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setAutoSecureTick((t) => t + 1), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const autoSecureSigner = invisible.signer;
+  const autoSecureClaims = !!nativeWardrobe?.claimsEnabled;
+  useEffect(() => {
+    let off = false;
+    try {
+      off = localStorage.getItem("questlayer-auto-secure") === "0";
+    } catch {}
+    const managed = autoSecureSigner;
+    const state = autoSecure.current;
+    if (off || state.running || !player || !managed) return;
+    if (!player.wallets.some((w) => w.account_id === managed.accountId)) return;
+    const now = Date.now();
+    const item = autoSecureClaims
+      ? player.inventory.find(
+          (i) =>
+            i.kind === "aura" &&
+            !i.equipped &&
+            i.native_claim_state !== "minted" &&
+            (!i.native_claim_state ||
+              i.native_claim_receiver === managed.accountId) &&
+            (state.retryAt.get(i.id) ?? 0) <= now,
+        )
+      : undefined;
+    const levels = state.levelsAt <= now;
+    if (!item && !levels) return;
+    state.running = true;
+    void (async () => {
+      let secured = 0;
+      try {
+        if (item) {
+          try {
+            if (await secureAuraOnChain(item, managed, managed.accountId)) {
+              secured++;
+              state.retryAt.delete(item.id);
+            } else state.retryAt.set(item.id, Date.now() + 2 * 60_000);
+          } catch {
+            state.retryAt.set(item.id, Date.now() + 15 * 60_000);
+          }
+        } else {
+          state.levelsAt = Date.now() + 10 * 60_000;
+          try {
+            const progress = await api<Progress>("/native/progression", {
+              accountId: managed.accountId,
+            });
+            for (const m of progress.milestones || []) {
+              if (!m.claimable && m.state !== "issued") continue;
+              if ((await secureLevelOnChain(m, managed, managed.accountId)) === "minted")
+                secured++;
+            }
+          } catch {
+            // Level rewards need the native rewards ledger; try again later.
+          }
+        }
+        if (secured) {
+          await refreshNative(true).catch(() => {});
+          notify(tr("Your Aura is secured."));
+        }
+      } finally {
+        state.running = false;
+        await me().catch(() => {});
+        setAutoSecureTick((t) => t + 1);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player, autoSecureSigner, autoSecureClaims, autoSecureTick]);
   async function action<T>(
     name: string,
     fn: () => Promise<T>,
@@ -611,10 +975,14 @@ export default function App() {
         e &&
         typeof e === "object" &&
         "code" in e &&
-        e.code === "WALLET_CANCELLED"
+        (e.code === "WALLET_CANCELLED" || e.code === "CANCELLED")
       )
         return undefined;
-      notify(e instanceof Error ? e.message : "Something went wrong.", true);
+      cue("error");
+      notify(
+        e instanceof Error ? e.message : tr("Something went wrong. Try again."),
+        true,
+      );
     } finally {
       if (ownerContext() === owner && version === actionVersion.current) {
         setBusy("");
@@ -629,24 +997,79 @@ export default function App() {
       }
     }
   }
+  // GOLD spending: lures and place pins near the player, refreshed every 30 s.
+  const goldSpot = `${Math.round(position.lat * 500)}:${Math.round(position.lng * 500)}`;
+  async function refreshGoldMap() {
+    if (!player) return;
+    try {
+      setGoldMapData(await readGoldMap(position.lat, position.lng));
+    } catch {
+      /* The map keeps the last pins; the next tick retries. */
+    }
+  }
+  async function readGoldLook() {
+    if (!player) return;
+    try {
+      setMyFrame((await goldShop()).look?.frame ?? null);
+    } catch {
+      /* No frame shown until the shop answers. */
+    }
+  }
+  const clearPlaceOpen = useCallback(() => setPlaceOpenId(null), []);
+  useEffect(() => {
+    if (!player?.id) return;
+    void refreshGoldMap();
+    const timer = setInterval(() => void refreshGoldMap(), 30_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id, goldSpot]);
+  useEffect(() => {
+    if (player?.id) void readGoldLook();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id]);
+  async function publishPlace(targetId: string): Promise<boolean> {
+    const account = recordAccount?.accountId;
+    const result = await action("place-record", async () => {
+      if (!account || !player) throw Error("Your explorer account is not ready yet.");
+      const { signer, accountId } = await signerForAccount(account);
+      const { publishPlaceRecord } = await import("./place-record");
+      const confirmed = await publishPlaceRecord({ call: api, signer, accountId, playerId: player.id, targetId });
+      notify(confirmed ? tr("Your message is now a public record on NEAR Social.") : tr("Record sent. Refresh in a moment to see it confirmed."));
+      return confirmed;
+    });
+    return result === true;
+  }
   async function me() {
     const token = playerReads.current.begin(ownerContext());
     try {
       const r = await api<{ player: Player }>("/me");
-      if (playerReads.current.isCurrent(token, ownerContext()))
+      if (playerReads.current.isCurrent(token, ownerContext())) {
         setPlayer(r.player);
+        setMeUnreachable(false);
+      }
     } catch (e) {
-      if (
-        playerReads.current.isCurrent(token, ownerContext()) &&
-        e instanceof ApiError &&
-        e.status === 401
-      )
+      if (!playerReads.current.isCurrent(token, ownerContext())) return;
+      if (e instanceof ApiError && e.status === 401) {
         setPlayer(null);
+        setMeUnreachable(false);
+      } else if (!(e instanceof ApiError) || e.status >= 500)
+        // No answer at all (offline, server restarting): don't show the
+        // first-run page to someone who already has an explorer.
+        setMeUnreachable(true);
     } finally {
       if (playerReads.current.isCurrent(token, ownerContext())) setLoaded(true);
     }
   }
-  async function loadWorld(location: Point, asArena: boolean) {
+  // Spots of this city world already searched for quests (H3 cells, server).
+  const searchedSpots = useRef<{ worldId: string; points: Point[] }>({
+    worldId: "",
+    points: [],
+  });
+  async function loadWorld(
+    location: Point,
+    asArena: boolean,
+    explore?: Point,
+  ) {
     collectionRun.current?.abort();
     collectionRun.current = null;
     const token = worldReads.current.begin(
@@ -655,18 +1078,44 @@ export default function App() {
     worldLoading.current = true;
     setBusy("world");
     try {
-      const w = await api<World>("/world", { location, arena: asArena });
+      const w = await api<World>("/world", {
+        location,
+        arena: asArena,
+        near: explore ? latest.current.position : location,
+        ...(explore ? { explore } : {}),
+      });
       if (
         worldReads.current.isCurrent(token, worldContext("replace")) &&
         w.arena === asArena
       ) {
         worldOwner.current = latest.current.player?.id;
+        const spots = searchedSpots.current;
+        if (spots.worldId !== w.id) {
+          spots.worldId = w.id;
+          spots.points = [];
+        }
+        spots.points.push(explore || location);
+        if (explore) {
+          const before = latest.current.world;
+          const added =
+            before?.id === w.id
+              ? w.zones.filter((z) => !before.zones.some((b) => b.id === z.id))
+                  .length
+              : 0;
+          notify(
+            added
+              ? tr("{0} new quest places found here.", { 0: added })
+              : tr("No new quests in this spot right now."),
+          );
+        }
         setWorld(w);
       }
     } catch (e) {
       if (worldReads.current.isCurrent(token, worldContext("replace")))
         notify(
-          e instanceof Error ? e.message : "Could not prepare the area.",
+          e instanceof Error
+            ? e.message
+            : tr("This area could not load. Try again in a moment."),
           true,
         );
     } finally {
@@ -687,8 +1136,10 @@ export default function App() {
       return;
     const token = worldReads.current.begin(worldContext("refresh"));
     try {
+      // Only the coins around the player (docs/PERFORMANCE-BUDGET.md).
+      const nearAt = `${state.position.lat.toFixed(5)},${state.position.lng.toFixed(5)}`;
       const w = await api<World>(
-        `/world?id=${encodeURIComponent(state.world.id)}`,
+        `/world?id=${encodeURIComponent(state.world.id)}&near=${nearAt}`,
       );
       if (
         worldReads.current.isCurrent(token, worldContext("refresh")) &&
@@ -727,7 +1178,10 @@ export default function App() {
   }, [player?.id]);
   useEffect(() => {
     void me();
-    const a = () => setOnline(navigator.onLine);
+    const a = () => {
+      setOnline(navigator.onLine);
+      if (navigator.onLine && !latest.current.player) void me();
+    };
     window.addEventListener("online", a);
     window.addEventListener("offline", a);
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -770,8 +1224,15 @@ export default function App() {
         w ? { ...w, coins: w.coins.filter((c) => c.id !== d.id) } : w,
       );
     });
+    // Every explorer's discovery is broadcast: coalesce bursts into one map
+    // refresh so a busy city does not multiply world reads per client.
+    let questRefresh: ReturnType<typeof setTimeout> | null = null;
     s.addEventListener("quest", () => {
-      if (latest.current.player?.id === owner) void refreshWorld();
+      if (latest.current.player?.id !== owner || questRefresh) return;
+      questRefresh = setTimeout(() => {
+        questRefresh = null;
+        if (latest.current.player?.id === owner) void refreshWorld();
+      }, 2500);
     });
     s.addEventListener("market", () => void me());
     const sync = setInterval(() => {
@@ -782,8 +1243,46 @@ export default function App() {
     return () => {
       s.close();
       clearInterval(sync);
+      if (questRefresh) clearTimeout(questRefresh);
     };
   }, [player?.id]);
+  // City worlds add POI quests per area searched (server H3 cells). Walking
+  // far from every searched spot searches the new one; a moved map offers a
+  // "Search this area" button for the spot in the middle of the screen.
+  const [mapCenter, setMapCenter] = useState<Point | null>(null);
+  const exploreAt = useRef(0);
+  const searchedNear = (p: Point, within: number) =>
+    searchedSpots.current.worldId === world?.id &&
+    searchedSpots.current.points.some((s) => meters(s, p) < within);
+  useEffect(() => {
+    if (!player || !world?.cityId || nativePlay || busy === "world") return;
+    if (searchedNear(position, SEARCH_SPACING_M)) return;
+    if (Date.now() - exploreAt.current < 20_000) return;
+    exploreAt.current = Date.now();
+    void loadWorld(arena ? HOME : position, arena, position);
+  }, [player?.id, world?.id, position, nativePlay]);
+  const searchHere =
+    !!player &&
+    !!world?.cityId &&
+    !nativePlay &&
+    !globe &&
+    tab === "explore" &&
+    !!mapCenter &&
+    busy !== "world" &&
+    !searchedNear(mapCenter, SEARCH_SPACING_M)
+      ? mapCenter
+      : null;
+  // The world carries only nearby coins: fetch the next ring once the player
+  // has walked (or jumped) a third of the way to its edge.
+  const nearRefreshAt = useRef(0);
+  useEffect(() => {
+    const ring = world?.coinsNear;
+    if (!player || !ring) return;
+    if (meters(position, ring) < ring.radiusM / 3) return;
+    if (Date.now() - nearRefreshAt.current < 3000) return;
+    nearRefreshAt.current = Date.now();
+    void refreshWorld();
+  }, [player?.id, world?.coinsNear, position]);
   useEffect(() => {
     if (!player) return;
     const t = setInterval(() => {
@@ -804,10 +1303,12 @@ export default function App() {
       collectionRun.current = request;
       const timeout = setTimeout(() => request.abort(), 15000);
       try {
+        const radius = (state.world.coinRadius ?? 18) - 1;
         const nearby = state.world.coins
           .filter(
             (c) =>
-              meters(state.position, c) < 17 && !collecting.current.has(c.id),
+              meters(state.position, c) < radius &&
+              !collecting.current.has(c.id),
           )
           .slice(0, 2);
         for (const coin of nearby) {
@@ -826,7 +1327,9 @@ export default function App() {
               player: Player;
               value: number;
               xp?: number;
+              find?: boolean;
               alreadyClaimed?: boolean;
+              chain?: ChainRef | null;
             }>(
               "/coins/claim",
               {
@@ -847,6 +1350,13 @@ export default function App() {
               w ? { ...w, coins: w.coins.filter((c) => c.id !== coin.id) } : w,
             );
             if (!result.alreadyClaimed && !latest.current.nativePlay) {
+              cue("coin");
+              const paid = `+${result.xp ?? 0} XP · +${gold(result.value, 2)} GOLD`;
+              burst(
+                result.find
+                  ? { tone: "find", title: tr("Street find!"), detail: paid, chain: result.chain }
+                  : { tone: "coin", title: paid, chain: result.chain },
+              );
               pickupFeedback.confirm(
                 demoPickupScope(state.player.id, state.world.id, state.arena),
                 {
@@ -922,61 +1432,13 @@ export default function App() {
     };
   }, [player?.id]);
   useEffect(() => {
-    if (!arena || nativePlay || !player) return;
-    const key = (e: KeyboardEvent) => {
-      if (
-        e.defaultPrevented ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.altKey ||
-        document.querySelector("dialog[open]") ||
-        (e.target as HTMLElement).closest(
-          "button,a,main,form,[contenteditable=true]",
-        )
-      )
-        return;
-      if (
-        (e.target as HTMLElement).matches("input,textarea,select") ||
-        ![
-          "ArrowUp",
-          "ArrowDown",
-          "ArrowLeft",
-          "ArrowRight",
-          "w",
-          "a",
-          "s",
-          "d",
-        ].includes(e.key)
-      )
-        return;
-      e.preventDefault();
-      setPosition((p) => ({
-        lat:
-          p.lat +
-          (["ArrowUp", "w"].includes(e.key)
-            ? 0.000065
-            : ["ArrowDown", "s"].includes(e.key)
-              ? -0.000065
-              : 0),
-        lng:
-          p.lng +
-          (["ArrowRight", "d"].includes(e.key)
-            ? 0.0001
-            : ["ArrowLeft", "a"].includes(e.key)
-              ? -0.0001
-              : 0),
-      }));
-    };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, [arena, nativePlay, player?.id]);
-  useEffect(() => {
     if (!presence || !player) return;
     if (document.visibilityState !== "visible") {
       setPresence(false);
       return;
     }
     const leaseId = crypto.randomUUID();
+    setPresenceUntil(0);
     let active = true;
     const send = (renew = false) => {
       if (!active || document.visibilityState !== "visible") return;
@@ -989,10 +1451,21 @@ export default function App() {
       })
         .then((r) => {
           if (!active) return;
-          if (!r.enabled) setPresence(false);
-          else if (r.expiresAt) setPresenceUntil(r.expiresAt);
+          if (!r.enabled) {
+            setPresence(false);
+            notify(tr("Position sharing ended. Share again to stay visible."));
+          } else if (r.expiresAt) setPresenceUntil(r.expiresAt);
         })
-        .catch(() => {});
+        .catch(() => {
+          // The first lease decides whether sharing started at all; a missed
+          // renewal is retried on the next tick.
+          if (!active || !renew) return;
+          setPresence(false);
+          notify(
+            tr("Your position could not be shared. Check your connection and try again."),
+            true,
+          );
+        });
     };
     void send(true);
     const t = setInterval(() => send(false), 10_000);
@@ -1028,12 +1501,155 @@ export default function App() {
     },
     [],
   );
-  function move(p: Point) {
-    if (arena && !nativePlay) {
-      setPosition(p);
+  // City demo only: the pad / arrows / WASD walk the explorer the way it
+  // faces. Real play has no manual movement; the position is the GPS fix.
+  const demoWalk = useDemoWalk({
+    enabled: !!player && arena && !nativePlay,
+    setPosition,
+    onWalk: () => {
       setOverview(false);
       setFollow(true);
+    },
+  });
+  const [demoTarget, setDemoTarget] = useState<
+    (Point & { label: string; coinId?: string; questId?: string }) | null
+  >(null);
+  // A target that is gone (coin collected, quest done) stops being pointed at;
+  // before, the pad kept saying "Street find" after the pickup.
+  useEffect(() => {
+    if (!demoTarget || !world) return;
+    const gone =
+      (demoTarget.coinId &&
+        !world.coins.some((c) => c.id === demoTarget.coinId && !c.claimant)) ||
+      (demoTarget.questId &&
+        world.quests.find((q) => q.id === demoTarget.questId)?.completed);
+    if (gone) return setDemoTarget(null);
+    // A trail moves on to its next stop: point there.
+    const quest = demoTarget.questId
+      ? world.quests.find((q) => q.id === demoTarget.questId)
+      : null;
+    const at = quest ? quest.nextPoint || quest : null;
+    if (at && (at.lat !== demoTarget.lat || at.lng !== demoTarget.lng))
+      setDemoTarget({ ...demoTarget, lat: at.lat, lng: at.lng });
+  }, [world, demoTarget]);
+  useEffect(() => {
+    if (!arena || nativePlay) setDemoTarget(null);
+  }, [arena, nativePlay]);
+  useEffect(() => {
+    // Arriving within a few metres settles the explorer on the spot, so thin
+    // path zones still count in the demo. GPS play never snaps.
+    if (demoTarget && metersBetween(position, demoTarget) < 3) {
+      if (arena && !nativePlay)
+        setPosition({ lat: demoTarget.lat, lng: demoTarget.lng });
+      setDemoTarget(null);
     }
+  }, [position, demoTarget]);
+  const [streetFindTarget, setStreetFindTarget] = useState<string | null>(null);
+  function goToStreetFind(coin: { id: string; lat: number; lng: number }) {
+    setStreetFindTarget(coin.id);
+    if (arena && !nativePlay) faceToward(coin, tr("Street find"), { coinId: coin.id });
+    else {
+      setFollow(false);
+      setOverview(false);
+    }
+  }
+  // First-session coach: every step points at an existing game action.
+  function nearestCoin(find: boolean) {
+    const coins = (world?.coins || []).filter(
+      (c) => !c.claimant && !!c.find === find,
+    );
+    let best: (typeof coins)[number] | null = null;
+    for (const c of coins)
+      if (!best || meters(position, c) < meters(position, best)) best = c;
+    return best;
+  }
+  function nearestChest() {
+    if (!world || !player) return null;
+    const zones = new Map(world.zones.map((z) => [z.id, z]));
+    let best: { quest: Quest; zone: Zone; d: number } | null = null;
+    for (const q of world.quests) {
+      const zone = q.zone_id ? zones.get(q.zone_id) : undefined;
+      if (
+        !zone ||
+        q.kind !== "chest" ||
+        q.completed ||
+        q.placeStatus === "closed" ||
+        zone.placeStatus === "closed" ||
+        q.tier > player.tier ||
+        q.opens_at > now ||
+        q.closes_at <= now
+      )
+        continue;
+      const d = meters(position, questPoint(q));
+      if (!best || d < best.d) best = { quest: q, zone, d };
+    }
+    return best;
+  }
+  function runFirstStep(step: FirstStepId) {
+    if (!player) return;
+    if (nativePlay) chooseLedger(false);
+    setTab("explore");
+    if (step !== "chest") setSelected(null);
+    if (step === "find" || step === "coin") {
+      const coin = nearestCoin(step === "find") || nearestCoin(step !== "find");
+      if (!coin) {
+        setSheetExpanded(true);
+        return;
+      }
+      setSheetExpanded(false);
+      if (coin.find) goToStreetFind(coin);
+      else if (arena)
+        faceToward(coin, coin.find ? tr("Street find") : tr("Coin"), { coinId: coin.id });
+      else setFollow(false);
+      return;
+    }
+    if (step === "chest") {
+      const chest = nearestChest();
+      if (chest) selectZone(chest.zone, chest.quest.id);
+      else setSheetExpanded(true);
+      return;
+    }
+    if (step === "aura") {
+      const aura = [...player.inventory]
+        .reverse()
+        .find((i) => i.kind === "aura" && !i.equipped && !i.native_claim_state);
+      if (!aura) {
+        setTab("inventory");
+        return;
+      }
+      void action("equip", async () => {
+        const r = await api<{ player: Player }>("/equip", {
+          itemId: aura.id,
+          desiredEquipped: true,
+        });
+        updateOwnedPlayer(r.player);
+        setSheetExpanded(false);
+        setFollow(true);
+        notify(tr("Equipped {0}. Your new glow is on the map.", { 0: aura.name }));
+      });
+      return;
+    }
+    if (step === "secure") {
+      const reward = adventureResults.results.find(
+        (r) => r.reward?.item?.kind === "aura",
+      );
+      if (reward) inspectAdventureResult(reward.id);
+      else setTab("inventory");
+    }
+  }
+  // Demo: turn the explorer toward a place; holding Forward walks there.
+  function faceToward(
+    p: Point,
+    label: string,
+    ref: { coinId?: string; questId?: string } = {},
+  ) {
+    if (!arena || nativePlay) return;
+    setOverview(false);
+    setFollow(true);
+    // The pad lives on the map: fold the sheet so it is there to walk with.
+    setSheetExpanded(false);
+    demoWalk.face(headingTo(latest.current.position, p));
+    setDemoTarget({ lat: p.lat, lng: p.lng, label, ...ref });
   }
   function chooseNativeQuest(index: number) {
     const q = nativeGame.state?.day?.quests.find((q) => q.index === index);
@@ -1094,13 +1710,17 @@ export default function App() {
     if (gps.current !== null) navigator.geolocation.clearWatch(gps.current);
     gps.current = null;
     setFix(null);
+    setGpsCourse(null);
     setArena(true);
     setPosition(HOME);
     void loadWorld(HOME, true);
   }
   async function locate() {
     if (!navigator.geolocation) {
-      notify("This browser does not support geolocation.", true);
+      notify(
+        tr("This browser cannot share your location. Keep exploring in the city demo."),
+        true,
+      );
       return;
     }
     const owner = ownerContext();
@@ -1135,9 +1755,20 @@ export default function App() {
             };
             setPosition(f);
             setFix(f);
+            const course = p.coords.heading;
+            if (
+              course !== null &&
+              Number.isFinite(course) &&
+              (p.coords.speed ?? 0) > 0.7
+            )
+              setGpsCourse(course);
           },
           () => {
-            if (current()) notify("Waiting for a fresh GPS fix.", true);
+            if (current())
+              notify(
+                tr("Waiting for a fresh GPS fix. Step into the open or try again in a moment."),
+                true,
+              );
           },
           { enableHighAccuracy: true, maximumAge: 0 },
         );
@@ -1146,26 +1777,72 @@ export default function App() {
         if (!current()) return;
         setBusy("");
         notify(
-          "Allow browser location access, or continue in the arena.",
+          tr("Allow location access, or keep exploring in the city demo."),
           true,
         );
       },
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
     );
   }
+  // The invisible account signs without a popup; an external wallet is the
+  // fallback when the player chose one or the managed account is not ready.
+  // Attaches a passkey to the explorer that is already playing, so the player
+  // keeps everything and can return from a synced device.
+  function chooseLedger(native: boolean) {
+    setNativePlay(native);
+    try {
+      localStorage.setItem("questlayer-play-mode-chosen", "1");
+    } catch {}
+  }
+  async function attachPasskey() {
+    await action("passkey", async () => {
+      const r = await api<{ options: any; challengeId: string }>(
+        "/passkey/options",
+        { action: "register", attach: true },
+      );
+      const { startRegistration } = await webauthn();
+      const response = await startRegistration({ optionsJSON: r.options });
+      const verified = await api<{ player: Player }>("/passkey/verify", {
+        challengeId: r.challengeId,
+        response,
+      });
+      setPlayer(verified.player);
+      notify(tr("Your explorer is secured with a passkey."));
+    });
+  }
+  async function resolveSigner(): Promise<{
+    signer: NativeSigner;
+    accountId: string;
+  }> {
+    const managed = invisible.signer;
+    if (managed && (!playAccount || playAccount === managed.accountId))
+      return { signer: managed, accountId: managed.accountId };
+    const { wallet, accountId } = await chooseNearAccount();
+    return { signer: walletSigner(wallet, accountId), accountId };
+  }
+  // Public profile and note records name their account up front: the
+  // explorer account signs without a popup, any other linked one uses a wallet.
+  async function signerForAccount(account: string) {
+    const managed = invisible.signer;
+    if (managed && managed.accountId === account)
+      return { signer: managed, accountId: managed.accountId };
+    if (!managed && !playAccount) return resolveSigner();
+    const { wallet, accountId } = await chooseNearAccount();
+    return { signer: walletSigner(wallet, accountId), accountId };
+  }
   async function chooseNearAccount() {
     if (!nearConnector.current) {
       const { NearConnector } = await import("@hot-labs/near-connect");
       nearConnector.current = new NearConnector({
-        network: "testnet",
+        network: NEAR_NETWORK,
         autoConnect: false,
         features: {
-          testnet: true,
+          testnet: NEAR_NETWORK === "testnet",
           signMessage: true,
           signInWithoutAddKey: true,
         },
         footerBranding: {
-          heading: "QuestLayer · NEAR testnet",
+          heading: tr("QuestLayer · {0}", { 0: NETWORK_LABEL }),
           link: "https://near.org",
           linkText: "NEAR Protocol",
         },
@@ -1179,10 +1856,11 @@ export default function App() {
       .map(({ id, name, icon, website }) => ({ id, name, icon, website }));
     if (!choices.length)
       throw Error(
-        "No supported testnet wallet is available in this browser. You can still enter the demo.",
+        "No supported NEAR wallet app was found in this browser. You can still start exploring.",
       );
     const walletId = await new Promise<string>((resolve, reject) => {
       walletChoice.current = { resolve, reject };
+      setWalletChoiceKind("near");
       setWalletChoices(choices);
     });
     await new Promise<void>((resolve) =>
@@ -1190,7 +1868,10 @@ export default function App() {
     );
     const wallet = await connector.connect({ walletId });
     const accounts = await wallet.getAccounts();
-    if (!accounts[0]) throw new Error("The wallet did not return an account.");
+    if (!accounts[0])
+      throw new Error(
+        tr("The wallet did not return an account. Try again or pick another wallet."),
+      );
     return { wallet, accountId: accounts[0].accountId };
   }
   async function connectNear(
@@ -1199,7 +1880,7 @@ export default function App() {
     if (options.signIn) {
       options.name = options.name?.trim() || "Explorer";
       if (options.name.length < 2 || options.name.length > 24) {
-        notify("Your name must be 2–24 characters.", true);
+        notify(tr("Pick a name between 2 and 24 characters."), true);
         return;
       }
     }
@@ -1222,7 +1903,7 @@ export default function App() {
         message: c.message,
         recipient: c.recipient,
         nonce: Uint8Array.from(atob(c.nonce), (x) => x.charCodeAt(0)),
-        network: "testnet",
+        network: NEAR_NETWORK,
         signerId: accountId,
       });
       const r = await api<{ player: Player; returning?: boolean }>(
@@ -1237,9 +1918,43 @@ export default function App() {
       notify(
         options.signIn
           ? r.returning
-            ? "Welcome back. Your NEAR wallet restored your explorer."
-            : "Your NEAR explorer is ready. Demo GOLD remains separate."
-          : "NEAR account verified. Demo GOLD remains separate.",
+            ? tr("Welcome back, explorer. Your account restored your progress.")
+            : tr("Your explorer is ready. Practice GOLD stays separate from secured rewards.")
+          : tr("Account linked. Practice GOLD stays separate from secured rewards."),
+      );
+    });
+  }
+  // Ethereum wallets (MetaMask, Rabby): sign in, or link to this explorer.
+  // The wallet signs readable text only; the module loads on demand.
+  async function connectEthereum(options: { signIn?: boolean; name?: string } = {}) {
+    const name = options.name?.trim() || "Explorer";
+    if (options.signIn && (name.length < 2 || name.length > 24)) {
+      notify(tr("Pick a name between 2 and 24 characters."), true);
+      return;
+    }
+    await action("evm-wallet", async () => {
+      const evm = await import("./evm-wallet");
+      const wallets = await evm.discoverEvmWallets();
+      if (!wallets.length)
+        throw Error(tr("No Ethereum wallet was found in this browser. Install MetaMask or Rabby, or keep exploring without one."));
+      let choice = wallets[0];
+      if (wallets.length > 1) {
+        const id = await new Promise<string>((resolve, reject) => {
+          walletChoice.current = { resolve, reject };
+          setWalletChoiceKind("evm");
+          setWalletChoices(wallets.map(({ id, name, icon, website }) => ({ id, name, icon, website })));
+        });
+        choice = wallets.find((w) => w.id === id) || choice;
+      }
+      const r = await evm.signInWithEthereum(choice, { name, link: !options.signIn });
+      setPlayer(r.player);
+      if (options.signIn) setNativePlay(true);
+      notify(
+        options.signIn
+          ? r.returning
+            ? tr("Welcome back, explorer. Your account restored your progress.")
+            : tr("Your explorer is ready. Practice GOLD stays separate from secured rewards.")
+          : tr("Ethereum wallet linked. It can sign NEAR Intents trades for your explorer."),
       );
     });
   }
@@ -1253,27 +1968,25 @@ export default function App() {
       if (account) await refreshNative(true);
       notify(
         account
-          ? "Your NEAR outfit is on the map."
-          : "Your demo outfit is on the map.",
+          ? tr("Your secured outfit is on the map.")
+          : tr("Your practice outfit is on the map."),
       );
     });
   }
   async function tradeNative(request: NativeTradeRequest): Promise<boolean> {
     const result = await action("native-market", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked NEAR wallet shown for this trade.");
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
+        throw Error("Choose the linked account shown for this trade.");
       if (
-        !request.marketId.endsWith(".testnet") ||
+        !onNearNetwork(request.marketId) ||
         request.nftContractId !== nativeWardrobe?.contractId
       )
         throw Error(
-          "This native market is not configured for your testnet inventory.",
+          "This market is not set up for your secured collection yet.",
         );
       const listing = request.kind === "list",
         receiverId = listing ? request.nftContractId : request.marketId;
@@ -1295,10 +2008,9 @@ export default function App() {
         : request.kind === "withdraw"
           ? {}
           : { token_id: request.tokenId, listing_id: request.listingId };
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId,
           actions: [
@@ -1320,29 +2032,139 @@ export default function App() {
     });
     return result === true;
   }
+  // Signed-order market calls. The explorer's device key signs silently: free
+  // calls are relayed and money moves in self-paid transactions. A linked
+  // external wallet signs orders with signMessage and sends calls through the
+  // reviewed wallet flow, which confirms them on the server.
+  function marketTransaction(
+    signerId: string,
+    call: MarketCall,
+  ): ReviewedNativeTransaction {
+    if (!onNearNetwork(call.receiverId))
+      throw Error("This market is not on the game network.");
+    return {
+      network: NEAR_NETWORK,
+      signerId,
+      receiverId: call.receiverId,
+      actions: [
+        {
+          type: "FunctionCall",
+          params: {
+            methodName: call.methodName,
+            args: call.args,
+            gas: call.gas,
+            deposit: call.deposit,
+          },
+        },
+      ],
+    };
+  }
+  async function marketCall(
+    send: (signerId: string) => Promise<string | null | void>,
+    signerId: string,
+  ): Promise<string | null> {
+    let hash: string | null = null;
+    const result = await action("native-market", async () => {
+      hash = (await send(signerId)) || null;
+      await refreshNative(true);
+      return true;
+    });
+    if (result !== true)
+      throw Error("The action was not sent. Nothing changed.");
+    return hash;
+  }
+  const walletForOrders = useRef<{
+    accountId: string;
+    wallet: Awaited<ReturnType<typeof chooseNearAccount>>["wallet"];
+  } | null>(null);
+  async function orderWallet(accountId: string) {
+    if (walletForOrders.current?.accountId !== accountId) {
+      const chosen = await chooseNearAccount();
+      if (chosen.accountId !== accountId)
+        throw Error(`Choose the wallet for ${accountId} to sign this order.`);
+      walletForOrders.current = chosen;
+    }
+    return walletForOrders.current!.wallet;
+  }
+  const orderSigner: OrderSigner | null =
+    invisible.signer && invisible.deviceKey?.accountId
+      ? deviceOrderSigner(invisible.deviceKey, (call) =>
+          marketCall(
+            (id) =>
+              invisible.signer!.send(marketTransaction(id, call), {
+                playerId: player!.id,
+              }),
+            invisible.signer!.accountId,
+          ),
+        )
+      : player?.wallets[0]
+        ? walletOrderSigner(
+            player.wallets[0].account_id,
+            async () =>
+              (await orderWallet(
+                player.wallets[0].account_id,
+              )) as unknown as MessageWallet,
+            (call) =>
+              marketCall(async (id) => {
+                const wallet = await orderWallet(id);
+                await walletSigner(wallet, id).send(
+                  marketTransaction(id, call),
+                  { playerId: player!.id },
+                );
+                return null;
+              }, player!.wallets[0].account_id),
+          )
+        : null;
+  // NPC trades settle on NEAR from the NPC sheet (src/chain-trades.ts): the
+  // explorer account signs without a popup, a linked wallet confirms each step.
+  useEffect(() => {
+    if (!player) {
+      registerChainTrades(null);
+      return;
+    }
+    registerChainTrades({
+      async send(accountId, call) {
+        const managed = invisible.signer;
+        if (managed && managed.accountId === accountId)
+          return (
+            (await managed.send(marketTransaction(accountId, call), {
+              playerId: player.id,
+            })) || null
+          );
+        const { wallet, accountId: chosen } = await chooseNearAccount();
+        if (chosen !== accountId)
+          throw Error(`Choose the wallet for ${accountId} to sign this trade.`);
+        await walletSigner(wallet, chosen).send(marketTransaction(chosen, call), {
+          playerId: player.id,
+        });
+        return null;
+      },
+      secureItem: (itemId) =>
+        mintEarnedAura({ id: itemId } as Item).then((ok) => ok === true),
+      // NPC buys and sales settle on NEAR Intents, signed by the device key.
+      intentsKey: () =>
+        invisible.deviceKey?.accountId ? invisible.deviceKey : null,
+    });
+  });
   async function withdrawNativeReward(
     expectedAccount: string,
     contractId: string,
   ): Promise<boolean> {
     const result = await action("native-withdrawal", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked receiving wallet.");
+        throw Error("Choose the linked account that receives this reward.");
       const configured = await api<{ contractId: string }>(
         "/native/rewards?account=" + encodeURIComponent(accountId),
       );
-      if (
-        configured.contractId !== contractId ||
-        !contractId.endsWith(".testnet")
-      )
-        throw Error("The native reward contract changed. Refresh first.");
-      await sendConfirmedNative(
-        wallet,
+      if (configured.contractId !== contractId || !onNearNetwork(contractId))
+        throw Error("The reward rules changed. Refresh, then try again.");
+      await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId: contractId,
           actions: [
@@ -1365,18 +2187,17 @@ export default function App() {
   }
   async function operateNativeVault(request: VaultRequest): Promise<boolean> {
     const result = await action("native-staking", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked wallet shown for this position.");
+        throw Error("Choose the linked account shown for this position.");
       const quote = await api<VaultQuote>("/native/vaults/prepare", request);
       assertVaultQuote(quote, request);
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId: quote.receiverId,
           actions: [
@@ -1397,22 +2218,45 @@ export default function App() {
     });
     return result === true;
   }
+  async function operateCreatorPayment(
+    request: CreatorPaymentRequest,
+    expected: { contractId: string; price?: string },
+  ): Promise<boolean> {
+    const result = await action("creator-payment", async () => {
+      const { signer, accountId } = await resolveSigner();
+      if (!player?.wallets.some((w) => w.account_id === accountId))
+        throw Error("Link this account before paying a creator.");
+      const quote = await api<CreatorPaymentQuote>(
+        "/native/creators/prepare",
+        request,
+      );
+      assertCreatorQuote(quote, request, { accountId, ...expected });
+      await signer.send(
+        {
+          network: NEAR_NETWORK,
+          signerId: accountId,
+          receiverId: quote.receiverId,
+          actions: [quote.actions[0]],
+        },
+        { playerId: player!.id },
+      );
+      return true;
+    });
+    return result === true;
+  }
   async function operateNativeTask(request: TaskRequest): Promise<boolean> {
     const result = await action("native-task", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked wallet shown for this task.");
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
+        throw Error("Choose the linked account shown for this task.");
       const quote = await api<TaskQuote>("/native/tasks/prepare", request);
       assertTaskQuote(quote, request);
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId: quote.receiverId,
           actions: [
@@ -1438,25 +2282,22 @@ export default function App() {
     avatar: { contractId: string; tokenId: string } | null,
   ): Promise<boolean> {
     const result = await action("native-profile", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await signerForAccount(account);
       if (
         accountId !== account ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Choose the linked NEAR wallet shown for your profile.");
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
+        throw Error("Choose the linked account shown for your profile.");
       const quote = await api<NativeProfileQuote>("/native/profile/prepare", {
         accountId,
         publicConsent: true,
       });
       assertProfileQuote(quote, { accountId, name: player.name, avatar });
-      await sendConfirmedNative(
-        wallet,
+      await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
-          receiverId: SOCIAL_TESTNET,
+          receiverId: SOCIAL_CONTRACT_ID,
           actions: [
             {
               type: "FunctionCall",
@@ -1478,17 +2319,109 @@ export default function App() {
         );
         if (response.confirmed) {
           updateOwnedPlayer(response.player);
-          notify("Your QuestLayer profile is public on NEAR testnet.");
+          notify(tr("Your explorer profile is now public."));
           return true;
         }
         await new Promise((resolve) => setTimeout(resolve, 800));
       }
       notify(
-        "Your transaction was sent. Refresh your public profile to check confirmation.",
+        tr("Profile update sent. Refresh your public profile to see it confirmed."),
       );
       return false;
     });
     return result === true;
+  }
+  async function recordNote(
+    noteId: string,
+    kind: NoteRecordKind,
+  ): Promise<boolean> {
+    const account = recordAccount?.accountId;
+    const result = await action("note-record", async () => {
+      if (!account || !player)
+        throw Error("Your explorer account is not ready yet.");
+      const { signer, accountId } = await signerForAccount(account);
+      if (accountId !== account)
+        throw Error("Choose the linked account shown for this record.");
+      const { confirmed } = await publishNoteRecord({
+        call: api,
+        signer,
+        accountId,
+        playerId: player.id,
+        noteId,
+        kind,
+      });
+      notify(
+        confirmed
+          ? kind === "note"
+            ? tr("Your note is now a public record.")
+            : tr("Your public record is marked removed.")
+          : tr("Record sent. Refresh in a moment to see it confirmed."),
+      );
+      return confirmed;
+    });
+    return result === true;
+  }
+  // Invisible-account devices: recovery passkey, revoke, restore here.
+  async function setupRecoveryPasskey() {
+    const ok = await action("recovery-setup", async () => {
+      const deviceKey = invisible.deviceKey,
+        accountId = invisible.accountId;
+      if (!deviceKey || !accountId)
+        throw Error("Your explorer account is still being prepared.");
+      const { setupPasskeyRecovery } = await import("./account-recovery");
+      await setupPasskeyRecovery({
+        deviceKey,
+        accountId,
+        credentials: navigator.credentials,
+        rpId: location.hostname,
+        api,
+      });
+      await invisible.refresh();
+      notify(tr("Recovery passkey saved. Use it to restore on a new device."));
+      return true;
+    });
+    return ok === true;
+  }
+  async function revokeDevice(publicKey: string, signOutOthers: boolean) {
+    const ok = await action("device-revoke", async () => {
+      const deviceKey = invisible.deviceKey,
+        accountId = invisible.accountId;
+      if (!deviceKey || !accountId)
+        throw Error("Your explorer account is still being prepared.");
+      try {
+        const { revokeAccountKey } = await import("./account-recovery");
+        await revokeAccountKey({ deviceKey, accountId, publicKey, api });
+      } finally {
+        await invisible.refresh().catch(() => undefined);
+      }
+      let signedOut = "";
+      if (signOutOthers) {
+        const { signOutOtherSessions } = await import("./account-recovery");
+        const r = await signOutOtherSessions({ deviceKey, accountId, api });
+        signedOut = ` ${r.revokedSessions} other session(s) signed out.`;
+      }
+      notify(tr("Device revoked.{0}", { 0: signedOut }));
+      return true;
+    });
+    return ok === true;
+  }
+  async function restoreThisDevice() {
+    const ok = await action("recovery-restore", async () => {
+      const { restoreWithPasskey } = await import("./account-recovery");
+      const restored = await restoreWithPasskey<Player>({
+        store: indexedDbKeyStore(),
+        credentials: navigator.credentials,
+        rpId: location.hostname,
+        api,
+        userAgent: navigator.userAgent,
+      });
+      setPlayer(restored.player);
+      setLoaded(true);
+      await invisible.ensure();
+      notify(tr("This device can now play with your explorer."));
+      return true;
+    });
+    return ok === true;
   }
   async function revokeGameSessions(expectedAccount: string) {
     const ok = await action("session-recovery", async () => {
@@ -1497,9 +2430,7 @@ export default function App() {
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error(
-          "Choose the linked NEAR wallet shown in the recovery review.",
-        );
+        throw Error("Choose the linked account shown in the recovery review.");
       const c = await api<{
         challengeId: string;
         nonce: string;
@@ -1508,22 +2439,24 @@ export default function App() {
         network: string;
         purpose: string;
       }>("/identity/recovery/challenge", { accountId });
-      if (c.network !== "testnet" || c.purpose !== "revoke-other-sessions")
-        throw Error("This recovery request could not be verified.");
+      if (c.network !== NEAR_NETWORK || c.purpose !== "revoke-other-sessions")
+        throw Error(
+          "This recovery request could not be verified. Try again with the linked account.",
+        );
       const signed = await wallet.signMessage({
         message: c.message,
         recipient: c.recipient,
         nonce: Uint8Array.from(atob(c.nonce), (x) => x.charCodeAt(0)),
-        network: "testnet",
+        network: NEAR_NETWORK,
         signerId: accountId,
       });
       const result = await api<{ ok: boolean; revokedSessions: number }>(
         "/identity/recovery/verify",
         { challengeId: c.challengeId, ...signed },
       );
-      if (!result.ok) throw Error("The game sessions could not be updated.");
+      if (!result.ok) throw Error("Sessions could not be updated. Try again.");
       notify(
-        `${result.revokedSessions} other game session(s) signed out. This browser stays signed in.`,
+        tr("{0} other session(s) signed out. This browser stays signed in.", { 0: result.revokedSessions }),
       );
       return true;
     });
@@ -1537,164 +2470,186 @@ export default function App() {
       });
       if (c.state !== "minted")
         throw Error(
-          "This level reward is not confirmed yet. Check again after your wallet transaction finishes.",
+          "This level reward is not confirmed yet. Check again in a moment.",
         );
       await refreshNative(true);
-      notify(
-        "Mint confirmed. Check your NEAR collection for its current owner.",
-      );
+      notify(tr("Reward secured. Find it in your Secured collection."));
       return true;
     });
     return ok === true;
+  }
+  // Level-reward Aura: voucher, relayed redeem_aura, then the server confirms.
+  async function secureLevelOnChain(
+    milestone: NativeMilestone,
+    signer: NativeSigner,
+    accountId: string,
+  ): Promise<"minted" | "already" | "pending"> {
+    const claim = await api<NativeLevelClaim>("/native/progression/claim", {
+      accountId,
+      level: milestone.level,
+    });
+    assertNativeLevelClaim(claim, accountId, milestone.level, milestone.edition);
+    if (claim.claim_id !== milestone.claimId)
+      throw Error("The level reward changed. Refresh, then try again.");
+    if (claim.state === "minted") return "already";
+    await signer.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: accountId,
+        receiverId: claim.contractId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: "redeem_aura",
+              args: {
+                claim_id: claim.claim_id,
+                edition: claim.edition,
+                receiver_id: claim.receiver_id,
+                expires_at_ms: claim.expires_at,
+                signature: claim.signature,
+              },
+              gas: "100000000000000",
+              deposit: (5n * 10n ** 22n).toString(),
+            },
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
+    for (let i = 0; i < 4; i++) {
+      const checked = await api<NativeLevelClaim>(
+        "/native/progression/confirm",
+        { accountId, level: milestone.level },
+      );
+      if (checked.state === "minted") return "minted";
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    return "pending";
   }
   async function mintNativeLevel(
     expectedAccount: string,
     milestone: NativeMilestone,
   ) {
     const ok = await action("native-level", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
+        throw Error("Choose the linked account shown for this level reward.");
+      const result = await secureLevelOnChain(milestone, signer, accountId);
+      if (result === "pending")
         throw Error(
-          "Choose the linked NEAR wallet shown for this level reward.",
+          "Your level reward is still confirming. Use Check claim before trying again.",
         );
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
-      const claim = await api<NativeLevelClaim>("/native/progression/claim", {
-        accountId,
-        level: milestone.level,
-      });
-      assertNativeLevelClaim(
-        claim,
-        accountId,
-        milestone.level,
-        milestone.edition,
-      );
-      if (claim.claim_id !== milestone.claimId)
-        throw Error("The level reward changed. Refresh before signing.");
-      if (claim.state !== "minted") {
-        await sendConfirmedNative(
-          wallet,
-          {
-            network: "testnet",
-            signerId: accountId,
-            receiverId: claim.contractId,
-            actions: [
-              {
-                type: "FunctionCall",
-                params: {
-                  methodName: "redeem_aura",
-                  args: {
-                    claim_id: claim.claim_id,
-                    edition: claim.edition,
-                    receiver_id: claim.receiver_id,
-                    expires_at_ms: claim.expires_at,
-                    signature: claim.signature,
-                  },
-                  gas: "100000000000000",
-                  deposit: (5n * 10n ** 22n).toString(),
-                },
-              },
-            ],
-          },
-          { playerId: player!.id },
-        );
-        for (let i = 0; i < 4; i++) {
-          const checked = await api<NativeLevelClaim>(
-            "/native/progression/confirm",
-            { accountId, level: milestone.level },
-          );
-          if (checked.state === "minted") {
-            await refreshNative(true);
-            notify(
-              "Level reward claimed. Equip your Aura from the NEAR collection.",
-            );
-            return true;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-        throw Error(
-          "Your level reward is awaiting confirmation. Use Check claim before trying again.",
-        );
-      }
       await refreshNative(true);
-      notify("This level reward was already claimed.");
+      notify(
+        result === "minted"
+          ? tr("Reward collected. Try it on from your Secured collection.")
+          : tr("You already collected this level reward."),
+      );
       return true;
     });
     return ok === true;
   }
-  async function mintEarnedAura(item: Item) {
-    await action("native-claim", async () => {
-      try {
-        const { wallet, accountId } = await chooseNearAccount();
-        if (!player?.wallets.some((w) => w.account_id === accountId))
-          throw Error("Select the linked NEAR wallet receiving this Aura.");
-        if (!wallet.manifest.features.signAndSendTransaction)
-          throw Error("Choose a wallet that supports NEAR transactions.");
-        const claim = await api<NativeAuraClaim>("/native/claims", {
-          itemId: item.id,
-          accountId,
-        });
-        await me();
-        if (claim.state !== "minted") {
-          if (!claim.contractId.endsWith(".testnet"))
-            throw Error("Aura claims are testnet-only.");
-          if (!wallet.manifest.features.signAndSendTransaction)
-            throw Error("Choose a wallet that supports NEAR transactions.");
-          await sendConfirmedNative(
-            wallet,
-            {
-              network: "testnet",
-              signerId: accountId,
-              receiverId: claim.contractId,
-              actions: [
-                {
-                  type: "FunctionCall",
-                  params: {
-                    methodName: "redeem_aura",
-                    args: {
-                      claim_id: claim.claim_id,
-                      edition: claim.edition,
-                      receiver_id: claim.receiver_id,
-                      expires_at_ms: claim.expires_at,
-                      signature: claim.signature,
-                    },
-                    gas: "100000000000000",
-                    deposit: (5n * 10n ** 22n).toString(),
-                  },
-                },
-              ],
+  // Wisp rolls take no deposit, so the explorer account relays them silently.
+  async function sendWispRoll(call: RollCall) {
+    const managed = invisible.signer;
+    if (!managed) throw Error("Your explorer account is not ready yet.");
+    if (!onNearNetwork(call.receiverId) || call.deposit !== "0")
+      throw Error("This roll is not on the game network.");
+    await managed.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: managed.accountId,
+        receiverId: call.receiverId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: call.methodName,
+              args: call.args,
+              gas: call.gas,
+              deposit: "0",
             },
-            { playerId: player!.id },
-          );
-        }
-        let minted = false;
-        for (let attempt = 0; attempt < 5; attempt++) {
-          const result = await api<{ claim: NativeAuraClaim; player: Player }>(
-            "/native/claims/confirm",
-            { itemId: item.id },
-          );
-          updateOwnedPlayer(result.player);
-          if (result.claim.state === "minted") {
-            minted = true;
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 800));
-        }
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
+  }
+  // Requests the award voucher, relays redeem_aura from the signing account and
+  // waits for the server to confirm the mint. Shared by the Secure button and
+  // the automatic background securing below.
+  async function secureAuraOnChain(
+    item: Item,
+    signer: NativeSigner,
+    accountId: string,
+  ): Promise<boolean> {
+    const claim = await api<NativeAuraClaim>("/native/claims", {
+      itemId: item.id,
+      accountId,
+    });
+    if (claim.state !== "minted") {
+      if (!onNearNetwork(claim.contractId))
+        throw Error("Securing Auras is not available on this network.");
+      await signer.send(
+        {
+          network: NEAR_NETWORK,
+          signerId: accountId,
+          receiverId: claim.contractId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: "redeem_aura",
+                args: {
+                  claim_id: claim.claim_id,
+                  edition: claim.edition,
+                  receiver_id: claim.receiver_id,
+                  expires_at_ms: claim.expires_at,
+                  signature: claim.signature,
+                },
+                gas: "100000000000000",
+                deposit: (5n * 10n ** 22n).toString(),
+              },
+            },
+          ],
+        },
+        { playerId: player!.id },
+      );
+    }
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const result = await api<{ claim: NativeAuraClaim; player: Player }>(
+        "/native/claims/confirm",
+        { itemId: item.id },
+      );
+      updateOwnedPlayer(result.player);
+      if (result.claim.state === "minted") return true;
+      await new Promise((resolve) => setTimeout(resolve, 800));
+    }
+    return false;
+  }
+  async function mintEarnedAura(item: Item): Promise<boolean> {
+    const done = await action("native-claim", async () => {
+      try {
+        const { signer, accountId } = await resolveSigner();
+        if (!player?.wallets.some((w) => w.account_id === accountId))
+          throw Error("Choose the linked account that receives this Aura.");
+        const minted = await secureAuraOnChain(item, signer, accountId);
         if (!minted)
           throw Error(
-            "Your NFT confirmation is still pending. Use Check claim before retrying.",
+            "Your Aura is still being secured. Use Check claim before retrying.",
           );
         await refreshNative(true);
-        notify(
-          "Your Aura NFT is ready. Choose where to wear it in your NEAR inventory.",
-        );
+        notify(tr("Your Aura is secured. Try it on from your Secured collection."));
+        return true;
       } finally {
         await me();
       }
     });
+    return done === true;
   }
   async function checkAuraClaim(item: Item) {
     await action("native-claim-check", async () => {
@@ -1706,8 +2661,8 @@ export default function App() {
       await refreshNative(true);
       notify(
         result.claim.state === "minted"
-          ? "Your native Aura is confirmed."
-          : "No NFT mint is confirmed yet. You can finish the claim or restore it after expiry.",
+          ? tr("Your Aura is secured.")
+          : tr("Not secured yet. Finish the claim, or restore the practice Aura after it expires."),
       );
     });
   }
@@ -1717,7 +2672,7 @@ export default function App() {
         itemId: item.id,
       });
       updateOwnedPlayer(result.player);
-      notify("Your Aura is available in the demo again.");
+      notify(tr("Your Aura is back in your practice collection."));
     });
   }
   async function nativeTransaction(
@@ -1727,21 +2682,20 @@ export default function App() {
     slot?: "above" | "below",
   ) {
     await action("native-transaction", async () => {
-      const { wallet, accountId } = await chooseNearAccount();
+      const { signer, accountId } = await resolveSigner();
       if (
         accountId !== account ||
         !player?.wallets.some((w) => w.account_id === accountId)
       )
-        throw Error("Select the linked NEAR wallet that owns this item.");
-      if (!wallet.manifest.features.signAndSendTransaction)
-        throw Error("Choose a wallet that supports NEAR transactions.");
+        throw Error("Choose the linked account that owns this Aura.");
       const contractId = nativeWardrobe?.contractId;
-      if (!contractId?.endsWith(".testnet"))
-        throw Error("The NEAR testnet collection is unavailable.");
-      await sendConfirmedNative(
-        wallet,
+      if (!onNearNetwork(contractId))
+        throw Error(
+          "Your secured collection could not load. Try again in a moment.",
+        );
+      await signer.send(
         {
-          network: "testnet",
+          network: NEAR_NETWORK,
           signerId: accountId,
           receiverId: contractId,
           actions: [
@@ -1779,7 +2733,7 @@ export default function App() {
       }
       if (!confirmed)
         throw Error(
-          "Transaction submitted; confirmation is still pending. Refresh NEAR inventory before retrying.",
+          "Sent. Confirmation is still pending; refresh your Secured collection before retrying.",
         );
       const r = await api<{ player: Player }>("/native/outfit", {
         enabled: true,
@@ -1788,10 +2742,10 @@ export default function App() {
       updateOwnedPlayer(r.player);
       notify(
         method === "mint_avatar"
-          ? "Your explorer NFT is confirmed on NEAR testnet."
+          ? tr("Your explorer is secured.")
           : method === "unequip_aura"
-            ? "Aura removed from your NEAR outfit."
-            : "Your on-chain Aura is equipped and visible on the map.",
+            ? tr("Aura taken off your secured outfit.")
+            : tr("Equipped. Your secured Aura is glowing on the map."),
       );
     });
   }
@@ -1799,7 +2753,9 @@ export default function App() {
     await action("evm", async () => {
       const injected = (window as any).ethereum;
       if (!injected)
-        throw new Error("Open the game in a browser with an EVM wallet.");
+        throw new Error(
+          tr("Open QuestLayer in a browser with an Aavegotchi wallet to link an original."),
+        );
       const { createWalletClient, custom } = await import("viem");
       const client = createWalletClient({ transport: custom(injected) });
       const [address] = await client.requestAddresses();
@@ -1813,7 +2769,9 @@ export default function App() {
       });
       await api("/evm/verify", { challengeId: c.challengeId, signature });
       await api("/aavegotchi");
-      notify("Address verified. Original NFTs stay on Base.");
+      notify(
+        tr("Address linked. Your originals stay where they are; here you only wear them."),
+      );
     });
   }
   function inspectAdventureResult(id: string) {
@@ -1868,14 +2826,14 @@ export default function App() {
       );
       if (!confirmed?.equipped || response.player.nativeOutfit)
         throw new Error(
-          "Equipment is not confirmed yet. Check your inventory before retrying.",
+          tr("Outfit change not confirmed yet. Check your collection before retrying."),
         );
       adventureResults.close();
       setSelected(null);
       setSheetExpanded(false);
       setFollow(true);
       setTab("explore");
-      notify("Aura equipped. Your new look is on the map.");
+      notify(tr("Equipped. Your new glow is on the map."));
     });
   }
   async function complete(qId: string) {
@@ -1894,7 +2852,9 @@ export default function App() {
           result?: AdventureResult;
           replayed?: boolean;
           awaiting?: boolean;
+          clue?: { correct: boolean; xp: number; answer: string };
           progress?: { completed: number; total: number };
+          chain?: ChainRef | null;
         }>(
           q?.kind === "route" && (q.checkpoint || 0) < (q.checkpointCount || 0)
             ? "/quests/checkpoint"
@@ -1902,6 +2862,7 @@ export default function App() {
           {
             questId: qId,
             checkpoint: q?.checkpoint || 0,
+            ...(q?.clue ? { answer: clueChoice[qId] } : {}),
             fix: arena
               ? { ...position, accuracy: 0, timestamp: Date.now() }
               : fix,
@@ -1914,15 +2875,43 @@ export default function App() {
           adventureResults.isCurrentInspection(inspection) &&
           navigationContext.current.revision === navigationRevision;
         if (sameView && r.result) adventureResults.accept(r.result);
+        if (!r.replayed && !r.awaiting) cue(r.item ? "reward" : "step");
+        if (!r.replayed)
+          burst(
+            r.awaiting
+              ? {
+                  tone: "quest",
+                  title: tr("Stop {0} of {1}", { 0: r.progress?.completed, 1: r.progress?.total }),
+                  detail: q?.title,
+                }
+              : {
+                  tone: "quest",
+                  chain: r.chain,
+                  title: tr("Quest complete!"),
+                  detail: [
+                    `+${r.xp} XP`,
+                    r.reward ? `+${gold(r.reward)} GOLD` : "",
+                    r.item?.name || "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · "),
+                },
+          );
         if (sameView && r.awaiting)
           notify(
-            `Checkpoint ${r.progress?.completed}/${r.progress?.total} recorded. Head to the next marker.`,
+            tr("Stop {0} of {1} confirmed. Walk to the next stop.", { 0: r.progress?.completed, 1: r.progress?.total }),
+          );
+        else if (sameView && !r.replayed && r.clue)
+          notify(
+            r.clue.correct
+              ? tr("Right answer: +{0} XP.", { 0: r.xp })
+              : tr("Visit counted: +{0} XP. The right answer is now marked.", { 0: r.xp }),
           );
         else if (sameView && !r.replayed)
           notify(
             r.item
-              ? `You discovered ${r.item.name}!`
-              : `Quest complete! +${r.xp} XP${r.reward ? ` and ${gold(r.reward)} demo GOLD` : ""}`,
+              ? tr("Reward collected: {0} is yours. Try it on!", { 0: r.item.name })
+              : tr("Reward collected: +{0} XP{1}.", { 0: r.xp, 1: r.reward ? ` and ${gold(r.reward)} practice GOLD` : "" }),
           );
         else if (sameView) setToast(null);
         await refreshWorld();
@@ -1958,31 +2947,91 @@ export default function App() {
         Number(b.tier > (player?.tier || 1)) ||
       meters(position, a) - meters(position, b),
   );
-  const recommended = world?.quests
-    .filter(
-      (q) =>
-        q.tier <= (player?.tier || 1) &&
-        !q.completed &&
-        q.opens_at <= now &&
-        q.closes_at > now,
-    )
-    .sort(
-      (a, b) =>
-        Number(
-          !player?.inventory.some((i) => i.kind === "aura") &&
-            b.kind === "chest" &&
-            b.itemAvailable,
-        ) -
-          Number(
-            !player?.inventory.some((i) => i.kind === "aura") &&
-              a.kind === "chest" &&
-              a.itemAvailable,
-          ) ||
-        meters(position, questPoint(a)) - meters(position, questPoint(b)),
-    )[0];
-  const recommendedZone = world?.zones.find(
-    (z) => z.id === recommended?.zone_id,
-  );
+  const recommendation = world
+    ? nearestDiscovery({
+        position,
+        quests: world.quests,
+        zones: world.zones,
+        coins: world.coins,
+        tier: player?.tier || 1,
+        now,
+        questPoint,
+      })
+    : null;
+  const recommended =
+    recommendation?.kind === "quest" ? recommendation.quest : undefined;
+  const recommendedZone =
+    recommendation?.kind === "quest" ? recommendation.zone : undefined;
+  const recommendedFind =
+    recommendation?.kind === "find" ? recommendation : null;
+  const findTarget =
+    !nativePlay && streetFindTarget
+      ? world?.coins.find((c) => c.id === streetFindTarget && c.find) || null
+      : null;
+  const coachActive = firstSession.visible && !nativePlay;
+  const coachStep = coachActive ? firstSession.progress.current?.id : undefined;
+  const coachChest = coachStep === "chest" ? nearestChest() : null;
+  const coachLabel =
+    coachStep === "chest"
+      ? coachChest
+        ? coachChest.d > 25
+          ? tr("Walk to the chest")
+          : tr("Open the chest")
+        : tr("See what's open")
+      : coachStep === "find" && !nearestCoin(true)
+        ? tr("Walk to a coin")
+        : null;
+  // Outside the reviewed city (H3 street cells, auto cities) the coach and
+  // the map point at the nearest open POI quest, or say honestly when quests
+  // open later today or this area has none.
+  const poiWorld =
+    !!world && !nativePlay && (!!world.poiQuests || world.cityStatus === "auto");
+  const poiOutlook =
+    poiWorld && world
+      ? poiQuestOutlook({
+          position,
+          quests: world.quests,
+          zones: world.zones,
+          tier: player?.tier || 1,
+          now,
+          emptyCell: world.poiQuests?.status === "empty",
+          questPoint,
+        })
+      : null;
+  const poiNext = poiOutlook?.state === "open" ? poiOutlook.nearest : null;
+  const coachAside =
+    !coachActive || !poiOutlook ? null : poiNext ? (
+      coachStep === "chest" &&
+      coachChest?.quest.id === poiNext.quest.id ? null : (
+        <button
+          className="first-session-next"
+          onClick={() => selectZone(poiNext.zone, poiNext.quest.id)}
+        >
+          <MapPin size={18} aria-hidden="true" />
+          <span>
+            <small>{tr("Nearest quest")}</small>
+            <strong>{poiNext.quest.title}</strong>
+            <span>{distanceLabel(poiNext.distance)}</span>
+          </span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </button>
+      )
+    ) : (
+      <p className="first-session-note" role="status">
+        {poiOutlook.state === "later"
+          ? tr("Quests here open at {0}. Street coins count already.", { 0: new Date(poiOutlook.opensAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: world?.timezone || undefined }) })
+          : poiOutlook.state === "empty"
+            ? tr("No quests in this spot today. Street coins still count; quests wait near parks, squares and landmarks.")
+            : tr("You've done every quest here today. New ones open tomorrow.")}
+      </p>
+    );
+  // The map marks one "next" place: the coach's POI quest, else the nearest
+  // recommended zone.
+  const nextZoneId = coachActive
+    ? coachStep === "chest" && coachChest
+      ? coachChest.zone.id
+      : poiNext?.zone.id || null
+    : recommendedZone?.id || null;
   const zoneQuests = (world?.quests || []).filter(
     (q) =>
       q.zone_id === selected?.id ||
@@ -1997,84 +3046,136 @@ export default function App() {
   const title =
     tab === "explore"
       ? nativePlay
-        ? "Testnet adventures"
-        : "Nearby adventures"
-      : nav.find((n) => n.id === tab)?.label ||
+        ? tr("Nearby walks")
+        : tr("Nearby discoveries")
+      : showProfileTabs
+        ? tr("Profile")
+        : showCommunityTabs
+          ? tr("Community")
+          : nav.find((n) => n.id === tab)?.label ||
         {
-          messages: "Map notes",
-          bounties: "Community tasks",
-          community: "Community",
-          settings: "Settings",
-          fund: "Game economy",
-          expeditions: "Testnet walks",
-          inventory: "Inventory",
-          market: "Market",
-          wallet: "Wallet",
+          messages: tr("Map notes"),
+          shop: tr("Inventory"),
+          places: tr("Community"),
+          bounties: tr("Community tasks"),
+          community: tr("Community"),
+          settings: tr("Settings"),
+          fund: tr("Game economy"),
+          funding: tr("How rewards are funded"),
+          fuel: tr("Fuel the prize pool"),
+          expeditions: tr("Nearby walks"),
+          inventory: tr("Inventory"),
+          market: tr("Market"),
+          wallet: tr("Wallet"),
         }[tab] ||
         "QuestLayer";
   return (
-    <div className="app-shell">
-      <GameMap
-        playerTier={nativePlay ? nativeGame.state?.access?.tier : player?.tier}
-        now={now}
-        map3D={!!player && map3D}
-        sheetExpanded={sheetExpanded}
-        panelMode={tab}
-        onCoin={
-          nativePlay
-            ? (id) => {
-                const coin = nativeGame.state?.day?.coins.find(
-                  (c) => `native-coin:${c.index}` === id,
-                );
-                if (!coin) return;
-                nativeObjective.select("coin", coin.index);
-                setTab("expeditions");
-                setSheetExpanded(true);
-                setFollow(false);
-              }
-            : undefined
-        }
-        onQuest={(id) =>
-          nativePlay
-            ? chooseNativeQuest(Number(id.split(":")[1]))
-            : chooseZoneQuest(id)
-        }
-        overview={overview}
-        focusZone={selected}
-        nativeTarget={nativeTarget}
-        nativeTargetKind={
-          nativeObjective.reference?.kind === "coin" ? "coin" : "route"
-        }
-        world={displayWorld}
-        position={position}
-        arena={arena && !nativePlay}
-        globe={globe}
-        equipped={equipped}
-        others={others}
-        skinUrl={
-          player?.appearance?.originTokenId
-            ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
-            : undefined
-        }
-        onMove={move}
-        onZone={(z) =>
-          nativePlay
-            ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
-            : selectZone(z)
-        }
-        follow={follow}
-        onPan={() => setFollow(false)}
-      />
+    <div
+      className={`app-shell${player && (tab !== "explore" || sheetExpanded) ? " sheet-open" : ""}`}
+    >
+      {player ? (
+        <GameMap
+          playerTier={
+            nativePlay ? nativeGame.state?.access?.tier : player?.tier
+          }
+          now={now}
+          map3D={!!player && map3D}
+          sheetExpanded={sheetExpanded}
+          panelMode={tab}
+          onCoin={
+            nativePlay
+              ? (id) => {
+                  const coin = nativeGame.state?.day?.coins.find(
+                    (c) => `native-coin:${c.index}` === id,
+                  );
+                  if (!coin) return;
+                  nativeObjective.select("coin", coin.index);
+                  setTab("expeditions");
+                  setSheetExpanded(true);
+                  setFollow(false);
+                }
+              : undefined
+          }
+          onQuest={(id) =>
+            nativePlay
+              ? chooseNativeQuest(Number(id.split(":")[1]))
+              : chooseZoneQuest(id)
+          }
+          overview={overview}
+          focusZone={selected}
+          nextZoneId={selected ? null : nextZoneId}
+          nativeTarget={
+            nativeTarget ||
+            (findTarget
+              ? {
+                  lat: findTarget.lat,
+                  lng: findTarget.lng,
+                  label: tr("Street find · +{0} XP", { 0: world?.streetFindXp ?? 15 }),
+                }
+              : null)
+          }
+          nativeTargetKind={
+            nativePlay
+              ? nativeObjective.reference?.kind === "coin"
+                ? "coin"
+                : "route"
+              : "discovery"
+          }
+          world={displayWorld}
+          position={position}
+          arena={arena && !nativePlay}
+          globe={globe}
+          equipped={equipped}
+          others={others}
+          skinUrl={
+            player?.appearance?.originTokenId
+              ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
+              : undefined
+          }
+          facing={
+            arena && !nativePlay ? demoWalk.heading : (gpsCourse ?? undefined)
+          }
+          onZone={(z) =>
+            nativePlay
+              ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
+              : selectZone(z)
+          }
+          follow={follow}
+          onPan={() => setFollow(false)}
+          onMoveEnd={(center, zoom) => setMapCenter(zoom >= 13 ? center : null)}
+          creatorPlaces={creatorPlaces}
+          onCreatorPlace={(questId) => {
+            setTab("community");
+            setCreatorView({ page: "quest", questId });
+            setSheetExpanded(true);
+            setFollow(false);
+          }}
+          actorsWorldId={world?.id || null}
+          onActor={setActorOpen}
+          emote={myEmote && myEmote.until > now ? myEmote.id : null}
+          frame={myFrame}
+          goldMap={goldMapData}
+          onPlacePin={(id) => {
+            setPlaceOpenId(id);
+            setTab("places");
+            setSheetExpanded(true);
+          }}
+        />
+      ) : (
+        // MapLibre and the map style load only after the name step, so the
+        // welcome screen ships without them (see scripts/check-bundle-budget.mjs).
+        <div className="game-map map-placeholder" aria-hidden="true" />
+      )}
       <div className="map-vignette" />
       <aside className="nav-rail">
         <button
           className="brand-mark"
-          aria-label="QuestLayer home"
+          aria-label={tr("QuestLayer home")}
           onClick={() => {
             setTab("explore");
           }}
         >
-          <Ghost />
+          <BrandLogo />
         </button>
         <div className="rail-links">
           {nav.map((n) => (
@@ -2096,36 +3197,36 @@ export default function App() {
             </button>
           ))}
         </div>
-        <button
-          className="rail-help"
-          onClick={() => setShowNpc(true)}
-          aria-label="Guide"
-        >
-          <Question size={24} />
-        </button>
-        <span className="rail-near">N</span>
       </aside>
       <header className="topbar">
         <div className="wordmark" onClick={() => setTab("explore")}>
-          <span>
-            QUEST<span>LAYER</span>
-          </span>
-          <small>WALK. DISCOVER. COLLECT.</small>
+          <img className="wordmark-logo" src="/icon.svg" alt="" width={36} height={36} />
+          {artUrl("brand/wordmark") ? (
+            <span className="wordmark-text">
+              <img className="wordmark-art" src={artUrl("brand/wordmark")!} alt="QuestLayer" draggable={false} />
+            </span>
+          ) : (
+            <span>
+              QUEST<span>LAYER</span>
+            </span>
+          )}
         </div>
         <div className="realm-label">
           <span className="status-dot" />
-          {nativePlay ? "NEAR TESTNET" : "DEMO WORLD"} <span>·</span>{" "}
           <span>
-            {nativePlay
-              ? "Plzeň"
-              : arena
-                ? "Plzeň city demo"
-                : "Your surroundings"}
+            {nativePlay || !arena
+              ? world?.cityName || tr("Your surroundings")
+              : tr("Plzeň · city demo")}
           </span>
         </div>
         <div className="topbar-right">
           {player && (
             <>
+              <DailyBoard
+                worldId={world?.id}
+                refreshKey={`${player.xp}:${player.history?.[0]?.id ?? ""}`}
+                onClaimed={() => void me()}
+              />
               <button
                 className="balance-pill"
                 onClick={() => {
@@ -2146,39 +3247,44 @@ export default function App() {
                       : "—"
                     : gold(player.gold_u)}
                 </b>
-                <span>{nativePlay ? "TEST GOLD" : "GOLD"}</span>
-                <Plus size={14} />
+                <span>GOLD</span>
               </button>
               <button
                 ref={profileButton}
                 className="profile-pill"
-                aria-label="Explorer profile"
+                aria-label={hudProgress ? undefined : tr("Explorer profile")}
                 aria-expanded={menu}
                 aria-controls="explorer-profile"
                 onClick={() => setMenu((v) => !v)}
               >
-                <Character
-                  items={appearanceItems}
-                  originTokenId={player.appearance.originTokenId}
-                  compact
-                />
-                <span>
-                  <b>{player.name}</b>
-                  <small>
-                    {nativePlay
-                      ? nativeGame.state?.balance
-                        ? `NEAR · Level ${1 + Math.floor(Math.sqrt(Number(nativeGame.state.balance.xp) / 100))}`
-                        : !playAccount
-                          ? "NEAR · Guest"
-                          : nativeGame.error
-                            ? "NEAR · Unavailable"
-                            : nativeGame.state
-                              ? "NEAR · New explorer"
-                              : "NEAR · Loading"
-                      : `Demo · Level ${player.level}`}
-                  </small>
-                </span>
-                <span className="level-bubble">{hudLevel ?? "—"}</span>
+                {hudProgress ? (
+                  <HudXpRing
+                    level={hudProgress.level}
+                    xp={hudProgress.xp}
+                    levelStartXp={hudProgress.levelStartXp}
+                    nextLevelXp={hudProgress.nextLevelXp}
+                    ring={hudProgress.ring}
+                  >
+                    <Character
+                      items={appearanceItems}
+                      originTokenId={player.appearance.originTokenId}
+                      compact
+                    />
+                    <span className="sr-only">{tr(", explorer profile")}</span>
+                  </HudXpRing>
+                ) : (
+                  <>
+                    <Character
+                      items={appearanceItems}
+                      originTokenId={player.appearance.originTokenId}
+                      compact
+                    />
+                    <span>
+                      <b>{player.name}</b>
+                      <small>{tr("Explorer")}</small>
+                    </span>
+                  </>
+                )}
               </button>
             </>
           )}
@@ -2187,15 +3293,7 @@ export default function App() {
       {menu && player && (
         <div id="explorer-profile" className="profile-menu">
           <b>{player.name}</b>
-          <span>Your character and demo progress are saved.</span>
-          <button
-            onClick={() => {
-              setTab("wallet");
-              setMenu(false);
-            }}
-          >
-            <Wallet /> Wallet and sign-in
-          </button>
+          <span>{tr("Your explorer and progress are saved on this device.")}</span>
           <button
             onClick={() => {
               setTab("settings");
@@ -2203,26 +3301,17 @@ export default function App() {
             }}
           >
             <GearSix />
-            Settings
-          </button>
+            {tr("Profile and settings")}</button>
           <details className="presence-consent">
-            <summary>Location sharing</summary>
+            <summary>{tr("Location sharing")}</summary>
             <p>
-              Sharing shows your name, chosen look and precise map position to
-              nearby explorers for up to 15 minutes while this tab is visible.
-              Switching away stops sharing. Demo presence stays separate from
-              GPS play.
-            </p>
+              {tr("Sharing shows your name, look and map position to nearby explorers for up to 15 minutes while this tab is open. Players you blocked never see you, and you never see them.")}</p>
           </details>
-          {!presence && (
-            <p className="play-hint">
-              Sharing publishes your name, look and precise location to nearby
-              players for up to 15 minutes.
-            </p>
-          )}
           <button onClick={() => setPresence((x) => !x)}>
             {presence ? <EyeSlash /> : <Eye />}
-            {presence ? "Stop sharing presence" : "Share presence for 15 min"}
+            {presence
+              ? tr("Stop sharing my position")
+              : tr("Share my position for 15 min")}
           </button>
           <button
             onClick={() =>
@@ -2235,13 +3324,7 @@ export default function App() {
               })
             }
           >
-            <SignOut /> Sign out
-          </button>
-        </div>
-      )}
-      {!online && (
-        <div className="offline-bar">
-          You are offline. Collecting will resume when you reconnect.
+            <SignOut /> {" "}{tr("Sign out")}</button>
         </div>
       )}
       {player && (
@@ -2250,34 +3333,30 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${tab === "explore" ? `explore-panel ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
-          {tab !== "explore" &&
-            (selected || (nativePlay && nativeObjective.reference)) && (
-              <button className="adventure-return" onClick={returnToAdventure}>
-                <ArrowLeft size={20} aria-hidden="true" />
-                <span>
-                  <strong>Back to adventure</strong>
-                  <small>{selected?.name || nativeObjective.view.label}</small>
-                </span>
-              </button>
-            )}
           {tab === "explore" && (
             <button
               className="sheet-toggle"
               aria-expanded={sheetExpanded}
               onClick={() => setSheetExpanded((v) => !v)}
             >
+              {sheetExpanded && (
+                <span className="sheet-toggle-back" aria-hidden="true">
+                  <ArrowLeft size={20} />
+                </span>
+              )}
               <span className="sheet-toggle-label">
-                {sheetExpanded ? "Show map" : "Show adventures"}
+                {sheetExpanded ? tr("Show map") : tr("Show discoveries")}
                 {!nativePlay && (
                   <PickupSummary totals={pickupFeedback.totals} />
                 )}
               </span>
-              <ArrowRight
-                size={20}
-                style={{
-                  transform: sheetExpanded ? "rotate(90deg)" : "rotate(-90deg)",
-                }}
-              />
+              {!sheetExpanded && (
+                <PhArrowRight
+                  size={20}
+                  aria-hidden="true"
+                  style={{ transform: "rotate(-90deg)" }}
+                />
+              )}
             </button>
           )}
           {tab === "explore" && !nativePlay && adventureResults.unread && (
@@ -2298,12 +3377,25 @@ export default function App() {
             >
               <Compass size={24} aria-hidden="true" />
               <span>
-                <strong>Choose another discovery</strong>
+                <strong>{tr("Choose another discovery")}</strong>
                 <small role="status">{adventureNotice}</small>
               </span>
               <ArrowRight size={20} aria-hidden="true" />
             </button>
           )}
+          {tab === "explore" &&
+            coachActive &&
+            !(selected && coachStep === "chest") && (
+              <FirstSessionCoach
+                session={firstSession}
+                worldId={world?.id}
+                position={position}
+                busy={!!busy}
+                onAction={runFirstStep}
+                actionLabel={coachLabel}
+                aside={coachAside}
+              />
+            )}
           {tab === "explore" && selected && (
             <button
               className="compact-selection"
@@ -2318,7 +3410,7 @@ export default function App() {
               />
               <span>
                 <strong>{selected.name}</strong>
-                <small>View quests and checkpoints</small>
+                <small>{tr("See what's here")}</small>
               </span>
               <ArrowRight />
             </button>
@@ -2337,7 +3429,7 @@ export default function App() {
                 <ArrowRight size={18} />
               </button>
               <button
-                aria-label="Clear saved testnet adventure"
+                aria-label={tr("Clear saved walk")}
                 onClick={() => {
                   nativeObjective.clear();
                   returnToAdventure();
@@ -2348,6 +3440,28 @@ export default function App() {
             </div>
           )}
           <div className="panel-heading">
+            {tab === "fund" ? (
+              <button
+                className="panel-back"
+                onClick={() => setTab("settings")}
+                aria-label={tr("Back to profile")}
+                title={tr("Back to profile")}
+              >
+                <ArrowLeft size={20} aria-hidden="true" />
+              </button>
+            ) : (
+              tab !== "explore" &&
+              (selected || (nativePlay && nativeObjective.reference)) && (
+                <button
+                  className="panel-back"
+                  onClick={returnToAdventure}
+                  aria-label={`${tr("Back to adventure")}: ${selected?.name || nativeObjective.view.label}`}
+                  title={`${tr("Back to adventure")}: ${selected?.name || nativeObjective.view.label}`}
+                >
+                  <ArrowLeft size={20} aria-hidden="true" />
+                </button>
+              )
+            )}
             <div>
               <h1 tabIndex={-1}>
                 {tab === "explore" && selected ? selected.name : title}
@@ -2355,41 +3469,155 @@ export default function App() {
             </div>
             {tab !== "explore" && (
               <button
-                className="icon-button"
+                className="icon-button panel-close"
                 onClick={() => setTab("explore")}
-                aria-label="Close panel"
+                aria-label={tr("Close panel")}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             )}
           </div>
-          {tab === "explore" && (
-            <div
-              className="play-mode-switch"
-              role="group"
-              aria-label="Adventure mode"
-            >
-              <button
-                aria-pressed={!nativePlay}
-                onClick={() => {
-                  setNativePlay(false);
+          {showProfileTabs && (
+            <ScreenTabs
+              label={tr("Profile")}
+              idBase="profile"
+              tabs={PROFILE_TABS}
+              value={profileTab}
+              onChange={chooseProfileTab}
+              withPanel={tab !== "wallet"}
+            />
+          )}
+          {showCommunityTabs && (
+            <ScreenTabs
+              label={tr("Community")}
+              idBase="community"
+              tabs={COMMUNITY_TABS}
+              value={communityTab}
+              onChange={chooseCommunityTab}
+            />
+          )}
+          {(tab === "inventory" || tab === "market" || tab === "shop") && (
+            <ScreenTabs
+              label={tr("Inventory")}
+              idBase="bag"
+              tabs={BAG_TABS}
+              value={tab === "market" ? "market" : tab === "shop" ? "shop" : "items"}
+              onChange={(next) => setTab(next === "market" ? "market" : next === "shop" ? "shop" : "inventory")}
+            />
+          )}
+          {tab === "shop" && (
+            <ScreenTabPanel idBase="bag" value="shop">
+              <GoldShop
+                key={player.id}
+                worldId={world?.id || null}
+                fix={fix}
+                arena={arena && !nativePlay}
+                notify={notify}
+                onSpent={() => {
+                  void me();
+                  void refreshGoldMap();
+                  void readGoldLook();
                 }}
-              >
-                Demo
-              </button>
-              <button
-                aria-pressed={nativePlay}
-                onClick={() => {
-                  setNativePlay(true);
+                onEmote={(id: string, until: number) => setMyEmote({ id, until })}
+              />
+            </ScreenTabPanel>
+          )}
+          {tab === "places" && (
+            <ScreenTabPanel idBase="community" value="places">
+              <PlaceMessages
+                key={player.id}
+                position={position}
+                fix={fix}
+                arena={arena && !nativePlay}
+                notify={notify}
+                onSpent={() => {
+                  void me();
+                  void refreshGoldMap();
                 }}
-              >
-                NEAR testnet
-              </button>
-            </div>
+                openId={placeOpenId}
+                onOpened={clearPlaceOpen}
+                onPublish={recordAccount ? publishPlace : undefined}
+              />
+            </ScreenTabPanel>
           )}
           {tab === "explore" && !selected && !nativePlay && (
+            <ScreenTabs
+              label={tr("Explore")}
+              idBase="explore"
+              tabs={EXPLORE_TABS}
+              value={exploreView}
+              withPanel={exploreView === "nearby"}
+              onChange={(next) => {
+                setExploreView(next);
+                setSheetExpanded(true);
+              }}
+            />
+          )}
+          {tab === "explore" && !selected && !nativePlay && exploreView === "nearby" && player && (
+            <ScreenTabPanel idBase="explore" value="nearby">
+              <NearbyMarket
+                position={position}
+                fix={() =>
+                  arena || !fix
+                    ? { ...position, accuracy: 0, timestamp: Date.now() }
+                    : fix
+                }
+                gold={player.gold_u}
+                notify={notify}
+                onBalance={() => void me()}
+              />
+            </ScreenTabPanel>
+          )}
+          {tab === "explore" && !selected && !nativePlay && exploreView === "discoveries" && (
             <>
-              {recommended &&
+              {!world?.zones.length &&
+                !recommendation &&
+                world &&
+                world.poiQuests?.status === "empty" && (
+                  <EmptyState art="place" title={tr("Nothing here yet")} status>
+                    {tr("This area has no checked public places for quests today. Street coins still follow mapped paths.")}</EmptyState>
+                )}
+              {!world?.zones.length &&
+                !recommendation &&
+                world &&
+                world.poiQuests?.status !== "empty" && (
+                <EmptyState art="place" title={tr("Nothing open right here yet")} status>
+                  {tr("Today's discoveries are still being placed. Pull the map to look around, or check back in a few minutes.")}</EmptyState>
+              )}
+              {world && world.zones.length > 0 && !recommendation && (
+                <EmptyState
+                  art="ghost"
+                  title={tr("You've done everything open for you today")}
+                  status
+                >
+                  {tr("New discoveries open with the next day. Coins on the streets still count while you walk.")}</EmptyState>
+              )}
+              {!coachStep &&
+                recommendedFind &&
+                !nativeTarget &&
+                !adventureNotice && (
+                  <button
+                    className="recommended-quest"
+                    onClick={() => goToStreetFind(recommendedFind.coin)}
+                  >
+                    <span className="recommended-art">
+                      <GameObjectArt kind="discovery" size={32} />
+                    </span>
+                    <span>
+                      <small>{tr("Nearest find")}</small>
+                      <strong>
+                        {tr("Street find · +")}{world?.streetFindXp ?? 15} XP
+                      </strong>
+                      <span>
+                        {tr("On a mapped path ·")}{" "}
+                        {distanceLabel(recommendedFind.distance)}
+                      </span>
+                    </span>
+                    <ArrowRight size={20} />
+                  </button>
+                )}
+              {!coachStep &&
+                recommended &&
                 recommendedZone &&
                 !nativeTarget &&
                 !adventureNotice && (
@@ -2407,12 +3635,13 @@ export default function App() {
                       />
                     </span>
                     <span>
-                      <small>Your next quest</small>
+                      <small>{tr("Nearest discovery")}</small>
                       <strong>{recommended.title}</strong>
                       <span>
                         {recommendedZone.name} ·{" "}
-                        {Math.round(meters(position, questPoint(recommended)))}{" "}
-                        m straight-line
+                        {distanceLabel(
+                          meters(position, questPoint(recommended)),
+                        )}
                       </span>
                     </span>
                     <ArrowRight size={20} />
@@ -2420,33 +3649,32 @@ export default function App() {
                 )}
               <div className="day-row">
                 <Badge tone="green">
-                  <Leaf size={12} /> {world?.cityName || "Your surroundings"}
+                  <Leaf size={12} /> {world?.cityName || tr("Your surroundings")}
                 </Badge>
+                {world?.cityStatus === "auto" && (
+                  <Badge tone="gold">{tr("Unverified map")}</Badge>
+                )}
                 <span>
-                  <Clock size={13} /> Refresh in{" "}
+                  <Clock size={13} /> {" "}{tr("Refresh in")}{" "}
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
-              <button
-                className="play-entry"
-                onClick={() => setTab("expeditions")}
-              >
-                <Footprints size={24} />
-                <span>
-                  <b>Testnet walks</b>
-                  <small>GPS checkpoints · NEAR rewards</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
+              <TodaysPot practice onOpen={() => setTab("funding")} />
+              <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               <div className="section-label">
-                <h2>Where to today?</h2>
-                <span>
-                  {world?.cityZoneCount ?? activeZones.length} CITY ZONES
-                </span>
+                <h2>{tr("Places today")}</h2>
+                <span>{world?.cityZoneCount ?? activeZones.length}</span>
               </div>
               {world?.quality && (
-                <details className="coverage-note">
-                  <summary>Map coverage & access</summary>
+                <details
+                  className={`coverage-note${world.cityStatus === "auto" ? " unverified" : ""}`}
+                  open={world.cityStatus === "auto" || undefined}
+                >
+                  <summary>
+                    {world.cityStatus === "auto"
+                      ? tr("Unverified map: generated automatically")
+                      : tr("About this map")}
+                  </summary>
                   <p>{world.quality.notice}</p>
                 </details>
               )}
@@ -2485,12 +3713,12 @@ export default function App() {
                       <div className="zone-info">
                         <div>
                           <Badge tone={z.tier === 1 ? "green" : "purple"}>
-                            {z.tier === 1 ? "FREE" : `TIER ${z.tier}`}
+                            {z.tier === 1 ? tr("FREE") : tr("TIER {0}", { 0: z.tier })}
                           </Badge>
                           {z.opensAt > now && (
-                            <small>Opens in {remaining(z.opensAt)}</small>
+                            <small>{tr("Opens in")}{" "}{remaining(z.opensAt)}</small>
                           )}
-                          <small>{Math.round(meters(position, z))} m</small>
+                          <small>{distanceLabel(meters(position, z))}</small>
                         </div>
                         <h3>{z.name}</h3>
                         <div className="zone-rewards">
@@ -2498,9 +3726,9 @@ export default function App() {
                             <Sparkle size={12} />
                             {q
                               ? q.completed
-                                ? "Personal activity complete"
+                                ? tr("Completed")
                                 : `${q.xp} XP`
-                              : "See activities"}
+                              : tr("See what's here")}
                           </span>
                           {q?.gold_u && !q.claimant ? (
                             <span>
@@ -2511,15 +3739,15 @@ export default function App() {
                             <span>
                               <GameObjectArt kind="discovery" size={20} />
                               {!q
-                                ? "Activity details"
+                                ? tr("Details")
                                 : activityArt?.state === "locked"
                                   ? activityArt.label
                                   : q.completed
-                                    ? "Completed"
+                                    ? tr("Completed")
                                     : q.kind === "chest" &&
                                         q.itemAvailable === true
-                                      ? "Aura chest"
-                                      : "XP discovery"}
+                                      ? tr("Aura chest")
+                                      : tr("XP visit")}
                             </span>
                           )}
                           <ArrowUpRight size={15} />
@@ -2533,34 +3761,29 @@ export default function App() {
                 className="subtle-link"
                 onClick={() => setTab("bounties")}
               >
-                Community tasks <ArrowRight size={15} />
+                {tr("Community tasks")}{" "}<ArrowRight size={15} />
               </button>
             </>
           )}
           {tab === "explore" && selected && (
             <>
               <button className="back-link" onClick={() => setSelected(null)}>
-                <ArrowLeft size={15} /> All zones
-              </button>
+                <ArrowLeft size={15} /> {" "}{tr("All discoveries")}</button>
               <div className="zone-access">
                 <Badge tone={selected.tier === 1 ? "green" : "purple"}>
-                  {selected.tier === 1 ? "Free zone" : `Tier ${selected.tier}`}
+                  {selected.tier === 1 ? tr("Free zone") : tr("Tier {0}", { 0: selected.tier })}
                 </Badge>
-                <span>{zoneQuests.length} activities</span>
+                <span>{tr("{0} activities", { 0: zoneQuests.length })}</span>
               </div>
               {selected.tier > player.tier ? (
                 <div className="locked-panel">
                   <LockKey size={25} />
-                  <h3>Unlock Tier {selected.tier}</h3>
+                  <h3>{tr("Opens at Tier")}{" "}{selected.tier}</h3>
                   <p>
-                    You need {selected.tier === 2 ? "50 000" : "100 000"} GOLD
-                    weighted stake. Your deposit is multiplied by the share of
-                    yield you contribute.
-                  </p>
+                    {tr("This place needs")}{" "}
+                    {selected.tier === 2 ? "50 000" : "100 000"} {" "}{tr("GOLD of weighted practice stake. Free places nearby are open to everyone.")}</p>
                   <p>
-                    You can request a withdrawal. Returns are not guaranteed.
-                    Staking does not guarantee a GOLD quest in every area.
-                  </p>
+                    {tr("Practice stake is play money you can withdraw. It does not promise a GOLD prize in every place.")}</p>
                   <button
                     className="primary-button"
                     onClick={() => {
@@ -2568,7 +3791,7 @@ export default function App() {
                       setTab("wallet");
                     }}
                   >
-                    Try demo staking <ArrowRight />
+                    {tr("Try practice staking")}{" "}<ArrowRight />
                   </button>
                 </div>
               ) : (
@@ -2585,15 +3808,25 @@ export default function App() {
                       <h2>{q.title}</h2>
                       <Badge tone="green">
                         {q.completed
-                          ? "COMPLETED"
+                          ? tr("COMPLETED")
                           : now < q.opens_at
-                            ? "OPENS LATER"
+                            ? tr("OPENS LATER")
                             : now >= q.closes_at
-                              ? "CLOSED"
-                              : "OPEN"}
+                              ? tr("CLOSED")
+                              : tr("OPEN")}
                       </Badge>
                     </div>
                     <p>{q.activity?.objective || q.description}</p>
+                    {q.clue && (
+                      <LandmarkClue
+                        clue={q.clue}
+                        choice={clueChoice[q.id]}
+                        disabled={!!busy || !!q.completed}
+                        onChoose={(choice) =>
+                          setClueChoice((all) => ({ ...all, [q.id]: choice }))
+                        }
+                      />
+                    )}
                     {q.activity && (
                       <div className="play-facts">
                         <span>
@@ -2637,53 +3870,59 @@ export default function App() {
                             size={24}
                           />
                           {q.completed
-                            ? "Activity complete"
+                            ? tr("Completed")
                             : q.itemAvailable === true
-                              ? "Aura chest"
+                              ? tr("Aura chest")
                               : q.itemAvailable === false
-                                ? "XP · editions exhausted"
-                                : "Item availability unconfirmed"}
+                                ? tr("XP only · all Auras found")
+                                : tr("Aura not confirmed yet")}
                         </span>
                       )}
                       {q.kind === "route" && (
                         <span>
                           <Flag />
-                          {q.checkpoint || 0}/{q.checkpointCount} checkpoints
+                          {tr("{0}/{1} stops", { 0: q.checkpoint || 0, 1: q.checkpointCount })}
                         </span>
                       )}
                       {q.gold_u > 0 && (
                         <span>
                           <CoinIcon />
                           {q.claimant
-                            ? "GOLD already claimed"
+                            ? tr("GOLD already collected")
                             : `${gold(q.gold_u)} GOLD`}
                         </span>
                       )}
                     </div>
                     <div className="distance-note">
                       <MapPin size={16} />
-                      {Math.round(meters(position, questPoint(q)))} m
-                      straight-line ·{" "}
+                      {distanceLabel(meters(position, questPoint(q)))} ·{" "}
                       {q.opens_at > now
-                        ? `opens in ${remaining(q.opens_at)}`
-                        : `closes in ${remaining(q.closes_at)}`}
+                        ? tr("opens in {0}", { 0: remaining(q.opens_at) })
+                        : tr("closes in {0}", { 0: remaining(q.closes_at) })}
                     </div>
                     {q.completed ? (
                       <button className="primary-button" disabled>
-                        Adventure completed <Check />
+                        {tr("Reward collected")}{" "}<Check />
                       </button>
                     ) : arena && meters(position, questPoint(q)) > 25 ? (
-                      <button
-                        className="primary-button"
-                        onClick={() => move(questPoint(q))}
-                      >
-                        Move here in demo <NavigationArrow />
-                      </button>
+                      <>
+                        <button
+                          className="primary-button"
+                          onClick={() =>
+                            faceToward(questPoint(q), q.title, { questId: q.id })
+                          }
+                        >
+                          {tr("Turn toward it")}{" "}<NavigationArrow />
+                        </button>
+                        <p className="fine-print">
+                          {tr("City demo: hold ↑ or W (or the pad) to walk, Shift to run. Real play moves only with your phone's GPS.")}</p>
+                      </>
                     ) : (
                       <button
                         className="primary-button"
                         disabled={
                           !!busy ||
+                          (!!q.clue && !clueChoice[q.id]) ||
                           meters(position, questPoint(q)) > 25 ||
                           q.opens_at > now ||
                           q.closes_at <= now
@@ -2691,30 +3930,27 @@ export default function App() {
                         onClick={() => void complete(q.id)}
                       >
                         {busy === "quest"
-                          ? "Verifying…"
+                          ? tr("Checking visit…")
                           : q.opens_at > now
-                            ? "Not open yet"
+                            ? tr("Not open yet")
                             : q.closes_at <= now
-                              ? "Closed"
+                              ? tr("Closed for today")
                               : q.kind === "route"
                                 ? (q.checkpoint || 0) >=
                                   (q.checkpointCount || 0)
-                                  ? "Finish walk"
-                                  : `Record checkpoint ${(q.checkpoint || 0) + 1}`
+                                  ? tr("Finish walk")
+                                  : tr("Confirm stop {0}", { 0: (q.checkpoint || 0) + 1 })
                                 : q.kind === "chest"
                                   ? q.itemAvailable === true
-                                    ? "Open the chest"
-                                    : "Complete the activity"
-                                  : q.activity?.actionLabel ||
-                                    "Confirm your visit"}
+                                    ? tr("Open chest")
+                                    : tr("Confirm visit")
+                                  : q.activity?.actionLabel || tr("Confirm visit")}
                         <ArrowRight />
                       </button>
                     )}
                     {q.gold_u > 0 && (
                       <p className="fine-print">
-                        Shared GOLD pays once. Your personal XP remains
-                        available.
-                      </p>
+                        {tr("The GOLD prize goes to the first explorer to finish. Your XP is always yours.")}</p>
                     )}
                   </div>
                 ))
@@ -2723,7 +3959,7 @@ export default function App() {
                 <details className="play-details zone-activities">
                   <summary>
                     <Flag size={20} />
-                    Choose another activity <span>{zoneQuests.length - 1}</span>
+                    {tr("Choose another activity")}{" "}<span>{zoneQuests.length - 1}</span>
                   </summary>
                   <div className="walk-picker">
                     {zoneQuests
@@ -2746,7 +3982,7 @@ export default function App() {
                             <b>{q.title}</b>
                             <small>
                               {q.completed
-                                ? "Completed"
+                                ? tr("Completed")
                                 : `${q.xp} XP · ${q.kind === "route" ? `${q.checkpointCount} stops` : "1 stop"}`}
                             </small>
                           </span>
@@ -2772,7 +4008,7 @@ export default function App() {
             />
           )}
           {tab === "inventory" && (
-            <>
+            <ScreenTabPanel idBase="bag" value="items">
               <Inventory
                 key={player.id}
                 onOriginalAppearance={(appearance) =>
@@ -2785,6 +4021,7 @@ export default function App() {
                 map3D={map3D}
                 onMap3D={toggleMap3D}
                 initialCollection={nativePlay ? "near" : "demo"}
+                xp={hudXp === null ? null : Number(hudXp)}
                 onExplore={() => setTab("explore")}
                 characterItems={appearanceItems}
                 adventureResults={
@@ -2799,6 +4036,15 @@ export default function App() {
                 }
                 nativeContent={
                   <>
+                    <WispRolls
+                      accountId={
+                        invisible.status === "ready" && invisible.signer
+                          ? invisible.signer.accountId
+                          : null
+                      }
+                      send={sendWispRoll}
+                      onWon={() => void me()}
+                    />
                     <NativeWardrobe
                       player={player}
                       data={nativeWardrobe}
@@ -2850,6 +4096,11 @@ export default function App() {
                       busy={busy}
                       onConnect={connectNear}
                       onPublish={publishNativeProfile}
+                      managedAccountId={
+                        invisible.status === "ready"
+                          ? invisible.accountId || ""
+                          : ""
+                      }
                     />
                   </>
                 }
@@ -2866,7 +4117,7 @@ export default function App() {
                     );
                     if (latest.current.player?.id !== player.id) return;
                     updateOwnedPlayer(r.player);
-                    notify("Your appearance has changed.");
+                    notify(tr("New look equipped."));
                   });
                 }}
                 onEquip={(item) =>
@@ -2878,24 +4129,62 @@ export default function App() {
                     updateOwnedPlayer(r.player);
                     notify(
                       item.equipped
-                        ? "Aura unequipped."
-                        : "Your new look is equipped.",
+                        ? tr("Aura taken off.")
+                        : tr("Equipped. Your new glow is on the map."),
                     );
                   })
                 }
-                onSell={async (item, price) => {
-                  const result = await action("listing", async () => {
-                    await api("/market/list", { itemId: item.id, price });
-                    if (latest.current.player?.id !== player.id) return false;
-                    await me();
-                    if (latest.current.player?.id !== player.id) return false;
-                    notify("Your Aura is listed on the demo market.");
-                    return true;
+                onSell={async (item, priceYocto) => {
+                  // Every Aura trade is on NEAR: secure the Aura as an NFT
+                  // (relayed, no fee), then list it on the market contract.
+                  if (!(await mintEarnedAura(item))) return false;
+                  const [claim, market] = await Promise.all([
+                    api<{ claim: NativeAuraClaim }>("/native/claims/confirm", {
+                      itemId: item.id,
+                    }),
+                    api<NativeMarketState>("/native/market"),
+                  ]);
+                  if (!claim.claim.token_id) return false;
+                  // NEAR Intents is the default market: the device key lists
+                  // the Aura there. Only a host without a deployed verifier
+                  // falls back to the market contract.
+                  if (
+                    orderSigner?.key &&
+                    orderSigner.accountId === claim.claim.receiver_id
+                  ) {
+                    // Loaded on demand to keep the first bundle small.
+                    const { sellAuraOnIntents } = await import("./intents-order");
+                    const viaIntents = await action("intents-sell", () =>
+                      sellAuraOnIntents(
+                        orderSigner,
+                        claim.claim.token_id!,
+                        priceYocto,
+                      ),
+                    );
+                    if (viaIntents === undefined) return false;
+                    if (viaIntents === "listed") {
+                      await me();
+                      notify(tr("Your Aura is listed through NEAR Intents. Find it in Market → Offers."));
+                      return true;
+                    }
+                  }
+                  if (!market.marketContract) return false;
+                  const listed = await tradeNative({
+                    kind: "list",
+                    accountId: claim.claim.receiver_id,
+                    marketId: market.marketContract,
+                    nftContractId: market.nftContract,
+                    tokenId: claim.claim.token_id,
+                    price: priceYocto,
                   });
-                  return result === true;
+                  if (listed) {
+                    await me();
+                    notify(tr("Your Aura is listed on NEAR. Find it in Market → Secured."));
+                  }
+                  return listed;
                 }}
               />
-            </>
+            </ScreenTabPanel>
           )}
           {((tab === "explore" && nativePlay) ||
             tab === "expeditions" ||
@@ -2910,6 +4199,12 @@ export default function App() {
                   ready={!!playAccount && nativeGame.state?.enrolled === true}
                   onToggle={nativeCollection.setEnabled}
                 />
+              )}
+              {tab === "explore" && nativePlay && (
+                <TodaysPot practice={false} onOpen={() => setTab("funding")} />
+              )}
+              {tab === "explore" && nativePlay && (
+                <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}
@@ -2989,102 +4284,289 @@ export default function App() {
             <button className="play-entry" onClick={() => setTab("fund")}>
               <ChartDonut size={22} />
               <span>
-                <b>Game economy</b>
-                <small>Funding and the 50/50 split</small>
+                <b>{tr("Game economy")}</b>
+                <small>{tr("Where rewards come from")}</small>
               </span>
               <ArrowRight size={20} />
             </button>
           )}
-          {tab === "settings" && (
-            <div className="play-menu">
-              <AccountSessions
-                player={player}
-                onConnect={connectNear}
-                onRevoke={revokeGameSessions}
-                busy={busy}
+          {tab === "settings" && profileView === "character" && (
+            <ScreenTabPanel idBase="profile" value="character">
+              <div className="profile-tiles">
+                <ProfileTile
+                  icon={Backpack}
+                  label={tr("Wardrobe")}
+                  hint={tr("Items and Auras")}
+                  onClick={() => setTab("inventory")}
+                />
+                <ProfileTile
+                  icon={Storefront}
+                  label={tr("Market")}
+                  hint={tr("Trade Auras")}
+                  onClick={() => setTab("market")}
+                />
+              </div>
+              <ProfileHero
+                avatar={
+                  <Character
+                    items={appearanceItems}
+                    originTokenId={player.appearance.originTokenId}
+                    compact
+                  />
+                }
+                name={player.name}
+                level={hudLevel}
+                progress={
+                  hudXp !== null && hudLevel !== null
+                    ? Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          ((hudXp - 100 * (hudLevel - 1) ** 2) /
+                            (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) *
+                            100,
+                        ),
+                      )
+                    : null
+                }
+                detail={
+                  hudXp !== null && hudLevel !== null
+                    ? tr("{0} / {1} XP to level {2}", { 0: hudXp, 1: 100 * hudLevel ** 2, 2: hudLevel + 1 })
+                    : tr("Secure your explorer to keep progress")
+                }
               />
-              <button className="play-entry" onClick={() => setTab("fund")}>
-                <ChartDonut size={24} />
-                <span>
-                  <b>Game economy</b>
-                  <small>NEAR funding, pools and distribution</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
-              <button
-                className="play-entry"
-                aria-pressed={map3D}
-                onClick={toggleMap3D}
+              <div className="play-menu">
+                <BadgeBook
+                  key={player.id}
+                  fix={fix}
+                  arena={arena}
+                  onConnectNear={() => void connectNear()}
+                />
+              </div>
+              <p className="fine-print">
+                {nativePlay
+                  ? tr("You are playing on the test network. Test NEAR has no monetary value.")
+                  : tr("You are playing with practice GOLD, which is play money.")}
+              </p>
+            </ScreenTabPanel>
+          )}
+          {tab === "settings" && profileView === "settings" && (
+            <ScreenTabPanel idBase="profile" value="settings">
+              <section
+                className="settings-group"
+                aria-labelledby="settings-game-title"
               >
-                <Cube size={24} />
+                <h2 id="settings-game-title">{tr("Game")}</h2>
+                <LanguageSetting />
+                <SettingsSwitch
+                  icon={Cube}
+                  label={tr("3D character")}
+                  hint={tr("Turn off for a lighter map")}
+                  checked={map3D}
+                  onChange={() => toggleMap3D()}
+                />
+                <SettingsSwitch
+                  icon={Vibrate}
+                  label={tr("Vibration")}
+                  checked={feedback.haptics}
+                  onChange={(on) => {
+                    setFeedbackPreferences({ haptics: on });
+                    if (on) cue("step");
+                  }}
+                />
+                <SettingsSwitch
+                  icon={SpeakerHigh}
+                  label={tr("Sound")}
+                  checked={feedback.sound}
+                  onChange={(on) => {
+                    setFeedbackPreferences({ sound: on });
+                    if (on) previewSound();
+                  }}
+                />
+                <SettingsSwitch
+                  icon={PersonSimpleRun}
+                  label={tr("Reduce motion")}
+                  hint={tr("Stops map flights, walking and sparkles")}
+                  checked={feedback.motion === "reduce"}
+                  onChange={(on) =>
+                    setFeedbackPreferences({ motion: on ? "reduce" : "system" })
+                  }
+                />
+              </section>
+              <section
+                className="settings-group"
+                aria-labelledby="settings-help-title"
+              >
+                <h2 id="settings-help-title">{tr("Help")}</h2>
+                <button
+                  type="button"
+                  className="settings-row"
+                  onClick={() => setShowNpc(true)}
+                >
+                  <Question size={22} aria-hidden="true" />
+                  <span>{tr("Help & guide")}</span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </button>
+<a className="settings-row" href="/how-it-works">
+                  <Sparkle size={22} aria-hidden="true" />
+                  <span>
+                    {tr("How it works")}<small>{tr("The game in one page")}</small>
+                  </span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </a>
+                                {!firstSession.visible && (
+                  <button
+                    type="button"
+                    className="settings-row"
+                    onClick={() => {
+                      firstSession.show();
+                      setTab("explore");
+                      setSheetExpanded(false);
+                    }}
+                  >
+                    <Compass size={22} aria-hidden="true" />
+                    <span>{tr("Show first steps again")}</span>
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="settings-row"
+                  onClick={() => setTab("fund")}
+                >
+                  <BookOpen size={22} aria-hidden="true" />
+                  <span>
+                    {tr("Game economy")}<small>{tr("Where rewards come from")}</small>
+                  </span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </button>
+              </section>
+              <ChainSettings accountId={invisible.accountId} />
+              <section
+                className="settings-group"
+                aria-labelledby="settings-account-title"
+              >
+                <h2 id="settings-account-title">{tr("Account and devices")}</h2>
+                <div className="settings-pad">
+                  <AccountSessions
+                    player={player}
+                    onConnect={connectNear}
+                    onConnectEthereum={() => connectEthereum()}
+                    onSecure={() => void attachPasskey()}
+                    onRevoke={revokeGameSessions}
+                    busy={busy}
+                  />
+                  <DeviceKeys
+                    status={invisible.status}
+                    accountId={invisible.accountId}
+                    keys={invisible.keys}
+                    localPublicKey={invisible.publicKey}
+                    busy={busy}
+                    onSetupRecovery={setupRecoveryPasskey}
+                    onRevoke={revokeDevice}
+                    onRestore={restoreThisDevice}
+                  />
+                </div>
+              </section>
+              <details className="advanced-settings settings-group">
+                <summary>{tr("Advanced: reward ledger")}</summary>
+                <div className="settings-pad">
+                  <div
+                    className="play-mode-switch"
+                    role="group"
+                    aria-label={tr("Reward ledger")}
+                  >
+                    <button
+                      aria-pressed={!nativePlay}
+                      onClick={() => chooseLedger(false)}
+                    >
+                      {tr("Practice ledger")}</button>
+                    <button
+                      aria-pressed={nativePlay}
+                      onClick={() => chooseLedger(true)}
+                    >
+                      {tr("Test network")}</button>
+                  </div>
+                  <p className="fine-print">
+                    {tr("Practice GOLD is play money. The test network uses NEAR testnet tokens. Neither has monetary value; receipts for both live in Profile · Rewards.")}</p>
+                </div>
+              </details>
+            </ScreenTabPanel>
+          )}
+          {tab === "funding" && (
+            <RewardFundingPage
+              practice={!nativePlay}
+              onExplore={() => setTab("explore")}
+              onLedger={() => setTab("fund")}
+            />
+          )}
+          {tab === "fuel" && (
+            <ScreenTabPanel idBase="profile" value="stake">
+              <FuelTheCity
+                player={player}
+                account={
+                  invisible.status === "ready" && invisible.accountId
+                    ? invisible.accountId
+                    : player.wallets[0]?.account_id || ""
+                }
+                managed={invisible.status === "ready" && !!invisible.accountId}
+                cityName={world?.cityName}
+                onConnect={connectNear}
+                onTransaction={operateNativeVault}
+              />
+              <button
+                type="button"
+                className="play-entry"
+                onClick={() => {
+                  setWalletView("staking");
+                  setTab("wallet");
+                }}
+              >
+                <Leaf size={22} />
                 <span>
-                  <b>3D character: {map3D ? "On" : "Off"}</b>
-                  <small>Choose 2D for a lighter map</small>
-                </span>
-              </button>
-              <button className="play-entry" onClick={() => setShowNpc(true)}>
-                <Question size={24} />
-                <span>
-                  <b>Help & guide</b>
-                  <small>How to play</small>
+                  <b>{tr("Vault staking")}</b>
+                  <small>{tr("Your staked balance and practice staking")}</small>
                 </span>
                 <ArrowRight size={20} />
               </button>
-            </div>
+            </ScreenTabPanel>
           )}
           {tab === "fund" && (
             <>
-              <button className="back-link" onClick={() => setTab("settings")}>
-                <ArrowLeft size={20} />
-                Settings
-              </button>
               <NativeEconomyPanel />
               <details className="play-details">
-                <summary>Demo economy simulation</summary>
+                <summary>{tr("Practice economy simulation")}</summary>
                 <FundPanel />
               </details>
             </>
           )}
           {tab === "community" && (
-            <>
-              <details className="play-details" open={!creatorsEnabled}>
-                <summary>Map notes and sponsored tasks</summary>
-                <div className="play-menu">
-                  <button
-                    className="play-entry"
-                    onClick={() => setTab("messages")}
-                  >
-                    <ChatCircle size={26} />
-                    <span>
-                      <b>Map notes</b>
-                      <small>Leave a message at a place</small>
-                    </span>
-                    <ArrowRight size={20} />
-                  </button>
-                  <button
-                    className="play-entry"
-                    onClick={() => setTab("bounties")}
-                  >
-                    <Flag size={26} />
-                    <span>
-                      <b>Community tasks</b>
-                      <small>Fund a task · share proof · earn a reward</small>
-                    </span>
-                    <ArrowRight size={20} />
-                  </button>
-                  <p className="play-hint">
-                    Notes use the selected demo or GPS location. Tasks have
-                    their own sponsor-funded rewards.
-                  </p>
-                </div>
-              </details>
+            <ScreenTabPanel idBase="community" value={communityTab}>
+              {communityTab === "creators" && (
+                <CommunityBonusVote
+                  key={`bonus-${player.id}`}
+                  playerId={player.id}
+                  notify={notify}
+                />
+              )}
               <CreatorCommunity
                 key={player.id}
+                section={communityTab === "creators" ? "creators" : "quests"}
                 player={player}
                 notify={notify}
                 view={creatorView}
                 onViewChange={setCreatorView}
                 onPlayerChange={me}
+                position={position}
+                money={{
+                  accountId:
+                    invisible.status === "ready" && invisible.accountId
+                      ? invisible.accountId
+                      : player.wallets[0]?.account_id || "",
+                  managed:
+                    invisible.status === "ready" && !!invisible.accountId,
+                  pay: operateCreatorPayment,
+                }}
                 onCapabilityChange={(enabled) => {
                   if (latest.current.player?.id !== player.id) return;
                   setCreatorCapability((previous) =>
@@ -3095,48 +4577,35 @@ export default function App() {
                   );
                 }}
               />
-            </>
+            </ScreenTabPanel>
           )}
           {tab === "market" && (
-            <Market
-              nativeContent={
-                <NativeMarketPanel
-                  player={player}
-                  wardrobe={nativeWardrobe}
-                  busy={busy}
-                  onConnect={connectNear}
-                  onTrade={tradeNative}
-                />
-              }
-              player={player}
-              busy={busy}
-              onBuy={(listing) =>
-                void action("buy", async () => {
-                  const r = await api<{ player: Player }>("/market/buy", {
-                    listingId: listing.id,
-                  });
-                  updateOwnedPlayer(r.player);
-                  notify("This Aura is yours. Find it in your inventory.");
-                })
-              }
-              onCancel={(listing) =>
-                void action("cancel", async () => {
-                  await api("/market/cancel", { listingId: listing.id });
-                  await me();
-                  notify("Listing cancelled.");
-                })
-              }
-              onInventory={() => setTab("inventory")}
-            />
-          )}
-          {(tab === "bounties" ||
-            (tab === "messages" && notesView === "browse")) && (
-            <button className="back-link" onClick={() => setTab("community")}>
-              <ArrowLeft size={20} />
-              Community
-            </button>
+            <ScreenTabPanel idBase="bag" value="market">
+              <ScreenTabs
+                label={tr("Market")}
+                idBase="market"
+                variant="sub"
+                sticky={false}
+                tabs={MARKET_TABS}
+                value={marketView}
+                onChange={setMarketView}
+              />
+              <ScreenTabPanel idBase="market" value={marketView}>
+                  <NativeMarketPanel
+                    key={marketView}
+                    section={marketView}
+                    player={player}
+                    wardrobe={nativeWardrobe}
+                    busy={busy}
+                    onConnect={connectNear}
+                    onTrade={tradeNative}
+                    orderSigner={orderSigner}
+                  />
+              </ScreenTabPanel>
+            </ScreenTabPanel>
           )}
           {tab === "messages" && (
+            <ScreenTabPanel idBase="community" value="notes">
             <MapNotes
               key={player.id}
               playerId={player.id}
@@ -3146,31 +4615,32 @@ export default function App() {
               view={notesView}
               notify={notify}
               onViewChange={setNotesView}
+              recordAccount={recordAccount}
+              onRecord={recordNote}
               onBlockChange={() => {
                 setOthers([]);
                 window.dispatchEvent(new Event("questlayer:social-blocks"));
               }}
             />
+            </ScreenTabPanel>
           )}
           {tab === "bounties" && (
-            <>
+            <ScreenTabPanel idBase="community" value="tasks">
               <div
                 className="play-mode-switch"
                 role="group"
-                aria-label="Community task network"
+                aria-label={tr("Task board")}
               >
                 <button
                   aria-pressed={taskRealm === "near"}
                   onClick={() => setTaskRealm("near")}
                 >
-                  NEAR testnet
-                </button>
+                  {tr("Sponsored tasks")}</button>
                 <button
                   aria-pressed={taskRealm === "demo"}
                   onClick={() => setTaskRealm("demo")}
                 >
-                  Demo
-                </button>
+                  {tr("Practice tasks")}</button>
               </div>
               {taskRealm === "near" ? (
                 <NativeTasks
@@ -3187,24 +4657,38 @@ export default function App() {
                   notify={notify}
                 />
               )}
-            </>
+            </ScreenTabPanel>
           )}
         </main>
       )}
       {player && (
         <>
-          <div className="map-top-chip">
+          <div className="map-top-chip map-status-chip">
             <span className="status-dot" />
-            {nativePlay
-              ? `NEAR TESTNET · ${arena ? "GPS REQUIRED" : `GPS ${fix ? Math.round(fix.accuracy) : "…"} m`}`
-              : arena
-                ? "CITY DEMO · CLICK TO MOVE"
-                : `DEMO · GPS ${fix ? Math.round(fix.accuracy) : "…"} m`}
+            <span className="map-status-text">
+              {nativePlay
+                ? arena
+                  ? tr("Turn on location")
+                  : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
+                : arena
+                  ? tr("City demo · arrows or WASD")
+                  : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`}
+            </span>
             <button
+              aria-label={
+                arena || nativePlay ? tr("Use GPS, my location") : tr("Demo, back to city demo")
+              }
               onClick={() => (arena || nativePlay ? locate() : returnToArena())}
             >
-              {arena || nativePlay ? "My surroundings" : "Back to arena"}
-              <ArrowUpRight size={12} />
+              {arena || nativePlay ? (
+                <>
+                  <NavigationArrow size={14} weight="fill" />
+                  {tr("Use GPS")}</>
+              ) : (
+                <>
+                  <ArrowUpRight size={14} />
+                  {tr("Demo")}</>
+              )}
             </button>
           </div>
           {presence && (
@@ -3212,14 +4696,51 @@ export default function App() {
               className="presence-chip"
               onClick={() => setPresence(false)}
             >
-              <Eye size={14} /> Visible · {remaining(presenceUntil)}{" "}
+              <Eye size={14} />{" "}
+              {presenceUntil > Date.now()
+                ? tr("Visible · {0}", { 0: remaining(presenceUntil) })
+                : tr("Going visible…")}{" "}
               <X size={12} />
             </button>
           )}
-          <div className="map-controls">
+          {searchHere && (
             <button
-              aria-label="City overview"
-              title="City overview"
+              className="map-search-here"
+              onClick={() => {
+                exploreAt.current = Date.now();
+                setMapCenter(null);
+                void loadWorld(arena ? HOME : position, arena, searchHere);
+              }}
+            >
+              <MagnifyingGlass size={16} weight="bold" aria-hidden="true" />
+              {tr("Search this area")}
+            </button>
+          )}
+          {arena && !nativePlay && !globe && tab === "explore" && (
+            <DemoControls
+              held={demoWalk.held}
+              running={demoWalk.running}
+              run={demoWalk.run}
+              setRun={demoWalk.setRun}
+              press={demoWalk.press}
+              release={demoWalk.release}
+              target={
+                demoTarget
+                  ? {
+                      label: demoTarget.label,
+                      meters: metersBetween(position, demoTarget),
+                      relative:
+                        (headingTo(position, demoTarget) ?? demoWalk.heading) -
+                        demoWalk.heading,
+                    }
+                  : null
+              }
+            />
+          )}
+          <div className="map-controls map-toolbar" role="toolbar" aria-label={tr("Map tools")} aria-orientation="vertical">
+            <button
+              aria-label={tr("City overview")}
+              title={tr("City overview")}
               onClick={() => {
                 setOverview((v) => !v);
                 setGlobe(false);
@@ -3227,11 +4748,11 @@ export default function App() {
                 setSelected(null);
               }}
             >
-              <Compass size={23} />
+              <Compass size={20} />
             </button>
             <button
-              aria-label="My location"
-              title="My location"
+              aria-label={tr("My location")}
+              title={tr("My location")}
               onClick={() => {
                 setFollow(true);
                 setOverview(false);
@@ -3240,12 +4761,12 @@ export default function App() {
                 else setPosition((p) => ({ ...p }));
               }}
             >
-              <Crosshair size={23} />
+              <Crosshair size={20} />
             </button>
             <button
-              aria-label="Globe"
+              aria-label={tr("Globe")}
               aria-pressed={globe}
-              title="Globe"
+              title={tr("Globe")}
               className={globe ? "active" : ""}
               onClick={() => {
                 if (!globe) {
@@ -3258,15 +4779,35 @@ export default function App() {
                 setFollow(true);
               }}
             >
-              <GlobeHemisphereWest size={23} />
+              <GlobeHemisphereWest size={20} />
             </button>
             <button
-              aria-label="Map notes"
-              title="Map notes"
+              aria-label={tr("Map notes")}
+              title={tr("Map notes")}
               onClick={() => setTab("messages")}
             >
-              <ChatCircle size={23} />
+              <ChatCircle size={20} />
             </button>
+            <button
+              aria-label={tr("Emotes")}
+              title={tr("Emotes")}
+              aria-expanded={emotePicker}
+              className={emotePicker ? "active" : ""}
+              onClick={() => setEmotePicker((v) => !v)}
+            >
+              <Smiley size={20} />
+            </button>
+            {emotePicker && (
+              <EmotePicker
+                onEmote={(id: string, until: number) => setMyEmote({ id, until })}
+                onShop={() => {
+                  setEmotePicker(false);
+                  setTab("shop");
+                  setSheetExpanded(true);
+                }}
+                onClose={() => setEmotePicker(false)}
+              />
+            )}
           </div>
           <div className="player-bottom">
             <div className="mini-avatar">
@@ -3278,64 +4819,35 @@ export default function App() {
               <span>{hudLevel ?? "—"}</span>
             </div>
             <div>
-              <b>
-                {player.name} <Badge>EXPLORER</Badge>
-              </b>
-              <div className="xp-bar">
-                <i
-                  style={{
-                    width:
-                      hudXp !== null && hudLevel !== null
-                        ? `${Math.min(100, ((hudXp - 100 * (hudLevel - 1) ** 2) / (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) * 100)}%`
-                        : "0%",
-                  }}
-                />
-              </div>
-              <small>
-                {hudXp !== null && hudLevel !== null
-                  ? `${hudXp} / ${100 * hudLevel ** 2} ${nativePlay ? "confirmed" : player.lockedXp ? "available demo" : "demo"} XP${!nativePlay && player.lockedXp ? ` · ${player.lockedXp} committed` : ""}`
-                  : playAccount
-                    ? "No confirmed XP available"
-                    : "Link a NEAR wallet to save testnet XP"}
-              </small>
+              <b>{player.name}</b>
+              <XpBar
+                xp={hudXp}
+                note={
+                  !nativePlay && player.lockedXp
+                    ? `${player.lockedXp} committed`
+                    : undefined
+                }
+                placeholder={
+                  playAccount
+                    ? tr("Loading your progress…")
+                    : tr("Secure your explorer to keep progress")
+                }
+              />
               {!nativePlay && <PickupSummary totals={pickupFeedback.totals} />}
             </div>
-            <button onClick={() => setTab("inventory")} aria-label="Inventory">
+            <button onClick={() => setTab("inventory")} aria-label={tr("Inventory")}>
               <Backpack size={23} />
             </button>
           </div>
-          <button
-            className="npc-button"
-            aria-label="Ask your guide"
-            onClick={() => setShowNpc(true)}
-          >
-            <Ghost color="#c4a165" hat />
-            <span>
-              Need a little direction?
-              <b>
-                Ask your guide <ArrowUpRight size={13} />
-              </b>
-            </span>
-            <span className="npc-dot" />
-          </button>
-          <div className="map-legend">
-            <span>
-              <GameObjectArt kind="place" size={20} /> Place
-            </span>
-            <span>
-              <GameObjectArt kind="discovery" state="completed" size={20} />{" "}
-              Completed
-            </span>
-            <span>
-              <GameObjectArt kind="coin" size={20} /> GOLD coin
-            </span>
-          </div>
         </>
+      )}
+      <RewardBursts bursts={bursts} />
+      {invisible.signer && player && (
+        <AutoSocialProfile signer={invisible.signer} player={player} />
       )}
       {busy === "world" && (
         <div className="world-loading">
-          <span className="spinner" /> Finding trails and today’s treasures…
-        </div>
+          <span className="spinner" /> {" "}{tr("Finding trails and today’s treasures…")}</div>
       )}
       {toast && (
         <div
@@ -3354,27 +4866,25 @@ export default function App() {
       {!player && busy === "near" && (
         <div className="wallet-connecting" role="status">
           <Wallet size={24} />
-          <strong>Connecting your NEAR explorer…</strong>
-          <span>Waiting for the wallet and NEAR verification.</span>
+          <strong>{tr("Connecting your explorer…")}</strong>
+          <span>{tr("Approve the request in your wallet app.")}</span>
         </div>
       )}
       {walletChoices && (
-        <Dialog label="Choose a NEAR wallet" onClose={() => chooseWallet(null)}>
+        <Dialog label={walletChoiceKind === "evm" ? tr("Choose an Ethereum wallet") : tr("Choose a NEAR wallet")} onClose={() => chooseWallet(null)}>
           <div className="wallet-select">
             <div className="panel-heading">
-              <h2>Choose a NEAR wallet</h2>
+              <h2>{walletChoiceKind === "evm" ? tr("Choose an Ethereum wallet") : tr("Choose a NEAR wallet")}</h2>
               <button
                 className="icon-button"
-                aria-label="Cancel wallet connection"
+                aria-label={tr("Cancel wallet connection")}
                 onClick={() => chooseWallet(null)}
               >
                 <X size={20} />
               </button>
             </div>
             <p>
-              Connect on NEAR testnet. Your wallet signs a message to create or
-              restore your explorer.
-            </p>
+              {tr("Your wallet signs a short message to create or restore your explorer. Nothing is paid.")}</p>
             <div className="wallet-options">
               {walletChoices.map((w) => (
                 <button key={w.id} onClick={() => chooseWallet(w.id)}>
@@ -3390,28 +4900,40 @@ export default function App() {
               ))}
             </div>
             <p className="fine-print">
-              Your keys stay in your wallet. QuestLayer never asks for your
-              recovery phrase.
-            </p>
+              {tr("Your keys stay in your wallet. QuestLayer never asks for your recovery phrase.")}</p>
             <button
               className="secondary-button"
               onClick={() => chooseWallet(null)}
             >
-              Back
-            </button>
+              {tr("Back")}</button>
           </div>
         </Dialog>
       )}
-      {loaded && !player && (
+      {loaded && !player && meUnreachable && (
+        <Dialog label={tr("Can't reach QuestLayer")} open onClose={() => {}}>
+          <section className="welcome-card offline-gate">
+            <WifiSlash size={40} aria-hidden="true" />
+            <h2>{online ? tr("Can't reach QuestLayer") : tr("You're offline")}</h2>
+            <p>
+              {tr("Your explorer and progress are saved. They'll be right here as soon as you're back online.")}</p>
+            <button className="primary-button" onClick={() => void me()}>
+              {tr("Try again")}{" "}<ArrowClockwise size={18} />
+            </button>
+          </section>
+        </Dialog>
+      )}
+      {loaded && !player && !meUnreachable && (
         <Welcome
           error={toast?.error ? toast.text : undefined}
           onNear={(name) => connectNear({ signIn: true, name })}
+          onEthereum={(name) => connectEthereum({ signIn: true, name })}
           busy={busy}
           action={action}
           onPlayer={(p) => {
             setPlayer(p);
             setLoaded(true);
           }}
+          onRestore={restoreThisDevice}
         />
       )}
       {discovery && player && !nativePlay && (
@@ -3423,6 +4945,27 @@ export default function App() {
           busy={!!busy}
           actionError={toast?.error ? toast.text : undefined}
           onInspect={inspectAdventureResult}
+          itemActions={(item) =>
+            item.kind === "aura" && (
+              <SecureAndShare
+                item={item}
+                player={player}
+                busy={!!busy}
+                place={world?.cityName}
+                availability={
+                  invisible.status === "ready" && nativeWardrobe?.claimsEnabled
+                    ? "ready"
+                    : invisible.status === "creating" ||
+                        (invisible.status === "ready" && !nativeWardrobe)
+                      ? "preparing"
+                      : "off"
+                }
+                onSecure={mintEarnedAura}
+                onPasskey={attachPasskey}
+                onDone={() => firstSession.mark("secure")}
+              />
+            )
+          }
           onEquip={(result) => void equipAdventureResult(result)}
           onInventory={() => {
             adventureResults.close();
@@ -3436,12 +4979,24 @@ export default function App() {
           }}
         />
       )}
-      {showNpc && <Npc onClose={() => setShowNpc(false)} />}
-      {tab === "explore" && (
-        <div className="demo-footer">
-          {nativePlay ? "NEAR TESTNET" : "DEMO GOLD · NEAR TESTNET"}{" "}
-          <span>✦</span> QuestLayer
-        </div>
+      {actorOpen && world && (
+        <ActorSheet
+          actor={actorOpen}
+          worldId={world.id}
+          location={
+            world.arena
+              ? { ...position, accuracy: 0, timestamp: Date.now() }
+              : fix
+          }
+          onClose={() => setActorOpen(null)}
+        />
+      )}
+      {showNpc && (
+        <Npc
+          worldId={world?.id}
+          position={position}
+          onClose={() => setShowNpc(false)}
+        />
       )}
     </div>
   );
@@ -3451,12 +5006,16 @@ function Welcome({
   busy,
   error,
   onNear,
+  onEthereum,
   action,
   onPlayer,
+  onRestore,
 }: {
   busy: string;
   error?: string;
+  onRestore: () => Promise<boolean>;
   onNear: (name: string) => Promise<void>;
+  onEthereum: (name: string) => Promise<void>;
   action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
   onPlayer: (p: Player) => void;
 }) {
@@ -3466,7 +5025,7 @@ function Welcome({
     e?.preventDefault();
     await action("welcome", async () => {
       const r = await api<{ player: Player }>("/session", {
-        name: name || "Explorer",
+        name: name || tr("Explorer"),
       });
       onPlayer(r.player);
     });
@@ -3475,11 +5034,11 @@ function Welcome({
     await action("passkey", async () => {
       const r = await api<{ options: any; challengeId: string }>(
         "/passkey/options",
-        { action: existing ? "login" : "register", name: name || "Explorer" },
+        { action: existing ? "login" : "register", name: name || tr("Explorer") },
       );
       const response = existing
-        ? await startAuthentication({ optionsJSON: r.options })
-        : await startRegistration({ optionsJSON: r.options });
+        ? await (await webauthn()).startAuthentication({ optionsJSON: r.options })
+        : await (await webauthn()).startRegistration({ optionsJSON: r.options });
       const verified = await api<{ player: Player }>("/passkey/verify", {
         challengeId: r.challengeId,
         response,
@@ -3489,12 +5048,11 @@ function Welcome({
   }
   return (
     <Dialog
-      label="Welcome to QuestLayer"
+      label={tr("Welcome to QuestLayer")}
       open={busy !== "near"}
       onClose={() => {}}
     >
       <section className="welcome-card">
-        <div className="eyebrow">WELCOME TO QUESTLAYER</div>
         <div className="welcome-art">
           <span className="orbit one" />
           <span className="orbit two" />
@@ -3507,15 +5065,16 @@ function Welcome({
           <Leaf className="welcome-leaf" weight="duotone" />
         </div>
         <h1 tabIndex={-1} autoFocus>
-          Your city.
-          <br />
-          <em>Your next quest.</em>
+          {tr("Your city.")}<br />
+          <em>{tr("Your haunt to explore.")}</em>
         </h1>
         <p>
-          Explore real places. Complete quests.
-          <br />
-          Find an Aura and make it yours.
-        </p>
+          {tr("Walk real streets and open chests.")}<br />
+          {tr("Earn Auras, the glow your friendly ghost wears.")}</p>
+        <a className="welcome-how" href="/how-it-works">
+          <Sparkle size={16} weight="fill" aria-hidden="true" />
+          {tr("How it works")}<ArrowRight size={16} aria-hidden="true" />
+        </a>
         {error && (
           <p className="inline-error" role="alert">
             {error}
@@ -3525,61 +5084,83 @@ function Welcome({
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
-            void onNear(name || "Explorer");
+            void start();
           }}
         >
-          <label htmlFor="nickname">WHAT SHOULD WE CALL YOU?</label>
+          <label htmlFor="nickname">{tr("What should we call you?")}</label>
           <input
             id="nickname"
-            placeholder="Your explorer name"
+            placeholder={tr("Your explorer name")}
             value={name}
             minLength={2}
             maxLength={24}
             onChange={(e) => setName(e.target.value)}
+            onFocus={preloadGameMap}
             autoComplete="nickname"
           />
           <button className="primary-button" type="submit" disabled={!!busy}>
-            <Wallet size={20} />
-            {busy === "near"
-              ? "Waiting for your wallet…"
-              : "Continue with NEAR"}
-          </button>
-          <p className="identity-note">
-            NEAR testnet · sign a message, not a payment. Returning wallets
-            restore the same explorer.
-          </p>
-          <button
-            className="secondary-button"
-            disabled={!!busy}
-            type="button"
-            onClick={() => void start()}
-          >
             {busy === "welcome"
-              ? "Preparing your adventure…"
-              : "Enter the demo world"}
+              ? tr("Preparing your explorer…")
+              : tr("Start exploring")}
             <ArrowRight size={20} />
           </button>
         </form>
         <button
-          className="passkey-button"
+          className="text-button"
           disabled={!!busy}
-          onClick={() => void passkey()}
+          onClick={() => {
+            setExisting(true);
+            void passkey();
+          }}
         >
-          <Key size={18} />
-          {existing
-            ? "Sign in with a passkey"
-            : "Create a demo explorer with a passkey"}
+          <Key size={16} /> {" "}{tr("I already have an explorer")}</button>
+        <button
+          className="text-button"
+          disabled={!!busy}
+          onClick={() => void onRestore()}
+        >
+          <Key size={16} />
+          {busy === "recovery-restore"
+            ? tr("Restoring your explorer…")
+            : tr("Restore with a recovery passkey")}
         </button>
-        <button className="text-button" onClick={() => setExisting((x) => !x)}>
-          {existing ? "I am new here" : "I already have a passkey"}
-        </button>
+        <details className="welcome-advanced">
+          <summary>{tr("Advanced")}</summary>
+          <button
+            className="passkey-button"
+            disabled={!!busy}
+            onClick={() => {
+              setExisting(false);
+              void passkey();
+            }}
+          >
+            <Key size={18} /> {" "}{tr("Create an explorer secured by a passkey")}</button>
+          <button
+            className="passkey-button"
+            disabled={!!busy}
+            onClick={() => void onNear(name || "Explorer")}
+          >
+            <Wallet size={18} />
+            {busy === "near"
+              ? tr("Waiting for your wallet…")
+              : tr("Continue with an external NEAR wallet")}
+          </button>
+          <button
+            className="passkey-button"
+            disabled={!!busy}
+            onClick={() => void onEthereum(name || "Explorer")}
+          >
+            <Wallet size={18} />
+            {busy === "evm-wallet"
+              ? tr("Waiting for your wallet…")
+              : tr("Continue with MetaMask or Rabby")}
+          </button>
+          <p className="identity-note">
+            {tr("A wallet signs a message, not a payment. Returning wallets restore the same explorer.")}</p>
+        </details>
         <div className="welcome-note">
           <ShieldCheck size={17} />
-          <span>
-            No deposit. Your wallet keeps your keys.
-            <br />
-            Demo GOLD is not real NEAR.
-          </span>
+          <span>{tr("No sign-up, no deposit. Play first, secure later.")}</span>
         </div>
       </section>
     </Dialog>
@@ -3593,12 +5174,12 @@ function WalletNavigation({
   onChange: (v: "rewards" | "staking" | "demo") => void;
 }) {
   return (
-    <div className="play-switch" role="group" aria-label="Wallet section">
+    <div className="play-switch" role="group" aria-label={tr("Rewards section")}>
       {(
         [
-          { id: "rewards", label: "Rewards", icon: Wallet },
-          { id: "staking", label: "Staking", icon: Leaf },
-          { id: "demo", label: "Demo", icon: Compass },
+          { id: "rewards", label: tr("Rewards"), icon: Wallet },
+          { id: "staking", label: tr("Staking"), icon: Leaf },
+          { id: "demo", label: tr("Practice"), icon: Compass },
         ] as const
       ).map((v) => (
         <button
@@ -3613,833 +5194,18 @@ function WalletNavigation({
     </div>
   );
 }
-function WalletPanel({
-  player,
-  busy,
-  action,
-  onPlayer,
-  onNear,
-  notify,
-}: {
-  player: Player;
-  busy: string;
-  action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
-  onPlayer: (p: Player) => void;
-  onNear: () => Promise<void>;
-  notify: (s: string, e?: boolean) => void;
-}) {
-  const [deposit, setDeposit] = useState("100000"),
-    [share, setShare] = useState(100),
-    [pool, setPool] = useState("meadow"),
-    [balance, setBalance] = useState<string | null>(null),
-    [contributions, setContributions] = useState<Record<string, number>>({});
-  const pools = [
-    {
-      id: "meadow",
-      name: "Meadow pool",
-      detail: "Native staking simulation",
-      fee: "5% APR · simulation",
-    },
-    {
-      id: "river",
-      name: "River pool",
-      detail: "Second simulated strategy",
-      fee: "5% APR · simulation",
-    },
-    {
-      id: "mountain",
-      name: "Mountain pool",
-      detail: "Third simulated strategy",
-      fee: "5% APR · simulation",
-    },
-  ];
-  const staked = player.positions.reduce((s, p) => s + p.active_u, 0);
-  const weighted = Math.floor((units(deposit) * share) / 100);
-  return (
-    <>
-      <div className="wallet-hero">
-        <span>AVAILABLE DEMO GOLD</span>
-        <div>
-          <CoinIcon />
-          <strong>{gold(player.gold_u)}</strong>
-        </div>
-        <small>
-          {near(player.gold_u)} NEAR equivalent in this simulation · no monetary
-          value
-        </small>
-        <div>
-          <Badge tone="gold">TIER {player.tier}</Badge>
-          <Badge>50% coins / 50% zones</Badge>
-        </div>
-      </div>
-      <div className="two-stats">
-        <div>
-          <small>Active simulated stake</small>
-          <b>{gold(staked)} GOLD</b>
-        </div>
-        <div>
-          <small>Weighted for tier</small>
-          <b>{gold(player.weighted_u)} GOLD</b>
-        </div>
-      </div>
-      <section className="form-section">
-        <h2>Try demo staking</h2>
-        <p>
-          Yield helps create rewards for everyone. This simulation does not
-          transfer real funds.
-        </p>
-        <label>
-          How much demo GOLD to stake?
-          <div className="input-suffix">
-            <input
-              value={deposit}
-              onChange={(e) => setDeposit(e.target.value)}
-              inputMode="decimal"
-            />
-            <span>GOLD</span>
-          </div>
-        </label>
-        <div className="range-heading">
-          <label>Yield contributed to the game</label>
-          <b>{share} %</b>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={share}
-          onChange={(e) => setShare(Number(e.target.value))}
-        />
-        <div className="range-endpoints">
-          <span>{100 - share} % for you</span>
-          <span>{share} % for the game</span>
-        </div>
-        <div className="contribution-preview">
-          <Leaf />
-          <span>
-            Weighted stake <b>{gold(weighted)} GOLD</b>
-          </span>
-          <Badge>
-            {weighted >= 100_000 * GOLD
-              ? "TIER 3"
-              : weighted >= 50_000 * GOLD
-                ? "TIER 2"
-                : "FREE"}
-          </Badge>
-        </div>
-        <label>Choose a simulated pool</label>
-        <div className="pool-list">
-          {pools.map((p) => (
-            <button
-              className={pool === p.id ? "selected" : ""}
-              key={p.id}
-              onClick={() => setPool(p.id)}
-            >
-              <span className="pool-symbol">
-                <Leaf weight="duotone" />
-              </span>
-              <span>
-                <b>{p.name}</b>
-                <small>{p.detail}</small>
-              </span>
-              <small>{p.fee}</small>
-              <span className="radio-dot" />
-            </button>
-          ))}
-        </div>
-        <button
-          className="primary-button"
-          disabled={
-            !!busy || units(deposit) <= 0 || units(deposit) > player.gold_u
-          }
-          onClick={() =>
-            void action("stake", async () => {
-              const r = await api<{ player: Player }>("/stake", {
-                amount: units(deposit),
-                contribution: share,
-                pool,
-              });
-              onPlayer(r.player);
-              notify(
-                "Demo stake deposited. The arena tier activates in 30 seconds.",
-              );
-            })
-          }
-        >
-          Stake demo GOLD <ArrowRight />
-        </button>
-        <p className="fine-print">
-          The arena shortens tier activation to 30 seconds and withdrawals to 60
-          seconds. Real NEAR staking follows network timing; the planned
-          withdrawal estimate is usually 1–7 days.
-        </p>
-      </section>
-      <section className="form-section">
-        <h2>Your positions</h2>
-        {!staked && <p>You have no active positions yet.</p>}
-        {player.positions
-          .filter((p) => p.active_u > 0)
-          .map((p) => (
-            <div className="position-row" key={p.id}>
-              <div>
-                <b>{pools.find((x) => x.id === p.pool)?.name}</b>
-                <small>
-                  {p.contribution}% yield for the game{" "}
-                  {p.matures_at > Date.now()
-                    ? `· active in ${remaining(p.matures_at)}`
-                    : "· tier active"}
-                </small>
-                <strong>{gold(p.active_u)} GOLD</strong>
-                <label className="position-contribution">
-                  Game yield: {contributions[p.id] ?? p.contribution}%
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={contributions[p.id] ?? p.contribution}
-                    onChange={(e) =>
-                      setContributions((v) => ({
-                        ...v,
-                        [p.id]: Number(e.target.value),
-                      }))
-                    }
-                  />
-                </label>
-                {contributions[p.id] !== undefined &&
-                  contributions[p.id] !== p.contribution && (
-                    <button
-                      className="text-button"
-                      disabled={!!busy}
-                      onClick={() =>
-                        void action("contribution", async () => {
-                          const r = await api<{ player: Player }>(
-                            "/contribution",
-                            {
-                              positionId: p.id,
-                              contribution: contributions[p.id],
-                            },
-                          );
-                          onPlayer(r.player);
-                          notify(
-                            "Contribution updated. Existing mature access is preserved.",
-                          );
-                        })
-                      }
-                    >
-                      Save contribution
-                    </button>
-                  )}
-              </div>
-              <button
-                className="secondary-button"
-                disabled={!!busy}
-                onClick={() =>
-                  void action("unstake", async () => {
-                    const r = await api<{ player: Player }>("/unstake", {
-                      positionId: p.id,
-                    });
-                    onPlayer(r.player);
-                    notify(
-                      "Demo withdrawal queued. Funds unlock in 60 seconds.",
-                    );
-                  })
-                }
-              >
-                Unstake
-              </button>
-            </div>
-          ))}
-        {player.withdrawals
-          .filter((w) => w.state === "pending")
-          .map((w) => (
-            <div className="position-row" key={w.id}>
-              <div>
-                <b>Withdrawal {gold(w.amount_u)} GOLD</b>
-                <small>
-                  {w.ready_at > Date.now()
-                    ? `Ready in ${remaining(w.ready_at)}`
-                    : "Ready to collect"}
-                </small>
-              </div>
-              <button
-                className="secondary-button"
-                disabled={!!busy || w.ready_at > Date.now()}
-                onClick={() =>
-                  void action("withdraw", async () => {
-                    const r = await api<{ player: Player }>("/withdraw", {
-                      withdrawalId: w.id,
-                    });
-                    onPlayer(r.player);
-                    notify("Your demo funds are back in your wallet.");
-                  })
-                }
-              >
-                Collect
-              </button>
-            </div>
-          ))}
-      </section>
-      <section className="form-section">
-        <div className="section-label">
-          <h2>NEAR wallet</h2>
-          <Badge tone="green">TESTNET</Badge>
-        </div>
-        <p>
-          Link a real testnet account by signing a message. This does not
-          transfer any funds.
-        </p>
-        {player.wallets.map((w) => (
-          <div className="connected-wallet" key={w.account_id}>
-            <SealCheck weight="fill" />
-            <b>{w.account_id}</b>
-          </div>
-        ))}
-        {balance && (
-          <p>
-            Real balance: <b>{balance} testNEAR</b>
-          </p>
-        )}
-        <button
-          className="secondary-button"
-          disabled={!!busy}
-          onClick={() => void onNear()}
-        >
-          <Wallet size={17} />
-          {player.wallets.length
-            ? "Link another account"
-            : "Connect NEAR wallet"}
-        </button>
-        {player.wallets.length > 0 && (
-          <button
-            className="text-button"
-            onClick={() =>
-              void action("balance", async () => {
-                const r = await api<{ amount: string }>("/wallet/balance");
-                setBalance(
-                  (Number(BigInt(r.amount) / 10n ** 18n) / 1e6).toLocaleString(
-                    "en-US",
-                    { maximumFractionDigits: 4 },
-                  ),
-                );
-              })
-            }
-          >
-            Read on-chain balance
-          </button>
-        )}
-        <p className="fine-print">
-          Native expeditions and Aura trading use separate testnet contracts.
-          The staking vault is an experimental project pilot. Demo GOLD stays
-          separate from native rewards. Never enter a recovery phrase here.
-        </p>
-      </section>
-      <section className="form-section">
-        <h2>Adventure history</h2>
-        <div className="history-list">
-          {player.history.slice(0, 20).map((h) => (
-            <div key={h.id}>
-              <span className={`history-dot ${h.kind}`}>
-                <Sparkle size={15} />
-              </span>
-              <span>
-                <b>{h.title}</b>
-                <small>
-                  {new Date(h.created_at).toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </small>
-              </span>
-              <strong>
-                {h.gold_u
-                  ? `${h.gold_u > 0 ? "+" : ""}${gold(h.gold_u)}`
-                  : "XP / item"}
-              </strong>
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
-function FundPanel() {
-  const [proof, setProof] = useState<any>(null);
-  const [data, setData] = useState<Dashboard | null>(null);
-  useEffect(() => {
-    api<Dashboard>("/dashboard").then(setData);
-    fetch("/testnet-deployment.json")
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setProof)
-      .catch(() => {});
-  }, []);
-  if (!data) return <p>Loading fund…</p>;
-  const total = data.buckets.reduce(
-    (s, b) => s + b.available_u + b.reserved_u,
-    0,
-  );
-  return (
-    <>
-      <p className="panel-subtitle">
-        Clear rules. Every reward has its backing.
-      </p>
-      <div className="fund-hero">
-        <div className="fund-donut">
-          <span>
-            <b>50 / 50</b>
-            <small>GAME YIELD</small>
-          </span>
-        </div>
-        <div>
-          <small>TOTAL DEMO FUND</small>
-          <h2>
-            {gold(total)} <span>GOLD</span>
-          </h2>
-          <p>
-            The opening fund is an explicit demo sponsor contribution. The 5%
-            rate is a simulation.
-          </p>
-        </div>
-      </div>
-      <div className="bucket-grid">
-        {data.buckets.map((b) => (
-          <div className={`bucket-card ${b.bucket}`} key={b.bucket}>
-            <span>{b.bucket === "coins" ? <Coins /> : <Flag />}</span>
-            <h3>{b.bucket === "coins" ? "Street coins" : "Daily zones"}</h3>
-            <strong>
-              {gold(b.available_u)} <small>GOLD available</small>
-            </strong>
-            <dl>
-              <div>
-                <dt>Backed rewards</dt>
-                <dd>{gold(b.reserved_u)}</dd>
-              </div>
-              <div>
-                <dt>Paid out</dt>
-                <dd>{gold(b.paid_u)}</dd>
-              </div>
-            </dl>
-          </div>
-        ))}
-      </div>
-      <div className="two-stats">
-        <div>
-          <small>Staking accounts</small>
-          <b>{data.stakers}</b>
-        </div>
-        <div>
-          <small>Active simulated stake</small>
-          <b>{gold(data.staked)} GOLD</b>
-        </div>
-      </div>
-      <div className="section-label">
-        <h2>Reward outlook</h2>
-        <Badge>5% APR SIMULATION</Badge>
-      </div>
-      <div className="projections">
-        {[
-          ["Day", 1],
-          ["Week", 7],
-          ["Month", 30],
-          ["Quarter", 90],
-          ["Year", 365],
-        ].map(([label, days]) => (
-          <div key={label}>
-            <span>{label}</span>
-            <b>
-              {gold(
-                Math.floor(((data.contributing * 0.05) / 365) * Number(days)),
-              )}{" "}
-              GOLD
-            </b>
-          </div>
-        ))}
-      </div>
-      <p className="fine-print">
-        Estimated game yield after contribution splits, at a simulated 5% APR.
-        These are alternative time horizons, not separate funds or guaranteed
-        returns. Rewards require liquid backing.
-      </p>
-      <div className="info-banner">
-        <ShieldCheck />
-        <span>
-          Unclaimed coins remain in the coin fund. Unclaimed zone rewards remain
-          in the zone fund. Player principal never funds rewards.
-        </span>
-      </div>
-      {proof && (
-        <section className="native-proof">
-          <div className="section-label">
-            <h2>Verified on NEAR</h2>
-            <Badge tone="green">TESTNET</Badge>
-          </div>
-          <p>
-            Earned Auras can become wallet-owned testnet NFTs. Native Aura
-            trading is available in Market, and public NEAR Social profiles are
-            available in Inventory. Staking and GOLD rewards remain demo.
-          </p>
-          <a
-            href={`https://testnet.nearblocks.io/address/${proof.gameContract}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Standalone settlement proof <ArrowUpRight size={14} />
-            <small>{proof.gameContract}</small>
-          </a>
-          <a
-            href={`https://testnet.nearblocks.io/address/${proof.collectiblesContract}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Aura NFT contract <ArrowUpRight size={14} />
-            <small>{proof.collectiblesContract}</small>
-          </a>
-          {proof.transactions
-            ?.filter(
-              (x: any) =>
-                x.label.includes("withdraw") ||
-                x.label.includes("transfer NFT"),
-            )
-            .map((x: any) => (
-              <a
-                key={x.transaction}
-                href={`https://testnet.nearblocks.io/txns/${x.transaction}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {x.label}
-                <ArrowUpRight size={14} />
-              </a>
-            ))}
-          <a href="/testnet-deployment.json" target="_blank" rel="noreferrer">
-            All deployment proofs <ArrowUpRight size={14} />
-          </a>
-        </section>
-      )}
-      <div className="section-label">
-        <h2>This world in numbers</h2>
-      </div>
-      <div className="three-stats">
-        <div>
-          <strong>{data.players}</strong>
-          <span>explorer accounts</span>
-        </div>
-        <div>
-          <strong>{data.coinsCollected}</strong>
-          <span>coins collected</span>
-        </div>
-        <div>
-          <strong>{data.worlds}</strong>
-          <span>daily worlds</span>
-        </div>
-      </div>
-    </>
-  );
-}
-function Market({
-  player,
-  nativeContent,
-  busy,
-  onBuy,
-  onCancel,
-  onInventory,
-}: {
-  player: Player;
-  nativeContent: ReactNode;
-  busy: string;
-  onBuy: (l: Listing) => void;
-  onCancel: (l: Listing) => void;
-  onInventory: () => void;
-}) {
-  const [items, setItems] = useState<Listing[]>([]),
-    [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const load = () =>
-      api<{ listings: Listing[] }>("/market")
-        .then((r) => setItems(r.listings))
-        .finally(() => setLoading(false));
-    void load();
-    const t = setInterval(load, 4000);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <>
-      {nativeContent}
-      <h2 className="demo-market-heading">Demo GOLD market</h2>
-      <p className="panel-subtitle">
-        Find an Aura that feels like you. Or pass your discovery along.
-      </p>
-      <div className="market-banner">
-        <Storefront size={29} />
-        <span>
-          <b>From explorers, for explorers</b>
-          <small>Fixed prices · 0% game fee · demo items</small>
-        </span>
-      </div>
-      <div className="section-label">
-        <h2>On the market</h2>
-        <button className="text-button" onClick={onInventory}>
-          Sell an Aura <Plus size={13} />
-        </button>
-      </div>
-      {loading ? (
-        <p>Loading listings…</p>
-      ) : !items.length ? (
-        <div className="empty-state">
-          <Storefront size={38} />
-          <h3>The first stall could be yours</h3>
-          <p>
-            Open a chest in a free zone, find an Aura and list it. Another
-            explorer can buy it.
-          </p>
-          <button className="secondary-button" onClick={onInventory}>
-            Open inventory
-          </button>
-        </div>
-      ) : (
-        <div className="item-grid">
-          {items.map((i) => (
-            <article className={`item-card rarity-${i.rarity}`} key={i.id}>
-              <AuraArt color={i.color} slot={i.slot} />
-              <Badge>{rarityNames[i.rarity]}</Badge>
-              <h3>{i.name}</h3>
-              <small>
-                #{i.serial} · {i.seller_name}
-              </small>
-              <div className="listing-price">
-                <CoinIcon />
-                <strong>{gold(i.price_u)}</strong>
-                <span>GOLD</span>
-              </div>
-              <button
-                className="secondary-button"
-                disabled={!!busy}
-                onClick={() =>
-                  i.seller === player.id ? onCancel(i) : onBuy(i)
-                }
-              >
-                {i.seller === player.id ? "Cancel listing" : "Buy Aura"}
-                <ArrowRight size={15} />
-              </button>
-            </article>
-          ))}
-        </div>
-      )}
-      <p className="fine-print">
-        Demo offers use demo GOLD. Native NFT offers and test NEAR balances are
-        shown separately above.
-      </p>
-    </>
-  );
-}
-function Bounties({
+function Npc({
+  onClose,
+  worldId,
   position,
-  player,
-  action,
-  onPlayer,
-  notify,
 }: {
-  position: Point;
-  player: Player;
-  action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
-  onPlayer: (p: Player) => void;
-  notify: (s: string, e?: boolean) => void;
+  onClose: () => void;
+  worldId?: string;
+  position?: Point;
 }) {
-  const [items, setItems] = useState<Bounty[]>([]),
-    [create, setCreate] = useState(false),
-    [title, setTitle] = useState(""),
-    [description, setDescription] = useState(""),
-    [reward, setReward] = useState("100"),
-    [evidence, setEvidence] = useState(""),
-    [selected, setSelected] = useState<string | null>(null),
-    [submissions, setSubmissions] = useState<any[]>([]);
-  const load = () =>
-    api<{ bounties: Bounty[] }>("/bounties").then((r) => setItems(r.bounties));
-  useEffect(() => {
-    void load();
-  }, []);
-  return (
-    <>
-      <p className="panel-subtitle">
-        Someone has an idea. Someone else brings it to life.
-      </p>
-      <div className="info-banner">
-        <ShieldCheck />
-        <span>
-          Rewards are locked in demo escrow before publishing. Every tier can
-          participate.
-        </span>
-      </div>
-      <button className="secondary-button" onClick={() => setCreate((v) => !v)}>
-        <Plus /> New task
-      </button>
-      {create && (
-        <form
-          className="inline-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void action("bounty", async () => {
-              const r = await api<{ player: Player }>("/bounties", {
-                title,
-                description,
-                amount: units(reward),
-                ...position,
-              });
-              onPlayer(r.player);
-              setCreate(false);
-              await load();
-              notify("Task published with a fully backed reward.");
-            });
-          }}
-        >
-          <label>
-            Title
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              minLength={5}
-              maxLength={100}
-              required
-            />
-          </label>
-          <label>
-            What needs to be done?
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={1000}
-            />
-          </label>
-          <label>
-            Reward in demo GOLD
-            <input
-              value={reward}
-              onChange={(e) => setReward(e.target.value)}
-              inputMode="decimal"
-            />
-          </label>
-          <button className="primary-button">
-            Lock reward and publish <ArrowRight />
-          </button>
-          <p className="fine-print">
-            Seven-day deadline. Timely pending submissions block refunds. Public
-            disputed tasks require the planned arbitration process.
-          </p>
-        </form>
-      )}
-      <div className="bounty-list">
-        {items.map((b) => (
-          <article key={b.id}>
-            <div>
-              <Badge tone={b.state === "open" ? "green" : "purple"}>
-                {b.state === "open"
-                  ? "OPEN"
-                  : b.state === "paid"
-                    ? "COMPLETED"
-                    : "REFUNDED"}
-              </Badge>
-              <b>
-                <CoinIcon />
-                {gold(b.amount_u)} GOLD
-              </b>
-            </div>
-            <h3>{b.title}</h3>
-            <p>{b.description}</p>
-            <small>
-              {b.creator_name} · {Math.round(meters(position, b))} m
-            </small>
-            {b.state === "open" &&
-              (b.creator === player.id ? (
-                <button
-                  className="text-button"
-                  onClick={() =>
-                    void action("submissions", async () => {
-                      const r = await api<{ submissions: any[] }>(
-                        `/bounties/submissions?id=${b.id}`,
-                      );
-                      setSubmissions(r.submissions);
-                      setSelected(b.id);
-                    })
-                  }
-                >
-                  Review submissions
-                </button>
-              ) : (
-                <button
-                  className="text-button"
-                  onClick={() => {
-                    setSelected(b.id);
-                    setSubmissions([]);
-                  }}
-                >
-                  Submit evidence
-                </button>
-              ))}
-            {selected === b.id && b.creator !== player.id && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void action("submit", async () => {
-                    await api("/bounties/submit", { bountyId: b.id, evidence });
-                    setSelected(null);
-                    setEvidence("");
-                    notify("Your evidence is awaiting the creator’s review.");
-                  });
-                }}
-              >
-                <textarea
-                  value={evidence}
-                  onChange={(e) => setEvidence(e.target.value)}
-                  minLength={10}
-                  maxLength={1000}
-                  placeholder="Describe how you completed the task…"
-                  required
-                />
-                <button className="secondary-button">
-                  Submit evidence <PaperPlane />
-                </button>
-              </form>
-            )}
-            {selected === b.id && b.creator === player.id && (
-              <div>
-                {submissions.length ? (
-                  submissions.map((s) => (
-                    <div className="submission" key={s.id}>
-                      <b>{s.name}</b>
-                      <p>{s.evidence}</p>
-                      {s.state === "pending" && (
-                        <button
-                          className="secondary-button"
-                          onClick={() =>
-                            void action("approve", async () => {
-                              await api("/bounties/approve", {
-                                submissionId: s.id,
-                              });
-                              await load();
-                              setSelected(null);
-                              notify("Evidence approved and demo reward paid.");
-                            })
-                          }
-                        >
-                          Approve and pay
-                        </button>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p>No submissions yet.</p>
-                )}
-              </div>
-            )}
-          </article>
-        ))}
-      </div>
-    </>
-  );
-}
-function Npc({ onClose }: { onClose: () => void }) {
   const [q, setQ] = useState(""),
     [answer, setAnswer] = useState(
-      "Hello, explorer. Try a free garden, collect a few coins, then find a treasure chest. Go at your own pace — this world is ready for solo adventures.",
+      () => tr("Hello, explorer. Start with a free place nearby, pick up a few coins on the way and open a chest. Solo is fine; this haunt is yours to explore."),
     ),
     [busy, setBusy] = useState(false),
     [source, setSource] = useState("rules");
@@ -4449,41 +5215,43 @@ function Npc({ onClose }: { onClose: () => void }) {
     try {
       const r = await api<{ answer: string; source: string }>("/npc", {
         question: q,
+        ...(worldId ? { worldId } : {}),
+        ...(position ? { location: position } : {}),
       });
       setAnswer(r.answer);
       setSource(r.source);
       setQ("");
     } catch {
       setAnswer(
-        "The connection is a little windy. Your adventures and coin collecting can continue.",
+        tr("The guide can't hear you right now. Keep exploring; your coins and visits still count."),
       );
     } finally {
       setBusy(false);
     }
   }
   return (
-    <Dialog label="Quest guide" onClose={onClose}>
+    <Dialog label={tr("Quest guide")} onClose={onClose}>
       <section className="npc-modal" onClick={(e) => e.stopPropagation()}>
         <button
           className="icon-button close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={tr("Close")}
         >
           <X />
         </button>
         <div className="npc-avatar">
           <Ghost color="#bc9b65" hat />
         </div>
-        <Badge tone="gold">EXPEDITION KEEPER</Badge>
-        <h2>Every trail leads somewhere.</h2>
+        <Badge tone="gold">{tr("EXPEDITION KEEPER")}</Badge>
+        <h2>{tr("Every trail leads somewhere.")}</h2>
         <p className="npc-answer">{answer}</p>
         <form onSubmit={ask}>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             maxLength={300}
-            aria-label="Question for the guide"
-            placeholder="What would you like to know?"
+            aria-label={tr("Question for the guide")}
+            placeholder={tr("Ask about places, chests or Auras…")}
             required
           />
           <button className="primary-button" disabled={busy}>
@@ -4492,8 +5260,10 @@ function Npc({ onClose }: { onClose: () => void }) {
         </form>
         <small>
           {source === "near-ai"
-            ? "Reply powered by NEAR AI Cloud"
-            : "Rule-based guide · NEAR AI is not configured"}
+            ? tr("Answered by the AI guide from live game data")
+            : source === "anthropic"
+              ? tr("Answered by Claude from live game data")
+              : tr("Answered from live game data")}
         </small>
       </section>
     </Dialog>

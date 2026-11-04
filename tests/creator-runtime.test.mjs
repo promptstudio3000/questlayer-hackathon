@@ -10,6 +10,7 @@ import {
   existsSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
+import "../server/schema-catalog.mjs";
 import { resolve, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { openDatabase, createPlayer, playerView } from "../server/database.mjs";
@@ -320,13 +321,15 @@ async function host(t, enabled) {
     }
     rmSync(directory, { recursive: true, force: true });
   });
-  for (let i = 0; i < 120; i++) {
+  // Up to 15 s: a cold host on a busy CI runner (clean-clone job) can need
+  // more than the 3 s this loop used to allow.
+  for (let i = 0; i < 600; i++) {
     if (child.exitCode !== null) throw Error(`QA host failed: ${logs}`);
     try {
       if ((await fetch(base + "/api/health")).ok) break;
     } catch {}
     await new Promise((ok) => setTimeout(ok, 25));
-    if (i === 119) throw Error(`QA host did not start: ${logs}`);
+    if (i === 599) throw Error(`QA host did not start: ${logs}`);
   }
   assert.equal(existsSync(env.AWARD_SIGNER_PATH), false);
   const request = async (

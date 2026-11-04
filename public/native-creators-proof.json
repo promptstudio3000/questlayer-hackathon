@@ -1,0 +1,128 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-01T09:32:23.307Z",
+  "contractId": "questlayer-creators-20261101b.testnet",
+  "codeHash": "HTaB1zHpHrfiAQpfAHY2JLGew3JYyusr7F3dUCtiPcyr",
+  "wasmSha256": "f48999b1068f823644cf631e8fd3eab58afe7d0450257ed95a24ff8aa5532eed",
+  "rewardsReceiver": "questlayer-rewards-20261101b.testnet",
+  "publisherPublicKey": "ed25519:5rotASVzJ3R7MMnJ92SAJu1ZBYhf9dktMMNZbGrgTHd1",
+  "policy": {
+    "version": "creator-money-v1",
+    "like_weight": 1,
+    "completion_weight": 3,
+    "max_score_per_creator": 30,
+    "max_round_budget": "5000000000000000000000000"
+  },
+  "treasuryBps": "2000",
+  "capabilities": [
+    "paid-access-80-20",
+    "donations-100",
+    "support-rounds",
+    "withdraw",
+    "treasury-flush"
+  ],
+  "smoke": {
+    "paidQuest": "smoke-paid-mvxms3ay",
+    "freeQuest": "smoke-free-mvxms3ay",
+    "round": {
+      "day": "smoke-mvxms3ay",
+      "budget": "100000000000000000000000",
+      "policy_version": "creator-money-v1",
+      "finalized": true,
+      "paid": "100000000000000000000000",
+      "scores": [
+        [
+          "explorer.questlayer-dev-20261101.testnet",
+          3
+        ],
+        [
+          "questlayer-dev-20261101.testnet",
+          1
+        ]
+      ]
+    },
+    "access": {
+      "paid": "100000000000000000000000",
+      "creator_share": "80000000000000000000000",
+      "treasury_share": "20000000000000000000000",
+      "at": "1793525514457"
+    },
+    "buyer": {
+      "credit": "0",
+      "pending": "0",
+      "withdrawn": "95000000000000000000000",
+      "earned_access": "0",
+      "earned_donations": "20000000000000000000000",
+      "earned_rounds": "75000000000000000000000"
+    },
+    "treasury": {
+      "fund_available": "900000000000000000000000",
+      "rounds_reserved": "0",
+      "creator_credit": "105000000000000000000000",
+      "creator_pending": "0",
+      "treasury_credit": "0",
+      "treasury_paid": "20000000000000000000000",
+      "paid_out": "95000000000000000000000",
+      "funded_total": "1120000000000000000000000",
+      "policy": "creator-money-v1"
+    }
+  },
+  "transactions": [
+    {
+      "label": "Deploy and initialize questlayer-creators-20261101b.testnet",
+      "transaction": "HPqqCpTz5Cd17HRrk2aUfav8AboqHT3YHz4n1ho5inWh"
+    },
+    {
+      "label": "Install bounded publisher key",
+      "transaction": "GqG3xRTL3LdpsNSZk7UrB2gbW9vBabT88jg7T119Fpbv"
+    },
+    {
+      "label": "Fund the creator fund with 1 test NEAR",
+      "transaction": "3Xten7VxsksQSSxqpduqfNxxkjULWZUFCWbbjQayUrL4"
+    },
+    {
+      "label": "Register a paid creator quest",
+      "transaction": "GasDDSLQKW2h8HxPyqYKT2PgSE3AxrLrDHqMn6aDAgPt"
+    },
+    {
+      "label": "Register a free creator quest",
+      "transaction": "9mLC6k2MpRiL25FvPuoJEhyHY5rg2FRWsovGesGFNitC"
+    },
+    {
+      "label": "Buy access for exactly 0.1 test NEAR (80/20)",
+      "transaction": "ALmeo1kDGoyh8oyWhLGGSSjLjzSH35RS1nBn16r5whJS"
+    },
+    {
+      "label": "Repeat purchase is a free no-op",
+      "transaction": "DZ4n8Bhwb9DaPQnt1DARwx58q3AG9HH3C2mMANATSjRq"
+    },
+    {
+      "label": "Donate 0.02 test NEAR to the free quest's author",
+      "transaction": "Dw3fP9nPzS9NsoqTmAL5BvoRb57X7PAQhqkDqo2KfPyU"
+    },
+    {
+      "label": "Open a support round with 0.1 test NEAR",
+      "transaction": "EUKps2Y2x3oFxKJ4fGngRNikgeqWRCGCm4g7B9CfuvV6"
+    },
+    {
+      "label": "Record one verified completion",
+      "transaction": "DzrGmQ36dB8y8y5boRF5FQUjPndPzwNWQTEcUfT6gJk3"
+    },
+    {
+      "label": "Record one like",
+      "transaction": "5a116Gge4WvQbpmqswPRhvkdTpnaSfazqeZAquN5E2y"
+    },
+    {
+      "label": "Finalize the round",
+      "transaction": "EjsyHTqgY2KB8aAHQ8QczRHh4DFKUnwHRE2ZXaXZ71NV"
+    },
+    {
+      "label": "Creator withdraws earnings",
+      "transaction": "GyGfWxh3ybJQeBRvCBDv7drx6Ai2YXzRVJin6PEnLjS4"
+    },
+    {
+      "label": "Flush the treasury share to the rewards contract",
+      "transaction": "E6UB18zxnZ65cyqFZ9myomEAoWU7fmuos8vARdXYxhuD"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import type { NativeProfileQuote } from "./types";
+import { NEAR_NETWORK, SOCIAL_CONTRACT_ID } from "./near-network.ts";
 const keys = (value: unknown, expected: string[]) =>
   !!value &&
   typeof value === "object" &&
@@ -19,8 +20,8 @@ export function assertProfileQuote(
   };
   if (
     !quote ||
-    quote.network !== "testnet" ||
-    quote.receiverId !== "v1.social08.testnet" ||
+    quote.network !== NEAR_NETWORK ||
+    quote.receiverId !== SOCIAL_CONTRACT_ID ||
     quote.accountId !== expected.accountId ||
     quote.methodName !== "set" ||
     !["1", "50000000000000000000000"].includes(quote.deposit) ||

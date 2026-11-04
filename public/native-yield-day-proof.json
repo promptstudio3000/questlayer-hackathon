@@ -1,0 +1,65 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-03T23:31:00Z",
+  "source": "read-only RPC views (rpc.testnet.near.org, finality=final) and https://questlayer.promptstudio3000.com/api/native/distribution; no transaction was sent by the verifier",
+  "claim": "plzen-2026-11-05-v2 is the first QuestLayer day paid entirely from realized staking yield: its whole cost is covered by what the treasury vault paid into the rewards contract.",
+  "yield": {
+    "vault": "questlayer-vault-20261101b.testnet",
+    "pool": "aurora.pool.f863973.m0",
+    "principal": "100000000000000000000000",
+    "contributionBps": 5000,
+    "gamePaid": "3553917099106675321",
+    "cycle": "harvest (epoch 5402) -> unlock -> advance -> flush_game -> fund_rewards(realized_yield)",
+    "treasuryFundedBefore": "200000000000000000000000",
+    "treasuryFundedAfter": "200003553917099106675321",
+    "timeline": "public/native-yield-cycle.json"
+  },
+  "day": {
+    "rewardsContract": "questlayer-rewards-20261101b.testnet",
+    "dayId": "plzen-2026-11-05-v2",
+    "startsAt": "2026-11-04T23:00:00Z",
+    "manifestHash": "39b82bf295763693e60ad42f6bd0536184e727866390ff6ee0887fc05e3764c8",
+    "coinUnit": "296159758258889",
+    "coinCount": 6000,
+    "coins": "1776958549553334000",
+    "zones": "1776958549553337660",
+    "questRewards": [
+      "444239637388334415",
+      "0",
+      "444239637388334415",
+      "888479274776668830",
+      "0",
+      "0"
+    ],
+    "total": "3553917099106671660",
+    "chainDateTotals": {
+      "date": "2026-11-05",
+      "coins": "1776958549553334000",
+      "zones": "1776958549553337660",
+      "cap": "100000000000000000000000"
+    }
+  },
+  "audit": {
+    "status": "verified",
+    "yieldBackedDaysCovered": {
+      "ok": true,
+      "paid": "3553917099106675321",
+      "committed": "3553917099106671660",
+      "free": "3661"
+    },
+    "otherChecks": [
+      "ledger-conservation",
+      "coin-reservations-explained",
+      "zone-reservations-explained",
+      "open-days-match-manifests",
+      "receipts-within-chain-claims",
+      "date-totals-match-publications",
+      "account-covers-liabilities"
+    ]
+  },
+  "server": {
+    "build": "50f88b8ff4dd8244c78c90c6d0c914d93132b809",
+    "yieldBackedDays": true
+  },
+  "limits": "Testnet, 0.1 NEAR principal: the day is a proof of principle worth about 0.0000036 NEAR. Location evidence is browser GPS attestation; spoofing resistance is not established."
+}

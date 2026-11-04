@@ -44,7 +44,15 @@ test("catalog exposes enforceable mechanics, capability gaps and no invented dur
   const catalog = questTemplateCatalog();
   assert.deepEqual(
     catalog.templates.map((t) => t.id),
-    ["path-visit", "ordered-trail", "return-trail", "cosmetic-chest"],
+    [
+      "path-visit",
+      "ordered-trail",
+      "return-trail",
+      "cosmetic-chest",
+      "poi-visit",
+      "poi-category-hunt",
+      "landmark-clue",
+    ],
   );
   assert.ok(
     catalog.templates.every(
@@ -108,17 +116,28 @@ test("templates refuse missing, malformed, excluded and overlapping targets", ()
       }),
     /too close/,
   );
+  // A single-target visit uses the second mapped point, so the hole is cut
+  // around that point and a one-point zone falls back to the first.
   const withHole = structuredClone(ZONE);
+  const visitTarget = ZONE.targets[1];
   withHole.geometry.coordinates.push([
-    [-0.0001, -0.0001],
-    [-0.0001, 0.0001],
-    [0.0001, 0.0001],
-    [0.0001, -0.0001],
-    [-0.0001, -0.0001],
+    [visitTarget.lng - 0.0001, visitTarget.lat - 0.0001],
+    [visitTarget.lng - 0.0001, visitTarget.lat + 0.0001],
+    [visitTarget.lng + 0.0001, visitTarget.lat + 0.0001],
+    [visitTarget.lng + 0.0001, visitTarget.lat - 0.0001],
+    [visitTarget.lng - 0.0001, visitTarget.lat - 0.0001],
   ]);
   assert.throws(
     () => instantiateQuestTemplate("path-visit", withHole),
     /outside/,
+  );
+  assert.deepEqual(
+    instantiateQuestTemplate("path-visit", ZONE).target,
+    { lat: visitTarget.lat, lng: visitTarget.lng },
+  );
+  assert.deepEqual(
+    instantiateQuestTemplate("path-visit", { ...ZONE, targets: [ZONE.targets[0]] }).target,
+    { lat: ZONE.targets[0].lat, lng: ZONE.targets[0].lng },
   );
 });
 
@@ -252,7 +271,7 @@ test("return trail requires ordered departure and return; retries and another pl
     assert.ok(q);
     const points = q.activity.steps.map((s) => s.point);
     assert.equal(points.length, 4);
-    assert.throws(() => claimQuest(db, player, q.id, q, NOW), /checkpoints/);
+    assert.throws(() => claimQuest(db, player, q.id, q, NOW), /stops in order/);
     assert.throws(
       () => advanceRoute(db, player, q.id, points[2], 2, NOW),
       /Refresh/,
@@ -306,9 +325,10 @@ test("physical return rejects reusing the starting GPS fix and preserves progres
         db,
         player,
         q.id,
-        { ...points[i], accuracy: 5, timestamp: NOW + i * 1000 },
+        // Walking pace between stops (the fair-play travel guard).
+        { ...points[i], accuracy: 5, timestamp: NOW + i * 600_000 },
         i,
-        NOW + i * 1000,
+        NOW + i * 600_000,
       );
     assert.throws(
       () =>
@@ -316,9 +336,9 @@ test("physical return rejects reusing the starting GPS fix and preserves progres
           db,
           player,
           q.id,
-          { ...points[0], accuracy: 5, timestamp: NOW },
+          { ...points[0], accuracy: 5, timestamp: NOW + 1_200_000 },
           3,
-          NOW + 3000,
+          NOW + 1_203_000,
         ),
       (e) => e.code === "GPS_REPLAY",
     );
@@ -331,9 +351,9 @@ test("physical return rejects reusing the starting GPS fix and preserves progres
       db,
       player,
       q.id,
-      { ...points[0], accuracy: 5, timestamp: NOW + 4000 },
+      { ...points[0], accuracy: 5, timestamp: NOW + 1_800_000 },
       3,
-      NOW + 4000,
+      NOW + 1_800_000,
     );
     assert.equal(result.xp, 100);
   } finally {

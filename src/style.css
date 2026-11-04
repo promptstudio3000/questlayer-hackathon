@@ -1,17 +1,12 @@
-@import url("https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&display=swap");
+@import "./fonts.css";
+@import "./tokens.css";
+@import "./i18n-scripts.css";
 :root {
-  font-family: "Kanit", system-ui, sans-serif;
-  color: #423b53;
+  font-family: var(--font-body);
+  color: var(--ink);
   background: #e7e7d7;
   font-synthesis: none;
   font-weight: 400;
-  --purple: #77639d;
-  --dark: #3e345c;
-  --muted: #92899b;
-  --border: #ede8e3;
-  --cream: #fbf9f4;
-  --gold: #d8a849;
-  --green: #6d9e87;
 }
 * {
   box-sizing: border-box;
@@ -66,7 +61,7 @@ h1,
 h2,
 h3,
 .wordmark {
-  font-family: "Kanit", system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 h1 {
   font-size: 29px;
@@ -196,20 +191,7 @@ svg {
 }
 .rail-links button:hover {
   background: #ffffff0b;
-}
-.rail-help {
-  margin-top: auto;
-  margin-bottom: 30px;
-  background: none;
-  color: #beb1d2;
-}
-.rail-near {
-  font-size: 24px;
-  color: #d1c5e4;
-  font-weight: 500;
-  margin-bottom: 10px;
-}
-.topbar {
+}.topbar {
   position: absolute;
   left: 87px;
   right: 0;
@@ -238,15 +220,7 @@ svg {
   font-weight: 400;
   color: #8b779f;
   letter-spacing: 0.3px;
-}
-.wordmark small {
-  display: block;
-  font-size: 7px;
-  letter-spacing: 2px;
-  margin-top: 3px;
-  color: #988a9b;
-}
-.realm-label {
+}.realm-label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -290,7 +264,7 @@ svg {
 }
 .balance-pill > span:not(.gold-icon) {
   font-size: 8px;
-  color: #a28d61;
+  color: #6f5f3f;
   letter-spacing: 0.8px;
 }
 .balance-pill > svg {
@@ -434,7 +408,7 @@ svg {
   letter-spacing: 0.7px;
   font-weight: 700;
   background: #eee7f5;
-  color: #927bab;
+  color: #654f80;
   border: 1px solid #e8def0;
   border-radius: 5px;
   white-space: nowrap;
@@ -468,7 +442,7 @@ svg {
   padding-left: 19px;
 }
 .daily-summary strong {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 21px;
   font-weight: 500;
   display: block;
@@ -655,7 +629,7 @@ svg {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #9b86b0;
+  color: #6c5785;
   font-size: 11px;
   background: none;
   padding: 10px 0;
@@ -713,7 +687,7 @@ svg {
   border: 1px solid #e1d7e9;
   border-radius: 9px;
   padding: 10px 13px;
-  color: #816797;
+  color: #654a7b;
   font-size: 11px;
   min-height: 37px;
 }
@@ -796,7 +770,7 @@ svg {
 }
 .fine-print {
   font-size: 10px !important;
-  color: #a497aa !important;
+  color: #6c6072 !important;
   line-height: 1.7 !important;
   margin: 12px 0 !important;
 }
@@ -938,94 +912,7 @@ svg {
   background: transparent;
   padding: 5px 0 5px 11px;
   border-left: 1px solid #e8e0ea;
-}
-.npc-button {
-  position: absolute;
-  z-index: 15;
-  right: 24px;
-  bottom: 54px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 18px 10px 12px;
-  background: #fbf9f2f0;
-  border-radius: 16px;
-  text-align: left;
-  box-shadow: 0 5px 20px #6544680a;
-  border: 1px solid #fff9;
-}
-.npc-button > .ghost-art {
-  width: 40px;
-  height: 48px;
-}
-.npc-button > span:not(.ghost-art):not(.npc-dot) {
-  font-size: 9px;
-  color: #a28e99;
-}
-.npc-button b {
-  font-size: 11px;
-  color: #8c739c;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 5px;
-}
-.npc-dot {
-  width: 6px;
-  height: 6px;
-  background: #9ab498;
-  border: 2px solid #fbf9f2;
-  border-radius: 50%;
-  position: absolute;
-  left: 43px;
-  bottom: 11px;
-}
-.map-legend {
-  position: absolute;
-  right: 28px;
-  bottom: 31px;
-  display: flex;
-  gap: 14px;
-  color: #8a7d86;
-  z-index: 10;
-  font-size: 8px;
-}
-.map-legend > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.map-legend i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-}
-.map-legend i.green {
-  background: #85ad91;
-}
-.map-legend i.purple {
-  background: #ad90c6;
-}
-.map-legend i.gold {
-  background: #d3aa57;
-}
-.demo-footer {
-  position: absolute;
-  bottom: 7px;
-  left: calc(50% + 43px);
-  transform: translateX(-50%);
-  font-size: 7px;
-  color: #91858b;
-  letter-spacing: 0.4px;
-  z-index: 10;
-  white-space: nowrap;
-}
-.demo-footer > span {
-  margin: 0 9px;
-  color: #ae9abb;
-}
-.ghost-art {
+}.ghost-art {
   display: inline-block;
   width: 48px;
   height: 56px;
@@ -1056,27 +943,28 @@ svg {
   color: #fff5ff;
   font-size: 7px;
   letter-spacing: 1px;
+  white-space: nowrap;
   border: 2px solid #faf4ef;
   padding: 3px 6px;
   border-radius: 5px;
 }
+/* Authored pixel Aura sprites (src/aura-art-data.ts); --aura-color only tints
+   the soft glow behind the sprite so an item's colour still reads. */
 .marker-aura {
   position: absolute;
-  left: 4px;
-  right: 4px;
-  height: 21px;
-  border: 3px solid var(--aura-color);
-  box-shadow:
-    0 0 20px var(--aura-color),
-    inset 0 0 15px var(--aura-color);
-  border-radius: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+  line-height: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px var(--aura-color));
   z-index: 2;
 }
 .marker-aura.top {
-  top: 2px;
+  top: -14px;
 }
 .marker-aura.bottom {
-  bottom: 10px;
+  bottom: 2px;
+  z-index: -1;
 }
 .zone-map-pin {
   background: none;
@@ -1293,7 +1181,7 @@ svg {
 }
 .welcome-card > p {
   font-size: 12px;
-  color: #a08e9e;
+  color: #6e5d6c;
   line-height: 1.7;
   margin-bottom: 23px;
 }
@@ -1303,7 +1191,7 @@ svg {
 .welcome-card label {
   font-size: 8px;
   letter-spacing: 1.5px;
-  color: #a28eaa;
+  color: #6f5a79;
   font-weight: 600;
 }
 .welcome-card input {
@@ -1315,7 +1203,7 @@ svg {
   justify-content: center;
   gap: 9px;
   margin-top: 13px;
-  color: #a495a4;
+  color: #6e616e;
   font-size: 9px;
   line-height: 1.6;
 }
@@ -1466,7 +1354,7 @@ input[type="range"] {
   font-size: 30px;
 }
 .wallet-hero strong {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 37px;
   letter-spacing: -1px;
   color: #72617f;
@@ -1855,7 +1743,7 @@ input[type="range"] {
   text-align: center;
 }
 .fund-donut b {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 23px;
   font-weight: 500;
   color: #96869c;
@@ -1903,7 +1791,7 @@ input[type="range"] {
   margin: 13px 0;
 }
 .bucket-card strong {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 20px;
   font-weight: 500;
   color: #9b8254;
@@ -1916,7 +1804,7 @@ input[type="range"] {
   font-size: 8px;
   color: #ad9b9f;
   margin-top: 3px;
-  font-family: "Kanit";
+  font-family: var(--font-body);
 }
 .bucket-card dl {
   font-size: 8px;
@@ -1984,7 +1872,7 @@ input[type="range"] {
   display: block;
   color: #a88bb6;
   font-size: 23px;
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-weight: 500;
 }
 .three-stats span {
@@ -2001,13 +1889,13 @@ input[type="range"] {
   display: flex;
   gap: 14px;
   align-items: center;
-  color: #ad94ba;
+  color: #6c5785;
   margin: 15px 0;
 }
 .market-banner b {
   display: block;
   font-size: 12px;
-  color: #9b82aa;
+  color: #654f80;
 }
 .market-banner small {
   display: block;
@@ -2021,7 +1909,7 @@ input[type="range"] {
   margin: 15px 0;
 }
 .listing-price strong {
-  font-family: "Kanit";
+  font-family: var(--font-body);
   font-size: 23px;
   color: #a88e60;
   font-weight: 500;
@@ -2349,17 +2237,7 @@ input[type="range"] {
   .player-bottom {
     min-width: 345px;
     left: 107px;
-  }
-  .npc-button > span:not(.ghost-art):not(.npc-dot) {
-    display: none;
-  }
-  .npc-button {
-    padding: 5px 10px;
-  }
-  .map-legend {
-    display: none;
-  }
-}
+  }}
 @media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
   .nav-rail {
     left: 0;
@@ -2405,12 +2283,7 @@ input[type="range"] {
   }
   .wordmark > span {
     font-size: 21px;
-  }
-  .wordmark small {
-    font-size: 5px;
-    letter-spacing: 1.1px;
-  }
-  .topbar-right {
+  }  .topbar-right {
     gap: 8px;
   }
   .balance-pill {
@@ -2549,31 +2422,7 @@ input[type="range"] {
   }
   .player-bottom {
     display: none;
-  }
-  .npc-button {
-    right: 13px;
-    bottom: calc(36dvh + 98px);
-    padding: 4px 8px;
-    border-radius: 13px;
-  }
-  .npc-button > .ghost-art {
-    width: 35px;
-    height: 41px;
-  }
-  .npc-dot {
-    left: 33px;
-    bottom: 7px;
-  }
-  .demo-footer {
-    bottom: 77px;
-    left: 50%;
-    font-size: 5px;
-    z-index: 36;
-    background: #fcf8f0c9;
-    border-radius: 5px;
-    padding: 2px 7px;
-  }
-  .maplibregl-ctrl-bottom-right {
+  }  .maplibregl-ctrl-bottom-right {
     bottom: calc(36dvh + 94px) !important;
     right: 66px !important;
   }
@@ -2909,11 +2758,7 @@ input[type="range"] {
   }
   .fine-print {
     font-size: 11px !important;
-  }
-  .demo-footer {
-    font-size: 7px;
-  }
-  .welcome-note {
+  }  .welcome-note {
     font-size: 10px;
   }
   .welcome-card label {
@@ -2937,15 +2782,6 @@ input[type="range"] {
 }
 
 /* QuestLayer's operational palette and readable interaction baseline. */
-:root {
-  --ink: #1a0335;
-  --muted: #665577;
-  --purple: #672eeb;
-  --cream: #fcfaff;
-  --surface: #fff;
-  --border: #d7cbe9;
-  --font-body: Kanit, system-ui, sans-serif;
-}
 body {
   font-family: var(--font-body);
   font-size: 16px;
@@ -3094,19 +2930,18 @@ select {
 }
 .character-aura {
   position: absolute;
-  border: 3px solid var(--aura-color);
-  box-shadow: 0 0 14px var(--aura-color);
-  width: 90px;
-  height: 24px;
-  border-radius: 50%;
-  transform: rotate(-10deg);
+  left: 50%;
+  transform: translateX(-50%);
+  line-height: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px var(--aura-color));
 }
 .character-aura.above {
-  top: 12px;
+  top: -6px;
   z-index: 2;
 }
 .character-aura.below {
-  bottom: 13px;
+  bottom: 0;
   z-index: 0;
 }
 .character-composition > small {
@@ -3125,11 +2960,7 @@ select {
   }
   .main-panel {
     padding-bottom: 24px;
-  }
-  .npc-button {
-    display: none;
-  }
-  .coverage-note {
+  }  .coverage-note {
     font-size: 12px;
   }
 }
@@ -3191,11 +3022,13 @@ select {
   font-size: 12px;
 }
 
-/* MapLibre owns absolute anchor positioning; relative layout displaces geographic markers. */
-.player-marker.maplibregl-marker,
-.zone-map-pin.maplibregl-marker,
-.quest-map-pin.maplibregl-marker,
-.other-player-marker.maplibregl-marker {
+/* MapLibre owns absolute anchor positioning for every map marker (player,
+   zones, quests, NPCs, monsters, arenas). A marker class that sets
+   position: relative puts the marker back into normal flow, so markers stack
+   on each other by a fixed pixel offset: they drift on zoom, jump when another
+   marker appears and leave their route. Two classes outrank any single
+   marker class, whichever stylesheet loads later. */
+.maplibregl-map .maplibregl-marker {
   position: absolute;
   top: 0;
   left: 0;
@@ -3244,8 +3077,21 @@ select {
     z-index: 3;
   }
   .sheet-compact
-    > :not(.sheet-toggle):not(.recommended-quest):not(.compact-selection):not(.native-objective):not(.adventure-notice) {
+    > :not(.sheet-toggle):not(.recommended-quest):not(.compact-selection):not(.native-objective):not(.adventure-notice):not(.first-session) {
     display: none !important;
+  }
+  .main-panel.explore-panel.sheet-compact:has(.first-session) {
+    height: auto;
+    max-height: min(56dvh, 380px);
+    overflow-y: auto;
+  }
+  .sheet-compact .first-session {
+    margin: 0;
+    gap: 6px;
+    padding: 10px 12px 12px;
+  }
+  .sheet-compact .first-session-hint {
+    font-size: 14px;
   }
   .sheet-compact .recommended-quest {
     margin: 0;
@@ -3330,13 +3176,13 @@ select {
 .map-overview-player .you-label {
   display: none;
 }
+/* The overview container is 32x42 but the starter image keeps its 78x91 box,
+   so the Auras follow that image rather than the container. */
 .map-overview-player .marker-aura {
-  height: 8px;
-  left: 1px;
-  right: 1px;
+  left: 39px;
 }
 .map-overview-player .marker-aura.bottom {
-  bottom: 5px;
+  bottom: -56px;
 }
 
 .welcome-card {
@@ -3770,13 +3616,11 @@ select {
   width: 38px;
   height: 44px;
 }
-.character-composition.compact .character-aura {
-  height: 8px;
-  left: 1px;
-  right: 1px;
+.character-composition.compact .character-aura.above {
+  top: -4px;
 }
 .character-composition.compact .character-aura.below {
-  bottom: 4px;
+  bottom: -1px;
 }
 @media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
   .maplibregl-ctrl-bottom-right {
@@ -3998,14 +3842,11 @@ select {
   font-size: 22px;
   margin-top: 28px;
 }
-.other-player-marker .marker-aura {
-  height: 9px;
-  border-width: 2px;
-  left: 1px;
-  right: 1px;
+.other-player-marker .marker-aura.top {
+  top: -6px;
 }
 .other-player-marker .marker-aura.bottom {
-  bottom: 14px;
+  bottom: 6px;
 }
 .other-player-marker > .origin-player {
   width: 44px;
@@ -4046,9 +3887,7 @@ select {
 .model-attribution { margin:16px 0 0; font-size:12px; line-height:1.5; color:#62516f; }
 .character-room .inline-error { margin-top:14px; }
 @media (max-width:380px) { .model-controls { gap:6px; } .character-room h2 {font-size:22px;} }
-.character-composition.compact .character-aura { width:40px; height:9px; border-width:1.5px; box-shadow:0 0 6px var(--aura-color); }
-.character-composition.compact .character-aura.above { top:-3px; }
-.character-composition.compact .character-aura.below { bottom:-2px; }
+.character-composition.compact .character-aura { filter:drop-shadow(0 0 2px var(--aura-color)); }
 @media (min-width:760px) and (max-height:500px) {
   .game-dialog:has(.character-room) { width:min(760px,calc(100vw - 32px)); padding:16px; }
   .character-room { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,1fr); gap:10px 16px; }
@@ -4060,15 +3899,10 @@ select {
   .character-room .model-instructions { text-align:left; }
 }
 /* Keep navigation, financial mode and map credits readable in every layout. */
-.rail-links button {font-size:12px;line-height:1.25;}
-.demo-footer {font-size:12px;line-height:16px;letter-spacing:0;color:#574365;pointer-events:none;}
-.map-legend {font-size:12px;color:#574365;left:calc(50% + 43px);right:auto;transform:translateX(-50%);bottom:30px;}
-.game-map .maplibregl-ctrl-attrib {font-size:12px!important;line-height:1.4;max-width:280px;}
+.rail-links button {font-size:12px;line-height:1.25;}.game-map .maplibregl-ctrl-attrib {font-size:12px!important;line-height:1.4;max-width:280px;}
 @media (min-width:1001px) {.maplibregl-ctrl-bottom-right {bottom:8px!important;}}
 .game-map.globe-view {left:550px;right:0;top:87px;bottom:24px;}
-.game-map.globe-view .maplibregl-ctrl-bottom-right {bottom:0!important;right:0!important;left:auto!important;}
-body:has(.globe-view) .npc-button,body:has(.globe-view) .map-legend {display:none;}
-@media (max-width:760px), (max-height:500px) and (max-width:1000px) {.game-map.globe-view {left:0;top:70px;bottom:280px;}}
+.game-map.globe-view .maplibregl-ctrl-bottom-right {bottom:0!important;right:0!important;left:auto!important;}@media (max-width:760px), (max-height:500px) and (max-width:1000px) {.game-map.globe-view {left:0;top:70px;bottom:280px;}}
 @media (max-height:500px) and (max-width:1000px) {.game-map.globe-view {left:0;right:56%;top:70px;bottom:84px;}}
 
 
@@ -4133,8 +3967,8 @@ body:has(.globe-view) .npc-button,body:has(.globe-view) .map-legend {display:non
 }
 
 /* Auras stay legible in screen space around the actual 3D map character. */
-.player-marker > .marker-aura.top {
-  top: -16px;
+.character-model-ready > .marker-aura.top {
+  top: -18px;
 }
 .character-art-credit {
   margin: -8px 0 20px;
@@ -4157,3 +3991,155 @@ body:has(.globe-view) .npc-button,body:has(.globe-view) .map-legend {display:non
 .original-item-pages > span { font-size: 14px; }
 .original-item-pages > button { min-height: 48px; font-size: 14px; }
 @media (max-width: 420px) { .original-item-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+
+/* E1 shell cleanup: progressive disclosure for optional identity and advanced settings. */
+.welcome-advanced,
+.advanced-settings {
+  margin-top: 12px;
+  border-top: 1px solid var(--border, #e4dcf2);
+  padding-top: 8px;
+  text-align: left;
+}
+.welcome-advanced > summary,
+.advanced-settings > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted, #665577);
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+.welcome-advanced > summary::before,
+.advanced-settings > summary::before {
+  content: "›";
+  display: inline-block;
+  width: 16px;
+  transition: transform 160ms ease-out;
+}
+.welcome-advanced[open] > summary::before,
+.advanced-settings[open] > summary::before {
+  transform: rotate(90deg);
+}
+.welcome-advanced .passkey-button,
+.welcome-advanced .identity-note {
+  margin-top: 8px;
+}
+.advanced-settings .play-mode-switch {
+  margin: 8px 0;
+}
+.welcome-card .text-button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.welcome-card .primary-button {
+  justify-content: center;
+  gap: 8px;
+}
+.signed-orders {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #ded2e8;
+}
+.signed-orders h3 {
+  font-size: 20px;
+}
+.signed-orders h4 {
+  font-size: 18px;
+  margin: 24px 0 8px;
+}
+.signed-orders > p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.signed-offer-form {
+  grid-column: 1/-1;
+  display: grid;
+  gap: 10px;
+}
+.signed-offer-form p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.signed-order-history {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.signed-order-history li {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #ded2e8;
+  border-radius: 12px;
+  background: #faf7ff;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.signed-order-history li[data-status="open"] {
+  border-color: #7b4bb3;
+}
+.signed-order-history li[data-status="filled"] {
+  background: #e6f2e9;
+}
+.signed-orders > button {
+  width: 100%;
+  margin-top: 12px;
+}
+.native-offer.signed-order {
+  grid-template-columns: minmax(0, 1fr);
+}
+.map-placeholder {background:linear-gradient(160deg,#f3ecfb 0%,#e6dcf5 100%);}
+/* Welcome screen link to the "How it works" one-pager. */
+.welcome-how {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: -4px 0 12px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--decorative-border);
+  background: var(--surface-soft);
+  color: var(--action);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.welcome-how:hover {
+  background: #e6dbfb;
+}
+a.settings-row {
+  text-decoration: none;
+}
+a.settings-row:hover {
+  background: var(--surface-soft);
+}
+/* Dropped-in logo mark (art/brand/logo, docs/ART-LIST.md). */
+.brand-logo {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* Dropped-in wordmark (art/brand/wordmark) in the desktop header. */
+.wordmark-text {
+  display: flex;
+  align-items: center;
+}
+.wordmark-art {
+  display: block;
+  height: 40px;
+  width: auto;
+}

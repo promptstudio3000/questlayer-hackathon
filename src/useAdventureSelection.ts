@@ -6,6 +6,7 @@ import {
   resolveAdventureSelection,
   type AdventureSelection,
 } from "./adventure-selection";
+import { tr } from "./i18n.ts";
 
 export function useAdventureSelection(
   playerId: string | undefined,
@@ -57,7 +58,7 @@ export function useAdventureSelection(
   useEffect(() => {
     if (resolved.status !== "unavailable" || nativePlay) return;
     setSaved({ key, reference: null });
-    setNotice("Your previous adventure is no longer available.");
+    setNotice(tr("Your previous adventure is no longer available."));
   }, [key, resolved.status, nativePlay]);
   function select(zone: Zone | null, questId: string | null = null) {
     if (!zone) {

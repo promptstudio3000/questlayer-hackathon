@@ -69,6 +69,52 @@ const TEMPLATES = [
   },
 ];
 
+// POI quests in street cells (docs/WORLDS-PLAN.md C.3/C.4, task W6). They
+// validate like path-visit and the ordered trail, but their targets come from
+// the checked POI file (safety "ok", snapped to a public path), never from a
+// zone polygon, and a category hunt takes its stops in any order.
+const POI_TEMPLATES = [
+  {
+    id: "poi-visit",
+    kind: "visit",
+    icon: "visit",
+    title: "Place visit",
+    objective: "Reach the marked public spot next to this place and confirm your visit.",
+    actionLabel: "Confirm visit",
+    stepLabels: ["Reach the marker"],
+    evidenceKind: "point-proximity",
+    distinctTargets: 1,
+    rewardConstraint: "Personal XP once. No GOLD or NEAR prize.",
+  },
+  {
+    id: "poi-category-hunt",
+    kind: "route",
+    icon: "trail",
+    title: "Place hunt",
+    objective: "Visit three places of one kind in this area today, in any order.",
+    actionLabel: "Record stop",
+    stepLabels: ["Find one", "Find another", "Find the last one"],
+    evidenceKind: "unordered-proximity",
+    distinctTargets: 3,
+    rewardConstraint:
+      "Personal XP once after the last stop. No GOLD or NEAR prize.",
+  },
+  {
+    // server/landmark-clue.mjs: the answer is a Wikidata fact, never model text.
+    id: "landmark-clue",
+    kind: "visit",
+    icon: "visit",
+    title: "Landmark clue",
+    objective: "Reach the marked public spot next to this place, then answer one question about it.",
+    actionLabel: "Answer and confirm",
+    stepLabels: ["Reach the marker and answer"],
+    evidenceKind: "point-proximity",
+    distinctTargets: 1,
+    rewardConstraint:
+      "Personal XP once: more for the right answer. One answer. No GOLD or NEAR prize.",
+  },
+];
+
 const SAFETY = {
   access: "mapped-paths-only",
   routing: "straight-line-only",
@@ -82,24 +128,36 @@ export function questTemplateCatalog() {
     policy: QUEST_POLICY,
     version: VERSION,
     activationDay: QUEST_POLICY_START_DAY,
-    scope: "New, unprepared demo city days; native-city-v1 stays unchanged.",
+    scope:
+      "New, unprepared demo city days and new native-city-v2 days; published native-city-v1 days stay unchanged.",
     templates: TEMPLATES.map((t) => ({
       ...t,
       stepLabels: [...t.stepLabels],
       status: "implemented",
+      scope: "zone",
       modes: ["demo-arena", "demo-gps"],
-      nativePolicy: t.id === "ordered-trail" ? "native-city-v1" : null,
+      nativePolicy:
+        t.id === "ordered-trail"
+          ? ["native-city-v1", "native-city-v2"]
+          : ["native-city-v2"],
       safety: { ...SAFETY },
       durationMinutes: null,
       durationReason: "No verified walking route or field timing is available.",
-    })),
+    })).concat(
+      POI_TEMPLATES.map((t) => ({
+        ...t,
+        stepLabels: [...t.stepLabels],
+        status: "implemented",
+        scope: "street-cell",
+        modes: ["demo-gps"],
+        nativePolicy: [],
+        safety: { ...SAFETY },
+        durationMinutes: null,
+        durationReason:
+          "No verified walking route or field timing is available.",
+      })),
+    ),
     planned: [
-      {
-        id: "landmark-clue",
-        status: "planned",
-        requires:
-          "Reviewed landmark facts, authored clues and an answer policy.",
-      },
       {
         id: "geocache",
         status: "planned",
@@ -119,7 +177,9 @@ export function questTemplateCatalog() {
 }
 
 function template(id) {
-  const result = TEMPLATES.find((t) => t.id === id);
+  const result =
+    TEMPLATES.find((t) => t.id === id) ||
+    POI_TEMPLATES.find((t) => t.id === id);
   assert(result, "Unknown quest template.");
   return result;
 }
@@ -140,9 +200,11 @@ function activity(t, targets, policy = QUEST_POLICY) {
     evidence: {
       kind: t.evidenceKind,
       attests:
-        t.kind === "route"
-          ? "Accepted checkpoint coordinates in order."
-          : "Accepted coordinates near the target.",
+        t.evidenceKind === "unordered-proximity"
+          ? "Accepted coordinates near each stop, in any order."
+          : t.kind === "route"
+            ? "Accepted checkpoint coordinates in order."
+            : "Accepted coordinates near the target.",
       doesNotAttest:
         "Physical presence, the path walked, an observation or a photograph.",
       observationRequired: false,
@@ -157,6 +219,25 @@ function activity(t, targets, policy = QUEST_POLICY) {
   };
 }
 
+/**
+ * Activity for a POI quest (W6). Targets are the POIs' public-path check-in
+ * points; the caller has already checked spacing and safety.
+ */
+export function poiQuestActivity(templateId, targets, { objective, policy } = {}) {
+  const t = template(templateId);
+  assert(
+    Array.isArray(targets) && targets.length === t.distinctTargets,
+    "The POI template needs its exact number of targets.",
+  );
+  const result = activity(
+    t,
+    targets.map((p) => point(p)),
+    policy || QUEST_POLICY,
+  );
+  if (objective) result.objective = objective;
+  return result;
+}
+
 export function instantiateQuestTemplate(templateId, zone) {
   const t = template(templateId);
   assert(
@@ -167,7 +248,14 @@ export function instantiateQuestTemplate(templateId, zone) {
     Array.isArray(zone.targets) && zone.targets.length >= t.distinctTargets,
     "The template needs more mapped path targets.",
   );
-  const distinct = zone.targets.slice(0, t.distinctTargets).map((p) => {
+  // A single-target visit uses the second mapped path point when one exists,
+  // so it never shares the return-trail start/finish and each confirmation
+  // happens at a different place in the zone.
+  const ordered =
+    t.distinctTargets === 1 && zone.targets.length > 1
+      ? zone.targets.slice(1)
+      : zone.targets;
+  const distinct = ordered.slice(0, t.distinctTargets).map((p) => {
     point(p);
     assert(contains(zone.geometry, p), "A quest target is outside its zone.");
     return { lat: p.lat, lng: p.lng };
@@ -226,8 +314,21 @@ export function describeStoredQuest(q, metadata = {}) {
   return activity(template(id), targets, "legacy-demo-v2");
 }
 
-// Response-only enrichment. Never add this object to the hashed v1 manifest body.
+// Response-only enrichment. Never add this object to a hashed manifest body.
+// v1 quests have no template and stay three ordered checkpoints; v2 quests
+// name the template they were published with.
 export function describeNativeQuest(q) {
+  if (q.template) {
+    const t = template(q.template);
+    const result = activity(t, q.targets, "native-city-v2");
+    if (t.kind === "chest")
+      result.objective = "Reach the chest and open it for the zone prize.";
+    result.rewardConstraint =
+      t.kind === "chest"
+        ? "Personal XP once; the first opener takes any funded zone prize. No item is minted."
+        : "Personal XP once; any funded shared GOLD prize pays once. Observations are optional.";
+    return result;
+  }
   const result = activity(
     template("ordered-trail"),
     q.targets,

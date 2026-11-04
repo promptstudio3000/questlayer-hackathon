@@ -1,9 +1,10 @@
+import { EmptyState } from "./EmptyState";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowClockwise,
-  ArrowLeft,
   Camera,
   ChatCircle,
+  Cube,
   DotsThree,
   Flag,
   MapPin,
@@ -12,6 +13,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
+import { ArrowLeft } from "./dir-icons";
 import { Dialog } from "./Dialog";
 import { Ghost } from "./Ghost";
 import type { Fix, Point } from "./types";
@@ -19,7 +21,10 @@ import { useFormDraft } from "./useFormDraft";
 import { browserDraftStorage } from "./form-draft";
 import { createReadEpoch } from "./read-epoch";
 import { createNotePublicationJournal } from "./note-publication-journal";
+import { NoteRecordDialog } from "./NoteRecordDialog";
+import type { NoteRecordKind } from "./note-record";
 import "./map-notes.css";
+import { tr } from "./i18n";
 
 export type MapNote = Point & {
   id: string;
@@ -97,7 +102,8 @@ async function request<T>(
     const value = await response.json();
     if (!response.ok)
       throw new NoteError(
-        value.error || "The note service could not complete this request.",
+        value.error ||
+          "Notes are unavailable right now. Try again in a moment.",
         response.status,
       );
     return value as T;
@@ -121,7 +127,7 @@ function freshFix(fix: Fix | null) {
 function message(error: unknown) {
   return error instanceof Error && error.name !== "AbortError"
     ? error.message
-    : "The connection did not finish. Check the current status before trying again.";
+    : tr("The connection dropped. Use Check status before trying again.");
 }
 
 export function MapNotes({
@@ -133,6 +139,8 @@ export function MapNotes({
   onBlockChange,
   onViewChange,
   view: requestedView,
+  recordAccount,
+  onRecord,
 }: {
   playerId: string;
   position: Point;
@@ -142,7 +150,10 @@ export function MapNotes({
   onBlockChange?: () => void;
   onViewChange?: (view: MapNotesView) => void;
   view?: MapNotesView;
+  recordAccount?: { accountId: string; managed: boolean } | null;
+  onRecord?: (noteId: string, kind: NoteRecordKind) => Promise<boolean>;
 }) {
+  const [recordNote, setRecordNote] = useState<MapNote | null>(null);
   const identity = `${playerId}:${arena ? "arena" : "physical"}`;
   const latest = useRef(identity);
   const operations = useRef(createReadEpoch());
@@ -344,10 +355,10 @@ export function MapNotes({
     setView(receipt.state === "abandoned" && text ? "compose" : "browse");
     const result =
       receipt.state === "published"
-        ? "Your note is on the map."
+        ? tr("Your note is on the map.")
         : receipt.state === "abandoned"
-          ? "The unfinished publication was discarded."
-          : "This publication is no longer visible. It has not been posted again.";
+          ? tr("The unfinished note was discarded.")
+          : tr("This note is no longer visible. It was not posted again.");
     setNotice(result);
     notify?.(result);
     await load();
@@ -378,9 +389,7 @@ export function MapNotes({
     if (existing && existing.clientId !== payload.clientId) {
       pendingRef.current = existing;
       setPending(existing);
-      throw Error(
-        "Another unfinished publication needs a status check first. Your text draft is kept.",
-      );
+      throw Error("Check your last note first. Your text is kept.");
     }
     const draftRevision =
       pendingRef.current?.clientId === payload.clientId
@@ -390,7 +399,7 @@ export function MapNotes({
       journal.remember(payload.clientId, draftRevision);
     } catch {
       throw Error(
-        "This browser could not save a publication receipt. Your note has not been sent; your draft is kept.",
+        "This browser could not save the note receipt. Nothing was sent; your text is kept.",
       );
     }
     const intent = { clientId: payload.clientId, payload, draftRevision };
@@ -409,7 +418,7 @@ export function MapNotes({
       if (!current(who) || pendingRef.current?.clientId !== payload.clientId)
         return;
       setError(
-        `${message(e)} Your publication receipt is kept. Check its status before starting another note.`,
+        tr("{0} The receipt is kept. Use Check status before writing another note.", { 0: message(e) }),
       );
       try {
         await checkPending();
@@ -422,10 +431,10 @@ export function MapNotes({
     if (pendingRef.current) return;
     if (shareGps && (arena || !freshFix(fix)))
       throw Error(
-        "Wait for a fresh GPS fix before attaching your exact location.",
+        "Wait for a fresh GPS fix before attaching your exact position.",
       );
     if (!consent || !text.trim())
-      throw Error("Write a note and confirm its public information first.");
+      throw Error("Write your note and tick the public-note box first.");
     await publish({
       clientId: crypto.randomUUID(),
       text: text.trim(),
@@ -443,7 +452,7 @@ export function MapNotes({
       !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
       file.size > 1000000
     ) {
-      setError("Choose a JPG, PNG or WebP photo smaller than 1 MB.");
+      setError(tr("Choose a JPG, PNG or WebP photo smaller than 1 MB."));
       return;
     }
     const who = identity,
@@ -460,7 +469,7 @@ export function MapNotes({
     };
     reader.onerror = () => {
       if (current(who) && version === photoGeneration.current) {
-        setError("That photo could not be opened. Choose it again.");
+        setError(tr("That photo could not be opened. Choose it again."));
         setReading(false);
       }
     };
@@ -492,22 +501,22 @@ export function MapNotes({
       if (!current(who)) return;
       heading.current?.focus();
       setNotice(
-        "Player blocked. Their notes and map presence are hidden from you.",
+        tr("Player blocked. Their notes and map presence are hidden from you."),
       );
     }
     if (selected.kind === "remove") {
       await load();
       if (!current(who)) return;
       heading.current?.focus();
-      setNotice("Note removed from QuestLayer.");
+      setNotice(tr("Note removed."));
     }
     if (selected.kind === "report")
       setNotice(
         reportResult?.state === "resolved"
-          ? "Your previous report has already been reviewed. No new report was opened."
+          ? tr("Your previous report has already been reviewed. No new report was opened.")
           : reportResult?.replayed
-            ? "Your report is already in the review queue."
-            : "Report received for review. Reporting does not automatically remove a note.",
+            ? tr("Your report is already in the review queue.")
+            : tr("Report received. A reviewer will look at it; the note stays until then."),
       );
   }
   const locked = busy || !!pending;
@@ -523,49 +532,57 @@ export function MapNotes({
     setView("browse");
     setNotice(
       removed
-        ? "Text draft discarded. No published note was removed."
-        : "Draft cleared from this view. Browser storage could not be cleared; a saved copy may return after reload.",
+        ? tr("Draft discarded. Published notes are untouched.")
+        : tr("Draft cleared here, but this browser kept a copy that may return after reload."),
     );
   }
   return (
-    <section className="map-notes" aria-label="Map notes">
+    <section className="map-notes" aria-label={tr("Map notes")}>
       <div className="map-notes-heading">
-        <div>
-          <span className="map-notes-mode">
-            {arena ? "Demo arena" : "Real-world map"}
-          </span>
-          <h2 ref={heading} tabIndex={-1}>
-            {view === "compose"
-              ? "Leave a note"
-              : view === "blocked"
-                ? "Blocked players"
-                : "Around you"}
-          </h2>
-        </div>
-        {view === "browse" ? (
+        {view !== "browse" && (
           <button
-            className="map-notes-primary"
-            disabled={locked}
-            onClick={() => {
-              if (!text && !image) setAnchor({ ...position });
-              setConsent(false);
-              setShareGps(false);
-              setView("compose");
-              setError("");
-            }}
-          >
-            <Plus size={20} />
-            {draft.hasDraft ? "Resume draft" : "Write a note"}
-          </button>
-        ) : (
-          <button
-            className="map-notes-icon"
-            aria-label="Back to nearby notes"
+            className="panel-back"
+            aria-label={tr("Back to nearby notes")}
+            title={tr("Back to nearby notes")}
             disabled={busy}
             onClick={() => setView("browse")}
           >
-            <ArrowLeft size={22} />
+            <ArrowLeft size={20} />
           </button>
+        )}
+        <h2 ref={heading} tabIndex={-1} title={arena ? tr("Demo arena") : tr("Real-world map")}>
+          {view === "compose"
+            ? tr("Leave a note")
+            : view === "blocked"
+              ? tr("Blocked players")
+              : tr("Around you")}
+        </h2>
+        {view === "browse" && (
+          <>
+            <button
+              className="map-notes-icon"
+              aria-label={tr("Refresh nearby notes")}
+              title={tr("Refresh nearby notes")}
+              disabled={busy || loading}
+              onClick={() => void load()}
+            >
+              <ArrowClockwise size={20} />
+            </button>
+            <button
+              className="map-notes-primary"
+              disabled={locked}
+              onClick={() => {
+                if (!text && !image) setAnchor({ ...position });
+                setConsent(false);
+                setShareGps(false);
+                setView("compose");
+                setError("");
+              }}
+            >
+              <Plus size={20} />
+              {draft.hasDraft ? tr("Resume draft") : tr("Write a note")}
+            </button>
+          </>
         )}
       </div>
       {notice && (
@@ -579,52 +596,44 @@ export function MapNotes({
         </p>
       )}
       {draft.hasDraft && (
-        <div className="map-notes-draft" aria-label="Note text draft">
+        <div className="map-notes-draft" aria-label={tr("Note text draft")}>
           <p className="map-notes-secondary" role="status">
             {draft.storageAvailable
               ? draft.restored
-                ? "Text draft restored on this device. Review the map pin, choose any photo again and confirm publication when ready."
-                : "Text draft kept on this device. Photos, map pin and location choices are not saved."
-              : "Your text remains in this tab. Browser storage is unavailable; it may be lost if you close or reload the page."}
+                ? tr("Your text is back. Check the pin, add a photo again and publish when ready.")
+                : tr("Your text is kept on this device. Photo, pin and GPS choice are not.")
+              : tr("Your text stays only in this tab; closing or reloading loses it.")}
           </p>
           <button type="button" disabled={locked} onClick={discardDraft}>
-            <Trash size={18} /> Discard draft
-          </button>
+            <Trash size={18} /> {" "}{tr("Discard draft")}</button>
         </div>
       )}
       {pending && (
-        <section className="map-notes-pending" aria-label="Publication status">
-          <b>Check your last publication</b>
+        <section className="map-notes-pending" aria-label={tr("Last note status")}>
+          <b>{tr("Check your last note")}</b>
           <p>
             {pending.receipt?.state === "retryable"
-              ? "That attempt did not finish. Retry the same note, or discard this publication before writing another."
-              : "It may already be on the map. Checking again will not post a second note."}
+              ? tr("That attempt did not finish. Retry it or discard it before writing another.")
+              : tr("It may already be on the map. Checking never posts it twice.")}
           </p>
           {!pending.payload && (
             <p>
-              Your text draft is kept separately. The previous photo, map pin
-              and publication consent are not restored. Check or discard this
-              publication before sending again.
-            </p>
+              {tr("Your text is kept, but the photo, pin and consent are not. Check or discard this note before sending again.")}</p>
           )}
           {pending.receipt?.state === "retryable" && retryGpsExpired && (
             <p>
-              The attached GPS fix has expired. Discard this publication, then
-              use a fresh fix in your retained draft.
-            </p>
+              {tr("Its GPS fix has expired. Discard this note and publish your draft with a fresh fix.")}</p>
           )}
           <div className="map-notes-actions">
             <button disabled={busy} onClick={() => void operate(checkPending)}>
               <ArrowClockwise size={20} />
-              Check status
-            </button>
+              {tr("Check status")}</button>
             {pending.receipt?.state === "retryable" && pending.payload && (
               <button
                 disabled={busy || retryGpsExpired}
                 onClick={() => void operate(() => publish(pending.payload!))}
               >
-                Retry this note
-              </button>
+                {tr("Retry this note")}</button>
             )}
             {
               <button
@@ -645,8 +654,7 @@ export function MapNotes({
                   })
                 }
               >
-                Discard publication
-              </button>
+                {tr("Discard note")}</button>
             }
           </div>
         </section>
@@ -659,7 +667,7 @@ export function MapNotes({
             void operate(submit);
           }}
         >
-          <label htmlFor="map-note-text">What did you discover?</label>
+          <label htmlFor="map-note-text">{tr("What did you discover?")}</label>
           <textarea
             id="map-note-text"
             ref={composer}
@@ -668,7 +676,7 @@ export function MapNotes({
             maxLength={500}
             required
             rows={4}
-            placeholder="A quiet bench, an interesting detail, a useful tip…"
+            placeholder={tr("A quiet bench, a hidden detail, a tip for the next ghost…")}
             onChange={(e) => {
               setText(e.target.value);
               setConsent(false);
@@ -681,13 +689,13 @@ export function MapNotes({
               <Camera size={22} />
               <span>
                 {reading
-                  ? "Opening photo…"
+                  ? tr("Opening photo…")
                   : image
-                    ? "Change photo"
-                    : "Add photo"}
+                    ? tr("Change photo")
+                    : tr("Add photo")}
               </span>
               <input
-                aria-label="Choose a photo"
+                aria-label={tr("Choose a photo")}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 disabled={locked || reading}
@@ -701,11 +709,11 @@ export function MapNotes({
           </div>
           {image && (
             <div className="map-notes-preview">
-              <img src={image} alt="Photo selected for this note" />
+              <img src={image} alt={tr("Photo selected for this note")} />
               <button
                 type="button"
                 className="map-notes-icon"
-                aria-label="Remove selected photo"
+                aria-label={tr("Remove selected photo")}
                 disabled={locked}
                 onClick={() => {
                   photoGeneration.current++;
@@ -721,8 +729,7 @@ export function MapNotes({
           <div className="map-notes-anchor">
             <MapPin size={20} />
             <span>
-              Public map pin
-              <br />
+              {tr("Public map pin")}<br />
               <span className="map-notes-secondary">
                 {anchor.lat.toFixed(5)}, {anchor.lng.toFixed(5)}
               </span>
@@ -735,13 +742,10 @@ export function MapNotes({
                 setConsent(false);
               }}
             >
-              Use current pin
-            </button>
+              {tr("Use current pin")}</button>
           </div>
           <p className="map-notes-secondary">
-            The map pin, note, photo and time are public. Photos lose their
-            embedded metadata. Stored by QuestLayer; not published on-chain.
-          </p>
+            {tr("The pin, note, photo and time are public. Photo metadata is removed. Notes are stored by QuestLayer only.")}</p>
           <label className="map-notes-check">
             <input
               type="checkbox"
@@ -752,18 +756,15 @@ export function MapNotes({
                 setConsent(false);
               }}
             />
-            <span>Also attach my exact GPS, accuracy and capture time</span>
+            <span>{tr("Also attach my exact GPS position and time")}</span>
           </label>
           {arena ? (
             <p className="map-notes-secondary">
-              Demo movement cannot attach real GPS.
-            </p>
+              {tr("The city demo has no real GPS to attach.")}</p>
           ) : (
             !freshFix(fix) && (
               <p className="map-notes-secondary">
-                A fresh, accurate GPS fix is needed for this optional
-                attachment.
-              </p>
+                {tr("Needs a fresh, accurate GPS fix.")}</p>
             )
           )}
           <label className="map-notes-check">
@@ -774,7 +775,7 @@ export function MapNotes({
               disabled={locked}
               onChange={(e) => setConsent(e.target.checked)}
             />
-            <span>I agree to publish this note and its map pin publicly.</span>
+            <span>{tr("Publish this note and its pin publicly.")}</span>
           </label>
           <button
             className="map-notes-primary"
@@ -787,27 +788,14 @@ export function MapNotes({
               (shareGps && !freshFix(fix))
             }
           >
-            {busy ? "Publishing…" : "Publish note"}
+            {busy ? tr("Publishing…") : tr("Publish note")}
           </button>
         </form>
       )}
       {view === "browse" && (
         <>
-          <div className="map-notes-toolbar">
-            <span className="map-notes-secondary">
-              Notes left near this map position
-            </span>
-            <button
-              className="map-notes-icon"
-              aria-label="Refresh nearby notes"
-              disabled={busy || loading}
-              onClick={() => void load()}
-            >
-              <ArrowClockwise size={21} />
-            </button>
-          </div>
           {loading ? (
-            <p role="status">Looking for nearby notes…</p>
+            <p role="status">{tr("Looking for nearby notes…")}</p>
           ) : notes.length ? (
             <div className="map-notes-list">
               {notes.map((note) => (
@@ -826,21 +814,30 @@ export function MapNotes({
                       </time>
                     </div>
                     <details className="map-note-menu">
-                      <summary aria-label={`Actions for ${note.author}'s note`}>
+                      <summary aria-label={tr("Actions for {0}'s note", { 0: note.author })}>
                         <DotsThree size={26} />
                       </summary>
                       <div>
                         {note.own ? (
-                          <button
-                            disabled={busy}
-                            onClick={() => {
-                              setError("");
-                              setDecision({ kind: "remove", note });
-                            }}
-                          >
-                            <Trash size={19} />
-                            Remove note
-                          </button>
+                          <>
+                            {onRecord && (
+                              <button
+                                disabled={busy}
+                                onClick={() => setRecordNote(note)}
+                              >
+                                <Cube size={19} />
+                                {tr("Public record")}</button>
+                            )}
+                            <button
+                              disabled={busy}
+                              onClick={() => {
+                                setError("");
+                                setDecision({ kind: "remove", note });
+                              }}
+                            >
+                              <Trash size={19} />
+                              {tr("Remove note")}</button>
+                          </>
                         ) : (
                           <>
                             <button
@@ -853,8 +850,7 @@ export function MapNotes({
                               }}
                             >
                               <Flag size={19} />
-                              Report note
-                            </button>
+                              {tr("Report note")}</button>
                             <button
                               disabled={busy}
                               onClick={() => {
@@ -863,8 +859,7 @@ export function MapNotes({
                               }}
                             >
                               <Prohibit size={19} />
-                              Block player
-                            </button>
+                              {tr("Block player")}</button>
                           </>
                         )}
                       </div>
@@ -875,22 +870,21 @@ export function MapNotes({
                     <img
                       className="map-note-image"
                       src={note.image}
-                      alt={`Photo attached to ${note.author}'s note`}
+                      alt={tr("Photo attached to {0}'s note", { 0: note.author })}
                       loading="lazy"
                     />
                   )}
                   <details className="map-note-location">
                     <summary>
                       <MapPin size={18} />
-                      Location details
-                    </summary>
+                      {tr("Location details")}</summary>
                     <p>
-                      Map pin: {note.lat.toFixed(5)}, {note.lng.toFixed(5)}
+                      {tr("Map pin:")}{" "}{note.lat.toFixed(5)}, {note.lng.toFixed(5)}
                     </p>
                     {note.author_fix && (
                       <p>
-                        Author GPS: {note.author_fix.lat.toFixed(5)},{" "}
-                        {note.author_fix.lng.toFixed(5)} · accuracy{" "}
+                        {tr("Author GPS:")}{" "}{note.author_fix.lat.toFixed(5)},{" "}
+                        {note.author_fix.lng.toFixed(5)} {" "}{tr("· accuracy")}{" "}
                         {Math.round(note.author_fix.accuracy)} m ·{" "}
                         {new Date(note.author_fix.timestamp).toLocaleString(
                           "en-US",
@@ -903,11 +897,8 @@ export function MapNotes({
             </div>
           ) : (
             !error && (
-              <div className="map-notes-empty">
-                <ChatCircle size={36} />
-                <h3>No notes nearby yet</h3>
-                <p>Share a discovery for the next explorer.</p>
-              </div>
+              <EmptyState art="ghost" title={tr("No notes nearby yet")}>
+                {tr("Leave something for the next ghost passing through.")}</EmptyState>
             )
           )}
           <button
@@ -921,16 +912,13 @@ export function MapNotes({
             }
           >
             <Prohibit size={20} />
-            Blocked players
-          </button>
+            {tr("Blocked players")}</button>
         </>
       )}
       {view === "blocked" && (
         <div className="map-notes-blocks">
           <p>
-            Blocked players’ notes and map presence are hidden from you. Your
-            notes and presence are hidden from them.
-          </p>
+            {tr("You and blocked players cannot see each other's notes or map position.")}</p>
           {blocks.length ? (
             blocks.map((person) => (
               <div className="map-notes-block" key={person.playerId}>
@@ -948,28 +936,36 @@ export function MapNotes({
                       await loadBlocks();
                       if (current(who)) {
                         heading.current?.focus();
-                        setNotice("Player unblocked.");
+                        setNotice(tr("Player unblocked."));
                       }
                     })
                   }
                 >
-                  Unblock
-                </button>
+                  {tr("Unblock")}</button>
               </div>
             ))
           ) : (
-            <p>No blocked players.</p>
+            <p>{tr("No blocked players.")}</p>
           )}
         </div>
+      )}
+      {recordNote && onRecord && (
+        <NoteRecordDialog
+          noteId={recordNote.id}
+          noteText={recordNote.text}
+          account={recordAccount || null}
+          onRecord={onRecord}
+          onClose={() => setRecordNote(null)}
+        />
       )}
       {decision && (
         <Dialog
           label={
             decision.kind === "remove"
-              ? "Remove this note?"
+              ? tr("Remove this note?")
               : decision.kind === "block"
-                ? "Block this player?"
-                : "Report this note"
+                ? tr("Block this player?")
+                : tr("Report this note")
           }
           onClose={() => {
             if (!busy) {
@@ -987,37 +983,35 @@ export function MapNotes({
           >
             <h2>
               {decision.kind === "remove"
-                ? "Remove this note?"
+                ? tr("Remove this note?")
                 : decision.kind === "block"
-                  ? `Block ${decision.note.author}?`
-                  : "Report this note"}
+                  ? tr("Block {0}?", { 0: decision.note.author })
+                  : tr("Report this note")}
             </h2>
             {decision.kind === "remove" ? (
               <p>
-                It will disappear from QuestLayer. Copies other people saved may
-                remain.
+                {tr("It disappears from the map. Copies others saved may remain.")}{onRecord &&
+                  tr(" If you kept it as a public record, mark that record removed first under Public record.")}
               </p>
             ) : decision.kind === "block" ? (
               <p>
-                Your notes and map presence will be hidden from each other. You
-                can undo this in Blocked players.
-              </p>
+                {tr("You will no longer see each other's notes or position. Undo this under Blocked players.")}</p>
             ) : (
               <>
-                <label htmlFor="map-note-reason">Reason</label>
+                <label htmlFor="map-note-reason">{tr("Reason")}</label>
                 <select
                   id="map-note-reason"
                   value={reason}
                   disabled={busy}
                   onChange={(e) => setReason(e.target.value)}
                 >
-                  <option value="spam">Spam</option>
-                  <option value="harassment">Harassment</option>
-                  <option value="unsafe-place">Unsafe place</option>
-                  <option value="privacy">Private information</option>
-                  <option value="other">Something else</option>
+                  <option value="spam">{tr("Spam")}</option>
+                  <option value="harassment">{tr("Harassment")}</option>
+                  <option value="unsafe-place">{tr("Unsafe place")}</option>
+                  <option value="privacy">{tr("Private information")}</option>
+                  <option value="other">{tr("Something else")}</option>
                 </select>
-                <label htmlFor="map-note-detail">Details (optional)</label>
+                <label htmlFor="map-note-detail">{tr("Details (optional)")}</label>
                 <textarea
                   id="map-note-detail"
                   maxLength={500}
@@ -1027,9 +1021,7 @@ export function MapNotes({
                   onChange={(e) => setDetail(e.target.value)}
                 />
                 <p>
-                  Reports go to the project’s review queue. They do not
-                  automatically remove content.
-                </p>
+                  {tr("A reviewer will look at it. Reporting alone does not remove the note.")}</p>
               </>
             )}
             {error && (
@@ -1047,16 +1039,15 @@ export function MapNotes({
                   setError("");
                 }}
               >
-                Cancel
-              </button>
+                {tr("Cancel")}</button>
               <button className="map-notes-primary" disabled={busy}>
                 {busy
-                  ? "Saving…"
+                  ? tr("Saving…")
                   : decision.kind === "remove"
-                    ? "Remove note"
+                    ? tr("Remove note")
                     : decision.kind === "block"
-                      ? "Block player"
-                      : "Send report"}
+                      ? tr("Block player")
+                      : tr("Send report")}
               </button>
             </div>
           </form>

@@ -1,6 +1,9 @@
 import type { Point, Zone, QuestActivity } from "./types";
+import type { NearNetwork } from "./near-network.ts";
 export type NativeQuest = {
   activity?: QuestActivity;
+  /** v2 days only: the published quest template (visit, trail, return, chest). */
+  template?: "path-visit" | "ordered-trail" | "return-trail" | "cosmetic-chest";
   prizeClaimed: boolean;
   prizePending: boolean;
   index: number;
@@ -30,7 +33,7 @@ export type NativeReceipt = {
 };
 export type NativeGameState = {
   status: string;
-  network: "testnet";
+  network: NearNetwork;
   accountId: string | null;
   generatedAt: number;
   collection: {
@@ -61,8 +64,20 @@ export type NativeGameState = {
     coinCount: number;
     claimsAccepted: number;
     claimsLimit: number;
-    coins: (Point & { index: number; distance: number })[];
+    /** Manifest version: 2 adds quest templates and street finds. */
+    version?: number;
+    findCount?: number;
+    /** XP a street find pays on chain; null until the contract holds the finds. */
+    findXp?: number | null;
+    coins: (Point & { index: number; distance: number; find?: boolean })[];
     quests: NativeQuest[];
+    /** "realized_yield": paid from staking yield already in the treasury. */
+    funding?: "sponsor" | "realized_yield";
+    fundingEvidence?: {
+      vaults: { accountId: string; gamePaid: string }[];
+      paid: string;
+      committedBefore: string;
+    };
   } | null;
   receipts: NativeReceipt[];
   treasury: {

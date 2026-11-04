@@ -1,0 +1,54 @@
+{
+  "verifiedAt": "2026-11-01T23:59:48.684Z",
+  "network": "testnet",
+  "contractId": "nfts.questlayer-dev-20261101.testnet",
+  "schemaVersion": 3,
+  "codeHash": "zzx62x4jjUxWMnCsMVFj2ZUQouWPPWPFmU5uoGS7Q1W",
+  "wasmSha256": "0edba1506f14de0afde3601bd52f6131c1e7753cbd550767c522460ca8c559b9",
+  "supportedEditions": [
+    "ember",
+    "dew",
+    "polar",
+    "bloom",
+    "storm",
+    "moon",
+    "comet",
+    "gold",
+    "nova",
+    "pilgrim",
+    "chronicle",
+    "ledger",
+    "wardbreaker",
+    "wisp",
+    "bossbane",
+    "stride",
+    "kindle",
+    "compass",
+    "quill",
+    "laurel",
+    "summit"
+  ],
+  "claimOnlyEditions": {
+    "bossbane": "earned:monster:",
+    "chronicle": "earned:npc:",
+    "compass": "earned:level:",
+    "kindle": "earned:level:",
+    "laurel": "earned:level:",
+    "ledger": "earned:npc:",
+    "pilgrim": "earned:npc:",
+    "quill": "earned:level:",
+    "stride": "earned:level:",
+    "summit": "earned:level:",
+    "wardbreaker": "earned:monster:",
+    "wisp": "earned:npc:"
+  },
+  "tokensPreserved": 4,
+  "equipmentPreserved": 2,
+  "awardSignerPreserved": true,
+  "transactions": [
+    {
+      "step": "deploy Aura editions collectibles code (no state migration)",
+      "transaction": "frgnjWp816fP7S2LTofSYjRgYimLRk8VqtWafvtbYXm"
+    }
+  ]
+}

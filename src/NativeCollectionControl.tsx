@@ -2,6 +2,7 @@ import { Footprints, Pause, Play } from "@phosphor-icons/react";
 import type { NativeAutoView } from "./native-autocollect";
 import { GameObjectArt } from "./game-object-art";
 import "./native-collection.css";
+import { tr } from "./i18n";
 
 function rewardGold(value: string) {
   const amount = BigInt(value),
@@ -22,7 +23,7 @@ export function NativeCollectionControl({
   onToggle: (enabled: boolean) => void;
 }) {
   return (
-    <section className="native-collection" aria-label="Walking collection">
+    <section className="native-collection" aria-label={tr("Walking collection")}>
       <button
         className="native-collection-toggle"
         aria-pressed={collection.enabled}
@@ -31,7 +32,7 @@ export function NativeCollectionControl({
       >
         <Footprints size={23} aria-hidden="true" />
         <span>
-          {collection.enabled ? "Pause collection" : "Collect as you walk"}
+          {collection.enabled ? tr("Pause collection") : tr("Collect as you walk")}
         </span>
         {collection.enabled ? (
           <Pause size={20} aria-hidden="true" />
@@ -41,7 +42,7 @@ export function NativeCollectionControl({
       </button>
       <p>
         {!ready && !collection.enabled
-          ? "Connect and join testnet walks to start."
+          ? tr("Connect and join testnet walks to start.")
           : collection.message}
       </p>
       {collection.confirmed.count > 0 && (
@@ -53,12 +54,11 @@ export function NativeCollectionControl({
           <GameObjectArt kind="coin" size={24} />
           <span>
             <b>{rewardGold(collection.confirmed.amount)} GOLD</b> ·{" "}
-            {collection.confirmed.count} confirmed this session
-          </span>
+            {collection.confirmed.count} {" "}{tr("confirmed this session")}</span>
         </div>
       )}
       {collection.pending > 0 && (
-        <small>{collection.pending} waiting for NEAR confirmation</small>
+        <small>{collection.pending} {" "}{tr("waiting for NEAR confirmation")}</small>
       )}
     </section>
   );

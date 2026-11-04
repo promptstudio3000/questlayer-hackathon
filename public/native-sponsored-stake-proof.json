@@ -1,0 +1,74 @@
+{
+  "network": "testnet",
+  "startedAt": "2026-11-01T00:43:32.089Z",
+  "steps": [
+    {
+      "label": "guest session",
+      "playerId": "player_0d2328b9-d1ed-4f72-8fd6-89967040eb23"
+    },
+    {
+      "label": "account ready",
+      "accountId": "stake-mvx3wq73.play-20261031.questlayer-dev-20261031.testnet",
+      "transactionHash": "6Lf4S5pXsFRADLLxXH8abM127rxYUnVVZmPhtDLzSRAv"
+    },
+    {
+      "label": "player money arrives (operator transfer stands in for a purchase)",
+      "from": "questlayer-dev-20261031.testnet",
+      "amount": "5500000000000000000000000",
+      "transactionHash": "4hWtEq1U4iLZiCgsytSxkuGegqVwQNXHrJnrF6CV1x5L"
+    },
+    {
+      "label": "relayer refuses to carry the setup deposit",
+      "refusal": "/relay: 409 RELAY_SELF_PAID Opening a staking position is paid from your own account, not through the relayer."
+    },
+    {
+      "label": "position created by the player's own key (setup deposit and gas paid by the player)",
+      "factory": "questlayer-vaults-20261101.testnet",
+      "pool": "aurora.pool.f863973.m0",
+      "setupDeposit": "3520000000000000000000000",
+      "transactionHash": "3UsAjNcgB5da67Yyj79dQk9wnZn2NsSwp8QWGZiuRQzy"
+    },
+    {
+      "label": "position registered by the factory callback",
+      "positionId": "3",
+      "vault": "v3.questlayer-vaults-20261101.testnet"
+    },
+    {
+      "label": "stake deposited by the player's own key, no wallet popup",
+      "vault": "v3.questlayer-vaults-20261101.testnet",
+      "amount": "500000000000000000000000",
+      "transactionHash": "AEHpXZNXV91BtT57vJAJc1kkkrJ2G59dCnsrsLrzxmEU"
+    },
+    {
+      "label": "zero-deposit maintenance relayed (gas sponsored)",
+      "vault": "v3.questlayer-vaults-20261101.testnet",
+      "transactionHash": "3gsyGYdjyW1mq3XWpjxPkSfBaHK11M55gYnDMq69dHgL"
+    },
+    {
+      "label": "vault state read back",
+      "stage": "idle",
+      "deposited": "500000000000000000000000",
+      "staked": "499999999999999999999996",
+      "contributionBps": 5000,
+      "pool": "aurora.pool.f863973.m0"
+    }
+  ],
+  "finishedAt": "2026-11-01T00:44:25.924Z",
+  "accountId": "stake-mvx3wq73.play-20261031.questlayer-dev-20261031.testnet",
+  "vault": "v3.questlayer-vaults-20261101.testnet",
+  "relayer": {
+    "enabled": true,
+    "relayer": "relay-20261031.questlayer-dev-20261031.testnet",
+    "lease": {
+      "owner": null,
+      "untilMs": 0,
+      "lastSuccess": 1793493797668,
+      "lastError": null
+    },
+    "jobs": {
+      "confirmed": 10,
+      "failed": 1
+    }
+  },
+  "note": "The 3.52 NEAR setup deposit, the 1 NEAR stake and their gas came from the player's own account (funded here by the project operator in place of a purchase) in transactions signed by the device key; the relayer refused the setup deposit and sponsored only the zero-deposit refresh."
+}

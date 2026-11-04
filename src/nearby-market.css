@@ -1,0 +1,197 @@
+/* Explorer · Nearby: tasks, Secrets and conditional sends. */
+.nearby-market {
+  display: grid;
+  gap: 14px;
+}
+.nearby-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.nearby-actions .secondary-button {
+  flex: 1 1 auto;
+  min-height: 48px;
+  font-size: 14px;
+}
+.nearby-note,
+.nearby-empty,
+.nearby-loading,
+.market-meta {
+  margin: 0;
+  color: #6b5a78;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.nearby-section {
+  display: grid;
+  gap: 8px;
+}
+.nearby-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 12px;
+  background: #fffdfa;
+  border: 1px solid #ebe5dc;
+  border-radius: 14px;
+  color: #1a0335;
+  text-align: left;
+}
+.nearby-card-body {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.nearby-card-body strong {
+  font-size: 16px;
+}
+.nearby-card-body small {
+  color: #6b5a78;
+  font-size: 14px;
+}
+.task-reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 64px;
+  font-weight: 700;
+  color: #7a4d00;
+}
+.secret-fog {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: #fcfaff;
+  background: radial-gradient(circle at 40% 35%, #b8a1ed, #441c6c 75%);
+  box-shadow: 0 0 0 4px #b8a1ed44;
+}
+.secret-fog.inside {
+  box-shadow: 0 0 0 4px #ffd34d;
+}
+.market-dialog {
+  display: grid;
+  gap: 12px;
+}
+.market-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.market-dialog-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.market-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.market-claim,
+.secret-revealed,
+.market-chat {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f5f0fa;
+}
+.market-chat h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 16px;
+}
+.market-chat p {
+  margin: 0;
+  font-size: 15px;
+}
+.market-claim-row {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e1d7e9;
+}
+.market-claim-row p {
+  margin: 0;
+}
+.market-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.market-form-row > * {
+  flex: 1 1 120px;
+}
+.market-form-col {
+  display: grid;
+  gap: 8px;
+}
+.market-field,
+.inline-field {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  color: #4a3a58;
+}
+.market-dialog input,
+.market-dialog select,
+.market-dialog textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid #d8cde3;
+  border-radius: 10px;
+  background: #fff;
+  color: #1a0335;
+}
+.market-dialog textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.market-dialog button:not(.secondary-button):not(.icon-button),
+.transfer-card button:not(.secondary-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #441c6c;
+  color: #fcfaff;
+  font-size: 16px;
+  font-weight: 600;
+}
+.market-dialog .secondary-button,
+.transfer-card .secondary-button {
+  min-height: 48px;
+  font-size: 14px;
+}
+.market-total {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff6db;
+  color: #5a3b00;
+  font-size: 14px;
+}
+.market-rate {
+  display: flex;
+  gap: 4px;
+}
+.market-rate .icon-button {
+  min-width: 48px;
+  min-height: 48px;
+}
+.explore-sheet-tabs {
+  margin-bottom: 8px;
+}

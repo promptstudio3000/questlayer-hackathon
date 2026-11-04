@@ -1,10 +1,11 @@
+import { ChainLink } from "./ChainLink";
 import {
-  ArrowRight,
   Check,
   ClockCounterClockwise,
   X,
 } from "@phosphor-icons/react";
-import { useEffect, useRef } from "react";
+import { ArrowRight } from "./dir-icons";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
 import { AuraArt } from "./Ghost";
@@ -16,8 +17,9 @@ import {
   type AdventureResult,
 } from "./adventure-results";
 import type { useAdventureResults } from "./useAdventureResults";
-import type { Player } from "./types";
+import type { Item, Player } from "./types";
 import "./adventure-results.css";
+import { tr } from "./i18n";
 
 type Results = ReturnType<typeof useAdventureResults>;
 
@@ -39,7 +41,7 @@ export function AdventureResultResume({
         size={32}
       />
       <span>
-        <strong>View confirmed result</strong>
+        <strong>{tr("Reward collected")}</strong>
         <small>
           {result.title}
           {result.reward ? ` · +${result.reward.xp} XP` : ""}
@@ -60,8 +62,7 @@ export function AdventureResultHistoryButton({
       className="secondary-button adventure-history-button"
       onClick={onOpen}
     >
-      <ClockCounterClockwise size={20} aria-hidden="true" /> Adventure results
-    </button>
+      <ClockCounterClockwise size={20} aria-hidden="true" /> {" "}{tr("Adventure results")}</button>
   );
 }
 
@@ -76,7 +77,10 @@ export function AdventureResultDialog({
   onInventory,
   onMap,
   onInspect,
+  itemActions,
 }: {
+  /** Secure and share controls for the Aura in this result (slice 3). */
+  itemActions?: (item: Item) => ReactNode;
   results: Results;
   player: Player;
   realm: AdventureRealm;
@@ -118,33 +122,27 @@ export function AdventureResultDialog({
     : player.inventory;
   return (
     <Dialog
-      label={
-        selection.mode === "history" ? "Adventure results" : "Adventure result"
-      }
+      label={selection.mode === "history" ? tr("Your rewards") : tr("Your reward")}
       onClose={results.close}
     >
       <div className="adventure-results-dialog">
         <div className="panel-heading">
           <h2 ref={heading} tabIndex={-1}>
-            {selection.mode === "history"
-              ? "Adventure results"
-              : "Confirmed adventure"}
+            {selection.mode === "history" ? tr("Your rewards") : tr("Reward collected")}
           </h2>
           <button
             className="icon-button"
-            aria-label="Close adventure results"
+            aria-label={tr("Close rewards")}
             onClick={results.close}
           >
             <X size={22} />
           </button>
         </div>
         <p className="adventure-result-domain">
-          Demo {realm === "arena" ? "arena" : "GPS play"} · saved results
-        </p>
+          {realm === "arena" ? tr("City demo") : tr("GPS play")} {" "}{tr("· saved rewards")}</p>
         {!online && (
           <p role="status">
-            You are offline. Reconnect to check current ownership and equipment.
-          </p>
+            {tr("You're offline. Reconnect to check what you own right now.")}</p>
         )}
         {results.error && (
           <p className="inline-error" role="alert">
@@ -159,24 +157,20 @@ export function AdventureResultDialog({
         {selection.mode === "history" ? (
           <>
             <p>
-              Inspect your completed adventures, including visits without an
-              Aura. Awards stay recorded when a discovery closes.
-            </p>
+              {tr("Every confirmed visit is kept here, with or without an Aura, even after the place closes.")}</p>
             <button
               className="secondary-button"
               disabled={!online || results.loading}
               onClick={() => void results.refresh()}
             >
-              {results.loading ? "Loading results…" : "Refresh latest results"}
+              {results.loading ? tr("Loading…") : tr("Refresh")}
             </button>
             {!results.loading &&
               !results.error &&
               online &&
               results.results.length === 0 && (
                 <p>
-                  No saved results in this mode yet. Complete a discovery to
-                  record its result.
-                </p>
+                  {tr("No rewards yet. Confirm a visit or open a chest to see it here.")}</p>
               )}
             <ol className="adventure-result-list">
               {results.results.map((receipt) => (
@@ -193,12 +187,13 @@ export function AdventureResultDialog({
                         {new Date(receipt.completedAt).toLocaleString()}
                         <br />
                         {receipt.reward
-                          ? `+${receipt.reward.xp} XP · ${gold(receipt.reward.goldU, 6)} demo GOLD${receipt.reward.item ? ` · ${receipt.reward.item.name}` : " · no Aura"}`
-                          : "Historical detail unavailable"}
+                          ? tr("+{0} XP · {1} practice GOLD{2}", { 0: receipt.reward.xp, 1: gold(receipt.reward.goldU, 6), 2: receipt.reward.item ? ` · ${receipt.reward.item.name}` : " · no Aura" })
+                          : tr("Details not recorded")}
                       </small>
                     </span>
                     <ArrowRight size={20} aria-hidden="true" />
                   </button>
+                  {receipt.chain && <ChainLink chain={receipt.chain} />}
                 </li>
               ))}
             </ol>
@@ -208,12 +203,10 @@ export function AdventureResultDialog({
                 disabled={results.loading || !online}
                 onClick={() => void results.refresh(results.nextCursor!)}
               >
-                Older results
-              </button>
+                {tr("Older rewards")}</button>
             )}
             <button className="text-button" onClick={onMap}>
-              Back to map
-            </button>
+              {tr("Back to map")}</button>
           </>
         ) : (
           <>
@@ -222,10 +215,7 @@ export function AdventureResultDialog({
                 <h3>{result.title}</h3>
                 {result.status === "legacy-unavailable" || !result.reward ? (
                   <p>
-                    This visit was completed before exact result records were
-                    introduced. Your original completion remains recorded; its
-                    exact reward cannot be reconstructed here.
-                  </p>
+                    {tr("This visit was confirmed before rewards were recorded in detail. The visit still counts.")}</p>
                 ) : (
                   <>
                     {item ? (
@@ -237,21 +227,21 @@ export function AdventureResultDialog({
                             preview
                           />
                         ) : (
-                          <AuraArt color={item.color} slot={item.slot} />
+                          <AuraArt color={item.color} slot={item.slot} name={item.name} />
                         )}
                         <strong>{item.name}</strong>
                         <span>
-                          {item.slot === "above" ? "Above" : "Below"} character
+                          {item.slot === "above" ? tr("Above character") : tr("Below character")}
                           {item.serial === null ? "" : ` · #${item.serial}`}
                         </span>
                         <p>
                           {result.itemCurrent.equipped
                             ? online && selection.fresh
-                              ? "This Aura is equipped."
-                              : "Equipped at the last online check."
+                              ? tr("Equipped")
+                              : tr("Equipped at the last online check")
                             : liveItem && result.itemCurrent.status === "owned"
-                              ? "Demo outfit preview · not equipped"
-                              : "Awarded Aura · historical appearance"}
+                              ? tr("In your collection · not equipped")
+                              : tr("Awarded Aura · as it looked then")}
                         </p>
                       </div>
                     ) : (
@@ -261,28 +251,27 @@ export function AdventureResultDialog({
                           state="completed"
                           size={48}
                         />
-                        <p>No Aura was awarded for this visit.</p>
+                        <p>{tr("No Aura this time. XP still counts.")}</p>
                       </div>
                     )}
                     <p className="adventure-result-award">
                       <strong>+{result.reward.xp} XP</strong> ·{" "}
-                      {gold(result.reward.goldU, 6)} demo GOLD awarded
-                    </p>
+                      {gold(result.reward.goldU, 6)} {" "}{tr("practice GOLD")}</p>
                     {item && (
                       <p>
                         {!online || !selection.fresh
-                          ? "Check current ownership online before equipping."
+                          ? tr("Go online to check you still own it before trying it on.")
                           : result.itemCurrent.reason ||
                             (result.itemCurrent.status === "owned"
-                              ? "This Aura is currently in your demo inventory."
-                              : "Current item availability must be checked before equipping.")}
+                              ? tr("This Aura is in your collection.")
+                              : tr("Check that you still own this Aura before trying it on."))}
                       </p>
                     )}
                     {!selection.fresh && !results.error && online && (
                       <p role="status">
                         {selection.checking
-                          ? "Checking current ownership…"
-                          : "Check current ownership before equipping."}
+                          ? tr("Checking what you own…")
+                          : tr("Check what you own before trying it on.")}
                       </p>
                     )}
                     {equipItem && (
@@ -291,9 +280,10 @@ export function AdventureResultDialog({
                         disabled={busy || !online || !selection.fresh}
                         onClick={() => onEquip(result)}
                       >
-                        Try it on <Check size={20} />
+                        {tr("Try it on")}{" "}<Check size={20} />
                       </button>
                     )}
+                    {item && liveItem && selection.fresh && itemActions?.(liveItem)}
                   </>
                 )}
                 {!equipItem && selection.fresh && (
@@ -302,16 +292,14 @@ export function AdventureResultDialog({
                     disabled={busy}
                     onClick={onMap}
                   >
-                    Back to map <ArrowRight size={20} />
+                    {tr("Back to map")}{" "}<ArrowRight size={20} />
                   </button>
                 )}
                 <p className="adventure-result-date">
-                  Completed {new Date(result.completedAt).toLocaleString()}.
-                  Inspecting a result does not collect another reward.
-                </p>
+                  {tr("Confirmed")}{" "}{new Date(result.completedAt).toLocaleString()}{tr(". Viewing this does not collect the reward again.")}</p>
               </>
             ) : (
-              !results.error && <p role="status">Loading confirmed result…</p>
+              !results.error && <p role="status">{tr("Loading your reward…")}</p>
             )}
             {selection.id && (
               <button
@@ -321,9 +309,9 @@ export function AdventureResultDialog({
               >
                 {selection.fresh
                   ? item
-                    ? "Check current ownership"
-                    : "Refresh confirmed result"
-                  : "Retry result check"}
+                    ? tr("Check what I own")
+                    : tr("Refresh")
+                  : tr("Try again")}
               </button>
             )}
             <button
@@ -331,19 +319,16 @@ export function AdventureResultDialog({
               disabled={busy}
               onClick={onInventory}
             >
-              Open inventory
-            </button>
+              {tr("Open collection")}</button>
             <button
               className="secondary-button"
               disabled={busy}
               onClick={results.history}
             >
-              All adventure results
-            </button>
+              {tr("All rewards")}</button>
             {(equipItem || !result || !selection.fresh) && (
               <button className="text-button" disabled={busy} onClick={onMap}>
-                Back to map
-              </button>
+                {tr("Back to map")}</button>
             )}
           </>
         )}

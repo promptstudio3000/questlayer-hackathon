@@ -1,5 +1,7 @@
+import { EmptyState } from "./EmptyState";
 import type { Item, Player } from "./types";
 import { AuraArt } from "./Ghost";
+import { tr } from "./i18n";
 export function AuraClaims({
   player,
   enabled,
@@ -13,7 +15,7 @@ export function AuraClaims({
   enabled: boolean;
   busy: string;
   onConnect: () => Promise<void>;
-  onMint: (item: Item) => Promise<void>;
+  onMint: (item: Item) => Promise<unknown>;
   onConfirm: (item: Item) => Promise<void>;
   onRestore: (item: Item) => Promise<void>;
 }) {
@@ -26,65 +28,56 @@ export function AuraClaims({
     );
   return (
     <section className="aura-claims">
-      <h2>Bring your Aura to NEAR</h2>
+      <h2>{tr("Secure your Auras")}</h2>
       {!linked && (
         <>
           <p>
-            Connect your NEAR wallet to mint an earned Aura as your own testnet
-            NFT.
-          </p>
+            {tr("Link a NEAR account to secure an Aura you earned. A secured Aura is yours even outside this game.")}</p>
           <button
             className="button secondary"
             disabled={!!busy}
             onClick={() => void onConnect()}
           >
-            Connect NEAR
-          </button>
+            {tr("Link NEAR account")}</button>
         </>
       )}
       {linked && !enabled && (
         <p>
-          Minting is temporarily unavailable. You can still check existing
-          claims or restore expired ones.
-        </p>
+          {tr("Securing is paused right now. You can still check or restore an Aura you already started.")}</p>
       )}
       {linked && enabled && (
         <p>
-          Your wallet approves up to <strong>0.05 test NEAR</strong> for
-          storage; unused deposit returns. Requesting a claim reserves its demo
-          item for 15 minutes. A confirmed NFT leaves the demo market.
-        </p>
+          {tr("Securing holds up to")}{" "}<strong>{tr("0.05 test NEAR")}</strong> {" "}{tr("for storage; anything unused comes back. The Aura is reserved for 15 minutes and leaves the practice market once secured.")}</p>
       )}
       {enabled && linked && !items.length && (
-        <p>Find a park chest to discover your next Aura.</p>
+        <EmptyState art="chest" title={tr("Nothing to secure yet")}>
+          {tr("Open a chest to find your next Aura.")}</EmptyState>
       )}
       {items.map((item) => (
         <article className="aura-claim" key={item.id}>
           <div className="aura-claim-heading">
-            <AuraArt color={item.color} slot={item.slot} />
+            <AuraArt color={item.color} slot={item.slot} name={item.name} />
             <div>
               <h3>{item.name}</h3>
               <span>
                 {item.native_claim_state === "issued"
-                  ? "Claim reserved"
-                  : "Earned demo Aura"}
+                  ? tr("Being secured")
+                  : tr("Earned Aura")}
               </span>
             </div>
           </div>
           {item.native_claim_state === "issued" && (
             <>
               <p>
-                Claim expires{" "}
+                {tr("Claim expires")}{" "}
                 {new Date(item.native_claim_expires_at!).toLocaleString(
                   "en-GB",
                   { dateStyle: "medium", timeStyle: "short" },
                 )}
-                . You can retry signing. Restore the demo item after expiry if
-                no NFT minted.
-              </p>
+                {tr(". You can try again. If it was not secured by then, restore the practice Aura.")}</p>
               {item.native_claim_receiver && (
                 <span className="native-address">
-                  Claim wallet: {item.native_claim_receiver}
+                  {tr("Account:")}{" "}{item.native_claim_receiver}
                 </span>
               )}
             </>
@@ -96,8 +89,8 @@ export function AuraClaims({
               onClick={() => void onMint(item)}
             >
               {item.native_claim_state === "issued"
-                ? "Finish mint"
-                : "Mint on NEAR"}
+                ? tr("Finish securing")
+                : tr("Secure this Aura")}
             </button>
             {item.native_claim_state === "issued" && (
               <>
@@ -106,8 +99,7 @@ export function AuraClaims({
                   disabled={!!busy}
                   onClick={() => void onConfirm(item)}
                 >
-                  Check claim
-                </button>
+                  {tr("Check claim")}</button>
                 <button
                   className="button secondary"
                   disabled={
@@ -115,8 +107,7 @@ export function AuraClaims({
                   }
                   onClick={() => void onRestore(item)}
                 >
-                  Restore demo
-                </button>
+                  {tr("Restore practice Aura")}</button>
               </>
             )}
           </div>

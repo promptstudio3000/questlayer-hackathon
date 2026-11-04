@@ -1,4 +1,7 @@
-export const NATIVE_VAULT_FACTORY = "questlayer-vaults-20261031.testnet";
+import rewardsManifest from "../public/native-rewards-testnet.json" with { type: "json" };
+import { NEAR_NETWORK } from "./near-network.ts";
+// The factory of the current deployment generation, pinned by the public manifest.
+export const NATIVE_VAULT_FACTORY: string = rewardsManifest.factory.contractId;
 export type VaultRequest = {
   accountId: string;
   action:
@@ -9,7 +12,9 @@ export type VaultRequest = {
     | "refresh"
     | "advance"
     | "register"
-    | "refund";
+    | "refund"
+    | "partial"
+    | "contribution";
   poolId?: string;
   contributionBps?: number;
   vaultId?: string;
@@ -46,6 +51,8 @@ export function assertVaultQuote(q: VaultQuote, r: VaultRequest) {
     advance: "advance",
     register: "register_position",
     refund: "withdraw_refund",
+    partial: "request_partial_exit",
+    contribution: "set_contribution",
   };
   const factory = ["create", "register", "refund"].includes(r.action),
     receiver = factory ? NATIVE_VAULT_FACTORY : r.vaultId;
@@ -54,7 +61,7 @@ export function assertVaultQuote(q: VaultQuote, r: VaultRequest) {
       ? r.setupDeposit
       : r.action === "deposit"
         ? r.amount
-        : ["exit", "withdraw", "refund"].includes(r.action)
+        : ["exit", "withdraw", "refund", "partial", "contribution"].includes(r.action)
           ? "1"
           : "0";
   const expectedArgs =
@@ -62,9 +69,13 @@ export function assertVaultQuote(q: VaultQuote, r: VaultRequest) {
       ? { pool_id: r.poolId, contribution_bps: r.contributionBps }
       : r.action === "register"
         ? { id: r.positionId }
-        : {};
+        : r.action === "partial"
+          ? { amount: r.amount }
+          : r.action === "contribution"
+            ? { contribution_bps: r.contributionBps }
+            : {};
   if (
-    q.network !== "testnet" ||
+    q.network !== NEAR_NETWORK ||
     q.signerId !== r.accountId ||
     q.factoryId !== NATIVE_VAULT_FACTORY ||
     q.receiverId !== receiver ||

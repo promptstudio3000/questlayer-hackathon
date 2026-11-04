@@ -59,7 +59,7 @@ snapshot; do not reconstruct them by guessing.
 | Document/source | Role and precedence |
 | --- | --- |
 | [IMPLEMENTATION-PLAN.md](../IMPLEMENTATION-PLAN.md) | Main product, economy and integration specification. Compare its initial Git version with the present version to distinguish original requirements from delivered scope. |
-| [PLAN-HRY.md](../PLAN-HRY.md) | A compatibility entry point pointing to the English specification. It is not a separate current implementation plan. |
+| `PLAN-HRY.md` (removed 1 November 2026) | Former compatibility pointer to the English specification; `IMPLEMENTATION-PLAN.md` is the only specification. |
 | [ROADMAP.md](../ROADMAP.md) / [roadmap.json](roadmap.json) | Delivery order, dependencies, task IDs, journeys and full acceptance gates. Tracker statuses are coarse and some implementation notes predate the latest batch. |
 | [CREATOR-ECONOMY-PLAN.md](../CREATOR-ECONOMY-PLAN.md) | Accepted creator direction: Community, refundable XP locks, creator support/funding, donations and paid access. The financial portions remain planned. |
 | [GAME-RULES.md](GAME-RULES.md) | Consolidated 102 rules, including economic, identity, privacy and delivery boundaries. |
@@ -124,13 +124,14 @@ performed. The exact active VPS release therefore remains **unverified**.
 ### Legacy server naming and release gap
 
 The checked-in [service](../deploy/questlayer-hackathon.service) and
-[deployment script](../scripts/deploy-vps.sh) still use the original technical name:
-
-- systemd service `auratrail.service`;
-- application `/opt/ps3000/apps/auratrail/current` and sibling `releases/`;
-- state `/var/lib/auratrail`, database `auratrail.sqlite`;
-- loopback port 7091, public QuestLayer domain;
-- separately managed private `runtime.env`.
+[deployment script](../scripts/deploy-vps.sh) now target the renamed installation
+(`questlayer-hackathon.service`, `/opt/ps3000/apps/questlayer-hackathon`,
+`/var/lib/questlayer-hackathon/questlayer-hackathon.sqlite`, loopback port 7091,
+public QuestLayer domain, separately managed private `runtime.env`). The host that was
+observed for this review still ran the original installation under its former technical
+name (`auratrail.service`, `/opt/ps3000/apps/auratrail`, `/var/lib/auratrail`); the
+deployment script refuses such a host until the migration in
+[CLOUD-DEVELOPMENT.md](CLOUD-DEVELOPMENT.md) and [VPS-MIGRATION.md](VPS-MIGRATION.md) is done.
 
 These are configuration/historical-record facts, not a fresh SSH confirmation.
 Searching only for a `questlayer` application directory/service can miss that
@@ -527,7 +528,7 @@ QUESTLAYER_REPO="$(pwd)"
 QUESTLAYER_QA_STATE="$(mktemp -d "${TMPDIR:-/tmp}/questlayer-handoff.XXXXXX")"
 (
   cd "$QUESTLAYER_QA_STATE"
-  env DATABASE_PATH="$QUESTLAYER_QA_STATE/auratrail.sqlite" \
+  env DATABASE_PATH="$QUESTLAYER_QA_STATE/questlayer-hackathon.sqlite" \
     APP_ORIGIN=http://127.0.0.1:8891 HOST=127.0.0.1 PORT=8891 \
     DISABLE_BACKGROUND_WORKERS=1 DISABLE_NATIVE_ATTESTATIONS=1 \
     AWARD_SIGNER_PATH= REWARD_ATTESTOR_PATH= REWARD_WORKER_KEY_PATH= \

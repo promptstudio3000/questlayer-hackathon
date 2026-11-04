@@ -1,0 +1,492 @@
+/* Compact game chrome (UI simplification pass, Nov 2026).
+   Loaded last so it wins over older panel styles:
+   - one-line panel header: back arrow · title · small round close
+   - small corner close on every bottom sheet / dialog
+   - compact tab bars (icon + label in one row)
+   - inventory: one tab row, Wardrobe/History as labelled buttons
+   See docs/UI-SIMPLIFICATION.md. */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- Panel header -------------------------------------------------- */
+.main-panel .panel-heading {
+  /* Above the sticky tab bar's surface-coloured mask (screen-tabs.css): with
+     the compact gap the mask reached up over the close button and title. */
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin-bottom: 10px;
+}
+.main-panel .panel-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.main-panel .panel-heading h1 {
+  margin: 0;
+  font-size: 22px;
+  /* Room for Devanagari/Arabic marks and tall CJK glyphs: the title is one
+     clipped line, so a tighter box cuts their tops and bottoms off. */
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel-back {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-soft, #f2ebff);
+  color: var(--action, #672eeb);
+}
+.panel-back:hover {
+  background: color-mix(in srgb, var(--action, #672eeb) 14%, #ffffff);
+}
+.main-panel .panel-heading .panel-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--surface-soft, #f2ebff);
+  color: var(--ink-secondary, #665577);
+}
+.panel-back:focus-visible,
+.main-panel .panel-heading .panel-close:focus-visible,
+.sheet-close:focus-visible {
+  outline: 3px solid var(--focus, #672eeb);
+  outline-offset: 2px;
+}
+/* The old full-width "Back to adventure" row is now the arrow in the header. */
+.adventure-return {
+  display: none;
+}
+
+/* ---- Small corner close on sheets and dialogs ------------------------ */
+.game-dialog .sheet-close,
+.game-dialog .npc-modal .close,
+.game-dialog .actor-sheet .close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 6;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid var(--decorative-border, #e4d9f2);
+  border-radius: 50%;
+  background: #ffffffe6;
+  color: var(--ink-secondary, #665577);
+  box-shadow: 0 2px 6px #1a03351f;
+}
+/* The close no longer takes a grid column in the item detail header. */
+.game-dialog .inv-detail-head {
+  grid-template-columns: 64px minmax(0, 1fr);
+  padding-right: 28px;
+}
+.game-dialog .inv-detail-head:has(> h2:first-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.game-dialog .inv-detail-art {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+}
+.game-dialog:has(> .inv-detail) {
+  padding: 16px;
+}
+.game-dialog .inventory-dialog.inv-detail {
+  gap: 10px;
+}
+
+/* ---- Compact tab bars ---------------------------------------------- */
+/* Tabs size to their label (flex), icon and label sit on one line. */
+.main-panel .screen-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  margin: 0 0 12px;
+  border-radius: 14px;
+}
+.main-panel .screen-tabs button {
+  flex: 1 1 auto;
+  flex-direction: row;
+  gap: 5px;
+  min-height: 40px;
+  padding: 4px 8px;
+  border-radius: 11px;
+  font-size: 14px;
+}
+.main-panel .screen-tabs .screen-tab-label {
+  overflow: visible;
+}
+.main-panel .screen-tabs button svg {
+  width: 18px;
+  height: 18px;
+}
+.main-panel .screen-tabs-sub {
+  margin-bottom: 10px;
+}
+.main-panel .screen-tabs-sub button {
+  min-height: 36px;
+  font-size: 13px;
+}
+.main-panel .screen-tab-count {
+  position: static;
+  min-width: 18px;
+  padding: 0 4px;
+  line-height: 16px;
+}
+@media (max-width: 420px) {
+  /* Four tabs on a phone: only the active tab keeps its icon. */
+  .main-panel .screen-tabs button:not([aria-selected="true"]) .screen-tab-icon {
+    display: none;
+  }
+  .main-panel .screen-tabs button {
+    padding: 4px 4px;
+  }
+}
+@media (max-width: 370px) {
+  .main-panel .screen-tabs button {
+    font-size: 13px;
+  }
+}
+
+/* Profile shortcuts: two slim labelled buttons. */
+@media (max-width: 760px) {
+  .main-panel .profile-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .main-panel .profile-tiles button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 10px;
+  }
+}
+
+/* ---- Inventory ----------------------------------------------------- */
+.main-panel .inventory-experience {
+  gap: 10px;
+}
+.inventory-experience .inv-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.inventory-experience .inv-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--inventory-border);
+  border-radius: 12px;
+  background: var(--inventory-raised);
+  color: var(--inventory-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.inventory-experience .inv-action-button:hover {
+  background: var(--inventory-soft);
+}
+.inventory-experience .inv-subhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inventory-experience .inv-subhead h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.inventory-experience .inv-chips {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 6px;
+}
+.inventory-experience .inv-chips .inv-chip {
+  flex-shrink: 0;
+  min-height: 36px;
+  min-width: 0;
+  padding: 0 12px;
+  font-size: 14px;
+}
+.inventory-experience .inv-chips .inv-chip-icon {
+  margin-left: auto;
+  width: 36px;
+  padding: 0;
+}
+.inv-chip-count {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ---- Disclosures and leads: never overlap the controls below ------- */
+.main-panel .screen-details {
+  margin: 4px 0 10px;
+}
+.main-panel .screen-details > summary {
+  min-height: 36px;
+}
+
+/* ---- Community ----------------------------------------------------- */
+/* One row: filter chips (Community · Following · Started) + refresh icon. */
+.creator-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.creator-toolbar .creator-tabs {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+  margin: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.creator-toolbar .creator-tabs button {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+.creator-toolbar .creator-icon {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 50%;
+}
+/* Creator bonus vote: a one-line card that opens the ballot. */
+.bonus-vote {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 1px solid var(--decorative-border, #d7cbe9);
+  border-top: 1px solid var(--decorative-border, #d7cbe9);
+  border-radius: 14px;
+  background: var(--surface-raised, #fff);
+}
+.bonus-vote > summary {
+  display: grid;
+  gap: 0;
+  padding: 10px 40px 10px 14px;
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+}
+.bonus-vote > summary::-webkit-details-marker {
+  display: none;
+}
+.bonus-vote > summary::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--action, #672eeb);
+  border-bottom: 2px solid var(--action, #672eeb);
+  transform: translateY(-70%) rotate(45deg);
+}
+.bonus-vote[open] > summary::after {
+  transform: translateY(-30%) rotate(225deg);
+}
+.bonus-vote > summary h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.bonus-vote > summary .bonus-vote-meta {
+  margin: 0;
+  font-size: 13px;
+}
+.bonus-vote[open] > :not(summary) {
+  margin-left: 14px;
+  margin-right: 14px;
+}
+.bonus-vote[open] > :last-child {
+  margin-bottom: 14px;
+}
+.bonus-vote > p:not(.bonus-vote-meta) {
+  font-size: 14px;
+  color: var(--ink-secondary, #665577);
+}
+
+/* Notes: back · title · refresh · Write, all on one line. */
+.map-notes-heading {
+  gap: 8px;
+  margin-bottom: 12px;
+  justify-content: flex-start;
+}
+.map-notes-heading > h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+}
+.map-notes-heading .map-notes-icon {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 50%;
+}
+.map-notes-heading .map-notes-primary {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+/* Native tasks: smaller heading now the eyebrow and intro are gone. */
+.task-heading h2 {
+  font-size: 18px;
+}
+
+/* Market: one header line (title · badge · action), no lead paragraph. */
+.section-label.market-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.section-label.market-head h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+}
+.market-refresh {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  border: 1px solid var(--control-border, #806a99);
+  border-radius: 50%;
+  background: var(--surface-raised, #fff);
+  color: var(--action, #672eeb);
+}
+
+/* NPC portrait close: same small round button. */
+.game-dialog .npc-sheet .npc-close {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+}
+.game-dialog .npc-sheet .npc-close svg {
+  width: 16px;
+  height: 16px;
+}
+/* Today's board: corner close instead of a Close button row. */
+.game-dialog .daily-board-sheet h2 {
+  padding-right: 36px;
+}
+.game-dialog .daily-board-lead {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+/* Round 36 px icon buttons in section headers. */
+.task-heading .task-icon,
+.map-note-menu > summary {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 50%;
+}
+.map-note-menu > summary {
+  border-color: transparent;
+  background: transparent;
+}
+.map-note-menu > div {
+  top: 40px;
+}
+
+/* ---- Wave 2 ---------------------------------------------------------- */
+/* Second-level switches (Rewards · Staking · Practice, Sponsored · Practice
+   tasks) are slim pill rows, not a second tab bar. */
+.main-panel .play-switch,
+.main-panel .play-mode-switch {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  margin: 0 0 10px;
+  border-radius: 999px;
+}
+.main-panel .play-switch button,
+.main-panel .play-mode-switch button {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.main-panel .play-switch button svg {
+  width: 16px;
+  height: 16px;
+}
+/* Discovery list: slim rows (56 px art) instead of tall cards. */
+.main-panel .zone-card {
+  min-height: 0;
+  padding: 8px;
+  gap: 10px;
+  align-items: center;
+}
+.main-panel .zone-illustration {
+  width: 56px;
+  height: 56px;
+}
+.main-panel .zone-illustration .game-object-art,
+.main-panel .zone-illustration svg,
+.main-panel .zone-illustration img {
+  max-width: 44px;
+  max-height: 44px;
+}
+.main-panel .zone-info h3 {
+  margin: 2px 0;
+  font-size: 16px;
+  line-height: 1.25;
+}
+.main-panel .zone-list {
+  gap: 8px;
+}

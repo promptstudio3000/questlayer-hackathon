@@ -1,0 +1,24 @@
+{
+  "baseline": "e94be6c",
+  "activeCityPack": "unchanged",
+  "cases": [
+    {
+      "day": "2026-10-31",
+      "zones": "unchanged",
+      "nativeManifestHash": "d3a12178c84e1e42215ca8c4f3ca08b8ae4f409d881fdd42f1e729d3f6cb4371",
+      "publication": "byte-compatible"
+    },
+    {
+      "day": "2026-11-02",
+      "zones": "unchanged",
+      "nativeManifestHash": "e27951a3020ff8d7243af38dce506b27cbe9beb0d326bea8a234f038518b2669",
+      "publication": "byte-compatible"
+    },
+    {
+      "day": "2026-12-31",
+      "zones": "unchanged",
+      "nativeManifestHash": "f2bf6189cd0440f1186c6a02d5883f519a3834facc7304408e274f3168b4cf17",
+      "publication": "byte-compatible"
+    }
+  ]
+}

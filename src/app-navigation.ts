@@ -12,18 +12,28 @@ export type AppTab =
   | "inventory"
   | "market"
   | "fund"
+  | "funding"
   | "wallet"
   | "messages"
   | "bounties"
   | "community"
   | "settings"
-  | "expeditions";
+  | "expeditions"
+  | "fuel"
+  | "shop"
+  | "places";
 export type DemoNavigationTarget = {
   worldId: string;
   zoneId: string;
   questId: string | null;
   realm: "arena" | "gps";
 };
+export type ProfileView = "character" | "settings";
+// Every Aura trade is on NEAR: the old database "practice" market is gone and
+// a stored "practice" view opens the secured market instead.
+export type MarketView = "secured" | "offers";
+export const PROFILE_VIEWS: readonly ProfileView[] = ["character", "settings"];
+export const MARKET_VIEWS: readonly MarketView[] = ["secured", "offers"];
 export type AppNavigation = {
   tab: AppTab;
   walletView: "rewards" | "staking" | "demo";
@@ -31,6 +41,10 @@ export type AppNavigation = {
   notesView: "browse" | "compose" | "blocked";
   sheetExpanded: boolean;
   creatorView: CreatorCommunityView;
+  /** Profile screen sub-tab shown while `tab` is "settings". */
+  profileView: ProfileView;
+  /** Market screen sub-tab shown while `tab` is "market". */
+  marketView: MarketView;
   demoTarget?: DemoNavigationTarget | null;
   nativeTarget?: NativeObjective | null;
 };
@@ -42,6 +56,8 @@ export const initialAppNavigation = (): AppNavigation => ({
   notesView: "browse",
   sheetExpanded: false,
   creatorView: { page: "community" },
+  profileView: "character",
+  marketView: "secured",
 });
 const identifier = (v: unknown): v is string =>
   typeof v === "string" && v.length > 0 && v.length <= 512;
@@ -59,12 +75,16 @@ export function parseAppNavigation(
       "inventory",
       "market",
       "fund",
+      "funding",
       "wallet",
       "messages",
       "bounties",
       "community",
       "settings",
       "expeditions",
+      "fuel",
+      "shop",
+      "places",
     ].includes(v.tab) ||
     typeof v.walletView !== "string" ||
     !["rewards", "staking", "demo"].includes(v.walletView) ||
@@ -74,6 +94,19 @@ export function parseAppNavigation(
     !["browse", "compose", "blocked"].includes(v.notesView) ||
     typeof v.sheetExpanded !== "boolean" ||
     !creatorView
+  )
+    return null;
+  // Sub-tabs were added after the first stored entries: a missing value falls
+  // back to its default so older history entries still restore.
+  if (
+    v.profileView !== undefined &&
+    !PROFILE_VIEWS.includes(v.profileView as ProfileView)
+  )
+    return null;
+  const marketView = v.marketView === "practice" ? "secured" : v.marketView;
+  if (
+    marketView !== undefined &&
+    !MARKET_VIEWS.includes(marketView as MarketView)
   )
     return null;
   let demoTarget: DemoNavigationTarget | null | undefined =
@@ -129,6 +162,8 @@ export function parseAppNavigation(
     notesView: v.notesView as AppNavigation["notesView"],
     sheetExpanded: v.sheetExpanded,
     creatorView,
+    profileView: (v.profileView as ProfileView | undefined) ?? "character",
+    marketView: (marketView as MarketView | undefined) ?? "secured",
     demoTarget,
     nativeTarget,
   };

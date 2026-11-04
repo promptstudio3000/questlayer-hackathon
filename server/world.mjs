@@ -2,60 +2,202 @@ import { getOrPrepareCityPlan } from "./world-planner.mjs";
 import { localDateBounds } from "./spatial/calendar.mjs";
 import tzLookup from "tz-lookup";
 import { latLngToCell, cellToLatLng, cellToBoundary } from "h3-js";
-import { COIN_VALUE, DAY, GOLD, dayKey, distance } from "./domain.mjs";
+import {
+  COIN_VALUE,
+  COIN_ARENA_RADIUS_M,
+  COIN_GPS_RADIUS_M,
+  GOLD,
+  assert,
+  dayKey,
+  positionTier,
+  tierFor,
+  levelFor,
+} from "./domain.mjs";
+import { chestAuraAvailable } from "./aura-catalog.mjs";
 import { atomic } from "./database.mjs";
-import { PLZEN, cityFor, sampleCityPaths } from "./spatial/city-pack.mjs";
+import {
+  DEFAULT_CITY,
+  cityFor,
+  isAutoCity,
+  playableCityById,
+  sampleCityPaths,
+} from "./spatial/city-pack.mjs";
+import { AUTO_CITY_NOTICE } from "./spatial/auto-cities.mjs";
 import { describeStoredQuest } from "./quest-templates.mjs";
-export const HOME = PLZEN.center;
-export const ZONE_NAMES = PLZEN.candidates.map((c) => c.name);
+import { STREET_FIND_XP, streetFindIds } from "./street-finds.mjs";
+import { publicPathSnapshot } from "./spatial/map-data.mjs";
+import {
+  worldQuery,
+  readQueryCursor,
+  queryCursor,
+  zoneInBounds,
+  nearQuery,
+  nearBox,
+  NEAR_RADIUS_M,
+  NEAR_COIN_LIMIT,
+} from "./spatial/world-query.mjs";
+import {
+  effectiveCityPack,
+  closedPlaces,
+  pointClosed,
+  placeClosed,
+} from "./spatial/place-safety.mjs";
+import { pauseState, pauseFor } from "./operator/world-controls.mjs";
+import {
+  defaultPoiSource,
+  huntVisited,
+  materializePoiQuests,
+  poiQuestText,
+} from "./poi-quests.mjs";
+import { clueView } from "./landmark-clue.mjs";
+import {
+  MAP_REWARDS_POLICY,
+} from "./map-rewards/policy.mjs";
+import {
+  coinTiers,
+  hiddenCoinIds,
+  mapRewardsEnabled,
+  materializeCellRewards,
+  nextWave,
+} from "./map-rewards/service.mjs";
+export const HOME = DEFAULT_CITY.center;
+export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
-let citySamples;
-async function publicPaths(db, region, center) {
-  const cached = db
-    .prepare("SELECT * FROM geo_cache WHERE region=? AND expires_at>?")
-    .get(region, Date.now());
-  if (cached) return JSON.parse(cached.data);
-  const [lat, lng] = center,
-    d = 0.009,
-    box = `(${lat - d},${lng - d},${lat + d},${lng + d})`;
-  const q =
-    "[out:json][timeout:12];(" +
-    ["footway", "pedestrian", "path", "living_street"]
-      .map(
-        (h) =>
-          `way[highway=${h}][access!=private][access!=no][foot!=no]${box};`,
-      )
-      .join("") +
-    ");out geom 150;";
-  const r = await fetch(
-    "https://overpass-api.de/api/interpreter?" +
-      new URLSearchParams({ data: q }),
-    {
-      headers: { "User-Agent": "QuestLayer map adapter" },
-      signal: AbortSignal.timeout(15000),
-    },
-  );
-  if (!r.ok) throw new Error("The map data service is busy.");
-  const json = await r.json();
-  const paths = (json.elements || [])
-    .filter((e) => e.geometry?.length > 1)
-    .map((e) => e.geometry.map((p) => [p.lon, p.lat]));
-  db.prepare("INSERT OR REPLACE INTO geo_cache VALUES (?,?,?)").run(
-    region,
-    JSON.stringify(paths),
-    Date.now() + 7 * DAY,
-  );
-  return paths;
-}
+const citySamples = new WeakMap();
 function samplePaths(paths, max = 350) {
   return sampleCityPaths(
     { paths: paths.map((points, i) => ({ id: String(i), points })) },
     max,
   );
 }
+function streetSamples(snapshot, region, max = 350) {
+  return samplePaths(snapshot.paths, 6000)
+    .filter((p) => latLngToCell(p.lat, p.lng, 7) === region)
+    .slice(0, max);
+}
+// Path points of one cell for map rewards (Poisson spacing picks from them).
+const CITY_CELL_SAMPLES = 40000;
+const cityCellSamples = new WeakMap();
+function cellSampler(db, world, cell, now, mapData) {
+  return async () => {
+    if (!world.cityId) {
+      const snapshot = await publicPathSnapshot(db, world.region, { ...mapData, clock: () => now });
+      return snapshot.status === "unavailable" ? null : streetSamples(snapshot, world.region, 6000);
+    }
+    const base = playableCityById(world.cityId);
+    if (!base) return null;
+    const city = effectiveCityPack(db, base);
+    if (!cityCellSamples.has(city.paths))
+      cityCellSamples.set(city.paths, sampleCityPaths(city, CITY_CELL_SAMPLES));
+    return cityCellSamples
+      .get(city.paths)
+      .filter((p) => latLngToCell(p.lat, p.lng, 7) === cell && !pointClosed(city.exclusions || [], p));
+  };
+}
+function pathState(snapshot, materialized) {
+  const { paths, ...state } = snapshot;
+  return { ...state, materialized };
+}
+function applyPathState(manifest, snapshot, materialized) {
+  manifest.pathData = pathState(snapshot, materialized);
+  manifest.coverage =
+    snapshot.status === "unavailable" ? "unavailable" : "street-only";
+  manifest.quality.pathCoverage = snapshot.status;
+  manifest.quality.notice =
+    snapshot.status === "unavailable"
+      ? "Map paths are temporarily unavailable. You can browse the map; nearby discoveries will retry shortly."
+      : "City zones are not available here yet. Street coins use mapped public paths; physical access still requires care.";
+}
+async function hydrateStreetWorld(db, manifest, now, mapOptions) {
+  if (
+    manifest.cityId ||
+    manifest.arena ||
+    manifest.pathData?.materialized !== false ||
+    now >= manifest.endsAt ||
+    now < manifest.pathData.retryAt
+  )
+    return publicManifest(db, manifest);
+  const started = Date.now();
+  const snapshot = await publicPathSnapshot(db, manifest.region, {
+    ...mapOptions,
+    clock: () => now,
+  });
+  const samples = streetSamples(snapshot, manifest.region);
+  const hydrated = atomic(db, () => {
+    const current = JSON.parse(
+      db.prepare("SELECT manifest FROM worlds WHERE id=?").get(manifest.id)
+        .manifest,
+    );
+    if (
+      current.pathData?.materialized !== false ||
+      current.endsAt <= now + Math.max(0, Date.now() - started) ||
+      db
+        .prepare("SELECT 1 FROM daily_jobs WHERE job_key=?")
+        .get(`expire:${current.id}`)
+    )
+      return current;
+    const ready = snapshot.status !== "unavailable";
+    // Map-reward worlds get their coins per cell in ensureWorld.
+    if (ready && !current.mapRewards) {
+      const available = db
+        .prepare("SELECT available_u FROM treasury WHERE bucket='coins'")
+        .get().available_u;
+      const count = Math.min(
+        samples.length,
+        Math.floor(available / COIN_VALUE),
+      );
+      for (let i = 0; i < count; i++)
+        db.prepare(
+          "INSERT INTO coins(id,world_id,lat,lng,value_u) VALUES(?,?,?,?,?)",
+        ).run(
+          `${current.id}:coin:${i}`,
+          current.id,
+          samples[i].lat,
+          samples[i].lng,
+          COIN_VALUE,
+        );
+      db.prepare(
+        "UPDATE treasury SET available_u=available_u-?,reserved_u=reserved_u+? WHERE bucket='coins'",
+      ).run(count * COIN_VALUE, count * COIN_VALUE);
+    }
+    applyPathState(current, snapshot, ready);
+    db.prepare("UPDATE worlds SET manifest=? WHERE id=?").run(
+      JSON.stringify(current),
+      current.id,
+    );
+    return current;
+  });
+  // The recovered paths also drop the cell's map rewards (no player visit needed).
+  if (!hydrated.mapRewards || hydrated.pathData?.materialized !== true)
+    return hydrated;
+  return materializeCellRewards(db, hydrated, {
+    cell: hydrated.region,
+    now,
+    samples: async () => streetSamples(snapshot, hydrated.region, 6000),
+  });
+}
+export async function retryStreetWorlds(
+  db,
+  { clock = Date.now, mapData = {}, maxJobs = 2 } = {},
+) {
+  assert(
+    Number.isSafeInteger(maxJobs) && maxJobs >= 0 && maxJobs <= 10,
+    "Invalid street recovery job limit.",
+  );
+  const now = clock(),
+    rows = db
+      .prepare(
+        "SELECT manifest FROM worlds WHERE json_valid(manifest) AND json_extract(manifest,'$.endsAt')>? AND json_extract(manifest,'$.pathData.materialized')=0 AND json_extract(manifest,'$.pathData.retryAt')<=? ORDER BY created_at,id LIMIT ?",
+      )
+      .all(now, now, maxJobs);
+  for (const row of rows)
+    await hydrateStreetWorld(db, JSON.parse(row.manifest), clock(), mapData);
+  return rows.length;
+}
 function publicManifest(db, w) {
   let center = w.center;
-  if (w.cityId === "plzen") center = PLZEN.center;
+  const registered = w.cityId ? playableCityById(w.cityId) : null;
+  if (registered) center = registered.center;
   else if (!w.arena) {
     const [lat, lng] = cellToLatLng(w.region);
     center = { lat, lng };
@@ -70,13 +212,57 @@ function publicManifest(db, w) {
   return w;
 }
 
+// Street worlds get today's POI quests on first load (docs/WORLDS-PLAN.md C.3,
+// task W6), from the local POI file only. City worlds (auto and reviewed, the
+// city demo too) get them per H3 cell: the player's cell, or `cellAt` when the
+// player asks to search another spot of the same city ("Search this area").
 export async function ensureWorld(
   db,
   location = HOME,
   arena = true,
   now = Date.now(),
+  { mapData = {}, poiSource, cellAt = null } = {},
 ) {
-  const city = arena ? PLZEN : cityFor(location),
+  const world = await ensureBaseWorld(db, location, arena, now, { mapData });
+  if (!world.cityId && arena) return world;
+  // A searched spot must lie in the same city; otherwise the player's own cell.
+  const at =
+    world.cityId && cellAt && cityFor(cellAt)?.id === world.cityId
+      ? cellAt
+      : location;
+  const cell = world.cityId ? latLngToCell(at.lat, at.lng, 7) : world.region;
+  let current = world;
+  try {
+    current = materializePoiQuests(db, world, {
+      source: poiSource === undefined ? defaultPoiSource() : poiSource,
+      now,
+      cell: world.cityId ? cell : null,
+    });
+  } catch (error) {
+    // POI quests are an addition: a broken POI file never hides the street world.
+    console.warn("poi-quests: materialisation failed", error?.message || error);
+  }
+  try {
+    return await materializeCellRewards(db, current, {
+      cell,
+      now,
+      samples: cellSampler(db, current, cell, now, mapData),
+    });
+  } catch (error) {
+    // Rewards come back on the next load; the world itself stays playable.
+    console.warn("map-rewards: cell drop failed", error?.message || error);
+    return current;
+  }
+}
+async function ensureBaseWorld(
+  db,
+  location = HOME,
+  arena = true,
+  now = Date.now(),
+  { mapData = {} } = {},
+) {
+  const baseCity = arena ? DEFAULT_CITY : cityFor(location),
+    city = baseCity ? effectiveCityPack(db, baseCity) : null,
     region = city
       ? `city-${city.id}`
       : latLngToCell(location.lat, location.lng, 7);
@@ -86,7 +272,8 @@ export async function ensureWorld(
   const found = db
     .prepare("SELECT manifest FROM worlds WHERE id=?")
     .get(worldId);
-  if (found) return publicManifest(db, JSON.parse(found.manifest));
+  if (found)
+    return hydrateStreetWorld(db, JSON.parse(found.manifest), now, mapData);
   let pending = databasePending.get(db);
   if (!pending) {
     pending = new Map();
@@ -94,18 +281,29 @@ export async function ensureWorld(
   }
   if (pending.has(worldId)) return pending.get(worldId);
   const job = (async () => {
+    const started = Date.now();
     expireWorlds(db, now);
     const plan = city ? getOrPrepareCityPlan(db, city, day, now) : null;
     const { startsAt, endsAt } = plan || localDateBounds(day, timezone),
       base = plan?.zones || [];
-    const paths = city
-      ? []
-      : await publicPaths(db, region, cellToLatLng(region));
-    if (city && !citySamples) citySamples = sampleCityPaths(city);
-    const samples = city ? citySamples : samplePaths(paths),
+    const snapshot = city
+      ? null
+      : await publicPathSnapshot(db, region, { ...mapData, clock: () => now });
+    const effectiveNow = now + Math.max(0, Date.now() - started);
+    if (effectiveNow >= endsAt)
+      return ensureBaseWorld(db, location, arena, effectiveNow, { mapData });
+    if (city && !citySamples.has(city.paths))
+      citySamples.set(city.paths, sampleCityPaths(city));
+    const samples = city
+        ? citySamples
+            .get(city.paths)
+            .filter((p) => !pointClosed(city.exclusions || [], p))
+        : streetSamples(snapshot, region),
       [lat, lng] = city
         ? [city.center.lat, city.center.lng]
         : cellToLatLng(region);
+    // Auto cities (unreviewed map data) are practice only: no zone prize.
+    const auto = isAutoCity(city);
     const zones = base.map((z) => ({
       ...z,
       id: `${worldId}:zone:${z.slot}`,
@@ -123,26 +321,40 @@ export async function ensureWorld(
       region,
       cityId: city?.id || null,
       cityName: city?.name || null,
+      ...(city ? { cityStatus: auto ? "auto" : "reviewed" } : {}),
       timezone,
       arena,
-      source: city ? "OpenStreetMap CityPack" : "OpenStreetMap / Overpass",
+      source: auto
+        ? "OpenStreetMap auto CityPack"
+        : city
+          ? "OpenStreetMap CityPack"
+          : "OpenStreetMap / Overpass",
       center: { lat, lng },
       boundary: city ? null : cellToBoundary(region, true),
       paths: [],
       endsAt,
       zones,
       cityZoneCount: zones.length,
+      ...(mapRewardsEnabled()
+        ? { mapRewards: { policy: MAP_REWARDS_POLICY, cells: {} } }
+        : {}),
+      coinRadius: arena ? COIN_ARENA_RADIUS_M : COIN_GPS_RADIUS_M,
       coverage: city ? "city-pack" : "street-only",
       quality: {
         fieldReview: city?.fieldReview || "pending",
+        ...(auto ? { status: "auto", funded: false } : {}),
         pathCoverage: city?.pathCoverage || "bounded-live-query",
         routing: "straight-line-only",
         geometry: "OSM-polygons",
-        notice: city
+        notice: auto
+          ? AUTO_CITY_NOTICE
+          : city
           ? "Map-data preview. Walking routes and physical access still require field review."
           : "City zones are not available here yet. Street coins use mapped public paths.",
       },
     };
+    if (snapshot)
+      applyPathState(manifest, snapshot, snapshot.status !== "unavailable");
     return atomic(db, () => {
       const existing = db
         .prepare("SELECT manifest FROM worlds WHERE id=?")
@@ -159,7 +371,9 @@ export async function ensureWorld(
       const available = db
           .prepare("SELECT available_u FROM treasury WHERE bucket='coins'")
           .get().available_u,
-        count = Math.min(samples.length, Math.floor(available / COIN_VALUE));
+        count = manifest.mapRewards
+          ? 0
+          : Math.min(samples.length, Math.floor(available / COIN_VALUE));
       for (let i = 0; i < count; i++)
         db.prepare(
           "INSERT INTO coins(id,world_id,lat,lng,value_u) VALUES (?,?,?,?,?)",
@@ -176,8 +390,13 @@ export async function ensureWorld(
       for (const z of [...zones].sort(
         (a, b) => a.tier - b.tier || a.slot - b.slot,
       )) {
-        const desired =
-          z.tier === 3 ? 5000 * GOLD : z.tier === 2 ? 1000 * GOLD : 0;
+        const desired = auto
+          ? 0
+          : z.tier === 3
+            ? 5000 * GOLD
+            : z.tier === 2
+              ? 1000 * GOLD
+              : 0;
         const available = db
             .prepare("SELECT available_u FROM treasury WHERE bucket='zones'")
             .get().available_u,
@@ -250,9 +469,27 @@ export async function ensureWorld(
   pending.set(worldId, job);
   return job;
 }
-export function worldView(db, id, player = null) {
+export function worldView(db, id, player = null, options = {}) {
+  // options.timing (an object) collects ms per phase for Server-Timing.
+  const spans = options.timing,
+    mark = (() => {
+      let last = performance.now();
+      return (name) => {
+        if (!spans) return;
+        const at = performance.now();
+        spans[name] = (spans[name] || 0) + (at - last);
+        last = at;
+      };
+    })();
   const row = db.prepare("SELECT manifest FROM worlds WHERE id=?").get(id);
   if (!row) return null;
+  const query = worldQuery(options),
+    near = query.limit ? null : nearQuery(options.near),
+    now = options.now ?? Date.now(),
+    manifest = publicManifest(db, JSON.parse(row.manifest)),
+    closed = closedPlaces(db, manifest.cityId),
+    paused = pauseState(db, manifest.cityId, manifest.day);
+  mark("wmanifest");
   const quests = db
     .prepare(
       "SELECT q.*,EXISTS(SELECT 1 FROM quest_claims c WHERE c.quest_id=q.id AND c.player_id=?) AS completed,COALESCE((SELECT checkpoint FROM quest_progress p WHERE p.quest_id=q.id AND p.player_id=?),0) AS checkpoint FROM quests q WHERE q.world_id=? ORDER BY q.tier,q.id",
@@ -261,33 +498,165 @@ export function worldView(db, id, player = null) {
     .map((q) => {
       const meta = JSON.parse(q.metadata || "{}");
       const cps = meta.checkpoints || [];
+      // A category hunt takes its stops in any order: point at the first open one.
+      const visited = meta.unordered ? huntVisited(db, q.id, player) : null;
       return {
         ...q,
+        ...(meta.poi ? poiQuestText(db, q, meta, { lang: options.lang }) || {} : {}),
         metadata: undefined,
         checkpointCount: cps.length,
-        nextPoint: cps[q.checkpoint] || null,
+        nextPoint: visited
+          ? cps.find((_, i) => !visited.has(i)) || null
+          : cps[q.checkpoint] || null,
+        ...(visited ? { visitedStops: [...visited].sort((a, b) => a - b) } : {}),
         activity: describeStoredQuest(q, meta),
+        ...(meta.clue ? { clue: clueView(db, q.id, meta.clue, player, options.lang) } : {}),
       };
     });
-  const remaining =
-    3 * 256 -
-    db.prepare("SELECT COALESCE(SUM(minted),0) AS n FROM editions").get().n;
-  return {
-    ...publicManifest(db, JSON.parse(row.manifest)),
-    coins: db
+  const level = levelFor(
+      (player &&
+        db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp) ||
+        0,
+    ),
+    chestStock = new Map(
+      [1, 2, 3].map((t) => [t, chestAuraAvailable(db, t, level)]),
+    );
+  // An operator pause reads as a closed place to players; operatorPause says why.
+  const zones = manifest.zones.map((z) => {
+      const pause = pauseFor(paused, z.slot);
+      return {
+        ...z,
+        placeStatus:
+          pause || placeClosed(closed, z.sourceId, z) ? "closed" : "open",
+        ...(pause ? { operatorPause: { reason: pause.reason } } : {}),
+      };
+    }),
+    visibleZones = zones.filter((z) => zoneInBounds(z, query.bounds)),
+    visibleIds = new Set(visibleZones.map((z) => z.id)),
+    zoneById = new Map(zones.map((z) => [z.id, z]));
+  const tier = player
+    ? tierFor(
+        db
+          .prepare("SELECT * FROM positions WHERE player_id=?")
+          .all(player)
+          .reduce((n, p) => n + positionTier(p, now), 0),
+      )
+    : 1;
+  const eligible = new Set(
+    quests
+      .filter(
+        (q) =>
+          zoneById.has(q.zone_id) &&
+          !q.completed &&
+          q.tier <= tier &&
+          q.opens_at <= now &&
+          q.closes_at > now &&
+          zoneById.get(q.zone_id)?.placeStatus !== "closed",
+      )
+      .map((q) => q.zone_id),
+  );
+  mark("wquests");
+  let rows;
+  if (query.limit) {
+    const after = readQueryCursor(id, query),
+      params = [id, after];
+    const bounds = query.bounds
+      ? " AND lng>=? AND lat>=? AND lng<=? AND lat<=?"
+      : "";
+    if (query.bounds) params.push(...query.bounds);
+    rows = db
+      .prepare(
+        `SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL AND id>?${bounds} ORDER BY id LIMIT ?`,
+      )
+      .all(...params, query.limit + 1);
+  } else if (near) {
+    const [w, south, e, north] = nearBox(near),
+      cosLat = Math.cos((near.lat * Math.PI) / 180),
+      away = (c) =>
+        ((c.lat - near.lat) * 111320) ** 2 +
+        ((c.lng - near.lng) * 111320 * cosLat) ** 2;
+    rows = db
+      .prepare(
+        "SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL AND lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?",
+      )
+      .all(id, south, north, w, e)
+      .filter((c) => away(c) <= NEAR_RADIUS_M ** 2);
+    if (rows.length > NEAR_COIN_LIMIT)
+      rows = rows.sort((a, b) => away(a) - away(b)).slice(0, NEAR_COIN_LIMIT);
+  } else
+    rows = db
       .prepare(
         "SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL",
       )
-      .all(id),
-    quests: quests.map((q) => ({
-      ...q,
-      itemAvailable: q.kind === "chest" && remaining > 0,
-    })),
+      .all(id);
+  mark("wcoins");
+  // Map-reward coins appear in waves; a later wave stays hidden until it opens.
+  const hidden = manifest.mapRewards ? hiddenCoinIds(db, id, now) : null,
+    tiers = manifest.mapRewards ? coinTiers(db, id) : null;
+  if (hidden?.size) rows = rows.filter((c) => !hidden.has(c.id));
+  const finds = streetFindIds(db, id);
+  mark("wfinds");
+  const more = !!query.limit && rows.length > query.limit,
+    page = query.limit ? rows.slice(0, query.limit) : rows;
+  const view = {
+    ...manifest,
+    zones: visibleZones,
+    cityZoneCount: zones.length,
+    visibleZoneCount: visibleZones.length,
+    openEligibleCount: eligible.size,
+    playerTier: tier,
+    ...(paused.day ? { operatorPause: { reason: paused.day.reason } } : {}),
+    coins: (paused.day ? [] : page)
+      .filter((p) => !pointClosed(closed, p))
+      .map((c) => {
+        const tier = tiers?.get(c.id);
+        const out = tier && tier !== "small" ? { ...c, tier } : c;
+        return finds.has(c.id) ? { ...out, find: true } : out;
+      }),
+    streetFindXp: STREET_FIND_XP,
+    ...(manifest.mapRewards
+      ? {
+          mapRewards: {
+            policy: manifest.mapRewards.policy,
+            cells: manifest.mapRewards.cells,
+            nextWaveAt: nextWave(manifest, now),
+            hiddenCoins: hidden?.size || 0,
+          },
+        }
+      : {}),
+    ...(near
+      ? { coinsNear: { lat: near.lat, lng: near.lng, radiusM: NEAR_RADIUS_M } }
+      : {}),
+    ...(query.limit
+      ? {
+          page: {
+            limit: query.limit,
+            bounds: query.bounds,
+            nextCursor: more ? queryCursor(id, query, page.at(-1).id) : null,
+          },
+        }
+      : {}),
+    quests: quests
+      .filter((q) => !query.bounds || visibleIds.has(q.zone_id))
+      .map((q) => ({
+        ...q,
+        placeStatus: zoneById.get(q.zone_id)?.placeStatus || "open",
+        itemAvailable:
+          q.kind === "chest" && (chestStock.get(q.tier) ?? false),
+      })),
   };
+  mark("wrest");
+  return view;
 }
 export function expireWorlds(db, now = Date.now()) {
   return atomic(db, () => {
-    for (const row of db.prepare("SELECT id,manifest FROM worlds").all()) {
+    // Worlds already closed out are skipped in SQL, so this stays cheap as
+    // past days pile up (it runs on every POST /api/world).
+    for (const row of db
+      .prepare(
+        "SELECT id,manifest FROM worlds w WHERE NOT EXISTS (SELECT 1 FROM daily_jobs j WHERE j.job_key='expire:'||w.id)",
+      )
+      .all()) {
       const w = JSON.parse(row.manifest);
       if (w.endsAt > now) continue;
       const key = `expire:${row.id}`;

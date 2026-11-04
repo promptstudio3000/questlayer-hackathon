@@ -1,16 +1,34 @@
 import { NativeContractReader } from "./reader.mjs";
 import { assert } from "../domain.mjs";
 import { nativeInteger, readStakingPool } from "./staking-pool.mjs";
-export const FACTORY_ID = "questlayer-vaults-20261031.testnet";
-export const VAULT_POOLS = [
-  { id: "aurora.pool.f863973.m0", name: "Aurora validator" },
-  { id: "stakely_v2.pool.f863973.m0", name: "Stakely validator" },
-  { id: "ts.pool.f863973.m0", name: "TS validator" },
-];
+import { existsSync, readFileSync } from "node:fs";
+import { NETWORK, manifestName } from "./network.mjs";
+// The factory of the current deployment generation is pinned by the public
+// rewards manifest; the server never accepts a caller-supplied factory. A
+// network without a rewards manifest (mainnet before its slice ships) has no
+// factory, so staking stays "not configured" instead of crashing the import.
+const rewardsManifestUrl = new URL(
+  `../../public/${manifestName("native-rewards")}`,
+  import.meta.url,
+);
+export const FACTORY_ID = existsSync(rewardsManifestUrl)
+  ? (JSON.parse(readFileSync(rewardsManifestUrl, "utf8")).factory?.contractId ??
+    null)
+  : null;
+// Reviewed validators per network. Mainnet pools are chosen at the go/no-go
+// review; until then no mainnet pool is accepted.
+export const VAULT_POOLS =
+  NETWORK === "testnet"
+    ? [
+        { id: "aurora.pool.f863973.m0", name: "Aurora validator" },
+        { id: "stakely_v2.pool.f863973.m0", name: "Stakely validator" },
+        { id: "ts.pool.f863973.m0", name: "TS validator" },
+      ]
+    : [];
 export class NativeVaults extends NativeContractReader {
   constructor(db, provider, configuration) {
     super(provider, configuration.factory.contractId);
-    assert(this.contractId === FACTORY_ID, "Unexpected factory.");
+    assert(FACTORY_ID && this.contractId === FACTORY_ID, "Unexpected factory.");
     this.db = db;
     this.configuration = configuration;
   }
@@ -106,7 +124,7 @@ export class NativeVaults extends NativeContractReader {
     const config = await this.validate(),
       positions = account ? await this.positions(account, true) : [];
     return {
-      network: "testnet",
+      network: NETWORK,
       factoryId: this.contractId,
       config,
       pools: VAULT_POOLS,
@@ -192,6 +210,8 @@ export class NativeVaults extends NativeContractReader {
           withdraw: "withdraw_owner",
           refresh: "refresh",
           advance: "advance",
+          partial: "request_partial_exit",
+          contribution: "set_contribution",
         };
         methodName = methods[action];
         assert(methodName, "Unsupported vault action.");
@@ -208,6 +228,44 @@ export class NativeVaults extends NativeContractReader {
             409,
           );
         }
+        if (action === "partial" || action === "contribution") {
+          // Factory positions created before the v2 upgrade stay v1 and
+          // have neither method; only a live v2 state is offered them.
+          assert(
+            s.version === 2,
+            "This stake predates partial withdrawals and share changes.",
+            409,
+          );
+          assert(
+            s.stage === "idle" &&
+              !s.exit_requested &&
+              String(s.partial_exit ?? "0") === "0",
+            "Wait for the current operation or exit.",
+            409,
+          );
+          deposit = "1";
+        }
+        if (action === "partial") {
+          const amount = nativeInteger(input.amount);
+          assert(
+            amount >= 10n ** 21n && amount + 10n ** 21n <= BigInt(s.principal),
+            "Leave at least 0.001 test NEAR staked, or use a full exit.",
+          );
+          args = { amount: amount.toString() };
+        }
+        if (action === "contribution") {
+          const bps = input.contributionBps;
+          assert(
+            Number.isInteger(bps) && bps >= 0 && bps <= 10000,
+            "Choose a 0–100% contribution.",
+          );
+          assert(
+            bps !== s.contribution_bps || s.pending_contribution_bps != null,
+            "This is already your share.",
+            409,
+          );
+          args = { contribution_bps: bps };
+        }
         if (action === "exit" || action === "withdraw") deposit = "1";
         if (action === "withdraw")
           assert(
@@ -218,7 +276,7 @@ export class NativeVaults extends NativeContractReader {
       }
     }
     return {
-      network: "testnet",
+      network: NETWORK,
       signerId: accountId,
       receiverId,
       methodName,

@@ -1,0 +1,7 @@
+{"id": "ovt-dup", "name": "Park Test", "category": "park", "basic_category": null, "confidence": 0.9, "operating_status": "open", "country": "CZ", "lat": 49.7473, "lng": 13.3776, "dataset": "meta"}
+{"id": "ovt-new", "name": "Muzeum Nové", "category": "museum", "basic_category": null, "confidence": 0.9, "operating_status": "open", "country": "CZ", "lat": 49.7472, "lng": 13.3788, "dataset": "meta"}
+{"id": "ovt-far", "name": "Muzeum Daleko", "category": "museum", "basic_category": null, "confidence": 0.9, "operating_status": "open", "country": "CZ", "lat": 49.76, "lng": 13.39, "dataset": "meta"}
+{"id": "ovt-closed", "name": "Zavřený park", "category": "park", "basic_category": null, "confidence": 0.9, "operating_status": "permanently_closed", "country": "CZ", "lat": 49.7471, "lng": 13.3786, "dataset": "meta"}
+{"id": "ovt-low", "name": "Nejistý park", "category": "park", "basic_category": null, "confidence": 0.3, "operating_status": "open", "country": "CZ", "lat": 49.7471, "lng": 13.3787, "dataset": "meta"}
+{"id": "ovt-food", "name": "Restaurace", "category": "restaurant", "basic_category": null, "confidence": 0.9, "operating_status": "open", "country": "CZ", "lat": 49.7471, "lng": 13.3788, "dataset": "meta"}
+{"id": "ovt-at", "name": "Park Wien", "category": "park", "basic_category": null, "confidence": 0.9, "operating_status": "open", "country": "AT", "lat": 49.7471, "lng": 13.3789, "dataset": "meta"}

@@ -1,0 +1,45 @@
+{
+  "network": "testnet",
+  "startedAt": "2026-11-01T00:21:23.105Z",
+  "steps": [
+    {
+      "label": "guest session",
+      "playerId": "player_b3092f50-761e-4efd-ba58-1198ade78e57"
+    },
+    {
+      "label": "account ready",
+      "accountId": "record-mvx348qu.play-20261031.questlayer-dev-20261031.testnet",
+      "transactionHash": "CHiaKVRDo7yLYkGReApspMh3UvYNW1xLbxKREGdpAz3o"
+    },
+    {
+      "label": "note public in the app",
+      "noteId": "message_2352c2cd-4649-471f-8edb-5fb846a62931",
+      "state": "published"
+    },
+    {
+      "label": "record quoted",
+      "receiverId": "v1.social08.testnet",
+      "deposit": "50000000000000000000000",
+      "mutationId": "record_61f3f9d7-96df-4995-9a01-d80a9b85f598",
+      "image": ""
+    },
+    {
+      "label": "record relayed without a wallet",
+      "transactionHash": "4YKtshNX1d1QfdkN4RGsMQXfbY834WMuz29fuUNrjBdy"
+    },
+    {
+      "label": "record confirmed from chain",
+      "state": "published",
+      "mutationId": "record_61f3f9d7-96df-4995-9a01-d80a9b85f598",
+      "anchor": "arena",
+      "publications": [
+        "confirmed"
+      ]
+    }
+  ],
+  "finishedAt": "2026-11-01T00:21:55.917Z",
+  "accountId": "record-mvx348qu.play-20261031.questlayer-dev-20261031.testnet",
+  "noteId": "message_2352c2cd-4649-471f-8edb-5fb846a62931",
+  "socialContract": "v1.social08.testnet",
+  "recordKey": "record-mvx348qu.play-20261031.questlayer-dev-20261031.testnet/questlayer/notes/message_2352c2cd-4649-471f-8edb-5fb846a62931"
+}

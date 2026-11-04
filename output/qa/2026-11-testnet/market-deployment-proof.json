@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-10-31T23:33:04.432Z",
+  "network": "testnet",
+  "marketContract": "questlayer-market-20261101.testnet",
+  "nftContract": "nfts.questlayer-dev-20261031.testnet",
+  "owner": "questlayer-dev-20261031.testnet",
+  "adminModel": "Project-controlled testnet upgrade/account keys; not audited for mainnet",
+  "storage": "Project-sponsored, bounded testnet storage",
+  "wasmSha256": "a9299948d40fc6128e4dd93571d8429c26196dd2bfc72b0a984ef68adf567ca5",
+  "transactions": [
+    {
+      "label": "Deploy testnet-only bounded NFT escrow market",
+      "transaction": "6RnQQL7RPfuieACMDFP7jxecrxt81qRR6ft3HPQevX6o"
+    }
+  ],
+  "limits": {
+    "listings": 128,
+    "participants": 256,
+    "perAccount": 3
+  }
+}

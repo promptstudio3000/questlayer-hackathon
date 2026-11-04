@@ -2,6 +2,10 @@
 
 This is a direct NEAR NFT escrow market for QuestLayer Auras. It is separate from the demo GOLD market and is not the canonical NEAR Intents protocol.
 
+## Version 2: signed orders
+
+Market version 2 adds NEP-413 signed listings and offers with nonces, deadlines, on-chain cancellation and recoverable settlement through the same escrow. See [SIGNED-AURA-ORDERS.md](SIGNED-AURA-ORDERS.md), including the NEAR Intents compatibility assessment. The version 1 fixed-price flow below is unchanged.
+
 ## Trade lifecycle
 
 An owner calls the collectible contract's NEP-171 `nft_transfer_call` with an exact NEAR price in yoctoNEAR. The market accepts only the configured QuestLayer collection, Aura tokens and direct-owner listings. The NFT remains in market escrow until a sale or cancellation succeeds. Each relisting gets a new identifier, so a stale quote cannot purchase a repriced offer.

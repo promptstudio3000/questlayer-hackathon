@@ -1,0 +1,278 @@
+.badge-book,
+.badge-detail {
+  display: grid;
+  gap: 14px;
+  padding: 22px 20px;
+  max-width: 520px;
+}
+.badge-book h2,
+.badge-detail h2 {
+  margin: 0;
+}
+.badge-book h3 {
+  margin: 6px 0 0;
+  font-size: 16px;
+}
+.badge-lead,
+.badge-sub {
+  margin: 0;
+  color: var(--ink-secondary);
+}
+.badge-tabs,
+.badge-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.badge-tabs button,
+.badge-filter button {
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--decorative-border);
+  background: var(--surface-soft);
+  color: var(--ink);
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.badge-tabs button[aria-selected="true"],
+.badge-filter button[aria-pressed="true"] {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--on-action);
+}
+.badge-filter small {
+  opacity: 0.8;
+}
+.badge-next {
+  background: var(--surface-soft);
+  border-radius: var(--radius-item);
+  padding: 10px 12px;
+}
+.badge-next ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.badge-next button {
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  text-align: left;
+  padding: 4px 0;
+}
+.badge-next small {
+  margin-left: auto;
+  color: var(--ink-secondary);
+}
+.badge-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+}
+.badge-medal {
+  width: 100%;
+  min-height: 100px;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  padding: 8px 4px;
+  background: none;
+  border: 0;
+  color: var(--ink-secondary);
+}
+.badge-medal-face {
+  --ring: #9a8cab;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  background: var(--surface-soft);
+  border: 3px solid var(--ring);
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+.badge-medal-face.big {
+  width: 96px;
+  height: 96px;
+  font-size: 48px;
+  margin: 0 auto;
+}
+.badge-medal.is-earned .badge-medal-face,
+.badge-detail .badge-medal-face:not(.is-locked),
+.badge-medal-face.user {
+  filter: none;
+  opacity: 1;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--surface-soft));
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--ring) 45%, transparent);
+}
+.badge-medal-face.user {
+  border-color: color-mix(in srgb, #000 20%, transparent);
+  background: none;
+}
+.badge-medal.is-earned {
+  color: var(--ink);
+}
+.badge-medal-name {
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
+}
+.rarity-rare .badge-medal-face {
+  --ring: #2b7bc0;
+}
+.rarity-epic .badge-medal-face {
+  --ring: #7d4cc0;
+}
+.rarity-legendary .badge-medal-face {
+  --ring: var(--gold);
+}
+.badge-rarity {
+  margin: 0;
+  text-transform: capitalize;
+  font-weight: 600;
+}
+.badge-detail {
+  text-align: center;
+}
+.badge-warn,
+.badge-message {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-item);
+  background: var(--surface-soft);
+}
+.badge-warn {
+  background: var(--error-surface);
+  color: var(--error);
+}
+.user-badges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.user-badge {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.user-badge > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.user-badge small {
+  color: var(--ink-secondary);
+  overflow-wrap: anywhere;
+}
+.user-badge-claim,
+.badge-lookup,
+.badge-create-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.user-badge-claim input,
+.badge-lookup input {
+  flex: 1;
+  min-width: 120px;
+  min-height: 44px;
+}
+.badge-create {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--decorative-border);
+  border-radius: var(--radius-item);
+}
+.badge-create label {
+  display: grid;
+  gap: 4px;
+}
+.badge-create input,
+.badge-create textarea,
+.badge-create select {
+  min-height: 44px;
+  font: inherit;
+}
+.badge-preview {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+.badge-icons,
+.badge-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.badge-icons button {
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  border-radius: 10px;
+  border: 1px solid var(--decorative-border);
+  background: var(--surface-raised);
+}
+.badge-colors button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+.badge-icons button[aria-pressed="true"],
+.badge-colors button[aria-pressed="true"] {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.badge-warn button {
+  margin-left: 4px;
+  min-height: 36px;
+  padding: 4px 12px;
+  border-radius: 18px;
+  border: 1px solid currentColor;
+  background: var(--surface-raised);
+  color: inherit;
+  font: inherit;
+}
+.badge-next small {
+  white-space: nowrap;
+}
+/* Dropped-in badge art (art/badges/, docs/ART-LIST.md) fills the medal face. */
+.badge-art {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+.badge-next .badge-art {
+  width: 1.4em;
+  height: 1.4em;
+  vertical-align: middle;
+}
+.badge-medal-face:has(> .badge-art) {
+  background: none;
+  overflow: hidden;
+}

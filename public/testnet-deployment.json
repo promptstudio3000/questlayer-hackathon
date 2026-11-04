@@ -1,47 +1,71 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-10-30T23:54:07.204Z",
-  "gameContract": "game.auratrail-dev-20261030.testnet",
-  "collectiblesContract": "nfts.auratrail-dev-20261030.testnet",
-  "operator": "auratrail-dev-20261030.testnet",
-  "smokeAccount": "explorer.auratrail-dev-20261030.testnet",
+  "verifiedAt": "2026-11-01T09:28:42.998Z",
+  "gameContract": "game.questlayer-dev-20261101.testnet",
+  "collectiblesContract": "nfts.questlayer-dev-20261101.testnet",
+  "operator": "questlayer-dev-20261101.testnet",
+  "smokeAccount": "explorer.questlayer-dev-20261101.testnet",
   "tokenId": "aura:polar:1",
   "transactions": [
     {
+      "label": "create game.questlayer-dev-20261101.testnet",
+      "transaction": "54jCfaX54b1bathmvWKXxwdPGFPpieJFM6ZHJ8V8YkKi"
+    },
+    {
+      "label": "create nfts.questlayer-dev-20261101.testnet",
+      "transaction": "E51ceMiarjDth3uh2hTL6kSEHQG3ur44fzWDEsFcbXny"
+    },
+    {
+      "label": "create explorer.questlayer-dev-20261101.testnet",
+      "transaction": "A45eVaQaPrFNhz6pBWgHTcDxcc9WkXu8LjQ4cWSNAwF8"
+    },
+    {
+      "label": "deploy game.questlayer-dev-20261101.testnet",
+      "transaction": "9EXTsLZ9bBQZdPF8f11SLWuGVHmGfeYvtB1FMvH4De93"
+    },
+    {
+      "label": "deploy nfts.questlayer-dev-20261101.testnet",
+      "transaction": "1Qx9FvU8iA4PAiBa7rxQEDHnEqfFegaPxjYHizyWwNq"
+    },
+    {
+      "label": "fund 50/50 reward buckets",
+      "transaction": "F9tE9wobGpiHddFa2zg8fA8Xwa9S6E3QLmyx8HKMZsNK"
+    },
+    {
       "label": "publish shared street coin batch",
-      "transaction": "YLAq4h8KLkUZ49QfxbefSNXfnoe7wQgdmnzQUv1qwf1"
+      "transaction": "J5nCghNzxB5m3YWVoKFVHEoafNhA7D8P4EoCcAXjG2tc"
     },
     {
       "label": "settle one shared coin",
-      "transaction": "7vvSDdnwNygbB4KBeRdFjDhoqucFbeRYgawd1EUswRrb"
+      "transaction": "FgsVyqkmfeNByw1WpPzCQUfqLTTDyDTp4jRsGi1Dbzbb"
     },
     {
       "label": "replay coin without duplicate credit",
-      "transaction": "H9KVZiSddKhgXF5P8QsBwcoPbszA7NNMebhKbnmqRvGN"
+      "transaction": "FmE9BUeej82wjSWsaD9GzzQSEWchUr1o53SLHQpx7GTA"
     },
     {
       "label": "publish funded solo quest",
-      "transaction": "BLP9DwHUcJN3Ga2yPkGF8fH4KTPVcGCQzL8pN8wiCRtM"
+      "transaction": "Bi8tTFhvNmgLVaxrHKY3Y2ix9cz8Bh7Ks3qTpjBD2XTh"
     },
     {
       "label": "complete a quest without another player",
-      "transaction": "3AbnGMNMkWWEfCxvXVPbsDBPuYf2JxFAPZzViP4XKHqF"
+      "transaction": "B4HMp8visjhYGt2NKQmMwx1HzZwWWMkV3avL15kDASxD"
     },
     {
       "label": "withdraw actual testnet reward",
-      "transaction": "6EXUUn3ZtbeX23nVbVMXXRpgr355Jh92M5WTVzBvMG56"
+      "transaction": "Cs2GmrTXb8E7UKgHujcY16JAw7bpcNzzBVSe4WcrVriU"
     },
     {
       "label": "mint a real NEP-171 Aura",
-      "transaction": "A4vcKDB3E2Kq6H5S6ZGPS5mTV9AinfqCXn7JXkuTi926"
+      "transaction": "Hq1hKBd2ctc9HowohSR84WFVRNdus25Eyfaqi1qZANrz"
     },
     {
       "label": "equip owned NFT",
-      "transaction": "7mMAdhbGL4V4PMw1Tptg1VScpg7gCg1y53VRXECMUF9a"
+      "transaction": "AJqENjkxjM8ATxJ3LxKAU9oKWWb3a6w4ZM5gX2txmkaa"
     },
     {
       "label": "transfer NFT and clear original equipment",
-      "transaction": "8copWwRPhb6nTHahaTENazvEaNgoX1xkmjGgmEj6BkZZ"
+      "transaction": "CwTwLTgNbbsEkZcdBMmE1yLAyXkzsT36kCkuvunDmjyr"
     }
   ],
   "treasury": {
@@ -59,7 +83,7 @@
     "owed": "0",
     "pending": "0",
     "paid": "110000000000000000000",
-    "oracle": "auratrail-dev-20261030.testnet",
+    "oracle": "questlayer-dev-20261101.testnet",
     "paused": false
   },
   "gameEconomy": "separate-demo-ledger",

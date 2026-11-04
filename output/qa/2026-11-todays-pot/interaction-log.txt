@@ -1,0 +1,60 @@
+practice-503 360: pot state=practice text="Today's pot Practice Practice GOLD is play money with no value. See how real rewards are funded"
+practice-503 360 .todays-pot: chainWord=null minFont=14 (Practice) smallTargets=[] hScroll=false
+practice-503 360: after open focus=H1 "How rewards are funded"
+practice-503 360 .reward-funding: chainWord=null minFont=14 (Partners fund rewards directly for the c) smallTargets=[] hScroll=false
+practice-503 360: after "Back to exploring" focus class=todays-pot
+practice-503 390: pot state=practice text="Today's pot Practice Practice GOLD is play money with no value. See how real rewards are funded"
+practice-503 390 .todays-pot: chainWord=null minFont=14 (Practice) smallTargets=[] hScroll=false
+practice-503 390: after open focus=H1 "How rewards are funded"
+practice-503 390 .reward-funding: chainWord=null minFont=14 (Partners fund rewards directly for the c) smallTargets=[] hScroll=false
+practice-503 390: after "Back to exploring" focus class=todays-pot
+practice-503 1280: pot state=practice text="Today's pot Practice Practice GOLD is play money with no value. See how real rewards are funded"
+practice-503 1280 .todays-pot: chainWord=null minFont=14 (Practice) smallTargets=[] hScroll=false
+practice-503 1280: after open focus=H1 "How rewards are funded"
+practice-503 1280 .reward-funding: chainWord=null minFont=14 (Partners fund rewards directly for the c) smallTargets=[] hScroll=false
+practice-503 1280: after "Back to exploring" focus class=todays-pot
+practice-503 844x390: pot state=practice text="Today's pot Practice Practice GOLD is play money with no value. See how real rewards are funded"
+practice-503 844x390 .todays-pot: chainWord=null minFont=14 (Practice) smallTargets=[] hScroll=false
+practice-503 844x390: after open focus=H1 "How rewards are funded"
+practice-503 844x390 .reward-funding: chainWord=null minFont=14 (Partners fund rewards directly for the c) smallTargets=[] hScroll=false
+practice-503 844x390: after "Back to exploring" focus class=todays-pot
+populated 360: pot state=ready text="Today's pot Books checked Coins 4.2 of 6 GOLD left Prizes 5 of 6 GOLD left Funded by sponsors · your practice GOLD is separate"
+populated 360 .todays-pot: chainWord=null minFont=14 (Books checked) smallTargets=[] hScroll=false
+populated 360: after open focus=H1 "How rewards are funded"
+populated 360 .reward-funding: chainWord=null minFont=14 (of) smallTargets=[] hScroll=false
+populated 360: after "Back to exploring" focus class=todays-pot
+populated 390: pot state=ready text="Today's pot Books checked Coins 4.2 of 6 GOLD left Prizes 5 of 6 GOLD left Funded by sponsors · your practice GOLD is separate"
+populated 390 .todays-pot: chainWord=null minFont=14 (Books checked) smallTargets=[] hScroll=false
+populated 390: after open focus=H1 "How rewards are funded"
+populated 390 .reward-funding: chainWord=null minFont=14 (of) smallTargets=[] hScroll=false
+populated 390: after "Back to exploring" focus class=todays-pot
+populated 1280: pot state=ready text="Today's pot Books checked Coins 4.2 of 6 GOLD left Prizes 5 of 6 GOLD left Funded by sponsors · your practice GOLD is separate"
+populated 1280 .todays-pot: chainWord=null minFont=14 (Books checked) smallTargets=[] hScroll=false
+populated 1280: after open focus=H1 "How rewards are funded"
+populated 1280 .reward-funding: chainWord=null minFont=14 (of) smallTargets=[] hScroll=false
+populated 1280: after "Back to exploring" focus class=todays-pot
+populated 844x390: pot state=ready text="Today's pot Books checked Coins 4.2 of 6 GOLD left Prizes 5 of 6 GOLD left Funded by sponsors · your practice GOLD is separate"
+populated 844x390 .todays-pot: chainWord=null minFont=14 (Books checked) smallTargets=[] hScroll=false
+populated 844x390: after open focus=H1 "How rewards are funded"
+populated 844x390 .reward-funding: chainWord=null minFont=14 (of) smallTargets=[] hScroll=false
+populated 844x390: after "Back to exploring" focus class=todays-pot
+drift: pot state=ready text="Today's pot Books under review Coins 4.2 of 6 GOLD left Prizes 5 of 6 GOLD left Funded by sponsors · your practice GOLD is separate"
+drift .todays-pot: chainWord=null minFont=14 (Books under review) smallTargets=[] hScroll=false
+drift .reward-funding: chainWord=null minFont=14 (of) smallTargets=[] hScroll=false
+failed: pot state=failed text="Today's pot Couldn't check the pot right now. Open to try again."
+failed .todays-pot: chainWord=null minFont=14 (Open to try again.) smallTargets=[] hScroll=false
+failed .reward-funding: chainWord=null minFont=14 (Partners fund rewards directly for the c) smallTargets=[] hScroll=false
+mixed-yield: pot state=ready text="Today's pot Books checked Coins 4.2 of 6 GOLD left Prizes 5 of 6 GOLD left Funded by sponsors and realized yield · your practice GOLD is separate"
+mixed-yield .todays-pot: chainWord=null minFont=14 (Books checked) smallTargets=[] hScroll=false
+mixed-yield .reward-funding: chainWord=null minFont=14 (of) smallTargets=[] hScroll=false
+native-ledger: pot state=ready text="Today's pot Books checked Coins 4.2 of 6 GOLD left Prizes 5 of 6 GOLD left Funded by sponsors"
+native-ledger .todays-pot: chainWord=null minFont=14 (Books checked) smallTargets=[] hScroll=false
+native-ledger .reward-funding: chainWord=null minFont=14 (of) smallTargets=[] hScroll=false
+zoom200: pot state=ready text="Today's pot Books checked Coins 4.2 of 6 GOLD left Prizes 5 of 6 GOLD left Funded by sponsors · your practice GOLD is separate"
+zoom200 .todays-pot: chainWord=null minFont=14 (Books checked) smallTargets=[] hScroll=false
+zoom200 .reward-funding: chainWord=null minFont=14 (of) smallTargets=[] hScroll=false
+keyboard: reached pot after 14 Tab presses
+keyboard: after Enter focus=H1 How rewards are funded
+keyboard: after Back focus class=todays-pot
+history: after browser Back, pot visible=true page visible=0
+console errors: live/360: Failed to load resource: the server responded with a status of 500 (Internal Server Error) | live/1280: Failed to load resource: the server responded with a status of 500 (Internal Server Error) | live/844x390: Failed to load resource: the server responded with a status of 500 (Internal Server Error) | populated/360: Failed to load resource: the server responded with a status of 500 (Internal Server Error) | populated/390: Failed to load resource: the server responded with a status of 500 (Internal Server Error) | populated/1280: Failed to load resource: the server responded with a status of 500 (Internal Server Error) | populated/844x390: Failed to load resource: the server responded with a status of 500 (Internal Server Error)

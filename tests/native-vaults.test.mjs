@@ -118,3 +118,71 @@ test("factory bytecode mismatch disables preparation before returning a wallet t
     db.close();
   }
 });
+test("partial exit and contribution change are offered only on an idle v2 position", async () => {
+  const f = fixture();
+  const v2 = {
+    version: 2,
+    stage: "idle",
+    exit_requested: false,
+    owner_credit: "0",
+    owner_pending: "0",
+    principal: (10n ** 24n).toString(),
+    contribution_bps: 5000,
+    partial_exit: "0",
+    pending_contribution_bps: null,
+  };
+  const base = { accountId: "alice.testnet", vaultId: "v0." + FACTORY_ID };
+  try {
+    // v1 state (no version 2): neither method is prepared.
+    await assert.rejects(
+      f.n.prepare(f.player, { ...base, action: "partial", amount: "1000000000000000000000" }),
+      /predates/,
+    );
+    await assert.rejects(
+      f.n.prepare(f.player, { ...base, action: "contribution", contributionBps: 0 }),
+      /predates/,
+    );
+    f.n.state = async () => v2;
+    const p = await f.n.prepare(f.player, {
+      ...base,
+      action: "partial",
+      amount: "500000000000000000000000",
+    });
+    assert.deepEqual(
+      [p.methodName, p.deposit, p.args],
+      ["request_partial_exit", "1", { amount: "500000000000000000000000" }],
+    );
+    // Must leave 0.001 behind, and take at least 0.001.
+    for (const amount of ["1000000000000000000000000", "999000000000000000001", "1"])
+      await assert.rejects(
+        f.n.prepare(f.player, { ...base, action: "partial", amount }),
+        /Leave at least/,
+      );
+    const c = await f.n.prepare(f.player, {
+      ...base,
+      action: "contribution",
+      contributionBps: 2500,
+    });
+    assert.deepEqual(
+      [c.methodName, c.deposit, c.args],
+      ["set_contribution", "1", { contribution_bps: 2500 }],
+    );
+    for (const contributionBps of [5000, 10001, -1, 2.5])
+      await assert.rejects(
+        f.n.prepare(f.player, { ...base, action: "contribution", contributionBps }),
+      );
+    // While a partial exit is in flight, nothing else is offered.
+    f.n.state = async () => ({ ...v2, partial_exit: "1" });
+    await assert.rejects(
+      f.n.prepare(f.player, { ...base, action: "contribution", contributionBps: 0 }),
+      /Wait for/,
+    );
+    f.n.state = async () => ({ ...v2, stage: "unstaking" });
+    await assert.rejects(
+      f.n.prepare(f.player, { ...base, action: "partial", amount: "500000000000000000000000" }),
+      /Wait for/,
+    );
+  } finally {
+    f.db.close();
+  }
+});

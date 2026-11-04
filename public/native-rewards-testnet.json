@@ -1,48 +1,48 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-10-31T13:08:04.700Z",
-  "contractId": "questlayer-rewards-20261031.testnet",
-  "codeHash": "FC4cKvohogoAH26FbRXrcF17rTb1ofYxPVNmZQc8fAAo",
-  "wasmSha256": "d2d9162f863086f39bf862b0928c64b1a6512a2974ff86bd629755c197c1c87c",
+  "verifiedAt": "2026-11-01T12:31:34.699Z",
+  "contractId": "questlayer-rewards-20261101b.testnet",
+  "codeHash": "2J92qoTyY2DkBGx5bD1u3hzXYgxCCUvmKXVZSSYiwr5F",
+  "wasmSha256": "133fa467b316af1a67a4bc3ccd83f1d06e56e721eae0acad41bc43c9a73a81fa",
   "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
-  "workerPublicKey": "ed25519:D7aVXb3Y6URXZ3znnWBVRHbYY1gLrZz2UiyV2dTWUSRb",
+  "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
   "factory": {
-    "contractId": "questlayer-vaults-20261031.testnet",
-    "codeHash": "D5C5L4wfmiDXNtQrTymSFPvWZt1vetPJRztQf4VMX55H",
-    "wasmSha256": "b35f16a6ae3d72a1821f849acafb091c8041550a41aba8f8bc837027ec0cc3b8",
-    "vaultCodeHash": "2EqRH4nVgKLp4kezRk8mrfXZivC3kjKw4Z33GeStDUmD",
-    "vaultWasmSha256": "1266fc07d590607ddc84457454f0e96399664cbe4d7b7e9139d6d5c284323040",
+    "contractId": "questlayer-vaults-20261101b.testnet",
+    "codeHash": "CuXpM81e398FHSfLeZ3JfgqXMnnNXgiQQizTiKFBvVJx",
+    "wasmSha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9",
+    "vaultCodeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
+    "vaultWasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7",
     "setupDeposit": "3520000000000000000000000"
   },
   "vaults": [
     {
-      "accountId": "questlayer-vault-20261031.testnet",
-      "beneficiary": "auratrail-dev-20261030.testnet",
+      "accountId": "questlayer-vault-20261101b.testnet",
+      "beneficiary": "questlayer-dev-20261101.testnet",
       "pool": "aurora.pool.f863973.m0",
-      "codeHash": "2EqRH4nVgKLp4kezRk8mrfXZivC3kjKw4Z33GeStDUmD",
-      "wasmSha256": "1266fc07d590607ddc84457454f0e96399664cbe4d7b7e9139d6d5c284323040"
+      "codeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
+      "wasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
     }
   ],
   "funding": "explicit sponsor; realized staking yield not yet demonstrated",
-  "vaultPolicy": "experimental keyless factory positions, immutable contribution, full exit; testnet only",
+  "vaultPolicy": "experimental keyless factory positions; owner-adjustable contribution settled at the old rate; full or partial exit; testnet only",
   "state": {
     "version": 1,
     "network": "testnet",
-    "beneficiary": "auratrail-dev-20261030.testnet",
+    "beneficiary": "questlayer-dev-20261101.testnet",
     "pool": "aurora.pool.f863973.m0",
-    "rewards": "questlayer-rewards-20261031.testnet",
+    "rewards": "questlayer-rewards-20261101b.testnet",
     "contribution_bps": 5000,
     "stage": "idle",
-    "nonce": "3",
+    "nonce": "1",
     "operation": "",
     "exit_requested": false,
     "unlock_epoch": "0",
-    "epoch": "5398",
-    "observed_epoch": "5398",
+    "epoch": "5401",
+    "observed_epoch": "5401",
     "principal": "100000000000000000000000",
     "high_water_basis": "100000000000000000000000",
-    "staked": "99999999999999999999998",
-    "unstaked": "2",
+    "staked": "100000000000000000000000",
+    "unstaked": "0",
     "pending_pool_cash": "0",
     "owner_credit": "0",
     "owner_pending": "0",
@@ -57,79 +57,72 @@
     "tier_policy": "conservative-mature-principal-v1"
   },
   "poolPosition": {
-    "account_id": "questlayer-vault-20261031.testnet",
-    "unstaked_balance": "2",
-    "staked_balance": "99999999999999999999998",
+    "account_id": "questlayer-vault-20261101b.testnet",
+    "unstaked_balance": "3",
+    "staked_balance": "99999999999999999999997",
     "can_withdraw": true
   },
   "transactions": [
     {
-      "label": "Deploy and initialize questlayer-rewards-20261031.testnet",
-      "transaction": "4Mwv3FnxwgEiZ25RrGEDzoxvEiGtwxwTDXJrW8FwqxGK"
+      "label": "Deploy and initialize questlayer-rewards-20261101b.testnet",
+      "transaction": "5rFMVYNnHgSNGsK7nuN4pijWuWMTQT2JHGLz8vae19Wm"
     },
     {
       "label": "Install bounded publisher and claim relay key",
-      "transaction": "GzDxZ39T8NPfUYGxBeyaHfGzFt3UcXitwFxnKfchDZQ8"
+      "transaction": "7m4ywEVgbcV1LFNCszxcaY3fLiEmWBrMzX8J872yMMvp"
     },
     {
-      "label": "Deploy and initialize questlayer-vault-20261031.testnet",
-      "transaction": "9ejXoQer2nE4LiZ9MX9Te9JakThYJAnJHKctnKwUEYDs"
+      "label": "Deploy and initialize questlayer-vault-20261101b.testnet",
+      "transaction": "xgZdPZJZzcoMzyhcmEWwtPyyhBBN4TWE9v1gSogrJbu"
     },
     {
       "label": "Allow only the isolated native vault as yield source",
-      "transaction": "HB4R85ZCgyR1RvYXipQLNZ9FNg6nvN888nRdYmg6px7W"
+      "transaction": "Fn5Jneh61mXC2GzUkctQiEGqydF21divTc52bcFVBdFx"
     },
     {
       "label": "Sponsor 0.2 test NEAR with separate 50/50 accounting",
-      "transaction": "9HMefp1EbNNzV8JUBuZixTmX9kmgHxabwfYyBsX1prbp"
+      "transaction": "2hAcJpBfstwzYVt1ewpSP8zsg4S4UVYijGBvbr9QUMmQ"
     },
     {
-      "label": "Deposit 0.1 actual test NEAR into validator through vault",
-      "transaction": "tWptNrmhty8U3YSP2PQnkXm3fkPwHSz7YunmLhXDMZd"
+      "label": "Deposit 100000000000000000000000 yoctoNEAR into the validator through the vault",
+      "transaction": "FHrWszH73xEcLagpTuqCNgtXcJUv2EsunHrvXrEx7Szb"
     },
     {
-      "label": "Upgrade reviewed compatible bytecode questlayer-rewards-20261031.testnet",
-      "transaction": "wMMgXtR328bvbHwpWJC3qtCj7dc9gsDCQ1W4sJBZ9nY"
-    },
-    {
-      "label": "Upgrade reviewed compatible bytecode questlayer-vault-20261031.testnet",
-      "transaction": "54sDkGj5kASz7vQooGHKfPCKQFSD6L3oyQU52nDnoKm"
-    },
-    {
-      "label": "Allow only the isolated native vault as yield source",
-      "transaction": "5w7mWEEMWLrqpqMit35KFfLjvwRxXYXLViYqxjmDRGEJ"
-    },
-    {
-      "label": "Deploy and initialize questlayer-vaults-20261031.testnet",
-      "transaction": "9sp2238qa8q5KJoC8auXViB79bYAXqs71E7i8SRZ6xHa"
-    },
-    {
-      "label": "Upgrade reviewed compatible bytecode questlayer-rewards-20261031.testnet",
-      "transaction": "h2vv8fQBDPtRq6Lkjo9rqkcE8hyjLwWPhwD1J97ngiw"
-    },
-    {
-      "label": "Reserve operating storage for existing native day 2026-10-31",
-      "transaction": "9uuezm6enrbb7jZFEYqRLSfhVvHCS9R9n5rW1yPeiZtm"
-    },
-    {
-      "label": "Reserve operating storage for existing native day 2026-11-01",
-      "transaction": "DnuHpWgC4NHzfq2KDLSC3HsN6Mh3TmPVKgehisS1s2Pi"
-    },
-    {
-      "label": "Allow only the isolated native vault as yield source",
-      "transaction": "87cbo8NPab2YKER913VyfReoDMjT2fKEbtSBLbMABrgk"
+      "label": "Deploy and initialize questlayer-vaults-20261101b.testnet",
+      "transaction": "5zH4y2cDuN3SnN5R2sWeRfH8Rarc3nhSrjHVdcccn3RX"
     },
     {
       "label": "Top up separate reward storage and gas reserve",
-      "transaction": "GyFQQWhmSiR6trgPMeYZvWSdEccikb1vRmrm476en2yy"
+      "transaction": "FjmiHkJfiCBAUapxzykwZYdBkvNDbs9TymMtCSMk6xFT"
     },
     {
-      "label": "Upgrade reviewed compatible bytecode questlayer-rewards-20261031.testnet",
-      "transaction": "GAYkBGvAWTaEkFACxdAX8bEAtonDpr3AcHRzGCaXvvBd"
+      "label": "Upgrade rewards v2: street find XP",
+      "transaction": "J6Y6FpN6oc91K7Pf9G1CBjzvRFwrfSj53B8E62bFK45N"
     },
     {
-      "label": "Allow only the isolated native vault as yield source",
-      "transaction": "3Q25vjkRB7yA6MjUcqdECAhDWx5ySPAdxz5ese3qTxe2"
+      "label": "Upgrade vault v2: questlayer-vault-20261101b.testnet",
+      "transaction": "JBd9DSzYNeYnJwDEBrL2jwkbWM65PNbiBNsyietDFFYz"
+    },
+    {
+      "label": "Upgrade vault factory: new positions get vault v2",
+      "transaction": "2RrR6bc3ooMctap5KahqDzdCyQcdJkuPR8ehaRcJb1Gs"
     }
+  ],
+  "streetFinds": {
+    "since": "2026-11-01T12:31:34.699Z",
+    "coinXp": 2,
+    "findXp": 15,
+    "view": "get_day(day_id).finds",
+    "backfill": []
+  },
+  "qgoldVault": "questlayer-qgold-vault-20261104.testnet",
+  "workerMethods": [
+    "publish_day",
+    "close_day",
+    "claim",
+    "maintain_vault",
+    "publish_map_day",
+    "claim_map",
+    "close_map_day"
   ]
 }

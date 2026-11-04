@@ -12,6 +12,7 @@ import { Account, KeyPairSigner } from "near-api-js";
 import { createNearProvider } from "../server/near-provider.mjs";
 import { NativeTasks } from "../server/native/tasks.mjs";
 import { openDatabase, createPlayer } from "../server/database.mjs";
+import "../server/schema-catalog.mjs";
 const keyPath = ".data/near-operator.json";
 assert.equal(statSync(keyPath).mode & 0o077, 0);
 const operator = JSON.parse(readFileSync(keyPath));

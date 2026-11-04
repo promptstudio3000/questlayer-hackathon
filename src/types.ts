@@ -1,3 +1,4 @@
+import type { NearNetwork } from "./near-network.ts";
 export type Point = { lat: number; lng: number };
 export type Fix = Point & { accuracy: number; timestamp: number };
 export type Item = {
@@ -6,6 +7,7 @@ export type Item = {
   native_claim_state?: "issued" | "minted" | null;
   native_claim_expires_at?: number | null;
   native_token_id?: string | null;
+  native_claim_tx?: string | null;
   id: string;
   kind: string;
   name: string;
@@ -53,6 +55,7 @@ export type Player = {
     title: string;
     gold_u: number;
     created_at: number;
+    chain?: import("./chain-proof").ChainRef;
   }[];
   wallets: { account_id: string }[];
 };
@@ -63,18 +66,30 @@ export type Zone = {
   lat: number;
   lng: number;
   radius: number;
-  geometry?: { type: "Polygon"; coordinates: number[][][] };
+  geometry?:
+    | { type: "Polygon"; coordinates: number[][][] }
+    // POI category hunts (W6): one small circle per stop.
+    | { type: "MultiPolygon"; coordinates: number[][][][] };
+  /** "poi" for a street-cell POI quest place (W6). */
+  source?: string;
   sector?: string;
   shapeFamily?: string;
   kind: string;
   opensAt: number;
   closesAt: number;
   color: string;
+  placeStatus?: "open" | "closed";
+  /** Set while an operator has paused this zone or the whole day. */
+  operatorPause?: { reason: string };
 };
 export type Coin = Point & {
   id: string;
   value_u: number;
   claimant: string | null;
+  // A street find is a coin seed that also pays extra XP (server-chosen).
+  find?: boolean;
+  /** Map rewards: medium or rare coins (small is the default). */
+  tier?: "medium" | "rare";
 };
 export type QuestActivity = {
   templateId: string;
@@ -93,8 +108,18 @@ export type QuestActivity = {
   distanceLowerBoundM: number;
   durationMinutes: null;
 };
+/** Landmark clue (server/landmark-clue.mjs): answers come from Wikidata. */
+export type QuestClue = {
+  question: string;
+  options: { id: string; text: string }[];
+  source: string;
+  policy: string;
+  xp: { correct: number; miss: number };
+  result?: { choice: string; correct: boolean; answer: string };
+};
 export type Quest = Point & {
   activity?: QuestActivity;
+  clue?: QuestClue;
   id: string;
   title: string;
   description: string;
@@ -108,6 +133,7 @@ export type Quest = Point & {
   checkpointCount?: number;
   nextPoint?: Point | null;
   itemAvailable?: boolean;
+  placeStatus?: "open" | "closed";
   opens_at: number;
   closes_at: number;
   claimant: string | null;
@@ -121,11 +147,39 @@ export type World = {
   source: string;
   center: Point;
   cityName?: string;
+  /** Set for city worlds (reviewed or auto); street cells have none. */
+  cityId?: string | null;
+  /** "auto": an auto city built from unreviewed map data (never funded). */
+  cityStatus?: "reviewed" | "auto";
   cityZoneCount?: number;
-  quality?: { notice: string; fieldReview: string };
+  coinRadius?: number;
+  streetFindXp?: number;
+  quality?: {
+    notice: string;
+    fieldReview: string;
+    status?: "auto";
+    funded?: false;
+  };
+  /** Street cells: today's POI quests (W6). "empty" = nothing here yet. */
+  poiQuests?: {
+    status: "ready" | "empty";
+    count: number;
+    notice?: string;
+    /** City worlds: POI quest count per H3 cell searched today. */
+    cells?: Record<string, number>;
+  };
   endsAt: number;
   zones: Zone[];
   coins: Coin[];
+  /** Set when the server sent only the coins within radiusM of this point. */
+  coinsNear?: Point & { radiusM: number };
+  /** Map rewards (docs/MAP-REWARDS.md): today's cell drops and the next coin wave. */
+  mapRewards?: {
+    policy: string;
+    cells: Record<string, { coins: number; valueU: number; pioneer: boolean; zones: number; waves: number[] }>;
+    nextWaveAt: number | null;
+    hiddenCoins: number;
+  };
   quests: Quest[];
 };
 export type Listing = {
@@ -200,7 +254,7 @@ export type NativePublicProfile = {
   avatar: { contractId: string; tokenId: string } | null;
 };
 export type NativeProfileState = {
-  network: "testnet";
+  network: NearNetwork;
   contractId: string;
   accountId: string;
   status: "unpublished" | "published" | "unsupported";
@@ -213,7 +267,7 @@ export type NativeProfileState = {
   publishEnabled: boolean;
 };
 export type NativeProfileQuote = {
-  network: "testnet";
+  network: NearNetwork;
   receiverId: string;
   accountId: string;
   methodName: "set";
@@ -241,14 +295,14 @@ export type NativeAccount = {
 export type NativeWardrobeState = {
   claimsEnabled?: boolean;
   status: string;
-  network: "testnet";
+  network: NearNetwork;
   contractId: string;
   accounts: NativeAccount[];
 };
 export type NativeCollectionState = {
   outfits?: NativeAccount[];
   status: string;
-  network: "testnet";
+  network: NearNetwork;
   contractId: string;
   name: string;
   version: number;
@@ -273,17 +327,18 @@ export type NativeMarketOffer = {
   token_id: string;
   seller: string;
   price: string;
-  state: "active" | "buying" | "returning";
+  state: "active" | "buying" | "returning" | "deposited" | "filling";
   buyer: string | null;
   available: boolean;
   token: NativeItem | null;
 };
 export type NativeMarketState = {
   status: string;
-  network: "testnet";
+  network: NearNetwork;
   marketContract: string;
   nftContract: string;
   stats: {
+    version?: number;
     paused: boolean;
     listing_count: number;
     funded: string;
@@ -325,5 +380,7 @@ export type NearbyExplorer = Point & {
     below: string | null;
     skinTokenId: string | null;
     source: "demo" | "native" | "unavailable";
+    /** GOLD cosmetics: a marker frame and a live emote (server/gold-spend). */
+    gold?: { frame?: string; emote?: string; emoteUntil?: number };
   };
 };

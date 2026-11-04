@@ -9,9 +9,21 @@ import { nearAccountId } from "../identity/near.mjs";
 import { FACTORY_ID, VAULT_POOLS } from "./vaults.mjs";
 import { SOCIAL_TESTNET, SOCIAL_CODE_HASH } from "./social-profile.mjs";
 
-const MARKET_ID = "questlayer-market-20261031.testnet";
-const NFT_ID = "nfts.auratrail-dev-20261030.testnet";
-const REWARDS_ID = "questlayer-rewards-20261031.testnet";
+import { existsSync, readFileSync } from "node:fs";
+import { NETWORK, NETWORK_LABEL } from "./network.mjs";
+import { isNativeAuraTokenId, isNativeEdition } from "../aura-catalog.mjs";
+// Contract identities are pinned by the reviewed public manifests, so a redeploy
+// under a new account only changes the manifests and their recorded code hashes.
+// A network may lack a slice (mainnet ships without market and rewards, see
+// docs/MAINNET-PLAN.md §1): its id is then null, no receiver matches it and
+// any action that would need it answers "configuration unavailable".
+const manifest = (name) => {
+  const url = new URL(`../../public/${name}.json`, import.meta.url);
+  return existsSync(url) ? JSON.parse(readFileSync(url, "utf8")) : {};
+};
+const MARKET_ID = manifest(`native-market-${NETWORK}`).marketContract ?? null;
+const NFT_ID = manifest(`native-claims-${NETWORK}`).contractId ?? null;
+const REWARDS_ID = manifest(`native-rewards-${NETWORK}`).contractId ?? null;
 const integer = (value) => Number.isSafeInteger(value) && value >= 0;
 const amount = (value) =>
   typeof value === "string" &&
@@ -19,7 +31,7 @@ const amount = (value) =>
   BigInt(value) < 2n ** 128n;
 const aura = (value) =>
   typeof value === "string" &&
-  /^aura:(polar|moon|gold):[1-9]\d{0,2}$/.test(value);
+  isNativeAuraTokenId(value);
 const keys = (value, expected) =>
   value &&
   typeof value === "object" &&
@@ -129,7 +141,7 @@ export class NativeTransactionConfirmation {
   }
   rewardConfiguration() {
     assert(
-      this.rewards?.network === "testnet" &&
+      this.rewards?.network === NETWORK &&
         this.rewards.contractId === REWARDS_ID &&
         typeof this.rewards.codeHash === "string",
       "The reviewed reward configuration is unavailable.",
@@ -139,7 +151,7 @@ export class NativeTransactionConfirmation {
   }
   nftConfiguration() {
     assert(
-      this.claims?.network === "testnet" && this.claims.contractId === NFT_ID,
+      this.claims?.network === NETWORK && this.claims.contractId === NFT_ID,
       "The reviewed collection configuration is unavailable.",
       503,
     );
@@ -147,7 +159,7 @@ export class NativeTransactionConfirmation {
   }
   marketConfiguration() {
     assert(
-      this.market?.network === "testnet" &&
+      this.market?.network === NETWORK &&
         this.market.marketContract === MARKET_ID &&
         this.market.nftContract === NFT_ID,
       "The reviewed market configuration is unavailable.",
@@ -159,7 +171,10 @@ export class NativeTransactionConfirmation {
     const { receiverId, methodName: method, args, deposit, gas } = quote;
     const pinned = new Map();
     let result = "true";
-    if (receiverId === FACTORY_ID || receiverId.endsWith("." + FACTORY_ID)) {
+    if (
+      FACTORY_ID &&
+      (receiverId === FACTORY_ID || receiverId.endsWith("." + FACTORY_ID))
+    ) {
       const cfg = this.rewardConfiguration();
       assert(
         cfg.factory?.contractId === FACTORY_ID &&
@@ -208,14 +223,27 @@ export class NativeTransactionConfirmation {
             409,
           );
       } else {
+        const v2 = ["request_partial_exit", "set_contribution"].includes(method);
         assert(
-          [
+          ([
             "deposit_and_stake",
             "request_exit",
             "withdraw_owner",
             "refresh",
             "advance",
-          ].includes(method) && keys(args, []),
+          ].includes(method) &&
+            keys(args, [])) ||
+            (method === "request_partial_exit" &&
+              keys(args, ["amount"]) &&
+              typeof args.amount === "string" &&
+              /^[1-9]\d{0,38}$/.test(args.amount) &&
+              BigInt(args.amount) >= 10n ** 21n &&
+              BigInt(args.amount) < 2n ** 128n) ||
+            (method === "set_contribution" &&
+              keys(args, ["contribution_bps"]) &&
+              Number.isInteger(args.contribution_bps) &&
+              args.contribution_bps >= 0 &&
+              args.contribution_bps <= 10000),
           "Unsupported vault confirmation.",
           409,
         );
@@ -234,7 +262,12 @@ export class NativeTransactionConfirmation {
           "Only your own registered factory position can be confirmed.",
           403,
         );
-        await this.bounded(this.vaults.state(position), deadline);
+        const state = await this.bounded(this.vaults.state(position), deadline);
+        assert(
+          !v2 || state?.version === 2,
+          "This position has no partial exit or contribution change.",
+          409,
+        );
         pinned.set(receiverId, {
           code: cfg.factory.vaultCodeHash,
           keyless: true,
@@ -249,7 +282,14 @@ export class NativeTransactionConfirmation {
         else
           assert(
             deposit ===
-              (["request_exit", "withdraw_owner"].includes(method) ? "1" : "0"),
+              ([
+                "request_exit",
+                "withdraw_owner",
+                "request_partial_exit",
+                "set_contribution",
+              ].includes(method)
+                ? "1"
+                : "0"),
             "Invalid staking authorization deposit.",
             409,
           );
@@ -257,13 +297,84 @@ export class NativeTransactionConfirmation {
     } else if (receiverId === MARKET_ID) {
       pinned.set(MARKET_ID, { code: this.marketConfiguration() });
       pinned.set(NFT_ID, { code: this.nftConfiguration() });
+      // Version 2 signed orders: the contract re-verifies every signature,
+      // nonce, epoch and deadline; this check pins shape, target and amounts.
+      const signedOrder = (o) =>
+        keys(o, [
+          "message",
+          "nonce",
+          "recipient",
+          "callback_url",
+          "public_key",
+          "signature",
+        ]) &&
+        o.recipient === MARKET_ID &&
+        o.callback_url === null &&
+        typeof o.message === "string" &&
+        o.message.length <= 1024 &&
+        typeof o.nonce === "string" &&
+        typeof o.signature === "string" &&
+        typeof o.public_key === "string" &&
+        o.public_key.startsWith("ed25519:");
+      const orderTerms = (o) => {
+        try {
+          return JSON.parse(o.message);
+        } catch {
+          return null;
+        }
+      };
       if (method === "withdraw")
         assert(
           keys(args, []) && deposit === "1",
           "Invalid market withdrawal.",
           409,
         );
-      else {
+      else if (method === "add_signing_key" || method === "remove_signing_key") {
+        result = "unit";
+        assert(
+          keys(args, ["public_key"]) &&
+            /^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(args.public_key)) &&
+            deposit === "1",
+          "Invalid order signing key change.",
+          409,
+        );
+      } else if (method === "cancel_all_orders") {
+        result = "any";
+        assert(
+          keys(args, []) && deposit === "1",
+          "Invalid order cancellation.",
+          409,
+        );
+      } else if (method === "deposit_near") {
+        result = "any";
+        assert(
+          keys(args, []) && amount(deposit) && BigInt(deposit) >= 10n ** 21n,
+          "Invalid market deposit.",
+          409,
+        );
+      } else if (
+        method === "cancel_order" ||
+        method === "fill_buy_order" ||
+        method === "fill_sell_order"
+      ) {
+        const terms =
+          keys(args, ["order"]) && signedOrder(args.order)
+            ? orderTerms(args.order)
+            : null;
+        assert(
+          terms &&
+            terms.market === MARKET_ID &&
+            aura(terms.token_id) &&
+            amount(terms.price) &&
+            (method === "fill_sell_order"
+              ? terms.kind === "sell" && deposit === terms.price
+              : deposit === "1") &&
+            (method !== "fill_buy_order" || terms.kind === "buy"),
+          "Invalid signed market order.",
+          409,
+        );
+        if (method === "cancel_order") result = "unit";
+      } else {
         assert(
           ["buy", "cancel"].includes(method) &&
             keys(args, ["token_id", "listing_id"]) &&
@@ -308,9 +419,10 @@ export class NativeTransactionConfirmation {
           assert(false, "Invalid Aura listing terms.", 409);
         }
         assert(
-          keys(message, ["price"]) &&
-            amount(message.price) &&
-            BigInt(message.price) > 0n,
+          (keys(message, ["deposit"]) && message.deposit === true) ||
+            (keys(message, ["price"]) &&
+              amount(message.price) &&
+              BigInt(message.price) > 0n),
           "Invalid Aura listing price.",
           409,
         );
@@ -337,7 +449,7 @@ export class NativeTransactionConfirmation {
               typeof args.claim_id === "string" &&
               args.claim_id.startsWith("earned:") &&
               args.claim_id.length <= 160 &&
-              ["polar", "moon", "gold"].includes(args.edition) &&
+              isNativeEdition(args.edition) &&
               integer(args.expires_at_ms) &&
               typeof args.signature === "string" &&
               args.signature.length === 88 &&
@@ -421,7 +533,7 @@ export class NativeTransactionConfirmation {
       this.clock,
     );
     this.linked(player, accountId);
-    return { network: "testnet", accountId, afterBlock };
+    return { network: NETWORK, accountId, afterBlock };
   }
   async confirm(player, input) {
     assert(input && typeof input === "object", "Choose a native transaction.");
@@ -434,7 +546,7 @@ export class NativeTransactionConfirmation {
     );
     assert(
       quote &&
-        quote.network === "testnet" &&
+        quote.network === NETWORK &&
         quote.signerId === accountId &&
         typeof quote.receiverId === "string" &&
         typeof quote.methodName === "string" &&
@@ -454,8 +566,8 @@ export class NativeTransactionConfirmation {
     const deadline = Date.now() + this.timeoutMs;
     const status = await this.bounded(this.provider.viewNodeStatus(), deadline);
     assert(
-      status.chain_id === "testnet" && !status.sync_info?.syncing,
-      "NEAR testnet confirmation is unavailable.",
+      status.chain_id === NETWORK && !status.sync_info?.syncing,
+      `${NETWORK_LABEL} confirmation is unavailable.`,
       503,
     );
     const block = await this.bounded(
@@ -541,8 +653,8 @@ export class NativeTransactionConfirmation {
         assert(false, "Invalid market configuration.", 503);
       }
       assert(
-        stats.network === "testnet" &&
-          stats.version === 1 &&
+        stats.network === NETWORK &&
+          (stats.version === 1 || stats.version === 2) &&
           stats.nft_contract === NFT_ID,
         "The market collection configuration changed.",
         503,
@@ -695,7 +807,7 @@ export class NativeTransactionConfirmation {
     this.linked(player, accountId);
     return {
       confirmed: true,
-      network: "testnet",
+      network: NETWORK,
       accountId,
       transactionHash,
       contractId: quote.receiverId,

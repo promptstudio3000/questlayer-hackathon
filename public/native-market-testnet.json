@@ -1,21 +1,31 @@
 {
-  "verifiedAt": "2026-10-31T04:13:22.306Z",
+  "verifiedAt": "2026-11-01T13:09:46.039Z",
   "network": "testnet",
-  "marketContract": "questlayer-market-20261031.testnet",
-  "nftContract": "nfts.auratrail-dev-20261030.testnet",
-  "owner": "auratrail-dev-20261030.testnet",
+  "marketContract": "questlayer-market-20261101b.testnet",
+  "nftContract": "nfts.questlayer-dev-20261101.testnet",
+  "owner": "questlayer-dev-20261101.testnet",
   "adminModel": "Project-controlled testnet upgrade/account keys; not audited for mainnet",
   "storage": "Project-sponsored, bounded testnet storage",
-  "wasmSha256": "6a103a62b0be41352cb2d40b4947356f49b797d6cbe0cff43a2923f902a013d7",
+  "wasmSha256": "bd1f74d2858e468b354c2bb174ca95d921e933898adb9738fced8b817a0439ee",
   "transactions": [
     {
       "label": "Deploy testnet-only bounded NFT escrow market",
-      "transaction": "7BaaikhtD4RrmApq84GNr1NNGQ7F4NQqQdVuwsiXm38o"
+      "transaction": "6W2LU7t8VH73i2KUTt2vwQCPToYMdLuTdWU5EFUnf79w"
+    },
+    {
+      "label": "Upgrade market to version 2 (deploy + migrate, atomic)",
+      "transaction": "84k2TBW2kYLRSrfZiPFhkaMPBafNobYCsoWk2EJLivAd"
     }
   ],
   "limits": {
     "listings": 128,
     "participants": 256,
     "perAccount": 3
+  },
+  "version": 2,
+  "signedOrders": {
+    "standard": "questlayer_aura_order",
+    "signature": "NEP-413 ed25519",
+    "intents": "NEP-413 envelope compatible; not executed by any NEAR Intents verifier (see docs/SIGNED-AURA-ORDERS.md)"
   }
 }
