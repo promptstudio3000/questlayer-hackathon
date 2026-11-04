@@ -259,3 +259,16 @@ test("vault state reads the vault contract's nested exit fields (PR #174 shape)"
   assert.equal(s.exit.safeWindowMs, 86400000);
   assert.equal(exitPaths(s).find((p) => p.id === "lst").available, false);
 });
+
+test("two due slots: the older is recorded as missed, never silently dropped", async () => {
+  const day0 = Date.parse("2026-11-05T00:00:00Z");
+  const k = fakeKeeper(day0 - 3_600_000, { poolNear: 100 });
+  await k.tick(day0 - 3_600_000);
+  await k.tick(day0 - 3_000_000);
+  const times = [day0 + 7_200_000 - 60_000, day0 + 7_200_000 + 60_000, ...Array.from({ length: 10 }, (_, i) => day0 + (i + 2) * 7_200_000 + 1000)];
+  k.db.prepare("UPDATE qgold_keeper_days SET times=? WHERE day='2026-11-05'").run(JSON.stringify(times));
+  k.db.prepare("DELETE FROM qgold_keeper_actions WHERE day='2026-11-05'").run();
+  await k.tick(times[1] + 1000);
+  const rows = k.db.prepare("SELECT slot,state,reason FROM qgold_keeper_actions WHERE day='2026-11-05' ORDER BY slot").all();
+  assert.deepEqual(rows.map((r) => [r.slot, r.state, r.reason]), [[0, "missed", "superseded"], [1, "skipped", "pool-below-minimum"]]);
+});

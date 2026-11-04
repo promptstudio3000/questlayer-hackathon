@@ -235,7 +235,11 @@ export class QgoldKeeper {
       // A slot whose time fell before the commitment was fixed cannot count.
       if (t < row.commit_at || now - t > MISSED_AFTER_MS) {
         this.record({ day, slot, at: now, kind: "slot", state: "missed", reason: t < row.commit_at ? "before-commitment" : "keeper-offline" });
-      } else due = { day, slot, at: t };
+      } else {
+        // Only the latest due slot acts; an older one it overtakes counts as missed.
+        if (due) this.record({ ...due, at: now, kind: "slot", state: "missed", reason: "superseded" });
+        due = { day, slot, at: t };
+      }
     });
     return due;
   }
