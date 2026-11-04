@@ -2,6 +2,9 @@
 # Daily stNEAR treasury harvest on the owner's Mac (docs/STNEAR-TREASURY.md).
 # Installs a LaunchAgent that runs `harvest` once a day at 06:30 local time
 # from this repository folder, with the operator key in .data/. Testnet only.
+# After the harvest it runs one treasury-mix step (docs/TREASURY-MIX.md):
+# `rebalance` (at most 25 % of the treasury toward 50/40/10) and `keep`
+# (supply stables to Rhea, harvest their interest into the prize pool).
 #   bash scripts/install-stnear-harvest-mac.sh          # install / refresh
 #   bash scripts/install-stnear-harvest-mac.sh --remove # uninstall
 set -euo pipefail
@@ -21,11 +24,11 @@ cat > "$PLIST" <<PL
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>$LABEL</string>
-  <key>EnvironmentVariables</key><dict><key>STNEAR_RECORD_PUSH</key><string>1</string></dict>
+  <key>EnvironmentVariables</key><dict><key>STNEAR_RECORD_PUSH</key><string>1</string><key>TREASURY_MIX_RECORD_PUSH</key><string>1</string></dict>
   <key>WorkingDirectory</key><string>$REPO</string>
   <key>ProgramArguments</key><array>
     <string>/bin/sh</string><string>-c</string>
-    <string>"$NODE" scripts/stnear-treasury-testnet.mjs fund-pending; "$NODE" scripts/stnear-treasury-testnet.mjs harvest</string>
+    <string>"$NODE" scripts/stnear-treasury-testnet.mjs fund-pending; "$NODE" scripts/stnear-treasury-testnet.mjs harvest; "$NODE" scripts/treasury-mix-testnet.mjs rebalance; "$NODE" scripts/treasury-mix-testnet.mjs keep</string>
   </array>
   <key>StartCalendarInterval</key><dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>30</integer></dict>
   <key>StandardOutPath</key><string>$REPO/.data/logs/stnear-harvest.log</string>
@@ -34,4 +37,4 @@ cat > "$PLIST" <<PL
 PL
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
-echo "installed $LABEL (daily 06:30), log .data/logs/stnear-harvest.log"
+echo "installed $LABEL (daily 06:30: stNEAR harvest + treasury mix), log .data/logs/stnear-harvest.log"
