@@ -144,6 +144,7 @@ import { createNearPrice } from "./near-price.mjs";
 import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mjs";
 import { createTreasuryView } from "./native/stnear-treasury.mjs";
+import { createTreasuryMixView, mixSettings } from "./native/treasury-mix.mjs";
 import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
 import { combineStakeReaders, createYieldVaultReader, yieldVaultSettings } from "./native/yield-vault-reader.mjs";
 import { createTraderKeeper, startTraderKeeper } from "./npc/trader-keeper.mjs";
@@ -613,6 +614,28 @@ const stnearTreasury = createTreasuryView({
     return p ? JSON.parse(readFileSync(p, "utf8")) : null;
   },
 });
+// Treasury mix 50 % LST / 40 % stablecoins on Rhea Lend / 10 % NEAR
+// (docs/TREASURY-MIX.md): live holdings, targets and the next run's plan. The
+// Mac worker writes the public record of runs; this never signs.
+const treasuryMixRecordPaths = [
+  process.env.TREASURY_MIX_RECORD,
+  resolve(dirname(defaultDatabasePath()), manifestName("treasury-mix")),
+  resolve(APP_ROOT, `public/${manifestName("treasury-mix")}`),
+  resolve(APP_ROOT, `dist/${manifestName("treasury-mix")}`),
+].filter(Boolean);
+const readJsonRecord = (paths) => {
+  const p = paths.find((f) => existsSync(f));
+  return p ? JSON.parse(readFileSync(p, "utf8")) : null;
+};
+const treasuryMixConfig = mixSettings(process.env, NETWORK);
+const treasuryMix = treasuryMixConfig.enabled
+  ? createTreasuryMixView({
+      provider,
+      settings: treasuryMixConfig,
+      record: () => readJsonRecord(treasuryMixRecordPaths),
+      account: () => readJsonRecord(treasuryRecordPaths)?.account || null,
+    })
+  : null;
 const liquidStakeConfig = liquidStakeSettings(process.env, NETWORK);
 const liquidStake =
   liquidStakeConfig.enabled && liquidStakeConfig.tokens.length
@@ -1155,6 +1178,10 @@ async function api(req, res, url) {
     return respond(res, await qgoldPage(), 200, {
       "Cache-Control": "public, max-age=30",
     });
+  if (path === "/api/treasury/mix" && method === "GET") {
+    assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
+    return respond(res, await treasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
+  }
   if (path === "/api/economy/ledger" && method === "GET")
     return respond(res, await publicLedger(), 200, {
       "Cache-Control": "public, max-age=60",
