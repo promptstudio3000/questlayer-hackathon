@@ -63,8 +63,10 @@ export function ensureMapChainSchema(db) {
   ready.add(db);
 }
 
+// Testnet only: the contract's map_claim_message is fixed to testnet and
+// mainnet needs Lubos's explicit go.
 export function mapChainEnabled(env = process.env) {
-  return env.MAP_CHAIN === "1";
+  return env.MAP_CHAIN === "1" && NETWORK === "testnet";
 }
 
 export const mapDayId = (day, version = MAP_DAY_VERSION) =>

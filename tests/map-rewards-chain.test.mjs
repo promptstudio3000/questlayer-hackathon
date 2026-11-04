@@ -20,6 +20,7 @@ import {
   runMapChainWorker,
 } from "../server/map-rewards/chain.mjs";
 import { allowedWorkerMethods } from "../server/native/reward-worker.mjs";
+import { NETWORK } from "../server/native/network.mjs";
 import { ensureWorld, worldView } from "../server/world.mjs";
 import { claimCoin } from "../server/game.mjs";
 
@@ -128,7 +129,7 @@ test("collected map coins go on chain with a proof the contract accepts", async 
       assert.ok(Number(claim.value_u) <= 2_000_000);
       indexes.add(claim.index);
       const text = mapClaimMessage(CONTRACT, claim);
-      assert.ok(text.startsWith("QuestLayer map reward v1\nNetwork: testnet\nContract: rewards.questlayer.testnet\n"));
+      assert.ok(text.startsWith(`QuestLayer map reward v1\nNetwork: ${NETWORK}\nContract: ${CONTRACT}\n`));
       assert.ok(verify(null, Buffer.from(text), signer.publicKey, Buffer.from(signature, "base64")));
     }
     assert.equal(indexes.size, 2, "each coin has its own index");
