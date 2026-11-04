@@ -15,6 +15,7 @@ import {
   MAP_ZONE_CAP_YOCTO,
   mapChainStatus,
   mapClaimMessage,
+  mapDayCaps,
   mapDayId,
   publishArgs,
   runMapChainWorker,
@@ -185,4 +186,21 @@ test("arena coins and players without a wallet stay practice", async () => {
     setPotentialSource(null);
     db.close();
   }
+});
+
+test("the map takes half of the date cap, within what city days left", async () => {
+  const NEAR = 10n ** 24n;
+  const view = (cap, coins, zones) => async () => ({
+    cap: String(cap),
+    coins: String(coins),
+    zones: String(zones),
+  });
+  assert.deepEqual(await mapDayCaps(view(NEAR / 10n, 6n * 10n ** 21n, 6n * 10n ** 21n), "d"), {
+    coinCap: NEAR / 20n,
+    zoneCap: NEAR / 20n,
+  });
+  // A 1000 NEAR treasury: the contract cap is 50 NEAR a date.
+  const big = await mapDayCaps(view(50n * NEAR, 20n * NEAR, 45n * NEAR), "d");
+  assert.deepEqual(big, { coinCap: 25n * NEAR, zoneCap: 5n * NEAR });
+  assert.deepEqual(await mapDayCaps(null, "d"), {});
 });

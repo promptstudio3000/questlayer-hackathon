@@ -16,6 +16,7 @@ import { buildCityPlan } from "../server/world-planner.mjs";
 import { PLZEN } from "../server/spatial/city-pack.mjs";
 import { ACCOUNT_SUFFIX } from "../server/native/network.mjs";
 import { ensureMapChainSchema } from "../server/map-rewards/chain.mjs";
+import { scaledBucketCap } from "../server/native/allocation.mjs";
 
 const NEAR = 10n ** 24n;
 const CONTRACT = `rewards${ACCOUNT_SUFFIX}`;
@@ -280,4 +281,9 @@ test("a published map day explains its reservations and its date total", async (
   const a = await auditDistribution(f.native);
   assert.equal(a.status, "verified", JSON.stringify(a.failed));
   assert.ok(a.days.some((d) => d.kind === "map" && d.chain === "open"));
+});
+
+test("city day caps grow with funding and keep 0.006 NEAR on a small treasury", () => {
+  assert.equal(scaledBucketCap(String(NEAR / 5n)), 6n * 10n ** 21n);
+  assert.equal(scaledBucketCap(String(1000n * NEAR)), 20n * NEAR);
 });

@@ -23,6 +23,7 @@ import {
 } from "./reward-manifest.mjs";
 import {
   allocateDailyBudget,
+  scaledBucketCap,
   demandWeights,
   realizedYieldBacking,
   recentCityPlayers,
@@ -154,6 +155,7 @@ export async function publishNativeDays(
             ? eligible
             : demandWeights(eligible, recentCityPlayers(native.db, day)),
         shareBps: native.dailyShareBps ?? 10000,
+        cap: scaledBucketCap(treasury.funded),
         limit,
       });
       const share = allocation.cities.find((c) => c.id === city.id);
@@ -166,6 +168,7 @@ export async function publishNativeDays(
         ),
         {
           budget: { coins: share.coins, zones: share.zones },
+          cap: scaledBucketCap(treasury.funded),
           funding,
           version: dayId.endsWith("-v2") ? 2 : 1,
         },

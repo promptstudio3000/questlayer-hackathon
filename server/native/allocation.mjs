@@ -22,6 +22,15 @@ import { assert } from "../domain.mjs";
 import { shiftDate } from "../spatial/calendar.mjs";
 
 export const DAILY_BUCKET_CAP = 6n * 10n ** 21n;
+// City days together may commit up to this share of a bucket's funding per
+// day (half of the contract's `funded`, 50/50 policy) once that is more than
+// DAILY_BUCKET_CAP. 4 % keeps today's 0.006 NEAR at 0.2 NEAR funded and grows
+// with the treasury, well under the contract's 10 % per-date cap.
+export const CITY_CAP_BPS = 400n;
+export function scaledBucketCap(funded) {
+  const scaled = (yocto(funded ?? "0", "funded") / 2n) * CITY_CAP_BPS / 10000n;
+  return scaled > DAILY_BUCKET_CAP ? scaled : DAILY_BUCKET_CAP;
+}
 const MAX_CITIES = 16;
 const MAX_WEIGHT = 1000;
 export const DEMAND_WINDOW_DAYS = 7;
