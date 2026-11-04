@@ -43,7 +43,9 @@
     "i18n:keys": "node scripts/i18n-keys.mjs",
     "e2e:languages": "node scripts/e2e-languages.mjs",
     "art:list": "node scripts/art.mjs list",
-    "art:check": "node scripts/art.mjs check"
+    "art:check": "node scripts/art.mjs check",
+    "wiki:check": "node scripts/wiki-check.mjs",
+    "wiki:stamp": "node scripts/wiki-check.mjs --write"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

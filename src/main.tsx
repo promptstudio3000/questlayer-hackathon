@@ -16,6 +16,9 @@ const HOW_IT_WORKS_PATH = /^\/how-it-works\/?$/;
 // Public prize pool ledger (docs/ECONOMY-PAGE.md): read-only, own lazy chunk.
 const EconomyPage = lazy(() => import("./economy/EconomyPage"));
 const ECONOMY_PATH = /^\/economy\/?$/;
+// Project wiki, the know-how center (docs/WIKI.md): read-only, own lazy chunk.
+const WikiPage = lazy(() => import("./wiki/WikiPage"));
+const WIKI_PATH = /^\/wiki\/?$/;
 // Treasury dashboard (docs/TREASURY-PAGE.md): charts and a model, own lazy chunk.
 const TreasuryPage = lazy(() => import("./economy/TreasuryPage"));
 const TREASURY_PATH = /^\/treasury\/?$/;
@@ -30,6 +33,10 @@ void loadLocale().then(() =>
     ) : ECONOMY_PATH.test(location.pathname) ? (
       <Suspense fallback={null}>
         <EconomyPage />
+      </Suspense>
+    ) : WIKI_PATH.test(location.pathname) ? (
+      <Suspense fallback={null}>
+        <WikiPage />
       </Suspense>
     ) : TREASURY_PATH.test(location.pathname) ? (
       <Suspense fallback={null}>
