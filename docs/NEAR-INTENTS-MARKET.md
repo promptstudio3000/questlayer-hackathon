@@ -82,12 +82,12 @@ Routes: `GET /api/native/intents`, `GET /api/native/intents/account?account=&pub
 
 ### Player UI
 
-NEAR Intents is the **default market** (Lubos, 4 Nov): once the verifier
-manifest exists, Market → Offers opens with the **NEAR Intents (test)** panel
-and the older signed offers fold into an "Older market" section, so Auras
-already escrowed there can still be traded or taken back. Without the manifest
-the old market shows as before. The collection's Sell button switches to an
-Intents sell in a follow-up from the "Put every trade on chain" thread (PR #161).
+NEAR Intents is **the market** (Lubos, 4 Nov): once the verifier manifest
+exists, Market → Offers shows only the **NEAR Intents (test)** panel; the
+market v2 signed offers are hidden (no players before 14 Nov, so no legacy
+data to keep). Without the manifest the old offers show as before. The
+collection's Sell button switches to an Intents sell in a follow-up from the
+"Put every trade on chain" thread (PR #161).
 It is P2P: both players sign their own side and the verifier settles both legs
 in one transaction; the server only pairs orders and pays gas. Turn on → list an Aura for a wNEAR price → others buy
 with one tap (the panel wraps and deposits missing wNEAR first) → withdraw

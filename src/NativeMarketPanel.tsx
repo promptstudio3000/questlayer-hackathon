@@ -420,10 +420,9 @@ export function NativeMarketPanel({
           />
           </Suspense>
           )}
-          {showOffers && (intentsOn ? (
-          // NEAR Intents is the default market; older ways stay reachable so
-          // Auras already escrowed there can be traded or taken back.
-          <Details summary={tr("Older market")}>
+          {/* NEAR Intents is the market; the v2 signed offers show only on a
+              host without the verifier manifest. */}
+          {showOffers && !intentsOn && (
           <SignedOrdersPanel
             data={data}
             signer={orderSigner}
@@ -438,23 +437,7 @@ export function NativeMarketPanel({
             busy={busy}
             onChanged={async () => (await load(true)).state}
           />
-          </Details>
-          ) : (
-          <SignedOrdersPanel
-            data={data}
-            signer={orderSigner}
-            owned={
-              wardrobe?.accounts
-                .find((a) => a.accountId === orderSigner?.accountId)
-                ?.items.filter((i) => i.kind === "aura") || []
-            }
-            balance={balances.find(
-              (a) => a.accountId === orderSigner?.accountId,
-            )}
-            busy={busy}
-            onChanged={async () => (await load(true)).state}
-          />
-          ))}
+          )}
           {showListings && (
           <div className="native-market-pages">
             <button
