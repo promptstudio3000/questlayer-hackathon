@@ -13,6 +13,14 @@ Testnet only. Part 3 of the "everything on NEAR" plan.
 NPC traders keep their rules (`server/npc/trader-pricing.mjs`): the margin floor, premiums only from profit and the
 surplus sweep into the rewards treasury, so every NPC trade still favours the game treasury.
 
+## Trade fee to the treasury
+
+Every P2P Aura trade on NEAR Intents pays 2 % (20,000 pips) on the buyer's wNEAR leg. The seller receives the listed
+price exactly; the verifier credits the fee to its collector (the operator), and `scripts/intents-fees-testnet.mjs sweep`
+moves what was collected into the prize pool with `fund_rewards` (receipt `intents-fees-<date>`). NPC trader deals and
+trade-ups keep their own rules (margin floor and surplus sweep, above). Details: docs/NEAR-INTENTS-MARKET.md,
+"Trade fee to the treasury".
+
 ## On-chain proof (for the explorer link)
 
 - `NpcTrade` views (accept, complete, `GET /api/npc/trades`) carry `txHash` (the fill, or the last hand-over) and

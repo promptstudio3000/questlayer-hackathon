@@ -11,6 +11,7 @@ import {
   confirmedPayouts,
   createPublicLedger,
   publishedDays,
+  tradeFees,
   yieldCycle,
 } from "../server/native/public-ledger.mjs";
 import { buildCityPlan } from "../server/world-planner.mjs";
@@ -135,6 +136,27 @@ test("ledger answers on a host without native rewards", async () => {
   assert.equal(l.audit.status, "not-configured");
   assert.deepEqual(l.days, []);
   assert.equal(l.yieldCycle, null);
+  assert.equal(l.tradeFees, null);
+});
+
+test("trade fees count only sweeps that reached the prize pool", () => {
+  const hash = (c) => c.repeat(44);
+  const t = tradeFees({
+    verifier: "intents.questlayer-dev-20261101.testnet",
+    feePips: 20000,
+    collector: "questlayer-dev-20261101.testnet",
+    rewardsContract: "questlayer-rewards-20261101b.testnet",
+    sweeps: [
+      { receiptId: "intents-fees-2026-11-05", amount: "30000000000000000000000", withdrawTransaction: hash("A"), unwrapTransaction: hash("B"), fundTransaction: hash("C"), finishedAt: "2026-11-05T05:31:00Z" },
+      { receiptId: "intents-fees-2026-11-06", amount: "20000000000000000000000", withdrawTransaction: hash("D"), startedAt: "2026-11-06T05:30:00Z" },
+    ],
+  });
+  assert.equal(t.feePips, 20000);
+  assert.equal(t.swept, "30000000000000000000000");
+  assert.deepEqual(t.sweeps.map((s) => s.funded), [true, false]);
+  assert.equal(t.sweeps[0].fundUrl, `${EXPLORER_BASE}/txns/${hash("C")}`);
+  assert.equal(t.sweeps[1].fundUrl, null);
+  assert.equal(tradeFees(null), null);
 });
 
 test("the cycle proof flushes add up to the realized yield it claims", () => {

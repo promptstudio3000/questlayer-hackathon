@@ -1384,6 +1384,7 @@
  "Price in NEAR (0.01 to 10)": "NEARでの価格（0.01〜10）",
  "Price in test NEAR": "テストNEARでの価格",
  "Price in wNEAR": "価格（wNEAR）",
+ "Prices include {0} % for the prize pool.": "価格には賞金プールへの {0} % が含まれます。",
  "Private AI on NEAR · runs in a sealed enclave, answers only from game data": "NEAR のプライベートAI · 封印されたエンクレーブで動作し、ゲームデータだけで答えます",
  "Private completion progress": "非公開の達成状況",
  "Private information": "個人情報",

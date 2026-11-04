@@ -16,6 +16,7 @@ import { assert } from "../domain.mjs";
 import {
   auraOrderTerms,
   checkWithdrawal,
+  grossForNet,
   matches,
   netDeltas,
   parseNonce,
@@ -87,6 +88,15 @@ export class IntentsMarket {
   get tokens() {
     return { nftContract: this.nftContract, wnear: this.wnear };
   }
+  /** Token ids plus the verifier's current fee (pips), cached for a minute. */
+  async terms() {
+    const now = this.now();
+    if (!this.feeCache || now - this.feeCache.at > 60_000) {
+      const fee = await this.verifier.view("fee", {}).catch(() => null);
+      this.feeCache = { at: now, fee: Number.isSafeInteger(fee) ? fee : this.feeCache?.fee ?? 0 };
+    }
+    return { ...this.tokens, feePips: this.feeCache.fee };
+  }
   row(id) {
     return this.db.prepare("SELECT * FROM intents_orders WHERE id=?").get(id);
   }
@@ -97,6 +107,8 @@ export class IntentsMarket {
       side: r.side,
       tokenId: r.token_id,
       price: r.price,
+      // What the buyer gives at the verifier's current fee (price + fee).
+      buyerPays: grossForNet(r.price, this.feeCache?.fee ?? 0).toString(),
       deadlineMs: r.deadline_ms,
       state: r.state,
       reason: r.reason,
@@ -107,10 +119,9 @@ export class IntentsMarket {
   }
 
   async config() {
-    const [salt, fee] = await Promise.all([
-      this.verifier.view("current_salt", {}),
-      this.verifier.view("fee", {}).catch(() => null),
-    ]);
+    // Refresh the fee cache first so listed orders show the same buyerPays.
+    this.feeCache = null;
+    const [salt, { feePips: fee }] = await Promise.all([this.verifier.view("current_salt", {}), this.terms()]);
     return {
       experimental: true,
       label: "Self-deployed NEAR Intents verifier (testnet, experimental)",
@@ -172,13 +183,13 @@ export class IntentsMarket {
   async fundedFor(maker, terms) {
     return terms.side === "sell"
       ? (await this.balance(maker, terms.nftTokenId)) === 1n
-      : (await this.balance(maker, terms.wnearTokenId)) >= BigInt(terms.price);
+      : (await this.balance(maker, terms.wnearTokenId)) >= BigInt(terms.gross ?? terms.price);
   }
 
   /** Stores a maker's signed token_diff order after the verifier-side checks. */
   async submit(signed) {
     const body = await this.verify(signed);
-    const terms = auraOrderTerms(body.intents, this.tokens);
+    const terms = auraOrderTerms(body.intents, await this.terms());
     const id = `${body.signerId}:${body.nonce}`;
     const existing = this.row(id);
     if (existing) return { ...this.view(existing), duplicate: true };
@@ -255,10 +266,11 @@ export class IntentsMarket {
       const maker = await this.verify(makerSigned);
       const taker = await this.verify(takerSigned);
       assert(taker.signerId !== maker.signerId, "You cannot take your own order.", 409);
-      const makerTerms = auraOrderTerms(maker.intents, this.tokens),
-        takerTerms = auraOrderTerms(taker.intents, this.tokens);
+      const terms = await this.terms();
+      const makerTerms = auraOrderTerms(maker.intents, terms),
+        takerTerms = auraOrderTerms(taker.intents, terms);
       assert(matches(makerTerms, takerTerms), "Your intent does not match this order.", 409);
-      assert(Object.keys(netDeltas([maker, taker])).length === 0, "The trade does not net to zero.", 409);
+      assert(Object.keys(netDeltas([maker, taker], terms.feePips)).length === 0, "The trade does not net to zero.", 409);
       assert(await this.fundedFor(taker.signerId, takerTerms), takerTerms.side === "buy" ? "Deposit enough wNEAR into the verifier first." : "Deposit the Aura into the verifier first.", 409);
       this.db.prepare("UPDATE intents_orders SET state='filling', taker=?, checked_at=? WHERE id=? AND state='open'").run(taker.signerId, this.now(), row.id);
       let hash;
@@ -278,7 +290,14 @@ export class IntentsMarket {
           hash,
           this.verifierId,
           JSON.stringify([maker.signerId, taker.signerId]),
-          JSON.stringify({ orderId: row.id, tokenId: makerTerms.tokenId, price: makerTerms.price, makerSide: makerTerms.side }),
+          JSON.stringify({
+            orderId: row.id,
+            tokenId: makerTerms.tokenId,
+            price: makerTerms.price,
+            makerSide: makerTerms.side,
+            // The buyer's extra over `price`: the verifier fee, which goes to the treasury.
+            fee: (BigInt(makerTerms.side === "buy" ? makerTerms.gross : takerTerms.gross) - BigInt(makerTerms.price)).toString(),
+          }),
           now,
         );
       return { ...this.view(this.row(row.id)), transactionHash: hash };
@@ -326,8 +345,9 @@ export class IntentsMarket {
         if (used) [state, reason] = ["closed", "Intent used on chain"];
         else if (!saltOk) [state, reason] = ["closed", "Verifier salt rotated"];
         else {
-          const terms = auraOrderTerms(intentsOf(signed), this.tokens);
-          if (!(await this.fundedFor(r.maker, terms))) [state, reason] = ["closed", "No longer funded in the verifier"];
+          const terms = auraOrderTerms(intentsOf(signed), await this.terms());
+          if (terms.price !== r.price) [state, reason] = ["closed", "Verifier fee changed; sign the order again"];
+          else if (!(await this.fundedFor(r.maker, terms))) [state, reason] = ["closed", "No longer funded in the verifier"];
         }
       }
       if (state !== "open") {

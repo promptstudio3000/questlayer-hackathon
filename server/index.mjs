@@ -33,6 +33,8 @@ import {
   startOrderIndexWorker,
 } from "./native/order-index.mjs";
 import { IntentsMarket, createIntentsRoutes } from "./native/intents-market.mjs";
+import { QgoldKeeper, keeperSettings } from "./qgold/keeper.mjs";
+import { createQgoldPage, RHEA_DEX } from "./qgold/token-page.mjs";
 import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
@@ -846,6 +848,7 @@ const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 // Public economy ledger for the /economy page (docs/ECONOMY-PAGE.md).
 const yieldCycleProofPath = resolve(APP_ROOT, "public/native-yield-cycle-proof.json");
+const intentsFeesRecordPath = resolve(APP_ROOT, "public/native-intents-fees-testnet.json");
 const publicLedger = createPublicLedger({
   native: nativeRewards,
   treasury: stnearTreasury,
@@ -854,6 +857,61 @@ const publicLedger = createPublicLedger({
     existsSync(yieldCycleProofPath)
       ? JSON.parse(readFileSync(yieldCycleProofPath, "utf8"))
       : null,
+  // 2 % P2P trade fee swept into the prize pool (scripts/intents-fees-testnet.mjs).
+  feeRecord: () =>
+    existsSync(intentsFeesRecordPath)
+      ? JSON.parse(readFileSync(intentsFeesRecordPath, "utf8"))
+      : null,
+});
+// QGOLD token page and market keeper (docs/QGOLD-MARKET.md). The vault
+// manifest comes from the vault stream, the pool manifest from
+// scripts/qgold-rhea-pool-testnet.mjs; each part waits for its manifest.
+const readManifest = (name) => {
+  const p = [
+    resolve(APP_ROOT, `public/${manifestName(name)}`),
+    resolve(APP_ROOT, `dist/${manifestName(name)}`),
+  ].find((x) => existsSync(x));
+  return p ? JSON.parse(readFileSync(p, "utf8")) : null;
+};
+const qgoldVaultManifest = readManifest("native-qgold-vault");
+const qgoldPoolManifest = readManifest("native-qgold-pool");
+const qgoldVaultReader =
+  qgoldVaultManifest?.network === NETWORK && qgoldVaultManifest.vaultContract
+    ? new NativeContractReader(provider, qgoldVaultManifest.vaultContract)
+    : null;
+const qgoldRhea =
+  qgoldPoolManifest?.network === NETWORK && RHEA_DEX[NETWORK]
+    ? new NativeContractReader(provider, qgoldPoolManifest.dex || RHEA_DEX[NETWORK])
+    : null;
+const qgoldKeeperSettings = keeperSettings(process.env);
+let qgoldKeeperAccount = null;
+if (qgoldVaultReader && qgoldKeeperSettings.execute && qgoldKeeperSettings.keyPath) {
+  try {
+    qgoldKeeperAccount = (
+      await loadServiceAccount(provider, qgoldKeeperSettings.keyPath)
+    ).account;
+  } catch (error) {
+    console.warn("QGOLD keeper key unavailable; keeper records only:", error.message);
+  }
+}
+const qgoldKeeper =
+  qgoldVaultReader && qgoldKeeperSettings.enabled
+    ? new QgoldKeeper(db, {
+        vault: qgoldVaultReader,
+        rhea: qgoldRhea,
+        poolId: Number.isInteger(qgoldPoolManifest?.poolId) ? qgoldPoolManifest.poolId : null,
+        wnear: qgoldPoolManifest?.wnear || "wrap.testnet",
+        provider,
+        account: qgoldKeeperAccount,
+        settings: qgoldKeeperSettings,
+      })
+    : null;
+const qgoldPage = createQgoldPage({
+  vaultManifest: qgoldVaultManifest,
+  poolManifest: qgoldPoolManifest,
+  vault: qgoldVaultReader,
+  rhea: qgoldRhea,
+  keeper: qgoldKeeper,
 });
 const tasksManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-tasks")}`),
@@ -1208,6 +1266,10 @@ async function api(req, res, url) {
     assert(proof, "This cell has no reward leaf on that day.", 404);
     return respond(res, proof);
   }
+  if (path === "/api/economy/qgold" && method === "GET")
+    return respond(res, await qgoldPage(), 200, {
+      "Cache-Control": "public, max-age=30",
+    });
   if (path === "/api/treasury/mix" && method === "GET") {
     assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
     return respond(res, await treasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
@@ -3397,6 +3459,11 @@ const pinWorker =
     : null;
 const npcRollWorker =
   !backgroundWorkersDisabled && npcRolls ? startNpcRollWorker(npcRolls) : null;
+const qgoldKeeperWorker =
+  !backgroundWorkersDisabled && qgoldKeeper
+    ? setInterval(() => void qgoldKeeper.tick().catch(() => {}), 5 * 60000)
+    : null;
+qgoldKeeperWorker?.unref?.();
 const intentsWorker =
   !backgroundWorkersDisabled && intentsMarket
     ? setInterval(() => void intentsMarket.reconcile().catch(() => {}), 60000)

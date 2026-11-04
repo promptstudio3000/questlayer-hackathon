@@ -5,6 +5,7 @@
 import React, { useEffect, useState } from "react";
 import { exactNear, priceLabel, shortAccount, shortHash, shortNear } from "./format";
 import "./economy.css";
+import QgoldSection from "./QgoldSection";
 import TreasuryMix from "./TreasuryMix";
 
 type Link = { explorerUrl: string | null };
@@ -77,6 +78,15 @@ type Ledger = {
     auditStatus: string | null;
     timeline: { step: string; epoch: number | null; at: string | null; detail: string | null }[];
     flushes: ({ vault: string; gamePaidYocto: string; at: string; transactionHash: string } & Link)[];
+  };
+  /** 2 % P2P trade fee on the NEAR Intents verifier, swept into the prize pool. */
+  tradeFees?: null | {
+    verifier: string;
+    verifierUrl: string | null;
+    feePips: number | null;
+    collector: string | null;
+    swept: string;
+    sweeps: { receiptId: string; amount: string; at: string | null; funded: boolean; withdrawUrl: string | null; fundUrl: string | null }[];
   };
 };
 
@@ -181,6 +191,8 @@ export default function EconomyPage() {
           </p>
         ) : null}
       </section>
+
+      <QgoldSection />
 
       {error ? <p className="eco-card eco-error">The ledger could not be loaded ({error}). Try again in a minute.</p> : null}
       {!data && !error ? <p className="eco-card eco-muted">Reading the chain…</p> : null}
@@ -309,6 +321,29 @@ export default function EconomyPage() {
               <Unavailable what="The stNEAR treasury" reason={data.stnear.reason} />
             )}
           </section>
+
+          {data.tradeFees ? (
+            <section className="eco-card" aria-labelledby="eco-fees">
+              <h2 id="eco-fees">Trade fee to the prize pool</h2>
+              <p>
+                Every player-to-player Aura trade on NEAR Intents pays {data.tradeFees.feePips == null ? "a fee" : `${data.tradeFees.feePips / 10_000} %`} on
+                the buyer's side. The verifier collects it and the treasury moves it into the prize pool, so trading funds more map rewards.
+              </p>
+              <dl className="eco-dl">
+                <dt>Verifier</dt>
+                <dd>{data.tradeFees.verifierUrl ? <a href={data.tradeFees.verifierUrl} target="_blank" rel="noreferrer">{data.tradeFees.verifier} ↗</a> : data.tradeFees.verifier}</dd>
+                <dt>In the prize pool</dt>
+                <dd><Amount yocto={data.tradeFees.swept} digits={6} /></dd>
+              </dl>
+              <ul className="eco-list">
+                {data.tradeFees.sweeps.map((s) => (
+                  <li key={s.receiptId}>
+                    Sweep {when(s.at)} · <Amount yocto={s.amount} digits={6} /> · withdrawn <Tx url={s.withdrawUrl} /> · {s.funded ? <>funded <Tx url={s.fundUrl} /></> : <span className="eco-muted">in progress</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <TreasuryMix />
 
