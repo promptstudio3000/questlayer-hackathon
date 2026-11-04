@@ -86,7 +86,7 @@ export function checkArt(dir = join(root, "art")) {
         if (min && Math.min(s.w, s.h) < min) warnings.push(`${rel}: ${s.w}×${s.h} is small, use at least ${min} px`);
         const aspect = item.aspect || group.aspect;
         if (aspect && Math.abs(s.w / s.h / aspect - 1) > 0.15)
-          warnings.push(`${rel}: ${s.w}×${s.h}, expected about ${group.size || item.size} (it is fitted, but may look small)`);
+          warnings.push(`${rel}: ${s.w}×${s.h}, expected about ${item.size || group.size} (it is fitted, but may look small)`);
       }
     }
     found.push(key);

@@ -68,7 +68,7 @@ function Portrait({ model, label, emote }: { model: string; label: string; emote
   }, [model, dropped]);
   return (
     <div className="npc-portrait">
-      {src && <img src={src} alt={label} width={384} height={384} />}
+      {src && <img className={dropped ? "npc-portrait-art" : undefined} src={src} alt={label} width={384} height={384} />}
       {emote && (
         <span className="npc-emote" aria-hidden="true">
           {emote}
