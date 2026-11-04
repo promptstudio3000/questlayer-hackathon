@@ -153,6 +153,9 @@ import { loadPlaceBadges } from "./badges/place-catalog.mjs";
 import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
 import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
 import { createBadgeRoutes } from "./badges/routes.mjs";
+import { chainLedgerSettings, createChainLedger } from "./chain-ledger/service.mjs";
+import { createLedgerChain, startLedgerWorker } from "./chain-ledger/chain.mjs";
+import { createChainLedgerRoutes } from "./chain-ledger/routes.mjs";
 import { seasonSettings } from "./season/config.mjs";
 import { createSeason } from "./season/service.mjs";
 import { createSeasonRoutes } from "./season/routes.mjs";
@@ -657,6 +660,34 @@ const badgeService =
         chain: () => badgeChain,
       });
 const badgeRoutes = createBadgeRoutes(badgeService);
+// On-chain ledger (docs/CHAIN-LEDGER.md): every coin, XP, street find, quest
+// and monster win as a soulbound QXP/QGOLD mint with what it was for. The
+// contract id comes from public/native-ledger-<network>.json (or
+// NEAR_LEDGER_CONTRACT); the recorder key from <state dir>/ledger-recorder.json
+// (or LEDGER_RECORDER_KEY_PATH). CHAIN_RECORD_MODE=each|daily|off.
+const ledgerManifestPath = [
+  resolve(APP_ROOT, `public/${manifestName("native-ledger")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-ledger")}`),
+].find((p) => existsSync(p));
+const ledgerContractId =
+  process.env.NEAR_LEDGER_CONTRACT ||
+  (ledgerManifestPath ? JSON.parse(readFileSync(ledgerManifestPath, "utf8")).contractId : null);
+const chainLedgerConfig = chainLedgerSettings(process.env, NETWORK);
+const ledgerChain = createLedgerChain({
+  provider,
+  contractId: ledgerContractId,
+  keyPath:
+    process.env.LEDGER_RECORDER_KEY_PATH ||
+    resolve(dirname(defaultDatabasePath()), "ledger-recorder.json"),
+});
+const chainLedger =
+  ledgerContractId && chainLedgerConfig.mode !== "off"
+    ? createChainLedger(db, { settings: chainLedgerConfig, linkedAccount: (player) => linkedAccount(player) })
+    : null;
+const chainLedgerRoutes = createChainLedgerRoutes(chainLedger, {
+  chain: () => ledgerChain,
+  linkedAccount: (player) => linkedAccount(player),
+});
 // Hackathon season (docs/SEASON.md): cosmetic leaderboard of hunts, visits and
 // NPC lines, season mark + Aura at the goal, pot meter. Off by default on
 // mainnet; SEASON_* settings change the window, goal and points.
@@ -1022,6 +1053,9 @@ async function api(req, res, url) {
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
       season: season ? season.status() : { status: "off" },
       badges: badgeService ? badgeService.status() : { status: "off" },
+      chainLedger: chainLedger
+        ? { ...chainLedger.status(), contract: ledgerChain.contractId, recorder: ledgerChain.ready ? "ready" : ledgerChain.error }
+        : { mode: "off" },
       now: Date.now(),
     });
   if (path === "/api/levels" && method === "GET")
@@ -1403,6 +1437,8 @@ async function api(req, res, url) {
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await badgeRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await chainLedgerRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await seasonRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
@@ -3033,6 +3069,10 @@ const rewardWorker =
         keyPath: process.env.REWARD_WORKER_KEY_PATH,
       })
     : null;
+const chainLedgerWorker =
+  !backgroundWorkersDisabled && chainLedger
+    ? startLedgerWorker(chainLedger, ledgerChain, { intervalMs: chainLedgerConfig.batchMs })
+    : null;
 const badgeWorker =
   !backgroundWorkersDisabled && badgeService && (badgeService.settings.enabled || badgeService.settings.placeMints)
     ? startBadgeWorker(badgeService, badgeChain)
@@ -3131,6 +3171,7 @@ async function close() {
   npcRollWorker?.stop();
   traderKeeper?.stop();
   badgeWorker?.stop();
+  chainLedgerWorker?.stop();
   await pinWorker?.stop?.();
   for (const r of listeners) r.end();
   server.close(() => {
