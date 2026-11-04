@@ -1,10 +1,12 @@
 // NPC trader identities (N3). A private JSON file (mode 0600, never in git)
 // names each trader's NEAR account and two keys:
-//   signingKey  ed25519 key registered with market `add_signing_key`; signs
-//               NEP-413 orders. It can only commit the trader's market credit.
+//   signingKey  ed25519 key registered on the NEAR Intents verifier
+//               (`add_public_key`); signs the trader's NEP-413 intents. It can
+//               only move what the trader holds inside the verifier.
 //   accountKey  optional full-access key of the trader account, used only by
-//               the keeper (escrow stock, sweep surplus to rewards, restore the
-//               float). Without it the keeper reports what it would do.
+//               the keeper (register the signing key, deposit stock, sweep
+//               surplus to rewards, restore the float). Without it the keeper
+//               reports what it would do.
 //
 // {
 //   "network": "testnet",
@@ -14,11 +16,9 @@
 // Default path: <state dir>/npc-traders.json, override with NPC_TRADERS_PATH.
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { randomBytes } from "node:crypto";
 import { KeyPair } from "near-api-js";
 import { assert } from "../domain.mjs";
 import { defaultDatabasePath } from "../state-path.mjs";
-import { nep413Digest, orderMessage, orderTerms, signedOrder } from "../native/signed-orders.mjs";
 
 const ACTOR = /^[a-z0-9-]{3,40}$/;
 const ACCOUNT = /^(?=.{2,64}$)(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
@@ -55,13 +55,4 @@ export function loadTraders(path = traderKeysPath(), options = {}) {
   if (!existsSync(path)) return null;
   assert((statSync(path).mode & 0o077) === 0, "NPC trader keys must be private (chmod 600).", 503);
   return parseTraders(JSON.parse(readFileSync(path, "utf8")), options);
-}
-
-/** Sign a market v2 order for a trader (NEP-413, standard questlayer_aura_order). */
-export function signTraderOrder(trader, { kind, market, nftContract, tokenId, price, deadlineMs, epoch = 0, nonce = randomBytes(32) }) {
-  const message = orderMessage(
-    orderTerms({ kind, market, nftContract, maker: trader.accountId, tokenId, price, deadlineMs, epoch }),
-  );
-  const { signature } = trader.signing.sign(nep413Digest({ message, nonce, recipient: market }));
-  return signedOrder({ message, nonce, recipient: market, publicKey: trader.signingPublicKey, signature });
 }

@@ -131,14 +131,13 @@ export function createTraderLedger(db, { clock = Date.now } = {}) {
         (r) => BigInt(r.premium),
       );
     },
-    /** Credit promised to open buy orders (each could be filled). */
+    /** wNEAR promised to open buys: the price plus the verifier fee (`data.gross`). */
     reservedForBuys(trader) {
       return sum(
-        q("SELECT price FROM npc_trader_trades WHERE trader=? AND kind='trade_buy' AND state='issued' AND deadline_ms>?").all(
-          trader,
-          clock(),
-        ),
-        (r) => BigInt(r.price),
+        q(
+          "SELECT price,json_extract(data,'$.gross') AS gross FROM npc_trader_trades WHERE trader=? AND kind='trade_buy' AND state='issued' AND deadline_ms>?",
+        ).all(trader, clock()),
+        (r) => BigInt(r.gross ?? r.price),
       );
     },
     openSellFor: (trader, tokenId) =>

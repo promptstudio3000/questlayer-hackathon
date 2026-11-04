@@ -1,14 +1,20 @@
-// NPC traders on market v2 (N3, docs/NPC-PLAN.md §2.2 and §14). The rules
-// engine computes every offer and price before any model talks; the trader
-// account signs a NEP-413 order only when the player accepts, and the market
-// contract settles it. Players fill with the ordinary market methods
-// (fill_buy_order / fill_sell_order), so the NPC never moves a player's funds.
+// NPC traders on NEAR Intents (N3, docs/NPC-TRADERS.md). The rules engine
+// computes every offer and price before any model talks. The trader's stock
+// (Auras) and purse (wNEAR) sit in the game's Intents verifier. Accepting an
+// offer reserves the deal; the player then signs their own token_diff, the
+// server signs the trader's exact opposite and the solver settles both in one
+// execute_intents. The trader's intent is never published, so only the player
+// standing next to the trader can take the deal, and the NPC never moves a
+// player's funds. Like every trade, the buyer's wNEAR leg pays the verifier
+// fee (2 %), which goes to the treasury.
 //
 // Offer kinds:
-//   trade_buy   premium buy of a "wanted" edition the player owns: a buy order
-//               for that exact token, so only its owner can fill it (10 min).
-//   trade_sell  sale from the trader's escrowed stock at ≥ cost × 1.10 (3 min,
-//               released only to the player standing next to the trader).
+//   trade_buy   premium buy of a "wanted" edition the player owns, for that
+//               exact token (10 min). The player receives the price; the
+//               trader pays it plus the fee.
+//   trade_sell  sale from the trader's stock at ≥ cost × 1.10 (3 min, only for
+//               the player standing next to the trader). The player pays the
+//               price plus the fee; the margin floor holds on the price.
 //   trade_up    the player hands 3 commons to the trader account and receives
 //               one rare Aura (game claim, secured via award-signed redeem).
 //               Patrons (Staker + level 4) also get a 3 rares → 1 epic table.
@@ -21,7 +27,15 @@ import { checkGate, playerStakerAccess } from "../staker-gates.mjs";
 import { atomic, history } from "../database.mjs";
 import { AURA_CATALOG, AURA_SUPPLY } from "../aura-catalog.mjs";
 import { id } from "../domain.mjs";
-import { signTraderOrder } from "./trader-keys.mjs";
+import {
+  auraOrderTerms,
+  auraTokenDiff,
+  grossForNet,
+  intentMessage,
+  nep171,
+  signIntentWithKeyPair,
+  versionedNonce,
+} from "../native/intents.mjs";
 import { createTraderLedger } from "./trader-ledger.mjs";
 import { awardEditionOnce } from "../earned-editions.mjs";
 import {
@@ -49,6 +63,8 @@ const DAY = 86_400_000;
 const TRADEUP_TTL_MS = 30 * 60_000;
 const TRADE_KINDS = new Set(["trade_buy", "trade_sell", "trade_up"]);
 const TX_HASH = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/;
+// The trader's counter-intent lives only for the settlement call.
+const TRADER_INTENT_TTL_MS = 2 * 60_000;
 const editionName = (edition) => AURA_CATALOG.find((e) => e.id === edition)?.name || edition;
 const tokenLabel = (tokenId) => `${editionName(editionOf(tokenId))} #${tokenId.split(":")[2]}`;
 const offerId = (kind, parts) => `${kind}:${hash(parts.join("|")).slice(0, 16)}`;
@@ -92,15 +108,16 @@ const editionLeft = (db, editionId) => {
 export function createTraderService({
   db,
   traders,
-  market,
+  intents,
   nfts,
-  orderIndex,
   clock = Date.now,
 }) {
-  assert(traders?.size && market && nfts && orderIndex, "NPC traders need the market, collection and order index.", 503);
+  assert(traders?.size && intents && nfts, "NPC traders need the NEAR Intents verifier and the collection.", 503);
   const ledger = createTraderLedger(db, { clock });
-  const marketId = market.contractId,
+  const verifierId = intents.verifierId,
     nftId = nfts.contractId;
+  assert(intents.nftContract === nftId, "The verifier trades another collection.", 503);
+  const fills = new Set();
   const traderAccounts = new Set([...traders.values()].map((t) => t.accountId));
   const traderFor = (actorId) => traders.get(actorId) || null;
   const linked = (player) =>
@@ -110,43 +127,37 @@ export function createTraderService({
       .map((r) => r.account_id)
       .slice(0, 3);
 
-  /** Lowest open sell order for an edition from players (not traders). */
+  /** Lowest open Intents sell order for an edition from players (not traders). */
   function floorFor(edition) {
     const rows = db
       .prepare(
-        "SELECT maker,price FROM signed_market_orders WHERE market=? AND state='open' AND kind='sell' AND token_id LIKE ? AND deadline_ms>?",
+        "SELECT maker,price FROM intents_orders WHERE verifier=? AND state='open' AND side='sell' AND token_id LIKE ? AND deadline_ms>?",
       )
-      .all(marketId, `aura:${edition}:%`, clock())
+      .all(verifierId, `aura:${edition}:%`, clock())
       .filter((r) => !traderAccounts.has(r.maker));
     return rows.reduce((min, r) => (min == null || BigInt(r.price) < min ? BigInt(r.price) : min), null);
   }
 
-  async function listings(fresh = false) {
-    const out = [];
-    for (let from = 0; from < 256; from += 50) {
-      const page = await market.view("get_listings", { from_index: from, limit: 50 }, fresh);
-      out.push(...page);
-      if (page.length < 50) break;
-    }
-    return out;
-  }
+  /** An account's Auras and wNEAR inside the verifier. */
+  const holdings = (accountId) => intents.account(accountId);
+  /** The trader's stock: its Auras deposited in the verifier. */
+  const stock = async (trader) => (await holdings(trader.accountId)).auras.filter((t) => editionOf(t));
+  /** The trader's purse: its wNEAR in the verifier. */
+  const purse = async (trader) => BigInt((await holdings(trader.accountId)).wnear || "0");
+  const feePips = async () => (await intents.terms()).feePips || 0;
 
-  /** Native Auras the player's linked accounts own or hold in market escrow. */
-  async function playerTokens(accounts, book) {
+  /** Native Auras the player's linked accounts own, in the wallet or in the verifier. */
+  async function playerTokens(accounts) {
     const out = [];
     for (const accountId of accounts) {
       const tokens = await nfts.view("nft_tokens_for_owner", { account_id: accountId, from_index: "0", limit: 100 });
       for (const t of tokens)
         if (editionOf(t.token_id) && t.owner_id === accountId) out.push({ tokenId: t.token_id, accountId, escrowed: false });
-      for (const l of book)
-        if (l.seller === accountId && l.state === "deposited" && editionOf(l.token_id))
-          out.push({ tokenId: l.token_id, accountId, escrowed: true });
+      for (const tokenId of (await holdings(accountId).catch(() => ({ auras: [] }))).auras)
+        if (editionOf(tokenId)) out.push({ tokenId, accountId, escrowed: true });
     }
     return out;
   }
-
-  const credit = async (trader, fresh = false) =>
-    BigInt((await market.view("get_account", { account_id: trader.accountId }, fresh))?.credit || "0");
 
   /** The player's stake tier, as the world view computes it (positions, matured). */
   function tierOf(player) {
@@ -188,25 +199,29 @@ export function createTraderService({
     const patron = isPatronPlayer(player);
     const rate = patron ? " (patron rate)" : "";
     const accounts = linked(player);
-    const book = await listings();
     const offers = [];
     const until = Math.min(expiresAt ?? now + 5 * 60_000, now + 5 * 60_000);
-    // Discount / margin-floor sales from escrowed stock.
-    const escrowed = new Set(book.filter((l) => l.seller === trader.accountId && l.state === "deposited").map((l) => l.token_id));
+    const fee = await feePips();
+    // Discount / margin-floor sales from the trader's stock in the verifier.
+    const escrowed = new Set(await stock(trader));
     for (const lot of ledger.held(actor.id)) {
       if (offers.length >= 2) break;
       if (!escrowed.has(lot.token_id) || ledger.openSellFor(actor.id, lot.token_id)) continue;
       const edition = editionOf(lot.token_id);
       const p = discountSellPrice(edition, BigInt(lot.cost), floorFor(edition), { patron });
       if (!p) continue;
+      // The player pays the price plus the verifier fee (to the treasury).
+      const pays = grossForNet(p.price, fee);
       offers.push({
         id: offerId("trade_sell", [actor.id, dayId, player, lot.token_id, p.price]),
         kind: "trade_sell",
-        label: `Buy ${tokenLabel(lot.token_id)} for ${formatNear(p.price)} test NEAR${p.discount ? " (below market)" : ""}${p.discount ? rate : ""}`,
+        label: `Buy ${tokenLabel(lot.token_id)} for ${formatNear(pays)} test NEAR${p.discount ? " (below market)" : ""}${p.discount ? rate : ""}`,
         terms: {
           tokenId: lot.token_id,
           edition,
           price: p.price.toString(),
+          buyerPays: pays.toString(),
+          feePips: fee,
           market: p.market.toString(),
           discount: p.discount,
           patron,
@@ -218,19 +233,21 @@ export function createTraderService({
       });
     }
     if (accounts.length) {
-      const mine = await playerTokens(accounts, book);
+      const mine = await playerTokens(accounts);
       // Premium buys of today's wanted editions, paid only from profit.
       const wanted = wantedEditions(actor.id, dayId);
       const budget = budgetFor(trader, dayId);
-      let free = (await credit(trader)) - ledger.reservedForBuys(actor.id);
+      let free = (await purse(trader)) - ledger.reservedForBuys(actor.id);
       let premiumLeft = budgetLeftFor(budget, { patron });
       for (const edition of wanted) {
         const token = mine.find((t) => editionOf(t.tokenId) === edition && !ledger.tokenInTradeUp(t.tokenId));
         if (!token) continue;
         const p = premiumBuyPrice(edition, floorFor(edition), { patron });
-        if (!p || p.premium > premiumLeft || p.price > free) continue;
+        // The trader pays the price plus the verifier fee from its purse.
+        const cost = p ? grossForNet(p.price, fee) : 0n;
+        if (!p || p.premium > premiumLeft || cost > free) continue;
         premiumLeft -= p.premium;
-        free -= p.price;
+        free -= cost;
         offers.push({
           id: offerId("trade_buy", [actor.id, dayId, player, token.tokenId, p.price]),
           kind: "trade_buy",
@@ -243,6 +260,8 @@ export function createTraderService({
             price: p.price.toString(),
             premium: p.premium.toString(),
             market: p.market.toString(),
+            traderPays: cost.toString(),
+            feePips: fee,
             trader: trader.accountId,
             ttlMs: BUY_TTL_MS,
             wanted: true,
@@ -294,9 +313,9 @@ export function createTraderService({
   async function assertOwner(tokenId, accountId) {
     const token = await nfts.view("nft_token", { token_id: tokenId }, true);
     if (token?.owner_id === accountId) return "wallet";
-    const l = await market.view("get_listing", { token_id: tokenId }, true);
-    assert(l?.seller === accountId && l?.state === "deposited", "That Aura is no longer in your account.", 409, "NPC_TRADE_GONE");
-    return "escrow";
+    const inVerifier = (await holdings(accountId)).auras.includes(tokenId);
+    assert(inVerifier, "That Aura is no longer in your account.", 409, "NPC_TRADE_GONE");
+    return "verifier";
   }
 
   function capCheck(actorId, dayId, player) {
@@ -314,11 +333,8 @@ export function createTraderService({
     );
   }
 
-  /** The fill transaction of a trader order, from the trade or the order index. */
-  const settlementTx = (t) =>
-    t.data.txHash ||
-    (t.order_id ? db.prepare("SELECT settlement_tx FROM signed_market_orders WHERE id=?").get(t.order_id)?.settlement_tx : null) ||
-    null;
+  /** The execute_intents transaction that settled a trader deal. */
+  const settlementTx = (t) => t.data.txHash || null;
 
   /**
    * Hand-over transactions of a trade-up: hashes the player reported (checked
@@ -359,7 +375,20 @@ export function createTraderService({
       // On-chain proof for the explorer link: the fill, or the hand-overs.
       txHash: txHash || txHashes[txHashes.length - 1] || null,
       txHashes,
-      ...(t.data.order ? { order: t.data.order, market: marketId, nftContract: nftId } : {}),
+      // What the player signs on the verifier (src/chain-trades.ts).
+      ...(t.kind === "trade_up"
+        ? {}
+        : {
+            intents: {
+              verifier: verifierId,
+              nftContract: nftId,
+              wnear: intents.wnear,
+              side: t.kind === "trade_sell" ? "buy" : "sell",
+              price: t.price,
+              feePips: t.data.feePips ?? 0,
+              buyerPays: t.data.gross ?? t.price,
+            },
+          }),
       ...(t.kind === "trade_up"
         ? { tokens: t.data.tokens, receiver: t.data.receiver, edition: t.data.edition, nftContract: nftId, handovers }
         : {}),
@@ -405,50 +434,43 @@ export function createTraderService({
       });
       return tradeView(ledger.trade(tradeId));
     }
-    let deadlineMs, price, premium = 0n, accountId, purse = 0n;
+    // Buy and sell deals only reserve the trade here: nothing is signed until
+    // the player signs their side (fill), so an unused offer costs nothing.
+    const fee = await feePips();
+    let deadlineMs, price, premium = 0n, accountId, gross, cash = 0n;
     if (offer.kind === "trade_buy") {
       accountId = t.accountId;
       assert(linked(player).includes(accountId), "Link this NEAR account first.", 403);
       await assertOwner(t.tokenId, accountId);
       price = BigInt(t.price);
       premium = BigInt(t.premium);
+      gross = grossForNet(price, fee);
       const budget = budgetFor(trader, dayId);
       assert(premium <= budgetLeftFor(budget, { patron }), "The trader is out of premium budget today.", 409, "NPC_TRADE_BUDGET");
-      purse = await credit(trader, true);
-      assert(price <= purse - ledger.reservedForBuys(actor.id), "The trader's purse is empty right now.", 409, "NPC_TRADE_BUDGET");
+      cash = await purse(trader);
+      assert(gross <= cash - ledger.reservedForBuys(actor.id), "The trader's purse is empty right now.", 409, "NPC_TRADE_BUDGET");
       deadlineMs = now + BUY_TTL_MS;
     } else {
       accountId = linked(player)[0] || "unlinked";
       const lot = ledger.heldLot(actor.id, t.tokenId);
       assert(lot && !ledger.openSellFor(actor.id, t.tokenId), "Someone else is buying that Aura.", 409, "NPC_TRADE_GONE");
-      const l = await market.view("get_listing", { token_id: t.tokenId }, true);
-      assert(l?.seller === trader.accountId && l.state === "deposited", "That Aura is not on the counter.", 409, "NPC_TRADE_GONE");
+      assert((await stock(trader)).includes(t.tokenId), "That Aura is not on the counter.", 409, "NPC_TRADE_GONE");
       price = BigInt(t.price);
+      gross = grossForNet(price, fee);
       // Never below the margin floor, even if the lot record changed meanwhile.
       assert(price * 10n >= BigInt(lot.cost) * 11n, "Price below the trader's margin floor.", 409, "NPC_TRADE_GONE");
       deadlineMs = now + SELL_TTL_MS;
     }
-    const epoch = (await market.view("get_signer", { account_id: trader.accountId }, true))?.epoch || 0;
-    const order = signTraderOrder(trader, {
-      kind: offer.kind === "trade_buy" ? "buy" : "sell",
-      market: marketId,
-      nftContract: nftId,
-      tokenId: t.tokenId,
-      price,
-      deadlineMs,
-      epoch,
-    });
-    const indexed = await orderIndex.submit(order);
     const tradeId = atomic(db, () => {
       capCheck(actor.id, dayId, player);
       if (offer.kind === "trade_sell")
         assert(!ledger.openSellFor(actor.id, t.tokenId), "Someone else is buying that Aura.", 409, "NPC_TRADE_GONE");
       if (offer.kind === "trade_buy") {
         // Re-check under the write lock: two accepts can pass the checks above
-        // together while the order is being signed and indexed, and each one
-        // alone fits the purse and the premium budget while both do not.
+        // together, and each one alone fits the purse and the premium budget
+        // while both do not.
         assert(premium <= budgetLeftFor(budgetFor(trader, dayId), { patron }), "The trader is out of premium budget today.", 409, "NPC_TRADE_BUDGET");
-        assert(price <= purse - ledger.reservedForBuys(actor.id), "The trader's purse is empty right now.", 409, "NPC_TRADE_BUDGET");
+        assert(gross <= cash - ledger.reservedForBuys(actor.id), "The trader's purse is empty right now.", 409, "NPC_TRADE_BUDGET");
       }
       return ledger.insertTrade({
         trader: actor.id,
@@ -459,13 +481,90 @@ export function createTraderService({
         tokenId: t.tokenId,
         price,
         premium,
-        orderId: indexed.id,
+        orderId: null,
         deadlineMs,
         dayId,
-        data: { order },
+        // `gross` is what the buyer gives: the price plus the verifier fee.
+        data: { venue: "intents", feePips: fee, gross: gross.toString() },
       });
     });
     return tradeView(ledger.trade(tradeId));
+  }
+
+  /** Books a settled buy or sale: the lot, the player's history, the Ledger Aura. */
+  function settleFilled(t, txHash) {
+    return atomic(db, () => {
+      if (ledger.settle(t.id, "filled") !== 1) return false;
+      if (txHash) ledger.mergeData(t.id, { txHash });
+      // A buy costs the trader the price plus the fee; a sale earns the price.
+      if (t.kind === "trade_buy")
+        ledger.addLot({ trader: t.trader, tokenId: t.token_id, cost: BigInt(t.data.gross ?? t.price), source: "buy", tradeId: t.id });
+      else ledger.sellLot(t.trader, t.token_id, BigInt(t.price));
+      history(db, t.player_id, "npc-trade", t.kind === "trade_buy" ? `Sold ${tokenLabel(t.token_id)} to a trader` : `Bought ${tokenLabel(t.token_id)} from a trader`, 0, {
+        actor: t.trader,
+        price: t.price,
+        tokenId: t.token_id,
+        txHash,
+        network: "testnet",
+        venue: "near-intents",
+        policy: NPC_TRADER_POLICY,
+      });
+      grantLedgerAura(t.trader, t.player_id);
+      return true;
+    });
+  }
+
+  /**
+   * The player's side of a reserved buy or sale: their signed token_diff on
+   * the verifier. The server checks it against the reserved terms, signs the
+   * trader's exact opposite with the trader's verifier key and the solver
+   * settles both at once.
+   */
+  async function fill({ player, tradeId, signed }) {
+    assert(typeof tradeId === "string" && tradeId.length <= 64, "Choose a trade.", 400, "NPC_OFFER");
+    const t = ledger.trade(tradeId);
+    assert(t && t.player_id === player && t.kind !== "trade_up", "You have no such trade with this character.", 404, "NPC_OFFER");
+    if (t.state === "filled") return { ...tradeView(t), replay: true };
+    assert(t.state === "issued" && t.deadline_ms > clock(), "This offer has lapsed. Talk to the trader again.", 409, "NPC_OFFER_EXPIRED");
+    const trader = traderFor(t.trader);
+    assert(trader, "This character does not trade here.", 404, "NPC_UNKNOWN");
+    assert(!fills.has(t.id), "This trade is being settled right now.", 409, "NPC_TRADE_BUSY");
+    fills.add(t.id);
+    try {
+      const body = await intents.verify(signed);
+      const accounts = linked(player);
+      assert(accounts.includes(body.signerId), "Sign with your linked NEAR account.", 403, "NPC_TX");
+      if (t.kind === "trade_buy") assert(body.signerId === t.account_id, "Sign with the account that holds this Aura.", 403, "NPC_TX");
+      const fee = t.data.feePips ?? 0;
+      assert(fee === (await feePips()), "The trade fee changed. Talk to the trader again.", 409, "NPC_OFFER_EXPIRED");
+      const mine = auraOrderTerms(body.intents, { nftContract: nftId, wnear: intents.wnear, feePips: fee });
+      const playerSide = t.kind === "trade_sell" ? "buy" : "sell";
+      assert(mine.side === playerSide && mine.tokenId === t.token_id && mine.price === String(t.price), "Your intent does not match this deal.", 409, "NPC_TX");
+      if (t.kind === "trade_sell") {
+        const lot = ledger.heldLot(t.trader, t.token_id);
+        assert(lot && BigInt(t.price) * 10n >= BigInt(lot.cost) * 11n, "That Aura is no longer on the counter.", 409, "NPC_TRADE_GONE");
+      }
+      const deadlineMs = clock() + TRADER_INTENT_TTL_MS;
+      const salt = await intents.verifier.view("current_salt", {}, true);
+      const nonce = versionedNonce({ salt, deadlineMs });
+      const traderIntent = signIntentWithKeyPair(trader.signing, {
+        message: intentMessage({
+          signerId: trader.accountId,
+          deadlineMs,
+          intents: [auraTokenDiff({ side: t.kind === "trade_sell" ? "sell" : "buy", nftContract: nftId, tokenId: t.token_id, price: t.price, wnear: intents.wnear, feePips: fee })],
+        }),
+        nonce,
+        recipient: verifierId,
+      });
+      // Remember the trader's nonce first: if the process stops mid-call,
+      // reconcile finds the used nonce and books the trade.
+      ledger.mergeData(t.id, { traderNonce: Buffer.from(nonce).toString("base64"), signer: body.signerId });
+      const r = await intents.settlePair(traderIntent, signed, { reference: `npc:${t.id}` });
+      if (!settleFilled(t, r.transactionHash)) ledger.mergeData(t.id, { txHash: r.transactionHash });
+      return tradeView(ledger.trade(t.id));
+    } finally {
+      fills.delete(t.id);
+    }
   }
 
   function grantLedgerAura(trader, player) {
@@ -520,64 +619,39 @@ export function createTraderService({
   }
 
   /**
-   * Settle issued orders from the order index and on-chain ownership: a buy
-   * is filled when the trader now holds the token, a sale when the token left
-   * the trader's escrow to someone else. Unfilled orders lapse at their deadline.
+   * Closes issued deals: trade-ups and unsigned deals lapse at their
+   * deadline; a fill that stopped after sending is booked once the trader's
+   * nonce shows as used on the verifier.
    */
   async function reconcile({ trader: only = null, limit = 24 } = {}) {
     const now = clock();
     let settled = 0;
     for (const t of ledger.openTrades().filter((x) => !only || x.trader === only).slice(0, limit)) {
       const trader = traderFor(t.trader);
-      if (!trader) continue;
+      if (!trader || fills.has(t.id)) continue;
       if (t.kind === "trade_up") {
         if (t.deadline_ms <= now) settled += ledger.settle(t.id, "expired");
         continue;
       }
-      const idx = t.order_id ? db.prepare("SELECT state FROM signed_market_orders WHERE id=?").get(t.order_id) : null;
-      if (idx?.state === "open" && t.deadline_ms > now) continue;
-      if (idx?.state === "cancelled") {
-        settled += ledger.settle(t.id, "cancelled");
-        continue;
+      // A fill that stopped after sending: the trader's nonce is used on chain.
+      if (t.data.traderNonce) {
+        const used = await intents.verifier
+          .view("is_nonce_used", { account_id: trader.accountId, nonce: t.data.traderNonce }, true)
+          .catch(() => false);
+        if (used) {
+          if (settleFilled(t, null)) settled++;
+          continue;
+        }
       }
-      const token = await nfts.view("nft_token", { token_id: t.token_id }, true);
-      const listing = await market.view("get_listing", { token_id: t.token_id }, true);
-      if (listing && /filling/i.test(JSON.stringify(listing.state))) continue; // settling right now
-      const filled =
-        t.kind === "trade_buy"
-          ? token?.owner_id === trader.accountId || listing?.seller === trader.accountId
-          : idx?.state === "filled" || (token?.owner_id !== trader.accountId && token?.owner_id !== marketId);
-      if (!filled) {
-        if (t.deadline_ms <= now) settled += ledger.settle(t.id, "expired");
-        continue;
-      }
-      const txHash = settlementTx(t);
-      atomic(db, () => {
-        if (ledger.settle(t.id, "filled") !== 1) return;
-        settled++;
-        if (txHash) ledger.mergeData(t.id, { txHash });
-        if (t.kind === "trade_buy")
-          ledger.addLot({ trader: t.trader, tokenId: t.token_id, cost: BigInt(t.price), source: "buy", tradeId: t.id });
-        else ledger.sellLot(t.trader, t.token_id, BigInt(t.price));
-        history(db, t.player_id, "npc-trade", t.kind === "trade_buy" ? `Sold ${tokenLabel(t.token_id)} to a trader` : `Bought ${tokenLabel(t.token_id)} from a trader`, 0, {
-          actor: t.trader,
-          price: t.price,
-          tokenId: t.token_id,
-          txHash,
-          network: "testnet",
-          policy: NPC_TRADER_POLICY,
-        });
-        grantLedgerAura(t.trader, t.player_id);
-      });
+      if (t.deadline_ms <= now) settled += ledger.settle(t.id, "expired");
     }
     return { settled };
   }
 
   /**
-   * The player reports the hash of an on-chain step of their trade (a fill
-   * from the NPC sheet, or a wallet-signed hand-over). Nothing is trusted from
-   * the client: fills are read from the final receipt by the order index,
-   * hand-overs are checked against the transaction itself.
+   * The player reports the hash of a wallet-signed trade-up hand-over. Nothing
+   * is trusted from the client: the hand-over is checked against the
+   * transaction itself. Buys and sales are settled by the server (fill).
    */
   async function recordTx({ player, tradeId, transactionHash }) {
     assert(typeof tradeId === "string" && tradeId.length <= 64, "Choose a trade.", 400, "NPC_OFFER");
@@ -606,7 +680,7 @@ export function createTraderService({
       ledger.mergeData(t.id, { handoverTxs: found });
       return tradeView(ledger.trade(t.id));
     }
-    await orderIndex.recordTransaction(transactionHash, t.account_id);
+    // Buys and sales are settled by the server itself (fill); nothing to record.
     await reconcile({ trader: t.trader });
     return tradeView(ledger.trade(t.id));
   }
@@ -630,7 +704,7 @@ export function createTraderService({
     for (const trader of traders.values()) {
       let float = null;
       try {
-        float = await credit(trader);
+        float = await purse(trader);
       } catch {}
       const reserved = ledger.reservedForBuys(trader.actorId);
       const b = budgetFor(trader, dayId);
@@ -638,7 +712,8 @@ export function createTraderService({
         actorId: trader.actorId,
         accountId: trader.accountId,
         startFloat: FLOAT.toString(),
-        marketCredit: float?.toString() ?? null,
+        // wNEAR the trader holds in the Intents verifier.
+        purse: float?.toString() ?? null,
         reservedForBuys: reserved.toString(),
         profit7d: b.profit7d.toString(),
         premiumBudgetToday: b.budget.toString(),
@@ -650,20 +725,24 @@ export function createTraderService({
         sweeps: ledger.sweeps(trader.actorId, 5),
       });
     }
-    return { policy: NPC_TRADER_POLICY, network: "testnet", market: marketId, traders: out };
+    return { policy: NPC_TRADER_POLICY, network: "testnet", venue: "near-intents", verifier: verifierId, traders: out };
   }
 
   return {
     ledger,
     traders,
-    marketId,
+    verifierId,
     nftId,
-    marketView: (method, args, fresh) => market.view(method, args, fresh),
+    wnear: intents.wnear,
+    verifierView: (method, args, fresh) => intents.verifier.view(method, args, fresh),
     nftsView: (method, args, fresh) => nfts.view(method, args, fresh),
-    listings,
+    holdings,
+    stock,
+    purse,
     isTrader: (actorId) => traders.has(actorId),
     menu,
     accept,
+    fill,
     completeTradeUp,
     reconcile,
     recordTx,

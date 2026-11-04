@@ -6,8 +6,8 @@ Testnet only. Part 3 of the "everything on NEAR" plan.
 | Trade | Before | Now |
 | --- | --- | --- |
 | Practice market (Aura for practice GOLD) | game database (`listings`) | **closed.** `POST /api/market/list` and `/api/market/buy` answer `410 MARKET_ON_CHAIN`; open database listings are cancelled at boot (the Auras never left their owners). "Sell" in the collection secures the Aura as an NFT (relayed `redeem_aura`, no fee) and lists it through NEAR Intents, the default market: the device key is added on the verifier, the Aura is deposited there (`nft_transfer_call`, msg `""`) and a sell `token_diff` is signed into the order book (`sellAuraOnIntents` in `src/intents-order.ts`). Until a host has a deployed verifier it lists on the market contract for test NEAR instead. The Market tab shows only Secured and Offers; a stored `practice` view opens Secured. `PRACTICE_MARKET=db` brings the old market back for local tests only. |
-| NPC trader buy (`trade_buy`) | trader-signed v2 buy order, filled in Market → Signed offers | same order, now filled **in the NPC sheet in one tap**: escrow (`nft_transfer_call {"deposit":true}`, relayed) then `fill_buy_order` (self-paid). |
-| NPC trader sale (`trade_sell`) | trader-signed v2 sell order, filled in Market → Signed offers | filled in the NPC sheet with `fill_sell_order` (self-paid, the price is the deposit). |
+| NPC trader buy (`trade_buy`) | trader-signed v2 buy order, filled in Market → Signed offers | **NEAR Intents** since 4 Nov: one tap in the NPC sheet deposits the Aura into the verifier, signs a sell `token_diff`, and the server settles it against the trader's private buy intent in one `execute_intents`; the NEAR goes straight back to the player (`native_withdraw`). |
+| NPC trader sale (`trade_sell`) | trader-signed v2 sell order, filled in Market → Signed offers | **NEAR Intents**: the player deposits the price plus the 2 % fee as wNEAR and signs a buy `token_diff`; the trader's stock sits in the verifier and its intent is never published. |
 | NPC trade-up (3 → 1) | player had to `nft_transfer` the Auras outside the app | the sheet sends the three `nft_transfer`s to the trader account (the relayer sponsors exactly the Auras of the player's issued trade-up), the server checks ownership on chain, and the paid-out Aura is **secured as an NFT right away** (award claim redeemed by the player's account). |
 
 NPC traders keep their rules (`server/npc/trader-pricing.mjs`): the margin floor, premiums only from profit and the
@@ -17,8 +17,8 @@ surplus sweep into the rewards treasury, so every NPC trade still favours the ga
 
 Every P2P Aura trade on NEAR Intents pays 2 % (20,000 pips) on the buyer's wNEAR leg. The seller receives the listed
 price exactly; the verifier credits the fee to its collector (the operator), and `scripts/intents-fees-testnet.mjs sweep`
-moves what was collected into the prize pool with `fund_rewards` (receipt `intents-fees-<date>`). NPC trader deals and
-trade-ups keep their own rules (margin floor and surplus sweep, above). Details: docs/NEAR-INTENTS-MARKET.md,
+moves what was collected into the prize pool with `fund_rewards` (receipt `intents-fees-<date>`). NPC trader buys and
+sales settle on the same verifier and pay the same fee on the buyer's side; trade-ups move no wNEAR and pay none. Details: docs/NEAR-INTENTS-MARKET.md,
 "Trade fee to the treasury".
 
 ## On-chain proof (for the explorer link)
@@ -48,4 +48,4 @@ trade-ups keep their own rules (margin floor and surplus sweep, above). Details:
 
 - Altar crafting (shards + Aura → Aura, `server/actors/hunt`) and practice-GOLD tasks stay in the game database
   until the QGOLD/QXP token from part 1 lands.
-- NEAR Intents for the market is part 5 (its own thread); NPC traders as Intents solvers build on this.
+- NPC traders trade on NEAR Intents since 4 Nov 2026 (docs/NPC-TRADERS.md).

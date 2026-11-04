@@ -531,22 +531,21 @@ const npcRoutes = createNpcRoutes(
         : null,
   },
 );
-// NPC traders on market v2 (N3): on when actors run, the market is v2 and the
-// private traders file exists (<state dir>/npc-traders.json or
-// NPC_TRADERS_PATH). NPC_TRADER_ENABLED=0 turns them off. Testnet only.
+// NPC traders on NEAR Intents (N3): on when actors run, the Intents verifier
+// is deployed and the private traders file exists (<state dir>/npc-traders.json
+// or NPC_TRADERS_PATH). NPC_TRADER_ENABLED=0 turns them off. Testnet only.
 let npcTraders = null;
 try {
   const traderKeys =
-    actorService && nativeMarket && signedOrderIndex && NETWORK === "testnet" && process.env.NPC_TRADER_ENABLED !== "0"
+    actorService && intentsMarket && nativeCollectibles && NETWORK === "testnet" && process.env.NPC_TRADER_ENABLED !== "0"
       ? loadTraders(traderKeysPath())
       : null;
   if (traderKeys?.size)
     npcTraders = createTraderService({
       db,
       traders: traderKeys,
-      market: nativeMarket,
+      intents: intentsMarket,
       nfts: nativeCollectibles,
-      orderIndex: signedOrderIndex,
     });
 } catch (error) {
   console.error("NPC traders disabled:", error?.message || error);

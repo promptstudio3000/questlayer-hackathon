@@ -81,7 +81,7 @@ export const referenceValue = (edition) => REFERENCE[rarityOf(edition)] ?? null;
  * at sale time with the real measured cost.
  */
 export const STOCK_EDITIONS = Object.freeze(TRADABLE.filter((e) => ["rare", "epic"].includes(rarityOf(e))));
-export const STOCK_TARGET = 3; // market v2 allows 3 active listings/deposits per account
+export const STOCK_TARGET = 3; // Auras the trader keeps on its shelf in the verifier
 export const STOCK_MINTS_PER_DAY = 3;
 export const STOCK_DEPOSIT = 50n * MILLI; // attached to redeem_aura; the unused part is refunded
 export const STOCK_COST_ESTIMATE = 25n * MILLI; // mint storage + gas + escrow gas, checked before minting

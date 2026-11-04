@@ -375,8 +375,8 @@ export function offerFacts(menu) {
 
 // Trader offers (N3, server/npc/trader.mjs): every number is already in the label.
 const TRADE_TEXT = {
-  trade_buy: "the player sells this Aura to you; they fill your signed buy order on the market",
-  trade_sell: "you sell this Aura from your stock; the player fills your signed sell order on the market",
+  trade_buy: "the player sells this Aura to you; both sides settle at once on NEAR Intents",
+  trade_sell: "you sell this Aura from your stock; both sides settle at once on NEAR Intents",
   trade_up: "the player hands you three common Auras and receives one rare Aura",
 };
 function tradeFact(o, index) {
