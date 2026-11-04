@@ -100,19 +100,22 @@ test("a GPS coin claim far from the last accepted fix is refused; arena coins sk
   const db = openDatabase(":memory:");
   try {
     const player = createPlayer(db, "Spoofer");
-    const gps = await ensureWorld(db, HOME, false, Date.now());
-    const coins = worldView(db, gps.id, player).coins;
+    // Midday Prague: map coins come in waves 07:00–22:00 local, so a run at
+    // night would see no claimable GPS coins.
+    const midday = Date.parse(`${new Date().toISOString().slice(0, 10)}T11:00:00Z`);
+    const gps = await ensureWorld(db, HOME, false, midday);
+    const coins = worldView(db, gps.id, player, { now: midday }).coins;
     const a = coins[0];
     const b = coins.find((c) => distance(c, a) > 500);
     assert.ok(b, "fixture needs two coins at least 500 m apart");
-    const t = Date.now();
+    const t = midday;
     claimCoin(db, player, a.id, fix(a, t), t);
     assert.throws(
       () => claimCoin(db, player, b.id, fix(b, t + 2000), t + 2000),
       (e) => e.code === "IMPLAUSIBLE_MOVE",
     );
-    const arena = await ensureWorld(db, HOME, true, Date.now());
-    const coin = worldView(db, arena.id, player).coins[0];
+    const arena = await ensureWorld(db, HOME, true, midday);
+    const coin = worldView(db, arena.id, player, { now: midday }).coins[0];
     const r = claimCoin(db, player, coin.id, fix(coin, t + 3000, 0), t + 3000);
     assert.ok(r.value > 0);
   } finally {
