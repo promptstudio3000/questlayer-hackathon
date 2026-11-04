@@ -21,7 +21,7 @@
 import { readFileSync, writeFileSync, statSync, existsSync } from "node:fs";
 import assert from "node:assert/strict";
 import { Account, KeyPair, KeyPairSigner, actions } from "near-api-js";
-import { createNearProvider } from "../server/near-provider.mjs";
+import { createNearProvider, rpcErrorText } from "../server/near-provider.mjs";
 import { fundingAttachment, fundingAlreadyRecorded } from "../server/native/stnear-treasury.mjs";
 
 const [command = "status", ...rest] = process.argv.slice(2);
@@ -35,6 +35,11 @@ const TGAS = 10n ** 12n,
   RESERVE = NEAR / 20n, // never swept
   MIN_SWEEP = 10n ** 22n, // 0.01 NEAR; each sweep pays a 0.005 NEAR receipt fee
   PROOF_PRICE = NEAR / 10n, // 0.1 test NEAR
+  BUY_GAS = 200n * TGAS,
+  // The signer must hold the price plus the prepaid gas at the pessimistic gas
+  // price (300 TGas cost 0.30 NEAR on testnet, 4 Nov); unused gas comes back.
+  BUYER_FUND = PROOF_PRICE + (4n * NEAR) / 10n,
+  PROOF_NOTE = "Testnet royalty proof on Mintbase.",
   MINTBASE_MARKET = process.env.MINTBASE_MARKET || "market-v2-beta.mintspace2.testnet";
 const near = (y) => (Number(BigInt(y)) / 1e24).toFixed(6);
 const log = (o) => console.log(JSON.stringify(o));
@@ -70,7 +75,7 @@ const accountOf = async (account_id) => {
   try {
     return await provider.query({ request_type: "view_account", account_id, finality: "final" });
   } catch (e) {
-    if (/does not exist|UNKNOWN_ACCOUNT/i.test(String(e?.message || e))) return null;
+    if (/does not exist|UNKNOWN_ACCOUNT/i.test(rpcErrorText(e))) return null;
     throw e;
   }
 };
@@ -201,7 +206,8 @@ if (command === "sweep") {
 if (command === "mintbase-proof") {
   // One real resale on Mintbase's testnet interop market: the operator lists a
   // fresh Aura for 0.1 test NEAR, a throwaway buyer account buys it, and the
-  // royalties account must receive exactly what nft_payout promised.
+  // royalties account must receive exactly what nft_payout promised. A rerun
+  // reuses a proof Aura the operator already listed instead of minting again.
   assert.deepEqual(royalty, { account_id: royaltiesId, bps: ROYALTY_BPS }, "Turn the royalty on first: set --execute.");
   const [lockSeconds, fallbackCut, listingDeposit] = await Promise.all([
     view(MINTBASE_MARKET, "get_listing_lock_seconds"),
@@ -222,53 +228,76 @@ if (command === "mintbase-proof") {
     listingLockSeconds: lockSeconds,
     listingStorageDeposit: near(listingDeposit),
     expectedRoyalty: near(expectedRoyalty),
-    cost: "about 0.33 test NEAR (Aura mint storage, listing deposit, buyer account and price; the price returns to the operator)",
+    cost: "up to 0.6 test NEAR moves (Aura mint storage, listing deposit, buyer account with price and gas); the price returns to the operator minus Mintbase's cut and the royalty, unused gas stays with the buyer",
   };
   log({ plan, execute });
   if (!execute) {
     log({ note: "Dry run. Re-run with --execute." });
     process.exit(0);
   }
-  const transactions = [];
+  const transactions = [...(record.mintbaseAttempt?.transactions || [])];
   const step = async (label, from, receiverId, method, args, deposit, gas) => {
     transactions.push({ label, transaction: await send(label, from, receiverId, method, args, deposit, gas) });
+    record.mintbaseAttempt = { startedAt: record.mintbaseAttempt?.startedAt || new Date().toISOString(), transactions };
+    save();
   };
-  // A fresh common Aura for the operator (oracle), so no player's Aura moves.
-  const before = new Set((await view(contractId, "nft_tokens_for_owner", { account_id: operator.accountId, from_index: "0", limit: 1000 })).map((t) => t.token_id));
-  const metadata = {
-    title: "Northern Lights",
-    description: "QuestLayer cosmetic. Testnet royalty proof on Mintbase.",
-    copies: 256,
-    extra: JSON.stringify({ slot: "above", rarity: "rare", origin: "questlayer-original" }),
-    media: null,
-    media_hash: null,
-    reference: null,
-    reference_hash: null,
-  };
-  await step("Mint a proof Aura to the operator", root, contractId, "mint_aura", { edition: "polar", receiver_id: operator.accountId, metadata }, NEAR / 10n, 150n * TGAS);
-  const tokenId = (await view(contractId, "nft_tokens_for_owner", { account_id: operator.accountId, from_index: "0", limit: 1000 }))
-    .map((t) => t.token_id)
-    .find((id) => !before.has(id));
-  assert.ok(tokenId, "The proof Aura did not arrive.");
+  const owned = await view(contractId, "nft_tokens_for_owner", { account_id: operator.accountId, from_index: "0", limit: 1000 });
+  // An earlier run may have listed a proof Aura already: buy that one.
+  let tokenId = null;
+  for (const t of owned.filter((t) => String(t.metadata?.description || "").includes(PROOF_NOTE))) {
+    const listing = await view(MINTBASE_MARKET, "get_listing", { nft_contract_id: contractId, token_id: t.token_id }).catch(() => null);
+    if (listing && listing.nft_owner_id === operator.accountId && listing.price === PROOF_PRICE.toString() && !listing.current_offer) {
+      tokenId = t.token_id;
+      log({ step: "Reusing the proof Aura already listed on Mintbase", tokenId, approvalId: listing.nft_approval_id });
+      break;
+    }
+  }
+  if (!tokenId) await listProofAura();
+  async function listProofAura() {
+    // A fresh common Aura for the operator (oracle), so no player's Aura moves.
+    const before = new Set(owned.map((t) => t.token_id));
+    const metadata = {
+      title: "Northern Lights",
+      description: `QuestLayer cosmetic. ${PROOF_NOTE}`,
+      copies: 256,
+      extra: JSON.stringify({ slot: "above", rarity: "rare", origin: "questlayer-original" }),
+      media: null,
+      media_hash: null,
+      reference: null,
+      reference_hash: null,
+    };
+    await step("Mint a proof Aura to the operator", root, contractId, "mint_aura", { edition: "polar", receiver_id: operator.accountId, metadata }, NEAR / 10n, 150n * TGAS);
+    tokenId = (await view(contractId, "nft_tokens_for_owner", { account_id: operator.accountId, from_index: "0", limit: 1000 }))
+      .map((t) => t.token_id)
+      .find((id) => !before.has(id));
+    assert.ok(tokenId, "The proof Aura did not arrive.");
+    await step("Pay Mintbase listing storage", root, MINTBASE_MARKET, "deposit_storage", {}, BigInt(listingDeposit), 30n * TGAS);
+    await step(
+      `List ${tokenId} on Mintbase for ${near(PROOF_PRICE)} NEAR`,
+      root,
+      contractId,
+      "nft_approve",
+      { token_id: tokenId, account_id: MINTBASE_MARKET, msg: JSON.stringify({ price: PROOF_PRICE.toString(), ft_contract: null }) },
+      10n ** 22n,
+      150n * TGAS,
+    );
+  }
   const preview = await view(contractId, "nft_payout", { token_id: tokenId, balance: netToContract.toString(), max_len_payout: 50 });
   assert.equal(preview.payout[royaltiesId], expectedRoyalty.toString(), "nft_payout disagrees with the expected royalty.");
-  await step("Pay Mintbase listing storage", root, MINTBASE_MARKET, "deposit_storage", {}, BigInt(listingDeposit), 30n * TGAS);
-  await step(
-    `List ${tokenId} on Mintbase for ${near(PROOF_PRICE)} NEAR`,
-    root,
-    contractId,
-    "nft_approve",
-    { token_id: tokenId, account_id: MINTBASE_MARKET, msg: JSON.stringify({ price: PROOF_PRICE.toString(), ft_contract: null }) },
-    10n ** 22n,
-    150n * TGAS,
-  );
-  if (!(await accountOf(buyerId))) {
-    const r = await root.createAccount({ newAccountId: buyerId, publicKey: operatorPublicKey, nearToTransfer: PROOF_PRICE + NEAR / 20n });
+  const buyerAccount = await accountOf(buyerId);
+  if (!buyerAccount) {
+    const r = await root.createAccount({ newAccountId: buyerId, publicKey: operatorPublicKey, nearToTransfer: BUYER_FUND });
     transactions.push({ label: `Create ${buyerId}`, transaction: txOf(r) });
+  } else if (BigInt(buyerAccount.amount) < BUYER_FUND) {
+    const topUp = BUYER_FUND - BigInt(buyerAccount.amount);
+    const r = await root.signAndSendTransaction({ receiverId: buyerId, actions: [actions.transfer(topUp)], waitUntil: "FINAL" });
+    assert.ok(!failed(r), "Buyer top-up failed.");
+    transactions.push({ label: `Top up ${buyerId} by ${near(topUp)} NEAR for price and gas`, transaction: txOf(r) });
+    log({ step: "Buyer topped up", amount: near(topUp), transaction: txOf(r) });
   }
   const royaltiesBefore = BigInt((await accountOf(royaltiesId)).amount);
   const buyer = new Account(buyerId, provider, signer);
-  await step(`Buy ${tokenId} on Mintbase`, buyer, MINTBASE_MARKET, "buy", { nft_contract_id: contractId, token_id: tokenId, referrer_id: null, affiliate_id: null }, PROOF_PRICE, 300n * TGAS);
+  await step(`Buy ${tokenId} on Mintbase`, buyer, MINTBASE_MARKET, "buy", { nft_contract_id: contractId, token_id: tokenId, referrer_id: null, affiliate_id: null }, PROOF_PRICE, BUY_GAS);
   const owner = (await view(contractId, "nft_token", { token_id: tokenId }))?.owner_id;
   const received = BigInt((await accountOf(royaltiesId)).amount) - royaltiesBefore;
   assert.equal(owner, buyerId, "The Aura did not reach the buyer: check the buy transaction.");
@@ -285,6 +314,7 @@ if (command === "mintbase-proof") {
     buyer: buyerId,
     transactions,
   };
+  delete record.mintbaseAttempt;
   save();
   log({ step: "Mintbase resale paid the royalty", tokenId, royalty: near(received), next: `commit ${recordPath}` });
   process.exit(0);
