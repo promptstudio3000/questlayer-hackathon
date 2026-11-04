@@ -241,6 +241,7 @@ import { headingTo, metersBetween } from "./map-motion.ts";
 import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
 import { registerChainTrades } from "./chain-trades";
+import { sellAuraOnIntents } from "./intents-order";
 import { tr } from "./i18n";
 
 type Tab =
@@ -3975,8 +3976,29 @@ export default function App() {
                     }),
                     api<NativeMarketState>("/native/market"),
                   ]);
-                  if (!claim.claim.token_id || !market.marketContract)
-                    return false;
+                  if (!claim.claim.token_id) return false;
+                  // NEAR Intents is the default market: the device key lists
+                  // the Aura there. Only a host without a deployed verifier
+                  // falls back to the market contract.
+                  if (
+                    orderSigner?.key &&
+                    orderSigner.accountId === claim.claim.receiver_id
+                  ) {
+                    const viaIntents = await action("intents-sell", () =>
+                      sellAuraOnIntents(
+                        orderSigner,
+                        claim.claim.token_id!,
+                        priceYocto,
+                      ),
+                    );
+                    if (viaIntents === undefined) return false;
+                    if (viaIntents === "listed") {
+                      await me();
+                      notify(tr("Your Aura is listed through NEAR Intents. Find it in Market → Offers."));
+                      return true;
+                    }
+                  }
+                  if (!market.marketContract) return false;
                   const listed = await tradeNative({
                     kind: "list",
                     accountId: claim.claim.receiver_id,
