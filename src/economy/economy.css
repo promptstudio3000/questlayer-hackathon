@@ -251,3 +251,109 @@ html.eco-root body {
   font-size: 14px;
   margin-top: 24px;
 }
+
+/* QGOLD token section (docs/QGOLD-MARKET.md). */
+.qg h3 {
+  margin: 20px 0 6px;
+  font-size: 1rem;
+}
+.qg-stats {
+  margin: 12px 0;
+}
+.qg-chart {
+  margin: 8px 0 12px;
+}
+.qg-chart svg {
+  width: 100%;
+  height: auto;
+  background: var(--eco-bg);
+  border: 1px solid var(--eco-line);
+  border-radius: 8px;
+}
+.qg-chart path {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.qg-line-r {
+  stroke: var(--eco-coin);
+}
+.qg-line-p {
+  stroke: var(--eco-mint);
+  stroke-dasharray: 6 4;
+}
+.qg-chart figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+.qg-key::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.qg-key-r::before {
+  background: var(--eco-coin);
+}
+.qg-key-p::before {
+  background: var(--eco-mint);
+}
+.qg-trade {
+  display: grid;
+  gap: 10px;
+  max-width: 420px;
+  padding: 12px;
+  border: 1px solid var(--eco-line);
+  border-radius: 8px;
+}
+.qg-tabs {
+  display: flex;
+  gap: 6px;
+}
+.qg-tabs button,
+.qg-go {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--eco-line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--eco-text);
+  font: inherit;
+  cursor: pointer;
+}
+.qg-tabs button.on,
+.qg-go {
+  background: var(--eco-accent);
+  border-color: var(--eco-accent);
+  color: #1a0335;
+  font-weight: 600;
+}
+.qg-go:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.qg-field {
+  display: grid;
+  gap: 4px;
+}
+.qg-field input,
+.qg-field select {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--eco-line);
+  border-radius: 8px;
+  background: var(--eco-bg);
+  color: var(--eco-text);
+  font: inherit;
+}
+.qg-quote {
+  margin: 0;
+}
+.qg-paths li.qg-off {
+  opacity: 0.6;
+}
