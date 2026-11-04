@@ -30,6 +30,7 @@ const DEFERRED = [
   /NativeTasks/,
   /MapNotes/,
   /MonsterChallenge/,
+  /WikiPage/,
 ];
 // Code that must stay out of the first load, by a string only it contains.
 const DEFERRED_CODE = [

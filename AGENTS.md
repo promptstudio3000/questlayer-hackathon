@@ -23,6 +23,10 @@ not a generic dashboard with game illustrations.
 
 ## Working agreements
 
+- The project wiki at `/wiki` (`src/wiki/`, rules in `docs/WIKI.md`) describes every mechanism in
+  force. Any change that adds or changes a mechanism updates its chapter in `src/wiki/chapters.ts` in
+  the same pull request, then runs `npm run wiki:stamp`. `tests/wiki.test.mjs` fails otherwise.
+
 - Product text, source comments and repository documentation use English. Discussion
   with the user may use Czech.
 - Preserve the accepted economy and integration boundaries in `IMPLEMENTATION-PLAN.md`
