@@ -90,6 +90,26 @@ fn network() -> &'static str {
     }
 }
 
+/// NEP-199 royalty: marketplaces that call `nft_transfer_payout` (Mintbase,
+/// Paras) pay this share of every resale to the game treasury account. It is
+/// stored under its own key, so adding it needs no state migration (schema 3).
+const ROYALTY_KEY: &[u8] = b"royalty";
+/// At most 10 % of a sale.
+const MAX_ROYALTY_BPS: u16 = 1_000;
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[borsh(crate = "near_sdk::borsh")]
+#[serde(crate = "near_sdk::serde")]
+pub struct Royalty {
+    pub account_id: AccountId,
+    /// Basis points of the sale price (100 = 1 %).
+    pub bps: u16,
+}
+/// NEP-199 payout: who receives what from a sale of `balance`.
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct Payout {
+    pub payout: std::collections::HashMap<AccountId, U128>,
+}
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(crate = "near_sdk::serde", rename_all = "snake_case")]
 pub enum AuraSlot {
@@ -340,6 +360,69 @@ impl Collectibles {
     pub fn get_version(&self) -> u32 {
         self.schema_version
     }
+    /// Owner only: the treasury account and share that marketplaces pay on
+    /// resales (NEP-199). `None` turns royalties off.
+    #[payable]
+    pub fn set_royalty(&mut self, royalty: Option<Royalty>) {
+        near_sdk::assert_one_yocto();
+        assert_eq!(
+            env::predecessor_account_id(),
+            self.tokens.owner_id,
+            "Owner only"
+        );
+        match royalty {
+            Some(r) => {
+                assert!(
+                    r.bps > 0 && r.bps <= MAX_ROYALTY_BPS,
+                    "Royalty must be between 0.01 % and 10 %"
+                );
+                env::storage_write(ROYALTY_KEY, &near_sdk::borsh::to_vec(&r).unwrap());
+            }
+            None => {
+                env::storage_remove(ROYALTY_KEY);
+            }
+        }
+    }
+    pub fn get_royalty(&self) -> Option<Royalty> {
+        env::storage_read(ROYALTY_KEY)
+            .map(|bytes| Royalty::try_from_slice(&bytes).expect("Royalty state is corrupt"))
+    }
+    /// NEP-199: how a sale of `balance` splits for this token right now.
+    pub fn nft_payout(
+        &self,
+        token_id: TokenId,
+        balance: U128,
+        max_len_payout: Option<u32>,
+    ) -> Payout {
+        let owner = self
+            .tokens
+            .owner_by_id
+            .get(&token_id)
+            .expect("Token not found");
+        self.payout_for(&owner, balance.0, max_len_payout)
+    }
+    /// NEP-199: a marketplace transfer for a sale; returns the split the
+    /// marketplace must pay. The usual transfer rules apply (1 yocto, owner or
+    /// approved account, equipment cleared).
+    #[payable]
+    pub fn nft_transfer_payout(
+        &mut self,
+        receiver_id: AccountId,
+        token_id: TokenId,
+        approval_id: Option<u64>,
+        memo: Option<String>,
+        balance: U128,
+        max_len_payout: Option<u32>,
+    ) -> Payout {
+        let owner = self
+            .tokens
+            .owner_by_id
+            .get(&token_id)
+            .expect("Token not found");
+        let payout = self.payout_for(&owner, balance.0, max_len_payout);
+        NonFungibleTokenCore::nft_transfer(self, receiver_id, token_id, approval_id, memo);
+        payout
+    }
     #[payable]
     pub fn mint_avatar(&mut self) -> Token {
         let owner = env::predecessor_account_id();
@@ -481,6 +564,25 @@ impl Collectibles {
     pub fn get_equipped(&self, account_id: AccountId) -> Option<TokenId> {
         let e = self.get_equipment(account_id);
         e.above.or(e.below)
+    }
+    fn payout_for(&self, owner: &AccountId, balance: u128, max_len_payout: Option<u32>) -> Payout {
+        let mut payout = std::collections::HashMap::new();
+        // No royalty when the treasury itself sells; split without overflow.
+        let royalty = self.get_royalty().filter(|r| &r.account_id != owner);
+        let cut = royalty.as_ref().map_or(0, |r| {
+            let bps = u128::from(r.bps);
+            balance / 10_000 * bps + balance % 10_000 * bps / 10_000
+        });
+        if let Some(r) = royalty {
+            if cut > 0 {
+                payout.insert(r.account_id, U128(cut));
+            }
+        }
+        payout.insert(owner.clone(), U128(balance - cut));
+        if let Some(max) = max_len_payout {
+            assert!(payout.len() as u32 <= max, "Too many payout receivers");
+        }
+        Payout { payout }
     }
     fn assert_oracle(&self) {
         assert_eq!(env::predecessor_account_id(), self.oracle, "Oracle only");
@@ -664,6 +766,7 @@ impl NonFungibleTokenMetadataProvider for Collectibles {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use near_contract_standards::non_fungible_token::approval::NonFungibleTokenApproval;
     use near_sdk::{test_utils::VMContextBuilder, testing_env, NearToken};
     fn a(s: &str) -> AccountId {
         s.parse().unwrap()
@@ -691,6 +794,67 @@ mod tests {
                 ..Default::default()
             },
         )
+    }
+    #[test]
+    fn royalty_payout_pays_the_treasury_share_and_the_rest_to_the_owner() {
+        let mut c = fresh();
+        let t = mint(&mut c, "polar");
+        // Without a royalty the owner gets everything.
+        let none = c.nft_payout(t.token_id.clone(), U128(1_000_000), Some(10));
+        assert_eq!(none.payout.len(), 1);
+        assert_eq!(none.payout[&a("alice.testnet")], U128(1_000_000));
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(Some(Royalty { account_id: a("treasury.testnet"), bps: 200 }));
+        assert_eq!(c.get_royalty().unwrap().bps, 200);
+        let p = c.nft_payout(t.token_id.clone(), U128(1_000_001), Some(10));
+        assert_eq!(p.payout[&a("treasury.testnet")], U128(20_000));
+        assert_eq!(p.payout[&a("alice.testnet")], U128(980_001));
+        // Huge balances do not overflow, and the parts always add up.
+        let big = c.nft_payout(t.token_id.clone(), U128(u128::MAX), None);
+        assert_eq!(
+            big.payout.values().map(|v| v.0).fold(0u128, |a, b| a.wrapping_add(b)),
+            u128::MAX
+        );
+        // A marketplace sale transfers the token and returns the same split.
+        context("alice.testnet", NearToken::from_millinear(10));
+        c.nft_approve(t.token_id.clone(), a("market.testnet"), None);
+        context("market.testnet", NearToken::from_yoctonear(1));
+        let sold = c.nft_transfer_payout(a("bob.testnet"), t.token_id.clone(), Some(1), None, U128(1_000_000), Some(10));
+        assert_eq!(sold.payout[&a("treasury.testnet")], U128(20_000));
+        assert_eq!(sold.payout[&a("alice.testnet")], U128(980_000));
+        assert_eq!(c.nft_token(t.token_id.clone()).unwrap().owner_id, a("bob.testnet"));
+        // The treasury selling its own Aura pays no royalty to itself.
+        context("bob.testnet", NearToken::from_yoctonear(1));
+        c.nft_transfer(a("treasury.testnet"), t.token_id.clone(), None, None);
+        let own = c.nft_payout(t.token_id.clone(), U128(500), Some(1));
+        assert_eq!(own.payout[&a("treasury.testnet")], U128(500));
+        // Off again.
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(None);
+        assert_eq!(c.get_royalty(), None);
+    }
+    #[test]
+    #[should_panic(expected = "Too many payout receivers")]
+    fn royalty_payout_respects_max_len() {
+        let mut c = fresh();
+        let t = mint(&mut c, "polar");
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(Some(Royalty { account_id: a("treasury.testnet"), bps: 200 }));
+        c.nft_payout(t.token_id, U128(1_000_000), Some(1));
+    }
+    #[test]
+    #[should_panic(expected = "Owner only")]
+    fn only_the_owner_sets_the_royalty() {
+        let mut c = fresh();
+        context("alice.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(Some(Royalty { account_id: a("alice.testnet"), bps: 1_000 }));
+    }
+    #[test]
+    #[should_panic(expected = "between 0.01 % and 10 %")]
+    fn royalty_is_capped_at_ten_percent() {
+        let mut c = fresh();
+        context("owner.testnet", NearToken::from_yoctonear(1));
+        c.set_royalty(Some(Royalty { account_id: a("treasury.testnet"), bps: 1_001 }));
     }
     #[test]
     fn transfer_removes_old_equipment_and_changes_owner() {
