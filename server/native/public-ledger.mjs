@@ -159,6 +159,36 @@ export function yieldCycle(proof) {
   };
 }
 
+/**
+ * The 2 % P2P trade fee (NEAR Intents verifier, docs/NEAR-INTENTS-MARKET.md):
+ * the public record written by scripts/intents-fees-testnet.mjs. Only swept
+ * amounts with a finished fund_rewards count as "in the prize pool".
+ */
+export function tradeFees(record) {
+  if (!record?.verifier) return null;
+  const sweeps = (record.sweeps || []).map((s) => {
+    const funded = typeof s.fundTransaction === "string" && Boolean(s.finishedAt);
+    return {
+      receiptId: s.receiptId,
+      amount: s.amount,
+      at: s.finishedAt ?? s.startedAt ?? null,
+      funded,
+      withdrawUrl: txUrl(s.withdrawTransaction),
+      fundUrl: txUrl(s.fundTransaction),
+    };
+  });
+  const swept = sweeps.filter((s) => s.funded).reduce((sum, s) => sum + BigInt(s.amount || 0), 0n);
+  return {
+    verifier: record.verifier,
+    verifierUrl: accountUrl(record.verifier),
+    feePips: Number.isSafeInteger(record.feePips) ? record.feePips : null,
+    collector: record.collector ?? null,
+    rewardsContract: record.rewardsContract ?? null,
+    swept: swept.toString(),
+    sweeps,
+  };
+}
+
 async function settle(fn) {
   try {
     return { status: "observed", data: await fn() };
@@ -179,6 +209,7 @@ export function createPublicLedger({
   treasury = null,
   yieldBacking = null,
   cycleProof = () => null,
+  feeRecord = () => null,
   clock = Date.now,
   cacheMs = 60_000,
 }) {
@@ -278,6 +309,7 @@ export function createPublicLedger({
         ? confirmedPayouts(native.db)
         : { count: 0, total: "0", byKind: {}, recent: [] },
       yieldCycle: yieldCycle(cycleProof()),
+      tradeFees: tradeFees(feeRecord()),
     };
   }
   return async function read() {

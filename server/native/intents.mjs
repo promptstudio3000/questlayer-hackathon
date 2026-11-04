@@ -111,19 +111,48 @@ const price = (value) => {
   return p;
 };
 
-/** token_diff for one side of an Aura <-> wNEAR swap (no counterparty named). */
-export function auraTokenDiff({ side, nftContract, tokenId, price: p, wnear, memo }) {
+// Verifier fee (contracts/defuse/core/src/intents/token_diff.rs, defuse-fees):
+// fees are in pips of 1/1,000,000 and are taken only from negative fungible
+// deltas (token_in); NFT legs pay nothing. A buyer who gives `a` wNEAR
+// delivers floor(a * (1e6 - fee) / 1e6) to the trade and the rest goes to
+// the fee collector, so the seller's `+p` is matched by the buyer's
+// `-ceil(p * 1e6 / (1e6 - fee))` (the verifier's own `closure` rule). The
+// game's verifier sends that fee to the treasury (2 % = 20,000 pips).
+export const PIPS_MAX = 1_000_000n;
+export const TREASURY_FEE_PIPS = 20_000;
+const pips = (fee) => {
+  const f = BigInt(fee ?? 0);
+  assert(f >= 0n && f < PIPS_MAX, "Invalid verifier fee.");
+  return f;
+};
+/** wNEAR a buyer must give so the seller receives exactly `p`. */
+export const grossForNet = (p, fee = 0) => {
+  const f = pips(fee);
+  const n = BigInt(p) * PIPS_MAX;
+  const d = PIPS_MAX - f;
+  return (n + d - 1n) / d;
+};
+/** wNEAR that reaches the seller when the buyer gives `a`. */
+export const netForGross = (a, fee = 0) => (BigInt(a) * (PIPS_MAX - pips(fee))) / PIPS_MAX;
+/** The fee the collector receives from a buyer's `a`. */
+export const feeForGross = (a, fee = 0) => BigInt(a) - netForGross(a, fee);
+
+/**
+ * token_diff for one side of an Aura <-> wNEAR swap (no counterparty named).
+ * `price` is always what the seller receives; a buy leg adds the verifier fee.
+ */
+export function auraTokenDiff({ side, nftContract, tokenId, price: p, wnear, memo, feePips = 0 }) {
   assert(side === "sell" || side === "buy", "Side must be sell or buy.");
   assert(AURA.test(String(tokenId)), "Choose a native Aura.");
-  const amount = price(p).toString(),
+  const amount = price(p),
     nft = nep171(nftContract, tokenId),
     ft = nep141(wnear);
   return {
     intent: "token_diff",
     diff:
       side === "sell"
-        ? { [nft]: "-1", [ft]: amount }
-        : { [nft]: "1", [ft]: `-${amount}` },
+        ? { [nft]: "-1", [ft]: amount.toString() }
+        : { [nft]: "1", [ft]: `-${grossForNet(amount, feePips)}` },
     ...(memo ? { memo: String(memo).slice(0, 64) } : {}),
   };
 }
@@ -356,7 +385,7 @@ export function erc191Prehash(message) {
  * Reads a one-intent Aura order: exactly one token_diff with one Aura of
  * `nftContract` and wNEAR, in opposite directions. Returns its terms.
  */
-export function auraOrderTerms(intents, { nftContract, wnear }) {
+export function auraOrderTerms(intents, { nftContract, wnear, feePips = 0 }) {
   assert(Array.isArray(intents) && intents.length === 1, "An order holds exactly one intent.");
   const [intent] = intents;
   assert(intent.intent === "token_diff", "Orders use token_diff.");
@@ -374,8 +403,10 @@ export function auraOrderTerms(intents, { nftContract, wnear }) {
   const amount = BigInt(money[1]);
   assert((side === "sell") === amount > 0n, "The wNEAR leg must oppose the Aura leg.");
   const abs = amount < 0n ? -amount : amount;
-  price(abs);
-  return { side, tokenId, price: abs.toString(), nftTokenId: nft[0], wnearTokenId: ft };
+  // `price` is what the seller receives; a buy leg pays it plus the fee.
+  const net = side === "buy" ? netForGross(abs, feePips) : abs;
+  price(net);
+  return { side, tokenId, price: net.toString(), gross: abs.toString(), nftTokenId: nft[0], wnearTokenId: ft };
 }
 
 /** True when the second order is the exact opposite of the first. */
@@ -389,17 +420,20 @@ export function matches(a, b) {
 }
 
 /**
- * Net token deltas across a batch of signed intent bodies. With the
- * self-deployed verifier's fee of 0, a valid swap batch nets to zero for
- * every token (the verifier's own invariant).
+ * Net supply deltas across a batch of signed intent bodies, after the
+ * verifier fee: a negative fungible delta counts as what it delivers to the
+ * trade (the fee goes to the collector). A valid swap batch nets to zero for
+ * every token, which is the verifier's own invariant.
  */
-export function netDeltas(bodies) {
+export function netDeltas(bodies, feePips = 0) {
   const net = new Map();
   const add = (id, v) => net.set(id, (net.get(id) || 0n) + v);
+  const supply = (id, v) =>
+    v < 0n && id.startsWith("nep141:") ? -netForGross(-v, feePips) : v;
   for (const { signerId, intents } of bodies)
     for (const intent of intents) {
       if (intent.intent === "token_diff")
-        for (const [id, v] of Object.entries(intent.diff)) add(id, BigInt(v));
+        for (const [id, v] of Object.entries(intent.diff)) add(id, supply(id, BigInt(v)));
       else if (intent.intent === "transfer") {
         assert(intent.receiver_id !== signerId, "Self-transfers are not trades.");
         // A transfer moves balance between two accounts: supply is unchanged.

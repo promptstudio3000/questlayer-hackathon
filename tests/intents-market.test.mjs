@@ -4,7 +4,10 @@ import { KeyPair } from "near-api-js";
 import { openDatabase } from "../server/database.mjs";
 import { IntentsMarket, createIntentsRoutes } from "../server/native/intents-market.mjs";
 import {
+  TREASURY_FEE_PIPS,
   auraTokenDiff,
+  feeForGross,
+  grossForNet,
   intentMessage,
   netDeltas,
   signIntentWithKeyPair,
@@ -21,7 +24,7 @@ const VERIFIER = "questlayer-intents-20261104.testnet",
 const keys = { "alice.testnet": KeyPair.fromRandom("ed25519"), "bob.testnet": KeyPair.fromRandom("ed25519") };
 
 /** In-memory stand-in for the verifier's views and execute_intents. */
-function fakeVerifier(now) {
+function fakeVerifier(now, fees = { fee: 0, collector: "questlayer-dev-20261101.testnet" }) {
   const balances = new Map(),
     used = new Set(),
     registered = new Set(Object.entries(keys).map(([a, k]) => `${a}|${k.getPublicKey()}`));
@@ -33,7 +36,8 @@ function fakeVerifier(now) {
       assert.ok(registered.has(`${b.signerId}|${b.publicKey}`));
       assert.ok(!used.has(`${b.signerId}|${b.nonce}`), "nonce used");
     }
-    if (Object.keys(netDeltas(bodies)).length) return { invariant_violated: { unmatched_deltas: netDeltas(bodies) } };
+    const net = netDeltas(bodies, fees.fee);
+    if (Object.keys(net).length) return { invariant_violated: { unmatched_deltas: net } };
     return { bodies };
   };
   const reader = {
@@ -43,7 +47,7 @@ function fakeVerifier(now) {
       this.calls.push(method);
       switch (method) {
         case "current_salt": return SALT;
-        case "fee": return 0;
+        case "fee": return fees.fee;
         case "is_valid_salt": return args.salt === SALT;
         case "has_public_key": return registered.has(`${args.account_id}|${args.public_key}`);
         case "is_nonce_used": return used.has(`${args.account_id}|${args.nonce}`);
@@ -69,7 +73,12 @@ function fakeVerifier(now) {
           used.add(`${b.signerId}|${b.nonce}`);
           for (const i of b.intents)
             if (i.intent === "token_diff")
-              for (const [t, v] of Object.entries(i.diff)) setBal(b.signerId, t, bal(b.signerId, t) + BigInt(v));
+              for (const [t, v] of Object.entries(i.diff)) {
+                setBal(b.signerId, t, bal(b.signerId, t) + BigInt(v));
+                // The verifier credits its fee collector from negative fungible deltas.
+                if (BigInt(v) < 0n && t.startsWith("nep141:"))
+                  setBal(fees.collector, t, bal(fees.collector, t) + feeForGross(-BigInt(v), fees.fee));
+              }
             else if (i.intent === "nft_withdraw") setBal(b.signerId, `nep171:${i.token}:${i.token_id}`, 0n);
         }
         solver.sent.push(args.signed.length);
@@ -77,7 +86,7 @@ function fakeVerifier(now) {
       },
     },
   };
-  return { reader, solver, setBal, bal, used };
+  return { reader, solver, setBal, bal, used, fees };
 }
 
 function signed(signerId, intents, now, ttl = 3600_000) {
@@ -88,18 +97,18 @@ function signed(signerId, intents, now, ttl = 3600_000) {
     recipient: VERIFIER,
   });
 }
-function setup() {
+function setup({ fee = 0 } = {}) {
   let t = Date.parse("2026-11-04T03:00:00Z");
   const now = () => t;
   const db = openDatabase(":memory:");
-  const v = fakeVerifier(now);
+  const v = fakeVerifier(now, { fee, collector: "questlayer-dev-20261101.testnet" });
   const market = new IntentsMarket(db, { verifier: v.reader, nftContract: NFT, wnear: WNEAR, solver: v.solver, now });
   return { db, v, market, now, advance: (ms) => (t += ms) };
 }
 const nft = `nep171:${NFT}:${AURA}`,
   ft = `nep141:${WNEAR}`;
 const sell = () => auraTokenDiff({ side: "sell", nftContract: NFT, tokenId: AURA, price: PRICE, wnear: WNEAR });
-const buy = (price = PRICE) => auraTokenDiff({ side: "buy", nftContract: NFT, tokenId: AURA, price, wnear: WNEAR });
+const buy = (price = PRICE, feePips = 0) => auraTokenDiff({ side: "buy", nftContract: NFT, tokenId: AURA, price, wnear: WNEAR, feePips });
 
 test("a funded sell intent is listed and a matching buy settles atomically through the solver", async () => {
   const { v, market, now } = setup();
@@ -148,6 +157,45 @@ test("reconcile closes expired, used and withdrawn orders", async () => {
   assert.equal(market.row(short.id).state, "expired");
   assert.equal(market.row(long.id).state, "closed");
   assert.match(market.row(long.id).reason, /funded/);
+});
+
+test("with the treasury fee on, the buyer pays the price plus 2 % and the collector gets the fee", async () => {
+  const { v, market, now } = setup({ fee: TREASURY_FEE_PIPS });
+  const gross = grossForNet(PRICE, TREASURY_FEE_PIPS),
+    fee = gross - BigInt(PRICE);
+  assert.ok(fee > 0n);
+  v.setBal("alice.testnet", nft, 1n);
+  v.setBal("bob.testnet", ft, gross - 1n);
+  const order = await market.submit(signed("alice.testnet", [sell()], now()));
+  assert.equal(order.price, PRICE);
+  assert.equal(order.buyerPays, gross.toString());
+  // A buy signed without the fee no longer matches the seller's price.
+  await assert.rejects(market.fill(order.id, signed("bob.testnet", [buy()], now())), /does not match/);
+  // One yocto short of price + fee is not funded.
+  await assert.rejects(market.fill(order.id, signed("bob.testnet", [buy(PRICE, TREASURY_FEE_PIPS)], now())), /Deposit enough wNEAR/);
+  v.setBal("bob.testnet", ft, gross);
+  const filled = await market.fill(order.id, signed("bob.testnet", [buy(PRICE, TREASURY_FEE_PIPS)], now()));
+  assert.equal(filled.state, "filled");
+  assert.equal(v.bal("alice.testnet", ft), BigInt(PRICE));
+  assert.equal(v.bal("bob.testnet", ft), 0n);
+  assert.equal(v.bal("bob.testnet", nft), 1n);
+  assert.equal(v.bal("questlayer-dev-20261101.testnet", ft), fee);
+  assert.equal(JSON.parse(market.db.prepare("SELECT detail FROM intents_settlements").get().detail).fee, fee.toString());
+});
+
+test("a buy offer signed before the fee changed is closed so the buyer signs again", async () => {
+  const { v, market, now, advance } = setup();
+  v.setBal("bob.testnet", ft, BigInt(PRICE));
+  v.setBal("alice.testnet", nft, 1n);
+  const offer = await market.submit(signed("bob.testnet", [buy()], now()));
+  const listing = await market.submit(signed("alice.testnet", [sell()], now()));
+  v.fees.fee = TREASURY_FEE_PIPS;
+  advance(61_000);
+  await market.reconcile();
+  assert.equal(market.row(offer.id).state, "closed");
+  assert.match(market.row(offer.id).reason, /fee changed/);
+  // The seller's terms do not depend on the fee, so a listing stays open.
+  assert.equal(market.row(listing.id).state, "open");
 });
 
 test("withdrawals go back to the signer only and are submitted by the solver", async () => {

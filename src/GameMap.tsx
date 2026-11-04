@@ -1,3 +1,5 @@
+import { applyGoldLook } from "./gold-emotes";
+import type { GoldMap } from "./gold-spend-client";
 import {
   characterMarkerMarkup,
   STARTER_SPRITE,
@@ -81,6 +83,11 @@ export type GameMapProps = {
   /** Today's demo world for roaming NPCs and monsters; null hides them. */
   actorsWorldId?: string | null;
   onActor?: (actor: ActorView) => void;
+  /** GOLD spending (QGOLD stream 4): own emote and frame, lures and place pins. */
+  emote?: string | null;
+  frame?: string | null;
+  goldMap?: GoldMap | null;
+  onPlacePin?: (id: string) => void;
 };
 export type CreatorMapPlace = {
   questId: string;
@@ -781,6 +788,7 @@ export function GameMap(props: GameMapProps) {
       label.textContent = p.name;
       node.append(label);
       skinFallback(node, look?.color || p.color);
+      applyGoldLook(node, look?.gold && (look.gold.emoteUntil ?? 0) > Date.now() ? look.gold : { frame: look?.gold?.frame });
       return new maplibregl.Marker({ element: node, anchor: "bottom" })
         .setLngLat([p.lng, p.lat])
         .addTo(m);
@@ -915,6 +923,35 @@ export function GameMap(props: GameMapProps) {
     if (modelHost) element.append(modelHost);
     skinFallback(element, color);
   }, [equipmentKey, props.skinUrl, ready]);
+  useEffect(() => {
+    const element = avatar.current?.getElement();
+    if (element) applyGoldLook(element, { emote: props.emote, frame: props.frame });
+  }, [props.emote, props.frame, equipmentKey, props.skinUrl, ready]);
+  // Lures (with countdowns) and place messages near the player: own chunk.
+  const goldLayer = useRef<{ update: (data: GoldMap) => void; remove: () => void } | null>(null);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !props.goldMap) return;
+    let gone = false;
+    const data = props.goldMap;
+    if (goldLayer.current) goldLayer.current.update(data);
+    else
+      import("./gold-map-layer").then(({ attachGoldLayer }) => {
+        if (gone || goldLayer.current) return;
+        goldLayer.current = attachGoldLayer(m, (id) => latest.current.onPlacePin?.(id));
+        goldLayer.current.update(data);
+      });
+    return () => {
+      gone = true;
+    };
+  }, [props.goldMap, ready]);
+  useEffect(
+    () => () => {
+      goldLayer.current?.remove();
+      goldLayer.current = null;
+    },
+    [],
+  );
   useEffect(() => {
     const m = map.current,
       element = avatar.current?.getElement();

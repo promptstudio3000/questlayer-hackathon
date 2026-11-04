@@ -49,6 +49,35 @@ const decorators = [];
 export function registerActorDecorator(fn) {
   if (typeof fn === "function" && !decorators.includes(fn)) decorators.push(fn);
 }
+// A slice can move an actor for a while (GOLD lures, server/gold-spend):
+// an override returns { from, to, lat, lng } and the actor dwells there for
+// that window instead of its planned segments. Overrides never change who
+// the actor is, its rewards or its odds.
+const segmentOverrides = [];
+export function registerSegmentOverride(fn) {
+  if (typeof fn === "function" && !segmentOverrides.includes(fn)) segmentOverrides.push(fn);
+}
+/** Replace the planned segments overlapping [from, to) with one dwell at the point. */
+export function spliceDwell(segments, { from, to, lat, lng }) {
+  return [
+    ...segments.filter((s) => s.to <= from),
+    { from, to, path: [[lng, lat]], dwell: true, lured: true },
+    ...segments.filter((s) => s.from >= to),
+  ];
+}
+function liveSegments(instance, worldId, now) {
+  for (const fn of segmentOverrides) {
+    let o = null;
+    try {
+      o = fn({ instance, worldId, now });
+    } catch {
+      o = null;
+    }
+    if (o && Number.isFinite(o.from) && Number.isFinite(o.to) && o.to > o.from && Number.isFinite(o.lat) && Number.isFinite(o.lng))
+      return spliceDwell(instance.segments, o);
+  }
+  return instance.segments;
+}
 function decorate(view, ctx) {
   for (const d of decorators) {
     try {
@@ -256,6 +285,31 @@ export function createActorService(db, options = {}) {
     };
   }
 
+  function withLiveSegments(instance, worldId, now) {
+    const segments = liveSegments(instance, worldId, now);
+    return segments === instance.segments ? instance : { ...instance, segments };
+  }
+
+  /** Every actor of today's world with its position now (null when away). */
+  function castNow(worldId) {
+    const now = clock(),
+      manifest = manifestFor(worldId);
+    if (manifest.endsAt <= now || paused(manifest)) return { manifest, now, actors: [] };
+    const plan = planFor(manifest);
+    if (!plan) return { manifest, now, actors: [] };
+    return {
+      manifest,
+      now,
+      actors: plan.instances.map((i) => ({
+        id: i.id,
+        kind: i.def.kind,
+        archetype: i.def.archetype,
+        name: i.def.name,
+        pos: positionAt(liveSegments(i, manifest.id, now), now),
+      })),
+    };
+  }
+
   function paused(manifest) {
     return !!pauseFor(pauseState(db, manifest.cityId, manifest.day), null);
   }
@@ -270,7 +324,8 @@ export function createActorService(db, options = {}) {
     const here = location ? point(location) : null,
       progress = progressFor(player, manifest.day),
       actors = [];
-    for (const instance of plan.instances) {
+    for (const planned of plan.instances) {
+      const instance = withLiveSegments(planned, manifest.id, now);
       const pos = positionAt(instance.segments, now);
       const next = instance.segments.find((s) => s.to > now && s.from < now + SEGMENT_HORIZON_MS);
       if (!pos && !next) continue;
@@ -278,7 +333,7 @@ export function createActorService(db, options = {}) {
       // Hidden actors are sent only to a player already within reveal range,
       // so the list can't be used to hunt them from afar.
       if (reveal && (!here || !pos || distance(here, pos) > reveal)) continue;
-      actors.push(decorate(view(instance, now, progress), { instance, player, dayId: manifest.day, cityId: manifest.cityId, now }));
+      actors.push(decorate(view(instance, now, progress), { instance, player, dayId: manifest.day, cityId: manifest.cityId, worldId: manifest.id, now }));
     }
     return { ...empty, ...(plan.center ? { sky: skyAt(now, plan.center) } : {}), actors };
   }
@@ -329,8 +384,9 @@ export function createActorService(db, options = {}) {
     assert(manifest.endsAt > now, "Today's world has ended. Refresh the map for a new one.", 410, "WORLD_ENDED");
     assert(!paused(manifest), "Operators paused today's world for a moment. Your progress is safe; try again later.", 423, "WORLD_PAUSED");
     const plan = planFor(manifest),
-      instance = plan?.byId.get(actorId);
-    assert(instance, "This character is not on today's map.", 404, "ACTOR_NOT_FOUND");
+      planned = plan?.byId.get(actorId);
+    assert(planned, "This character is not on today's map.", 404, "ACTOR_NOT_FOUND");
+    const instance = withLiveSegments(planned, manifest.id, now);
     const pos = positionAt(instance.segments, now);
     assert(pos, `${instance.def.name} is not out right now. Check back later.`, 409, "ACTOR_AWAY");
     const recent = db
@@ -342,7 +398,7 @@ export function createActorService(db, options = {}) {
       radius = pos.dwell ? STATION_RADIUS_M : ENCOUNTER_RADIUS_M;
     assert(meters <= radius, `Get closer to ${instance.def.name}, then try again.`, 422, "OUT_OF_RANGE");
     const progress = progressFor(player, manifest.day),
-      actor = decorate(view(instance, now, progress), { instance, player, dayId: manifest.day, cityId: manifest.cityId, now }),
+      actor = decorate(view(instance, now, progress), { instance, player, dayId: manifest.day, cityId: manifest.cityId, worldId: manifest.id, now }),
       expiresAt = now + ENCOUNTER_TTL_MS;
     assert(actor.state !== "cooldown", `${instance.def.name} needs a moment. Try again later.`, 429, "ACTOR_COOLDOWN");
     const menu = await buildActorMenu({
@@ -430,5 +486,5 @@ export function createActorService(db, options = {}) {
     return built;
   }
 
-  return { list, encounter, requireEncounter, planFor, warm };
+  return { list, encounter, requireEncounter, planFor, warm, castNow, manifestFor };
 }

@@ -1,0 +1,340 @@
+/* GOLD shop, trader gear and place messages (QGOLD stream 4). */
+.gold-shop,
+.place-messages,
+.place-thread {
+  display: grid;
+  gap: 14px;
+  padding: 4px 0 16px;
+}
+.gold-shop section {
+  display: grid;
+  gap: 8px;
+}
+.gold-shop h3,
+.place-thread h3 {
+  margin: 4px 0 0;
+  font-size: 16px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.gold-shop-lead,
+.gold-shop-note,
+.gold-shop-empty {
+  margin: 0;
+  color: var(--ink-secondary);
+  font-size: 14px;
+}
+.gold-shop-balance {
+  margin: 0;
+  font-size: 16px;
+}
+.gold-shop-balance small {
+  color: var(--ink-secondary);
+  font-size: 13px;
+}
+.gold-emote-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+}
+.gold-emote {
+  min-height: 64px;
+  border-radius: var(--radius-item);
+  border: 1px solid var(--decorative-border);
+  background: var(--surface-raised);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+}
+.gold-emote.owned {
+  border-color: var(--action);
+}
+.gold-emote:disabled {
+  opacity: 0.55;
+}
+.gold-emote-glyph {
+  font-size: 26px;
+  line-height: 1;
+}
+.gold-emote small {
+  font-size: 12px;
+  color: var(--ink-secondary);
+}
+.gold-frame-list,
+.gold-lure-quote {
+  display: grid;
+  gap: 8px;
+}
+.gold-frame {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius-item);
+  background: var(--surface-soft);
+}
+.gold-frame.equipped {
+  outline: 2px solid var(--action);
+}
+.gold-frame-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 5px solid;
+  background: var(--surface-raised);
+}
+.gold-frame button,
+.place-actions button,
+.place-filters button,
+.place-back {
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: 22px;
+  border: 1px solid var(--control-border);
+  background: var(--surface-raised);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.place-filters button[aria-pressed="true"] {
+  background: var(--action);
+  color: var(--on-action);
+  border-color: var(--action);
+}
+.gold-primary {
+  min-height: 48px;
+  padding: 8px 16px;
+  border-radius: var(--radius-control);
+  border: 0;
+  background: var(--action);
+  color: var(--on-action);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.gold-primary:disabled,
+.gold-lure-option:disabled {
+  opacity: 0.55;
+}
+.gold-lure-option {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-item);
+  border: 1px solid var(--decorative-border);
+  background: var(--surface-raised);
+  color: var(--ink);
+  text-align: left;
+}
+.gold-lure-option small {
+  color: var(--ink-secondary);
+}
+.gold-lure-active {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-item);
+  background: var(--success-surface);
+  color: var(--success);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.gold-lure-blocked {
+  color: var(--error);
+}
+.gold-gear-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.gold-gear-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.gold-gear-list small {
+  color: var(--ink-secondary);
+}
+.npc-gear {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+.npc-gear-title {
+  margin: 0;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-weight: 600;
+}
+.place-compose-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.place-compose {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-item);
+  background: var(--surface-soft);
+}
+.place-compose input,
+.place-compose textarea,
+.place-compose select,
+.place-reply input,
+.place-filters select {
+  font: inherit;
+  font-size: 16px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--control-border);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+.place-compose textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+.place-days {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.place-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.place-feed,
+.place-replies {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.place-feed button {
+  width: 100%;
+  min-height: 56px;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: var(--radius-item);
+  border: 1px solid var(--decorative-border);
+  background: var(--surface-raised);
+  color: var(--ink);
+  text-align: left;
+}
+.place-feed-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.place-feed-body b,
+.place-feed-body span {
+  overflow-wrap: anywhere;
+}
+.place-feed-body small,
+.place-thread header small {
+  color: var(--ink-secondary);
+  font-size: 13px;
+}
+.place-kind {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  background: var(--surface-soft);
+  color: var(--action);
+}
+.place-kind-shout {
+  background: var(--coin);
+  color: var(--on-coin);
+}
+.place-thread header {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+}
+.place-text {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.place-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.place-back {
+  justify-self: start;
+}
+.place-replies li {
+  padding: 8px 10px;
+  border-radius: var(--radius-item);
+  background: var(--surface-soft);
+  overflow-wrap: anywhere;
+}
+.place-reply {
+  display: grid;
+  grid-template-columns: 1fr 48px;
+  gap: 6px;
+}
+.place-reply button {
+  min-height: 44px;
+  border-radius: var(--radius-control);
+  border: 0;
+  background: var(--action);
+  color: var(--on-action);
+}
+.emote-picker {
+  position: absolute;
+  right: 64px;
+  top: 0;
+  z-index: 20;
+  width: min(260px, calc(100vw - 96px));
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+  box-shadow: 0 6px 20px rgb(26 3 53 / 0.25);
+}
+.emote-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.emote-picker-grid button {
+  min-height: 48px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--decorative-border);
+  background: var(--surface-soft);
+  font-size: 24px;
+}
+.emote-picker-more {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--action);
+  font: inherit;
+  font-weight: 600;
+}

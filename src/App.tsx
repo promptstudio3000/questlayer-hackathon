@@ -37,7 +37,11 @@ import {
   ActorSheet,
   BadgeBook,
   NearbyMarket,
+  GoldShop,
+  PlaceMessages,
+  EmotePicker,
 } from "./lazy-panels";
+import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
 import type { RollCall } from "./WispRolls";
 // Styles of the split-off screens stay in the main stylesheet, in their old
 // order, so nothing shifts while a screen's script is still loading.
@@ -128,6 +132,7 @@ import type { NativeProfileQuote } from "./types";
 import { assertProfileQuote } from "./native-profile-quote";
 import type { NativeWardrobeState, NativeItem } from "./types";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -157,6 +162,7 @@ import {
   Check,
   Leaf,
   ChatCircle,
+  Smiley,
   PaperPlane,
   SignOut,
   ShieldCheck,
@@ -263,7 +269,9 @@ type Tab =
   | "community"
   | "settings"
   | "expeditions"
-  | "fuel";
+  | "fuel"
+  | "shop"
+  | "places";
 const HOME = { lat: 49.74745, lng: 13.3774 };
 /** A searched spot stands for its H3 res-7 cell (≈1.2 km edge) on the server. */
 const SEARCH_SPACING_M = 650;
@@ -276,9 +284,9 @@ const nav = [
 function navigationActive(tab: Tab, id: string) {
   return (
     tab === id ||
-    (id === "community" && ["messages", "bounties"].includes(tab)) ||
+    (id === "community" && ["messages", "bounties", "places"].includes(tab)) ||
     (id === "explore" && ["expeditions", "funding"].includes(tab)) ||
-    (id === "inventory" && tab === "market") ||
+    (id === "inventory" && (tab === "market" || tab === "shop")) ||
     (id === "settings" && ["wallet", "fund", "fuel"].includes(tab))
   );
 }
@@ -336,6 +344,12 @@ export default function App() {
     [others, setOthers] = useState<NearbyExplorer[]>([]),
     [showNpc, setShowNpc] = useState(false),
     [actorOpen, setActorOpen] = useState<ActorView | null>(null),
+    // GOLD spending (QGOLD stream 4): own emote and frame, lures and place pins.
+    [myEmote, setMyEmote] = useState<{ id: string; until: number } | null>(null),
+    [myFrame, setMyFrame] = useState<string | null>(null),
+    [goldMapData, setGoldMapData] = useState<GoldMap | null>(null),
+    [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
+    [emotePicker, setEmotePicker] = useState(false),
     [now, setNow] = useState(Date.now()),
     [menu, setMenu] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackPreferences>(() =>
@@ -409,10 +423,14 @@ export default function App() {
   }
   const communityTab = communityTabOf(tab, creatorView);
   const showCommunityTabs =
-    tab === "community" || tab === "bounties" || tab === "messages";
+    tab === "community" ||
+    tab === "bounties" ||
+    tab === "messages" ||
+    tab === "places";
   function chooseCommunityTab(next: CommunityTab) {
     if (next === "tasks") setTab("bounties");
     else if (next === "notes") setTab("messages");
+    else if (next === "places") setTab("places");
     else
       navigation.update({
         tab: "community",
@@ -978,6 +996,48 @@ export default function App() {
         });
       }
     }
+  }
+  // GOLD spending: lures and place pins near the player, refreshed every 30 s.
+  const goldSpot = `${Math.round(position.lat * 500)}:${Math.round(position.lng * 500)}`;
+  async function refreshGoldMap() {
+    if (!player) return;
+    try {
+      setGoldMapData(await readGoldMap(position.lat, position.lng));
+    } catch {
+      /* The map keeps the last pins; the next tick retries. */
+    }
+  }
+  async function readGoldLook() {
+    if (!player) return;
+    try {
+      setMyFrame((await goldShop()).look?.frame ?? null);
+    } catch {
+      /* No frame shown until the shop answers. */
+    }
+  }
+  const clearPlaceOpen = useCallback(() => setPlaceOpenId(null), []);
+  useEffect(() => {
+    if (!player?.id) return;
+    void refreshGoldMap();
+    const timer = setInterval(() => void refreshGoldMap(), 30_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id, goldSpot]);
+  useEffect(() => {
+    if (player?.id) void readGoldLook();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id]);
+  async function publishPlace(targetId: string): Promise<boolean> {
+    const account = recordAccount?.accountId;
+    const result = await action("place-record", async () => {
+      if (!account || !player) throw Error("Your explorer account is not ready yet.");
+      const { signer, accountId } = await signerForAccount(account);
+      const { publishPlaceRecord } = await import("./place-record");
+      const confirmed = await publishPlaceRecord({ call: api, signer, accountId, playerId: player.id, targetId });
+      notify(confirmed ? tr("Your message is now a public record on NEAR Social.") : tr("Record sent. Refresh in a moment to see it confirmed."));
+      return confirmed;
+    });
+    return result === true;
   }
   async function me() {
     const token = playerReads.current.begin(ownerContext());
@@ -2992,6 +3052,8 @@ export default function App() {
           : nav.find((n) => n.id === tab)?.label ||
         {
           messages: tr("Map notes"),
+          shop: tr("Inventory"),
+          places: tr("Community"),
           bounties: tr("Community tasks"),
           community: tr("Community"),
           settings: tr("Settings"),
@@ -3087,6 +3149,14 @@ export default function App() {
           }}
           actorsWorldId={world?.id || null}
           onActor={setActorOpen}
+          emote={myEmote && myEmote.until > now ? myEmote.id : null}
+          frame={myFrame}
+          goldMap={goldMapData}
+          onPlacePin={(id) => {
+            setPlaceOpenId(id);
+            setTab("places");
+            setSheetExpanded(true);
+          }}
         />
       ) : (
         // MapLibre and the map style load only after the name step, so the
@@ -3423,14 +3493,49 @@ export default function App() {
               onChange={chooseCommunityTab}
             />
           )}
-          {(tab === "inventory" || tab === "market") && (
+          {(tab === "inventory" || tab === "market" || tab === "shop") && (
             <ScreenTabs
               label={tr("Inventory")}
               idBase="bag"
               tabs={BAG_TABS}
-              value={tab === "market" ? "market" : "items"}
-              onChange={(next) => setTab(next === "market" ? "market" : "inventory")}
+              value={tab === "market" ? "market" : tab === "shop" ? "shop" : "items"}
+              onChange={(next) => setTab(next === "market" ? "market" : next === "shop" ? "shop" : "inventory")}
             />
+          )}
+          {tab === "shop" && (
+            <ScreenTabPanel idBase="bag" value="shop">
+              <GoldShop
+                key={player.id}
+                worldId={world?.id || null}
+                fix={fix}
+                arena={arena && !nativePlay}
+                notify={notify}
+                onSpent={() => {
+                  void me();
+                  void refreshGoldMap();
+                  void readGoldLook();
+                }}
+                onEmote={(id: string, until: number) => setMyEmote({ id, until })}
+              />
+            </ScreenTabPanel>
+          )}
+          {tab === "places" && (
+            <ScreenTabPanel idBase="community" value="places">
+              <PlaceMessages
+                key={player.id}
+                position={position}
+                fix={fix}
+                arena={arena && !nativePlay}
+                notify={notify}
+                onSpent={() => {
+                  void me();
+                  void refreshGoldMap();
+                }}
+                openId={placeOpenId}
+                onOpened={clearPlaceOpen}
+                onPublish={recordAccount ? publishPlace : undefined}
+              />
+            </ScreenTabPanel>
           )}
           {tab === "explore" && !selected && !nativePlay && (
             <ScreenTabs
@@ -4680,6 +4785,26 @@ export default function App() {
             >
               <ChatCircle size={20} />
             </button>
+            <button
+              aria-label={tr("Emotes")}
+              title={tr("Emotes")}
+              aria-expanded={emotePicker}
+              className={emotePicker ? "active" : ""}
+              onClick={() => setEmotePicker((v) => !v)}
+            >
+              <Smiley size={20} />
+            </button>
+            {emotePicker && (
+              <EmotePicker
+                onEmote={(id: string, until: number) => setMyEmote({ id, until })}
+                onShop={() => {
+                  setEmotePicker(false);
+                  setTab("shop");
+                  setSheetExpanded(true);
+                }}
+                onClose={() => setEmotePicker(false)}
+              />
+            )}
           </div>
           <div className="player-bottom">
             <div className="mini-avatar">

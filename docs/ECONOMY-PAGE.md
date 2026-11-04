@@ -22,6 +22,10 @@ moves through it. No sign-in, no actions, no player ids.
     the internal player id is never returned.
   - **Yield cycle proof** from `public/native-yield-cycle-proof.json`, with an
     explorer link per flush.
+  - **Trade fee** (`tradeFees`) from `public/native-intents-fees-testnet.json`,
+    written by `scripts/intents-fees-testnet.mjs`: the 2 % P2P fee on the
+    NEAR Intents verifier and each sweep into the prize pool (withdraw and
+    `fund_rewards` transactions). Only finished sweeps count in `swept`.
 - Every amount is a yoctoNEAR string; the page formats with BigInt-safe string
   math (`src/economy/format.ts`) and never rounds small yield to zero.
 - Each source fails on its own: a host without native rewards or with RPC

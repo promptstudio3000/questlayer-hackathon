@@ -371,5 +371,7 @@ export type NearbyExplorer = Point & {
     below: string | null;
     skinTokenId: string | null;
     source: "demo" | "native" | "unavailable";
+    /** GOLD cosmetics: a marker frame and a live emote (server/gold-spend). */
+    gold?: { frame?: string; emote?: string; emoteUntil?: number };
   };
 };

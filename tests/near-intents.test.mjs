@@ -2,13 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { KeyPair } from "near-api-js";
 import {
+  PIPS_MAX,
+  TREASURY_FEE_PIPS,
   auraOrderTerms,
   auraTokenDiff,
   auraTransferPair,
   checkWithdrawal,
+  feeForGross,
+  grossForNet,
   intentMessage,
   matches,
   netDeltas,
+  netForGross,
   parseNonce,
   signIntentWithKeyPair,
   verifierInitArgs,
@@ -103,6 +108,49 @@ test("opposite token_diffs match and net to zero; same-side orders do not", () =
   );
 });
 
+test("the treasury fee follows the verifier's rounding: the seller gets the price exactly", () => {
+  assert.equal(TREASURY_FEE_PIPS, 20_000);
+  assert.equal(PIPS_MAX, 1_000_000n);
+  for (const p of [10n ** 22n, 10n ** 24n + 7n, 123_456_789_012_345_678_901n, 5n * 10n ** 25n]) {
+    const gross = grossForNet(p, TREASURY_FEE_PIPS);
+    // The verifier keeps ceil(gross * fee / 1e6) and passes the rest on.
+    const verifierFee = (gross * 20_000n + PIPS_MAX - 1n) / PIPS_MAX;
+    assert.equal(gross - verifierFee, p);
+    assert.equal(netForGross(gross, TREASURY_FEE_PIPS), p);
+    assert.equal(feeForGross(gross, TREASURY_FEE_PIPS), verifierFee);
+    // One yocto less would short the seller.
+    assert.ok(netForGross(gross - 1n, TREASURY_FEE_PIPS) < p);
+    assert.equal(grossForNet(p, 0), p);
+  }
+  // 2 % of what the buyer gives: 0.01 NEAR to the seller costs ~0.0102 NEAR.
+  assert.equal(grossForNet(10n ** 22n, TREASURY_FEE_PIPS), 10_204_081_632_653_061_224_490n);
+  assert.throws(() => grossForNet(1n, 1_000_000), /fee/);
+  assert.throws(() => netForGross(1n, -1), /fee/);
+});
+
+test("with the fee on, a fee-paying buy matches a sell and the batch nets to zero", () => {
+  const feePips = TREASURY_FEE_PIPS,
+    opts = { nftContract, wnear, feePips };
+  const sell = auraTokenDiff({ side: "sell", nftContract, tokenId, price, wnear }),
+    buy = auraTokenDiff({ side: "buy", nftContract, tokenId, price, wnear, feePips });
+  assert.equal(buy.diff["nep141:wrap.testnet"], `-${grossForNet(price, feePips)}`);
+  const a = auraOrderTerms([sell], opts),
+    b = auraOrderTerms([buy], opts);
+  assert.equal(b.price, price);
+  assert.equal(b.gross, grossForNet(price, feePips).toString());
+  assert.ok(matches(a, b));
+  const bodies = [
+    { signerId: "alice.testnet", intents: [sell] },
+    { signerId: "bob.testnet", intents: [buy] },
+  ];
+  assert.deepEqual(netDeltas(bodies, feePips), {});
+  // Without the fee the buyer's extra shows up as an unmatched delta.
+  assert.ok(Object.keys(netDeltas(bodies)).length);
+  // A buy signed before the fee went on no longer covers the seller's price.
+  const old = auraTokenDiff({ side: "buy", nftContract, tokenId, price, wnear });
+  assert.ok(!matches(a, auraOrderTerms([old], opts)));
+});
+
 test("fallback transfer pair names both parties and moves exactly one Aura", () => {
   const pair = auraTransferPair({ seller: "alice.testnet", buyer: "bob.testnet", nftContract, tokenId, price, wnear });
   assert.deepEqual(pair.seller, {
@@ -153,4 +201,10 @@ test("browser builders produce the same bytes as the server helpers", async () =
   const intents = [web.auraTokenDiff("buy", nftContract, tokenId, price, wnear)];
   assert.deepEqual(intents[0], auraTokenDiff({ side: "buy", nftContract, tokenId, price, wnear }));
   assert.equal(web.intentMessage("bob.testnet", deadlineMs, intents), intentMessage({ signerId: "bob.testnet", deadlineMs, intents }));
+  assert.deepEqual(
+    web.auraTokenDiff("buy", nftContract, tokenId, price, wnear, TREASURY_FEE_PIPS),
+    auraTokenDiff({ side: "buy", nftContract, tokenId, price, wnear, feePips: TREASURY_FEE_PIPS }),
+  );
+  for (const p of ["10000000000000000000000", "123456789012345678901", "1"])
+    assert.equal(web.grossForNet(p, TREASURY_FEE_PIPS), grossForNet(p, TREASURY_FEE_PIPS).toString());
 });

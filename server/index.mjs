@@ -29,6 +29,8 @@ import {
   startOrderIndexWorker,
 } from "./native/order-index.mjs";
 import { IntentsMarket, createIntentsRoutes } from "./native/intents-market.mjs";
+import { QgoldKeeper, keeperSettings } from "./qgold/keeper.mjs";
+import { createQgoldPage, RHEA_DEX } from "./qgold/token-page.mjs";
 import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
@@ -167,6 +169,11 @@ import { loadPlaceBadges } from "./badges/place-catalog.mjs";
 import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
 import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
 import { createBadgeRoutes } from "./badges/routes.mjs";
+import { createGoldSpend } from "./gold-spend/service.mjs";
+import { createPlaces } from "./gold-spend/places.mjs";
+import { createPlaceSocial } from "./gold-spend/social.mjs";
+import { createGoldSpendRoutes } from "./gold-spend/routes.mjs";
+import { defaultPoiSource } from "./poi-quests.mjs";
 import { chainLedgerSettings, createChainLedger } from "./chain-ledger/service.mjs";
 import { createLedgerChain, startLedgerWorker } from "./chain-ledger/chain.mjs";
 import { createChainLedgerRoutes } from "./chain-ledger/routes.mjs";
@@ -696,8 +703,28 @@ const traderRoutes = createTraderRoutes({
 const monsterHunt = createMonsterHunt(db, actorService, {
   levelOf: (player) => demoProgression(db, player).level,
   bossHp: Number(process.env.BOSS_HP) || undefined,
+  // The Golden Altar fee in GOLD (QGOLD stream 4); GOLD_ALTAR_FEE=0 turns it off.
+  altarFees: process.env.GOLD_ALTAR_FEE !== "0",
 });
 const huntRoutes = createHuntRoutes(monsterHunt, actorService, db);
+// GOLD spending (QGOLD stream 4, docs/GOLD-SPENDING.md): emotes, cosmetics,
+// trader premium gear, lures and place messages. Every spend burns practice
+// GOLD until the QGOLD vault is live. GOLD_LURE_DEMO=1 (never on mainnet)
+// lets the demo walk set lures for testing.
+const goldSpend = createGoldSpend(db, {
+  actors: actorService,
+  poiSource: defaultPoiSource(),
+  allowArenaLures: process.env.GOLD_LURE_DEMO === "1" && NETWORK !== "mainnet",
+});
+const placeMessages = createPlaces(db, {
+  levelOf: (player) => demoProgression(db, player).level,
+});
+const goldSpendRoutes = createGoldSpendRoutes({
+  gold: goldSpend,
+  places: placeMessages,
+  social: createPlaceSocial(db, featureEnabled("social") ? socialRecords : null),
+  linkedAccount,
+});
 // Daily board of three goals (docs/DAILY-BOARD.md): on by default except on
 // mainnet; DAILY_BOARD_* settings change the goals and bonus. No streak.
 const dailyBoardConfig = dailyBoardSettings(process.env, NETWORK);
@@ -839,6 +866,7 @@ const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 // Public economy ledger for the /economy page (docs/ECONOMY-PAGE.md).
 const yieldCycleProofPath = resolve(APP_ROOT, "public/native-yield-cycle-proof.json");
+const intentsFeesRecordPath = resolve(APP_ROOT, "public/native-intents-fees-testnet.json");
 const publicLedger = createPublicLedger({
   native: nativeRewards,
   treasury: stnearTreasury,
@@ -847,6 +875,61 @@ const publicLedger = createPublicLedger({
     existsSync(yieldCycleProofPath)
       ? JSON.parse(readFileSync(yieldCycleProofPath, "utf8"))
       : null,
+  // 2 % P2P trade fee swept into the prize pool (scripts/intents-fees-testnet.mjs).
+  feeRecord: () =>
+    existsSync(intentsFeesRecordPath)
+      ? JSON.parse(readFileSync(intentsFeesRecordPath, "utf8"))
+      : null,
+});
+// QGOLD token page and market keeper (docs/QGOLD-MARKET.md). The vault
+// manifest comes from the vault stream, the pool manifest from
+// scripts/qgold-rhea-pool-testnet.mjs; each part waits for its manifest.
+const readManifest = (name) => {
+  const p = [
+    resolve(APP_ROOT, `public/${manifestName(name)}`),
+    resolve(APP_ROOT, `dist/${manifestName(name)}`),
+  ].find((x) => existsSync(x));
+  return p ? JSON.parse(readFileSync(p, "utf8")) : null;
+};
+const qgoldVaultManifest = readManifest("native-qgold-vault");
+const qgoldPoolManifest = readManifest("native-qgold-pool");
+const qgoldVaultReader =
+  qgoldVaultManifest?.network === NETWORK && qgoldVaultManifest.vaultContract
+    ? new NativeContractReader(provider, qgoldVaultManifest.vaultContract)
+    : null;
+const qgoldRhea =
+  qgoldPoolManifest?.network === NETWORK && RHEA_DEX[NETWORK]
+    ? new NativeContractReader(provider, qgoldPoolManifest.dex || RHEA_DEX[NETWORK])
+    : null;
+const qgoldKeeperSettings = keeperSettings(process.env);
+let qgoldKeeperAccount = null;
+if (qgoldVaultReader && qgoldKeeperSettings.execute && qgoldKeeperSettings.keyPath) {
+  try {
+    qgoldKeeperAccount = (
+      await loadServiceAccount(provider, qgoldKeeperSettings.keyPath)
+    ).account;
+  } catch (error) {
+    console.warn("QGOLD keeper key unavailable; keeper records only:", error.message);
+  }
+}
+const qgoldKeeper =
+  qgoldVaultReader && qgoldKeeperSettings.enabled
+    ? new QgoldKeeper(db, {
+        vault: qgoldVaultReader,
+        rhea: qgoldRhea,
+        poolId: Number.isInteger(qgoldPoolManifest?.poolId) ? qgoldPoolManifest.poolId : null,
+        wnear: qgoldPoolManifest?.wnear || "wrap.testnet",
+        provider,
+        account: qgoldKeeperAccount,
+        settings: qgoldKeeperSettings,
+      })
+    : null;
+const qgoldPage = createQgoldPage({
+  vaultManifest: qgoldVaultManifest,
+  poolManifest: qgoldPoolManifest,
+  vault: qgoldVaultReader,
+  rhea: qgoldRhea,
+  keeper: qgoldKeeper,
 });
 const tasksManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-tasks")}`),
@@ -1169,6 +1252,10 @@ async function api(req, res, url) {
     if (fresh) nativeRewards.lastAudit = await auditDistribution(nativeRewards);
     return respond(res, nativeRewards.lastAudit);
   }
+  if (path === "/api/economy/qgold" && method === "GET")
+    return respond(res, await qgoldPage(), 200, {
+      "Cache-Control": "public, max-age=30",
+    });
   if (path === "/api/treasury/mix" && method === "GET") {
     assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
     return respond(res, await treasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
@@ -1663,6 +1750,8 @@ async function api(req, res, url) {
   if (await marketRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await badgeRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await goldSpendRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await chainLedgerRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
@@ -2641,8 +2730,13 @@ async function api(req, res, url) {
         { lat, lng },
         url.searchParams.get("arena") !== "0",
         {
-          appearanceReader: (players) =>
-            publicAppearances(db, players, nativeCollectibles),
+          appearanceReader: async (players) =>
+            (await publicAppearances(db, players, nativeCollectibles)).map(
+              (look, i) => {
+                const gold = look && goldSpend.lookOf(players[i].id);
+                return gold ? { ...look, gold } : look;
+              },
+            ),
           assertSession: () =>
             assert(auth(req) === player, "Please sign in again.", 401),
         },
@@ -3353,6 +3447,11 @@ const pinWorker =
     : null;
 const npcRollWorker =
   !backgroundWorkersDisabled && npcRolls ? startNpcRollWorker(npcRolls) : null;
+const qgoldKeeperWorker =
+  !backgroundWorkersDisabled && qgoldKeeper
+    ? setInterval(() => void qgoldKeeper.tick().catch(() => {}), 5 * 60000)
+    : null;
+qgoldKeeperWorker?.unref?.();
 const intentsWorker =
   !backgroundWorkersDisabled && intentsMarket
     ? setInterval(() => void intentsMarket.reconcile().catch(() => {}), 60000)
