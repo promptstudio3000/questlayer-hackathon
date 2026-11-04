@@ -328,7 +328,17 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
             <h3>{t.about}</h3>
             {title && <p>{title}</p>}
             {reply?.note && <p>{reply.note}</p>}
-            <p className="npc-fine">{reply?.source && reply.source !== "template" ? t.aiVoice : t.stdVoice}</p>
+            <p className="npc-fine">
+              {reply?.source === "near-ai" ? t.privateVoice : reply?.source && reply.source !== "template" ? t.aiVoice : t.stdVoice}
+            </p>
+            {reply?.verification && (
+              <p className="npc-fine">
+                <a href={reply.verification.url} target="_blank" rel="noreferrer">
+                  {t.verifyReply}
+                </a>{" "}
+                <code>{reply.verification.chatId}</code>
+              </p>
+            )}
             <p className="npc-fine">{t.aiNote}</p>
           </div>
         )}

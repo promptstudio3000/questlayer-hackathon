@@ -3,6 +3,7 @@ import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
 import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
+import { nearAiStatus } from "./ai/near-ai.mjs";
 import { createAdventureResults } from "./adventure-results.mjs";
 import { recordSchemaVersions, schemaStatus } from "./schema-compatibility.mjs";
 import { resolveBuildId } from "./build-id.mjs";
@@ -1028,7 +1029,7 @@ async function api(req, res, url) {
         collectibles: nativeCollectibles.contractId,
         intents: process.env.NEAR_INTENTS_CONTRACT || null,
       },
-      nearAI: !!process.env.NEAR_AI_API_KEY,
+      nearAI: nearAiStatus(process.env),
       guide: guide.provider,
       // World layers (docs/WORLDS-PLAN.md): response-only, never hashed.
       layerId: DEFAULT_LAYER.id,

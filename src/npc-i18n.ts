@@ -20,6 +20,8 @@ const strings = () => ({
   error: tr("Something went wrong."),
   aiVoice: tr("AI voice · answers only from game data"),
   stdVoice: tr("Standard replies"),
+  privateVoice: tr("Private AI on NEAR · runs in a sealed enclave, answers only from game data"),
+  verifyReply: tr("Check this reply"),
   role: {
     storyteller: tr("Storyteller"),
     trader: tr("Trader"),

@@ -28,6 +28,7 @@ import {
   validateNpcOutput,
 } from "./talk.mjs";
 import { createNpcStore } from "./store.mjs";
+import { NEAR_AI_VERIFY_URL, createNearAiVerifier } from "../ai/near-ai.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { ACTORS_SCHEMA } from "../actors/schema.mjs";
 import { checkGate, playerStakerAccess } from "../staker-gates.mjs";
@@ -61,6 +62,7 @@ export function createNpcService(
     env = process.env,
     config = npcConfiguration(env),
     provider = config.provider === "off" ? null : npcProviderFor(config, env),
+    verifier = config.nearAi?.active && config.nearAi.verify ? createNearAiVerifier(config.nearAi) : null,
     clock = Date.now,
     personas,
     priceEur = () => null,
@@ -139,7 +141,8 @@ export function createNpcService(
     const memory = store.memory(player, actor.id);
     let result = null,
       reason = null,
-      outcome = "template";
+      outcome = "template",
+      used = null;
     if (provider) {
       if (store.talkCount(player, 60_000) >= config.perMinute || store.talkCount(player, 3600_000) >= config.perHour) {
         outcome = "limited";
@@ -149,7 +152,9 @@ export function createNpcService(
         reason = "daily-budget";
       } else {
         try {
-          const raw = await provider.reply({ persona, facts, menu, memory: memory.notes, message: text });
+          const res = await provider.reply({ persona, facts, menu, memory: memory.notes, message: text });
+          used = provider.withMeta ? res : { output: res, source: provider.name, model: provider.model };
+          const raw = used.output;
           const checked = validateNpcOutput(raw, facts, menu);
           if (checked.value) {
             result = checked.value;
@@ -174,17 +179,29 @@ export function createNpcService(
     }
     if (!result) result = templateReply(persona, menu, { message: text, lang: languageOf(text) });
     if (result.remember) store.remember(player, actor.id, result.remember);
-    store.audit({
+    const receipt = outcome === "answered" && used?.source === "near-ai" ? used.receipt : null;
+    const auditId = store.audit({
       player,
       actor: actor.id,
-      provider: provider ? provider.name : "template",
-      model: provider?.model,
+      provider: used?.source || (provider ? provider.name : "template"),
+      model: used?.model || provider?.model,
       outcome,
-      reason,
+      reason: reason || used?.primaryReason || null,
       factsHash,
       menuHash: mh,
       outputHash: hash(result.say),
     });
+    if (receipt && verifier)
+      verifier
+        .check(receipt)
+        .then((v) => {
+          try {
+            store.attest(auditId, v);
+          } catch {
+            // database closed (shutdown or test teardown)
+          }
+        })
+        .catch(() => {});
     return {
       say: result.say,
       emote: result.emote,
@@ -194,8 +211,22 @@ export function createNpcService(
       menuHash: mh,
       locked,
       active: activeView(rows, world),
-      source: outcome === "answered" ? provider.name : "template",
+      source: outcome === "answered" ? used.source : "template",
       attested: false,
+      // Private inference: the enclave signature is checked in the background
+      // and recorded on the audit row; anyone can re-check the chat id at
+      // the NEAR AI Verification Center.
+      ...(receipt?.chatId
+        ? {
+            verification: {
+              provider: "near-ai",
+              model: receipt.model,
+              chatId: receipt.chatId,
+              status: verifier ? "pending" : "unchecked",
+              url: NEAR_AI_VERIFY_URL,
+            },
+          }
+        : {}),
       policy: NPC_TALK_POLICY,
       ...(reason
         ? { note: reason === "rate-limit" || reason === "daily-budget" ? "Chat limit reached; standard reply." : "Standard reply." }
@@ -334,6 +365,7 @@ export function createNpcService(
 
   return {
     provider: provider ? provider.name : "template",
+    attestation: (auditId) => store.attestation(auditId),
     greet,
     talk,
     accept,

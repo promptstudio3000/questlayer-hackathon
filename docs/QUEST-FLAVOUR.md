@@ -64,7 +64,7 @@ npm run ai:flavour -- --since 7d [--dry-run] [--max-pois N] [--budget N] [--poi 
 Keys come from the existing variables (`OLLAMA_API_KEY`, `ANTHROPIC_API_KEY`, `NEAR_AI_API_KEY`) and are never
 logged or printed. On the testnet VPS `QUEST_AI_PROVIDER=ollama` is already set, so the batch uses Ollama
 (`deepseek-v4.1-flash`) without a new setting. Switching to NEAR AI later is `FLAVOUR_AI_PROVIDER=near-ai` plus
-`NEAR_AI_API_KEY` and `NEAR_AI_MODEL`.
+`NEAR_AI_ENABLED=1` and `NEAR_AI_API_KEY` (docs/NEAR-AI-CLOUD.md).
 
 A new prompt version (`FLAVOUR_PROMPT_VERSION`) makes every cached text a miss, so the next batches refill the
 cache while players see template text. `AI_DEBUG_REJECTED=1` logs redacted samples of rejected texts.
