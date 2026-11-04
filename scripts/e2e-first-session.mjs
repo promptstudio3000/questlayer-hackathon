@@ -24,6 +24,7 @@ import { join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
+import { openScreen } from "./lib/e2e-nav.mjs";
 
 const require = createRequire(import.meta.url);
 const AXE_SOURCE = require("axe-core").source;
@@ -532,7 +533,7 @@ async function runDevice(name, server) {
     await scan(page, "settings");
 
     console.log("8. Equip from the collection");
-    await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
+    await openScreen(page, "Inventory");
     // The backpack grid: the first-session Aura is the worn cell.
     const aura = page.locator(".inv-grid .inv-cell.worn").first();
     await aura.waitFor();
@@ -569,7 +570,7 @@ async function runDevice(name, server) {
     await buyer.getByPlaceholder("Your explorer name").fill(`${TAG}Buyer ${name}`);
     await buyer.getByRole("button", { name: "Start exploring" }).click();
     await buyer.getByRole("button", { name: "Hide first steps" }).click();
-    await buyer.getByRole("button", { name: "Profile", exact: true }).first().click();
+    await openScreen(buyer, "Profile");
     await buyer.getByRole("button", { name: /^Market/ }).click();
     const offer = buyer.locator(".listing-card, li, article").filter({ hasText: explorer }).filter({
       has: buyer.getByRole("button", { name: "Buy Aura" }),
@@ -581,14 +582,14 @@ async function runDevice(name, server) {
     await buyer.getByText("This Aura is yours.", { exact: false }).waitFor({ timeout: 10_000 });
     await buyerContext.close();
     // The seller sees the sale: the Aura has left the collection.
-    await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
+    await openScreen(page, "Inventory");
     await page.waitForFunction(
       (n) => ![...document.querySelectorAll(".inv-grid .inv-cell:not(.locked):not(.empty)")].some((e) => (e.getAttribute("aria-label") || "").split(",")[0].trim() === n),
       auraName,
       { timeout: 15_000 },
     ).catch(async () => {
       await page.reload();
-      await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
+      await openScreen(page, "Inventory");
       await page.waitForFunction(
         (n) => ![...document.querySelectorAll(".inv-grid .inv-cell:not(.locked):not(.empty)")].some((e) => (e.getAttribute("aria-label") || "").split(",")[0].trim() === n),
         auraName,
@@ -598,7 +599,7 @@ async function runDevice(name, server) {
     console.log(`  ${auraName} sold for 25 practice GOLD`);
 
     console.log("10. Creator feed");
-    await page.getByRole("button", { name: "Community", exact: true }).first().click();
+    await openScreen(page, "Community");
     const feed = page.getByRole("region", { name: "Creator community" });
     await feed.waitFor();
     await feed.getByRole("heading", { name: "All creator quests" }).waitFor({ timeout: 15_000 });
@@ -643,7 +644,7 @@ async function runDevice(name, server) {
       await check("profile menu open");
       await capture(cardPage, "home-screen-card-profile-menu");
       await profileButton.click();
-      await cardPage.getByRole("button", { name: "Profile", exact: true }).first().click();
+      await openScreen(cardPage, "Profile");
       await cardPage.getByRole("tab", { name: "Character" }).click();
       await cardPage.locator(".profile-tiles button").filter({ hasText: /^Market/ }).waitFor();
       await check("Profile screen");

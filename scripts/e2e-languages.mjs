@@ -17,6 +17,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
+import { closeOpenSheet } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const I18N = join(ROOT, "src/i18n");
@@ -194,6 +195,7 @@ async function runLanguage(browser, url, lang) {
   const ids = ["explore", "inventory", "community", "profile"];
   for (let i = 1; i < (await rail.count()); i++) {
     await dismissOverlays(page);
+    await closeOpenSheet(page);
     await rail.nth(i).click();
     await page.waitForTimeout(600);
     await check(page, lang, dir, ids[i], report);

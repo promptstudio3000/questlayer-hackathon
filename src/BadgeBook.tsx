@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Medal,
+  X,
 } from "@phosphor-icons/react";
 import { ArrowRight } from "./dir-icons";
 import { api } from "./api";
@@ -132,6 +133,9 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
       {open && (
         <Dialog label={tr("Badges")} onClose={() => setOpen(false)}>
           <section className="badge-book">
+            <button className="sheet-close" aria-label={tr("Close")} onClick={() => setOpen(false)}>
+              <X size={16} aria-hidden="true" />
+            </button>
             <h2>{tr("Badges")}</h2>
             <div className="badge-tabs" role="tablist" aria-label={tr("Badge kind")}>
               <button role="tab" aria-selected={view === "places"} onClick={() => setView("places")}>
@@ -196,8 +200,6 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
             ) : (
               <PlayerBadges data={data} gps={freshFix(gps)} reload={load} onConnectNear={onConnectNear} />
             )}
-            <button className="secondary-button" onClick={() => setOpen(false)}>
-              {tr("Close")}</button>
           </section>
         </Dialog>
       )}

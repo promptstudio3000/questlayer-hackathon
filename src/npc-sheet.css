@@ -107,3 +107,15 @@
 .npc-task-title { margin: 0; font-weight: 600; }
 .npc-turnin { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: #37f4a0; color: #0f4639; font: inherit; font-weight: 600; cursor: pointer; }
 .npc-turnin:disabled { background: #ffffff1a; color: #cbb8ef; cursor: default; }
+/* Grid tracks default to their widest content, so one long locked chip
+   ("Reach Tier 2 (50 NEAR matured) · Reach level 5") pushed the whole
+   dialog past the right edge on phones. Tracks may shrink; text wraps. */
+.npc-sheet,
+.npc-panel,
+.npc-actions { grid-template-columns: minmax(0, 1fr); }
+.npc-sheet > *,
+.npc-panel > *,
+.npc-actions > * { min-width: 0; }
+.npc-panel .locked-chip-face { flex-wrap: wrap; row-gap: 2px; }
+.npc-panel .locked-chip-face .locked-chip-label { flex: 1 1 0; min-width: 0; }
+.npc-panel .locked-chip-face small { flex-basis: 100%; padding-left: 24px; white-space: normal; }

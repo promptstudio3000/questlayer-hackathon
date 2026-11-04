@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { openScreen } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -130,10 +131,7 @@ function stubBallot() {
 }
 
 async function openCommunity(page) {
-  await page
-    .getByRole("button", { name: "Community", exact: true })
-    .first()
-    .click();
+  await openScreen(page, "Community");
   // The bonus vote lives on Community → Creators.
   await page.getByRole("tab", { name: /Creators/ }).click();
   await page.getByRole("tabpanel").first().waitFor();
@@ -177,10 +175,7 @@ async function main() {
     console.log("3. Ballot shown and votes saved");
     const stub = stubBallot();
     await page.route("**/api/creators/bonus-vote", (r) => stub.handle(r));
-    await page
-      .getByRole("button", { name: "Explore", exact: true })
-      .first()
-      .click();
+    await openScreen(page, "Explore");
     await openCommunity(page);
     const panel = page.locator(".bonus-vote");
     await panel.waitFor({ timeout: 10_000 });

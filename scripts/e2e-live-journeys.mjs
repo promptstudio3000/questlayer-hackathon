@@ -26,6 +26,7 @@ import { join, resolve } from "node:path";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
 import { loadQuizBank } from "../server/actors/challenges/quiz.mjs";
+import { openScreen } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const BASE = (process.env.E2E_BASE_URL || "https://questlayer.promptstudio3000.com").replace(/\/$/, "");
@@ -428,7 +429,7 @@ async function newPlayer(browser, device, name, spot, { account = false, cookie 
 }
 
 async function openProfileTab(page, tabName) {
-  await page.getByRole("button", { name: /^(Profile|Profil)$/ }).first().click();
+  await openScreen(page, /^(Profile|Profil)$/);
   await page.getByRole("tab", { name: tabName }).first().click();
 }
 
@@ -590,7 +591,7 @@ function uiJourneys(device) {
       const { page, context, errors } = await newPlayer(browser, device, null, null, { account: true, cookie: e.cookie });
       try {
         await page.getByRole("button", { name: "Hide first steps" }).click().catch(() => {});
-        await page.getByRole("button", { name: "Inventory", exact: true }).first().click();
+        await openScreen(page, "Inventory");
         await page.locator(".inv-chip").filter({ hasText: "Secured" }).click();
         const panel = page.getByRole("region", { name: "Wisp rolls" });
         await panel.waitFor({ timeout: 30_000 });
