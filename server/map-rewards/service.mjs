@@ -2,6 +2,7 @@
 // an H3 cell on a day, its coins, zone prizes and pioneer bonus are drawn
 // from the day plan and written once. Everything is practice GOLD until the
 // QGOLD vault (build plan stream 1) can mint real QGOLD for a claim.
+import { mapChainEnabled, mapChainStatus } from "./chain.mjs";
 import {
   latLngToCell,
   cellToLatLng,
@@ -262,10 +263,9 @@ export async function materializeCellRewards(
         db
           .prepare("SELECT pioneer_left_u FROM map_reward_days WHERE day=?")
           .get(day)?.pioneer_left_u || 0;
-      pioneerU = Math.min(
-        left,
-        Math.max(budget * (PIONEER_MULT - 1), 50 * COIN_VALUE),
-      );
+      // At most x2 of the cell's leaf: the rewards contract pays a pioneer
+      // cell up to twice its coinsU (contracts/rewards map_days.rs).
+      pioneerU = Math.min(left, budget * (PIONEER_MULT - 1));
       if (pioneerU > 0)
         db.prepare(
           "UPDATE map_reward_days SET pioneer_left_u=pioneer_left_u-? WHERE day=?",
@@ -538,6 +538,10 @@ export function mapRewardsView(db, { bounds, res = 7, now = Date.now() } = {}) {
 
 export function mapRewardsDay(db, now = Date.now()) {
   const plan = ensureDayPlan(db, now);
-  return { ...plan, policy: MAP_REWARDS_POLICY };
+  return {
+    ...plan,
+    policy: MAP_REWARDS_POLICY,
+    chain: mapChainEnabled() ? mapChainStatus(db, plan.day) : null,
+  };
 }
 export { cellProof, readDay };
