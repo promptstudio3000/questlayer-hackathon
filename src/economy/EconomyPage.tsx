@@ -5,6 +5,7 @@
 import React, { useEffect, useState } from "react";
 import { exactNear, priceLabel, shortAccount, shortHash, shortNear } from "./format";
 import "./economy.css";
+import QgoldSection from "./QgoldSection";
 import TreasuryMix from "./TreasuryMix";
 
 type Link = { explorerUrl: string | null };
@@ -181,6 +182,8 @@ export default function EconomyPage() {
           </p>
         ) : null}
       </section>
+
+      <QgoldSection />
 
       {error ? <p className="eco-card eco-error">The ledger could not be loaded ({error}). Try again in a minute.</p> : null}
       {!data && !error ? <p className="eco-card eco-muted">Reading the chain…</p> : null}
