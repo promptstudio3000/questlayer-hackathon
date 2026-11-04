@@ -10,6 +10,7 @@
 import * as THREE from "three";
 import { tr } from "./i18n.ts";
 import { artUrl } from "./art-registry.ts";
+import "./art-world.ts";
 
 /** Dropped-in art for an NPC/monster (art/actors/<model>, docs/ART-LIST.md), or null for the 3D bake. */
 export const actorArtUrl = (model: string) => artUrl(`actors/${model}`);

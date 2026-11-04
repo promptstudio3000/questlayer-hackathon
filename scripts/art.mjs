@@ -143,7 +143,7 @@ export function renderList() {
   lines.push(
     "## How it works in code",
     "",
-    "- `src/art-overrides.ts` collects `art/**/*.{png,webp,svg}` at build time (Vite `import.meta.glob`) and registers them in `src/art-registry.ts`.",
+    "- At build time (Vite `import.meta.glob`) `src/art-overrides.ts` registers the welcome-screen art (logo, coin, player) and `src/art-world.ts`, which rides the map chunk, registers the rest in `src/art-registry.ts`. This keeps the welcome screen inside its JS budget.",
     "- Each placeholder asks `artUrl(key)` first: logo (`BrandLogo`), player (`STARTER_SPRITE`), NPC/monster map sprites and sheets (`actorSprite`, `createActorScene`), dialog portraits (`NpcSheet`), Auras (`AuraSprite`, `auraMarkup`), map/list objects (`GameObjectArt`, `gameObjectMarkup`, map coin and street-find icons) and place badges (`BadgeBook`).",
     "- Missing file = current art. NFT media already minted on NEAR (`public/aura-*.svg`, explorer cover) never change.",
     "- `tests/art-catalog.test.mjs` keeps the catalog in step with the game data and this file in step with the catalog.",

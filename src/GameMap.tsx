@@ -33,6 +33,7 @@ import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 maplibregl.setWorkerUrl(mapWorkerUrl);
 import type { GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./art-world";
 import type { Point, World, Zone, Item } from "./types";
 import { prefersReducedMotion } from "./feedback";
 import { paintMapSky, skyFor, skyLabel } from "./map-sky";

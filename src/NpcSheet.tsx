@@ -20,6 +20,7 @@ import {
 } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
 import { artUrl } from "./art-registry";
+import "./art-world";
 import LockedChip, { openStakeScreen } from "./LockedChip";
 import type { ActorEncounter, ActorOffer } from "./actor-types";
 import {

@@ -9,6 +9,7 @@ import { Dialog } from "./Dialog";
 import type { Fix } from "./types";
 import "./badges.css";
 import { artUrl } from "./art-registry";
+import "./art-world";
 import { tr } from "./i18n";
 import { EXPLORER_BASE } from "./near-network";
 
