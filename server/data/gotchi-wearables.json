@@ -1,0 +1,3921 @@
+{
+ "source": "Aavegotchi Diamond on Base (chain 8453), getItemType(itemId)",
+ "contract": "0xA99c4B08201F2913Db8D28e71d020c4298F29dBF",
+ "note": "Names and placement from the official contract. Item artwork is read from getItemSvg(itemId) at runtime and is not stored here.",
+ "generatedAt": "2026-11-04",
+ "items": [
+  {
+   "id": 1,
+   "name": "Camo Hat",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    15,
+    2,
+    34,
+    20
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 2,
+   "name": "Camo Pants",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    15,
+    41,
+    34,
+    14
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 3,
+   "name": "MK2 Grenade",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    5,
+    31,
+    8,
+    11
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 4,
+   "name": "Snow Camo Hat",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    2,
+    34,
+    20
+   ],
+   "supply": 500
+  },
+  {
+   "id": 5,
+   "name": "Snow Camo Pants",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    41,
+    34,
+    14
+   ],
+   "supply": 500
+  },
+  {
+   "id": 6,
+   "name": "M67 Grenade",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    4,
+    31,
+    9,
+    11
+   ],
+   "supply": 500
+  },
+  {
+   "id": 7,
+   "name": "Marine Cap",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    12,
+    1,
+    39,
+    27
+   ],
+   "supply": 300
+  },
+  {
+   "id": 8,
+   "name": "Marine Jacket",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    12,
+    32,
+    40,
+    23
+   ],
+   "supply": 300
+  },
+  {
+   "id": 9,
+   "name": "Walkie Talkie",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    3,
+    31,
+    7,
+    15
+   ],
+   "supply": 300
+  },
+  {
+   "id": 10,
+   "name": "Link White Hat",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    9,
+    1,
+    46,
+    20
+   ],
+   "supply": 150
+  },
+  {
+   "id": 11,
+   "name": "Link Mess Dress",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    12,
+    32,
+    40,
+    23
+   ],
+   "supply": 150
+  },
+  {
+   "id": 12,
+   "name": "Link Bubbly",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    5,
+    25,
+    5,
+    19
+   ],
+   "supply": 150
+  },
+  {
+   "id": 13,
+   "name": "Sergey Beard",
+   "slot": "face",
+   "rarity": "mythical",
+   "dims": [
+    15,
+    6,
+    34,
+    34
+   ],
+   "supply": 50
+  },
+  {
+   "id": 14,
+   "name": "Sergey Eyes",
+   "slot": "eyes",
+   "rarity": "mythical",
+   "dims": [
+    22,
+    22,
+    20,
+    8
+   ],
+   "supply": 50
+  },
+  {
+   "id": 15,
+   "name": "Red Plaid",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    12,
+    32,
+    40,
+    22
+   ],
+   "supply": 50
+  },
+  {
+   "id": 16,
+   "name": "Blue Plaid",
+   "slot": "body",
+   "rarity": "godlike",
+   "dims": [
+    12,
+    32,
+    40,
+    22
+   ],
+   "supply": 5
+  },
+  {
+   "id": 17,
+   "name": "Link Cube",
+   "slot": "hand",
+   "rarity": "godlike",
+   "dims": [
+    1,
+    31,
+    12,
+    16
+   ],
+   "supply": 5
+  },
+  {
+   "id": 18,
+   "name": "Aave Hero Mask",
+   "slot": "face",
+   "rarity": "common",
+   "dims": [
+    15,
+    19,
+    38,
+    13
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 19,
+   "name": "Aave Hero Shirt",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    12,
+    32,
+    40,
+    19
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 20,
+   "name": "Aave Plush",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    1,
+    32,
+    13,
+    13
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 21,
+   "name": "Captain Aave Mask",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    11,
+    6,
+    42,
+    28
+   ],
+   "supply": 500
+  },
+  {
+   "id": 22,
+   "name": "Captain Aave Suit",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    7,
+    31,
+    50,
+    22
+   ],
+   "supply": 500
+  },
+  {
+   "id": 23,
+   "name": "Captain Aave Shield",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    3,
+    32,
+    20,
+    20
+   ],
+   "supply": 500
+  },
+  {
+   "id": 24,
+   "name": "Thaave Helmet",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    9,
+    6,
+    46,
+    24
+   ],
+   "supply": 250
+  },
+  {
+   "id": 25,
+   "name": "Thaave Suit",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    9,
+    33,
+    46,
+    22
+   ],
+   "supply": 250
+  },
+  {
+   "id": 26,
+   "name": "Thaave Hammer",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    0,
+    28,
+    14,
+    14
+   ],
+   "supply": 250
+  },
+  {
+   "id": 27,
+   "name": "Marc Hair",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    6,
+    34,
+    20
+   ],
+   "supply": 100
+  },
+  {
+   "id": 28,
+   "name": "Marc Outfit",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    12,
+    32,
+    40,
+    22
+   ],
+   "supply": 100
+  },
+  {
+   "id": 29,
+   "name": "REKT Sign",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    0,
+    24,
+    17,
+    23
+   ],
+   "supply": 100
+  },
+  {
+   "id": 30,
+   "name": "Jordan Hair",
+   "slot": "head",
+   "rarity": "mythical",
+   "dims": [
+    7,
+    0,
+    50,
+    34
+   ],
+   "supply": 50
+  },
+  {
+   "id": 31,
+   "name": "Jordan Suit",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    12,
+    32,
+    40,
+    22
+   ],
+   "supply": 50
+  },
+  {
+   "id": 32,
+   "name": "Aave Flag",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    0,
+    24,
+    12,
+    25
+   ],
+   "supply": 50
+  },
+  {
+   "id": 33,
+   "name": "Stani Hair",
+   "slot": "head",
+   "rarity": "godlike",
+   "dims": [
+    15,
+    6,
+    34,
+    18
+   ],
+   "supply": 5
+  },
+  {
+   "id": 34,
+   "name": "Stani Vest",
+   "slot": "body",
+   "rarity": "godlike",
+   "dims": [
+    15,
+    33,
+    34,
+    16
+   ],
+   "supply": 5
+  },
+  {
+   "id": 35,
+   "name": "Aave Boat",
+   "slot": "pet",
+   "rarity": "godlike",
+   "dims": [
+    5,
+    46,
+    57,
+    15
+   ],
+   "supply": 5
+  },
+  {
+   "id": 36,
+   "name": "ETH Logo Glasses",
+   "slot": "eyes",
+   "rarity": "common",
+   "dims": [
+    15,
+    19,
+    34,
+    13
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 37,
+   "name": "ETH Tshirt",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    12,
+    32,
+    40,
+    19
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 38,
+   "name": "32 ETH Coin",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    1,
+    31,
+    14,
+    14
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 39,
+   "name": "Foxy Mask",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    2,
+    34,
+    40
+   ],
+   "supply": 500
+  },
+  {
+   "id": 40,
+   "name": "Foxy Tail",
+   "slot": "pet",
+   "rarity": "uncommon",
+   "dims": [
+    49,
+    40,
+    15,
+    14
+   ],
+   "supply": 500
+  },
+  {
+   "id": 41,
+   "name": "Trezor Wallet",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    4,
+    31,
+    9,
+    14
+   ],
+   "supply": 500
+  },
+  {
+   "id": 42,
+   "name": "Eagle Mask",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    5,
+    6,
+    54,
+    27
+   ],
+   "supply": 250
+  },
+  {
+   "id": 43,
+   "name": "Eagle Armor",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    12,
+    32,
+    40,
+    22
+   ],
+   "supply": 250
+  },
+  {
+   "id": 44,
+   "name": "DAO Egg",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    0,
+    27,
+    16,
+    22
+   ],
+   "supply": 250
+  },
+  {
+   "id": 45,
+   "name": "Ape Mask",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    11,
+    6,
+    42,
+    36
+   ],
+   "supply": 100
+  },
+  {
+   "id": 46,
+   "name": "Halfrekt Shirt",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    12,
+    32,
+    40,
+    19
+   ],
+   "supply": 100
+  },
+  {
+   "id": 47,
+   "name": "Waifu Pillow",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    0,
+    23,
+    17,
+    30
+   ],
+   "supply": 100
+  },
+  {
+   "id": 48,
+   "name": "Xibot Mohawk",
+   "slot": "head",
+   "rarity": "mythical",
+   "dims": [
+    27,
+    0,
+    10,
+    22
+   ],
+   "supply": 50
+  },
+  {
+   "id": 49,
+   "name": "Coderdan Shades",
+   "slot": "eyes",
+   "rarity": "mythical",
+   "dims": [
+    15,
+    19,
+    34,
+    12
+   ],
+   "supply": 50
+  },
+  {
+   "id": 50,
+   "name": "GldnXross Robe",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    10,
+    32,
+    44,
+    24
+   ],
+   "supply": 50
+  },
+  {
+   "id": 51,
+   "name": "Mudgen Diamond",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    0,
+    33,
+    13,
+    10
+   ],
+   "supply": 50
+  },
+  {
+   "id": 52,
+   "name": "Galaxy Brain",
+   "slot": "head",
+   "rarity": "godlike",
+   "dims": [
+    11,
+    1,
+    42,
+    22
+   ],
+   "supply": 5
+  },
+  {
+   "id": 53,
+   "name": "All-Seeing Eyes",
+   "slot": "eyes",
+   "rarity": "godlike",
+   "dims": [
+    18,
+    19,
+    28,
+    12
+   ],
+   "supply": 5
+  },
+  {
+   "id": 54,
+   "name": "Llamacorn Shirt",
+   "slot": "body",
+   "rarity": "godlike",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 5
+  },
+  {
+   "id": 55,
+   "name": "Aagent Headset",
+   "slot": "face",
+   "rarity": "rare",
+   "dims": [
+    48,
+    25,
+    3,
+    7
+   ],
+   "supply": 308
+  },
+  {
+   "id": 56,
+   "name": "Aagent Shirt",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    12,
+    32,
+    40,
+    19
+   ],
+   "supply": 308
+  },
+  {
+   "id": 57,
+   "name": "Aagent Shades",
+   "slot": "eyes",
+   "rarity": "rare",
+   "dims": [
+    15,
+    22,
+    34,
+    9
+   ],
+   "supply": 308
+  },
+  {
+   "id": 58,
+   "name": "Aagent Pistol",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    2,
+    34,
+    9,
+    7
+   ],
+   "supply": 308
+  },
+  {
+   "id": 59,
+   "name": "Aagent Fedora Hat",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    11,
+    4,
+    42,
+    17
+   ],
+   "supply": 308
+  },
+  {
+   "id": 60,
+   "name": "Common Wizard Hat",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    11,
+    0,
+    42,
+    22
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 61,
+   "name": "Legendary Wizard Hat",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    11,
+    0,
+    42,
+    22
+   ],
+   "supply": 125
+  },
+  {
+   "id": 62,
+   "name": "Mythical Wizard Hat",
+   "slot": "head",
+   "rarity": "mythical",
+   "dims": [
+    11,
+    0,
+    42,
+    22
+   ],
+   "supply": 50
+  },
+  {
+   "id": 63,
+   "name": "Godlike Wizard Hat",
+   "slot": "head",
+   "rarity": "godlike",
+   "dims": [
+    11,
+    0,
+    42,
+    22
+   ],
+   "supply": 5
+  },
+  {
+   "id": 64,
+   "name": "Common Wizard Staff",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    7,
+    24,
+    7,
+    31
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 65,
+   "name": "Legendary Wizard Staff",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    6,
+    22,
+    9,
+    33
+   ],
+   "supply": 125
+  },
+  {
+   "id": 66,
+   "name": "Wizard Visor",
+   "slot": "eyes",
+   "rarity": "common",
+   "dims": [
+    15,
+    22,
+    34,
+    8
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 67,
+   "name": "Straw Hat",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    7,
+    2,
+    50,
+    20
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 68,
+   "name": "Farmer Jeans",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    15,
+    41,
+    34,
+    14
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 69,
+   "name": "Pitchfork",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    7,
+    24,
+    7,
+    31
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 70,
+   "name": "Handsaw",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    7,
+    19,
+    5,
+    27
+   ],
+   "supply": 50
+  },
+  {
+   "id": 71,
+   "name": "Red Santa Hat",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    11,
+    0,
+    42,
+    22
+   ],
+   "supply": 389
+  },
+  {
+   "id": 72,
+   "name": "Jaay Hairpiece",
+   "slot": "head",
+   "rarity": "mythical",
+   "dims": [
+    15,
+    6,
+    36,
+    16
+   ],
+   "supply": 30
+  },
+  {
+   "id": 73,
+   "name": "Jaay Glasses",
+   "slot": "eyes",
+   "rarity": "mythical",
+   "dims": [
+    15,
+    21,
+    34,
+    10
+   ],
+   "supply": 10
+  },
+  {
+   "id": 74,
+   "name": "Jaay Suit",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    11,
+    31,
+    42,
+    23
+   ],
+   "supply": 20
+  },
+  {
+   "id": 75,
+   "name": "OKex Sign",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    1,
+    24,
+    13,
+    22
+   ],
+   "supply": 40
+  },
+  {
+   "id": 76,
+   "name": "Big GHST Token",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    1,
+    33,
+    12,
+    12
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 77,
+   "name": "Bitcoin Beanie",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    13,
+    2,
+    38,
+    18
+   ],
+   "supply": 500
+  },
+  {
+   "id": 78,
+   "name": "Black Jeans",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    41,
+    34,
+    14
+   ],
+   "supply": 500
+  },
+  {
+   "id": 79,
+   "name": "Skateboard",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    5,
+    25,
+    8,
+    26
+   ],
+   "supply": 250
+  },
+  {
+   "id": 80,
+   "name": "Sushi Bandana",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    15,
+    14,
+    38,
+    10
+   ],
+   "supply": 250
+  },
+  {
+   "id": 81,
+   "name": "Sushi Coat",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    15,
+    41,
+    36,
+    14
+   ],
+   "supply": 250
+  },
+  {
+   "id": 82,
+   "name": "Sushi Piece",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    0,
+    29,
+    19,
+    15
+   ],
+   "supply": 125
+  },
+  {
+   "id": 83,
+   "name": "Sushi Knife",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    7,
+    25,
+    6,
+    18
+   ],
+   "supply": 250
+  },
+  {
+   "id": 84,
+   "name": "Gentleman Hat",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    9,
+    2,
+    46,
+    18
+   ],
+   "supply": 125
+  },
+  {
+   "id": 85,
+   "name": "Gentleman Coat",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    12,
+    32,
+    40,
+    23
+   ],
+   "supply": 125
+  },
+  {
+   "id": 86,
+   "name": "Monocle",
+   "slot": "eyes",
+   "rarity": "mythical",
+   "dims": [
+    34,
+    21,
+    12,
+    21
+   ],
+   "supply": 50
+  },
+  {
+   "id": 87,
+   "name": "Miner Helmet",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    13,
+    4,
+    38,
+    18
+   ],
+   "supply": 500
+  },
+  {
+   "id": 88,
+   "name": "Miner Jeans",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    41,
+    34,
+    14
+   ],
+   "supply": 500
+  },
+  {
+   "id": 89,
+   "name": "Pickaxe",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    0,
+    30,
+    14,
+    14
+   ],
+   "supply": 250
+  },
+  {
+   "id": 90,
+   "name": "Pajama Hat",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    8,
+    0,
+    43,
+    22
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 91,
+   "name": "Pajama Shirt",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    11,
+    31,
+    42,
+    22
+   ],
+   "supply": 500
+  },
+  {
+   "id": 92,
+   "name": "Bedtime Milk",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    4,
+    34,
+    6,
+    10
+   ],
+   "supply": 250
+  },
+  {
+   "id": 93,
+   "name": "Fluffy Pillow",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    3,
+    36,
+    11,
+    19
+   ],
+   "supply": 125
+  },
+  {
+   "id": 94,
+   "name": "Sweatband",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    14,
+    34,
+    6
+   ],
+   "supply": 500
+  },
+  {
+   "id": 95,
+   "name": "Track Shorts",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    41,
+    34,
+    14
+   ],
+   "supply": 500
+  },
+  {
+   "id": 96,
+   "name": "Water bottle",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    7,
+    31,
+    6,
+    13
+   ],
+   "supply": 500
+  },
+  {
+   "id": 97,
+   "name": "Pillbox Hat",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    11,
+    3,
+    42,
+    18
+   ],
+   "supply": 125
+  },
+  {
+   "id": 98,
+   "name": "Day Dress",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    40,
+    34,
+    15
+   ],
+   "supply": 125
+  },
+  {
+   "id": 99,
+   "name": "Parasol",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    1,
+    21,
+    17,
+    25
+   ],
+   "supply": 50
+  },
+  {
+   "id": 100,
+   "name": "Clutch",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    4,
+    37,
+    9,
+    14
+   ],
+   "supply": 125
+  },
+  {
+   "id": 101,
+   "name": "Witchy Hat",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    11,
+    0,
+    42,
+    22
+   ],
+   "supply": 125
+  },
+  {
+   "id": 102,
+   "name": "Witchy Cloak",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    9,
+    29,
+    46,
+    26
+   ],
+   "supply": 125
+  },
+  {
+   "id": 103,
+   "name": "Witchy Wand",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    3,
+    33,
+    11,
+    11
+   ],
+   "supply": 50
+  },
+  {
+   "id": 104,
+   "name": "Portal Mage Helmet",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    8,
+    1,
+    48,
+    35
+   ],
+   "supply": 125
+  },
+  {
+   "id": 105,
+   "name": "Portal Mage Armor",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    7,
+    29,
+    50,
+    26
+   ],
+   "supply": 125
+  },
+  {
+   "id": 106,
+   "name": "Portal Mage Axe",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    0,
+    18,
+    14,
+    28
+   ],
+   "supply": 125
+  },
+  {
+   "id": 107,
+   "name": "Portal Mage Black Axe",
+   "slot": "hand",
+   "rarity": "godlike",
+   "dims": [
+    0,
+    18,
+    14,
+    28
+   ],
+   "supply": 5
+  },
+  {
+   "id": 108,
+   "name": "Rasta Hat",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    11,
+    3,
+    42,
+    29
+   ],
+   "supply": 500
+  },
+  {
+   "id": 109,
+   "name": "Rasta Shirt",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    12,
+    32,
+    40,
+    15
+   ],
+   "supply": 500
+  },
+  {
+   "id": 110,
+   "name": "Jamaican Flag",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    2,
+    24,
+    10,
+    28
+   ],
+   "supply": 250
+  },
+  {
+   "id": 111,
+   "name": "Hazmat Hood",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    6,
+    34,
+    34
+   ],
+   "supply": 125
+  },
+  {
+   "id": 112,
+   "name": "Hazmat Suit",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    7,
+    31,
+    50,
+    24
+   ],
+   "supply": 125
+  },
+  {
+   "id": 113,
+   "name": "Uranium Rod",
+   "slot": "hand",
+   "rarity": "godlike",
+   "dims": [
+    8,
+    26,
+    3,
+    19
+   ],
+   "supply": 5
+  },
+  {
+   "id": 114,
+   "name": "Red Hawaiian Shirt",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    12,
+    32,
+    40,
+    18
+   ],
+   "supply": 50
+  },
+  {
+   "id": 115,
+   "name": "Blue Hawaiian Shirt",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 125
+  },
+  {
+   "id": 116,
+   "name": "Coconut",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    1,
+    27,
+    12,
+    18
+   ],
+   "supply": 250
+  },
+  {
+   "id": 117,
+   "name": "Cool shades",
+   "slot": "eyes",
+   "rarity": "common",
+   "dims": [
+    15,
+    22,
+    34,
+    8
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 118,
+   "name": "Water Jug",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    1,
+    21,
+    16,
+    26
+   ],
+   "supply": 125
+  },
+  {
+   "id": 119,
+   "name": "Baby Bottle",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    6,
+    27,
+    7,
+    17
+   ],
+   "supply": 125
+  },
+  {
+   "id": 120,
+   "name": "Martini",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    1,
+    25,
+    14,
+    19
+   ],
+   "supply": 125
+  },
+  {
+   "id": 121,
+   "name": "Wine",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    6,
+    23,
+    7,
+    22
+   ],
+   "supply": 250
+  },
+  {
+   "id": 122,
+   "name": "Milkshake",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    2,
+    21,
+    12,
+    29
+   ],
+   "supply": 50
+  },
+  {
+   "id": 123,
+   "name": "Apple Juice",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    3,
+    30,
+    8,
+    14
+   ],
+   "supply": 500
+  },
+  {
+   "id": 124,
+   "name": "Beer Helmet",
+   "slot": "head",
+   "rarity": "mythical",
+   "dims": [
+    5,
+    2,
+    54,
+    29
+   ],
+   "supply": 50
+  },
+  {
+   "id": 125,
+   "name": "Track Suit",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    11,
+    31,
+    42,
+    24
+   ],
+   "supply": 125
+  },
+  {
+   "id": 130,
+   "name": "Fireball",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    3,
+    31,
+    10,
+    12
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 131,
+   "name": "Dragon Horns",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    19,
+    3,
+    26,
+    15
+   ],
+   "supply": 500
+  },
+  {
+   "id": 132,
+   "name": "Dragon Wings",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    2,
+    19,
+    60,
+    31
+   ],
+   "supply": 250
+  },
+  {
+   "id": 133,
+   "name": "Pointy Horns",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    19,
+    4,
+    26,
+    14
+   ],
+   "supply": 100
+  },
+  {
+   "id": 134,
+   "name": "L2 Sign",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    1,
+    24,
+    13,
+    23
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 135,
+   "name": "Polygon Shirt",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    12,
+    32,
+    40,
+    20
+   ],
+   "supply": 500
+  },
+  {
+   "id": 136,
+   "name": "Polygon Cap",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    7,
+    4,
+    42,
+    17
+   ],
+   "supply": 250
+  },
+  {
+   "id": 137,
+   "name": "Vote Sign",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    0,
+    24,
+    17,
+    23
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 138,
+   "name": "Snapshot Shirt",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    12,
+    32,
+    40,
+    20
+   ],
+   "supply": 500
+  },
+  {
+   "id": 139,
+   "name": "Snapshot Cap",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    7,
+    4,
+    42,
+    17
+   ],
+   "supply": 250
+  },
+  {
+   "id": 140,
+   "name": "Elf Ears",
+   "slot": "face",
+   "rarity": "common",
+   "dims": [
+    9,
+    18,
+    46,
+    12
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 141,
+   "name": "Gemstone Ring",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    5,
+    29,
+    8,
+    14
+   ],
+   "supply": 500
+  },
+  {
+   "id": 142,
+   "name": "Princess Tiara",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    15,
+    8,
+    34,
+    10
+   ],
+   "supply": 250
+  },
+  {
+   "id": 143,
+   "name": "Gold Necklace",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    34,
+    34,
+    12
+   ],
+   "supply": 100
+  },
+  {
+   "id": 144,
+   "name": "Princess Hair",
+   "slot": "head",
+   "rarity": "mythical",
+   "dims": [
+    15,
+    6,
+    34,
+    45
+   ],
+   "supply": 50
+  },
+  {
+   "id": 145,
+   "name": "Godli Locks",
+   "slot": "head",
+   "rarity": "godlike",
+   "dims": [
+    15,
+    6,
+    34,
+    45
+   ],
+   "supply": 5
+  },
+  {
+   "id": 146,
+   "name": "Imperial Moustache",
+   "slot": "face",
+   "rarity": "common",
+   "dims": [
+    19,
+    32,
+    26,
+    7
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 147,
+   "name": "Tiny Crown",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    26,
+    4,
+    12,
+    6
+   ],
+   "supply": 500
+  },
+  {
+   "id": 148,
+   "name": "Royal Scepter",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    5,
+    28,
+    6,
+    21
+   ],
+   "supply": 250
+  },
+  {
+   "id": 149,
+   "name": "Royal Crown",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    6,
+    34,
+    12
+   ],
+   "supply": 100
+  },
+  {
+   "id": 150,
+   "name": "Royal Robes",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    10,
+    30,
+    44,
+    25
+   ],
+   "supply": 50
+  },
+  {
+   "id": 151,
+   "name": "Common Rofl",
+   "slot": "pet",
+   "rarity": "common",
+   "dims": [
+    42,
+    43,
+    20,
+    18
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 152,
+   "name": "Uncommon Rofl",
+   "slot": "pet",
+   "rarity": "uncommon",
+   "dims": [
+    42,
+    43,
+    20,
+    18
+   ],
+   "supply": 500
+  },
+  {
+   "id": 153,
+   "name": "Rare Rofl",
+   "slot": "pet",
+   "rarity": "rare",
+   "dims": [
+    42,
+    43,
+    20,
+    18
+   ],
+   "supply": 250
+  },
+  {
+   "id": 154,
+   "name": "Legendary Rofl",
+   "slot": "pet",
+   "rarity": "legendary",
+   "dims": [
+    42,
+    43,
+    20,
+    18
+   ],
+   "supply": 100
+  },
+  {
+   "id": 155,
+   "name": "Mythical Rofl",
+   "slot": "pet",
+   "rarity": "mythical",
+   "dims": [
+    42,
+    38,
+    20,
+    23
+   ],
+   "supply": 50
+  },
+  {
+   "id": 156,
+   "name": "Godlike Rofl",
+   "slot": "pet",
+   "rarity": "godlike",
+   "dims": [
+    30,
+    38,
+    34,
+    23
+   ],
+   "supply": 5
+  },
+  {
+   "id": 157,
+   "name": "Lil Pump Goatee",
+   "slot": "face",
+   "rarity": "uncommon",
+   "dims": [
+    29,
+    37,
+    6,
+    3
+   ],
+   "supply": 500
+  },
+  {
+   "id": 158,
+   "name": "Lil Pump Drank",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    4,
+    31,
+    8,
+    13
+   ],
+   "supply": 250
+  },
+  {
+   "id": 159,
+   "name": "Lil Pump Shades",
+   "slot": "eyes",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    19,
+    34,
+    12
+   ],
+   "supply": 100
+  },
+  {
+   "id": 160,
+   "name": "Lil Pump Threads",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    11,
+    31,
+    42,
+    22
+   ],
+   "supply": 50
+  },
+  {
+   "id": 161,
+   "name": "Lil Pump Dreads",
+   "slot": "head",
+   "rarity": "godlike",
+   "dims": [
+    13,
+    6,
+    38,
+    27
+   ],
+   "supply": 5
+  },
+  {
+   "id": 162,
+   "name": "Miami Shirt",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 199,
+   "name": "Steampunk Goggles",
+   "slot": "eyes",
+   "rarity": "rare",
+   "dims": [
+    15,
+    20,
+    34,
+    19
+   ],
+   "supply": 250
+  },
+  {
+   "id": 200,
+   "name": "Steampunk Trousers",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    41,
+    34,
+    14
+   ],
+   "supply": 500
+  },
+  {
+   "id": 201,
+   "name": "Mechanical Claw",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    1,
+    33,
+    14,
+    11
+   ],
+   "supply": 100
+  },
+  {
+   "id": 202,
+   "name": "VR Headset",
+   "slot": "eyes",
+   "rarity": "mythical",
+   "dims": [
+    14,
+    5,
+    36,
+    26
+   ],
+   "supply": 50
+  },
+  {
+   "id": 203,
+   "name": "Gamer Jacket",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    12,
+    32,
+    34,
+    20
+   ],
+   "supply": 250
+  },
+  {
+   "id": 204,
+   "name": "Game Controller",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    0,
+    35,
+    16,
+    13
+   ],
+   "supply": 500
+  },
+  {
+   "id": 205,
+   "name": "Gotchi Mug",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    1,
+    29,
+    13,
+    15
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 206,
+   "name": "Biker Helmet",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    12,
+    2,
+    40,
+    30
+   ],
+   "supply": 250
+  },
+  {
+   "id": 207,
+   "name": "Biker Jacket",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    33,
+    34,
+    20
+   ],
+   "supply": 500
+  },
+  {
+   "id": 208,
+   "name": "Aviators",
+   "slot": "eyes",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    21,
+    34,
+    11
+   ],
+   "supply": 500
+  },
+  {
+   "id": 209,
+   "name": "Horseshoe Mustache",
+   "slot": "face",
+   "rarity": "legendary",
+   "dims": [
+    23,
+    32,
+    18,
+    9
+   ],
+   "supply": 100
+  },
+  {
+   "id": 211,
+   "name": "Guy Fawkes Mask",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    15,
+    6,
+    34,
+    39
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 212,
+   "name": "1337 Laptop",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    0,
+    30,
+    16,
+    14
+   ],
+   "supply": 50
+  },
+  {
+   "id": 213,
+   "name": "H4xx0r Shirt",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    10,
+    31,
+    44,
+    22
+   ],
+   "supply": 100
+  },
+  {
+   "id": 214,
+   "name": "Matrix Eyes",
+   "slot": "eyes",
+   "rarity": "godlike",
+   "dims": [
+    20,
+    22,
+    24,
+    8
+   ],
+   "supply": 5
+  },
+  {
+   "id": 215,
+   "name": "Cyborg Eye",
+   "slot": "eyes",
+   "rarity": "legendary",
+   "dims": [
+    32,
+    15,
+    17,
+    19
+   ],
+   "supply": 100
+  },
+  {
+   "id": 216,
+   "name": "Rainbow Vomit",
+   "slot": "face",
+   "rarity": "mythical",
+   "dims": [
+    22,
+    32,
+    20,
+    23
+   ],
+   "supply": 50
+  },
+  {
+   "id": 217,
+   "name": "Energy Gun",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    2,
+    33,
+    13,
+    11
+   ],
+   "supply": 50
+  },
+  {
+   "id": 218,
+   "name": "Mohawk",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    27,
+    0,
+    10,
+    22
+   ],
+   "supply": 500
+  },
+  {
+   "id": 219,
+   "name": "Mutton Chops",
+   "slot": "face",
+   "rarity": "rare",
+   "dims": [
+    15,
+    21,
+    34,
+    19
+   ],
+   "supply": 250
+  },
+  {
+   "id": 220,
+   "name": "Punk Shirt",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    9,
+    32,
+    46,
+    21
+   ],
+   "supply": 100
+  },
+  {
+   "id": 221,
+   "name": "Pirate Hat",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    7,
+    0,
+    50,
+    20
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 222,
+   "name": "Pirate Coat",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    10,
+    31,
+    44,
+    24
+   ],
+   "supply": 500
+  },
+  {
+   "id": 223,
+   "name": "Hook Hand",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    1,
+    35,
+    9,
+    9
+   ],
+   "supply": 500
+  },
+  {
+   "id": 224,
+   "name": "Pirate Patch",
+   "slot": "eyes",
+   "rarity": "rare",
+   "dims": [
+    15,
+    21,
+    34,
+    10
+   ],
+   "supply": 250
+  },
+  {
+   "id": 225,
+   "name": "Basketball",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    1,
+    28,
+    13,
+    13
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 226,
+   "name": "Red Headband",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    15,
+    14,
+    34,
+    6
+   ],
+   "supply": 250
+  },
+  {
+   "id": 227,
+   "name": "23 Jersey",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    15,
+    33,
+    34,
+    22
+   ],
+   "supply": 250
+  },
+  {
+   "id": 228,
+   "name": "10 Gallon Hat",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    9,
+    3,
+    46,
+    18
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 229,
+   "name": "Lasso",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    2,
+    23,
+    12,
+    26
+   ],
+   "supply": 500
+  },
+  {
+   "id": 230,
+   "name": "Wraangler Jeans",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    15,
+    40,
+    34,
+    15
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 231,
+   "name": "Comfy Poncho",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    12,
+    31,
+    40,
+    24
+   ],
+   "supply": 500
+  },
+  {
+   "id": 232,
+   "name": "Poncho Hoodie",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    12,
+    1,
+    40,
+    30
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 233,
+   "name": "Uncommon Cacti",
+   "slot": "pet",
+   "rarity": "uncommon",
+   "dims": [
+    40,
+    45,
+    23,
+    17
+   ],
+   "supply": 500
+  },
+  {
+   "id": 234,
+   "name": "Shaaman Poncho",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    12,
+    31,
+    40,
+    24
+   ],
+   "supply": 50
+  },
+  {
+   "id": 235,
+   "name": "Shaaman Hoodie",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    12,
+    1,
+    40,
+    30
+   ],
+   "supply": 100
+  },
+  {
+   "id": 236,
+   "name": "Rare Cacti",
+   "slot": "pet",
+   "rarity": "rare",
+   "dims": [
+    40,
+    45,
+    23,
+    17
+   ],
+   "supply": 250
+  },
+  {
+   "id": 237,
+   "name": "Mythical Cacti",
+   "slot": "pet",
+   "rarity": "mythical",
+   "dims": [
+    40,
+    45,
+    23,
+    17
+   ],
+   "supply": 50
+  },
+  {
+   "id": 238,
+   "name": "Godlike Cacti",
+   "slot": "pet",
+   "rarity": "godlike",
+   "dims": [
+    1,
+    48,
+    62,
+    14
+   ],
+   "supply": 5
+  },
+  {
+   "id": 239,
+   "name": "Wagie Cap",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    4,
+    34,
+    19
+   ],
+   "supply": 500
+  },
+  {
+   "id": 240,
+   "name": "Headphones",
+   "slot": "face",
+   "rarity": "uncommon",
+   "dims": [
+    11,
+    2,
+    42,
+    29
+   ],
+   "supply": 500
+  },
+  {
+   "id": 241,
+   "name": "WGMI Shirt",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 250
+  },
+  {
+   "id": 242,
+   "name": "Maan Bun",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    0,
+    34,
+    22
+   ],
+   "supply": 100
+  },
+  {
+   "id": 243,
+   "name": "Tinted Shades",
+   "slot": "eyes",
+   "rarity": "rare",
+   "dims": [
+    15,
+    22,
+    34,
+    9
+   ],
+   "supply": 250
+  },
+  {
+   "id": 244,
+   "name": "V-Neck Shirt",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    12,
+    32,
+    40,
+    23
+   ],
+   "supply": 250
+  },
+  {
+   "id": 245,
+   "name": "Gecko Hat",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    15,
+    3,
+    34,
+    27
+   ],
+   "supply": 250
+  },
+  {
+   "id": 246,
+   "name": "APY Shades",
+   "slot": "eyes",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    20,
+    34,
+    12
+   ],
+   "supply": 500
+  },
+  {
+   "id": 247,
+   "name": "Up Arrow",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    0,
+    24,
+    16,
+    26
+   ],
+   "supply": 500
+  },
+  {
+   "id": 248,
+   "name": "Up Only Shirt",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 500
+  },
+  {
+   "id": 249,
+   "name": "Gecko Eyes",
+   "slot": "eyes",
+   "rarity": "rare",
+   "dims": [
+    19,
+    20,
+    26,
+    12
+   ],
+   "supply": 250
+  },
+  {
+   "id": 250,
+   "name": "CoinGecko Tee",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 250
+  },
+  {
+   "id": 251,
+   "name": "Candy Jaar",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    1,
+    25,
+    14,
+    20
+   ],
+   "supply": 250
+  },
+  {
+   "id": 252,
+   "name": "Aastronaut Helmet",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    12,
+    5,
+    40,
+    35
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 253,
+   "name": "Aastronaut Suit",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    7,
+    31,
+    50,
+    24
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 254,
+   "name": "uGOTCHI Token",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    0,
+    34,
+    12,
+    12
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 255,
+   "name": "Space Helmet",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    14,
+    5,
+    36,
+    35
+   ],
+   "supply": 100
+  },
+  {
+   "id": 256,
+   "name": "Lil Bubble Space Suit",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    7,
+    31,
+    50,
+    24
+   ],
+   "supply": 100
+  },
+  {
+   "id": 257,
+   "name": "Bitcoin Guitar",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    0,
+    17,
+    15,
+    38
+   ],
+   "supply": 100
+  },
+  {
+   "id": 258,
+   "name": "Taoist Robe",
+   "slot": "body",
+   "rarity": "godlike",
+   "dims": [
+    10,
+    31,
+    44,
+    25
+   ],
+   "supply": 5
+  },
+  {
+   "id": 259,
+   "name": "Bushy Eyebrows",
+   "slot": "eyes",
+   "rarity": "godlike",
+   "dims": [
+    16,
+    18,
+    32,
+    9
+   ],
+   "supply": 5
+  },
+  {
+   "id": 260,
+   "name": "Beard of Wisdom",
+   "slot": "face",
+   "rarity": "godlike",
+   "dims": [
+    25,
+    32,
+    14,
+    14
+   ],
+   "supply": 5
+  },
+  {
+   "id": 261,
+   "name": "Aantenna Bot",
+   "slot": "pet",
+   "rarity": "mythical",
+   "dims": [
+    44,
+    33,
+    17,
+    26
+   ],
+   "supply": 50
+  },
+  {
+   "id": 262,
+   "name": "Radar Eyes",
+   "slot": "eyes",
+   "rarity": "mythical",
+   "dims": [
+    19,
+    20,
+    26,
+    12
+   ],
+   "supply": 50
+  },
+  {
+   "id": 263,
+   "name": "Signal Headset",
+   "slot": "face",
+   "rarity": "mythical",
+   "dims": [
+    11,
+    6,
+    42,
+    25
+   ],
+   "supply": 50
+  },
+  {
+   "id": 292,
+   "name": "Brunette Ponytail",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    15,
+    2,
+    48,
+    21
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 293,
+   "name": "Leather Tunic",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    10,
+    31,
+    44,
+    24
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 294,
+   "name": "Bow and Arrow",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    0,
+    26,
+    12,
+    27
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 295,
+   "name": "Forked Beard",
+   "slot": "face",
+   "rarity": "common",
+   "dims": [
+    21,
+    32,
+    22,
+    11
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 296,
+   "name": "Doublesided Axe",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    0,
+    28,
+    15,
+    15
+   ],
+   "supply": 500
+  },
+  {
+   "id": 297,
+   "name": "Animal Skins",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    13,
+    32,
+    38,
+    22
+   ],
+   "supply": 500
+  },
+  {
+   "id": 298,
+   "name": "Horned Helmet",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    11,
+    4,
+    42,
+    20
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 299,
+   "name": "Longbow",
+   "slot": "hand",
+   "rarity": "uncommon",
+   "dims": [
+    0,
+    25,
+    13,
+    30
+   ],
+   "supply": 500
+  },
+  {
+   "id": 300,
+   "name": "Feathered Cap",
+   "slot": "head",
+   "rarity": "uncommon",
+   "dims": [
+    14,
+    1,
+    36,
+    21
+   ],
+   "supply": 500
+  },
+  {
+   "id": 301,
+   "name": "Alluring Eyes",
+   "slot": "eyes",
+   "rarity": "rare",
+   "dims": [
+    18,
+    19,
+    27,
+    13
+   ],
+   "supply": 250
+  },
+  {
+   "id": 302,
+   "name": "Geisha Headpiece",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    15,
+    1,
+    34,
+    32
+   ],
+   "supply": 250
+  },
+  {
+   "id": 303,
+   "name": "Kimono",
+   "slot": "body",
+   "rarity": "rare",
+   "dims": [
+    10,
+    31,
+    44,
+    24
+   ],
+   "supply": 250
+  },
+  {
+   "id": 304,
+   "name": "Paper Fan",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    1,
+    31,
+    18,
+    12
+   ],
+   "supply": 250
+  },
+  {
+   "id": 305,
+   "name": "Sus Butterfly",
+   "slot": "pet",
+   "rarity": "legendary",
+   "dims": [
+    3,
+    2,
+    15,
+    14
+   ],
+   "supply": 100
+  },
+  {
+   "id": 306,
+   "name": "Flower Studs",
+   "slot": "face",
+   "rarity": "legendary",
+   "dims": [
+    13,
+    23,
+    38,
+    5
+   ],
+   "supply": 100
+  },
+  {
+   "id": 307,
+   "name": "Fairy Wings",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    6,
+    17,
+    52,
+    38
+   ],
+   "supply": 100
+  },
+  {
+   "id": 308,
+   "name": "Red Hair",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    13,
+    2,
+    50,
+    29
+   ],
+   "supply": 100
+  },
+  {
+   "id": 309,
+   "name": "Citaadel Helm",
+   "slot": "head",
+   "rarity": "mythical",
+   "dims": [
+    13,
+    0,
+    38,
+    30
+   ],
+   "supply": 50
+  },
+  {
+   "id": 310,
+   "name": "Plate Armor",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    7,
+    31,
+    50,
+    24
+   ],
+   "supply": 50
+  },
+  {
+   "id": 311,
+   "name": "Spirit Sword",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    6,
+    10,
+    7,
+    35
+   ],
+   "supply": 50
+  },
+  {
+   "id": 312,
+   "name": "Plate Shield",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    0,
+    30,
+    18,
+    22
+   ],
+   "supply": 50
+  },
+  {
+   "id": 313,
+   "name": "Kabuto Helmet",
+   "slot": "head",
+   "rarity": "godlike",
+   "dims": [
+    9,
+    2,
+    46,
+    40
+   ],
+   "supply": 5
+  },
+  {
+   "id": 314,
+   "name": "Yoroi Armor",
+   "slot": "body",
+   "rarity": "godlike",
+   "dims": [
+    10,
+    32,
+    44,
+    23
+   ],
+   "supply": 5
+  },
+  {
+   "id": 315,
+   "name": "Haanzo Katana",
+   "slot": "hand",
+   "rarity": "godlike",
+   "dims": [
+    3,
+    2,
+    9,
+    44
+   ],
+   "supply": 5
+  },
+  {
+   "id": 350,
+   "name": "Pixelcraft Tee",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 351,
+   "name": "3D Glasses",
+   "slot": "eyes",
+   "rarity": "common",
+   "dims": [
+    15,
+    21,
+    34,
+    9
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 352,
+   "name": "Pixelcraft Square",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    3,
+    32,
+    8,
+    8
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 353,
+   "name": "Nimbus",
+   "slot": "pet",
+   "rarity": "common",
+   "dims": [
+    38,
+    3,
+    26,
+    14
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 354,
+   "name": "Alchemica Apron",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    37,
+    34,
+    18
+   ],
+   "supply": 500
+  },
+  {
+   "id": 355,
+   "name": "Safety Glasses",
+   "slot": "eyes",
+   "rarity": "rare",
+   "dims": [
+    15,
+    21,
+    34,
+    10
+   ],
+   "supply": 250
+  },
+  {
+   "id": 356,
+   "name": "Bandage",
+   "slot": "face",
+   "rarity": "uncommon",
+   "dims": [
+    37,
+    31,
+    10,
+    6
+   ],
+   "supply": 500
+  },
+  {
+   "id": 357,
+   "name": "Nail Gun",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    0,
+    28,
+    17,
+    20
+   ],
+   "supply": 250
+  },
+  {
+   "id": 358,
+   "name": "Flaming Apron",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    31,
+    34,
+    24
+   ],
+   "supply": 100
+  },
+  {
+   "id": 359,
+   "name": "Forge Goggles",
+   "slot": "eyes",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    21,
+    34,
+    10
+   ],
+   "supply": 100
+  },
+  {
+   "id": 360,
+   "name": "Geode Smasher",
+   "slot": "hand",
+   "rarity": "legendary",
+   "dims": [
+    0,
+    25,
+    18,
+    25
+   ],
+   "supply": 100
+  },
+  {
+   "id": 361,
+   "name": "Geo",
+   "slot": "pet",
+   "rarity": "legendary",
+   "dims": [
+    41,
+    37,
+    23,
+    22
+   ],
+   "supply": 100
+  },
+  {
+   "id": 362,
+   "name": "FAKE Shirt",
+   "slot": "body",
+   "rarity": "mythical",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 50
+  },
+  {
+   "id": 363,
+   "name": "FAKE Beret",
+   "slot": "head",
+   "rarity": "mythical",
+   "dims": [
+    7,
+    0,
+    48,
+    22
+   ],
+   "supply": 50
+  },
+  {
+   "id": 364,
+   "name": "Paint Brush",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    6,
+    22,
+    4,
+    29
+   ],
+   "supply": 50
+  },
+  {
+   "id": 365,
+   "name": "Paint Palette",
+   "slot": "hand",
+   "rarity": "mythical",
+   "dims": [
+    1,
+    30,
+    13,
+    20
+   ],
+   "supply": 50
+  },
+  {
+   "id": 366,
+   "name": "Heavenly Robes",
+   "slot": "body",
+   "rarity": "godlike",
+   "dims": [
+    8,
+    29,
+    48,
+    28
+   ],
+   "supply": 5
+  },
+  {
+   "id": 367,
+   "name": "Eyes of Devotion",
+   "slot": "eyes",
+   "rarity": "godlike",
+   "dims": [
+    18,
+    20,
+    28,
+    12
+   ],
+   "supply": 5
+  },
+  {
+   "id": 368,
+   "name": "Beard of Divinity",
+   "slot": "face",
+   "rarity": "godlike",
+   "dims": [
+    15,
+    30,
+    34,
+    27
+   ],
+   "supply": 5
+  },
+  {
+   "id": 369,
+   "name": "Staff of Creation",
+   "slot": "hand",
+   "rarity": "godlike",
+   "dims": [
+    1,
+    18,
+    14,
+    38
+   ],
+   "supply": 5
+  },
+  {
+   "id": 370,
+   "name": "Wavy Hair",
+   "slot": "head",
+   "rarity": "common",
+   "dims": [
+    13,
+    3,
+    39,
+    21
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 371,
+   "name": "Plastic Earrings",
+   "slot": "face",
+   "rarity": "common",
+   "dims": [
+    9,
+    25,
+    46,
+    7
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 372,
+   "name": "Party Dress",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    10,
+    33,
+    44,
+    23
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 373,
+   "name": "Overalls",
+   "slot": "body",
+   "rarity": "uncommon",
+   "dims": [
+    12,
+    30,
+    40,
+    25
+   ],
+   "supply": 500
+  },
+  {
+   "id": 374,
+   "name": "Lens Frens Plant",
+   "slot": "pet",
+   "rarity": "rare",
+   "dims": [
+    39,
+    36,
+    25,
+    27
+   ],
+   "supply": 250
+  },
+  {
+   "id": 375,
+   "name": "GM Seeds",
+   "slot": "hand",
+   "rarity": "common",
+   "dims": [
+    0,
+    34,
+    16,
+    17
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 376,
+   "name": "Lick Brain",
+   "slot": "head",
+   "rarity": "rare",
+   "dims": [
+    15,
+    1,
+    34,
+    22
+   ],
+   "supply": 250
+  },
+  {
+   "id": 377,
+   "name": "Lick Eyes",
+   "slot": "eyes",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    22,
+    34,
+    8
+   ],
+   "supply": 500
+  },
+  {
+   "id": 378,
+   "name": "Lick Tongue",
+   "slot": "face",
+   "rarity": "rare",
+   "dims": [
+    21,
+    31,
+    22,
+    8
+   ],
+   "supply": 250
+  },
+  {
+   "id": 379,
+   "name": "Lick Tentacle",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    4,
+    27,
+    8,
+    28
+   ],
+   "supply": 250
+  },
+  {
+   "id": 380,
+   "name": "Sebastien Hair",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    4,
+    34,
+    26
+   ],
+   "supply": 100
+  },
+  {
+   "id": 381,
+   "name": "Voxel Eyes",
+   "slot": "eyes",
+   "rarity": "legendary",
+   "dims": [
+    18,
+    19,
+    27,
+    13
+   ],
+   "supply": 100
+  },
+  {
+   "id": 382,
+   "name": "GOATee",
+   "slot": "face",
+   "rarity": "legendary",
+   "dims": [
+    25,
+    32,
+    14,
+    9
+   ],
+   "supply": 100
+  },
+  {
+   "id": 383,
+   "name": "Sandbox Hoodie",
+   "slot": "body",
+   "rarity": "legendary",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 100
+  },
+  {
+   "id": 384,
+   "name": "Faangs",
+   "slot": "face",
+   "rarity": "mythical",
+   "dims": [
+    20,
+    31,
+    24,
+    8
+   ],
+   "supply": 50
+  },
+  {
+   "id": 385,
+   "name": "Block Scanners",
+   "slot": "eyes",
+   "rarity": "godlike",
+   "dims": [
+    17,
+    19,
+    30,
+    12
+   ],
+   "supply": 5
+  },
+  {
+   "id": 386,
+   "name": "Staff Charming",
+   "slot": "hand",
+   "rarity": "godlike",
+   "dims": [
+    4,
+    5,
+    13,
+    56
+   ],
+   "supply": 5
+  },
+  {
+   "id": 387,
+   "name": "Roflnoggin",
+   "slot": "head",
+   "rarity": "godlike",
+   "dims": [
+    13,
+    2,
+    38,
+    22
+   ],
+   "supply": 5
+  },
+  {
+   "id": 404,
+   "name": "Granny Glasses",
+   "slot": "eyes",
+   "rarity": "common",
+   "dims": [
+    15,
+    21,
+    34,
+    11
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 405,
+   "name": "Freckles",
+   "slot": "face",
+   "rarity": "common",
+   "dims": [
+    20,
+    31,
+    24,
+    4
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 406,
+   "name": "Common Stohn",
+   "slot": "pet",
+   "rarity": "common",
+   "dims": [
+    43,
+    40,
+    19,
+    19
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 407,
+   "name": "Based Shades",
+   "slot": "eyes",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    20,
+    34,
+    11
+   ],
+   "supply": 500
+  },
+  {
+   "id": 408,
+   "name": "Rasta Glasses",
+   "slot": "eyes",
+   "rarity": "uncommon",
+   "dims": [
+    15,
+    22,
+    34,
+    9
+   ],
+   "supply": 500
+  },
+  {
+   "id": 409,
+   "name": "Braces",
+   "slot": "face",
+   "rarity": "uncommon",
+   "dims": [
+    20,
+    32,
+    24,
+    7
+   ],
+   "supply": 500
+  },
+  {
+   "id": 410,
+   "name": "Uncommon Stohn",
+   "slot": "pet",
+   "rarity": "uncommon",
+   "dims": [
+    43,
+    40,
+    19,
+    19
+   ],
+   "supply": 500
+  },
+  {
+   "id": 411,
+   "name": "Aloha Flowers",
+   "slot": "face",
+   "rarity": "rare",
+   "dims": [
+    15,
+    31,
+    34,
+    14
+   ],
+   "supply": 250
+  },
+  {
+   "id": 412,
+   "name": "Baable Gum",
+   "slot": "face",
+   "rarity": "rare",
+   "dims": [
+    25,
+    28,
+    14,
+    14
+   ],
+   "supply": 250
+  },
+  {
+   "id": 413,
+   "name": "Rare Stohn",
+   "slot": "pet",
+   "rarity": "rare",
+   "dims": [
+    43,
+    40,
+    19,
+    19
+   ],
+   "supply": 250
+  },
+  {
+   "id": 414,
+   "name": "Cheap Mask",
+   "slot": "face",
+   "rarity": "legendary",
+   "dims": [
+    15,
+    26,
+    34,
+    13
+   ],
+   "supply": 100
+  },
+  {
+   "id": 415,
+   "name": "Wild Fungi",
+   "slot": "pet",
+   "rarity": "legendary",
+   "dims": [
+    41,
+    43,
+    23,
+    15
+   ],
+   "supply": 100
+  },
+  {
+   "id": 416,
+   "name": "Kawaii Mouth",
+   "slot": "face",
+   "rarity": "mythical",
+   "dims": [
+    19,
+    32,
+    26,
+    6
+   ],
+   "supply": 50
+  },
+  {
+   "id": 417,
+   "name": "Baby Licky",
+   "slot": "pet",
+   "rarity": "mythical",
+   "dims": [
+    32,
+    37,
+    27,
+    23
+   ],
+   "supply": 50
+  },
+  {
+   "id": 418,
+   "name": "Based Shirt",
+   "slot": "body",
+   "rarity": "common",
+   "dims": [
+    12,
+    32,
+    40,
+    21
+   ],
+   "supply": 1000
+  },
+  {
+   "id": 419,
+   "name": "Base App",
+   "slot": "hand",
+   "rarity": "rare",
+   "dims": [
+    1,
+    31,
+    9,
+    14
+   ],
+   "supply": 250
+  },
+  {
+   "id": 420,
+   "name": "Jesse Pollak Hair",
+   "slot": "head",
+   "rarity": "legendary",
+   "dims": [
+    9,
+    0,
+    46,
+    34
+   ],
+   "supply": 100
+  }
+ ]
+}

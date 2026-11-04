@@ -27,7 +27,11 @@ import {
   linkedItemId,
   originalInventoryView,
 } from "./gotchi-items.mjs";
-import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
+import {
+  publicAppearance,
+  publicAppearances,
+  sharedOriginalSvg,
+} from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
 import {
   SignedOrderIndex,
@@ -83,6 +87,13 @@ import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
 import { startFlavourWorker } from "./ai/flavour-batch.mjs";
 import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
+import {
+  WEARABLES,
+  equipWearable,
+  wardrobe,
+  wornWearables,
+} from "./gotchi-wearables.mjs";
+import { playerCard, sendWave, takeWaves } from "./player-waves.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
@@ -1158,6 +1169,7 @@ function profile(player) {
   }
   return {
     ...p,
+    wearables: wornWearables(db, player),
     nativeOutfit: !!p.native_outfit,
     nativeAccount: p.native_account || p.wallets[0]?.account_id || null,
     coinsCollected: db
@@ -1779,6 +1791,29 @@ async function api(req, res, url) {
   }
   if (path === "/api/native/collection" && method === "GET")
     return respond(res, await nativeCollectibles.collection());
+  const wearableArt = path.match(/^\/api\/wearables\/art\/([1-9]\d{0,4})\.svg$/);
+  if (wearableArt && method === "GET") {
+    // Public: official artwork of a catalogued wearable, read from the
+    // Aavegotchi contract on Base and cached (server/gotchi-items.mjs).
+    const itemId = Number(wearableArt[1]);
+    assert(WEARABLES.has(itemId), "Unknown wearable.", 404);
+    limit(
+      "wearable-art",
+      clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      240,
+      "Please wait before loading more wearables.",
+    );
+    const svg = await gotchiItemArt.get(String(itemId));
+    res.writeHead(200, {
+      "Content-Type": "image/svg+xml",
+      "Content-Length": svg.length,
+      "Content-Security-Policy":
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "public,max-age=86400",
+    });
+    return res.end(svg);
+  }
   const player = auth(req);
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
@@ -2767,9 +2802,7 @@ async function api(req, res, url) {
     const lat = Number(url.searchParams.get("lat") || HOME.lat),
       lng = Number(url.searchParams.get("lng") || HOME.lng);
     point({ lat, lng });
-    return respond(
-      res,
-      await readNearbyPresence(
+    const nearby = await readNearbyPresence(
         db,
         player,
         { lat, lng },
@@ -2785,8 +2818,9 @@ async function api(req, res, url) {
           assertSession: () =>
             assert(auth(req) === player, "Please sign in again.", 401),
         },
-      ),
-    );
+      );
+    // Waves to this explorer ride the same poll; only while they share.
+    return respond(res, { ...nearby, waves: takeWaves(db, player) });
   }
   if (path === "/api/wallet/challenge" && method === "POST") {
     const i = await body(req);
@@ -2922,6 +2956,35 @@ async function api(req, res, url) {
       );
     });
     return respond(res, { address: c.address, verified: true });
+  }
+  if (path === "/api/wearables" && method === "GET")
+    return respond(res, wardrobe(db, player));
+  if (path === "/api/wearables/equip" && method === "POST") {
+    limit("wearable-equip", player, 60, "Please wait before changing wearables again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const result = equipWearable(db, player, i.itemId, !!i.equipped);
+    return respond(res, { ...result, player: profile(player) });
+  }
+  if (path === "/api/players/card" && method === "GET") {
+    limit("player-card", player, 60, "Please wait before opening more explorer cards.");
+    const target = url.searchParams.get("playerId");
+    let look = null;
+    if (/^player_[a-f0-9-]{36}$/.test(target || "")) {
+      const row = db
+        .prepare(
+          "SELECT id,appearance,native_outfit,native_account FROM players WHERE id=?",
+        )
+        .get(target);
+      if (row) look = await publicAppearance(db, row, nativeCollectibles);
+    }
+    return respond(res, playerCard(db, player, target, look));
+  }
+  if (path === "/api/players/wave" && method === "POST") {
+    limit("wave", player, 20, "Please wait before waving again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    return respond(res, sendWave(db, player, i.playerId, i.phrase));
   }
   if (path === "/api/aavegotchi" && method === "GET") {
     const link = db

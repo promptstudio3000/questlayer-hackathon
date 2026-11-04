@@ -1,4 +1,5 @@
 import { nativeItem } from "./native/collectibles.mjs";
+import { wornWearables } from "./gotchi-wearables.mjs";
 const validColor = (value) =>
   typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : null;
 export async function publicAppearance(
@@ -13,6 +14,13 @@ export async function publicAppearance(
     below: null,
     skinTokenId: null,
     source: "demo",
+    // Aavegotchi wearable clones (ids, slot, placement, gold check only).
+    wearables: wornWearables(db, player.id, now).map((w) => ({
+      id: w.id,
+      slot: w.slot,
+      dims: w.dims,
+      verified: w.verified,
+    })),
   };
   const appearance =
     typeof player.appearance === "string"

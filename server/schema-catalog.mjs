@@ -8,6 +8,8 @@ for (const relative of [
   "./ai/schema.mjs",
   "./badges/schema.mjs",
   "./gold-spend/schema.mjs",
+  "./gotchi-wearables.mjs",
+  "./player-waves.mjs",
   "./chain-ledger/schema.mjs",
   "./creators/bonus-vote.mjs",
   "./daily-board/schema.mjs",

@@ -25,6 +25,7 @@ import {
 import { AUTO_CITY_NOTICE } from "./spatial/auto-cities.mjs";
 import { describeStoredQuest } from "./quest-templates.mjs";
 import { STREET_FIND_XP, streetFindIds } from "./street-finds.mjs";
+import { wearableFinds } from "./gotchi-wearables.mjs";
 import { publicPathSnapshot } from "./spatial/map-data.mjs";
 import {
   worldQuery,
@@ -604,7 +605,8 @@ export function worldView(db, id, player = null, options = {}) {
   const hidden = manifest.mapRewards ? hiddenCoinIds(db, id, now) : null,
     tiers = manifest.mapRewards ? coinTiers(db, id) : null;
   if (hidden?.size) rows = rows.filter((c) => !hidden.has(c.id));
-  const finds = streetFindIds(db, id);
+  const finds = streetFindIds(db, id),
+    wearables = wearableFinds(db, id);
   mark("wfinds");
   const more = !!query.limit && rows.length > query.limit,
     page = query.limit ? rows.slice(0, query.limit) : rows;
@@ -621,7 +623,11 @@ export function worldView(db, id, player = null, options = {}) {
       .map((c) => {
         const tier = tiers?.get(c.id);
         const out = tier && tier !== "small" ? { ...c, tier } : c;
-        return finds.has(c.id) ? { ...out, find: true } : out;
+        if (!finds.has(c.id)) return out;
+        const w = wearables.get(c.id);
+        return w
+          ? { ...out, find: true, wearable: { id: w.id, name: w.name, rarity: w.rarity } }
+          : { ...out, find: true };
       }),
     streetFindXp: STREET_FIND_XP,
     ...(manifest.mapRewards

@@ -1,5 +1,7 @@
 import { ChainLink } from "./ChainLink";
 import {
+  lazy,
+  Suspense,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -53,6 +55,10 @@ import {
 import { OriginalItemGallery, type OriginalItem } from "./OriginalItemGallery";
 import type { Item, Player } from "./types";
 import "./inventory.css";
+// Aavegotchi wearable clones: own chunk, loaded when the Wardrobe opens.
+const GotchiWardrobe = lazy(() =>
+  import("./GotchiWardrobe").then((m) => ({ default: m.GotchiWardrobe })),
+);
 import "./inventory-game.css";
 import { tr } from "./i18n";
 
@@ -156,8 +162,11 @@ export function Inventory({
   initialCollection,
   xp,
   loadOriginals = readOriginals,
+  onWearables,
 }: {
   onOriginalAppearance: (appearance: Player["appearance"]) => void;
+  /** Wearing a wearable clone changes the player (their map character). */
+  onWearables?: (player: Player) => void;
   map3D: boolean;
   onMap3D: () => void;
   player: Player;
@@ -783,6 +792,14 @@ export function Inventory({
           aria-labelledby="inv-tab-wardrobe"
         >
           <AuraSetStatus items={characterItems} />
+          <Suspense fallback={null}>
+            <GotchiWardrobe
+              key={origin?.verifiedAt || 0}
+              onPlayer={(next) => onWearables?.(next)}
+              onLink={() => void onEvm()}
+              linking={locked}
+            />
+          </Suspense>
           {origin?.status === "unavailable" && (
             <p className="inventory-notice" role="status">
               {origin.error ||

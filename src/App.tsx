@@ -15,6 +15,7 @@ import {
   CreatorCommunity,
   CommunityBonusVote,
   MapNotes,
+  PlayerCard,
   NativeCollectionControl,
   NativeTasks,
   Inventory,
@@ -346,6 +347,7 @@ export default function App() {
     [presence, setPresence] = useState(false),
     [presenceUntil, setPresenceUntil] = useState(0),
     [others, setOthers] = useState<NearbyExplorer[]>([]),
+    [cardPlayer, setCardPlayer] = useState<string | null>(null),
     [showNpc, setShowNpc] = useState(false),
     [actorOpen, setActorOpen] = useState<ActorView | null>(null),
     // GOLD spending (QGOLD stream 4): own emote and frame, lures and place pins.
@@ -1343,6 +1345,7 @@ export default function App() {
               value: number;
               xp?: number;
               find?: boolean;
+              wearable?: { id: number; name: string; duplicate: boolean };
               alreadyClaimed?: boolean;
               chain?: ChainRef | null;
             }>(
@@ -1368,7 +1371,16 @@ export default function App() {
               cue("coin");
               const paid = `+${result.xp ?? 0} XP · +${gold(result.value, 2)} GOLD`;
               burst(
-                result.find
+                result.wearable
+                  ? {
+                      tone: "find",
+                      title: result.wearable.duplicate
+                        ? tr("{0} again", { 0: result.wearable.name })
+                        : tr("Wearable found: {0}", { 0: result.wearable.name }),
+                      detail: `${tr("Clone in your Wardrobe")} · ${paid}`,
+                      chain: result.chain,
+                    }
+                  : result.find
                   ? { tone: "find", title: tr("Street find!"), detail: paid, chain: result.chain }
                   : { tone: "coin", title: paid, chain: result.chain },
               );
@@ -1423,7 +1435,10 @@ export default function App() {
       if (document.visibilityState !== "visible") return;
       const mode = latest.current.arena;
       const version = ++requestVersion;
-      void api<{ players: NearbyExplorer[] }>(
+      void api<{
+        players: NearbyExplorer[];
+        waves?: { from: string; name: string; phrase: string; text: string }[];
+      }>(
         `/presence?arena=${mode ? 1 : 0}&lat=${latest.current.position.lat.toFixed(2)}&lng=${latest.current.position.lng.toFixed(2)}`,
       )
         .then((r) => {
@@ -1433,6 +1448,17 @@ export default function App() {
             mode === latest.current.arena
           )
             setOthers(r.players);
+          // Ready-phrase waves from nearby explorers (only while sharing).
+          const wave = r.waves?.at(-1);
+          if (active && wave)
+            void import("./PlayerCard").then(({ WAVE_TEXT }) =>
+              notify(
+                tr("{0} waves: “{1}”", {
+                  0: wave.name,
+                  1: WAVE_TEXT[wave.phrase]?.() || wave.text,
+                }),
+              ),
+            );
         })
         .catch(() => {});
     };
@@ -3179,6 +3205,12 @@ export default function App() {
           globe={globe}
           equipped={equipped}
           others={others}
+          onPlayer={setCardPlayer}
+          wearables={nativePlay ? undefined : player?.wearables}
+          onWearableFind={(id) => {
+            const coin = world?.coins.find((c) => c.id === id);
+            if (coin) goToStreetFind(coin);
+          }}
           skinUrl={
             player?.appearance?.originTokenId
               ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
@@ -4103,6 +4135,7 @@ export default function App() {
                       : current,
                   )
                 }
+                onWearables={(next) => updateOwnedPlayer(next)}
                 map3D={map3D}
                 onMap3D={toggleMap3D}
                 initialCollection={nativePlay ? "near" : "demo"}
@@ -4977,6 +5010,16 @@ export default function App() {
       {busy === "world" && (
         <div className="world-loading">
           <span className="spinner" /> {" "}{tr("Finding trails and today’s treasures…")}</div>
+      )}
+      {cardPlayer && (
+        <PlayerCard
+          key={cardPlayer}
+          playerId={cardPlayer}
+          onClose={() => setCardPlayer(null)}
+          onBlocked={() =>
+            setOthers((list) => list.filter((p) => p.id !== cardPlayer))
+          }
+        />
       )}
       {toast && (
         <div
