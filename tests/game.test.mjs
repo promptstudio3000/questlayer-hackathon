@@ -63,38 +63,40 @@ test("simultaneous activation shares a single world and one reserved coin budget
   ]);
   assert.equal(w1.id, w2.id);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM worlds").get().n, 1);
-  const n = db.prepare("SELECT COUNT(*) AS n FROM coins").get().n;
+  // Map rewards: one cell drop, its coins are exactly the reserved budget.
+  const n = db.prepare("SELECT COALESCE(SUM(value_u),0) AS n FROM coins").get().n;
+  assert.ok(n > 0);
   assert.equal(
     db.prepare("SELECT reserved_u FROM treasury WHERE bucket='coins'").get()
       .reserved_u,
-    n * COIN_VALUE,
+    n,
   );
   db.close();
 });
 test("shared coin pays one player once and cannot be farmed by retries", async () => {
   const { db, a, b } = setup();
   const w = await ensureWorld(db, HOME, true, now);
-  const coin = worldView(db, w.id).coins[0];
+  const coin = worldView(db, w.id, null, { now }).coins[0];
   const start = db
     .prepare("SELECT gold_u FROM players WHERE id=?")
     .get(a).gold_u;
-  assert.equal(claimCoin(db, a, coin.id, coin, now).value, COIN_VALUE);
+  assert.equal(claimCoin(db, a, coin.id, coin, now).value, coin.value_u);
   assert.equal(claimCoin(db, a, coin.id, coin, now).alreadyClaimed, true);
   assert.throws(() => claimCoin(db, b, coin.id, coin, now), /Another explorer/);
   assert.equal(
     db.prepare("SELECT gold_u FROM players WHERE id=?").get(a).gold_u,
-    start + COIN_VALUE,
+    start + coin.value_u,
   );
   assert.equal(
     db.prepare("SELECT paid_u FROM treasury WHERE bucket='coins'").get().paid_u,
-    COIN_VALUE,
+    coin.value_u,
   );
   db.close();
 });
 test("expired coins cannot be collected and unclaimed backing rolls over once", async () => {
   const { db, a } = setup();
   const w = await ensureWorld(db, HOME, true, now),
-    coin = worldView(db, w.id).coins[0];
+    coin = worldView(db, w.id, null, { now }).coins[0];
   const initial = db
     .prepare(
       "SELECT available_u+reserved_u AS n FROM treasury WHERE bucket='coins'",
@@ -109,7 +111,7 @@ test("expired coins cannot be collected and unclaimed backing rolls over once", 
   expireWorlds(db, w.endsAt + 2);
   const t = db.prepare("SELECT * FROM treasury WHERE bucket='coins'").get();
   assert.equal(t.reserved_u, 0);
-  assert.equal(t.available_u, initial - COIN_VALUE);
+  assert.equal(t.available_u, initial - coin.value_u);
   db.close();
 });
 test("a solo player can complete a free quest and mint one bounded Aura", async () => {
@@ -321,6 +323,7 @@ test("city snapshots share a fixed public center and never record the first visi
   assert.deepEqual(worldView(db, w.id).center, HOME);
   const second = await ensureWorld(db, { lat: 49.73, lng: 13.36 }, false, now);
   assert.equal(second.id, w.id);
-  assert.equal(second.zones.length, 6);
+  // Six reviewed city zones; pioneer chests of first-visited cells come on top.
+  assert.equal(second.zones.filter((z) => z.source !== "pioneer").length, 6);
   db.close();
 });

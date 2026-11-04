@@ -77,3 +77,17 @@
     transition: none;
   }
 }
+
+/* Map rewards: the next coin wave, inside the sky chip. */
+.map-wave-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid currentColor;
+  font-variant-numeric: tabular-nums;
+}
+.map-wave-hint > svg {
+  color: #f2b632;
+}

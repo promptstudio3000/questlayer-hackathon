@@ -50,6 +50,16 @@ import {
   poiQuestText,
 } from "./poi-quests.mjs";
 import { clueView } from "./landmark-clue.mjs";
+import {
+  MAP_REWARDS_POLICY,
+} from "./map-rewards/policy.mjs";
+import {
+  coinTiers,
+  hiddenCoinIds,
+  mapRewardsEnabled,
+  materializeCellRewards,
+  nextWave,
+} from "./map-rewards/service.mjs";
 export const HOME = DEFAULT_CITY.center;
 export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
@@ -60,10 +70,29 @@ function samplePaths(paths, max = 350) {
     max,
   );
 }
-function streetSamples(snapshot, region) {
+function streetSamples(snapshot, region, max = 350) {
   return samplePaths(snapshot.paths, 6000)
     .filter((p) => latLngToCell(p.lat, p.lng, 7) === region)
-    .slice(0, 350);
+    .slice(0, max);
+}
+// Path points of one cell for map rewards (Poisson spacing picks from them).
+const CITY_CELL_SAMPLES = 40000;
+const cityCellSamples = new WeakMap();
+function cellSampler(db, world, cell, now, mapData) {
+  return async () => {
+    if (!world.cityId) {
+      const snapshot = await publicPathSnapshot(db, world.region, { ...mapData, clock: () => now });
+      return snapshot.status === "unavailable" ? null : streetSamples(snapshot, world.region, 6000);
+    }
+    const base = playableCityById(world.cityId);
+    if (!base) return null;
+    const city = effectiveCityPack(db, base);
+    if (!cityCellSamples.has(city.paths))
+      cityCellSamples.set(city.paths, sampleCityPaths(city, CITY_CELL_SAMPLES));
+    return cityCellSamples
+      .get(city.paths)
+      .filter((p) => latLngToCell(p.lat, p.lng, 7) === cell && !pointClosed(city.exclusions || [], p));
+  };
 }
 function pathState(snapshot, materialized) {
   const { paths, ...state } = snapshot;
@@ -94,7 +123,7 @@ async function hydrateStreetWorld(db, manifest, now, mapOptions) {
     clock: () => now,
   });
   const samples = streetSamples(snapshot, manifest.region);
-  return atomic(db, () => {
+  const hydrated = atomic(db, () => {
     const current = JSON.parse(
       db.prepare("SELECT manifest FROM worlds WHERE id=?").get(manifest.id)
         .manifest,
@@ -108,7 +137,8 @@ async function hydrateStreetWorld(db, manifest, now, mapOptions) {
     )
       return current;
     const ready = snapshot.status !== "unavailable";
-    if (ready) {
+    // Map-reward worlds get their coins per cell in ensureWorld.
+    if (ready && !current.mapRewards) {
       const available = db
         .prepare("SELECT available_u FROM treasury WHERE bucket='coins'")
         .get().available_u;
@@ -136,6 +166,14 @@ async function hydrateStreetWorld(db, manifest, now, mapOptions) {
       current.id,
     );
     return current;
+  });
+  // The recovered paths also drop the cell's map rewards (no player visit needed).
+  if (!hydrated.mapRewards || hydrated.pathData?.materialized !== true)
+    return hydrated;
+  return materializeCellRewards(db, hydrated, {
+    cell: hydrated.region,
+    now,
+    samples: async () => streetSamples(snapshot, hydrated.region, 6000),
   });
 }
 export async function retryStreetWorlds(
@@ -192,16 +230,28 @@ export async function ensureWorld(
     world.cityId && cellAt && cityFor(cellAt)?.id === world.cityId
       ? cellAt
       : location;
+  const cell = world.cityId ? latLngToCell(at.lat, at.lng, 7) : world.region;
+  let current = world;
   try {
-    return materializePoiQuests(db, world, {
+    current = materializePoiQuests(db, world, {
       source: poiSource === undefined ? defaultPoiSource() : poiSource,
       now,
-      cell: world.cityId ? latLngToCell(at.lat, at.lng, 7) : null,
+      cell: world.cityId ? cell : null,
     });
   } catch (error) {
     // POI quests are an addition: a broken POI file never hides the street world.
     console.warn("poi-quests: materialisation failed", error?.message || error);
-    return world;
+  }
+  try {
+    return await materializeCellRewards(db, current, {
+      cell,
+      now,
+      samples: cellSampler(db, current, cell, now, mapData),
+    });
+  } catch (error) {
+    // Rewards come back on the next load; the world itself stays playable.
+    console.warn("map-rewards: cell drop failed", error?.message || error);
+    return current;
   }
 }
 async function ensureBaseWorld(
@@ -285,6 +335,9 @@ async function ensureBaseWorld(
       endsAt,
       zones,
       cityZoneCount: zones.length,
+      ...(mapRewardsEnabled()
+        ? { mapRewards: { policy: MAP_REWARDS_POLICY, cells: {} } }
+        : {}),
       coinRadius: arena ? COIN_ARENA_RADIUS_M : COIN_GPS_RADIUS_M,
       coverage: city ? "city-pack" : "street-only",
       quality: {
@@ -318,7 +371,9 @@ async function ensureBaseWorld(
       const available = db
           .prepare("SELECT available_u FROM treasury WHERE bucket='coins'")
           .get().available_u,
-        count = Math.min(samples.length, Math.floor(available / COIN_VALUE));
+        count = manifest.mapRewards
+          ? 0
+          : Math.min(samples.length, Math.floor(available / COIN_VALUE));
       for (let i = 0; i < count; i++)
         db.prepare(
           "INSERT INTO coins(id,world_id,lat,lng,value_u) VALUES (?,?,?,?,?)",
@@ -535,6 +590,10 @@ export function worldView(db, id, player = null, options = {}) {
       )
       .all(id);
   mark("wcoins");
+  // Map-reward coins appear in waves; a later wave stays hidden until it opens.
+  const hidden = manifest.mapRewards ? hiddenCoinIds(db, id, now) : null,
+    tiers = manifest.mapRewards ? coinTiers(db, id) : null;
+  if (hidden?.size) rows = rows.filter((c) => !hidden.has(c.id));
   const finds = streetFindIds(db, id);
   mark("wfinds");
   const more = !!query.limit && rows.length > query.limit,
@@ -549,8 +608,22 @@ export function worldView(db, id, player = null, options = {}) {
     ...(paused.day ? { operatorPause: { reason: paused.day.reason } } : {}),
     coins: (paused.day ? [] : page)
       .filter((p) => !pointClosed(closed, p))
-      .map((c) => (finds.has(c.id) ? { ...c, find: true } : c)),
+      .map((c) => {
+        const tier = tiers?.get(c.id);
+        const out = tier && tier !== "small" ? { ...c, tier } : c;
+        return finds.has(c.id) ? { ...out, find: true } : out;
+      }),
     streetFindXp: STREET_FIND_XP,
+    ...(manifest.mapRewards
+      ? {
+          mapRewards: {
+            policy: manifest.mapRewards.policy,
+            cells: manifest.mapRewards.cells,
+            nextWaveAt: nextWave(manifest, now),
+            hiddenCoins: hidden?.size || 0,
+          },
+        }
+      : {}),
     ...(near
       ? { coinsNear: { lat: near.lat, lng: near.lng, radiusM: NEAR_RADIUS_M } }
       : {}),

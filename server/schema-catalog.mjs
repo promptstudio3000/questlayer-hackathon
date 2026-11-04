@@ -32,6 +32,7 @@ for (const relative of [
   "./operator/world-controls.mjs",
   "./poi-quests.mjs",
   "./landmark-clue.mjs",
+  "./map-rewards/schema.mjs",
   "./relayer/schema.mjs",
   "./season/schema.mjs",
   "./spatial/place-safety.mjs",

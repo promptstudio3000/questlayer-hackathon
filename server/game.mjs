@@ -1,3 +1,4 @@
+import { coinMeta } from "./map-rewards/service.mjs";
 import { randomBytes } from "node:crypto";
 import {
   GOLD,
@@ -106,6 +107,13 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     );
     if (coin.claimant === player)
       return { alreadyClaimed: true, value: coin.value_u };
+    const wave = world.mapRewards ? coinMeta(db, coinId) : null;
+    assert(
+      !wave || wave.opensAt <= now,
+      "This coin arrives with a later wave. Check back soon.",
+      409,
+      "WAVE_NOT_OPEN",
+    );
     assert(
       !coin.claimant,
       "Another explorer got this coin first. Pick another one nearby.",
@@ -171,6 +179,7 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     return {
       value: coin.value_u,
       xp,
+      ...(wave && wave.tier !== "small" ? { tier: wave.tier } : {}),
       ...(chain ? { chain } : {}),
       ...(find ? { find: true } : {}),
       ...(cap ? { xpCap: cap, note: XP_CAP_NOTES[cap] } : {}),

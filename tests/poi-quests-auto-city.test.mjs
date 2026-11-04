@@ -61,7 +61,10 @@ test("an auto city gets POI quests in the player's cell, XP only, notice kept", 
     for (const t of z.targets)
       for (const c of cityTargets) assert.ok(distance(t, c) >= MIN_POI_GAP_M);
   const rows = db.prepare("SELECT * FROM quests WHERE id LIKE '%:quest:poi-%'").all();
-  assert.ok(rows.every((q) => q.gold_u === 0 && q.tier === 1));
+  // 1-3 become funded cell zones (docs/MAP-REWARDS.md); the rest stay XP only.
+  assert.ok(rows.every((q) => q.tier === 1));
+  const prized = rows.filter((q) => q.gold_u > 0).length;
+  assert.ok(prized >= 1 && prized <= 3, `cell zones ${prized}`);
   assert.ok(rows.every((q) => q.id.includes(`:quest:poi-${cellA}-`)));
   // Same cell again: nothing new. Parallel loads: one set.
   await Promise.all([
@@ -71,7 +74,7 @@ test("an auto city gets POI quests in the player's cell, XP only, notice kept", 
   assert.equal(db.prepare("SELECT count(*) n FROM quests WHERE id LIKE '%:quest:poi-%'").get().n, rows.length);
   const view = worldView(db, w.id, player, { now });
   assert.equal(view.quality.notice, AUTO_CITY_NOTICE);
-  const visit = view.quests.find((q) => q.zone_id.includes(":zone:poi-") && q.kind === "visit");
+  const visit = view.quests.find((q) => q.zone_id.includes(":zone:poi-") && q.kind === "visit" && !q.gold_u);
   const fix = { lat: visit.lat, lng: visit.lng, accuracy: 5, timestamp: now };
   const r = claimQuest(db, player, visit.id, fix, now);
   assert.equal(r.reward, 0);
@@ -109,6 +112,7 @@ test("reviewed Plzeň adds POI quests per cell next to its own zones", async () 
       for (const c of own.flatMap((z) => z.targets || [z]))
         assert.ok(distance(t, c) >= MIN_POI_GAP_M);
   const rows = db.prepare("SELECT * FROM quests WHERE id LIKE '%:quest:poi-%'").all();
+  // Plzeň keeps its six reviewed zones: no funded cell zones there.
   assert.ok(rows.every((q) => q.gold_u === 0 && q.tier === 1));
   // The city demo gets its own set too.
   const demo = await ensureWorld(db, cityPack.PLZEN.center, true, now, { poiSource });

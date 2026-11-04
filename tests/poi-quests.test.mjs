@@ -182,10 +182,14 @@ test("a street cell materialises one set on first load, the same after a restart
       .prepare("SELECT id,title,lat,lng,xp,gold_u,kind,zone_id FROM quests WHERE world_id=? ORDER BY id")
       .all(a.id);
   const first = rows();
-  assert.equal(first.length, MAX_POI_QUESTS_PER_CELL);
-  assert.ok(first.every((q) => q.gold_u === 0), "XP only, never GOLD");
-  assert.ok(first.every((q) => q.zone_id.includes(":zone:poi-")));
-  assert.equal(first.filter((q) => q.kind === "chest").length, 1);
+  const poi = first.filter((q) => q.zone_id.includes(":zone:poi-"));
+  assert.equal(poi.length, MAX_POI_QUESTS_PER_CELL);
+  // Map rewards (docs/MAP-REWARDS.md): 1-3 of them become funded cell zones;
+  // the rest stay XP only. A first visit in 30 days adds one pioneer chest.
+  const prized = poi.filter((q) => q.gold_u > 0);
+  assert.ok(prized.length >= 1 && prized.length <= 3, `cell zones ${prized.length}`);
+  assert.equal(first.filter((q) => q.zone_id.includes(":zone:pioneer-")).length, 1);
+  assert.equal(poi.filter((q) => q.kind === "chest").length, 1);
   source.close();
   db.close();
   // Restart: a new process with a new handle on the same files.
@@ -211,7 +215,7 @@ test("a street cell materialises one set on first load, the same after a restart
   const view = worldView(db2, a.id, null);
   assert.equal(view.poiQuests.status, "ready");
   assert.equal(view.poiQuests.count, MAX_POI_QUESTS_PER_CELL);
-  assert.equal(view.zones.length, MAX_POI_QUESTS_PER_CELL);
+  assert.equal(view.zones.filter((z) => z.source === "poi").length, MAX_POI_QUESTS_PER_CELL);
   for (const z of view.zones)
     assert.ok(zoneInBounds(z, [clng - 0.05, clat - 0.05, clng + 0.05, clat + 0.05]));
 });
@@ -225,7 +229,7 @@ test("an empty cell says nothing here yet; a missing POI file changes nothing", 
     });
     assert.equal(w.poiQuests.status, "empty");
     assert.match(w.poiQuests.notice, /Nothing here yet/);
-    assert.equal(db.prepare("SELECT count(*) n FROM quests").get().n, 0);
+    assert.equal(db.prepare("SELECT count(*) n FROM quests WHERE id LIKE '%:quest:poi-%'").get().n, 0);
     const other = latLngToCell(50.2, 14.6, 7);
     const [olat, olng] = cellToLatLng(other);
     const none = await ensureWorld(db, { lat: olat, lng: olng }, false, NOW, {
@@ -233,7 +237,7 @@ test("an empty cell says nothing here yet; a missing POI file changes nothing", 
       poiSource: openPoiFileSource("/nonexistent/poi.sqlite"),
     });
     assert.equal(none.poiQuests, undefined);
-    assert.equal(none.zones.length, 0);
+    assert.equal(none.zones.filter((z) => z.source !== "pioneer").length, 0);
   } finally {
     db.close();
   }
@@ -327,7 +331,7 @@ test("cached W8 flavour text replaces the stored title at read time; chests keep
     });
     const before = worldView(db, w.id, null, { now: NOW }).quests;
     const visit = before.find((q) => q.kind === "visit"),
-      chest = before.find((q) => q.kind === "chest");
+      chest = before.find((q) => q.kind === "chest" && q.zone_id.includes(":zone:poi-"));
     const meta = (id) =>
       JSON.parse(db.prepare("SELECT metadata FROM quests WHERE id=?").get(id).metadata).poi;
     // The flavour module creates its cache table on first read.
