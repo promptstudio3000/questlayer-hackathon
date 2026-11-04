@@ -401,7 +401,9 @@ test("screen sub-tabs persist, and entries stored before sub-tabs existed still 
   const parsed = parseAppNavigation(legacy, "player-a");
   assert.equal(parsed.tab, "market");
   assert.equal(parsed.profileView, "character");
-  assert.equal(parsed.marketView, "practice");
+  assert.equal(parsed.marketView, "secured");
+  // The old database market view now opens the on-chain market.
+  assert.equal(parseAppNavigation({ ...legacy, marketView: "practice" }, "player-a").marketView, "secured");
   const old = fixture({
     [NAVIGATION_STATE_KEY]: {
       version: 1,
@@ -412,7 +414,7 @@ test("screen sub-tabs persist, and entries stored before sub-tabs existed still 
     },
   });
   assert.equal(old.journal.initial.tab, "market");
-  assert.equal(old.journal.initial.marketView, "practice");
+  assert.equal(old.journal.initial.marketView, "secured");
 
   for (const patch of [
     { profileView: "wallet" },

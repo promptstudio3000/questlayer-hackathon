@@ -27,13 +27,11 @@ export type DemoNavigationTarget = {
   realm: "arena" | "gps";
 };
 export type ProfileView = "character" | "settings";
-export type MarketView = "practice" | "secured" | "offers";
+// Every Aura trade is on NEAR: the old database "practice" market is gone and
+// a stored "practice" view opens the secured market instead.
+export type MarketView = "secured" | "offers";
 export const PROFILE_VIEWS: readonly ProfileView[] = ["character", "settings"];
-export const MARKET_VIEWS: readonly MarketView[] = [
-  "practice",
-  "secured",
-  "offers",
-];
+export const MARKET_VIEWS: readonly MarketView[] = ["secured", "offers"];
 export type AppNavigation = {
   tab: AppTab;
   walletView: "rewards" | "staking" | "demo";
@@ -57,7 +55,7 @@ export const initialAppNavigation = (): AppNavigation => ({
   sheetExpanded: false,
   creatorView: { page: "community" },
   profileView: "character",
-  marketView: "practice",
+  marketView: "secured",
 });
 const identifier = (v: unknown): v is string =>
   typeof v === "string" && v.length > 0 && v.length <= 512;
@@ -101,9 +99,10 @@ export function parseAppNavigation(
     !PROFILE_VIEWS.includes(v.profileView as ProfileView)
   )
     return null;
+  const marketView = v.marketView === "practice" ? "secured" : v.marketView;
   if (
-    v.marketView !== undefined &&
-    !MARKET_VIEWS.includes(v.marketView as MarketView)
+    marketView !== undefined &&
+    !MARKET_VIEWS.includes(marketView as MarketView)
   )
     return null;
   let demoTarget: DemoNavigationTarget | null | undefined =
@@ -160,7 +159,7 @@ export function parseAppNavigation(
     sheetExpanded: v.sheetExpanded,
     creatorView,
     profileView: (v.profileView as ProfileView | undefined) ?? "character",
-    marketView: (v.marketView as MarketView | undefined) ?? "practice",
+    marketView: (marketView as MarketView | undefined) ?? "secured",
     demoTarget,
     nativeTarget,
   };
