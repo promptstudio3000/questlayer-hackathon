@@ -72,6 +72,10 @@ node scripts/treasury-mix-testnet.mjs rebalance           # one run (at most 25 
 node scripts/treasury-mix-testnet.mjs keep                # supply stables to Rhea, harvest their interest
 ```
 
+Daily at 06:30 the Mac LaunchAgent `com.questlayer.stnear-harvest` runs the stNEAR harvest, then `rebalance` and
+`keep` (Lubos approved 4 Nov 2026). Reinstall it with `bash scripts/install-stnear-harvest-mac.sh`; log
+`.data/logs/stnear-harvest.log`.
+
 `TREASURY_MIX_RECORD_PUSH=1` copies `public/treasury-mix-testnet.json` to the VPS state directory, so `/economy`
 shows a run without a redeploy. State: `.data/treasury-mix.json`.
 
