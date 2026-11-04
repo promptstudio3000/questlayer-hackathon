@@ -86,14 +86,15 @@ export class GotchiItemArt {
             this.cache.delete(job.id);
           }
           while (
-            this.cache.size >= 64 ||
-            this.bytes + svg.length > 2 * 1024 * 1024
+            this.cache.size >= 400 ||
+            this.bytes + svg.length > 8 * 1024 * 1024
           ) {
             const key = this.cache.keys().next().value;
             this.bytes -= this.cache.get(key).svg.length;
             this.cache.delete(key);
           }
-          this.cache.set(job.id, { svg, until: this.clock() + 3600000 });
+          // On-chain item art never changes; a day keeps the map light on Base RPC.
+          this.cache.set(job.id, { svg, until: this.clock() + 86400000 });
           this.bytes += svg.length;
           job.resolve(svg);
         })

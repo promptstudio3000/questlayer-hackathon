@@ -1,3 +1,4 @@
+import { grantWearableFind } from "./gotchi-wearables.mjs";
 import { coinMeta } from "./map-rewards/service.mjs";
 import { randomBytes } from "node:crypto";
 import {
@@ -158,6 +159,10 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       xp,
       player,
     );
+    // A wearable find also gives a cosmetic Aavegotchi wearable clone.
+    const wearable = find
+      ? grantWearableFind(db, player, coin.world_id, coinId, now)
+      : null;
     const chain = recordChainAction(db, {
       player,
       kind: find ? "find" : "coin",
@@ -174,7 +179,7 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       "coin",
       find ? "Street find" : "Street coin",
       coin.value_u,
-      { coin: coinId, ...(find ? { find: true } : {}), ...(cap ? { xpCap: cap } : {}), ...(chain ? { chain: { id: chain.id, status: chain.status, tx: null } } : {}) },
+      { coin: coinId, ...(find ? { find: true } : {}), ...(wearable ? { wearable: wearable.id } : {}), ...(cap ? { xpCap: cap } : {}), ...(chain ? { chain: { id: chain.id, status: chain.status, tx: null } } : {}) },
     );
     return {
       value: coin.value_u,
@@ -182,6 +187,7 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       ...(wave && wave.tier !== "small" ? { tier: wave.tier } : {}),
       ...(chain ? { chain } : {}),
       ...(find ? { find: true } : {}),
+      ...(wearable ? { wearable } : {}),
       ...(cap ? { xpCap: cap, note: XP_CAP_NOTES[cap] } : {}),
     };
   });

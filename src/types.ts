@@ -36,6 +36,8 @@ export type Player = {
   nativeAccount?: string | null;
   coinsCollected?: number;
   appearance: { originTokenId?: string };
+  /** Aavegotchi wearable clones the player wears. */
+  wearables?: WornWearable[];
   id: string;
   name: string;
   gold_u: number;
@@ -90,6 +92,25 @@ export type Coin = Point & {
   find?: boolean;
   /** Map rewards: medium or rare coins (small is the default). */
   tier?: "medium" | "rare";
+  /** A wearable find: picking it up gives this Aavegotchi wearable clone. */
+  wearable?: { id: number; name: string; rarity: WearableRarity };
+};
+export type WearableRarity =
+  | "common"
+  | "uncommon"
+  | "rare"
+  | "legendary"
+  | "mythical"
+  | "godlike";
+/** An Aavegotchi wearable as worn on a character (server/gotchi-wearables.mjs). */
+export type WornWearable = {
+  id: number;
+  slot: string;
+  /** x, y, width, height on the 64×64 Aavegotchi canvas. */
+  dims: [number, number, number, number];
+  verified: boolean;
+  name?: string;
+  rarity?: WearableRarity;
 };
 export type QuestActivity = {
   templateId: string;
@@ -386,5 +407,6 @@ export type NearbyExplorer = Point & {
     source: "demo" | "native" | "unavailable";
     /** GOLD cosmetics: a marker frame and a live emote (server/gold-spend). */
     gold?: { frame?: string; emote?: string; emoteUntil?: number };
+    wearables?: WornWearable[];
   };
 };

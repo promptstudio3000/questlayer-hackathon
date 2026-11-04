@@ -3,6 +3,7 @@ import type { GoldMap } from "./gold-spend-client";
 import {
   characterMarkerMarkup,
   STARTER_SPRITE,
+  wearableArtUrl,
   starterMarkerMarkup,
 } from "./character-art";
 import { auraEdition } from "./aura-art-data.ts";
@@ -26,7 +27,7 @@ import {
   zoneBeamSpots,
   beamFeatures,
 } from "./zone-landmarks";
-import type { NearbyExplorer } from "./types";
+import type { NearbyExplorer, WornWearable } from "./types";
 import type { ActorView } from "./actor-types";
 import type { ActorsLayer } from "./actors-layer";
 import type { MapRewardsLayer } from "./map-rewards-layer";
@@ -44,6 +45,7 @@ import { Coins, MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
 import "./map-sky.css";
 // Phone map-first layout; lazy with the map, so the welcome screen skips it.
 import "./phone-map.css";
+import "./wearables.css";
 import { tr } from "./i18n";
 import type { QuestRoute } from "./quest-route";
 type PawnScene = ReturnType<
@@ -68,6 +70,12 @@ export type GameMapProps = {
   globe: boolean;
   equipped: Item[];
   others: NearbyExplorer[];
+  /** Tap another explorer: open their card (what they wear, waves). */
+  onPlayer?: (playerId: string) => void;
+  /** Aavegotchi wearable clones the player wears (drawn on the starter). */
+  wearables?: WornWearable[];
+  /** Tap a wearable find: head there. */
+  onWearableFind?: (coinId: string) => void;
   skinUrl?: string;
   map3D?: boolean;
   /**
@@ -276,9 +284,10 @@ export function GameMap(props: GameMapProps) {
       cancelAnimationFrame(frame);
     };
   }, []);
-  const equipmentKey = props.equipped
-    .map((i) => `${i.id}:${i.color}:${i.slot}`)
-    .join("|");
+  const equipmentKey =
+    props.equipped.map((i) => `${i.id}:${i.color}:${i.slot}`).join("|") +
+    "#" +
+    (props.wearables || []).map((w) => w.id).join(",");
   useEffect(() => {
     const m = map.current,
       target = props.nativeTarget;
@@ -685,6 +694,49 @@ export function GameMap(props: GameMapProps) {
       ),
     } as Parameters<GeoJSONSource["setData"]>[0]);
   }, [coins, ready]);
+  // Wearable finds: the actual Aavegotchi wearable, floating in a rarity ring.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !coins) return;
+    const finds = coins.filter((c) => c.wearable && !c.claimant).slice(0, 24);
+    if (!finds.length) return;
+    const markers = finds.map((c) => {
+      const w = c.wearable!;
+      const node = document.createElement("button");
+      node.type = "button";
+      node.className = `wearable-find-marker rarity-${w.rarity}`;
+      node.setAttribute(
+        "aria-label",
+        tr("Wearable find: {0}", { 0: w.name }),
+      );
+      node.title = w.name;
+      const img = document.createElement("img");
+      img.src = wearableArtUrl(w.id);
+      img.alt = "";
+      img.draggable = false;
+      img.loading = "lazy";
+      node.append(img);
+      node.addEventListener("click", (event) => {
+        event.stopPropagation();
+        latest.current.onWearableFind?.(c.id);
+      });
+      return new maplibregl.Marker({ element: node, anchor: "bottom", offset: [0, -14] })
+        .setLngLat([c.lng, c.lat])
+        .addTo(m);
+    });
+    // Far out the map shows cities, not single items.
+    const zoomed = () => {
+      const hide = m.getZoom() < 13.5;
+      for (const marker of markers)
+        marker.getElement().classList.toggle("is-far", hide);
+    };
+    zoomed();
+    m.on("zoomend", zoomed);
+    return () => {
+      m.off("zoomend", zoomed);
+      markers.forEach((marker) => marker.remove());
+    };
+  }, [coins, ready]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready || !props.world) return;
@@ -824,14 +876,36 @@ export function GameMap(props: GameMapProps) {
         skinUrl: look?.skinTokenId
           ? `/api/presence/skin?playerId=${encodeURIComponent(p.id)}`
           : undefined,
+        wearables: look?.wearables,
       });
-      node.setAttribute("role", "img");
+      if (look?.wearables?.some((w) => w.verified)) {
+        const check = document.createElement("i");
+        check.className = "verified-check";
+        check.title = tr("Verified original");
+        node.append(check);
+      }
+      // A button: tapping an explorer opens their card.
+      node.setAttribute("role", "button");
+      node.tabIndex = 0;
+      const open = (event: Event) => {
+        event.stopPropagation();
+        latest.current.onPlayer?.(p.id);
+      };
+      node.addEventListener("click", open);
+      node.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open(event);
+        }
+      });
       node.setAttribute(
         "aria-label",
         p.name +
           (look?.source === "unavailable"
             ? " · appearance temporarily unavailable"
-            : " · nearby explorer"),
+            : " · nearby explorer") +
+          " · " +
+          tr("Open explorer card"),
       );
       const label = document.createElement("span");
       label.textContent = p.name;
@@ -986,6 +1060,7 @@ export function GameMap(props: GameMapProps) {
         belowEdition: bottom && auraEdition(bottom),
         scale: 2,
         skinUrl: props.skinUrl,
+        wearables: props.wearables,
       }) + `<span class="you-label">${tr("YOU")}</span>`;
     if (modelHost) element.append(modelHost);
     skinFallback(element, color);
@@ -1019,10 +1094,12 @@ export function GameMap(props: GameMapProps) {
     },
     [],
   );
+  const wearing2D = !props.skinUrl && !!props.wearables?.length;
   useEffect(() => {
     const m = map.current,
       element = avatar.current?.getElement();
-    if (!m || !element || !ready || props.map3D === false) return;
+    // Aavegotchi wearable clones are drawn on the 2D starter only.
+    if (!m || !element || !ready || props.map3D === false || wearing2D) return;
     const controller = new AbortController(),
       host = document.createElement("div");
     host.className = "map-character-model";
@@ -1092,7 +1169,7 @@ export function GameMap(props: GameMapProps) {
       show2D();
       host.remove();
     };
-  }, [props.skinUrl, props.map3D, ready]);
+  }, [props.skinUrl, props.map3D, wearing2D, ready]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
