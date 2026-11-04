@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { openDatabase } from "../server/database.mjs";
+import "../server/schema-catalog.mjs";
 import { createCreatorRuntime } from "../server/creators/runtime.mjs";
 import { creatorAudit, creatorOperator } from "../server/creators/operator.mjs";
 import { creatorAssert as fail } from "../server/creators/operations.mjs";

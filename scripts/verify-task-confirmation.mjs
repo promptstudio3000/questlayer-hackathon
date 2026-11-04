@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { NativeTasks } from "../server/native/tasks.mjs";
 import { createNearProvider } from "../server/near-provider.mjs";
 import { openDatabase, createPlayer } from "../server/database.mjs";
+import "../server/schema-catalog.mjs";
 
 const manifest = JSON.parse(readFileSync("public/native-tasks-testnet.json"));
 const proof = JSON.parse(readFileSync("public/native-tasks-proof.json"));

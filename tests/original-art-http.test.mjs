@@ -9,6 +9,7 @@ import { once } from "node:events";
 import { decodeFunctionData, encodeFunctionResult } from "viem";
 import { AAVEGOTCHI, AAVEGOTCHI_ABI } from "../server/aavegotchi.mjs";
 import { openDatabase } from "../server/database.mjs";
+import "../server/schema-catalog.mjs";
 
 test("HTTP original items preserve ownership checks around shared cache and refresh a removed appearance", async (t) => {
   const dir = mkdtempSync(join(tmpdir(), "questlayer-original-art-")),

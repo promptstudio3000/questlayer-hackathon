@@ -10,6 +10,7 @@ import {
   existsSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
+import "../server/schema-catalog.mjs";
 import { resolve, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { openDatabase, createPlayer, playerView } from "../server/database.mjs";
