@@ -134,3 +134,9 @@ export const ActorSheet = lazyNamed(
   () => import("./ActorSheet"),
   "ActorSheet",
 );
+// On-chain proof (docs/CHAIN-PROOF.md): one chunk for the icon, the
+// Settings feed and the background SocialDB profile, never with the map.
+const chainProof = () => import("./ChainFeed");
+export const ChainLink = lazyNamed(chainProof, "ChainLink");
+export const ChainSettings = lazyNamed(chainProof, "ChainSettings");
+export const AutoSocialProfile = lazyNamed(chainProof, "AutoSocialProfile");

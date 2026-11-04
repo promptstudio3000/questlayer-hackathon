@@ -7,6 +7,7 @@ import { api } from "./api";
 import LockedChip from "./LockedChip";
 import "./stake-today.css";
 import { tr } from "./i18n";
+import { ChainLink } from "./ChainLink";
 
 export interface StakeVault {
   vault: string;
@@ -284,7 +285,8 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
                 {v.maturity.state === "pending" && v.maturity.epochsLeft != null && (
                   <span className="stake-countdown" aria-hidden="true">E−{v.maturity.epochsLeft}</span>
                 )}
-                {maturityLine(v, card)}
+                {maturityLine(v, card)}{" "}
+                {/^[a-z0-9._-]+$/.test(v.vault) && <ChainLink chain={{ account: v.vault }} />}
               </li>
             ))}
           </ul>

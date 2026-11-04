@@ -6,6 +6,9 @@ import {
   AdventureResultResume,
   AdventureResultHistoryButton,
   PendingNativeTransactions,
+  ChainSettings,
+  AutoSocialProfile,
+  ChainLink,
   CreatorCommunity,
   CommunityBonusVote,
   MapNotes,
@@ -112,6 +115,7 @@ import "./mobile-sheets.css";
 import { HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
 import { pushBurst, type RewardBurst } from "./reward-burst";
+import type { ChainRef } from "./chain-proof";
 import type { NativeTradeRequest } from "./types";
 import type { NativeAuraClaim, NativeMarketState } from "./types";
 import { nativeAppearanceItems } from "./native-appearance";
@@ -1281,6 +1285,7 @@ export default function App() {
               xp?: number;
               find?: boolean;
               alreadyClaimed?: boolean;
+              chain?: ChainRef | null;
             }>(
               "/coins/claim",
               {
@@ -1305,8 +1310,8 @@ export default function App() {
               const paid = `+${result.xp ?? 0} XP · +${gold(result.value, 2)} GOLD`;
               burst(
                 result.find
-                  ? { tone: "find", title: tr("Street find!"), detail: paid }
-                  : { tone: "coin", title: paid },
+                  ? { tone: "find", title: tr("Street find!"), detail: paid, chain: result.chain }
+                  : { tone: "coin", title: paid, chain: result.chain },
               );
               pickupFeedback.confirm(
                 demoPickupScope(state.player.id, state.world.id, state.arena),
@@ -2766,6 +2771,7 @@ export default function App() {
           awaiting?: boolean;
           clue?: { correct: boolean; xp: number; answer: string };
           progress?: { completed: number; total: number };
+          chain?: ChainRef | null;
         }>(
           q?.kind === "route" && (q.checkpoint || 0) < (q.checkpointCount || 0)
             ? "/quests/checkpoint"
@@ -2797,6 +2803,7 @@ export default function App() {
                 }
               : {
                   tone: "quest",
+                  chain: r.chain,
                   title: tr("Quest complete!"),
                   detail: [
                     `+${r.xp} XP`,
@@ -4249,6 +4256,7 @@ export default function App() {
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
               </section>
+              <ChainSettings accountId={invisible.accountId} />
               <section
                 className="settings-group"
                 aria-labelledby="settings-account-title"
@@ -4628,6 +4636,9 @@ export default function App() {
         </>
       )}
       <RewardBursts bursts={bursts} />
+      {invisible.signer && player && (
+        <AutoSocialProfile signer={invisible.signer} player={player} />
+      )}
       {busy === "world" && (
         <div className="world-loading">
           <span className="spinner" /> {" "}{tr("Finding trails and today’s treasures…")}</div>
@@ -5283,6 +5294,7 @@ function WalletPanel({
                   ? `${h.gold_u > 0 ? "+" : ""}${gold(h.gold_u)}`
                   : tr("XP / item")}
               </strong>
+              {h.chain && <ChainLink chain={h.chain} />}
             </div>
           ))}
         </div>

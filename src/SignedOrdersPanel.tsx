@@ -20,6 +20,7 @@ import {
 } from "./signed-order";
 import type { NativeItem, NativeMarketBalance, NativeMarketState } from "./types";
 import { tr } from "./i18n";
+import { ChainLink } from "./ChainLink";
 
 export type MarketCall = {
   receiverId: string;
@@ -91,6 +92,7 @@ export function SignedOrdersPanel({
     [step, setStep] = useState(""),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
+    [lastTx, setLastTx] = useState<string | null>(null),
     [sellToken, setSellToken] = useState(""),
     [sellPrice, setSellPrice] = useState("10"),
     [ttl, setTtl] = useState<number>(ORDER_TTL_CHOICES[1].ms),
@@ -154,6 +156,7 @@ export function SignedOrdersPanel({
   }, [sellable.map((s) => s.tokenId).join(",")]);
 
   async function run(label: string, work: () => Promise<string>) {
+    setLastTx(null);
     setError("");
     setMessage("");
     setStep(label);
@@ -168,6 +171,7 @@ export function SignedOrdersPanel({
   }
   async function call(c: Omit<MarketCall, "gas"> & { gas?: string }) {
     const hash = await signer!.call({ gas: GAS, ...c });
+    if (hash) setLastTx(hash);
     // Feed the durable order index; it reads the final receipt itself.
     if (hash)
       void api("/native/market/orders/events", {
@@ -335,7 +339,8 @@ export function SignedOrdersPanel({
       {step && <p role="status">{step}</p>}
       {message && !step && (
         <p role="status" className="native-market-message">
-          {message}
+          {message}{" "}
+          {lastTx && <ChainLink label chain={{ tx: lastTx }} />}
         </p>
       )}
       {!ready ? (

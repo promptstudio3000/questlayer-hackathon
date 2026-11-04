@@ -26,6 +26,7 @@ import {
   SignedOrderIndex,
   startOrderIndexWorker,
 } from "./native/order-index.mjs";
+import { IntentsMarket, createIntentsRoutes } from "./native/intents-market.mjs";
 import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
@@ -76,6 +77,7 @@ import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
+import { chainFeed, chainItems } from "./native/chain-feed.mjs";
 import { clientAddress, pruneRateWindows } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, extname, dirname } from "node:path";
@@ -340,6 +342,17 @@ const managedAccounts = relayConfig.factoryAccount
       topupCapYocto: relayConfig.topupCapYocto,
     })
   : null;
+// Experimental NEAR Intents market (docs/NEAR-INTENTS-MARKET.md): on only when
+// the self-deployed testnet verifier manifest exists. The relayer account is
+// the solver: it pays gas for execute_intents and can move nothing itself.
+const intentsManifestPath = [
+  resolve(APP_ROOT, `public/${manifestName("native-intents")}`),
+  resolve(APP_ROOT, `dist/${manifestName("native-intents")}`),
+].find((p) => existsSync(p));
+const intentsManifest =
+  intentsManifestPath && process.env.INTENTS_MARKET_ENABLED !== "0"
+    ? JSON.parse(readFileSync(intentsManifestPath, "utf8"))
+    : null;
 const relayerService =
   managedAccounts && relayConfig.enabled
     ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
@@ -371,6 +384,8 @@ const relayer = managedAccounts
                 ).contractId
               : undefined,
           npcGames: npcRolls?.contractId || undefined,
+          intents: intentsManifest?.verifierContract || undefined,
+          wnear: intentsManifest?.wnear || undefined,
           rewards: !featureEnabled("rewards")
             ? undefined
             : rewardsConfig?.contractId ||
@@ -396,6 +411,19 @@ const signedOrderIndex = nativeMarket
       relaySenderId: relayerService?.accountId ?? null,
     })
   : null;
+const intentsMarket =
+  intentsManifest?.network === NETWORK &&
+  intentsManifest.verifierContract &&
+  nativeMarket
+    ? new IntentsMarket(db, {
+        verifier: new NativeContractReader(provider, intentsManifest.verifierContract),
+        nftContract: intentsManifest.nftContract || nativeMarket.nfts.contractId,
+        wnear: intentsManifest.wnear,
+        solver: relayerService,
+        manifest: intentsManifest,
+      })
+    : null;
+const intentsRoutes = createIntentsRoutes(intentsMarket);
 const relayerRoutes = createRelayerRoutes({
   relayer,
   accounts: managedAccounts,
@@ -1447,6 +1475,10 @@ async function api(req, res, url) {
   )
     return;
   if (
+    await intentsRoutes.handle(req, res, url, { player, body, respond, assert })
+  )
+    return;
+  if (
     await actorRoutes.handle(req, res, url, { player, body, respond, assert })
   )
     return;
@@ -1847,6 +1879,26 @@ async function api(req, res, url) {
       429,
     );
     return respond(res, await nativeRewards.submit(player, await body(req)));
+  }
+  // The "On chain" feed (Settings) and ChainLink polling.
+  if (
+    (path === "/api/chain/feed" || path === "/api/chain/items") &&
+    method === "GET"
+  ) {
+    const key = `chain-feed:${player}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(count <= 120, "Please wait a moment before checking again.", 429);
+    return respond(
+      res,
+      path === "/api/chain/feed"
+        ? chainFeed(db, player, { limit: url.searchParams.get("limit") })
+        : chainItems(
+            db,
+            player,
+            String(url.searchParams.get("ids") || "").split(","),
+          ),
+    );
   }
   if (
     [
@@ -3089,6 +3141,14 @@ const pinWorker =
     : null;
 const npcRollWorker =
   !backgroundWorkersDisabled && npcRolls ? startNpcRollWorker(npcRolls) : null;
+const intentsWorker =
+  !backgroundWorkersDisabled && intentsMarket
+    ? setInterval(() => void intentsMarket.reconcile().catch(() => {}), 60000)
+    : null;
+if (intentsWorker) {
+  intentsWorker.unref?.();
+  void intentsMarket.reconcile({ limit: 256 }).catch(() => {});
+}
 const orderIndexWorker =
   !backgroundWorkersDisabled && signedOrderIndex
     ? startOrderIndexWorker(signedOrderIndex, { intervalMs: 30000 })
@@ -3168,6 +3228,7 @@ async function close() {
   await relayWorker?.stop?.();
   await creatorMoneyWorker?.stop?.();
   orderIndexWorker?.stop();
+  if (intentsWorker) clearInterval(intentsWorker);
   npcRollWorker?.stop();
   traderKeeper?.stop();
   badgeWorker?.stop();
