@@ -1,3 +1,4 @@
+import { ChainLink } from "./ChainLink";
 import {
   useEffect,
   useLayoutEffect,
@@ -1070,7 +1071,18 @@ export function Inventory({
                 </header>
                 {selected.native_claim_state === "issued" && (
                   <p className="inventory-notice">
-                    {tr("This Aura is being secured and cannot be listed. Find it in the Secured collection.")}</p>
+                    {tr("This Aura is being secured and cannot be listed. Find it in the Secured collection.")}{" "}
+                    {selected.native_claim_id && (
+                      <ChainLink
+                        label
+                        chain={{
+                          id: `aura:${selected.native_claim_id}`,
+                          status: "pending",
+                          account: selected.native_claim_receiver,
+                        }}
+                      />
+                    )}
+                  </p>
                 )}
                 {selling && selected.native_claim_state !== "issued" ? (
                   <form

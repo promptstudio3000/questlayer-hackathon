@@ -54,6 +54,7 @@ export type Player = {
     title: string;
     gold_u: number;
     created_at: number;
+    chain?: import("./chain-proof").ChainRef;
   }[];
   wallets: { account_id: string }[];
 };

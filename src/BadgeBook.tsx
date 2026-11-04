@@ -1,3 +1,5 @@
+import { ChainLink } from "./ChainLink";
+import type { ChainRef } from "./chain-proof";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Medal,
@@ -30,6 +32,8 @@ type PlaceBadge = {
   lat: number;
   lng: number;
   earnedAt: number | null;
+  /** NFT mint of this place badge, once badges are minted on NEAR. */
+  chain?: ChainRef | null;
 };
 type UserBadge = {
   id: string;
@@ -49,6 +53,8 @@ type UserBadge = {
   state: "queued" | "live" | "hidden" | "failed";
   onChain: boolean;
   holding: { state: "queued" | "minted" | "failed"; tokenId: string | null; tx: string | null } | null;
+  /** The transaction that put the badge design on NEAR. */
+  tx?: string | null;
   distanceM?: number;
 };
 type Overview = {
@@ -221,6 +227,12 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
               {detail.earnedAt
                 ? tr("Earned {0}.", { 0: date(detail.earnedAt) })
                 : tr("Get within {0} of it with GPS on to earn it.", { 0: km(detail.radiusM) })}
+              {detail.earnedAt && detail.chain && (
+                <>
+                  {" "}
+                  <ChainLink label chain={detail.chain} />
+                </>
+              )}
             </p>
             <a
               className="secondary-button"
@@ -308,6 +320,26 @@ function PlayerBadges({
           {b.holding ? ` · ${holdingLabel(b)}` : ""}
           {b.mine ? ` · ${b.onChain ? tr("design on NEAR") : b.state === "failed" ? tr("design failed") : tr("design queued")}` : ""}
         </small>
+        {(b.holding || (b.mine && b.tx)) && (
+          <small className="user-badge-chain">
+            {b.holding ? (
+              <ChainLink
+                label
+                chain={{
+                  id: `badge:${b.id}`,
+                  status: b.holding.state,
+                  tx: b.holding.tx,
+                  token:
+                    b.holding.tokenId && u.contractId
+                      ? { contract: u.contractId, id: b.holding.tokenId }
+                      : null,
+                }}
+              />
+            ) : (
+              <ChainLink label chain={{ tx: b.tx }} />
+            )}
+          </small>
+        )}
         {b.description && <small className="user-badge-desc">{b.description}</small>}
         {b.mine && b.code && (
           <small className="user-badge-code">

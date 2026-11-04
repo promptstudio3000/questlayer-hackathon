@@ -6,6 +6,7 @@ import {
   AdventureResultResume,
   AdventureResultHistoryButton,
   PendingNativeTransactions,
+  ChainFeed,
   CreatorCommunity,
   CommunityBonusVote,
   MapNotes,
@@ -112,12 +113,15 @@ import "./mobile-sheets.css";
 import { HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
 import { pushBurst, type RewardBurst } from "./reward-burst";
+import type { ChainRef } from "./chain-proof";
+import { ChainLink } from "./ChainLink";
 import type { NativeTradeRequest } from "./types";
 import type { NativeAuraClaim } from "./types";
 import { nativeAppearanceItems } from "./native-appearance";
 import { publishNoteRecord, type NoteRecordKind } from "./note-record";
 import type { NativeProfileQuote } from "./types";
 import { assertProfileQuote } from "./native-profile-quote";
+import { autoPublishProfile } from "./auto-social-profile";
 import type { NativeWardrobeState, NativeItem } from "./types";
 import {
   useEffect,
@@ -544,6 +548,30 @@ export default function App() {
         : null;
   const invisibleEnsure = invisible.ensure,
     invisibleStatus = invisible.status;
+  // A public NEAR Social profile for every new explorer, right after the
+  // explorer account is ready (src/auto-social-profile.ts). Silent: a failure
+  // only means the player can still publish from Profile later.
+  const autoProfileTried = useRef("");
+  useEffect(() => {
+    const signer = invisible.signer,
+      accountId = invisible.accountId;
+    if (invisibleStatus !== "ready" || !signer || !accountId || !player) return;
+    if (!player.wallets.some((w) => w.account_id === accountId)) return;
+    if (autoProfileTried.current === accountId) return;
+    autoProfileTried.current = accountId;
+    let storage: Storage | null = null;
+    try {
+      storage = localStorage;
+    } catch {}
+    void autoPublishProfile({
+      accountId,
+      playerId: player.id,
+      name: player.name,
+      signer,
+      call: (path, data) => api(path, data),
+      storage,
+    }).catch(() => {});
+  }, [invisibleStatus, invisible.accountId, player?.id, player?.wallets.length]);
   useEffect(() => {
     // Prepare the invisible account in the background; play never waits for it.
     if (player?.id) void invisibleEnsure();
@@ -768,6 +796,7 @@ export default function App() {
     hudXp === null ? null : levelProgress(Number(hudXp), levelTable);
   // Floating reward feedback over the map (src/RewardBursts.tsx).
   const [bursts, setBursts] = useState<RewardBurst[]>([]);
+  const [showChainFeed, setShowChainFeed] = useState(false);
   const burst = (b: Omit<RewardBurst, "id" | "until">) =>
     setBursts((list) => pushBurst(list, b, Date.now()));
   useEffect(() => {
@@ -1199,6 +1228,7 @@ export default function App() {
               xp?: number;
               find?: boolean;
               alreadyClaimed?: boolean;
+              chain?: ChainRef | null;
             }>(
               "/coins/claim",
               {
@@ -1223,8 +1253,8 @@ export default function App() {
               const paid = `+${result.xp ?? 0} XP · +${gold(result.value, 2)} GOLD`;
               burst(
                 result.find
-                  ? { tone: "find", title: tr("Street find!"), detail: paid }
-                  : { tone: "coin", title: paid },
+                  ? { tone: "find", title: tr("Street find!"), detail: paid, chain: result.chain }
+                  : { tone: "coin", title: paid, chain: result.chain },
               );
               pickupFeedback.confirm(
                 demoPickupScope(state.player.id, state.world.id, state.arena),
@@ -2646,6 +2676,7 @@ export default function App() {
           awaiting?: boolean;
           clue?: { correct: boolean; xp: number; answer: string };
           progress?: { completed: number; total: number };
+          chain?: ChainRef | null;
         }>(
           q?.kind === "route" && (q.checkpoint || 0) < (q.checkpointCount || 0)
             ? "/quests/checkpoint"
@@ -2677,6 +2708,7 @@ export default function App() {
                 }
               : {
                   tone: "quest",
+                  chain: r.chain,
                   title: tr("Quest complete!"),
                   detail: [
                     `+${r.xp} XP`,
@@ -4116,6 +4148,30 @@ export default function App() {
               </section>
               <section
                 className="settings-group"
+                aria-labelledby="settings-chain-title"
+              >
+                <h2 id="settings-chain-title">{tr("On chain")}</h2>
+                <button
+                  type="button"
+                  className="settings-row"
+                  aria-expanded={showChainFeed}
+                  onClick={() => setShowChainFeed((open) => !open)}
+                >
+                  <Cube size={22} aria-hidden="true" />
+                  <span>
+                    {tr("On-chain feed")}
+                    <small>{tr("Every action saved on NEAR, with explorer links")}</small>
+                  </span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </button>
+                {showChainFeed && (
+                  <div className="settings-pad">
+                    <ChainFeed accountId={invisible.accountId} />
+                  </div>
+                )}
+              </section>
+              <section
+                className="settings-group"
                 aria-labelledby="settings-account-title"
               >
                 <h2 id="settings-account-title">{tr("Account and devices")}</h2>
@@ -5174,6 +5230,7 @@ function WalletPanel({
                   ? `${h.gold_u > 0 ? "+" : ""}${gold(h.gold_u)}`
                   : tr("XP / item")}
               </strong>
+              {h.chain && <ChainLink chain={h.chain} />}
             </div>
           ))}
         </div>

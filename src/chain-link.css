@@ -1,0 +1,60 @@
+/* On-chain proof icon (src/ChainLink.tsx). */
+.chain-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 999px;
+  color: var(--success, #176553);
+  background: var(--success-surface, #e3f6ee);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  vertical-align: middle;
+}
+a.chain-link {
+  /* A larger tap target than the drawn chip. */
+  position: relative;
+}
+a.chain-link::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+a.chain-link:focus-visible {
+  outline: 2px solid var(--action, #672eeb);
+  outline-offset: 2px;
+}
+.chain-link.has-label {
+  padding: 0 8px 0 6px;
+}
+.chain-link.is-pending {
+  color: var(--ink-secondary, #665577);
+  background: rgba(103, 46, 235, 0.1);
+}
+.chain-link.is-failed {
+  color: #9a2a1a;
+  background: #fde8e3;
+}
+.chain-link-spin {
+  animation: chain-link-spin 0.9s linear infinite;
+}
+@keyframes chain-link-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chain-link-spin {
+    animation: none;
+  }
+}
+/* Inside a reward burst the chip sits on the burst colour. */
+.reward-burst .chain-link {
+  background: rgba(255, 255, 255, 0.85);
+}

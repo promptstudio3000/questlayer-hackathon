@@ -76,6 +76,7 @@ import { readGotchis } from "./aavegotchi.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
+import { chainFeed, chainItems } from "./native/chain-feed.mjs";
 import { clientAddress, pruneRateWindows } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, extname, dirname } from "node:path";
@@ -1776,6 +1777,26 @@ async function api(req, res, url) {
       429,
     );
     return respond(res, await nativeRewards.submit(player, await body(req)));
+  }
+  // The "On chain" feed (Settings) and ChainLink polling.
+  if (
+    (path === "/api/chain/feed" || path === "/api/chain/items") &&
+    method === "GET"
+  ) {
+    const key = `chain-feed:${player}:${Math.floor(Date.now() / 60000)}`,
+      count = (rates.get(key) || 0) + 1;
+    rates.set(key, count);
+    assert(count <= 120, "Please wait a moment before checking again.", 429);
+    return respond(
+      res,
+      path === "/api/chain/feed"
+        ? chainFeed(db, player, { limit: url.searchParams.get("limit") })
+        : chainItems(
+            db,
+            player,
+            String(url.searchParams.get("ids") || "").split(","),
+          ),
+    );
   }
   if (
     [

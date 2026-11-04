@@ -5,6 +5,8 @@ import { api } from "./api";
 import { AuraArt } from "./Ghost";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
 import type { OrderSigner } from "./order-signers";
+import { ChainLink } from "./ChainLink";
+import type { ChainRef } from "./chain-proof";
 import { SignedOrdersPanel } from "./SignedOrdersPanel";
 import { Details } from "./ScreenTabs";
 import { ArrowClockwise } from "@phosphor-icons/react";
@@ -40,6 +42,7 @@ export function NativeMarketPanel({
     [balances, setBalances] = useState<NativeMarketBalance[]>([]),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
+    [proof, setProof] = useState<ChainRef | null>(null),
     [page, setPage] = useState(0),
     [loading, setLoading] = useState(true),
     [accountId, setAccount] = useState(
@@ -109,8 +112,13 @@ export function NativeMarketPanel({
   async function perform(request: NativeTradeRequest) {
     setMessage("");
     setError("");
+    setProof(null);
+    // Server and phone clocks may differ by a little; a minute is plenty.
+    const since = Date.now() - 60_000;
     try {
       const submitted = await onTrade(request);
+      if (submitted)
+        setProof({ id: `latest:market:${since}`, account: request.accountId });
       if (!submitted) {
         await load(true, request.tokenId);
         return;
@@ -181,7 +189,8 @@ export function NativeMarketPanel({
       {error && <p role="alert">{error}</p>}
       {message && (
         <p role="status" className="native-market-message">
-          {message}
+          {message}{" "}
+          {proof && <ChainLink label chain={proof} />}
         </p>
       )}
       {loading ? (

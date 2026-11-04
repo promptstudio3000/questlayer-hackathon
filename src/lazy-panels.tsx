@@ -134,3 +134,4 @@ export const ActorSheet = lazyNamed(
   () => import("./ActorSheet"),
   "ActorSheet",
 );
+export const ChainFeed = lazyNamed(() => import("./ChainFeed"), "ChainFeed");
