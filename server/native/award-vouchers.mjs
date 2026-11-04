@@ -235,6 +235,7 @@ export class AwardVouchers {
         network: NETWORK,
         tokenId: snapshot.tokenId,
         receiver: claim.receiver_id,
+        claimId: claim.claim_id,
       });
     });
     return db

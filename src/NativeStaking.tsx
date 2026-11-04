@@ -18,6 +18,8 @@ import { api } from "./api";
 import type { Player } from "./types";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import { EXPLORER_BASE } from "./near-network.ts";
+import { ChainLink } from "./ChainLink";
+import type { ChainRef } from "./chain-proof";
 import { tr } from "./i18n";
 type Position = {
   id: string;
@@ -92,6 +94,7 @@ export function NativeStaking({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
+    [proof, setProof] = useState<ChainRef | null>(null),
     [pool, setPool] = useState("aurora.pool.f863973.m0"),
     [contribution, setContribution] = useState(50),
     [amount, setAmount] = useState("0.1"),
@@ -128,8 +131,11 @@ export function NativeStaking({
     setBusy(true);
     setError("");
     setNotice("");
+    setProof(null);
+    const since = Date.now() - 60_000;
     try {
       if (await onTransaction({ ...request, accountId: account })) {
+        setProof({ id: `latest:stake:${since}`, account });
         setNotice(tr("Transaction submitted. Check the confirmed position below."));
         await refresh();
       }
@@ -168,7 +174,8 @@ export function NativeStaking({
       )}
       {notice && !busy && (
         <p role="status" className="staking-feedback staking-success">
-          <CheckCircle size={20} aria-hidden="true" /> {notice}
+          <CheckCircle size={20} aria-hidden="true" /> {notice}{" "}
+          {proof && <ChainLink label chain={proof} />}
         </p>
       )}
       {!data && !error && <p role="status">{tr("Loading testnet positions…")}</p>}

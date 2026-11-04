@@ -27,6 +27,8 @@ export interface NpcReply {
   active: NpcActiveLine[];
   source: string;
   attested?: boolean;
+  /** NEAR AI Cloud reply: chat id to re-check at the Verification Center. */
+  verification?: { provider: "near-ai"; model: string; chatId: string; status: string; url: string };
   note?: string;
   npc?: { id: string; name: string; title: string | null; archetype: string };
 }

@@ -8,10 +8,11 @@ export function createNpcStore(db, { clock = Date.now } = {}) {
   const q = (sql) => db.prepare(sql);
   return {
     audit(row) {
+      const auditId = id("ainpc");
       q(
         "INSERT INTO ai_npc_requests(id,player_id,actor_id,provider,model,outcome,reason,facts_hash,menu_hash,output_hash,signature_hash,attested,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
       ).run(
-        id("ainpc"),
+        auditId,
         row.player,
         row.actor,
         row.provider,
@@ -21,10 +22,18 @@ export function createNpcStore(db, { clock = Date.now } = {}) {
         row.factsHash,
         row.menuHash,
         row.outputHash,
-        null,
-        0,
+        row.signatureHash ?? null,
+        row.attested ? 1 : 0,
         clock(),
       );
+      return auditId;
+    },
+    // NEAR AI receipts are checked after the reply is sent.
+    attest(auditId, { attested, signatureHash }) {
+      q("UPDATE ai_npc_requests SET attested=?, signature_hash=? WHERE id=?").run(attested ? 1 : 0, signatureHash ?? null, auditId);
+    },
+    attestation(auditId) {
+      return q("SELECT provider,model,attested,signature_hash FROM ai_npc_requests WHERE id=?").get(auditId) || null;
     },
     talkCount(player, sinceMs) {
       return q(

@@ -24,6 +24,7 @@ import { cityById } from "../spatial/city-pack.mjs";
 import { WORLD_REGISTRY } from "../worlds/registry.mjs";
 import { debugRejected, redactedSample } from "./text-policy.mjs";
 import { ollamaConfiguration, ollamaJson } from "./ollama.mjs";
+import { nearAiConfiguration, nearAiJson } from "./near-ai.mjs";
 import {
   CATEGORY_LABELS,
   DEFAULT_FLAVOUR_LAYER,
@@ -83,7 +84,7 @@ export function flavourConfiguration(env = process.env) {
         : provider === "anthropic"
           ? (env.FLAVOUR_AI_MODEL || env.QUEST_AI_MODEL || "claude-opus-5-5").trim()
           : provider === "near-ai"
-            ? (env.FLAVOUR_AI_MODEL || env.NEAR_AI_MODEL || "").trim() || null
+            ? (env.FLAVOUR_AI_MODEL || nearAiConfiguration(env).model).trim()
             : null,
   };
 }
@@ -230,30 +231,17 @@ export function createAnthropicFlavourProvider({ apiKey, model, client = null })
   };
 }
 
-export function createNearAiFlavourProvider({ apiKey, model, fetcher = fetch }) {
+export function createNearAiFlavourProvider(config) {
   return {
     name: "near-ai",
-    model,
-    async generate({ system, user }) {
-      const r = await fetcher("https://cloud-api.near.ai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          max_tokens: 6000,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: `${system}\nReply with one JSON object {"items":[{"key","title","description"}]} only.` },
-            { role: "user", content: user },
-          ],
-        }),
-        signal: AbortSignal.timeout(90_000),
-      });
-      if (!r.ok) throw Error(`provider-unavailable (${r.status})`);
-      const j = await r.json();
-      const { extractJsonObject } = await import("./ollama.mjs");
-      return extractJsonObject(j.choices?.[0]?.message?.content);
-    },
+    model: config.model,
+    generate: async ({ system, user }) =>
+      (
+        await nearAiJson(
+          { ...config, timeoutMs: 90_000 },
+          { system, user, schema: FLAVOUR_OUTPUT_SCHEMA, maxTokens: 6000, name: "flavour_items" },
+        )
+      ).value,
   };
 }
 
@@ -265,8 +253,10 @@ export function flavourProvider(config, env = process.env) {
   }
   if (config.provider === "anthropic" && env.ANTHROPIC_API_KEY)
     return createAnthropicFlavourProvider({ apiKey: env.ANTHROPIC_API_KEY, model: config.model });
-  if (config.provider === "near-ai" && env.NEAR_AI_API_KEY && config.model)
-    return createNearAiFlavourProvider({ apiKey: env.NEAR_AI_API_KEY, model: config.model });
+  if (config.provider === "near-ai") {
+    const n = nearAiConfiguration(env);
+    return n.active ? createNearAiFlavourProvider({ ...n, model: config.model }) : null;
+  }
   return null;
 }
 
