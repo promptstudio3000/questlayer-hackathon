@@ -84,7 +84,7 @@ Worlds created before the deploy keep their coins until midnight; the next day u
   fields (`cell, coins_u, zones_u, zones, pioneer, seed`), the `proof`, `kind` ("coin" or "zone"),
   `index` and `value_u`. The contract:
   - rebuilds the leaf and checks it against the root;
-  - pays a coin once per index, at most 0.2 GOLD, while the cell's coins last (`coins_u`, twice that on a
+  - pays a coin once per index, at most 2 GOLD (a rare coin: 10 × the 0.2 GOLD unit cap), while the cell's coins last (`coins_u`, twice that on a
     pioneer cell);
   - pays each zone index (`< zones`) once, while `zones_u` lasts;
   - never pays more than the day reserved.

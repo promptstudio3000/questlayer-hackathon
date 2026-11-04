@@ -17,8 +17,8 @@
 //! vault, minted at R. State lives under new storage keys (no layout change).
 use crate::*;
 
-/// Largest coin: 0.2 GOLD (map-rewards-v1 cap).
-pub const MAP_MAX_COIN_U: u128 = 200_000;
+/// Largest coin: a rare coin, 10 x the 0.2 GOLD unit cap (map-rewards-v1).
+pub const MAP_MAX_COIN_U: u128 = 2_000_000;
 pub const MAP_MAX_COINS_PER_CELL: u16 = 1024;
 const MAP_ZONE_XP: u16 = 40;
 
@@ -253,7 +253,7 @@ impl Rewards {
         let amount = value.checked_mul(day.yocto_per_u).expect("Overflow");
         let xp = if claim.kind == "coin" {
             assert!(claim.index < MAP_MAX_COINS_PER_CELL, "Invalid coin index");
-            assert!(value <= MAP_MAX_COIN_U, "Coin above the 0.2 GOLD cap");
+            assert!(value <= MAP_MAX_COIN_U, "Coin above the 2 GOLD cap");
             if cell.coins.is_empty() {
                 cell.coins = vec![0; MAP_MAX_COINS_PER_CELL as usize / 8];
             }
@@ -473,7 +473,7 @@ mod map_tests {
     }
 
     #[test]
-    #[should_panic(expected = "Coin above the 0.2 GOLD cap")]
+    #[should_panic(expected = "Coin above the 2 GOLD cap")]
     fn coins_are_capped() {
         let (mut r, cells) = setup();
         claim(&mut r, &cells[0], "coin", 0, MAP_MAX_COIN_U + 1, "x");
