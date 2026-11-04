@@ -87,9 +87,9 @@ const strings = () => ({
   tradeOnChain: (t: NpcTrade, who: string) =>
     t.state === "filled" || t.txHash
       ? t.kind === "trade_buy"
-        ? tr("Sold to {0} on NEAR: {1} test NEAR is in your market balance.", { 0: who, 1: near(t.price) })
+        ? tr("Sold to {0} on NEAR: {1} test NEAR is on its way to your account.", { 0: who, 1: near(t.price) })
         : tr("Bought from {0} on NEAR: {1} is in your Secured collection.", { 0: who, 1: t.tokenId })
-      : tr("Sent to NEAR. It settles in a few seconds; check Market → Signed offers if it does not show up."),
+      : tr("Sent to NEAR. It settles in a few seconds."),
   trade: (t: NpcTrade, who: string) => {
     if (t.kind === "trade_up")
       return t.state === "completed"
@@ -97,8 +97,8 @@ const strings = () => ({
         : tr('Send {0} to {1} (wardrobe → transfer), then tap "Check hand-over". The deal stays open 30 minutes.', { 0: t.tokens?.join(", "), 1: t.receiver });
     const minutes = Math.max(1, Math.round((t.deadlineMs - Date.now()) / 60000));
     return t.kind === "trade_buy"
-      ? tr("{0} signed a buy order: {1} test NEAR for {2}. Open Market → Signed offers and accept within {3} min.", { 0: who, 1: near(t.price), 2: t.tokenId, 3: minutes })
-      : tr("{0} signed a sell order: {1} for {2} test NEAR. Open Market → Signed offers and buy it within {3} min.", { 0: who, 1: t.tokenId, 2: near(t.price), 3: minutes });
+      ? tr("{0} will buy {1} for {2} test NEAR for the next {3} min. Settle it here with your explorer account.", { 0: who, 1: t.tokenId, 2: near(t.price), 3: minutes })
+      : tr("{0} holds {1} for you at {2} test NEAR for {3} min. Settle it here with your explorer account.", { 0: who, 1: t.tokenId, 2: near(t.intents?.buyerPays ?? t.price), 3: minutes });
   },
 });
 

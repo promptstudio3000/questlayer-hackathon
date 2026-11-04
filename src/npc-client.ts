@@ -76,8 +76,18 @@ export interface NpcTrade {
   tokenId: string;
   price: string;
   deadlineMs: number;
-  order?: unknown;
-  market?: string;
+  /** Buy or sale on NEAR Intents: the side the player signs (server/npc/trader.mjs). */
+  intents?: {
+    verifier: string;
+    nftContract: string;
+    wnear: string;
+    side: "buy" | "sell";
+    /** What the seller receives. */
+    price: string;
+    feePips: number;
+    /** What the buyer gives: the price plus the verifier fee (to the treasury). */
+    buyerPays: string;
+  };
   nftContract?: string;
   tokens?: string[];
   receiver?: string;

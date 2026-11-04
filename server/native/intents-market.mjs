@@ -253,6 +253,40 @@ export class IntentsMarket {
     return hash;
   }
 
+  /** Records a settled Aura trade with the fee the buyer paid (to the treasury). */
+  recordTrade(hash, { maker, taker, makerTerms, takerTerms, orderId }) {
+    this.db
+      .prepare("INSERT OR IGNORE INTO intents_settlements(tx_hash,verifier,kind,accounts,detail,recorded_at) VALUES(?,?,'trade',?,?,?)")
+      .run(
+        hash,
+        this.verifierId,
+        JSON.stringify([maker.signerId, taker.signerId]),
+        JSON.stringify({
+          orderId,
+          tokenId: makerTerms.tokenId,
+          price: makerTerms.price,
+          makerSide: makerTerms.side,
+          // The buyer's extra over `price`: the verifier fee, which goes to the treasury.
+          fee: (BigInt(makerTerms.side === "buy" ? makerTerms.gross : takerTerms.gross) - BigInt(makerTerms.price)).toString(),
+        }),
+        this.now(),
+      );
+  }
+
+  /** Verifies two signed Aura token_diffs and checks they are exact opposites. */
+  async pair(makerSigned, takerSigned) {
+    const maker = await this.verify(makerSigned);
+    const taker = await this.verify(takerSigned);
+    assert(taker.signerId !== maker.signerId, "You cannot take your own order.", 409);
+    const terms = await this.terms();
+    const makerTerms = auraOrderTerms(maker.intents, terms),
+      takerTerms = auraOrderTerms(taker.intents, terms);
+    assert(matches(makerTerms, takerTerms), "Your intent does not match this order.", 409);
+    assert(Object.keys(netDeltas([maker, taker], terms.feePips)).length === 0, "The trade does not net to zero.", 409);
+    assert(await this.fundedFor(taker.signerId, takerTerms), takerTerms.side === "buy" ? "Deposit enough wNEAR into the verifier first." : "Deposit the Aura into the verifier first.", 409);
+    return { maker, taker, makerTerms, takerTerms };
+  }
+
   /** Takes an open order with the opposite signed token_diff. */
   async fill(orderId, takerSigned) {
     const row = this.row(String(orderId));
@@ -263,16 +297,8 @@ export class IntentsMarket {
     this.locks.add(row.id);
     try {
       const makerSigned = JSON.parse(row.signed_intent);
-      const maker = await this.verify(makerSigned);
-      const taker = await this.verify(takerSigned);
-      assert(taker.signerId !== maker.signerId, "You cannot take your own order.", 409);
-      const terms = await this.terms();
-      const makerTerms = auraOrderTerms(maker.intents, terms),
-        takerTerms = auraOrderTerms(taker.intents, terms);
-      assert(matches(makerTerms, takerTerms), "Your intent does not match this order.", 409);
-      assert(Object.keys(netDeltas([maker, taker], terms.feePips)).length === 0, "The trade does not net to zero.", 409);
-      assert(await this.fundedFor(taker.signerId, takerTerms), takerTerms.side === "buy" ? "Deposit enough wNEAR into the verifier first." : "Deposit the Aura into the verifier first.", 409);
-      this.db.prepare("UPDATE intents_orders SET state='filling', taker=?, checked_at=? WHERE id=? AND state='open'").run(taker.signerId, this.now(), row.id);
+      const p = await this.pair(makerSigned, takerSigned);
+      this.db.prepare("UPDATE intents_orders SET state='filling', taker=?, checked_at=? WHERE id=? AND state='open'").run(p.taker.signerId, this.now(), row.id);
       let hash;
       try {
         hash = await this.execute([makerSigned, takerSigned], EXECUTE_GAS);
@@ -284,26 +310,25 @@ export class IntentsMarket {
       this.db
         .prepare("UPDATE intents_orders SET state='filled', settlement_tx=?, closed_at=?, checked_at=? WHERE id=?")
         .run(hash, now, now, row.id);
-      this.db
-        .prepare("INSERT OR IGNORE INTO intents_settlements(tx_hash,verifier,kind,accounts,detail,recorded_at) VALUES(?,?,'trade',?,?,?)")
-        .run(
-          hash,
-          this.verifierId,
-          JSON.stringify([maker.signerId, taker.signerId]),
-          JSON.stringify({
-            orderId: row.id,
-            tokenId: makerTerms.tokenId,
-            price: makerTerms.price,
-            makerSide: makerTerms.side,
-            // The buyer's extra over `price`: the verifier fee, which goes to the treasury.
-            fee: (BigInt(makerTerms.side === "buy" ? makerTerms.gross : takerTerms.gross) - BigInt(makerTerms.price)).toString(),
-          }),
-          now,
-        );
+      this.recordTrade(hash, { ...p, orderId: row.id });
       return { ...this.view(this.row(row.id)), transactionHash: hash };
     } finally {
       this.locks.delete(row.id);
     }
+  }
+
+  /**
+   * Settles a private pair that never enters the public book: an NPC
+   * trader's counter-intent (maker, signed by the server) and the player's
+   * signed intent (taker). Same checks as a book fill, and the maker must be
+   * funded too. Nobody else ever sees the maker's signature.
+   */
+  async settlePair(makerSigned, takerSigned, { reference = null } = {}) {
+    const p = await this.pair(makerSigned, takerSigned);
+    assert(await this.fundedFor(p.maker.signerId, p.makerTerms), "The trader cannot cover this trade right now.", 409, "NPC_TRADE_BUDGET");
+    const hash = await this.execute([makerSigned, takerSigned], EXECUTE_GAS);
+    this.recordTrade(hash, { ...p, orderId: reference });
+    return { transactionHash: hash, makerTerms: p.makerTerms, takerTerms: p.takerTerms };
   }
 
   /** Submits a player's signed withdrawal (back to their own account only). */

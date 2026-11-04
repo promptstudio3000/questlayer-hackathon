@@ -5,7 +5,9 @@
 //   POST /api/actors/:id/keeper                                               {encounter}
 //   GET  /api/npc/traders     public books: float, 7-day P&L, premiums, sweeps
 //   GET  /api/npc/trades      the player's trader trades with their tx hashes
-//   POST /api/npc/trades/tx   {tradeId, transactionHash} records an on-chain step
+//   POST /api/npc/trades/tx   {tradeId, transactionHash} records a trade-up hand-over
+//   POST /api/npc/trades/fill {tradeId, signed} settles an accepted buy or sale on
+//                             NEAR Intents with the player's signed token_diff
 //   GET  /api/keeper/stake                       "your stake today" card (Profile → Stake)
 //   POST /api/keeper/ceremonies/:id/seen         closes an E+2 / tier ceremony
 //   POST /api/keeper/rank/:rank/seen             closes a patron rank-up ceremony
@@ -165,6 +167,14 @@ export function createTraderRoutes({ traders, actors, db, market, vaults, keeper
         assert(player, "Sign in first.", 401);
         const input = await body(req);
         respond(res, await traders.recordTx({ player, tradeId: input.tradeId, transactionHash: input.transactionHash }));
+        return true;
+      }
+      if (path === "/api/npc/trades/fill" && method === "POST") {
+        assert(traders, "NPC traders are not open here.", 503, "NPC_TRADERS_DISABLED");
+        assert(player, "Sign in first.", 401);
+        const input = await body(req);
+        assert(input?.signed && typeof input.signed === "object", "Sign your side of the trade first.", 400, "NPC_TX");
+        respond(res, await traders.fill({ player, tradeId: input.tradeId, signed: input.signed }));
         return true;
       }
       if (path === "/api/staker/gates" && method === "GET") {

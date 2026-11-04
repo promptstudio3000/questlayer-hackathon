@@ -2134,6 +2134,9 @@ export default function App() {
       },
       secureItem: (itemId) =>
         mintEarnedAura({ id: itemId } as Item).then((ok) => ok === true),
+      // NPC buys and sales settle on NEAR Intents, signed by the device key.
+      intentsKey: () =>
+        invisible.deviceKey?.accountId ? invisible.deviceKey : null,
     });
   });
   async function withdrawNativeReward(

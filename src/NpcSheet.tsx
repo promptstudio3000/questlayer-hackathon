@@ -142,9 +142,9 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
           return;
         }
         if (trade.kind === "trade_up") return settleTradeUp(offer.id, trade);
-        // Buy and sell orders are filled on NEAR right here, in one tap.
+        // Buys and sales settle on NEAR Intents right here, in one tap.
         setNotice(t.settlingOnChain);
-        const filled = await fillOnChain(trade, { escrowed: !!(offer.terms as { escrowed?: boolean }).escrowed });
+        const filled = await fillOnChain(trade);
         keep(offer.id, filled);
         setNotice(t.tradeOnChain(filled, name));
         return;

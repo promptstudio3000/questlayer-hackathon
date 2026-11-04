@@ -1,12 +1,24 @@
-// NPC traders on market v2 (N3): pricing always favours the treasury, offers
-// become NEP-413 orders signed by the trader account, caps hold, fills settle
-// into the books, trade-ups pay a rare Aura, and the keeper sweeps surplus.
+// NPC traders on NEAR Intents (N3): pricing always favours the treasury, a
+// deal settles as the player's signed token_diff against the trader's private
+// opposite intent, the buyer pays the verifier fee, caps hold, fills settle
+// into the books, trade-ups pay a rare Aura, and the keeper runs the trader's
+// stock and purse inside the verifier and sweeps surplus to the treasury.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { KeyPair } from "near-api-js";
 import { openDatabase, createPlayer } from "../server/database.mjs";
-import { SignedOrderIndex } from "../server/native/order-index.mjs";
-import { verifySignedOrderLocally } from "../server/native/signed-orders.mjs";
+import { IntentsMarket } from "../server/native/intents-market.mjs";
+import {
+  TREASURY_FEE_PIPS,
+  auraTokenDiff,
+  feeForGross,
+  grossForNet,
+  intentMessage,
+  netDeltas,
+  signIntentWithKeyPair,
+  verifyIntentLocally,
+  versionedNonce,
+} from "../server/native/intents.mjs";
 import { NETWORK } from "../server/native/network.mjs";
 import { parseTraders } from "../server/npc/trader-keys.mjs";
 import { createTraderService } from "../server/npc/trader.mjs";
@@ -37,8 +49,7 @@ import {
 } from "../server/npc/trader-pricing.mjs";
 
 const skip = NETWORK !== "testnet";
-const MARKET = "market.testnet",
-  NFTS = "nfts.testnet",
+const NFTS = "nfts.testnet",
   NPC = "npc-kupec-vojtech.op.testnet",
   DAY = "2026-11-02";
 const ACTOR = { id: "kupec-vojtech", kind: "npc", archetype: "trader", name: "Vojtěch the Merchant" };
@@ -82,35 +93,73 @@ test("premiums are paid only from profit, plus a first-week seed", () => {
   assert.ok(sweepReceiptId(ACTOR.id, "20261102", 1).length <= 64);
 });
 
-function chain() {
-  const s = {
-    owner: new Map(),
-    listings: new Map(),
-    credit: new Map([[NPC, FLOAT]]),
-    epoch: 0,
-    calls: [],
+const VERIFIER = "intents.op.testnet",
+  WNEAR = "wrap.testnet",
+  COLLECTOR = "op.testnet",
+  SALT = "a1b2c3d4";
+const ft = `nep141:${WNEAR}`,
+  nft = (tokenId) => `nep171:${NFTS}:${tokenId}`;
+const playerKeys = new Map();
+const keyOf = (account) => {
+  if (!playerKeys.has(account)) playerKeys.set(account, KeyPair.fromRandom("ed25519"));
+  return playerKeys.get(account);
+};
+
+/** Wallet NFTs plus an in-memory NEAR Intents verifier (fee to the collector). */
+function chain({ fee = TREASURY_FEE_PIPS, now = () => Date.now() } = {}) {
+  const s = { owner: new Map(), balances: new Map(), used: new Set(), keys: new Set(), fee, executed: [], failNext: false };
+  const bal = (a, t) => s.balances.get(`${a}|${t}`) || 0n;
+  const setBal = (a, t, v) => s.balances.set(`${a}|${t}`, v);
+  const apply = (signed) => {
+    const bodies = signed.map((x) => verifyIntentLocally(x, { verifier: VERIFIER, nowMs: now() }));
+    for (const b of bodies) {
+      assert.ok(s.keys.has(`${b.signerId}|${b.publicKey}`), `${b.signerId} key registered`);
+      assert.ok(!s.used.has(`${b.signerId}|${b.nonce}`), "nonce used");
+    }
+    const net = netDeltas(bodies, s.fee);
+    return Object.keys(net).length ? { invariant_violated: { unmatched_deltas: net } } : { bodies };
   };
-  const market = {
-    contractId: MARKET,
-    nfts: { contractId: NFTS },
-    view: async (method, args = {}) => {
+  const reader = {
+    contractId: VERIFIER,
+    async view(method, args = {}) {
       switch (method) {
-        case "get_stats":
-          return { version: 2 };
-        case "get_listings":
-          return [...s.listings.entries()].slice(args.from_index, args.from_index + args.limit).map(([token_id, l], i) => ({ id: i, token_id, seller: l.seller, price: "0", state: l.state }));
-        case "get_listing": {
-          const l = s.listings.get(args.token_id);
-          return l ? { token_id: args.token_id, seller: l.seller, state: l.state } : null;
-        }
-        case "get_account":
-          return { credit: String(s.credit.get(args.account_id) || 0n), withdrawing: "0", listed: 0 };
-        case "get_signer":
-          return { keys: [], epoch: s.epoch };
-        case "check_order":
-          return { valid: true, reason: null, fillable: false };
+        case "current_salt": return SALT;
+        case "fee": return s.fee;
+        case "is_valid_salt": return args.salt === SALT;
+        case "has_public_key": return s.keys.has(`${args.account_id}|${args.public_key}`);
+        case "is_nonce_used": return s.used.has(`${args.account_id}|${args.nonce}`);
+        case "mt_balance_of": return bal(args.account_id, args.token_id).toString();
+        case "mt_batch_balance_of": return args.token_ids.map((t) => bal(args.account_id, t).toString());
+        case "mt_tokens_for_owner":
+          return [...s.balances].filter(([k, v]) => k.startsWith(args.account_id + "|") && v > 0n).map(([k]) => ({ token_id: k.split("|")[1] }));
+        case "simulate_intents": return { invariant_violated: apply(args.signed).invariant_violated ?? null };
       }
       throw new Error(method);
+    },
+  };
+  const solver = {
+    accountId: "relayer.testnet",
+    account: {
+      async callFunctionRaw({ methodName, args }) {
+        assert.equal(methodName, "execute_intents");
+        const r = apply(args.signed);
+        assert.ok(!r.invariant_violated);
+        for (const b of r.bodies) {
+          s.used.add(`${b.signerId}|${b.nonce}`);
+          for (const i of b.intents)
+            for (const [t, v] of Object.entries(i.diff || {})) {
+              setBal(b.signerId, t, bal(b.signerId, t) + BigInt(v));
+              if (BigInt(v) < 0n && t.startsWith("nep141:")) setBal(COLLECTOR, t, bal(COLLECTOR, t) + feeForGross(-BigInt(v), s.fee));
+            }
+        }
+        s.executed.push(r.bodies.map((b) => b.signerId));
+        const hash = `${s.executed.length}Wn3n9sZ7nK5YbYdH1Wf3pX6c8fQx2mKjv9JQw7sC`.padEnd(44, "q");
+        if (s.failNext) {
+          s.failNext = false;
+          throw new Error("RPC timeout after send");
+        }
+        return { transaction: { hash }, status: { SuccessValue: "" }, receipts_outcome: [] };
+      },
     },
   };
   const nfts = {
@@ -125,72 +174,110 @@ function chain() {
       throw new Error(method);
     },
   };
-  return { s, market, nfts };
+  /** Puts an Aura into an account's verifier balance (nft_transfer_call). */
+  const deposit = (account, tokenId) => {
+    s.owner.set(tokenId, VERIFIER);
+    setBal(account, nft(tokenId), 1n);
+  };
+  const stockOf = (account) => [...s.balances].filter(([k, v]) => k.startsWith(`${account}|nep171:`) && v > 0n).length;
+  return { s, reader, solver, nfts, bal, setBal, deposit, stockOf };
 }
 
-function setup(t, { now = Date.now() } = {}) {
+function setup(t, { now = Date.now(), fee = TREASURY_FEE_PIPS } = {}) {
   const db = openDatabase(":memory:");
   t.after(() => db.close());
   let clock = now;
-  const c = chain();
-  const index = new SignedOrderIndex(db, c.market, { now: () => clock });
+  const c = chain({ fee, now: () => clock });
+  const intents = new IntentsMarket(db, { verifier: c.reader, nftContract: NFTS, wnear: WNEAR, solver: c.solver, now: () => clock });
   const traders = parseTraders({
     network: "testnet",
     traders: [
       { actorId: ACTOR.id, accountId: NPC, signingKey: KeyPair.fromRandom("ed25519").toString(), fundedAt: new Date(now).toISOString() },
     ],
   });
-  const service = createTraderService({ db, traders, market: c.market, nfts: c.nfts, orderIndex: index, clock: () => clock });
+  const trader = traders.get(ACTOR.id);
+  c.s.keys.add(`${NPC}|${trader.signingPublicKey}`);
+  c.setBal(NPC, ft, FLOAT);
+  const service = createTraderService({ db, traders, intents, nfts: c.nfts, clock: () => clock });
   const player = (name, account) => {
     const p = createPlayer(db, name, now);
     db.prepare("INSERT INTO wallet_links(account_id,player_id,verified_at) VALUES(?,?,?)").run(account, p, now);
+    c.s.keys.add(`${account}|${keyOf(account).getPublicKey()}`);
     return p;
   };
   const encounter = async (p) => {
     const menu = await service.menu({ actor: ACTOR, player: p, dayId: DAY, now: clock, expiresAt: clock + 300_000 });
     return { menu, dayId: DAY, encounterId: "enc" };
   };
-  return { db, c, index, service, traders, player, encounter, tick: (ms) => (clock += ms), now: () => clock };
+  /** The player's side of a deal, as the NPC sheet signs it with the device key. */
+  const sign = (account, trade, { price = trade.intents.price, side = trade.intents.side } = {}) => {
+    const deadlineMs = clock + 600_000;
+    return signIntentWithKeyPair(keyOf(account), {
+      message: intentMessage({
+        signerId: account,
+        deadlineMs,
+        intents: [auraTokenDiff({ side, nftContract: NFTS, tokenId: trade.tokenId, price, wnear: WNEAR, feePips: trade.intents.feePips })],
+      }),
+      nonce: versionedNonce({ salt: SALT, deadlineMs }),
+      recipient: VERIFIER,
+    });
+  };
+  return { db, c, intents, service, traders, player, encounter, sign, tick: (ms) => (clock += ms), now: () => clock };
 }
 
-test("a premium buy becomes a trader-signed buy order bound to one token", { skip }, async (t) => {
-  const { c, service, player, encounter, traders, db } = setup(t);
+test("a premium buy settles on NEAR Intents for that exact token, and the trader pays the fee", { skip }, async (t) => {
+  const { c, service, player, encounter, sign, intents } = setup(t);
   const [wanted] = wantedEditions(ACTOR.id, DAY);
+  const token = `aura:${wanted}:7`;
   const alice = player("Alice", "alice.testnet"),
     bob = player("Bob", "bob.testnet");
-  c.s.owner.set(`aura:${wanted}:7`, "alice.testnet");
+  c.s.owner.set(token, "alice.testnet");
   const enc = await encounter(alice);
   const offer = enc.menu.find((o) => o.kind === "trade_buy");
   assert.ok(offer, "Alice is offered a premium for her wanted Aura");
-  assert.equal(offer.terms.tokenId, `aura:${wanted}:7`);
-  assert.match(offerFacts([offer])[0].text, /signed buy order/);
+  assert.equal(offer.terms.tokenId, token);
+  assert.equal(offer.terms.traderPays, grossForNet(offer.terms.price, TREASURY_FEE_PIPS).toString());
+  assert.match(offerFacts([offer])[0].text, /NEAR Intents/);
   const trade = await service.accept({ player: alice, actor: ACTOR, encounter: enc, offerId: offer.id });
-  const terms = verifySignedOrderLocally(trade.order, { market: MARKET, nftContract: NFTS });
-  assert.equal(terms.maker, NPC);
-  assert.equal(terms.kind, "buy");
-  assert.equal(terms.token_id, `aura:${wanted}:7`);
-  assert.equal(trade.order.public_key, traders.get(ACTOR.id).signingPublicKey);
-  // Accepting again returns the same order (no second nonce, no double budget).
+  assert.equal(trade.state, "issued");
+  assert.deepEqual(
+    { side: trade.intents.side, price: trade.intents.price, verifier: trade.intents.verifier },
+    { side: "sell", price: offer.terms.price, verifier: VERIFIER },
+  );
+  // Accepting reserves the deal and signs nothing; the trader's intent is never listed.
+  assert.equal(intents.list().length, 0);
   const again = await service.accept({ player: alice, actor: ACTOR, encounter: enc, offerId: offer.id });
   assert.equal(again.tradeId, trade.tradeId);
   // Bob cannot use Alice's offer: it is not on his encounter menu.
   const bobEnc = await encounter(bob);
   await assert.rejects(service.accept({ player: bob, actor: ACTOR, encounter: bobEnc, offerId: offer.id }), /no longer available/);
-  // The fill (on chain the trader now owns the token) settles into the books.
-  c.s.owner.set(`aura:${wanted}:7`, NPC);
-  db.prepare("UPDATE signed_market_orders SET state='filled' WHERE id=?").run(`${NPC}:${trade.order.nonce}`);
-  assert.equal((await service.reconcile()).settled, 1);
-  const lot = service.ledger.heldLot(ACTOR.id, `aura:${wanted}:7`);
-  assert.equal(lot.cost, String(BigInt(offer.terms.price)));
+  await assert.rejects(service.fill({ player: bob, tradeId: trade.tradeId, signed: sign("bob.testnet", trade) }), /no such trade/);
+  // Alice deposits the Aura and signs her sell side; a lower or higher price does not match.
+  c.deposit("alice.testnet", token);
+  await assert.rejects(
+    service.fill({ player: alice, tradeId: trade.tradeId, signed: sign("alice.testnet", trade, { price: String(BigInt(trade.price) + MILLI) }) }),
+    /does not match/,
+  );
+  const filled = await service.fill({ player: alice, tradeId: trade.tradeId, signed: sign("alice.testnet", trade) });
+  assert.equal(filled.state, "filled");
+  assert.ok(filled.txHash);
+  assert.deepEqual(c.s.executed, [[NPC, "alice.testnet"]], "one execute_intents with both sides");
+  const gross = grossForNet(trade.price, TREASURY_FEE_PIPS);
+  assert.equal(c.bal("alice.testnet", ft), BigInt(trade.price), "the seller receives the price exactly");
+  assert.equal(c.bal(NPC, ft), FLOAT - gross);
+  assert.equal(c.bal(COLLECTOR, ft), gross - BigInt(trade.price), "the fee goes to the treasury collector");
+  assert.equal(c.bal(NPC, nft(token)), 1n);
+  const lot = service.ledger.heldLot(ACTOR.id, token);
+  assert.equal(lot.cost, gross.toString(), "the trader's cost basis includes the fee");
+  assert.equal((await service.fill({ player: alice, tradeId: trade.tradeId, signed: sign("alice.testnet", trade) })).replay, true);
 });
 
 test("caps stop the fourth trade of the day with one trader", { skip }, async (t) => {
   const { c, service, player, encounter } = setup(t);
   const alice = player("Alice", "alice.testnet");
-  // Escrowed stock from earlier trade-ups (cost 0) for four sales.
+  // Stock from earlier trade-ups (cost 0) in the verifier for four sales.
   for (let i = 1; i <= 4; i++) {
-    c.s.listings.set(`aura:ember:${i}`, { seller: NPC, state: "deposited" });
-    c.s.owner.set(`aura:ember:${i}`, MARKET);
+    c.deposit(NPC, `aura:ember:${i}`);
     service.ledger.addLot({ trader: ACTOR.id, tokenId: `aura:ember:${i}`, cost: 0n, source: "trade_up" });
   }
   let done = 0;
@@ -201,9 +288,9 @@ test("caps stop the fourth trade of the day with one trader", { skip }, async (t
     for (const o of sells) {
       if (done >= MAX_TRADES_PER_PLAYER_DAY) break;
       const trade = await service.accept({ player: alice, actor: ACTOR, encounter: enc, offerId: o.id });
-      const terms = verifySignedOrderLocally(trade.order, { market: MARKET, nftContract: NFTS });
-      assert.equal(terms.kind, "sell");
-      assert.ok(BigInt(terms.price) < REFERENCE.common);
+      assert.equal(trade.intents.side, "buy");
+      assert.ok(BigInt(trade.price) < REFERENCE.common);
+      assert.equal(trade.intents.buyerPays, o.terms.buyerPays, "the player pays the price plus the fee");
       done++;
     }
     if (done >= MAX_TRADES_PER_PLAYER_DAY) break;
@@ -217,7 +304,7 @@ test("the trader pays no premium when its purse cannot cover the order", { skip 
   const [wanted] = wantedEditions(ACTOR.id, DAY);
   const alice = player("Alice", "alice.testnet");
   c.s.owner.set(`aura:${wanted}:3`, "alice.testnet");
-  c.s.credit.set(NPC, 0n);
+  c.setBal(NPC, ft, 0n);
   assert.equal((await encounter(alice)).menu.filter((o) => o.kind === "trade_buy").length, 0);
 });
 
@@ -231,8 +318,8 @@ test("two buy orders accepted at once never promise more than the trader's purse
   const [ea, eb] = [await encounter(alice), await encounter(bob)];
   const [oa, ob] = [ea, eb].map((e) => e.menu.find((o) => o.kind === "trade_buy"));
   assert.ok(oa && ob, "both are offered a premium");
-  // The purse covers either order alone, not both.
-  c.s.credit.set(NPC, BigInt(oa.terms.price) + BigInt(ob.terms.price) - 1n);
+  // The purse covers either deal alone (price plus fee), not both.
+  c.setBal(NPC, ft, BigInt(oa.terms.traderPays) + BigInt(ob.terms.traderPays) - 1n);
   const results = await Promise.allSettled([
     service.accept({ player: alice, actor: ACTOR, encounter: ea, offerId: oa.id }),
     service.accept({ player: bob, actor: ACTOR, encounter: eb, offerId: ob.id }),
@@ -240,7 +327,7 @@ test("two buy orders accepted at once never promise more than the trader's purse
   assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
   const refused = results.find((r) => r.status === "rejected");
   assert.equal(refused.reason.code, "NPC_TRADE_BUDGET");
-  assert.ok(service.ledger.reservedForBuys(ACTOR.id) <= c.s.credit.get(NPC));
+  assert.ok(service.ledger.reservedForBuys(ACTOR.id) <= c.bal(NPC, ft));
 });
 
 test("a trade-up turns three handed-over commons into one rare Aura", { skip }, async (t) => {
@@ -263,7 +350,7 @@ test("a trade-up turns three handed-over commons into one rare Aura", { skip }, 
 });
 
 test("trader trades carry their on-chain proof: hand-over hashes and the fill", { skip }, async (t) => {
-  const { c, service, player, encounter, db, index } = setup(t);
+  const { c, service, player, encounter, db, sign } = setup(t);
   const alice = player("Alice", "alice.testnet");
   for (const id of ["aura:ember:1", "aura:ember:2", "aura:dew:3"]) c.s.owner.set(id, "alice.testnet");
   const enc = await encounter(alice);
@@ -292,41 +379,46 @@ test("trader trades carry their on-chain proof: hand-over hashes and the fill", 
   assert.deepEqual(service.handoversFor(alice), []);
   const meta = JSON.parse(db.prepare("SELECT meta FROM history WHERE player_id=? AND kind='npc-trade'").get(alice).meta);
   assert.equal(meta.txHashes.length, 3);
-  // A sale settles with the fill transaction from the order index.
+  // A sale settles with the execute_intents transaction.
   const lot = "aura:polar:4";
-  c.s.listings.set(lot, { seller: NPC, state: "deposited" });
-  c.s.owner.set(lot, MARKET);
+  c.deposit(NPC, lot);
   service.ledger.addLot({ trader: ACTOR.id, tokenId: lot, cost: 0n, source: "trade_up" });
   const enc2 = await encounter(alice);
   const sellOffer = enc2.menu.find((o) => o.kind === "trade_sell" && o.terms.tokenId === lot);
   const sale = await service.accept({ player: alice, actor: ACTOR, encounter: enc2, offerId: sellOffer.id });
-  const fill = "7Wn3n9sZ7nK5YbYdH1Wf3pX6c8fQx2mKjv9JQw7sCq1d";
-  index.close(`${NPC}:${sale.order.nonce}`, "filled", { tx: fill });
-  c.s.listings.delete(lot);
-  c.s.owner.set(lot, "alice.testnet");
-  await service.reconcile();
+  // Without the price plus the fee in the verifier, nothing is sent.
+  c.setBal("alice.testnet", ft, BigInt(sale.intents.buyerPays) - 1n);
+  await assert.rejects(service.fill({ player: alice, tradeId: sale.tradeId, signed: sign("alice.testnet", sale) }), /Deposit enough wNEAR/);
+  c.setBal("alice.testnet", ft, BigInt(sale.intents.buyerPays));
+  const settled = await service.fill({ player: alice, tradeId: sale.tradeId, signed: sign("alice.testnet", sale) });
+  assert.equal(c.bal("alice.testnet", nft(lot)), 1n);
+  assert.equal(c.bal(NPC, ft), FLOAT + BigInt(sale.price), "the trader earns the price; the fee went to the treasury");
   const mine = service.myTrades(alice);
   const sold = mine.find((x) => x.tradeId === sale.tradeId);
   assert.equal(sold.state, "filled");
-  assert.equal(sold.txHash, fill);
+  assert.equal(sold.txHash, settled.txHash);
+  const history = db.prepare("SELECT meta FROM history WHERE player_id=? AND kind='npc-trade' ORDER BY rowid DESC").get(alice);
+  assert.equal(JSON.parse(history.meta).txHash, settled.txHash);
   await assert.rejects(service.recordTx({ player: alice, tradeId: sale.tradeId, transactionHash: "nope" }), /Invalid transaction hash/);
 });
 
 test("the keeper sweeps only the surplus above the float, and only with no open buy", { skip }, async (t) => {
   const { c, service } = setup(t);
-  const provider = { query: async () => ({ amount: String(YOCTO), storage_usage: 1000 }) };
+  const provider = fakeProvider(() => YOCTO, { storage_usage: 1000 });
   const keeper = createTraderKeeper({ service, provider, rewardsId: "rewards.testnet" });
-  c.s.credit.set(NPC, FLOAT + SWEEP_BUFFER + 3n * YOCTO);
+  c.setBal(NPC, ft, FLOAT + SWEEP_BUFFER + 3n * YOCTO);
   const r = await keeper.tick({ execute: false });
   const sweep = r.reports[0].actions.find((a) => a.step === "sweep");
   assert.equal(sweep.amount, String(3n * YOCTO));
   assert.equal(r.reports[0].execute, false, "no account key: dry run");
-  c.s.credit.set(NPC, FLOAT);
+  c.setBal(NPC, ft, FLOAT);
   const quiet = await keeper.tick({ execute: false });
   assert.equal(quiet.reports[0].actions.length, 0);
   const books = await service.books();
   assert.equal(books.traders[0].accountId, NPC);
   assert.equal(books.traders[0].startFloat, String(FLOAT));
+  assert.equal(books.traders[0].purse, String(FLOAT));
+  assert.equal(books.venue, "near-intents");
 });
 
 test("traders files are testnet-only and keys must parse", () => {
@@ -351,6 +443,20 @@ test("stock editions always leave the treasury a margin over the mint cost", () 
   }
 });
 
+/** RPC stand-in: account balances plus wNEAR views for the keeper. */
+function fakeProvider(amount, { storage_usage = 0, wnear = { registered: true, loose: 0n } } = {}) {
+  return {
+    query: async (q) => {
+      if (q.request_type === "view_account") return { amount: String(amount()), storage_usage };
+      const value =
+        q.method_name === "storage_balance_of" ? (wnear.registered ? { total: "1250000000000000000000", available: "0" } : null)
+        : q.method_name === "ft_balance_of" ? String(wnear.loose)
+        : null;
+      return { result: [...Buffer.from(JSON.stringify(value))] };
+    },
+  };
+}
+
 function stockKeeper(t, { liquid = YOCTO, awardKey } = {}) {
   const ctx = setup(t);
   const { c, service } = ctx;
@@ -372,14 +478,14 @@ function stockKeeper(t, { liquid = YOCTO, awardKey } = {}) {
         amount -= 18n * MILLI; // storage + gas
       }
       if (methodName === "nft_transfer_call") {
-        c.s.owner.set(args.token_id, MARKET);
-        c.s.listings.set(args.token_id, { seller: NPC, state: "deposited" });
+        assert.equal(args.receiver_id, VERIFIER, "stock goes into the verifier");
+        c.deposit(NPC, args.token_id);
         amount -= 2n * MILLI;
       }
       return { status: {}, transaction: { hash: `tx-${calls.length}` } };
     },
   };
-  const provider = { query: async () => ({ amount: String(amount), storage_usage: 0 }) };
+  const provider = fakeProvider(() => amount);
   const keeper = createTraderKeeper({ service, provider, rewardsId: "rewards.testnet", awardSigner: signer, accountFor: () => account });
   return { ...ctx, keeper, calls, signer };
 }
@@ -397,7 +503,7 @@ test("the keeper stocks an empty shelf with signed claims and escrows it", { ski
   const msg = awardMessage(NFTS, { ...r0.args, expires_at: r0.args.expires_at_ms });
   assert.equal(r0.args.signature, signer.sign(msg));
   assert.equal(new Set(redeems.map((x) => x.args.edition)).size, STOCK_TARGET, "three different editions");
-  assert.equal(c.s.listings.size, STOCK_TARGET, "all stock is in market escrow");
+  assert.equal(c.stockOf(NPC), STOCK_TARGET, "all stock is in the verifier");
   const lots = service.ledger.held(ACTOR.id);
   assert.equal(lots.length, STOCK_TARGET);
   for (const lot of lots) assert.equal(BigInt(lot.cost), 21n * MILLI, "cost = measured spend + escrow allowance");
@@ -423,16 +529,16 @@ test("stocking needs the collection to trust the award key, liquid NEAR and a da
   const busy = stockKeeper(t);
   for (let i = 0; i < 6; i++) {
     await busy.keeper.tick({ execute: true });
-    busy.c.s.listings.clear(); // pretend everything sold
+    for (const k of [...busy.c.s.balances.keys()]) if (k.startsWith(`${NPC}|nep171:`)) busy.c.s.balances.delete(k); // pretend everything sold
   }
   assert.equal(busy.calls.filter((x) => x.methodName === "redeem_aura").length, 3);
 });
 
 test("a sweep leaves a restocking reserve behind and sends the rest to the treasury", { skip }, async (t) => {
   const { c, service } = setup(t);
-  const provider = { query: async () => ({ amount: String(YOCTO / 2n), storage_usage: 0 }) }; // no spare liquid
+  const provider = fakeProvider(() => YOCTO / 2n); // no spare liquid
   const keeper = createTraderKeeper({ service, provider, rewardsId: "rewards.testnet" });
-  c.s.credit.set(NPC, FLOAT + SWEEP_BUFFER + YOCTO);
+  c.setBal(NPC, ft, FLOAT + SWEEP_BUFFER + YOCTO);
   const sweep = (await keeper.tick({ execute: false })).reports[0];
   assert.equal(sweep.actions.find((a) => a.step === "sweep").amount, String(YOCTO - STOCK_RESERVE));
   assert.equal(sweep.stockReserve, String(STOCK_RESERVE));
@@ -480,8 +586,7 @@ test("only patrons (Staker + L4) see the rare → epic trade-up and patron sale 
   makePatron(db, alice, now());
   for (const id of ["aura:polar:1", "aura:polar:2", "aura:bloom:3"]) c.s.owner.set(id, "alice.testnet");
   for (const id of ["aura:polar:4", "aura:polar:5", "aura:bloom:6"]) c.s.owner.set(id, "bob.testnet");
-  c.s.listings.set("aura:storm:9", { seller: NPC, state: "deposited" });
-  c.s.owner.set("aura:storm:9", MARKET);
+  c.deposit(NPC, "aura:storm:9");
   service.ledger.addLot({ trader: ACTOR.id, tokenId: "aura:storm:9", cost: 0n, source: "trade_up" });
 
   const bobEnc = await encounter(bob);
@@ -506,4 +611,91 @@ test("only patrons (Staker + L4) see the rare → epic trade-up and patron sale 
   assert.equal(done.aura.rarity, "epic");
   // The trader gains three rares (cost 0) for an epic from game supply.
   assert.equal(service.ledger.held(ACTOR.id).filter((l) => rarityOf(l.token_id.split(":")[1]) === "rare").length, 3);
+});
+
+test("the keeper registers the trader's key, sweeps through the verifier and refills the float", { skip }, async (t) => {
+  const { c, service, traders } = setup(t);
+  const trader = traders.get(ACTOR.id);
+  c.s.keys.delete(`${NPC}|${trader.signingPublicKey}`);
+  c.setBal(NPC, ft, FLOAT + SWEEP_BUFFER + YOCTO);
+  const calls = [];
+  const account = {
+    callFunctionRaw: async ({ contractId, methodName, args, deposit }) => {
+      calls.push({ contractId, methodName, args, deposit });
+      if (methodName === "add_public_key") c.s.keys.add(`${NPC}|${args.public_key}`);
+      if (methodName === "ft_withdraw") c.setBal(NPC, ft, c.bal(NPC, ft) - BigInt(args.amount));
+      if (methodName === "ft_transfer_call") c.setBal(NPC, ft, c.bal(NPC, ft) + BigInt(args.amount));
+      return { status: {}, transaction: { hash: `tx-${calls.length}` } };
+    },
+  };
+  const keeper = createTraderKeeper({ service, provider: fakeProvider(() => YOCTO), rewardsId: "rewards.testnet", stock: false, accountFor: () => account });
+  const r = (await keeper.tick({ execute: true })).reports[0];
+  assert.deepEqual(
+    calls.map((x) => `${x.contractId}.${x.methodName}`),
+    [`${VERIFIER}.add_public_key`, `${VERIFIER}.ft_withdraw`, `${WNEAR}.near_withdraw`, "rewards.testnet.fund_rewards"],
+  );
+  assert.equal(calls[0].args.public_key, trader.signingPublicKey);
+  const sweep = r.actions.find((a) => a.step === "sweep");
+  assert.equal(sweep.amount, String(YOCTO));
+  assert.equal(calls[1].args.amount, String(YOCTO));
+  assert.equal(calls[1].args.receiver_id, NPC, "the surplus comes back to the trader account first");
+  assert.equal(calls[3].deposit, YOCTO + 5n * 10n ** 21n, "the surplus plus the rewards storage fee");
+  assert.match(calls[3].args.receipt_id, /^npc-kupec-vojtech-\d{8}-1$/);
+  assert.equal(c.bal(NPC, ft), FLOAT + SWEEP_BUFFER);
+  // An interrupted sweep left the purse short: loose wNEAR goes back first, then wrapped NEAR.
+  calls.length = 0;
+  c.setBal(NPC, ft, FLOAT - YOCTO / 4n);
+  const loose = { registered: true, loose: YOCTO / 10n };
+  const refill = createTraderKeeper({ service, provider: fakeProvider(() => 2n * YOCTO, { wnear: loose }), rewardsId: "rewards.testnet", stock: false, accountFor: () => account });
+  const restore = (await refill.tick({ execute: true })).reports[0].actions.find((a) => a.step === "restore-float");
+  const want = YOCTO / 4n + SWEEP_BUFFER;
+  assert.equal(restore.amount, String(want));
+  assert.equal(restore.wrap, String(want - YOCTO / 10n));
+  assert.deepEqual(
+    calls.map((x) => `${x.contractId}.${x.methodName}`),
+    [`${WNEAR}.near_deposit`, `${WNEAR}.ft_transfer_call`],
+  );
+  assert.equal(calls[1].args.receiver_id, VERIFIER);
+  assert.equal(c.bal(NPC, ft), FLOAT + SWEEP_BUFFER);
+});
+
+test("a fill that stopped after it was sent is booked once the trader's nonce is used", { skip }, async (t) => {
+  const { c, service, player, encounter, sign, tick } = setup(t);
+  const alice = player("Alice", "alice.testnet");
+  c.deposit(NPC, "aura:comet:2");
+  service.ledger.addLot({ trader: ACTOR.id, tokenId: "aura:comet:2", cost: 0n, source: "trade_up" });
+  const enc = await encounter(alice);
+  const offer = enc.menu.find((o) => o.kind === "trade_sell");
+  const trade = await service.accept({ player: alice, actor: ACTOR, encounter: enc, offerId: offer.id });
+  c.setBal("alice.testnet", ft, BigInt(trade.intents.buyerPays));
+  c.s.failNext = true; // settled on chain, but the answer never came back
+  await assert.rejects(service.fill({ player: alice, tradeId: trade.tradeId, signed: sign("alice.testnet", trade) }), /timeout/);
+  assert.equal(service.ledger.trade(trade.tradeId).state, "issued");
+  assert.equal((await service.reconcile()).settled, 1);
+  assert.equal(service.ledger.trade(trade.tradeId).state, "filled");
+  assert.equal(c.bal("alice.testnet", nft("aura:comet:2")), 1n);
+  // An unsigned deal simply lapses at its deadline.
+  c.deposit(NPC, "aura:moon:3");
+  service.ledger.addLot({ trader: ACTOR.id, tokenId: "aura:moon:3", cost: 0n, source: "trade_up" });
+  const enc2 = await encounter(alice);
+  const other = await service.accept({ player: alice, actor: ACTOR, encounter: enc2, offerId: enc2.menu.find((o) => o.kind === "trade_sell").id });
+  tick(10 * 60_000);
+  await service.reconcile();
+  assert.equal(service.ledger.trade(other.tradeId).state, "expired");
+  await assert.rejects(service.fill({ player: alice, tradeId: other.tradeId, signed: sign("alice.testnet", other) }), /lapsed/);
+});
+
+test("a deal signed at one fee is refused after the verifier fee changes", { skip }, async (t) => {
+  const { c, service, player, encounter, sign, tick } = setup(t, { fee: 0 });
+  const alice = player("Alice", "alice.testnet");
+  c.deposit(NPC, "aura:bloom:5");
+  service.ledger.addLot({ trader: ACTOR.id, tokenId: "aura:bloom:5", cost: 0n, source: "trade_up" });
+  const enc = await encounter(alice);
+  const trade = await service.accept({ player: alice, actor: ACTOR, encounter: enc, offerId: enc.menu.find((o) => o.kind === "trade_sell").id });
+  assert.equal(trade.intents.buyerPays, trade.price, "no fee, no extra");
+  c.setBal("alice.testnet", ft, YOCTO);
+  c.s.fee = TREASURY_FEE_PIPS;
+  tick(61_000); // the fee cache refreshes after a minute
+  await assert.rejects(service.fill({ player: alice, tradeId: trade.tradeId, signed: sign("alice.testnet", trade) }), /fee changed/);
+  assert.deepEqual(c.s.executed, []);
 });

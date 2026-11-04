@@ -2,17 +2,22 @@
 // operator's machine: it reads .data/near-operator.json and writes the private
 // traders file .data/npc-traders.json (mode 600, never committed).
 //
-//   node scripts/npc-trader-testnet.mjs setup                 # dry run: show the plan
-//   node scripts/npc-trader-testnet.mjs setup --execute       # create + fund + register
-//   node scripts/npc-trader-testnet.mjs status                # float, stock, signing keys
-//   node scripts/npc-trader-testnet.mjs cancel-all --execute  # emergency: void every NPC order
+//   node scripts/npc-trader-testnet.mjs setup                    # dry run: show the plan
+//   node scripts/npc-trader-testnet.mjs setup --execute          # create + register + fund
+//   node scripts/npc-trader-testnet.mjs status                   # purse, stock, signing key
+//   node scripts/npc-trader-testnet.mjs leave-market --execute   # once: take stock + credit out of market v2
+//   node scripts/npc-trader-testnet.mjs cancel-all --execute     # emergency: remove the signing key
 //
+// Traders trade on the game's NEAR Intents verifier (public/native-intents-testnet.json).
 // setup, per trader in server/data/actors/<city>.json (archetype "trader"):
 //   1. create npc-<actor>.<operator>.testnet with 2.6 test NEAR (2 float + gas/storage),
-//   2. add_signing_key on the market (1 yocto) with a separate order-signing key,
-//   3. deposit_near 2 test NEAR: the trader's float.
+//   2. add_public_key on the verifier (1 yocto) with a separate intent-signing key,
+//   3. wrap 2 test NEAR and deposit it into the verifier: the trader's float.
+// The VPS keeper repeats 2 and 3 when needed and deposits stock into the verifier.
 // Then install the file on the VPS with scripts/install-npc-traders-vps.sh.
-// Testnet only; mainnet is refused.
+// leave-market: traders used market v2 before 4 Nov 2026; this returns their
+// escrowed Auras (cancel) and credit (withdraw) to the trader account, where
+// the keeper picks them up. Testnet only; mainnet is refused.
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { Account, KeyPair, KeyPairSigner } from "near-api-js";
@@ -33,7 +38,11 @@ assert.equal(statSync(".data/near-operator.json").mode & 0o077, 0, "Operator key
 const provider = createNearProvider();
 assert.equal((await provider.viewNodeStatus()).chain_id, "testnet", "Testnet RPC only.");
 const marketId = JSON.parse(readFileSync("public/native-market-testnet.json", "utf8")).marketContract;
-assert.ok(marketId.endsWith(".testnet"));
+const intents = JSON.parse(readFileSync("public/native-intents-testnet.json", "utf8"));
+const verifierId = intents.verifierContract,
+  WNEAR = intents.wnear,
+  WNEAR_STORAGE = 125n * 10n ** 19n;
+assert.ok(marketId.endsWith(".testnet") && verifierId.endsWith(".testnet") && WNEAR.endsWith(".testnet"));
 const actors = JSON.parse(readFileSync(`server/data/actors/${cityArg}.json`, "utf8")).actors.filter(
   (a) => a.kind === "npc" && a.archetype === "trader" && a.enabled,
 );
@@ -95,21 +104,21 @@ if (command === "setup") {
         );
     }
     const npc = new Account(accountId, provider, KeyPairSigner.fromSecretKey(entry.accountKey));
-    const signer = (await exists(accountId)) ? await view(marketId, "get_signer", { account_id: accountId }) : { keys: [] };
-    if (!signer.keys.includes(signingPub)) {
-      plan.steps.push({ step: "add_signing_key" });
-      if (EXECUTE)
-        plan.steps.at(-1).tx = txHash(
-          await npc.callFunctionRaw({ contractId: marketId, methodName: "add_signing_key", args: { public_key: signingPub }, deposit: 1n, gas: 30n * TGAS, waitUntil: "FINAL" }),
-        );
+    const call = (contractId, methodName, args, deposit, gas = 30n * TGAS) =>
+      npc.callFunctionRaw({ contractId, methodName, args, deposit, gas, waitUntil: "FINAL" }).then(txHash);
+    const registered = (await exists(accountId)) ? await view(verifierId, "has_public_key", { account_id: accountId, public_key: signingPub }) : false;
+    if (!registered) {
+      plan.steps.push({ step: "add_public_key", verifier: verifierId });
+      if (EXECUTE) plan.steps.at(-1).tx = await call(verifierId, "add_public_key", { public_key: signingPub }, 1n);
     }
-    const credit = (await exists(accountId)) ? BigInt((await view(marketId, "get_account", { account_id: accountId })).credit) : 0n;
-    if (!entry.fundedAt && credit < FLOAT) {
-      plan.steps.push({ step: "deposit_near", amount: (FLOAT - credit).toString() });
+    const purse = (await exists(accountId)) ? BigInt(await view(verifierId, "mt_balance_of", { account_id: accountId, token_id: `nep141:${WNEAR}` })) : 0n;
+    if (!entry.fundedAt && purse < FLOAT) {
+      const amount = FLOAT - purse;
+      plan.steps.push({ step: "wrap and deposit into the verifier", amount: amount.toString() });
       if (EXECUTE) {
-        plan.steps.at(-1).tx = txHash(
-          await npc.callFunctionRaw({ contractId: marketId, methodName: "deposit_near", args: {}, deposit: FLOAT - credit, gas: 30n * TGAS, waitUntil: "FINAL" }),
-        );
+        await call(WNEAR, "storage_deposit", { account_id: accountId, registration_only: true }, WNEAR_STORAGE);
+        await call(WNEAR, "near_deposit", {}, amount);
+        plan.steps.at(-1).tx = await call(WNEAR, "ft_transfer_call", { receiver_id: verifierId, amount: amount.toString(), msg: "" }, 1n, 100n * TGAS);
       }
     }
     if (EXECUTE && !entry.fundedAt) {
@@ -118,36 +127,66 @@ if (command === "setup") {
     }
     log({ ...plan, execute: EXECUTE });
   }
-  if (!EXECUTE) log({ note: "Dry run. Re-run with --execute to create, fund and register the traders." });
+  if (!EXECUTE) log({ note: "Dry run. Re-run with --execute to create, register and fund the traders on the verifier." });
 } else if (command === "status") {
   const file = loadFile();
   for (const t of file.traders) {
     const ok = await exists(t.accountId);
-    const signer = ok ? await view(marketId, "get_signer", { account_id: t.accountId }) : null;
-    const acct = ok ? await view(marketId, "get_account", { account_id: t.accountId }) : null;
+    const signingPub = KeyPair.fromString(t.signingKey).getPublicKey().toString();
+    const owned = ok ? await view(verifierId, "mt_tokens_for_owner", { account_id: t.accountId, from_index: "0", limit: 100 }) : [];
+    const market = ok ? await view(marketId, "get_account", { account_id: t.accountId }) : null;
+    const listings = ok ? (await view(marketId, "get_listings", { from_index: 0, limit: 100 })).filter((l) => l.seller === t.accountId) : [];
     log({
       actorId: t.actorId,
       accountId: t.accountId,
       exists: ok,
-      signingKeyRegistered: !!signer?.keys.includes(KeyPair.fromString(t.signingKey).getPublicKey().toString()),
-      epoch: signer?.epoch ?? null,
-      marketCredit: acct?.credit ?? null,
-      listed: acct?.listed ?? null,
+      verifier: verifierId,
+      signingKeyRegistered: ok ? await view(verifierId, "has_public_key", { account_id: t.accountId, public_key: signingPub }) : false,
+      purse: ok ? await view(verifierId, "mt_balance_of", { account_id: t.accountId, token_id: `nep141:${WNEAR}` }) : null,
+      stock: owned.map((x) => x.token_id).filter((id) => id.startsWith("nep171:")),
+      leftInMarketV2: { credit: market?.credit ?? null, listings: listings.map((l) => l.token_id) },
       fundedAt: t.fundedAt,
     });
   }
-} else if (command === "cancel-all") {
+} else if (command === "leave-market") {
+  // One time: market v2 escrow and credit back to the trader account. The
+  // keeper then deposits the Auras and the NEAR into the verifier.
   for (const t of loadFile().traders) {
-    const step = { actorId: t.actorId, step: "cancel_all_orders", execute: EXECUTE };
+    if (!(await exists(t.accountId))) continue;
+    const npc = new Account(t.accountId, provider, KeyPairSigner.fromSecretKey(t.accountKey));
+    const call = (methodName, args) =>
+      npc.callFunctionRaw({ contractId: marketId, methodName, args, deposit: 1n, gas: 100n * TGAS, waitUntil: "FINAL" }).then(txHash);
+    const listings = (await view(marketId, "get_listings", { from_index: 0, limit: 100 })).filter(
+      (l) => l.seller === t.accountId && /deposited|active/i.test(String(l.state)),
+    );
+    for (const l of listings) {
+      const step = { actorId: t.actorId, step: "cancel", tokenId: l.token_id, execute: EXECUTE };
+      if (EXECUTE) step.tx = await call("cancel", { token_id: l.token_id, listing_id: l.id });
+      log(step);
+    }
+    const credit = BigInt((await view(marketId, "get_account", { account_id: t.accountId }))?.credit || "0");
+    if (credit > 0n) {
+      const step = { actorId: t.actorId, step: "withdraw", amount: credit.toString(), execute: EXECUTE };
+      if (EXECUTE) step.tx = await call("withdraw", {});
+      log(step);
+    }
+  }
+  if (!EXECUTE) log({ note: "Dry run. Re-run with --execute to move the traders out of market v2." });
+} else if (command === "cancel-all") {
+  // Emergency: removing the signing key voids every intent it signed. Turn
+  // the traders off first (NPC_TRADER_ENABLED=0), or the keeper adds it back.
+  for (const t of loadFile().traders) {
+    const step = { actorId: t.actorId, step: "remove_public_key", verifier: verifierId, execute: EXECUTE };
     if (EXECUTE) {
       const npc = new Account(t.accountId, provider, KeyPairSigner.fromSecretKey(t.accountKey));
+      const public_key = KeyPair.fromString(t.signingKey).getPublicKey().toString();
       step.tx = txHash(
-        await npc.callFunctionRaw({ contractId: marketId, methodName: "cancel_all_orders", args: {}, deposit: 1n, gas: 30n * TGAS, waitUntil: "FINAL" }),
+        await npc.callFunctionRaw({ contractId: verifierId, methodName: "remove_public_key", args: { public_key }, deposit: 1n, gas: 30n * TGAS, waitUntil: "FINAL" }),
       );
     }
     log(step);
   }
 } else {
-  console.error("Usage: node scripts/npc-trader-testnet.mjs setup|status|cancel-all [--execute]");
+  console.error("Usage: node scripts/npc-trader-testnet.mjs setup|status|leave-market|cancel-all [--execute]");
   process.exit(2);
 }
