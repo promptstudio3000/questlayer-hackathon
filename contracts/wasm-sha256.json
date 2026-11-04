@@ -28,11 +28,6 @@
       "contract": "questlayer_market",
       "sha256": "bd1f74d2858e468b354c2bb174ca95d921e933898adb9738fced8b817a0439ee"
     },
-    "public/native-rewards-testnet.json:wasmSha256": {
-      "contract": "questlayer_rewards",
-      "sha256": "b22f7ceecf260ab1760c444c189d93a998b18c0f1468df1fdf93fcd009207a81",
-      "note": "Rewards with QGOLD withdrawals (PR #174), live since 4 Nov. The map-day build (PR #181) replaces it on the next run of scripts/deploy-qgold-testnet.mjs, which drops this entry."
-    },
     "public/native-rewards-testnet.json:factory.wasmSha256": {
       "contract": "questlayer_vault_factory",
       "sha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9"
@@ -57,6 +52,16 @@
       "contract": "near_intents_defuse",
       "sha256": "1098ca2fecdfdb4dbc21e9fdfc513351816d85ed75f88144abb0c78a64ac1d60",
       "note": "External code, not ours: near/intents defuse v0.4.5 (commit 16d04f6), built by scripts/intents-verifier-testnet.mjs --build in its own pinned image sourcescan/cargo-near:0.22.0-rust-1.97.1. Experimental testnet verifier only."
+    },
+    "public/native-claims-testnet.json:wasmSha256": {
+      "contract": "questlayer_collectibles",
+      "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
+      "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
+    },
+    "public/native-editions-testnet.json:wasmSha256": {
+      "contract": "questlayer_collectibles",
+      "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
+      "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
     }
   }
 }
