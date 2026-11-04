@@ -89,7 +89,7 @@ export function nativeManifest(
   coinPoints = cityById(plan.cityId)
     ? sampleCityPaths(cityById(plan.cityId))
     : null,
-  { budget = null, funding = null, version = 1 } = {},
+  { budget = null, funding = null, version = 1, cap: capOption = null } = {},
 ) {
   const dayId = nativeDayId(plan.cityId, plan.day, version);
   assert(
@@ -104,7 +104,7 @@ export function nativeManifest(
   );
   if (!coinPoints.length) return null;
   coinPoints.forEach(point);
-  const cap = 6n * 10n ** 21n;
+  const cap = capOption == null ? 6n * 10n ** 21n : BigInt(capOption);
   const available = (bucket) => nativeInteger(treasury[bucket].available);
   // An explicit budget comes from the allocation (server/native/allocation.mjs);
   // without one a single city takes the capped available funds, as in v1.

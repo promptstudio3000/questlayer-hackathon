@@ -100,6 +100,24 @@ export function publishArgs(
   };
 }
 
+/**
+ * The map's share of a date's cap: half of the contract's per-date cap
+ * (which grows with funding), never more than what city days left of it.
+ * Without a chain view it keeps the fixed testnet half (0.05 NEAR).
+ */
+export async function mapDayCaps(view, date) {
+  if (!view) return {};
+  try {
+    const t = await view("get_date_totals", { date });
+    const cap = BigInt(t.cap),
+      half = cap / 2n,
+      room = (used) => (cap - BigInt(used) < half ? cap - BigInt(used) : half);
+    return { coinCap: room(t.coins), zoneCap: room(t.zones) };
+  } catch {
+    return {};
+  }
+}
+
 /** Same text as the contract's map_claim_message. */
 export function mapClaimMessage(contractId, c, network = NETWORK) {
   return [
@@ -269,7 +287,7 @@ export function queueMapClaims(db, { signer, contractId, day, now = Date.now() }
  */
 export async function runMapChainWorker(
   db,
-  { call, signer, contractId, now = Date.now(), maxClaims = 20 },
+  { call, view = null, signer, contractId, now = Date.now(), maxClaims = 20 },
 ) {
   ensureMapChainSchema(db);
   const result = { published: null, queued: 0, sent: 0, closed: 0, failed: 0 };
@@ -282,7 +300,7 @@ export async function runMapChainWorker(
       db.prepare("INSERT OR IGNORE INTO map_chain_days VALUES(?,?,?,'pending',NULL,NULL,NULL,?)").run(
         dayId,
         today,
-        JSON.stringify(publishArgs(plan)),
+        JSON.stringify(publishArgs(plan, await mapDayCaps(view, today))),
         now,
       );
       row = db.prepare("SELECT * FROM map_chain_days WHERE day_id=?").get(dayId);

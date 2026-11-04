@@ -461,6 +461,7 @@ export function startRewardWorker(
         if (mapChainEnabled() && send.mapDays)
           await runMapChainWorker(native.db, {
             call: send,
+            view: (method, args) => native.view(method, args, true),
             signer: native.signer,
             contractId: native.contractId,
           }).catch((error) =>

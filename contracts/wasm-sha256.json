@@ -11,7 +11,7 @@
     "questlayer_npc_games": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
     "questlayer_qgold": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
     "questlayer_qgold_escrow": "5d375a2cc25ae6817ab6820d5777e9ec3459d888cd7dd52a055b869e78210452",
-    "questlayer_rewards": "133fa467b316af1a67a4bc3ccd83f1d06e56e721eae0acad41bc43c9a73a81fa",
+    "questlayer_rewards": "ec4e162fe0a1c83aa727bf1d52803906e6351ea163891d6077c5012a763f3dc3",
     "questlayer_soulbound_ft": "2746a77ec1de90c9b9a8054769922d0a2027cec8c15f743fcd66b89b3c572293",
     "questlayer_tasks": "055954f30c81b4dfd56b3bd9a88c469aeb74c50d5eb4eb83f9aeb5b8bbc51751",
     "questlayer_vault": "9bc4ffa8d4b7c2f403efa7ebb2cc1bc20e086039d5c690fdbdd82aaff93347d5",
@@ -62,6 +62,11 @@
       "contract": "questlayer_collectibles",
       "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
       "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
+    },
+    "public/native-rewards-testnet.json:wasmSha256": {
+      "contract": "questlayer_rewards",
+      "sha256": "133fa467b316af1a67a4bc3ccd83f1d06e56e721eae0acad41bc43c9a73a81fa",
+      "note": "Live testnet rewards before the funding-scaled date cap (PR #194). node scripts/deploy-qgold-testnet.mjs --reviewed upgrades it; the record commit then removes this entry."
     }
   }
 }

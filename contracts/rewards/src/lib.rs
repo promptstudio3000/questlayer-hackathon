@@ -11,6 +11,8 @@ mod map_days;
 const NEAR: u128 = 10u128.pow(24);
 const DAY_MS: u64 = 86_400_000;
 const CLAIM_LIMIT: u16 = 256;
+/// Share of each bucket's funding that one date may commit (see date_cap).
+const DATE_CAP_BPS: u128 = 1000;
 const CLAIM_STORAGE: u64 = 1024;
 const SPONSOR_STORAGE_FEE: u128 = 5 * 10u128.pow(21);
 /// Plain street coin XP (unchanged since v1).
@@ -286,10 +288,8 @@ impl Rewards {
             zone_cost = zone_cost.checked_add(q.reward.0).expect("Overflow");
         }
         // The restricted publisher can never publish an unbounded testnet day.
-        assert!(
-            coin_cost <= NEAR / 10 && zone_cost <= NEAR / 10,
-            "Daily testnet cap"
-        );
+        let cap = self.date_cap();
+        assert!(coin_cost <= cap && zone_cost <= cap, "Daily testnet cap");
         assert!(
             coin_cost <= self.coins.available && zone_cost <= self.zones.available,
             "Insufficient liquid funding"
@@ -582,7 +582,7 @@ impl Rewards {
     }
     pub fn get_date_totals(&self, date: String) -> near_sdk::serde_json::Value {
         let (coins, zones) = date_totals().get(&date).unwrap_or((0, 0));
-        near_sdk::serde_json::json!({"date":date,"coins":coins.to_string(),"zones":zones.to_string(),"cap":(NEAR / 10).to_string()})
+        near_sdk::serde_json::json!({"date":date,"coins":coins.to_string(),"zones":zones.to_string(),"cap":self.date_cap().to_string()})
     }
     fn add_to_date_total(&self, day_id: &str, coin_cost: u128, zone_cost: u128) {
         let date = day_date(day_id);
@@ -591,12 +591,22 @@ impl Rewards {
         let mut totals = date_totals();
         let (coins, zones) = totals.get(&date).unwrap_or((0, 0));
         let (coins, zones) = (coins + coin_cost, zones + zone_cost);
-        assert!(
-            coins <= NEAR / 10 && zones <= NEAR / 10,
-            "Daily cap across cities"
-        );
+        let cap = self.date_cap();
+        assert!(coins <= cap && zones <= cap, "Daily cap across cities");
         totals.insert(&date, &(coins, zones));
         seen.insert(&day_id.to_string(), &true);
+    }
+    /// Per-date cap for each bucket: 0.1 NEAR, or a tenth of what was ever
+    /// funded into that bucket (half of `funded`, 50/50 policy) once the
+    /// treasury is larger. It grows with funding and never shrinks, so a
+    /// date's recorded total always stays within it.
+    fn date_cap(&self) -> u128 {
+        let scaled = self.funded / 2 * DATE_CAP_BPS / 10_000;
+        if scaled > NEAR / 10 {
+            scaled
+        } else {
+            NEAR / 10
+        }
     }
     fn publisher(&self) {
         assert_eq!(
@@ -1081,6 +1091,20 @@ mod tests {
         assert_eq!(t["zones"], "300");
         assert_eq!(t["cap"], (NEAR / 10).to_string());
         assert_eq!(r.get_date_totals("2026-11-02".into())["coins"], "0");
+        r.check();
+    }
+    #[test]
+    fn the_date_cap_grows_with_funding() {
+        let mut r = big_funding();
+        context("sponsor.testnet", 1, 10 * NEAR + SPONSOR_STORAGE_FEE, None);
+        r.fund_rewards("sponsor".into(), "fund-bigger".into());
+        // About 11 NEAR funded → 5.5 per bucket → a tenth is 0.55 NEAR a date.
+        let cap = r.funded / 2 / 10;
+        assert!(cap > NEAR / 2);
+        assert_eq!(r.get_date_totals("2026-11-05".into())["cap"], cap.to_string());
+        publish(&mut r, "brno-2026-11-05-v1", NEAR / 40, 0); // 10 coins: 0.25 NEAR
+        publish(&mut r, "ostrava-2026-11-05-v1", NEAR / 40, 0);
+        assert_eq!(r.get_date_totals("2026-11-05".into())["coins"], (NEAR / 2).to_string());
         r.check();
     }
     #[test]
