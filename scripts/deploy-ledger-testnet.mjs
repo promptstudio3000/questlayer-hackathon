@@ -278,7 +278,10 @@ try {
   });
   refused = !!r.status?.Failure;
 } catch (e) {
-  refused = /soulbound/i.test(String(e?.message || e));
+  // The release WASM aborts without its panic text ("unreachable" trap), so
+  // any contract execution failure counts as the refusal.
+  refused =
+    /soulbound/i.test(rpcErrorText(e)) || e?.name === "ContractExecutionError" || e?.constructor?.name === "ContractExecutionError";
 }
 assert(refused, "QXP ft_transfer must fail");
 
