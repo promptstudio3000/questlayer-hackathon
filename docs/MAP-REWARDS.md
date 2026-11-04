@@ -77,7 +77,10 @@ bigger. The sky chip shows the time of the next coin wave.
   at most 240 a day), and closes the day after one day of grace (`server/map-rewards/chain.mjs`).
   It needs the rewards upgrade with `map_days.rs` and a worker key that allows the three map
   methods next to the four native ones. The demo arena stays practice. Status:
-  `chain` in `GET /api/map/rewards/day`.
+  `chain` in `GET /api/map/rewards/day`. Every published day (city or map) holds 256 receipt slots
+  (about 2.6 NEAR of storage) until it closes, so the contract needs about five days of separate storage
+  reserve; `node scripts/topup-rewards-storage.mjs [--send]` tops it up from the operator. Without it
+  `publish_map_day` traps ("Top up separate storage and gas funding before publication").
 
 Worlds created before the deploy keep their coins until midnight; the next day uses map rewards.
 
