@@ -57,16 +57,6 @@
       "contract": "near_intents_defuse",
       "sha256": "1098ca2fecdfdb4dbc21e9fdfc513351816d85ed75f88144abb0c78a64ac1d60",
       "note": "External code, not ours: near/intents defuse v0.4.5 (commit 16d04f6), built by scripts/intents-verifier-testnet.mjs --build in its own pinned image sourcescan/cargo-near:0.22.0-rust-1.97.1. Experimental testnet verifier only."
-    },
-    "public/native-claims-testnet.json:wasmSha256": {
-      "contract": "questlayer_collectibles",
-      "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
-      "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
-    },
-    "public/native-editions-testnet.json:wasmSha256": {
-      "contract": "questlayer_collectibles",
-      "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
-      "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
     }
   }
 }
