@@ -33,8 +33,8 @@ At the first request of a local day (Europe/Prague) the server builds the day pl
 - **Merkle root:** one leaf per funded cell,
   `sha256("qlmap1|policy|day|cell|coinsU|zonesU|zones|pioneer|cellSeed")`, sorted by cell, same tree as the
   chain ledger (`server/chain-ledger/merkle.mjs`). `GET /api/map/rewards/day` shows the root;
-  `GET /api/map/rewards/proof?cell=` returns the leaf and its proof. Publishing the root on chain and
-  checking the proof on a claim waits for the rewards/vault change of stream 1.
+  `GET /api/map/rewards/proof?cell=` returns the leaf and its proof. The rewards contract
+  verifies it on chain (see "On chain" below).
 
 ## 2. A cell's drop
 
@@ -73,3 +73,22 @@ bigger. The sky chip shows the time of the next coin wave.
 - `MAP_REWARDS_SEED`: secret mixed into the day seed.
 
 Worlds created before the deploy keep their coins until midnight; the next day uses map rewards.
+
+## 5. On chain (contracts/rewards `map_days.rs`)
+
+- `publish_map_day({day_id: "map-YYYY-MM-DD-v<n>", policy, root, starts_at, ends_at, coins_u, zones_u,
+  yocto_per_u})`: publisher only. It reserves `coins_u × yocto_per_u` and `zones_u × yocto_per_u` NEAR from
+  the coin and zone treasury. The same per-date cap applies across cities and the map (0.1 NEAR each on
+  testnet), together with the receipt storage reservation. `coins_u` must already include the pioneer reserve.
+- `claim_map({claim, signature})`: the attestor signs `map_claim_message(claim)`. A claim carries the leaf
+  fields (`cell, coins_u, zones_u, zones, pioneer, seed`), the `proof`, `kind` ("coin" or "zone"),
+  `index` and `value_u`. The contract:
+  - rebuilds the leaf and checks it against the root;
+  - pays a coin once per index, at most 0.2 GOLD, while the cell's coins last (`coins_u`, twice that on a
+    pioneer cell);
+  - pays each zone index (`< zones`) once, while `zones_u` lasts;
+  - never pays more than the day reserved.
+  Credits are withdrawn like every reward: into the QGOLD vault, minted at R (docs/QGOLD-VAULT.md).
+- `close_map_day(day_id)`: after a one-day grace period, returns the unclaimed budget to the available
+  treasury.
+- Views: `get_map_day(day_id)` and `get_map_cell(day_id, cell)`.
