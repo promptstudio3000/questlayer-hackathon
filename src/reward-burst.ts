@@ -1,8 +1,11 @@
 // Floating reward feedback over the map (coins, street finds, quests, level
 // ups). Presentation only: callers pass amounts the server already confirmed.
 export type RewardBurstTone = "coin" | "find" | "quest" | "level";
+import type { ChainRef } from "./chain-proof";
 export type RewardBurst = {
   id: number;
+  /** On-chain proof of this reward (the icon shows its stage). */
+  chain?: ChainRef | null;
   tone: RewardBurstTone;
   title: string;
   detail?: string;
@@ -31,7 +34,7 @@ export function pushBurst(
     if (last?.tone === "coin")
       return [
         ...live.slice(0, -1),
-        { ...last, ...burst, id: next++, until: now + LIFETIME.coin },
+        { ...last, ...burst, id: next++, until: now + LIFETIME[burst.tone] },
       ];
   }
   const out = [...live, { ...burst, id: next++, until: now + LIFETIME[burst.tone] }];

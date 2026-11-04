@@ -23,6 +23,7 @@ import type {
   Item,
 } from "./types";
 import { EXPLORER_BASE } from "./near-network.ts";
+import { ChainLink } from "./ChainLink";
 import { nativeAppearanceItems } from "./native-appearance";
 import { tr } from "./i18n";
 export { nativeAppearanceItems };
@@ -256,6 +257,11 @@ export function NativeWardrobe({
                               {item.tokenId}
                             </span>
                           </div>
+                          {data && (
+                            <ChainLink
+                              chain={{ token: { contract: data.contractId, id: item.tokenId } }}
+                            />
+                          )}
                         </article>
                       ))}
                   </div>
@@ -356,7 +362,13 @@ export function NativeWardrobe({
                   <summary>{tr("Details")}</summary>
                   <div className="inventory-disclosure-body">
                     <p className="native-address">
-                      {tr("Token:")}{" "}{selectedItem.tokenId}
+                      {tr("Token:")}{" "}{selectedItem.tokenId}{" "}
+                      {data && (
+                        <ChainLink
+                          label
+                          chain={{ token: { contract: data.contractId, id: selectedItem.tokenId } }}
+                        />
+                      )}
                     </p>
                     <p className="native-address">
                       {tr("Account:")}{" "}{selectedAccount.accountId}
@@ -404,7 +416,12 @@ export function NativeWardrobe({
                   <NativePicture item={item} />
                   <div>
                     <h3>{item.title}</h3>
-                    <small className="native-address">{item.tokenId}</small>
+                    <small className="native-address">
+                      {item.tokenId}{" "}
+                      <ChainLink
+                        chain={{ token: { contract: gallery.contractId, id: item.tokenId } }}
+                      />
+                    </small>
                     <small className="native-address">
                       {tr("Owner:")}{" "}{item.ownerId}
                     </small>

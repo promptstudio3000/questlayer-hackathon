@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "./api";
 import { tr } from "./i18n";
+import { ChainLink } from "./ChainLink";
 
 export type RollCall = {
   receiverId: string;
@@ -130,10 +131,23 @@ export function WispRolls({
           {busy || (pending ? tr("Finish your roll") : tr("Roll at the wisp"))}
         </button>
       )}
-      {won && <p className="monster-rewards">{tr("The wisp gave you")}{" "}{rewardText(won)}{tr(". Secure it on NEAR below.")}</p>}
+      {won && (
+        <p className="monster-rewards">
+          {tr("The wisp gave you")}{" "}{rewardText(won)}{tr(". Secure it on NEAR below.")}{" "}
+          <ChainLink label chain={{ id: `roll:${won.rollId}` }} />
+        </p>
+      )}
       {error && <p role="alert">{error}</p>}
       {recent.length > 0 && !won && (
-        <p className="monster-sub">{tr("Last rolls:")}{" "}{recent.map(rewardText).join(" · ")}</p>
+        <p className="monster-sub">
+          {tr("Last rolls:")}{" "}
+          {recent.map((r, i) => (
+            <span key={r.rollId}>
+              {i > 0 && " · "}
+              {rewardText(r)} <ChainLink chain={{ id: `roll:${r.rollId}` }} />
+            </span>
+          ))}
+        </p>
       )}
     </section>
   );

@@ -16,6 +16,7 @@ import "./season/schema.mjs";
 import "./map-read-indexes.mjs";
 import "./hot-path-indexes.mjs";
 import { GOLD, id, hash, dayKey, levelFor, assert } from "./domain.mjs";
+import { withChain } from "./native/chain-feed.mjs";
 
 // Request handlers call db.prepare(sql) inline, so SQLite compiled the same
 // SQL again on every request (~10 µs each, dozens per request; load test,
@@ -242,11 +243,15 @@ export function playerView(db, playerId) {
         `SELECT i.*,a.claim_id AS native_claim_id,a.receiver_id AS native_claim_receiver,a.state AS native_claim_state,a.expires_at AS native_claim_expires_at,a.token_id AS native_token_id${nativeClaimTxColumn(db)} FROM inventory i LEFT JOIN native_awards a ON a.item_id=i.id WHERE i.player_id=? ORDER BY i.created_at`,
       )
       .all(playerId),
-    history: db
-      .prepare(
-        "SELECT * FROM history WHERE player_id=? ORDER BY created_at DESC LIMIT 80",
-      )
-      .all(playerId),
+    history: withChain(
+      db,
+      playerId,
+      db
+        .prepare(
+          "SELECT * FROM history WHERE player_id=? ORDER BY created_at DESC LIMIT 80",
+        )
+        .all(playerId),
+    ),
     wallets: db
       .prepare(
         "SELECT account_id,verified_at FROM wallet_links WHERE player_id=?",

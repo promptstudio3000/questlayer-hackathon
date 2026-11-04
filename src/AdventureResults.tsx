@@ -1,3 +1,4 @@
+import { ChainLink } from "./ChainLink";
 import {
   Check,
   ClockCounterClockwise,
@@ -192,6 +193,7 @@ export function AdventureResultDialog({
                     </span>
                     <ArrowRight size={20} aria-hidden="true" />
                   </button>
+                  {receipt.chain && <ChainLink chain={receipt.chain} />}
                 </li>
               ))}
             </ol>

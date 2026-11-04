@@ -1,3 +1,4 @@
+import { ChainLink } from "./ChainLink";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Medal,
@@ -10,7 +11,6 @@ import type { Fix } from "./types";
 import "./badges.css";
 import { artUrl } from "./art-registry";
 import { tr } from "./i18n";
-import { EXPLORER_BASE } from "./near-network";
 
 // Badge book (docs/BADGES.md). Place badges: one per notable place, earned by
 // reaching it with GPS; cosmetic, never sellable. Player badges: POAP-like
@@ -52,6 +52,8 @@ type UserBadge = {
   state: "queued" | "live" | "hidden" | "failed";
   onChain: boolean;
   holding: { state: "queued" | "minted" | "failed"; tokenId: string | null; tx: string | null } | null;
+  /** The transaction that put the badge design on NEAR. */
+  tx?: string | null;
   distanceM?: number;
 };
 type Overview = {
@@ -234,16 +236,16 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
                     : detail.chain.accountId
                       ? tr("Minting on NEAR…")
                       : tr("Mints on NEAR once your explorer account is ready.")}
-                {detail.chain.state === "minted" && detail.chain.tx && (
+                {(detail.chain.accountId || detail.chain.state !== "queued") && (
                   <>
-                    {" · "}
-                    <a
-                      href={`${EXPLORER_BASE}/txns/${encodeURIComponent(detail.chain.tx)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {tr("View the NFT on NEAR")}
-                    </a>
+                    {" "}
+                    <ChainLink
+                      chain={{
+                        status: detail.chain.state,
+                        tx: detail.chain.tx,
+                        account: detail.chain.accountId,
+                      }}
+                    />
                   </>
                 )}
               </p>
@@ -334,6 +336,26 @@ function PlayerBadges({
           {b.holding ? ` · ${holdingLabel(b)}` : ""}
           {b.mine ? ` · ${b.onChain ? tr("design on NEAR") : b.state === "failed" ? tr("design failed") : tr("design queued")}` : ""}
         </small>
+        {(b.holding || (b.mine && b.tx)) && (
+          <small className="user-badge-chain">
+            {b.holding ? (
+              <ChainLink
+                label
+                chain={{
+                  id: `badge:${b.id}`,
+                  status: b.holding.state,
+                  tx: b.holding.tx,
+                  token:
+                    b.holding.tokenId && u.contractId
+                      ? { contract: u.contractId, id: b.holding.tokenId }
+                      : null,
+                }}
+              />
+            ) : (
+              <ChainLink label chain={{ tx: b.tx }} />
+            )}
+          </small>
+        )}
         {b.description && <small className="user-badge-desc">{b.description}</small>}
         {b.mine && b.code && (
           <small className="user-badge-code">
