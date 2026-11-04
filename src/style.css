@@ -4133,3 +4133,13 @@ a.settings-row:hover {
   height: 100%;
   object-fit: contain;
 }
+/* Dropped-in wordmark (art/brand/wordmark) in the desktop header. */
+.wordmark-text {
+  display: flex;
+  align-items: center;
+}
+.wordmark-art {
+  display: block;
+  height: 40px;
+  width: auto;
+}

@@ -63,8 +63,8 @@
      "hooked": false,
      "use": "'QuestLayer' lettering for the phone header, welcome screen and how-it-works page. Needs a small hook in the header once the compact header lands.",
      "now": "Plain text.",
-     "size": "1200×300, SVG preferred",
-     "aspect": 4,
+     "size": "about 900×280 (trimmed), SVG preferred",
+     "aspect": 3.2,
      "prompt": "Wordmark 'QuestLayer' (exact spelling) in a rounded, chunky, playful game font, cream letters with a thick #1A0335 outline, a small hot-pink map pin after the last letter, transparent background. Simple enough to redraw as SVG."
     }
    ]

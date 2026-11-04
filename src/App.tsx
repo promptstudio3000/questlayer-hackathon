@@ -210,6 +210,7 @@ import { Character } from "./Character";
 import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
 import { Ghost, AuraArt, BrandLogo } from "./Ghost";
+import { artUrl } from "./art-registry";
 import type {
   Player,
   World,
@@ -3084,9 +3085,15 @@ export default function App() {
       <header className="topbar">
         <div className="wordmark" onClick={() => setTab("explore")}>
           <img className="wordmark-logo" src="/icon.svg" alt="" width={36} height={36} />
-          <span>
-            QUEST<span>LAYER</span>
-          </span>
+          {artUrl("brand/wordmark") ? (
+            <span className="wordmark-text">
+              <img className="wordmark-art" src={artUrl("brand/wordmark")!} alt="QuestLayer" draggable={false} />
+            </span>
+          ) : (
+            <span>
+              QUEST<span>LAYER</span>
+            </span>
+          )}
         </div>
         <div className="realm-label">
           <span className="status-dot" />
