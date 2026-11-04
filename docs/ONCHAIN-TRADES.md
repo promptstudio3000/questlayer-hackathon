@@ -46,6 +46,8 @@ Mac steps after the collectibles upgrade (`scripts/upgrade-collectibles-editions
 2. `node scripts/collectibles-royalty-testnet.mjs mintbase-proof`, then `--execute`: mints one fresh `polar` Aura to the
    operator, lists it on Mintbase for 0.1 test NEAR, buys it from a throwaway `mb-buyer.<operator>` account and
    checks that the royalties account received exactly what `nft_payout` promised (0.00198 NEAR). No player's Aura moves.
+   The buyer is funded with the price plus 0.4 NEAR, because the signer must cover the prepaid gas (200 TGas) at the
+   pessimistic gas price; unused gas stays with it. A rerun buys a proof Aura the operator already listed instead of minting again.
 3. `node scripts/collectibles-royalty-testnet.mjs sweep` whenever the royalties account holds at least 0.01 NEAR
    above its 0.05 NEAR reserve (it can run next to the daily fee sweep).
 
