@@ -2,6 +2,7 @@ import { defaultDatabasePath } from "./state-path.mjs";
 import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
+import { createMarketRoutes } from "./market/routes.mjs";
 import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
 import { nearAiStatus } from "./ai/near-ai.mjs";
 import { createAdventureResults } from "./adventure-results.mjs";
@@ -658,6 +659,28 @@ const dailyBoard = dailyBoardConfig.enabled
   ? createDailyBoard(db, dailyBoardConfig, { actorsOn: () => !!actorService })
   : null;
 const dailyBoardRoutes = createDailyBoardRoutes(dailyBoard, db);
+// Player task market, Secrets and conditional sends (docs/TASK-MARKET.md).
+// Disputes go to MARKET_MODERATORS (player ids or NEAR accounts), falling back
+// to the creator moderators.
+const marketModerators = new Set(
+  [process.env.MARKET_MODERATORS || "", process.env.CREATOR_MODERATORS || ""]
+    .join(",")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean),
+);
+const marketRoutes = createMarketRoutes({
+  db,
+  isModerator: (player) => {
+    if (marketModerators.has(player)) return true;
+    const p = db.prepare("SELECT native_account FROM players WHERE id=?").get(player);
+    if (p?.native_account && marketModerators.has(p.native_account)) return true;
+    return db
+      .prepare("SELECT account_id FROM wallet_links WHERE player_id=?")
+      .all(player)
+      .some((w) => marketModerators.has(w.account_id));
+  },
+});
 // Badges (docs/BADGES.md): place badges for notable places reached with GPS
 // (game database, cosmetic, never sellable) and POAP-like player badges on
 // the soulbound questlayer_badges contract. The contract id comes from
@@ -1464,6 +1487,8 @@ async function api(req, res, url) {
   if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await marketRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await badgeRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;

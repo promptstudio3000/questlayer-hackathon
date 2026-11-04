@@ -1,0 +1,128 @@
+# Task market, Secrets and conditional sends
+
+QGOLD build stream 3 (see `/mnt/project-files/tokenomics/QGOLD-BUILD-PLAN.md`). Players pay
+each other for real-world tasks, sell hidden places ("Secrets") and send GOLD on a condition.
+Testnet only.
+
+## Settlement
+
+- **Today:** practice GOLD (`players.gold_u`), server module `server/market/`. Every row records
+  `currency = 'practice'`.
+- **With the QGOLD vault:** the same flows settle in QGOLD through `contracts/qgold-escrow`
+  (docs/QGOLD-ESCROW.md). The game server is the escrow `publisher` (it verifies GPS and answers
+  off chain); disputes go to the escrow `moderator`.
+
+| Flow | Who pays | Fee to treasury |
+| --- | --- | --- |
+| Task | poster pays reward + 10 % on top | 10 %, only when a completion is paid; refunds return reward and fee |
+| Secret (paid) | buyer pays the price | 10 % taken from the price; creator gets 90 % |
+| Secret (sponsored) | sponsor prepays visit rewards + 10 % | 10 % per paid visit |
+| Conditional send | sender | none |
+
+No paid chance: nothing here is a lottery or a prize draw.
+
+## Tasks
+
+- **Types:** go, photo, deliver, meet, collect, event, answer, create, recurring, chain.
+  - The server checks go, meet, collect, event and deliver by GPS at the pin (20–500 m).
+  - Answer tasks store only a hash of the answer and pay automatically when it matches.
+- **Visibility:**
+  - `public` is listed in Explorer · Nearby within 5 km.
+  - `link` can be opened by anyone with `/#task=<id>`.
+  - `private` needs `/#task=<id>&k=<key>`.
+  - `user` is for one named player (player id or NEAR account).
+  - `group` is for 2–20 players.
+- **Payout modes:**
+  - `auto` pays as soon as the server has verified the completion.
+  - `review` waits for the poster. Proof that is not reviewed within 72 h pays the worker.
+  - `best` lets the poster pick the winners.
+- **Slots:** 1–50 per task.
+  - Recurring tasks run 2–12 rounds, with the slots limit applying to each round.
+  - A chain step opens only after you are paid for the step before it.
+- **Interactions:**
+  - A reservation holds a slot for 3 h.
+  - A counteroffer (up to 10× the reward) is accepted by the poster, who pays the difference + 10 %.
+  - Messages.
+  - Reject, then dispute (within 3 days), then a moderator decides.
+  - 1–5 star ratings both ways.
+- The poster can close a task at any time and get back unpaid rewards with their fee. This is blocked
+  while proof is waiting for review or a dispute is open.
+
+## Secrets
+
+- The creator must stand within 150 m of the place when hiding it.
+- Others see only a fog circle of 500–1000 m. Its centre is offset by 20–60 % of the radius, so the
+  circle does not give the place away. They see "?" while they are inside it.
+- A reveal shows the text and the exact place.
+- The creator is paid 90 % after the buyer's GPS visit (within 60 m), or after 7 days without a
+  dispute. A moderator can refund a disputed reveal.
+- **Kinds:**
+  - `place`;
+  - `route`, 2–30 points, where the visit is the last point (server only for now);
+  - `sponsored`, free to reveal, and each finder gets the sponsor's visit reward;
+  - `private`, shown only with `/#secret=<id>&k=<key>` and never listed.
+
+## Conditional sends
+
+- **Release conditions:**
+  - `both_confirm`: both sides confirm.
+  - `after`: a date arrives. It releases by itself.
+  - `gps`: the receiver reaches a place.
+- The receiver can decline at any time.
+- Unreleased sends return to the sender at expiry (1–60 days).
+
+## API
+
+All routes are under `/api/market/` and need a session.
+
+| Method | Route | Use |
+| --- | --- | --- |
+| GET | `nearby?lat&lng` | Explorer · Nearby data |
+| GET | `task?id&k` | Read a task |
+| GET | `secret?id&k&lat&lng` | Read a Secret |
+| GET | `transfers` | List conditional sends |
+| GET | `stats` | Escrow totals, fees and the invariant |
+| POST | `tasks` | Create a task |
+| POST | `task/reserve` | Take a task, or send a counteroffer |
+| POST | `task/accept-offer` | Accept a counteroffer |
+| POST | `task/submit` | Send proof |
+| POST | `task/review` | Approve or reject proof |
+| POST | `task/dispute` | Open a dispute |
+| POST | `task/resolve` | Moderator decides a dispute |
+| POST | `task/cancel` | Close a task and get the rest back |
+| POST | `task/message` | Message about a task |
+| POST | `task/rate` | Rate the other side |
+| POST | `secrets` | Hide a Secret |
+| POST | `secret/reveal` | Reveal a Secret |
+| POST | `secret/visit` | Confirm a visit |
+| POST | `secret/dispute` | Dispute a reveal |
+| POST | `secret/resolve` | Moderator decides a dispute |
+| POST | `secret/close` | Close your Secret |
+| POST | `transfers` | Create a conditional send |
+| POST | `transfer/act` | Confirm, arrive, decline or cancel a send |
+
+Moderators are `MARKET_MODERATORS` (player ids or NEAR accounts, comma separated), plus
+`CREATOR_MODERATORS`.
+
+## Invariant
+
+Every GOLD that leaves a player sits in exactly one escrow row until it is paid or refunded.
+Closed rows hold nothing (`marketInvariant`). `tests/task-market.test.mjs` checks that player
+balances, held escrow and fees add up to what the players started with.
+
+## Not yet
+
+- QGOLD settlement waits for the vault stream and a transferable QGOLD token.
+- Drawing Secret fog circles on the map; for now they are in the Nearby list.
+- Creating route Secrets from the UI.
+- Photo upload for task proof; proof is text with a link for now.
+
+## QGOLD hand-off (from the vault stream, PR #174)
+
+- QGOLD is a standard NEP-141 token with 6 decimals, and the vault contract issues it. The planned
+  testnet account is `questlayer-qgold-vault-20261104.testnet`.
+- The escrow receives QGOLD through `ft_transfer_call`.
+- Before anyone can receive QGOLD they need a `storage_deposit` on QGOLD (0.00125 NEAR). That covers
+  the escrow account, the treasury, and every player who withdraws.
+- Fees stay in QGOLD and are credited to the treasury account (`questlayer-dev-20261101.testnet` on
+  testnet).

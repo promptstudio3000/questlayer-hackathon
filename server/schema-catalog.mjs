@@ -11,6 +11,7 @@ for (const relative of [
   "./creators/bonus-vote.mjs",
   "./daily-board/schema.mjs",
   "./earned-editions.mjs",
+  "./market/service.mjs",
   "./fair-play.mjs",
   "./map-read-indexes.mjs",
   "./hot-path-indexes.mjs",

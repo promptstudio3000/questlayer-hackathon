@@ -36,6 +36,7 @@ import {
   preloadPanels,
   ActorSheet,
   BadgeBook,
+  NearbyMarket,
 } from "./lazy-panels";
 import type { RollCall } from "./WispRolls";
 // Styles of the split-off screens stay in the main stylesheet, in their old
@@ -199,6 +200,7 @@ import {
   profileTabOf,
   type CommunityTab,
   type ProfileTab,
+  EXPLORE_TABS,
 } from "./screens";
 // Passkey helpers load on first use, outside the welcome screen's first load.
 const webauthn = () => import("@simplewebauthn/browser");
@@ -315,6 +317,11 @@ export default function App() {
     [worldData, setWorld] = useState<World | null>(null),
     [position, setPosition] = useState<Point>(HOME),
     [fix, setFix] = useState<Fix | null>(null),
+    // Explorer sheet: today's discoveries, or player tasks and Secrets nearby.
+    // A #task= / #secret= share link opens Nearby directly.
+    [exploreView, setExploreView] = useState<"discoveries" | "nearby">(() =>
+      /^#(task|secret)=/.test(location.hash) ? "nearby" : "discoveries",
+    ),
     // Course over ground from the GPS, when the device reports one.
     [gpsCourse, setGpsCourse] = useState<number | null>(null),
     [arena, setArena] = useState(true),
@@ -3390,6 +3397,34 @@ export default function App() {
             />
           )}
           {tab === "explore" && !selected && !nativePlay && (
+            <ScreenTabs
+              label={tr("Explore")}
+              idBase="explore"
+              tabs={EXPLORE_TABS}
+              value={exploreView}
+              withPanel={exploreView === "nearby"}
+              onChange={(next) => {
+                setExploreView(next);
+                setSheetExpanded(true);
+              }}
+            />
+          )}
+          {tab === "explore" && !selected && !nativePlay && exploreView === "nearby" && player && (
+            <ScreenTabPanel idBase="explore" value="nearby">
+              <NearbyMarket
+                position={position}
+                fix={() =>
+                  arena || !fix
+                    ? { ...position, accuracy: 0, timestamp: Date.now() }
+                    : fix
+                }
+                gold={player.gold_u}
+                notify={notify}
+                onBalance={() => void me()}
+              />
+            </ScreenTabPanel>
+          )}
+          {tab === "explore" && !selected && !nativePlay && exploreView === "discoveries" && (
             <>
               {!world?.zones.length &&
                 !recommendation &&
