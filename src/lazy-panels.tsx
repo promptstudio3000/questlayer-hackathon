@@ -1,3 +1,5 @@
+import { EmptyState } from "./EmptyState";
+import { tr } from "./i18n";
 // Screens that only exist after the name step (market, creator feed,
 // wardrobe, wallet and signing panels, ...) are split into their own chunks so
 // the welcome screen ships without them. Each export keeps the original
@@ -5,6 +7,7 @@
 // `preloadPanels()` fetches them all in the background once a player exists,
 // so opening a tab later does not wait for the network.
 import {
+  Component,
   lazy,
   Suspense,
   type ComponentProps,
@@ -28,9 +31,11 @@ function lazyNamed<M, K extends keyof M>(load: () => Promise<M>, key: K): M[K] {
   }));
   function Deferred(props: ComponentProps<AnyComponent>): JSX.Element {
     return (
-      <Suspense fallback={null}>
-        <Lazy {...props} />
-      </Suspense>
+      <PanelBoundary>
+        <Suspense fallback={<EmptyState title={tr("Loading…")} status className="panel-loading" />}>
+          <Lazy {...props} />
+        </Suspense>
+      </PanelBoundary>
     );
   }
   Deferred.displayName = `Deferred(${String(key)})`;
@@ -157,3 +162,11 @@ export const EmotePicker = lazyNamed(
   () => import("./EmotePicker"),
   "EmotePicker",
 );
+
+class PanelBoundary extends Component<{ children: import("react").ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    return this.state.failed ? <EmptyState art="ghost" title={tr("Something went wrong.")} action={{ label: tr("Reload game"), onClick: () => window.location.reload() }} /> : this.props.children;
+  }
+}

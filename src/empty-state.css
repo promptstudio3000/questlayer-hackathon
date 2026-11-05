@@ -71,13 +71,13 @@
 .illustrated-empty-text {
   margin: 0;
   max-width: 32ch;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 1.45;
   color: var(--ink-secondary, #5a4b6e);
 }
 .illustrated-empty .secondary-button {
   margin-top: 6px;
-  min-height: 44px;
+  min-height: 48px;
 }
 @media (prefers-reduced-motion: no-preference) {
   .illustrated-empty-stage > .ghost-art,
@@ -90,3 +90,5 @@
     transform: translateY(-3px);
   }
 }
+
+.panel-loading { min-height: 180px; }

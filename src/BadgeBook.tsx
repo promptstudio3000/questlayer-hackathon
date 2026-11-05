@@ -1,3 +1,4 @@
+import { EmptyState } from "./EmptyState";
 import type { ReactNode } from "react";
 import { ChainLink } from "./ChainLink";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -97,6 +98,7 @@ const freshFix = (fix: Fix | null) => (fix && Date.now() - fix.timestamp < 15_00
 
 export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: Fix | null; arena: boolean; onConnectNear?: () => void; inline?: boolean }) {
   const [data, setData] = useState<Overview | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"places" | "player">("places");
   const [kind, setKind] = useState<Kind | "all">("all");
@@ -104,10 +106,11 @@ export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: 
   const gps = arena ? null : fix;
   const at = gps ? `?lat=${gps.lat.toFixed(5)}&lng=${gps.lng.toFixed(5)}` : "";
   const load = useCallback(async () => {
+    setLoadError(false);
     try {
       setData(await api<Overview>(`/badges${at}`));
     } catch {
-      /* The entry just keeps its last state. */
+      setLoadError(true);
     }
   }, [at]);
   useEffect(() => {
@@ -123,7 +126,11 @@ export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: 
     () => (places ? places.badges.filter((b) => kind === "all" || b.kind === kind) : []),
     [places, kind],
   );
-  if (!data?.enabled || !places) return null;
+  if (!data?.enabled || !places) return inline ? (
+    <EmptyState art="place" title={tr("Badges")} status action={loadError ? { label: tr("Try again"), onClick: () => void load() } : undefined}>
+      {loadError ? tr("Something went wrong.") : data ? tr("Nothing here yet") : tr("Loading…")}
+    </EmptyState>
+  ) : null;
   const byId = new Map(places.badges.map((b) => [b.id, b]));
   return (
     <>
