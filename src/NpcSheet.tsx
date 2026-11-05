@@ -1,3 +1,4 @@
+import { ScreenTabs, type ScreenTab } from "./ScreenTabs";
 // Encounter sheet for a roaming NPC, built like a game dialog: a big portrait
 // with the NPC's line in a speech bubble, the actions the server computed
 // (they always work without AI) and a box to write to them. Everything else
@@ -179,11 +180,11 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   const active = reply?.active ?? [];
   const ready = active.filter((line) => line.steps.every((s) => s.done));
   const pendingHandOver = Object.entries(trades).filter(([, x]) => x.kind === "trade_up" && x.state === "issued");
-  const tabs: { id: Tab; label: string; icon: ReactNode; badge?: number }[] = [
-    { id: "talk", label: t.tabTalk, icon: <Sparkle weight="duotone" /> },
-    { id: "tasks", label: t.tabTasks, icon: <ListChecks weight="duotone" />, badge: active.length || undefined },
-    ...(vault ? [{ id: "vault" as Tab, label: t.tabVault, icon: <Vault weight="duotone" /> }] : []),
-    { id: "about", label: t.tabAbout, icon: <IdentificationCard weight="duotone" /> },
+  const tabs: ScreenTab<Tab>[] = [
+    { id: "talk", label: t.tabTalk, icon: Sparkle },
+    { id: "tasks", label: t.tabTasks, icon: ListChecks, count: active.length || undefined },
+    ...(vault ? [{ id: "vault" as Tab, label: t.tabVault, icon: Vault }] : []),
+    { id: "about", label: t.tabAbout, icon: IdentificationCard },
   ];
 
   const offerMeta = (offer: ActorOffer) => {
@@ -204,7 +205,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   );
 
   return (
-    <Dialog label={t.talkTo(name)} onClose={onClose}>
+    <Dialog presentation="screen" label={t.talkTo(name)} onClose={onClose}>
       <div className={`npc-sheet npc-${archetype}`}>
         <header className="npc-hero">
           <Portrait model={encounter.actor.model} label={name} emote={reply ? EMOTE[reply.emote] || "" : ""} />
@@ -221,25 +222,10 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
           {reply ? reply.say : t.thinking}
         </p>
 
-        <nav className="npc-tabs" role="tablist">
-          {tabs.map((x) => (
-            <button
-              type="button"
-              role="tab"
-              key={x.id}
-              aria-selected={tab === x.id}
-              className={tab === x.id ? "active" : ""}
-              onClick={() => setTab(x.id)}
-            >
-              {x.icon}
-              <span>{x.label}</span>
-              {x.badge ? <b className="npc-badge">{x.badge}</b> : null}
-            </button>
-          ))}
-        </nav>
+        <ScreenTabs label={t.talkTo(name)} idBase={`npc-${actorId}`} tabs={tabs} value={tab} onChange={setTab} sticky={false} />
 
         {tab === "talk" && (
-          <div className="npc-panel" role="tabpanel">
+          <div className="npc-panel" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
             <div className="npc-actions">
               {ready.map((line) => (
                 <div key={line.offerId}>{turnInButton(line)}</div>
@@ -289,7 +275,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
         )}
 
         {tab === "tasks" && (
-          <div className="npc-panel" role="tabpanel">
+          <div className="npc-panel" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
             {!active.length && <p className="npc-empty">{t.noTasks}</p>}
             {active.map((line) => {
               const done = line.steps.every((s) => s.done);
@@ -322,7 +308,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
         )}
 
         {tab === "vault" && vault && (
-          <div className="npc-panel npc-vault" role="tabpanel">
+          <div className="npc-panel npc-vault" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
             {vault.stake && (
               <>
                 <StakeTodayCard
@@ -355,7 +341,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
         )}
 
         {tab === "about" && (
-          <div className="npc-panel npc-about" role="tabpanel">
+          <div className="npc-panel npc-about" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
             <h3>{t.about}</h3>
             {title && <p>{title}</p>}
             {reply?.note && <p>{reply.note}</p>}
@@ -391,9 +377,9 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
           </p>
         )}
         {error && (
-          <p className="npc-error" role="alert">
-            {error}
-          </p>
+          <div className="npc-error" role="alert"><p>{error}</p>
+            {!reply && <button className="secondary-button" disabled={busy} onClick={() => run(refresh)}>{t.retry}</button>}
+          </div>
         )}
 
         <form className="npc-chat" onSubmit={send}>

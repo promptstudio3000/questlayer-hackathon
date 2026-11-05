@@ -36,16 +36,16 @@
   border-radius: 16px;
   background: #fcfaff;
   color: #1a0335;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: unset;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .npc-bubble::before { content: ""; position: absolute; top: -8px; left: 50%; margin-left: -8px; border: 8px solid transparent; border-top: 0; border-bottom-color: #fcfaff; }
 .npc-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: #ffffff12; }
-.npc-tabs button { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 44px; padding: 4px 2px; border: 0; border-radius: 9px; background: transparent; color: #cbb8ef; font: inherit; font-size: 12px; cursor: pointer; }
+.npc-tabs button { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 48px; padding: 4px 2px; border: 0; border-radius: 9px; background: transparent; color: #cbb8ef; font: inherit; font-size: 12px; cursor: pointer; }
 .npc-tabs button svg { font-size: 18px; }
 .npc-tabs button.active { background: #672eeb; color: #fff; }
 .npc-badge { position: absolute; top: 2px; right: calc(50% - 22px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: #ff1dff; color: #1a0335; font-size: 11px; line-height: 16px; }
@@ -94,8 +94,8 @@
 .npc-notice { margin: 0; padding: 8px 12px; border: 0; border-radius: 12px; background: #e3f6ee; color: #176553; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
 .npc-error { margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff0f3; color: #a32947; font-size: 14px; }
 .npc-chat { position: sticky; bottom: 0; display: flex; gap: 6px; padding-top: 4px; background: #1a0335; }
-.npc-chat input { flex: 1; min-width: 0; min-height: 46px; padding: 0 14px; border: 2px solid #8348ff; border-radius: 23px; background: #fcfaff; color: #1a0335; font: inherit; font-size: 16px; }
-.npc-chat button { display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 50%; background: #ff1dff; color: #1a0335; font-size: 20px; cursor: pointer; }
+.npc-chat input { flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; border: 2px solid #8348ff; border-radius: 23px; background: #fcfaff; color: #1a0335; font: inherit; font-size: 16px; }
+.npc-chat button { display: grid; place-items: center; width: 48px; height: 48px; border: 0; border-radius: 50%; background: #ff1dff; color: #1a0335; font-size: 20px; cursor: pointer; }
 .npc-chat button:disabled { opacity: 0.45; cursor: default; }
 .npc-sheet :focus-visible { outline: 3px solid #fef87d; outline-offset: 2px; }
 @keyframes npc-bob { 50% { transform: translateY(-6px); } }
@@ -105,7 +105,7 @@
   .npc-action { transition: none; }
 }
 .npc-task-title { margin: 0; font-weight: 600; }
-.npc-turnin { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: #37f4a0; color: #0f4639; font: inherit; font-weight: 600; cursor: pointer; }
+.npc-turnin { min-height: 48px; padding: 0 14px; border: 0; border-radius: 12px; background: #37f4a0; color: #0f4639; font: inherit; font-weight: 600; cursor: pointer; }
 .npc-turnin:disabled { background: #ffffff1a; color: #cbb8ef; cursor: default; }
 /* Grid tracks default to their widest content, so one long locked chip
    ("Reach Tier 2 (50 NEAR matured) · Reach level 5") pushed the whole
@@ -122,3 +122,12 @@
 /* Dropped-in portraits (art/portraits/) fill their square edge to edge, so
    keep a little headroom for the idle bob and let the name plate breathe. */
 .npc-portrait img.npc-portrait-art { height: calc(100% - 12px); margin-top: 12px; }
+
+.npc-sheet .screen-tabs { margin: 0; background: #ffffff12; }
+.npc-sheet .screen-tabs button { color: #e2d5ff; font-size: 14px; }
+.npc-sheet .screen-tabs button[aria-selected=true] { color: #fff; }
+.npc-sheet .npc-hero { height: 112px; }
+.npc-sheet .npc-close { width: 48px; height: 48px; }
+.npc-sheet .npc-bubble { font-size: 16px; }
+.npc-sheet .npc-fine { font-size: 14px; opacity: 1; color: #d9c9f0; }
+.npc-sheet .npc-link, .npc-sheet .npc-turnin { min-height: 48px; }

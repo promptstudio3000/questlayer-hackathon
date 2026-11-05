@@ -127,7 +127,7 @@ export function ActorSheet({
       </Suspense>
     );
   return (
-    <Dialog label={actor.name} onClose={onClose}>
+    <Dialog presentation="screen" label={actor.name} onClose={onClose}>
       <section className={`actor-sheet actor-sheet-${actor.kind}`}>
         <button className="icon-button close" onClick={onClose} aria-label={tr("Close")}>
           ×

@@ -3214,7 +3214,7 @@ export default function App() {
       <div className="map-stage" inert={!!player && !mapVisible} aria-hidden={!!player && !mapVisible}>
       {player ? (
         <GameMap
-          active={mapVisible}
+          active={mapVisible && !actorOpen && !showNpc}
           playerTier={
             nativePlay ? nativeGame.state?.access?.tier : player?.tier
           }

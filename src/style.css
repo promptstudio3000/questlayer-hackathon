@@ -2876,6 +2876,14 @@ select {
   box-shadow: 0 24px 80px #1a033544;
   overflow: auto;
 }
+.game-dialog.game-dialog-screen {
+  width: 100vw; height: 100dvh; max-width: none; max-height: none;
+  margin: 0; border: 0; border-radius: 0; padding: calc(16px + env(safe-area-inset-top)) max(16px, calc((100vw - 640px) / 2)) calc(16px + env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
+}
+.game-dialog-screen:has(.npc-sheet) { background: var(--shell); }
+.game-dialog-screen .npc-sheet { max-width: 640px; margin-inline: auto; }
+.game-dialog-screen .actor-sheet { width: 100%; border: 0; box-shadow: none; }
 .game-dialog::backdrop {
   background: #1a033577;
 }

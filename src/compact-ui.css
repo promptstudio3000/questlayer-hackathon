@@ -403,8 +403,8 @@
 
 /* NPC portrait close: same small round button. */
 .game-dialog .npc-sheet .npc-close {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   font-size: 16px;
 }
 .game-dialog .npc-sheet .npc-close svg {

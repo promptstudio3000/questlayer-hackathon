@@ -3,11 +3,13 @@ import { trackDialogHistory } from "./dialog-history";
 import { dialogTabBoundary, dialogTabStops } from "./dialog-focus";
 export function Dialog({
   label,
+  presentation,
   open = true,
   onClose,
   children,
 }: {
   label: string;
+  presentation?: "screen";
   open?: boolean;
   onClose: () => void;
   children: ReactNode;
@@ -35,7 +37,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className="game-dialog"
+      className={`game-dialog${presentation === "screen" ? " game-dialog-screen" : ""}`}
       aria-label={label}
       onKeyDown={(event) => {
         if (
