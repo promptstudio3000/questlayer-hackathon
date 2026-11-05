@@ -1,0 +1,158 @@
+{
+  "status": "ok",
+  "version": "0.1.0",
+  "network": "testnet",
+  "source": {
+    "buildId": "e9160028637cda7785cae02acd9ea3e299525c17",
+    "recorded": true
+  },
+  "worldPreparation": {
+    "cityId": "plzen",
+    "timezone": "Europe/Prague",
+    "version": 1,
+    "financialMode": "demo",
+    "days": [
+      {
+        "day": "2026-11-05",
+        "state": "ready",
+        "attempts": 1,
+        "updatedAt": 1793746853035,
+        "coverage": {
+          "requestedZones": 6,
+          "acceptedZones": 6,
+          "shortfall": 0,
+          "reason": null
+        },
+        "reason": null
+      },
+      {
+        "day": "2026-11-06",
+        "state": "ready",
+        "attempts": 1,
+        "updatedAt": 1793833205627,
+        "coverage": {
+          "requestedZones": 6,
+          "acceptedZones": 6,
+          "shortfall": 0,
+          "reason": null
+        },
+        "reason": null
+      }
+    ]
+  },
+  "autoCities": {
+    "status": "on",
+    "version": "cz-20261102-6620c3bf-a1",
+    "cities": 85,
+    "funded": false
+  },
+  "poiWorld": {
+    "status": "ready",
+    "schema": "questlayer.poi/1",
+    "version": "cz-20261102-6620c3bf",
+    "regions": "cz",
+    "taxonomyVersion": "poi-taxonomy-v1",
+    "safetyVersion": "poi-safety-v1",
+    "pois": 290817,
+    "bySafety": {
+      "excluded": 86951,
+      "ok": 197999,
+      "review": 5867
+    },
+    "excludedShare": 0.299,
+    "byReason": {
+      "unnamed": 34604,
+      "no-public-path": 32522,
+      "private-access": 10594,
+      "military": 5742,
+      "inside-railway": 1243,
+      "inside-hospital": 459,
+      "inside-school": 443,
+      "disused": 407,
+      "inside-military": 330,
+      "inside-playground": 140,
+      "inside-quarry": 120,
+      "inside-construction": 68,
+      "inside-kindergarten": 66,
+      "inside-care-home": 57,
+      "inside-aerodrome": 45,
+      "construction": 17,
+      "bar": 16,
+      "railway": 16,
+      "water-no-path": 15,
+      "quarry": 11,
+      "inside-prison": 8,
+      "care-home": 7,
+      "kindergarten": 7,
+      "school": 5,
+      "playground": 3,
+      "aerodrome": 2,
+      "hospital": 2,
+      "adult-venue": 1,
+      "police": 1
+    },
+    "partitions": 395,
+    "cities": 123,
+    "cellsWithPois": 15835,
+    "cellsWithQuests": 14999,
+    "countryCells": 15282,
+    "countryShare": 0.9815,
+    "builtAt": "2026-11-02T13:22:17.757Z",
+    "sha256": "b09374bafc380a81e3cf9c572f290629750a40c4c18123d57a784f06f97cb724",
+    "w4Source": "w4",
+    "lastRun": {
+      "status": "ok",
+      "stage": "done",
+      "startedAt": "2026-11-03T01:20:40.340Z",
+      "finishedAt": "2026-11-03T01:37:38.218Z",
+      "version": "cz-20261102-6620c3bf",
+      "error": null
+    }
+  },
+  "questFlavour": {
+    "promptVersion": "flavour-v1",
+    "cached": 2844,
+    "lastBatch": {
+      "trigger": "nightly",
+      "provider": "ollama",
+      "model": "deepseek-v4.1-flash",
+      "outcome": "budget",
+      "reason": "stopped after 220 of 300 places",
+      "generated": 877,
+      "rejected": 0,
+      "requested": 1197,
+      "failed_calls": 0,
+      "calls": 56,
+      "tokens_used": 118270,
+      "token_budget": 120000,
+      "started_at": 1793840798343,
+      "finished_at": 1793841022273,
+      "rejectionRate": 0,
+      "topRejectionReasons": []
+    }
+  },
+  "distribution": {
+    "status": "verified",
+    "observedAt": 1793915777166,
+    "failed": [],
+    "reconciling": []
+  },
+  "chainLedger": {
+    "mode": "each",
+    "batchMs": 2000,
+    "records": {
+      "confirmed": 17
+    },
+    "unbound": 0,
+    "days": [
+      {
+        "day": "2026-11-04",
+        "status": "confirmed",
+        "tx": "D9W7CSsThuSoKYy2FUykeHn4DLh7xZQFDByfnDR24nhK"
+      }
+    ],
+    "contract": "questlayer-ledger-20261104.testnet",
+    "recorder": "ready"
+  },
+  "observedAt": "2026-11-05T21:57:25.517986+00:00"
+}

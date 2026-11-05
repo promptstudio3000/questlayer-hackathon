@@ -1,0 +1,344 @@
+{
+  "scope": "Source accuracy review; public runtime only where explicitly dated; no financial end-to-end or field certification",
+  "chapters": [
+    {
+      "id": "overview",
+      "title": "What QuestLayer is",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/ARCHITECTURE.md",
+        "docs/GAME-RULES.md",
+        "docs/SOURCES-AND-INTEGRATIONS.md",
+        "README.md",
+        "server/index.mjs",
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/DemoControls.tsx"
+      ],
+      "note": "Separate XP, cosmetic appearances and settled QGOLD; document map home and the five-section screens."
+    },
+    {
+      "id": "walk-and-collect",
+      "title": "Walking, coins and finds",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/MAP-REWARDS.md",
+        "docs/NATIVE-AUTO-COLLECT.md",
+        "docs/NATIVE-GAME-MAP.md",
+        "docs/PEER-APPEARANCES.md",
+        "docs/FIRST-SESSION.md",
+        "src/useDemoWalk.ts",
+        "src/map-motion.ts",
+        "src/RewardBursts.tsx"
+      ],
+      "note": "Keep GPS distinct from the arena; single-row controls; Rewards route; demo gives XP only."
+    },
+    {
+      "id": "zones-and-quests",
+      "title": "Zones, quests and the daily board",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/WORLD-GENERATION.md",
+        "docs/LANDMARK-ERRANDS.md",
+        "docs/DAILY-BOARD.md",
+        "docs/QUEST-TEMPLATES.md",
+        "server/world-planner.mjs",
+        "server/poi-quests.mjs",
+        "server/landmark-clue.mjs"
+      ],
+      "note": "Six citywide slots; quests, daily goals and landmark requirements remain unchanged."
+    },
+    {
+      "id": "progression",
+      "title": "XP, levels, season and badges",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/LEVELS.md",
+        "docs/GAME-LOOPS.md",
+        "docs/NATIVE-PROGRESSION.md",
+        "docs/SEASON.md",
+        "docs/BADGES.md",
+        "server/data/level-table.json",
+        "server/data/place-badges.json",
+        "src/levels.ts"
+      ],
+      "note": "Import level/badge counts; correct the claim that level cannot influence duel power."
+    },
+    {
+      "id": "npcs-and-monsters",
+      "title": "NPCs, monsters and mini-games",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/NPC-PLAN.md",
+        "src/NpcSheet.tsx",
+        "src/useFormDraft.ts",
+        "docs/ACTORS-API.md",
+        "docs/MONSTER-CHALLENGES.md",
+        "docs/MONSTER-HUNT.md",
+        "docs/NPC-GAMES.md",
+        "docs/NPC-TRADERS.md",
+        "docs/KEEPER-VAULT.md",
+        "server/actors/service.mjs",
+        "server/npc/service.mjs"
+      ],
+      "note": "Short replies; real server results; keyboard tracing and retry; locally scoped unsent NPC messages."
+    },
+    {
+      "id": "collectibles",
+      "title": "Auras and collectibles",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/NATIVE-AURA-CLAIMS.md",
+        "docs/COLLECTIBLES-REVIEW.md",
+        "docs/ASSET-CATALOG.md",
+        "server/data/aura-catalog.json",
+        "server/earned-editions.mjs"
+      ],
+      "note": "Use catalogue-derived edition/supply summary; ownership and settlement unchanged."
+    },
+    {
+      "id": "wearables-and-explorers",
+      "title": "Wearables and explorer cards",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/PLAYER-CARDS.md",
+        "server/gotchi-wearables.mjs",
+        "server/player-waves.mjs"
+      ],
+      "note": "Remove stale catalogue count; Local chat is public notes, not direct messaging."
+    },
+    {
+      "id": "world-and-places",
+      "title": "Cities, cells and places",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/WORLDS-PLAN.md",
+        "docs/POI-PIPELINE.md",
+        "docs/POI-SAFETY.md",
+        "docs/WORLD-COVERAGE.md",
+        "docs/SECOND-CITY-PLAYBOOK.md",
+        "docs/WORLD-WORKER.md",
+        "docs/OPERATOR-WORLD-CONTROLS.md",
+        "server/data/cities.json",
+        "server/spatial/auto-cities.mjs",
+        "server/poi/index.mjs"
+      ],
+      "note": "Distinguish reviewed cities, unfunded automatic cities and the country cell plan."
+    },
+    {
+      "id": "map-rewards",
+      "title": "Map rewards plan",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/MAP-REWARDS.md",
+        "docs/GLOBAL-TREASURY.md",
+        "server/map-rewards/policy.mjs",
+        "server/map-rewards/budget.mjs",
+        "server/map-rewards/chain.mjs"
+      ],
+      "note": "Distinguish the map-proof contract capability from enabled nightly settlement; no demo payments."
+    },
+    {
+      "id": "economy",
+      "title": "The money model",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/GLOBAL-TREASURY.md",
+        "docs/ECONOMY-RULES.md",
+        "docs/ECONOMY-PAGE.md",
+        "IMPLEMENTATION-PLAN.md",
+        "server/native/public-ledger.mjs"
+      ],
+      "note": "Remove categorical legal assurance; preserve accepted burns, allocations and player principal boundaries."
+    },
+    {
+      "id": "treasury-and-yield",
+      "title": "Treasury, yield and the mix",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/STNEAR-TREASURY.md",
+        "docs/TREASURY-MIX.md",
+        "docs/TREASURY-PAGE.md",
+        "docs/YIELD-VAULT.md",
+        "docs/YIELD-VAULT-PLAN.md",
+        "docs/NATIVE-REWARDS-AND-VAULT.md",
+        "docs/LIQUID-STAKE.md",
+        "server/native/treasury-mix.mjs"
+      ],
+      "note": "Retain sourced mix/yield mechanics; no new yield or payment verification claimed."
+    },
+    {
+      "id": "qgold",
+      "title": "QGOLD token and vault",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/QGOLD-VAULT.md",
+        "docs/QGOLD-MARKET.md",
+        "contracts/qgold/src/lib.rs",
+        "server/qgold/keeper.mjs",
+        "server/qgold/token-page.mjs"
+      ],
+      "note": "Retain token/vault semantics and audit status; no parameters changed."
+    },
+    {
+      "id": "fees-and-spending",
+      "title": "Fees, spending and the task market",
+      "status": "partial",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/GOLD-SPENDING.md",
+        "docs/TASK-MARKET.md",
+        "docs/QGOLD-ESCROW.md",
+        "docs/CREATOR-BONUS-VOTE.md",
+        "docs/NATIVE-TASK-ESCROW.md",
+        "docs/NATIVE-TASKS-UI.md",
+        "CREATOR-ECONOMY-PLAN.md",
+        "server/data/gold-spend.json"
+      ],
+      "note": "Escrow/task/Secret/send descriptions retained; source review is separate from a deployed payment audit."
+    },
+    {
+      "id": "staking-and-gates",
+      "title": "Staker step, tiers and patron perks",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/KEEPER-VAULT.md",
+        "docs/LIQUID-STAKE.md",
+        "docs/NATIVE-STAKING-FOUNDATION.md",
+        "server/data/staker-gates.json",
+        "server/staker-gates.mjs",
+        "server/npc/patron-rank.mjs"
+      ],
+      "note": "Use configured threshold and source gates; remove stale indicative fiat equivalence."
+    },
+    {
+      "id": "on-chain",
+      "title": "What is on chain",
+      "status": "partial",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/CHAIN-PROOF.md",
+        "docs/CHAIN-LEDGER.md",
+        "docs/NEAR-INTEGRATION-STATUS.md",
+        "docs/MAINNET-PLAN.md",
+        "contracts/wasm-sha256.json",
+        "src/ChainLink.tsx"
+      ],
+      "note": "Add existing QGOLD escrow row; correct recorder-off claim using dated public health."
+    },
+    {
+      "id": "daily-payouts",
+      "title": "Daily QGOLD payouts",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/DAILY-PAYOUTS.md",
+        "contracts/rewards/src/payouts.rs",
+        "server/payouts/payout-tree.mjs",
+        "server/payouts/worker.mjs"
+      ],
+      "note": "Preserve newly merged nightly payout mechanism, pending states, dust and retry semantics; Rewards route."
+    },
+    {
+      "id": "accounts",
+      "title": "Accounts, wallets and the relayer",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/RELAYER.md",
+        "docs/IDENTITY-RECOVERY.md",
+        "docs/NATIVE-TRANSACTION-CONFIRMATION.md",
+        "docs/DURABLE-NATIVE-RECOVERY.md",
+        "docs/ETH-WALLETS.md",
+        "docs/NATIVE-PROFILES.md",
+        "server/relayer/policy.mjs"
+      ],
+      "note": "Preserve relayer/account/session custody boundaries; no signing or production account access."
+    },
+    {
+      "id": "intents-market",
+      "title": "NEAR Intents market",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/NEAR-INTENTS-MARKET.md",
+        "docs/ONCHAIN-TRADES.md",
+        "docs/SIGNED-AURA-ORDERS.md",
+        "docs/NATIVE-MARKET.md",
+        "src/intents-order.ts"
+      ],
+      "note": "Preserve proposal/off state; no implementation or enablement claimed."
+    },
+    {
+      "id": "ai",
+      "title": "AI in the game",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/NEAR-AI-CLOUD.md",
+        "docs/QUEST-FLAVOUR.md",
+        "docs/AI-QUEST-DRAFTS.md",
+        "server/ai/near-ai.mjs",
+        "server/ai/flavour.mjs"
+      ],
+      "note": "Remove unsupported fixed provider timing/cost assurances; qualify attestation status by actual verification."
+    },
+    {
+      "id": "safety",
+      "title": "Fair play and safety",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/FAIR-PLAY.md",
+        "docs/POI-SAFETY.md",
+        "docs/SOCIAL-CONTROLS.md",
+        "docs/MAP-NOTES-UI.md",
+        "docs/MODERATION-AND-EVIDENCE.md",
+        "server/fair-play.mjs"
+      ],
+      "note": "Preserve distance/GPS/fair-play constraints; no legal or physical-route certification."
+    },
+    {
+      "id": "operations",
+      "title": "Runtime and operations",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/RUNTIME-RELIABILITY.md",
+        "docs/PERFORMANCE-BUDGET.md",
+        "docs/STATE-RECOVERY.md",
+        "docs/OWNER-RUNBOOK.md",
+        "docs/TEST-SEED.md",
+        ".github/workflows/check.yml",
+        "scripts/check-bundle-budget.mjs"
+      ],
+      "note": "Replace unsupported universal latency/capacity claims with dated measurement requirements."
+    },
+    {
+      "id": "maintaining",
+      "title": "How this wiki stays current",
+      "status": "live",
+      "reviewed": "2026-11-05",
+      "sources": [
+        "docs/WIKI.md",
+        "AGENTS.md",
+        "scripts/wiki-check.mjs",
+        "tests/wiki.test.mjs"
+      ],
+      "note": "Imported tables do not make narrative/status claims automatically current; manual review still needed."
+    }
+  ]
+}
