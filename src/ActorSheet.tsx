@@ -12,6 +12,8 @@ import { tr } from "./i18n";
 
 type Location = { lat: number; lng: number; accuracy?: number; timestamp?: number };
 type HandoffProps = {
+  playerId: string;
+  draftRealm: string;
   actor: ActorView;
   actorId: string;
   encounter: string | ActorEncounter;
@@ -43,11 +45,13 @@ const PROBLEM: Record<string, string> = {
 
 export function ActorSheet({
   actor,
+  playerId,
   worldId,
   location,
   onClose,
 }: {
   actor: ActorView;
+  playerId: string;
   worldId: string;
   location: Location | null;
   onClose: () => void;
@@ -111,7 +115,7 @@ export function ActorSheet({
   if (ready && handoff === "npc" && NpcSheet)
     return (
       <Suspense fallback={null}>
-        <NpcSheet actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} />
+        <NpcSheet playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} />
       </Suspense>
     );
   if (ready && handoff === "boss")
@@ -123,7 +127,7 @@ export function ActorSheet({
   if (ready && handoff === "challenge" && MonsterChallenge)
     return (
       <Suspense fallback={null}>
-        <MonsterChallenge actor={ready.actor} actorId={actor.id} encounter={ready.encounter} onClose={onClose} />
+        <MonsterChallenge playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready.encounter} onClose={onClose} />
       </Suspense>
     );
   return (

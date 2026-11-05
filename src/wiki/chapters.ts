@@ -300,8 +300,9 @@ export const CHAPTERS: Chapter[] = [
     summary: "Roaming NPCs with AI voices, monsters beaten by skill, an altar for crafting and earned dice rolls on chain.",
     status: "live",
     updated: "2026-11-05",
-    sources: ["docs/NPC-PLAN.md", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
+    sources: ["docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
     blocks: [
+      { p: "Unsent NPC messages are kept as bounded local text drafts for the current explorer, world and actor. Returning or reloading restores the text; a successful send clears only that submitted revision. Drafts never store encounter tokens or prove consent, position or a completed action." },
       {
         p: "Actors walk real pedestrian paths on a schedule. Reviewed cities have a hand-cast list; every other city and street cell gets a generic cast (quest giver, storyteller, wandering rare, one roamer, two lurkers). Actors are out **07:00–22:00 local** and switch between day and night casts by the real sun.",
       },

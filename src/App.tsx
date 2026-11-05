@@ -5175,8 +5175,9 @@ export default function App() {
           }}
         />
       )}
-      {actorOpen && world && (
+      {actorOpen && world && player && (
         <ActorSheet
+          playerId={player.id}
           actor={actorOpen}
           worldId={world.id}
           location={

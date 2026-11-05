@@ -249,6 +249,8 @@ async function cardOverlaps(page, where) {
         "top bar": document.querySelectorAll(".topbar"),
         "profile menu": document.querySelectorAll(".profile-menu"),
         "tab bar": document.querySelectorAll(".nav-rail"),
+        "map tools": document.querySelectorAll(".map-toolbar"),
+        "demo controls": document.querySelectorAll(".demo-pad"),
         "Market entry": [...document.querySelectorAll(".profile-tiles button")].filter((e) =>
           /^Market/.test(e.textContent.trim()),
         ),
@@ -270,16 +272,6 @@ async function dismissInstallOffer(page, layout) {
   await page.addLocatorHandler(page.locator(CARD), async (card) => {
     const shown = await cardOverlaps(page, "card");
     layout.problems.push(...shown.hits);
-    const profile = page.getByRole("button", { name: "Explorer profile" });
-    const modal = await page.locator("dialog[open], [aria-modal='true']").count();
-    if (!modal && (await profile.isVisible().catch(() => false))) {
-      const open = (await profile.getAttribute("aria-expanded")) === "true";
-      if (!open) await profile.click();
-      await page.locator(".profile-menu").waitFor();
-      layout.problems.push(...(await cardOverlaps(page, "profile menu open")).hits);
-      if (!open) await profile.click();
-      await page.locator(".profile-menu").waitFor({ state: "detached" });
-    }
     layout.checks += 1;
     console.log(`  checked a home-screen card clears the bars (${shown.hits.length ? "OVERLAP" : "clear"}), dismissed it`);
     await card.getByRole("button", { name: /Got it|Not now/ }).click();

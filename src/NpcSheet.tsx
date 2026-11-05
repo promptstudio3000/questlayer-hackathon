@@ -1,10 +1,11 @@
+import { useFormDraft } from "./useFormDraft";
 import { ScreenTabs, type ScreenTab } from "./ScreenTabs";
 // Encounter sheet for a roaming NPC, built like a game dialog: a big portrait
 // with the NPC's line in a speech bubble, the actions the server computed
 // (they always work without AI) and a box to write to them. Everything else
 // (open tasks, the keeper's vault, the character profile) lives in tabs.
 import { NpcGear } from "./NpcGear";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   BookOpen,
   CheckCircle,
@@ -83,10 +84,14 @@ function Portrait({ model, label, emote }: { model: string; label: string; emote
   );
 }
 
-export default function NpcSheet({ actorId, encounter, onClose }: { actorId: string; encounter: ActorEncounter; onClose: () => void }) {
+export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onClose }: { playerId: string; draftRealm: string; actorId: string; encounter: ActorEncounter; onClose: () => void }) {
   const t = npcStrings();
   const [reply, setReply] = useState<NpcReply | null>(null);
-  const [message, setMessage] = useState("");
+  const draft = useFormDraft({playerId, form:`npc-message:${actorId}`, realm:draftRealm, fields:{message:300}, initial:{message:""}});
+  const message = draft.values.message;
+  const latestMessage = useRef(message);
+  latestMessage.current = message;
+  const setMessage = (value: string) => draft.setField("message", value);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -165,11 +170,12 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   const send = (event: React.FormEvent) => {
     event.preventDefault();
     const text = message.trim();
+    const draftRevision = draft.revision;
     if (!text) return;
     run(async () => {
       const r = await npcTalk(actorId, token, text);
       setReply((old) => ({ ...r, npc: r.npc ?? old?.npc }));
-      setMessage("");
+      if (latestMessage.current.trim() === text) draft.discard(draftRevision);
       setNotice("");
     });
   };

@@ -6,6 +6,6 @@ import "../../src/style.css";
 
 const fixture = (window as any).__encounterFixture;
 const root = createRoot(document.getElementById("root")!);
-root.render(<ActorSheet actor={fixture.actor} worldId={fixture.worldId}
+root.render(<ActorSheet playerId={fixture.playerId} actor={fixture.actor} worldId={fixture.worldId}
   location={{...fixture.position, accuracy:8, timestamp:Date.now()}}
   onClose={() => root.render(<p>Encounter closed</p>)} />);

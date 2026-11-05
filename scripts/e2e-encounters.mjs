@@ -59,13 +59,13 @@ try{
     page.on("response",async r=>{if(r.url().includes("/api/actors/")&&!r.ok())console.error("Actor API:",r.status(),await r.text());});
     if(offset)await page.clock.setSystemTime(new Date(Date.now()+offset));
     const post=async(path,data)=>{const response=await context.request.post(url+"/api"+path,{headers:{Origin:url},data});const value=await response.json();assert.ok(response.ok(),JSON.stringify(value));return value;};
-    await post("/session",{name:`Encounter ${kind}`});
+    const session=await post("/session",{name:`Encounter ${kind}`});
     const world=await post("/world",{arena:false,location:BRNO});
     const actors=await (await context.request.get(url+`/api/actors?worldId=${encodeURIComponent(world.id)}&lat=${BRNO.lat}&lng=${BRNO.lng}`)).json();
     const actor=actors.actors.find(a=>kind==="npc"?a.archetype==="quest_giver":a.kind==="monster"&&a.archetype==="roamer");
     assert.ok(actor,`${kind} fixture has an actor`);
     const position=positionAt(actor.segments,actors.now);assert.ok(position);
-    await page.addInitScript(data=>{window.__encounterFixture=data;},{actor,worldId:world.id,position});
+    await page.addInitScript(data=>{window.__encounterFixture=data;},{actor,playerId:session.player.id,worldId:world.id,position});
     if(kind==="npc") {
       let failed=false;
       await page.route("**/greet", route => { if(!failed) { failed=true; return route.abort("failed"); } return route.continue(); });
@@ -82,13 +82,28 @@ try{
       await page.addScriptTag({content:axeSource});
       const issues=await page.evaluate(async()=> (await window.axe.run()).violations.filter(v=>["serious","critical"].includes(v.impact)).map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})));
       assert.deepEqual(issues,[],"NPC accessibility");
+      await page.locator(".npc-chat input").fill("An unsent question for the wayfinder.");
+      await page.locator("dialog[open]").click({position:{x:380,y:830}});
+      assert.equal(await page.locator(".npc-chat input").isVisible(),true,"Blank screen area does not dismiss a page");
+      await page.reload();
+      await page.locator(".npc-chat input").waitFor();
+      assert.equal(await page.locator(".npc-chat input").inputValue(),"An unsent question for the wayfinder.");
       await page.screenshot({path:join(shots,"npc-ready.png")});
       const accepted=page.waitForResponse(r=>decodeURIComponent(new URL(r.url()).pathname).endsWith(`/offers/${offer.id}/accept`));
       await page.getByRole("button",{name:new RegExp(offer.label.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))}).click();
       const receipt=await (await accepted).json();assert.equal(receipt.state,"accepted");
       await page.getByRole("tab",{name:/Tasks/}).click();
       await page.screenshot({path:join(shots,"npc-accepted.png")});
-      results.push({kind,accepted:receipt.state});
+      await page.setViewportSize({width:390,height:420});
+      await page.locator(".npc-chat input").focus();
+      await page.locator(".npc-chat input").scrollIntoViewIfNeeded();
+      const inputBounds=await page.locator(".npc-chat input").boundingBox();assert.ok(inputBounds.y+inputBounds.height<=421);
+      await page.screenshot({path:join(shots,"npc-keyboard-viewport.png")});
+      await page.setViewportSize({width:390,height:844});
+      await page.locator(".npc-sheet *").evaluateAll(elements=>elements.map(el=>[el,getComputedStyle(el).fontSize]).filter(([el])=>[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,size])=>el.style.fontSize=`${parseFloat(size)*2}px`));
+      assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
+      await page.screenshot({path:join(shots,"npc-enlarged-text.png")});
+      results.push({kind,accepted:receipt.state,draftRestored:true,keyboardViewport:true,enlargedText:true});
     }else{
       await page.locator(".actor-offers button").first().click();
       const started=page.waitForResponse(r=>r.url().endsWith(`/${actor.id}/challenge`)&&r.request().method()==="POST");

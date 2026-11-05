@@ -76,8 +76,8 @@ function useBarAnchors(active: boolean) {
     if (!active) return;
     const measure = () => {
       const next: Record<string, string> = {};
-      const bar = document.querySelector(".topbar")?.getBoundingClientRect();
-      if (bar?.height) next["--pwa-top"] = `${Math.round(bar.bottom) + 8}px`;
+      const topEdges = [...document.querySelectorAll(".topbar, .map-toolbar, .map-status-chip")].filter(el => (el as HTMLElement).checkVisibility()).map(el => el.getBoundingClientRect().bottom);
+      if (topEdges.length) next["--pwa-top"] = `${Math.round(Math.max(...topEdges)) + 8}px`;
       const railEl = document.querySelector(".nav-rail");
       const rail = railEl?.getBoundingClientRect();
       // An open sheet slides the tab bar off screen with a transform, which
@@ -98,7 +98,7 @@ function useBarAnchors(active: boolean) {
     const bars = new ResizeObserver(measure);
     let watched: Element[] = [];
     const observe = () => {
-      const now = [...document.querySelectorAll(".topbar, .nav-rail, .demo-pad, .demo-pad-open")];
+      const now = [...document.querySelectorAll(".topbar, .nav-rail, .demo-pad, .demo-pad-open, .map-toolbar, .map-status-chip")];
       if (
         now.length === watched.length &&
         now.every((el, i) => el === watched[i])

@@ -26,7 +26,13 @@ export function Dialog({
     const previous = document.activeElement as HTMLElement | null;
     return () => {
       d?.close();
-      previous?.focus();
+      requestAnimationFrame(() => {
+        if (document.querySelector("dialog[open]")) return;
+        const target = previous?.isConnected && previous.checkVisibility()
+          ? previous
+          : document.querySelector<HTMLElement>(".map-recenter, .main-panel");
+        target?.focus({ preventScroll: true });
+      });
     };
   }, []);
   useEffect(() => {
@@ -65,7 +71,7 @@ export function Dialog({
         onClose();
       }}
       onClick={(e) => {
-        if (e.target === ref.current) onClose();
+        if (presentation !== "screen" && e.target === ref.current) onClose();
       }}
     >
       {children}

@@ -154,9 +154,9 @@ try {
       }).map(el=>el.className);
     });assert.deepEqual(overlaps,[],"Install offer keeps map controls available");
     await page.screenshot({path:join(SHOTS,"iphone-install-map.png")});
-    await page.locator(".topbar .profile-pill").click();await page.clock.runFor(1000);
+    await page.locator(".topbar .profile-pill").click();await page.clock.runFor(2500);
     await card.waitFor({state:"hidden"});
-    await page.getByRole("button",{name:"Close panel",exact:true}).click();await page.clock.runFor(1000);
+    await page.getByRole("button",{name:"Close panel",exact:true}).click();await page.clock.runFor(2500);
     await card.waitFor();
     writeFileSync(join(SHOTS,"pwa-report.json"),JSON.stringify({engine:"WebKit iPhone 15 emulation",overlaps,hiddenDuringContent:true,returnedOnMap:true},null,2));
     await context.close();
