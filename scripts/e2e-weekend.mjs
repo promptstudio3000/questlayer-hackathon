@@ -42,6 +42,16 @@ try {
     await page.goto(url);
     await page.getByLabel("What should we call you?").fill("UI explorer");
     if (width === 390) {
+      await page.locator(".welcome-card *").evaluateAll(elements => {
+        const saved=elements.map(el=>[el,el.style.fontSize,getComputedStyle(el).fontSize]);
+        window.__restoreText=()=>saved.forEach(([el,style])=>el.style.fontSize=style);
+        saved.filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,,size])=>el.style.fontSize=`${parseFloat(size)*2}px`);
+      });
+      await page.screenshot({path:join(SHOTS,"enlarged-text-welcome.png")});
+      assert.equal(await page.locator("#nickname").evaluate(el=>getComputedStyle(el).fontSize),"32px");
+      await page.evaluate(()=>window.__restoreText());
+    }
+    if (width === 390) {
       await page.setViewportSize({ width, height: 420 });
       await page.getByLabel("What should we call you?").focus();
       await page.screenshot({ path: join(SHOTS, "keyboard-viewport-welcome.png") });
@@ -92,6 +102,16 @@ try {
           await tabs.nth(i).click();
           await page.waitForTimeout(400);
           await scan(`${screen}-${i}`);
+          if (screen === "Profile") assert.ok(await page.locator(".main-panel").evaluate(el=>el.scrollHeight)<=height*2, "Profile sections fit two phone heights");
+          if (screen === "Profile" && i === 1) {
+            const first=await page.locator(".badge-medal").first().getAttribute("aria-label");
+            assert.equal(await page.locator(".badge-medal").count(),12);
+            await page.getByRole("button",{name:"Next page",exact:true}).click();
+            assert.notEqual(await page.locator(".badge-medal").first().getAttribute("aria-label"),first);
+            await page.getByRole("button",{name:"Previous page",exact:true}).click();
+            assert.equal(await page.locator(".badge-medal").first().getAttribute("aria-label"),first);
+            await page.screenshot({path:join(SHOTS,"profile-badges-paged.png")});
+          }
         }
         if (screen === "Community") {
           await page.getByRole("tab", { name:"Local chat", exact:true }).click();
@@ -113,9 +133,17 @@ try {
           await page.locator("#map-note-text").waitFor();
           assert.match(await page.locator("#map-note-text").inputValue(), /A draft kept/);
           await page.screenshot({path:join(SHOTS,"local-chat-resumed-draft.png")});
+          await page.locator(".map-notes-compose *").evaluateAll(elements => {
+            const saved=elements.map(el=>[el,el.style.fontSize,getComputedStyle(el).fontSize]);
+            window.__restoreText=()=>saved.forEach(([el,style])=>el.style.fontSize=style);
+            saved.filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,,size])=>el.style.fontSize=`${parseFloat(size)*2}px`);
+          });
+          await page.screenshot({path:join(SHOTS,"enlarged-text-local-chat.png")});
+          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+          await page.evaluate(()=>window.__restoreText());
         }
         if (screen === "Profile") {
-          await page.locator(".main-panel *").evaluateAll(elements => elements.map(el => [el, getComputedStyle(el).fontSize]).filter(([el]) => el.childNodes.length && [...el.childNodes].some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())).map(([el,size]) => { el.style.fontSize = `${parseFloat(size)*2}px`; return size; }));
+          await page.locator(".main-panel *").evaluateAll(elements => elements.map(el => [el, getComputedStyle(el).fontSize]).filter(([el]) => el.matches("input,textarea,select") || [...el.childNodes].some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())).map(([el,size]) => { el.style.fontSize = `${parseFloat(size)*2}px`; return size; }));
           await page.screenshot({ path: join(SHOTS, "enlarged-text-profile.png") });
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, "200% text keeps page width");
         }
@@ -125,6 +153,21 @@ try {
       } else await page.getByRole("button", { name: "Close panel", exact: true }).click();
     }
     if (width === 390) {
+      const cameraBefore=await page.locator(".player-marker").first().getAttribute("style");
+      await page.locator(".topbar .profile-pill").click();
+      await page.getByRole("button",{name:"Close panel",exact:true}).click();
+      const cameraAfter=await page.locator(".player-marker").first().getAttribute("style");
+      assert.equal(cameraAfter,cameraBefore,"Map camera remains stable across a content screen");
+      await page.evaluate(()=>{navigator.geolocation.getCurrentPosition=(_ok,fail)=>fail({code:1,message:"denied"});});
+      await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+      await page.getByText("Allow location access, or keep exploring in the city demo.",{exact:true}).first().waitFor();
+      assert.ok(await page.locator(".map-status-chip.demo").count());
+      await page.screenshot({path:join(SHOTS,"gps-denied.png")});
+      await page.evaluate(()=>{navigator.geolocation.getCurrentPosition=ok=>ok({coords:{latitude:49.7384,longitude:13.3736,accuracy:999,heading:null,speed:0},timestamp:Date.now()});navigator.geolocation.watchPosition=()=>1;});
+      await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+      await page.getByText("GPS ±999 m",{exact:true}).waitFor();
+      assert.equal(await page.locator(".demo-pad").count(),0,"GPS play never offers manual movement");
+      await page.screenshot({path:join(SHOTS,"gps-inaccurate.png")});
       await page.goto(url + "/wiki");
       await page.locator(".wk-chapter").first().waitFor();
       assert.equal(await page.locator(".wk-chapter").count(),22);

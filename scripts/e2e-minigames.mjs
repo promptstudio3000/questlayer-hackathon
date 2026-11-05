@@ -33,6 +33,13 @@ for(const input of ["keyboard","touch"])for(const format of ["quiz","memory","rh
   await route.fulfill({json:{duel:{round,playerHp:100,monsterHp:100-round*25,ringMs:1000,last:{stance:rounds.at(-1).stance,monster:"guard",outcome:"win",skill:1,dealt:25,taken:0}},...(round===3?{result:{challengeId:challenge.id,outcome:"won",score:3,max:3,format},detail:{}}:{})}});
  });
  await page.goto(url+"/__input.html");await page.getByRole("dialog").waitFor();
+ if (input==="keyboard") {
+  for(const [name,width,height] of [["360",360,780],["390",390,844],["landscape",844,390],["desktop",1440,900]]){
+   await page.setViewportSize({width,height});
+   assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
+   await page.screenshot({path:join(shots,`${format}-ready-${name}.png`)});
+  }await page.setViewportSize({width:390,height:844});
+ }
  const press=async button=>{if(input==="keyboard"){await button.focus();await page.keyboard.press("Enter");}else await button.tap({force:true});};
  if(format==="quiz"){await page.clock.runFor(1800);await press(page.getByRole("button",{name:"Rune",exact:true}));}
  if(format==="memory"){

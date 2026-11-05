@@ -89,6 +89,12 @@ try{
       await page.locator(".npc-chat input").waitFor();
       assert.equal(await page.locator(".npc-chat input").inputValue(),"An unsent question for the wayfinder.");
       await page.screenshot({path:join(shots,"npc-ready.png")});
+      for (const [name,width,height] of [["360",360,780],["landscape",844,390],["desktop",1440,900]]) {
+        await page.setViewportSize({width,height});
+        assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
+        await page.screenshot({path:join(shots,`npc-${name}.png`)});
+      }
+      await page.setViewportSize({width:390,height:844});
       const accepted=page.waitForResponse(r=>decodeURIComponent(new URL(r.url()).pathname).endsWith(`/offers/${offer.id}/accept`));
       await page.getByRole("button",{name:new RegExp(offer.label.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))}).click();
       const receipt=await (await accepted).json();assert.equal(receipt.state,"accepted");
@@ -100,7 +106,7 @@ try{
       const inputBounds=await page.locator(".npc-chat input").boundingBox();assert.ok(inputBounds.y+inputBounds.height<=421);
       await page.screenshot({path:join(shots,"npc-keyboard-viewport.png")});
       await page.setViewportSize({width:390,height:844});
-      await page.locator(".npc-sheet *").evaluateAll(elements=>elements.map(el=>[el,getComputedStyle(el).fontSize]).filter(([el])=>[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,size])=>el.style.fontSize=`${parseFloat(size)*2}px`));
+      await page.locator(".npc-sheet *").evaluateAll(elements=>elements.map(el=>[el,getComputedStyle(el).fontSize]).filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,size])=>el.style.fontSize=`${parseFloat(size)*2}px`));
       assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
       await page.screenshot({path:join(shots,"npc-enlarged-text.png")});
       results.push({kind,accepted:receipt.state,draftRestored:true,keyboardViewport:true,enlargedText:true});
@@ -119,6 +125,12 @@ try{
       await page.getByRole("heading",{name:"You beat it!"}).waitFor();
       assert.equal(await page.locator(".monster-result").count(),1);
       await page.screenshot({path:join(shots,"monster-confirmed.png")});
+      for (const [name,width,height] of [["360",360,780],["landscape",844,390],["desktop",1440,900]]) {
+        await page.setViewportSize({width,height});
+        assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
+        await page.screenshot({path:join(shots,`monster-${name}.png`)});
+      }
+      await page.setViewportSize({width:390,height:844});
       await page.getByRole("button",{name:"Back to the map",exact:true}).click();
       await page.getByText("Encounter closed",{exact:true}).waitFor();
       results.push({kind,outcome:receipt.result.outcome,score:receipt.result.score});

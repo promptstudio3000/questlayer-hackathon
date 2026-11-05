@@ -4572,14 +4572,14 @@ export default function App() {
                   <span>{tr("Help & guide")}</span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
-<a className="settings-row" href="/how-it-works">
+                <a className="settings-row" href="/how-it-works">
                   <Sparkle size={22} aria-hidden="true" />
                   <span>
                     {tr("How it works")}<small>{tr("The game in one page")}</small>
                   </span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </a>
-                                {[["/wiki", "Wiki"], ["/economy", "Economy"], ["/treasury", "Treasury"]].map(([href, label]) => (
+                {[["/wiki", "Wiki"], ["/economy", "Economy"], ["/treasury", "Treasury"]].map(([href, label]) => (
                   <a key={href} className="settings-row" href={href}>
                     <BookOpen size={22} aria-hidden="true" /><span>{label === "Wiki" ? tr("Wiki") : label === "Economy" ? tr("Economy") : tr("Treasury")}</span><ArrowRight size={18} aria-hidden="true" />
                   </a>

@@ -1,12 +1,12 @@
 import { EmptyState } from "./EmptyState";
 import type { ReactNode } from "react";
 import { ChainLink } from "./ChainLink";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Medal,
   X,
 } from "@phosphor-icons/react";
-import { ArrowRight } from "./dir-icons";
+import { ArrowLeft, ArrowRight } from "./dir-icons";
 import { api } from "./api";
 import { Dialog } from "./Dialog";
 import type { Fix } from "./types";
@@ -102,6 +102,8 @@ export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: 
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"places" | "player">("places");
   const [kind, setKind] = useState<Kind | "all">("all");
+  const [badgePage, setBadgePage] = useState(0);
+  const badgeGrid = useRef<HTMLUListElement>(null);
   const [detail, setDetail] = useState<PlaceBadge | null>(null);
   const gps = arena ? null : fix;
   const at = gps ? `?lat=${gps.lat.toFixed(5)}&lng=${gps.lng.toFixed(5)}` : "";
@@ -126,6 +128,13 @@ export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: 
     () => (places ? places.badges.filter((b) => kind === "all" || b.kind === kind) : []),
     [places, kind],
   );
+  const pageSize = inline ? 12 : Math.max(1, shown.length);
+  const pages = Math.max(1, Math.ceil(shown.length / pageSize));
+  const page = Math.min(badgePage, pages - 1);
+  function turnPage(next: number) {
+    setBadgePage(next);
+    requestAnimationFrame(() => badgeGrid.current?.focus());
+  }
   if (!data?.enabled || !places) return inline ? (
     <EmptyState art="place" title={tr("Badges")} status action={loadError ? { label: tr("Try again"), onClick: () => void load() } : undefined}>
       {loadError ? tr("Something went wrong.") : data ? tr("Nothing here yet") : tr("Loading…")}
@@ -185,7 +194,7 @@ export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: 
                 {arena && <p className="fine-print">{tr("Badges need real GPS. Turn on your location on the map to collect them.")}</p>}
                 <div className="badge-filter" role="group" aria-label={tr("Filter")}>
                   {KINDS.map((k) => (
-                    <button key={k.id} aria-pressed={kind === k.id} onClick={() => setKind(k.id)}>
+                    <button key={k.id} aria-pressed={kind === k.id} onClick={() => { setKind(k.id); setBadgePage(0); }}>
                       {k.label}
                       {k.id !== "all" && (
                         <small>
@@ -195,8 +204,8 @@ export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: 
                     </button>
                   ))}
                 </div>
-                <ul className="badge-grid">
-                  {shown.map((b) => (
+                <ul className="badge-grid" ref={badgeGrid} tabIndex={-1} aria-label={tr("Badges")}>
+                  {shown.slice(page * pageSize, (page + 1) * pageSize).map((b) => (
                     <li key={b.id}>
                       <button
                         className={`badge-medal rarity-${b.rarity}${b.earnedAt ? " is-earned" : ""}`}
@@ -211,6 +220,11 @@ export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: 
                     </li>
                   ))}
                 </ul>
+                {pages > 1 && <div className="badge-pages" role="group" aria-label={tr("Badges")}>
+                  <button disabled={page === 0} aria-label={tr("Previous page")} onClick={() => turnPage(page - 1)}><ArrowLeft size={20} aria-hidden="true" /></button>
+                  <span aria-live="polite">{tr("Page {0} of {1}", {0:page+1,1:pages})}</span>
+                  <button disabled={page === pages - 1} aria-label={tr("Next page")} onClick={() => turnPage(page + 1)}><ArrowRight size={20} aria-hidden="true" /></button>
+                </div>}
               </>
             ) : (
               <PlayerBadges data={data} gps={freshFix(gps)} reload={load} onConnectNear={onConnectNear} />
