@@ -439,7 +439,7 @@ export async function runRewardWorker(
 }
 export function startRewardWorker(
   native,
-  { keyPath, intervalMs = 30000 } = {},
+  { keyPath, intervalMs = 30000, qgoldRate = null } = {},
 ) {
   let stopped = false,
     running = null,
@@ -466,6 +466,7 @@ export function startRewardWorker(
             view: (method, args) => native.view(method, args, true),
             signer: native.signer,
             contractId: native.contractId,
+            qgoldRate,
           }).catch((error) =>
             console.error("Map chain worker:", String(error.message).slice(0, 200)),
           );

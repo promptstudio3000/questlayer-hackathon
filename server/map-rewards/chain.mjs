@@ -29,6 +29,7 @@ import {
   readCell,
   readDay,
 } from "./day-plan.mjs";
+import { recordMapBudget } from "./budget.mjs";
 import { MAP_REWARDS_POLICY } from "./policy.mjs";
 
 export const MAP_DAY_VERSION = 1;
@@ -287,11 +288,21 @@ export function queueMapClaims(db, { signer, contractId, day, now = Date.now() }
  */
 export async function runMapChainWorker(
   db,
-  { call, view = null, signer, contractId, now = Date.now(), maxClaims = 20 },
+  { call, view = null, signer, contractId, now = Date.now(), maxClaims = 20, qgoldRate = null },
 ) {
   ensureMapChainSchema(db);
-  const result = { published: null, queued: 0, sent: 0, closed: 0, failed: 0 };
+  const result = { published: null, queued: 0, sent: 0, closed: 0, failed: 0, budget: false };
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: MAP_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  // The next plans price coins from what the chain allows: the map's share of
+  // the per-date cap and the vault's backing rate R.
+  if (view && qgoldRate) {
+    try {
+      const [caps, rate] = await Promise.all([mapDayCaps(view, today), qgoldRate()]);
+      result.budget = recordMapBudget(db, { coinYocto: caps.coinCap, zoneYocto: caps.zoneCap, rateYocto: rate }, now);
+    } catch {
+      // keep the last report
+    }
+  }
   const plan = readDay(db, today);
   if (plan?.root) {
     const dayId = mapDayId(today);

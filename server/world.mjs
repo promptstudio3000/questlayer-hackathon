@@ -61,6 +61,7 @@ import {
   materializeCellRewards,
   nextWave,
 } from "./map-rewards/service.mjs";
+import { ensureMapRewardsSchema } from "./map-rewards/schema.mjs";
 export const HOME = DEFAULT_CITY.center;
 export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
@@ -665,6 +666,7 @@ export function worldView(db, id, player = null, options = {}) {
   return view;
 }
 export function expireWorlds(db, now = Date.now()) {
+  ensureMapRewardsSchema(db);
   return atomic(db, () => {
     // Worlds already closed out are skipped in SQL, so this stays cheap as
     // past days pile up (it runs on every POST /api/world).
@@ -680,12 +682,14 @@ export function expireWorlds(db, now = Date.now()) {
         continue;
       const coins = db
           .prepare(
-            "SELECT COALESCE(SUM(value_u),0) AS n FROM coins WHERE world_id=? AND claimant IS NULL",
+            // Map coins and cell zones are backed by the day's chain budget,
+            // not by this treasury, so they never roll back into it.
+            "SELECT COALESCE(SUM(value_u),0) AS n FROM coins c WHERE world_id=? AND claimant IS NULL AND NOT EXISTS(SELECT 1 FROM map_coin_meta m WHERE m.coin_id=c.id)",
           )
           .get(row.id).n,
         quests = db
           .prepare(
-            "SELECT COALESCE(SUM(gold_u),0) AS n FROM quests WHERE world_id=? AND claimant IS NULL",
+            "SELECT COALESCE(SUM(gold_u),0) AS n FROM quests WHERE world_id=? AND claimant IS NULL AND NOT (json_valid(metadata) AND json_extract(metadata,'$.cellZone.cell') IS NOT NULL)",
           )
           .get(row.id).n;
       for (const [bucket, n] of [

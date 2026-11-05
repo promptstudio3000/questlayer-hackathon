@@ -13,6 +13,7 @@ import {
 import {
   buildDayPlan,
   cellProof,
+  coinValue,
   ensureDayPlan,
   mapDaySeed,
   readCell,
@@ -23,8 +24,10 @@ import { mapRewardsView } from "../server/map-rewards/service.mjs";
 import {
   AREA_CAP_BPS,
   CELL_CAP_BPS,
+  CELL_COINS,
   COIN_SPACING_NEAR_ZONE_M,
 } from "../server/map-rewards/policy.mjs";
+import { mapDayBudget, recordMapBudget } from "../server/map-rewards/budget.mjs";
 import { ensureWorld, worldView } from "../server/world.mjs";
 import { claimCoin } from "../server/game.mjs";
 
@@ -71,44 +74,31 @@ test("coins keep 60-120 m apart, gather near zones and never cluster", () => {
   assert.deepEqual(spaceCoins(samples, [zone], { seed: "s", max: 400 }), spots);
 });
 
-test("coin values fit the budget, come in three sizes and in six waves", () => {
+test("every coin in a cell is worth the same, up to the planned count, in six waves", () => {
   const samples = grid(PLZEN);
   const { coins, spentU } = placeCellCoins({
     samples,
     zones: [PLZEN],
     seed: "x",
-    budgetU: 5_000_000,
+    count: 400,
+    valueU: 7,
   });
-  assert.ok(coins.length > 50);
-  assert.ok(spentU <= 5_000_000);
-  assert.equal(
-    spentU,
-    coins.reduce((n, c) => n + c.valueU, 0),
-  );
-  assert.deepEqual([...new Set(coins.map((c) => c.tier))].sort(), [
-    "medium",
-    "rare",
-    "small",
-  ]);
+  assert.ok(coins.length > 50 && coins.length <= 400);
+  assert.ok(coins.every((c) => c.valueU === 7 && c.tier === "small"));
+  assert.equal(spentU, coins.length * 7);
   assert.deepEqual(
     [...new Set(coins.map((c) => c.wave))].sort(),
     [0, 1, 2, 3, 4, 5],
   );
-  const small = coins.find((c) => c.tier === "small").valueU;
-  assert.ok(
-    coins.every(
-      (c) => c.valueU === small * { small: 1, medium: 3, rare: 10 }[c.tier],
-    ),
-  );
-  // A tiny budget places fewer coins, never a coin below 0.01 GOLD.
-  const tiny = placeCellCoins({ samples, seed: "x", budgetU: 35_000 });
-  assert.ok(
-    tiny.coins.length >= 1 && tiny.coins.every((c) => c.valueU >= 10_000),
-  );
+  // The count caps the spots; value 0 = XP-only coins (the demo arena).
   assert.equal(
-    placeCellCoins({ samples, seed: "x", budgetU: 5_000 }).coins.length,
-    0,
+    placeCellCoins({ samples, seed: "x", count: 10, valueU: 7 }).coins.length,
+    10,
   );
+  const xp = placeCellCoins({ samples, seed: "x", count: 5, valueU: 0 });
+  assert.equal(xp.coins.length, 5);
+  assert.equal(xp.spentU, 0);
+  assert.equal(placeCellCoins({ samples, seed: "x", count: 0, valueU: 7 }).coins.length, 0);
 });
 
 test("six waves open between 06:30 and 22:00 local time in order", () => {
@@ -132,60 +122,85 @@ test("six waves open between 06:30 and 22:00 local time in order", () => {
   );
 });
 
-test("the day plan spreads the budget over Czechia with caps, a root and proofs", () => {
+test("the day plan backs every coin equally and spreads zone prizes with caps", () => {
   const cells = czechiaCells();
   const plzen = latLngToCell(PLZEN.lat, PLZEN.lng, 7);
   const demand = new Map([[plzen, 40]]),
-    potential = new Map(cells.slice(0, 3000).map((c, i) => [c, i % 200]));
-  const coinsU = 5_000_000_000,
-    plan = buildDayPlan({
+    potential = new Map(cells.slice(0, 3000).map((c, i) => [c, i % 200])),
+    pioneers = new Set(cells.slice(0, 1000));
+  const coinsU = 50_000_000_000,
+    zonesU = 1_000_000_000,
+    args = {
       day: "2026-11-05",
       seed: mapDaySeed("2026-11-05"),
       coinsU,
-      zonesU: 1_000_000_000,
+      zonesU,
       demand,
       potential,
-    });
-  const spent = plan.rows.reduce((n, r) => n + r.coinsU, 0);
-  assert.ok(spent <= coinsU * 0.95 + 1);
-  assert.ok(plan.rows.length > 15000, "almost every cell gets something");
-  assert.ok(
-    plan.rows.every((r) => r.coinsU <= (coinsU * CELL_CAP_BPS) / 10000),
-  );
+      pioneers,
+    },
+    plan = buildDayPlan(args);
+  // One coin = the coin budget over all shares (400 per cell, 800 per pioneer cell).
+  const shares = CELL_COINS * (cells.length + pioneers.size);
+  const value = Math.floor(coinsU / shares);
+  assert.equal(plan.summary.coinValueU, value);
+  assert.equal(coinValue(coinsU, cells.length, pioneers.size), value);
+  assert.ok(value > 0);
+  assert.equal(plan.rows.length, cells.length, "every cell has backed coins");
+  assert.ok(plan.rows.every((r) => r.coinsU === CELL_COINS * value && r.coins === CELL_COINS));
+  assert.equal(plan.rows.filter((r) => r.pioneer).length, pioneers.size);
+  // Pioneer coins count twice and the day never commits more than its budget.
+  assert.equal(plan.pioneerU, pioneers.size * CELL_COINS * value);
+  assert.ok(plan.coinsU + plan.pioneerU <= coinsU);
+  assert.ok(coinsU - plan.coinsU - plan.pioneerU < shares);
+  // Zone prizes keep the formula and its caps.
+  assert.ok(plan.rows.every((r) => r.zonesU <= (zonesU * CELL_CAP_BPS) / 10000));
   const areas = new Map();
   for (const r of plan.rows)
     areas.set(
       cellToParent(r.cell, 5),
-      (areas.get(cellToParent(r.cell, 5)) || 0) + r.coinsU,
+      (areas.get(cellToParent(r.cell, 5)) || 0) + r.zonesU,
     );
   assert.ok(
-    [...areas.values()].every((v) => v <= (coinsU * AREA_CAP_BPS) / 10000),
+    [...areas.values()].every((v) => v <= (zonesU * AREA_CAP_BPS) / 10000),
   );
-  // Votes have no voters yet: their 50 % goes to the others.
   assert.equal(plan.summary.components.votes, 0);
-  assert.ok(
-    Math.abs(
-      Object.values(plan.summary.components).reduce((a, b) => a + b, 0) - 10000,
-    ) <= 2,
-  );
-  // The demand cell is among the richest.
   const rank = [...plan.rows]
-    .sort((a, b) => b.coinsU - a.coinsU)
+    .sort((a, b) => b.zonesU - a.zonesU)
     .findIndex((r) => r.cell === plzen);
   assert.ok(rank < 50, `rank ${rank}`);
-  // Same inputs, same root.
-  const again = buildDayPlan({
-    day: "2026-11-05",
-    seed: mapDaySeed("2026-11-05"),
-    coinsU,
-    zonesU: 1_000_000_000,
-    demand,
-    potential,
-  });
-  assert.equal(again.root, plan.root);
+  // Same inputs, same root; a budget too small for one unit per share gives no coins.
+  assert.equal(buildDayPlan(args).root, plan.root);
+  const poor = buildDayPlan({ ...args, coinsU: 1000 });
+  assert.equal(poor.summary.coinValueU, 0);
+  assert.ok(poor.rows.every((r) => r.coinsU === 0 && r.coins === 0));
   assert.equal(zonesForPotential(0), 1);
   assert.equal(zonesForPotential(40), 2);
   assert.equal(zonesForPotential(500), 3);
+});
+
+test("the day budget comes from the chain report, priced in micro-QGOLD at R", () => {
+  const db = openDatabase(":memory:");
+  try {
+    // Defaults: 0.05 NEAR for coins at R = 0.001 NEAR per QGOLD = 50 QGOLD.
+    const first = mapDayBudget(db, {});
+    assert.equal(first.coinsU, 50_000_000);
+    assert.equal(first.source, "default");
+    assert.ok(
+      recordMapBudget(db, {
+        coinYocto: (25n * 10n ** 24n).toString(),
+        zoneYocto: (10n ** 24n).toString(),
+        rateYocto: (2n * 10n ** 21n).toString(),
+      }),
+    );
+    const b = mapDayBudget(db, {});
+    assert.equal(b.coinsU, 12_500_000_000); // 25 NEAR / 0.002 = 12,500 QGOLD
+    assert.equal(b.zonesU, 500_000_000);
+    assert.equal(b.source, "chain");
+    assert.equal(recordMapBudget(db, { coinYocto: "0", zoneYocto: "1", rateYocto: "1" }), false);
+  } finally {
+    db.close();
+  }
 });
 
 test("a cell drop follows the stored plan, proves its leaf and opens coins in waves", async () => {
@@ -207,18 +222,25 @@ test("a cell drop follows the stored plan, proves its leaf and opens coins in wa
       .prepare("SELECT * FROM map_cell_drops WHERE world_id=? AND cell=?")
       .get(w.id, cell);
     assert.equal(drop.pioneer, 1);
-    assert.ok(drop.pioneer_u > 0, "pioneer reserve doubles the first drop");
+    assert.ok(drop.pioneer_u > 0, "pioneer coins count twice on the first drop");
     assert.ok(
       w.zones.some((z) => z.source === "pioneer"),
       "a pioneer chest",
     );
-    const reserved = db
-      .prepare("SELECT reserved_u FROM treasury WHERE bucket='coins'")
-      .get().reserved_u;
+    // Backed by the day's chain budget: the game treasury is not touched and
+    // the first (pioneer) drop pays two shares per coin.
+    const plan = ensureDayPlan(db, NOW);
+    const mapCoins = db
+      .prepare(
+        "SELECT c.value_u v FROM coins c JOIN map_coin_meta m ON m.coin_id=c.id WHERE c.world_id=? AND m.cell=?",
+      )
+      .all(w.id, cell);
+    assert.ok(mapCoins.length > 0);
+    assert.ok(mapCoins.every((c) => c.v === 2 * plan.summary.coinValueU));
     assert.equal(
-      reserved,
-      db.prepare("SELECT SUM(value_u) v FROM coins WHERE world_id=?").get(w.id)
-        .v,
+      db.prepare("SELECT reserved_u FROM treasury WHERE bucket='coins'").get()
+        .reserved_u,
+      0,
     );
     // At 13:00 some waves are still closed.
     const early = worldView(db, w.id, player, { now: NOW });

@@ -280,7 +280,6 @@ test("POI quests pay XP once; a category hunt accepts its stops in any order", a
     assert.equal(visit.activity.templateId, "poi-visit");
     const r = claimQuest(db, player, visit.id, fix(visit, NOW), NOW);
     assert.equal(r.xp, POI_XP.visit);
-    assert.equal(r.reward, 0);
     const hunt = view.quests.find((q) => q.kind === "route");
     assert.equal(hunt.activity.templateId, "poi-category-hunt");
     assert.equal(hunt.checkpointCount, 3);
@@ -299,8 +298,14 @@ test("POI quests pay XP once; a category hunt accepts its stops in any order", a
     t += 600_000; // walking pace (fair-play travel guard)
     const done = advanceRoute(db, player, hunt.id, fix(stops[1], t), 2, t);
     assert.equal(done.xp, POI_XP.hunt);
-    assert.equal(done.reward, 0);
-    assert.equal(db.prepare("SELECT gold_u FROM players WHERE id=?").get(player).gold_u, gold0);
+    // A POI quest pays QGOLD only when the day plan promoted it to a funded cell zone.
+    const prize = (id) =>
+      JSON.parse(db.prepare("SELECT metadata FROM quests WHERE id=?").get(id).metadata).cellZone?.prizeU || 0;
+    assert.equal(done.reward, prize(hunt.id));
+    assert.equal(
+      db.prepare("SELECT gold_u FROM players WHERE id=?").get(player).gold_u,
+      gold0 + prize(visit.id) + prize(hunt.id),
+    );
   } finally {
     db.close();
   }
