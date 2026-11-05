@@ -36,6 +36,7 @@ for (const relative of [
   "./landmark-clue.mjs",
   "./map-rewards/schema.mjs",
   "./map-rewards/budget.mjs",
+  "./payouts/worker.mjs",
   "./map-rewards/chain.mjs",
   "./relayer/schema.mjs",
   "./season/schema.mjs",

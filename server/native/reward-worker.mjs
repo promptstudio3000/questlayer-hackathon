@@ -25,6 +25,7 @@ import {
   runMapChainWorker,
 } from "../map-rewards/chain.mjs";
 import { PAYOUT_CHAIN_METHODS } from "../payouts/payout-tree.mjs";
+import { payoutsEnabled, runPayoutWorker } from "../payouts/worker.mjs";
 const METHODS = ["publish_day", "close_day", "claim", "maintain_vault"];
 // The key is the native set alone, the native set plus the map-day methods
 // (contracts/rewards map_days.rs), or both plus the daily payout methods
@@ -104,6 +105,7 @@ export async function rewardTransport(
     return result.transaction?.hash || result.transaction_outcome?.id;
   };
   send.mapDays = allowed.length > METHODS.length;
+  send.payouts = allowed.length === METHODS.length + MAP_CHAIN_METHODS.length + PAYOUT_CHAIN_METHODS.length;
   return send;
 }
 export async function runRewardWorker(
@@ -460,6 +462,9 @@ export function startRewardWorker(
         enteredWorker = true;
         await runRewardWorker(native, send);
         // Map days ride on the same key once it allows the map methods.
+        // With nightly payouts on, map coins are paid only through them
+        // (one leaf per account per day), so claim_map is not sent.
+        const payouts = payoutsEnabled() && send.payouts;
         if (mapChainEnabled() && send.mapDays)
           await runMapChainWorker(native.db, {
             call: send,
@@ -467,8 +472,13 @@ export function startRewardWorker(
             signer: native.signer,
             contractId: native.contractId,
             qgoldRate,
+            budgetOnly: payouts,
           }).catch((error) =>
             console.error("Map chain worker:", String(error.message).slice(0, 200)),
+          );
+        if (payouts)
+          await runPayoutWorker(native.db, { call: send }).catch((error) =>
+            console.error("Payout worker:", String(error.message).slice(0, 200)),
           );
       } catch (error) {
         console.error(

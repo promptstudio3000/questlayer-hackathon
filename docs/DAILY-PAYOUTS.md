@@ -31,6 +31,31 @@ Contract: `contracts/rewards/src/payouts.rs` (rewards contract,
 4. `close_payout_day(day_id)` (publisher, 3 days after publication) returns the
    unclaimed rest to the available buckets and deletes the bitmap.
 
+## Server worker (`server/payouts/worker.mjs`)
+
+Runs inside the reward worker when `MAP_PAYOUTS=1` (testnet) and the worker key
+holds all 10 methods. Each pass:
+
+1. **Prepare** yesterday's day once (`payout_days`, local Europe/Prague date):
+   every claimed map coin (`map_coin_meta`) and funded cell-zone prize
+   (`cellZone` quests) of a GPS world, collected before midnight, with a value,
+   not in `payout_items` and not already sent as `claim_map`, by a player with a
+   `wallet_links` account. Each is priced at `value_u × R / 10⁶` yoctoNEAR, R
+   being the rate its map day was planned with (`summary.budget.rateYocto`).
+   Totals per account plus last night's `payout_carry` go into
+   `buildPayoutDay`; the new carry replaces the old.
+2. **Publish** pending days (`publish_payout_day`); a refusal keeps the day
+   pending and retries next pass ("Day exists" counts as published).
+3. **Claim** queued leaves of published days, 10 per transaction, with backoff;
+   proof or day errors fail the leaf, others retry up to 5 times.
+4. **Close** a day `PAYOUT_GRACE_MS` after publication.
+
+Coins of a player without an account are not assigned and join the first
+payout after the account exists. While payouts run, the map-day worker only
+records the day budget (`budgetOnly`), so `claim_map` never pays the same coin.
+`GET /api/qgold/pending` (the player's waiting QGOLD in yoctoNEAR) and
+`payouts` in `GET /api/map/rewards/day` show the state.
+
 ## Leaf and tree
 
 ```

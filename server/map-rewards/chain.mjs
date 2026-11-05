@@ -288,7 +288,7 @@ export function queueMapClaims(db, { signer, contractId, day, now = Date.now() }
  */
 export async function runMapChainWorker(
   db,
-  { call, view = null, signer, contractId, now = Date.now(), maxClaims = 20, qgoldRate = null },
+  { call, view = null, signer, contractId, now = Date.now(), maxClaims = 20, qgoldRate = null, budgetOnly = false },
 ) {
   ensureMapChainSchema(db);
   const result = { published: null, queued: 0, sent: 0, closed: 0, failed: 0, budget: false };
@@ -303,6 +303,8 @@ export async function runMapChainWorker(
       // keep the last report
     }
   }
+  // Nightly payouts pay map coins instead (server/payouts/worker.mjs).
+  if (budgetOnly) return result;
   const plan = readDay(db, today);
   if (plan?.root) {
     const dayId = mapDayId(today);
