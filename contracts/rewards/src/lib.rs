@@ -8,6 +8,7 @@ use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, Promise,
 };
 mod map_days;
+mod payouts;
 const NEAR: u128 = 10u128.pow(24);
 const DAY_MS: u64 = 86_400_000;
 const CLAIM_LIMIT: u16 = 256;
