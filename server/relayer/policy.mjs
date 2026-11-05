@@ -512,6 +512,20 @@ export function validateDelegate(decoded, context) {
         "A timeout claim takes one roll id.",
       );
     else unsupported();
+  } else if (c.qgold != null && receiverId === c.qgold && method === "ft_burn") {
+    // Spending in game: the player burns their own QGOLD with the game's memo
+    // (server/gold-spend/qgold-burn.mjs). 1 yocto is the NEP-141 confirmation.
+    depositIs(1n, "A QGOLD burn");
+    demand(
+      plainObject(args) &&
+        keysOf(args, ["amount", "memo"]) &&
+        typeof args.amount === "string" &&
+        /^[1-9]\d{0,30}$/.test(args.amount) &&
+        typeof args.memo === "string" &&
+        /^questlayer:burn:[a-z]+:[0-9a-f]{16}$/.test(args.memo),
+      "RELAY_ARGS",
+      "A QGOLD burn takes an amount and the game's burn memo.",
+    );
   } else if (
     c.qgold != null &&
     c.qgoldEscrow != null &&

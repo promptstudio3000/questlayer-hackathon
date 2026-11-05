@@ -203,6 +203,7 @@ import { createGoldSpend } from "./gold-spend/service.mjs";
 import { createPlaces } from "./gold-spend/places.mjs";
 import { createPlaceSocial } from "./gold-spend/social.mjs";
 import { createGoldSpendRoutes } from "./gold-spend/routes.mjs";
+import { setSpendRealm } from "./gold-spend/ledger.mjs";
 import { defaultPoiSource } from "./poi-quests.mjs";
 import { chainLedgerSettings, createChainLedger } from "./chain-ledger/service.mjs";
 import { createLedgerChain, startLedgerWorker } from "./chain-ledger/chain.mjs";
@@ -402,6 +403,15 @@ const intentsManifest =
   intentsManifestPath && process.env.INTENTS_MARKET_ENABLED !== "0"
     ? JSON.parse(readFileSync(intentsManifestPath, "utf8"))
     : null;
+// The QGOLD token the relayer may sponsor burns on (and escrow funding).
+const qgoldTokenForRelay = (() => {
+  const path = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+  const settings = qgoldVaultSettings(
+    process.env,
+    existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null,
+  );
+  return settings.enabled ? settings.manifest?.tokenContract || settings.contract : undefined;
+})();
 const relayerService =
   managedAccounts && relayConfig.enabled
     ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
@@ -435,7 +445,7 @@ const relayer = managedAccounts
           npcGames: npcRolls?.contractId || undefined,
           intents: intentsManifest?.verifierContract || undefined,
           wnear: intentsManifest?.wnear || undefined,
-          qgold: escrowManifestForRelay()?.tokenId || undefined,
+          qgold: escrowManifestForRelay()?.tokenId || qgoldTokenForRelay,
           qgoldEscrow: escrowManifestForRelay()?.contractId || undefined,
           rewards: !featureEnabled("rewards")
             ? undefined
@@ -750,11 +760,34 @@ const goldSpend = createGoldSpend(db, {
 const placeMessages = createPlaces(db, {
   levelOf: (player) => demoProgression(db, player).level,
 });
+// With the QGOLD vault open every spend burns the player's own QGOLD on chain
+// (server/gold-spend/qgold-burn.mjs); GOLD_SPEND_REALM=practice keeps the old
+// practice balance for local testing only.
+const qgoldSpending = qgoldVault && process.env.GOLD_SPEND_REALM !== "practice";
+setSpendRealm(qgoldSpending ? "qgold" : "practice");
+const playerAccounts = (player) =>
+  db
+    .prepare("SELECT account_id FROM wallet_links WHERE player_id=? ORDER BY rowid DESC")
+    .all(player)
+    .map((r) => r.account_id);
 const goldSpendRoutes = createGoldSpendRoutes({
   gold: goldSpend,
   places: placeMessages,
   social: createPlaceSocial(db, featureEnabled("social") ? socialRecords : null),
   linkedAccount,
+  db,
+  qgold: qgoldSpending
+    ? {
+        contract: qgoldConfig.manifest?.tokenContract || qgoldConfig.contract,
+        accountIds: playerAccounts,
+        async balanceU(player) {
+          const account = playerAccounts(player)[0];
+          if (!account) return 0;
+          return Number((await qgoldVault.account(account)).balance || 0);
+        },
+        txStatus: (hash, account) => provider.txStatus(hash, account, "FINAL"),
+      }
+    : null,
 });
 // Daily board of three goals (docs/DAILY-BOARD.md): on by default except on
 // mainnet; DAILY_BOARD_* settings change the goals and bonus. No streak.
@@ -3576,6 +3609,7 @@ const server = createServer(async (req, res) => {
         {
           error: e.status ? e.message : "The request could not be completed.",
           code: e.code || "SERVER_ERROR",
+          ...(e.status && e.details ? { details: e.details } : {}),
         },
         e.status || 500,
       );

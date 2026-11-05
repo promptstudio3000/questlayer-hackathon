@@ -8,6 +8,8 @@
 //   POST /api/gold/lure {worldId, fix, kind, actorId?}  set a 30-minute lure (burn)
 //   GET  /api/gold/map?lat=&lng=              lures and place-message pins nearby
 //   GET  /api/gold/burns                      public burn totals
+//   POST /api/gold/burn/prepare {kind, amountU}   the ft_burn call to sign (QGOLD realm)
+//   POST /api/gold/burn/confirm {txHash}          verify that burn and keep it as a credit
 //   GET  /api/places?lat=&lng=&radiusKm=&sort=   the local feed
 //   POST /api/places {kind, text, title?, days, lat, lng, fix?, arena, publicConsent}
 //   GET  /api/places/:id                      open a shout or topic (counts a read)
@@ -17,9 +19,29 @@
 //   DELETE /api/places/:id                    the author removes a message or post
 //   POST /api/places/follow {playerId, on}    follow an author for the Following feed
 //   POST /api/places/:id/social/prepare|confirm {accountId, ...}   NEAR Social record
+import { BURN_KINDS, spendRealm } from "./ledger.mjs";
+import { confirmQgoldBurn, ensureQgoldBurns, prepareQgoldBurn } from "./qgold-burn.mjs";
+
 const ONE = /^\/api\/places\/((?:place|post)_[a-f0-9-]{36})(?:\/(extend|posts|report|social\/prepare|social\/confirm))?$/;
 
-export function createGoldSpendRoutes({ gold, places, social, linkedAccount = () => null }, { rates = new Map() } = {}) {
+export function createGoldSpendRoutes(
+  { gold, places, social, linkedAccount = () => null, qgold = null, db = null },
+  { rates = new Map() } = {},
+) {
+  // Created up front: a spend's transaction may roll back the first use.
+  if (db) ensureQgoldBurns(db);
+  // QGOLD realm: balances are the player's QGOLD on chain, spends are burns.
+  const onChain = () => spendRealm() === "qgold" && qgold;
+  async function withBalance(player, view) {
+    if (!onChain()) return view;
+    let balanceU = 0;
+    try {
+      balanceU = await qgold.balanceU(player);
+    } catch {
+      /* the shop still opens; the burn itself checks the balance on chain */
+    }
+    return { ...view, realm: "qgold", balanceU };
+  }
   function limit(key, max, assert) {
     const k = `${key}:${Math.floor(Date.now() / 60_000)}`,
       n = (rates.get(k) || 0) + 1;
@@ -42,7 +64,37 @@ export function createGoldSpendRoutes({ gold, places, social, linkedAccount = ()
       }
       assert(player, "Sign in first.", 401, "AUTH");
       limit(`gold:${player}`, 120, assert);
-      if (path === "/api/gold/shop" && method === "GET") return respond(res, gold.shop(player)), true;
+      if (path === "/api/gold/shop" && method === "GET") return respond(res, await withBalance(player, gold.shop(player))), true;
+      if (path === "/api/gold/burn/prepare" && method === "POST") {
+        assert(onChain(), "QGOLD spending is not open here.", 503, "QGOLD_DISABLED");
+        const i = await body(req);
+        return (
+          respond(
+            res,
+            prepareQgoldBurn({
+              contract: qgold.contract,
+              accountId: qgold.accountIds(player)[0] || null,
+              kind: i.kind,
+              amountU: i.amountU,
+              kinds: BURN_KINDS,
+            }),
+          ),
+          true
+        );
+      }
+      if (path === "/api/gold/burn/confirm" && method === "POST") {
+        assert(onChain(), "QGOLD spending is not open here.", 503, "QGOLD_DISABLED");
+        limit(`burn:${player}`, 20, assert);
+        const i = await body(req);
+        const credit = await confirmQgoldBurn(db, {
+          player,
+          accountIds: qgold.accountIds(player),
+          contract: qgold.contract,
+          txHash: i.txHash,
+          txStatus: qgold.txStatus,
+        });
+        return respond(res, { kind: credit.kind, amountU: credit.amount_u, memo: credit.memo }), true;
+      }
       if (path === "/api/gold/buy" && method === "POST") return respond(res, gold.buy(player, await body(req))), true;
       if (path === "/api/gold/equip" && method === "POST") return respond(res, gold.equip(player, await body(req))), true;
       if (path === "/api/gold/emote" && method === "POST") {
@@ -50,7 +102,8 @@ export function createGoldSpendRoutes({ gold, places, social, linkedAccount = ()
         return respond(res, gold.emote(player, await body(req))), true;
       }
       if (path === "/api/gold/gear" && method === "POST") return respond(res, await gold.buyGear(player, await body(req))), true;
-      if (path === "/api/gold/lure/quote" && method === "POST") return respond(res, gold.lureQuote(player, await body(req))), true;
+      if (path === "/api/gold/lure/quote" && method === "POST")
+        return respond(res, await withBalance(player, gold.lureQuote(player, await body(req)))), true;
       if (path === "/api/gold/lure" && method === "POST") {
         limit(`lure:${player}`, 6, assert);
         return respond(res, gold.setLure(player, await body(req)), 201), true;

@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Lightning, Trophy, Timer } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
+import { withQgoldBurn } from "./qgold-burn";
 import { Dialog } from "./Dialog";
 import { ChallengePlay } from "./MonsterChallenge";
 import { retryLabel, type Challenge, type MonsterRef } from "./monster-challenge";
@@ -131,7 +132,9 @@ export function BossFight({
     setBusy(true);
     setError(null);
     try {
-      const r = await api<Pouch & { crafted: { item: { name: string } } }>("/hunt/craft", { worldId, ...(recipe ? { recipe } : {}) });
+      const r = await withQgoldBurn(() =>
+        api<Pouch & { crafted: { item: { name: string } } }>("/hunt/craft", { worldId, ...(recipe ? { recipe } : {}) }),
+      );
       setPouch(r);
       setCrafted(r.crafted.item.name);
     } catch (e) {

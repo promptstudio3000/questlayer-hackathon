@@ -9,14 +9,31 @@ vault, so every burn raises the backing rate R for all holders.
 
 ## Realms
 
-- **Now: practice GOLD.** `burnGold()` (`server/gold-spend/ledger.mjs`) takes the
-  amount out of `players.gold_u` inside the caller's transaction and writes a
-  `gold_burns` row with a memo `questlayer:burn:<kind>:<ref>` (at most 200 bytes).
-- **Once the QGOLD vault is live** (stream 1, `docs/QGOLD-VAULT.md`): the player's
-  account calls `ft_burn({amount, memo})` with 1 yocto on the QGOLD contract read
-  from `public/native-qgold-vault-testnet.json`. The same `gold_burns` rows carry
-  `realm='qgold'` and the memo. Until that manifest exists, spending stays on
-  practice GOLD.
+- **QGOLD (default whenever the QGOLD vault manifest exists).** Every spend burns
+  the player's own QGOLD on chain first:
+  1. The spend endpoint answers `402 QGOLD_BURN` with `details: {kind, amountU}`.
+  2. `POST /api/gold/burn/prepare {kind, amountU}` returns the exact call:
+     `ft_burn({amount, memo})` with 1 yocto on the QGOLD token, memo
+     `questlayer:burn:<kind>:<16 hex>`, signed by the player's latest linked
+     NEAR account. The relayer sponsors exactly this call
+     (`server/relayer/policy.mjs`), so the explorer account needs no popup.
+  3. `POST /api/gold/burn/confirm {txHash}` reads the final transaction from
+     RPC and checks the signer (a linked account), the receiver (the token),
+     success and the nep141 `ft_burn` event with the game memo. It stores one
+     credit in `qgold_burn_credits` (module `qgold-burns`); a hash counts once.
+  4. The client (`src/qgold-burn.ts`) runs the same spend again. `burnGold()`
+     takes one unused credit of the same kind and amount inside the spend's
+     transaction and writes `gold_burns` with `realm='qgold'` and the burn's
+     memo. `players.gold_u` is not touched.
+
+  If the spend still fails after the burn (sold out, lure blocked), the credit
+  stays unused and pays the next spend of the same kind and amount. The shop and
+  lure quote show the QGOLD balance of the linked account (`balanceU`, 6 decimals).
+  An external wallet that does not report the transaction hash cannot confirm a
+  burn; the explorer account always can.
+- **Practice (local testing only).** With no QGOLD vault, or
+  `GOLD_SPEND_REALM=practice`, `burnGold()` takes the amount out of
+  `players.gold_u` as before.
 
 Public totals: `GET /api/gold/burns`.
 

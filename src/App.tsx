@@ -78,6 +78,7 @@ import { useAdventureSelection } from "./useAdventureSelection";
 import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
 import { walletSigner, type NativeSigner } from "./native-signer";
 import type { MarketFunding } from "./NearbyMarket";
+import { setQgoldBurner, type QgoldBurnCall } from "./qgold-burn";
 import { useInvisibleAccount } from "./useInvisibleAccount";
 import "./map-notes.css";
 import { useNativeGame } from "./useNativeGame";
@@ -2064,6 +2065,30 @@ export default function App() {
       { playerId: player!.id },
     );
   }
+  // GOLD spending burns the explorer's own QGOLD (src/qgold-burn.ts): the
+  // explorer account signs without a popup, an external wallet asks.
+  async function burnQgold(call: QgoldBurnCall) {
+    const { signer, accountId } = await signerForAccount(call.signerId);
+    if (accountId !== call.signerId)
+      throw Error(tr("Pay with the account that holds your QGOLD: {0}", { 0: call.signerId }));
+    return signer.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: accountId,
+        receiverId: call.receiverId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: { methodName: call.methodName, args: call.args, gas: call.gas, deposit: call.deposit },
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
+  }
+  useEffect(() => {
+    setQgoldBurner(player ? burnQgold : null);
+  });
   async function tradeNative(request: NativeTradeRequest): Promise<boolean> {
     const result = await action("native-market", async () => {
       const { signer, accountId } = await resolveSigner();

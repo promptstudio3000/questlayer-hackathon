@@ -19,7 +19,7 @@ export function NpcGear({ actorId, encounter }: { actorId: string; encounter: st
   return (
     <div className="npc-gear">
       <p className="npc-gear-title">
-        <Storefront weight="duotone" /> {tr("Premium gear for GOLD")} · {gold(shop.balanceU, 0)}
+        <Storefront weight="duotone" /> {tr("Premium gear for GOLD")} · {gold(shop.balanceU, shop.realm === "qgold" ? 6 : 0)}
       </p>
       {done && <p className="gold-shop-note">{tr("One premium piece per day. Come back tomorrow.")}</p>}
       {shop.gear.items.map((g) => (

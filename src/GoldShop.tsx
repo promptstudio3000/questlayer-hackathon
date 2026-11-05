@@ -17,7 +17,8 @@ import {
 import "./gold-spend.css";
 
 // GOLD shop (QGOLD stream 4): everything here burns GOLD. Nothing pays another
-// player or changes odds. Until the QGOLD vault is live it spends practice GOLD.
+// player or changes odds. With the QGOLD vault open each purchase burns the
+// player's own QGOLD on chain first (src/qgold-burn.ts).
 const FRAME_NAME: Record<string, () => string> = {
   "frame-ember": () => tr("Ember frame"),
   "frame-frost": () => tr("Frost frame"),
@@ -81,8 +82,12 @@ export function GoldShop({
         <Sparkle weight="duotone" /> {tr("Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.")}
       </p>
       <p className="gold-shop-balance">
-        {tr("Your GOLD")}: <b>{gold(shop.balanceU, 0)}</b>
-        {shop.realm === "practice" && <small> · {tr("practice GOLD until the QGOLD vault opens")}</small>}
+        {shop.realm === "qgold" ? tr("Your QGOLD") : tr("Your GOLD")}: <b>{gold(shop.balanceU, shop.realm === "qgold" ? 6 : 0)}</b>
+        {shop.realm === "qgold" ? (
+          <small> · {tr("each purchase burns QGOLD from your NEAR account")}</small>
+        ) : (
+          <small> · {tr("practice GOLD until the QGOLD vault opens")}</small>
+        )}
       </p>
 
       <section aria-labelledby="gold-emotes">

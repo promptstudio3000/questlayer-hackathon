@@ -651,7 +651,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Fees, spending and the task market",
     summary: "Where fees go, what GOLD can buy, and how tasks, Secrets and conditional sends settle.",
     status: "partial",
-    updated: "2026-11-04",
+    updated: "2026-11-05",
     sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json"],
     blocks: [
       { viz: "fees" },
@@ -666,7 +666,7 @@ export const CHAPTERS: Chapter[] = [
           `NPC gear: one chest-edition Aura a day from a trader (rare ${GOLD.gear.price.rare}, epic ${GOLD.gear.price.epic} GOLD).`,
           `Lures: ${GOLD.lures.minutes} minutes, GPS only, ${GOLD.lures.hours.join("–")}, at least ${GOLD.lures.spacingM} m apart, snapped to a safe place within ${GOLD.lures.poiSnapM} m. They attract actors; they never change odds.`,
           "Place messages: paid shouts live up to 7 days; a topic with posts from 6 distinct authors becomes free forever and is archived after 90 days without activity.",
-          "Every spend writes a burn row with memo `questlayer:burn:<kind>:<ref>`; with QGOLD the same memo goes into `ft_burn`.",
+          "Every spend burns real QGOLD: the player's own account calls `ft_burn` on the QGOLD token with the game's memo (sponsored, no popup on the explorer account), the server verifies that transaction on chain, and only then the purchase happens. The backing stays in the vault, so every burn raises R for all holders.",
         ],
       },
       { h: "Task market, Secrets and conditional sends" },

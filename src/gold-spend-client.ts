@@ -1,5 +1,6 @@
 // Client for GOLD spending and place messages (server/gold-spend/routes.mjs).
 import { api } from "./api";
+import { withQgoldBurn } from "./qgold-burn";
 
 export type ShopEmote = { id: string; price: number; owned: boolean; free: boolean };
 export type ShopCosmetic = { id: string; slot: string; price: number; owned: boolean; equipped: boolean };
@@ -102,14 +103,17 @@ async function send<T>(path: string, method: string, data?: unknown): Promise<T>
 }
 
 export const goldShop = () => api<Shop>("/gold/shop");
-export const goldBuy = (sku: string) => api<{ sku: string; balanceU: number }>("/gold/buy", { sku });
+export const goldBuy = (sku: string) =>
+  withQgoldBurn(() => api<{ sku: string; balanceU: number | null }>("/gold/buy", { sku }));
 export const goldEquip = (frame: string | null) => api("/gold/equip", { frame });
 export const goldEmote = (emote: string) => api<{ emote: string; until: number }>("/gold/emote", { emote });
 export const goldGear = (actorId: string, encounter: string, edition: string) =>
-  api<{ item: { id: string; name: string }; balanceU: number }>("/gold/gear", { actorId, encounter, edition });
+  withQgoldBurn(() =>
+    api<{ item: { id: string; name: string }; balanceU: number | null }>("/gold/gear", { actorId, encounter, edition }),
+  );
 export const lureQuote = (worldId: string, fix: Fix) => api<LureQuote>("/gold/lure/quote", { worldId, fix });
 export const setLure = (worldId: string, fix: Fix, kind: string, actorId: string | null) =>
-  api<{ lure: LureView; balanceU: number }>("/gold/lure", { worldId, fix, kind, actorId });
+  withQgoldBurn(() => api<{ lure: LureView; balanceU: number | null }>("/gold/lure", { worldId, fix, kind, actorId }));
 export const goldMap = (lat: number, lng: number) => api<GoldMap>(`/gold/map?lat=${lat}&lng=${lng}`);
 
 export const placeFeed = (lat: number, lng: number, radiusKm: number, sort: PlaceSort) =>
@@ -125,8 +129,9 @@ export const placeCreate = (input: {
   arena: boolean;
   fix?: Fix | null;
   publicConsent: true;
-}) => api<{ thread: PlaceThread; balanceU: number }>("/places", input);
-export const placeExtend = (id: string, days: number) => api<{ thread: PlaceThread }>(`/places/${id}/extend`, { days });
+}) => withQgoldBurn(() => api<{ thread: PlaceThread; balanceU: number | null }>("/places", input));
+export const placeExtend = (id: string, days: number) =>
+  withQgoldBurn(() => api<{ thread: PlaceThread }>(`/places/${id}/extend`, { days }));
 export const placePost = (id: string, text: string) =>
   api<{ thread: PlaceThread; becameFree: boolean }>(`/places/${id}/posts`, { text });
 export const placeReport = (id: string, reason: string) => api(`/places/${id}/report`, { reason });
