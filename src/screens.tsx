@@ -64,7 +64,7 @@ export type CommunityTab = "quests" | "tasks" | "notes" | "places" | "creators";
 export const COMMUNITY_TABS: readonly ScreenTab<CommunityTab>[] = [
   { id: "quests", get label() { return tr("Quests"); }, icon: Scroll },
   { id: "tasks", get label() { return tr("Tasks"); }, icon: Flag },
-  { id: "notes", get label() { return tr("Notes"); }, icon: ChatCircle },
+  { id: "notes", get label() { return tr("Local chat"); }, icon: ChatCircle },
   { id: "places", get label() { return tr("Places"); }, icon: Megaphone },
   { id: "creators", get label() { return tr("Creators"); }, icon: PencilSimpleLine },
 ];
