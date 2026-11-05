@@ -2,8 +2,8 @@
   "network": "testnet",
   "verifiedAt": "2026-11-01T12:31:34.699Z",
   "contractId": "questlayer-rewards-20261101b.testnet",
-  "codeHash": "GuSH4Yn5WxhaLnYkoscuHK7wxkzhWhY8yhoP64pFQkWE",
-  "wasmSha256": "ec4e162fe0a1c83aa727bf1d52803906e6351ea163891d6077c5012a763f3dc3",
+  "codeHash": "EeXroUJRzyAqpsaDsMN1KcH6yDpdHVU61w5LS2FvcDrd",
+  "wasmSha256": "cac54fdc555d9e5e0033e7c6c578118a1e128fd114ff42e101b9b9cc96610f36",
   "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
   "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
   "factory": {
@@ -123,6 +123,9 @@
     "maintain_vault",
     "publish_map_day",
     "claim_map",
-    "close_map_day"
+    "close_map_day",
+    "publish_payout_day",
+    "claim_payout",
+    "close_payout_day"
   ]
 }

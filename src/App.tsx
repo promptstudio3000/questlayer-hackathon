@@ -77,6 +77,7 @@ import { makeNativeObjective } from "./native-objective";
 import { useAdventureSelection } from "./useAdventureSelection";
 import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
 import { walletSigner, type NativeSigner } from "./native-signer";
+import type { MarketFunding } from "./NearbyMarket";
 import { useInvisibleAccount } from "./useInvisibleAccount";
 import "./map-notes.css";
 import { useNativeGame } from "./useNativeGame";
@@ -2041,6 +2042,28 @@ export default function App() {
       );
     });
   }
+  // Task market, Secrets and sends: the explorer pays real QGOLD into the
+  // market escrow from the account the server named (sponsored, no popup on
+  // the explorer account).
+  async function fundMarketEscrow(call: MarketFunding) {
+    const { signer, accountId } = await signerForAccount(call.signerId);
+    if (accountId !== call.signerId)
+      throw Error(tr("Pay with the account that holds your QGOLD: {0}", { 0: call.signerId }));
+    await signer.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: accountId,
+        receiverId: call.receiverId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: { methodName: call.methodName, args: call.args, gas: call.gas, deposit: call.deposit },
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
+  }
   async function tradeNative(request: NativeTradeRequest): Promise<boolean> {
     const result = await action("native-market", async () => {
       const { signer, accountId } = await resolveSigner();
@@ -3657,7 +3680,7 @@ export default function App() {
                     ? { ...position, accuracy: 0, timestamp: Date.now() }
                     : fix
                 }
-                gold={player.gold_u}
+                fund={fundMarketEscrow}
                 notify={notify}
                 onBalance={() => void me()}
               />

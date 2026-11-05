@@ -99,3 +99,18 @@ test("a linked Ethereum wallet's secp256k1 key can be registered for ERC-191 int
   await rejects(delegate(CONTRACTS.intents, "add_public_key", { public_key: "secp256k1:abc" }, 1n), "RELAY_ARGS");
   await rejects(delegate(CONTRACTS.intents, "add_public_key", { public_key: evmKey, extra: 1 }, 1n), "RELAY_ARGS");
 });
+
+test("QGOLD goes only into the market escrow, with 1 yocto", async () => {
+  const contracts = { ...CONTRACTS, qgold: "questlayer-qgold-vault-20261104.testnet", qgoldEscrow: "questlayer-qgold-escrow-20261105.testnet" };
+  const msg = JSON.stringify({ kind: "task", id: "task_1", reward: "1000000", deadline_ms: "1800000000000", slots: 1 });
+  const ok = validateDelegate(
+    await delegate(contracts.qgold, "ft_transfer_call", { receiver_id: contracts.qgoldEscrow, amount: "1100000", memo: null, msg }, 1n),
+    ctx(contracts),
+  );
+  assert.equal(ok.methodName, "ft_transfer_call");
+  await rejects(delegate(contracts.qgold, "ft_transfer_call", { receiver_id: "eve.testnet", amount: "1", msg }, 1n), "RELAY_ARGS", ctx(contracts));
+  await rejects(delegate(contracts.qgold, "ft_transfer_call", { receiver_id: contracts.qgoldEscrow, amount: "1", msg }, 0n), "RELAY_DEPOSIT", ctx(contracts));
+  await rejects(delegate(contracts.qgold, "ft_transfer", { receiver_id: contracts.qgoldEscrow, amount: "1" }, 1n), "RELAY_RECEIVER", ctx(contracts));
+  // Without an escrow manifest nothing on the token is sponsored by this rule.
+  await rejects(delegate(contracts.qgold, "ft_transfer_call", { receiver_id: contracts.qgoldEscrow, amount: "1", msg }, 1n), "RELAY_RECEIVER", ctx({ ...CONTRACTS, qgold: contracts.qgold }));
+});

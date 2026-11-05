@@ -10,7 +10,7 @@
     "questlayer_market": "1642a65af521b17b9d46786d66d1606c223cbf68d6a53cd90d620ce8ce225435",
     "questlayer_npc_games": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
     "questlayer_qgold": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
-    "questlayer_qgold_escrow": "5d375a2cc25ae6817ab6820d5777e9ec3459d888cd7dd52a055b869e78210452",
+    "questlayer_qgold_escrow": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da",
     "questlayer_rewards": "cac54fdc555d9e5e0033e7c6c578118a1e128fd114ff42e101b9b9cc96610f36",
     "questlayer_soulbound_ft": "2746a77ec1de90c9b9a8054769922d0a2027cec8c15f743fcd66b89b3c572293",
     "questlayer_tasks": "055954f30c81b4dfd56b3bd9a88c469aeb74c50d5eb4eb83f9aeb5b8bbc51751",
@@ -62,11 +62,6 @@
       "contract": "questlayer_collectibles",
       "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
       "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
-    },
-    "public/native-rewards-testnet.json:wasmSha256": {
-      "contract": "questlayer_rewards",
-      "sha256": "ec4e162fe0a1c83aa727bf1d52803906e6351ea163891d6077c5012a763f3dc3",
-      "note": "Live testnet code before daily payouts (payouts.rs). node scripts/deploy-qgold-testnet.mjs --reviewed upgrades it in place and removes this entry."
     }
   }
 }

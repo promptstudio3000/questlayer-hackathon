@@ -6,11 +6,37 @@ Testnet only.
 
 ## Settlement
 
-- **Today:** practice GOLD (`players.gold_u`), server module `server/market/`. Every row records
-  `currency = 'practice'`.
-- **With the QGOLD vault:** the same flows settle in QGOLD through `contracts/qgold-escrow`
-  (docs/QGOLD-ESCROW.md). The game server is the escrow `publisher` (it verifies GPS and answers
-  off chain); disputes go to the escrow `moderator`.
+All money is real QGOLD (6 decimals; 1 micro-GOLD = 1 base unit) held by `contracts/qgold-escrow`
+(docs/QGOLD-ESCROW.md). `players.gold_u` is never read or written by the market.
+
+1. The server creates the row in state `funding` and returns the exact call the player signs:
+   `ft_transfer_call(receiver_id = escrow, amount, msg)` on the QGOLD token, 1 yocto, 200 Tgas.
+   The relayer sponsors it for the explorer account (policy: only into the escrow).
+2. The app signs it (`fundMarketEscrow` in `src/App.tsx`) and calls `POST /api/market/funded {id}`.
+   The server reads `get_task` / `get_secret` / `get_transfer` and opens the row when the funder,
+   amount and terms match. The escrow worker re-checks waiting fundings every 15 s and drops rows
+   that never arrived after 2 h.
+3. Every payout or refund is a queued publisher call in `mk_chain_ops` (`server/market/chain.mjs`),
+   written in the same database transaction as the row change and sent in order per escrow id.
+   After a payout the worker calls `withdraw_for(account)`, so QGOLD lands in the receiver's
+   account without them doing anything.
+
+| Market event | Escrow call |
+| --- | --- |
+| task posted / counteroffer accepted | player `ft_transfer_call` kind `task` (the counteroffer extra is its own escrow task with the worker as assignee) |
+| auto-checked completion | `approve_task(id, worker)` |
+| proof waits for review | `open_dispute(id, worker)` holds the slot |
+| review approved / timeout / moderator pays | `resolve_dispute(id, worker, true)` (or `approve_task` without a hold) |
+| review rejected / moderator rejects | `resolve_dispute(id, worker, false)` |
+| task cancelled or expired | `cancel_task(id)` (refunds every unpaid slot and its fee to the poster) |
+| Secret reveal (paid) | player `ft_transfer_call` kind `secret`; then `confirm_visit`, `release_secret` after 7 days, `dispute_secret`, `resolve_secret` |
+| sponsored Secret | sponsor funds a `task` with a slot per visit; each finder visit is `approve_task`; closing is `cancel_task` |
+| conditional send | player `ft_transfer_call` kind `transfer`; `confirm_transfer`, `release_transfer`, `confirm_transfer_gps`, `decline_transfer`, `refund_transfer` |
+
+Limits that come from the escrow: a task pays at most 50 completions over all rounds; an account is
+paid once per task (also across recurring rounds); a sponsored Secret funds 1–50 visits; a sender
+gets an unreleased send back only after it expires (the receiver can decline sooner). Everyone who
+moves QGOLD needs a NEAR account (the explorer account is created at login).
 
 | Flow | Who pays | Fee to treasury |
 | --- | --- | --- |
@@ -106,13 +132,13 @@ Moderators are `MARKET_MODERATORS` (player ids or NEAR accounts, comma separated
 
 ## Invariant
 
-Every GOLD that leaves a player sits in exactly one escrow row until it is paid or refunded.
-Closed rows hold nothing (`marketInvariant`). `tests/task-market.test.mjs` checks that player
-balances, held escrow and fees add up to what the players started with.
+Every QGOLD that leaves a player sits in the escrow contract until it is paid or refunded; the
+contract asserts `total_held == escrowed + credits + pending` after every change. The database
+mirrors it: closed rows hold nothing (`marketInvariant`). `tests/task-market.test.mjs` checks each
+flow's escrow calls; `contracts/qgold-escrow/src/tests.rs` checks the money.
 
 ## Not yet
 
-- QGOLD settlement waits for the vault stream and a transferable QGOLD token.
 - Drawing Secret fog circles on the map; for now they are in the Nearby list.
 - Creating route Secrets from the UI.
 - Photo upload for task proof; proof is text with a link for now.
