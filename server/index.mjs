@@ -53,6 +53,7 @@ import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
+import { payoutsEnabled, payoutStatus, pendingPayout } from "./payouts/worker.mjs";
 import { allocationSettings } from "./native/allocation.mjs";
 import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
@@ -1355,7 +1356,7 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/map/rewards/day" && method === "GET") {
-    const day = mapRewardsDay(db);
+    const day = { ...mapRewardsDay(db), payouts: payoutsEnabled() ? payoutStatus(db) : null };
     return respond(res, day, 200, { "Cache-Control": "public, max-age=60" });
   }
   if (path === "/api/map/rewards/proof" && method === "GET") {
@@ -1926,6 +1927,10 @@ async function api(req, res, url) {
   if (url.pathname === "/api/qgold/account" && req.method === "GET") {
     assert(qgoldVault, "The QGOLD vault is not open here.", 503, "QGOLD_DISABLED");
     return respond(res, await qgoldVault.account(url.searchParams.get("account") || ""));
+  }
+  // QGOLD this player collected that the nightly payout has not minted yet.
+  if (url.pathname === "/api/qgold/pending" && req.method === "GET") {
+    return respond(res, { ...pendingPayout(db, player), enabled: payoutsEnabled() });
   }
   if (url.pathname === "/api/yield/position" && req.method === "GET") {
     assert(yieldVaultReader, "The yield vault is not open here.", 503, "YIELD_VAULT_DISABLED");

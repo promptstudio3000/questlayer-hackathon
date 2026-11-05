@@ -769,7 +769,7 @@ export const CHAPTERS: Chapter[] = [
     summary: "One Merkle root per day of what every account earned, paid straight into the QGOLD vault with no daily claim limit.",
     status: "off",
     updated: "2026-11-05",
-    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "server/payouts/payout-tree.mjs"],
+    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
     blocks: [
       {
         p: "Every backed coin is real QGOLD. After the day ends the server sums each account's earnings in NEAR and the rewards contract pays every account once from a single published root, instead of one receipt per coin (which allowed only 240 claims a day).",
@@ -790,8 +790,18 @@ export const CHAPTERS: Chapter[] = [
           ["Limits", "Up to 262,144 accounts a day; 10 leaves per claim transaction"],
         ],
       },
+      { h: "The nightly worker" },
       {
-        note: "The contract code is built and tested; it goes live after the testnet rewards upgrade and once the server publishes payout days.",
+        list: [
+          "After local midnight (Europe/Prague) the reward worker collects every backed map coin and cell-zone prize of GPS worlds that is not paid yet, prices it in NEAR at the rate its day was planned with, sums it per account and publishes the day.",
+          "Then it sends `claim_payout` in batches of 10 until every leaf is paid, and closes the day after the grace period.",
+          "A player without a NEAR account yet keeps their coins waiting; they join the first payout after the account exists. `GET /api/qgold/pending` shows what is still on its way (in micro-QGOLD `units`, with `awaitingAccount` for coins collected before an account existed).",
+          "Profile · Wallet shows the QGOLD balance on the linked NEAR account and the amount the next payout brings. Pickup messages count QGOLD; there is no practice GOLD. The old practice stake for zone tiers stays as a labelled simulation.",
+          "While payouts are on, map days no longer send `claim_map`, so a coin is never paid twice. The demo arena gives XP only and never pays.",
+        ],
+      },
+      {
+        note: "Switched on with `MAP_PAYOUTS=1` once the testnet rewards contract is upgraded and the worker key holds the three payout methods.",
         tone: "info",
       },
     ],

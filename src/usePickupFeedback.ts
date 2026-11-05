@@ -52,7 +52,7 @@ export function usePickupFeedback(scope: string, blocked: boolean) {
           previous.scope === current.scope
             ? {
                 ...previous,
-                announcement: `${batch.count} ${batch.count === 1 ? "coin" : "coins"}: ${gold(batch.amount, 6)} practice GOLD and ${batch.xp} XP confirmed. ${total} this session.`,
+                announcement: `${batch.count} ${batch.count === 1 ? "coin" : "coins"}: ${gold(batch.amount, 6)} QGOLD and ${batch.xp} XP confirmed. ${total} this session.`,
               }
             : previous,
         );

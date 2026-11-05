@@ -85,6 +85,8 @@ bigger. The sky chip shows the time of the next coin wave.
   (about 2.6 NEAR of storage) until it closes, so the contract needs about five days of separate storage
   reserve; `node scripts/topup-rewards-storage.mjs [--send]` tops it up from the operator. Without it
   `publish_map_day` traps ("Top up separate storage and gas funding before publication").
+- `MAP_PAYOUTS=1`: map coins and cell zones are paid by the nightly payout (docs/DAILY-PAYOUTS.md), one
+  leaf per account per day, and `claim_map` is no longer sent (the map day worker only records the budget).
 - **Caps grow with the treasury.** The rewards contract caps each date at max(0.1 NEAR, 10 % of each
   bucket's funding) (`date_cap`). City days together take at most max(0.006 NEAR, 4 % of a bucket's
   funding) (`scaledBucketCap`), and a map day at most half of the date cap, within what the city days
