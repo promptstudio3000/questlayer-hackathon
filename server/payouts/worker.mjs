@@ -22,7 +22,7 @@ import {
   ensureModuleVersion,
 } from "../schema-compatibility.mjs";
 import { localDateBounds, shiftDate } from "../spatial/calendar.mjs";
-import { yoctoPerUnit } from "../map-rewards/budget.mjs";
+import { mapDayBudget, yoctoPerUnit } from "../map-rewards/budget.mjs";
 import { MAP_TIMEZONE, readDay } from "../map-rewards/day-plan.mjs";
 import { DEFAULT_QGOLD_RATE_YOCTO } from "../map-rewards/policy.mjs";
 import {
@@ -81,7 +81,7 @@ function dayRate(db, day, cache) {
  * Backed rewards collected before `before` and not paid yet, with the
  * collector's NEAR account (rows without one are left for a later payout).
  */
-export function unpaidRewards(db, before) {
+export function unpaidRewards(db, before, { unlinked = false } = {}) {
   ensurePayoutSchema(db);
   const out = [],
     rates = new Map();
@@ -108,12 +108,13 @@ export function unpaidRewards(db, before) {
       )
       .all(before)) {
       const acc = account(r.claimant);
-      if (!acc) continue;
+      if (!acc && !unlinked) continue;
       out.push({
         kind: "coin",
         ref: r.id,
         player: r.claimant,
         accountId: acc,
+        units: BigInt(r.value_u),
         amountYocto: BigInt(r.value_u) * dayRate(db, r.day, rates),
       });
     }
@@ -128,12 +129,13 @@ export function unpaidRewards(db, before) {
     )
     .all(before)) {
     const acc = account(q.claimant);
-    if (!acc) continue;
+    if (!acc && !unlinked) continue;
     out.push({
       kind: "zone",
       ref: q.id,
       player: q.claimant,
       accountId: acc,
+      units: BigInt(q.gold_u),
       amountYocto: BigInt(q.gold_u) * dayRate(db, q.day, rates),
     });
   }
@@ -279,16 +281,34 @@ export async function runPayoutWorker(db, { call, now = Date.now(), maxBatches =
  */
 export function pendingPayout(db, player) {
   ensurePayoutSchema(db);
-  const waiting = unpaidRewards(db, Number.MAX_SAFE_INTEGER).filter((i) => i.player === player);
+  const waiting = unpaidRewards(db, Number.MAX_SAFE_INTEGER, { unlinked: true }).filter(
+    (i) => i.player === player,
+  );
+  const linked = waiting.filter((i) => i.accountId);
   const queued = db
     .prepare(
       "SELECT i.amount_yocto FROM payout_items i JOIN payout_claims c ON c.day_id=i.day_id AND c.account_id=i.account_id WHERE i.player_id=? AND c.state='queued'",
     )
     .all(player);
-  const yocto =
-    waiting.reduce((n, i) => n + i.amountYocto, 0n) +
-    queued.reduce((n, r) => n + BigInt(r.amount_yocto), 0n);
-  return { yocto: String(yocto), items: waiting.length + queued.length };
+  const queuedYocto = queued.reduce((n, r) => n + BigInt(r.amount_yocto), 0n);
+  const yocto = linked.reduce((n, i) => n + i.amountYocto, 0n) + queuedYocto;
+  // micro-QGOLD: exact for rewards not built into a payout day yet, at the
+  // current backing rate for the ones already queued on chain.
+  const perUnit = yoctoPerUnit(mapDayBudget(db).rateYocto);
+  const units =
+    waiting.reduce((n, i) => n + i.units, 0n) + (perUnit > 0n ? queuedYocto / perUnit : 0n);
+  const accountId =
+    db
+      .prepare("SELECT account_id FROM wallet_links WHERE player_id=? ORDER BY rowid DESC LIMIT 1")
+      .get(player)?.account_id || null;
+  return {
+    accountId,
+    yocto: String(yocto),
+    units: Number(units),
+    items: waiting.length + queued.length,
+    // Collected before the player had a NEAR account: paid once they have one.
+    awaitingAccount: waiting.length - linked.length,
+  };
 }
 
 /** Public status of the last payout days. */

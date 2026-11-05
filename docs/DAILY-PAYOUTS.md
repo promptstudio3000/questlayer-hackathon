@@ -53,7 +53,7 @@ holds all 10 methods. Each pass:
 Coins of a player without an account are not assigned and join the first
 payout after the account exists. While payouts run, the map-day worker only
 records the day budget (`budgetOnly`), so `claim_map` never pays the same coin.
-`GET /api/qgold/pending` (the player's waiting QGOLD in yoctoNEAR) and
+`GET /api/qgold/pending` (the player's waiting QGOLD: `yocto`, micro-QGOLD `units`, `awaitingAccount`, `accountId`) and
 `payouts` in `GET /api/map/rewards/day` show the state.
 
 ## Leaf and tree

@@ -476,7 +476,7 @@ export function Inventory({
           </div>
           <dl className="inv-stats">
             <div>
-              <dt>{tr("Practice GOLD")}</dt>
+              <dt>{tr("QGOLD earned")}</dt>
               <dd>
                 <Coins size={16} weight="fill" aria-hidden="true" />
                 {compactGold(player.gold_u)}

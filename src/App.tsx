@@ -1987,8 +1987,8 @@ export default function App() {
         options.signIn
           ? r.returning
             ? tr("Welcome back, explorer. Your account restored your progress.")
-            : tr("Your explorer is ready. Practice GOLD stays separate from secured rewards.")
-          : tr("Account linked. Practice GOLD stays separate from secured rewards."),
+            : tr("Your explorer is ready. Coins you collect are paid in QGOLD to your NEAR account after midnight.")
+          : tr("Account linked. Coins you collect are paid in QGOLD to this NEAR account after midnight."),
       );
     });
   }
@@ -2021,7 +2021,7 @@ export default function App() {
         options.signIn
           ? r.returning
             ? tr("Welcome back, explorer. Your account restored your progress.")
-            : tr("Your explorer is ready. Practice GOLD stays separate from secured rewards.")
+            : tr("Your explorer is ready. Coins you collect are paid in QGOLD to your NEAR account after midnight.")
           : tr("Ethereum wallet linked. It can sign NEAR Intents trades for your explorer."),
       );
     });
@@ -2958,7 +2958,7 @@ export default function App() {
                   title: tr("Quest complete!"),
                   detail: [
                     `+${r.xp} XP`,
-                    r.reward ? `+${gold(r.reward)} GOLD` : "",
+                    r.reward ? `+${gold(r.reward, 6)} QGOLD` : "",
                     r.item?.name || "",
                   ]
                     .filter(Boolean)
@@ -2979,7 +2979,7 @@ export default function App() {
           notify(
             r.item
               ? tr("Reward collected: {0} is yours. Try it on!", { 0: r.item.name })
-              : tr("Reward collected: +{0} XP{1}.", { 0: r.xp, 1: r.reward ? ` and ${gold(r.reward)} practice GOLD` : "" }),
+              : tr("Reward collected: +{0} XP{1}.", { 0: r.xp, 1: r.reward ? ` and ${gold(r.reward, 6)} QGOLD` : "" }),
           );
         else if (sameView) setToast(null);
         await refreshWorld();
@@ -4464,7 +4464,7 @@ export default function App() {
               <p className="fine-print">
                 {nativePlay
                   ? tr("You are playing on the test network. Test NEAR has no monetary value.")
-                  : tr("You are playing with practice GOLD, which is play money.")}
+                  : tr("Map coins are real QGOLD on the test network, paid to your NEAR account each night. Test tokens have no monetary value.")}
               </p>
             </ScreenTabPanel>
           )}
@@ -4598,7 +4598,7 @@ export default function App() {
                       aria-pressed={!nativePlay}
                       onClick={() => chooseLedger(false)}
                     >
-                      {tr("Practice ledger")}</button>
+                      {tr("Map coins (QGOLD)")}</button>
                     <button
                       aria-pressed={nativePlay}
                       onClick={() => chooseLedger(true)}
@@ -4606,7 +4606,7 @@ export default function App() {
                       {tr("Test network")}</button>
                   </div>
                   <p className="fine-print">
-                    {tr("Practice GOLD is play money. The test network uses NEAR testnet tokens. Neither has monetary value; receipts for both live in Profile · Rewards.")}</p>
+                    {tr("Map coins pay QGOLD to your NEAR account each night. The test network ledger plays the Plzeň NEAR days instead. Test tokens have no monetary value.")}</p>
                 </div>
               </details>
             </ScreenTabPanel>

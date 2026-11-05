@@ -793,7 +793,8 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "After local midnight (Europe/Prague) the reward worker collects every backed map coin and cell-zone prize of GPS worlds that is not paid yet, prices it in NEAR at the rate its day was planned with, sums it per account and publishes the day.",
           "Then it sends `claim_payout` in batches of 10 until every leaf is paid, and closes the day after the grace period.",
-          "A player without a NEAR account yet keeps their coins waiting; they join the first payout after the account exists. `GET /api/qgold/pending` shows what is still on its way.",
+          "A player without a NEAR account yet keeps their coins waiting; they join the first payout after the account exists. `GET /api/qgold/pending` shows what is still on its way (in micro-QGOLD `units`, with `awaitingAccount` for coins collected before an account existed).",
+          "Profile · Wallet shows the QGOLD balance on the linked NEAR account and the amount the next payout brings. Pickup messages count QGOLD; there is no practice GOLD. The old practice stake for zone tiers stays as a labelled simulation.",
           "While payouts are on, map days no longer send `claim_map`, so a coin is never paid twice. The demo arena gives XP only and never pays.",
         ],
       },

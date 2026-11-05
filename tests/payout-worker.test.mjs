@@ -48,10 +48,17 @@ test("the nightly payout pays each account once, from one root, and never twice"
     const other = coins.find((c) => !mine.includes(c));
     claimCoin(db, guest, other.id, fix(other, NOW + 3_600_000), NOW + 3_600_000);
 
+    // The guest's coin shows as pending QGOLD that waits for an account.
+    const guestPending = pendingPayout(db, guest);
+    assert.equal(guestPending.yocto, "0");
+    assert.equal(guestPending.awaitingAccount, 1);
+    assert.ok(guestPending.units > 0);
+
     const waiting = unpaidRewards(db, NEXT);
     assert.ok(waiting.length >= 1 && waiting.every((i) => i.accountId === "walker.testnet"));
     const pending = pendingPayout(db, walker);
     assert.ok(BigInt(pending.yocto) >= PAYOUT_MIN_YOCTO);
+    assert.ok(pending.units > 0 && pending.awaitingAccount === 0);
 
     // Before midnight nothing is built for today.
     assert.equal(preparePayoutDay(db, NOW)?.date, "2026-11-04");
