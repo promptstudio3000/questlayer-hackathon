@@ -2328,6 +2328,7 @@
  "Use a JPG, PNG or WebP image.": "请使用 JPG、PNG 或 WebP 图片。",
  "Use a neighbourhood or public landmark, without precise coordinates.": "请使用街区或公共地标，不要使用精确坐标。",
  "Use an image smaller than 1 MB.": "请使用小于 1 MB 的图片。",
+ "Use arrow keys to trace; press Space to start or finish.": "使用方向键描画；按空格键开始或结束。",
  "Use current pin": "使用当前标记",
  "Use my GPS location": "使用我的 GPS 位置",
  "Use my recovery passkey": "使用我的恢复通行密钥",

@@ -120,10 +120,12 @@
 .app-shell .demo-pad-grid { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px); }
 .app-shell .demo-pad .demo-pad-hint { max-width: 144px; font-size: 14px; line-height: 1.3; overflow-wrap: anywhere; }
 .app-shell .demo-pad:not([data-target]) .demo-pad-hint { display: none; }
+@media (max-width: 380px) { .app-shell .nav-rail .rail-links { flex-direction: column; } }
 @media (max-height: 500px) and (min-width: 600px) {
+  .app-shell .nav-rail .rail-links { flex-direction: column; }
   .app-shell .main-panel.explore-panel.sheet-compact { inset: auto 12px 12px auto; width: min(40vw, 360px); max-height: 55dvh; }
   .app-shell .nav-rail { left: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
-  .app-shell .demo-pad, .app-shell .demo-pad-open { right: auto; left: 164px; bottom: 12px; }
+  .app-shell .demo-pad, .app-shell .demo-pad-open { right: auto; left: 128px; bottom: 12px; }
 }
 /* ---- Full map --------------------------------------------------------- */
 .map-full-exit {

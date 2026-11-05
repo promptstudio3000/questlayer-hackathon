@@ -323,6 +323,7 @@ export const CHAPTERS: Chapter[] = [
       },
       { viz: "actor-dialog" },
       { h: "Monsters" },
+      { p: "Monster challenges support touch and keyboard input. The rune path has an arrow-key cursor; Space starts and finishes a trace. Both inputs send the same path samples for server scoring. A failed result request can retry the same input; a confirmed result is shown once." },
       {
         list: [
           "Beaten by a quiz, a rhythm mini-game or a stance duel. Power = level (capped at 20) + skill. Auras and items are flavour only and never change odds.",

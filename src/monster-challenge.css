@@ -254,3 +254,10 @@
 .altar-recipe p { margin: 2px 0 0; }
 .altar-recipe .monster-primary { flex: none; width: auto; padding: 6px 14px; }
 .altar-recipe.rarity-epic { border-color: rgba(180, 120, 255, 0.45); }
+
+.trace-board:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.trace-cursor { fill: #fff; stroke: #ff1dff; stroke-width: 0.012; }
+.game-dialog-screen .monster-challenge { max-width: 640px; margin: 0 auto; }
+@media (prefers-reduced-motion: reduce) {
+  .rhythm-beat, .duel-closing { transition: none; }
+}

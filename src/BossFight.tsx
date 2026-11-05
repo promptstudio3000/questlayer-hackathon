@@ -148,7 +148,7 @@ export function BossFight({
   const nextAt = ev?.you?.nextHitAt ?? null;
   const waiting = !!nextAt && nextAt > Date.now();
   return (
-    <Dialog label={tr("Weekly boss {0}", { 0: actor.name })} onClose={onClose}>
+    <Dialog presentation="screen" label={tr("Weekly boss {0}", { 0: actor.name })} onClose={onClose}>
       <div className="monster-challenge monster-boss">
         <header className="monster-head">
           <span className="monster-sigil" aria-hidden="true" />

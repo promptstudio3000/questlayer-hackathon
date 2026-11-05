@@ -2328,6 +2328,7 @@
  "Use a JPG, PNG or WebP image.": "JPG、PNG、WebPの画像を使ってください。",
  "Use a neighbourhood or public landmark, without precise coordinates.": "正確な座標ではなく、地域名や公共のランドマークを使ってください。",
  "Use an image smaller than 1 MB.": "1 MB未満の画像を使ってください。",
+ "Use arrow keys to trace; press Space to start or finish.": "矢印キーでなぞり、スペースキーで開始・終了します。",
  "Use current pin": "現在のピンを使う",
  "Use my GPS location": "GPSの現在地を使う",
  "Use my recovery passkey": "復元用パスキーを使う",
