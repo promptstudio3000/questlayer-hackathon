@@ -2,8 +2,8 @@
   "network": "testnet",
   "verifiedAt": "2026-11-01T12:31:34.699Z",
   "contractId": "questlayer-rewards-20261101b.testnet",
-  "codeHash": "2J92qoTyY2DkBGx5bD1u3hzXYgxCCUvmKXVZSSYiwr5F",
-  "wasmSha256": "133fa467b316af1a67a4bc3ccd83f1d06e56e721eae0acad41bc43c9a73a81fa",
+  "codeHash": "GuSH4Yn5WxhaLnYkoscuHK7wxkzhWhY8yhoP64pFQkWE",
+  "wasmSha256": "ec4e162fe0a1c83aa727bf1d52803906e6351ea163891d6077c5012a763f3dc3",
   "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
   "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
   "factory": {
