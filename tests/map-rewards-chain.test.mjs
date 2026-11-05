@@ -51,6 +51,12 @@ test("the worker key may hold the native methods alone or with the map methods",
   assert.ok(
     allowedWorkerMethods([...native, "publish_map_day", "claim_map", "close_map_day"]),
   );
+  const map = ["publish_map_day", "claim_map", "close_map_day"];
+  assert.ok(
+    allowedWorkerMethods([...native, ...map, "publish_payout_day", "claim_payout", "close_payout_day"]),
+  );
+  assert.equal(allowedWorkerMethods([...native, "claim_payout"]), null);
+  assert.equal(allowedWorkerMethods([...native, ...map, "claim_payout"]), null);
   assert.equal(allowedWorkerMethods([...native, "claim_map"]), null);
   assert.equal(allowedWorkerMethods([...native, "withdraw"]), null);
   assert.equal(allowedWorkerMethods([...native, "claim"]), null);

@@ -727,7 +727,7 @@ export const CHAPTERS: Chapter[] = [
         table: {
           head: ["Contract", "Account", "Role"],
           rows: [
-            ["Rewards", "`questlayer-rewards-20261101b.testnet`", "Treasury, daily days, map days, claims, withdrawals"],
+            ["Rewards", "`questlayer-rewards-20261101b.testnet`", "Treasury, daily days, map days, daily QGOLD payouts, claims"],
             ["QGOLD vault", "`questlayer-qgold-vault-20261104.testnet`", "Backed token, exits, insurance"],
             ["Collectibles", "`nfts.questlayer-dev-20261101.testnet`", "Aura NFTs (NEP-171/199), wardrobe"],
             ["Badges", "`questlayer-badges-20261102.testnet`", "Soulbound place and player badges"],
@@ -754,6 +754,40 @@ export const CHAPTERS: Chapter[] = [
       { h: "Reproducible builds" },
       {
         p: "Every contract WASM is built in Docker (Rust 1.97.0, linux/amd64) and its sha256 is pinned in `contracts/wasm-sha256.json`. CI fails when a build or a deployed manifest does not match. Collectibles changes also need an independent re-review.",
+      },
+    ],
+  },
+  {
+    id: "daily-payouts",
+    group: "chain",
+    title: "Daily QGOLD payouts",
+    summary: "One Merkle root per day of what every account earned, paid straight into the QGOLD vault with no daily claim limit.",
+    status: "off",
+    updated: "2026-11-05",
+    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "server/payouts/payout-tree.mjs"],
+    blocks: [
+      {
+        p: "Every backed coin is real QGOLD. After the day ends the server sums each account's earnings in NEAR and the rewards contract pays every account once from a single published root, instead of one receipt per coin (which allowed only 240 claims a day).",
+      },
+      {
+        list: [
+          "`publish_payout_day` commits the root and reserves the day's total from the coin and zone treasury, under the same per-date cap as city and map days.",
+          "`claim_payout` (anyone, 10 leaves per transaction) checks each leaf against the root and calls the vault's `mint_for` for exactly that account and amount. A repeated leaf is skipped; a refused mint reopens the leaf, so nothing is lost or paid twice.",
+          "`close_payout_day` returns what nobody claimed to the treasury three days after publication.",
+          "Amounts below 0.00000001 NEAR carry over to the next day: the vault cannot mint less than one QGOLD unit.",
+        ],
+      },
+      {
+        facts: [
+          ["Leaf", "`sha256(\"payout|<day_id>|<index>|<account>|<amount_yocto>\")`"],
+          ["Tree", "Sorted-pair sha256, the same as map days and the QXP ledger"],
+          ["Storage", "Root, totals and a bitmap of claimed leaves; no receipt per account"],
+          ["Limits", "Up to 262,144 accounts a day; 10 leaves per claim transaction"],
+        ],
+      },
+      {
+        note: "The contract code is built and tested; it goes live after the testnet rewards upgrade and once the server publishes payout days.",
+        tone: "info",
       },
     ],
   },
