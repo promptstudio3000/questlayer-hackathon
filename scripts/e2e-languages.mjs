@@ -191,19 +191,22 @@ async function runLanguage(browser, url, lang) {
   await page.locator(".rail-links button").first().waitFor({ timeout: 30_000 });
   await page.waitForTimeout(2500);
   await check(page, lang, dir, "map", report);
-  const rail = page.locator(".rail-links button");
-  const ids = ["explore", "inventory", "community", "profile"];
-  for (let i = 1; i < (await rail.count()); i++) {
+  const destinations = [
+    ["inventory", ".rail-links button:first-child"],
+    ["community", ".rail-links button:last-child"],
+    ["profile", ".topbar .profile-pill"],
+  ];
+  for (const [id, selector] of destinations) {
     await dismissOverlays(page);
     await closeOpenSheet(page);
-    await rail.nth(i).click();
+    await page.locator(selector).click();
     await page.waitForTimeout(600);
-    await check(page, lang, dir, ids[i], report);
+    await check(page, lang, dir, id, report);
     const tabs = page.locator(".screen-tabs:not(.screen-tabs-sub)").first().locator("[role=tab]");
     const count = await tabs.count().catch(() => 0);
     for (let t = 1; t < count; t++) {
-      await tabs.nth(t).click().catch(() => {});
-      await check(page, lang, dir, `${ids[i]}-tab${t + 1}`, report);
+      await tabs.nth(t).click();
+      await check(page, lang, dir, `${id}-tab${t + 1}`, report);
     }
   }
   await context.close();
