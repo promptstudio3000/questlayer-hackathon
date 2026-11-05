@@ -62,11 +62,6 @@
       "contract": "questlayer_collectibles",
       "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
       "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
-    },
-    "public/native-rewards-testnet.json:wasmSha256": {
-      "contract": "questlayer_rewards",
-      "sha256": "ec4e162fe0a1c83aa727bf1d52803906e6351ea163891d6077c5012a763f3dc3",
-      "note": "Live testnet code before daily payouts (payouts.rs). node scripts/deploy-qgold-testnet.mjs --reviewed upgrades it in place and removes this entry."
     }
   }
 }
