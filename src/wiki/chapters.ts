@@ -129,7 +129,7 @@ export const CHAPTERS: Chapter[] = [
     title: "What QuestLayer is",
     summary: "A location game on real streets: walk, collect, meet NPCs, earn collectibles, with a real prize pool settled on NEAR.",
     status: "live",
-    updated: "2026-11-04",
+    updated: "2026-11-05",
     sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx"],
     blocks: [
       {
@@ -141,7 +141,7 @@ export const CHAPTERS: Chapter[] = [
       { viz: "architecture" },
       { h: "Three kinds of value" },
       {
-        p: "The game deliberately keeps three ledgers apart so a player always knows what is practice and what is real.",
+        p: "There is no practice money. XP is soulbound experience; everything a player earns on the map is real QGOLD backed by NEAR, paid to their own NEAR account after midnight; NEAR is the money behind it.",
       },
       { viz: "money-modes" },
       {
@@ -149,8 +149,7 @@ export const CHAPTERS: Chapter[] = [
           head: ["Unit", "What it is", "Where it lives", "Transferable"],
           rows: [
             ["XP / QXP", "Experience from play. Drives levels and gates.", "Game DB; QXP mirror contract on NEAR", "Never (soulbound)"],
-            ["GOLD (practice)", "Display denomination of the practice ledger. 1 GOLD = 10⁶ micro-GOLD.", "Game DB (`players.gold_u`)", "Only inside the game"],
-            ["QGOLD", "Token fully backed by NEAR in the QGOLD vault. Its rate R only rises.", "`questlayer-qgold-vault-20261104.testnet`", "Yes (NEP-141)"],
+            ["QGOLD (shown as GOLD in play)", "Token fully backed by NEAR in the QGOLD vault; 6 decimals. Map coins and zone prizes earn it, the nightly payout mints it to the player's account, every purchase burns it. Its rate R only rises.", "`questlayer-qgold-vault-20261104.testnet`; collected but unpaid amounts wait in the game DB", "Yes (NEP-141)"],
             ["NEAR / test NEAR", "Prize pool money, stake, fees, Aura prices.", "Rewards, vault, market and Intents contracts", "Yes"],
           ],
         },
@@ -205,7 +204,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "Practice mode, NEAR mode and other explorers" },
       {
         list: [
-          "Explore has two modes. Practice (default for guests) uses practice GOLD; NEAR mode projects the funded, published day onto the map and collects as you walk with fresh GPS, one request at a time, showing only confirmed results.",
+          "Explore has two ledgers. The default map pays backed QGOLD for every coin and zone prize: it waits as \"on its way\" in Profile · Wallet and the nightly payout mints it to the player's NEAR account (created automatically at sign-in). The test network ledger instead projects the funded Plzeň NEAR day onto the map and collects as you walk with fresh GPS, one request at a time, showing only confirmed results.",
           "Other explorers appear only if they opt in: sharing publishes a name, look and position for at most 15 minutes and stops when the tab is hidden. Wallets, balances and inventory are never exposed.",
         ],
       },
@@ -535,7 +534,7 @@ export const CHAPTERS: Chapter[] = [
     title: "The money model",
     summary: "One global treasury, funded by yield and fees, paying players through daily budgets. Nobody pays to win.",
     status: "live",
-    updated: "2026-11-04",
+    updated: "2026-11-05",
     sources: ["docs/GLOBAL-TREASURY.md", "docs/ECONOMY-RULES.md", "docs/ECONOMY-PAGE.md", "IMPLEMENTATION-PLAN.md", "server/native/public-ledger.mjs"],
     blocks: [
       {
@@ -545,7 +544,8 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**No paid chance.** Randomness is free or earned (wisp rolls, chests), never bought, in line with Czech gambling law.",
-          "**No streaks, energy or loot purchases.** Spending only burns GOLD for cosmetics and conveniences.",
+          "**No streaks, energy or loot purchases.** Spending only burns the player's own QGOLD (`ft_burn`) for cosmetics and conveniences; the backing stays in the vault, so every burn raises R for all holders.",
+          "**No practice money.** Every map coin and zone prize is backed by the day's budget and paid as QGOLD by the nightly payout.",
           "**Players never fund the prizes.** Principal you stake stays yours; only the yield share you choose goes to the game.",
           "Everything is published: [Economy](/economy) lists the treasury, audits and every payout with a transaction link; [Treasury](/treasury) shows the treasury dashboard.",
         ],
@@ -768,7 +768,7 @@ export const CHAPTERS: Chapter[] = [
     group: "chain",
     title: "Daily QGOLD payouts",
     summary: "One Merkle root per day of what every account earned, paid straight into the QGOLD vault with no daily claim limit.",
-    status: "off",
+    status: "live",
     updated: "2026-11-05",
     sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
     blocks: [
@@ -802,7 +802,7 @@ export const CHAPTERS: Chapter[] = [
         ],
       },
       {
-        note: "Switched on with `MAP_PAYOUTS=1` once the testnet rewards contract is upgraded and the worker key holds the three payout methods.",
+        note: "Live on testnet since 5 Nov 2026 (`MAP_PAYOUTS=1`, rewards contract upgraded, worker key holds the payout methods). The first payout covers 5 Nov and runs after Prague midnight.",
         tone: "info",
       },
     ],
@@ -927,7 +927,7 @@ export const CHAPTERS: Chapter[] = [
     title: "How this wiki stays current",
     summary: "Every change to a mechanism updates its chapter, and CI refuses changes that skip it.",
     status: "live",
-    updated: "2026-11-04",
+    updated: "2026-11-05",
     sources: ["docs/WIKI.md", "AGENTS.md", "scripts/wiki-check.mjs", "tests/wiki.test.mjs"],
     blocks: [
       { viz: "wiki-loop" },
@@ -938,6 +938,7 @@ export const CHAPTERS: Chapter[] = [
           "A new doc must be added to a chapter's sources or explicitly marked as not a mechanism (plans, audits, hand-offs) in `docs/wiki-coverage.json`.",
           "Numbers that live in rules files are imported, so they can never drift.",
           "The page never names events or contains secrets, keys or private hosts; the test checks the copy.",
+          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`. A protected-paths CI guard fails any pull request that touches contracts, deploy or signing scripts, money code, economy numbers, deployment records, CI or dependencies without the owner's `owner-approved` label, or that adds anything that looks like a secret.",
         ],
       },
     ],
