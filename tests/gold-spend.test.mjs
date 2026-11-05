@@ -42,8 +42,8 @@ test("premium emotes and frames burn GOLD once; basic emotes are free", () => {
   assert.throws(() => g.emote(p, { emote: "dragon" }), /Unlock this emote/);
   const dragon = PREMIUM_EMOTES.find((e) => e.id === "dragon");
   const r = g.buy(p, { sku: "emote:dragon" });
-  assert.equal(r.burn.amountU, dragon.price * GOLD);
-  assert.equal(gold(db, p), before - dragon.price * GOLD);
+  assert.equal(r.burn.amountU, priceU(dragon.price));
+  assert.equal(gold(db, p), before - priceU(dragon.price));
   assert.match(r.burn.memo, /^questlayer:burn:emote:dragon$/);
   assert.throws(() => g.buy(p, { sku: "emote:dragon" }), /already have/);
   g.emote(p, { emote: "dragon" });
@@ -67,9 +67,9 @@ test("a short balance burns nothing", () => {
   const db = openDatabase(":memory:");
   const g = createGoldSpend(db, { now: () => noon });
   const p = createPlayer(db, "Broke");
-  db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(GOLD, p);
+  db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(1000, p);
   assert.throws(() => g.buy(p, { sku: "cosmetic:frame-gold" }), /Not enough GOLD/);
-  assert.equal(gold(db, p), GOLD);
+  assert.equal(gold(db, p), 1000);
   assert.equal(burnTotals(db).totalU, 0);
 });
 

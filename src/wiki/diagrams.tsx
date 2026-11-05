@@ -679,7 +679,7 @@ function GoldPrices() {
     { label: "NPC gear (epic)", value: GOLD.gear.price.epic, tone: "money" as Tone },
     { label: "Altar fee", value: GOLD.altar.default, tone: "muted" as Tone },
   ].sort((a, b) => b.value - a.value);
-  return <Bars title="GOLD prices from server/data/gold-spend.json (a tuning proposal)." bars={items} format={(v) => `${v} GOLD`} />;
+  return <Bars title="QGOLD prices from server/data/gold-spend.json; a map coin is worth about 0.0004 QGOLD on testnet." bars={items} format={(v) => `${v} QGOLD`} />;
 }
 
 function StakerLadder() {

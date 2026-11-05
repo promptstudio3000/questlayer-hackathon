@@ -27,7 +27,7 @@ export function NpcGear({ actorId, encounter }: { actorId: string; encounter: st
           type="button"
           key={g.id}
           className="npc-action"
-          disabled={busy || done || g.left === 0 || shop.balanceU < g.price * GOLD}
+          disabled={busy || done || g.left === 0 || shop.balanceU < Math.round(g.price * GOLD)}
           onClick={async () => {
             setBusy(true);
             setMessage("");
