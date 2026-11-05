@@ -1,0 +1,27 @@
+name: Protected paths
+# Fails a pull request that changes contracts, deploy/signing scripts, money
+# server code, economy numbers, deployment records, CI or dependencies without
+# the owner's `owner-approved` label, or that adds anything that looks like a
+# secret. Rules: .github/scripts/protected-paths.mjs, docs/HANDOFF-WEEKEND.md.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, edited]
+permissions:
+  contents: read
+jobs:
+  protected-paths:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node .github/scripts/protected-paths.mjs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
