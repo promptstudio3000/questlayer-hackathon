@@ -170,6 +170,7 @@ async function walkToTarget(page) {
   for (let i = 0; i < 20; i++) {
     // The pad drops the target within 3 m (zones can be thin path strips).
     const left = await remainingMeters(page);
+    if (i % 5 === 0) console.log(`  walking: ${left} m left`);
     if (!left) return;
     // Run (14 m/s) while far, then walk (5 m/s) the last metres;
     // src/map-motion.ts DEMO_RUN_MPS / DEMO_WALK_MPS.
@@ -378,6 +379,7 @@ async function a11y(page, screen, report) {
     ? result.map((v) => `${v.id}(${v.impact}×${v.count})`).join(", ")
     : "clean";
   console.log(`  a11y ${screen}: ${note}`);
+  if (blocking.length) console.log(JSON.stringify(blocking));
   return blocking;
 }
 
@@ -519,8 +521,7 @@ async function runDevice(name, server) {
     console.log(`  ${vibrations} haptic cues`);
 
     console.log("7. Sound, vibration and motion settings");
-    await page.getByRole("button", { name: "Explorer profile" }).click();
-    await page.getByRole("button", { name: "Profile and settings" }).click();
+    await page.locator(".topbar .profile-pill").click();
     await page.getByRole("tab", { name: "Settings" }).click();
     const settings = page.getByRole("tabpanel");
     await settings.scrollIntoViewIfNeeded();
@@ -606,7 +607,9 @@ async function runDevice(name, server) {
     await cardPage.goto(server.url);
     await cardPage.getByPlaceholder("Your explorer name").fill(`${TAG}Card ${name}`);
     await cardPage.getByRole("button", { name: "Start exploring" }).click();
+    await cardPage.locator(".sheet-toggle").click();
     await cardPage.getByRole("button", { name: "Hide first steps" }).click();
+    await cardPage.locator(".sheet-toggle[aria-expanded=true]").click();
     await cardPage.clock.runFor(50_000);
     const card = cardPage.locator(".pwa-install");
     if (await card.isVisible()) {
@@ -618,13 +621,7 @@ async function runDevice(name, server) {
       };
       await check("map");
       await capture(cardPage, "home-screen-card-map");
-      const profileButton = cardPage.getByRole("button", { name: "Explorer profile" });
-      await profileButton.click();
-      await cardPage.locator(".profile-menu").waitFor();
-      await check("profile menu open");
-      await capture(cardPage, "home-screen-card-profile-menu");
-      await profileButton.click();
-      await openScreen(cardPage, "Profile");
+      await cardPage.locator(".topbar .profile-pill").click();
       await cardPage.getByRole("tab", { name: "Character" }).click();
       await cardPage.locator(".profile-tiles button").filter({ hasText: /^Market/ }).waitFor();
       await check("Profile screen");

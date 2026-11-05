@@ -130,7 +130,7 @@ export const CHAPTERS: Chapter[] = [
     summary: "A location game on real streets: walk, collect, meet NPCs, earn collectibles, with a real prize pool settled on NEAR.",
     status: "live",
     updated: "2026-11-05",
-    sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx"],
+    sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx"],
     blocks: [
       {
         p: "QuestLayer turns the streets around you into a daily adventure. Coins lie along public paths, six quest zones open across the city every day, NPCs walk the map and offer errands, monsters guard chests, and everything you earn becomes yours: XP and levels on your account, Auras as NFTs, and coin rewards paid from one global prize pool that is funded by staking yield and sponsors, never by players losing money.",
@@ -138,6 +138,7 @@ export const CHAPTERS: Chapter[] = [
       {
         p: "This wiki is the know-how center of the project. Every chapter describes a mechanism **that is in force today**, the numbers it uses, how it connects to the rest and where it lives in the code. Status chips say honestly what is live on testnet, what is built but switched off and what is only planned.",
       },
+      { p: "The map is home: the avatar opens Profile, and compact shortcuts open Inventory and Community. One objective holds the next action. Content screens keep the map camera and adventure selection; returning from a confirmed completion releases that finished target. Profile has Character, Badges, Stake, Rewards and Settings; Community has Quests, Tasks, Local chat, Places and Creators." },
       { viz: "architecture" },
       { h: "Three kinds of value" },
       {
@@ -180,7 +181,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Real play moves only with the phone's GPS.** There is no tap-to-walk anywhere.",
-          "The city demo has a small pad (arrows / WASD). Up and down walk along the character's facing, left and right turn it. Running (14 m/s) is the default and Shift walks (5 m/s), both under the 15 m/s fair-play jump cap.",
+          "The city demo has an open, collapsible single row of controls (arrows / WASD). Up and down walk along the character's facing, left and right turn it. Running (14 m/s) is the default and Shift walks (5 m/s), both under the 15 m/s fair-play jump cap.",
           "Quest buttons only turn the explorer toward the target. Within 3 m the demo snaps onto it so thin path zones count.",
           "The 3D character follows map rotation and, in GPS play, the device heading.",
         ],

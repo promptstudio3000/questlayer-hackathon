@@ -65,17 +65,17 @@ function markerNode(actor: ActorView, onSelect: (a: ActorView) => void) {
   node.type = "button";
   node.className = `actor-marker actor-${actor.kind} actor-${actor.archetype}`;
   node.dataset.actorId = actor.id;
-  node.setAttribute(
-    "aria-label",
-    `${actor.name}, ${actorRoleLabel(actor)}${actor.state === "defeated" ? ", beaten today" : ""}`,
-  );
   const badge = document.createElement("span");
   badge.className = "actor-badge";
+  badge.setAttribute("aria-hidden", "true");
   badge.textContent = actor.name.slice(0, 1);
   const label = document.createElement("span");
   label.className = "actor-label";
   label.textContent = actor.name;
-  node.append(badge, label);
+  const role = document.createElement("span");
+  role.className = "sr-only";
+  role.textContent = `, ${actorRoleLabel(actor)}`;
+  node.append(badge, label, role);
   node.addEventListener("click", (e) => {
     e.stopPropagation();
     onSelect(actor);

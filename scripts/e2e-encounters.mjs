@@ -7,6 +7,8 @@ import {join,resolve} from "node:path";
 import {createServer} from "node:net";
 import {DatabaseSync} from "node:sqlite";
 import assert from "node:assert/strict";
+import {createRequire} from "node:module";
+const axeSource=createRequire(import.meta.url)("axe-core").source;
 import {createServer as createVite} from "vite";
 import react from "@vitejs/plugin-react";
 import {chromium} from "playwright";
@@ -25,7 +27,7 @@ const port=await new Promise(done=>{const s=createServer();s.listen(0,"127.0.0.1
 const vite=await createVite({root:ROOT,configFile:false,envDir:false,cacheDir:join(dir,"vite"),plugins:[react(),{
   name:"isolated-encounter-fixture",configureServer(server){server.middlewares.use("/__encounter-test.html",(_req,res)=>{
     res.setHeader("Content-Type","text/html");
-    const html='<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/tests/fixtures/weekend-encounter.tsx"></script></body></html>';
+    const html='<!doctype html><html lang="en"><head><title>Encounter acceptance</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/tests/fixtures/weekend-encounter.tsx"></script></body></html>';
     server.transformIndexHtml("/__encounter-test.html",html).then(value=>res.end(value));
   });}
 }],server:{host:"127.0.0.1",port:0,proxy:{"/api":`http://127.0.0.1:${port}`}}});
@@ -64,11 +66,22 @@ try{
     assert.ok(actor,`${kind} fixture has an actor`);
     const position=positionAt(actor.segments,actors.now);assert.ok(position);
     await page.addInitScript(data=>{window.__encounterFixture=data;},{actor,worldId:world.id,position});
+    if(kind==="npc") {
+      let failed=false;
+      await page.route("**/greet", route => { if(!failed) { failed=true; return route.abort("failed"); } return route.continue(); });
+    }
     const greet=kind==="npc"?page.waitForResponse(r=>r.url().endsWith(`/${actor.id}/greet`)):null;
     await page.goto(url+"/__encounter-test.html");
     if(kind==="npc"){
+      await page.getByRole("alert").waitFor();
+      await page.screenshot({path:join(shots,"npc-failed.png")});
+      await page.getByRole("button",{name:"Try again",exact:true}).click();
       const greeting=await (await greet).json();
       const offer=greeting.menu.find(o=>o.terms.errand);assert.ok(offer,"quest giver has a real errand");
+      const bounds=await page.locator("dialog[open]").boundingBox();assert.ok(bounds.x<2&&bounds.y<2&&bounds.width>=389&&bounds.height>=843,"NPC owns the full screen");
+      await page.addScriptTag({content:axeSource});
+      const issues=await page.evaluate(async()=> (await window.axe.run()).violations.filter(v=>["serious","critical"].includes(v.impact)).map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})));
+      assert.deepEqual(issues,[],"NPC accessibility");
       await page.screenshot({path:join(shots,"npc-ready.png")});
       const accepted=page.waitForResponse(r=>decodeURIComponent(new URL(r.url()).pathname).endsWith(`/offers/${offer.id}/accept`));
       await page.getByRole("button",{name:new RegExp(offer.label.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))}).click();

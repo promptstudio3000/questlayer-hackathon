@@ -103,7 +103,7 @@ export function GoldShop({
               className={`gold-emote${e.owned ? " owned" : ""}`}
               disabled={!!busy || (!e.owned && !can(e.price))}
               onClick={() => (e.owned ? showEmote(e.id) : run(`buy:${e.id}`, () => goldBuy(`emote:${e.id}`)))}
-              aria-label={e.owned ? tr("Show emote {0}", { 0: e.id }) : tr("Unlock emote {0} for {1} GOLD", { 0: e.id, 1: e.price })}
+              aria-label={`${e.owned ? tr("Show emote {0}", { 0: e.id }) : tr("Unlock emote {0} for {1} GOLD", { 0: e.id, 1: e.price })}, ${e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}`}
             >
               <span className="gold-emote-glyph" aria-hidden="true">
                 {EMOTE_GLYPH[e.id]}

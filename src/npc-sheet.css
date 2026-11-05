@@ -1,5 +1,5 @@
 /* NPC conversation: a dark game dialog centred on the portrait. */
-.game-dialog:has(> .npc-sheet) {
+.game-dialog:not(.game-dialog-screen):has(> .npc-sheet) {
   width: min(420px, calc(100vw - 16px));
   max-height: calc(100dvh - 16px);
   padding: 0;
@@ -9,11 +9,11 @@
   color: #f4ecff;
   overflow: auto;
 }
-.npc-sheet { display: grid; gap: 10px; padding: 0 12px 12px; }
+.npc-sheet { color: #f4ecff; display: grid; gap: 10px; padding: 0 12px 12px; }
 .npc-hero {
   position: relative;
   margin: 0 -12px;
-  height: min(240px, 34dvh);
+  height: 112px;
   background: radial-gradient(circle at 50% 58%, #8348ff88 0, #3d0981 42%, #1a0335 78%);
   border-radius: 20px 20px 0 0;
   overflow: hidden;
@@ -28,7 +28,7 @@
 .npc-plate { position: absolute; left: 12px; right: 12px; bottom: 8px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .npc-plate h2 { margin: 0; font-size: 22px; line-height: 1.1; color: #fff; text-shadow: 0 2px 0 #1a0335, 0 0 12px #1a0335; }
 .npc-role { order: 2; padding: 2px 8px; border-radius: 99px; background: #1a0335cc; color: #fef87d; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
-.npc-close { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #1a033599; color: #fff; font-size: 20px; cursor: pointer; }
+.npc-close { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 48px; height: 48px; border: 0; border-radius: 50%; background: #1a033599; color: #fff; font-size: 20px; cursor: pointer; }
 .npc-bubble {
   position: relative;
   margin: 0;
@@ -78,9 +78,9 @@
 .npc-action.turn-in { border-color: #37f4a0; background: linear-gradient(#176553, #0f4639); }
 .npc-action.turn-in .npc-action-icon { color: #7dffc4; }
 .npc-action.patron, .npc-task.patron { border-color: #ffd01f; }
-.npc-link { justify-self: start; min-height: 36px; padding: 0 4px; border: 0; background: none; color: #cbb8ef; font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
+.npc-link { justify-self: start; min-height: 48px; padding: 0 4px; border: 0; background: none; color: #cbb8ef; font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
 .npc-empty, .npc-fine { margin: 0; font-size: 14px; opacity: 0.8; }
-.npc-fine { font-size: 13px; opacity: 0.65; }
+.npc-fine { font-size: 14px; opacity: 1; color: #d9c9f0; }
 .npc-about p { margin: 0; }
 .npc-sheet h3 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: #cbb8ef; }
 .npc-task { display: grid; gap: 6px; padding: 8px; border-radius: 14px; border: 1px solid #8348ff; }
@@ -126,8 +126,3 @@
 .npc-sheet .screen-tabs { margin: 0; background: #ffffff12; }
 .npc-sheet .screen-tabs button { color: #e2d5ff; font-size: 14px; }
 .npc-sheet .screen-tabs button[aria-selected=true] { color: #fff; }
-.npc-sheet .npc-hero { height: 112px; }
-.npc-sheet .npc-close { width: 48px; height: 48px; }
-.npc-sheet .npc-bubble { font-size: 16px; }
-.npc-sheet .npc-fine { font-size: 14px; opacity: 1; color: #d9c9f0; }
-.npc-sheet .npc-link, .npc-sheet .npc-turnin { min-height: 48px; }

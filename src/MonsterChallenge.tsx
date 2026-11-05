@@ -53,11 +53,13 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
   const lastInput = useRef<unknown>(null);
   const completed = useRef(new Set<string>());
 
+  const [menuAttempt, setMenuAttempt] = useState(0);
   useEffect(() => {
+    setError(null);
     api<ChallengeMenu>(`${path(monster)}?encounter=${encodeURIComponent(encounter)}`)
       .then(setMenu)
       .catch((e) => setError(e instanceof ApiError ? e.message : tr("Could not reach the monster.")));
-  }, [monster, encounter]);
+  }, [monster, encounter, menuAttempt]);
 
   async function start(format: ChallengeFormat) {
     setBusy(true);
@@ -114,7 +116,7 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
             </p>
           </div>
         </header>
-        {error && <div className="monster-error" role="alert"><p>{error}</p>{challenge && lastInput.current !== null && !result && <button className="monster-secondary" disabled={busy} onClick={() => submit(lastInput.current)}>{tr("Try again")}</button>}</div>}
+        {error && <div className="monster-error" role="alert"><p>{error}</p>{!menu && !challenge && <button className="monster-secondary" onClick={() => setMenuAttempt(n => n+1)}>{tr("Try again")}</button>}{challenge && lastInput.current !== null && !result && <button className="monster-secondary" disabled={busy} onClick={() => submit(lastInput.current)}>{tr("Try again")}</button>}</div>}
         {result ? (
           <ResultView result={result} onClose={onClose} />
         ) : challenge ? (

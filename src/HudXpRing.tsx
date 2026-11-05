@@ -48,7 +48,7 @@ export function HudXpRing({ level, xp, levelStartXp, nextLevelXp, ring = null, c
         </span>
       </span>
       <span className="hud-xp-text">
-        <b>{tr("Lv")}{" "}{level}</b>
+        <b>{tr("Lv")}{" "}{level}</b>{" "}
         <small>
           {xp.toLocaleString("en-US")}/{nextLevelXp.toLocaleString("en-US")} XP
         </small>

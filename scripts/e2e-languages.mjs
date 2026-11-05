@@ -157,7 +157,7 @@ async function dismissOverlays(page) {
     const b = page.locator(sel).last();
     if (await b.isVisible().catch(() => false)) await b.click().catch(() => {});
   }
-  await page.keyboard.press("Escape").catch(() => {});
+  if (await page.locator("dialog[open]").count()) await page.keyboard.press("Escape");
 }
 
 async function check(page, lang, dir, shot, report) {

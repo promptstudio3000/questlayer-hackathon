@@ -26,7 +26,7 @@
 }
 .badge-tabs button,
 .badge-filter button {
-  min-height: 40px;
+  min-height: 48px;
   padding: 6px 12px;
   border-radius: 20px;
   border: 1px solid var(--decorative-border);
@@ -43,7 +43,8 @@
   color: var(--on-action);
 }
 .badge-filter small {
-  opacity: 0.8;
+  font-size: 14px;
+  color: inherit;
 }
 .badge-next {
   background: var(--surface-soft);
@@ -59,7 +60,7 @@
 }
 .badge-next button {
   width: 100%;
-  min-height: 40px;
+  min-height: 48px;
   display: flex;
   gap: 8px;
   align-items: center;

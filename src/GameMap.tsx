@@ -935,6 +935,9 @@ export function GameMap(props: GameMapProps) {
       rewardsLayer.current = null;
     };
   }, [ready]);
+  useEffect(() => {
+    if (props.active === false) map.current?.stop();
+  }, [props.active, ready]);
   // Roaming NPCs and monsters: a separate chunk, loaded once the map is up.
   const actorsLayer = useRef<ActorsLayer | null>(null);
   const actorsEnabled = !!props.onActor && !!props.actorsWorldId && props.active !== false;

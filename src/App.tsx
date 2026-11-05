@@ -371,8 +371,7 @@ export default function App() {
       }
     }),
     [peekHidden, setPeekHidden] = useState(false),
-    [now, setNow] = useState(Date.now()),
-    [menu, setMenu] = useState(false);
+    [now, setNow] = useState(Date.now());
   const [feedback, setFeedback] = useState<FeedbackPreferences>(() =>
     loadFeedbackPreferences(),
   );
@@ -630,6 +629,25 @@ export default function App() {
   }
   const [nativeVisitBusy, setNativeVisitBusy] = useState(false);
   const mainPanel = useRef<HTMLElement>(null);
+  const contentScreen = tab !== "explore" || sheetExpanded;
+  useEffect(() => {
+    if (!contentScreen || !player) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const frame = requestAnimationFrame(() => mainPanel.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true }));
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || document.querySelector("dialog[open]")) return;
+      event.preventDefault();
+      setTab("explore");
+      setSheetExpanded(false);
+    };
+    window.addEventListener("keydown", escape);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", escape);
+      requestAnimationFrame(() => previous?.isConnected && previous.focus({ preventScroll: true }));
+    };
+  }, [contentScreen, player?.id]);
+
   useEffect(() => {
     if (mainPanel.current) mainPanel.current.scrollTop = 0;
   }, [tab, player?.id]);
@@ -708,7 +726,6 @@ export default function App() {
     const token = `${player?.id}:${navigation.restoreRevision}`;
     if (restoreNavigation.current.token !== token) {
       restoreNavigation.current = { token, demo: false, native: false };
-      setMenu(false);
     }
     const pending = restoreNavigation.current;
     if (!pending.native && nativeObjectiveBase.ready) {
@@ -770,7 +787,6 @@ export default function App() {
       tab === "explore" &&
       !busy &&
       !nativeVisitBusy &&
-      !menu &&
       !walletChoices &&
       !discovery &&
       !showNpc,
@@ -1194,7 +1210,6 @@ export default function App() {
     setOthers([]);
     setBusy("");
     setToast(null);
-    setMenu(false);
     if (player) void loadWorld(HOME, true);
   }, [player?.id]);
   useEffect(() => {
@@ -1415,18 +1430,6 @@ export default function App() {
     }, 600);
     return () => clearInterval(collect);
   }, [player?.id]);
-  const profileButton = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!menu) return;
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !document.querySelector("dialog[open]")) {
-        setMenu(false);
-        profileButton.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [menu]);
   useEffect(() => {
     setPresence(false);
     setOthers([]);
@@ -3399,13 +3402,10 @@ export default function App() {
                 <span>GOLD</span>
               </button>
               <button
-                ref={profileButton}
                 className="profile-pill"
-                aria-label={tr("Profile")}
-                aria-expanded={menu}
-                aria-controls="explorer-profile"
-                onClick={() => { setMenu(false); setTab("settings"); }}
+                onClick={() => setTab("settings")}
               >
+                <span className="sr-only">{tr("Profile")}</span>
                 {hudProgress ? (
                   <HudXpRing
                     level={hudProgress.level}
@@ -3439,43 +3439,6 @@ export default function App() {
           )}
         </div>
       </header>
-      {menu && player && (
-        <div id="explorer-profile" className="profile-menu">
-          <b>{player.name}</b>
-          <span>{tr("Your explorer and progress are saved on this device.")}</span>
-          <button
-            onClick={() => {
-              setTab("settings");
-              setMenu(false);
-            }}
-          >
-            <GearSix />
-            {tr("Profile and settings")}</button>
-          <details className="presence-consent">
-            <summary>{tr("Location sharing")}</summary>
-            <p>
-              {tr("Sharing shows your name, look and map position to nearby explorers for up to 15 minutes while this tab is open. Players you blocked never see you, and you never see them.")}</p>
-          </details>
-          <button onClick={() => setPresence((x) => !x)}>
-            {presence ? <EyeSlash /> : <Eye />}
-            {presence
-              ? tr("Stop sharing my position")
-              : tr("Share my position for 15 min")}
-          </button>
-          <button
-            onClick={() =>
-              void action("logout", async () => {
-                await api("/logout", {});
-                setPlayer(null);
-                setWorld(null);
-                setMenu(false);
-                setPresence(false);
-              })
-            }
-          >
-            <SignOut /> {" "}{tr("Sign out")}</button>
-        </div>
-      )}
       {player && (
         <main
           ref={mainPanel}
@@ -3499,6 +3462,7 @@ export default function App() {
                   <PickupSummary totals={pickupFeedback.totals} />
                 )}
               </span>
+              {!sheetExpanded && demoTarget && <span className="sheet-target-distance">{distanceLabel(metersBetween(position, demoTarget))}</span>}
               {!sheetExpanded && (
                 <PhArrowRight
                   size={20}
@@ -5203,6 +5167,7 @@ export default function App() {
             setTab("inventory");
           }}
           onMap={() => {
+            if (discovery.result && world?.quests.some(q => q.id === discovery.result?.questId && q.zone_id === selected?.id)) setSelected(null);
             adventureResults.close();
             setTab("explore");
             setSheetExpanded(false);
