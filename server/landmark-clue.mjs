@@ -125,8 +125,8 @@ function descriptionClue(poi, pool, seed) {
   return {
     kind: "description",
     question: {
-      en: `Which short description of ${poi.name} is the one Wikidata gives?`,
-      cs: `Který krátký popis místa ${poi.name} uvádějí Wikidata?`,
+      en: `Which description matches ${poi.name}?`,
+      cs: `Který popis odpovídá místu ${poi.name}?`,
     },
     options: shuffle([right, ...picked], `${seed}:order`),
     answer: right.id,

@@ -94,3 +94,10 @@ taken, so the batch waited a day. When the worker starts it now marks such night
 
 The CLIs in `server/cli/` load `server/schema-catalog.mjs` before opening the database, so tables that other
 modules create lazily no longer fail preflight with `SCHEMA_INCOMPATIBLE`.
+
+## Fallback copy review, 5 November 2026
+
+The rule templates use short action-led English titles (a stop, a chest or three nearby places).
+Landmark questions ask which description matches the named place; the source remains Wikidata.
+This is wording only: template IDs, option IDs, answer selection, proximity, timing and rewards are unchanged.
+The nightly cached text remains optional; a missing batch must leave a complete playable instruction.

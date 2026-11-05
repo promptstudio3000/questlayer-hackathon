@@ -240,7 +240,7 @@ export const CHAPTERS: Chapter[] = [
           "Every H3 res-7 cell (about 5 km²) can hold **up to 6 quests a day**, at least 250 m apart, chosen from checked public places. At most 2 are category hunts (visit any 3 cafés, for example).",
           "Open 08:00–20:00 local. They rotate every 72 h. Rewards are XP only: 40 visit, 90 hunt, 60 chest (one chest per cell and day).",
           "An empty cell says \"Nothing here yet\" instead of inventing content.",
-          "Nightly AI flavour texts (see AI chapter) give each quest a short line; the template text is the fallback.",
+          "Nightly AI flavour texts (see AI chapter) give each quest a short line; short action-led template text is the fallback when the batch is missing.",
         ],
       },
       { h: "Landmark clues and errands" },
