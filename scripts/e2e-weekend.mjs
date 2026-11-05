@@ -43,9 +43,9 @@ try {
     await page.getByLabel("What should we call you?").fill("UI explorer");
     if (width === 390) {
       await page.locator(".welcome-card *").evaluateAll(elements => {
-        const saved=elements.map(el=>[el,el.style.fontSize,getComputedStyle(el).fontSize]);
-        window.__restoreText=()=>saved.forEach(([el,style])=>el.style.fontSize=style);
-        saved.filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,,size])=>el.style.fontSize=`${parseFloat(size)*2}px`);
+        const saved=elements.map(el=>[el,el.style.fontSize,getComputedStyle(el).fontSize,el.style.getPropertyPriority("font-size")]);
+        window.__restoreText=()=>saved.forEach(([el,style,,priority])=>el.style.setProperty("font-size",style,priority));
+        saved.filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,,size])=>el.style.setProperty("font-size",`${parseFloat(size)*2}px`,"important"));
       });
       await page.screenshot({path:join(SHOTS,"enlarged-text-welcome.png")});
       assert.equal(await page.locator("#nickname").evaluate(el=>getComputedStyle(el).fontSize),"32px");
@@ -134,16 +134,16 @@ try {
           assert.match(await page.locator("#map-note-text").inputValue(), /A draft kept/);
           await page.screenshot({path:join(SHOTS,"local-chat-resumed-draft.png")});
           await page.locator(".map-notes-compose *").evaluateAll(elements => {
-            const saved=elements.map(el=>[el,el.style.fontSize,getComputedStyle(el).fontSize]);
-            window.__restoreText=()=>saved.forEach(([el,style])=>el.style.fontSize=style);
-            saved.filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,,size])=>el.style.fontSize=`${parseFloat(size)*2}px`);
+            const saved=elements.map(el=>[el,el.style.fontSize,getComputedStyle(el).fontSize,el.style.getPropertyPriority("font-size")]);
+            window.__restoreText=()=>saved.forEach(([el,style,,priority])=>el.style.setProperty("font-size",style,priority));
+            saved.filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,,size])=>el.style.setProperty("font-size",`${parseFloat(size)*2}px`,"important"));
           });
           await page.screenshot({path:join(SHOTS,"enlarged-text-local-chat.png")});
           assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
           await page.evaluate(()=>window.__restoreText());
         }
         if (screen === "Profile") {
-          await page.locator(".main-panel *").evaluateAll(elements => elements.map(el => [el, getComputedStyle(el).fontSize]).filter(([el]) => el.matches("input,textarea,select") || [...el.childNodes].some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())).map(([el,size]) => { el.style.fontSize = `${parseFloat(size)*2}px`; return size; }));
+          await page.locator(".main-panel *").evaluateAll(elements => elements.map(el => [el, getComputedStyle(el).fontSize]).filter(([el]) => el.matches("input,textarea,select") || [...el.childNodes].some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())).map(([el,size]) => { el.style.setProperty("font-size",`${parseFloat(size)*2}px`,"important"); return size; }));
           await page.screenshot({ path: join(SHOTS, "enlarged-text-profile.png") });
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, "200% text keeps page width");
         }

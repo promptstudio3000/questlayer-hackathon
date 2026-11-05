@@ -106,7 +106,7 @@ try{
       const inputBounds=await page.locator(".npc-chat input").boundingBox();assert.ok(inputBounds.y+inputBounds.height<=421);
       await page.screenshot({path:join(shots,"npc-keyboard-viewport.png")});
       await page.setViewportSize({width:390,height:844});
-      await page.locator(".npc-sheet *").evaluateAll(elements=>elements.map(el=>[el,getComputedStyle(el).fontSize]).filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,size])=>el.style.fontSize=`${parseFloat(size)*2}px`));
+      await page.locator(".npc-sheet *").evaluateAll(elements=>elements.map(el=>[el,getComputedStyle(el).fontSize]).filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,size])=>el.style.setProperty("font-size",`${parseFloat(size)*2}px`,"important")));
       assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
       await page.screenshot({path:join(shots,"npc-enlarged-text.png")});
       results.push({kind,accepted:receipt.state,draftRestored:true,keyboardViewport:true,enlargedText:true});
