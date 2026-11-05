@@ -34,8 +34,11 @@
 .wearable-find-marker.is-far {
   display: none;
 }
+/* MapLibre positions a marker with `transform` on this same element, so the
+   bob must use the separate `translate` property. Animating `transform` here
+   overwrote the marker position and the find flew across the map. */
 @keyframes wearable-bob {
-  50% { transform: translateY(-5px); }
+  50% { translate: 0 -5px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .wearable-find-marker { animation: none; }
