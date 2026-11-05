@@ -52,6 +52,7 @@ type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
 export type GameMapProps = {
+  active?: boolean;
   sheetExpanded: boolean;
   panelMode: string;
   onQuest: (questId: string) => void;
@@ -304,7 +305,7 @@ export function GameMap(props: GameMapProps) {
     const marker = new maplibregl.Marker({ element: node, anchor: "bottom" })
       .setLngLat([target.lng, target.lat])
       .addTo(m);
-    if (!props.follow)
+    if (!props.follow && props.active !== false)
       m.easeTo({
         center: [target.lng, target.lat],
         zoom: 17,
@@ -321,12 +322,10 @@ export function GameMap(props: GameMapProps) {
     // pan changes follow but must not itself trigger another camera movement.
   }, [
     ready,
-    props.nativeTarget,
+    props.nativeTarget?.lat,
+    props.nativeTarget?.lng,
     props.nativeTargetKind,
     props.globe,
-    props.sheetExpanded,
-    props.panelMode,
-    viewportRevision,
   ]);
   useEffect(() => {
     if (!el.current) return;
@@ -938,7 +937,7 @@ export function GameMap(props: GameMapProps) {
   }, [ready]);
   // Roaming NPCs and monsters: a separate chunk, loaded once the map is up.
   const actorsLayer = useRef<ActorsLayer | null>(null);
-  const actorsEnabled = !!props.onActor && !!props.actorsWorldId;
+  const actorsEnabled = !!props.onActor && !!props.actorsWorldId && props.active !== false;
   useEffect(() => {
     const m = map.current;
     if (!m || !ready || !actorsEnabled) return;
@@ -971,7 +970,6 @@ export function GameMap(props: GameMapProps) {
     });
   }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe]);
   function cameraOffset(): [number, number] {
-    if (!phoneLayout()) return [155, 35];
     const box = el.current?.getBoundingClientRect(),
       panel = document.querySelector(".main-panel")?.getBoundingClientRect(),
       header = document.querySelector(".topbar")?.getBoundingClientRect();
@@ -981,7 +979,7 @@ export function GameMap(props: GameMapProps) {
         top + 80,
         Math.min(box.bottom, panel?.top || box.bottom),
       );
-    if (window.innerWidth >= 760 && panel)
+    if (window.innerWidth >= 760 && panel && panel.width < box.width / 2)
       return [
         (116 + panel.left - box.left) / 2 - box.width / 2,
         (top + box.bottom - 84) / 2 - box.top - box.height / 2 + 35,
@@ -1003,7 +1001,7 @@ export function GameMap(props: GameMapProps) {
     if (m && !props.globe)
       pawn.current?.setMapView(m.getBearing(), m.getPitch(), heading.current);
     return moveMapMarker(avatar.current, props.position, {
-      reducedMotion: prefersReducedMotion(),
+      reducedMotion: props.active === false || prefersReducedMotion(),
       // Demo pad steps arrive every tick; glide one tick so they join up.
       duration: props.arena && props.facing !== undefined ? DEMO_TICK_MS + 30 : 450,
     });
@@ -1018,7 +1016,7 @@ export function GameMap(props: GameMapProps) {
   useEffect(() => {
     if (!map.current) return;
     const demoGlide = props.arena && props.facing !== undefined;
-    if (props.follow && !props.globe && !props.overview)
+    if (props.active !== false && props.follow && !props.globe && !props.overview)
       map.current.easeTo({
         center: [props.position.lng, props.position.lat],
         offset: cameraOffset(),
@@ -1033,6 +1031,7 @@ export function GameMap(props: GameMapProps) {
   }, [
     props.position,
     props.follow,
+    props.active,
     props.globe,
     props.sheetExpanded,
     props.panelMode,
@@ -1099,7 +1098,7 @@ export function GameMap(props: GameMapProps) {
     const m = map.current,
       element = avatar.current?.getElement();
     // Aavegotchi wearable clones are drawn on the 2D starter only.
-    if (!m || !element || !ready || props.map3D === false || wearing2D) return;
+    if (!m || !element || !ready || props.active === false || props.map3D === false || wearing2D) return;
     const controller = new AbortController(),
       host = document.createElement("div");
     host.className = "map-character-model";
@@ -1169,7 +1168,7 @@ export function GameMap(props: GameMapProps) {
       show2D();
       host.remove();
     };
-  }, [props.skinUrl, props.map3D, wearing2D, ready]);
+  }, [props.skinUrl, props.map3D, props.active, wearing2D, ready]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;

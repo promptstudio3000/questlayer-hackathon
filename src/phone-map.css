@@ -28,9 +28,102 @@
   }
 }
 
-/* ---- Map tools: one button opens the column on phones ------------- */
-.map-controls.map-toolbar > .map-tools-toggle {
-  display: none;
+/* One map shell at every viewport. Content screens deliberately own the
+   available area; their hidden map keeps its camera and selection. */
+.map-stage { position: fixed; inset: 0; }
+.map-stage .game-map { inset: 0; width: 100%; height: 100%; }
+.map-stage[inert] { visibility: hidden; pointer-events: none; }
+.app-shell .nav-rail {
+  position: fixed; inset: auto auto calc(var(--sheet-gap, 160px) + 12px) 12px;
+  width: auto; height: auto; padding: 0; border: 0; background: none;
+  box-shadow: none; z-index: 21;
+}
+.app-shell .nav-rail .brand-mark { display: none; }
+.app-shell .nav-rail .rail-links { display: flex; gap: 8px; }
+.app-shell .rail-links button {
+  display: flex; flex-direction: column; justify-content: center; gap: 3px;
+  min-width: 64px; min-height: 58px; padding: 6px 10px;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--control-border);
+  border-radius: 14px; box-shadow: 0 2px 8px #1a03351a;
+}
+.app-shell .rail-links button span { font-size: 14px; line-height: 1.2; }
+.app-shell .topbar {
+  inset: 0 0 auto; height: auto; min-height: calc(64px + env(safe-area-inset-top));
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+  border: 0; background: transparent; pointer-events: none;
+}
+.app-shell .topbar .wordmark, .app-shell .topbar .realm-label { display: none; }
+.app-shell .topbar-right { display: flex; justify-content: flex-end; width: 100%; gap: 8px; }
+.app-shell .topbar-right > button { pointer-events: auto; min-height: 48px; }
+.app-shell .topbar .profile-pill { order: -1; margin-inline-end: auto; background: var(--surface); border-radius: 24px; }
+.app-shell .topbar .balance-pill, .app-shell .topbar .daily-board-chip {
+  background: var(--surface); padding: 8px 12px; border: 1px solid var(--control-border);
+}
+.app-shell .main-panel.explore-panel.sheet-compact {
+  inset: auto 12px calc(12px + env(safe-area-inset-bottom)); width: auto;
+  max-width: 430px; height: auto; max-height: min(38dvh, 260px); overflow-y: auto;
+  margin: 0 auto; padding: 4px 12px 10px; border-radius: 18px;
+  background: var(--surface); box-shadow: 0 4px 20px #1a03352b;
+}
+.app-shell .sheet-compact > :not(.sheet-toggle):not(.sheet-peek):not(.native-objective):not(.adventure-notice):not(.first-session):not(.adventure-result-resume) { display: none !important; }
+.app-shell .sheet-compact .sheet-toggle { display: flex; min-height: 48px; margin: 0; top: -4px; font-size: 14px; }
+.app-shell .sheet-compact .first-session { margin: 0; padding: 0; border: 0; box-shadow: none; background: none; gap: 4px; }
+.app-shell .sheet-compact .first-session-head, .app-shell .sheet-compact .first-session-hint { display: none; }
+.app-shell .sheet-compact .first-session h2 { font-size: 16px; line-height: 1.35; }
+.app-shell .sheet-compact .first-session-action { min-height: 48px; margin: 0; padding: 8px 12px; }
+.app-shell .sheet-compact .recommended-quest, .app-shell .sheet-compact .compact-selection {
+  display: flex; width: 100%; align-items: center; gap: 10px; min-height: 64px;
+  margin: 0; padding: 6px 48px 6px 0; border: 0; box-shadow: none; background: none;
+}
+.app-shell .sheet-compact .recommended-quest strong, .app-shell .sheet-compact .compact-selection strong { font-size: 16px; }
+.app-shell .sheet-compact .recommended-quest small, .app-shell .sheet-compact .compact-selection small,
+.app-shell .sheet-compact .recommended-quest > span > span { font-size: 14px; }
+.app-shell .sheet-compact .recommended-art { width: 40px; height: 40px; }
+.sheet-peek { position: relative; }
+.app-shell .sheet-compact .sheet-peek-hide {
+  display: grid; place-items: center; position: absolute; right: -8px; top: calc(50% - 24px);
+  width: 48px; height: 48px; border: 0; border-radius: 50%; background: transparent; color: var(--ink-secondary);
+}
+.app-shell.sheet-open .main-panel,
+.app-shell.sheet-open .main-panel.explore-panel.sheet-expanded {
+  position: fixed; inset: 0; width: auto; height: 100dvh; max-width: none; max-height: none;
+  margin: 0; border: 0; border-radius: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: calc(12px + env(safe-area-inset-top)) max(16px, calc((100vw - 960px) / 2)) calc(24px + env(safe-area-inset-bottom));
+  background: var(--surface); z-index: 30;
+}
+.app-shell.sheet-open .topbar, .app-shell.sheet-open .nav-rail,
+.app-shell.sheet-open .map-status-chip, .app-shell.sheet-open .map-toolbar,
+.app-shell.sheet-open .presence-chip, .app-shell.sheet-open .demo-pad,
+.app-shell.sheet-open .demo-pad-open { visibility: hidden; pointer-events: none; }
+.app-shell.sheet-open .panel-heading { display: flex; }
+.app-shell .panel-heading .panel-close, .app-shell .panel-back { min-width: 48px; min-height: 48px; }
+.app-shell .map-controls.map-toolbar {
+  position: fixed; top: calc(76px + env(safe-area-inset-top)); right: 12px; left: auto;
+  display: flex; flex-direction: column; gap: 4px; padding: 0; border: 0;
+  background: none; box-shadow: none; z-index: 22;
+}
+.app-shell .map-toolbar > button { display: grid; place-items: center; width: 48px; height: 48px; min-height: 48px; border-radius: 50%; background: var(--surface); border: 1px solid var(--control-border); }
+.app-shell .map-toolbar > .map-tools-toggle { display: grid; }
+.app-shell .map-toolbar:not(.tools-open) > button:not(.map-tools-toggle):not(.map-recenter) { display: none; }
+.app-shell .map-status-chip { top: calc(76px + env(safe-area-inset-top)); left: 12px; max-width: calc(100vw - 84px); min-height: 48px; background: var(--surface); }
+.app-shell .map-status-chip.demo .map-status-text { display: inline; font-size: 14px; }
+.app-shell .map-status-chip button { min-height: 48px; min-width: 48px; }
+.app-shell .map-sky-chip { top: calc(132px + env(safe-area-inset-top)); left: 12px; right: auto; padding: 6px 10px; max-width: calc(100vw - 84px); font-size: 14px; }
+.app-shell .map-sky-chip > span { display: none; }
+.app-shell .demo-pad, .app-shell .demo-pad-open {
+  top: auto; left: auto; right: 12px; bottom: calc(var(--sheet-gap, 160px) + 12px);
+}
+.app-shell .demo-pad { width: auto; padding: 4px; background: var(--surface); }
+.app-shell .demo-pad header { min-height: 48px; }
+.app-shell .demo-pad header > span { display: none; }
+.app-shell .demo-pad .demo-pad-min { width: 48px; height: 48px; }
+.app-shell .demo-pad-grid { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px); }
+.app-shell .demo-pad .demo-pad-hint { max-width: 144px; font-size: 14px; line-height: 1.3; overflow-wrap: anywhere; }
+.app-shell .demo-pad:not([data-target]) .demo-pad-hint { display: none; }
+@media (max-height: 500px) and (min-width: 600px) {
+  .app-shell .main-panel.explore-panel.sheet-compact { inset: auto 12px 12px auto; width: min(40vw, 360px); max-height: 55dvh; }
+  .app-shell .nav-rail { left: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .app-shell .demo-pad, .app-shell .demo-pad-open { right: auto; left: 164px; bottom: 12px; }
 }
 /* ---- Full map --------------------------------------------------------- */
 .map-full-exit {
@@ -67,197 +160,5 @@ body:has(.app-shell.map-full) .pwa-install {
   top: calc(10px + env(safe-area-inset-top));
 }
 
-/* ---- Peek cards under "Show discoveries" can be hidden ------------- */
-.sheet-peek {
-  position: relative;
-}
-.sheet-peek-hide {
-  display: none;
-}
 
-@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
-  /* Map tools fold into one button; it opens the full column. */
-  .app-shell .map-controls.map-toolbar > .map-tools-toggle {
-    display: grid;
-    place-items: center;
-  }
-  .app-shell .map-controls.map-toolbar:not(.tools-open) > button:not(.map-tools-toggle) {
-    display: none;
-  }
-  .app-shell .map-controls.map-toolbar:not(.tools-open) {
-    border-radius: 50%;
-  }
-  .app-shell .map-controls.map-toolbar.tools-open {
-    z-index: 30;
-  }
-  /* Discoveries open: a little more map above the sheet. */
-  .app-shell.sheet-open .main-panel.explore-panel.sheet-expanded {
-    height: min(58dvh, calc(100dvh - 160px));
-  }
-
-  /* The location chip in the demo keeps only its dot and "Use GPS". */
-  .app-shell .map-status-chip.demo .map-status-text {
-    display: none;
-  }
-  .app-shell .map-status-chip.demo {
-    padding-left: 10px;
-  }
-
-  /* Day/night chip: one small icon under the location chip. */
-  .app-shell .map-sky-chip {
-    top: calc(114px + env(safe-area-inset-top));
-    left: 14px;
-    right: auto;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 50%;
-  }
-  .app-shell .map-sky-chip > span {
-    display: none;
-  }
-  .app-shell.sheet-open .map-sky-chip {
-    top: calc(58px + env(safe-area-inset-top));
-  }
-
-  /* The bottom sheet when folded: one slim row and at most one card. */
-  .app-shell .main-panel.explore-panel.sheet-compact {
-    height: auto;
-    max-height: min(46dvh, 330px);
-    padding: 2px 10px 10px;
-    overflow-y: auto;
-  }
-  .app-shell .sheet-compact .sheet-toggle {
-    min-height: 40px;
-    margin-bottom: 6px;
-    top: -2px;
-  }
-  .app-shell .sheet-compact .sheet-peek-hide {
-    position: absolute;
-    top: 50%;
-    right: 6px;
-    transform: translateY(-50%);
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border: 0;
-    border-radius: 50%;
-    background: #ffffffcc;
-    color: #5a4b6e;
-  }
-  .app-shell .sheet-compact .sheet-peek-hide:focus-visible {
-    outline: 3px solid var(--discovery, #ff1dff);
-    outline-offset: 1px;
-  }
-  .app-shell .sheet-compact .recommended-quest,
-  .app-shell .sheet-compact .compact-selection {
-    min-height: 56px;
-    margin: 0;
-    padding: 8px 46px 8px 10px;
-    gap: 10px;
-  }
-  .app-shell .sheet-compact .recommended-quest > svg:last-child,
-  .app-shell .sheet-compact .compact-selection > svg:last-child {
-    display: none;
-  }
-  .app-shell .sheet-compact .recommended-quest small {
-    display: none;
-  }
-  .app-shell .sheet-compact .recommended-quest strong {
-    font-size: 15px;
-  }
-  .app-shell .sheet-compact .recommended-quest > span:nth-child(2) > span,
-  .app-shell .sheet-compact .compact-selection small {
-    font-size: 13px;
-  }
-  .app-shell .sheet-compact .recommended-art {
-    width: 40px;
-    height: 40px;
-  }
-  .app-shell .sheet-compact .sheet-peek + .sheet-peek {
-    margin-top: 6px;
-  }
-  /* First steps: title, two lines of hint and the action. */
-  .app-shell .sheet-compact .first-session {
-    padding: 8px 10px 10px;
-    gap: 4px;
-  }
-  .app-shell .sheet-compact .first-session h2 {
-    font-size: 16px;
-    line-height: 1.25;
-  }
-  .app-shell .sheet-compact .first-session-hint {
-    display: none;
-  }
-  .app-shell .sheet-compact .first-session .first-session-action {
-    min-height: 44px;
-    padding-block: 6px;
-    margin-top: 4px;
-  }
-
-  /* Demo pad: bottom right above the sheet, under the thumb and clear of
-     the explorer in the middle. --sheet-gap comes from App.tsx. */
-  .app-shell .demo-pad,
-  .app-shell .demo-pad-open {
-    top: auto;
-    left: auto;
-    right: 10px;
-    bottom: calc(var(--sheet-gap, 280px) + 10px);
-  }
-  .app-shell .demo-pad {
-    width: auto;
-    padding: 6px;
-    background: #fbf9f2d9;
-    backdrop-filter: blur(6px);
-  }
-  .app-shell .demo-pad header {
-    position: absolute;
-    top: -14px;
-    left: -14px;
-  }
-  .app-shell .demo-pad header > span {
-    display: none;
-  }
-  .app-shell .demo-pad .demo-pad-min {
-    width: 30px;
-    height: 30px;
-    background: #fbf9f2;
-    border: 2px solid var(--ink, #1a0335);
-  }
-  .app-shell .demo-pad-grid {
-    grid-template-columns: repeat(3, 44px);
-    grid-template-rows: repeat(3, 42px);
-  }
-  .app-shell .demo-pad:not([data-target]) .demo-pad-hint {
-    display: none;
-  }
-  .app-shell .demo-pad .demo-pad-hint {
-    max-width: 140px;
-    margin-top: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .app-shell.map-full .demo-pad,
-  .app-shell.map-full .demo-pad-open {
-    bottom: calc(14px + env(safe-area-inset-bottom));
-  }
-}
-
-@media (max-height: 500px) and (max-width: 1000px) {
-  /* Landscape phones: the sheet sits on the right, the pad bottom left. */
-  .app-shell .demo-pad,
-  .app-shell .demo-pad-open {
-    left: 12px;
-    right: auto;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .quest-route-stop.next {
-    animation: none;
-  }
-}
+@media (prefers-reduced-motion: reduce) { .quest-route-stop.next { animation: none; } }

@@ -1,3 +1,4 @@
+import { mapObjective } from "./map-objective";
 import { EmptyState } from "./EmptyState";
 import { XpBar, useLevelTable } from "./XpBar";
 import { levelProgress } from "./levels";
@@ -1547,7 +1548,7 @@ export default function App() {
   // City demo only: the pad / arrows / WASD walk the explorer the way it
   // faces. Real play has no manual movement; the position is the GPS fix.
   const demoWalk = useDemoWalk({
-    enabled: !!player && arena && !nativePlay,
+    enabled: !!player && arena && !nativePlay && tab === "explore" && !sheetExpanded,
     setPosition,
     onWalk: () => {
       setOverview(false);
@@ -3169,6 +3170,17 @@ export default function App() {
         })
       : null;
   const mapFullOn = mapFull && tab === "explore" && !sheetExpanded && !globe;
+  const mapVisible = tab === "explore" && !sheetExpanded;
+  const objective = mapObjective({
+    selection: !!selected,
+    native: !!nativeObjective.reference,
+    receipt: !nativePlay && !!adventureResults.unread,
+    notice: !!adventureNotice,
+    coach: coachActive,
+    find: !!recommendedFind && !peekHidden,
+    quest: !!recommended && !!recommendedZone && !peekHidden,
+  });
+  const showObjective = (kind: typeof objective) => sheetExpanded || objective === kind;
   const title =
     tab === "explore"
       ? nativePlay
@@ -3199,8 +3211,10 @@ export default function App() {
     <div
       className={`app-shell${player && (tab !== "explore" || sheetExpanded) ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}`}
     >
+      <div className="map-stage" inert={!!player && !mapVisible} aria-hidden={!!player && !mapVisible}>
       {player ? (
         <GameMap
+          active={mapVisible}
           playerTier={
             nativePlay ? nativeGame.state?.access?.tier : player?.tier
           }
@@ -3300,6 +3314,7 @@ export default function App() {
         <div className="game-map map-placeholder" aria-hidden="true" />
       )}
       <div className="map-vignette" />
+      </div>
       <aside className="nav-rail">
         <button
           className="brand-mark"
@@ -3311,7 +3326,7 @@ export default function App() {
           <BrandLogo />
         </button>
         <div className="rail-links">
-          {nav.map((n) => (
+          {nav.filter((n) => n.id === "inventory" || n.id === "community").map((n) => (
             <button
               key={n.id}
               className={navigationActive(tab, n.id) ? "active" : ""}
@@ -3385,10 +3400,10 @@ export default function App() {
               <button
                 ref={profileButton}
                 className="profile-pill"
-                aria-label={hudProgress ? undefined : tr("Explorer profile")}
+                aria-label={tr("Profile")}
                 aria-expanded={menu}
                 aria-controls="explorer-profile"
-                onClick={() => setMenu((v) => !v)}
+                onClick={() => { setMenu(false); setTab("settings"); }}
               >
                 {hudProgress ? (
                   <HudXpRing
@@ -3492,7 +3507,7 @@ export default function App() {
               )}
             </button>
           )}
-          {tab === "explore" && !nativePlay && adventureResults.unread && (
+          {tab === "explore" && !nativePlay && adventureResults.unread && showObjective("receipt") && (
             <AdventureResultResume
               result={adventureResults.unread}
               onInspect={() =>
@@ -3500,7 +3515,7 @@ export default function App() {
               }
             />
           )}
-          {tab === "explore" && adventureNotice && (
+          {tab === "explore" && adventureNotice && showObjective("notice") && (
             <button
               className="adventure-notice"
               onClick={() => {
@@ -3517,7 +3532,7 @@ export default function App() {
             </button>
           )}
           {tab === "explore" &&
-            coachActive &&
+            coachActive && showObjective("coach") &&
             !(selected && coachStep === "chest") && (
               <FirstSessionCoach
                 session={firstSession}
@@ -3529,7 +3544,7 @@ export default function App() {
                 aside={coachAside}
               />
             )}
-          {tab === "explore" && selected && (
+          {tab === "explore" && selected && showObjective("selection") && (
             <div className="sheet-peek sheet-peek-selection">
             <button
               className="compact-selection"
@@ -3544,7 +3559,7 @@ export default function App() {
               />
               <span>
                 <strong>{selected.name}</strong>
-                <small>{tr("See what's here")}</small>
+                <small>{distanceLabel(meters(position, selected))} · {tr("See what's here")}</small>
               </span>
               <ArrowRight />
             </button>
@@ -3558,7 +3573,7 @@ export default function App() {
             </button>
             </div>
           )}
-          {tab === "explore" && nativePlay && nativeObjective.reference && (
+          {tab === "explore" && nativePlay && nativeObjective.reference && showObjective("native") && (
             <div className="native-objective">
               <button
                 className="native-objective-open"
@@ -3579,6 +3594,15 @@ export default function App() {
                 }}
               >
                 <X size={20} />
+              </button>
+            </div>
+          )}
+          {mapVisible && objective === "empty" && (
+            <div className="sheet-peek">
+              <button className="compact-selection" onClick={() => setSheetExpanded(true)}>
+                <GameObjectArt kind="place" size={32} />
+                <span><strong>{world ? tr("Nothing here yet") : tr("Preparing the map…")}</strong><small>{tr("Show discoveries")}</small></span>
+                <ArrowRight size={20} />
               </button>
             </div>
           )}
@@ -3735,7 +3759,7 @@ export default function App() {
                 >
                   {tr("New discoveries open with the next day. Coins on the streets still count while you walk.")}</EmptyState>
               )}
-              {!coachStep &&
+              {showObjective("find") && !coachStep &&
                 recommendedFind &&
                 !nativeTarget &&
                 !adventureNotice &&
@@ -3770,7 +3794,7 @@ export default function App() {
                   </button>
                   </div>
                 )}
-              {!coachStep &&
+              {showObjective("quest") && !coachStep &&
                 recommended &&
                 recommendedZone &&
                 !nativeTarget &&
@@ -4882,7 +4906,7 @@ export default function App() {
               {tr("Search this area")}
             </button>
           )}
-          {arena && !nativePlay && !globe && tab === "explore" && (
+          {arena && !nativePlay && !globe && mapVisible && (
             <DemoControls
               held={demoWalk.held}
               running={demoWalk.running}
@@ -4927,7 +4951,7 @@ export default function App() {
               aria-label={tr("Map tools")}
               title={tr("Map tools")}
               aria-expanded={mapTools}
-              onClick={() => setMapTools((v) => !v)}
+                            onClick={() => setMapTools((v) => !v)}
             >
               {mapTools ? <X size={20} /> : <SlidersHorizontal size={20} />}
             </button>
@@ -4961,6 +4985,7 @@ export default function App() {
               <Compass size={20} />
             </button>
             <button
+              className="map-recenter"
               aria-label={tr("My location")}
               title={tr("My location")}
               onClick={() => {

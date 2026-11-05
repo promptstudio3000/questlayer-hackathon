@@ -125,8 +125,8 @@
     display: inline-grid;
     place-items: center;
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: var(--surface-soft, #f2ebff);
     color: var(--action, #672eeb);
