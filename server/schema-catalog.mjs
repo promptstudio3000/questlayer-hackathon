@@ -8,6 +8,7 @@ for (const relative of [
   "./ai/schema.mjs",
   "./badges/schema.mjs",
   "./gold-spend/schema.mjs",
+  "./gold-spend/qgold-burn.mjs",
   "./gotchi-wearables.mjs",
   "./player-waves.mjs",
   "./chain-ledger/schema.mjs",

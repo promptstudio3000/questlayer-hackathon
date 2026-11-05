@@ -4,10 +4,19 @@
 // and a history line. Nothing is credited to anyone: in the QGOLD model the
 // backing stays in the vault, so every burn raises R for all holders.
 import { readFileSync } from "node:fs";
-import { assert, GOLD, id } from "../domain.mjs";
+import { assert, GameError, GOLD, id } from "../domain.mjs";
 import { history } from "../database.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { GOLD_SPEND_SCHEMA } from "./schema.mjs";
+import { takeQgoldCredit } from "./qgold-burn.mjs";
+
+// "qgold" once the QGOLD vault is open (server/index.mjs): every spend needs a
+// verified ft_burn credit (qgold-burn.mjs) and players.gold_u is not touched.
+let realm = "practice";
+export function setSpendRealm(next) {
+  realm = next === "qgold" ? "qgold" : "practice";
+}
+export const spendRealm = () => realm;
 
 export const GOLD_SPEND = Object.freeze(
   JSON.parse(readFileSync(new URL("../data/gold-spend.json", import.meta.url), "utf8")),
@@ -40,15 +49,25 @@ export function burnGold(db, { player, kind, ref, amountU, title, now = Date.now
   assert(Number.isSafeInteger(amountU) && amountU > 0, "Invalid GOLD amount.", 400, "BURN_AMOUNT");
   const row = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
   assert(row, "Sign in to spend GOLD.", 401, "AUTH");
-  assert(row.gold_u >= amountU, "Not enough GOLD for this.", 402, "GOLD_LOW");
-  db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=? AND gold_u>=?").run(amountU, player, amountU);
-  const burn = id("burn"),
-    memo = burnMemo(kind, ref);
+  const burn = id("burn");
+  let memo = burnMemo(kind, ref);
+  if (realm === "qgold") {
+    const credit = takeQgoldCredit(db, { player, kind, amountU, burnId: burn, now });
+    if (!credit) {
+      const error = new GameError("Burn the QGOLD for this first.", 402, "QGOLD_BURN");
+      error.details = { kind, amountU };
+      throw error;
+    }
+    memo = credit.memo;
+  } else {
+    assert(row.gold_u >= amountU, "Not enough GOLD for this.", 402, "GOLD_LOW");
+    db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=? AND gold_u>=?").run(amountU, player, amountU);
+  }
   db.prepare(
-    "INSERT INTO gold_burns(id,player_id,kind,ref,amount_u,memo,realm,created_at) VALUES(?,?,?,?,?,?,'practice',?)",
-  ).run(burn, player, kind, String(ref).slice(0, 120), amountU, memo, now);
-  history(db, player, "burn", title || `Spent GOLD: ${kind}`, -amountU, { burn, kind, ref, memo, ...meta });
-  return { id: burn, amountU, memo, balanceU: row.gold_u - amountU };
+    "INSERT INTO gold_burns(id,player_id,kind,ref,amount_u,memo,realm,created_at) VALUES(?,?,?,?,?,?,?,?)",
+  ).run(burn, player, kind, String(ref).slice(0, 120), amountU, memo, realm, now);
+  history(db, player, "burn", title || `Spent GOLD: ${kind}`, -amountU, { burn, kind, ref, memo, realm, ...meta });
+  return { id: burn, amountU, memo, realm, balanceU: realm === "qgold" ? null : row.gold_u - amountU };
 }
 
 /** Public burn totals for the economy page. */
@@ -61,7 +80,7 @@ export function burnTotals(db, now = Date.now()) {
     .prepare("SELECT COALESCE(SUM(amount_u),0) AS u FROM gold_burns WHERE created_at>?")
     .get(now - 86_400_000).u;
   return {
-    realm: "practice",
+    realm,
     totalU: rows.reduce((a, r) => a + r.u, 0),
     last24hU: day,
     byKind: Object.fromEntries(rows.map((r) => [r.kind, { count: r.n, u: r.u }])),
