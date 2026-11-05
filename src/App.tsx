@@ -1,6 +1,6 @@
 import { mapObjective } from "./map-objective";
 import { EmptyState } from "./EmptyState";
-import { XpBar, useLevelTable } from "./XpBar";
+import { useLevelTable } from "./XpBar";
 import { levelProgress } from "./levels";
 import {
   AdventureResultDialog,
@@ -4525,19 +4525,24 @@ export default function App() {
                     : tr("Secure your explorer to keep progress")
                 }
               />
+              <p className="fine-print">
+                {nativePlay
+                  ? tr("You are playing on the test network. Test NEAR has no monetary value.")
+                  : tr("Map coins are real QGOLD on the test network, paid to your NEAR account each night. Test tokens have no monetary value.")}
+              </p>
+            </ScreenTabPanel>
+          )}
+          {tab === "settings" && profileView === "badges" && (
+            <ScreenTabPanel idBase="profile" value="badges">
               <div className="play-menu">
                 <BadgeBook
+                  inline
                   key={player.id}
                   fix={fix}
                   arena={arena}
                   onConnectNear={() => void connectNear()}
                 />
               </div>
-              <p className="fine-print">
-                {nativePlay
-                  ? tr("You are playing on the test network. Test NEAR has no monetary value.")
-                  : tr("Map coins are real QGOLD on the test network, paid to your NEAR account each night. Test tokens have no monetary value.")}
-              </p>
             </ScreenTabPanel>
           )}
           {tab === "settings" && profileView === "settings" && (
@@ -4547,6 +4552,11 @@ export default function App() {
                 aria-labelledby="settings-game-title"
               >
                 <h2 id="settings-game-title">{tr("Game")}</h2>
+                <button className="settings-row" onClick={() => setPresence(value => !value)}>
+                  {presence ? <EyeSlash /> : <Eye />}<span>{presence ? tr("Stop sharing my position") : tr("Share my position for 15 min")}</span>
+                </button>
+                <details className="presence-consent"><summary>{tr("Location sharing")}</summary><p>{tr("Sharing shows your name, look and map position to nearby explorers for up to 15 minutes while this tab is open. Players you blocked never see you, and you never see them.")}</p></details>
+
                 <LanguageSetting />
                 <SettingsSwitch
                   icon={Cube}
@@ -4604,7 +4614,12 @@ export default function App() {
                   </span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </a>
-                                {!firstSession.visible && (
+                                {[["/wiki", "Wiki"], ["/economy", "Economy"], ["/treasury", "Treasury"]].map(([href, label]) => (
+                  <a key={href} className="settings-row" href={href}>
+                    <BookOpen size={22} aria-hidden="true" /><span>{label === "Wiki" ? tr("Wiki") : label === "Economy" ? tr("Economy") : tr("Treasury")}</span><ArrowRight size={18} aria-hidden="true" />
+                  </a>
+                ))}
+                {!firstSession.visible && (
                   <button
                     type="button"
                     className="settings-row"
@@ -4631,12 +4646,9 @@ export default function App() {
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
               </section>
-              <ChainSettings accountId={invisible.accountId} />
-              <section
-                className="settings-group"
-                aria-labelledby="settings-account-title"
-              >
-                <h2 id="settings-account-title">{tr("Account and devices")}</h2>
+              <details className="settings-group screen-details">
+                <summary>{tr("Account and devices")}</summary>
+                <ChainSettings accountId={invisible.accountId} />
                 <div className="settings-pad">
                   <AccountSessions
                     player={player}
@@ -4657,7 +4669,10 @@ export default function App() {
                     onRestore={restoreThisDevice}
                   />
                 </div>
-              </section>
+              </details>
+              <button className="settings-row" onClick={() => void action("logout", async () => {
+                await api("/logout", {}); setPlayer(null); setWorld(null); setPresence(false);
+              })}><SignOut /><span>{tr("Sign out")}</span></button>
               <details className="advanced-settings settings-group">
                 <summary>{tr("Advanced: reward ledger")}</summary>
                 <div className="settings-pad">
@@ -5043,36 +5058,6 @@ export default function App() {
                 onClose={() => setEmotePicker(false)}
               />
             )}
-          </div>
-          <div className="player-bottom">
-            <div className="mini-avatar">
-              <Character
-                items={appearanceItems}
-                originTokenId={player.appearance.originTokenId}
-                compact
-              />
-              <span>{hudLevel ?? "—"}</span>
-            </div>
-            <div>
-              <b>{player.name}</b>
-              <XpBar
-                xp={hudXp}
-                note={
-                  !nativePlay && player.lockedXp
-                    ? `${player.lockedXp} committed`
-                    : undefined
-                }
-                placeholder={
-                  playAccount
-                    ? tr("Loading your progress…")
-                    : tr("Secure your explorer to keep progress")
-                }
-              />
-              {!nativePlay && <PickupSummary totals={pickupFeedback.totals} />}
-            </div>
-            <button onClick={() => setTab("inventory")} aria-label={tr("Inventory")}>
-              <Backpack size={23} />
-            </button>
           </div>
         </>
       )}

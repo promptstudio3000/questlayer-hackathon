@@ -15,6 +15,7 @@ import {
   Signature,
   Storefront,
   Trophy,
+  Medal,
   UserCircle,
   ShieldCheck,
   Coins,
@@ -31,6 +32,7 @@ import { lang, LANGS, setLang, tr, type Lang } from "./i18n";
 export type ProfileTab = ProfileView | "stake" | "rewards";
 export const PROFILE_TABS: readonly ScreenTab<ProfileTab>[] = [
   { id: "character", get label() { return tr("Character"); }, icon: UserCircle },
+  { id: "badges", get label() { return tr("Badges"); }, icon: Medal },
   { id: "stake", get label() { return tr("Stake"); }, icon: Flame },
   { id: "rewards", get label() { return tr("Rewards"); }, icon: Trophy },
   { id: "settings", get label() { return tr("Settings"); }, icon: GearSix },

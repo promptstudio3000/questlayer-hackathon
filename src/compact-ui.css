@@ -27,7 +27,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 48px;
   margin-bottom: 10px;
 }
 .main-panel .panel-heading > div {
@@ -51,7 +51,7 @@
   width: 36px;
   height: 36px;
   min-width: 36px;
-  min-height: 36px;
+  min-height: 48px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -134,10 +134,10 @@
   border-radius: 14px;
 }
 .main-panel .screen-tabs button {
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   flex-direction: row;
   gap: 5px;
-  min-height: 40px;
+  min-height: 48px;
   padding: 4px 8px;
   border-radius: 11px;
   font-size: 14px;
@@ -153,7 +153,7 @@
   margin-bottom: 10px;
 }
 .main-panel .screen-tabs-sub button {
-  min-height: 36px;
+  min-height: 48px;
   font-size: 13px;
 }
 .main-panel .screen-tab-count {
@@ -173,7 +173,7 @@
 }
 @media (max-width: 370px) {
   .main-panel .screen-tabs button {
-    font-size: 13px;
+    font-size: 14px;
   }
 }
 
@@ -187,7 +187,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 40px;
+    min-height: 48px;
     padding: 0 10px;
   }
 }
@@ -206,7 +206,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 48px;
   padding: 0 10px;
   border: 1px solid var(--inventory-border);
   border-radius: 12px;
@@ -235,7 +235,7 @@
 }
 .inventory-experience .inv-chips .inv-chip {
   flex-shrink: 0;
-  min-height: 36px;
+  min-height: 48px;
   min-width: 0;
   padding: 0 12px;
   font-size: 14px;
@@ -255,7 +255,7 @@
   margin: 4px 0 10px;
 }
 .main-panel .screen-details > summary {
-  min-height: 36px;
+  min-height: 48px;
 }
 
 /* ---- Community ----------------------------------------------------- */
@@ -277,7 +277,7 @@
 }
 .creator-toolbar .creator-tabs button {
   flex-shrink: 0;
-  min-height: 36px;
+  min-height: 48px;
   padding: 0 14px;
   border-radius: 999px;
   font-size: 14px;
@@ -286,7 +286,7 @@
   width: 36px;
   min-width: 36px;
   height: 36px;
-  min-height: 36px;
+  min-height: 48px;
   padding: 0;
   border-radius: 50%;
 }
@@ -360,12 +360,12 @@
   width: 36px;
   min-width: 36px;
   height: 36px;
-  min-height: 36px;
+  min-height: 48px;
   padding: 0;
   border-radius: 50%;
 }
 .map-notes-heading .map-notes-primary {
-  min-height: 36px;
+  min-height: 48px;
   padding: 0 12px;
   font-size: 14px;
 }
@@ -426,7 +426,7 @@
   width: 36px;
   min-width: 36px;
   height: 36px;
-  min-height: 36px;
+  min-height: 48px;
   padding: 0;
   border-radius: 50%;
 }
@@ -456,7 +456,7 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-height: 36px;
+  min-height: 48px;
   padding: 0 10px;
   border-radius: 999px;
   font-size: 13px;

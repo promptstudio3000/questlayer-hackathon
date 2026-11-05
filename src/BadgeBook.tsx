@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ChainLink } from "./ChainLink";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -94,7 +95,7 @@ function km(m: number) {
 const date = (t: number) => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 const freshFix = (fix: Fix | null) => (fix && Date.now() - fix.timestamp < 15_000 ? fix : null);
 
-export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; arena: boolean; onConnectNear?: () => void }) {
+export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: Fix | null; arena: boolean; onConnectNear?: () => void; inline?: boolean }) {
   const [data, setData] = useState<Overview | null>(null);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"places" | "player">("places");
@@ -126,7 +127,7 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
   const byId = new Map(places.badges.map((b) => [b.id, b]));
   return (
     <>
-      <button className="play-entry" onClick={() => setOpen(true)}>
+      {!inline && <button className="play-entry" onClick={() => setOpen(true)}>
         <Medal size={24} />
         <span>
           <b>{tr("Badges")}</b>
@@ -136,13 +137,13 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
           </small>
         </span>
         <ArrowRight size={20} />
-      </button>
-      {open && (
-        <Dialog label={tr("Badges")} onClose={() => setOpen(false)}>
+      </button>}
+      {(open || inline) && (
+        <BadgeSurface inline={inline} onClose={() => setOpen(false)}>
           <section className="badge-book">
-            <button className="sheet-close" aria-label={tr("Close")} onClick={() => setOpen(false)}>
+            {!inline && <button className="sheet-close" aria-label={tr("Close")} onClick={() => setOpen(false)}>
               <X size={16} aria-hidden="true" />
-            </button>
+            </button>}
             <h2>{tr("Badges")}</h2>
             <div className="badge-tabs" role="tablist" aria-label={tr("Badge kind")}>
               <button role="tab" aria-selected={view === "places"} onClick={() => setView("places")}>
@@ -208,7 +209,7 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
               <PlayerBadges data={data} gps={freshFix(gps)} reload={load} onConnectNear={onConnectNear} />
             )}
           </section>
-        </Dialog>
+        </BadgeSurface>
       )}
       {detail && (
         <Dialog label={detail.nameCs} onClose={() => setDetail(null)}>
@@ -567,4 +568,8 @@ function CreateBadge({
       </div>
     </form>
   );
+}
+
+function BadgeSurface({ inline, onClose, children }: { inline: boolean; onClose: () => void; children: ReactNode }) {
+  return inline ? <>{children}</> : <Dialog label={tr("Badges")} onClose={onClose}>{children}</Dialog>;
 }
