@@ -65,16 +65,16 @@ function Architecture() {
 function MoneyModes() {
   return (
     <Flow
-      title="Practice play never turns into real money by itself; real value only comes from the funded treasury."
+      title="Every coin is backed: play earns QGOLD from the funded daily budget, the nightly payout mints it, spending burns it."
       width={720}
       height={230}
       nodes={[
         { id: "play", x: 90, y: 115, label: "Your play", sub: "coins · quests · wins", tone: "player", pulse: true },
         { id: "xp", x: 300, y: 40, label: "XP → QXP", sub: "soulbound", tone: "core" },
-        { id: "gold", x: 300, y: 115, label: "Practice GOLD", sub: "game DB only", tone: "muted" },
-        { id: "near", x: 300, y: 190, label: "Prize pool claims", sub: "funded days · map days", tone: "money" },
-        { id: "qgold", x: 560, y: 190, label: "QGOLD", sub: "backed by NEAR", tone: "money" },
-        { id: "burn", x: 560, y: 115, label: "Cosmetics", sub: "spend = burn", tone: "muted" },
+        { id: "gold", x: 300, y: 115, label: "On its way", sub: "coins · zone prizes", tone: "money" },
+        { id: "near", x: 300, y: 190, label: "Funded NEAR days", sub: "Plzeň ledger", tone: "money" },
+        { id: "qgold", x: 560, y: 190, label: "QGOLD", sub: "your NEAR account", tone: "money" },
+        { id: "burn", x: 560, y: 115, label: "Cosmetics", sub: "spend = ft_burn", tone: "muted" },
         { id: "lvl", x: 560, y: 40, label: "Levels & gates", tone: "core" },
       ]}
       edges={[
@@ -82,7 +82,8 @@ function MoneyModes() {
         { from: "play", to: "gold", flow: true, tone: "muted" },
         { from: "play", to: "near", flow: true, tone: "money" },
         { from: "near", to: "qgold", label: "Claim as QGOLD", flow: true, tone: "money" },
-        { from: "gold", to: "burn", tone: "muted" },
+        { from: "gold", to: "qgold", label: "Nightly payout", flow: true, tone: "money" },
+        { from: "qgold", to: "burn", tone: "muted" },
         { from: "xp", to: "lvl", tone: "core" },
       ]}
     />
@@ -761,8 +762,10 @@ function ChainSplit() {
         { label: "Stake & yield vaults", value: 100, tone: "chain" },
         { label: "Funded city & map days", value: 100, tone: "money" },
         { label: "QGOLD mint / burn / exit", value: 100, tone: "money" },
-        { label: "Practice coins & XP", value: 30, tone: "core", note: "ledger built" },
-        { label: "Altar crafting, practice tasks", value: 0, tone: "muted" },
+        { label: "Map coins & zone prizes", value: 100, tone: "money", note: "nightly payout" },
+        { label: "GOLD spending", value: 100, tone: "money", note: "ft_burn" },
+        { label: "Task market & Secrets", value: 100, tone: "money", note: "QGOLD escrow" },
+        { label: "XP", value: 30, tone: "core", note: "QXP ledger" },
       ]}
     />
   );
