@@ -1,8 +1,12 @@
+import { questDisplayTitle } from "./quest-copy";
 import { mapObjective } from "./map-objective";
 import { EmptyState } from "./EmptyState";
 import { useLevelTable } from "./XpBar";
 import { levelProgress } from "./levels";
 import {
+  DailyBoard,
+  SeasonCard,
+  LandmarkClue,
   AdventureResultDialog,
   AdventureResultResume,
   AdventureResultHistoryButton,
@@ -220,8 +224,6 @@ import {
 const webauthn = () => import("@simplewebauthn/browser");
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
-import { DailyBoard } from "./DailyBoard";
-import { SeasonCard } from "./Season";
 import { Character } from "./Character";
 import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
@@ -258,7 +260,6 @@ import {
   subscribeFeedback,
   type FeedbackPreferences,
 } from "./feedback";
-import LandmarkClue from "./LandmarkClue";
 import { headingTo, metersBetween } from "./map-motion.ts";
 import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
@@ -3816,7 +3817,7 @@ export default function App() {
                     </span>
                     <span>
                       <small>{tr("Nearest discovery")}</small>
-                      <strong>{recommended.title}</strong>
+                      <strong>{questDisplayTitle(recommended.title)}</strong>
                       <span>
                         {recommendedZone.name} ·{" "}
                         {distanceLabel(
@@ -3988,13 +3989,13 @@ export default function App() {
                   <div
                     className="quest-detail"
                     role="region"
-                    aria-label={q.title}
+                    aria-label={questDisplayTitle(q.title)}
                     tabIndex={-1}
                     key={q.id}
                     id={"quest-" + q.id}
                   >
                     <div className="section-label">
-                      <h2>{q.title}</h2>
+                      <h2>{questDisplayTitle(q.title)}</h2>
                       <Badge tone="green">
                         {q.completed
                           ? tr("COMPLETED")
@@ -4168,7 +4169,7 @@ export default function App() {
                             />
                           </span>
                           <span>
-                            <b>{q.title}</b>
+                            <b>{questDisplayTitle(q.title)}</b>
                             <small>
                               {q.completed
                                 ? tr("Completed")

@@ -97,7 +97,7 @@ modules create lazily no longer fail preflight with `SCHEMA_INCOMPATIBLE`.
 
 ## Fallback copy review, 5 November 2026
 
-The rule templates use short action-led English titles (a stop, a chest or three nearby places).
+The player UI presents short action-led English titles (a stop or a chest) for generic rule-template titles. Stored template text remains unchanged because it contributes to published plan hashes.
 Landmark questions ask which description matches the named place; the source remains Wikidata.
 This is wording only: template IDs, option IDs, answer selection, proximity, timing and rewards are unchanged.
 The nightly cached text remains optional; a missing batch must leave a complete playable instruction.

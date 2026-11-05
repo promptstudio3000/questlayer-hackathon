@@ -18,7 +18,7 @@ import {
 type AnyComponent = ComponentType<any>;
 const loaders: Array<() => Promise<unknown>> = [];
 
-function lazyNamed<M, K extends keyof M>(load: () => Promise<M>, key: K): M[K] {
+function lazyNamed<M, K extends keyof M>(load: () => Promise<M>, key: K, compact = false): M[K] {
   let pending: Promise<M> | undefined;
   const loadOnce = () =>
     (pending ??= load().catch((error) => {
@@ -32,7 +32,7 @@ function lazyNamed<M, K extends keyof M>(load: () => Promise<M>, key: K): M[K] {
   function Deferred(props: ComponentProps<AnyComponent>): JSX.Element {
     return (
       <PanelBoundary>
-        <Suspense fallback={<EmptyState title={tr("Loading…")} status className="panel-loading" />}>
+        <Suspense fallback={compact ? <span className="sr-only" role="status">{tr("Loading…")}</span> : <EmptyState title={tr("Loading…")} status className="panel-loading" />}>
           <Lazy {...props} />
         </Suspense>
       </PanelBoundary>
@@ -60,7 +60,7 @@ export const AdventureResultResume = lazyNamed(
 );
 export const AdventureResultHistoryButton = lazyNamed(
   adventureResults,
-  "AdventureResultHistoryButton",
+  "AdventureResultHistoryButton", true,
 );
 export const PendingNativeTransactions = lazyNamed(
   () => import("./PendingNativeTransactions"),
@@ -143,9 +143,9 @@ export const ActorSheet = lazyNamed(
 // On-chain proof (docs/CHAIN-PROOF.md): one chunk for the icon, the
 // Settings feed and the background SocialDB profile, never with the map.
 const chainProof = () => import("./ChainFeed");
-export const ChainLink = lazyNamed(chainProof, "ChainLink");
+export const ChainLink = lazyNamed(chainProof, "ChainLink", true);
 export const ChainSettings = lazyNamed(chainProof, "ChainSettings");
-export const AutoSocialProfile = lazyNamed(chainProof, "AutoSocialProfile");
+export const AutoSocialProfile = lazyNamed(chainProof, "AutoSocialProfile", true);
 // Practice wallet, fund and bounty screens (split from App.tsx).
 const walletScreens = () => import("./WalletScreens");
 export const WalletPanel = lazyNamed(walletScreens, "WalletPanel");
@@ -170,3 +170,7 @@ class PanelBoundary extends Component<{ children: import("react").ReactNode }, {
     return this.state.failed ? <EmptyState art="ghost" title={tr("Something went wrong.")} action={{ label: tr("Reload game"), onClick: () => window.location.reload() }} /> : this.props.children;
   }
 }
+
+export const DailyBoard = lazyNamed(() => import("./DailyBoard"), "DailyBoard", true);
+export const SeasonCard = lazyNamed(() => import("./Season"), "SeasonCard");
+export const LandmarkClue = lazyNamed(() => import("./LandmarkClue"), "default");
