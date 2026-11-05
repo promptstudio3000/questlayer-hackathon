@@ -1,6 +1,6 @@
 # QuestLayer status
 
-Updated 3 November 2026. This is the single start page for the current state of the project. Older status
+Updated 5 November 2026. This is the single start page for the current state of the project. Older status
 documents (`DEVELOPMENT-STATUS.md`, `V1-REMAINING.md`, `NEXT-DEVELOPMENT-PLAN.md`, `NEAR-INTEGRATION-STATUS.md`,
 `PROJECT-REVIEW-*`) are kept as dated history and are superseded by this page.
 
@@ -12,6 +12,50 @@ reviewed, funded showcase where the player opens a zone chest, receives an Aura 
 rewards and NFTs are created, funded and signed in the background. The blockchain is a property of the items, not a
 screen the player visits. Coverage is Czechia only before the deadline (owner decision, 2 November); Europe and
 beyond come after.
+
+## Public testnet checkpoint — 5 November 2026, 21:57 UTC
+
+Read-only observation of [the public health endpoint](https://questlayer.promptstudio3000.com/api/health).
+It reports build `e9160028637cda7785cae02acd9ea3e299525c17`, network `testnet`, status `ok`.
+The weekend UI changes below are local work and are **not deployed** by this checkpoint.
+A healthy endpoint is not evidence that every financial journey or physical location has been tested.
+
+| Area | Observed state | Evidence field |
+| --- | --- | --- |
+| Plzeň preparation | 6/6 zones ready for 5 and 6 November; no shortfall | `worldPreparation.days` |
+| Czechia POIs | 290,817 places; 197,999 quest-ready; 5,867 require review | `poiWorld` |
+| Country coverage | 14,999 / 15,282 street cells have quest candidates (98.15%) | `poiWorld.countryShare` |
+| Auto cities | On, 85 cities; not funded | `autoCities` |
+| AI flavour | 2,844 cached entries; latest bounded nightly batch stopped at its token budget, 877 generated, no failed calls | `questFlavour` |
+| Distribution | Verified; no failed or reconciling entries reported | `distribution` |
+| Ledger | Recorder ready, per-action mode, 17 confirmed records, no unbound records; 4 November root confirmed | `chainLedger` |
+
+PRs #206–#210 and the preceding financial changes are included in the fetched base. The current source includes
+nightly QGOLD payouts, real-balance display and verified spending burns. Those mechanisms were not changed by
+this UI work. Their source presence and public health are separate from a fresh end-to-end money-flow audit.
+
+## Local weekend implementation — not deployed
+
+Map home now has one objective, two compact shortcuts and full-screen inventory, community, profile and encounter
+screens. The five profile sections and five community sections share accessible tabs. NPC and monster screens,
+keyboard rune tracing, retry handling, quiz/NPC copy and display-only fallback quest titles are implemented.
+Deferred panels reduce the measured first-screen bundle from 206 to 201 KB gzip on this checkout.
+
+New local checks cover landmark boundaries, keyboard trace scoring, an NPC errand acceptance and a server-confirmed
+monster quiz. Final verification, screenshots and the status of all 16 tasks are recorded in
+`output/qa/weekend-2026-11-05/README.md`. Physical iOS Safari and Android Chrome checks remain outstanding.
+No weekend change has been pushed, merged or deployed.
+
+## Remaining release gates
+
+- Review the local UI and complete physical-phone GPS, touch, keyboard and accessibility checks.
+- Verify financial end-to-end flows separately, including scheduled payouts and recovery on the deployed build.
+- Field-review geography and access; map provenance is not proof of a safe walking route.
+- Mainnet and publication remain separate owner decisions; see `docs/MAINNET-PLAN.md`.
+
+## Historical checkpoint — 3 November 2026
+
+The following checkpoint is retained as dated history. Later observations above supersede its live-state claims.
 
 ## Live on the public testnet host (3 November 2026)
 
