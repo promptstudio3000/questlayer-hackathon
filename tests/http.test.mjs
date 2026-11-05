@@ -123,7 +123,8 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     rmSync(dir, { recursive: true, force: true });
   });
   let ready = false;
-  const startupDeadline = Date.now() + 15000;
+  // Generous: four servers boot at once under npm test on a laptop.
+  const startupDeadline = Date.now() + 30000;
   while (Date.now() < startupDeadline) {
     try {
       const r = await fetch(base + "/api/health");

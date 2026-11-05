@@ -34,7 +34,10 @@ test("HTTP notes preserve consent, replay, visibility, photo permissions and blo
     rmSync(dir, { recursive: true, force: true });
   });
   let ready = false;
-  for (let i = 0; i < 100; i++) {
+  // Boot takes ~1.5 s alone but several seconds more when the suite runs four
+  // servers at once on a laptop (12 s seen on the Mac deploy run, 5 Nov).
+  const startupDeadline = Date.now() + 30000;
+  while (Date.now() < startupDeadline) {
     try {
       if ((await fetch(base + "/api/health")).ok) {
         ready = true;
