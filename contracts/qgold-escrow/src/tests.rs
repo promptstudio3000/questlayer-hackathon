@@ -281,10 +281,10 @@ fn cancel_refunds_reward_and_fee_for_unpaid_slots() {
     ctx("publisher.testnet", NOW);
     c.approve_task("t1".into(), a("w1.testnet"));
     let e = fails(|| {
-        ctx("publisher.testnet", NOW);
+        ctx("stranger.testnet", NOW);
         c.cancel_task("t1".into());
     });
-    assert!(e.contains("Only the poster"), "{e}");
+    assert!(e.contains("Only the poster or the publisher"), "{e}");
     ctx("poster.testnet", NOW);
     let v = c.cancel_task("t1".into());
     assert_eq!((v.paid_slots, v.refunded_slots, v.status.as_str()), (1, 3, "settled"));
@@ -319,7 +319,7 @@ fn dispute_blocks_cancel_and_reserves_slot_on_expiry() {
         ctx("stranger.testnet", NOW);
         c.open_dispute("t1".into(), a("w1.testnet"));
     });
-    assert!(e.contains("Only the worker or the poster"), "{e}");
+    assert!(e.contains("Only the worker, the poster or the publisher"), "{e}");
     ctx("w1.testnet", NOW);
     assert_eq!(c.open_dispute("t1".into(), a("w1.testnet")).status, "disputed");
     let e = fails(|| {
@@ -874,5 +874,98 @@ fn invariant_holds_across_mixed_flows() {
     // single paid slot (fee 1 / 7 slots = 0, so 0); secret fee ceil(33.3) = 34.
     assert_eq!(s.fees_collected.0, 50 + 34);
     assert_eq!(credit(&c, "creator.testnet"), 299);
+    assert_conserved(&c);
+}
+
+// ------------------------------------------------- game server (publisher) acts
+
+#[test]
+fn publisher_cancels_task_refunding_only_the_poster() {
+    let mut c = fresh();
+    fund_task(&mut c, "t1", 100, 2);
+    ctx("publisher.testnet", NOW);
+    c.open_dispute("t1".into(), a("w1.testnet"));
+    let e = fails(|| {
+        ctx("publisher.testnet", NOW);
+        c.cancel_task("t1".into());
+    });
+    assert!(e.contains("A dispute is open"), "{e}");
+    ctx("moderator.testnet", NOW);
+    c.resolve_dispute("t1".into(), a("w1.testnet"), true);
+    ctx("publisher.testnet", NOW);
+    let v = c.cancel_task("t1".into());
+    assert_eq!((v.paid_slots, v.refunded_slots), (1, 1));
+    assert_eq!(credit(&c, "w1.testnet"), 50);
+    assert_eq!(credit(&c, "poster.testnet"), 55);
+    assert_eq!(credit(&c, "publisher.testnet"), 0);
+    assert_conserved(&c);
+}
+
+#[test]
+fn publisher_disputes_secret_and_settles_transfers_for_players() {
+    let mut c = fresh();
+    deposit(&mut c, "buyer.testnet", 100, secret_msg("p1", 100));
+    ctx("publisher.testnet", NOW);
+    assert_eq!(c.dispute_secret("p1".into()).status, "disputed");
+    let e = fails(|| {
+        ctx("stranger.testnet", NOW);
+        c.dispute_secret("p1".into());
+    });
+    assert!(e.contains("Only the buyer or the publisher"), "{e}");
+
+    deposit(&mut c, "alice.testnet", 300, transfer_msg("x1", json!({"type":"both_confirm"})));
+    ctx("publisher.testnet", NOW);
+    assert_eq!(c.confirm_transfer("x1".into()).status, "released");
+    assert_eq!(credit(&c, "bob.testnet"), 300);
+
+    deposit(&mut c, "alice.testnet", 40, transfer_msg("x2", json!({"type":"both_confirm"})));
+    ctx("publisher.testnet", NOW);
+    assert_eq!(c.decline_transfer("x2".into()).status, "refunded");
+    assert_eq!(credit(&c, "alice.testnet"), 40);
+
+    deposit(&mut c, "alice.testnet", 60, transfer_msg("x3", json!({"type":"both_confirm"})));
+    let e = fails(|| {
+        ctx("publisher.testnet", NOW);
+        c.refund_transfer("x3".into());
+    });
+    assert!(e.contains("not expired"), "{e}");
+    ctx("publisher.testnet", NOW + 10 * HOUR);
+    assert_eq!(c.refund_transfer("x3".into()).status, "refunded");
+    assert_eq!(credit(&c, "alice.testnet"), 100);
+    assert_eq!(credit(&c, "publisher.testnet"), 0);
+    assert_conserved(&c);
+}
+
+#[test]
+fn withdraw_for_pays_only_the_credit_owner() {
+    let mut c = fresh();
+    fund_task(&mut c, "t1", 100, 1);
+    ctx("publisher.testnet", NOW);
+    c.approve_task("t1".into(), a("w.testnet"));
+    let e = fails(|| {
+        ctx_full("anyone.testnet", NOW, 0, 300);
+        let _ = c.withdraw_for(a("nobody.testnet"));
+    });
+    assert!(e.contains("No credit"), "{e}");
+    let e = fails(|| {
+        ctx_full("anyone.testnet", NOW, 0, 50);
+        let _ = c.withdraw_for(a("w.testnet"));
+    });
+    assert!(e.contains("60 Tgas"), "{e}");
+    ctx_full("anyone.testnet", NOW, 0, 300);
+    let _ = c.withdraw_for(a("w.testnet"));
+    assert_eq!(credit(&c, "w.testnet"), 0);
+    assert_eq!(credit(&c, "anyone.testnet"), 0);
+    assert_eq!(c.get_stats().pending_withdrawals.0, 100);
+    assert_conserved(&c);
+    callback(PromiseResult::Failed);
+    assert_eq!(c.on_withdraw(a("w.testnet"), U128(100)).0, 0);
+    assert_eq!(credit(&c, "w.testnet"), 100);
+    assert_conserved(&c);
+    ctx_full("anyone.testnet", NOW, 0, 300);
+    let _ = c.withdraw_for(a("w.testnet"));
+    callback(PromiseResult::Successful(vec![]));
+    assert_eq!(c.on_withdraw(a("w.testnet"), U128(100)).0, 100);
+    assert_eq!(c.get_stats().withdrawn.0, 100);
     assert_conserved(&c);
 }

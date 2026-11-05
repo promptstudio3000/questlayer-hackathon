@@ -101,6 +101,13 @@ function checkContext(ctx) {
           : null,
       wnear:
         typeof ctx.contracts.wnear === "string" ? ctx.contracts.wnear : null,
+      // QGOLD vault token and the market escrow (contracts/qgold-escrow).
+      qgold:
+        typeof ctx.contracts.qgold === "string" ? ctx.contracts.qgold : null,
+      qgoldEscrow:
+        typeof ctx.contracts.qgoldEscrow === "string"
+          ? ctx.contracts.qgoldEscrow
+          : null,
     },
     factorySetupDeposit:
       ctx.factorySetupDeposit === undefined || ctx.factorySetupDeposit === null
@@ -505,6 +512,28 @@ export function validateDelegate(decoded, context) {
         "A timeout claim takes one roll id.",
       );
     else unsupported();
+  } else if (
+    c.qgold != null &&
+    c.qgoldEscrow != null &&
+    receiverId === c.qgold &&
+    method === "ft_transfer_call"
+  ) {
+    // Funding a task, Secret or conditional send: the player's own QGOLD goes
+    // into the market escrow (the token moves, not NEAR; 1 yocto is the NEP-141
+    // confirmation). Nowhere else.
+    depositIs(1n, "QGOLD escrow funding");
+    demand(
+      plainObject(args) &&
+        Object.keys(args).every((k) => ["receiver_id", "amount", "memo", "msg"].includes(k)) &&
+        args.receiver_id === c.qgoldEscrow &&
+        typeof args.amount === "string" &&
+        /^[1-9]\d{0,30}$/.test(args.amount) &&
+        (args.memo == null || (typeof args.memo === "string" && args.memo.length <= 100)) &&
+        typeof args.msg === "string" &&
+        args.msg.length <= 2000,
+      "RELAY_ARGS",
+      "QGOLD can be sent only into the market escrow.",
+    );
   } else if (c.intents != null && receiverId === c.intents) {
     // Registering or removing the key that signs intents; trades and
     // withdrawals are signed intents the solver submits, never relayed calls.
