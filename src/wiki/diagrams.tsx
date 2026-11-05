@@ -351,7 +351,7 @@ function PoiPipeline() {
 function MapFormula() {
   return (
     <StackBar
-      title="How the day's map budget is shared between cells (after 5 % pioneer reserve). Votes take up to half; unused vote share flows to the rest."
+      title="How the day's zone prizes are shared between cells (coins are equal everywhere). Votes take up to half; unused vote share flows to the rest."
       segments={[
         { label: "Votes (QGOLD holders)", value: 50, tone: "ai" },
         { label: "Demand (players, 7 days)", value: 20, tone: "player" },

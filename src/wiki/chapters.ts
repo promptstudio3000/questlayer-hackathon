@@ -173,7 +173,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Walking, coins and finds",
     summary: "GPS-only movement, street coins in daily waves, street finds and calm reward feedback.",
     status: "live",
-    updated: "2026-11-04",
+    updated: "2026-11-05",
     sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/map-motion.ts", "src/RewardBursts.tsx"],
     blocks: [
       { viz: "core-loop" },
@@ -188,7 +188,7 @@ export const CHAPTERS: Chapter[] = [
       },
       { h: "Coins" },
       {
-        p: "Coins sit on mapped public paths, spaced 95–120 m apart (60 m within 300 m of a zone). Each cell has small ×1, medium ×3 and rare ×10 coins. They appear in **six waves between 07:00 and 22:00 local time**, each start shifted by up to ±30 min from the day seed; a later wave's coins stay hidden and cannot be claimed early. The demo arena has no waves so remote visitors in any time zone can play.",
+        p: "Coins sit on mapped public paths, spaced 95–120 m apart (60 m within 300 m of a zone). Every coin of a day is backed QGOLD of the same value (a pioneer coin counts twice). They appear in **six waves between 07:00 and 22:00 local time**, each start shifted by up to ±30 min from the day seed; a later wave's coins stay hidden and cannot be claimed early. The demo arena has no waves so remote visitors in any time zone can play; its coins give XP only.",
       },
       { viz: "map-coins" },
       {
@@ -485,21 +485,24 @@ export const CHAPTERS: Chapter[] = [
     id: "map-rewards",
     group: "world",
     title: "Map rewards plan",
-    summary: "One daily plan for all 16,346 cells of Czechia, a published Merkle root and claims verified on chain.",
+    summary: "One daily plan for all 16,346 cells of Czechia: every coin backed and equal, a published Merkle root and claims verified on chain.",
     status: "live",
-    updated: "2026-11-04",
-    sources: ["docs/MAP-REWARDS.md", "docs/GLOBAL-TREASURY.md", "server/map-rewards/policy.mjs", "server/map-rewards/chain.mjs"],
+    updated: "2026-11-05",
+    sources: ["docs/MAP-REWARDS.md", "docs/GLOBAL-TREASURY.md", "server/map-rewards/policy.mjs", "server/map-rewards/budget.mjs", "server/map-rewards/chain.mjs"],
     blocks: [
       {
-        p: "At the first request of a local day the server builds the day plan once: **10 % of the available coin treasury and 4 % of the zone treasury**, 5 % of it held as a pioneer reserve. Only cells a player actually opens reserve money, so the plan never drains the treasury; the rest stays for later days.",
+        p: "At the first request of a local day the server builds the day plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's backing rate R. There is no practice money: **every coin on the map is backed and all coins of a day are worth the same**.",
+      },
+      {
+        p: "Every cell holds 400 coin shares (a pioneer cell 800), so one coin = coin budget ÷ all shares. At the testnet default of 0.05 NEAR and R = 0.001 NEAR that is 50 QGOLD over 6.5 to 13 million shares, a few micro-QGOLD per coin. The value grows with the treasury; shares a cell's paths cannot hold stay in the treasury.",
       },
       { viz: "map-formula" },
       {
         list: [
-          "Votes may steer up to 50 %. With no voters their share goes to the other parts.",
-          "Caps: at most 1 % of the day per cell and 25 % per H3 res-5 area. What a capped cell cannot take is offered to the others.",
-          "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop doubles coins from the pioneer reserve and adds a pioneer chest. New places get more, not less.",
-          "Outside Czechia a cell gets a small fixed practice budget until more countries have a plan.",
+          "Zone prizes follow the formula: votes may steer up to 50 %; with no voters their share goes to the other parts.",
+          "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area. What a capped cell cannot take is offered to the others.",
+          "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest. New places get more, not less.",
+          "The demo arena (no GPS) gives XP only. Outside Czechia a cell gets no coins until more countries have a plan.",
         ],
       },
       { h: "Proof on chain" },
@@ -507,7 +510,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "One leaf per funded cell, sorted, hashed with sha256. `GET /api/map/rewards/day` shows the root, `GET /api/map/rewards/proof?cell=` the leaf and its proof.",
-          "The reward worker calls `publish_map_day`, `claim_map` and `close_map_day` on the rewards contract, which verifies every claim against the root. Only GPS-world coins and cell zones of players with a linked NEAR account, max 240 claims a day; the arena stays practice.",
+          "The reward worker calls `publish_map_day`, `claim_map` and `close_map_day` on the rewards contract, which verifies every claim against the root. Only GPS-world coins and cell zones of players with a linked NEAR account, max 240 claims a day; the demo arena gives XP only and never goes on chain.",
           "Each published day holds 256 storage slots (≈ 2.6 NEAR) until it is closed.",
         ],
       },
@@ -729,7 +732,7 @@ export const CHAPTERS: Chapter[] = [
         table: {
           head: ["Contract", "Account", "Role"],
           rows: [
-            ["Rewards", "`questlayer-rewards-20261101b.testnet`", "Treasury, daily days, map days, claims, withdrawals"],
+            ["Rewards", "`questlayer-rewards-20261101b.testnet`", "Treasury, daily days, map days, daily QGOLD payouts, claims"],
             ["QGOLD vault", "`questlayer-qgold-vault-20261104.testnet`", "Backed token, exits, insurance"],
             ["Collectibles", "`nfts.questlayer-dev-20261101.testnet`", "Aura NFTs (NEP-171/199), wardrobe"],
             ["Badges", "`questlayer-badges-20261102.testnet`", "Soulbound place and player badges"],
@@ -756,6 +759,40 @@ export const CHAPTERS: Chapter[] = [
       { h: "Reproducible builds" },
       {
         p: "Every contract WASM is built in Docker (Rust 1.97.0, linux/amd64) and its sha256 is pinned in `contracts/wasm-sha256.json`. CI fails when a build or a deployed manifest does not match. Collectibles changes also need an independent re-review.",
+      },
+    ],
+  },
+  {
+    id: "daily-payouts",
+    group: "chain",
+    title: "Daily QGOLD payouts",
+    summary: "One Merkle root per day of what every account earned, paid straight into the QGOLD vault with no daily claim limit.",
+    status: "off",
+    updated: "2026-11-05",
+    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "server/payouts/payout-tree.mjs"],
+    blocks: [
+      {
+        p: "Every backed coin is real QGOLD. After the day ends the server sums each account's earnings in NEAR and the rewards contract pays every account once from a single published root, instead of one receipt per coin (which allowed only 240 claims a day).",
+      },
+      {
+        list: [
+          "`publish_payout_day` commits the root and reserves the day's total from the coin and zone treasury, under the same per-date cap as city and map days.",
+          "`claim_payout` (anyone, 10 leaves per transaction) checks each leaf against the root and calls the vault's `mint_for` for exactly that account and amount. A repeated leaf is skipped; a refused mint reopens the leaf, so nothing is lost or paid twice.",
+          "`close_payout_day` returns what nobody claimed to the treasury three days after publication.",
+          "Amounts below 0.00000001 NEAR carry over to the next day: the vault cannot mint less than one QGOLD unit.",
+        ],
+      },
+      {
+        facts: [
+          ["Leaf", "`sha256(\"payout|<day_id>|<index>|<account>|<amount_yocto>\")`"],
+          ["Tree", "Sorted-pair sha256, the same as map days and the QXP ledger"],
+          ["Storage", "Root, totals and a bitmap of claimed leaves; no receipt per account"],
+          ["Limits", "Up to 262,144 accounts a day; 10 leaves per claim transaction"],
+        ],
+      },
+      {
+        note: "The contract code is built and tested; it goes live after the testnet rewards upgrade and once the server publishes payout days.",
+        tone: "info",
       },
     ],
   },

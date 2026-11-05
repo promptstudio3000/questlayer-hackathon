@@ -10,6 +10,7 @@
 //   5. upgrades the rewards contract in place (state kept; backup of the old
 //      WASM in .data/contract-backups/) and sets its QGOLD vault once; lets the
 //      reward worker key also call publish_map_day, claim_map, close_map_day,
+//      publish_payout_day, claim_payout, close_payout_day (daily payouts),
 //   6. smoke test from the operator: deposit 0.05 NEAR -> QGOLD, ft_burn 1 QGOLD,
 //      redeem 1 QGOLD instantly, audit ok, R not below its start,
 //   7. writes public/native-qgold-vault-testnet.json and the new rewards code hash
@@ -162,7 +163,7 @@ assert.equal((await view(rewardsId, "get_config")).qgold_vault, vaultId);
 // 5b. The reward worker key (same key pair, so the VPS key file stays) may also
 // publish, claim and close map days (docs/MAP-REWARDS.md §5). Swapped in one
 // transaction: delete the old function-call key, add it back with 7 methods.
-const WORKER_METHODS = ["publish_day", "close_day", "claim", "maintain_vault", "publish_map_day", "claim_map", "close_map_day"];
+const WORKER_METHODS = ["publish_day", "close_day", "claim", "maintain_vault", "publish_map_day", "claim_map", "close_map_day", "publish_payout_day", "claim_payout", "close_payout_day"];
 const workerKey = rewardsManifest.workerPublicKey;
 const rewardsKeys = (await provider.query({ request_type: "view_access_key_list", account_id: rewardsId, finality: "final" })).keys;
 const current = rewardsKeys.find((k) => k.public_key === workerKey);
@@ -171,7 +172,7 @@ const fc = current.access_key.permission?.FunctionCall;
 assert(fc && fc.receiver_id === rewardsId, "The reward worker key must be a function-call key on the rewards contract");
 if (!WORKER_METHODS.every((m) => fc.method_names.includes(m))) {
   const allowance = fc.allowance ? BigInt(fc.allowance) : 4n * 10n ** 23n;
-  await record("Let the reward worker key publish, claim and close map days", () =>
+  await record("Let the reward worker key publish, claim and close map and payout days", () =>
     rewardsAccount.signAndSendTransaction({
       receiverId: rewardsId,
       actions: [

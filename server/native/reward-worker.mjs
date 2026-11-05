@@ -24,16 +24,18 @@ import {
   mapChainEnabled,
   runMapChainWorker,
 } from "../map-rewards/chain.mjs";
+import { PAYOUT_CHAIN_METHODS } from "../payouts/payout-tree.mjs";
 const METHODS = ["publish_day", "close_day", "claim", "maintain_vault"];
-// The key is either the native set alone or the native set plus the map-day
-// methods (contracts/rewards map_days.rs); nothing else.
+// The key is the native set alone, the native set plus the map-day methods
+// (contracts/rewards map_days.rs), or both plus the daily payout methods
+// (payouts.rs); nothing else.
 export function allowedWorkerMethods(names) {
   if (!Array.isArray(names) || new Set(names).size !== names.length) return null;
   const withMap = [...METHODS, ...MAP_CHAIN_METHODS];
-  if (names.length === METHODS.length && names.every((m) => METHODS.includes(m)))
-    return METHODS;
-  if (names.length === withMap.length && names.every((m) => withMap.includes(m)))
-    return withMap;
+  const withPayouts = [...withMap, ...PAYOUT_CHAIN_METHODS];
+  for (const set of [METHODS, withMap, withPayouts])
+    if (names.length === set.length && names.every((m) => set.includes(m)))
+      return set;
   return null;
 }
 export async function rewardTransport(
@@ -437,7 +439,7 @@ export async function runRewardWorker(
 }
 export function startRewardWorker(
   native,
-  { keyPath, intervalMs = 30000 } = {},
+  { keyPath, intervalMs = 30000, qgoldRate = null } = {},
 ) {
   let stopped = false,
     running = null,
@@ -464,6 +466,7 @@ export function startRewardWorker(
             view: (method, args) => native.view(method, args, true),
             signer: native.signer,
             contractId: native.contractId,
+            qgoldRate,
           }).catch((error) =>
             console.error("Map chain worker:", String(error.message).slice(0, 200)),
           );
