@@ -38,6 +38,7 @@ export function rewardsResolution(zoom: number) {
 }
 export function goldLabel(valueU: number) {
   const g = valueU / 1e6;
+  if (g > 0 && g < 0.01) return String(Number(g.toFixed(6)));
   return g >= 100 ? g.toFixed(0) : g >= 10 ? g.toFixed(1) : g.toFixed(2);
 }
 

@@ -3533,6 +3533,10 @@ const rewardWorker =
   process.env.REWARD_WORKER_KEY_PATH
     ? startRewardWorker(nativeRewards, {
         keyPath: process.env.REWARD_WORKER_KEY_PATH,
+        // Map coins are priced in QGOLD at the vault's backing rate R.
+        qgoldRate: qgoldVault
+          ? async () => (await qgoldVault.read()).state?.rate
+          : null,
       })
     : null;
 const chainLedgerWorker =

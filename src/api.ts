@@ -1,6 +1,8 @@
 import { tr } from "./i18n.ts";
 export const GOLD=1_000_000;
-export const gold=(value:number,decimals=2)=>new Intl.NumberFormat('en-US',{maximumFractionDigits:decimals}).format(value/GOLD);
+// Map coins are backed QGOLD split over every coin of the day, so one coin
+// can be a few micro-QGOLD: amounts under 0.01 show up to 6 decimals.
+export const gold=(value:number,decimals=2)=>new Intl.NumberFormat('en-US',{maximumFractionDigits:value&&Math.abs(value)<GOLD/100?Math.max(decimals,6):decimals}).format(value/GOLD);
 export const near=(value:number)=>new Intl.NumberFormat('en-US',{maximumFractionDigits:4}).format(value/GOLD/1000);
 export class ApiError extends Error {code:string;status:number;constructor(message:string,code:string,status:number){super(message);this.code=code;this.status=status;}}
 export async function api<T=Record<string,unknown>>(path:string,data?:unknown,options?:{signal?:AbortSignal}):Promise<T>{const r=await fetch(`/api${path}`,{signal:options?.signal,method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json'},credentials:'same-origin',...(data===undefined?{}:{body:JSON.stringify(data)})});const result=await r.json();if(!r.ok)throw new ApiError(result.error||'Could not connect to the game.',result.code,r.status);return result as T;}

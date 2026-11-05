@@ -55,7 +55,7 @@ test("yield uses two conserved buckets and idempotent receipts", () => {
   );
   db.close();
 });
-test("simultaneous activation shares a single world and one reserved coin budget", async () => {
+test("simultaneous activation shares a single world and one cell drop", async () => {
   const { db } = setup();
   const [w1, w2] = await Promise.all([
     ensureWorld(db, HOME, true, now),
@@ -63,13 +63,15 @@ test("simultaneous activation shares a single world and one reserved coin budget
   ]);
   assert.equal(w1.id, w2.id);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM worlds").get().n, 1);
-  // Map rewards: one cell drop, its coins are exactly the reserved budget.
-  const n = db.prepare("SELECT COALESCE(SUM(value_u),0) AS n FROM coins").get().n;
-  assert.ok(n > 0);
+  // Map rewards: one cell drop. The demo arena's coins give XP only, so no
+  // money is reserved anywhere.
+  const c = db.prepare("SELECT COUNT(*) n,COALESCE(SUM(value_u),0) v FROM coins").get();
+  assert.ok(c.n > 0);
+  assert.equal(c.v, 0);
   assert.equal(
     db.prepare("SELECT reserved_u FROM treasury WHERE bucket='coins'").get()
       .reserved_u,
-    n,
+    0,
   );
   db.close();
 });

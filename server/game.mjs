@@ -143,9 +143,12 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       "This coin was just collected. Pick another one nearby.",
       409,
     );
-    db.prepare(
-      "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
-    ).run(coin.value_u, coin.value_u, "coins");
+    // Map coins are backed by the day's on-chain budget (map-rewards budget),
+    // never by the game database's treasury.
+    if (!wave)
+      db.prepare(
+        "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
+      ).run(coin.value_u, coin.value_u, "coins");
     const find = streetFindIds(db, coin.world_id).has(coinId),
       { xp, cap } = capLocationXp(
         db,
@@ -243,7 +246,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
       now,
       q.id,
     );
-    if (reward)
+    if (reward && !meta.cellZone)
       db.prepare(
         "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
       ).run(reward, reward, "zones");
