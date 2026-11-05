@@ -8,6 +8,15 @@ import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
 import { createMarketRoutes } from "./market/routes.mjs";
+import {
+  escrowHealth,
+  escrowTransport,
+  escrowView,
+  loadEscrowManifest,
+  runEscrowWorker,
+  setEscrowConfig,
+} from "./market/chain.mjs";
+import { ACTIVATE as marketActivate, DROP as marketDrop } from "./market/service.mjs";
 import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
 import { nearAiStatus } from "./ai/near-ai.mjs";
 import { createAdventureResults } from "./adventure-results.mjs";
@@ -112,6 +121,10 @@ import {
 } from "./native/network.mjs";
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+// The relayer is built before the market; it reads the same escrow manifest.
+function escrowManifestForRelay() {
+  return loadEscrowManifest(APP_ROOT, NETWORK);
+}
 import { createHash, randomBytes } from "node:crypto";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
@@ -421,6 +434,8 @@ const relayer = managedAccounts
           npcGames: npcRolls?.contractId || undefined,
           intents: intentsManifest?.verifierContract || undefined,
           wnear: intentsManifest?.wnear || undefined,
+          qgold: escrowManifestForRelay()?.tokenId || undefined,
+          qgoldEscrow: escrowManifestForRelay()?.contractId || undefined,
           rewards: !featureEnabled("rewards")
             ? undefined
             : rewardsConfig?.contractId ||
@@ -757,7 +772,47 @@ const marketModerators = new Set(
     .map((x) => x.trim())
     .filter(Boolean),
 );
+// Every market amount is real QGOLD in contracts/qgold-escrow
+// (public/native-qgold-escrow-<network>.json). The publisher key (a
+// function-call key for the escrow) lives at <state dir>/escrow-publisher.json
+// or QGOLD_ESCROW_PUBLISHER_KEY_PATH; without it fundings are still
+// confirmed but payouts wait in the queue.
+const escrowManifest = loadEscrowManifest(APP_ROOT, NETWORK);
+setEscrowConfig(escrowManifest);
+const marketEscrowView = escrowManifest ? escrowView(provider, escrowManifest.contractId) : null;
+if (escrowManifest && process.env.QGOLD_ESCROW_WORKER !== "0") {
+  const keyPath =
+    process.env.QGOLD_ESCROW_PUBLISHER_KEY_PATH ||
+    resolve(dirname(defaultDatabasePath()), "escrow-publisher.json");
+  let send = null,
+    running = false;
+  const tick = async () => {
+    if (running) return;
+    running = true;
+    try {
+      if (!send && existsSync(keyPath)) {
+        const nearApi = await import("near-api-js");
+        send = await escrowTransport(provider, escrowManifest, keyPath, nearApi);
+      }
+      await runEscrowWorker(db, {
+        view: marketEscrowView,
+        call: send || (async () => { throw Error("Escrow publisher key is not installed."); }),
+        activate: marketActivate,
+        drop: marketDrop,
+        now: Date.now(),
+      });
+    } catch (error) {
+      console.error("Market escrow worker:", String(error?.message || error).slice(0, 200));
+    } finally {
+      running = false;
+    }
+  };
+  setInterval(() => void tick(), 15_000).unref();
+  void tick();
+}
 const marketRoutes = createMarketRoutes({
+  escrowView: marketEscrowView,
+  tokenView: escrowManifest ? escrowView(provider, escrowManifest.tokenId) : null,
   db,
   isModerator: (player) => {
     if (marketModerators.has(player)) return true;
@@ -1260,6 +1315,7 @@ async function api(req, res, url) {
       season: season ? season.status() : { status: "off" },
       badges: badgeService ? badgeService.status() : { status: "off" },
       qgoldVault: qgoldVault ? qgoldVault.status() : { status: "not-configured" },
+      marketEscrow: escrowHealth(db),
       chainLedger: chainLedger
         ? { ...chainLedger.status(), contract: ledgerChain.contractId, recorder: ledgerChain.ready ? "ready" : ledgerChain.error }
         : { mode: "off" },

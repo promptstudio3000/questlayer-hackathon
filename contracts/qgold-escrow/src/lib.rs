@@ -31,6 +31,10 @@ const VERSION: &str = "1.0.0";
 const GAS_FT_TRANSFER: Gas = Gas::from_tgas(20);
 const GAS_ON_WITHDRAW: Gas = Gas::from_tgas(15);
 const GAS_WITHDRAW_MIN: Gas = Gas::from_tgas(50);
+const GAS_STORAGE_DEPOSIT: Gas = Gas::from_tgas(10);
+const GAS_WITHDRAW_FOR_MIN: Gas = Gas::from_tgas(60);
+/// NEP-145 registration on the QGOLD vault (0.00125 NEAR, contracts/qgold STORAGE_FEE).
+const STORAGE_DEPOSIT_YOCTO: u128 = 1_250_000_000_000_000_000_000;
 
 /// Platform fee, rounded up: ceil(amount * FEE_BPS / BPS).
 pub fn fee_of(amount: u128) -> u128 {
@@ -244,6 +248,7 @@ pub struct ConfigView {
 #[allow(dead_code)]
 trait FungibleToken {
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
+    fn storage_deposit(&mut self, account_id: Option<AccountId>, registration_only: Option<bool>);
 }
 #[ext_contract(ext_self)]
 #[allow(dead_code)]
@@ -384,11 +389,17 @@ impl QgoldEscrow {
         self.save_task(&id, task)
     }
 
-    /// Poster refunds every unpaid slot (reward + fee) while no dispute is open.
+    /// Poster (or the publisher on the poster's request in the game) refunds
+    /// every unpaid slot (reward + fee) while no dispute is open. Refunds only
+    /// ever go to the poster.
     pub fn cancel_task(&mut self, id: String) -> TaskView {
         self.not_paused();
         let mut task = self.task(&id);
-        assert_eq!(env::predecessor_account_id(), task.poster, "Only the poster can cancel");
+        let caller = env::predecessor_account_id();
+        assert!(
+            caller == task.poster || caller == self.publisher_id,
+            "Only the poster or the publisher can cancel"
+        );
         assert!(task.disputes.is_empty(), "A dispute is open");
         assert!(!task.closed(), "Task is closed");
         let n = task.free_slots();
@@ -407,14 +418,15 @@ impl QgoldEscrow {
         self.save_task(&id, task)
     }
 
-    /// Worker or poster disputes a submission; this reserves one slot.
+    /// Worker, poster or publisher (a proof waiting for review in the game)
+    /// reserves one slot for `worker`, so cancel/expire cannot take it.
     pub fn open_dispute(&mut self, id: String, worker: AccountId) -> TaskView {
         self.not_paused();
         let mut task = self.task(&id);
         let caller = env::predecessor_account_id();
         assert!(
-            caller == worker || caller == task.poster,
-            "Only the worker or the poster can open a dispute"
+            caller == worker || caller == task.poster || caller == self.publisher_id,
+            "Only the worker, the poster or the publisher can open a dispute"
         );
         Self::check_worker(&task, &worker);
         assert!(!task.disputes.contains(&worker), "Dispute already open");
@@ -484,11 +496,12 @@ impl QgoldEscrow {
         self.save_secret(&id, s)
     }
 
-    /// Buyer disputes within 7 days of the purchase.
+    /// Buyer (or the publisher for a dispute filed in the game) within 7 days.
     pub fn dispute_secret(&mut self, id: String) -> SecretView {
         self.not_paused();
         let mut s = self.secret(&id);
-        assert_eq!(env::predecessor_account_id(), s.buyer, "Only the buyer");
+        let caller = env::predecessor_account_id();
+        assert!(caller == s.buyer || caller == self.publisher_id, "Only the buyer or the publisher");
         assert!(s.status == Status::Held, "Secret purchase is not held");
         assert!(
             Self::now() < s.funded_at_ms + SECRET_HOLD_MS,
@@ -522,7 +535,8 @@ impl QgoldEscrow {
 
     // --------------------------------------------------------------- transfers
 
-    /// both_confirm: sender and receiver each confirm before expiry; the second confirmation releases.
+    /// both_confirm: sender and receiver each confirm before expiry; the second
+    /// confirmation releases. The publisher releases once the game recorded both.
     pub fn confirm_transfer(&mut self, id: String) -> TransferView {
         self.not_paused();
         let mut t = self.transfer(&id);
@@ -530,7 +544,11 @@ impl QgoldEscrow {
         assert!(t.status == Status::Held, "Transfer is not held");
         assert!(Self::now() < t.expires_ms, "Transfer expired");
         let caller = env::predecessor_account_id();
-        if caller == t.sender {
+        if caller == self.publisher_id {
+            // The game recorded both confirmations of its signed-in players.
+            t.sender_confirmed = true;
+            t.receiver_confirmed = true;
+        } else if caller == t.sender {
             t.sender_confirmed = true;
         } else if caller == t.to {
             t.receiver_confirmed = true;
@@ -570,22 +588,24 @@ impl QgoldEscrow {
         self.save_transfer(&id, t)
     }
 
-    /// Sender takes the funds back once the transfer expired unreleased.
+    /// Sender (or the publisher for them) takes the funds back once the transfer expired unreleased.
     pub fn refund_transfer(&mut self, id: String) -> TransferView {
         self.not_paused();
         let mut t = self.transfer(&id);
-        assert_eq!(env::predecessor_account_id(), t.sender, "Only the sender");
+        let caller = env::predecessor_account_id();
+        assert!(caller == t.sender || caller == self.publisher_id, "Only the sender or the publisher");
         assert!(t.status == Status::Held, "Transfer is not held");
         assert!(Self::now() >= t.expires_ms, "Transfer has not expired");
         self.refund_transfer_funds(&id, &mut t, "expired");
         self.save_transfer(&id, t)
     }
 
-    /// Receiver declines at any time: the sender is refunded.
+    /// Receiver (or the publisher for them) declines at any time: the sender is refunded.
     pub fn decline_transfer(&mut self, id: String) -> TransferView {
         self.not_paused();
         let mut t = self.transfer(&id);
-        assert_eq!(env::predecessor_account_id(), t.to, "Only the receiver");
+        let caller = env::predecessor_account_id();
+        assert!(caller == t.to || caller == self.publisher_id, "Only the receiver or the publisher");
         assert!(t.status == Status::Held, "Transfer is not held");
         self.refund_transfer_funds(&id, &mut t, "declined");
         self.save_transfer(&id, t)
@@ -601,17 +621,37 @@ impl QgoldEscrow {
         self.not_paused();
         assert!(env::prepaid_gas() >= GAS_WITHDRAW_MIN, "Attach at least 50 Tgas");
         let account_id = env::predecessor_account_id();
-        let amount = self.credits.get(&account_id).unwrap_or(0);
-        assert!(amount > 0, "No credit to withdraw");
-        self.credits.remove(&account_id);
-        self.credits_total -= amount;
-        self.pending_total += amount;
-        self.check();
-        Self::event("withdraw_started", json!({"account_id":account_id,"amount":U128(amount)}));
+        let amount = self.start_withdraw(&account_id);
         ext_ft::ext(self.token_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(GAS_FT_TRANSFER)
             .ft_transfer(account_id.clone(), U128(amount), Some("QuestLayer escrow withdrawal".into()))
+            .then(
+                ext_self::ext(env::current_account_id())
+                    .with_static_gas(GAS_ON_WITHDRAW)
+                    .on_withdraw(account_id, U128(amount)),
+            )
+    }
+
+    /// Pushes `account_id`'s whole credit to that account. Anyone may call it
+    /// (the game server does after every payout): the tokens can only go to
+    /// the credit's owner. The escrow first registers the account on the token
+    /// from its own NEAR balance (the token refunds the deposit when the
+    /// account is registered already). Attach at least 60 Tgas.
+    pub fn withdraw_for(&mut self, account_id: AccountId) -> Promise {
+        self.not_paused();
+        assert!(env::prepaid_gas() >= GAS_WITHDRAW_FOR_MIN, "Attach at least 60 Tgas");
+        let amount = self.start_withdraw(&account_id);
+        ext_ft::ext(self.token_id.clone())
+            .with_attached_deposit(NearToken::from_yoctonear(STORAGE_DEPOSIT_YOCTO))
+            .with_static_gas(GAS_STORAGE_DEPOSIT)
+            .storage_deposit(Some(account_id.clone()), Some(true))
+            .then(
+                ext_ft::ext(self.token_id.clone())
+                    .with_attached_deposit(NearToken::from_yoctonear(1))
+                    .with_static_gas(GAS_FT_TRANSFER)
+                    .ft_transfer(account_id.clone(), U128(amount), Some("QuestLayer escrow payout".into())),
+            )
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_static_gas(GAS_ON_WITHDRAW)
@@ -749,6 +789,17 @@ impl QgoldEscrow {
     }
     fn not_paused(&self) {
         assert!(!self.paused, "Escrow is paused");
+    }
+    /// Moves the account's whole credit to pending (the token transfer follows).
+    fn start_withdraw(&mut self, account_id: &AccountId) -> u128 {
+        let amount = self.credits.get(account_id).unwrap_or(0);
+        assert!(amount > 0, "No credit to withdraw");
+        self.credits.remove(account_id);
+        self.credits_total -= amount;
+        self.pending_total += amount;
+        self.check();
+        Self::event("withdraw_started", json!({"account_id":account_id,"amount":U128(amount)}));
+        amount
     }
     fn owner_only(&self) {
         assert_eq!(env::predecessor_account_id(), self.owner_id, "Only the owner");

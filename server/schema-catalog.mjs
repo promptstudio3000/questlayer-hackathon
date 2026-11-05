@@ -15,6 +15,7 @@ for (const relative of [
   "./daily-board/schema.mjs",
   "./earned-editions.mjs",
   "./market/service.mjs",
+  "./market/chain.mjs",
   "./fair-play.mjs",
   "./map-read-indexes.mjs",
   "./hot-path-indexes.mjs",

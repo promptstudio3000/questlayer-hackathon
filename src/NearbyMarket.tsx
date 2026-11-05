@@ -1,5 +1,7 @@
 // Explorer · Nearby: player tasks, Secrets and conditional sends around the
-// explorer (docs/TASK-MARKET.md). Practice GOLD until the QGOLD vault is live.
+// explorer (docs/TASK-MARKET.md). Every amount is real QGOLD: the player pays
+// it into the qgold-escrow contract with one sponsored ft_transfer_call from
+// their own NEAR account, and the game releases or refunds it on chain.
 // Posters pay the reward plus a 10 % fee on top; Secret creators get 90 % of
 // the price after a visit or 7 days without a dispute; sends carry no fee.
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
@@ -99,7 +101,18 @@ type Transfer = {
   expiresAt: number;
   incoming: boolean;
 };
+/** The exact call the player signs to pay QGOLD into the market escrow. */
+export type MarketFunding = {
+  id: string;
+  signerId: string;
+  receiverId: string;
+  methodName: "ft_transfer_call";
+  args: { receiver_id: string; amount: string; memo: null; msg: string };
+  gas: string;
+  deposit: "1";
+};
 type Nearby = {
+  wallet?: { account: string | null; balance: number | null };
   tasks: MarketTask[];
   forMe: MarketTask[];
   taking: MarketTask[];
@@ -147,17 +160,20 @@ const feeOnTop = (v: number) => Math.ceil(v / 10);
 const when = (ms: number) =>
   new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(ms);
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export function NearbyMarket({
   position,
   fix,
-  gold: balance,
+  fund,
   notify,
   onBalance,
 }: {
   position: Point;
   /** Current GPS fix (or the demo position as a fix). */
   fix: () => Fix;
-  gold: number;
+  /** Signs the escrow funding call with the account it names. */
+  fund: (call: MarketFunding) => Promise<void>;
   notify: (text: string, error?: boolean) => void;
   /** Called after any change that moves the player's GOLD. */
   onBalance: () => void;
@@ -195,6 +211,20 @@ export function NearbyMarket({
     setBusy(label);
     try {
       const result = await work();
+      const funding = (result as { funding?: MarketFunding | null } | undefined)?.funding;
+      if (funding) {
+        // The agreement opens once the QGOLD is in the escrow.
+        await fund(funding);
+        let state = "waiting";
+        for (let i = 0; i < 10 && state !== "funded"; i++) {
+          if (i) await sleep(1500);
+          state = (await api<{ state: string }>("/market/funded", { id: funding.id })).state;
+        }
+        if (state !== "funded") {
+          notify(tr("Your QGOLD is on its way. It opens here in a minute."));
+          done = undefined;
+        }
+      }
       if (done) notify(done);
       onBalance();
       await load();
@@ -226,7 +256,10 @@ export function NearbyMarket({
           <HandCoins size={18} aria-hidden="true" /> {tr("Send on a condition")}
         </button>
       </div>
-      <p className="nearby-note">{tr("Practice GOLD for now. Real QGOLD comes with the vault. Posting a task adds a 10 % fee on top; sends are free.")}</p>
+      <p className="nearby-note">
+        {tr("Real QGOLD from your account, held by the escrow contract until the task is done. Posting a task adds a 10 % fee on top; sends are free.")}
+        {data.wallet?.balance != null && ` ${tr("You hold {0} QGOLD.", { 0: gold(data.wallet.balance) })}`}
+      </p>
 
       {active.length > 0 && (
         <TaskSection title={tr("Your active tasks")} tasks={active} onOpen={(t) => setOpenTask({ id: t.id })} />
@@ -304,7 +337,7 @@ export function NearbyMarket({
         />
       )}
       {form === "task" && (
-        <TaskForm balance={balance} position={position} onClose={() => setForm("")} submit={async (input) => {
+        <TaskForm balance={data.wallet?.balance ?? Number.MAX_SAFE_INTEGER} position={position} onClose={() => setForm("")} submit={async (input) => {
           const r = await run("task:new", () => api<{ id: string; linkKey: string | null }>("/market/tasks", input), tr("Task posted. The reward is held until someone completes it."));
           if (r) {
             setForm("");
@@ -709,7 +742,7 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
       <p className="market-total" role="status">
         {tr("You pay {0} GOLD: {1} in rewards + {2} fee (10 %). Unused GOLD and its fee come back.", { 0: gold(total + fee), 1: gold(total), 2: gold(fee) })}
       </p>
-      {short && <p role="alert">{tr("Not enough GOLD.")}</p>}
+      {short && <p role="alert">{tr("Not enough QGOLD in your account.")}</p>}
       <button disabled={busy || short || reward < 0.01 * GOLD}>{tr("Post and hold the reward")}</button>
     </FormShell>
   );
