@@ -252,7 +252,7 @@ export function PlaceMessages({
           </label>
           <p className="gold-shop-note">{tr("Public at this map spot. GOLD is burned and not returned if the message is removed.")}</p>
           <button type="submit" className="gold-primary" disabled={busy || !text.trim()}>
-            {tr("Post for {0} GOLD", { 0: (perDay ?? 0) * days })}
+            {tr("Post for {0} GOLD", { 0: Math.round((perDay ?? 0) * days * 1e6) / 1e6 })}
           </button>
         </form>
       )}

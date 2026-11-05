@@ -663,7 +663,8 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           `Emotes: ${GOLD.emotes.free.length} free, premium ones shown to others for ${GOLD.emotes.showSeconds} s (${premiumEmotes}).`,
-          `NPC gear: one chest-edition Aura a day from a trader (rare ${GOLD.gear.price.rare}, epic ${GOLD.gear.price.epic} GOLD).`,
+          `NPC gear: one chest-edition Aura a day from a trader (rare ${GOLD.gear.price.rare}, epic ${GOLD.gear.price.epic} QGOLD).`,
+          `Prices are in QGOLD and sized to play: a map coin is worth about 0.0004 QGOLD on testnet and a cell-zone prize a few hundredths, so a premium emote (${Math.min(...GOLD.emotes.premium.map((e) => e.price))}–${Math.max(...GOLD.emotes.premium.map((e) => e.price))} QGOLD) is about one good walk and a frame a few days of play.`,
           `Lures: ${GOLD.lures.minutes} minutes, GPS only, ${GOLD.lures.hours.join("–")}, at least ${GOLD.lures.spacingM} m apart, snapped to a safe place within ${GOLD.lures.poiSnapM} m. They attract actors; they never change odds.`,
           "Place messages: paid shouts live up to 7 days; a topic with posts from 6 distinct authors becomes free forever and is archived after 90 days without activity.",
           "Every spend burns real QGOLD: the player's own account calls `ft_burn` on the QGOLD token with the game's memo (sponsored, no popup on the explorer account), the server verifies that transaction on chain, and only then the purchase happens. The backing stays in the vault, so every burn raises R for all holders.",

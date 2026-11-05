@@ -1,51 +1,141 @@
 {
-  "version": "gold-spend-v1",
-  "note": "Tuning proposal (QGOLD stream 4, 4 Nov 2026). Prices are whole GOLD. Until the QGOLD vault is live every spend burns practice GOLD from the game database; afterwards the same rows become ft_burn memos. Spending never creates money and never changes odds.",
+  "version": "gold-spend-v2",
+  "note": "Prices are QGOLD (6 decimals), set 5 Nov 2026 so a premium emote costs about one good walk: with the testnet map budget a coin is worth about 0.0004 QGOLD and a cell-zone prize a few hundredths. Every spend burns the player's own QGOLD on chain (ft_burn, docs/GOLD-SPENDING.md). Spending never creates money and never changes odds.",
   "emotes": {
-    "free": ["wave", "smile", "thumbs", "heart", "party", "question"],
+    "free": [
+      "wave",
+      "smile",
+      "thumbs",
+      "heart",
+      "party",
+      "question"
+    ],
     "premium": [
-      { "id": "fire", "price": 5 },
-      { "id": "crown", "price": 8 },
-      { "id": "gem", "price": 8 },
-      { "id": "ghost", "price": 5 },
-      { "id": "dragon", "price": 12 },
-      { "id": "rocket", "price": 6 },
-      { "id": "bolt", "price": 5 },
-      { "id": "clover", "price": 6 },
-      { "id": "rainbow", "price": 10 },
-      { "id": "unicorn", "price": 15 }
+      {
+        "id": "fire",
+        "price": 0.025
+      },
+      {
+        "id": "crown",
+        "price": 0.04
+      },
+      {
+        "id": "gem",
+        "price": 0.04
+      },
+      {
+        "id": "ghost",
+        "price": 0.025
+      },
+      {
+        "id": "dragon",
+        "price": 0.06
+      },
+      {
+        "id": "rocket",
+        "price": 0.03
+      },
+      {
+        "id": "bolt",
+        "price": 0.025
+      },
+      {
+        "id": "clover",
+        "price": 0.03
+      },
+      {
+        "id": "rainbow",
+        "price": 0.05
+      },
+      {
+        "id": "unicorn",
+        "price": 0.075
+      }
     ],
     "showSeconds": 30
   },
   "cosmetics": [
-    { "id": "frame-ember", "slot": "frame", "price": 20 },
-    { "id": "frame-frost", "slot": "frame", "price": 20 },
-    { "id": "frame-storm", "slot": "frame", "price": 30 },
-    { "id": "frame-void", "slot": "frame", "price": 30 },
-    { "id": "frame-gold", "slot": "frame", "price": 60 }
+    {
+      "id": "frame-ember",
+      "slot": "frame",
+      "price": 0.1
+    },
+    {
+      "id": "frame-frost",
+      "slot": "frame",
+      "price": 0.1
+    },
+    {
+      "id": "frame-storm",
+      "slot": "frame",
+      "price": 0.15
+    },
+    {
+      "id": "frame-void",
+      "slot": "frame",
+      "price": 0.15
+    },
+    {
+      "id": "frame-gold",
+      "slot": "frame",
+      "price": 0.3
+    }
   ],
   "gear": {
-    "editions": ["polar", "bloom", "storm", "moon", "comet"],
-    "price": { "rare": 150, "epic": 400 },
+    "editions": [
+      "polar",
+      "bloom",
+      "storm",
+      "moon",
+      "comet"
+    ],
+    "price": {
+      "rare": 0.75,
+      "epic": 2
+    },
     "perDay": 1
   },
-  "altar": { "default": 5, "byRecipe": { "ember-comet": 10, "storm-crown": 10, "void-moon": 10, "wardbreaker": 10 } },
+  "altar": {
+    "default": 0.025,
+    "byRecipe": {
+      "ember-comet": 0.05,
+      "storm-crown": 0.05,
+      "void-moon": 0.05,
+      "wardbreaker": 0.05
+    }
+  },
   "lures": {
     "minutes": 30,
     "spacingM": 200,
     "poiSnapM": 75,
-    "hours": ["07:00", "22:00"],
+    "hours": [
+      "07:00",
+      "22:00"
+    ],
     "searchM": 2000,
-    "price": { "beacon": 2, "trader": 10, "roamer": 8, "lurker": 12, "wandering_rare": 10, "storyteller": 6, "quest_giver": 6 },
+    "price": {
+      "beacon": 0.01,
+      "trader": 0.05,
+      "roamer": 0.04,
+      "lurker": 0.06,
+      "wandering_rare": 0.05,
+      "storyteller": 0.03,
+      "quest_giver": 0.03
+    },
     "kinds": {
-      "monster": ["roamer", "lurker"],
-      "trader": ["trader"]
+      "monster": [
+        "roamer",
+        "lurker"
+      ],
+      "trader": [
+        "trader"
+      ]
     },
     "visibleM": 1000
   },
   "places": {
-    "shoutPerDay": 1,
-    "topicPerDay": 2,
+    "shoutPerDay": 0.005,
+    "topicPerDay": 0.01,
     "maxDays": 7,
     "shoutChars": 140,
     "topicChars": 280,
@@ -56,6 +146,10 @@
     "postLevel": 2,
     "perPlayerActive": 5,
     "hideAfterReports": 3,
-    "feedKm": [1, 3, 10]
+    "feedKm": [
+      1,
+      3,
+      10
+    ]
   }
 }

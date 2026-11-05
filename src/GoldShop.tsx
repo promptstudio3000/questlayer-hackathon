@@ -68,7 +68,7 @@ export function GoldShop({
     }
   };
   if (!shop) return <p className="gold-shop-empty">{tr("Opening the shop…")}</p>;
-  const can = (price: number) => shop.balanceU >= price * GOLD;
+  const can = (price: number) => shop.balanceU >= Math.round(price * GOLD);
   const priceTag = (price: number) => tr("{0} GOLD", { 0: price });
   const showEmote = (id: string) =>
     run(`show:${id}`, async () => {

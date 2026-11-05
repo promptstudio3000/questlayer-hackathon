@@ -39,14 +39,19 @@ Public totals: `GET /api/gold/burns`.
 
 ## What GOLD buys
 
-Prices are a tuning proposal in `server/data/gold-spend.json` (whole GOLD).
+Prices live in `server/data/gold-spend.json` and are QGOLD (set 5 Nov 2026,
+`gold-spend-v2`). They are sized to what play earns on testnet: a map coin is
+worth about 0.0004 QGOLD (the day's coin budget split over every coin in
+Czechia) and a cell-zone prize a few hundredths. So a premium emote
+(0.025–0.075) is about one good walk, a frame (0.1–0.3) a few days, NPC gear
+0.75 (rare) or 2 (epic), a lure 0.01–0.06, a shout 0.005 and a topic 0.01 a day.
 
 | Spend | Rule |
 | --- | --- |
 | Emotes above the character | 6 basic emotes are free for everyone. 10 premium emotes are unlocked once. An emote shows to nearby players for 30 s (presence carries it). |
 | Cosmetics | Marker frames, unlocked once, one worn at a time. Visible to nearby players. |
 | Trader premium gear | At a trader (encounter token required). Burn first, then a chest-edition Aura (`polar`, `bloom`, `storm`, `moon`, `comet`) from the shared supply lands in the wardrobe; it is secured as an NFT through the ordinary `redeem_aura` claim. One a day. |
-| Golden Altar fee | 5 GOLD per offering, 10 for epic recipes (`GOLD_ALTAR_FEE=0` turns it off). |
+| Golden Altar fee | 0.025 QGOLD per offering, 0.05 for epic recipes (`GOLD_ALTAR_FEE=0` turns it off). |
 | Lure | See below. |
 | Place messages | See below. |
 
