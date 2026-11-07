@@ -20,6 +20,7 @@ export type AdventureResult = {
   reward: {
     xp: number;
     goldU: number;
+    near?: {asset:'NEAR';amountYocto:string;amountNear:string;unconvertedYocto:string;settlementAsset:'QGOLD';state:'converted'|'conversion-carry'|'pending-payout';day:string;objectId:string};
     item: Pick<
       Item,
       "id" | "kind" | "name" | "rarity" | "slot" | "color" | "serial"

@@ -257,6 +257,10 @@ export function AdventureResultDialog({
                     <p className="adventure-result-award">
                       <strong>+{result.reward.xp} XP</strong> ·{" "}
                       {gold(result.reward.goldU, 6)} {" "}{tr("practice GOLD")}</p>
+                    {result.reward.near && <p className="adventure-result-award">
+                      <strong>+{result.reward.near.amountNear} {tr("NEAR testnet")}</strong><br />
+                      {result.reward.near.state==='converted'?tr('Converted to QGOLD'):result.reward.near.state==='conversion-carry'?tr('Fractional NEAR remains credited'):tr('Awaiting QGOLD settlement')}
+                    </p>}
                     {item && (
                       <p>
                         {!online || !selection.fresh

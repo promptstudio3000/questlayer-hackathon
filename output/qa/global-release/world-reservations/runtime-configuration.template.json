@@ -1,0 +1,10 @@
+{
+  "globalRewards": {
+    "enabled": false,
+    "rewardsCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+    "qgoldContractId": "questlayer-qgold-vault-20261104.testnet",
+    "qgoldCodeHash": "85efScVdQfYjrAFKrVWKFwmHHWWp2kgzEHe9np4HDxqr",
+    "fundingTransactions": []
+  },
+  "note": "Keep disabled until actual upgrades, complete received-funding inventory, bounded key methods and pre-opening reservation checks pass."
+}

@@ -1,0 +1,191 @@
+{
+  "day": "2026-11-07",
+  "inputHash": "4bae92ec11e961eb7112038aae02b110338a7a4324bd744d376b251836dbc670",
+  "counts": {
+    "chest": 0,
+    "coin": 0,
+    "item": 0,
+    "npc": 0,
+    "quest": 277,
+    "zone": 10
+  },
+  "scope": "Real OSM inputs; local server, simulated GPS and desktop browser emulation only.",
+  "http": [
+    {
+      "country": "FR",
+      "region": "851f8033fffffff",
+      "questId": "world:2026-11-07:quest:3bf6e22d375d67b4053dfd549ec4b897d7338e0835d2f7b96533959d13392635",
+      "title": "Discover Parc du Wasen",
+      "source": {
+        "id": "osm:w1269016182",
+        "license": "ODbL-1.0",
+        "sha256": "6e2016da2eef0d17ee7fe95dfd89abeb538903918ce39b279ef6389b5e3458b8",
+        "url": "https://www.openstreetmap.org/way/1269016182"
+      },
+      "lat": 48.014423,
+      "lng": 7.3302083,
+      "farStatus": 422,
+      "xp": 40,
+      "reward": 0,
+      "replayed": true
+    },
+    {
+      "country": "LU",
+      "region": "851fa3cffffffff",
+      "questId": "world:2026-11-07:quest:0191b188c7de59890f5b7b9d162e11ff99acc1f590ec307d7c74bbdb9567a408",
+      "title": "Discover Parc du Château de Dommeldange",
+      "source": {
+        "id": "osm:w221220296",
+        "license": "ODbL-1.0",
+        "sha256": "f3259bb77640ae3b770ae553db8ebb745eeef7eba7a4e43d411291fd8f28be3f",
+        "url": "https://www.openstreetmap.org/way/221220296"
+      },
+      "lat": 49.6376308,
+      "lng": 6.1465459,
+      "farStatus": 422,
+      "xp": 40,
+      "reward": 0,
+      "replayed": true
+    }
+  ],
+  "screens": [
+    {
+      "name": "phone-390",
+      "width": 390,
+      "height": 844,
+      "disclosureOpen": true,
+      "horizontalOverflow": false
+    },
+    {
+      "name": "phone-360",
+      "width": 360,
+      "height": 780,
+      "disclosureOpen": true,
+      "horizontalOverflow": false
+    },
+    {
+      "name": "landscape",
+      "width": 844,
+      "height": 390,
+      "disclosureOpen": true,
+      "horizontalOverflow": false
+    },
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "disclosureOpen": true,
+      "horizontalOverflow": false
+    },
+    {
+      "name": "phone-enlarged",
+      "paragraphScale": 2,
+      "horizontalOverflow": false
+    }
+  ],
+  "pageErrors": [],
+  "readiness": {
+    "state": "configured",
+    "financialActivation": false,
+    "rewards": {
+      "state": "not-configured"
+    },
+    "days": [
+      {
+        "day": "2026-11-07",
+        "state": "ready",
+        "regions": 2,
+        "loadedRegions": 2,
+        "financialActivation": false
+      }
+    ],
+    "worker": {
+      "state": "awaiting-content",
+      "missingRegions": [],
+      "problems": [
+        "No complete daily manifest has been supplied."
+      ],
+      "day": "2026-11-08",
+      "days": [
+        {
+          "state": "ready",
+          "missingRegions": [],
+          "problems": [],
+          "day": "2026-11-07",
+          "processedRegions": 2,
+          "regions": 2,
+          "failures": 0,
+          "retryAt": null
+        },
+        {
+          "state": "awaiting-content",
+          "missingRegions": [],
+          "problems": [
+            "No complete daily manifest has been supplied."
+          ],
+          "day": "2026-11-08"
+        }
+      ]
+    }
+  },
+  "browserClaim": {
+    "xp": 40,
+    "reward": 0,
+    "durableReceipt": true,
+    "tooFarDisabled": true,
+    "keyboardConfirmation": true
+  },
+  "globalNoticeLocales": [
+    {
+      "lang": "ar",
+      "translated": true,
+      "horizontalOverflow": false
+    },
+    {
+      "lang": "cs",
+      "translated": true,
+      "horizontalOverflow": false
+    },
+    {
+      "lang": "de",
+      "translated": true,
+      "horizontalOverflow": false
+    },
+    {
+      "lang": "es",
+      "translated": true,
+      "horizontalOverflow": false
+    },
+    {
+      "lang": "fr",
+      "translated": true,
+      "horizontalOverflow": false
+    },
+    {
+      "lang": "hi",
+      "translated": true,
+      "horizontalOverflow": false
+    },
+    {
+      "lang": "ja",
+      "translated": true,
+      "horizontalOverflow": false
+    },
+    {
+      "lang": "pt",
+      "translated": true,
+      "horizontalOverflow": false
+    },
+    {
+      "lang": "ru",
+      "translated": true,
+      "horizontalOverflow": false
+    },
+    {
+      "lang": "zh",
+      "translated": true,
+      "horizontalOverflow": false
+    }
+  ],
+  "state": "passed"
+}

@@ -1,0 +1,19 @@
+{
+  "network": "testnet",
+  "sourceBase": "e9160028637cda7785cae02acd9ea3e299525c17",
+  "publiclyDeployed": false,
+  "artifacts": {
+    "rewards": {
+      "file": "questlayer_rewards.wasm",
+      "sha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+      "nearCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+      "bytes": 435857
+    },
+    "qgold": {
+      "file": "questlayer_qgold.wasm",
+      "sha256": "6932b7985cb90fec7220b374b4815f6f1dc67cbc600c66cc03d578a0b10629cd",
+      "nearCodeHash": "85efScVdQfYjrAFKrVWKFwmHHWWp2kgzEHe9np4HDxqr",
+      "bytes": 389710
+    }
+  }
+}

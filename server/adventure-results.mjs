@@ -1,4 +1,5 @@
 import { atomic } from "./database.mjs";
+import { globalRewardReceipt } from './global-rewards.mjs';
 import { assert, id } from "./domain.mjs";
 import {
   registerModuleSchema,
@@ -240,6 +241,7 @@ function present(db, player, row) {
     };
   }
   const item = row.item_snapshot ? JSON.parse(row.item_snapshot) : null;
+  const near=globalRewardReceipt(db,player,row.quest_id);
   return {
     id: row.id,
     version: 1,
@@ -254,7 +256,7 @@ function present(db, player, row) {
     title: row.quest_title,
     completedAt: row.created_at,
     viewedAt: row.viewed_at ?? null,
-    reward: { xp: row.xp, goldU: row.gold_u, item },
+    reward: { xp: row.xp, goldU: row.gold_u, item, ...(near?{near}:{}) },
     itemCurrent: currentAdventureItem(db, player, item),
   };
 }

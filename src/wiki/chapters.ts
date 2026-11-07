@@ -434,13 +434,13 @@ export const CHAPTERS: Chapter[] = [
     id: "world-and-places",
     group: "world",
     title: "Cities, cells and places",
-    summary: "Reviewed cities, automatic cities and every H3 cell of Czechia, built from a safety-filtered POI database.",
+    summary: "Reviewed cities, Czech map rewards and optional prepared Atlas discoveries in supplied global regions.",
     status: "live",
-    updated: "2026-11-04",
-    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
+    updated: "2026-11-07",
+    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
     blocks: [
       {
-        p: `Live reviewed cities: **${LIVE_CITIES.join(", ")}**. Before mid-November the world covers Czechia only.`,
+        p: `Live reviewed cities: **${LIVE_CITIES.join(", ")}**. The current reward map covers Czechia. Prepared Atlas discoveries can also run in supplied global regions with personal XP; worldwide funding and full data coverage remain separate release work.`,
       },
       { viz: "coverage-tiers" },
       {
@@ -469,6 +469,22 @@ export const CHAPTERS: Chapter[] = [
           "Daylight-saving days keep their real 23 or 25 hours.",
           "An operator with server access can pause a day or zone, close a place or adjust a future unpublished day. There is no web route for these changes.",
         ],
+      },
+      { h: "Global Atlas discoveries" },
+      {
+        p: "When a geographic catalog is connected, a background worker selects mapped zones and Atlas quests for today and tomorrow before players load them. It checks public-path targets, exclusions, polygon boundaries and the whole supplied region inventory. The live game opens only a completely imported UTC day. Loading a place does not generate extra activities. Missing or incomplete regions remain unavailable.",
+      },
+      {
+        p: "The game imports regions in separate steps so it can handle other requests between them. An interrupted import resumes the same day without opening partial content or duplicating quests. Preparation reports each date separately and identifies regions whose content failed validation. A failed date retries with increasing pauses and does not stop work on the next day.",
+      },
+      {
+        p: "Atlas visits and three-stop hunts use the normal GPS checks, personal XP and durable completion receipts. Without a separately confirmed financial day they promise no money or item. The optional testnet financial adapter fixes one first-completion NEAR prize per prepared zone before opening; it requires reviewed contract upgrades, a complete received-funding inventory and an exact on-chain day reservation. Map-derived places remain unverified on foot, and known opening restrictions are excluded from this all-day mode. Plzen keeps its existing six shared slots; other cells select up to three actual polygons and explain missing slots. The collected catalog determines coverage: a pilot is not a fully seeded planet.",
+      },
+      {
+        p: "An optional bulk collector continues from verified map downloads through export, real polygon selection and isolated gameplay checks without another AI prompt. It retains complete neighboring path and exclusion geometry, preserves polygon holes, and reports unsafe or oversized areas instead of dropping them. Accepted regions join the next unpublished preparation; a published day stays unchanged. The source worker plans every mapped candidate cell of each selected owner, including places without parks; an incomplete section withholds its owner. Complete neighboring geometry is indexed in compressed chunks. Incomplete unrestricted polygon candidates are rejected with source identities and reasons; an incomplete restricted ground blocks that source. This is map-derived coverage, not field verification.",
+      },
+      {
+        p: "A versioned launch selection can cover European extracts and US extracts in full, with national-capital footprints elsewhere. Russia, North Korea and Iran are excluded from that selection. Capital coordinates and timezones come from a pinned GeoNames snapshot. The same hashed selection controls acquisition and owner planning; existing downloads are retained. The first active collection phase is EU-only: all 27 member countries, including Cyprus even though its extract is grouped under Asia. Non-EU collection is paused, with no automatic expansion after EU completion. EU daily outputs are kept separate from earlier global pilots. Missing capitals and incomplete sources remain explicit, and completing this selected footprint never reports a complete planet. Financial activation still requires separate confirmed reservations.",
       },
       { h: "Theme layers" },
       {
@@ -769,8 +785,8 @@ export const CHAPTERS: Chapter[] = [
     title: "Daily QGOLD payouts",
     summary: "One Merkle root per day of what every account earned, paid straight into the QGOLD vault with no daily claim limit.",
     status: "live",
-    updated: "2026-11-05",
-    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
+    updated: "2026-11-07",
+    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "contracts/rewards/src/world_days.rs", "contracts/qgold/src/lib.rs", "server/global-rewards.mjs", "server/global-reward-worker.mjs", "server/map-rewards/global-plan.mjs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
     blocks: [
       {
         p: "Every backed coin is real QGOLD. After the day ends the server sums each account's earnings in NEAR and the rewards contract pays every account once from a single published root, instead of one receipt per coin (which allowed only 240 claims a day).",
@@ -779,7 +795,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "`publish_payout_day` commits the root and reserves the day's total from the coin and zone treasury, under the same per-date cap as city and map days.",
           "`claim_payout` (anyone, 10 leaves per transaction) checks each leaf against the root and calls the vault's `mint_for` for exactly that account and amount. A repeated leaf is skipped; a refused mint reopens the leaf, so nothing is lost or paid twice.",
-          "`close_payout_day` returns what nobody claimed to the treasury three days after publication.",
+          "`close_payout_day` can close a day after three days only when every leaf has a finalized successful mint and no mint is pending. Unpaid earned rights remain available.",
           "Amounts below 0.00000001 NEAR carry over to the next day: the vault cannot mint less than one QGOLD unit.",
         ],
       },
@@ -795,14 +811,14 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "After local midnight (Europe/Prague) the reward worker collects every backed map coin and cell-zone prize of GPS worlds that is not paid yet, prices it in NEAR at the rate its day was planned with, sums it per account and publishes the day.",
-          "Then it sends `claim_payout` in batches of 10 until every leaf is paid, and closes the day after the grace period.",
+          "Then it submits `claim_payout` in batches of 10. Submission is not payment: finalized per-leaf chain status confirms each receipt. Failed mints restore the same reservation for retry. Restart recovery reconciles pending leaves before sending new ones; an exclusive fenced lease prevents overlapping workers from changing the same payout. A fully paid day may close after the grace period.",
           "A player without a NEAR account yet keeps their coins waiting; they join the first payout after the account exists. `GET /api/qgold/pending` shows what is still on its way (in micro-QGOLD `units`, with `awaitingAccount` for coins collected before an account existed).",
           "Profile · Wallet shows the QGOLD balance on the linked NEAR account and the amount the next payout brings. Pickup messages count QGOLD; there is no practice GOLD. The old practice stake for zone tiers stays as a labelled simulation.",
           "While payouts are on, map days no longer send `claim_map`, so a coin is never paid twice. The demo arena gives XP only and never pays.",
         ],
       },
       {
-        note: "Live on testnet since 5 Nov 2026 (`MAP_PAYOUTS=1`, rewards contract upgraded, worker key holds the payout methods). The first payout covers 5 Nov and runs after Prague midnight.",
+        note: "The existing nightly payout runs on testnet. The prepared Atlas adapter separately reserves a UTC day before opening, records exact earned NEAR, releases only unearned rewards and transfers original reservations into payouts without charging the date cap twice. Unlinked and small earnings retain their source and day. World payouts use a reviewed QGOLD conversion method that keeps fractional NEAR as account-bound credit and stores a durable conversion receipt. This requires both reviewed testnet contract upgrades, including QGOLD's existing 48-hour governance timelock. Until confirmed activation, Atlas quests award personal XP only; prepared coins and item stock are not yet supported by this adapter.",
         tone: "info",
       },
     ],

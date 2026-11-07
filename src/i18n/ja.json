@@ -2928,5 +2928,13 @@
  "· saved rewards": "· 保存済みの報酬",
  "· share it with the people who come": "· 来た人たちと分け合おう",
  "· tier active": "· ティア有効",
- "🔒 The inner vault": "🔒 奥の金庫"
+ "🔒 The inner vault": "🔒 奥の金庫",
+ "Map-derived discoveries by Atlas. Public access and paths have not been checked on foot: follow local signs and skip blocked places. These activities award personal XP; no monetary or item reward is promised.": "地図データに基づくAtlasの探索スポットです。一般の立ち入りや通路は現地で確認されていません。現地の標識に従い、通行できない場所はスキップしてください。これらのアクティビティでは個人XPを獲得できますが、金銭やアイテムの報酬は保証されません。",
+ "Funded Atlas zones: the first confirmed completion earns the fixed NEAR prize shown in the objective. QGOLD is calculated at settlement; fractional NEAR stays credited. Follow local signs and skip blocked places.": "資金確保済みのAtlasゾーンでは、最初に確認された達成に、目標に表示された固定NEAR報酬が付与されます。QGOLDは精算時に計算され、NEARの端数は残高に残ります。現地の標識に従い、閉鎖された場所は避けてください。",
+ "No monetary budget today. Atlas discoveries still award personal XP. Follow local signs and skip blocked places.": "本日の金銭報酬の予算はありません。Atlasの発見で個人XPは引き続き獲得できます。現地の標識に従い、閉鎖された場所は避けてください。",
+ "First confirmed completion: {0} NEAR, converted to QGOLD at settlement.": "最初に確認された達成：{0} NEAR。精算時にQGOLDへ換算されます。",
+ "The shared NEAR prize was already earned. Personal XP is still available.": "共有NEAR報酬はすでに獲得されています。個人XPは引き続き獲得できます。",
+ "Converted to QGOLD": "QGOLDに換算済み",
+ "Fractional NEAR remains credited": "NEARの端数は残高に保持されます",
+ "Awaiting QGOLD settlement": "QGOLDの精算待ち"
 }

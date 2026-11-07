@@ -1,0 +1,27 @@
+{
+  "networkId": "testnet",
+  "status": "unsigned-owner-review",
+  "transaction": {
+    "signerId": "questlayer-dev-20261101.testnet",
+    "receiverId": "questlayer-qgold-vault-20261104.testnet",
+    "actions": [
+      {
+        "type": "FunctionCall",
+        "params": {
+          "methodName": "propose",
+          "args": {
+            "action": {
+              "Upgrade": {
+                "code_sha256": "6932b7985cb90fec7220b374b4815f6f1dc67cbc600c66cc03d578a0b10629cd"
+              }
+            }
+          },
+          "gas": "100000000000000",
+          "deposit": "0"
+        }
+      }
+    ]
+  },
+  "timelockMs": "172800000",
+  "note": "Proposing does not deploy. Preserve the existing council threshold; apply only the exact reviewed WASM after the on-chain executable_at time."
+}

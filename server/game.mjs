@@ -1,5 +1,6 @@
 import { grantWearableFind } from "./gotchi-wearables.mjs";
 import { coinMeta } from "./map-rewards/service.mjs";
+import { earnGlobalQuest } from './global-rewards.mjs';
 import { randomBytes } from "node:crypto";
 import {
   GOLD,
@@ -15,6 +16,7 @@ import {
   positionTier,
   tierFor,
   validateFix,
+  GPS_MAX_AGE_MS,
   splitYield,
   COIN_ARENA_RADIUS_M,
 } from "./domain.mjs";
@@ -200,6 +202,9 @@ export function claimQuest(db, player, questId, fix, now = Date.now(), { answer 
   const results = createAdventureResults(db);
   return atomic(db, () => settleQuest(db, player, questId, fix, now, results, null, answer));
 }
+function questEvidenceTime(q,fix,now) {
+  return now>=q.closes_at&&JSON.parse(q.metadata||"{}").globalActivity&&Number.isFinite(fix?.timestamp)&&fix.timestamp<q.closes_at&&now-fix.timestamp<=GPS_MAX_AGE_MS?fix.timestamp:now;
+}
 function settleQuest(db, player, questId, fix, now, results, target = null, answer = null) {
   const q = db
     .prepare(
@@ -215,7 +220,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
   )
     return replayAdventureResult(results.forQuest(player, q.id));
   assert(
-    now >= q.opens_at && now < q.closes_at,
+    questEvidenceTime(q,fix,now) >= q.opens_at && questEvidenceTime(q,fix,now) < q.closes_at,
     "This place is closed for today. Find another discovery.",
     410,
   );
@@ -252,6 +257,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
       ).run(reward, reward, "zones");
   }
   db.prepare("INSERT INTO quest_claims VALUES (?,?,?)").run(q.id, player, now);
+  const nearReward=earnGlobalQuest(db,player,q,questEvidenceTime(q,fix,now));
   const { xp, cap } = capLocationXp(db, player, earned, target || q, now);
   db.prepare("UPDATE players SET gold_u=gold_u+?,xp=xp+? WHERE id=?").run(
     reward,
@@ -294,6 +300,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
     reward,
     xp,
     item,
+    ...(nearReward?{nearReward}:{}),
     ...(chain ? { chain } : {}),
     ...(clue ? { clue } : {}),
     result: results.get(player, resultId),
@@ -303,7 +310,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
 }
 function validateQuestEvidence(db, player, q, fix, now, target) {
   assert(
-    now >= q.opens_at && now < q.closes_at,
+    questEvidenceTime(q,fix,now) >= q.opens_at && questEvidenceTime(q,fix,now) < q.closes_at,
     "This place is closed for today. Find another discovery.",
     410,
   );
