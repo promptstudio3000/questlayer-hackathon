@@ -1,5 +1,6 @@
 // Actual local-chain worker. Synthetic signers arrive only through private IPC.
 import { writeSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { openDatabase } from "../../server/database.mjs";
 import { QgoldKeeper, keeperSettings } from "../../server/qgold/keeper.mjs";
 import { keeperTransport } from "../../server/qgold/keeper-transport.mjs";
@@ -22,13 +23,18 @@ process.once("message", async (config) => {
         });
       }
     };
-    const keeper = new QgoldKeeper(db, {
+    const Subject = config.subject ? (await import(pathToFileURL(config.subject))).QgoldKeeper : QgoldKeeper;
+    const keeper = new Subject(db, {
       vault: reader("qgold.testnet"), rhea: reader("dex.testnet"), poolId: config.poolId, wnear: "wrap.testnet",
       provider: local.provider, account: local.account, clock: () => config.now, leaseClock: () => config.leaseNow,
       settings: { ...keeperSettings({}), execute: true, inverseBudgetYocto: config.mode === "inverse" ? 10n ** 24n : 0n },
       transportFactory: async (k) => {
         const transport = await keeperTransport(k);
         return { ...transport,
+          receipts: transport.receipts && (async (response, ids) => {
+            const enriched = await transport.receipts(response, ids);
+            process.send({ type: "transaction", via: "receipt-details", tx: response.transaction?.hash, response: enriched }); return enriched;
+          }),
           status: async (attempt) => {
             if (config.hideStatus) throw Error("Injected local RPC status outage");
             const response = await transport.status(attempt);

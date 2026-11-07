@@ -657,6 +657,7 @@ export const CHAPTERS: Chapter[] = [
           "A keeper acts at 12 secret times a day, committed in advance and revealed from NEAR block randomness: inverse buy-and-burn below R, buyback-and-burn from 20 % of fees below 1.1 R, sales on a 1.1 / 1.2 / 1.3 R ladder above it.",
           "The keeper stays idle while the pool is too small (threshold set on the server).",
           "The keeper records each operation before spending and preserves completed steps after a restart. A failed burn does not repeat its purchase or erase money already committed from the limits. Uncertain outcomes wait for reconciliation; ordinary gameplay needs no extra confirmation.",
+          "When Rhea retains an undelivered swap output, the keeper can register its token account and recover the exact verified amount automatically. Recovery has its own saved transaction record, so a restart does not repeat the purchase. Ambiguous or mixed balances wait for reconciliation without burning unrelated tokens.",
         ],
       },
       { note: "QGOLD is not an investment product. The vault is unaudited testnet code; mainnet needs an external audit and a legal opinion.", tone: "warn" },

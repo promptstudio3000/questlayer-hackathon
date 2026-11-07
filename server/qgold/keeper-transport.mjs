@@ -22,6 +22,16 @@ export async function keeperTransport(k) {
     } else if (r.phase === "burn") {
       need(r.contractId === k.qgoldId && r.methodName === "ft_burn" && r.deposit === "1" && gas(30) && positive(r.args.amount));
       need(["qgold-keeper:inverse-buy-burn", "qgold-keeper:buyback-burn"].includes(r.args.memo) && Object.keys(r.args).length === 2);
+    } else if (r.phase === "register") {
+      need([k.qgoldId, k.wnear].includes(r.contractId) && r.methodName === "storage_deposit" && gas(30));
+      // Match the existing QGOLD/wNEAR minimum; never fund arbitrary storage quotes.
+      need(positive(r.deposit) && BigInt(r.deposit) <= 1250000000000000000000n);
+      need(JSON.stringify(r.args) === JSON.stringify({ account_id: k.account.accountId, registration_only: true }));
+    } else if (r.phase === "recover") {
+      need(r.contractId === k.rhea.contractId && r.deposit === "1" && gas(100));
+      need([k.qgoldId, k.wnear].includes(r.tokenOut) && positive(r.expectedAmount) && /^[1-9A-HJ-NP-Za-km-z]{43,44}$/.test(r.swapTx));
+      if (r.methodName === "claim_lostfound") need(JSON.stringify(r.args) === JSON.stringify({ token_id: r.tokenOut }));
+      else need(r.methodName === "withdraw" && JSON.stringify(r.args) === JSON.stringify({ token_id: r.tokenOut, amount: r.expectedAmount, unregister: false, skip_unwrap_near: true }));
     } else {
       need(r.phase === "swap" && [k.wnear, k.qgoldId].includes(r.contractId) && r.methodName === "ft_transfer_call" && r.deposit === "1" && gas(150));
       need(r.args.receiver_id === k.rhea.contractId && positive(r.args.amount) && positive(r.minOut) && Object.keys(r.args).length === 3);
@@ -43,6 +53,17 @@ export async function keeperTransport(k) {
   };
   return {
     identity, verify,
+    async receipts(response, receiptIds) {
+      need(receiptIds.length === 2 && new Set(receiptIds).size === 2);
+      const receipts = await Promise.all(receiptIds.map((receiptId) => k.provider.viewTransactionReceipt(receiptId)));
+      return { ...response, receipts };
+    },
+    async view(contractId, method, args) {
+      need([k.qgoldId, k.wnear, k.rhea.contractId].includes(contractId));
+      need(["storage_balance_of", "storage_balance_bounds", "get_lostfound_token", "get_deposits"].includes(method));
+      const r = await k.provider.callFunctionRaw({ contractId, method, args, finalityQuery: { finality: "final" } });
+      return JSON.parse(Buffer.from(r.result).toString());
+    },
     async prepare(request) {
       allowed(request);
       const signed = await k.account.createSignedTransaction({ receiverId: request.contractId,

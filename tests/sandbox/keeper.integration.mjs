@@ -12,7 +12,7 @@ import { openDatabase } from "../../server/database.mjs";
 import { QgoldKeeper } from "../../server/qgold/keeper.mjs";
 import { escrowLocalTransport } from "./escrow-rpc.mjs";
 
-const [sandboxModule, wasmDirectory, reportPath] = process.argv.slice(2);
+const [sandboxModule, wasmDirectory, reportPath, selection = ""] = process.argv.slice(2);
 assert.ok(sandboxModule && wasmDirectory && reportPath, "arguments: sandbox module, WASM directory, report path");
 const { Sandbox, GenesisAccount } = await import(pathToFileURL(resolve(sandboxModule)));
 const NEAR = 10n ** 24n, GOLD = 10n ** 6n, NOW = Date.parse("2026-11-06T01:00:00Z");
@@ -57,7 +57,7 @@ const rows = (f) => ({
   steps: f.db.prepare("SELECT step,attempt,tx,state,request,proof FROM qgold_keeper_steps ORDER BY rowid").all(),
   sent: f.db.prepare("SELECT COUNT(*) n FROM qgold_keeper_actions WHERE state='sent'").get().n,
 });
-async function fixture(mode = "inverse", { registerWnear = true, registerQgold = true } = {}) {
+async function fixture(mode = "inverse", { registerWnear = true, registerQgold = true, registerDex = false } = {}) {
   const index = fixtureIndex++, accountId = `keeper${index}.testnet`, dbPath = join(dir, `keeper${index}.sqlite`);
   const rate = BigInt((await view("qgold", "get_state")).rate), multiplier = mode === "sale" ? 1500n : mode === "buyback" ? 1050n : 800n;
   const amounts = [String(1000n * NEAR), String(1000n * NEAR * GOLD * 1000n / (rate * multiplier))];
@@ -66,6 +66,7 @@ async function fixture(mode = "inverse", { registerWnear = true, registerQgold =
     await call(token, "ft_transfer_call", { receiver_id: "dex.testnet", amount: amounts[i], msg: "" }, 1n);
   await call("dex", "add_liquidity", { pool_id: poolId, amounts, min_amounts: amounts }, NEAR / 10n);
   if (registerWnear) await call("wrap", "storage_deposit", { account_id: accountId, registration_only: true }, NEAR / 10n);
+  if (registerDex) await call("dex", "storage_deposit", { account_id: accountId }, NEAR);
   if (registerQgold) {
     await call("qgold", "storage_deposit", { account_id: accountId, registration_only: true }, NEAR / 10n);
     // A real unrelated balance must survive buy-and-burn recovery untouched.
@@ -115,7 +116,8 @@ async function worker(f, options = {}) {
     });
   });
   child.send({ rpcUrl: sandbox.rpcUrl, accountId: f.accountId, secretKey: keys.get(f.accountId).toString(), dbPath: f.dbPath,
-    poolId: f.poolId, mode: f.mode, now: options.now ?? NOW + sequence * 120_000, leaseNow: options.leaseNow ?? leaseNow, ...options });
+    poolId: f.poolId, mode: f.mode, subject: process.env.KEEPER_SANDBOX_SUBJECT,
+    now: options.now ?? NOW + sequence * 120_000, leaseNow: options.leaseNow ?? leaseNow, ...options });
   return done;
 }
 async function completed(f, { attempts = f.mode === "sale" ? 2 : 3 } = {}) {
@@ -147,6 +149,7 @@ async function completed(f, { attempts = f.mode === "sale" ? 2 : 3 } = {}) {
   return { before: f.before, after, principal: String(principal), gasAndYoctoDeposits: String(debit - principal), journal: rows(f) };
 }
 async function scenario(name, body) {
+  if (selection && !name.includes(selection)) return;
   activeFixture = null;
   const start = report.workers.length;
   try {
@@ -221,27 +224,78 @@ try {
   await scenario("unregistered wNEAR: actual storage deduction cannot cause a second wrap", async () => {
     const f = await fixture("inverse", { registerWnear: false }); await worker(f); return completed(f);
   });
-  await scenario("missing QGOLD output storage: failed delivery retains operation and forbids a second purchase", async () => {
+  await scenario("missing QGOLD output storage: automatic registration, lost-found claim and original burn", async () => {
     const f = await fixture("inverse", { registerQgold: false });
     const lostfoundArgs = { account_id: f.accountId, token_id: "qgold.testnet" };
     const lostfoundBefore = await view("dex", "get_lostfound_token", lostfoundArgs);
     await worker(f);
-    const state = rows(f), after = await snapshot(f);
-    assert.equal(state.operations[0].state, "pending"); assert.equal(state.steps.length, 2);
-    assert.equal(state.steps[0].state, "succeeded"); assert.equal(state.steps[1].state, "prepared");
-    assert.equal(state.sent, 0); assert.equal(after.qgold, "0"); assert.equal(after.burned, f.before.burned);
-    await worker(f); await worker(f);
-    assert.deepEqual(await snapshot(f), after); assert.equal(rows(f).steps.length, 2);
+    const result = await completed(f, { attempts: 5 });
     const lostfoundAfter = await view("dex", "get_lostfound_token", lostfoundArgs);
-    const output = BigInt(f.before.pool[1]) - BigInt(after.pool[1]);
-    assert.ok(output > 0n);
-    assert.equal(BigInt(lostfoundAfter) - BigInt(lostfoundBefore), output,
-      "failed output is preserved in the real Rhea lost-found balance attributed to this keeper");
-    return { after, journal: rows(f), lostfoundBefore, lostfoundAfter, output: String(output), reconciliationRequired: true,
-      note: "Rhea user lost-found contains the output; explicit keeper/DEX reconciliation is required. No second purchase or false burn acknowledgement. Owner fallback under low DEX storage funding is not exercised." };
+    assert.equal(lostfoundBefore, "0"); assert.equal(lostfoundAfter, "0");
+    return { ...result, lostfoundBefore, lostfoundAfter, recoveredAutomatically: true };
+  });
+  for (const method of ["storage_deposit", "claim_lostfound"]) for (const phase of ["before", "after"])
+    await scenario(`recovery SIGKILL ${phase} ${method}: resume one retained output`, async () => {
+      const f = await fixture("inverse", { registerQgold: false });
+      await worker(f, { stop: { phase, method } }); await worker(f);
+      return completed(f, { attempts: 5 });
+    });
+  for (const [method, action] of [["claim_lostfound", "pause-rhea"], ["claim_lostfound", "pause-qgold"], ["ft_burn", "pause-qgold"]])
+    await scenario(`recovery rejected ${method} with ${action}: no duplicate swap or claim`, async () => {
+      const f = await fixture("inverse", { registerQgold: false });
+      await worker(f, { intercept: { phase: "before", method, action } });
+      const afterFailure = await snapshot(f), failed = rows(f);
+      assert.equal(failed.operations[0].state, "pending"); assert.equal(failed.steps.at(-1).state, "retry", JSON.stringify(failed));
+      if (action === "pause-rhea") await call("dex", "change_state", { state: "Running" }, 1n); else await call("qgold", "unpause");
+      await worker(f); return { afterFailure, ...await completed(f, { attempts: 6 }) };
+    });
+  await scenario("recovery lost claim reply: zero lost-found balance still resumes the same transaction", async () => {
+    const f = await fixture("inverse", { registerQgold: false }); await worker(f, { loseReply: "claim_lostfound" });
+    assert.equal(await view("dex", "get_lostfound_token", { account_id: f.accountId, token_id: "qgold.testnet" }), "0");
+    const claim = rows(f).steps.find((s) => s.step === 101); assert.equal(claim.state, "prepared");
+    await worker(f); assert.equal(rows(f).steps.find((s) => s.step === 101).tx, claim.tx);
+    return completed(f, { attempts: 5 });
+  });
+  await scenario("recovery two processes claim and burn the retained output once", async () => {
+    const f = await fixture("inverse", { registerQgold: false });
+    await Promise.all([worker(f, { leaseNow: NOW }), worker(f, { leaseNow: NOW })]);
+    return completed(f, { attempts: 5 });
+  });
+  await scenario("recovery from registered Rhea deposit withdraws only the original output", async () => {
+    const f = await fixture("inverse", { registerQgold: false, registerDex: true }); await worker(f);
+    const result = await completed(f, { attempts: 5 });
+    assert.equal(JSON.parse(rows(f).steps.find((s) => s.step === 101).request).methodName, "withdraw");
+    assert.equal((await view("dex", "get_deposits", { account_id: f.accountId }))["qgold.testnet"], "0");
+    return result;
+  });
+  await scenario("recovery refuses mixed lost-found inventory without another purchase", async () => {
+    const f = await fixture("inverse", { registerQgold: false });
+    await worker(f, { stop: { phase: "after", method: "ft_transfer_call" } });
+    const swap = rows(f).steps.find(s => s.step === 1), request = JSON.parse(swap.request);
+    const original = await view("dex", "get_lostfound_token", { account_id: f.accountId, token_id: "qgold.testnet" });
+    // An independently funded swap puts unrelated inventory into the same
+    // amount-less Rhea lost-found bucket before keeper reconciliation.
+    await call("wrap", "near_deposit", {}, NEAR / 10n, f.accountId);
+    await call("wrap", "ft_transfer_call", { ...request.args, amount: String(NEAR / 10n),
+      msg: JSON.stringify({ force: 0, actions: [{ pool_id: f.poolId, token_in: "wrap.testnet", token_out: "qgold.testnet", min_amount_out: "1" }] }) }, 1n, f.accountId);
+    const mixed = await view("dex", "get_lostfound_token", { account_id: f.accountId, token_id: "qgold.testnet" });
+    assert.ok(BigInt(mixed) > BigInt(original));
+    const before = await snapshot(f); await worker(f); await worker(f);
+    const after = await snapshot(f), journal = rows(f);
+    assert.equal(journal.operations[0].state, "pending"); assert.match(journal.operations[0].last_error, /ambiguous/);
+    assert.equal(journal.steps.filter(s => s.step === 0).length, 1); assert.equal(journal.steps.filter(s => s.step === 1).length, 1);
+    assert.ok(!journal.steps.some(s => [2, 101].includes(s.step))); assert.equal(after.burned, before.burned); assert.deepEqual(after.pool, before.pool);
+    assert.equal(await view("dex", "get_lostfound_token", { account_id: f.accountId, token_id: "qgold.testnet" }), mixed);
+    return { original, mixed, before, after, journal, heldForReconciliation: true };
   });
   // Sales generate real vault fees; run them after fee-free inverse scenarios.
   await scenario("sale: actual QGOLD deposit and Rhea swap", async () => { const f = await fixture("sale"); await worker(f); return completed(f); });
+  await scenario("sale missing wNEAR storage: automatically recover output without buying QGOLD twice", async () => {
+    const f = await fixture("sale", { registerWnear: false }); await worker(f);
+    const result = await completed(f, { attempts: 4 });
+    assert.equal(await view("dex", "get_lostfound_token", { account_id: f.accountId, token_id: "wrap.testnet" }), "0");
+    return result;
+  });
   for (const method of ["deposit", "ft_transfer_call"])
     await scenario(`sale SIGKILL after ${method}: no duplicate vault purchase`, async () => {
       const f = await fixture("sale"); await worker(f, { stop: { phase: "after", method } }); await worker(f); return completed(f);

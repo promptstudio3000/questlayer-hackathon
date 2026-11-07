@@ -55,8 +55,27 @@ burning unrelated inventory. The signer accepts only the configured keeper metho
 A proved root rejection or full swap-input refund permits another attempt of that step with capped
 backoff. A later burn failure preserves the funded/swapped steps, their hashes and the original budget;
 recovery retries burning without wrapping or purchasing again. Incomplete receipts, partial consumption,
-missing output, unknown expired transactions and changed signing/configuration identity remain pending
+unattributed output, unknown expired transactions and changed signing/configuration identity remain pending
 for reconciliation. Recovery precedes new quotes, slot expiry and a new day's planning.
+
+A failed Rhea output can recover automatically when the FINAL swap tree, original output action,
+restoration callback and exact amount prove that the keeper owns retained tokens. The worker fetches
+the two receipt action records when ordinary transaction status omits them. It distinguishes a keeper's
+user lost-found balance from its registered Rhea deposit; the DEX owner's fallback is never claimed.
+If token registration is missing, a journaled `storage_deposit` funds only the published minimum up
+to the existing QGOLD/wNEAR fee of 0.00125 NEAR. Journal steps 100 and 101 retain registration and
+recovery separately from funding/swap/burn, without a schema change.
+
+`claim_lostfound` has no amount argument. Before creating a claim, the retained balance must equal
+the output proved by the original swap. Missing, partial or mixed inventory waits for reconciliation.
+Registered deposits use an exact-amount `withdraw` with unwrapping disabled. A saved claim takes
+precedence over current balances: zero retained tokens after a lost successful reply does not authorize
+another transaction. A proved rejected claim or restored output may retry only recovery; the original
+purchase and reservation remain. The original swap is completed only after the recovery receipt proves
+delivery, then its exact output may be burned. Changed aggregate balances during a claim, unsupported
+Rhea versions and unknown outcomes remain pending. Small storage costs and protocol gas are separate
+from the existing principal limits. These tests use an archived Ref/Rhea 1.9.19 artifact; current target
+code identity and external provenance remain release prerequisites.
 
 Planning counts reserved/committed principal even if completion fails. A pending operation occupies
 its daily allowance across midnight; a delayed completion also charges the completion day conservatively.

@@ -17,11 +17,44 @@ function transfers(node, legacy) {
   });
 }
 
+// A failed output has no token event. Bind its actual action arguments and the
+// successful Rhea restoration callback to the finalized swap receipt tree.
+function retainedOutput(r, id, request, reachable, dexRoot, expected) {
+  const children = (dexRoot.outcome.receipt_ids ?? []).map((key) => reachable.get(key));
+  const failed = children.filter((n) => n?.outcome.executor_id === request.tokenOut && n.outcome.status?.Failure);
+  const callbacks = children.filter((n) => n?.outcome.executor_id === id.rhea && n !== dexRoot && n.outcome.status?.SuccessValue);
+  need(failed.length === 1 && callbacks.length === 1);
+  need([...reachable.values()].filter((n) => n.outcome.status?.Failure).length === 1);
+  const ids = [failed[0].id, callbacks[0].id];
+  const receipts = new Map((r.receipts ?? []).map((n) => [n.receipt_id, n]));
+  if (!ids.every((key) => receipts.has(key))) return { state: "pending", reason: "rhea_receipts_required", receiptIds: ids };
+  const call = (key, receiver, method) => {
+    const receipt = receipts.get(key), a = receipt?.receipt?.Action;
+    need(receipt?.predecessor_id === id.rhea && receipt.receiver_id === receiver && a?.actions?.length === 1);
+    const action = a.actions[0].FunctionCall; need(action?.method_name === method);
+    return { args: JSON.parse(Buffer.from(action.args, "base64").toString()), deposit: action.deposit };
+  };
+  const output = call(ids[0], request.tokenOut, "ft_transfer"), callback = call(ids[1], id.rhea, "exchange_callback_post_withdraw");
+  need(output.deposit === "1" && output.args.receiver_id === id.accountId && output.args.amount === expected);
+  need(callback.deposit === "0" && callback.args.token_id === request.tokenOut && callback.args.sender_id === id.accountId && callback.args.amount === expected);
+  need(value(callbacks[0].outcome.status) === "0");
+  const logs = callbacks[0].outcome.logs ?? [];
+  // Never claim the DEX owner's aggregate balance. Unsupported destinations or
+  // unexpected callback logs remain pending for explicit reconciliation.
+  const user = logs.includes("Depositing to user lostfound account.");
+  const location = user && logs.length === 2 && logs[0].startsWith(`Account ${id.accountId} `) ? "lostfound" : logs.length === 0 ? "deposit" : null;
+  need(location);
+  return { state: "recoverable", reason: "rhea_output_retained", amount: expected, location,
+    outputReceipt: ids[0], callbackReceipt: ids[1] };
+}
+
 /** Never substitute a current wallet balance or an unrelated transaction for this step's receipts. */
 export function assessKeeperStep(attempt, response) {
   try {
     need(response?.final_execution_status === "FINAL");
-    const r = response.final_execution_outcome ?? response, id = JSON.parse(attempt.identity), request = JSON.parse(attempt.request);
+    const r = response.final_execution_outcome ? { ...response.final_execution_outcome,
+      receipts: response.receipts ?? response.final_execution_outcome.receipts } : response;
+    const id = JSON.parse(attempt.identity), request = JSON.parse(attempt.request);
     const tx = r.transaction, action = tx?.actions?.[0]?.FunctionCall;
     need(tx?.hash === attempt.tx && tx.signer_id === id.accountId && tx.public_key === id.publicKey && tx.receiver_id === request.contractId);
     need(tx.actions.length === 1 && action?.method_name === request.methodName && String(action.gas) === request.gas && action.deposit === request.deposit);
@@ -33,6 +66,11 @@ export function assessKeeperStep(attempt, response) {
     function visit(key, into = reachable) {
       if (into.has(key)) return;
       const n = nodes.get(key); need(n); into.set(key, n);
+      const status = n.outcome?.status;
+      need(status && Object.keys(status).length === 1 &&
+        (typeof status.SuccessValue === "string" || typeof status.SuccessReceiptId === "string" ||
+          (status.Failure && typeof status.Failure === "object")));
+      if (status.SuccessReceiptId) need(n.outcome.receipt_ids?.includes(status.SuccessReceiptId));
       for (const child of n.outcome.receipt_ids ?? []) visit(child, into);
     }
     const rootId = r.transaction_outcome.outcome.status?.SuccessReceiptId;
@@ -53,6 +91,28 @@ export function assessKeeperStep(attempt, response) {
     need(typeof terminal.outcome.status?.SuccessValue === "string" && typeof r.status?.SuccessValue === "string");
     need(terminal.outcome.status.SuccessValue === r.status.SuccessValue);
     const allSucceeded = [...reachable.values()].every((n) => !n.outcome.status?.Failure);
+    if (request.phase === "register") {
+      need(allSucceeded && terminal === root && request.methodName === "storage_deposit");
+      const storage = value(r.status);
+      need(storage && integer(storage.total) && BigInt(storage.total) >= BigInt(request.deposit) && storage.available === "0");
+      return { state: "succeeded", amount: request.deposit };
+    }
+    if (request.phase === "recover") {
+      need(request.contractId === id.rhea && ["claim_lostfound", "withdraw"].includes(request.methodName));
+      need(terminal.outcome.executor_id === id.rhea && terminal !== root && integer(request.expectedAmount));
+      const got = value(r.status);
+      const outputs = [...reachable.values()].filter((n) => n.outcome.executor_id === request.tokenOut)
+        .flatMap((n) => transfers(n, request.tokenOut === id.wnear).map((e) => ({ n, e })))
+        .filter(({ e }) => e.old_owner_id === id.rhea);
+      if (got === request.expectedAmount) {
+        need(allSucceeded && outputs.length === 1 && typeof outputs[0].n.outcome.status?.SuccessValue === "string");
+        need(outputs[0].e.new_owner_id === id.accountId && outputs[0].e.amount === got);
+        return { state: "succeeded", amount: got, swapTx: request.swapTx };
+      }
+      need(got === "0" && outputs.length === 0);
+      const proof = retainedOutput(r, id, request, reachable, root, request.expectedAmount);
+      return proof.state === "recoverable" ? { ...proof, state: "retry", reason: "rhea_recovery_output_restored" } : proof;
+    }
     if (request.phase === "fund") {
       need(allSucceeded && terminal === root);
       if (request.methodName === "deposit") {
@@ -88,6 +148,16 @@ export function assessKeeperStep(attempt, response) {
       .flatMap((n) => transfers(n, request.tokenOut === id.wnear).map((e) => ({ n, e })))
       .filter(({ e }) => e.old_owner_id === id.rhea && e.new_owner_id === id.accountId);
     if (used === request.args.amount) {
+      if (!allSucceeded && outputs.length === 0) {
+        const swapRoots = dex.filter((n) => (root.outcome.receipt_ids ?? []).includes(n.id));
+        need(swapRoots.length === 1 && value(swapRoots[0].outcome.status) === "0");
+        const logs = (swapRoots[0].outcome.logs ?? []).filter((line) => line.startsWith("Swapped "));
+        need(logs.length === 1);
+        const match = /^Swapped ([0-9]+) ([a-z0-9._-]+) for ([0-9]+) ([a-z0-9._-]+)$/.exec(logs[0]);
+        need(match && match[1] === request.args.amount && match[2] === request.contractId && match[4] === request.tokenOut);
+        need(integer(match[3]) && BigInt(match[3]) > 0n && BigInt(match[3]) >= BigInt(request.minOut));
+        return retainedOutput(r, id, request, reachable, swapRoots[0], match[3]);
+      }
       need(allSucceeded && outputs.length === 1 && typeof outputs[0].n.outcome.status?.SuccessValue === "string");
       const got = outputs[0].e.amount;
       need(integer(got) && BigInt(got) > 0n && BigInt(got) >= BigInt(request.minOut));

@@ -3,6 +3,7 @@ import { atomic } from "../database.mjs";
 import { registerModuleSchema, ensureModuleVersion } from "../schema-compatibility.mjs";
 import { depositQuote, QGOLD_ONE, swapNearIn, swapQgoldIn } from "./market-math.mjs";
 import { assessKeeperStep } from "./keeper-receipts.mjs";
+import { recoverKeeperOutput } from "./keeper-recovery.mjs";
 
 export const KEEPER_LEASE_MS = 60_000;
 export const KEEPER_JOURNAL_SCHEMA = registerModuleSchema({ name: "qgold-keeper-journal", version: 1, sql: `
@@ -119,10 +120,12 @@ export async function resumeKeeperOperations(k, transport, guard, now) {
     try {
       current(); need(op.identity === transport.identity, "Keeper identity changed; reconcile pending operations before rotating configuration");
       if (op.run_after > now) return false;
-      const count = op.kind === "sale" ? 2 : 3;
-      for (let step = 0; step < count; step++) {
-        if (successful(db, op.id, step)) continue;
-        const request = nextRequest(op, step, step ? successful(db, op.id, step - 1) : null);
+      const advance = async (step, request) => {
+        const done = successful(db, op.id, step);
+        if (done) {
+          need(done.request === json(request), "Completed keeper request changed");
+          return { attempt: done, proof: JSON.parse(done.proof) };
+        }
         let attempt = db.prepare("SELECT * FROM qgold_keeper_steps WHERE op_id=? AND step=? ORDER BY attempt DESC LIMIT 1").get(op.id, step);
         if (!attempt || attempt.state === "retry") {
           const prepared = await transport.prepare(request); current(); transport.verify(prepared, request);
@@ -145,16 +148,36 @@ export async function resumeKeeperOperations(k, transport, guard, now) {
         let response;
         try { response = await transport.status(attempt); } catch { /* Re-send only persisted identical bytes. */ }
         currentAttempt(); if (!response) { response = await transport.send(attempt); currentAttempt(); }
-        const proof = assessKeeperStep(attempt, response);
+        let proof = assessKeeperStep(attempt, response);
+        if (proof.reason === "rhea_receipts_required" && transport.receipts) {
+          response = await transport.receipts(response, proof.receiptIds); currentAttempt();
+          proof = assessKeeperStep(attempt, response);
+        }
         atomic(db, () => {
           current();
           need(db.prepare("SELECT state FROM qgold_keeper_steps WHERE tx=?").get(attempt.tx)?.state === "prepared");
           db.prepare("UPDATE qgold_keeper_steps SET state=?,proof=?,outcome=?,updated_at=? WHERE tx=?")
-            .run(proof.state === "pending" ? "prepared" : proof.state, json(proof), json(response), now, attempt.tx);
+            .run(["pending", "recoverable"].includes(proof.state) ? "prepared" : proof.state, json(proof), json(response), now, attempt.tx);
           const next = proof.state === "retry" ? now + Math.min(3_600_000, 15_000 * 2 ** Math.min(attempt.attempt, 8)) : now;
           db.prepare("UPDATE qgold_keeper_ops SET last_error=?,run_after=? WHERE id=?").run(proof.reason ?? null, next, op.id);
         });
-        if (proof.state !== "succeeded") return false;
+        return { attempt, proof };
+      };
+      const count = op.kind === "sale" ? 2 : 3;
+      for (let step = 0; step < count; step++) {
+        if (successful(db, op.id, step)) continue;
+        const request = nextRequest(op, step, step ? successful(db, op.id, step - 1) : null);
+        const result = await advance(step, request);
+        if (step === 1 && result.proof.state === "recoverable") {
+          const recovered = await recoverKeeperOutput({ db, op, swap: result.attempt, proof: result.proof, transport, current, advance });
+          if (!recovered) return false;
+          atomic(db, () => {
+            current();
+            need(db.prepare("SELECT state FROM qgold_keeper_steps WHERE tx=?").get(result.attempt.tx)?.state === "prepared");
+            db.prepare("UPDATE qgold_keeper_steps SET state='succeeded',proof=?,updated_at=? WHERE tx=?").run(json(recovered), now, result.attempt.tx);
+            db.prepare("UPDATE qgold_keeper_ops SET last_error=NULL WHERE id=?").run(op.id);
+          });
+        } else if (result.proof.state !== "succeeded") return false;
       }
       atomic(db, () => {
         current();
