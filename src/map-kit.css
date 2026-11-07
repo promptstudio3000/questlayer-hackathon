@@ -178,3 +178,13 @@
 
 /* Rarity remains legible when a city-scale curtain is only a few pixels high. */
 .zone-map-pin.map-overview-pin { box-shadow: 0 0 0 3px color-mix(in srgb, var(--zone-aura, #672eeb) 42%, transparent); }
+
+@media (min-width: 901px) and (min-height: 501px) {
+  .map-guide-key {
+    top: calc(env(safe-area-inset-top) + 80px);
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+}

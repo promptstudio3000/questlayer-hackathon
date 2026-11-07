@@ -1297,7 +1297,7 @@ export function GameMap(props: GameMapProps) {
             : 650,
         });
       }
-    } else if (props.focusZone && !props.follow)
+    } else if (props.focusZone && !props.follow && !props.guideRequest)
       m.easeTo({
         center: [props.focusZone.lng, props.focusZone.lat],
         offset: cameraOffset(),
@@ -1310,7 +1310,8 @@ export function GameMap(props: GameMapProps) {
       });
   }, [
     props.overview,
-    props.focusZone,
+    props.focusZone?.id,
+    props.guideRequest?.questId,
     ready,
     props.world?.id,
     props.sheetExpanded,
@@ -1336,7 +1337,7 @@ export function GameMap(props: GameMapProps) {
   }, [ready, routeKey]);
   useEffect(() => {
     const m = map.current;
-    if (!m || !ready || !props.guideRequest || guidePoints.length < 2) return;
+    if (!m || !ready || !props.guideRequest || props.active === false || props.follow || guidePoints.length < 2) return;
     const bounds = new maplibregl.LngLatBounds();
     for (const p of guidePoints) bounds.extend([p.lng, p.lat]);
     const box = el.current!.getBoundingClientRect();
@@ -1344,18 +1345,25 @@ export function GameMap(props: GameMapProps) {
     const phone = window.innerWidth <= 900;
     const landscape = phone && window.innerWidth > window.innerHeight;
     const pad = document.querySelector(".demo-pad")?.getBoundingClientRect();
+    const rail = document.querySelector(".nav-rail")?.getBoundingClientRect();
+    const header = document.querySelector(".topbar")?.getBoundingClientRect();
+    const legend = document.querySelector(".map-guide-key")?.getBoundingClientRect();
+    // The compact objective is centered at the bottom. Reserve actual occupied
+    // space rather than treating its right edge as a left sidebar.
+    const lower = [panel, pad, rail].filter((r): r is DOMRect => !!r && r.height > 0 && r.top > box.top + box.height * .35);
+    const occupiedTop = Math.min(box.bottom, ...lower.map(r => r.top));
+    const top = Math.min(box.height * (landscape ? .46 : phone ? .36 : .34), Math.max((header?.bottom || box.top + 70) - box.top + 100, (legend?.bottom || box.top + 100) - box.top + 100));
+    const bottom = Math.min(landscape ? 90 : Math.max(90, box.bottom - occupiedTop + 32), box.height * .48, Math.max(40, box.height - top - 120));
+    const left = 38;
+    const right = landscape && panel ? Math.min(box.width * .6, box.right - panel.left + 30, box.width - left - 140) : 38;
     m.fitBounds(bounds, {
-      padding: {
-        top: phone && !landscape ? Math.min(220, box.height * .28) : Math.min(150, box.height * .38),
-        bottom: phone && !landscape ? Math.min(box.height * .5, (panel ? box.bottom - panel.top : 160) + (pad?.height || 0) + 32) : 90,
-        left: !phone ? (panel?.right || 500) + 36 : landscape ? (pad?.width || 0) + 40 : 38,
-        right: landscape ? Math.min(box.width * .6, panel ? box.right - panel.left + 30 : 330) : !phone ? Math.max(38, (pad?.width || 0) + 40) : 38,
-      },
+      padding: { top, bottom, left, right },
       maxZoom: 17, pitch: 35, bearing: 0,
       duration: prefersReducedMotion() ? 0 : 550,
     });
-    // A request frames the guide once; later walking and panning keep control.
-  }, [ready, props.guideRequest?.revision]);
+    // Reframe only for an explicit request or a changed visible layout.
+    // Position updates and manual panning keep control of the camera.
+  }, [ready, props.guideRequest?.revision, props.active, viewportRevision]);
   const stopsKey = JSON.stringify([props.route?.stops, guidePoints.slice(1)]);
   useEffect(() => {
     const m = map.current;

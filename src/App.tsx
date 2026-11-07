@@ -3525,7 +3525,7 @@ export default function App() {
           )}
         </div>
       </header>
-      {player && zonePresence && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone, zonePresence.questId)} />}
+      {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone, zonePresence.questId)} />}
       {player && (
         <MapSurface overlay={tab === "explore" && sheetExpanded} label={selected?.name || title} onClose={selected ? closeZone : closeMapPanel}>
         <main
