@@ -37,6 +37,7 @@ async function main(){
  assert.equal(artifacts.rewards.sha256,canonical.questlayer_rewards);
  assert.equal((await provider.viewNodeStatus()).chain_id,'testnet');
  assert.equal(manifest.network,'testnet');assert.equal(oldGold.network,'testnet');
+ assert.equal(manifest.contractId,REWARDS);assert.equal(oldGold.vaultContract,QGOLD);assert.equal(oldGold.tokenContract,QGOLD);assert.equal(oldGold.rewardsContract,REWARDS);
  const [rewardCode,goldCode,cfg,gcfg,gstate,treasury]=await Promise.all([accountView(REWARDS),accountView(QGOLD),view(REWARDS,'get_config'),view(QGOLD,'get_config'),view(QGOLD,'get_state'),view(REWARDS,'get_treasury')]);
  assert([manifest.codeHash,artifacts.rewards.nearCodeHash].includes(rewardCode.code_hash));
  assert([oldGold.codeHash,artifacts.qgold.nearCodeHash].includes(goldCode.code_hash));

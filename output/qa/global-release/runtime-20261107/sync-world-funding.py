@@ -60,6 +60,7 @@ def main(a):
   assert rpc('status',[])['chain_id']=='testnet'
   release=pathlib.Path(a.release).resolve();m=json.loads((release/'public/native-rewards-testnet.json').read_text());g=json.loads((release/'public/native-qgold-vault-testnet.json').read_text());c=m['globalRewards']
   assert m['network']==g['network']=='testnet' and m['contractId']==REWARDS and c['rewardsCodeHash']==m['codeHash']==REWARDS_CODE and c['qgoldContractId']==QGOLD and c['qgoldCodeHash']==GOLD_CODE
+  assert g['vaultContract']==g['tokenContract']==QGOLD and g['rewardsContract']==REWARDS
   assert code(REWARDS)==REWARDS_CODE
   treasury=view(REWARDS,'get_treasury');cache_file=state/'proof-cache.json';cache=json.loads(cache_file.read_text()) if cache_file.exists() else {'network':'testnet','transactions':{},'proofs':{}}
   assert cache['network']=='testnet'
