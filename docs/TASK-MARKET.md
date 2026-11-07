@@ -13,13 +13,46 @@ All money is real QGOLD (6 decimals; 1 micro-GOLD = 1 base unit) held by `contra
    `ft_transfer_call(receiver_id = escrow, amount, msg)` on the QGOLD token, 1 yocto, 200 Tgas.
    The relayer sponsors it for the explorer account (policy: only into the escrow).
 2. The app signs it (`fundMarketEscrow` in `src/App.tsx`) and calls `POST /api/market/funded {id}`.
-   The server reads `get_task` / `get_secret` / `get_transfer` and opens the row when the funder,
-   amount and terms match. The escrow worker re-checks waiting fundings every 15 s and drops rows
-   that never arrived after 2 h.
+   The server reads `get_task` / `get_secret` / `get_transfer` from the configured escrow at FINAL
+   finality and checks the full persisted intent and lifecycle before applying it atomically.
+   The escrow worker re-checks waiting fundings every 15 s. Only an explicit absent (`null`) view
+   can expire a waiting row after 2 h; an RPC error or incomplete response is not proof of absence.
 3. Every payout or refund is a queued publisher call in `mk_chain_ops` (`server/market/chain.mjs`),
    written in the same database transaction as the row change and sent in order per escrow id.
    After a payout the worker calls `withdraw_for(account)`, so QGOLD lands in the receiver's
    account without them doing anything.
+
+### Funding verification and recovery
+
+`server/market/funding.mjs` binds the view ID and payer to the persisted funding request and checks
+exact integer amounts. A task also binds its reward, fee, slots, per-slot reward, assignee and
+deadline; a Secret binds its Secret ID, creator, price, creator share and seven-day release time;
+a conditional send binds its receiver, expiry and every field of its release condition.
+
+The immutable agreement in the configured contract is evidence of accepted funding: its ID can
+be created only once, through the configured token's successful exact-amount `ft_on_transfer`.
+This relies on the reviewed contract code/configuration and a trusted FINAL RPC response. A client
+claim, matching amount alone, arbitrary contract view or submitted transaction hash is insufficient.
+
+| Observed agreement | Local result |
+| --- | --- |
+| Entire task/sponsor collateral still open | Open the existing offer with its original capacity |
+| All task/sponsor slots paid or refunded | Keep it closed, zero held funds and record an earned fee only if paid |
+| Secret held or disputed | Preserve that state and the original on-chain funding timestamp |
+| Secret released or refunded | Preserve legitimate paid access after release; grant no access after refund; zero held funds |
+| Transfer held, released or refunded | Preserve that state and existing confirmation flags; zero held funds if settled |
+| Partly consumed/disputed task, consumed counteroffer, mismatched or incomplete view | Keep unresolved for reconciliation; never recreate full collateral or guess who is entitled |
+
+Recognizing an already settled payment does not submit another release/refund. It may queue only
+`withdraw_for` to deliver the contract's existing credit to its owner. Fee records, withdrawal
+requests, the target row and the funding claim commit together. A stale check cannot reactivate a
+dropped or changed intent. Repeated confirmation is idempotent, and failed/interrupted activation
+rolls back before retry. Bounded worker checks rotate past unresolved/malformed entries.
+
+This change requires no extra player signature, approval dialog or new economy value. It does not
+reconcile already-confirmed historic rows, replace the settlement outbox, or solve funding accepted
+after the existing two-hour absence timeout. Review those separately before release; late payments
+must be reconciled to their original agreement, not retried as a new purchase blindly.
 
 | Market event | Escrow call |
 | --- | --- |

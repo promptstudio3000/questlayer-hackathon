@@ -5,7 +5,7 @@
 // - The poster, buyer or sender funds an agreement with ONE sponsored
 //   `ft_transfer_call` from their own NEAR account to the escrow. The market
 //   row waits in `funding` until the escrow view shows the agreement with the
-//   expected funder and amount (`confirmFunding`).
+//   exact persisted terms and a verified lifecycle (`checkFunding`).
 // - Every payout or refund is an escrow call by the game server's publisher
 //   key (approve_task, confirm_visit, cancel_task, ...). The service enqueues
 //   them in `mk_chain_ops` inside the same database transaction that changes
@@ -17,6 +17,7 @@ import { readFileSync, existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { assert, id } from "../domain.mjs";
 import { atomic } from "../database.mjs";
+import { fundingAssessment } from "./funding.mjs";
 import {
   ensureModuleVersion,
   registerModuleSchema,
@@ -142,42 +143,37 @@ export function pendingFunding(db, escrowId, player) {
 
 /** Pure: does the escrow view match what this funding asked for? */
 export function fundingMatches(f, view) {
-  if (!view) return false;
-  const msg = JSON.parse(f.msg);
-  if (msg.kind === "task") {
-    return (
-      view.poster === f.account &&
-      String(view.reward) === String(msg.reward) &&
-      (view.slots ?? 1) === (msg.slots ?? 1) &&
-      (view.assignee ?? null) === (msg.assignee ?? null)
-    );
-  }
-  if (msg.kind === "secret")
-    return view.buyer === f.account && view.creator === msg.creator && String(view.price) === String(msg.price);
-  if (msg.kind === "transfer")
-    return view.sender === f.account && view.to === msg.to && String(view.amount) === String(f.amount_u);
-  return false;
+  return fundingAssessment(f, view) !== null;
 }
 const VIEW_METHOD = { task: "get_task", secret: "get_secret", transfer: "get_transfer" };
-export const fundingView = (f) => ({ method: VIEW_METHOD[JSON.parse(f.msg).kind], args: { id: f.id } });
+export function fundingView(f) {
+  try {
+    const m = JSON.parse(f.msg), method = VIEW_METHOD[m.kind];
+    return typeof method === "string" && m.id === f.id ? { method, args: { id: f.id } } : null;
+  } catch { return null; }
+}
+const sameFunding = (a, b) => b && ["id", "target", "ref", "player", "account", "amount_u", "msg", "created_at"]
+  .every((key) => a[key] === b[key]);
 
 /**
  * Applies a funded agreement to its market row (inside one transaction).
  * `activate[target](db, ref, now)` is supplied by the market service.
  */
-export function markFunded(db, f, activate, now) {
+export function markFunded(db, f, activate, now, onChain) {
   return atomic(db, () => {
     const fresh = db.prepare("SELECT * FROM mk_fundings WHERE id=?").get(f.id);
-    if (!fresh || fresh.state === "funded") return false;
+    if (!sameFunding(f, fresh) || fresh.state !== "waiting") return false;
+    const evidence = fundingAssessment(fresh, onChain);
+    if (!evidence) return false;
     db.prepare("UPDATE mk_fundings SET state='funded',checked_at=?,updated_at=? WHERE id=?").run(now, now, f.id);
-    activate[f.target](db, f.ref, now, fresh);
+    activate[fresh.target](db, fresh.ref, now, fresh, evidence);
     return true;
   });
 }
 export function dropFunding(db, f, drop, now) {
   return atomic(db, () => {
     const fresh = db.prepare("SELECT * FROM mk_fundings WHERE id=? AND state='waiting'").get(f.id);
-    if (!fresh) return false;
+    if (!sameFunding(f, fresh)) return false;
     db.prepare("UPDATE mk_fundings SET state='dropped',updated_at=? WHERE id=?").run(now, f.id);
     drop[f.target](db, f.ref, now, fresh);
     return true;
@@ -225,22 +221,30 @@ const DONE = /No credit to withdraw|already paid|is not held|Task is closed|Disp
  */
 export async function runEscrowWorker(db, { view, call, activate, drop, now = Date.now(), maxOps = 20, maxChecks = 20 }) {
   ensureMarketChainSchema(db);
-  const result = { funded: 0, dropped: 0, sent: 0, failed: 0 };
+  const result = { funded: 0, dropped: 0, fundingFailed: 0, sent: 0, failed: 0 };
   for (const f of db
-    .prepare("SELECT * FROM mk_fundings WHERE state='waiting' ORDER BY created_at LIMIT ?")
+    .prepare("SELECT * FROM mk_fundings WHERE state='waiting' ORDER BY COALESCE(checked_at,0),created_at,id LIMIT ?")
     .all(maxChecks)) {
     const v = fundingView(f);
+    db.prepare("UPDATE mk_fundings SET checked_at=? WHERE id=? AND state='waiting'").run(now, f.id);
+    if (!v) continue;
     let onChain = null;
     try {
       onChain = await view(v.method, v.args);
     } catch {
       continue;
     }
-    if (onChain && fundingMatches(f, onChain)) {
-      if (markFunded(db, f, activate, now)) result.funded++;
-    } else if (!onChain && now - f.created_at > FUNDING_WAIT_MS) {
-      if (dropFunding(db, f, drop, now)) result.dropped++;
-    } else db.prepare("UPDATE mk_fundings SET checked_at=? WHERE id=?").run(now, f.id);
+    try {
+      if (onChain && fundingMatches(f, onChain)) {
+        if (markFunded(db, f, activate, now, onChain)) result.funded++;
+      } else if (onChain === null && now - f.created_at > FUNDING_WAIT_MS) {
+        if (dropFunding(db, f, drop, now)) result.dropped++;
+      }
+    } catch {
+      // The transaction rolled back. One inconsistent order must not block
+      // other confirmations or the settlement outbox in this worker pass.
+      result.fundingFailed++;
+    }
   }
   const blocked = new Set();
   for (const op of db
@@ -291,12 +295,13 @@ export async function checkFunding(db, escrowId, player, { view, activate, now }
   assert(f, "Unknown payment.", 404);
   if (f.state !== "waiting") return { state: f.state };
   const v = fundingView(f);
+  if (!v) return { state: "waiting" };
   const onChain = await view(v.method, v.args).catch(() => null);
   if (onChain && fundingMatches(f, onChain)) {
-    markFunded(db, f, activate, now);
-    return { state: "funded" };
+    markFunded(db, f, activate, now, onChain);
   }
-  return { state: "waiting" };
+  // Another worker may have committed or dropped this intent while RPC waited.
+  return { state: db.prepare("SELECT state FROM mk_fundings WHERE id=? AND player=?").get(escrowId, player)?.state ?? "waiting" };
 }
 export function escrowHealth(db) {
   ensureMarketChainSchema(db);

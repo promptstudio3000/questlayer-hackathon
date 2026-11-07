@@ -667,7 +667,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Fees, spending and the task market",
     summary: "Where fees go, what GOLD can buy, and how tasks, Secrets and conditional sends settle.",
     status: "partial",
-    updated: "2026-11-05",
+    updated: "2026-11-06",
     sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json"],
     blocks: [
       { viz: "fees" },
@@ -692,7 +692,8 @@ export const CHAPTERS: Chapter[] = [
           "A poster pays the reward plus 10 % on top. The fee reaches the treasury only on payout; a refund returns both.",
           "**Secrets:** a creator hides a place; finders pay to reveal it and the creator gets 90 % after a GPS visit or 7 days without dispute. A sponsor can prepay finder rewards so the reveal is free.",
           "**Conditional sends:** escrow that releases on a condition, no fee.",
-          "Everything settles in real QGOLD. The poster, buyer or sender pays it from their own NEAR account into the `qgold-escrow` contract with one sponsored `ft_transfer_call` (no popup on the explorer account); the task, Secret or send opens once the escrow shows it.",
+          "Everything settles in real QGOLD. The poster, buyer or sender pays it from their own NEAR account into the `qgold-escrow` contract with one sponsored `ft_transfer_call` (no popup on the explorer account). The server confirms the exact payment, recipient, deadline and conditions before opening the task, Secret or send.",
+          "A returned payment never opens a paid Secret or creates a new reward. A completed payment stays completed after a restart, and existing confirmations are preserved. An uncertain payment waits for verification without another approval from the player; normal exploration stays available.",
           "The game server is the escrow's publisher: it approves GPS-checked or reviewed completions, confirms Secret visits, releases or refunds sends and pushes each payout to the receiver's account (`withdraw_for`). It can only pay the named counterparty or refund the funder; there is no admin withdrawal and the escrow has no access keys.",
           "A proof waiting for review holds its slot on chain, so the poster cannot cancel it away. One escrow task pays at most 50 completions, and each account once per task.",
           "Sponsored NEAR tasks already run on a separate escrow contract that holds each sponsor's exact reward until a reviewed completion; it never touches stake, yield or prize money.",

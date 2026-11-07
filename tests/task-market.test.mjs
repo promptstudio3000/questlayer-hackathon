@@ -5,6 +5,7 @@ import { GOLD, DAY } from "../server/domain.mjs";
 import * as m from "../server/market/service.mjs";
 import * as chain from "../server/market/chain.mjs";
 import { createMarketRoutes } from "../server/market/routes.mjs";
+import { escrowFundingView } from "./fixtures/escrow-funding.mjs";
 
 const now = Date.parse("2026-11-04T12:00:00Z");
 const PLZEN = { lat: 49.7475, lng: 13.3776 };
@@ -39,7 +40,7 @@ function fund(db, r, at = now) {
   assert.equal(r.funding.args.receiver_id, ESCROW.contractId);
   assert.equal(r.funding.deposit, "1");
   const f = db.prepare("SELECT * FROM mk_fundings WHERE id=?").get(r.funding.id);
-  assert.ok(chain.markFunded(db, f, m.ACTIVATE, at));
+  assert.ok(chain.markFunded(db, f, m.ACTIVATE, at, escrowFundingView(f, at)));
   return JSON.parse(f.msg);
 }
 
@@ -270,7 +271,7 @@ test("escrow worker: confirms matching fundings, drops stale ones, sends calls i
   const t = m.createTask(db, alice, { title: "Visit the cathedral", type: "go", ...PLZEN, reward: 5 * GOLD, slots: 2 }, now);
   const stale = m.createTransfer(db, alice, { to: bob, amount: GOLD }, now);
   const views = {
-    [t.id]: { poster: "alice.testnet", reward: String(10 * GOLD), slots: 2, assignee: null },
+    [t.id]: escrowFundingView(db.prepare("SELECT * FROM mk_fundings WHERE id=?").get(t.id)),
   };
   const calls = [];
   const run = (at, call = async (method, args) => (calls.push(`${method} ${args.id ?? args.account_id}`), "tx")) =>
@@ -355,7 +356,7 @@ test("routes mount under /api/market, confirm a funding and gate moderators", as
   const created = await call(alice, "POST", "/api/market/tasks", { title: "Route test", ...PLZEN, reward: GOLD });
   assert.equal(created.status, 201);
   assert.equal((await call(alice, "POST", "/api/market/funded", { id: created.body.id })).body.state, "waiting");
-  views[created.body.id] = { poster: "alice.testnet", reward: String(GOLD), slots: 1, assignee: null };
+  views[created.body.id] = escrowFundingView(db.prepare("SELECT * FROM mk_fundings WHERE id=?").get(created.body.id));
   await assert.rejects(call(bob, "POST", "/api/market/funded", { id: created.body.id }), /Unknown payment/);
   assert.equal((await call(alice, "POST", "/api/market/funded", { id: created.body.id })).body.state, "funded");
   const near = await call(bob, "GET", `/api/market/nearby?lat=${PLZEN.lat}&lng=${PLZEN.lng}`);
