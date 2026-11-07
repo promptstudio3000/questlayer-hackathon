@@ -10,9 +10,10 @@
 // generic NPC cast must be out too. In the empty cell the coach must say so
 // truthfully and the map marks nothing. The server runs on a throwaway
 // database with the Czechia POI fixture (tests/fixtures/world-coverage) as
-// POI_DB_PATH, the cells' path snapshots are pre-seeded (no map network), and
-// server and browser clocks are moved into play hours (scripts/lib/
-// e2e-clock.mjs) so the run gives the same answer at 02:00 as at noon.
+// POI_DB_PATH; the cells' path snapshots are pre-seeded (no map network).
+// Server and browser clocks use a fixed afternoon on the same fixture date
+// (scripts/lib/e2e-clock.mjs). Several coin waves must be open as well as POI
+// quests, so the same checks apply at 02:00 and at noon on the CI host.
 //
 // Usage:  npm run build && npm run e2e:world [-- --device=<name>]
 //   --device=phone-390  Chromium at 390 x 844 (default)
@@ -39,7 +40,6 @@ import {
   pathsAround,
 } from "../tests/fixtures/world-coverage/czechia.mjs";
 import { coverageReport, openPoiDb } from "../server/poi/coverage.mjs";
-import { daytimeOffset } from "./lib/e2e-clock.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -81,8 +81,10 @@ function chosenDevices() {
   assert.ok(DEVICES[name], `Unknown device "${name}".`);
   return [name];
 }
-// Server and browsers share one shifted clock (0 inside 09:00-18:00 Prague).
-const CLOCK_OFFSET_MS = daytimeOffset("Europe/Prague");
+// Freeze the fixture date and wave phase, while keeping elapsed time flowing.
+// Moving an evening run to 11:00 hid later coin waves and made the unchanged
+// minimum-count assertions fail depending on when CI happened to run.
+const CLOCK_OFFSET_MS = Date.parse("2026-11-07T16:00:00.000Z") - Date.now();
 
 async function freePort() {
   return new Promise((done, fail) => {

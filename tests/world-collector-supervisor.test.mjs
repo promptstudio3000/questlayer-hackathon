@@ -24,5 +24,5 @@ with tempfile.TemporaryDirectory() as temp:
  assert not (root/'.prepare.lock.recovery').exists()
 print('passed')
 `;
- assert.equal(execFileSync('python3',['-c',source],{encoding:'utf8'}).trim(),'passed');
+ assert.equal(execFileSync('python3',['-B','-c',source],{encoding:'utf8'}).trim(),'passed');
 });

@@ -28,5 +28,5 @@ try:m.reconcile(p+[changed],treasury);raise RuntimeError('Conflicting source acc
 except AssertionError:pass
 print('passed')
 `;
- assert.equal(execFileSync('python3',['-c',source],{encoding:'utf8'}).trim(),'passed');
+ assert.equal(execFileSync('python3',['-B','-c',source],{encoding:'utf8'}).trim(),'passed');
 });
