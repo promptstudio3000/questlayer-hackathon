@@ -25,6 +25,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import type { ScreenTab } from "./ScreenTabs";
+import { ArrowRight } from "./dir-icons";
 import type { CreatorCommunityView } from "./creator-community-types";
 import type { MarketView, ProfileView } from "./app-navigation";
 import { lang, LANGS, setLang, tr, type Lang } from "./i18n";
@@ -101,6 +102,7 @@ export function ProfileHero({
   level,
   progress,
   detail,
+  appearanceLabel,
 }: {
   avatar: ReactNode;
   name: string;
@@ -108,18 +110,19 @@ export function ProfileHero({
   /** 0–100, or null while progress is unknown. */
   progress: number | null;
   detail: string;
+  appearanceLabel?: string;
 }) {
   return (
     <section className="profile-hero" aria-label={tr("Your character")}>
       <div className="profile-hero-avatar">
+        {appearanceLabel && <span className="profile-hero-source">{appearanceLabel}</span>}
         {avatar}
-        <span className="profile-hero-level" aria-hidden="true">
-          {level ?? "—"}
-        </span>
       </div>
-      <div>
-        <h2>{name}</h2>
-        <small>{level !== null ? tr("Level {0}", { 0: level }) : tr("Explorer")}</small>
+      <div className="profile-hero-body">
+        <div className="profile-hero-heading">
+          <h2>{name}</h2>
+          <small>{level !== null ? tr("Level {0}", { 0: level }) : tr("Explorer")}</small>
+        </div>
         <div
           className="profile-xp"
           role="progressbar"
@@ -141,17 +144,20 @@ export function ProfileTile({
   label,
   hint,
   onClick,
+  primary = false,
 }: {
   icon: Icon;
   label: string;
   hint: string;
   onClick: () => void;
+  primary?: boolean;
 }) {
   return (
-    <button type="button" onClick={onClick}>
+    <button type="button" className={primary ? "profile-primary-action" : undefined} onClick={onClick}>
       <TileIcon size={26} weight="duotone" aria-hidden="true" />
       <span>{label}</span>
       <small>{hint}</small>
+      <ArrowRight size={20} aria-hidden="true" />
     </button>
   );
 }

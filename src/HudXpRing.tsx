@@ -13,6 +13,7 @@ export type HudXpRingProps = {
   nextLevelXp: number;
   /** Ring unlock from the level table ("silver" from L5, "gold" from L10); purple otherwise. */
   ring?: string | null;
+  name?: string;
   children?: ReactNode;
 };
 
@@ -26,7 +27,7 @@ export function levelFraction({ xp, levelStartXp, nextLevelXp }: Pick<HudXpRingP
   return Math.min(1, Math.max(0, (xp - levelStartXp) / span));
 }
 
-export function HudXpRing({ level, xp, levelStartXp, nextLevelXp, ring = null, children }: HudXpRingProps) {
+export function HudXpRing({ level, xp, levelStartXp, nextLevelXp, ring = null, name, children }: HudXpRingProps) {
   const fraction = levelFraction({ xp, levelStartXp, nextLevelXp });
   return (
     <span className={`hud-xp${ring === "silver" || ring === "gold" ? ` ring-${ring}` : ""}`}>
@@ -48,7 +49,7 @@ export function HudXpRing({ level, xp, levelStartXp, nextLevelXp, ring = null, c
         </span>
       </span>
       <span className="hud-xp-text">
-        <b>{tr("Lv")}{" "}{level}</b>{" "}
+        <b>{name && <span className="hud-player-name" title={name}>{name}</span>}<span>{tr("Lv")}{" "}{level}</span></b>{" "}
         <small>
           {xp.toLocaleString("en-US")}/{nextLevelXp.toLocaleString("en-US")} XP
         </small>

@@ -1,0 +1,149 @@
+/* Profile and public Community use the approved map/collection visual language.
+   Existing routes, consent, moderation and financial components are unchanged. */
+.app-shell[data-area] .panel-heading h1 { font-size: 24px; line-height: 1.25; font-weight: 500; }
+.app-shell[data-area] .screen-tabs-primary {
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--decorative-border);
+  border-radius: 0;
+  background: var(--surface);
+  box-shadow: none;
+}
+.app-shell[data-area] .screen-tabs-primary button {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 8px 4px;
+  background: transparent;
+  border-radius: 0;
+  color: var(--ink-secondary);
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 400;
+  flex: 1 0 auto;
+}
+.app-shell[data-area] .screen-tabs-primary button[aria-selected="true"] {
+  color: var(--ink);
+  font-weight: 500;
+  background: transparent;
+  box-shadow: inset 0 -3px 0 var(--action);
+}
+.app-shell[data-area] .screen-tabs-primary .screen-tab-icon { display: none; }
+.app-shell[data-area] .screen-tabs-primary .screen-tab-label { white-space: nowrap; overflow: visible; line-height: 1.4; }
+
+/* One shared appearance with room for both equipped Aura slots. */
+.app-shell[data-area="profile"] .profile-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding: 0;
+  margin: 20px 0;
+  color: var(--ink);
+  border: 0;
+  background: transparent;
+}
+.app-shell[data-area="profile"] .profile-hero-avatar {
+  position: relative;
+  width: 100%;
+  min-height: 248px;
+  height: auto;
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+  padding: 12px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface-soft);
+}
+.profile-hero-source { justify-self: start; max-width: 100%; padding: 4px 10px; border-radius: 8px; background: var(--surface-raised); color: var(--ink-secondary); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.app-shell[data-area="profile"] .profile-hero-avatar .character-composition { width: 192px; height: 196px; }
+.app-shell[data-area="profile"] .profile-hero-avatar .character-composition > .ghost-art,
+.app-shell[data-area="profile"] .profile-hero-avatar .character-composition > img { width: 96px; height: 108px; object-fit: contain; }
+.app-shell[data-area="profile"] .profile-hero-avatar .character-aura { filter: none; }
+.app-shell[data-area="profile"] .profile-hero-avatar .character-aura.above { top: 0; }
+.app-shell[data-area="profile"] .profile-hero-avatar .character-aura.below { bottom: 0; }
+.app-shell[data-area="profile"] .profile-hero-avatar .aura-sprite { width: 168px; height: auto; }
+.app-shell[data-area="profile"] .profile-hero-avatar .character-composition > small { width: 100%; bottom: -12px; text-align: center; color: var(--error); font-size: 14px; }
+.profile-hero-body { min-width: 0; }
+.profile-hero-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.app-shell[data-area="profile"] .profile-hero h2 { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 500; color: var(--ink); }
+.app-shell[data-area="profile"] .profile-hero small { font-size: 14px; line-height: 1.5; color: var(--ink-secondary); }
+.app-shell[data-area="profile"] .profile-hero-heading > small { flex: none; padding: 4px 10px; border-radius: 8px; background: var(--surface-soft); }
+.app-shell[data-area="profile"] .profile-xp { height: 6px; margin: 16px 0 10px; border: 0; background: var(--surface-soft); }
+.app-shell[data-area="profile"] .profile-xp > i { background: var(--action); }
+.app-shell[data-area="profile"] .profile-tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 16px; }
+.app-shell[data-area="profile"] .profile-tiles button {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 24px;
+  align-items: center;
+  justify-items: start;
+  gap: 2px 12px;
+  min-height: 64px;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--decorative-border);
+  border-radius: 0;
+  background: transparent;
+  text-align: start;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 500;
+}
+.app-shell[data-area="profile"] .profile-tiles button > svg:first-child { grid-column: 1; grid-row: 1 / span 2; color: inherit; }
+.app-shell[data-area="profile"] .profile-tiles button > svg:last-child { grid-column: 3; grid-row: 1 / span 2; color: inherit; }
+.app-shell[data-area="profile"] .profile-tiles button > span { grid-column: 2; }
+.app-shell[data-area="profile"] .profile-tiles button small { display: block; grid-column: 2; color: var(--ink-secondary); font-size: 14px; font-weight: 400; line-height: 1.4; }
+.app-shell[data-area="profile"] .profile-tiles button.profile-primary-action { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--action); color: var(--on-action); }
+.app-shell[data-area="profile"] .profile-tiles .profile-primary-action small { color: var(--on-action); }
+.app-shell[data-area="profile"] .screen-tab-panel > .fine-print { font-size: 14px; line-height: 1.5; color: var(--ink-secondary); }
+
+/* Capability-aware entry points keep the empty creator state useful. */
+.app-shell[data-area="community"] .illustrated-empty { padding: 24px 8px; border: 0; border-radius: 0; background: transparent; }
+.app-shell[data-area="community"] .illustrated-empty-title { font-size: 24px; font-weight: 500; }
+.app-shell[data-area="community"] .illustrated-empty-text { max-width: 36em; margin-inline: auto; font-size: 16px; line-height: 1.5; }
+.app-shell[data-area="community"] .illustrated-empty-stage { width: 112px; height: 112px; border: 0; background: var(--surface-soft); box-shadow: none; }
+.community-available-actions { display: grid; gap: 4px; }
+.app-shell .community-available-actions button { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 12px 16px; font-size: 16px; font-weight: 500; border: 0; border-radius: 10px; box-shadow: none; }
+.community-available-actions button > svg { flex: none; }
+.community-available-actions button > svg:last-child { margin-inline-start: auto; }
+.community-available-actions .community-tasks-link { width: 100%; background: transparent; color: var(--action); }
+.app-shell[data-area="community"] .creator-community { margin-top: 0; padding-top: 8px; border-top: 0; }
+.app-shell[data-area="community"] .creator-heading h3 { font-size: 24px; font-weight: 500; }
+.app-shell[data-area="community"] .creator-quest-open h4 { font-weight: 500; }
+.app-shell[data-area="community"] .creator-icon { border-color: var(--decorative-border); border-radius: 10px; }
+
+/* Existing public notes, not private chat; retain all pin/GPS/consent text. */
+.app-shell[data-area="community"] .map-notes-heading { align-items: center; flex-wrap: wrap; gap: 8px; margin: 16px 0 20px; }
+.app-shell[data-area="community"] .map-notes-heading > div { flex: 1 1 100%; }
+.app-shell[data-area="community"] .map-notes h2 { font-size: 28px; font-weight: 500; }
+.app-shell[data-area="community"] .map-notes-heading > h2 { flex: 1 1 100%; }
+.app-shell[data-area="community"] .map-notes-heading:has(.panel-back) > h2 { flex: 1; }
+.app-shell[data-area="community"] .map-notes-mode { display: inline-block; padding: 4px 10px; border-radius: 8px; background: var(--surface-soft); color: var(--ink-secondary); font-size: 14px; }
+.app-shell[data-area="community"] .map-notes .map-notes-primary { min-height: 52px; border: 0; border-radius: 10px; background: var(--action); color: var(--on-action); font-weight: 500; }
+.app-shell[data-area="community"] .map-notes-heading > .map-notes-primary { flex: 1; }
+.app-shell[data-area="community"] .map-notes .map-notes-icon { min-width: 48px; min-height: 48px; border-color: var(--decorative-border); border-radius: 10px; color: var(--ink); }
+.app-shell[data-area="community"] .map-notes > .map-notes-secondary { font-size: 14px; line-height: 1.5; }
+.app-shell[data-area="community"] .map-note { padding: 20px 0 24px; border-color: var(--decorative-border); }
+.app-shell[data-area="community"] .map-note .map-note-ghost { width: 44px; height: 48px; flex-basis: 44px; padding: 6px; border-radius: 12px; background: var(--surface-soft); }
+.app-shell[data-area="community"] .map-note .map-note-ghost > img { width: 100%; height: 100%; object-fit: contain; }
+.app-shell[data-area="community"] .map-note-author b { font-weight: 500; }
+.app-shell[data-area="community"] .map-note > p { font-size: 16px; line-height: 1.5; }
+.app-shell[data-area="community"] .map-note-menu > summary { border: 0; border-radius: 10px; background: transparent; color: var(--ink-secondary); }
+.app-shell[data-area="community"] .map-note-menu > div { right: auto; inset-inline-end: 0; border-color: var(--decorative-border); }
+.app-shell[data-area="community"] .map-notes-compose { padding-top: 8px; gap: 16px; }
+.app-shell[data-area="community"] .map-notes-compose textarea { border-color: var(--control-border); border-radius: 10px; }
+.app-shell[data-area="community"] .map-notes-compose .map-notes-secondary { font-size: 14px; line-height: 1.5; }
+.app-shell[data-area="community"] .map-notes-anchor { border-color: var(--decorative-border); }
+.app-shell[data-area="community"] .map-notes-pending { background: var(--surface-soft); border-color: var(--decorative-border); }
+@media (max-width: 380px) {
+  .app-shell[data-area] .screen-tabs-primary { gap: 2px; }
+  .app-shell[data-area] .screen-tabs-primary button { padding-inline: 2px; }
+  .app-shell[data-area="profile"] .profile-hero-avatar { min-height: 224px; }
+  .app-shell[data-area="profile"] .profile-hero-avatar .character-composition { width: 168px; height: 176px; }
+  .app-shell[data-area="profile"] .profile-hero-avatar .aura-sprite { width: 152px; }
+}
+@media (min-width: 700px) and (max-height: 500px) {
+  .app-shell[data-area="profile"] .profile-hero { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 24px; align-items: center; margin-block: 12px; }
+  .app-shell[data-area="profile"] .profile-hero-avatar { min-height: 216px; }
+  .app-shell[data-area="profile"] .profile-hero-avatar .character-composition { width: 168px; height: 164px; }
+  .app-shell[data-area="profile"] .profile-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

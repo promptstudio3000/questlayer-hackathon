@@ -18,6 +18,7 @@ type HandoffProps = {
   actorId: string;
   encounter: string | ActorEncounter;
   onClose: () => void;
+  onQuest?: (questId: string) => void;
 };
 
 // Optional slices: NPC talk (N1/N2) and monster challenges (M1/M2).
@@ -48,12 +49,14 @@ export function ActorSheet({
   playerId,
   worldId,
   location,
+  onQuest,
   onClose,
 }: {
   actor: ActorView;
   playerId: string;
   worldId: string;
   location: Location | null;
+  onQuest?: (questId: string) => void;
   onClose: () => void;
 }) {
   const [state, setState] = useState<
@@ -115,7 +118,7 @@ export function ActorSheet({
   if (ready && handoff === "npc" && NpcSheet)
     return (
       <Suspense fallback={null}>
-        <NpcSheet playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} />
+        <NpcSheet playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} onQuest={onQuest} />
       </Suspense>
     );
   if (ready && handoff === "boss")
@@ -131,11 +134,8 @@ export function ActorSheet({
       </Suspense>
     );
   return (
-    <Dialog presentation="screen" label={actor.name} onClose={onClose}>
+    <Dialog presentation="encounter" label={actor.name} onClose={onClose}>
       <section className={`actor-sheet actor-sheet-${actor.kind}`}>
-        <button className="icon-button close" onClick={onClose} aria-label={tr("Close")}>
-          ×
-        </button>
         <div className="actor-stage" ref={stage} aria-hidden="true" />
         <header>
           <p className="actor-role">

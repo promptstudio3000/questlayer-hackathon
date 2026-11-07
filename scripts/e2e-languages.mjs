@@ -49,15 +49,17 @@ async function startServer() {
   const port = await freePort();
   const dir = mkdtempSync(join(tmpdir(), "questlayer-lang-"));
   const url = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, ["server/index.mjs"], {
-    cwd: ROOT,
+  const child = spawn(process.execPath, [join(ROOT, "server/index.mjs")], {
+    cwd: dir,
     env: {
-      ...process.env,
+      PATH: process.env.PATH,
       PORT: String(port),
       HOST: "127.0.0.1",
       APP_ORIGIN: url,
       DATABASE_PATH: join(dir, "e2e.sqlite"),
       DISABLE_RELAYER: "1",
+      DISABLE_NATIVE_ATTESTATIONS: "1",
+      NEAR_RPC_URL: "http://127.0.0.1:9",
       CREATOR_COMMUNITY_ENABLED: "1",
       CREATOR_POLICY_VERSION: "e2e-languages-v1",
       CREATOR_XP_COMMITMENT: "200",
