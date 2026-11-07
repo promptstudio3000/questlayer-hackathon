@@ -1026,7 +1026,7 @@ fn admission_reserves_the_maximum_bounded_settlement_growth() {
         ctx("publisher.testnet", NOW);
         c.approve_task("capacity".into(), a(&format!("p{i:03}{}", "a".repeat(60))));
     }
-    assert!(env::storage_usage() - before < STORAGE_GROWTH_PER_OPEN);
+    assert!(env::storage_usage() - before < task_growth(MAX_SLOTS));
     assert_conserved(&c);
 }
 
@@ -1042,4 +1042,57 @@ fn exhausted_native_reserve_cannot_consume_existing_withdrawal_credit() {
     assert!(fails(|| { c.withdraw_for(a("worker.testnet")); }).contains("storage reserve"));
     assert_eq!(credit(&c, "worker.testnet"), before);
     assert_eq!(c.get_stats().pending_withdrawals.0, 0);
+}
+
+// ------------------------------------------------- storage reserve (A07 follow-up)
+
+#[test]
+fn reserve_is_sized_per_agreement_and_released_on_close() {
+    let mut c = fresh();
+    let before = reserved_growth();
+    fund_task(&mut c, "small", 10, 1);
+    assert_eq!(reserved_growth() - before, task_growth(1));
+    assert!(task_growth(1) < 8 * 1024, "a one-slot task must not reserve the 50-slot maximum");
+    assert_eq!(task_growth(MAX_SLOTS), (50 + 100) * 256 + 4096);
+    ctx("poster.testnet", NOW);
+    c.cancel_task("small".into());
+    assert_eq!(reserved_growth(), before);
+}
+
+#[test]
+fn dispute_capacity_follows_task_size() {
+    assert_eq!(task_dispute_cap(1), 6);
+    assert_eq!(task_dispute_cap(MAX_SLOTS), MAX_DISPUTES);
+}
+
+#[test]
+fn many_small_agreements_fit_where_the_flat_reserve_allowed_few() {
+    // With 10 NEAR and the old flat 42 KiB per agreement about 15 agreements
+    // fit after the contract's own storage; per-agreement sizing fits far more.
+    let flat = (MAX_SLOTS as u64 + MAX_DISPUTES as u64) * 256 + 4096;
+    assert!(flat / task_growth(1) >= 7);
+    assert!(flat / PAIR_GROWTH >= 9);
+}
+
+#[test]
+fn worst_case_one_slot_task_fits_its_reserve() {
+    let mut c = fresh();
+    fund_task(&mut c, "one", 10, 1);
+    let before = env::storage_usage();
+    for i in 0..task_dispute_cap(1) {
+        let worker = a(&format!("w{i:03}{}", "a".repeat(60)));
+        ctx("publisher.testnet", NOW);
+        c.open_dispute("one".into(), worker.clone());
+        ctx("moderator.testnet", NOW);
+        c.resolve_dispute("one".into(), worker, false);
+    }
+    let e = fails(|| {
+        ctx("publisher.testnet", NOW);
+        c.open_dispute("one".into(), a(&format!("x{}", "a".repeat(60))));
+    });
+    assert!(e.contains("Dispute capacity reached"), "{e}");
+    ctx("publisher.testnet", NOW);
+    c.approve_task("one".into(), a(&format!("p{}", "a".repeat(60))));
+    assert!(env::storage_usage() - before < task_growth(1));
+    assert_conserved(&c);
 }

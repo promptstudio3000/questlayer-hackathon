@@ -19,7 +19,7 @@ pub const FEE_BPS: u128 = 1000;
 pub const BPS: u128 = 10_000;
 pub const MAX_ID: usize = 64;
 pub const MAX_SLOTS: u32 = 50;
-pub const MAX_OPEN_PER_ACCOUNT: u32 = 200;
+pub const MAX_OPEN_PER_ACCOUNT: u32 = 20;
 /// Open plus rejected disputes per task.
 pub const MAX_DISPUTES: usize = 100;
 pub const MAX_RADIUS_M: u32 = 10_000;
@@ -35,10 +35,32 @@ const GAS_STORAGE_DEPOSIT: Gas = Gas::from_tgas(10);
 const GAS_WITHDRAW_FOR_MIN: Gas = Gas::from_tgas(60);
 /// NEP-145 registration on the QGOLD vault (0.00125 NEAR, contracts/qgold STORAGE_FEE).
 const STORAGE_DEPOSIT_YOCTO: u128 = 1_250_000_000_000_000_000_000;
-// Each possible worker/dispute needs at most one bounded account identifier
-// and credit record. Reserve 256 bytes per entry plus 4 KiB for fixed records,
-// keys and callbacks. This is native storage headroom, not a token price/fee.
-const STORAGE_GROWTH_PER_OPEN: u64 = (MAX_SLOTS as u64 + MAX_DISPUTES as u64) * 256 + 4096;
+// Native storage headroom per open agreement, sized by what that agreement can
+// still add: one bounded account id plus credit record (256 bytes) per possible
+// worker, dispute or payee, plus 4 KiB for the fixed record, keys and callbacks.
+// Sizing per agreement (not by the largest possible task) keeps the service
+// open: a flat 42 KiB per agreement let a few 1-unit sends block every new
+// task. This is native storage headroom, not a token price or fee.
+const ENTRY_BYTES: u64 = 256;
+const FIXED_BYTES: u64 = 4096;
+/// Sum of the headroom reserved for open agreements. Kept under its own key so
+/// the contract state layout is unchanged.
+const RESERVED_GROWTH_KEY: &[u8] = b"reserved-growth-bytes";
+/// Disputes plus resolved disputes a task can hold: two per slot plus four,
+/// capped at MAX_DISPUTES.
+pub fn task_dispute_cap(slots: u32) -> usize {
+    (2 * slots as usize + 4).min(MAX_DISPUTES)
+}
+fn task_growth(slots: u32) -> u64 {
+    (u64::from(slots) + task_dispute_cap(slots) as u64) * ENTRY_BYTES + FIXED_BYTES
+}
+/// Secrets and sends credit at most the payee and the payer.
+const PAIR_GROWTH: u64 = 2 * ENTRY_BYTES + FIXED_BYTES;
+fn reserved_growth() -> u64 {
+    env::storage_read(RESERVED_GROWTH_KEY)
+        .map(|b| u64::from_le_bytes(b.try_into().expect("Invalid reserved growth")))
+        .unwrap_or(0)
+}
 
 /// Platform fee, rounded up: ceil(amount * FEE_BPS / BPS).
 pub fn fee_of(amount: u128) -> u128 {
@@ -444,7 +466,7 @@ impl QgoldEscrow {
         assert!(!task.rejected.contains(&worker), "Dispute already resolved for this worker");
         assert!(task.free_slots() > 0, "No open slot left");
         assert!(
-            task.disputes.len() + task.rejected.len() < MAX_DISPUTES,
+            task.disputes.len() + task.rejected.len() < task_dispute_cap(task.slots),
             "Dispute capacity reached"
         );
         task.disputes.push(worker.clone());
@@ -760,6 +782,16 @@ impl QgoldEscrow {
     pub fn get_open_count(&self, account_id: AccountId) -> u32 {
         self.open_by_account.get(&account_id).unwrap_or(0)
     }
+    /// Native storage headroom for monitoring: new agreements are refused
+    /// while `free_yocto` is below what the next one needs, so top up early.
+    pub fn get_storage_reserve(&self) -> Value {
+        let reserved = reserved_growth();
+        let required = (u128::from(env::storage_usage()) + u128::from(reserved)) * env::storage_byte_cost().as_yoctonear();
+        let balance = env::account_balance().as_yoctonear();
+        json!({"reserved_growth_bytes": reserved, "required_yocto": required.to_string(),
+            "balance_yocto": balance.to_string(), "free_yocto": balance.saturating_sub(required).to_string(),
+            "pair_growth_bytes": PAIR_GROWTH, "one_slot_task_growth_bytes": task_growth(1)})
+    }
     pub fn get_stats(&self) -> StatsView {
         StatsView {
             total_held: U128(self.total_held),
@@ -848,12 +880,17 @@ impl QgoldEscrow {
         }
         assert!(!task.paid.contains(worker), "Worker already paid for this task");
     }
-    fn open_inc(&mut self, account: &AccountId) {
+    fn open_inc(&mut self, account: &AccountId, growth: u64) {
         let n = self.open_by_account.get(account).unwrap_or(0);
         assert!(n < MAX_OPEN_PER_ACCOUNT, "Too many open escrows for this account");
         self.open_by_account.insert(account, &(n + 1));
+        let total = reserved_growth().checked_add(growth).expect("Reserved growth overflow");
+        env::storage_write(RESERVED_GROWTH_KEY, &total.to_le_bytes());
     }
-    fn open_dec(&mut self, account: &AccountId) {
+    fn open_dec(&mut self, account: &AccountId, growth: u64) {
+        // Agreements opened before this accounting existed reserved nothing.
+        let total = reserved_growth().saturating_sub(growth);
+        env::storage_write(RESERVED_GROWTH_KEY, &total.to_le_bytes());
         let n = self.open_by_account.get(account).expect("Open count underflow");
         if n <= 1 {
             self.open_by_account.remove(account);
@@ -906,7 +943,7 @@ impl QgoldEscrow {
             reward.checked_add(fee).expect("Overflow"),
             "Amount must equal reward plus the 10% fee exactly"
         );
-        self.open_inc(&poster);
+        self.open_inc(&poster, task_growth(slots));
         let task = Task {
             poster: poster.clone(),
             reward,
@@ -941,7 +978,7 @@ impl QgoldEscrow {
         assert_ne!(m.creator, buyer, "The creator cannot buy their own Secret");
         self.check_party(&m.creator);
         assert_eq!(amount, m.price.0, "Amount must equal the price exactly");
-        self.open_inc(&buyer);
+        self.open_inc(&buyer, PAIR_GROWTH);
         self.secrets.insert(
             &m.id,
             &Secret {
@@ -980,7 +1017,7 @@ impl QgoldEscrow {
                 );
             }
         }
-        self.open_inc(&sender);
+        self.open_inc(&sender, PAIR_GROWTH);
         self.transfers.insert(
             &m.id,
             &Transfer {
@@ -1028,7 +1065,7 @@ impl QgoldEscrow {
             json!({"kind":"task","id":id,"worker":worker,"amount":U128(r),"fee":U128(f),"treasury":self.treasury_id}),
         );
         if task.closed() {
-            self.open_dec(&poster);
+            self.open_dec(&poster, task_growth(task.slots));
         }
         self.check();
     }
@@ -1049,7 +1086,7 @@ impl QgoldEscrow {
             json!({"kind":"task","id":id,"to":poster,"slots":n,"amount":U128(total),"reason":reason}),
         );
         if task.closed() {
-            self.open_dec(&poster);
+            self.open_dec(&poster, task_growth(task.slots));
         }
         self.check();
     }
@@ -1059,7 +1096,7 @@ impl QgoldEscrow {
         let buyer = s.buyer.clone();
         self.unlock(&[(s.creator.clone(), share)], fee);
         s.status = Status::Released;
-        self.open_dec(&buyer);
+        self.open_dec(&buyer, PAIR_GROWTH);
         Self::event(
             "paid",
             json!({"kind":"secret","id":id,"creator":s.creator,"amount":U128(share),"fee":U128(fee),"treasury":self.treasury_id,"reason":reason}),
@@ -1070,7 +1107,7 @@ impl QgoldEscrow {
         let sender = t.sender.clone();
         self.unlock(&[(t.to.clone(), t.amount)], 0);
         t.status = Status::Released;
-        self.open_dec(&sender);
+        self.open_dec(&sender, PAIR_GROWTH);
         Self::event(
             "paid",
             json!({"kind":"transfer","id":id,"to":t.to,"amount":U128(t.amount),"reason":reason}),
@@ -1081,7 +1118,7 @@ impl QgoldEscrow {
         let sender = t.sender.clone();
         self.unlock(&[(sender.clone(), t.amount)], 0);
         t.status = Status::Refunded;
-        self.open_dec(&sender);
+        self.open_dec(&sender, PAIR_GROWTH);
         Self::event(
             "refunded",
             json!({"kind":"transfer","id":id,"to":sender,"amount":U128(t.amount),"reason":reason}),
@@ -1128,7 +1165,7 @@ impl QgoldEscrow {
     }
 
     fn require_native_reserve(&self, outgoing: u128) {
-        let bytes = u128::from(env::storage_usage()) + u128::from(self.open_escrows) * u128::from(STORAGE_GROWTH_PER_OPEN);
+        let bytes = u128::from(env::storage_usage()) + u128::from(reserved_growth());
         let required = bytes.checked_mul(env::storage_byte_cost().as_yoctonear())
             .and_then(|cost| cost.checked_add(outgoing)).expect("Native storage reserve overflow");
         assert!(env::account_balance().as_yoctonear() >= required, "Escrow storage reserve is insufficient; existing token rights remain saved");
