@@ -171,17 +171,12 @@ test("a lost creation response is reconciled from the chain; a stolen name fails
   assert.equal(f.rows("managed_accounts").length, 2);
   // Factory funding problems retry instead of burning the account slot.
   f.factory.calls.length = 0;
-  const original = f.factory.signAndSendTransaction;
-  f.factory.signAndSendTransaction = async (input) => ({
-    ...(await original.call(f.factory, { ...input, actions: [] })),
-    status: {
-      Failure: {
+  const original = f.factory.fail;
+  f.factory.fail = () => ({
         ActionError: {
           index: 1,
           kind: { LackBalanceForState: { account_id: FACTORY, amount: "1" } },
         },
-      },
-    },
   });
   assert.deepEqual(await f.relayer.runRelayJobs(), {
     completed: 0,
@@ -193,7 +188,7 @@ test("a lost creation response is reconciled from the chain; a stolen name fails
     .get(retry.account.accountId);
   assert.equal(job.error_code, "FACTORY_UNDERFUNDED");
   assert.equal(f.accounts.view(bob).account.state, "creating");
-  f.factory.signAndSendTransaction = original;
+  f.factory.fail = original;
   f.advance(5000);
   assert.deepEqual(await f.relayer.runRelayJobs(), {
     completed: 1,
@@ -266,4 +261,15 @@ test("account ids stay within NEAR's 64 characters under a long factory id", asy
     assert.ok(id.length <= 64, `${id} is ${id.length} characters`);
     assert.match(id, /^[a-z0-9]+(-[a-z0-9]+)*\./);
   }
+});
+
+test("revocation during the account-name lookup prevents an account job or subsidy reservation", async (t) => {
+  const f = fixture(); t.after(() => f.db.close());
+  let active = true;
+  f.accounts.exists = async () => { active = false; return false; };
+  await assert.rejects(f.accounts.create(f.player, {
+    publicKey: key(), authorizeEnrollment() { if (!active) throw Error("revoked"); }
+  }), /revoked/);
+  assert.equal(f.rows("managed_accounts").length, 0);
+  assert.equal(f.rows("relay_jobs").length, 0);
 });

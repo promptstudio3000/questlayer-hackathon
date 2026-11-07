@@ -1,0 +1,601 @@
+import "./style.css";
+import {
+  KeyPairSigner,
+  PublicKey,
+  JsonRpcProvider,
+  actions,
+  buildDelegateAction,
+  decodeTransaction,
+  encodeSignedDelegate,
+} from "near-api-js";
+import {
+  createDeviceKey,
+  DEVICE_KEY,
+  type PlayerKeyRecord,
+} from "../player-key.ts";
+import {
+  setupPasskeyRecovery,
+  nep413Proof,
+  restoreWithPasskey,
+  revokeAccountKey,
+  signOutOtherSessions,
+} from "../account-recovery.ts";
+import {
+  needsProtection,
+  trustedVaultMessage,
+  validateVaultCall,
+  validateVaultOrigins,
+  type VaultAction,
+  type VaultCall,
+  type VaultConfig,
+} from "./policy.ts";
+import { localVaultKeyStore, vaultRecord, vaultRequests } from "./store.ts";
+const config: VaultConfig = validateVaultOrigins(
+  await (await fetch("/vault-config.json")).json(),
+);
+if (location.origin !== config.vaultOrigin)
+  throw Error("Wrong signing origin.");
+const store = localVaultKeyStore(),
+  channel = new BroadcastChannel("questlayer-signing-vault-results");
+type Request = { id: string; method: string; input: Record<string, unknown> };
+type Pending = {
+  request: Request;
+  review: unknown;
+  accountId: string | null;
+  publicKey: string | null;
+  createdAt: number;
+  state: "waiting" | "executing" | "done";
+  result?: unknown;
+  error?: string;
+};
+const bytes = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const base64 = (b: Uint8Array) =>
+  btoa(Array.from(b, (c) => String.fromCharCode(c)).join(""));
+const publicRecord = (r: PlayerKeyRecord | null) =>
+  r
+    ? {
+        publicKey: r.publicKey,
+        accountId: r.accountId,
+        origin: r.origin,
+        createdAt: r.createdAt,
+        secretKey: "",
+        vaultId: config.vaultOrigin,
+      }
+    : null;
+const need = (ok: unknown, message: string) => {
+  if (!ok) throw Error(message);
+};
+async function api<T = Record<string, unknown>>(
+  path: string,
+  input?: unknown,
+): Promise<T> {
+  const response = await fetch(`${config.appOrigin}/api${path}`, {
+    credentials: "include",
+    method: input === undefined ? "GET" : "POST",
+    ...(input === undefined
+      ? {}
+      : {
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        }),
+  });
+  const result = await response.json();
+  if (!response.ok)
+    throw Error(result.error ?? "The game could not verify this action.");
+  return result;
+}
+function actionView(a: ReturnType<typeof actions.functionCall>): VaultAction {
+  if (a.functionCall)
+    return {
+      kind: "functionCall",
+      methodName: a.functionCall.methodName,
+      args: JSON.parse(
+        new TextDecoder("utf-8", { fatal: true }).decode(a.functionCall.args),
+      ),
+      gas: String(a.functionCall.gas),
+      deposit: String(a.functionCall.deposit),
+    };
+  if (a.addKey) {
+    need(
+      a.addKey.accessKey.permission.enum === "fullAccess",
+      "Unsupported key permission.",
+    );
+    return { kind: "addKey", publicKey: a.addKey.publicKey.toString() };
+  }
+  if (a.deleteKey)
+    return { kind: "deleteKey", publicKey: a.deleteKey.publicKey.toString() };
+  throw Error("This action is not supported by the secure account.");
+}
+function nearAction(a: VaultAction) {
+  if (a.kind === "functionCall")
+    return actions.functionCall(
+      a.methodName,
+      a.args,
+      BigInt(a.gas),
+      BigInt(a.deposit),
+    );
+  return a.kind === "addKey"
+    ? actions.addFullAccessKey(PublicKey.fromString(a.publicKey))
+    : actions.deleteKey(PublicKey.fromString(a.publicKey));
+}
+async function reviewed(request: Request, record: PlayerKeyRecord) {
+  const i = request.input;
+  if (
+    [
+      "setupRecovery",
+      "restoreRecovery",
+      "revokeKey",
+      "revokeSessions",
+    ].includes(request.method)
+  )
+    return {
+      protected: true,
+      review: {
+        operation: request.method,
+        account: record.accountId,
+        ...(request.method === "revokeKey"
+          ? { keyToRemove: String(i.target) }
+          : {}),
+      },
+    };
+  need(
+    record.accountId && i.publicKey === record.publicKey,
+    "The account key changed.",
+  );
+  if (request.method === "signMessage") {
+    need(
+      i.accountId === record.accountId &&
+        typeof i.message === "string" &&
+        i.message.length <= 16384 &&
+        typeof i.recipient === "string" &&
+        typeof i.nonce === "string" &&
+        bytes(i.nonce).length === 32 &&
+        !i.callbackUrl,
+      "Invalid account authorization.",
+    );
+    return {
+      protected: true,
+      review: {
+        account: record.accountId,
+        recipient: i.recipient,
+        authorization: i.message,
+      },
+    };
+  }
+  let call: VaultCall;
+  if (request.method === "signTransaction") {
+    need(
+      typeof i.bytes === "string" && i.bytes.length <= 50000,
+      "Invalid transaction.",
+    );
+    const tx = decodeTransaction(bytes(i.bytes as string));
+    need(
+      tx.publicKey.toString() === record.publicKey,
+      "Wrong transaction key.",
+    );
+    call = {
+      accountId: tx.signerId,
+      receiverId: tx.receiverId,
+      actions: tx.actions.map(actionView),
+    };
+  } else {
+    need(request.method === "signDelegate", "Unsupported signing request.");
+    call = i.call as VaultCall;
+    need(
+      typeof i.nonce === "string" &&
+        /^[1-9][0-9]{0,19}$/.test(i.nonce) &&
+        typeof i.maxBlockHeight === "string" &&
+        /^[1-9][0-9]{0,19}$/.test(i.maxBlockHeight),
+      "Invalid delegated transaction window.",
+    );
+  }
+  validateVaultCall(call, record.accountId!);
+  const protectedAction = await needsProtection(
+    call,
+    config,
+    (memo) => api(`/gold/burn/intent?memo=${encodeURIComponent(memo)}`),
+    (id) => api(`/market/funding-intent?id=${encodeURIComponent(id)}`),
+  );
+  return { protected: protectedAction, review: call };
+}
+async function execute(request: Request) {
+  const record = await store.get(DEVICE_KEY),
+    i = request.input;
+  if (request.method === "restoreRecovery")
+    return navigator.locks.request("vault-device-key", () =>
+      restoreWithPasskey({
+        store,
+        credentials: navigator.credentials,
+        rpId: location.hostname,
+        api,
+        userAgent: navigator.userAgent,
+      }),
+    );
+  need(record?.accountId, "No secure account is bound on this device.");
+  const key = record!,
+    accountId = key.accountId!;
+  // Only these already reviewed device actions can obtain a short management grant.
+  async function deviceApi<T>(path: string, input?: unknown): Promise<T> {
+    if (path === "/account/keys") {
+      const challenge = await api<{
+        challengeId: string;
+        playerId: string;
+        nonce: string;
+        recipient: string;
+        message: string;
+      }>("/identity/management/challenge", { accountId });
+      need(
+        challenge.recipient === config.appOrigin &&
+          /^player_[a-f0-9-]{36}$/.test(challenge.playerId) &&
+          challenge.message ===
+            `Authorize management of sign-in methods for explorer ${challenge.playerId} with ${accountId} on NEAR testnet for five minutes. No transaction or transfer.`,
+        "The account authorization challenge does not match this device action.",
+      );
+      const proof = await nep413Proof(key, accountId, challenge);
+      await api("/identity/management/verify", {
+        challengeId: challenge.challengeId,
+        ...proof,
+      });
+    }
+    return api<T>(path, input);
+  }
+  if (request.method === "setupRecovery")
+    return setupPasskeyRecovery({
+      deviceKey: key,
+      accountId,
+      credentials: navigator.credentials,
+      rpId: location.hostname,
+      api: deviceApi,
+    });
+  if (request.method === "revokeKey")
+    return revokeAccountKey({
+      deviceKey: key,
+      accountId,
+      publicKey: String(i.target),
+      api: deviceApi,
+    });
+  if (request.method === "revokeSessions")
+    return signOutOtherSessions({ deviceKey: key, accountId, api });
+  need(i.publicKey === key.publicKey, "The account key changed after review.");
+  const signer = KeyPairSigner.fromSecretKey(
+    key.secretKey as `ed25519:${string}`,
+  );
+  if (request.method === "signTransaction") {
+    const tx = decodeTransaction(bytes(String(i.bytes)));
+    const result = await signer.signTransaction(tx);
+    return {
+      signed: base64(result.signedTransaction.encode()),
+      hash: base64(result.txHash),
+    };
+  }
+  if (request.method === "signMessage") {
+    const result = await signer.signNep413Message(accountId, {
+      message: String(i.message),
+      recipient: String(i.recipient),
+      nonce: bytes(String(i.nonce)),
+    });
+    return {
+      accountId,
+      publicKey: key.publicKey,
+      signature: base64(result.signature),
+    };
+  }
+  const call = i.call as VaultCall;
+  const da = buildDelegateAction({
+    senderId: accountId,
+    receiverId: call.receiverId,
+    actions: call.actions.map(nearAction),
+    nonce: BigInt(String(i.nonce)),
+    maxBlockHeight: BigInt(String(i.maxBlockHeight)),
+    publicKey: PublicKey.fromString(key.publicKey),
+  });
+  const result = await signer.signDelegateAction(da);
+  return {
+    signed: base64(encodeSignedDelegate(result.signedDelegate)),
+    hash: base64(result.delegateHash),
+  };
+}
+async function receive(request: Request) {
+  const i = request.input;
+  need(
+    JSON.stringify(request).length <= 60000 && i && typeof i === "object",
+    "Invalid secure account request.",
+  );
+  if (request.method === "read")
+    return publicRecord(await store.get(DEVICE_KEY));
+  if (request.method === "create")
+    return navigator.locks.request("vault-device-key", async () =>
+      publicRecord(await createDeviceKey(store)),
+    );
+  if (request.method === "bind") {
+    const old = await store.get(DEVICE_KEY);
+    need(
+      old &&
+        i.publicKey === old.publicKey &&
+        typeof i.accountId === "string" &&
+        (!old.accountId || old.accountId === i.accountId),
+      "This key belongs to another account.",
+    );
+    const p = new JsonRpcProvider({ url: config.rpcUrl });
+    const access = await p.query({
+      request_type: "view_access_key",
+      account_id: String(i.accountId),
+      public_key: old!.publicKey,
+      finality: "final",
+    });
+    need(
+      access &&
+        typeof access === "object" &&
+        "permission" in access &&
+        access.permission === "FullAccess",
+      "The secure key has not been registered on this account.",
+    );
+    return navigator.locks.request("vault-device-key", async () => {
+      const fresh = await store.get(DEVICE_KEY);
+      need(
+        fresh?.publicKey === old!.publicKey,
+        "The key changed while binding the account.",
+      );
+      await store.put(DEVICE_KEY, { ...old!, accountId: String(i.accountId) });
+      return publicRecord(await store.get(DEVICE_KEY));
+    });
+  }
+  const record = await store.get(DEVICE_KEY);
+  const review =
+    request.method === "restoreRecovery"
+      ? {
+          protected: true,
+          review: { operation: "Restore this account with a passkey" },
+        }
+      : await reviewed(
+          request,
+          record ?? {
+            publicKey: "",
+            secretKey: "",
+            accountId: null,
+            origin: "device",
+            createdAt: 0,
+          },
+        );
+  if (!review.protected) return execute(request);
+  return navigator.locks.request("vault-approval-queue", async () => {
+    const existing = await vaultRecord<Pending>(`request:${request.id}`);
+    need(
+      !existing || JSON.stringify(existing.request) === JSON.stringify(request),
+      "A pending account action changed.",
+    );
+    if (existing?.state === "done") {
+      if (existing.error) throw Error(existing.error);
+      return existing.result;
+    }
+    if (!existing) {
+      let active = 0;
+      for (const row of await vaultRequests<Pending>()) {
+        if (row.state !== "executing" && Date.now() - row.createdAt > 180000)
+          await vaultRecord(`request:${row.request.id}`, undefined, true);
+        else active++;
+      }
+      need(
+        active < 32,
+        "Finish the existing secure account requests before starting another.",
+      );
+      await vaultRecord<Pending>(`request:${request.id}`, {
+        request,
+        review: review.review,
+        accountId: record?.accountId ?? null,
+        publicKey: record?.publicKey ?? null,
+        createdAt: Date.now(),
+        state: "waiting",
+      });
+    }
+    return { awaitingApproval: true };
+  });
+}
+if (location.pathname === "/approve") {
+  need(
+    window.top === window,
+    "Account approvals must open in their own window.",
+  );
+  const id = new URL(location.href).searchParams.get("id") ?? "",
+    pending = await vaultRecord<Pending>(`request:${id}`);
+  const main = document.querySelector("#vault")!;
+  const heading = document.createElement("h1");
+  heading.textContent = "Confirm account action";
+  main.append(heading);
+  if (
+    !pending ||
+    pending.state !== "waiting" ||
+    Date.now() - pending.createdAt > 180000
+  ) {
+    const p = document.createElement("p");
+    p.textContent =
+      "This request expired or is already complete. You can close this window.";
+    main.append(p);
+  } else {
+    const intro = document.createElement("p");
+    intro.textContent =
+      "Review the account, destination and amount. Approve only the action you started in QuestLayer.";
+    const review = document.createElement("section"),
+      data = pending.review as Partial<VaultCall> & {
+        account?: string;
+        operation?: string;
+        keyToRemove?: string;
+        recipient?: string;
+        authorization?: string;
+      };
+    const fields = document.createElement("dl");
+    const pair = (label: string, value: string) => {
+      const term = document.createElement("dt"),
+        description = document.createElement("dd");
+      term.textContent = label;
+      description.textContent = value;
+      fields.append(term, description);
+    };
+    const units = (value: string, decimals: number) => {
+      if (!/^[0-9]{1,39}$/.test(value)) return value;
+      const digits = value.padStart(decimals + 1, "0"),
+        fraction = digits.slice(-decimals).replace(/0+$/, "");
+      return `${digits.slice(0, -decimals)}${fraction ? `.${fraction}` : ""}`;
+    };
+    pair(
+      "Your account",
+      data.accountId ?? data.account ?? "Selected recovery passkey",
+    );
+    const action = data.actions?.[0];
+    if (action?.kind === "functionCall") {
+      const labels: Record<string, string> = {
+        ft_transfer: "Transfer tokens",
+        ft_transfer_call: "Fund a contract",
+        redeem: "Withdraw QGOLD",
+        withdraw: "Withdraw funds",
+        claim_exit: "Collect queued withdrawal",
+        nft_transfer: "Transfer collectible",
+        nft_approve: "Authorize collectible transfer",
+      };
+      pair(
+        "Action",
+        labels[action.methodName] ?? `Contract action: ${action.methodName}`,
+      );
+      pair("Contract", data.receiverId!);
+      if (typeof action.args.receiver_id === "string")
+        pair("Recipient", action.args.receiver_id);
+      if (typeof action.args.amount === "string")
+        pair(
+          "Amount",
+          data.receiverId === config.contracts.qgold
+            ? `${units(action.args.amount, 6)} QGOLD`
+            : `${action.args.amount} token base units`,
+        );
+      if (action.deposit !== "0" && action.deposit !== "1")
+        pair("Attached NEAR", units(action.deposit, 24));
+      if (typeof action.args.token_id === "string")
+        pair("Collectible", action.args.token_id);
+    } else if (action) {
+      pair(
+        "Action",
+        action.kind === "addKey" ? "Add account key" : "Remove account key",
+      );
+      pair("Public key", action.publicKey);
+    } else {
+      const labels: Record<string, string> = {
+        setupRecovery: "Create recovery passkey",
+        restoreRecovery: "Recover account",
+        revokeKey: "Remove device key",
+        revokeSessions: "Sign out other game sessions",
+      };
+      pair(
+        "Action",
+        labels[data.operation ?? ""] ?? "Authorize signed message",
+      );
+      if (data.keyToRemove) pair("Public key to remove", data.keyToRemove);
+      if (data.recipient) pair("Authorization recipient", data.recipient);
+    }
+    const details = document.createElement("details"),
+      summary = document.createElement("summary"),
+      exact = document.createElement("pre");
+    summary.textContent = "Exact request";
+    exact.textContent = JSON.stringify(pending.review, null, 2);
+    details.append(summary, exact);
+    review.append(fields, details);
+    const cancel = document.createElement("button"),
+      approve = document.createElement("button"),
+      status = document.createElement("p");
+    cancel.textContent = "Cancel";
+    approve.textContent = "Approve";
+    approve.className = "primary";
+    status.setAttribute("role", "status");
+    const controls = document.createElement("div");
+    controls.className = "actions";
+    controls.append(cancel, approve);
+    main.append(intro, review, controls, status);
+    cancel.focus();
+    const finish = async (accepted: boolean) => {
+      cancel.disabled = approve.disabled = true;
+      const done: Pending = { ...pending, state: "done" };
+      let claimed = false;
+      try {
+        await navigator.locks.request("vault-approval-queue", async () => {
+          const fresh = await vaultRecord<Pending>(`request:${id}`);
+          need(
+            fresh?.state === "waiting" &&
+              JSON.stringify(fresh.request) === JSON.stringify(pending.request),
+            "This account action is already being handled.",
+          );
+          await vaultRecord(`request:${id}`, {
+            ...pending,
+            state: "executing",
+          });
+          claimed = true;
+        });
+        if (!accepted) throw Error("Account action cancelled.");
+        need(
+          Date.now() - pending.createdAt <= 180000,
+          "Account action expired.",
+        );
+        done.result = await navigator.locks.request(
+          "vault-account-approval",
+          async () => {
+            if (pending.request.method !== "restoreRecovery") {
+              const current = await store.get(DEVICE_KEY);
+              need(
+                current?.accountId === pending.accountId &&
+                  current?.publicKey === pending.publicKey,
+                "The account changed after review. Start the action again.",
+              );
+            }
+            return execute(pending.request);
+          },
+        );
+      } catch (error) {
+        if (!claimed) {
+          status.textContent = (error as Error).message;
+          return;
+        }
+        done.error = (error as Error).message;
+      }
+      await vaultRecord(`request:${id}`, done);
+      channel.postMessage({ id });
+      status.textContent = done.error ?? "Approved. Return to QuestLayer.";
+    };
+    cancel.onclick = () => void finish(false);
+    approve.onclick = () => void finish(true);
+    addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !cancel.disabled) void finish(false);
+    });
+  }
+} else {
+  const reply = (id: string, body: Record<string, unknown>) =>
+    parent.postMessage(
+      { channel: "questlayer-signing-vault", id, ...body },
+      config.appOrigin,
+    );
+  addEventListener("message", (event) => {
+    if (
+      window === parent ||
+      !trustedVaultMessage(event, config.appOrigin, parent)
+    )
+      return;
+    const request = event.data as Request;
+    void receive(request).then(
+      (result) =>
+        reply(
+          request.id,
+          result && typeof result === "object" && "awaitingApproval" in result
+            ? { approval: true }
+            : { result },
+        ),
+      (error) => reply(request.id, { error: (error as Error).message }),
+    );
+  });
+  channel.onmessage = async (event) => {
+    const id = event.data?.id;
+    if (typeof id !== "string") return;
+    const pending = await vaultRecord<Pending>(`request:${id}`);
+    if (pending?.state === "done")
+      reply(id, { result: pending.result, error: pending.error });
+  };
+  parent.postMessage(
+    { channel: "questlayer-signing-vault", ready: true },
+    config.appOrigin,
+  );
+}

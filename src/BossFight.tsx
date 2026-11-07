@@ -133,9 +133,7 @@ export function BossFight({
     setBusy(true);
     setError(null);
     try {
-      const r = await withQgoldBurn(() =>
-        api<Pouch & { crafted: { item: { name: string } } }>("/hunt/craft", { worldId, ...(recipe ? { recipe } : {}) }),
-      );
+      const r = await withQgoldBurn<Pouch & { crafted: { item: { name: string } } }>("/hunt/craft", { worldId, ...(recipe ? { recipe } : {}) });
       setPouch(r);
       setCrafted(r.crafted.item.name);
     } catch (e) {

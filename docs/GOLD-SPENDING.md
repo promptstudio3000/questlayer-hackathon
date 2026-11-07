@@ -11,26 +11,33 @@ vault, so every burn raises the backing rate R for all holders.
 
 - **QGOLD (default whenever the QGOLD vault manifest exists).** Every spend burns
   the player's own QGOLD on chain first:
-  1. The spend endpoint answers `402 QGOLD_BURN` with `details: {kind, amountU}`.
-  2. `POST /api/gold/burn/prepare {kind, amountU}` returns the exact call:
-     `ft_burn({amount, memo})` with 1 yocto on the QGOLD token, memo
-     `questlayer:burn:<kind>:<16 hex>`, signed by the player's latest linked
-     NEAR account. The relayer sponsors exactly this call
-     (`server/relayer/policy.mjs`), so the explorer account needs no popup.
-  3. `POST /api/gold/burn/confirm {txHash}` reads the final transaction from
-     RPC and checks the signer (a linked account), the receiver (the token),
-     success and the nep141 `ft_burn` event with the game memo. It stores one
-     credit in `qgold_burn_credits` (module `qgold-burns`); a hash counts once.
-  4. The client (`src/qgold-burn.ts`) runs the same spend again. `burnGold()`
-     takes one unused credit of the same kind and amount inside the spend's
-     transaction and writes `gold_burns` with `realm='qgold'` and the burn's
-     memo. `players.gold_u` is not touched.
+  1. The client saves a purchase UUID and sends it as `X-Questlayer-Purchase`.
+     The server binds the request and its own quoted price; identical open requests
+     share one intent. Refreshed GPS/encounter evidence can be supplied on retry.
+  2. `POST /api/gold/burn/prepare {purchaseId, submitterId}` returns the same memo,
+     account, contract and amount across reloads. The signed delegate and relay job
+     are saved before submission. An untouched job blocked by an earlier failure
+     resumes that same delegate rather than allocating another payment.
+  3. `POST /api/gold/burn/confirm {purchaseId, txHash}` requires exact FINAL direct
+     or delegated actions, hash, receipt ancestry and one successful NEP-141 burn
+     event. An unknown outcome stays pending. Only proved non-execution permits a
+     fresh submission for the same intent.
+  4. The business effect, exact intent's credit consumption and cached response
+     commit together. Retrying after a lost response returns that response and
+     cannot deliver another item or burn again. Other players and purchases
+     cannot consume the credit.
 
-  If the spend still fails after the burn (sold out, lure blocked), the credit
-  stays unused and pays the next spend of the same kind and amount. The shop and
-  lure quote show the QGOLD balance of the linked account (`balanceU`, 6 decimals).
-  An external wallet that does not report the transaction hash cannot confirm a
-  burn; the explorer account always can.
+  The isolated signing origin checks the authenticated, read-only
+  `GET /api/gold/burn/intent?memo=...` before signing a normal purchase silently.
+  External-wallet burns retain the existing durable transaction journal and use
+  this domain-specific confirmation. If a wallet loses its hash, the journal holds
+  the operation for reconciliation instead of signing again.
+
+  If availability or geography changes after payment, the exact purchase credit
+  remains recorded. It is not silently reassigned to a different item. Delivery
+  can resume with fresh valid gameplay evidence; a permanently unavailable item
+  needs an operator-reviewed remedy. No automated refund/reassignment policy is
+  introduced by this candidate.
 - **Practice (local testing only).** With no QGOLD vault, or
   `GOLD_SPEND_REALM=practice`, `burnGold()` takes the amount out of
   `players.gold_u` as before.

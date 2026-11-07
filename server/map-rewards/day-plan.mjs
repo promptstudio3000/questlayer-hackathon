@@ -120,26 +120,7 @@ function capped(weights, pool, cellCap, areaCap) {
   return out;
 }
 
-/**
- * Pure plan of one day. `demand`, `stake` and `potential` map cell -> score
- * (players or place counts); `pioneers` is the set of cells nobody visited for
- * PIONEER_DAYS. Returns totals, per-cell rows and the Merkle root.
- */
-export function buildDayPlan({
-  day,
-  seed,
-  cells = czechiaCells(),
-  coinsU,
-  zonesU,
-  demand = new Map(),
-  stake = new Map(),
-  potential = new Map(),
-  votes = new Map(),
-  pioneers = new Set(),
-}) {
-  const pioneerCount = cells.filter((c) => pioneers.has(c)).length;
-  const valueU = coinValue(coinsU, cells.length, pioneerCount),
-    cellCoinsU = CELL_COINS * valueU;
+export function zoneAllocationWeights({ seed, cells, demand=new Map(), stake=new Map(), potential=new Map(), votes=new Map() }) {
   const random = new Set(
     cells.filter((c) => unit(seed, `random:${c}`) * 10000 < RANDOM_CELLS_BPS),
   );
@@ -165,6 +146,30 @@ export function buildDayPlan({
     for (const k of used) w += (FORMULA[k] / share) * (scores[k](c) / sums[k]);
     if (w > 0) weights.set(c, w);
   }
+  return {random,used,share,weights};
+}
+
+/**
+ * Pure plan of one day. `demand`, `stake` and `potential` map cell -> score
+ * (players or place counts); `pioneers` is the set of cells nobody visited for
+ * PIONEER_DAYS. Returns totals, per-cell rows and the Merkle root.
+ */
+export function buildDayPlan({
+  day,
+  seed,
+  cells = czechiaCells(),
+  coinsU,
+  zonesU,
+  demand = new Map(),
+  stake = new Map(),
+  potential = new Map(),
+  votes = new Map(),
+  pioneers = new Set(),
+}) {
+  const pioneerCount = cells.filter((c) => pioneers.has(c)).length;
+  const valueU = coinValue(coinsU, cells.length, pioneerCount),
+    cellCoinsU = CELL_COINS * valueU;
+  const {random,used,share,weights}=zoneAllocationWeights({seed,cells,demand,stake,potential,votes});
   const zones = capped(
     weights,
     zonesU,
@@ -249,7 +254,7 @@ function safeAll(db, sql, ...args) {
 }
 
 /** Distinct players per cell from coin and quest claims since `since`. */
-function claimersByCell(db, since, { stakersOnly = false } = {}) {
+export function claimersByCell(db, since, { stakersOnly = false } = {}) {
   const stakers = stakersOnly
     ? new Set(
         safeAll(
@@ -277,7 +282,7 @@ function claimersByCell(db, since, { stakersOnly = false } = {}) {
     add(latLngToCell(r.lat, r.lng, 7), r.claimant);
   for (const r of safeAll(
     db,
-    "SELECT q.lat,q.lng,c.player_id FROM quest_claims c JOIN quests q ON q.id=c.quest_id WHERE c.claimed_at>=?",
+    "SELECT q.lat,q.lng,c.player_id FROM quest_claims c JOIN quests q ON q.id=c.quest_id WHERE c.created_at>=?",
     since,
   ))
     add(latLngToCell(r.lat, r.lng, 7), r.player_id);

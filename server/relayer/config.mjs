@@ -54,5 +54,10 @@ export function relayerConfiguration(env = process.env) {
     ),
     maxGas: yocto(env.RELAY_MAX_GAS, "300000000000000", "RELAY_MAX_GAS"),
     blockTtl: count(env.RELAY_BLOCK_TTL, 120, "RELAY_BLOCK_TTL", 1000),
+    // No guessed treasury allowance: financial sponsorship fails closed until
+    // an operator reviews all three limits. Solo play has no dependency on it.
+    subsidyDailyYocto: yocto(env.SUBSIDY_DAILY_YOCTO, "0", "SUBSIDY_DAILY_YOCTO"),
+    subsidyDailyOperations: env.SUBSIDY_DAILY_OPERATIONS ? count(env.SUBSIDY_DAILY_OPERATIONS, 0, "SUBSIDY_DAILY_OPERATIONS", 100000) : 0,
+    subsidyGasReserveYocto: yocto(env.SUBSIDY_GAS_RESERVE_YOCTO, "0", "SUBSIDY_GAS_RESERVE_YOCTO"),
   };
 }

@@ -2,8 +2,8 @@
   "network": "testnet",
   "verifiedAt": "2026-11-01T12:31:34.699Z",
   "contractId": "questlayer-rewards-20261101b.testnet",
-  "codeHash": "EeXroUJRzyAqpsaDsMN1KcH6yDpdHVU61w5LS2FvcDrd",
-  "wasmSha256": "cac54fdc555d9e5e0033e7c6c578118a1e128fd114ff42e101b9b9cc96610f36",
+  "codeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+  "wasmSha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
   "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
   "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
   "factory": {
@@ -106,6 +106,14 @@
     {
       "label": "Upgrade vault factory: new positions get vault v2",
       "transaction": "2RrR6bc3ooMctap5KahqDzdCyQcdJkuPR8ehaRcJb1Gs"
+    },
+    {
+      "label": "Upgrade: reviewed UTC world reservations and callback recovery",
+      "transaction": "3kc5oS6HEyp5X3cxvuhZYDED1VR71mkLoevnPaioQBma"
+    },
+    {
+      "label": "Authorize only bounded UTC world reservation operations",
+      "transaction": "7dKjY7HRy9ZBgEi1aFdn1RNTXAMua7UKvynpfdce3iGr"
     }
   ],
   "streetFinds": {
@@ -126,6 +134,42 @@
     "close_map_day",
     "publish_payout_day",
     "claim_payout",
-    "close_payout_day"
-  ]
+    "close_payout_day",
+    "reserve_world_day",
+    "record_world_earned",
+    "move_world_to_payout",
+    "close_world_day"
+  ],
+  "globalRewards": {
+    "enabled": false,
+    "rewardsCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+    "qgoldContractId": "questlayer-qgold-vault-20261104.testnet",
+    "qgoldCodeHash": "F4p3S4cuvTScZXBWbqssNUxohgDN3rBGQq8gRS74jj4A",
+    "fundingTransactions": [
+      {
+        "hash": "2hAcJpBfstwzYVt1ewpSP8zsg4S4UVYijGBvbr9QUMmQ",
+        "signerId": "questlayer-dev-20261101.testnet"
+      },
+      {
+        "hash": "Ai9HKsve62DNX4bxLJ6PHe1MAGUKChKQH4rbPWudUkGL",
+        "signerId": "questlayer-rewards-20261101b.testnet"
+      },
+      {
+        "hash": "GSjfp1xjeXkpj8o5tqxwXARxeTgDd3yRT2HZ7QPBAYJx",
+        "signerId": "questlayer-rewards-20261101b.testnet"
+      }
+    ],
+    "fundingRpcUrl": "https://archival-rpc.testnet.near.org"
+  },
+  "worldReservationUpgrade": {
+    "verifiedAt": "2026-11-07T15:56:16.550Z",
+    "sourceCommit": "f984e6b212e179aed5ede8fce1d8097be068e944",
+    "previousCodeHash": "EeXroUJRzyAqpsaDsMN1KcH6yDpdHVU61w5LS2FvcDrd",
+    "newCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+    "treasuryUnchanged": true,
+    "worldReservationVersion": 1,
+    "workerAllowanceAtGrantYocto": "280890509269139100000000",
+    "globalFinancialActivation": false,
+    "awaitingQgoldProposal": 2
+  }
 }

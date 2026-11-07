@@ -38,6 +38,68 @@ approved doc "QGOLD: návrh ekonomiky". Testnet only.
   - Tables: `qgold_keeper_days`, `qgold_keeper_actions` and `qgold_snapshots` (a reading every 10 minutes for the
     chart and the 24 h average).
 
+## Durable execution and recovery
+
+Each slot's complete plan and principal allocation commit before signing. The additive
+`qgold-keeper-journal` module contains unique slot/operation claims, a renewable database lease
+and immutable signed attempts for each funding, swap and burn step. Two processes sharing the
+authoritative database cannot claim the same slot or concurrently advance a pending step.
+
+Before broadcasting, the keeper saves the exact signed bytes and transaction hash. After interruption
+it queries that hash or rebroadcasts those bytes; it never signs a replacement for an unknown outcome.
+FINAL receipt verification binds the configured network/key, token and exchange identities, pool,
+method, arguments, attached deposit and gas. Output must be attributable to that transaction's receipt
+tree. Current wallet balance differences are not evidence of purchased tokens and cannot authorize
+burning unrelated inventory. The signer accepts only the configured keeper methods and request shapes.
+
+A proved root rejection or full swap-input refund permits another attempt of that step with capped
+backoff. A later burn failure preserves the funded/swapped steps, their hashes and the original budget;
+recovery retries burning without wrapping or purchasing again. Incomplete receipts, partial consumption,
+unattributed output, unknown expired transactions and changed signing/configuration identity remain pending
+for reconciliation. Recovery precedes new quotes, slot expiry and a new day's planning.
+
+A failed Rhea output can recover automatically when the FINAL swap tree, original output action,
+restoration callback and exact amount prove that the keeper owns retained tokens. The worker fetches
+the two receipt action records when ordinary transaction status omits them. It distinguishes a keeper's
+user lost-found balance from its registered Rhea deposit; the DEX owner's fallback is never claimed.
+If token registration is missing, a journaled `storage_deposit` funds only the published minimum up
+to the existing QGOLD/wNEAR fee of 0.00125 NEAR. Journal steps 100 and 101 retain registration and
+recovery separately from funding/swap/burn, without a schema change.
+
+`claim_lostfound` has no amount argument. Before creating a claim, the retained balance must equal
+the output proved by the original swap. Missing, partial or mixed inventory waits for reconciliation.
+Registered deposits use an exact-amount `withdraw` with unwrapping disabled. A saved claim takes
+precedence over current balances: zero retained tokens after a lost successful reply does not authorize
+another transaction. A proved rejected claim or restored output may retry only recovery; the original
+purchase and reservation remain. The original swap is completed only after the recovery receipt proves
+delivery, then its exact output may be burned. Changed aggregate balances during a claim, unsupported
+Rhea versions and unknown outcomes remain pending. Small storage costs and protocol gas are separate
+from the existing principal limits. These tests use an archived Ref/Rhea 1.9.19 artifact; current target
+code identity and external provenance remain release prerequisites.
+
+Planning counts reserved/committed principal even if completion fails. A pending operation occupies
+its daily allowance across midnight; a delayed completion also charges the completion day conservatively.
+Global fee-funded buyback reservations are never reset by a later failed burn. Completed action history
+and journal accounting commit together and are not double-counted. Existing numeric policy, slippage,
+fees and gas budgets are unchanged. Protocol gas fees remain separate from these principal allowances.
+
+`publicView` adds sanitized pending-operation status and `budgetCommitted` (used plus reserved capacity),
+while spent amounts are based on verified steps. Signed bytes, private diagnostics and unrevealed
+schedule material stay private. The existing player flow and confirmations do not change. No UI
+rendering or operational alert delivery is claimed merely because these fields exist.
+
+Use one authoritative database and a dedicated keeper signer. Preserve the full journal in consistent
+backups and stop every old worker before a version transition; the old code does not honor the lease.
+Legacy failed actions block new execution until reviewed, and historical successful rows are not
+retroactively certified. A pre-journal crash may have left effects without any row: inventory and
+reconciliation are release prerequisites, not something the new code can infer. With
+`QGOLD_KEEPER_EXECUTE=0`, pending work is retained and trading/recovery stays paused.
+
+Regressions cover real process death/restart against a deterministic transaction/receipt model,
+partial failures, exact-byte replay, overlapping workers, budget reservation and snapshot restore.
+They do not establish actual wNEAR/Rhea WASM compatibility or target balances/permissions. Review
+real deployed receipt shapes, callback failure paths and gas margins before activating this repair.
+
 ## Vault interface (agreed with the vault stream)
 
 `public/native-qgold-vault-testnet.json` holds `{network, vaultContract, tokenContract (same account), decimals: 6, methods}`.

@@ -101,7 +101,8 @@ calls it after every payout.
 - Only the configured token can deposit; amounts must match exactly.
 - Funds only move to the funder (refund) or the named counterparty/treasury per the rules above.
 - Paused blocks every call except views, admin calls and the `on_withdraw` callback; deposits are refunded.
-- Bounds: id ≤ 64 bytes, ≤ 50 slots, ≤ 100 disputes per task, ≤ 200 open escrows per funding account, deadlines ≤ 365 days.
+- Bounds: id ≤ 64 bytes, ≤ 50 slots, disputes plus resolved disputes per task ≤ 2 × slots + 4 (at most 100), ≤ 20 open escrows per funding account, deadlines ≤ 365 days.
+- Storage reserve: each open agreement reserves native storage headroom sized by what it can still add (a one-slot task about 5.9 KB, a Secret or send 4.6 KB, a 50-slot task 42.5 KB); the sum is kept under its own key and released on close. A new agreement is refused (the token refunds it) while the escrow's NEAR balance cannot cover current storage plus all reservations. Monitor `get_storage_reserve().free_yocto` and top up before it nears zero.
 - QGOLD sent with plain `ft_transfer` (not `ft_transfer_call`) is not accounted and cannot be recovered.
 
 ## Views

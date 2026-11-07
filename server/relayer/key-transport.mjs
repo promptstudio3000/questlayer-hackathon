@@ -5,6 +5,8 @@ import {
   KeyPairSigner,
   baseEncode,
   encodeTransaction,
+  decodeSignedTransaction,
+  encodeSignedDelegate,
 } from "near-api-js";
 import { assert } from "../domain.mjs";
 import { assertTestnetRpc, nearAccountId } from "../identity/near.mjs";
@@ -82,6 +84,17 @@ export async function loadServiceAccount(
 export function relayTransport(service) {
   const { account, accountId, publicKey } = service;
   const provider = account.provider;
+  const digest = signed => baseEncode(createHash("sha256").update(encodeTransaction(signed.transaction)).digest());
+  const wrap = signedTx => ({
+    hash: digest(signedTx), signedTx: Buffer.from(signedTx.encode()).toString("base64"),
+    async send(waitUntil = "FINAL") {
+      try { return await provider.sendTransactionUntil(signedTx, waitUntil); }
+      catch (error) {
+        if (error?.name === "InvalidNonceError") await account.nonceManager?.invalidate?.(signedTx.transaction.publicKey, signedTx.transaction.nonceIndex);
+        throw error;
+      }
+    },
+  });
   return {
     accountId,
     publicKey,
@@ -90,32 +103,22 @@ export function relayTransport(service) {
         receiverId,
         actions,
       });
-      const hash = baseEncode(
-        createHash("sha256")
-          .update(encodeTransaction(signedTx.transaction))
-          .digest(),
-      );
-      return {
-        hash,
-        async send(waitUntil = "FINAL") {
-          try {
-            return await provider.sendTransactionUntil(signedTx, waitUntil);
-          } catch (error) {
-            if (error?.name === "InvalidNonceError")
-              await account.nonceManager?.invalidate?.(
-                signedTx.transaction.publicKey,
-                signedTx.transaction.nonceIndex,
-              );
-            throw error;
-          }
-        },
-      };
+      return wrap(signedTx);
+    },
+    restore(row, request) {
+      const signed = decodeSignedTransaction(Buffer.from(row.signed_tx, "base64")), tx = signed.transaction;
+      assert(row.account_id === accountId && row.public_key === publicKey && row.hash === digest(signed) &&
+        tx.signerId === accountId && tx.publicKey.toString() === publicKey && tx.receiverId === request.receiverId &&
+        tx.actions.length === 1 && request.actions.length === 1 && tx.actions[0].signedDelegate &&
+        Buffer.from(encodeSignedDelegate(tx.actions[0].signedDelegate)).equals(Buffer.from(encodeSignedDelegate(request.actions[0].signedDelegate))),
+      "Saved relay submission does not match this service and action.", 503, "RELAY_RECOVERY");
+      return wrap(signed);
     },
     status(hash) {
       return provider.viewTransactionStatus({
         txHash: hash,
         accountId,
-        waitUntil: "FINAL",
+        waitUntil: "NONE",
       });
     },
   };

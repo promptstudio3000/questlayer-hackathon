@@ -2954,5 +2954,13 @@
  "Update location": "更新位置",
  "Step inside the place first, then confirm your visit.": "请先进入该地点，再确认到访。",
  "Next stop": "下一站",
- "Any order": "任意顺序"
+ "Any order": "任意顺序",
+ "Map-derived discoveries by Atlas. Public access and paths have not been checked on foot: follow local signs and skip blocked places. These activities award personal XP; no monetary or item reward is promised.": "Atlas 根据地图数据提供的探索地点。公共通行条件和路径尚未经过实地核查：请遵守当地标识，跳过无法通行的地点。这些活动提供个人 XP，不承诺金钱或物品奖励。",
+ "Funded Atlas zones: the first confirmed completion earns the fixed NEAR prize shown in the objective. QGOLD is calculated at settlement; fractional NEAR stays credited. Follow local signs and skip blocked places.": "已获资金支持的 Atlas 区域：首个确认完成者可获得目标中显示的固定 NEAR 奖励。QGOLD 在结算时计算；不足一个代币单位的 NEAR 会保留在余额中。请遵守当地标识，避开封闭地点。",
+ "No monetary budget today. Atlas discoveries still award personal XP. Follow local signs and skip blocked places.": "今天没有现金奖励预算。Atlas 探索仍可获得个人 XP。请遵守当地标识，避开封闭地点。",
+ "First confirmed completion: {0} NEAR, converted to QGOLD at settlement.": "首个确认完成者：{0} NEAR，结算时转换为 QGOLD。",
+ "The shared NEAR prize was already earned. Personal XP is still available.": "共享 NEAR 奖励已被领取。仍可获得个人 XP。",
+ "Converted to QGOLD": "已转换为 QGOLD",
+ "Fractional NEAR remains credited": "NEAR 零头仍保留在余额中",
+ "Awaiting QGOLD settlement": "等待 QGOLD 结算"
 }

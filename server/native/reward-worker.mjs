@@ -26,6 +26,7 @@ import {
 } from "../map-rewards/chain.mjs";
 import { PAYOUT_CHAIN_METHODS } from "../payouts/payout-tree.mjs";
 import { payoutsEnabled, runPayoutWorker } from "../payouts/worker.mjs";
+import { WORLD_CHAIN_METHODS,runConfiguredGlobalRewards } from '../global-reward-worker.mjs';
 const METHODS = ["publish_day", "close_day", "claim", "maintain_vault"];
 // The key is the native set alone, the native set plus the map-day methods
 // (contracts/rewards map_days.rs), or both plus the daily payout methods
@@ -34,7 +35,8 @@ export function allowedWorkerMethods(names) {
   if (!Array.isArray(names) || new Set(names).size !== names.length) return null;
   const withMap = [...METHODS, ...MAP_CHAIN_METHODS];
   const withPayouts = [...withMap, ...PAYOUT_CHAIN_METHODS];
-  for (const set of [METHODS, withMap, withPayouts])
+  const withWorld=[...withPayouts,...WORLD_CHAIN_METHODS];
+  for (const set of [METHODS, withMap, withPayouts,withWorld])
     if (names.length === set.length && names.every((m) => set.includes(m)))
       return set;
   return null;
@@ -105,7 +107,8 @@ export async function rewardTransport(
     return result.transaction?.hash || result.transaction_outcome?.id;
   };
   send.mapDays = allowed.length > METHODS.length;
-  send.payouts = allowed.length === METHODS.length + MAP_CHAIN_METHODS.length + PAYOUT_CHAIN_METHODS.length;
+  send.payouts = allowed.includes('claim_payout');
+  send.worldDays = allowed.includes('reserve_world_day');
   return send;
 }
 export async function runRewardWorker(
@@ -460,7 +463,8 @@ export function startRewardWorker(
           native.config.codeHash,
         );
         enteredWorker = true;
-        await runRewardWorker(native, send);
+        await runRewardWorker(native, send).catch(error=>console.error('Native settlement:',String(error.message).slice(0,200)));
+        await runConfiguredGlobalRewards(native,send).catch(error=>console.error('Global reward worker:',String(error.message).slice(0,300)));
         // Map days ride on the same key once it allows the map methods.
         // With nightly payouts on, map coins are paid only through them
         // (one leaf per account per day), so claim_map is not sent.
@@ -477,7 +481,10 @@ export function startRewardWorker(
             console.error("Map chain worker:", String(error.message).slice(0, 200)),
           );
         if (payouts)
-          await runPayoutWorker(native.db, { call: send }).catch((error) =>
+          await runPayoutWorker(native.db, {
+            call: send,
+            view: (method, args) => native.view(method, args, true),
+          }).catch((error) =>
             console.error("Payout worker:", String(error.message).slice(0, 200)),
           );
       } catch (error) {

@@ -1,3 +1,4 @@
+import { purchaseAtomic } from "../../gold-spend/purchases.mjs";
 // Monster rewards (docs/NPC-PLAN.md §13.4, slice M3). Every grant is a row in
 // monster_rewards keyed by (player, source, kind), so a replayed result can't
 // pay twice. Nothing here mints GOLD: wins pay account-bound XP, element
@@ -212,7 +213,7 @@ export function createHuntRewards(db, { now = () => Date.now(), altarFees = fals
     const r = ALTAR_RECIPES.find((x) => x.id === recipe);
     assert(r, "The altar does not know this recipe.", 400, "CRAFT_RECIPE");
     const at = now();
-    return atomic(db, () => {
+    return purchaseAtomic(db, () => {
       const s = summary(player, dayId),
         v = s.altar.recipes.find((x) => x.id === r.id);
       assert(!v.needs.includes("daily"), s.altar.perDay > 1 ? `The altar accepts ${s.altar.perDay} offerings per day.` : "The altar accepts one offering per day.", 429, "CRAFT_DAILY");

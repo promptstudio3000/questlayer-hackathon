@@ -153,3 +153,15 @@ Then commit both manifests and `contracts/wasm-sha256.json`, and deploy the VPS.
   (see the yield status of 3 Nov), so this release holds the backing in NEAR. The `lst` exit path and
   `get_state.lsts` stay empty until the next release adds the LST strategy behind the same interface.
 - **Mainnet.** The contract refuses `new` on any account outside `.testnet`.
+
+## Local security candidate: sponsored registration
+
+`storage_deposit_sponsored(account_id)` is an explicit application-funded lifetime
+grant. Its reserve and marker survive empty-holder unregister/register cycles; the
+recipient cannot withdraw the grant as NEAR. Repeated grants refund the sponsor.
+Standard NEP-145 `storage_deposit` remains refundable to the holder, including when
+a sponsor subsequently encounters an already registered player. Existing root
+Borsh layout is unchanged; the new grant map uses a separate `sg` prefix. Historical
+sponsored deposits are not reclassified automatically. The paired escrow candidate
+requires this token method before its new `withdraw_for` path can run. Release
+hashes and on-chain state have not been updated or inspected.

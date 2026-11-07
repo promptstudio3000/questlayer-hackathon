@@ -1,6 +1,8 @@
 {
   "note": "docs/*.md files that describe no live mechanism (plans, audits, hand-offs, reports). Every other doc must be a source of a wiki chapter in src/wiki/chapters.ts. See docs/WIKI.md.",
   "notMechanisms": {
+    "docs/GLOBAL-DATA-WORKER-BRIEF.md": "assignment for an external geographic data worker",
+    "docs/GLOBAL-REWARD-INTEGRATION-HANDOFF.md": "owner handoff for protected finance and runtime integration",
     "docs/AAVEGOTCHI-REUSE.md": "rights and asset research",
     "docs/ART-LIST.md": "art production list",
     "docs/CLAUDE-AUDIT-AND-STRATEGY.md": "audit",
@@ -38,6 +40,10 @@
     "docs/UI-UX-RESEARCH.md": "research",
     "docs/V1-REMAINING.md": "plan",
     "docs/VPS-MIGRATION.md": "operations history",
-    "docs/YIELD-CREDIT-PROPOSAL.md": "proposal"
+    "docs/YIELD-CREDIT-PROPOSAL.md": "proposal",
+    "docs/QGOLD-NIGHTLY-PAYOUT-FIX-2026-11-06.md": "payout repair audit and evidence",
+    "docs/QGOLD-SANDBOX-2026-11-06.md": "local actual-WASM regression verification report",
+    "docs/QGOLD-WITHDRAWAL-FIX-2026-11-06.md": "withdrawal callback repair audit",
+    "docs/SECURITY-AUDIT-2026-11-06.md": "Security audit (6 Nov 2026): findings and remediation order, not a mechanism."
   }
 }

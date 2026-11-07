@@ -22,6 +22,8 @@
 import { BURN_KINDS, spendRealm } from "./ledger.mjs";
 import { confirmQgoldBurn, ensureQgoldBurns, prepareQgoldBurn } from "./qgold-burn.mjs";
 
+import { runPurchase, purchaseRow } from "./purchases.mjs";
+
 const ONE = /^\/api\/places\/((?:place|post)_[a-f0-9-]{36})(?:\/(extend|posts|report|social\/prepare|social\/confirm))?$/;
 
 export function createGoldSpendRoutes(
@@ -32,6 +34,8 @@ export function createGoldSpendRoutes(
   if (db) ensureQgoldBurns(db);
   // QGOLD realm: balances are the player's QGOLD on chain, spends are burns.
   const onChain = () => spendRealm() === "qgold" && qgold;
+  const purchase = (req, player, path, input, work) => onChain()
+    ? runPurchase(db, { player, id: req.headers["x-questlayer-purchase"], path, input }, work) : work();
   async function withBalance(player, view) {
     if (!onChain()) return view;
     let balanceU = 0;
@@ -64,18 +68,35 @@ export function createGoldSpendRoutes(
       }
       assert(player, "Sign in first.", 401, "AUTH");
       limit(`gold:${player}`, 120, assert);
+      if (path === "/api/gold/burn/intent" && method === "GET") {
+        assert(onChain(), "QGOLD spending is not open here.", 503, "QGOLD_DISABLED");
+        const p = db.prepare("SELECT * FROM qgold_purchases WHERE player_id=? AND memo=?").get(player, url.searchParams.get("memo"));
+        assert(p, "Purchase not found.", 404, "PURCHASE_NOT_FOUND");
+        respond(res, { accountId: p.account_id, contractId: p.contract_id, amount: String(p.amount_u), memo: p.memo, state: p.state }); return true;
+      }
       if (path === "/api/gold/shop" && method === "GET") return respond(res, await withBalance(player, gold.shop(player))), true;
       if (path === "/api/gold/burn/prepare" && method === "POST") {
         assert(onChain(), "QGOLD spending is not open here.", 503, "QGOLD_DISABLED");
         const i = await body(req);
+        const pending = purchaseRow(db, player, i.purchaseId);
+        const accounts = qgold.accountIds(player);
+        const accountId = pending.account_id ?? accounts[0] ?? null;
+        assert(accounts.includes(accountId), "This purchase account is not linked.", 403, "BURN_SIGNER");
+        if (pending.relay_job_id && pending.state === "prepared") {
+          const job = db.prepare("SELECT transaction_hash,state FROM relay_jobs WHERE id=?").get(pending.relay_job_id);
+          if (job?.transaction_hash) {
+            try { await confirmQgoldBurn(db, { player, intentId: pending.id, accountIds: accounts, contract: qgold.contract,
+              txHash: job.transaction_hash, txStatus: qgold.txStatus, relayerId: qgold.relayerId }); }
+            catch (error) { if (!["BURN_REJECTED", "BURN_PENDING"].includes(error.code)) throw error; }
+          }
+        }
         return (
           respond(
             res,
             prepareQgoldBurn({
+              db, player, intentId: i.purchaseId, submitterId: i.submitterId,
               contract: qgold.contract,
-              accountId: qgold.accountIds(player)[0] || null,
-              kind: i.kind,
-              amountU: i.amountU,
+              accountId,
               kinds: BURN_KINDS,
             }),
           ),
@@ -87,26 +108,30 @@ export function createGoldSpendRoutes(
         limit(`burn:${player}`, 20, assert);
         const i = await body(req);
         const credit = await confirmQgoldBurn(db, {
-          player,
+          player, intentId: i.purchaseId, relayerId: qgold.relayerId,
           accountIds: qgold.accountIds(player),
           contract: qgold.contract,
           txHash: i.txHash,
           txStatus: qgold.txStatus,
         });
-        return respond(res, { kind: credit.kind, amountU: credit.amount_u, memo: credit.memo }), true;
+        return respond(res, { kind: credit.kind, amountU: credit.amount_u, memo: credit.memo, transactionHash: credit.tx_hash, accountId: credit.account_id, contractId: qgold.contract, confirmed: true }), true;
       }
-      if (path === "/api/gold/buy" && method === "POST") return respond(res, gold.buy(player, await body(req))), true;
+      if (path === "/api/gold/buy" && method === "POST") {
+        const i = await body(req); respond(res, await purchase(req, player, path, i, () => gold.buy(player, i))); return true;
+      }
       if (path === "/api/gold/equip" && method === "POST") return respond(res, gold.equip(player, await body(req))), true;
       if (path === "/api/gold/emote" && method === "POST") {
         limit(`emote:${player}`, 12, assert);
         return respond(res, gold.emote(player, await body(req))), true;
       }
-      if (path === "/api/gold/gear" && method === "POST") return respond(res, await gold.buyGear(player, await body(req))), true;
+      if (path === "/api/gold/gear" && method === "POST") {
+        const i = await body(req); respond(res, await purchase(req, player, path, i, () => gold.buyGear(player, i))); return true;
+      }
       if (path === "/api/gold/lure/quote" && method === "POST")
         return respond(res, await withBalance(player, gold.lureQuote(player, await body(req)))), true;
       if (path === "/api/gold/lure" && method === "POST") {
         limit(`lure:${player}`, 6, assert);
-        return respond(res, gold.setLure(player, await body(req)), 201), true;
+        const i = await body(req); return respond(res, await purchase(req, player, path, i, () => gold.setLure(player, i)), 201), true;
       }
       if (path === "/api/gold/map" && method === "GET") {
         const here = { lat: num(url, "lat"), lng: num(url, "lng") };
@@ -128,7 +153,7 @@ export function createGoldSpendRoutes(
         );
       if (path === "/api/places" && method === "POST") {
         limit(`place:${player}`, 6, assert);
-        return respond(res, places.create(player, await body(req)), 201), true;
+        const i = await body(req); return respond(res, await purchase(req, player, path, i, () => places.create(player, i)), 201), true;
       }
       if (path === "/api/places/follow" && method === "POST") {
         const i = await body(req);
@@ -139,7 +164,9 @@ export function createGoldSpendRoutes(
       const [, targetId, action] = one;
       if (!action && method === "GET") return respond(res, places.open(player, targetId)), true;
       if (!action && method === "DELETE") return respond(res, places.remove(player, targetId)), true;
-      if (action === "extend" && method === "POST") return respond(res, places.extend(player, targetId, await body(req))), true;
+      if (action === "extend" && method === "POST") {
+        const i = await body(req); return respond(res, await purchase(req, player, path, i, () => places.extend(player, targetId, i))), true;
+      }
       if (action === "posts" && method === "POST") return respond(res, places.post(player, targetId, await body(req)), 201), true;
       if (action === "report" && method === "POST") return respond(res, places.report(player, targetId, await body(req))), true;
       if (action?.startsWith("social/") && method === "POST") {

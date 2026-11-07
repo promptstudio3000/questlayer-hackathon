@@ -104,16 +104,14 @@ async function send<T>(path: string, method: string, data?: unknown): Promise<T>
 
 export const goldShop = () => api<Shop>("/gold/shop");
 export const goldBuy = (sku: string) =>
-  withQgoldBurn(() => api<{ sku: string; balanceU: number | null }>("/gold/buy", { sku }));
+  withQgoldBurn<{ sku: string; balanceU: number | null }>("/gold/buy", { sku });
 export const goldEquip = (frame: string | null) => api("/gold/equip", { frame });
 export const goldEmote = (emote: string) => api<{ emote: string; until: number }>("/gold/emote", { emote });
 export const goldGear = (actorId: string, encounter: string, edition: string) =>
-  withQgoldBurn(() =>
-    api<{ item: { id: string; name: string }; balanceU: number | null }>("/gold/gear", { actorId, encounter, edition }),
-  );
+  withQgoldBurn<{ item: { id: string; name: string }; balanceU: number | null }>("/gold/gear", { actorId, encounter, edition });
 export const lureQuote = (worldId: string, fix: Fix) => api<LureQuote>("/gold/lure/quote", { worldId, fix });
 export const setLure = (worldId: string, fix: Fix, kind: string, actorId: string | null) =>
-  withQgoldBurn(() => api<{ lure: LureView; balanceU: number | null }>("/gold/lure", { worldId, fix, kind, actorId }));
+  withQgoldBurn<{ lure: LureView; balanceU: number | null }>("/gold/lure", { worldId, fix, kind, actorId });
 export const goldMap = (lat: number, lng: number) => api<GoldMap>(`/gold/map?lat=${lat}&lng=${lng}`);
 
 export const placeFeed = (lat: number, lng: number, radiusKm: number, sort: PlaceSort) =>
@@ -129,9 +127,9 @@ export const placeCreate = (input: {
   arena: boolean;
   fix?: Fix | null;
   publicConsent: true;
-}) => withQgoldBurn(() => api<{ thread: PlaceThread; balanceU: number | null }>("/places", input));
+}) => withQgoldBurn<{ thread: PlaceThread; balanceU: number | null }>("/places", input);
 export const placeExtend = (id: string, days: number) =>
-  withQgoldBurn(() => api<{ thread: PlaceThread }>(`/places/${id}/extend`, { days }));
+  withQgoldBurn<{ thread: PlaceThread }>(`/places/${id}/extend`, { days });
 export const placePost = (id: string, text: string) =>
   api<{ thread: PlaceThread; becameFree: boolean }>(`/places/${id}/posts`, { text });
 export const placeReport = (id: string, reason: string) => api(`/places/${id}/report`, { reason });

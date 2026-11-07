@@ -161,3 +161,31 @@ Routes: `POST /api/account/create {publicKey,name}` → 201 account view (state 
 limits; `POST /api/relay {signedDelegateBase64,preview?}` → 202 job (200 when duplicate);
 `GET /api/relay/:id`; `GET /api/relay?account=…`. Job states: `queued`, `retrying`, `sent`,
 `confirmed` (with `result.tokenId` for mints), `failed` (with `errorCode`).
+
+## Local security candidate: durable submissions and shared budget
+
+The candidate saves the exact signed outer transaction before broadcasting. A
+restart queries its status without waiting for an unbroadcast transaction to become
+FINAL; an unknown hash replays identical bytes. No timeout or invalid nonce alone
+permits a replacement payment. Account creation and native topups have the same
+durable journal; balance changes are not proof that another transfer is owed.
+Writes and sends are fenced by the worker lease.
+
+A shared SQLite reservation budget covers initial account funding, attached
+deposits, gas reserves and topups across all players. Configure
+`SUBSIDY_DAILY_YOCTO`, `SUBSIDY_DAILY_OPERATIONS` and
+`SUBSIDY_GAS_RESERVE_YOCTO` from the operator's actual reserve/workload; defaults
+disable sponsorship. Unknown reservations carry across UTC midnight. Final
+refunds are not recycled into new allowances. A verified retry consumes another
+reservation. Observed receipt fees above their reserve trigger a persistent
+`SUBSIDY_GAS_OVERRUN` breaker; existing signed submissions can still reconcile.
+The estimate is not a protocol gas-price cap: keep a bounded service-account
+balance and monitor it. The first overrun/in-flight operations can exceed the
+estimate. An operator must reconcile the ledger before clearing the breaker.
+
+`SIGNING_VAULT_ORIGIN` must name the independent signing service before managed
+financial services activate. The same-site, separate origin has an immutable public
+configuration, fixed RPC/contract allowlist, strict CSP and no game database or
+service keys. Free solo play does not require this service or sponsor budget.
+The earlier wiring example omits these candidate-specific gates; use current
+`server/index.mjs` as the implementation reference.

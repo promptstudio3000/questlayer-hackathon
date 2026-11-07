@@ -545,3 +545,19 @@ test("unexpected server errors have a generic retry response without leaking int
   assert.equal(result.status, 500);
   assert.ok(!JSON.stringify(await result.json()).includes("secret"));
 });
+
+test("revoking a creator session during paid admission prevents starting the quest", async () => {
+  let actor = "explorer", started = false;
+  const handle = createCreatorApi({
+    enabled:true, origin:ORIGIN, authenticate:() => actor,
+    community:{publicQuest:()=>({})},
+    admitStart:async () => { actor = null; },
+    lifecycle:{start:() => { started = true; }},
+  });
+  const result = await handle(new Request(ROOT + "/quests/example/participation",{
+    method:"POST",headers:{Origin:ORIGIN,"Content-Type":"application/json"},
+    body:JSON.stringify({operationId:"test-start"})
+  }));
+  assert.equal(result.status,401);
+  assert.equal(started,false);
+});

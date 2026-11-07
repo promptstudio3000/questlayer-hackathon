@@ -42,6 +42,9 @@ export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, on
     <p className={`quest-brief-status${q.kind === "route" && !q.completed && open && online ? " quest-brief-progress" : ""}`}>{q.kind === "route" && !q.completed && open && online ? <><strong>{q.visitedStops ? tr("Any order") : tr("Next stop")} · {tr("Stop {0} of {1}", {0: targetNumber, 1: steps})}</strong><br />{tr("Completed")} · {q.checkpoint || 0}/{steps}</> : status}</p>
     <h2 ref={heading} tabIndex={-1}>{title}</h2>
     <p className="quest-brief-description">{q.activity?.objective || q.description}</p>
+    {q.nearPrize && <p className="quest-brief-prize"><strong>{tr("NEAR testnet")}. </strong>{q.nearPrize.available
+      ? tr("First confirmed completion: {0} NEAR, converted to QGOLD at settlement.", { 0: q.nearPrize.amountNear })
+      : tr("The shared NEAR prize was already earned. Personal XP is still available.")}</p>}
     {zone.operatorPause && <p role="status">{zone.operatorPause.reason}</p>}
     <div className="quest-brief-rewards" aria-label={tr("Rewards")}>
       <span><Sparkle aria-hidden="true" />{q.xp} XP</span>

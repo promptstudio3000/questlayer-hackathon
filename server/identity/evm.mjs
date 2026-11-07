@@ -43,8 +43,19 @@ export function siweNonce(bytes) {
   return hex;
 }
 
+export const evmLinkStatement = (player) =>
+  `Link this wallet as a sign-in method for QuestLayer explorer ${player}. This wallet will be able to access that explorer.`;
+
 /** The exact EIP-4361 text the wallet shows and signs. */
-export function signInMessage({ origin, address, chainId, nonce, issuedAt, expiresAt }) {
+export function signInMessage({
+  origin,
+  address,
+  chainId,
+  nonce,
+  issuedAt,
+  expiresAt,
+  linkPlayerId,
+}) {
   const url = new URL(origin);
   return createSiweMessage({
     domain: url.host,
@@ -52,7 +63,7 @@ export function signInMessage({ origin, address, chainId, nonce, issuedAt, expir
     address: getAddress(address),
     chainId,
     nonce,
-    statement: EVM_STATEMENT,
+    statement: linkPlayerId ? evmLinkStatement(linkPlayerId) : EVM_STATEMENT,
     version: "1",
     issuedAt: new Date(issuedAt),
     expirationTime: new Date(expiresAt),
@@ -76,7 +87,10 @@ export function evmSignatureBytes(signature) {
   );
   const bytes = Buffer.from(signature.slice(2), "hex");
   const v = bytes[64];
-  assert([0, 1, 27, 28].includes(v), "The wallet returned an invalid signature.");
+  assert(
+    [0, 1, 27, 28].includes(v),
+    "The wallet returned an invalid signature.",
+  );
   return bytes;
 }
 
@@ -97,12 +111,19 @@ export async function verifyEvmSignature({ message, signature, address }) {
     assert(false, "The wallet returned an invalid signature.", 401);
   }
   const info = evmKeyInfo(key);
-  assert(info.address === expected, "The signature does not match this address.", 401);
+  assert(
+    info.address === expected,
+    "The signature does not match this address.",
+    401,
+  );
   return info;
 }
 
 /** Wallet name a browser reported (EIP-6963), for display only. */
 export function walletLabel(value) {
-  const text = String(value ?? "").replace(/[^\p{L}\p{N} ._-]/gu, "").trim().slice(0, 32);
+  const text = String(value ?? "")
+    .replace(/[^\p{L}\p{N} ._-]/gu, "")
+    .trim()
+    .slice(0, 32);
   return text || null;
 }

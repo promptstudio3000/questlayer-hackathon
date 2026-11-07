@@ -2954,5 +2954,13 @@
  "Update location": "Обновить местоположение",
  "Step inside the place first, then confirm your visit.": "Сначала войди на территорию, затем подтверди посещение.",
  "Next stop": "Следующая остановка",
- "Any order": "В любом порядке"
+ "Any order": "В любом порядке",
+ "Map-derived discoveries by Atlas. Public access and paths have not been checked on foot: follow local signs and skip blocked places. These activities award personal XP; no monetary or item reward is promised.": "Находки Атласа по данным карты. Доступность общественных мест и дорожек не проверена на месте: соблюдай местные указания и пропускай закрытые места. Эти задания дают личный опыт XP; денежная награда или предмет не обещаны.",
+ "Funded Atlas zones: the first confirmed completion earns the fixed NEAR prize shown in the objective. QGOLD is calculated at settlement; fractional NEAR stays credited. Follow local signs and skip blocked places.": "Зоны Atlas с финансированием: первое подтверждённое выполнение получает фиксированную награду NEAR, указанную в задании. QGOLD рассчитывается при выплате; остаток NEAR сохраняется на счёте. Соблюдай местные указатели и обходи закрытые места.",
+ "No monetary budget today. Atlas discoveries still award personal XP. Follow local signs and skip blocked places.": "Сегодня бюджета на денежные награды нет. За открытия Atlas по-прежнему начисляются личные XP. Соблюдай местные указатели и обходи закрытые места.",
+ "First confirmed completion: {0} NEAR, converted to QGOLD at settlement.": "Первое подтверждённое выполнение: {0} NEAR с переводом в QGOLD при выплате.",
+ "The shared NEAR prize was already earned. Personal XP is still available.": "Общая награда NEAR уже получена. Личные XP по-прежнему доступны.",
+ "Converted to QGOLD": "Переведено в QGOLD",
+ "Fractional NEAR remains credited": "Остаток NEAR сохранён на счёте",
+ "Awaiting QGOLD settlement": "Ожидает выплаты в QGOLD"
 }

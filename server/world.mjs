@@ -1,4 +1,6 @@
 import { getOrPrepareCityPlan } from "./world-planner.mjs";
+import { preparedActivityWorld, assertGlobalActivityReady } from "./global-activities.mjs";
+import { decorateGlobalRewardWorld,globalPrizeForQuest } from './global-rewards.mjs';
 import { localDateBounds } from "./spatial/calendar.mjs";
 import tzLookup from "tz-lookup";
 import { latLngToCell, cellToLatLng, cellToBoundary } from "h3-js";
@@ -223,8 +225,12 @@ export async function ensureWorld(
   location = HOME,
   arena = true,
   now = Date.now(),
-  { mapData = {}, poiSource, cellAt = null } = {},
+  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR } = {},
 ) {
+  // An installed global day is read-only on player arrival. Plzen retains its
+  // reviewed citywide six-slot world; the arena remains its existing simulation.
+  if (globalActivities && !arena && cityFor(location)?.id !== "plzen")
+    return preparedActivityWorld(db, cellAt || location, now);
   const world = await ensureBaseWorld(db, location, arena, now, { mapData });
   if (!world.cityId && arena) return world;
   // A searched spot must lie in the same city; otherwise the player's own cell.
@@ -485,10 +491,11 @@ export function worldView(db, id, player = null, options = {}) {
     })();
   const row = db.prepare("SELECT manifest FROM worlds WHERE id=?").get(id);
   if (!row) return null;
+  assertGlobalActivityReady(db, JSON.parse(row.manifest));
   const query = worldQuery(options),
     near = query.limit ? null : nearQuery(options.near),
     now = options.now ?? Date.now(),
-    manifest = publicManifest(db, JSON.parse(row.manifest)),
+    manifest = publicManifest(db, decorateGlobalRewardWorld(db,JSON.parse(row.manifest))),
     closed = closedPlaces(db, manifest.cityId),
     paused = pauseState(db, manifest.cityId, manifest.day);
   mark("wmanifest");
@@ -499,7 +506,7 @@ export function worldView(db, id, player = null, options = {}) {
     .all(player, player, id)
     .map((q) => {
       const meta = JSON.parse(q.metadata || "{}");
-      const cps = meta.checkpoints || [];
+      const cps = meta.checkpoints || [], nearPrize=globalPrizeForQuest(db,q.id);
       // A category hunt takes its stops in any order: point at the first open one.
       const visited = meta.unordered ? huntVisited(db, q.id, player) : null;
       return {
@@ -521,7 +528,9 @@ export function worldView(db, id, player = null, options = {}) {
               ).map((p) => ({ lat: p.lat, lng: p.lng })),
             }
           : {}),
-        activity: describeStoredQuest(q, meta),
+        activity: {...describeStoredQuest(q, meta),...(nearPrize?{rewardConstraint:nearPrize.available?`Personal XP for everyone. The first confirmed completion also earns ${nearPrize.amountNear} NEAR, converted to QGOLD at settlement; fractional NEAR stays credited.`:'The shared NEAR prize was already earned. You can still finish for personal XP.'}:{})},
+        ...(nearPrize?{nearPrize}:{}),
+        ...(meta.author ? { author: meta.author } : {}),
         ...(meta.clue ? { clue: clueView(db, q.id, meta.clue, player, options.lang) } : {}),
       };
     });

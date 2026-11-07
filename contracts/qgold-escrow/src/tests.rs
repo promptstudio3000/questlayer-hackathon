@@ -320,10 +320,10 @@ fn dispute_blocks_cancel_and_reserves_slot_on_expiry() {
         c.open_dispute("t1".into(), a("w1.testnet"));
     });
     assert!(e.contains("Only the worker, the poster or the publisher"), "{e}");
-    ctx("w1.testnet", NOW);
+    ctx("publisher.testnet", NOW);
     assert_eq!(c.open_dispute("t1".into(), a("w1.testnet")).status, "disputed");
     let e = fails(|| {
-        ctx("w1.testnet", NOW);
+        ctx("publisher.testnet", NOW);
         c.open_dispute("t1".into(), a("w1.testnet"));
     });
     assert!(e.contains("already open"), "{e}");
@@ -378,12 +378,12 @@ fn rejected_dispute_frees_slot_or_refunds_after_deadline() {
     let v = c.resolve_dispute("t1".into(), a("w1.testnet"), false);
     assert_eq!((v.open_slots, v.status.as_str()), (1, "open"));
     let e = fails(|| {
-        ctx("w1.testnet", NOW);
+        ctx("publisher.testnet", NOW);
         c.open_dispute("t1".into(), a("w1.testnet"));
     });
     assert!(e.contains("already resolved"), "{e}");
     // A second worker disputes; rejected after the deadline -> poster refunded at once.
-    ctx("w2.testnet", NOW);
+    ctx("publisher.testnet", NOW);
     c.open_dispute("t1".into(), a("w2.testnet"));
     ctx("moderator.testnet", NOW + 25 * HOUR);
     let v = c.resolve_dispute("t1".into(), a("w2.testnet"), false);
@@ -846,7 +846,7 @@ fn invariant_holds_across_mixed_flows() {
         c.approve_task("t1".into(), a(&format!("w{i}.testnet")));
         assert_conserved(&c);
     }
-    ctx("w9.testnet", NOW);
+    ctx("publisher.testnet", NOW);
     c.open_dispute("t1".into(), a("w9.testnet"));
     ctx("publisher.testnet", NOW);
     c.approve_task("t2".into(), a("w0.testnet"));
@@ -967,5 +967,132 @@ fn withdraw_for_pays_only_the_credit_owner() {
     callback(PromiseResult::Successful(vec![]));
     assert_eq!(c.on_withdraw(a("w.testnet"), U128(100)).0, 100);
     assert_eq!(c.get_stats().withdrawn.0, 100);
+    assert_conserved(&c);
+}
+
+#[test]
+fn unassigned_worker_cannot_reserve_a_strangers_slot_but_verified_appeals_survive_delay() {
+    let mut c = fresh();
+    fund_task(&mut c, "public", 100, 2);
+    let e = fails(|| {
+        ctx("unrelated.testnet", NOW);
+        c.open_dispute("public".into(), a("unrelated.testnet"));
+    });
+    assert!(e.contains("participation must be verified"), "{e}");
+    assert_eq!(c.get_task("public".into()).unwrap().open_disputes.len(), 0);
+    // The game authenticated a timely submission; publisher retries can arrive
+    // after the task deadline without deleting that worker's appeal.
+    ctx("publisher.testnet", NOW + 25 * HOUR);
+    c.open_dispute("public".into(), a("verified.testnet"));
+    ctx("anyone.testnet", NOW + 26 * HOUR);
+    c.expire_task("public".into());
+    ctx("moderator.testnet", NOW + 30 * DAY_MS);
+    c.resolve_dispute("public".into(), a("verified.testnet"), true);
+    assert_eq!(credit(&c, "verified.testnet"), 50);
+    assert_conserved(&c);
+}
+
+#[test]
+fn named_worker_has_a_direct_timely_appeal_but_not_an_unbounded_opening_window() {
+    let mut c = fresh();
+    for id in ["timely", "late"] {
+        deposit(&mut c, "poster.testnet", 110, json!({"kind":"task","id":id,"reward":"100","slots":1,
+            "assignee":"named.testnet","deadline_ms":U64(NOW + HOUR)}));
+    }
+    ctx("named.testnet", NOW);
+    c.open_dispute("timely".into(), a("named.testnet"));
+    let e = fails(|| {
+        ctx("named.testnet", NOW + HOUR);
+        c.open_dispute("late".into(), a("named.testnet"));
+    });
+    assert!(e.contains("before the deadline"), "{e}");
+    ctx("publisher.testnet", NOW + HOUR);
+    c.open_dispute("late".into(), a("named.testnet"));
+}
+
+#[test]
+fn admission_reserves_the_maximum_bounded_settlement_growth() {
+    let mut c = fresh();
+    fund_task(&mut c, "capacity", 5000, MAX_SLOTS);
+    let before = env::storage_usage();
+    for i in 0..MAX_DISPUTES {
+        let worker = a(&format!("w{i:03}{}", "a".repeat(60)));
+        ctx("publisher.testnet", NOW);
+        c.open_dispute("capacity".into(), worker.clone());
+        ctx("moderator.testnet", NOW);
+        c.resolve_dispute("capacity".into(), worker, false);
+    }
+    for i in 0..MAX_SLOTS {
+        ctx("publisher.testnet", NOW);
+        c.approve_task("capacity".into(), a(&format!("p{i:03}{}", "a".repeat(60))));
+    }
+    assert!(env::storage_usage() - before < task_growth(MAX_SLOTS));
+    assert_conserved(&c);
+}
+
+#[test]
+fn exhausted_native_reserve_cannot_consume_existing_withdrawal_credit() {
+    let mut c = fresh(); fund_task(&mut c, "existing", 100, 1);
+    ctx("publisher.testnet", NOW); c.approve_task("existing".into(), a("worker.testnet"));
+    let before = credit(&c, "worker.testnet");
+    let mut b = VMContextBuilder::new();
+    b.current_account_id(a(ME)).predecessor_account_id(a("caller.testnet"))
+        .account_balance(NearToken::from_yoctonear(0)).storage_usage(env::storage_usage()).prepaid_gas(Gas::from_tgas(300));
+    testing_env!(b.build());
+    assert!(fails(|| { c.withdraw_for(a("worker.testnet")); }).contains("storage reserve"));
+    assert_eq!(credit(&c, "worker.testnet"), before);
+    assert_eq!(c.get_stats().pending_withdrawals.0, 0);
+}
+
+// ------------------------------------------------- storage reserve (A07 follow-up)
+
+#[test]
+fn reserve_is_sized_per_agreement_and_released_on_close() {
+    let mut c = fresh();
+    let before = reserved_growth();
+    fund_task(&mut c, "small", 10, 1);
+    assert_eq!(reserved_growth() - before, task_growth(1));
+    assert!(task_growth(1) < 8 * 1024, "a one-slot task must not reserve the 50-slot maximum");
+    assert_eq!(task_growth(MAX_SLOTS), (50 + 100) * 256 + 4096);
+    ctx("poster.testnet", NOW);
+    c.cancel_task("small".into());
+    assert_eq!(reserved_growth(), before);
+}
+
+#[test]
+fn dispute_capacity_follows_task_size() {
+    assert_eq!(task_dispute_cap(1), 6);
+    assert_eq!(task_dispute_cap(MAX_SLOTS), MAX_DISPUTES);
+}
+
+#[test]
+fn many_small_agreements_fit_where_the_flat_reserve_allowed_few() {
+    // With 10 NEAR and the old flat 42 KiB per agreement about 15 agreements
+    // fit after the contract's own storage; per-agreement sizing fits far more.
+    let flat = (MAX_SLOTS as u64 + MAX_DISPUTES as u64) * 256 + 4096;
+    assert!(flat / task_growth(1) >= 7);
+    assert!(flat / PAIR_GROWTH >= 9);
+}
+
+#[test]
+fn worst_case_one_slot_task_fits_its_reserve() {
+    let mut c = fresh();
+    fund_task(&mut c, "one", 10, 1);
+    let before = env::storage_usage();
+    for i in 0..task_dispute_cap(1) {
+        let worker = a(&format!("w{i:03}{}", "a".repeat(60)));
+        ctx("publisher.testnet", NOW);
+        c.open_dispute("one".into(), worker.clone());
+        ctx("moderator.testnet", NOW);
+        c.resolve_dispute("one".into(), worker, false);
+    }
+    let e = fails(|| {
+        ctx("publisher.testnet", NOW);
+        c.open_dispute("one".into(), a(&format!("x{}", "a".repeat(60))));
+    });
+    assert!(e.contains("Dispute capacity reached"), "{e}");
+    ctx("publisher.testnet", NOW);
+    c.approve_task("one".into(), a(&format!("p{}", "a".repeat(60))));
+    assert!(env::storage_usage() - before < task_growth(1));
     assert_conserved(&c);
 }

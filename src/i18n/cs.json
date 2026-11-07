@@ -2954,5 +2954,13 @@
  "Update location": "Aktualizovat polohu",
  "Step inside the place first, then confirm your visit.": "Nejdřív vstup do místa a potom potvrď návštěvu.",
  "Next stop": "Další zastávka",
- "Any order": "Libovolné pořadí"
+ "Any order": "Libovolné pořadí",
+ "Map-derived discoveries by Atlas. Public access and paths have not been checked on foot: follow local signs and skip blocked places. These activities award personal XP; no monetary or item reward is promised.": "Objevy od Atlase podle mapových dat. Veřejný přístup a cesty nebyly ověřeny v terénu: řiď se místním značením a nepřístupná místa vynech. Za tyto aktivity získáš osobní XP; peněžní odměna ani předmět nejsou přislíbeny.",
+ "Funded Atlas zones: the first confirmed completion earns the fixed NEAR prize shown in the objective. QGOLD is calculated at settlement; fractional NEAR stays credited. Follow local signs and skip blocked places.": "Financované zóny Atlase: první potvrzené dokončení získá pevnou odměnu NEAR uvedenou v úkolu. QGOLD se vypočítá při vypořádání; drobný zbytek NEAR zůstává připsaný. Řiď se místním značením a nepřístupná místa vynech.",
+ "No monetary budget today. Atlas discoveries still award personal XP. Follow local signs and skip blocked places.": "Dnes není rozpočet na peněžní odměny. Za objevy Atlase stále získáš osobní XP. Řiď se místním značením a nepřístupná místa vynech.",
+ "First confirmed completion: {0} NEAR, converted to QGOLD at settlement.": "První potvrzené dokončení: {0} NEAR, převedených na QGOLD při vypořádání.",
+ "The shared NEAR prize was already earned. Personal XP is still available.": "Sdílenou odměnu NEAR už někdo získal. Osobní XP jsou stále dostupné.",
+ "Converted to QGOLD": "Převedeno na QGOLD",
+ "Fractional NEAR remains credited": "Drobný zbytek NEAR zůstává připsaný",
+ "Awaiting QGOLD settlement": "Čeká na vypořádání v QGOLD"
 }

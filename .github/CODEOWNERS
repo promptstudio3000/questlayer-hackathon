@@ -19,3 +19,12 @@
 /AGENTS.md             @promptstudio3000
 /GEMINI.md             @promptstudio3000
 /docs/HANDOFF-WEEKEND.md @promptstudio3000
+/server/index.mjs      @promptstudio3000
+/server/signing-vault.mjs @promptstudio3000
+/server/signing-vault-cors.mjs @promptstudio3000
+/signing-vault.html    @promptstudio3000
+/src/signing-vault/    @promptstudio3000
+/src/player-key.ts     @promptstudio3000
+/src/native-signer.ts  @promptstudio3000
+/src/qgold-burn.ts     @promptstudio3000
+/src/account-recovery.ts @promptstudio3000

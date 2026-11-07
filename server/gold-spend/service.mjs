@@ -1,3 +1,4 @@
+import { purchaseAtomic } from "./purchases.mjs";
 // GOLD spending (QGOLD build plan, stream 4; doc "QGOLD: návrh ekonomiky").
 // Every spend burns: nothing here pays another player or the treasury, and
 // nothing creates money or changes odds.
@@ -102,7 +103,7 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
     const item = kind === "emote" ? PREMIUM_EMOTES.find((e) => e.id === itemId) : COSMETICS.find((c) => c.id === itemId);
     assert(item, "This is not in the shop.", 404, "SKU");
     const at = now();
-    return atomic(db, () => {
+    return purchaseAtomic(db, () => {
       assert(!owned(player).has(sku), "You already have this.", 409, "OWNED");
       const burn = burnGold(db, { player, kind, ref: itemId, amountU: priceU(item.price), title: kind === "emote" ? `Emote unlocked: ${itemId}` : `Cosmetic unlocked: ${itemId}`, now: at });
       db.prepare("INSERT INTO gold_unlocks(player_id,sku,burn_id,created_at) VALUES(?,?,?,?)").run(player, sku, burn.id, at);
@@ -153,7 +154,7 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
     const g = GEAR.find((x) => x.id === edition);
     assert(g, "The trader does not sell this.", 404, "GEAR");
     const at = now();
-    return atomic(db, () => {
+    return purchaseAtomic(db, () => {
       assert(gearToday(player, at) < GOLD_SPEND.gear.perDay, "One premium piece per day. Come back tomorrow.", 429, "GEAR_DAILY");
       const burn = burnGold(db, { player, kind: "gear", ref: `${g.id}@${actorId}`, amountU: priceU(g.price), title: `Premium gear: ${g.name}`, now: at, meta: { trader: actorId } });
       const item = grantEdition(db, player, g.id, at);
@@ -278,7 +279,7 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
       assert(distance(place, actor.pos) <= LURE.searchM, `${actor.name} is too far away to hear the lure.`, 409, "LURE_FAR");
     }
     const price = kind === "beacon" ? LURE.price.beacon : LURE.price[actor.archetype] ?? LURE.price[kind];
-    return atomic(db, () => {
+    return purchaseAtomic(db, () => {
       assert(!db.prepare("SELECT 1 FROM gold_lures WHERE player_id=? AND ends_at>?").get(player, at), "You already have an active lure.", 409, "LURE_ACTIVE");
       assert(!nearbyLures(place, at).some((x) => x.d < LURE.spacingM), `Another lure is within ${LURE.spacingM} m. Walk a bit further.`, 409, "LURE_SPACING");
       if (actor)

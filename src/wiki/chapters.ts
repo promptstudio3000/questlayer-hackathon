@@ -445,13 +445,13 @@ export const CHAPTERS: Chapter[] = [
     id: "world-and-places",
     group: "world",
     title: "Cities, cells and places",
-    summary: "Reviewed cities, automatic cities and every H3 cell of Czechia, built from a safety-filtered POI database.",
+    summary: "Reviewed cities, Czech map rewards and optional prepared Atlas discoveries in supplied global regions.",
     status: "live",
-    updated: "2026-11-05",
-    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
+    updated: "2026-11-07",
+    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
     blocks: [
       {
-        p: `Live reviewed cities: **${LIVE_CITIES.join(", ")}**. Before mid-November the world covers Czechia only.`,
+        p: `Live reviewed cities: **${LIVE_CITIES.join(", ")}**. The current reward map covers Czechia. Prepared Atlas discoveries can also run in supplied global regions with personal XP; worldwide funding and full data coverage remain separate release work.`,
       },
       { viz: "coverage-tiers" },
       {
@@ -480,6 +480,22 @@ export const CHAPTERS: Chapter[] = [
           "Daylight-saving days keep their real 23 or 25 hours.",
           "An operator with server access can pause a day or zone, close a place or adjust a future unpublished day. There is no web route for these changes.",
         ],
+      },
+      { h: "Global Atlas discoveries" },
+      {
+        p: "When a geographic catalog is connected, a background worker selects mapped zones and Atlas quests for today and tomorrow before players load them. It checks public-path targets, exclusions, polygon boundaries and the whole supplied region inventory. The live game opens only a completely imported UTC day. Loading a place does not generate extra activities. Missing or incomplete regions remain unavailable.",
+      },
+      {
+        p: "The game imports regions in separate steps so it can handle other requests between them. An interrupted import resumes the same day without opening partial content or duplicating quests. Preparation reports each date separately and identifies regions whose content failed validation. A failed date retries with increasing pauses and does not stop work on the next day.",
+      },
+      {
+        p: "Atlas visits and three-stop hunts use the normal GPS checks, personal XP and durable completion receipts. Without a separately confirmed financial day they promise no money or item. The optional testnet financial adapter fixes one first-completion NEAR prize per prepared zone before opening; it requires reviewed contract upgrades, a complete received-funding inventory and an exact on-chain day reservation. Map-derived places remain unverified on foot, and known opening restrictions are excluded from this all-day mode. Plzen keeps its existing six shared slots; other cells select up to three actual polygons and explain missing slots. The collected catalog determines coverage: a pilot is not a fully seeded planet.",
+      },
+      {
+        p: "An optional bulk collector continues from verified map downloads through export, real polygon selection and isolated gameplay checks without another AI prompt. It retains complete neighboring path and exclusion geometry, preserves polygon holes, and reports unsafe or oversized areas instead of dropping them. Accepted regions join the next unpublished preparation; a published day stays unchanged. The source worker plans every mapped candidate cell of each selected owner, including places without parks; an incomplete section withholds its owner. Complete neighboring geometry is indexed in compressed chunks. Incomplete unrestricted polygon candidates are rejected with source identities and reasons; an incomplete restricted ground blocks that source. This is map-derived coverage, not field verification.",
+      },
+      {
+        p: "A versioned launch selection can cover European extracts and US extracts in full, with national-capital footprints elsewhere. Russia, North Korea and Iran are excluded from that selection. Capital coordinates and timezones come from a pinned GeoNames snapshot. The same hashed selection controls acquisition and owner planning; existing downloads are retained. The first active collection phase is EU-only: all 27 member countries, including Cyprus even though its extract is grouped under Asia. Non-EU collection is paused, with no automatic expansion after EU completion. EU daily outputs are kept separate from earlier global pilots. Missing capitals and incomplete sources remain explicit, and completing this selected footprint never reports a complete planet. Financial activation still requires separate confirmed reservations.",
       },
       { h: "Theme layers" },
       {
@@ -651,6 +667,8 @@ export const CHAPTERS: Chapter[] = [
           "A Rhea (Ref) testnet pool #2895 pairs wNEAR and QGOLD near R + 1 %.",
           "A keeper acts at 12 secret times a day, committed in advance and revealed from NEAR block randomness: inverse buy-and-burn below R, buyback-and-burn from 20 % of fees below 1.1 R, sales on a 1.1 / 1.2 / 1.3 R ladder above it.",
           "The keeper stays idle while the pool is too small (threshold set on the server).",
+          "The keeper records each operation before spending and preserves completed steps after a restart. A failed burn does not repeat its purchase or erase money already committed from the limits. Uncertain outcomes wait for reconciliation; ordinary gameplay needs no extra confirmation.",
+          "When Rhea retains an undelivered swap output, the keeper can register its token account and recover the exact verified amount automatically. Recovery has its own saved transaction record, so a restart does not repeat the purchase. Ambiguous or mixed balances wait for reconciliation without burning unrelated tokens.",
         ],
       },
       { note: "QGOLD is not an investment product. The vault is unaudited testnet code; mainnet needs an external audit and a legal opinion.", tone: "warn" },
@@ -662,7 +680,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Fees, spending and the task market",
     summary: "Where fees go, what GOLD can buy, and how tasks, Secrets and conditional sends settle.",
     status: "partial",
-    updated: "2026-11-05",
+    updated: "2026-11-06",
     sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json"],
     blocks: [
       { viz: "fees" },
@@ -687,7 +705,11 @@ export const CHAPTERS: Chapter[] = [
           "A poster pays the reward plus 10 % on top. The fee reaches the treasury only on payout; a refund returns both.",
           "**Secrets:** a creator hides a place; finders pay to reveal it and the creator gets 90 % after a GPS visit or 7 days without dispute. A sponsor can prepay finder rewards so the reveal is free.",
           "**Conditional sends:** escrow that releases on a condition, no fee.",
-          "Everything settles in real QGOLD. The poster, buyer or sender pays it from their own NEAR account into the `qgold-escrow` contract with one sponsored `ft_transfer_call` (no popup on the explorer account); the task, Secret or send opens once the escrow shows it.",
+          "In the security candidate, each shop purchase keeps one saved reference from price quote through burn and delivery. The server verifies direct or relayed payment receipts; retries return the saved result. If an item becomes unavailable after payment, its credit stays recorded for resolution.",
+          "Everything settles in real QGOLD. The poster, buyer or sender pays it from their own NEAR account into the `qgold-escrow` contract with one sponsored `ft_transfer_call` (task/Secret payments stay seamless; peer transfers use protected account approval in the security candidate). The server confirms the exact payment, recipient, deadline and conditions before opening the task, Secret or send.",
+          "A returned payment never opens a paid Secret or creates a new reward. A completed payment stays completed after a restart, and existing confirmations are preserved. An uncertain payment waits for verification without another approval from the player; normal exploration stays available.",
+          "In the security candidate, sponsored token registration is a lifetime grant that cannot be cashed out by unregistering. Escrow admission reserves storage before accepting a payment; genuine appeals remain available, while unrelated workers cannot freeze an unassigned slot.",
+          "If a reward or refund transfer fails, the escrow keeps the credit and the worker retries after verifying the failure. Restart recovery checks the same payment before sending again. New rewards remain owed even while an earlier payment is in progress; no extra player confirmation is required.",
           "The game server is the escrow's publisher: it approves GPS-checked or reviewed completions, confirms Secret visits, releases or refunds sends and pushes each payout to the receiver's account (`withdraw_for`). It can only pay the named counterparty or refund the funder; there is no admin withdrawal and the escrow has no access keys.",
           "A proof waiting for review holds its slot on chain, so the poster cannot cancel it away. One escrow task pays at most 50 completions, and each account once per task.",
           "Sponsored NEAR tasks already run on a separate escrow contract that holds each sponsor's exact reward until a reviewed completion; it never touches stake, yield or prize money.",
@@ -781,8 +803,8 @@ export const CHAPTERS: Chapter[] = [
     title: "Daily QGOLD payouts",
     summary: "One Merkle root per day of what every account earned, paid straight into the QGOLD vault with no daily claim limit.",
     status: "live",
-    updated: "2026-11-05",
-    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
+    updated: "2026-11-07",
+    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "contracts/rewards/src/world_days.rs", "contracts/qgold/src/lib.rs", "server/global-rewards.mjs", "server/global-reward-worker.mjs", "server/map-rewards/global-plan.mjs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
     blocks: [
       {
         p: "Every backed coin is real QGOLD. After the day ends the server sums each account's earnings in NEAR and the rewards contract pays every account once from a single published root, instead of one receipt per coin (which allowed only 240 claims a day).",
@@ -791,7 +813,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "`publish_payout_day` commits the root and reserves the day's total from the coin and zone treasury, under the same per-date cap as city and map days.",
           "`claim_payout` (anyone, 10 leaves per transaction) checks each leaf against the root and calls the vault's `mint_for` for exactly that account and amount. A repeated leaf is skipped; a refused mint reopens the leaf, so nothing is lost or paid twice.",
-          "`close_payout_day` returns what nobody claimed to the treasury three days after publication.",
+          "`close_payout_day` can close a day after three days only when every leaf has a finalized successful mint and no mint is pending. Unpaid earned rights remain available.",
           "Amounts below 0.00000001 NEAR carry over to the next day: the vault cannot mint less than one QGOLD unit.",
         ],
       },
@@ -807,15 +829,18 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "After local midnight (Europe/Prague) the reward worker collects every backed map coin and cell-zone prize of GPS worlds that is not paid yet, prices it in NEAR at the rate its day was planned with, sums it per account and publishes the day.",
-          "Then it sends `claim_payout` in batches of 10 until every leaf is paid, and closes the day after the grace period.",
+          "Then it submits `claim_payout` in batches of 10. Submission is not payment: finalized per-leaf chain status confirms each receipt. Failed mints restore the same reservation for retry. Restart recovery reconciles pending leaves before sending new ones; an exclusive fenced lease prevents overlapping workers from changing the same payout. A fully paid day may close after the grace period.",
           "A player without a NEAR account yet keeps their coins waiting; they join the first payout after the account exists. `GET /api/qgold/pending` shows what is still on its way (in micro-QGOLD `units`, with `awaitingAccount` for coins collected before an account existed).",
           "Profile · Rewards shows the QGOLD balance on the linked NEAR account and the amount the next payout brings. Pickup messages count QGOLD; there is no practice GOLD. The old practice stake for zone tiers stays as a labelled simulation.",
           "While payouts are on, map days no longer send `claim_map`, so a coin is never paid twice. The demo arena gives XP only and never pays.",
         ],
       },
       {
-        note: "Live on testnet since 5 Nov 2026 (`MAP_PAYOUTS=1`, rewards contract upgraded, worker key holds the payout methods). The first payout covers 5 Nov and runs after Prague midnight.",
+        note: "The existing nightly payout runs on testnet. The prepared Atlas adapter separately reserves a UTC day before opening, records exact earned NEAR, releases only unearned rewards and transfers original reservations into payouts without charging the date cap twice. Unlinked and small earnings retain their source and day. World payouts use a reviewed QGOLD conversion method that keeps fractional NEAR as account-bound credit and stores a durable conversion receipt. This requires both reviewed testnet contract upgrades, including QGOLD's existing 48-hour governance timelock. Until confirmed activation, Atlas quests award personal XP only; prepared coins and item stock are not yet supported by this adapter.",
         tone: "info",
+      },
+      {
+        p: "Funding inputs are refreshed from finalized NEAR receipts and reconciled against the shared treasury, including prior liabilities. [NearBlocks](https://testnet.nearblocks.io) supplies transaction discovery hints; its indexed amounts never authorize a reward. Incomplete evidence blocks new financial activation. The refresh cannot sign transactions or change an already opened day's promises.",
       },
     ],
   },
@@ -829,12 +854,13 @@ export const CHAPTERS: Chapter[] = [
     sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs"],
     blocks: [
       { viz: "account-seq" },
+      { p: "The local security candidate separates the signing key from the game page. Normal purchases, equipment and earned mini-games remain seamless. Withdrawals, asset transfers and account recovery require approval in a separate account window. This candidate has not been deployed or rotated into existing accounts." },
       {
         list: [
           "A new explorer gets `<name>.play-…testnet`, funded with 0.1 NEAR. Its only full-access key is generated on the device; the server never holds a player key.",
           "Game actions are signed as NEP-366 meta-transactions. The relayer checks a strict policy (one action, allowed receiver + method + deposit, nonce, expiry, gas) and pays the gas.",
-          "Attached deposits are capped at 0.5 NEAR per account per day; a failed relayed call refunds the deposit to the player.",
-          "A NEAR wallet links with a NEP-413 signature; MetaMask or Rabby sign in with SIWE and can sign Intents trades (erc191). A SocialDB profile is published once per account.",
+          "Attached deposits retain the per-account cap. The security candidate also reserves one service-wide budget for new accounts, relays and topups. Unknown payments retain their reservation across restarts and midnight; refunds are not counted as new allowance. Free solo play remains available without sponsorship.",
+          "Adding a sign-in method to a secured explorer requires a recent sign-in with an existing method. Ordinary play uses the game session. A NEAR wallet links with a NEP-413 signature; MetaMask or Rabby sign in with SIWE and can sign Intents trades (erc191). A SocialDB profile is published once per account.",
           "Passkeys sign in to the game identity; they are not NEAR keys. Recovery restores the explorer by signing again with the linked wallet.",
           "A wallet transaction counts only after the server reads it as FINAL and matches it against the terms reviewed before signing. Unresolved transactions survive reloads in a local journal so a retry never signs twice.",
         ],
@@ -950,7 +976,7 @@ export const CHAPTERS: Chapter[] = [
           "A new doc must be added to a chapter's sources or explicitly marked as not a mechanism (plans, audits, hand-offs) in `docs/wiki-coverage.json`.",
           "Rule tables are imported from their owning files. Narrative examples and activation labels still need review against the current source and public checkpoint.",
           "The page never names events or contains secrets, keys or private hosts; the test checks the copy.",
-          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`. A protected-paths CI guard fails any pull request that touches contracts, deploy or signing scripts, money code, economy numbers, deployment records, CI or dependencies without the owner's `owner-approved` label, or that adds anything that looks like a secret.",
+          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`. A protected-paths CI guard fails any pull request that touches contracts, deploy or signing scripts, money code, economy numbers, deployment records, CI or dependencies without the owner's `owner-approved` label, or that adds anything that looks like a secret. Sign-in, session and transaction-signing code is protected too, and the guard always runs as it is on the base branch, so a pull request cannot loosen its own check.",
         ],
       },
     ],

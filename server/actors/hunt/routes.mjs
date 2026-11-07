@@ -1,3 +1,5 @@
+import { runPurchase } from "../../gold-spend/purchases.mjs";
+import { spendRealm } from "../../gold-spend/ledger.mjs";
 // HTTP routes for the monster hunt (slices M3 + M4):
 //   GET  /api/hunt?worldId=                 shards, roll tickets, craft status, this week's boss
 //   POST /api/hunt/craft                    {worldId, recipe?, itemId?} -> an altar recipe edition
@@ -56,7 +58,8 @@ export function createHuntRoutes(hunt, actorService, db) {
       if (path === "/api/hunt/craft" && method === "POST") {
         const input = await body(req);
         const manifest = world(String(input.worldId || ""), assert);
-        const crafted = hunt.rewards.craft(player, { itemId: input.itemId ? String(input.itemId) : undefined, recipe: input.recipe ? String(input.recipe).slice(0, 40) : undefined, dayId: manifest.day });
+        const work = () => hunt.rewards.craft(player, { itemId: input.itemId ? String(input.itemId) : undefined, recipe: input.recipe ? String(input.recipe).slice(0, 40) : undefined, dayId: manifest.day });
+        const crafted = spendRealm() === "qgold" ? await runPurchase(db, { player, id: req.headers["x-questlayer-purchase"], path, input }, work) : work();
         respond(res, { crafted, ...hunt.rewards.summary(player, manifest.day) });
         return true;
       }

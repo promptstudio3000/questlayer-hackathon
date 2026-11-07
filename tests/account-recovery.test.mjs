@@ -567,3 +567,17 @@ test("device labels and rows", () => {
   );
   assert.equal(alone.find((r) => r.publicKey === "a").canRevoke, false);
 });
+
+test('recovery preserves the new private device key across a lost AddKey reply', async t => {
+ const f=fixture(); t.after(()=>f.db.close()); const phone=f.ready();
+ const {api,session}=server(f);session.player=f.player;const credentials=passkeyProvider();
+ await setupPasskeyRecovery({deviceKey:deviceRecord(phone),accountId:phone.accountId,credentials,rpId:'localhost',api,intervalMs:1});
+ const store=memoryKeyStore();let lost=false;
+ const dropping=async(path,data)=>{const result=await api(path,data);if(path==='/relay'&&!lost){lost=true;throw Error('lost AddKey acknowledgement');}return result;};
+ await assert.rejects(restoreWithPasskey({store,credentials,rpId:'localhost',api:dropping,intervalMs:1}),/lost AddKey/);
+ const saved=await store.get(`pending-recovery:${phone.accountId}`);assert.ok(saved?.secretKey);
+ assert.ok(f.state.accounts.get(phone.accountId).keys.has(saved.publicKey));
+ const recovered=await restoreWithPasskey({store,credentials,rpId:'localhost',api,intervalMs:1});
+ assert.equal(recovered.publicKey,saved.publicKey);assert.equal((await store.get(DEVICE_KEY)).secretKey,saved.secretKey);
+ assert.equal(await store.get(`pending-recovery:${phone.accountId}`),null);
+});
