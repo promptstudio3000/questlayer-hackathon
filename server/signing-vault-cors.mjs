@@ -4,6 +4,7 @@ const PATHS = [
   /^\/api\/account\/keys$/,
   /^\/api\/relay(?:\/prepare|\/relay_[a-f0-9-]{36})?$/,
   /^\/api\/auth\/near\/(?:challenge|verify)$/,
+  /^\/api\/identity\/management\/(?:challenge|verify)$/,
   /^\/api\/identity\/recovery\/(?:challenge|verify)$/,
 ];
 export function signingVaultOrigin(value, appOrigin) {

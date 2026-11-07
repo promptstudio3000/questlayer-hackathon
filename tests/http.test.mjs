@@ -153,7 +153,7 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     return {
       status: r.status,
       data: await r.json(),
-      cookie: r.headers.get("set-cookie")?.split(";")[0],
+      cookie: r.headers.getSetCookie().map(c => c.split(";")[0]).join("; ") || undefined,
     };
   }
   const a = await request("/session", { name: "HTTP Alice" }),
@@ -531,6 +531,15 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     response: assertion(attachKey2, attachedLogin.data.options.challenge),
   });
   assert.equal(attachedRecovered.data.player.id, guest.data.player.id);
+  await t.test("attaching a passkey rotates the guest bearer and binds the next attachment to the exact session", async () => {
+    assert.equal((await request("/me", undefined, guest.cookie)).status, 401);
+    const options = await request("/passkey/options", {action: "register", attach: true}, attached.cookie);
+    assert.equal(options.status, 200);
+    const newKey = credential(options.data.options.challenge);
+    const finish = {challengeId: options.data.challengeId, response: newKey.registration};
+    assert.equal((await request("/passkey/verify", finish, attachedRecovered.cookie)).status, 403);
+    assert.equal((await request("/passkey/verify", finish, attached.cookie)).status, 200);
+  });
   const wrong = await request("/passkey/options", {
     action: "register",
     name: "Wrong Origin",

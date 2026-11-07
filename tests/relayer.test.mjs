@@ -548,7 +548,9 @@ test("the route handler dispatches account and relay routes with the parent's he
   t.after(() => f.db.close());
   const { createRelayerRoutes } = await import("../server/relayer/routes.mjs");
   const { assert: gameAssert } = await import("../server/domain.mjs");
+  let mayManage = false;
   const routes = createRelayerRoutes({
+    authorizeEnrollment: () => gameAssert(mayManage, "Sign in again", 403),
     relayer: f.relayer,
     accounts: f.accounts,
   });
@@ -602,6 +604,11 @@ test("the route handler dispatches account and relay routes with the parent's he
     call("GET", "/api/relay?account=INVALID"),
     /valid NEAR account/,
   );
+  const attemptedKey = KeyPair.fromRandom("ed25519").getPublicKey().toString();
+  for (const remove of [true, false])
+    await assert.rejects(call("POST", "/api/account/keys", {publicKey: attemptedKey, remove}), error => error.status === 403);
+  assert.equal(f.accounts.view(f.player).account.keys.length, 1);
+  mayManage = true;
   const keys = await call("POST", "/api/account/keys", {
     publicKey: KeyPair.fromRandom("ed25519").getPublicKey().toString(),
     label: "tablet",

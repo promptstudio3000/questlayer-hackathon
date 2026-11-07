@@ -15,6 +15,7 @@ import {
 } from "../player-key.ts";
 import {
   setupPasskeyRecovery,
+  nep413Proof,
   restoreWithPasskey,
   revokeAccountKey,
   signOutOtherSessions,
@@ -213,20 +214,45 @@ async function execute(request: Request) {
   need(record?.accountId, "No secure account is bound on this device.");
   const key = record!,
     accountId = key.accountId!;
+  // Only these already reviewed device actions can obtain a short management grant.
+  async function deviceApi<T>(path: string, input?: unknown): Promise<T> {
+    if (path === "/account/keys") {
+      const challenge = await api<{
+        challengeId: string;
+        playerId: string;
+        nonce: string;
+        recipient: string;
+        message: string;
+      }>("/identity/management/challenge", { accountId });
+      need(
+        challenge.recipient === config.appOrigin &&
+          /^player_[a-f0-9-]{36}$/.test(challenge.playerId) &&
+          challenge.message ===
+            `Authorize management of sign-in methods for explorer ${challenge.playerId} with ${accountId} on NEAR testnet for five minutes. No transaction or transfer.`,
+        "The account authorization challenge does not match this device action.",
+      );
+      const proof = await nep413Proof(key, accountId, challenge);
+      await api("/identity/management/verify", {
+        challengeId: challenge.challengeId,
+        ...proof,
+      });
+    }
+    return api<T>(path, input);
+  }
   if (request.method === "setupRecovery")
     return setupPasskeyRecovery({
       deviceKey: key,
       accountId,
       credentials: navigator.credentials,
       rpId: location.hostname,
-      api,
+      api: deviceApi,
     });
   if (request.method === "revokeKey")
     return revokeAccountKey({
       deviceKey: key,
       accountId,
       publicKey: String(i.target),
-      api,
+      api: deviceApi,
     });
   if (request.method === "revokeSessions")
     return signOutOtherSessions({ deviceKey: key, accountId, api });

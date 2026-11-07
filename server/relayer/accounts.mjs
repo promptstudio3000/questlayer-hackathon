@@ -147,7 +147,7 @@ export class ManagedAccounts {
       .all(accountId, ...states)
       .map((k) => k.public_key);
   }
-  async create(player, { publicKey, name } = {}) {
+  async create(player, { publicKey, name, authorizeEnrollment = () => {} } = {}) {
     assert(
       this.factory,
       "Managed accounts are not configured on this host.",
@@ -170,6 +170,7 @@ export class ManagedAccounts {
       .get(player).name;
     const existing = this.row(player);
     if (existing && existing.state !== "failed") return this.view(player);
+    authorizeEnrollment();
     let slug = this.slugFor(name ?? playerName),
       accountId = `${slug}.${this.factoryId}`;
     for (let attempt = 0; attempt < 6; attempt++) {
@@ -191,6 +192,7 @@ export class ManagedAccounts {
     }
     const now = this.clock(), jobId = id("relay");
     atomic(this.db, () => {
+      authorizeEnrollment();
       const current = this.row(player);
       assert(
         !current || current.state === "failed",

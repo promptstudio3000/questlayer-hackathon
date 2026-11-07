@@ -24,7 +24,7 @@ Existing independent guest explorers are not automatically merged on wallet sign
 
 ## API contract
 
-All routes use the existing same-origin API and HttpOnly session cookie. Mutating requests require the configured Origin and JSON content type. No wallet permissions or signing keys are added.
+All routes use the existing same-origin API and HttpOnly session cookie. Writes check the supplied Origin and require a JSON media type. Cross-site browser writes are refused apart from the explicitly configured signer routes. No wallet permissions or signing keys are added.
 
 `GET /api/identity/sessions` returns:
 
@@ -140,3 +140,9 @@ purchase authorization. Game-origin script compromise can still request permitte
 game spending; this is not a claim that all XSS impact has been eliminated.
 Safari/iOS, Chrome/Android, WebAuthn PRF and popup/cookie behavior require physical
 device rehearsal before release. The candidate is testnet-only.
+
+## Credential enrollment and revocation
+
+A guest may secure their first explorer directly. Once a passkey or wallet is linked, adding another sign-in method requires a five-minute HttpOnly proof tied to that exact game session and issued after passkey or wallet verification. Restart sign-in with an existing method if the proof expires. Existing games, purchases and location actions use the ordinary session. Successful attachment rotates that browser's session. Ethereum wallet linking signs the destination explorer and the authority being added. Outstanding attachment challenges must still match the initiating credential at completion. Managed account creation checks the same authority before recording the job. Device key registration and removal also require this proof. During a reviewed device change, the isolated signer can renew it by signing a single-use challenge for the current explorer, wallet, origin and session. Previously issued credentials and ambiguous historical links require separate review.
+
+Revoked sessions lose access to new live events. Private game actions check the session after reading the request body. Browser RPC configuration uses the public network default or an explicitly public `PUBLIC_NEAR_RPC_URL`. Supply a loopback public endpoint separately for local chains.

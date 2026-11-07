@@ -9,10 +9,19 @@ export function createSigningVaultServer({
   dist = resolve("dist/signing-vault"),
 }) {
   validateVaultOrigins(config);
-  const serialized = JSON.stringify(config);
+  const serialized = JSON.stringify({
+    appOrigin: config.appOrigin, vaultOrigin: config.vaultOrigin, network: config.network, rpcUrl: config.rpcUrl,
+    contracts: Object.fromEntries(["qgold", "qgoldEscrow", "collectibles", "npcGames", "social"]
+      .filter(name => typeof config.contracts?.[name] === "string").map(name => [name, config.contracts[name]])),
+  });
   return createServer((req, res) => {
-    const url = new URL(req.url, config.vaultOrigin),
-      approval = url.pathname === "/approve";
+    let url;
+    try { url = new URL(req.url, config.vaultOrigin); }
+    catch { res.writeHead(400).end(); return; }
+    if (!req.url.startsWith("/") || req.url.startsWith("//") || url.origin !== config.vaultOrigin) {
+      res.writeHead(400).end(); return;
+    }
+    const approval = url.pathname === "/approve";
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "no-referrer");
@@ -51,7 +60,8 @@ export function createSigningVaultServer({
           ? "text/css"
           : "text/html",
     );
-    res.end(readFileSync(path));
+    try { res.end(readFileSync(path)); }
+    catch { res.writeHead(404).end(); }
   });
 }
 if (

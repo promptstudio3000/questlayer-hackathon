@@ -149,6 +149,8 @@ export function createCreatorApi({
         "CREATOR_AUTH",
         401,
       );
+      const checkActor = async () => fail(await authenticate(request) === actor,
+        "Sign in again to continue.", "CREATOR_AUTH", 401);
       const suffix = url.pathname.slice(PREFIX.length);
       const parts = suffix
         .split("/")
@@ -173,6 +175,7 @@ export function createCreatorApi({
         } else if (request.method === "POST" && suffix === "/ai/quest-drafts") {
           query(url, []);
           const body = await jsonBody(request);
+          await checkActor();
           const allowed = ["cityId", "candidateId", "template", "stops", "notes", "language"];
           fail(
             ["cityId", "candidateId", "template"].every((k) => Object.hasOwn(body, k)) &&
@@ -257,6 +260,7 @@ export function createCreatorApi({
           405,
         );
         const body = await jsonBody(request);
+          await checkActor();
         if (
           request.method === "POST" &&
           parts.length === 3 &&
@@ -337,8 +341,10 @@ export function createCreatorApi({
               code: "CREATOR_NOT_FOUND",
             });
           fields(body, action[1]);
-          if (action[0] === "start" && admitStart)
+          if (action[0] === "start" && admitStart) {
             await admitStart(actor, parts[1], community.publicQuest(actor, parts[1]));
+            await checkActor();
+          }
           result = lifecycle[action[0]]({ actor, questId: parts[1], ...body });
         } else
           return response(404, {

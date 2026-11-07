@@ -262,3 +262,14 @@ test("account ids stay within NEAR's 64 characters under a long factory id", asy
     assert.match(id, /^[a-z0-9]+(-[a-z0-9]+)*\./);
   }
 });
+
+test("revocation during the account-name lookup prevents an account job or subsidy reservation", async (t) => {
+  const f = fixture(); t.after(() => f.db.close());
+  let active = true;
+  f.accounts.exists = async () => { active = false; return false; };
+  await assert.rejects(f.accounts.create(f.player, {
+    publicKey: key(), authorizeEnrollment() { if (!active) throw Error("revoked"); }
+  }), /revoked/);
+  assert.equal(f.rows("managed_accounts").length, 0);
+  assert.equal(f.rows("relay_jobs").length, 0);
+});
