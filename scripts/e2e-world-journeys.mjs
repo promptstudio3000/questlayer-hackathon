@@ -11,8 +11,10 @@
 // truthfully and the map marks nothing. The server runs on a throwaway
 // database with the Czechia POI fixture (tests/fixtures/world-coverage) as
 // POI_DB_PATH, the cells' path snapshots are pre-seeded (no map network), and
-// server and browser clocks are moved into play hours (scripts/lib/
-// e2e-clock.mjs) so the run gives the same answer at 02:00 as at noon.
+// server and browser clocks use the same late-afternoon fixture instant
+// (scripts/lib/e2e-clock.mjs), after multiple coin waves have opened and
+// while POI quests and NPCs are still available. The date seed and visible
+// waves must not change with the CI runner clock.
 //
 // Usage:  npm run build && npm run e2e:world [-- --device=<name>]
 //   --device=phone-390  Chromium at 390 x 844 (default)
@@ -39,7 +41,6 @@ import {
   pathsAround,
 } from "../tests/fixtures/world-coverage/czechia.mjs";
 import { coverageReport, openPoiDb } from "../server/poi/coverage.mjs";
-import { daytimeOffset } from "./lib/e2e-clock.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -81,8 +82,10 @@ function chosenDevices() {
   assert.ok(DEVICES[name], `Unknown device "${name}".`);
   return [name];
 }
-// Server and browsers share one shifted clock (0 inside 09:00-18:00 Prague).
-const CLOCK_OFFSET_MS = daytimeOffset("Europe/Prague");
+// Keep the real clock flowing from a reproducible 17:00 Prague fixture.
+// Moving only night runs to 11:00 left fewer coin waves open than day runs.
+const FIXTURE_TIME = "2026-11-07T16:00:00.000Z";
+const CLOCK_OFFSET_MS = Date.parse(FIXTURE_TIME) - Date.now();
 
 async function freePort() {
   return new Promise((done, fail) => {
@@ -215,6 +218,7 @@ async function journey(browser, server, device, j, expected) {
     const poiZones = world.zones.filter((z) => z.source === "poi");
     const result = {
       device,
+      fixtureTime: FIXTURE_TIME,
       journey: j.title,
       cell,
       worldId: world.id,
