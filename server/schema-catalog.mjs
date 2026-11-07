@@ -29,6 +29,7 @@ for (const relative of [
   "./native/order-index.mjs",
   "./native/intents-market.mjs",
   "./qgold/keeper.mjs",
+  "./qgold/keeper-journal.mjs",
   "./native/social-records.mjs",
   "./npc/rolls-schema.mjs",
   "./npc/keeper-vault.mjs",

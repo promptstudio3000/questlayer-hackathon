@@ -656,6 +656,7 @@ export const CHAPTERS: Chapter[] = [
           "A Rhea (Ref) testnet pool #2895 pairs wNEAR and QGOLD near R + 1 %.",
           "A keeper acts at 12 secret times a day, committed in advance and revealed from NEAR block randomness: inverse buy-and-burn below R, buyback-and-burn from 20 % of fees below 1.1 R, sales on a 1.1 / 1.2 / 1.3 R ladder above it.",
           "The keeper stays idle while the pool is too small (threshold set on the server).",
+          "The keeper records each operation before spending and preserves completed steps after a restart. A failed burn does not repeat its purchase or erase money already committed from the limits. Uncertain outcomes wait for reconciliation; ordinary gameplay needs no extra confirmation.",
         ],
       },
       { note: "QGOLD is not an investment product. The vault is unaudited testnet code; mainnet needs an external audit and a legal opinion.", tone: "warn" },

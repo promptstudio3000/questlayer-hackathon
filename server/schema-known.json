@@ -474,6 +474,20 @@
       "indexes": {}
     },
     {
+      "name": "qgold-keeper-journal",
+      "version": 1,
+      "sql": "\nCREATE TABLE IF NOT EXISTS qgold_keeper_lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT NOT NULL,until_ms INTEGER NOT NULL);\nCREATE TABLE IF NOT EXISTS qgold_keeper_slots(day TEXT NOT NULL,slot INTEGER NOT NULL,plan TEXT NOT NULL CHECK(json_valid(plan)),created_at INTEGER NOT NULL,PRIMARY KEY(day,slot));\nCREATE TABLE IF NOT EXISTS qgold_keeper_ops(\n id TEXT PRIMARY KEY,day TEXT NOT NULL,slot INTEGER NOT NULL,position INTEGER NOT NULL,kind TEXT NOT NULL,\n identity TEXT NOT NULL,plan TEXT NOT NULL CHECK(json_valid(plan)),reserved_near TEXT NOT NULL,reserved_qgold TEXT NOT NULL,\n state TEXT NOT NULL CHECK(state IN ('pending','done')),run_after INTEGER NOT NULL,last_error TEXT,\n created_at INTEGER NOT NULL,completed_day TEXT,action_id INTEGER,UNIQUE(day,slot,kind));\nCREATE TABLE IF NOT EXISTS qgold_keeper_steps(\n op_id TEXT NOT NULL,step INTEGER NOT NULL,attempt INTEGER NOT NULL,identity TEXT NOT NULL,request TEXT NOT NULL CHECK(json_valid(request)),\n tx TEXT NOT NULL UNIQUE,signed_tx TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('prepared','succeeded','retry')),\n proof TEXT,outcome TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(op_id,step,attempt));\n",
+      "tables": {
+        "qgold_keeper_lease": "CREATE TABLE qgold_keeper_lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT NOT NULL,until_ms INTEGER NOT NULL)",
+        "qgold_keeper_ops": "CREATE TABLE qgold_keeper_ops(\n id TEXT PRIMARY KEY,day TEXT NOT NULL,slot INTEGER NOT NULL,position INTEGER NOT NULL,kind TEXT NOT NULL,\n identity TEXT NOT NULL,plan TEXT NOT NULL CHECK(json_valid(plan)),reserved_near TEXT NOT NULL,reserved_qgold TEXT NOT NULL,\n state TEXT NOT NULL CHECK(state IN ('pending','done')),run_after INTEGER NOT NULL,last_error TEXT,\n created_at INTEGER NOT NULL,completed_day TEXT,action_id INTEGER,UNIQUE(day,slot,kind))",
+        "qgold_keeper_slots": "CREATE TABLE qgold_keeper_slots(day TEXT NOT NULL,slot INTEGER NOT NULL,plan TEXT NOT NULL CHECK(json_valid(plan)),created_at INTEGER NOT NULL,PRIMARY KEY(day,slot))",
+        "qgold_keeper_steps": "CREATE TABLE qgold_keeper_steps(\n op_id TEXT NOT NULL,step INTEGER NOT NULL,attempt INTEGER NOT NULL,identity TEXT NOT NULL,request TEXT NOT NULL CHECK(json_valid(request)),\n tx TEXT NOT NULL UNIQUE,signed_tx TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('prepared','succeeded','retry')),\n proof TEXT,outcome TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(op_id,step,attempt))"
+      },
+      "indexes": {},
+      "fingerprint": "bbd79d77649782924f276d26b3a846a0b7b60e4d9443956903e7b7e39aaf151a",
+      "upgrades": []
+    },
+    {
       "name": "signed-market-orders",
       "version": 1,
       "source": "server/native/order-index.mjs",

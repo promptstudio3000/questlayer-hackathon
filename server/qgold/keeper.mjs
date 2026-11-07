@@ -12,21 +12,20 @@
 // All of it is off while the pool holds less than ~500 NEAR. Without
 // QGOLD_KEEPER_EXECUTE=1 and a keeper key it only records what it would do.
 import { randomBytes } from "node:crypto";
+import { keeperTransport } from "./keeper-transport.mjs";
+import { ensureKeeperJournal, withKeeperLease, pendingKeeperOperation, keeperLegacyBlocked,
+  reserveKeeperPlan, resumeKeeperOperations, keeperSums } from "./keeper-journal.mjs";
 import { registerModuleSchema, ensureModuleVersion } from "../schema-compatibility.mjs";
 import {
   POLICY,
-  QGOLD_ONE,
   askLadder,
   average24h,
   backingRate,
   buybackBudget,
-  depositQuote,
   keeperPlan,
   poolPrice,
   saleTimes,
   scheduleCommitment,
-  swapNearIn,
-  swapQgoldIn,
 } from "./market-math.mjs";
 
 export const QGOLD_KEEPER_SCHEMA = registerModuleSchema({
@@ -73,7 +72,6 @@ CREATE TABLE IF NOT EXISTS qgold_snapshots(
 const DAY_MS = 86_400_000;
 const SNAPSHOT_MS = 10 * 60_000;
 const MISSED_AFTER_MS = 30 * 60_000;
-const TGAS = 10n ** 12n;
 const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10);
 const big = (v) => {
   try {
@@ -82,9 +80,6 @@ const big = (v) => {
     return 0n;
   }
 };
-const hashOf = (r) => r?.transaction?.hash || r?.transaction_outcome?.id || null;
-const failed = (r) =>
-  Boolean(r?.status?.Failure) || (r?.receipts_outcome || []).some((o) => o.outcome?.status?.Failure);
 
 /**
  * The keeper executes when its key file exists (QGOLD_KEEPER_KEY_PATH, or
@@ -159,9 +154,10 @@ export class QgoldKeeper {
    * @param provider  NEAR provider (for the block random seed)
    * @param account   keeper near-api-js Account, or null (records only)
    */
-  constructor(db, { vault, rhea = null, poolId = null, wnear, provider, account = null, settings = keeperSettings(), clock = Date.now }) {
+  constructor(db, { vault, rhea = null, poolId = null, wnear, provider, account = null, settings = keeperSettings(), clock = Date.now, leaseClock = Date.now, transportFactory = keeperTransport }) {
     ensureModuleVersion(db, QGOLD_KEEPER_SCHEMA);
-    Object.assign(this, { db, vault, rhea, poolId, wnear, provider, account, settings, clock });
+    ensureKeeperJournal(db);
+    Object.assign(this, { db, vault, rhea, poolId, wnear, provider, account, settings, clock, leaseClock, transportFactory });
     this.running = false;
     this.lastError = null;
   }
@@ -202,8 +198,9 @@ export class QgoldKeeper {
   }
 
   /** Commit to today and tomorrow, fix seeds once a later block exists. */
-  async ensureSchedule(now = this.clock()) {
+  async ensureSchedule(now = this.clock(), guard = () => {}) {
     const block = await this.provider.viewBlock({ finality: "final" });
+    guard();
     const height = Number(block?.header?.height),
       random = block?.header?.random_value;
     for (const day of [dayOf(now), dayOf(now + DAY_MS)]) {
@@ -234,7 +231,7 @@ export class QgoldKeeper {
     if (!row?.times) return null;
     const times = JSON.parse(row.times);
     const done = new Set(
-      this.db.prepare("SELECT slot FROM qgold_keeper_actions WHERE day=?").all(day).map((r) => r.slot),
+      this.db.prepare("SELECT slot FROM qgold_keeper_actions WHERE day=? UNION SELECT slot FROM qgold_keeper_slots WHERE day=?").all(day, day).map((r) => r.slot),
     );
     let due = null;
     times.forEach((t, slot) => {
@@ -252,26 +249,16 @@ export class QgoldKeeper {
   }
 
   record({ day, slot, at, kind, state, qgold = null, near = null, reason = null, txHashes = null }) {
-    this.db
+    const row = this.db
       .prepare(
         "INSERT INTO qgold_keeper_actions(day,slot,at,kind,state,qgold,near,reason,tx_hashes) VALUES(?,?,?,?,?,?,?,?,?)",
       )
       .run(day, slot, at, kind, state, qgold, near, reason, txHashes ? JSON.stringify(txHashes) : null);
+    return Number(row.lastInsertRowid);
   }
 
   sums(day) {
-    const rows = this.db
-      .prepare("SELECT kind,qgold,near,state,day FROM qgold_keeper_actions WHERE state IN ('sent','simulated')")
-      .all();
-    let soldToday = 0n,
-      inverseToday = 0n,
-      buybackSpent = 0n;
-    for (const r of rows) {
-      if (r.kind === "sale" && r.day === day) soldToday += big(r.qgold);
-      if (r.kind === "inverse-buy-burn" && r.day === day) inverseToday += big(r.near);
-      if (r.kind === "buyback-burn") buybackSpent += big(r.near);
-    }
-    return { soldToday, inverseToday, buybackSpent };
+    return keeperSums(this.db, day);
   }
 
   avgPrice(now = this.clock()) {
@@ -285,47 +272,34 @@ export class QgoldKeeper {
     if (this.running || !this.settings.enabled) return null;
     this.running = true;
     try {
-      const read = await this.readState();
-      this.snapshot(read, now);
-      await this.ensureSchedule(now);
-      const due = this.dueSlot(now);
-      if (!due) return null;
-      const { state, pool } = read;
-      const sums = this.sums(due.day);
-      const plan = keeperPlan({
-        pool,
-        rate: state.rate,
-        supply: state.supply,
-        avgPrice24h: this.avgPrice(now),
-        soldToday: sums.soldToday,
-        inverseSpentToday: sums.inverseToday,
-        inverseBudget: await this.inverseBudget(),
-        buyback: buybackBudget({ feesTotal: state.fees, spent: sums.buybackSpent }),
-        saleDue: true,
-        policy: this.settings.policy,
-      });
-      if (!plan.active) {
-        this.record({ ...due, kind: "slot", state: "skipped", reason: plan.reason });
+      return await withKeeperLease(this.db, this.leaseClock, async (guard) => {
+        const executing = this.settings.execute && this.account;
+        // Resume before new market reads, schedule expiry or the next UTC day.
+        // Trading disabled means pause recovery too; it never erases a claim.
+        if (pendingKeeperOperation(this.db)) {
+          if (!executing) return { active: false, reason: "keeper-recovery-paused", actions: [] };
+          const transport = await this.transportFactory(this); guard();
+          await resumeKeeperOperations(this, transport, guard, now);
+          return { active: true, recovering: true, actions: [] };
+        }
+        if (executing && keeperLegacyBlocked(this.db)) throw Error("Legacy failed keeper actions require reconciliation before trading");
+        const read = await this.readState(); guard();
+        this.snapshot(read, now);
+        await this.ensureSchedule(now, guard); guard();
+        const due = this.dueSlot(now);
+        if (!due) return null;
+        const { state, pool } = read, sums = this.sums(due.day);
+        const budget = await this.inverseBudget(); guard();
+        const plan = keeperPlan({ pool, rate: state.rate, supply: state.supply, avgPrice24h: this.avgPrice(now),
+          soldToday: sums.soldToday, inverseSpentToday: sums.inverseToday, inverseBudget: budget,
+          buyback: buybackBudget({ feesTotal: state.fees, spent: sums.buybackSpent }), saleDue: true, policy: this.settings.policy });
+        const transport = executing && plan.active && plan.actions.some((a) => a.kind !== "sale-skipped")
+          ? await this.transportFactory(this) : null;
+        guard();
+        if (!reserveKeeperPlan(this, due, plan, read, transport?.identity, guard, now)) return null;
+        if (transport) await resumeKeeperOperations(this, transport, guard, now);
         return plan;
-      }
-      if (!plan.actions.length) this.record({ ...due, kind: "slot", state: "skipped", reason: "nothing-to-do" });
-      for (const a of plan.actions) {
-        if (a.kind === "sale-skipped") {
-          this.record({ ...due, kind: "sale", state: "skipped", reason: a.reason });
-          continue;
-        }
-        if (!this.settings.execute || !this.account) {
-          this.record({ ...due, kind: a.kind, state: "simulated", qgold: a.qgold ?? null, near: a.near ?? null, reason: a.reason });
-          continue;
-        }
-        try {
-          const out = await this.execute(a, { state, pool });
-          this.record({ ...due, kind: a.kind, state: "sent", qgold: out.qgold, near: out.near, reason: a.reason, txHashes: out.txHashes });
-        } catch (error) {
-          this.record({ ...due, kind: a.kind, state: "failed", qgold: a.qgold ?? null, near: a.near ?? null, reason: String(error?.message || error).slice(0, 300) });
-        }
-      }
-      return plan;
+      });
     } catch (error) {
       this.lastError = { at: now, message: String(error?.message || error).slice(0, 300) };
       return null;
@@ -347,53 +321,6 @@ export class QgoldKeeper {
     }
   }
 
-  async call(contractId, methodName, args, deposit = 0n, gas = 100n * TGAS) {
-    const r = await this.account.callFunctionRaw({ contractId, methodName, args, gas, deposit, waitUntil: "FINAL" });
-    if (failed(r)) throw Error(`${contractId}.${methodName} failed (${hashOf(r)})`);
-    return hashOf(r);
-  }
-
-  async qgoldBalance() {
-    return big(await this.vault.view("ft_balance_of", { account_id: this.account.accountId }, true));
-  }
-
-  /** Executes one planned action. Every step is a separate final transaction. */
-  async execute(action, { state, pool }) {
-    const rhea = this.rhea.contractId,
-      txHashes = [];
-    const swapMsg = (tokenIn, tokenOut, amountIn, minOut) =>
-      JSON.stringify({
-        force: 0,
-        actions: [{ pool_id: this.poolId, token_in: tokenIn, token_out: tokenOut, amount_in: amountIn.toString(), min_amount_out: minOut.toString() }],
-      });
-    if (action.kind === "sale") {
-      const qgold = big(action.qgold);
-      // Buy the QGOLD from the vault at R + 1 % (backed 1:R), then sell it into the pool.
-      const near = (qgold * state.rate * 10100n) / (QGOLD_ONE * 10000n) + 1n;
-      const minted = big(depositQuote(near, state.rate).qgold);
-      txHashes.push(await this.call(this.qgoldId, "deposit", { min_out: ((minted * 99n) / 100n).toString() }, near));
-      const amount = await this.qgoldBalance();
-      const sell = amount < qgold ? amount : qgold;
-      const minOut = (swapQgoldIn(pool, sell, pool.feeBps) * 98n) / 100n;
-      txHashes.push(
-        await this.call(this.qgoldId, "ft_transfer_call", { receiver_id: rhea, amount: sell.toString(), msg: swapMsg(this.qgoldId, this.wnear, sell, minOut) }, 1n, 150n * TGAS),
-      );
-      return { qgold: sell.toString(), near: near.toString(), txHashes };
-    }
-    // Buys (inverse and buyback): wrap NEAR, swap into QGOLD, burn what arrived.
-    const near = big(action.near);
-    const before = await this.qgoldBalance();
-    txHashes.push(await this.call(this.wnear, "near_deposit", {}, near, 30n * TGAS));
-    const minOut = (swapNearIn(pool, near, pool.feeBps) * 98n) / 100n;
-    txHashes.push(
-      await this.call(this.wnear, "ft_transfer_call", { receiver_id: rhea, amount: near.toString(), msg: swapMsg(this.wnear, this.qgoldId, near, minOut) }, 1n, 150n * TGAS),
-    );
-    const got = (await this.qgoldBalance()) - before;
-    if (got > 0n)
-      txHashes.push(await this.call(this.qgoldId, "ft_burn", { amount: got.toString(), memo: `qgold-keeper:${action.kind}` }, 1n, 30n * TGAS));
-    return { qgold: got.toString(), near: near.toString(), txHashes };
-  }
-
   /** Public view of the keeper: commitments, revealed past days, recent actions. */
   publicView(now = this.clock(), { rate, supply } = {}) {
     const today = dayOf(now);
@@ -401,14 +328,18 @@ export class QgoldKeeper {
     const actions = this.db
       .prepare("SELECT day,slot,at,kind,state,qgold,near,reason,tx_hashes FROM qgold_keeper_actions ORDER BY id DESC LIMIT 60")
       .all();
-    const sums = this.sums(today);
+    const sums = keeperSums(this.db, today, { reserve: false });
+    const reserved = this.sums(today);
+    const pending = this.db.prepare("SELECT day,slot,kind,last_error FROM qgold_keeper_ops WHERE state='pending' ORDER BY created_at,position LIMIT 60").all();
     return {
       execute: Boolean(this.settings.execute && this.account),
       minPoolNear: this.settings.policy.minPoolNear.toString(),
       lastError: this.lastError,
+      pending: pending.map((op) => ({ day: op.day, slot: op.slot, kind: op.kind, state: "pending" })),
+      budgetCommitted: { saleQgold: reserved.soldToday.toString(), inverseNear: reserved.inverseToday.toString(), buybackNear: reserved.buybackSpent.toString() },
       soldToday: sums.soldToday.toString(),
       buybackSpent: sums.buybackSpent.toString(),
-      ladder: rate != null ? askLadder({ rate, supply, soldToday: sums.soldToday, policy: this.settings.policy }) : [],
+      ladder: rate != null ? askLadder({ rate, supply, soldToday: reserved.soldToday, policy: this.settings.policy }) : [],
       schedule: days.map((d) => {
         const ended = d.day < today;
         const times = d.times ? JSON.parse(d.times) : null;
