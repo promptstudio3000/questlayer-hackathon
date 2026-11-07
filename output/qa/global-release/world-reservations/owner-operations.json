@@ -1,0 +1,115 @@
+{
+  "network": "testnet",
+  "owner": "questlayer-dev-20261101.testnet",
+  "rewards": "questlayer-rewards-20261101b.testnet",
+  "qgold": "questlayer-qgold-vault-20261104.testnet",
+  "transactions": [
+    {
+      "step": "propose-exact-qgold-upgrade",
+      "transactionHash": "JsRFAYdTj8NAfr2WD4pQZZ1meRgJ92uZXdCLb6AUr3o"
+    },
+    {
+      "step": "deploy-reviewed-rewards",
+      "transactionHash": "3kc5oS6HEyp5X3cxvuhZYDED1VR71mkLoevnPaioQBma"
+    },
+    {
+      "step": "extend-bounded-world-worker-methods",
+      "transactionHash": "7dKjY7HRy9ZBgEi1aFdn1RNTXAMua7UKvynpfdce3iGr"
+    },
+    {
+      "step": "propose-exact-qgold-upgrade",
+      "transactionHash": "GgXTWDQ3W6jFRD4HcQJo1EZernvQ9K1hFJ2My563ewGN"
+    },
+    {
+      "step": "retire-superseded-qgold-proposal",
+      "transactionHash": "3FUjjXLfY7VZDS8s1ggau1TBTFixnPBMEcfvReVQ3yhJ"
+    }
+  ],
+  "rewardsCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+  "rewardsWasmSha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+  "workerMethods": [
+    "publish_day",
+    "close_day",
+    "claim",
+    "maintain_vault",
+    "publish_map_day",
+    "claim_map",
+    "close_map_day",
+    "publish_payout_day",
+    "claim_payout",
+    "close_payout_day",
+    "reserve_world_day",
+    "record_world_earned",
+    "move_world_to_payout",
+    "close_world_day"
+  ],
+  "treasuryAfter": {
+    "coins": {
+      "available": "38001758993208555958515",
+      "reserved": "61999774504917567032664",
+      "awarded": "2002453628056800000"
+    },
+    "zones": {
+      "available": "70780661826860206987972",
+      "reserved": "29222874124893972803208",
+      "awarded": "0"
+    },
+    "funded": "200007071903508359582359",
+    "owed": "2002453628056800000",
+    "pending": "0",
+    "withdrawn": "0",
+    "policy": "50/50-v1"
+  },
+  "qgoldProposal": {
+    "id": 2,
+    "action": {
+      "Upgrade": {
+        "code_sha256": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f"
+      }
+    },
+    "proposer": "questlayer-dev-20261101.testnet",
+    "approvals": [
+      "questlayer-dev-20261101.testnet"
+    ],
+    "created_at": "1794072070054",
+    "executable_at": "1794244870054",
+    "done": false
+  },
+  "supersededQgoldProposal": {
+    "id": 1,
+    "codeSha256": "6932b7985cb90fec7220b374b4815f6f1dc67cbc600c66cc03d578a0b10629cd",
+    "state": "cancelled"
+  },
+  "at": "2026-11-07T17:21:33.374Z",
+  "plan": {
+    "rewardsFrom": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+    "rewardsTo": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+    "qgoldFrom": "6D81v7i3YJKVviJUqDADFpK8oBG9oZbzasyqfazS2hnu",
+    "qgoldTo": "F4p3S4cuvTScZXBWbqssNUxohgDN3rBGQq8gRS74jj4A",
+    "qgoldSha256": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f",
+    "workerMethods": [
+      "publish_day",
+      "close_day",
+      "claim",
+      "maintain_vault",
+      "publish_map_day",
+      "claim_map",
+      "close_map_day",
+      "publish_payout_day",
+      "claim_payout",
+      "close_payout_day",
+      "reserve_world_day",
+      "record_world_earned",
+      "move_world_to_payout",
+      "close_world_day"
+    ],
+    "workerAllowanceYocto": "280890509269139100000000",
+    "timelockMs": "172800000",
+    "proposalId": 2,
+    "additionalRewardsStorageYocto": "0",
+    "additionalQgoldStorageYocto": "223750000000000000000000",
+    "fundingBefore": "200007071903508359582359",
+    "qgoldBackingBefore": "5147624696869516754775589"
+  },
+  "state": "awaiting-qgold-timelock"
+}

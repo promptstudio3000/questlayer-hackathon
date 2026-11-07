@@ -1,0 +1,74 @@
+{
+  "network": "testnet",
+  "at": "2026-11-07T15:16:10.878480+00:00",
+  "rpc": "https://archival-rpc.testnet.near.org",
+  "discoverySource": "https://api-testnet.nearblocks.io/v3/accounts/questlayer-rewards-20261101b.testnet/receipts?method=fund_rewards",
+  "contractId": "questlayer-rewards-20261101b.testnet",
+  "fundingTransactions": [
+    {
+      "hash": "2hAcJpBfstwzYVt1ewpSP8zsg4S4UVYijGBvbr9QUMmQ",
+      "signerId": "questlayer-dev-20261101.testnet"
+    },
+    {
+      "hash": "Ai9HKsve62DNX4bxLJ6PHe1MAGUKChKQH4rbPWudUkGL",
+      "signerId": "questlayer-rewards-20261101b.testnet"
+    },
+    {
+      "hash": "GSjfp1xjeXkpj8o5tqxwXARxeTgDd3yRT2HZ7QPBAYJx",
+      "signerId": "questlayer-rewards-20261101b.testnet"
+    }
+  ],
+  "proofs": [
+    {
+      "id": "questlayer-dev-20261101.testnet:initial-pilot-questlayer-rewards-20261101b-testnet",
+      "source": "sponsor",
+      "amountYocto": "200000000000000000000000",
+      "finalized": true,
+      "blockHeight": 275730210,
+      "transactionHash": "2hAcJpBfstwzYVt1ewpSP8zsg4S4UVYijGBvbr9QUMmQ",
+      "receiptId": "AHBoL42TJr5mqqcGwN1d9u2Ld6FpQfnDtoiGLMqmiMLR",
+      "blockHash": "4yzPraPeiF7Wn1m6vZ3BQ1urkNUQYBtcf983nqfYDrZU"
+    },
+    {
+      "id": "questlayer-vault-20261101b.testnet:vault-1",
+      "source": "realized_yield",
+      "amountYocto": "3553917099106675321",
+      "finalized": true,
+      "blockHeight": 275923606,
+      "transactionHash": "Ai9HKsve62DNX4bxLJ6PHe1MAGUKChKQH4rbPWudUkGL",
+      "receiptId": "56Yr5Q9GsiX29jekgrSaJgtjq1rGwwazLxo718umKgmu",
+      "blockHash": "2GD4w3HRyYqhXEc8u59Lu1rPmZWGA2g92LC8uYRXRqRA"
+    },
+    {
+      "id": "questlayer-vault-20261101b.testnet:vault-2",
+      "source": "realized_yield",
+      "amountYocto": "3517986409252907038",
+      "finalized": true,
+      "blockHeight": 276136491,
+      "transactionHash": "GSjfp1xjeXkpj8o5tqxwXARxeTgDd3yRT2HZ7QPBAYJx",
+      "receiptId": "7Ef7WjyHBSHvVSnnJgcfqu623sioEP2GMv6yiHwesfzB",
+      "blockHash": "BF1mCCremAdEVQgKSKW2SksEhP8mG9DvUiy14dnokSUY"
+    }
+  ],
+  "treasury": {
+    "coins": {
+      "available": "38001758993208555958515",
+      "reserved": "61999774504917567032664",
+      "awarded": "2002453628056800000"
+    },
+    "zones": {
+      "available": "70780661826860206987972",
+      "reserved": "29222874124893972803208",
+      "awarded": "0"
+    },
+    "funded": "200007071903508359582359",
+    "owed": "2002453628056800000",
+    "pending": "0",
+    "withdrawn": "0",
+    "policy": "50/50-v1"
+  },
+  "treasuryBlockHash": "47awjKWbbzHvLYAwg3XF5c1ChdoxqydfAhQZKi11h5PW",
+  "treasuryBlockHeight": 276648636,
+  "receivedTotalYocto": "200007071903508359582359",
+  "reconciled": true
+}

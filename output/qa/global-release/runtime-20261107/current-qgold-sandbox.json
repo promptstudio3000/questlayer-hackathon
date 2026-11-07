@@ -1,0 +1,2691 @@
+{
+  "startedAt": "2026-11-07T17:18:42.598Z",
+  "scope": "local sandbox only",
+  "scenarios": [
+    {
+      "name": "withdrawal: real U128 callback clears credit; repeated withdrawal and receipt cannot pay twice",
+      "passed": true
+    },
+    {
+      "name": "withdrawal: actual mint failure restores credit, continued earning and retry pay exactly once",
+      "passed": true
+    },
+    {
+      "name": "nightly: SIGKILL after a ten-leaf mint, restart and direct replay cause exactly ten payments",
+      "passed": true
+    },
+    {
+      "name": "nightly: failed real mints restore both treasury buckets; restart retries without losing or duplicating rewards",
+      "passed": true
+    },
+    {
+      "name": "nightly: SIGKILL after durable intent but before submission is recovered by a new process",
+      "passed": true
+    },
+    {
+      "name": "nightly: restart recovers a published day whose transaction response was lost",
+      "passed": true
+    },
+    {
+      "name": "nightly: two actual worker processes submit the same unclaimed leaves concurrently; contract pays once",
+      "passed": true
+    },
+    {
+      "name": "nightly: a partly paid day reconciles the paid leaf and sends only the outstanding leaf",
+      "passed": true
+    },
+    {
+      "name": "nightly: unpaid rights survive four chain days; settlement then closes safely and retains replay protection",
+      "passed": true
+    },
+    {
+      "name": "world: pre-opening reservation, immutable replay, exact unused release, no second date charge, real mint failure/retry and durable account-bound NEAR carry",
+      "passed": true,
+      "day": "world-2026-11-21-v1",
+      "carryYocto": "18"
+    }
+  ],
+  "transactions": [
+    {
+      "source": "runner",
+      "method": "new",
+      "hash": "4PqU9NNemzZUdNzs9GvsNA89DwsMjVe2oFnAbMh6UFSw",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "1560947799459",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "new",
+      "hash": "3b4TSWPX75No2tHyifgdeeVw4smkW1eaBSER5xj9e3H8",
+      "receipts": [
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1543112205518",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "set_qgold_vault",
+      "hash": "237mniiSCsy95ybKg2s4PopZg9GYrZ23Rht6vuDbZVeM",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "1835918986297",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"qgold_vault_set\",\"data\":[{\"account_id\":\"qgold.testnet\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "fund_rewards",
+      "hash": "4Y69RLExPunZY1WsMrzZM8s2zXKsCKxV1Y3FDCuneXup",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2148112441395",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"funded\",\"data\":[{\"source\":\"sponsor\",\"sender\":\"owner.testnet\",\"receipt_id\":\"sandbox-funding\",\"amount\":\"10000000000000000000000000\",\"storage_fee\":\"5000000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "publish_day",
+      "hash": "Ag4rM2rKQ3dr2H8gfCyYJFvMCoq1pwri9XQYQzxCTc7k",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2669885101992",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"day_published\",\"data\":[{\"day_id\":\"plzen-2026-11-06-v1\",\"coins\":\"40000000000000000000\",\"zones\":\"0\",\"finds\":0}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "claim",
+      "hash": "GCSHMCSfqFHuzBBrLSYmBuHGZ9NpgBpc56UtWCUW1s64",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "3271395973399",
+          "status": {
+            "SuccessValue": "eyJyZWNlaXZlcl9pZCI6IndpdGhkcmF3YWwudGVzdG5ldCIsImFtb3VudCI6IjEwMDAwMDAwMDAwMDAwMDAwMDAwIiwieHAiOjIsIm1lc3NhZ2VfaGFzaCI6IjgwYWFkYWZkOWIyZGIxYTE1YWIxNmI3NTZjZWY1ZmQxNjg5Mjg1Njg1MTg2NGU0MGZkNDJjMGJlY2ZlNWRhZmUifQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"claim\",\"data\":[{\"receipt_id\":\"sandbox-coin-0\",\"receiver_id\":\"withdrawal.testnet\",\"amount\":\"10000000000000000000\",\"xp\":2}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "withdraw",
+      "hash": "HbaWRMbaejw5Zvex3Vqz4bEFuaFc62dt6TTi6rucoWrr",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2623550031142",
+          "status": {
+            "SuccessReceiptId": "EwnNEqcH3Z2F4oGs36YvvFyKZjjgGGa5aV2wktCqY3Xk"
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2091418519184",
+          "status": {
+            "SuccessValue": "IjEwMDAwIg=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"withdrawal.testnet\",\"amount\":\"10000\",\"memo\":\"rewards claim\"}]}"
+          ]
+        },
+        {
+          "executor": "withdrawal.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "1814137911524",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": []
+        },
+        {
+          "executor": "withdrawal.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "withdrawal.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "claim",
+      "hash": "8Z7eMJEMYan3HgKwLk3h1ZExHjF6M74oxVcCAqEDWtau",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2033015097398",
+          "status": {
+            "SuccessValue": "eyJyZWNlaXZlcl9pZCI6IndpdGhkcmF3YWwudGVzdG5ldCIsImFtb3VudCI6IjEwMDAwMDAwMDAwMDAwMDAwMDAwIiwieHAiOjIsIm1lc3NhZ2VfaGFzaCI6IjgwYWFkYWZkOWIyZGIxYTE1YWIxNmI3NTZjZWY1ZmQxNjg5Mjg1Njg1MTg2NGU0MGZkNDJjMGJlY2ZlNWRhZmUifQ=="
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "claim",
+      "hash": "HeNtRspATqXXiAc3QPYJhVdR3qayCiJmV3xHqyFFUPED",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "3334335516951",
+          "status": {
+            "SuccessValue": "eyJyZWNlaXZlcl9pZCI6IndpdGhkcmF3YWwudGVzdG5ldCIsImFtb3VudCI6IjEwMDAwMDAwMDAwMDAwMDAwMDAwIiwieHAiOjIsIm1lc3NhZ2VfaGFzaCI6IjU2OTAyMGNjZWVlOTE3NTI0OTg2ODU1ZmNiMDhlMTc3NmMwNjMyMmFjZTI1OWI1OTZiZjJiYWJiMzJmYjAxYzIifQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"claim\",\"data\":[{\"receipt_id\":\"sandbox-coin-1\",\"receiver_id\":\"withdrawal.testnet\",\"amount\":\"10000000000000000000\",\"xp\":2}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "pause",
+      "hash": "CmLX19idpdANW5XH3kSxgFBCRbZn7BtMZNAeiTgaurrW",
+      "receipts": [
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1675579944903",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_qgold\",\"version\":\"1.0.0\",\"event\":\"paused\",\"data\":[{\"by\":\"owner.testnet\",\"until\":\"1794331132790\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "withdraw",
+      "hash": "39yYsPU9MCutrwZ5q1rmj9u4pWGJs9KjQ1jvAd9vr2Nm",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2623550031142",
+          "status": {
+            "SuccessReceiptId": "3iwHR7Eod5FEZZ8ankFSR3W78xGQzbZ8ncYAdieVvnrK"
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1438787444339",
+          "status": {
+            "Failure": {
+              "ActionError": {
+                "index": 0,
+                "kind": {
+                  "FunctionCallError": {
+                    "ExecutionError": "WebAssembly trap: An `unreachable` opcode was executed."
+                  }
+                }
+              }
+            }
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "withdrawal.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "1810937374220",
+          "status": {
+            "SuccessValue": "ZmFsc2U="
+          },
+          "logs": []
+        },
+        {
+          "executor": "withdrawal.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "withdrawal.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "claim",
+      "hash": "CvFMtdgWRCnMWhM9QToih9R55ZqambmtaXtoR9X9cxXN",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "3336554633007",
+          "status": {
+            "SuccessValue": "eyJyZWNlaXZlcl9pZCI6IndpdGhkcmF3YWwudGVzdG5ldCIsImFtb3VudCI6IjEwMDAwMDAwMDAwMDAwMDAwMDAwIiwieHAiOjIsIm1lc3NhZ2VfaGFzaCI6IjE2OWM1YWM4MzEyMDVkNGY0ZDU3OTE2ZGY3YWRmMDUxOWEwOWU2ZDAwMDU1NTRiMGQ5ZjdiYzEwM2Q3NTgwNmUifQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"claim\",\"data\":[{\"receipt_id\":\"sandbox-coin-2\",\"receiver_id\":\"withdrawal.testnet\",\"amount\":\"10000000000000000000\",\"xp\":2}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "unpause",
+      "hash": "6dvLRPFAuExDk3oHTLGCQc6LTPv6CSQKBfTVvYVdZwmh",
+      "receipts": [
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1659764410214",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_qgold\",\"version\":\"1.0.0\",\"event\":\"unpaused\",\"data\":[{\"by\":\"owner.testnet\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "withdraw",
+      "hash": "7KiKe8SwjibgVSj7z9iU4NHcF9DnsCZq7cEHyLG7sUtF",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2623550031142",
+          "status": {
+            "SuccessReceiptId": "8cVAFeszWek858GcT3tUjVmxXyCswCMY73fYeaaV4wTP"
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2035626678360",
+          "status": {
+            "SuccessValue": "IjIwMDAwIg=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"withdrawal.testnet\",\"amount\":\"20000\",\"memo\":\"rewards claim\"}]}"
+          ]
+        },
+        {
+          "executor": "withdrawal.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "1814137911524",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": []
+        },
+        {
+          "executor": "withdrawal.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "withdrawal.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "publish_payout_day",
+      "hash": "EvjeJU7xPFFJxw92Hj6wyFjqCkoLLxMJeGYLVHQ7otcA",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2488289112770",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_day_published\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"root\":\"53044725596be24add787eeeae4b3e6d827729e93ed30a8745632e82ff723ab3\",\"leaves\":10,\"coins\":\"55000000000000000000\",\"zones\":\"0\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "claim_payout",
+      "indexes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "hash": "EMxCmAsJvVr8Hb8LWipbb2jmdj7NaFUkMUePDgjjYGat",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "15047319302415",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZSx0cnVlLHRydWUsdHJ1ZSx0cnVlLHRydWUsdHJ1ZSx0cnVlLHRydWVd"
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2105435372033",
+          "status": {
+            "SuccessValue": "IjEwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player0.testnet\",\"amount\":\"1000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2303097203248",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":0,\"account_id\":\"player0.testnet\",\"amount\":\"1000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2087195372033",
+          "status": {
+            "SuccessValue": "IjIwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player1.testnet\",\"amount\":\"2000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":1,\"account_id\":\"player1.testnet\",\"amount\":\"2000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2087195372033",
+          "status": {
+            "SuccessValue": "IjMwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player2.testnet\",\"amount\":\"3000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":2,\"account_id\":\"player2.testnet\",\"amount\":\"3000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2087195372033",
+          "status": {
+            "SuccessValue": "IjQwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player3.testnet\",\"amount\":\"4000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":3,\"account_id\":\"player3.testnet\",\"amount\":\"4000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2087195372033",
+          "status": {
+            "SuccessValue": "IjUwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player4.testnet\",\"amount\":\"5000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":4,\"account_id\":\"player4.testnet\",\"amount\":\"5000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2087195372033",
+          "status": {
+            "SuccessValue": "IjYwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player5.testnet\",\"amount\":\"6000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":5,\"account_id\":\"player5.testnet\",\"amount\":\"6000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2087195372033",
+          "status": {
+            "SuccessValue": "IjcwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player6.testnet\",\"amount\":\"7000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":6,\"account_id\":\"player6.testnet\",\"amount\":\"7000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2087195372033",
+          "status": {
+            "SuccessValue": "IjgwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player7.testnet\",\"amount\":\"8000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":7,\"account_id\":\"player7.testnet\",\"amount\":\"8000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2087195372033",
+          "status": {
+            "SuccessValue": "IjkwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player8.testnet\",\"amount\":\"9000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":8,\"account_id\":\"player8.testnet\",\"amount\":\"9000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2087696063095",
+          "status": {
+            "SuccessValue": "IjEwMDAwIg=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player9.testnet\",\"amount\":\"10000\",\"memo\":\"daily payout payout-2026-11-05-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246902941833",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-05-v1\",\"index\":9,\"account_id\":\"player9.testnet\",\"amount\":\"10000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "claim_payout",
+      "hash": "D6DdhLHFHvf4jo9QuHaTkPWJV3NiFAMufw5pxxmH7U7h",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "5120584103506",
+          "status": {
+            "SuccessValue": "W2ZhbHNlLGZhbHNlLGZhbHNlLGZhbHNlLGZhbHNlLGZhbHNlLGZhbHNlLGZhbHNlLGZhbHNlLGZhbHNlXQ=="
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "pause",
+      "hash": "E6bYQ1Wi16VSzzASkxD1dWQtidriWPwGhsjYsvg4raZv",
+      "receipts": [
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1675579944903",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_qgold\",\"version\":\"1.0.0\",\"event\":\"paused\",\"data\":[{\"by\":\"owner.testnet\",\"until\":\"1794331140216\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "publish_payout_day",
+      "hash": "JAsBTz8zciQCVqviESWEaZarwBQE3xBZuNSPY1ccWQYD",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2522119355922",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_day_published\",\"data\":[{\"day_id\":\"payout-2026-11-04-v1\",\"root\":\"f74fea2a1a9eed989ac06bdc7998989b03ca2ce3c6bd456a92ea6e038d614968\",\"leaves\":2,\"coins\":\"1500000000000000000\",\"zones\":\"1500000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "claim_payout",
+      "indexes": [
+        0,
+        1
+      ],
+      "hash": "6QoYvC8wckCjK4gMEUnu6cwtizHsFnd8U4P912kz5cW5",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "4559142035879",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZV0="
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1438817487487",
+          "status": {
+            "Failure": {
+              "ActionError": {
+                "index": 0,
+                "kind": {
+                  "FunctionCallError": {
+                    "ExecutionError": "WebAssembly trap: An `unreachable` opcode was executed."
+                  }
+                }
+              }
+            }
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2471004361612",
+          "status": {
+            "SuccessValue": "ZmFsc2U="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_failed\",\"data\":[{\"day_id\":\"payout-2026-11-04-v1\",\"index\":0,\"account_id\":\"player0.testnet\",\"amount\":\"1000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1438817487487",
+          "status": {
+            "Failure": {
+              "ActionError": {
+                "index": 0,
+                "kind": {
+                  "FunctionCallError": {
+                    "ExecutionError": "WebAssembly trap: An `unreachable` opcode was executed."
+                  }
+                }
+              }
+            }
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2339173552152",
+          "status": {
+            "SuccessValue": "ZmFsc2U="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_failed\",\"data\":[{\"day_id\":\"payout-2026-11-04-v1\",\"index\":1,\"account_id\":\"player1.testnet\",\"amount\":\"2000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "unpause",
+      "hash": "AWSQuiUuyDGb3nvSpyiseZTw1baEPa5vCCq9CJqdMfXD",
+      "receipts": [
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1659764410214",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_qgold\",\"version\":\"1.0.0\",\"event\":\"unpaused\",\"data\":[{\"by\":\"owner.testnet\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "claim_payout",
+      "indexes": [
+        0,
+        1
+      ],
+      "hash": "DLp6WkrFNt5LTHGiqFTi867bPBsRyUd8GLM9rF5rEwWB",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "4588805987429",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZV0="
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2051565374949",
+          "status": {
+            "SuccessValue": "IjEwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player0.testnet\",\"amount\":\"1000\",\"memo\":\"daily payout payout-2026-11-04-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2312217203248",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-04-v1\",\"index\":0,\"account_id\":\"player0.testnet\",\"amount\":\"1000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2033325374949",
+          "status": {
+            "SuccessValue": "IjIwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player1.testnet\",\"amount\":\"2000\",\"memo\":\"daily payout payout-2026-11-04-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2248828445970",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-04-v1\",\"index\":1,\"account_id\":\"player1.testnet\",\"amount\":\"2000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "publish_payout_day",
+      "hash": "7vW4bWNDCcuyXnD6fbRhisbSvMZzwJH7LvRQfdF4XdQ7",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2519274947040",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_day_published\",\"data\":[{\"day_id\":\"payout-2026-11-03-v1\",\"root\":\"a901c7e1b27389dc850d561299b00cc76a7405e5269c3c49a0fca0a1426e786d\",\"leaves\":2,\"coins\":\"3000000000000000000\",\"zones\":\"0\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "claim_payout",
+      "indexes": [
+        0,
+        1
+      ],
+      "hash": "AEPPm89BvCq2aFj9Ec7MerA56xVhZk88aqdbsFH7Qg1W",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "4559170363668",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZV0="
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2051565374949",
+          "status": {
+            "SuccessValue": "IjEwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player0.testnet\",\"amount\":\"1000\",\"memo\":\"daily payout payout-2026-11-03-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2314497203248",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-03-v1\",\"index\":0,\"account_id\":\"player0.testnet\",\"amount\":\"1000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2033325374949",
+          "status": {
+            "SuccessValue": "IjIwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player1.testnet\",\"amount\":\"2000\",\"memo\":\"daily payout payout-2026-11-03-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-03-v1\",\"index\":1,\"account_id\":\"player1.testnet\",\"amount\":\"2000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "publish_payout_day",
+      "hash": "4B7QRjpV69ipytaLiotDPh5Wf4KrTmHMgtUdUwjm5tLS",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2519274947040",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_day_published\",\"data\":[{\"day_id\":\"payout-2026-11-02-v1\",\"root\":\"7e567e8903b11decec6bce8e9068c70a9d1bde9f7907cc53036ff1b2cb84cd47\",\"leaves\":2,\"coins\":\"3000000000000000000\",\"zones\":\"0\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "claim_payout",
+      "indexes": [
+        0,
+        1
+      ],
+      "hash": "HcC7V9Ub5VnkTiKv6trmr8f5C8nCsjnp1WmT8y8unDWR",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "4558987711836",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZV0="
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2051565374949",
+          "status": {
+            "SuccessValue": "IjEwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player0.testnet\",\"amount\":\"1000\",\"memo\":\"daily payout payout-2026-11-02-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2314497203248",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-02-v1\",\"index\":0,\"account_id\":\"player0.testnet\",\"amount\":\"1000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2033325374949",
+          "status": {
+            "SuccessValue": "IjIwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player1.testnet\",\"amount\":\"2000\",\"memo\":\"daily payout payout-2026-11-02-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-02-v1\",\"index\":1,\"account_id\":\"player1.testnet\",\"amount\":\"2000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "publish_payout_day",
+      "hash": "4ophs48UKTSyCaSiooXYzXwis7K97XcDcCHz4QgdRExX",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2519274947040",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_day_published\",\"data\":[{\"day_id\":\"payout-2026-11-01-v1\",\"root\":\"d1581ee25782f96af376e69cb1bc0e43fa147cc2d976096067f39c3028e86dbf\",\"leaves\":2,\"coins\":\"3000000000000000000\",\"zones\":\"0\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "claim_payout",
+      "indexes": [
+        0,
+        1
+      ],
+      "hash": "4TyuyMjr8tfKKF1cxwDCCkQdKisvdQ8ozqYSCw3x8Vzu",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "4558865943948",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZV0="
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2051565374949",
+          "status": {
+            "SuccessValue": "IjEwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player0.testnet\",\"amount\":\"1000\",\"memo\":\"daily payout payout-2026-11-01-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2314497203248",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-01-v1\",\"index\":0,\"account_id\":\"player0.testnet\",\"amount\":\"1000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2033325374949",
+          "status": {
+            "SuccessValue": "IjIwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player1.testnet\",\"amount\":\"2000\",\"memo\":\"daily payout payout-2026-11-01-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-01-v1\",\"index\":1,\"account_id\":\"player1.testnet\",\"amount\":\"2000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "claim_payout",
+      "indexes": [
+        0,
+        1
+      ],
+      "hash": "4TyuyMjr8tfKKF1cxwDCCkQdKisvdQ8ozqYSCw3x8Vzu",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "4558865943948",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZV0="
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2051565374949",
+          "status": {
+            "SuccessValue": "IjEwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player0.testnet\",\"amount\":\"1000\",\"memo\":\"daily payout payout-2026-11-01-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2314497203248",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-01-v1\",\"index\":0,\"account_id\":\"player0.testnet\",\"amount\":\"1000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2033325374949",
+          "status": {
+            "SuccessValue": "IjIwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player1.testnet\",\"amount\":\"2000\",\"memo\":\"daily payout payout-2026-11-01-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-11-01-v1\",\"index\":1,\"account_id\":\"player1.testnet\",\"amount\":\"2000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "publish_payout_day",
+      "hash": "3mDTW8Co1Ks7MrMJV1DQkcvwHp3rVfxBmDAe6quabVw9",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2510154947040",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_day_published\",\"data\":[{\"day_id\":\"payout-2026-10-31-v1\",\"root\":\"c3c9a42f4355b650ecbc08808fad6ea89bbdfe5b0c2499a3434c94c47c5b5d44\",\"leaves\":2,\"coins\":\"3000000000000000000\",\"zones\":\"0\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "claim_payout",
+      "hash": "2pJaRzMshYgXNJVhq6gE31rW1u7WkRBs4JG5wsdx7ByK",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "3336380751407",
+          "status": {
+            "SuccessValue": "W3RydWVd"
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2051565374949",
+          "status": {
+            "SuccessValue": "IjEwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player0.testnet\",\"amount\":\"1000\",\"memo\":\"daily payout payout-2026-10-31-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2312217203248",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-10-31-v1\",\"index\":0,\"account_id\":\"player0.testnet\",\"amount\":\"1000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "claim_payout",
+      "indexes": [
+        1
+      ],
+      "hash": "7dn2ha8jzHjG9HSFRk44jr4Lsqkcwrk8yVvDprMpgfj9",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "3365737814969",
+          "status": {
+            "SuccessValue": "W3RydWVd"
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2051565374949",
+          "status": {
+            "SuccessValue": "IjIwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player1.testnet\",\"amount\":\"2000\",\"memo\":\"daily payout payout-2026-10-31-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2342079438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-10-31-v1\",\"index\":1,\"account_id\":\"player1.testnet\",\"amount\":\"2000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "publish_payout_day",
+      "hash": "6MaZgNKUmbMwt8n2H5fikaDD8EdqzDrcGzXiSn7iU3kK",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2528394947040",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_day_published\",\"data\":[{\"day_id\":\"payout-2026-10-30-v1\",\"root\":\"8b5a327e16cf28c56faf99979dcc1fabd5a998070a0662a52fecfb7b9372bc8d\",\"leaves\":2,\"coins\":\"3000000000000000000\",\"zones\":\"0\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "claim_payout",
+      "indexes": [
+        0,
+        1
+      ],
+      "hash": "5vd24MCeerQ91widoNHiMsrd9JHEtmzc9tLkFuL1Z4qK",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "4570326827892",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZV0="
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2051565374949",
+          "status": {
+            "SuccessValue": "IjEwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player0.testnet\",\"amount\":\"1000\",\"memo\":\"daily payout payout-2026-10-30-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2321337203248",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-10-30-v1\",\"index\":0,\"account_id\":\"player0.testnet\",\"amount\":\"1000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2033325374949",
+          "status": {
+            "SuccessValue": "IjIwMDAi"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player1.testnet\",\"amount\":\"2000\",\"memo\":\"daily payout payout-2026-10-30-v1\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2246319438994",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-2026-10-30-v1\",\"index\":1,\"account_id\":\"player1.testnet\",\"amount\":\"2000000000000000000\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "worker",
+      "type": "transaction",
+      "method": "close_payout_day",
+      "hash": "CLMnjEXRAzLVqQpBwvQFzDN6bdfbNwL46DH6k5C9PQwy",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2131360067897",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_day_closed\",\"data\":[{\"day_id\":\"payout-2026-10-30-v1\",\"returned\":\"0\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "reserve_world_day",
+      "hash": "6DPnL4iVatn7GXo7c1TrbbbR4hTZsqgqNoEWHXAaJCGG",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2546267209471",
+          "status": {
+            "SuccessValue": "eyJtYW5pZmVzdF9oYXNoIjoiZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZCIsInN0YXJ0c19hdCI6IjE3OTUyMTkyMDAwMDAiLCJlbmRzX2F0IjoiMTc5NTMwNTYwMDAwMCIsImNvaW5zX3Jlc2VydmVkIjoiMCIsInpvbmVzX3Jlc2VydmVkIjoiMzAwMDAwMDAwMDAwMDAwMzEiLCJjb2luc19lYXJuZWQiOiIwIiwiem9uZXNfZWFybmVkIjoiMCIsImNvaW5zX21vdmVkIjoiMCIsInpvbmVzX21vdmVkIjoiMCIsImNsb3NlZCI6ZmFsc2V9"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"world_day_reserved\",\"data\":[{\"day_id\":\"world-2026-11-21-v1\",\"manifest_hash\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"coins\":\"0\",\"zones\":\"30000000000000031\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "reserve_world_day",
+      "hash": "13NAs2ydk2U4uaA4z25ukx5v9PbvaYAtQmhD1kbzqcq4",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "1867206313004",
+          "status": {
+            "SuccessValue": "eyJtYW5pZmVzdF9oYXNoIjoiZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZCIsInN0YXJ0c19hdCI6IjE3OTUyMTkyMDAwMDAiLCJlbmRzX2F0IjoiMTc5NTMwNTYwMDAwMCIsImNvaW5zX3Jlc2VydmVkIjoiMCIsInpvbmVzX3Jlc2VydmVkIjoiMzAwMDAwMDAwMDAwMDAwMzEiLCJjb2luc19lYXJuZWQiOiIwIiwiem9uZXNfZWFybmVkIjoiMCIsImNvaW5zX21vdmVkIjoiMCIsInpvbmVzX21vdmVkIjoiMCIsImNsb3NlZCI6ZmFsc2V9"
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "record_world_earned",
+      "hash": "7JRafNJHRRS7fs4GtChxci3SzqX96w6GsEqCHuLXvxJA",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "1817853223753",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "close_world_day",
+      "hash": "4TuTPdJzkzLSbyXaxq3gQZ4wjuTUGfTdqhMgLrNhVEXx",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2100707273913",
+          "status": {
+            "SuccessValue": "eyJtYW5pZmVzdF9oYXNoIjoiZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZCIsInN0YXJ0c19hdCI6IjE3OTUyMTkyMDAwMDAiLCJlbmRzX2F0IjoiMTc5NTMwNTYwMDAwMCIsImNvaW5zX3Jlc2VydmVkIjoiMCIsInpvbmVzX3Jlc2VydmVkIjoiMzAwMDAwMDAwMDAwMDAwMzEiLCJjb2luc19lYXJuZWQiOiIwIiwiem9uZXNfZWFybmVkIjoiMzAwMDAwMDAwMDAwMDAwMTgiLCJjb2luc19tb3ZlZCI6IjAiLCJ6b25lc19tb3ZlZCI6IjAiLCJjbG9zZWQiOnRydWV9"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"world_day_closed\",\"data\":[{\"day_id\":\"world-2026-11-21-v1\",\"coins_released\":\"0\",\"zones_released\":\"13\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "move_world_to_payout",
+      "hash": "AYLTiouxKhdH8TX1Xc48VUoSVyhP7wJ1bBLEbi76QYU3",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2541463986113",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_day_published\",\"data\":[{\"day_id\":\"payout-world-2026-11-21-v1\",\"root\":\"bd7f2b662abf95ec329ace7b96d90883db7a2478775e05bc6bf5ab10ca63f25f\",\"leaves\":2,\"coins\":\"0\",\"zones\":\"30000000000000018\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "move_world_to_payout",
+      "hash": "GGpeHVAjuNXJ85AXxdJekE8zvNX9cpHHW44DXAaZSGiC",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "1782854044886",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "pause",
+      "hash": "AaFvrZMH9X3uX4fLqcfrMjaHFQNwGZWA3vk8LpwauXSA",
+      "receipts": [
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1675579944903",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_qgold\",\"version\":\"1.0.0\",\"event\":\"paused\",\"data\":[{\"by\":\"owner.testnet\",\"until\":\"1796206064837\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "claim_payout",
+      "hash": "EHx2rrc5L7L3zWwsvx42vxDB8mXa5EzyEXA35HVyVvCg",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "4617625026420",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZV0="
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1438951660409",
+          "status": {
+            "Failure": {
+              "ActionError": {
+                "index": 0,
+                "kind": {
+                  "FunctionCallError": {
+                    "ExecutionError": "WebAssembly trap: An `unreachable` opcode was executed."
+                  }
+                }
+              }
+            }
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2474188235216",
+          "status": {
+            "SuccessValue": "ZmFsc2U="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_failed\",\"data\":[{\"day_id\":\"payout-world-2026-11-21-v1\",\"index\":0,\"account_id\":\"player8.testnet\",\"amount\":\"10000000000000007\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1438951660409",
+          "status": {
+            "Failure": {
+              "ActionError": {
+                "index": 0,
+                "kind": {
+                  "FunctionCallError": {
+                    "ExecutionError": "WebAssembly trap: An `unreachable` opcode was executed."
+                  }
+                }
+              }
+            }
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2339686335848",
+          "status": {
+            "SuccessValue": "ZmFsc2U="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_failed\",\"data\":[{\"day_id\":\"payout-world-2026-11-21-v1\",\"index\":1,\"account_id\":\"player9.testnet\",\"amount\":\"20000000000000011\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "unpause",
+      "hash": "E1KYDbZgtzh1WY5JDaFdPX9yiAwTRDrY73gqds9KaAVM",
+      "receipts": [
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "1659764410214",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_qgold\",\"version\":\"1.0.0\",\"event\":\"unpaused\",\"data\":[{\"by\":\"owner.testnet\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "claim_payout",
+      "hash": "FdToG4DbnKpz7B47nPj2dupmTVsEtraV8mBHSokA5Leb",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "4647023227782",
+          "status": {
+            "SuccessValue": "W3RydWUsdHJ1ZV0="
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2785191005282",
+          "status": {
+            "SuccessValue": "eyJtaW50ZXIiOiJyZXdhcmRzLnRlc3RuZXQiLCJhY2NvdW50X2lkIjoicGxheWVyOC50ZXN0bmV0IiwiZGVwb3NpdGVkWW9jdG8iOiIxMDAwMDAwMDAwMDAwMDAwNyIsInByZXZpb3VzQ2FycnlZb2N0byI6IjAiLCJjb25zdW1lZFlvY3RvIjoiMTAwMDAwMDAwMDAwMDAwMDAiLCJjYXJyeVlvY3RvIjoiNyIsInFnb2xkVSI6IjEwIn0="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player8.testnet\",\"amount\":\"10\",\"memo\":\"world payout payout-world-2026-11-21-v1:0\"}]}",
+            "EVENT_JSON:{\"standard\":\"questlayer_qgold\",\"version\":\"1.0.0\",\"event\":\"game_earning_converted\",\"data\":[{\"minter\":\"rewards.testnet\",\"account_id\":\"player8.testnet\",\"depositedYocto\":\"10000000000000007\",\"previousCarryYocto\":\"0\",\"consumedYocto\":\"10000000000000000\",\"carryYocto\":\"7\",\"qgoldU\":\"10\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2314784238404",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-world-2026-11-21-v1\",\"index\":0,\"account_id\":\"player8.testnet\",\"amount\":\"10000000000000007\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "qgold.testnet",
+          "gasBurnt": "2766976337289",
+          "status": {
+            "SuccessValue": "eyJtaW50ZXIiOiJyZXdhcmRzLnRlc3RuZXQiLCJhY2NvdW50X2lkIjoicGxheWVyOS50ZXN0bmV0IiwiZGVwb3NpdGVkWW9jdG8iOiIyMDAwMDAwMDAwMDAwMDAxMSIsInByZXZpb3VzQ2FycnlZb2N0byI6IjAiLCJjb25zdW1lZFlvY3RvIjoiMjAwMDAwMDAwMDAwMDAwMDAiLCJjYXJyeVlvY3RvIjoiMTEiLCJxZ29sZFUiOiIyMCJ9"
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"player9.testnet\",\"amount\":\"20\",\"memo\":\"world payout payout-world-2026-11-21-v1:1\"}]}",
+            "EVENT_JSON:{\"standard\":\"questlayer_qgold\",\"version\":\"1.0.0\",\"event\":\"game_earning_converted\",\"data\":[{\"minter\":\"rewards.testnet\",\"account_id\":\"player9.testnet\",\"depositedYocto\":\"20000000000000011\",\"previousCarryYocto\":\"0\",\"consumedYocto\":\"20000000000000000\",\"carryYocto\":\"11\",\"qgoldU\":\"20\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2248434781106",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"questlayer_rewards\",\"version\":\"1.0.0\",\"event\":\"payout_paid\",\"data\":[{\"day_id\":\"payout-world-2026-11-21-v1\",\"index\":1,\"account_id\":\"player9.testnet\",\"amount\":\"20000000000000011\"}]}"
+          ]
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    },
+    {
+      "source": "runner",
+      "method": "claim_payout",
+      "hash": "F1JYjFXLufdrjd7ryNQuK9LPj61EiebvPGaRku1vXczA",
+      "receipts": [
+        {
+          "executor": "rewards.testnet",
+          "gasBurnt": "2555335039482",
+          "status": {
+            "SuccessValue": "W2ZhbHNlLGZhbHNlXQ=="
+          },
+          "logs": []
+        },
+        {
+          "executor": "owner.testnet",
+          "gasBurnt": "223182562500",
+          "status": {
+            "SuccessValue": ""
+          },
+          "logs": []
+        }
+      ]
+    }
+  ],
+  "workerRuns": [
+    {
+      "pid": 79184,
+      "stopped": "stopped-after-send",
+      "stopAfter": "claim_payout",
+      "code": null,
+      "signal": "SIGKILL"
+    },
+    {
+      "pid": 79185,
+      "stopped": null,
+      "clockOffset": 180000,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79188,
+      "stopped": "stopped-after-send",
+      "stopAfter": "claim_payout",
+      "code": null,
+      "signal": "SIGKILL"
+    },
+    {
+      "pid": 79190,
+      "stopped": null,
+      "clockOffset": 180000,
+      "now": 1794072943392,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79194,
+      "stopped": null,
+      "clockOffset": 180000,
+      "now": 1794073004548,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79195,
+      "stopped": "stopped-before-send",
+      "stopBefore": "claim_payout",
+      "code": null,
+      "signal": "SIGKILL"
+    },
+    {
+      "pid": 79196,
+      "stopped": null,
+      "clockOffset": 180000,
+      "now": 1794072945688,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79197,
+      "stopped": null,
+      "clockOffset": 180000,
+      "now": 1794073006951,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79198,
+      "stopped": "stopped-after-send",
+      "stopAfter": "publish_payout_day",
+      "code": null,
+      "signal": "SIGKILL"
+    },
+    {
+      "pid": 79199,
+      "stopped": null,
+      "clockOffset": 180000,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79200,
+      "stopped": null,
+      "clockOffset": 180000,
+      "now": 1794072009256,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79201,
+      "stopped": null,
+      "barrierGroup": "two-outboxes",
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79202,
+      "stopped": null,
+      "barrierGroup": "two-outboxes",
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79203,
+      "stopped": null,
+      "now": 1794072011457,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79204,
+      "stopped": null,
+      "now": 1794072011687,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79208,
+      "stopped": null,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79210,
+      "stopped": null,
+      "now": 1794072014883,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79220,
+      "stopped": null,
+      "now": 1795143323959,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 79221,
+      "stopped": null,
+      "now": 1795143383959,
+      "code": 0,
+      "signal": null
+    }
+  ],
+  "wasm": {
+    "rewards": {
+      "sha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+      "bytes": 435857
+    },
+    "qgold": {
+      "sha256": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f",
+      "bytes": 392990
+    }
+  },
+  "node": {
+    "chainId": "test-chain-31d7C",
+    "version": "2.14.0",
+    "protocolVersion": 88,
+    "rpcHost": "127.0.0.1"
+  },
+  "timeAdvance": {
+    "before": "1794071955772118000",
+    "after": "1795143323959128000"
+  },
+  "finalQgold": {
+    "version": 1,
+    "network": "testnet",
+    "backing": "103030000000000000000",
+    "mint_carry_total": "18",
+    "exact_game_mint": 1,
+    "supply": "103030",
+    "rate": "1000000000000000000000",
+    "r_peak": "1000000000000000000000",
+    "initial_rate": "1000000000000000000000",
+    "reserve_near": "103030000000000000000",
+    "lsts": [],
+    "insurance": "0",
+    "treasury_due": "0",
+    "minted_total": "103030",
+    "burned_total": "0",
+    "redeemed_total": "0",
+    "fees_total": "0",
+    "losses_total": "0",
+    "refilled_total": "0",
+    "holders": 11,
+    "fees": {
+      "deposit_bps": 100,
+      "redeem_bps": 100,
+      "insurance_share_bps": 1000
+    },
+    "exit": {
+      "instant_used_24h": "0",
+      "instant_cap_24h": "1000000000000000000000000",
+      "account_cap_24h": "200000000000000000000000",
+      "window_resets_at": "0",
+      "safe_window_ms": "86400000",
+      "queue_pending": "0",
+      "queue_count": 0,
+      "in_flight": "0",
+      "paths": [
+        "near_instant",
+        "near_queue"
+      ]
+    },
+    "paused": false,
+    "pause_until": "0"
+  },
+  "finalTreasury": {
+    "coins": {
+      "available": "4999888500000000000000000",
+      "reserved": "10000000000000000000",
+      "awarded": "101500000000000000000"
+    },
+    "zones": {
+      "available": "4999998469999999999999982",
+      "reserved": "0",
+      "awarded": "1530000000000000018"
+    },
+    "funded": "10000000000000000000000000",
+    "owed": "0",
+    "pending": "0",
+    "withdrawn": "103030000000000000018",
+    "policy": "50/50-v1"
+  },
+  "passed": true,
+  "finishedAt": "2026-11-07T17:19:48.999Z"
+}

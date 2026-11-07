@@ -1,6 +1,36 @@
 # Global release continuation — 7 November 2026
 
-## Latest verified continuation
+## Current public release and operations
+
+PR #211 was merged and source `f984e6b212e179aed5ede8fce1d8097be068e944`
+is public. The validated two-owner EU day contains ten polygon zones and 277
+quests; it is playable with personal XP. Monetary Atlas activation is disabled.
+Rewards is upgraded and its bounded worker permission extended, with unchanged
+treasury/configuration at the operation boundary. All received funding has been
+reconciled against finalized receipts, with sponsorship and realized yield separate.
+
+QGOLD proposal 1 was cancelled after newer owner changes were merged. Proposal 2
+preserves those changes and exact world carry; its actual-WASM tests pass. Its
+48-hour timelock ends November 9 at 17:21:10.054 UTC. No QGOLD code has yet changed.
+The earliest possible new monetary UTC day remains November 10.
+
+See `docs/GLOBAL-REWARD-INTEGRATION-HANDOFF.md`, `runtime-20261107/` and the
+public-only operation journal `world-reservations/owner-operations.json` for
+current proofs, helpers, exact hashes, rollout gates and remaining limitations.
+The signer wrapper refuses artifacts that differ from current canonical pins.
+Its WASM inputs are reproducible build artifacts, intentionally not committed:
+download `contract-wasm-linux-amd64` from CI run 42388575618; verify the hashes in
+`runtime-20261107/current-artifacts.json`; place Rewards at
+`world-reservations/questlayer_rewards.wasm` and current QGOLD at
+`world-reservations/questlayer_qgold-current.wasm`. Never use the old proposal's
+QGOLD binary. Operator keys stay at the owner's existing private location.
+
+The publisher is installed; the funding refresh is prepared and dry-tested,
+pending the follow-up protected-path review. The supervisor recovery repair is
+installed for subsequent Agent Zero runs; its offline regression covers dead and
+changed writers, repeated timeouts, resource pauses and preserved accepted data.
+
+## Historical continuation before public rollout
 
 The isolated EU collector repair is installed. Public application/contract
 activation has **not** happened. Current source includes exact UTC financial

@@ -1,0 +1,21 @@
+{
+  "network": "testnet",
+  "receiverId": "questlayer-qgold-vault-20261104.testnet",
+  "methodName": "propose",
+  "args": {
+    "action": {
+      "Upgrade": {
+        "code_sha256": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f"
+      }
+    }
+  },
+  "depositYocto": "0",
+  "artifact": {
+    "file": "questlayer_qgold-current.wasm",
+    "sha256": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f",
+    "nearCodeHash": "F4p3S4cuvTScZXBWbqssNUxohgDN3rBGQq8gRS74jj4A",
+    "bytes": 392990
+  },
+  "submittedProposalId": 2,
+  "supersedes": 1
+}
