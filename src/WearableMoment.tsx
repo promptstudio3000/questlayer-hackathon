@@ -17,11 +17,11 @@ export function WearableMoment({ wearable, onClose, onWardrobe }: {
       <h2>{wearable.name}</h2>
       <p>{tr("Clone in your Wardrobe")}</p>
       <button className="primary-button" onClick={onClose}>{tr("Continue")}</button>
+      <button className="secondary-button" onClick={onWardrobe}>{tr("See it in your Wardrobe")}</button>
       <details className="reward-more"><summary>{tr("Learn more")}</summary>
         <p>{tr("A practice wearable for your character. The original collectible stays on its original network.")}</p>
         <p>{wearable.detail}</p>
         {wearable.chain && <ChainLink chain={wearable.chain} />}
-        <button className="secondary-button" onClick={onWardrobe}>{tr("Inventory")}</button>
       </details>
     </section>
   </Dialog>;

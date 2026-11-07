@@ -89,7 +89,7 @@ export type OriginalInventory = {
 const readOriginals = (refresh: boolean) =>
   api<OriginalInventory>(`/aavegotchi${refresh ? "?refresh=1" : ""}`);
 
-type InventoryTab = "items" | "wardrobe" | "history";
+export type InventoryTab = "items" | "wardrobe" | "history";
 const TABS: { id: InventoryTab; label: string; Icon: typeof Backpack }[] = [
   { id: "items", get label() { return tr("Items"); }, Icon: Backpack },
   { id: "wardrobe", get label() { return tr("Wardrobe"); }, Icon: TShirt },
@@ -166,10 +166,13 @@ export function Inventory({
   xp,
   loadOriginals = readOriginals,
   onWearables,
+  initialTab = "items",
 }: {
   onOriginalAppearance: (appearance: Player["appearance"]) => void;
   /** Wearing a wearable clone changes the player (their map character). */
   onWearables?: (player: Player) => void;
+  /** Opens straight on a section, e.g. the Wardrobe right after a wearable pickup. */
+  initialTab?: InventoryTab;
   map3D: boolean;
   onMap3D: () => void;
   player: Player;
@@ -198,7 +201,7 @@ export function Inventory({
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lockedId, setLockedId] = useState<string | null>(null);
-  const [tab, setTab] = useState<InventoryTab>("items");
+  const [tab, setTab] = useState<InventoryTab>(initialTab);
   const [filterOpen, setFilterOpen] = useState(false);
   const [gridRef, columns] = useGridColumns();
   const [selling, setSelling] = useState(false);
@@ -591,6 +594,10 @@ export function Inventory({
                   ? tr("{0} still to find", { 0: lockedEditions.length })
                   : tr("Catalog complete")}
           </p>
+          <button type="button" className="inv-wearable-hint" onClick={() => setTab("wardrobe")}>
+            <TShirt size={18} aria-hidden="true" />
+            <span>{tr("Wearables you pick up on the map are in your Wardrobe.")}</span>
+          </button>
           <div className="inv-chips" role="group" aria-label={tr("Filter Auras")}>
             {(["all", "above", "below"] as const).map((slot) => (
               <button

@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "（任意、GPSオン時のみ）",
  "(paid out through later days).": "（後日にかけて支払われます）。",
  ") and NPC lines (": "）、NPCライン（",
- ") is in your wardrobe. Secure it on NEAR from there.": "）がワードローブにあります。そこからNEARで確保しましょう。",
  "), zone visits (": "）、ゾーン訪問（",
  "). Check every stop and edit the text before you save.": "）。保存する前に各ストップを確認し、テキストを編集してください。",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": "）。GOLD、NEAR、ステークにはなりません。ランクは見た目だけの称号で、報酬・確率・ダメージは変わりません。",
@@ -2157,7 +2156,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "ウォレットからアカウントが返されませんでした。もう一度試すか、別のウォレットを選んでください。",
  "The wisp gave you": "ウィスプからの贈り物：",
  "The wisp is drawing…": "ウィスプが抽選中…",
- "The zone chest it guarded is open for you now.": "それが守っていたゾーンの宝箱が開けられるようになりました。",
  "There is a find near here.": "この近くに発見があるよ。",
  "These keys can act for your explorer account": "これらのキーはあなたの探検者アカウントとして操作できます",
  "These receipts are already saved. Use Check confirmation to see their result.": "これらのレシートは保存済みです。「確定を確認」で結果を確認できます。",
@@ -2962,5 +2960,9 @@
  "The shared NEAR prize was already earned. Personal XP is still available.": "共有NEAR報酬はすでに獲得されています。個人XPは引き続き獲得できます。",
  "Converted to QGOLD": "QGOLDに換算済み",
  "Fractional NEAR remains credited": "NEARの端数は残高に保持されます",
- "Awaiting QGOLD settlement": "QGOLDの精算待ち"
+ "Awaiting QGOLD settlement": "QGOLDの精算待ち",
+ "It dropped the chest it guarded, right next to you. Open it now.": "守っていた宝箱をすぐ隣に落とした。今すぐ開けよう。",
+ ") is in your Inventory. Secure it on NEAR from there.": ")はインベントリにあります。そこからNEARで確保できます。",
+ "Wearables you pick up on the map are in your Wardrobe.": "マップで拾った装備はワードローブにあります。",
+ "See it in your Wardrobe": "ワードローブで見る"
 }

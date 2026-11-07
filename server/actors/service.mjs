@@ -192,9 +192,11 @@ export function createActorService(db, options = {}) {
     const pack = source.cell ? base : effectiveCityPack(db, base),
       seed = worldSeed(manifest),
       dayStart = localDateStart(manifest.day, manifest.timezone),
+      chests = zoneChests(manifest.id),
       zones = (manifest.zones || []).map((z) => ({
         ...z,
         placeStatus: placeClosed(closed, z.sourceId, z) ? "closed" : "open",
+        ...(chests.has(z.id) ? { chest: chests.get(z.id) } : {}),
       }));
     const finds = streetFinds(manifest.id);
     const pois = source.generic ? actorPois({ manifest, pack, graph: pathGraph(pack, closed), zones, closed }) : null,
@@ -228,6 +230,20 @@ export function createActorService(db, options = {}) {
     plans.set(key, plan);
     while (plans.size > PLAN_CACHE_SIZE) plans.delete(plans.keys().next().value);
     return plan;
+  }
+
+  // Each zone's chest quest: its guardian stands on it (server/actors/spawns.mjs).
+  function zoneChests(worldId) {
+    try {
+      return new Map(
+        db
+          .prepare("SELECT id,zone_id,lat,lng FROM quests WHERE world_id=? AND kind='chest' AND zone_id IS NOT NULL ORDER BY id")
+          .all(worldId)
+          .map((q) => [q.zone_id, { questId: q.id, lat: q.lat, lng: q.lng }]),
+      );
+    } catch {
+      return new Map();
+    }
   }
 
   // Today's street finds (lurkers hide next to them). Worlds without coins

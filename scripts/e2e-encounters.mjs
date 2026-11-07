@@ -142,10 +142,11 @@ try{
       assert.equal(await page.evaluate(()=>window.__focusedQuest),offer.terms.steps[0].questId,"The confirmed NPC task supplies the next map target");
       results.push({kind,accepted:receipt.state,draftRestored:true,keyboardViewport:true,enlargedText:true,nextQuestFocused:true});
     }else{
-      await page.locator(".actor-offers button").first().click();
       const started=page.waitForResponse(r=>r.url().endsWith(`/${actor.id}/challenge`)&&r.request().method()==="POST");
-      await page.getByRole("button",{name:/Answer its riddles/}).click();
+      // The format picked in the encounter starts at once: no second format menu.
+      await page.locator(".actor-offers button",{hasText:"Answer its riddles"}).click();
       const {challenge}=await (await started).json();assert.equal(challenge.format,"quiz");
+      assert.equal(await page.locator(".monster-formats").count(),0,"the challenge sheet does not ask for a format again");
       const submitted=page.waitForResponse(r=>r.url().endsWith(`/${challenge.id}/submit`));
       for(const question of challenge.questions){
         const original=bank.byId.get(question.id);const answer=original.choices[original.answer];

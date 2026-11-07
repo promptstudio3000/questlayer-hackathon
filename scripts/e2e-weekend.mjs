@@ -94,7 +94,9 @@ try {
       if (screen === "Profile") await page.locator(".profile-hero").waitFor();
       await page.screenshot({ path: join(SHOTS, `${name}-${screen.toLowerCase()}.png`) });
       const bounds = await page.locator(".main-panel").boundingBox();
-      assert.ok(bounds.y < 2 && bounds.height >= height - 2, `${name}: ${screen} uses the whole screen`);
+      if (width >= 900 && height >= 560)
+        assert.ok(bounds.width <= 962 && bounds.y >= 30 && bounds.height <= height - 60, `${name}: ${screen} is a card over the map on desktop`);
+      else assert.ok(bounds.y < 2 && bounds.height >= height - 2, `${name}: ${screen} uses the whole screen`);
       assert.ok(await page.locator(".map-stage").getAttribute("inert") !== null);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
       if (width === 390) {

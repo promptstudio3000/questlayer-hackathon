@@ -36,7 +36,7 @@ export type HuntWinRewards = {
   xp: number;
   shards: { element: string; count: number } | null;
   rollTicket: boolean;
-  unlocks: { zoneId: string } | null;
+  unlocks: { zoneId: string; questId?: string } | null;
   /** Monster/NPC-only edition paid on the first win of this kind (once per player). */
   edition?: { id: string; name: string; rarity: string; edition: string } | null;
 };
