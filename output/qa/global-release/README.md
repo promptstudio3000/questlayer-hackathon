@@ -31,8 +31,10 @@ contract observations; earlier "unfinished source" notes below are historical.
   template are in that directory. No real key or public chain write was used.
 - Public read-only checks still identify the previous app/Rewards/QGOLD builds.
   QGOLD's finalized config has one council member, threshold one, the existing
-  Rewards minter and a 172800000 ms upgrade timelock. Transaction-history reads
-  timed out; complete funding provenance is still a positive-activation gate.
+  Rewards minter and a 172800000 ms upgrade timelock. Ordinary transaction-history reads
+  timed out; archival RPC then confirmed the 0.2 test NEAR sponsor event. The
+  adapter now uses cached archival proofs. Complete yield provenance remains a
+  positive-activation gate.
 
 The owner-only PR label, green CI/merge, actual contract upgrades, received-funding
 reconciliation and a read-only mount of `eu-days` are required before public

@@ -3840,7 +3840,7 @@ export default function App() {
                       ? tr("Unverified map: generated automatically")
                       : tr("About this map")}
                   </summary>
-                  <p>{world.globalPreparation?.financialActivation
+                  <p>{world.globalPreparation?.financialActivation && <strong>{tr("NEAR testnet")}. </strong>}{world.globalPreparation?.financialActivation
                     ? world.quality.funded
                       ? tr("Funded Atlas zones: the first confirmed completion earns the fixed NEAR prize shown in the objective. QGOLD is calculated at settlement; fractional NEAR stays credited. Follow local signs and skip blocked places.")
                       : tr("No monetary budget today. Atlas discoveries still award personal XP. Follow local signs and skip blocked places.")
@@ -3988,7 +3988,7 @@ export default function App() {
                       </Badge>
                     </div>
                     <p>{q.activity?.objective || q.description}</p>
-                    {q.nearPrize && <p>{q.nearPrize.available
+                    {q.nearPrize && <p><strong>{tr("NEAR testnet")}. </strong>{q.nearPrize.available
                       ? tr("First confirmed completion: {0} NEAR, converted to QGOLD at settlement.",{0:q.nearPrize.amountNear})
                       : tr("The shared NEAR prize was already earned. Personal XP is still available.")}</p>}
                     {q.clue && (

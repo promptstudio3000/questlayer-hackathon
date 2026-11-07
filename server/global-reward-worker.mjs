@@ -6,6 +6,7 @@ import { GPS_MAX_AGE_MS } from './domain.mjs';
 import { NETWORK } from './native/network.mjs';
 import { NativeContractReader } from './native/reader.mjs';
 import { assertTestnetRpc } from './identity/near.mjs';
+import { createNearProvider } from './near-provider.mjs';
 import { claimersByCell } from './map-rewards/day-plan.mjs';
 import { buildGlobalRewardPlan } from './map-rewards/global-plan.mjs';
 import { utcEpoch } from './world-preparation/calendar.mjs';
@@ -14,6 +15,7 @@ import { ensureGlobalRewards,activateGlobalRewards,globalEarnedTotals,prepareGlo
 
 export const WORLD_CHAIN_METHODS=Object.freeze(['reserve_world_day','record_world_earned','move_world_to_payout','close_world_day']);
 const parse=JSON.parse;
+const fundingHistory=new WeakMap();
 export function globalRewardWorkerStatus(db){
   if(!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='global_reward_worker'").get())return {state:'not-configured'};
   const row=db.prepare('SELECT last_success AS lastSuccess,last_error AS lastError FROM global_reward_worker WHERE id=1').get();
@@ -152,17 +154,26 @@ export async function runConfiguredGlobalRewards(native,send){
     },
     fundingReceipts:async()=>{
       requireValue(Array.isArray(c.fundingTransactions),'A complete funding transaction inventory is required.');
+      // Normal RPC nodes can prune old funding receipts. Reuse immutable
+      // finalized proofs and use an archival testnet provider after a restart.
+      if(!fundingHistory.has(native))fundingHistory.set(native,{provider:createNearProvider(c.fundingRpcUrl||'https://archival-rpc.testnet.near.org'),proofs:new Map()});
+      const history=fundingHistory.get(native);
       const receipts=[];
       for(const ref of c.fundingTransactions){
-        const response=await native.provider.txStatus(ref.hash,ref.signerId,'FINAL'),outcome=response.final_execution_outcome??response;
+        const key=`${ref.hash}:${ref.signerId}`;
+        if(history.proofs.has(key)){receipts.push(...history.proofs.get(key));continue;}
+        await assertTestnetRpc(history.provider);
+        const response=await history.provider.txStatus(ref.hash,ref.signerId,'FINAL'),outcome=response.final_execution_outcome??response;
         requireValue(outcome.transaction?.hash===ref.hash&&outcome.transaction?.signer_id===ref.signerId,'Funding transaction identity differs.');
         // All receipt outcomes returned by FINAL are complete. The block
         // containing the fund event supplies deterministic FIFO ordering.
+        const proofs=[];
         for(const r of outcome.receipts_outcome??[]){
           if(r.outcome.executor_id!==native.contractId)continue;
-          const block=await native.provider.viewBlock({blockId:r.block_hash});
-          receipts.push(...fundingEvents({...outcome,receipts_outcome:[r]},{contractId:native.contractId,blockHeight:block.header.height}));
+          const block=await history.provider.viewBlock({blockId:r.block_hash});
+          proofs.push(...fundingEvents({...outcome,receipts_outcome:[r]},{contractId:native.contractId,blockHeight:block.header.height}));
         }
+        history.proofs.set(key,proofs);receipts.push(...proofs);
       }
       return receipts;
     },

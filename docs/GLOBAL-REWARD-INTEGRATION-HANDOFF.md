@@ -59,8 +59,8 @@ are not implemented by the Atlas runtime adapter and must not be advertised.
 4. Extend only the existing bounded Rewards worker key with
    `reserve_world_day`, `record_world_earned`, `move_world_to_payout`,
    `close_world_day`; preserve the existing allowance and receiver restrictions.
-5. Complete the received-funding transaction inventory. A sponsor record exists
-   but public transaction-history requests timed out in this run; the inventory
+5. Complete the received-funding transaction inventory. Archival RPC confirms
+   the 0.2 test NEAR sponsor receipt. The remaining yield receipt inventory
    has **not** been proven to match `get_treasury.funded`. Never treat that
    incomplete inventory, a cap, QGOLD backing or forecast yield as free money.
 6. Update actual deployment records only after finalized upgrades. Add
