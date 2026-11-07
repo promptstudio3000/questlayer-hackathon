@@ -121,7 +121,8 @@ financialTest('worker reconciles a lost reservation reply, exact GPS earnings, c
 
 test('funding provenance comes only from successful Rewards receipts, with sponsor and yield kept separate',()=>{
  const log=source=>'EVENT_JSON:'+JSON.stringify({standard:'questlayer_rewards',event:'funded',data:[{source,sender:'vault.testnet',receipt_id:source,amount:'13'}]});
- const outcome={status:{SuccessValue:''},receipts_outcome:[{outcome:{executor_id:'rewards.testnet',status:{SuccessValue:''},logs:[log('yield'),log('sponsor')]}},{outcome:{executor_id:'mallory.testnet',status:{SuccessValue:''},logs:[log('sponsor')]}}]};
+ const outcome={status:{SuccessValue:''},receipts_outcome:[{outcome:{executor_id:'rewards.testnet',status:{SuccessValue:''},logs:[log('realized_yield'),log('sponsor')]}},{outcome:{executor_id:'mallory.testnet',status:{SuccessValue:''},logs:[log('sponsor')]}}]};
  assert.deepEqual(fundingEvents(outcome,{contractId:'rewards.testnet',blockHeight:7}).map(r=>r.source),['realized_yield','sponsor']);
  assert.throws(()=>fundingEvents({...outcome,status:{Failure:{}}},{contractId:'rewards.testnet',blockHeight:7}),/Finalized/);
+ assert.throws(()=>fundingEvents({...outcome,receipts_outcome:[{outcome:{executor_id:'rewards.testnet',status:{SuccessValue:''},logs:[log('yield')]}}]},{contractId:'rewards.testnet',blockHeight:7}),/Unknown funding source/);
 });

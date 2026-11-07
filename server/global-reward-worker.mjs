@@ -130,7 +130,7 @@ export function fundingEvents(outcome,{contractId,blockHeight}){
     for(const log of r.outcome.logs??[]){
       if(!log.startsWith('EVENT_JSON:'))continue;const e=parse(log.slice(11));
       if(e.standard!=='questlayer_rewards'||e.event!=='funded')continue;
-      for(const f of e.data){requireValue(['sponsor','yield'].includes(f.source),'Unknown funding source.');result.push({id:`${f.sender}:${f.receipt_id}`,source:f.source==='yield'?'realized_yield':'sponsor',amountYocto:f.amount,blockHeight,finalized:true});}
+      for(const f of e.data){requireValue(['sponsor','realized_yield'].includes(f.source),'Unknown funding source.');result.push({id:`${f.sender}:${f.receipt_id}`,source:f.source,amountYocto:f.amount,blockHeight,finalized:true});}
     }
   }
   return result;
