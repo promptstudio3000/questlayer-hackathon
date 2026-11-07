@@ -253,10 +253,15 @@ async function journey(browser, server, device, j, expected) {
       // be on "Open your first chest". When that chest is the same POI quest
       // the coach hides its "Nearest quest" line and its main action opens
       // the quest instead, so either button counts.
+      // With the one-objective map, a quest within reach replaces the
+      // compact coach with a single "Open <quest>" action, so that counts too.
+      const nearbyOpen = page.locator("button.nearby-open");
       await coach
         .getByRole("button", {
           name: /^(Nearest quest|Open the chest|Walk to the chest)/,
         })
+        .first()
+        .or(nearbyOpen)
         .first()
         .waitFor({ timeout: 15_000 });
       // Let the auto pick-up of spawn-side coins settle before reading it.
@@ -264,9 +269,24 @@ async function journey(browser, server, device, j, expected) {
       const chestButton = coach.getByRole("button", {
         name: /^(Open the chest|Walk to the chest)/,
       });
-      const opener = (await chestButton.count())
-        ? chestButton.first()
-        : coach.getByRole("button", { name: /^Nearest quest/ });
+      const coachButton = coach
+        .getByRole("button", { name: /^(Nearest quest|Open the chest|Walk to the chest)/ })
+        .first();
+      const nearbyLabel = (await nearbyOpen.isVisible())
+        ? await nearbyOpen.innerText()
+        : "";
+      const nearbyQuest =
+        !!nearbyLabel && world.quests.some((q) => nearbyLabel.includes(q.title));
+      // An NPC or find within reach takes the single objective slot instead;
+      // then the map's next-quest marker itself is the way in.
+      const pinOnly = !nearbyQuest && !(await coachButton.isVisible());
+      const opener = nearbyQuest
+        ? nearbyOpen
+        : pinOnly
+          ? page.locator('.zone-map-pin[data-next="true"]')
+          : (await chestButton.count())
+            ? chestButton.first()
+            : coach.getByRole("button", { name: /^Nearest quest/ });
       // …the map marks the same place…
       const pin = page.locator('.zone-map-pin[data-next="true"]');
       // Attached, not visible: map markers re-render on every world update
@@ -279,9 +299,12 @@ async function journey(browser, server, device, j, expected) {
       const pinLabel = (await pin.getAttribute("aria-label")) || "";
       const zone = poiZones.find((z) => pinLabel.startsWith(`${z.name} · `));
       assert.ok(zone, `the next-quest marker "${pinLabel}" is a POI quest`);
-      const label = await opener.innerText();
+      const label = pinOnly ? "" : await opener.innerText();
       let quest;
-      if (/^Nearest quest/.test(label)) {
+      if (pinOnly) {
+        quest = world.quests.find((q) => q.zone_id === zone.id);
+        assert.ok(quest, "the next-quest marker is one of today's quests");
+      } else if (/^(Nearest quest|Open (?!the chest))/.test(label)) {
         quest = world.quests.find((q) => label.includes(q.title));
         assert.ok(quest, `coach quest "${label}" is one of today's quests`);
         assert.equal(
@@ -301,7 +324,8 @@ async function journey(browser, server, device, j, expected) {
       await page.waitForTimeout(1200);
       await page.screenshot({ path: join(shots, `${j.id}-coach.png`) });
       // …and the coach opens it.
-      await opener.click();
+      if (pinOnly) await opener.dispatchEvent("click");
+      else await opener.click();
       await page
         .getByRole("heading", { level: 1, name: zone.name })
         .waitFor({ timeout: 10_000 });
