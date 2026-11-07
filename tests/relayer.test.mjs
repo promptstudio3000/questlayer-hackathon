@@ -200,17 +200,19 @@ test("network failures retry durably with bounded backoff and reconcile a lost r
   assert.equal(row.run_after, f.clock() + 10000);
   assert.equal(
     row.transaction_hash,
-    "T2",
-    "an unknown transaction is signed again",
+    "T1",
+    "an unknown transaction replays the original signed bytes and hash",
   );
   assert.deepEqual(
     [backoff(5), backoff(6), backoff(20)],
     [160000, 300000, 300000],
   );
-  // The second send actually landed; the successor finds it by hash and sends nothing.
+  assert.equal(f.rows("relay_submissions").length, 1);
+  assert.equal(f.transport.sends[0].hash, f.transport.sends[1].hash);
+  // The original transaction landed; the successor finds it by hash and sends nothing.
   f.advance(10000);
   f.transport.onStatus = async (hash) => {
-    assert.equal(hash, "T2");
+    assert.equal(hash, "T1");
     return outcomeFor(f.transport.sends[1].signedDelegate, { hash });
   };
   assert.deepEqual(await f.relayer.runRelayJobs(), {
@@ -221,7 +223,7 @@ test("network failures retry durably with bounded backoff and reconcile a lost r
   assert.equal(f.transport.sends.length, 2);
   row = f.job(job.id);
   assert.equal(row.state, "confirmed");
-  assert.equal(row.transaction_hash, "T2");
+  assert.equal(row.transaction_hash, "T1");
   assert.equal(row.last_error, null);
 });
 

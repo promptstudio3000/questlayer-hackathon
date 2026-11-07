@@ -35,6 +35,10 @@ const GAS_STORAGE_DEPOSIT: Gas = Gas::from_tgas(10);
 const GAS_WITHDRAW_FOR_MIN: Gas = Gas::from_tgas(60);
 /// NEP-145 registration on the QGOLD vault (0.00125 NEAR, contracts/qgold STORAGE_FEE).
 const STORAGE_DEPOSIT_YOCTO: u128 = 1_250_000_000_000_000_000_000;
+// Each possible worker/dispute needs at most one bounded account identifier
+// and credit record. Reserve 256 bytes per entry plus 4 KiB for fixed records,
+// keys and callbacks. This is native storage headroom, not a token price/fee.
+const STORAGE_GROWTH_PER_OPEN: u64 = (MAX_SLOTS as u64 + MAX_DISPUTES as u64) * 256 + 4096;
 
 /// Platform fee, rounded up: ceil(amount * FEE_BPS / BPS).
 pub fn fee_of(amount: u128) -> u128 {
@@ -248,7 +252,7 @@ pub struct ConfigView {
 #[allow(dead_code)]
 trait FungibleToken {
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
-    fn storage_deposit(&mut self, account_id: Option<AccountId>, registration_only: Option<bool>);
+    fn storage_deposit_sponsored(&mut self, account_id: AccountId);
 }
 #[ext_contract(ext_self)]
 #[allow(dead_code)]
@@ -365,6 +369,9 @@ impl QgoldEscrow {
         self.escrowed = self.escrowed.checked_add(amount.0).expect("Overflow");
         self.open_escrows += 1;
         self.check();
+        // Reject before accepting tokens when the service cannot fund their
+        // complete settlement state. ft_transfer_call then refunds the sender.
+        self.require_native_reserve(0);
         U128(0)
     }
 
@@ -428,6 +435,10 @@ impl QgoldEscrow {
             caller == worker || caller == task.poster || caller == self.publisher_id,
             "Only the worker, the poster or the publisher can open a dispute"
         );
+        if caller == worker && caller != task.poster && caller != self.publisher_id {
+            assert!(task.assignee.as_ref() == Some(&worker), "Unassigned participation must be verified by the publisher or poster");
+            assert!(Self::now() < task.deadline_ms, "Ask the publisher to verify a proof submitted before the deadline");
+        }
         Self::check_worker(&task, &worker);
         assert!(!task.disputes.contains(&worker), "Dispute already open");
         assert!(!task.rejected.contains(&worker), "Dispute already resolved for this worker");
@@ -636,16 +647,17 @@ impl QgoldEscrow {
     /// Pushes `account_id`'s whole credit to that account. Anyone may call it
     /// (the game server does after every payout): the tokens can only go to
     /// the credit's owner. The escrow first registers the account on the token
-    /// from its own NEAR balance (the token refunds the deposit when the
-    /// account is registered already). Attach at least 60 Tgas.
+    /// with a nonrefundable lifetime grant. The token refunds the deposit when
+    /// already registered or previously sponsored. Attach at least 60 Tgas.
     pub fn withdraw_for(&mut self, account_id: AccountId) -> Promise {
         self.not_paused();
         assert!(env::prepaid_gas() >= GAS_WITHDRAW_FOR_MIN, "Attach at least 60 Tgas");
+        self.require_native_reserve(STORAGE_DEPOSIT_YOCTO + 1);
         let amount = self.start_withdraw(&account_id);
         ext_ft::ext(self.token_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(STORAGE_DEPOSIT_YOCTO))
             .with_static_gas(GAS_STORAGE_DEPOSIT)
-            .storage_deposit(Some(account_id.clone()), Some(true))
+            .storage_deposit_sponsored(account_id.clone())
             .then(
                 ext_ft::ext(self.token_id.clone())
                     .with_attached_deposit(NearToken::from_yoctonear(1))
@@ -1113,6 +1125,13 @@ impl QgoldEscrow {
     /// accounted token balance (deposits - completed withdrawals).
     fn check(&self) {
         assert!(self.conserved(), "Escrow conservation invariant failed");
+    }
+
+    fn require_native_reserve(&self, outgoing: u128) {
+        let bytes = u128::from(env::storage_usage()) + u128::from(self.open_escrows) * u128::from(STORAGE_GROWTH_PER_OPEN);
+        let required = bytes.checked_mul(env::storage_byte_cost().as_yoctonear())
+            .and_then(|cost| cost.checked_add(outgoing)).expect("Native storage reserve overflow");
+        assert!(env::account_balance().as_yoctonear() >= required, "Escrow storage reserve is insufficient; existing token rights remain saved");
     }
 
     fn task_view(id: String, t: Task) -> TaskView {

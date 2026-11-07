@@ -1,3 +1,4 @@
+import { purchaseAtomic } from "./purchases.mjs";
 // Place messages (QGOLD build plan, stream 4; doc "Vzkazy na místě").
 //   - shout: up to 140 characters (emoji welcome) as a bubble at a place,
 //     paid per day of display, at most 7 days, no replies;
@@ -109,7 +110,7 @@ export function createPlaces(db, { now = () => Date.now(), levelOf = null } = {}
       place = typeof input.place === "string" ? clean(input.place).slice(0, 80) : "";
     assert(input.publicConsent === true, "Confirm that this message is public.", 400, "CONSENT");
     const perDay = kind === "shout" ? PLACES.shoutPerDay : PLACES.topicPerDay;
-    return atomic(db, () => {
+    return purchaseAtomic(db, () => {
       sweep(at);
       const mine = db
         .prepare("SELECT COUNT(*) AS n FROM place_threads WHERE author=? AND state='published' AND (free_forever=1 OR paid_until>?)")
@@ -129,7 +130,7 @@ export function createPlaces(db, { now = () => Date.now(), levelOf = null } = {}
     assert(player, "Sign in first.", 401, "AUTH");
     const at = now(),
       d = days(input.days);
-    return atomic(db, () => {
+    return purchaseAtomic(db, () => {
       const t = thread(threadId);
       assert(t.state === "published", "This message is no longer on the map.", 409, "PLACE_GONE");
       assert(!t.free_forever, "This topic is already free for good.", 409, "PLACE_FREE");

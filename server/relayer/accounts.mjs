@@ -8,6 +8,8 @@ import { initializeManagedAccounts } from "./schema.mjs";
 import { RelayJobError, retryLater, terminal } from "./errors.mjs";
 import { classifyFailure, relayFailure } from "./outcome.mjs";
 import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
+import { SubsidyBudget } from "./subsidy-budget.mjs";
+import { FundingJournal } from "./funding-journal.mjs";
 
 const MAX_SLUG = 32,
   MAX_KEYS = 10;
@@ -42,7 +44,7 @@ export class ManagedAccounts {
     db,
     provider,
     factory,
-    { factoryId, fundYocto, topupCapYocto = 0n, clock = Date.now } = {},
+    { factoryId, fundYocto, topupCapYocto = 0n, clock = Date.now, subsidyBudget = null } = {},
   ) {
     this.db = db;
     this.provider = provider;
@@ -56,6 +58,8 @@ export class ManagedAccounts {
     this.fundYocto = yoctoText(fundYocto ?? 0n);
     this.topupCapYocto = yoctoText(topupCapYocto);
     this.clock = clock;
+    this.subsidyBudget = subsidyBudget ?? new SubsidyBudget(db, { clock });
+    this.funding = new FundingJournal(db, factory, this.subsidyBudget, clock);
     initializeManagedAccounts(db);
   }
   /** NEAR account ids are at most 64 characters: slug + "." + factory. */
@@ -185,7 +189,7 @@ export class ManagedAccounts {
       slug = `${this.slugFor(name ?? playerName).slice(0, this.maxSlug - 5).replace(/-+$/g, "")}-${randomBytes(3).toString("hex").slice(0, 4)}`;
       accountId = `${slug}.${this.factoryId}`;
     }
-    const now = this.clock();
+    const now = this.clock(), jobId = id("relay");
     atomic(this.db, () => {
       const current = this.row(player);
       assert(
@@ -208,6 +212,7 @@ export class ManagedAccounts {
           .prepare("DELETE FROM managed_accounts WHERE account_id=?")
           .run(current.account_id);
       }
+      this.subsidyBudget.reserve(jobId, { kind: "create-account", accountId, principal: this.fundYocto });
       this.db
         .prepare(
           "INSERT INTO managed_accounts(account_id,player_id,slug,factory_id,network,state,created_at,updated_at) VALUES(?,?,?,?,?,'creating',?,?)",
@@ -223,7 +228,7 @@ export class ManagedAccounts {
           "INSERT INTO relay_jobs(id,player_id,account_id,kind,state,call,receiver_id,method_name,run_after,created_at,updated_at) VALUES(?,?,?,'create-account','queued',?,?,'create_account',?,?,?)",
         )
         .run(
-          id("relay"),
+          jobId,
           player,
           accountId,
           JSON.stringify({
@@ -349,20 +354,12 @@ export class ManagedAccounts {
         "ACCOUNT_TAKEN",
         "The account name was taken by someone else.",
       );
-    if (key === undefined) {
+    if (key === undefined || this.funding.latest(job.id)?.state === "prepared") {
       let result;
       try {
-        result = await this.factory.signAndSendTransaction({
-          receiverId: row.account_id,
-          actions: [
-            actions.createAccount(),
-            actions.transfer(fund),
-            actions.addFullAccessKey(PublicKey.fromString(publicKey)),
-          ],
-          waitUntil: "FINAL",
-          throwOnFailure: false,
-        });
+        result = await this.funding.perform(job.id, { kind: "create-account", accountId: row.account_id, principal: String(fund), publicKey }, { write });
       } catch (error) {
+        if (error instanceof RelayJobError || error.message === "Relay worker lease expired.") throw error;
         throw classifyFailure(error, {});
       }
       transactionHash = result?.transaction?.hash || transactionHash;
@@ -390,6 +387,7 @@ export class ManagedAccounts {
       );
     const now = this.clock();
     write(() => {
+      if (!this.funding.latest(job.id)) this.subsidyBudget.settle(job.id, transactionHash);
       const link = this.db
         .prepare("SELECT player_id FROM wallet_links WHERE account_id=?")
         .get(row.account_id);
@@ -481,16 +479,18 @@ export class ManagedAccounts {
     neededYocto,
     { jobId = null, write = (work) => atomic(this.db, work) } = {},
   ) {
+    const operationId = `topup:${jobId ?? `${accountId}:${dayKey(this.clock(), "UTC")}:${neededYocto}`}`;
+    const saved = this.funding.latest(operationId);
     const needed = yoctoText(neededYocto),
       current = await this.balance(accountId);
-    if (current >= needed)
+    if (current >= needed && !saved)
       return { toppedUp: false, balance: current.toString() };
     if (!this.factory)
       throw terminal(
         "RELAY_INSUFFICIENT_BALANCE",
         "Your account balance does not cover the attached deposit.",
       );
-    const amount = needed - current,
+    const amount = saved ? BigInt(JSON.parse(saved.request).principal) : needed - current,
       day = dayKey(this.clock(), "UTC");
     const used = BigInt(
       this.db
@@ -499,20 +499,23 @@ export class ManagedAccounts {
         )
         .get(accountId, day)?.topup_yocto ?? "0",
     );
-    if (used + amount > this.topupCapYocto)
+    if (!saved && used + amount > this.topupCapYocto)
       throw terminal(
         "RELAY_TOPUP_CAP",
         "Today's sponsored funding for this account is used up.",
       );
     let result;
     try {
-      result = await this.factory.signAndSendTransaction({
-        receiverId: accountId,
-        actions: [actions.transfer(amount)],
-        waitUntil: "FINAL",
-        throwOnFailure: false,
-      });
+      result = await this.funding.perform(operationId, { kind: "topup", accountId, principal: String(amount) }, { write: work => write(() => {
+        if (!this.funding.latest(operationId)) {
+          const freshUsed = BigInt(this.db.prepare("SELECT topup_yocto FROM relay_budget WHERE account_id=? AND day=?").get(accountId, day)?.topup_yocto ?? "0");
+          assert(freshUsed + amount <= this.topupCapYocto, "Today's sponsored funding is reserved.", 429, "RELAY_TOPUP_CAP");
+          this.db.prepare("INSERT INTO relay_budget(account_id,day,jobs,topup_yocto) VALUES(?,?,0,?) ON CONFLICT(account_id,day) DO UPDATE SET topup_yocto=excluded.topup_yocto").run(accountId, day, String(freshUsed + amount));
+        }
+        return work();
+      }) });
     } catch (error) {
+      if (error instanceof RelayJobError || error.message === "Relay worker lease expired.") throw error;
       throw classifyFailure(error, {});
     }
     const failure = relayFailure(result);
@@ -526,14 +529,9 @@ export class ManagedAccounts {
     write(() => {
       this.db
         .prepare(
-          "INSERT INTO relay_budget(account_id,day,jobs,topup_yocto) VALUES(?,?,0,?) ON CONFLICT(account_id,day) DO UPDATE SET topup_yocto=excluded.topup_yocto",
+          "INSERT OR IGNORE INTO managed_account_funding VALUES(?,?,'topup',?,?,?,?)",
         )
-        .run(accountId, day, (used + amount).toString());
-      this.db
-        .prepare(
-          "INSERT INTO managed_account_funding VALUES(?,?,'topup',?,?,?,?)",
-        )
-        .run(id("fund"), accountId, amount.toString(), jobId, hash, now);
+        .run(operationId, accountId, amount.toString(), jobId, hash, now);
     });
     return { toppedUp: true, amount: amount.toString(), transactionHash: hash };
   }

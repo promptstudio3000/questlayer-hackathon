@@ -2083,11 +2083,14 @@ export default function App() {
           },
         ],
       },
-      { playerId: player!.id },
+      { playerId: player!.id, recoveryKey: `${call.purchaseId}:${call.submission}`,
+        confirm: async (txHash) => ({ ...(await api<{ confirmed: boolean; accountId: string; contractId: string; transactionHash: string }>(
+          "/gold/burn/confirm", { purchaseId: call.purchaseId, txHash })), network: NEAR_NETWORK }),
+      },
     );
   }
   useEffect(() => {
-    setQgoldBurner(player ? burnQgold : null);
+    setQgoldBurner(player ? burnQgold : null, player?.id);
   });
   async function tradeNative(request: NativeTradeRequest): Promise<boolean> {
     const result = await action("native-market", async () => {

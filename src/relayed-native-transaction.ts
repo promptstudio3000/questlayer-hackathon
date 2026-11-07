@@ -1,8 +1,8 @@
 // Sends a reviewed native transaction through the sponsored relayer instead of
 // a wallet popup. The player's device key signs a NEP-366 delegate; the server
 // pays gas, submits it and reports the finalized outcome.
-import { api, ApiError } from "./api";
-import { signDelegate, type PlayerKeyRecord } from "./player-key";
+import { api, ApiError } from "./api.ts";
+import { signDelegate, type PlayerKeyRecord } from "./player-key.ts";
 import type { ReviewedNativeTransaction } from "./confirmed-native-transaction";
 import { NEAR_NETWORK } from "./near-network.ts";
 
@@ -78,7 +78,8 @@ export async function sendRelayed(
   {
     signal,
     retryExpired = true,
-  }: { signal?: AbortSignal; retryExpired?: boolean } = {},
+    recoveryKey,
+  }: { signal?: AbortSignal; retryExpired?: boolean; recoveryKey?: string } = {},
 ): Promise<RelayJob> {
   if (
     transaction.network !== NEAR_NETWORK ||
@@ -92,24 +93,39 @@ export async function sendRelayed(
       "RELAY_ACCOUNT",
     );
   const call = transaction.actions[0].params;
-  const prepared = await api<Prepared>("/relay/prepare", {
-    accountId: transaction.signerId,
-    receiverId: transaction.receiverId,
-    methodName: call.methodName,
-    publicKey: key.publicKey,
-  });
-  const signed = await signDelegate(key, {
-    senderId: transaction.signerId,
-    receiverId: transaction.receiverId,
-    call: {
-      methodName: call.methodName,
-      args: call.args,
-      gas: call.gas,
-      deposit: call.deposit,
-    },
-    nonce: prepared.nonce,
-    maxBlockHeight: prepared.maxBlockHeight,
-  });
+  const cacheKey = recoveryKey ? `questlayer:burn-submission:${NEAR_NETWORK}:${transaction.signerId}:${recoveryKey}` : null;
+  const quote = JSON.stringify(transaction);
+  type Saved = { quote: string; publicKey: string; signedDelegateBase64: string; jobId: string | null };
+  const load = (): Saved | null => {
+    if (!cacheKey) return null;
+    const raw = localStorage.getItem(cacheKey); if (!raw) return null;
+    const row = JSON.parse(raw) as Saved;
+    if (raw.length > 50000 || row.quote !== quote || row.publicKey !== key.publicKey ||
+      typeof row.signedDelegateBase64 !== "string" || (row.jobId !== null && typeof row.jobId !== "string"))
+      throw new RelayError("The saved purchase signature does not match. No replacement will be signed.", "BURN_RECOVERY");
+    return row;
+  };
+  const save = (row: Saved) => {
+    if (!cacheKey) return;
+    const raw = JSON.stringify(row); localStorage.setItem(cacheKey, raw);
+    if (localStorage.getItem(cacheKey) !== raw) throw new RelayError("The payment signature could not be saved.", "BURN_RECOVERY");
+  };
+  const prepare = async (): Promise<Saved> => {
+    const old = load(); if (old) return old;
+    const prepared = await api<Prepared>("/relay/prepare", {
+      accountId: transaction.signerId, receiverId: transaction.receiverId,
+      methodName: call.methodName, publicKey: key.publicKey,
+    });
+    const signed = await signDelegate(key, {
+      senderId: transaction.signerId, receiverId: transaction.receiverId,
+      call: { methodName: call.methodName, args: call.args, gas: call.gas, deposit: call.deposit },
+      nonce: prepared.nonce, maxBlockHeight: prepared.maxBlockHeight,
+    });
+    const row = { quote, publicKey: key.publicKey, signedDelegateBase64: signed.signedDelegateBase64, jobId: null };
+    save(row); return row;
+  };
+  const signed = cacheKey && globalThis.navigator?.locks ? await navigator.locks.request(cacheKey, prepare) : await prepare();
+  if (signed.jobId) return waitForRelayJob(signed.jobId, { signal });
   let job: RelayJob;
   try {
     job = await api<RelayJob>("/relay", {
@@ -122,17 +138,24 @@ export async function sendRelayed(
       },
     });
   } catch (error) {
+    // Admission checks duplicate jobs before expiry. An explicit expiry here
+    // proves this cached delegate was never admitted and can no longer execute.
+    if (cacheKey && error instanceof ApiError && error.code === "RELAY_EXPIRED" && retryExpired) {
+      localStorage.removeItem(cacheKey);
+      return sendRelayed(key, transaction, { signal, recoveryKey, retryExpired: false });
+    }
     if (error instanceof ApiError)
       throw new RelayError(error.message, error.code || "RELAY_REJECTED");
     throw error;
   }
+  save({ ...signed, jobId: job.id });
   try {
     return await waitForRelayJob(job.id, { signal });
   } catch (error) {
     if (
       error instanceof RelayError &&
       error.code === "RELAY_EXPIRED" &&
-      retryExpired
+      retryExpired && !recoveryKey
     )
       return sendRelayed(key, transaction, { signal, retryExpired: false });
     throw error;

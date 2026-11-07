@@ -114,3 +114,29 @@ No new embedded-wallet dependency or native passkey-account contract was adopted
 ## Live project-pilot verification
 
 On 31 October 2026 the integrated server-side QA exercised recovery with a real project-owned NEAR testnet key. A fresh purpose-bound NEP413 proof revoked four older pilot game sessions, retained one with a rotated cookie, and made the copied old cookie return HTTP 401. The linked account and native progression remained accessible. The public proof is `public/native-progression-proof.json`. This was an API/script rehearsal, not a physical-device wallet-connector acceptance test.
+
+## Local security candidate: isolated account authority
+
+The game page receives only public device metadata. The private FullAccess key and
+WebAuthn PRF recovery run on a separately served same-site origin. Its hidden frame
+accepts exact-origin/parent messages, and a fixed policy independently verifies
+server-priced QGOLD burns and task/Secret funding. Avatar creation, Aura redemption
+to self, equipment, earned mini-games and own SocialDB publication remain silent.
+
+Withdrawals, asset transfers, account/order-signing key changes and recovery open
+a separate approval page. It displays immutable account, contract, recipient and
+amount; cannot be framed; supports Cancel/Escape, keyboard approval and enlarged
+text. A durable execution claim prevents two approval windows from executing one
+request. Raw-byte signing is refused. Approval does not export a private key.
+A recovered device key is saved before AddKey and reused after a lost reply.
+Self-paid financial actions reserve the existing receipt journal before signing.
+
+This is a candidate, not a deployed key rotation. Existing game-origin private
+keys and old recovery relying-party IDs must be inventoried and replaced by the
+owner before calling the boundary effective. Do not silently discard them or
+blindly import them into the new origin. The design still trusts initial key
+enrollment, the signer build/configuration, RPC, browser/device and the game server's
+purchase authorization. Game-origin script compromise can still request permitted
+game spending; this is not a claim that all XSS impact has been eliminated.
+Safari/iOS, Chrome/Android, WebAuthn PRF and popup/cookie behavior require physical
+device rehearsal before release. The candidate is testnet-only.

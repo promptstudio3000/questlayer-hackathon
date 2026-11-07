@@ -779,6 +779,30 @@ impl QGold {
         StorageBalance { total: U128(STORAGE_FEE), available: U128(0) }
     }
 
+    /// Application-funded lifetime registration. Unlike NEP-145 deposits, this
+    /// explicit grant is not redeemable by the recipient. Its reserve survives
+    /// unregister/register cycles and is excluded from backing reconciliation.
+    #[payable]
+    pub fn storage_deposit_sponsored(&mut self, account_id: AccountId) -> StorageBalance {
+        let d = env::attached_deposit().as_yoctonear();
+        let mut grants: LookupMap<AccountId, bool> = LookupMap::new(b"sg".to_vec());
+        let mut retained = 0;
+        if self.holders.get(&account_id).is_none() {
+            if !grants.get(&account_id).unwrap_or(false) {
+                assert!(d >= STORAGE_FEE, "Attach at least the storage grant");
+                grants.insert(&account_id, &true);
+                self.storage_deposits = self.storage_deposits.checked_add(STORAGE_FEE).expect("Storage reserve overflow");
+                retained = STORAGE_FEE;
+            }
+            self.ensure_holder(&account_id, 0);
+        }
+        if d > retained {
+            Promise::new(env::predecessor_account_id()).transfer(NearToken::from_yoctonear(d - retained)).detach();
+        }
+        self.after_change();
+        StorageBalance { total: U128(STORAGE_FEE), available: U128(0) }
+    }
+
     pub fn storage_balance_of(&self, account_id: AccountId) -> Option<StorageBalance> {
         self.holders.get(&account_id).map(|_| StorageBalance { total: U128(STORAGE_FEE), available: U128(0) })
     }

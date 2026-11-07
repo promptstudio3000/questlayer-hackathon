@@ -211,3 +211,22 @@ flow's escrow calls; `contracts/qgold-escrow/src/tests.rs` checks the money.
   the escrow account, the treasury, and every player who withdraws.
 - Fees stay in QGOLD and are credited to the treasury account (`questlayer-dev-20261101.testnet` on
   testnet).
+
+## Local security candidate: admission and appeals
+
+New escrows must cover present native storage plus a conservative worst-case
+future record allowance before accepting QGOLD. Failure rolls back the obligation
+and the token refunds the payment. Automatic withdrawal preserves the token credit
+if the native registration reserve is insufficient. Closed records remain as
+replay evidence and consume paid storage; this candidate does not prune them.
+
+An unrelated worker cannot reserve an unassigned task slot by opening a dispute.
+Direct worker appeals require the named assignee and a pre-deadline call. The
+publisher/poster can preserve a verified, timely submitted proof even when its
+on-chain publication is delayed. The moderator can still resolve a genuine appeal
+later. There is no new automatic forfeiture or moderator timeout; a fair liveness
+policy and moderation coverage remain review decisions.
+
+`GET /api/market/funding-intent?id=...` exposes only the authenticated player's
+waiting exact funding call. The isolated signer uses it to keep task/Secret
+purchases seamless. Conditional peer transfers require protected approval.

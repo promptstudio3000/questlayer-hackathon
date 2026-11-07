@@ -1,7 +1,7 @@
 // HTTP routes for the task market, Secrets and conditional transfers.
 // Mounted after session auth: `player` is the signed-in explorer.
 import * as market from "./service.mjs";
-import { accountOf, checkFunding, escrowConfig } from "./chain.mjs";
+import { accountOf, checkFunding, escrowConfig, pendingFunding } from "./chain.mjs";
 
 const num = (v) => (v === null || v === undefined || v === "" ? NaN : Number(v));
 
@@ -16,6 +16,12 @@ export function createMarketRoutes({ db, isModerator = () => false, clock = Date
       const send = (data, status = 200) => (respond(res, data, status), true);
       const q = url.searchParams;
       const route = path.slice("/api/market/".length);
+
+      if (route === "funding-intent" && method === "GET") {
+        const funding = pendingFunding(db, String(q.get("id") ?? ""), player);
+        assert(funding, "This funding request is no longer pending for this player.", 404);
+        return send(funding);
+      }
 
       if (route === "nearby" && method === "GET") {
         const view = market.nearby(db, player, { lat: num(q.get("lat")), lng: num(q.get("lng")) }, now);

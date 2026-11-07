@@ -472,6 +472,40 @@ fn unregister_refunds_only_what_was_paid() {
 }
 
 #[test]
+fn lifetime_storage_grant_cannot_be_cashed_out_or_charged_twice() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    let initial_reserve = q.storage_deposits;
+    c.call("escrow.testnet", STORAGE_FEE, || q.storage_deposit_sponsored(a("recipient.testnet")));
+    assert_eq!(q.storage_deposits, initial_reserve + STORAGE_FEE);
+    for _ in 0..8 {
+        let before = c.bal;
+        assert!(c.call("recipient.testnet", 1, || q.storage_unregister(None)));
+        assert_eq!(c.bal, before + 1, "recipient receives no native refund");
+        assert_eq!(q.storage_deposits, initial_reserve + STORAGE_FEE, "grant remains reserved");
+        let before = c.bal;
+        c.call("escrow.testnet", STORAGE_FEE, || q.storage_deposit_sponsored(a("recipient.testnet")));
+        assert_eq!(c.bal, before, "repeat sponsor payment is refunded in full");
+        assert_eq!(q.storage_deposits, initial_reserve + STORAGE_FEE);
+    }
+    // An ordinary player's refundable deposit keeps its existing semantics.
+    c.call("player.testnet", STORAGE_FEE, || q.storage_deposit(None, None));
+    let before = c.bal;
+    c.call("escrow.testnet", STORAGE_FEE, || q.storage_deposit_sponsored(a("player.testnet")));
+    assert_eq!(c.bal, before);
+    c.call("player.testnet", 1, || q.storage_unregister(None));
+    assert_eq!(c.bal, before + 1 - STORAGE_FEE);
+}
+
+#[test]
+#[should_panic(expected = "Attach at least the storage grant")]
+fn first_storage_grant_requires_funding() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("escrow.testnet", 0, || q.storage_deposit_sponsored(a("recipient.testnet")));
+}
+
+#[test]
 fn rounding_never_lowers_r() {
     let mut c = Chain::new();
     let mut q = fresh(&mut c);

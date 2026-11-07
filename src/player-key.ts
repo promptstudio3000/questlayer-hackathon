@@ -1,6 +1,6 @@
-// The player's own signing key for the invisible NEAR account. It is generated
-// in the browser and stays on this device; the server only ever sees the public
-// key. A passkey-derived recovery key is optional and never a server-stored seed.
+// Production device keys live on the separate secure signing origin. The game
+// receives public metadata and reviewed signatures, never a private key. Local
+// in-memory stores are used only inside that origin and by synthetic tests.
 import { loadNearApi } from "./near-api.ts";
 
 export type PlayerKeyRecord = {
@@ -9,8 +9,11 @@ export type PlayerKeyRecord = {
   accountId: string | null;
   origin: "device" | "prf";
   createdAt: number;
+  vaultId?: string;
 };
 export interface KeyStore {
+  vault?: true;
+  create?: () => Promise<PlayerKeyRecord>;
   get(key: string): Promise<PlayerKeyRecord | null>;
   put(key: string, value: PlayerKeyRecord): Promise<void>;
   delete(key: string): Promise<void>;
@@ -22,45 +25,17 @@ export type DelegateCall = {
   deposit: string;
 };
 export const DEVICE_KEY = "device";
-const DB_NAME = "questlayer-keys";
-const STORE = "keys";
-
-function openStore(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(STORE))
-        request.result.createObjectStore(STORE);
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-function transact<T>(
-  mode: IDBTransactionMode,
-  work: (store: IDBObjectStore) => IDBRequest<T>,
-): Promise<T> {
-  return openStore().then(
-    (db) =>
-      new Promise<T>((resolve, reject) => {
-        const tx = db.transaction(STORE, mode);
-        const request = work(tx.objectStore(STORE));
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-        tx.oncomplete = () => db.close();
-      }),
-  );
-}
 export function indexedDbKeyStore(): KeyStore {
+  const request = async <T>(method: string, input?: unknown) => (await import("./signing-vault/client.ts")).vaultRequest<T>(method, input);
   return {
-    get: (key) =>
-      transact<PlayerKeyRecord | undefined>("readonly", (s) => s.get(key)).then(
-        (v) => v ?? null,
-      ),
-    put: (key, value) =>
-      transact("readwrite", (s) => s.put(value, key)).then(() => undefined),
-    delete: (key) =>
-      transact("readwrite", (s) => s.delete(key)).then(() => undefined),
+    vault: true,
+    create: () => request<PlayerKeyRecord>("create"),
+    get: key => key === DEVICE_KEY ? request<PlayerKeyRecord | null>("read") : Promise.resolve(null),
+    put: async (key, value) => {
+      if (key !== DEVICE_KEY || value.secretKey || !value.vaultId) throw Error("Private keys cannot be written from the game origin.");
+      await request("bind", { publicKey: value.publicKey, accountId: value.accountId });
+    },
+    delete: async () => { throw Error("Manage device keys in the secure account window."); },
   };
 }
 export function memoryKeyStore(): KeyStore {
@@ -82,6 +57,7 @@ export async function createDeviceKey(
   store: KeyStore,
   now = Date.now(),
 ): Promise<PlayerKeyRecord> {
+  if (store.create) return store.create();
   const existing = await store.get(DEVICE_KEY);
   if (existing) return existing;
   const { KeyPair } = await loadNearApi();
@@ -104,6 +80,10 @@ export async function bindAccount(store: KeyStore, accountId: string) {
   await store.put(DEVICE_KEY, { ...record, accountId });
 }
 export async function signerFor(record: PlayerKeyRecord) {
+  if (record.vaultId) {
+    const { IsolatedSigner } = await import("./signing-vault/signer.ts");
+    return new IsolatedSigner(record);
+  }
   const { KeyPairSigner } = await loadNearApi();
   return KeyPairSigner.fromSecretKey(record.secretKey as `ed25519:${string}`);
 }

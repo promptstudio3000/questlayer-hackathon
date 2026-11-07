@@ -12,11 +12,11 @@ import { openDatabase } from "../../server/database.mjs";
 import { QgoldKeeper } from "../../server/qgold/keeper.mjs";
 import { escrowLocalTransport } from "./escrow-rpc.mjs";
 
-const [sandboxModule, wasmDirectory, reportPath, selection = ""] = process.argv.slice(2);
+const [sandboxModule, wasmDirectory, reportPath, selection = "", candidateManifest] = process.argv.slice(2);
 assert.ok(sandboxModule && wasmDirectory && reportPath, "arguments: sandbox module, WASM directory, report path");
 const { Sandbox, GenesisAccount } = await import(pathToFileURL(resolve(sandboxModule)));
 const NEAR = 10n ** 24n, GOLD = 10n ** 6n, NOW = Date.parse("2026-11-06T01:00:00Z");
-const manifest = JSON.parse(readFileSync(new URL("./keeper-wasm-artifacts.json", import.meta.url)));
+const manifest = JSON.parse(readFileSync(candidateManifest ? resolve(candidateManifest) : new URL("./keeper-wasm-artifacts.json", import.meta.url)));
 const artifacts = {}, report = { startedAt: new Date().toISOString(), scope: "loopback local chain only", wasm: {}, scenarios: [], transactions: [], workers: [], findings: [], releaseReady: false };
 for (const [name, artifact] of Object.entries(manifest)) {
   const code = readFileSync(join(wasmDirectory, artifact.filename));

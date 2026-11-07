@@ -171,17 +171,12 @@ test("a lost creation response is reconciled from the chain; a stolen name fails
   assert.equal(f.rows("managed_accounts").length, 2);
   // Factory funding problems retry instead of burning the account slot.
   f.factory.calls.length = 0;
-  const original = f.factory.signAndSendTransaction;
-  f.factory.signAndSendTransaction = async (input) => ({
-    ...(await original.call(f.factory, { ...input, actions: [] })),
-    status: {
-      Failure: {
+  const original = f.factory.fail;
+  f.factory.fail = () => ({
         ActionError: {
           index: 1,
           kind: { LackBalanceForState: { account_id: FACTORY, amount: "1" } },
         },
-      },
-    },
   });
   assert.deepEqual(await f.relayer.runRelayJobs(), {
     completed: 0,
@@ -193,7 +188,7 @@ test("a lost creation response is reconciled from the chain; a stolen name fails
     .get(retry.account.accountId);
   assert.equal(job.error_code, "FACTORY_UNDERFUNDED");
   assert.equal(f.accounts.view(bob).account.state, "creating");
-  f.factory.signAndSendTransaction = original;
+  f.factory.fail = original;
   f.advance(5000);
   assert.deepEqual(await f.relayer.runRelayJobs(), {
     completed: 1,

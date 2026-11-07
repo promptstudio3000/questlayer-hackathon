@@ -444,9 +444,14 @@ test("the server boots on mainnet from the slice manifests; DISABLE_RELAYER paus
     DATABASE_PATH: join(data, "db.sqlite"),
     AWARD_SIGNER_PATH: join(data, "award-attestor-mainnet.pem"),
     DISABLE_BACKGROUND_WORKERS: "1",
+    // Synthetic configuration only; no public RPC or signing service is used.
+    SIGNING_VAULT_ORIGIN: "http://127.0.0.1:19183",
   };
   delete env.REWARD_ATTESTOR_PATH;
 
+  const unconfigured = await boot(app, { ...env, SIGNING_VAULT_ORIGIN: "" }, 19184);
+  try { assert.notEqual(unconfigured.health.relayer.enabled, true, "missing isolated signer fails closed"); }
+  finally { await unconfigured.stop(); }
   const live = await boot(app, env, 19181);
   try {
     assert.equal(live.health.network, "mainnet");

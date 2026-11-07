@@ -1,0 +1,87 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #f6f0ff;
+  background: #1b1034;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: max(24px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+  font-size: 1rem;
+  line-height: 1.5;
+}
+main {
+  max-width: 640px;
+  margin: auto;
+}
+h1 {
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  padding: 16px;
+  background: #291b46;
+  border-radius: 12px;
+}
+dl {
+  padding: 16px;
+  background: #291b46;
+  border-radius: 12px;
+}
+dt {
+  color: #d7c3f0;
+  margin-top: 12px;
+}
+dt:first-child {
+  margin-top: 0;
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+summary {
+  min-height: 48px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  background: #1b1034;
+  padding: 8px 0;
+}
+button {
+  min-height: 48px;
+  min-width: 112px;
+  font: inherit;
+  padding: 12px 20px;
+  margin: 8px 8px 0 0;
+  border-radius: 10px;
+  border: 2px solid #ae97cc;
+  background: #291b46;
+  color: #fff;
+  cursor: pointer;
+}
+button.primary {
+  background: #bdfd79;
+  color: #1b1034;
+  border-color: #bdfd79;
+  font-weight: 700;
+}
+button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
+button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}

@@ -59,6 +59,8 @@ import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
 import { ManagedAccounts } from "./relayer/accounts.mjs";
+import { SubsidyBudget } from "./relayer/subsidy-budget.mjs";
+import { signingVaultOrigin, vaultCors } from "./signing-vault-cors.mjs";
 import { Relayer, startRelayWorker } from "./relayer/relay.mjs";
 import { createRelayerRoutes } from "./relayer/routes.mjs";
 import {
@@ -246,6 +248,7 @@ const moderation = new Moderation(db, { evidence: taskEvidence });
 const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
+const secureSigningOrigin = signingVaultOrigin(process.env.SIGNING_VAULT_ORIGIN, origin);
 const creatorRuntime = createCreatorRuntime(db, {
   origin,
   authenticate: auth,
@@ -381,7 +384,7 @@ const nativeVaults =
 const relayConfig = relayerConfiguration(
   featureEnabled("relayer") ? process.env : { DISABLE_RELAYER: "1" },
 );
-const factoryService = relayConfig.accountsEnabled
+const factoryService = relayConfig.accountsEnabled && secureSigningOrigin
   ? await loadServiceAccount(provider, relayConfig.factoryKeyPath, {
       expectAccountId: relayConfig.factoryAccount,
     })
@@ -391,6 +394,7 @@ const managedAccounts = relayConfig.factoryAccount
       factoryId: relayConfig.factoryAccount,
       fundYocto: relayConfig.fundYocto,
       topupCapYocto: relayConfig.topupCapYocto,
+      subsidyBudget: new SubsidyBudget(db, { dailyYocto: relayConfig.subsidyDailyYocto, dailyOperations: relayConfig.subsidyDailyOperations, gasReserveYocto: relayConfig.subsidyGasReserveYocto }),
     })
   : null;
 // Experimental NEAR Intents market (docs/NEAR-INTENTS-MARKET.md): on only when
@@ -414,7 +418,7 @@ const qgoldTokenForRelay = (() => {
   return settings.enabled ? settings.manifest?.tokenContract || settings.contract : undefined;
 })();
 const relayerService =
-  managedAccounts && relayConfig.enabled
+  managedAccounts && relayConfig.enabled && secureSigningOrigin
     ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
     : null;
 const relayer = managedAccounts
@@ -786,7 +790,8 @@ const goldSpendRoutes = createGoldSpendRoutes({
           if (!account) return 0;
           return Number((await qgoldVault.account(account)).balance || 0);
         },
-        txStatus: (hash, account) => provider.txStatus(hash, account, "FINAL"),
+        txStatus: (hash, account) => provider.viewTransactionStatusWithReceipts({ txHash: hash, accountId: account, waitUntil: "FINAL" }),
+        relayerId: relayer?.relayerId,
       }
     : null,
 });
@@ -1274,9 +1279,12 @@ function profile(player) {
 async function api(req, res, url) {
   const path = url.pathname,
     method = req.method || "GET";
+  const fromVault = vaultCors(req, res, path, secureSigningOrigin);
+  if (fromVault && method === "OPTIONS") return;
   if (method !== "GET") {
     const allowed = new Set([
       origin,
+      ...(fromVault ? [secureSigningOrigin] : []),
       ...(process.env.NODE_ENV === "production"
         ? []
         : [
@@ -1421,6 +1429,7 @@ async function api(req, res, url) {
     return respond(res, {
       mode: "demo",
       network: NETWORK,
+      signingVaultOrigin: secureSigningOrigin,
       features: ENABLED_FEATURES,
       rpcUrl: rpc,
       coinValue: 0.01,

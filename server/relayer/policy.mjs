@@ -206,6 +206,11 @@ export function validateDelegate(decoded, context) {
     "The delegate nonce is stale. Prepare the action again.",
   );
   demand(
+    typeof maxBlockHeight !== "bigint" || maxBlockHeight > ctx.blockHeight,
+    "RELAY_EXPIRED",
+    "The signed action expired before admission. Prepare it again.",
+  );
+  demand(
     typeof maxBlockHeight === "bigint" &&
       maxBlockHeight > ctx.blockHeight &&
       maxBlockHeight <= ctx.blockHeight + ctx.blockTtl,

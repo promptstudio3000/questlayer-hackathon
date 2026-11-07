@@ -359,10 +359,13 @@ test("routes mount under /api/market, confirm a funding and gate moderators", as
   };
   const created = await call(alice, "POST", "/api/market/tasks", { title: "Route test", ...PLZEN, reward: GOLD });
   assert.equal(created.status, 201);
+  assert.deepEqual((await call(alice, "GET", `/api/market/funding-intent?id=${created.body.id}`)).body, created.body.funding);
+  await assert.rejects(call(bob, "GET", `/api/market/funding-intent?id=${created.body.id}`), /no longer pending/);
   assert.equal((await call(alice, "POST", "/api/market/funded", { id: created.body.id })).body.state, "waiting");
   views[created.body.id] = escrowFundingView(db.prepare("SELECT * FROM mk_fundings WHERE id=?").get(created.body.id));
   await assert.rejects(call(bob, "POST", "/api/market/funded", { id: created.body.id }), /Unknown payment/);
   assert.equal((await call(alice, "POST", "/api/market/funded", { id: created.body.id })).body.state, "funded");
+  await assert.rejects(call(alice, "GET", `/api/market/funding-intent?id=${created.body.id}`), /no longer pending/);
   const near = await call(bob, "GET", `/api/market/nearby?lat=${PLZEN.lat}&lng=${PLZEN.lng}`);
   assert.equal(near.body.tasks[0].id, created.body.id);
   assert.equal((await call(bob, "GET", "/api/market/escrow")).body.contractId, ESCROW.contractId);
