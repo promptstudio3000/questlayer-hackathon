@@ -1,10 +1,16 @@
 name: Protected paths
 # Fails a pull request that changes contracts, deploy/signing scripts, money
-# server code, economy numbers, deployment records, CI or dependencies without
-# the owner's `owner-approved` label, or that adds anything that looks like a
-# secret. Rules: .github/scripts/protected-paths.mjs, docs/HANDOFF-WEEKEND.md.
+# server code, sign-in/signing code, economy numbers, deployment records, CI or
+# dependencies without the owner's `owner-approved` label, or that adds anything
+# that looks like a secret. Rules: .github/scripts/protected-paths.mjs,
+# docs/HANDOFF-WEEKEND.md.
+#
+# pull_request_target: GitHub runs THIS workflow file and the guard script as
+# they are on the base branch, so a pull request cannot edit the check that
+# judges it. The pull request's commits are only fetched for `git diff`; no code
+# from the pull request is executed, and the token is read-only.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, labeled, unlabeled, edited]
 permissions:
   contents: read
@@ -13,13 +19,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out the base branch (trusted guard)
+        uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.base.sha }}
           fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch the pull request commits (data only)
+        run: git fetch --no-tags https://github.com/${{ github.repository }}.git "+refs/pull/${{ github.event.pull_request.number }}/head:refs/remotes/pr/head"
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node .github/scripts/protected-paths.mjs
+      - name: Run the base branch's guard
+        run: node .github/scripts/protected-paths.mjs
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
