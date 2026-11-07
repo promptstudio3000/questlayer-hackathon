@@ -190,3 +190,28 @@ The active collection phase is now restricted to the 27 EU member states. Build 
 The same EU policy controls future bulk acquisition and the preparation of zones/Atlas quests. Czechia and small EU sources with useful neighboring context are prioritized. The worker continues autonomously within that scope and pauses when its resource floor is reached. There is no automatic switch to US/capital/global collection after EU completion; widening the scope requires another owner decision.
 
 EU processing uses a separate work state and daily-output directory so an older non-EU pilot cannot be relabeled as EU coverage. Reuse only verified eligible source indexes from the earlier work directory. Report missing EU countries, missing neighboring geometry, source failures and incomplete owners. EU-only mode never asserts full-planet readiness and does not activate financial rewards.
+
+
+### Completing days while acquisition waits
+
+The collector CLI accepts `--prepare-only`. It retains the same scope, source
+context, safety checks, immutable snapshot, complete-day compiler and isolated
+runtime acceptance, while skipping source extraction/planning/export attempts.
+It does not increment those attempts or scheduling turns. An interrupted daily
+build resumes its already frozen catalog, rather than accepting different inputs.
+
+The Agent Zero supervisor gives publication priority from 23:00 UTC. Heavy work
+requires 9 GiB free; publication-only work starts with 128 MiB above the unchanged
+8 GiB service floor. A publication slice has up to 55 minutes; heavy slices retain
+their 20-minute bound. Both preserve memory/process gates and explicit waiting
+states. No money, item supply or whole-EU readiness follows from this mode.
+
+Verified indexed plaintext intermediates may be retained losslessly as
+`*.retained.gz` with `*.retention.json`. The retention helper checks the original, sealed
+index references, complete decompression and archive hash before releasing
+plaintext. Gameplay index reads retain their independent chunk-hash checks.
+Existing index-driven planning/export does not reopen whole-country originals.
+An intentional re-extraction first restores those originals from their verified
+receipts. Raw PBFs, complete selected geometry, audit evidence and prior published
+days remain intact. This is storage maintenance, not a change to public access or
+safety classification.
