@@ -18,6 +18,8 @@ import { resolve } from "node:path";
 import { assert, id } from "../domain.mjs";
 import { atomic } from "../database.mjs";
 import { fundingAssessment } from "./funding.mjs";
+import { ensureEscrowDeliverySchema, runEscrowDelivery } from "./delivery.mjs";
+import { escrowDeliveryTransport } from "./delivery-transport.mjs";
 import {
   ensureModuleVersion,
   registerModuleSchema,
@@ -41,7 +43,6 @@ export const PUBLISHER_METHODS = Object.freeze([
   "decline_transfer",
   "withdraw_for",
 ]);
-const MAX_ATTEMPTS = 8;
 
 export const MARKET_CHAIN_SCHEMA = registerModuleSchema({
   name: "task-market-chain",
@@ -56,6 +57,7 @@ const ready = new WeakSet();
 export function ensureMarketChainSchema(db) {
   if (ready.has(db)) return;
   ensureModuleVersion(db, MARKET_CHAIN_SCHEMA);
+  ensureEscrowDeliverySchema(db);
   ready.add(db);
 }
 
@@ -192,12 +194,16 @@ export function enqueue(db, escrowId, method, args, now) {
     id("eop"), seq, escrowId, method, JSON.stringify(args), now, now,
   );
 }
-/** Pushes an account's escrow credit to it, once per queue. */
+/** Coalesce only before a delivery pass can observe or consume the credit. */
 export function payOut(db, account, now) {
   if (!account) return;
   ensureMarketChainSchema(db);
   const queued = db
-    .prepare("SELECT 1 FROM mk_chain_ops WHERE method='withdraw_for' AND state='queued' AND json_extract(args,'$.account_id')=?")
+    .prepare(`SELECT 1 FROM mk_chain_ops o WHERE method='withdraw_for' AND state='queued' AND attempts=0 AND tx IS NULL
+       AND json_extract(args,'$.account_id')=?
+       AND NOT EXISTS(SELECT 1 FROM mk_delivery_lease)
+       AND NOT EXISTS(SELECT 1 FROM mk_delivery_attempts a WHERE a.op_id=o.id)
+       AND NOT EXISTS(SELECT 1 FROM mk_chain_ops later WHERE later.seq>o.seq AND later.method!='withdraw_for')`)
     .get(account);
   if (!queued) enqueue(db, null, "withdraw_for", { account_id: account }, now);
 }
@@ -211,13 +217,10 @@ export function release(db, escrowId, account) {
   return db.prepare("DELETE FROM mk_chain_holds WHERE escrow_id=? AND account=?").run(escrowId, account).changes > 0;
 }
 
-/** Errors that mean the call already happened (a retry after a lost response). */
-const DONE = /No credit to withdraw|already paid|is not held|Task is closed|Dispute already open|not disputed|No open dispute for this worker/;
-
 /**
  * One worker pass: confirm waiting fundings, then send due publisher calls.
- * `view(method, args)` reads the escrow; `call(method, args)` sends a
- * transaction as the publisher and returns its hash.
+ * `view(method, args)` reads the escrow; `call` prepares, replays and queries
+ * durable signed transactions. A hash-only sender cannot deliver money safely.
  */
 export async function runEscrowWorker(db, { view, call, activate, drop, now = Date.now(), maxOps = 20, maxChecks = 20 }) {
   ensureMarketChainSchema(db);
@@ -246,46 +249,7 @@ export async function runEscrowWorker(db, { view, call, activate, drop, now = Da
       result.fundingFailed++;
     }
   }
-  const blocked = new Set();
-  for (const op of db
-    .prepare("SELECT * FROM mk_chain_ops WHERE state='queued' ORDER BY seq LIMIT ?")
-    .all(maxOps * 3)) {
-    if (result.sent + result.failed >= maxOps) break;
-    if (op.escrow_id && blocked.has(op.escrow_id)) continue;
-    // A payout push waits for every earlier call, so the credit exists.
-    if (!op.escrow_id && blocked.size) break;
-    if (op.run_after > now) {
-      if (op.escrow_id) blocked.add(op.escrow_id);
-      continue;
-    }
-    try {
-      const args = JSON.parse(op.args);
-      let tx;
-      try {
-        tx = await call(op.method, args);
-      } catch (error) {
-        // A review slot whose hold never reached the chain is paid directly.
-        if (op.method === "resolve_dispute" && args.pay && /No open dispute/.test(String(error?.message || error)))
-          tx = await call("approve_task", { id: args.id, worker: args.worker });
-        else throw error;
-      }
-      db.prepare("UPDATE mk_chain_ops SET state='sent',tx=?,attempts=attempts+1,last_error=NULL WHERE id=?").run(tx ?? null, op.id);
-      result.sent++;
-    } catch (error) {
-      const message = String(error?.message || error).slice(0, 300);
-      if (DONE.test(message)) {
-        db.prepare("UPDATE mk_chain_ops SET state='sent',attempts=attempts+1,last_error=? WHERE id=?").run(message, op.id);
-        continue;
-      }
-      const attempts = op.attempts + 1;
-      const state = attempts >= MAX_ATTEMPTS ? "failed" : "queued";
-      db.prepare("UPDATE mk_chain_ops SET state=?,attempts=?,last_error=?,run_after=? WHERE id=?").run(
-        state, attempts, message, now + Math.min(3_600_000, 15_000 * 2 ** attempts), op.id,
-      );
-      if (op.escrow_id) blocked.add(op.escrow_id);
-      result.failed++;
-    }
-  }
+  Object.assign(result, await runEscrowDelivery(db, { call, view, now, maxOps }));
   return result;
 }
 /** The player says they signed: check that one funding right away. */
@@ -339,20 +303,7 @@ export async function escrowTransport(provider, escrow, keyPath, { Account, KeyP
     503,
   );
   const account = new Account(config.accountId, provider, signer);
-  return async (method, args) => {
-    assert(p.method_names.includes(method), "The publisher key does not allow " + method, 503);
-    const result = await account.callFunctionRaw({
-      contractId: escrow.contractId,
-      methodName: method,
-      args,
-      gas: 120n * 10n ** 12n,
-      deposit: 0n,
-      waitUntil: "FINAL",
-    });
-    const failure = result.status?.Failure;
-    if (failure) throw Error(JSON.stringify(failure).slice(0, 300));
-    return result.transaction?.hash || result.transaction_outcome?.id;
-  };
+  return escrowDeliveryTransport(provider, account, escrow, p.method_names);
 }
 export function escrowView(provider, contractId) {
   return async (method, args) => {

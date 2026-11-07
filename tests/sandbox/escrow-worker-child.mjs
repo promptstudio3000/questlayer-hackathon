@@ -2,6 +2,7 @@
 import { openDatabase } from "../../server/database.mjs";
 import * as chain from "../../server/market/chain.mjs";
 import * as market from "../../server/market/service.mjs";
+import { escrowDeliveryTransport } from "../../server/market/delivery-transport.mjs";
 import { escrowLocalTransport, escrowReceiptSummary } from "./escrow-rpc.mjs";
 
 const send = (message) => process.send?.(message);
@@ -33,13 +34,16 @@ process.once("message", async (config) => {
         Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0);
       }
     }]));
-    const call = async (method, args) => {
-      if (config.stopBefore === method) await stop(`before-${method}`);
-      const outcome = await transport.call(config.escrow.contractId, method, args);
-      send({ type: "transaction", method, args, ...escrowReceiptSummary(outcome) });
-      if (config.stopAfter === method) await stop(`after-final-${method}-before-local-save`);
-      if (outcome.status?.Failure) throw Error(JSON.stringify(outcome.status.Failure));
-      return outcome.transaction.hash;
+    const durable = await escrowDeliveryTransport(transport.provider, transport.account, config.escrow, chain.PUBLISHER_METHODS);
+    const call = { ...durable,
+      async send(attempt) {
+        const method = attempt.method, args = JSON.parse(attempt.args);
+        if (config.stopBefore === method) await stop(`before-${method}`);
+        const outcome = await durable.send(attempt);
+        send({ type: "transaction", method, args, ...escrowReceiptSummary(outcome.final_execution_outcome ?? outcome) });
+        if (config.stopAfter === method) await stop(`after-final-${method}-before-local-save`);
+        return outcome;
+      },
     };
     const result = await chain.runEscrowWorker(db, {
       view, call, activate, drop: market.DROP, now: config.now,

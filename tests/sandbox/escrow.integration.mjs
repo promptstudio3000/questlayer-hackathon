@@ -20,7 +20,7 @@ const NEAR = 10n ** 24n, PRICE = BigInt(GOLD), PLACE = { lat: 49.7475, lng: 13.3
 const escrow = { contractId: "escrow.testnet", tokenId: "qgold.testnet", treasuryId: "treasury.testnet", publisherId: "owner.testnet" };
 chain.setEscrowConfig(escrow);
 const keys = new Map();
-const accounts = ["owner", "escrow", "qgold", "alice", "bob", "treasury", "worker2"].map((name) => {
+const accounts = ["owner", "escrow", "qgold", "alice", "bob", "treasury", "worker2", "unregistered"].map((name) => {
   const id = `${name}.testnet`, key = KeyPair.fromRandom("ed25519"); keys.set(id, key);
   return new GenesisAccount(id, key.getPublicKey().toString(), key.toString(), 200n * NEAR);
 });
@@ -90,7 +90,8 @@ async function confirm(f, item) {
   });
 }
 async function worker(f, options = {}) {
-  const now = options.now ?? await chainNow();
+  const now = options.now ?? Math.max(await chainNow(), f.workerTime ?? 0) + 120_000;
+  f.workerTime = now;
   const child = fork(new URL("./escrow-worker-child.mjs", import.meta.url), [], {
     env: { PATH: process.env.PATH, NODE_NO_WARNINGS: "1" }, stdio: ["ignore", "ignore", "pipe", "ipc"],
   });
@@ -219,10 +220,12 @@ try {
   const creatorBefore = await balance("alice.testnet"), feeBefore = await balance("treasury.testnet"), buyerBefore = await balance("bob.testnet");
   await fund(released, paid); await call("confirm_visit", { id: paid.id });
   const realPaid = await view("get_secret", { id: paid.id });
-  await Promise.all([worker(released, { barrier: "confirm-together", maxOps: 0 }), worker(released, { barrier: "confirm-together", maxOps: 0, accountId: "worker2.testnet" })]);
+  await Promise.all([worker(released, { barrier: "confirm-together", maxOps: 0 }), worker(released, { barrier: "confirm-together", maxOps: 0 })]);
   assert.equal(feeCount(released, paid), 1);
   assert.equal(sql(released, "mk_reveals", paid).created_at, Number(realPaid.funded_at_ms));
-  await worker(released); await worker(released);
+  const together = Math.max(await chainNow(), released.workerTime) + 120_000;
+  await Promise.all([worker(released, { now: together }), worker(released, { now: together })]);
+  await worker(released);
   assert.equal(await balance("alice.testnet") - creatorBefore, PRICE * 9n / 10n);
   assert.equal(await balance("treasury.testnet") - feeBefore, PRICE / 10n);
   assert.equal(buyerBefore - await balance("bob.testnet"), PRICE);
@@ -265,10 +268,9 @@ try {
   assert.equal(await balance("treasury.testnet") - lostTreasury, PRICE / 10n);
   assert.equal(feeCount(lost, lostPayment), 1);
   const afterLost = outstandingOps(lost);
-  if (afterLost.length) report.findings.push({ id: "ESCROW-WASM-01", severity: "P2", title: "Completed withdrawal remains queued after lost response",
-    evidence: afterLost, impact: "No duplicate token payout in this run, but durable outbox recovery did not recognize the completed withdrawal.",
-    boundary: "Existing settlement outbox, separate from initial funding verification" });
-  await passed("SIGKILL after finalized withdrawal cannot pay twice on replay", { localOutboxRecovered: afterLost.length === 0, outstandingOps: afterLost });
+  assert.equal(afterLost.length, 0, "lost acknowledgement must reconcile to delivered automatically");
+  assert.equal(lost.db.prepare("SELECT COUNT(*) n FROM mk_delivery_attempts").get().n, 2, "one signed attempt per recipient, no replacement after response loss");
+  await passed("SIGKILL after finalized withdrawal is reconciled without a second transfer or stranded outbox row");
 
   const failedPush = await fixture("failed-token-push"), failedPurchase = failedPush.secret();
   const pushCreator = await balance("alice.testnet"), pushTreasury = await balance("treasury.testnet");
@@ -283,19 +285,36 @@ try {
   await worker(failedPush); await worker(failedPush);
   const undelivered = await balance("alice.testnet") === pushCreator;
   const failedPushOps = failedPush.db.prepare("SELECT method,state,attempts FROM mk_chain_ops ORDER BY seq").all();
-  if (undelivered) report.findings.push({ id: "ESCROW-WASM-02", severity: "P1", title: "Failed child token transfer is acknowledged as sent and never retried",
-    evidence: { retainedCredit, operations: failedPushOps, creatorWalletChange: "0", retriesAfterUnpause: 2 },
-    impact: "Funds remain recoverable in escrow, but the worker stops automatic delivery after the callback returns zero.",
-    boundary: "Existing settlement outbox accepts a successful outer transaction without verifying the child transfer/callback amount" });
-  // Explicit test-operator recovery demonstrates the money is retained; this
-  // is not counted as successful automatic worker recovery.
-  if (undelivered) {
-    await call("withdraw_for", { account_id: "alice.testnet" });
-    await call("withdraw_for", { account_id: "treasury.testnet" });
-  }
+  assert.equal(undelivered, false, "restored credit must be delivered automatically after unpause");
+  assert.ok(failedPushOps.every((op) => op.state === "sent" && op.attempts === 2));
+  assert.equal(failedPush.db.prepare("SELECT COUNT(*) n FROM mk_delivery_attempts WHERE state='retry'").get().n, 2);
+  assert.equal(failedPush.db.prepare("SELECT COUNT(*) n FROM mk_delivery_attempts WHERE state='delivered'").get().n, 2);
   assert.equal(await balance("alice.testnet") - pushCreator, PRICE * 9n / 10n);
   assert.equal(await balance("treasury.testnet") - pushTreasury, PRICE / 10n);
-  await passed("failed real token transfers retain exact credit and operator recovery pays once", { automaticWorkerRecovery: !undelivered, operatorRecoveryRequired: undelivered });
+  await passed("failed real token transfers retain exact credit and restarted workers automatically pay both recipients once", { automaticWorkerRecovery: true, operatorRecoveryRequired: false });
+
+  const unregistered = await fixture("partial-delivery");
+  unregistered.db.prepare("UPDATE players SET native_account='unregistered.testnet' WHERE id=?").run(unregistered.alice);
+  const unregisteredSecret = unregistered.secret(), registeredTreasury = await balance("treasury.testnet");
+  await fund(unregistered, unregisteredSecret);
+  await call("confirm_visit", { id: unregisteredSecret.id });
+  assert.equal(await gold("storage_balance_of", { account_id: "unregistered.testnet" }), null);
+  await worker(unregistered, { maxOps: 1 });
+  assert.equal(await balance("unregistered.testnet"), PRICE * 9n / 10n, "withdraw_for registers its recipient automatically");
+  assert.equal(await balance("treasury.testnet"), registeredTreasury);
+  await call("pause", {}, { contract: escrow.tokenId });
+  await worker(unregistered);
+  assert.equal(await view("get_credit", { account_id: "treasury.testnet" }), String(PRICE / 10n));
+  assert.equal(unregistered.db.prepare("SELECT COUNT(*) n FROM mk_delivery_attempts WHERE state='retry'").get().n, 1);
+  assert.equal(unregistered.db.prepare("SELECT COUNT(*) n FROM mk_delivery_attempts WHERE state='delivered'").get().n, 1);
+  await call("unpause", {}, { contract: escrow.tokenId });
+  await worker(unregistered); await worker(unregistered);
+  assert.equal(await balance("unregistered.testnet"), PRICE * 9n / 10n);
+  assert.equal(await balance("treasury.testnet") - registeredTreasury, PRICE / 10n);
+  assert.equal(await view("get_credit", { account_id: "unregistered.testnet" }), "0");
+  assert.equal(outstandingOps(unregistered).length, 0);
+  assert.equal(unregistered.db.prepare("SELECT COUNT(*) n FROM mk_delivery_attempts").get().n, 3);
+  await passed("partial delivery registers and pays the creator once, then recovers only the failed treasury share after restart");
 
   const partial = await fixture("partial-task"), multi = partial.task({ slots: 2 });
   await fund(partial, multi); await call("approve_task", { id: multi.id, worker: "bob.testnet" });

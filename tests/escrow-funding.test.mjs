@@ -10,6 +10,7 @@ import * as market from "../server/market/service.mjs";
 import * as chain from "../server/market/chain.mjs";
 import { escrowFundingView } from "./fixtures/escrow-funding.mjs";
 import { fundingAssessment } from "../server/market/funding.mjs";
+import { mockDelivery } from "./fixtures/escrow-delivery.mjs";
 
 const NOW = Date.parse("2026-11-06T12:00:00Z");
 const PLACE = { lat: 49.7475, lng: 13.3776 };
@@ -29,7 +30,8 @@ function fixture(t, filename = ":memory:") {
   const transfer = (extra = {}) => market.createTransfer(db, alice, { to: bob, amount: GOLD, ...extra }, NOW);
   const confirm = (id, view, now = NOW) => chain.checkFunding(db, id, row(id).player, { view: async () => view, activate: market.ACTIVATE, now });
   const run = (view, extra = {}) => chain.runEscrowWorker(db, {
-    view, call: async () => "test-tx", activate: market.ACTIVATE, drop: market.DROP, now: NOW,
+    view: (method, args) => method === "get_credit" ? "100" : view(method, args),
+    call: mockDelivery(), activate: market.ACTIVATE, drop: market.DROP, now: NOW,
     maxOps: 0, ...extra,
   });
   return { db, alice, bob, row, task, secret, transfer, confirm, run };

@@ -19,6 +19,7 @@ All money is real QGOLD (6 decimals; 1 micro-GOLD = 1 base unit) held by `contra
    can expire a waiting row after 2 h; an RPC error or incomplete response is not proof of absence.
 3. Every payout or refund is a queued publisher call in `mk_chain_ops` (`server/market/chain.mjs`),
    written in the same database transaction as the row change and sent in order per escrow id.
+   The worker persists the exact signed transaction before broadcast and acknowledges receipt evidence.
    After a payout the worker calls `withdraw_for(account)`, so QGOLD lands in the receiver's
    account without them doing anything.
 
@@ -50,9 +51,34 @@ dropped or changed intent. Repeated confirmation is idempotent, and failed/inter
 rolls back before retry. Bounded worker checks rotate past unresolved/malformed entries.
 
 This change requires no extra player signature, approval dialog or new economy value. It does not
-reconcile already-confirmed historic rows, replace the settlement outbox, or solve funding accepted
+reconcile already-confirmed historic rows or solve funding accepted
 after the existing two-hour absence timeout. Review those separately before release; late payments
 must be reconciled to their original agreement, not retried as a new purchase blindly.
+
+### Durable delivery and refund recovery
+
+`server/market/delivery.mjs` uses a renewable, fenced database lease for the configured chain and
+escrow. Each operation's immutable signed bytes, hash, signer/configuration identity and outcome
+are stored in `mk_delivery_attempts` before broadcast. Restart recovery queries that hash, or
+rebroadcasts those exact bytes; it never silently signs a replacement after an unknown outcome.
+A definitive FINAL contract rejection permits a new attempt after backoff. Ambiguous or incomplete
+receipts remain pending and block later publisher nonces until reconciled.
+
+A withdrawal is delivered only when the matching FINAL transaction links the escrow's start event,
+the configured token's transfer to the correct account for the exact amount, and the escrow's
+successful callback. A successful outer transaction returning zero is not payment: if receipt
+evidence proves token failure and restored credit, retry automatically with capped backoff, without
+an attempt-count cutoff. A lost final reply is acknowledged from its recorded hash, without paying
+again. A new credit obligation cannot disappear into a push whose credit is being read, signed or
+sent. An unattempted push with no current credit is retired as `no_current_credit`, not as evidence
+of historical delivery. Receipt verification relies on a trusted configured RPC and reviewed WASM.
+
+The additive `task-market-delivery` schema is part of the schema/backup catalog. Keep its rows and
+signed bytes private and preserve them with the same consistent database snapshot. Old attempted
+operations without this journal, exhausted operations, expired unknown transactions and signer
+changes need operator reconciliation; no error-string heuristic or guessed `approve_task` fallback
+may turn them into success. Existing `sent` rows are not retroactively validated. Core exploration,
+demo balances and existing player confirmations are unchanged; settlement can remain pending.
 
 | Market event | Escrow call |
 | --- | --- |

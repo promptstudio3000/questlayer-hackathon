@@ -465,6 +465,15 @@
       "indexes": {}
     },
     {
+      "name": "task-market-delivery",
+      "version": 1,
+      "tables": {
+        "mk_delivery_attempts": "CREATE TABLE mk_delivery_attempts(op_id TEXT NOT NULL,attempt INTEGER NOT NULL,tx TEXT NOT NULL UNIQUE,signed_tx TEXT NOT NULL,identity TEXT NOT NULL,method TEXT NOT NULL,args TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('prepared','delivered','retry')),outcome TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(op_id,attempt))",
+        "mk_delivery_lease": "CREATE TABLE mk_delivery_lease(scope TEXT PRIMARY KEY,owner TEXT NOT NULL,until_ms INTEGER NOT NULL)"
+      },
+      "indexes": {}
+    },
+    {
       "name": "signed-market-orders",
       "version": 1,
       "source": "server/native/order-index.mjs",
