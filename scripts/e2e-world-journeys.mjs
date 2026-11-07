@@ -246,24 +246,16 @@ async function journey(browser, server, device, j, expected) {
         .filter(Boolean);
       assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
       result.cast = [...new Set(cast)];
-      // The compact nearby quest is the primary cue when already in reach;
-      // farther away, the coach retains the nearest-quest/chest action.
-      const cues = page.locator('.nearby-open[data-quest-id], .first-session button')
-        .filter({ hasText: /^(Nearest quest|Open the chest|Walk to the chest|Open )/ })
-        .filter({ visible: true });
-      await cues.first().waitFor({ timeout: 15_000 });
+      // A nearby actor can replace the compact cue after actors finish loading.
+      // The published next-quest marker remains the stable discovery entry.
+      const pin = page.locator('.zone-map-pin[data-next="true"]');
+      await pin.waitFor({ state: "attached", timeout: 15_000 });
       await page.waitForTimeout(2500);
       const nearbyQuest = page.locator('.nearby-open[data-quest-id]').filter({ visible: true });
       const chestButton = coach.getByRole("button", { name: /^(Open the chest|Walk to the chest)/ }).filter({ visible: true });
-      const opener = await nearbyQuest.count() ? nearbyQuest.first() : await chestButton.count() ? chestButton.first() : coach.getByRole("button", { name: /^Nearest quest/ });
-      // …the map marks the same place…
-      const pin = page.locator('.zone-map-pin[data-next="true"]');
-      // Attached, not visible: map markers re-render on every world update
-      // and WebKit can report one mid-swap as hidden.
-      await pin.waitFor({ state: "attached", timeout: 15_000 }).catch(async (e) => {
-        await page.screenshot({ path: join(shots, `${j.id}-no-next-pin.png`) });
-        throw e;
-      });
+      const nearestButton = coach.getByRole("button", { name: /^Nearest quest/ }).filter({ visible: true });
+      const fromPin = !(await nearbyQuest.count()) && !(await chestButton.count()) && !(await nearestButton.count());
+      const opener = await nearbyQuest.count() ? nearbyQuest.first() : await chestButton.count() ? chestButton.first() : await nearestButton.count() ? nearestButton.first() : pin;
       assert.equal(await pin.count(), 1, "exactly one next-quest marker");
       const pinLabel = (await pin.getAttribute("aria-label")) || "";
       const zone = poiZones.find((z) => pinLabel.startsWith(`${z.name} · `));
@@ -271,7 +263,10 @@ async function journey(browser, server, device, j, expected) {
       const label = await opener.innerText();
       let quest;
       const cueQuestId = await opener.getAttribute("data-quest-id");
-      if (cueQuestId) {
+      if (fromPin) {
+        quest = world.quests.find(q => q.zone_id === zone.id);
+        assert.ok(quest, "the published next marker opens one of today's POI quests");
+      } else if (cueQuestId) {
         quest = world.quests.find(q => q.id === cueQuestId);
         assert.ok(quest, "the nearby cue identifies a real quest");
         assert.equal(quest.zone_id, zone.id, "nearby objective and next map marker agree");
@@ -295,7 +290,8 @@ async function journey(browser, server, device, j, expected) {
       await page.waitForTimeout(1200);
       await page.screenshot({ path: join(shots, `${j.id}-coach.png`) });
       // …and the coach opens it.
-      await opener.click();
+      if (fromPin) { await opener.focus(); await opener.press("Enter"); }
+      else await opener.click();
       await page
         .getByRole("heading", { level: 1, name: zone.name })
         .waitFor({ timeout: 10_000 });
@@ -308,6 +304,7 @@ async function journey(browser, server, device, j, expected) {
         )
         .first()
         .waitFor({ state: "attached", timeout: 10_000 });
+      result.entryCue = fromPin ? "next map marker" : "compact objective";
       result.coachQuest = quest.title;
       result.coachQuestKind = quest.kind;
       await page.waitForTimeout(600);
