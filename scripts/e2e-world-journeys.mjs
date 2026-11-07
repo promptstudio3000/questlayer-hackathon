@@ -246,25 +246,16 @@ async function journey(browser, server, device, j, expected) {
         .filter(Boolean);
       assert.ok(cast.length > 0, "the generic NPC/monster cast is on the map");
       result.cast = [...new Set(cast)];
-      // The coach names the nearest open POI quest… Street coins next to
-      // the spawn point are picked up on their own, so the coach may already
-      // be on "Open your first chest". When that chest is the same POI quest
-      // the coach hides its "Nearest quest" line and its main action opens
-      // the quest instead, so either button counts.
-      await coach
-        .getByRole("button", {
-          name: /^(Nearest quest|Open the chest|Walk to the chest)/,
-        })
-        .first()
-        .waitFor({ timeout: 15_000 });
-      // Let the auto pick-up of spawn-side coins settle before reading it.
+      // The compact nearby quest is the primary cue when already in reach;
+      // farther away, the coach retains the nearest-quest/chest action.
+      const cues = page.locator('.nearby-open[data-quest-id], .first-session button')
+        .filter({ hasText: /^(Nearest quest|Open the chest|Walk to the chest|Open )/ })
+        .filter({ visible: true });
+      await cues.first().waitFor({ timeout: 15_000 });
       await page.waitForTimeout(2500);
-      const chestButton = coach.getByRole("button", {
-        name: /^(Open the chest|Walk to the chest)/,
-      });
-      const opener = (await chestButton.count())
-        ? chestButton.first()
-        : coach.getByRole("button", { name: /^Nearest quest/ });
+      const nearbyQuest = page.locator('.nearby-open[data-quest-id]').filter({ visible: true });
+      const chestButton = coach.getByRole("button", { name: /^(Open the chest|Walk to the chest)/ }).filter({ visible: true });
+      const opener = await nearbyQuest.count() ? nearbyQuest.first() : await chestButton.count() ? chestButton.first() : coach.getByRole("button", { name: /^Nearest quest/ });
       // …the map marks the same place…
       const pin = page.locator('.zone-map-pin[data-next="true"]');
       // Attached, not visible: map markers re-render on every world update
@@ -279,7 +270,12 @@ async function journey(browser, server, device, j, expected) {
       assert.ok(zone, `the next-quest marker "${pinLabel}" is a POI quest`);
       const label = await opener.innerText();
       let quest;
-      if (/^Nearest quest/.test(label)) {
+      const cueQuestId = await opener.getAttribute("data-quest-id");
+      if (cueQuestId) {
+        quest = world.quests.find(q => q.id === cueQuestId);
+        assert.ok(quest, "the nearby cue identifies a real quest");
+        assert.equal(quest.zone_id, zone.id, "nearby objective and next map marker agree");
+      } else if (/^Nearest quest/.test(label)) {
         quest = world.quests.find((q) => label.includes(q.title));
         assert.ok(quest, `coach quest "${label}" is one of today's quests`);
         assert.equal(
@@ -334,6 +330,10 @@ async function journey(browser, server, device, j, expected) {
     assert.deepEqual(errors, [], "no page errors");
     console.log(`  ${JSON.stringify(result)}`);
     return result;
+  } catch (error) {
+    await page.screenshot({path:join(shots,`${j.id}-failure.png`)}).catch(()=>{});
+    console.log("VISIBLE STATE",await page.locator("body").innerText());
+    throw error;
   } finally {
     await context.close();
   }

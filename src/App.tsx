@@ -4672,7 +4672,7 @@ export default function App() {
         </main>
         </MapSurface>
       )}
-      {player && mapInteractive && showNearby && near && !mapFullOn && <button className="nearby-open" onClick={() => {
+      {player && mapInteractive && showNearby && near && !mapFullOn && <button className="nearby-open" data-quest-id={near.kind === "quest" ? near.quest.id : undefined} onClick={() => {
         if (near.kind === "actor") setActorOpen(near.actor);
         else if (near.kind === "quest") selectZone(near.zone, near.quest.id);
         else if (world) setFindInspect({worldId:world.id,coin:near.coin});
