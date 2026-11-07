@@ -58,3 +58,14 @@ test('resource pressure reports a resumable wait without creating a false prepar
  assert.equal(JSON.parse(readFileSync(resolve(config.workDir,'status.json'))).phase,'waiting-resources');
  assert.equal(existsSync(resolve(config.daysDir,'2026-11-07/manifest.json')),false);
 });
+
+test('publication-only preparation bypasses heavy pending sources without changing their attempts or the published day',async t=>{
+ const {config}=setup(t),a=addSource(config,'a',52.514,13.355,'DE',1),b=addSource(config,'b',40.731,-73.997,'US',2),inputs=new Map([[a.pbf,a.inputs],[b.pbf,b.inputs]]),extract=async({pbf})=>inputs.get(pbf);
+ for(let i=0;i<6;i++)await collectorStep(config,{now,extract});
+ const first=readFileSync(resolve(config.daysDir,'2026-11-07/manifest.json'));
+ const c=addSource(config,'c',35.69,139.69,'JP',3);writeFileSync(c.pbf,'Unusable pending source');
+ const before=JSON.parse(readFileSync(resolve(config.workDir,'state.json')));
+ const state=await collectorStep({...config,nextDayMinuteUTC:1380},{now:Date.parse('2026-11-07T23:01:00Z'),prepareOnly:true,extract:()=>{throw Error('Heavy extraction must not run');}});
+ const pending=Object.values(state.sources).find(s=>s.id==='c');assert.equal(pending.stage,'extract');assert.equal(pending.attempts,0);assert.equal(pending.steps,0);assert.equal(state.workTurns,before.workTurns);
+ assert.equal(state.days['2026-11-08'].verified.regions,2);assert.equal(state.days['2026-11-08'].verified.zones,2);assert.deepEqual(readFileSync(resolve(config.daysDir,'2026-11-07/manifest.json')),first);
+});

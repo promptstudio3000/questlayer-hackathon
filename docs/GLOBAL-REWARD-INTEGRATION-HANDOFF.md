@@ -84,8 +84,11 @@ Remaining gates:
    verify FINAL code hash, unchanged financial state/council/minters, audit and
    `get_state.exact_game_mint === 1`. Before maturity the wrapper returns without
    loading a key or sending a transaction.
-2. Review and install `runtime-20261107/sync-world-funding.py` as the bounded
-   fifteen-minute operational input refresh. A dry run reconciled all sources; repeat against proposal 2 records before installing.
+2. PR #215 was owner-approved and merged as `c2ddaf967082588a57a67860251b590958e6790d`.
+   The bounded fifteen-minute input refresh is installed at
+   `/opt/prompt-studio/ops/questlayer-sync-world-funding.py` with its root-only
+   proof cache and status. Manual apply-mode replay preserved the game PID; the
+   18:45 UTC scheduled run independently confirmed three sources and proposal 2.
    It never signs, reads keys or allocates rewards. It enables the adapter only
    after the exact QGOLD code/proposal and bounded worker permission are verified.
    NearBlocks supplies discovery hints; finalized RPC receipts prove amounts.
@@ -113,7 +116,9 @@ unbuilt days, never an already published date.
 At 17:05 UTC on November 7, ten cells had passed isolated runtime acceptance
 (74 polygons, 954 quests). Only the earlier two-cell day is public today. The
 collector freezes tomorrow after 23:30 UTC. Approximately 12 GB remained on the
-VPS; both jobs pause at the 8 GiB floor without deleting collected data.
+VPS. The service floor stays 8 GiB. Heavy acquisition and extraction now stop
+at 9 GiB, leaving 1 GiB for verified day assembly and publication. This is disk
+headroom; it changes no treasury budget. Collected data and checkpoints are retained.
 
 A source-specific neighborhood fingerprint avoids invalidating distant regions.
 Indexed work receives three turns per new-extraction turn; extraction explicitly
@@ -145,3 +150,68 @@ Similarly, after the QGOLD carry method has accepted funds, the prior QGOLD code
 does not account for those liabilities: an automatic old-WASM rollback is not a
 valid recovery plan. A reviewed forward repair must retain the carry and receipt
 namespaces. Resolve this operational gate before any public upgrade.
+
+
+## Indexed intermediate retention
+
+`output/qa/global-release/retain-indexed-geography.py` operates only on completed,
+indexed EU-work `pois`, `paths` and `exclusions` sequences. It validates the selected
+role's sealed index references and the original SHA, writes a deterministic gzip,
+checks its complete decompressed SHA, fsyncs the archive and restoration receipt,
+then releases only the redundant plaintext copy. Raw PBFs, published days, context
+facts, source audits, shared-index directories and MapOS are untouched. Reused
+indexes can be read; that does not authorize writing another work tree.
+
+For an intentional full re-extraction, first restore retained inputs using the
+receipt and explicit EU work/data roots. Existing indexed planning/export needs
+no plaintext originals; the spatial-index regression verifies that contract.
+Gameplay reads independently verify compressed index-chunk hashes; retention
+never changes those chunks or their checks. The helper is bounded to a time slice
+and file count. It never lowers the service
+floor, accepts corrupt retained bytes or overwrites another archive.
+
+Unused osmium `.idx` lookup caches from six interrupted steps were removed only
+after taking the scoped supervisor lock and checking no process had them open.
+They are reproducible temporary caches, not source geometry or sealed indexes.
+The initial archival pilot stopped without changing data on a reused-index path;
+the corrected pilot retained three files with exact round-trip hashes.
+
+
+### Publication priority and maintenance schedule
+
+The collector supports `--prepare-only` and skips expensive source steps while
+retaining the same context, geography and runtime checks. The supervisor selects
+this mode during the final hour of the UTC day and when heavy work cannot retain
+9 GiB free. Publication starts with at least 128 MiB above the 8 GiB service floor;
+it keeps that floor and all memory/process gates. Publication slices allow up to
+55 minutes; heavy slices remain bounded at 20 minutes. The nightly close is now
+23:00 UTC. A source-resource pause does not count as a region rejection.
+
+The scoped retention job runs every fifteen minutes, only below 12 GiB free,
+with a twelve-file/four-minute work bound and a process lock. Per-file receipts
+retain original and archive hashes. Pause the retention schedule during an
+intentional restore/full re-extraction, then resume after the new index seals.
+All operations remain confined to Agent Zero's EU work; no MapOS, financial
+policy, application signing key, source PBF or published day was removed.
+
+
+### Public next-day acceptance
+
+The immutable November 8 day is now mirrored and loaded by the public game:
+**8/8 owners, 57 polygon zones and 734 quests**, covering supplied regions in
+France, Luxembourg and Spain. Its UTC opening is November 8 00:00 (01:00 Prague).
+Manifest SHA: `f17c4708b36f445e259d602c0283d3261b41e3dbea62831602037a4ceeb1d5be`;
+input hash: `1d6826f60a9f5918435a48b8360dd86fc05b28f169a652952fb4bfec9819fa77`.
+All eight owners passed isolated runtime/GPS receipt acceptance before publication.
+Public HTTPS health independently reports tomorrow ready with no missing owners;
+the November 7 manifest remains unchanged. This is partial geography and personal
+XP only. Atlas coins/NPCs/chests/items and monetary activation are still absent.
+
+The accompanying observation records 137/141 selected EU source acquisitions,
+49 losslessly retained plaintext copies and 3.068 GiB reclaimed, with raw PBFs
+untouched by retention. Free space was 10.092 GiB at that observation. Capacity
+remains finite: an additional 100 GB is a first planning step, not a proven
+whole-EU storage bound. See
+`output/qa/global-release/eu-continuity-20261107/observations.json` for timestamps,
+funding proof totals and public readiness. The local TLS client initially timed
+out; subsequent public IPv4 HTTPS and independent VPS HTTPS reads both succeeded.
