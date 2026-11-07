@@ -938,7 +938,7 @@ export const CHAPTERS: Chapter[] = [
           "A new doc must be added to a chapter's sources or explicitly marked as not a mechanism (plans, audits, hand-offs) in `docs/wiki-coverage.json`.",
           "Numbers that live in rules files are imported, so they can never drift.",
           "The page never names events or contains secrets, keys or private hosts; the test checks the copy.",
-          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`. A protected-paths CI guard fails any pull request that touches contracts, deploy or signing scripts, money code, economy numbers, deployment records, CI or dependencies without the owner's `owner-approved` label, or that adds anything that looks like a secret.",
+          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`. A protected-paths CI guard fails any pull request that touches contracts, deploy or signing scripts, money code, economy numbers, deployment records, CI or dependencies without the owner's `owner-approved` label, or that adds anything that looks like a secret. Sign-in, session and transaction-signing code is protected too, and the guard always runs as it is on the base branch, so a pull request cannot loosen its own check.",
         ],
       },
     ],

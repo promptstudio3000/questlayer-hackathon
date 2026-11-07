@@ -8,7 +8,12 @@
 //
 // Pull requests from `claude/` branches are the owner's Claude project threads,
 // which work under the owner's standing rules; they skip the path rule but not
-// the secret scan.
+// the secret scan. The branch name is a convention, not an identity, so the
+// guard's own files, CI and agent rules are never exempt: changing them always
+// needs the owner's label.
+//
+// CI runs this script from the BASE commit (guard.yml, pull_request_target),
+// so a pull request cannot weaken the guard that checks it.
 //
 // Usage (CI sets these):
 //   BASE_SHA=<base> HEAD_SHA=<head> HEAD_REF=<branch> PR_LABELS='["a","b"]' \
@@ -22,10 +27,14 @@ const APPROVAL_LABEL = "owner-approved";
 const EXEMPT_BRANCH_PREFIX = "claude/";
 
 // Each rule: a test on the repo-relative path and the reason shown on failure.
+// Paths that need the label even on `claude/` branches.
+const NEVER_EXEMPT = (p) =>
+  p.startsWith(".github/") || ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "docs/HANDOFF-WEEKEND.md"].includes(p);
+
 const RULES = [
   [(p) => p.startsWith("contracts/") || p === "rust-toolchain.toml", "smart contracts, WASM hashes and the Rust toolchain"],
   [(p) => p.startsWith(".github/"), "CI workflows, this guard and CODEOWNERS"],
-  [(p) => ["AGENTS.md", "GEMINI.md", "docs/HANDOFF-WEEKEND.md"].includes(p), "agent rules and the hand-off"],
+  [(p) => ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "docs/HANDOFF-WEEKEND.md"].includes(p), "agent rules and the hand-off"],
   [(p) => p.startsWith("deploy/"), "VPS service units and backups"],
   [(p) => p === "package.json" || p === "package-lock.json", "dependencies and npm scripts"],
   [
@@ -42,6 +51,16 @@ const RULES = [
       /^server\/(native|payouts|qgold|relayer|market|chain-ledger|identity|creators|map-rewards|gold-spend|operator)\//.test(p) ||
       /^server\/(fair-play|http-security|staker-gates|levels|near-provider|state-path|database)\.mjs$/.test(p),
     "chain, money, identity and anti-cheat server code",
+  ],
+  [
+    (p) =>
+      // Sessions, sign-in and account management live in the main API file.
+      p === "server/index.mjs" ||
+      /^server\/signing-vault[^/]*\.mjs$/.test(p) ||
+      p === "signing-vault.html" ||
+      p.startsWith("src/signing-vault/") ||
+      /^src\/(player-key|native-signer|order-signers|qgold-burn|account-recovery|relayed-native-transaction|self-paid-native-transaction|confirmed-native-transaction)\.ts$/.test(p),
+    "sign-in, sessions, device keys and transaction signing",
   ],
   [
     (p) => /^server\/data\/(level-table|staker-gates|gold-spend|aura-catalog|cities|place-badges)\.json$/.test(p),
@@ -113,19 +132,22 @@ for (const line of added) {
   }
 }
 
-const exempt = headRef.startsWith(EXEMPT_BRANCH_PREFIX);
+const exemptBranch = headRef.startsWith(EXEMPT_BRANCH_PREFIX);
 const approved = labels.includes(APPROVAL_LABEL);
 const protectedHits = [];
+let touchesNeverExempt = false;
 for (const p of paths) {
   const rule = RULES.find(([test]) => test(p));
   if (rule) protectedHits.push(`${p}  (${rule[1]})`);
+  if (NEVER_EXEMPT(p)) touchesNeverExempt = true;
 }
+const exempt = exemptBranch && !touchesNeverExempt;
 
 console.log(`Branch ${headRef}, ${paths.length} changed files, labels: ${labels.join(", ") || "none"}.`);
 if (protectedHits.length) {
   console.log(`\nProtected paths touched:\n  ${protectedHits.join("\n  ")}`);
-  if (exempt) console.log(`\n(${EXEMPT_BRANCH_PREFIX} branch: owner's Claude thread, path rule skipped.)`);
-  else if (approved) console.log(`\nLabel "${APPROVAL_LABEL}" present: allowed by the owner.`);
+  if (approved) console.log(`\nLabel "${APPROVAL_LABEL}" present: allowed by the owner.`);
+  else if (exempt) console.log(`\n(${EXEMPT_BRANCH_PREFIX} branch: owner's Claude thread, path rule skipped.)`);
   else
     problems.push(
       `this PR changes protected paths. Only the owner may allow that by adding the "${APPROVAL_LABEL}" label. ` +

@@ -47,7 +47,10 @@ The **Protected paths** CI job (`.github/workflows/guard.yml`, rules in `.github
 fails any PR that touches the paths in rules 1, 2, 5, 6 and 7 or adds something that looks like a secret.
 Only the owner can allow an exception, by adding the `owner-approved` label himself. An agent never adds that
 label, never asks another agent to, and never uses a `claude/` branch name (those are the owner's Claude
-threads and skip the path rule).
+threads and skip the path rule). Sign-in, session and signing code (`server/index.mjs`, the signing vault,
+`src/player-key.ts`, `src/qgold-burn.ts`, the native transaction helpers) is protected too. CI runs the guard
+from the base branch, so editing the guard in a PR does not change the result; guard, CI and agent-rule
+changes need the label on every branch, `claude/` included.
 
 ## 2. Product rules every change keeps
 
