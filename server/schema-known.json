@@ -465,6 +465,29 @@
       "indexes": {}
     },
     {
+      "name": "task-market-delivery",
+      "version": 1,
+      "tables": {
+        "mk_delivery_attempts": "CREATE TABLE mk_delivery_attempts(op_id TEXT NOT NULL,attempt INTEGER NOT NULL,tx TEXT NOT NULL UNIQUE,signed_tx TEXT NOT NULL,identity TEXT NOT NULL,method TEXT NOT NULL,args TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('prepared','delivered','retry')),outcome TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(op_id,attempt))",
+        "mk_delivery_lease": "CREATE TABLE mk_delivery_lease(scope TEXT PRIMARY KEY,owner TEXT NOT NULL,until_ms INTEGER NOT NULL)"
+      },
+      "indexes": {}
+    },
+    {
+      "name": "qgold-keeper-journal",
+      "version": 1,
+      "sql": "\nCREATE TABLE IF NOT EXISTS qgold_keeper_lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT NOT NULL,until_ms INTEGER NOT NULL);\nCREATE TABLE IF NOT EXISTS qgold_keeper_slots(day TEXT NOT NULL,slot INTEGER NOT NULL,plan TEXT NOT NULL CHECK(json_valid(plan)),created_at INTEGER NOT NULL,PRIMARY KEY(day,slot));\nCREATE TABLE IF NOT EXISTS qgold_keeper_ops(\n id TEXT PRIMARY KEY,day TEXT NOT NULL,slot INTEGER NOT NULL,position INTEGER NOT NULL,kind TEXT NOT NULL,\n identity TEXT NOT NULL,plan TEXT NOT NULL CHECK(json_valid(plan)),reserved_near TEXT NOT NULL,reserved_qgold TEXT NOT NULL,\n state TEXT NOT NULL CHECK(state IN ('pending','done')),run_after INTEGER NOT NULL,last_error TEXT,\n created_at INTEGER NOT NULL,completed_day TEXT,action_id INTEGER,UNIQUE(day,slot,kind));\nCREATE TABLE IF NOT EXISTS qgold_keeper_steps(\n op_id TEXT NOT NULL,step INTEGER NOT NULL,attempt INTEGER NOT NULL,identity TEXT NOT NULL,request TEXT NOT NULL CHECK(json_valid(request)),\n tx TEXT NOT NULL UNIQUE,signed_tx TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('prepared','succeeded','retry')),\n proof TEXT,outcome TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(op_id,step,attempt));\n",
+      "tables": {
+        "qgold_keeper_lease": "CREATE TABLE qgold_keeper_lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT NOT NULL,until_ms INTEGER NOT NULL)",
+        "qgold_keeper_ops": "CREATE TABLE qgold_keeper_ops(\n id TEXT PRIMARY KEY,day TEXT NOT NULL,slot INTEGER NOT NULL,position INTEGER NOT NULL,kind TEXT NOT NULL,\n identity TEXT NOT NULL,plan TEXT NOT NULL CHECK(json_valid(plan)),reserved_near TEXT NOT NULL,reserved_qgold TEXT NOT NULL,\n state TEXT NOT NULL CHECK(state IN ('pending','done')),run_after INTEGER NOT NULL,last_error TEXT,\n created_at INTEGER NOT NULL,completed_day TEXT,action_id INTEGER,UNIQUE(day,slot,kind))",
+        "qgold_keeper_slots": "CREATE TABLE qgold_keeper_slots(day TEXT NOT NULL,slot INTEGER NOT NULL,plan TEXT NOT NULL CHECK(json_valid(plan)),created_at INTEGER NOT NULL,PRIMARY KEY(day,slot))",
+        "qgold_keeper_steps": "CREATE TABLE qgold_keeper_steps(\n op_id TEXT NOT NULL,step INTEGER NOT NULL,attempt INTEGER NOT NULL,identity TEXT NOT NULL,request TEXT NOT NULL CHECK(json_valid(request)),\n tx TEXT NOT NULL UNIQUE,signed_tx TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('prepared','succeeded','retry')),\n proof TEXT,outcome TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(op_id,step,attempt))"
+      },
+      "indexes": {},
+      "fingerprint": "bbd79d77649782924f276d26b3a846a0b7b60e4d9443956903e7b7e39aaf151a",
+      "upgrades": []
+    },
+    {
       "name": "signed-market-orders",
       "version": 1,
       "source": "server/native/order-index.mjs",
@@ -532,6 +555,56 @@
       "indexes": {
         "global_reward_claims_player": "CREATE INDEX global_reward_claims_player ON global_reward_claims(player_id,state)"
       }
+    },
+    {
+      "name": "qgold-purchases",
+      "version": 1,
+      "sql": "\nCREATE TABLE IF NOT EXISTS qgold_purchases(\n id TEXT PRIMARY KEY, player_id TEXT NOT NULL, request_hash TEXT NOT NULL, request TEXT NOT NULL,\n kind TEXT, amount_u INTEGER, memo TEXT UNIQUE, account_id TEXT, contract_id TEXT,\n submitter_id TEXT, submission INTEGER NOT NULL DEFAULT 0, relay_job_id TEXT, tx_hash TEXT, tx_sender TEXT,\n state TEXT NOT NULL DEFAULT 'new' CHECK(state IN ('new','prepared','credited','complete')),\n response TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL\n);\nCREATE INDEX IF NOT EXISTS qgold_purchases_owner ON qgold_purchases(player_id,request_hash,state);\nCREATE TABLE IF NOT EXISTS qgold_purchase_attempts(tx_hash TEXT PRIMARY KEY,purchase_id TEXT NOT NULL,state TEXT NOT NULL,outcome TEXT NOT NULL,created_at INTEGER NOT NULL);\nCREATE TABLE IF NOT EXISTS qgold_purchase_aliases(id TEXT PRIMARY KEY, purchase_id TEXT NOT NULL REFERENCES qgold_purchases(id),player_id TEXT NOT NULL);\n",
+      "tables": {
+        "qgold_purchase_aliases": "CREATE TABLE qgold_purchase_aliases(id TEXT PRIMARY KEY, purchase_id TEXT NOT NULL REFERENCES qgold_purchases(id),player_id TEXT NOT NULL)",
+        "qgold_purchase_attempts": "CREATE TABLE qgold_purchase_attempts(tx_hash TEXT PRIMARY KEY,purchase_id TEXT NOT NULL,state TEXT NOT NULL,outcome TEXT NOT NULL,created_at INTEGER NOT NULL)",
+        "qgold_purchases": "CREATE TABLE qgold_purchases(\n id TEXT PRIMARY KEY, player_id TEXT NOT NULL, request_hash TEXT NOT NULL, request TEXT NOT NULL,\n kind TEXT, amount_u INTEGER, memo TEXT UNIQUE, account_id TEXT, contract_id TEXT,\n submitter_id TEXT, submission INTEGER NOT NULL DEFAULT 0, relay_job_id TEXT, tx_hash TEXT, tx_sender TEXT,\n state TEXT NOT NULL DEFAULT 'new' CHECK(state IN ('new','prepared','credited','complete')),\n response TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL\n)"
+      },
+      "indexes": {
+        "qgold_purchases_owner": "CREATE INDEX IF NOT EXISTS qgold_purchases_owner ON qgold_purchases(player_id,request_hash,state)"
+      },
+      "fingerprint": "afce7f07cc6d35859711f3aa795adf30b5af22f9ae2be1457ebc0a56381da0dc",
+      "upgrades": []
+    },
+    {
+      "name": "relay-submissions",
+      "version": 1,
+      "sql": "\nCREATE TABLE IF NOT EXISTS relay_submissions(\n job_id TEXT NOT NULL, attempt INTEGER NOT NULL, hash TEXT NOT NULL UNIQUE,\n signed_tx TEXT NOT NULL, account_id TEXT NOT NULL, public_key TEXT NOT NULL,\n state TEXT NOT NULL DEFAULT 'prepared', outcome TEXT, created_at INTEGER NOT NULL,\n PRIMARY KEY(job_id,attempt)\n);",
+      "tables": {
+        "relay_submissions": "CREATE TABLE relay_submissions(\n job_id TEXT NOT NULL, attempt INTEGER NOT NULL, hash TEXT NOT NULL UNIQUE,\n signed_tx TEXT NOT NULL, account_id TEXT NOT NULL, public_key TEXT NOT NULL,\n state TEXT NOT NULL DEFAULT 'prepared', outcome TEXT, created_at INTEGER NOT NULL,\n PRIMARY KEY(job_id,attempt)\n)"
+      },
+      "indexes": {},
+      "fingerprint": "48ea1e6567b26b91884c1a0dee9826ec024cc992d131371e54fa306f50fb9b50",
+      "upgrades": []
+    },
+    {
+      "name": "subsidy-budget",
+      "version": 1,
+      "sql": "\nCREATE TABLE IF NOT EXISTS subsidy_reservations(\n id TEXT PRIMARY KEY, kind TEXT NOT NULL, account_id TEXT NOT NULL,\n principal TEXT NOT NULL, gas_reserve TEXT NOT NULL, reserved TEXT NOT NULL,\n state TEXT NOT NULL DEFAULT 'reserved', tx_hash TEXT, created_at INTEGER NOT NULL, settled_at INTEGER\n);\nCREATE INDEX IF NOT EXISTS subsidy_reservations_day ON subsidy_reservations(created_at,state);",
+      "tables": {
+        "subsidy_reservations": "CREATE TABLE subsidy_reservations(\n id TEXT PRIMARY KEY, kind TEXT NOT NULL, account_id TEXT NOT NULL,\n principal TEXT NOT NULL, gas_reserve TEXT NOT NULL, reserved TEXT NOT NULL,\n state TEXT NOT NULL DEFAULT 'reserved', tx_hash TEXT, created_at INTEGER NOT NULL, settled_at INTEGER\n)"
+      },
+      "indexes": {
+        "subsidy_reservations_day": "CREATE INDEX IF NOT EXISTS subsidy_reservations_day ON subsidy_reservations(created_at,state)"
+      },
+      "fingerprint": "6254c8de46d7a99d1f51f0ab69c8094401883e432f31750774ef591e660ac566",
+      "upgrades": []
+    },
+    {
+      "name": "native-funding-journal",
+      "version": 1,
+      "sql": "\nCREATE TABLE IF NOT EXISTS native_funding_attempts(\n id TEXT NOT NULL, attempt INTEGER NOT NULL, request TEXT NOT NULL, budget_id TEXT NOT NULL,\n hash TEXT NOT NULL UNIQUE, signed_tx TEXT NOT NULL, identity TEXT NOT NULL,\n state TEXT NOT NULL DEFAULT 'prepared', outcome TEXT, created_at INTEGER NOT NULL,\n PRIMARY KEY(id,attempt)\n);",
+      "tables": {
+        "native_funding_attempts": "CREATE TABLE native_funding_attempts(\n id TEXT NOT NULL, attempt INTEGER NOT NULL, request TEXT NOT NULL, budget_id TEXT NOT NULL,\n hash TEXT NOT NULL UNIQUE, signed_tx TEXT NOT NULL, identity TEXT NOT NULL,\n state TEXT NOT NULL DEFAULT 'prepared', outcome TEXT, created_at INTEGER NOT NULL,\n PRIMARY KEY(id,attempt)\n)"
+      },
+      "indexes": {},
+      "fingerprint": "cd3de97ecae9e8dcb9400d2b310da920ad54fa8c2cabf1b8a1e56d17ef9fa441",
+      "upgrades": []
     }
   ]
 }

@@ -131,5 +131,5 @@ test("rate windows prune only finished minutes", () => {
   assert.equal(pruneRateWindows(rates, NOW), 1);
   assert.ok(rates.has(`coin:p1:${minute}`));
   const big = new Map(Array.from({ length: 5 }, (_, i) => [`k:${i}:${minute}`, 1]));
-  assert.equal(pruneRateWindows(big, NOW, 3), 0);
+  assert.equal(pruneRateWindows(big, NOW), 5, "All active counters survive maintenance.");
 });

@@ -80,3 +80,21 @@ test("market calls that move money are self-paid even with a 1 yocto deposit", (
   for (const m of ["cancel_order", "cancel_all_orders", "add_signing_key", "cancel"])
     assert.equal(isRelayedDeposit(quote("1", {}, m)), true, m);
 });
+
+test('a lost self-paid response survives reload without signing or paying again', async t => {
+  const { sendJournaledSelfPaid } = await import('../src/self-paid-native-transaction.ts');
+  const { readPendingNativeTransactions, checkPendingNativeTransaction } = await import('../src/confirmed-native-transaction.ts');
+  const values = new Map(), storage = { getItem: k => values.get(k) ?? null, setItem: (k,v) => values.set(k,v), removeItem: k => values.delete(k) };
+  const context = { playerId:'self_paid_test', storage, getAnchor:async()=>100, withLock:async(_,f)=>f() };
+  let sends = 0;
+  const send = async () => { sends++; throw Error('reply lost after the payment'); };
+  const transaction = quote('1000000000000000000000000');
+  await assert.rejects(sendJournaledSelfPaid(key,transaction,context,send), /receipt/);
+  assert.equal(readPendingNativeTransactions(context.playerId,storage).length,1);
+  t.mock.method(globalThis,'fetch',async()=>({ok:false,json:async()=>({error:'The saved payment is still being checked.'})}));
+  await assert.rejects(sendJournaledSelfPaid(key,transaction,{...context},send));
+  assert.equal(sends,1);
+  const hash='8'.repeat(44), pending=readPendingNativeTransactions(context.playerId,storage)[0];
+  await checkPendingNativeTransaction({...context,confirm:async()=>({confirmed:true,network:'testnet',accountId:transaction.signerId,contractId:transaction.receiverId,transactionHash:hash})},pending.id,hash);
+  assert.equal(readPendingNativeTransactions(context.playerId,storage).length,0);
+});

@@ -43,6 +43,7 @@
     "docs/YIELD-CREDIT-PROPOSAL.md": "proposal",
     "docs/QGOLD-NIGHTLY-PAYOUT-FIX-2026-11-06.md": "payout repair audit and evidence",
     "docs/QGOLD-SANDBOX-2026-11-06.md": "local actual-WASM regression verification report",
-    "docs/QGOLD-WITHDRAWAL-FIX-2026-11-06.md": "withdrawal callback repair audit"
+    "docs/QGOLD-WITHDRAWAL-FIX-2026-11-06.md": "withdrawal callback repair audit",
+    "docs/SECURITY-AUDIT-2026-11-06.md": "Security audit (6 Nov 2026): findings and remediation order, not a mechanism."
   }
 }

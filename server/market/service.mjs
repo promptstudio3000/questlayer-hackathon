@@ -17,6 +17,8 @@
 import { randomBytes, createHash } from "node:crypto";
 import { assert, distance, id, point, DAY, GOLD } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
+import { MARKET_FEE_BPS, SECRET_RELEASE_MS } from "./funding.mjs";
+export { MARKET_FEE_BPS, SECRET_RELEASE_MS } from "./funding.mjs";
 import {
   ensureModuleVersion,
   registerModuleSchema,
@@ -35,8 +37,6 @@ import {
   requireEscrow,
 } from "./chain.mjs";
 
-export const MARKET_FEE_BPS = 1000; // 10 % on top for tasks, taken from Secrets.
-export const SECRET_RELEASE_MS = 7 * DAY;
 export const REVIEW_WINDOW_MS = 72 * 3_600_000; // unreviewed proof pays the worker.
 export const RESERVATION_MS = 3 * 3_600_000;
 export const TASK_TYPES = Object.freeze([
@@ -1045,20 +1045,58 @@ export function marketInvariant(db) {
 }
 
 // ---------------------------------------------------------------- funding
-/** Applied by the escrow worker when an agreement shows up funded on chain. */
+function fundingTarget(db, table, ref) {
+  const row = db.prepare(`SELECT * FROM ${table} WHERE id=?`).get(ref);
+  assert(row?.state === "funding", "Payment needs reconciliation with its original order.", 409, "FUNDING_RECONCILIATION_REQUIRED");
+  return row;
+}
+function activateTaskFunding(db, ref, now, f, evidence, sponsored = false) {
+  const table = sponsored ? "mk_secrets" : "mk_tasks";
+  fundingTarget(db, table, ref);
+  if (evidence.status === "open") {
+    db.prepare(`UPDATE ${table} SET state='open',updated_at=? WHERE id=?`).run(now, ref);
+    return;
+  }
+  const paid = evidence.status === "paid";
+  if (sponsored)
+    db.prepare("UPDATE mk_secrets SET state=?,held_u=0,fee_held_u=0,visits_left=0,updated_at=? WHERE id=?")
+      .run(paid ? "done" : "closed", now, ref);
+  else
+    db.prepare("UPDATE mk_tasks SET state=?,held_u=0,fee_held_u=0,paid_slots=?,updated_at=? WHERE id=?")
+      .run(paid ? "done" : "cancelled", evidence.paidSlots, now, ref);
+  if (paid) {
+    for (const account of evidence.paidWorkers) payOut(db, account, now);
+    payOutTreasury(db, now);
+    fee(db, sponsored ? "sponsored" : "task", ref, evidence.fee, CURRENCY, now);
+  } else payOut(db, f.account, now);
+}
+
+/** Called atomically with an exact, lifecycle-checked FINAL escrow snapshot. */
 export const ACTIVATE = Object.freeze({
-  task: (db, ref, now) =>
-    db.prepare("UPDATE mk_tasks SET state='open',updated_at=? WHERE id=? AND state='funding'").run(now, ref),
-  sponsor: (db, ref, now) =>
-    db.prepare("UPDATE mk_secrets SET state='open',updated_at=? WHERE id=? AND state='funding'").run(now, ref),
-  // The 7-day hold counts from the on-chain funding.
-  reveal: (db, ref, now) =>
-    db.prepare("UPDATE mk_reveals SET state='held',created_at=?,updated_at=? WHERE id=? AND state='funding'").run(now, now, ref),
-  transfer: (db, ref, now) =>
-    db.prepare("UPDATE mk_transfers SET state='held',updated_at=? WHERE id=? AND state='funding'").run(now, ref),
+  task: (db, ref, now, f, evidence) => activateTaskFunding(db, ref, now, f, evidence),
+  sponsor: (db, ref, now, f, evidence) => activateTaskFunding(db, ref, now, f, evidence, true),
+  reveal: (db, ref, now, f, evidence) => {
+    fundingTarget(db, "mk_reveals", ref);
+    const settled = ["released", "refunded"].includes(evidence.status);
+    db.prepare("UPDATE mk_reveals SET state=?,held_u=?,created_at=?,updated_at=? WHERE id=?")
+      .run(evidence.status, settled ? 0 : f.amount_u, evidence.fundedAt, now, ref);
+    if (evidence.status === "released") {
+      payOut(db, evidence.creator, now);
+      payOutTreasury(db, now);
+      fee(db, "secret", ref, evidence.fee, CURRENCY, now);
+    } else if (evidence.status === "refunded") payOut(db, f.account, now);
+  },
+  transfer: (db, ref, now, f, evidence) => {
+    fundingTarget(db, "mk_transfers", ref);
+    db.prepare("UPDATE mk_transfers SET state=?,held_u=?,sender_ok=?,receiver_ok=?,updated_at=? WHERE id=?")
+      .run(evidence.status, evidence.status === "held" ? f.amount_u : 0,
+        Number(evidence.senderConfirmed), Number(evidence.receiverConfirmed), now, ref);
+    if (evidence.status === "released") payOut(db, evidence.to, now);
+    else if (evidence.status === "refunded") payOut(db, f.account, now);
+  },
   offer: (db, ref, now, f) => {
     const claim = db.prepare("SELECT * FROM mk_claims WHERE id=?").get(ref);
-    if (!claim) return;
+    assert(claim, "Payment needs its original counteroffer.", 409, "FUNDING_RECONCILIATION_REQUIRED");
     const extra = Number(JSON.parse(f.msg).reward);
     db.prepare("UPDATE mk_tasks SET held_u=held_u+?,fee_held_u=fee_held_u+?,updated_at=? WHERE id=?").run(extra, f.amount_u - extra, now, claim.task_id);
     const task = db.prepare("SELECT state FROM mk_tasks WHERE id=?").get(claim.task_id);

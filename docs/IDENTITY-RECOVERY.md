@@ -24,7 +24,7 @@ Existing independent guest explorers are not automatically merged on wallet sign
 
 ## API contract
 
-All routes use the existing same-origin API and HttpOnly session cookie. Mutating requests require the configured Origin and JSON content type. No wallet permissions or signing keys are added.
+All routes use the existing same-origin API and HttpOnly session cookie. Writes check the supplied Origin and require a JSON media type. Cross-site browser writes are refused apart from the explicitly configured signer routes. No wallet permissions or signing keys are added.
 
 `GET /api/identity/sessions` returns:
 
@@ -114,3 +114,35 @@ No new embedded-wallet dependency or native passkey-account contract was adopted
 ## Live project-pilot verification
 
 On 31 October 2026 the integrated server-side QA exercised recovery with a real project-owned NEAR testnet key. A fresh purpose-bound NEP413 proof revoked four older pilot game sessions, retained one with a rotated cookie, and made the copied old cookie return HTTP 401. The linked account and native progression remained accessible. The public proof is `public/native-progression-proof.json`. This was an API/script rehearsal, not a physical-device wallet-connector acceptance test.
+
+## Local security candidate: isolated account authority
+
+The game page receives only public device metadata. The private FullAccess key and
+WebAuthn PRF recovery run on a separately served same-site origin. Its hidden frame
+accepts exact-origin/parent messages, and a fixed policy independently verifies
+server-priced QGOLD burns and task/Secret funding. Avatar creation, Aura redemption
+to self, equipment, earned mini-games and own SocialDB publication remain silent.
+
+Withdrawals, asset transfers, account/order-signing key changes and recovery open
+a separate approval page. It displays immutable account, contract, recipient and
+amount; cannot be framed; supports Cancel/Escape, keyboard approval and enlarged
+text. A durable execution claim prevents two approval windows from executing one
+request. Raw-byte signing is refused. Approval does not export a private key.
+A recovered device key is saved before AddKey and reused after a lost reply.
+Self-paid financial actions reserve the existing receipt journal before signing.
+
+This is a candidate, not a deployed key rotation. Existing game-origin private
+keys and old recovery relying-party IDs must be inventoried and replaced by the
+owner before calling the boundary effective. Do not silently discard them or
+blindly import them into the new origin. The design still trusts initial key
+enrollment, the signer build/configuration, RPC, browser/device and the game server's
+purchase authorization. Game-origin script compromise can still request permitted
+game spending; this is not a claim that all XSS impact has been eliminated.
+Safari/iOS, Chrome/Android, WebAuthn PRF and popup/cookie behavior require physical
+device rehearsal before release. The candidate is testnet-only.
+
+## Credential enrollment and revocation
+
+A guest may secure their first explorer directly. Once a passkey or wallet is linked, adding another sign-in method requires a five-minute HttpOnly proof tied to that exact game session and issued after passkey or wallet verification. Restart sign-in with an existing method if the proof expires. Existing games, purchases and location actions use the ordinary session. Successful attachment rotates that browser's session. Ethereum wallet linking signs the destination explorer and the authority being added. Outstanding attachment challenges must still match the initiating credential at completion. Managed account creation checks the same authority before recording the job. Device key registration and removal also require this proof. During a reviewed device change, the isolated signer can renew it by signing a single-use challenge for the current explorer, wallet, origin and session. Previously issued credentials and ambiguous historical links require separate review.
+
+Revoked sessions lose access to new live events. Private game actions check the session after reading the request body. Browser RPC configuration uses the public network default or an explicitly public `PUBLIC_NEAR_RPC_URL`. Supply a loopback public endpoint separately for local chains.

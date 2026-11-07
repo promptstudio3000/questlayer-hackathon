@@ -56,7 +56,7 @@ test("Ethereum sign-in creates one explorer, restores it, links on request and p
       body: data === undefined ? undefined : JSON.stringify(data),
     });
     const text = await response.text();
-    return { status: response.status, body: text ? JSON.parse(text) : null, cookie: response.headers.get("set-cookie")?.split(";")[0] };
+    return { status: response.status, body: text ? JSON.parse(text) : null, cookie: response.headers.getSetCookie().map(c => c.split(";")[0]).join("; ") || undefined };
   }
   const wallet = privateKeyToAccount(generatePrivateKey());
   async function signIn(account, extra = {}, cookie) {
@@ -86,14 +86,59 @@ test("Ethereum sign-in creates one explorer, restores it, links on request and p
   assert.ok(sessions.body.sessions.some((s) => s.current && s.kind === "evm-wallet"));
   // A second wallet links to the same explorer; it cannot be taken over.
   const rabby = privateKeyToAccount(generatePrivateKey());
+  await t.test("a copied game bearer cannot enroll another login method or borrow a different session's management proof", async () => {
+    const bearer = again.cookie.split("; ")[0];
+    const wrongProof = ok.cookie.split("; ")[1];
+    for (const cookie of [bearer, bearer + "; " + wrongProof]) {
+      for (const [path, data] of [
+        ["/auth/evm/challenge", {address: rabby.address, link: true}],
+        ["/wallet/challenge", {accountId: "other.testnet"}],
+        ["/passkey/options", {action:"register",attach:true}],
+      ]) {
+        const attempt = await request(path, data, cookie);
+        assert.equal(attempt.status, 403);
+        assert.equal(attempt.body.code, "ACCOUNT_REAUTH_REQUIRED");
+      }
+      assert.equal((await request("/me", undefined, cookie)).status, 200);
+    }
+  });
+  await t.test("wallet linking signs the target explorer and rejects a signature over login wording", async () => {
+    const pending = await signIn(rabby, {link:true}, again.cookie);
+    assert.ok(pending.c.body.message.includes("Link this wallet as a sign-in method for QuestLayer explorer " + ok.body.player.id));
+    const loginText = pending.c.body.message.replace(/^Link this wallet.*$/m,
+      "Sign in to QuestLayer. Authentication only: no transaction, no approval and no funds transfer.");
+    const forged = await rabby.signMessage({message:loginText});
+    assert.equal((await pending.verify(forged)).status,401);
+  });
   const linked = await (await signIn(rabby, { link: true, wallet: "Rabby" }, again.cookie)).verify();
   assert.equal(linked.status, 200, JSON.stringify(linked.body));
   assert.equal(linked.body.player.id, ok.body.player.id);
-  assert.equal(linked.cookie, undefined);
-  assert.equal((await request("/identity/evm", undefined, again.cookie)).body.wallets.length, 2);
+  assert.ok(linked.cookie);
+  assert.equal((await request("/identity/evm", undefined, again.cookie)).status, 401);
+  assert.equal((await request("/identity/evm", undefined, linked.cookie)).body.wallets.length, 2);
   const other = await (await signIn(privateKeyToAccount(generatePrivateKey()))).verify();
   const steal = await (await signIn(rabby, { link: true }, other.cookie)).verify();
   assert.equal(steal.status, 409);
+  await t.test("an expired management grant cannot finish a previously signed attachment", async () => {
+    const pending = await signIn(privateKeyToAccount(generatePrivateKey()), {link:true}, linked.cookie);
+    const testDb = new DatabaseSync(join(dir,"db.sqlite"));
+    try {
+      testDb.prepare("UPDATE auth_challenges SET expires_at=0 WHERE id LIKE 'manage_%'").run();
+      assert.equal((await pending.verify()).status,403);
+      assert.equal((await request("/me", undefined, linked.cookie)).status,200);
+    } finally { testDb.close(); }
+  });
+  await t.test("logout revokes both presented cookie names for this explorer without revoking another explorer", async () => {
+    const primary = (await (await signIn(wallet)).verify()).cookie.split("; ")[0];
+    const second = (await (await signIn(wallet)).verify()).cookie.split("; ")[0];
+    const legacy = second.replace("questlayer-hackathon=", "auratrail=");
+    assert.equal((await request("/logout", {}, primary + "; " + legacy)).status, 200);
+    for (const cookie of [primary, legacy]) assert.equal((await request("/me", undefined, cookie)).status, 401);
+    const next = (await (await signIn(wallet)).verify()).cookie.split("; ")[0];
+    const foreign = other.cookie.split("; ")[0].replace("questlayer-hackathon=", "auratrail=");
+    assert.equal((await request("/logout", {}, next + "; " + foreign)).status, 200);
+    assert.equal((await request("/me", undefined, other.cookie)).status, 200);
+  });
   const db = new DatabaseSync(join(dir, "db.sqlite"), { readOnly: true });
   assert.equal(db.prepare("SELECT COUNT(*) n FROM evm_links").get().n, 3);
   db.close();

@@ -11,6 +11,8 @@ import { openDatabase, createPlayer } from "../server/database.mjs";
 import { ManagedAccounts } from "../server/relayer/accounts.mjs";
 import { Relayer } from "../server/relayer/relay.mjs";
 import { NETWORK } from "../server/native/network.mjs";
+import { decodeSignedDelegate } from "../server/relayer/delegate.mjs";
+import { SubsidyBudget } from "../server/relayer/subsidy-budget.mjs";
 
 export const NOW = Date.parse("2026-11-01T09:00:00Z");
 export const FACTORY = "players.questlayer.testnet",
@@ -78,31 +80,35 @@ export function chain() {
 // A factory that creates sub-accounts and transfers on the fake chain.
 export function fakeFactory(state, { fail = null } = {}) {
   const calls = [];
+  const outcomes = new Map();
   let n = 0;
-  return {
+  const factory = {
     accountId: FACTORY,
-    calls,
-    async signAndSendTransaction({ receiverId, actions: list }) {
+    calls, fail,
+    async signAndSendTransaction({ receiverId, actions: list, transactionHash }) {
+      const hash = transactionHash ?? `F${++n}`;
+      if (outcomes.has(hash)) return outcomes.get(hash);
       calls.push({ receiverId, actions: list });
-      const hash = `F${++n}`;
-      const failure = fail?.(receiverId, list, calls.length);
+      const failure = factory.fail?.(receiverId, list, calls.length);
       if (failure instanceof Error) throw failure;
       const ok = {
         final_execution_status: "FINAL",
-        transaction: { hash, signer_id: FACTORY, receiver_id: receiverId },
+        transaction: { hash, signer_id: FACTORY, receiver_id: receiverId, actions: list.map(a => a.createAccount ? "CreateAccount" : a.transfer ? { Transfer: { deposit: String(a.transfer.deposit) } } : { AddKey: { public_key: a.addKey.publicKey.toString(), access_key: { nonce: 0, permission: "FullAccess" } } }) },
         status: failure ? { Failure: failure } : { SuccessValue: "" },
         transaction_outcome: {
-          outcome: { executor_id: FACTORY, status: { SuccessReceiptId: "R" } },
+          id: hash, outcome: { executor_id: FACTORY, receipt_ids: ["R"], status: { SuccessReceiptId: "R" } },
         },
         receipts_outcome: [
           {
+            id: "R",
             outcome: {
-              executor_id: receiverId,
+              executor_id: receiverId, receipt_ids: [],
               status: failure ? { Failure: failure } : { SuccessValue: "" },
             },
           },
         ],
       };
+      outcomes.set(hash, ok);
       if (failure) return ok;
       for (const action of list) {
         if (action.createAccount) state.add(receiverId, { amount: 0n });
@@ -120,7 +126,18 @@ export function fakeFactory(state, { fail = null } = {}) {
       }
       return ok;
     },
+    fundingTransport(request) {
+      const list = request.kind === "create-account" ? [actions.createAccount(), actions.transfer(BigInt(request.principal)), actions.addFullAccessKey(PublicKey.fromString(request.publicKey))] : [actions.transfer(BigInt(request.principal))];
+      return {
+        identity: "synthetic-factory",
+        async prepare() { const hash = `F${++n}`; return { hash, identity: "synthetic-factory", signed_tx: JSON.stringify({ hash, request }) }; },
+        verify(row) { if (row.signed_tx !== JSON.stringify({ hash: row.hash, request })) throw Error("Synthetic funding request changed"); },
+        async status(row) { if (!outcomes.has(row.hash)) throw Error("UNKNOWN_TRANSACTION"); return outcomes.get(row.hash); },
+        send: row => factory.signAndSendTransaction({ receiverId: request.accountId, actions: list, transactionHash: row.hash }),
+      };
+    },
   };
+  return factory;
 }
 // Builds the RPC view of a relayed meta-transaction from the decoded delegate.
 export function outcomeFor(
@@ -229,10 +246,14 @@ export function fakeTransport(state) {
     },
     async sign({ receiverId, actions: list }) {
       const hash = `T${++n}`;
+      return transport.restore({ hash, signed_tx: JSON.stringify({ hash, receiverId, delegate: Buffer.from(encodeSignedDelegate(list[0].signedDelegate)).toString("base64") }) });
+    },
+    restore(row) {
+      const { hash, receiverId, delegate } = JSON.parse(row.signed_tx);
       return {
-        hash,
+        hash, signedTx: row.signed_tx,
         send: async () => {
-          const signedDelegate = list[0].signedDelegate;
+          const signedDelegate = decodeSignedDelegate(delegate).signedDelegate;
           transport.sends.push({ hash, receiverId, signedDelegate });
           if (transport.onSend)
             return transport.onSend({ hash, receiverId, signedDelegate });
@@ -257,6 +278,7 @@ export function fixture({
   maxJobsPerDay = 40,
   maxDepositYoctoPerDay,
   factoryOptions,
+  subsidyLimits = {},
 } = {}) {
   const db = openDatabase(":memory:"),
     state = chain(),
@@ -271,6 +293,7 @@ export function fixture({
     fundYocto,
     topupCapYocto,
     clock,
+    subsidyBudget: new SubsidyBudget(db, { dailyYocto: 100n * NEAR, dailyOperations: 10000, gasReserveYocto: NEAR / 100n, clock, ...subsidyLimits }),
   });
   const relayer = new Relayer(db, state.provider, transport, {
     accounts,

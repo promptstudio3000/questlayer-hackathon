@@ -6,7 +6,7 @@ import type {
   ReviewedNativeTransaction,
 } from "./confirmed-native-transaction";
 import { sendRelayed } from "./relayed-native-transaction";
-import { isRelayedDeposit, sendSelfPaid } from "./self-paid-native-transaction";
+import { isRelayedDeposit, sendJournaledSelfPaid } from "./self-paid-native-transaction";
 import type { PlayerKeyRecord } from "./player-key";
 
 type Wallet = Parameters<typeof sendConfirmedNative>[0] & {
@@ -30,7 +30,7 @@ export function walletSigner(wallet: Wallet, accountId: string): NativeSigner {
         throw Error("Choose a wallet that supports NEAR transactions.");
       // The wallet review flow loads on first use, off the first screen.
       const { sendConfirmedNative: send } = await import("./confirmed-native-transaction");
-      await send(wallet, transaction, context);
+      return send(wallet, transaction, context);
     },
   };
 }
@@ -44,10 +44,10 @@ export function managedSigner(
   return {
     kind: "managed",
     accountId,
-    async send(transaction) {
+    async send(transaction, context) {
       if (isRelayedDeposit(transaction))
-        return (await sendRelayed(key, transaction)).transactionHash;
-      return (await sendSelfPaid(key, transaction)).transactionHash;
+        return (await sendRelayed(key, transaction, { recoveryKey: context.recoveryKey })).transactionHash;
+      return sendJournaledSelfPaid(key, transaction, context);
     },
   };
 }

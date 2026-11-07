@@ -323,9 +323,7 @@ export async function relayKeyChange(
     maxBlockHeight: BigInt(prepared.maxBlockHeight),
     publicKey: PublicKey.from(signer.publicKey),
   });
-  const { signedDelegate } = await KeyPairSigner.fromSecretKey(
-    signer.secretKey as `ed25519:${string}`,
-  ).signDelegateAction(delegateAction);
+  const { signedDelegate } = await (await signerFor(signer)).signDelegateAction(delegateAction);
   const job = await api<RelayJobView>("/relay", {
     signedDelegateBase64: toBase64(encodeSignedDelegate(signedDelegate)),
     preview: { receiverId: accountId },
@@ -398,6 +396,7 @@ export async function setupPasskeyRecovery({
   api: ApiCall;
   intervalMs?: number;
 }) {
+  if (deviceKey.vaultId) return (await import("./signing-vault/client.ts")).vaultRequest<{ publicKey: string }>("setupRecovery");
   const { prf } = await createRecoveryPasskey({ accountId, credentials, rpId });
   const recovery = await recoveryKeyFromPrf(prf, accountId);
   await api("/account/keys", {
@@ -430,6 +429,7 @@ export async function restoreWithPasskey<P>({
   userAgent?: string;
   intervalMs?: number;
 }) {
+  if (store.vault) return (await import("./signing-vault/client.ts")).vaultRequest<{ accountId: string; player: P; publicKey: string }>("restoreRecovery");
   const { accountId, recovery } = await readRecoveryPasskey({
     credentials,
     rpId,
@@ -445,18 +445,24 @@ export async function restoreWithPasskey<P>({
     challengeId: challenge.challengeId,
     ...proof,
   });
-  const device = await freshDeviceKey(accountId);
-  await api("/account/keys", {
+  // Persist a newly authorized device before registration. A restart after the
+  // chain accepts AddKey must not discard the only copy of that device key.
+  const pendingKey = `pending-recovery:${accountId}`;
+  const device = (await store.get(pendingKey)) ?? await freshDeviceKey(accountId);
+  if (device.accountId !== accountId) throw new RecoveryError("Saved account recovery changed.", "RECOVERY_ACCOUNT");
+  await store.put(pendingKey, device);
+  const registration = await api<{ account: { keys: AccountKey[] } | null }>("/account/keys", {
     publicKey: device.publicKey,
     kind: "device",
     label: deviceLabel(userAgent),
   });
-  await relayKeyChange(
+  if (!registration.account?.keys.some(k => k.publicKey === device.publicKey && k.state === "active")) await relayKeyChange(
     recovery,
     { accountId, change: "add", publicKey: device.publicKey },
     { api, intervalMs },
   );
   await replaceDeviceKey(store, device);
+  await store.delete(pendingKey);
   return { accountId, player: signedIn.player, publicKey: device.publicKey };
 }
 
@@ -474,6 +480,7 @@ export async function revokeAccountKey({
   api: ApiCall;
   intervalMs?: number;
 }) {
+  if (deviceKey.vaultId) return (await import("./signing-vault/client.ts")).vaultRequest<{ removed: boolean; onChain: boolean }>("revokeKey", { target: publicKey });
   if (publicKey === deviceKey.publicKey)
     throw new RecoveryError(
       "Revoke this device from another device.",
@@ -506,6 +513,7 @@ export async function signOutOtherSessions({
   accountId: string;
   api: ApiCall;
 }) {
+  if (deviceKey.vaultId) return (await import("./signing-vault/client.ts")).vaultRequest<{ ok: boolean; revokedSessions: number }>("revokeSessions");
   const c = await api<{
     challengeId: string;
     nonce: string;

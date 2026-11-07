@@ -9,8 +9,8 @@
     "questlayer_ledger": "3c4df45cdfa8854dc37553fc13be261fef09acd00a283d4c7fac0aa26704ffa5",
     "questlayer_market": "1642a65af521b17b9d46786d66d1606c223cbf68d6a53cd90d620ce8ce225435",
     "questlayer_npc_games": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
-    "questlayer_qgold": "6932b7985cb90fec7220b374b4815f6f1dc67cbc600c66cc03d578a0b10629cd",
-    "questlayer_qgold_escrow": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da",
+    "questlayer_qgold": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f",
+    "questlayer_qgold_escrow": "2030dbd135d22f397be6d9e951c37eacff60556c1fdebd88a2ed7af14fa4a298",
     "questlayer_rewards": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
     "questlayer_soulbound_ft": "2746a77ec1de90c9b9a8054769922d0a2027cec8c15f743fcd66b89b3c572293",
     "questlayer_tasks": "055954f30c81b4dfd56b3bd9a88c469aeb74c50d5eb4eb83f9aeb5b8bbc51751",
@@ -72,6 +72,10 @@
       "contract": "questlayer_qgold",
       "sha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
       "note": "Public testnet still runs the prior QGOLD build. Exact NEAR game carry and durable conversion receipts require the existing council upgrade process and its 48-hour timelock. No deployment is implied."
+    },
+    "public/native-qgold-escrow-testnet.json:wasmSha256": {
+      "contract": "questlayer_qgold_escrow",
+      "sha256": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da"
     }
   }
 }

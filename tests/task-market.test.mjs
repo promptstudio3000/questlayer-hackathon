@@ -5,6 +5,8 @@ import { GOLD, DAY } from "../server/domain.mjs";
 import * as m from "../server/market/service.mjs";
 import * as chain from "../server/market/chain.mjs";
 import { createMarketRoutes } from "../server/market/routes.mjs";
+import { escrowFundingView } from "./fixtures/escrow-funding.mjs";
+import { mockDelivery } from "./fixtures/escrow-delivery.mjs";
 
 const now = Date.parse("2026-11-04T12:00:00Z");
 const PLZEN = { lat: 49.7475, lng: 13.3776 };
@@ -39,7 +41,7 @@ function fund(db, r, at = now) {
   assert.equal(r.funding.args.receiver_id, ESCROW.contractId);
   assert.equal(r.funding.deposit, "1");
   const f = db.prepare("SELECT * FROM mk_fundings WHERE id=?").get(r.funding.id);
-  assert.ok(chain.markFunded(db, f, m.ACTIVATE, at));
+  assert.ok(chain.markFunded(db, f, m.ACTIVATE, at, escrowFundingView(f, at)));
   return JSON.parse(f.msg);
 }
 
@@ -270,11 +272,12 @@ test("escrow worker: confirms matching fundings, drops stale ones, sends calls i
   const t = m.createTask(db, alice, { title: "Visit the cathedral", type: "go", ...PLZEN, reward: 5 * GOLD, slots: 2 }, now);
   const stale = m.createTransfer(db, alice, { to: bob, amount: GOLD }, now);
   const views = {
-    [t.id]: { poster: "alice.testnet", reward: String(10 * GOLD), slots: 2, assignee: null },
+    [t.id]: escrowFundingView(db.prepare("SELECT * FROM mk_fundings WHERE id=?").get(t.id)),
   };
   const calls = [];
   const run = (at, call = async (method, args) => (calls.push(`${method} ${args.id ?? args.account_id}`), "tx")) =>
-    chain.runEscrowWorker(db, { view: async (_m, args) => views[args.id] ?? null, call, activate: m.ACTIVATE, drop: m.DROP, now: at });
+    chain.runEscrowWorker(db, { view: async (method, args) => method === "get_credit" ? "100" : views[args.id] ?? null,
+      call: mockDelivery(call), activate: m.ACTIVATE, drop: m.DROP, now: at });
   // A funding from another account does not count.
   views[stale.id] = { sender: "mallory.testnet", to: "bob.testnet", amount: String(GOLD) };
   let r = await run(now);
@@ -288,20 +291,20 @@ test("escrow worker: confirms matching fundings, drops stale ones, sends calls i
   m.submitClaim(db, bob, c.id, { fix: fix() }, now);
   r = await run(now + 3 * 3_600_000);
   assert.deepEqual(calls, [`approve_task ${t.id}`, "withdraw_for bob.testnet", "withdraw_for treasury.testnet"]);
-  // A failure is retried later; "already done" errors count as sent.
+  // Error text alone proves nothing; the original signed attempt stays pending.
   m.cancelTask(db, alice, t.id, now);
   calls.length = 0;
   r = await run(now + 4 * 3_600_000, async (method) => {
     if (method === "cancel_task") throw Error("Smart contract panicked: Task is closed");
     throw Error("RPC timeout");
   });
-  assert.deepEqual([r.sent, r.failed], [0, 1]);
+  assert.deepEqual([r.sent, r.pending], [0, 1]);
   const left = db.prepare("SELECT method,state,attempts FROM mk_chain_ops WHERE state!='sent'").all().map((r) => ({ ...r }));
-  assert.deepEqual(left, [{ method: "withdraw_for", state: "queued", attempts: 1 }]); // cancel_task counted as done
-  assert.equal(chain.escrowHealth(db).queued, 1);
+  assert.deepEqual(left, [{ method: "cancel_task", state: "queued", attempts: 1 }, { method: "withdraw_for", state: "queued", attempts: 0 }]);
+  assert.equal(chain.escrowHealth(db).queued, 2);
 });
 
-test("a review payout whose hold never reached the chain falls back to approve_task", async () => {
+test("an unverified review hold cannot trigger a guessed approval or bypass a failed operation", async () => {
   const { db, alice, bob } = setup();
   const t = m.createTask(db, alice, { title: "Photograph the fountain", type: "photo", ...PLZEN, reward: GOLD }, now);
   fund(db, t);
@@ -314,25 +317,27 @@ test("a review payout whose hold never reached the chain falls back to approve_t
     activate: m.ACTIVATE,
     drop: m.DROP,
     now,
-    call: async (method, args) => {
+    call: mockDelivery(async (method, args) => {
       calls.push(method);
       if (method === "open_dispute") throw Error("Smart contract panicked: Escrow is paused");
       if (method === "resolve_dispute") throw Error("Smart contract panicked: No open dispute for this worker");
       return "tx";
-    },
+    }),
   });
   assert.deepEqual(calls, ["open_dispute"]); // the failing hold blocks this task's later calls
   db.prepare("UPDATE mk_chain_ops SET state='failed' WHERE method='open_dispute'").run();
   calls.length = 0;
   await chain.runEscrowWorker(db, {
     view: async () => null, activate: m.ACTIVATE, drop: m.DROP, now: now + 3_600_000,
-    call: async (method) => {
+    call: mockDelivery(async (method) => {
       calls.push(method);
       if (method === "resolve_dispute") throw Error("Smart contract panicked: No open dispute for this worker");
       return "tx";
-    },
+    }),
   });
-  assert.deepEqual(calls.slice(0, 2), ["resolve_dispute", "approve_task"]);
+  assert.deepEqual(calls, []);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM mk_delivery_attempts").get().n, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM mk_chain_ops WHERE method='approve_task'").get().n, 0);
 });
 
 test("routes mount under /api/market, confirm a funding and gate moderators", async () => {
@@ -354,10 +359,13 @@ test("routes mount under /api/market, confirm a funding and gate moderators", as
   };
   const created = await call(alice, "POST", "/api/market/tasks", { title: "Route test", ...PLZEN, reward: GOLD });
   assert.equal(created.status, 201);
+  assert.deepEqual((await call(alice, "GET", `/api/market/funding-intent?id=${created.body.id}`)).body, created.body.funding);
+  await assert.rejects(call(bob, "GET", `/api/market/funding-intent?id=${created.body.id}`), /no longer pending/);
   assert.equal((await call(alice, "POST", "/api/market/funded", { id: created.body.id })).body.state, "waiting");
-  views[created.body.id] = { poster: "alice.testnet", reward: String(GOLD), slots: 1, assignee: null };
+  views[created.body.id] = escrowFundingView(db.prepare("SELECT * FROM mk_fundings WHERE id=?").get(created.body.id));
   await assert.rejects(call(bob, "POST", "/api/market/funded", { id: created.body.id }), /Unknown payment/);
   assert.equal((await call(alice, "POST", "/api/market/funded", { id: created.body.id })).body.state, "funded");
+  await assert.rejects(call(alice, "GET", `/api/market/funding-intent?id=${created.body.id}`), /no longer pending/);
   const near = await call(bob, "GET", `/api/market/nearby?lat=${PLZEN.lat}&lng=${PLZEN.lng}`);
   assert.equal(near.body.tasks[0].id, created.body.id);
   assert.equal((await call(bob, "GET", "/api/market/escrow")).body.contractId, ESCROW.contractId);

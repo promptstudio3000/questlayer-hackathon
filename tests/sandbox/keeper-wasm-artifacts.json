@@ -1,0 +1,19 @@
+{
+  "qgold": {
+    "filename": "questlayer_qgold.wasm",
+    "sha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
+    "source": "Unchanged QuestLayer QGOLD source; use the earlier QGOLD/escrow local build evidence."
+  },
+  "wnear": {
+    "filename": "w_near.wasm",
+    "sha256": "bf42d41cfe1ee902c117f198f39456c7c5aec37969ee0fd52057cee52a357f55",
+    "url": "https://raw.githubusercontent.com/near/core-contracts/1b0436c96379c63aee7d2429c6d5d24019031ab8/w-near/res/w_near.wasm"
+  },
+  "rhea": {
+    "filename": "ref_exchange_release_v1919.wasm",
+    "sha256": "8918c505017ceb57646bdd863c34e4fe56e2edc7756963d6f4a1f38d6f9c34d2",
+    "url": "https://raw.githubusercontent.com/xTRPs/ref-contracts/864513b6c2f7acdcb6a084ee9cb7c0dcd6507774/releases/ref_exchange_release.wasm",
+    "matchingArchiveUrl": "https://raw.githubusercontent.com/shawn10359/rhea-contracts/20b5f7e5be18099cee0ff94cdd5147092dc36f10/releases/ref_exchange_release_v1919.wasm",
+    "limitation": "Archived Ref/Rhea exchange 1.9.19 WASM. Two public copies match. Official source repositories return 404; origin authenticity and equivalence to any current deployment are NOT independently established. No public-chain query is performed."
+  }
+}

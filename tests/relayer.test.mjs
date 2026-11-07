@@ -200,17 +200,19 @@ test("network failures retry durably with bounded backoff and reconcile a lost r
   assert.equal(row.run_after, f.clock() + 10000);
   assert.equal(
     row.transaction_hash,
-    "T2",
-    "an unknown transaction is signed again",
+    "T1",
+    "an unknown transaction replays the original signed bytes and hash",
   );
   assert.deepEqual(
     [backoff(5), backoff(6), backoff(20)],
     [160000, 300000, 300000],
   );
-  // The second send actually landed; the successor finds it by hash and sends nothing.
+  assert.equal(f.rows("relay_submissions").length, 1);
+  assert.equal(f.transport.sends[0].hash, f.transport.sends[1].hash);
+  // The original transaction landed; the successor finds it by hash and sends nothing.
   f.advance(10000);
   f.transport.onStatus = async (hash) => {
-    assert.equal(hash, "T2");
+    assert.equal(hash, "T1");
     return outcomeFor(f.transport.sends[1].signedDelegate, { hash });
   };
   assert.deepEqual(await f.relayer.runRelayJobs(), {
@@ -221,7 +223,7 @@ test("network failures retry durably with bounded backoff and reconcile a lost r
   assert.equal(f.transport.sends.length, 2);
   row = f.job(job.id);
   assert.equal(row.state, "confirmed");
-  assert.equal(row.transaction_hash, "T2");
+  assert.equal(row.transaction_hash, "T1");
   assert.equal(row.last_error, null);
 });
 
@@ -546,7 +548,9 @@ test("the route handler dispatches account and relay routes with the parent's he
   t.after(() => f.db.close());
   const { createRelayerRoutes } = await import("../server/relayer/routes.mjs");
   const { assert: gameAssert } = await import("../server/domain.mjs");
+  let mayManage = false;
   const routes = createRelayerRoutes({
+    authorizeEnrollment: () => gameAssert(mayManage, "Sign in again", 403),
     relayer: f.relayer,
     accounts: f.accounts,
   });
@@ -600,6 +604,11 @@ test("the route handler dispatches account and relay routes with the parent's he
     call("GET", "/api/relay?account=INVALID"),
     /valid NEAR account/,
   );
+  const attemptedKey = KeyPair.fromRandom("ed25519").getPublicKey().toString();
+  for (const remove of [true, false])
+    await assert.rejects(call("POST", "/api/account/keys", {publicKey: attemptedKey, remove}), error => error.status === 403);
+  assert.equal(f.accounts.view(f.player).account.keys.length, 1);
+  mayManage = true;
   const keys = await call("POST", "/api/account/keys", {
     publicKey: KeyPair.fromRandom("ed25519").getPublicKey().toString(),
     label: "tablet",

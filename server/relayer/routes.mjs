@@ -3,7 +3,11 @@ import { NETWORK } from "../native/network.mjs";
 
 // Player-facing routes. The parent server authenticates the player, parses the
 // body and owns the response helpers; this handler only dispatches.
-export function createRelayerRoutes({ relayer = null, accounts = null } = {}) {
+export function createRelayerRoutes({ relayer = null, accounts = null, authorizeEnrollment } = {}) {
+  const checkEnrollment = (req, player) => {
+    if (typeof authorizeEnrollment !== "function") throw new Error("Account authorization is unavailable.");
+    authorizeEnrollment(req, player);
+  };
   async function handle(req, res, url, { player, body, respond, assert }) {
     const path = url.pathname,
       method = req.method || "GET";
@@ -32,6 +36,7 @@ export function createRelayerRoutes({ relayer = null, accounts = null } = {}) {
         await accounts.create(player, {
           publicKey: input.publicKey,
           name: input.name,
+          authorizeEnrollment: () => checkEnrollment(req, player),
         }),
         201,
       );
@@ -45,6 +50,7 @@ export function createRelayerRoutes({ relayer = null, accounts = null } = {}) {
         "ACCOUNT_DISABLED",
       );
       const input = await body(req);
+      checkEnrollment(req, player);
       respond(
         res,
         input.remove

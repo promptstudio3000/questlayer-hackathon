@@ -342,7 +342,7 @@ test("shape, identity, nonce, expiry, gas and argument bounds", async () => {
   );
   await rejects(decoded({ nonce: 100n }), "RELAY_NONCE");
   await rejects(decoded({ nonce: 102n }), "RELAY_NONCE");
-  await rejects(decoded({ maxBlockHeight: 5000n }), "RELAY_EXPIRY");
+  await rejects(decoded({ maxBlockHeight: 5000n }), "RELAY_EXPIRED");
   await rejects(decoded({ maxBlockHeight: 5121n }), "RELAY_EXPIRY");
   assert.equal(
     validateDelegate(await decoded({ maxBlockHeight: 5120n }), ctx())

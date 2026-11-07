@@ -7,7 +7,7 @@ import type { Account } from "near-api-js";
 import { loadNearApi } from "./near-api.ts";
 import { api } from "./api.ts";
 import { signerFor, type PlayerKeyRecord } from "./player-key.ts";
-import type { ReviewedNativeTransaction } from "./confirmed-native-transaction.ts";
+import type { ReviewedNativeTransaction, NativeConfirmationContext } from "./confirmed-native-transaction.ts";
 import { NEAR_NETWORK } from "./near-network.ts";
 
 export const RELAYED_DEPOSITS = ["0", "1", "50000000000000000000000"];
@@ -53,6 +53,21 @@ function resolveRpcUrl() {
 }
 const plain = (value: unknown) =>
   !!value && typeof value === "object" && !Array.isArray(value);
+
+// Reserve the operation before calling the signer. An uncertain send must be
+// reconciled from the saved receipt, never turned into a new payment on retry.
+export async function sendJournaledSelfPaid(
+  key: PlayerKeyRecord,
+  transaction: ReviewedNativeTransaction,
+  context: NativeConfirmationContext,
+  send = sendSelfPaid,
+) {
+  const { sendConfirmedNative } = await import("./confirmed-native-transaction.ts");
+  return sendConfirmedNative({ signAndSendTransaction: async () => {
+    const result = await send(key, transaction);
+    return { transaction: { hash: result.transactionHash } };
+  } }, transaction, context);
+}
 
 export async function sendSelfPaid(
   key: PlayerKeyRecord,

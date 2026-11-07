@@ -1,3 +1,5 @@
+import { ensurePurchases, existingPurchaseRelay } from "../gold-spend/purchases.mjs";
+import { ensureRelaySubmissions } from "./submissions.mjs";
 import { actions } from "near-api-js";
 import { atomic } from "../database.mjs";
 import { assert, dayKey, id } from "../domain.mjs";
@@ -28,7 +30,7 @@ const STATE_MARGIN = 10n ** 22n; // 0.01 NEAR
 const integer = (value) => Number.isSafeInteger(value) && value > 0;
 const missing = (error) =>
   /does not exist|UNKNOWN_TRANSACTION|UnknownTransaction/i.test(
-    rpcErrorText(error),
+    `${error?.name}: ${rpcErrorText(error)}`,
   );
 function jobView(row) {
   if (!row) return null;
@@ -118,6 +120,8 @@ export class Relayer {
     this.maxDepositYoctoPerDay = BigInt(maxDepositYoctoPerDay);
     this.customContext = policyContext;
     initializeManagedAccounts(db);
+    ensurePurchases(db);
+    ensureRelaySubmissions(db);
   }
   get enabled() {
     return !!this.transport;
@@ -357,6 +361,10 @@ export class Relayer {
         );
         return again;
       }
+      const purchase = call.methodName === "ft_burn" && call.receiverId === this.contracts.qgold
+        ? existingPurchaseRelay(this.db, playerId, call) : null;
+      if (purchase?.job) return purchase.job;
+      this.accounts.subsidyBudget.reserve(jobId, { kind: "relay", accountId: senderId, principal: call.deposit });
       const used =
         this.db
           .prepare("SELECT jobs FROM relay_budget WHERE account_id=? AND day=?")
@@ -396,6 +404,7 @@ export class Relayer {
           now,
           now,
         );
+      if (purchase) this.db.prepare("UPDATE qgold_purchases SET relay_job_id=?,updated_at=? WHERE id=?").run(jobId, now, purchase.row.id);
       return this.db.prepare("SELECT * FROM relay_jobs WHERE id=?").get(jobId);
     });
     return { ...jobView(row), duplicate: row.id !== jobId };
@@ -450,6 +459,7 @@ export class Relayer {
         lastError: lease?.last_error ?? null,
       },
       jobs: counts,
+      sponsorship: this.accounts.subsidyBudget.snapshot(),
     };
   }
   // One pass over due jobs. The lease fences every durable write so a stalled
@@ -584,6 +594,11 @@ export class Relayer {
     this.requireEnabled();
     const call = JSON.parse(job.call),
       decoded = decodeSignedDelegate(job.delegate);
+    const request = { receiverId: call.senderId, actions: [actions.signedDelegate(decoded.signedDelegate)] };
+    let submission = this.db.prepare("SELECT * FROM relay_submissions WHERE job_id=? ORDER BY attempt DESC LIMIT 1").get(job.id);
+    if (submission?.state === "rejected") submission = null;
+    let signed = submission ? this.transport.restore(submission, request) : null;
+    assert(!submission || submission.hash === job.transaction_hash, "Saved relay hash changed.", 503, "RELAY_RECOVERY");
     let outcome = null;
     if (job.transaction_hash) {
       try {
@@ -597,36 +612,40 @@ export class Relayer {
     if (!outcome) {
       // The relayer's transaction carries the attached deposit (NEP-366), so
       // the player's account needs no transfer before sending.
-      const signed = await this.transport.sign({
-        receiverId: call.senderId,
-        actions: [actions.signedDelegate(decoded.signedDelegate)],
-      });
-      write(() =>
-        this.db
+      // An unknown RPC result is not proof of non-execution. Replay the exact
+      // persisted outer transaction; never replace its nonce or lose its hash.
+      if (!signed) {
+        if (job.transaction_hash) throw retryLater("RELAY_RECOVERY", "The earlier transaction needs reconciliation before another submission.");
+        signed = await this.transport.sign(request);
+        assert(typeof signed.signedTx === "string" && signed.signedTx.length > 0, "Relay submission cannot be recovered.", 503, "RELAY_RECOVERY");
+        write(() => {
+          const attempt = this.db.prepare("SELECT COALESCE(MAX(attempt),0)+1 n FROM relay_submissions WHERE job_id=?").get(job.id).n;
+          this.accounts.subsidyBudget.reserve(attempt === 1 ? job.id : `${job.id}:attempt:${attempt}`, { kind: "relay", accountId: call.senderId, principal: call.deposit });
+          this.db.prepare("INSERT INTO relay_submissions(job_id,attempt,hash,signed_tx,account_id,public_key,created_at) VALUES(?,?,?,?,?,?,?)")
+            .run(job.id, attempt, signed.hash, signed.signedTx, this.transport.accountId, this.transport.publicKey, this.clock());
+          this.db
           .prepare(
             "UPDATE relay_jobs SET state='sent',transaction_hash=?,updated_at=? WHERE id=?",
           )
-          .run(signed.hash, this.clock(), job.id),
-      );
+          .run(signed.hash, this.clock(), job.id);
+        });
+      }
       try {
         outcome = await signed.send("FINAL");
       } catch (error) {
-        if (
-          error?.name === "InvalidNonceError" ||
-          /InvalidNonce/.test(rpcErrorText(error))
-        )
-          write(() =>
-            this.db
-              .prepare("UPDATE relay_jobs SET transaction_hash=NULL WHERE id=?")
-              .run(job.id),
-          );
         throw retryLater("RELAY_NETWORK", rpcErrorText(error).slice(0, 160));
       }
       renew();
     }
     const failure = relayFailure(outcome);
     if (failure) {
+      const expectedHash = signed?.hash ?? job.transaction_hash;
+      assert(outcome.final_execution_status === "FINAL" && outcome.transaction?.hash === expectedHash &&
+        outcome.transaction.signer_id === this.relayerId && outcome.transaction.receiver_id === call.senderId,
+      "The failed relay receipt is not bound to the saved submission.", 503, "RELAY_RECOVERY");
       const verdict = classifyFailure(failure, call);
+      const failedAttempt = this.db.prepare("SELECT attempt FROM relay_submissions WHERE job_id=? AND hash=?").get(job.id, expectedHash)?.attempt;
+      if (failedAttempt) write(() => this.accounts.subsidyBudget.settle(failedAttempt === 1 ? job.id : `${job.id}:attempt:${failedAttempt}`, expectedHash, outcome));
       if (verdict.topup && job.attempts === 0) {
         // Only the account's own state storage can run short; one margin-funded
         // retry proves it either way (the nonce may already be consumed).
@@ -634,11 +653,13 @@ export class Relayer {
           jobId: job.id,
           write,
         });
-        write(() =>
+        write(() => {
+          this.db.prepare("UPDATE relay_submissions SET state='rejected',outcome=? WHERE job_id=? AND hash=?")
+            .run(JSON.stringify(outcome), job.id, expectedHash);
           this.db
             .prepare("UPDATE relay_jobs SET transaction_hash=NULL WHERE id=?")
-            .run(job.id),
-        );
+            .run(job.id);
+        });
         throw retryLater(
           "RELAY_INSUFFICIENT_BALANCE",
           "The account was topped up; retrying the signed action.",
@@ -652,6 +673,11 @@ export class Relayer {
       relayerId: this.relayerId,
       call,
     });
+    assert(result.transactionHash === (signed?.hash ?? job.transaction_hash), "Relay result changed its transaction hash.", 503, "RELAY_RECOVERY");
+    write(() => this.db.prepare("UPDATE relay_submissions SET state='succeeded',outcome=? WHERE job_id=? AND hash=?")
+      .run(JSON.stringify(outcome), job.id, result.transactionHash));
+    const attempt = this.db.prepare("SELECT attempt FROM relay_submissions WHERE job_id=? AND hash=?").get(job.id, result.transactionHash)?.attempt;
+    if (attempt) write(() => this.accounts.subsidyBudget.settle(attempt === 1 ? job.id : `${job.id}:attempt:${attempt}`, result.transactionHash, outcome));
     if (call.kind === "addKey" || call.kind === "deleteKey")
       write(() =>
         this.db

@@ -59,6 +59,8 @@ import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
 import { ManagedAccounts } from "./relayer/accounts.mjs";
+import { SubsidyBudget } from "./relayer/subsidy-budget.mjs";
+import { signingVaultOrigin, vaultCors } from "./signing-vault-cors.mjs";
 import { Relayer, startRelayWorker } from "./relayer/relay.mjs";
 import { createRelayerRoutes } from "./relayer/routes.mjs";
 import {
@@ -73,6 +75,7 @@ import {
   bonusVoteSettings,
   createBonusVoteRoutes,
 } from "./creators/bonus-vote.mjs";
+import { publicDistribution, publicAudit } from "./public-distribution.mjs";
 import { auditDistribution, auditSummary } from "./native/distribution.mjs";
 import { createPublicLedger } from "./native/public-ledger.mjs";
 import { readYieldBacking } from "./native/day-publication.mjs";
@@ -109,7 +112,7 @@ import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
 import { chainFeed, chainItems } from "./native/chain-feed.mjs";
-import { clientAddress, pruneRateWindows } from "./http-security.mjs";
+import { clientAddress, RateWindows, pruneRateWindows, publicRpcUrl } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -148,6 +151,7 @@ import {
   evmAddress,
   evmChainId,
   signInMessage,
+  evmLinkStatement,
   siweNonce,
   verifyEvmSignature,
   walletLabel,
@@ -246,6 +250,7 @@ const moderation = new Moderation(db, { evidence: taskEvidence });
 const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
+const secureSigningOrigin = signingVaultOrigin(process.env.SIGNING_VAULT_ORIGIN, origin);
 const creatorRuntime = createCreatorRuntime(db, {
   origin,
   authenticate: auth,
@@ -255,6 +260,7 @@ const creatorRuntime = createCreatorRuntime(db, {
 });
 const guide = createGuide(db);
 const rpc = process.env.NEAR_RPC_URL || DEFAULT_RPC;
+const browserRpc = publicRpcUrl(process.env.PUBLIC_NEAR_RPC_URL, DEFAULT_RPC);
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
 const deploymentManifestPath = existsSync(
@@ -381,7 +387,7 @@ const nativeVaults =
 const relayConfig = relayerConfiguration(
   featureEnabled("relayer") ? process.env : { DISABLE_RELAYER: "1" },
 );
-const factoryService = relayConfig.accountsEnabled
+const factoryService = relayConfig.accountsEnabled && secureSigningOrigin
   ? await loadServiceAccount(provider, relayConfig.factoryKeyPath, {
       expectAccountId: relayConfig.factoryAccount,
     })
@@ -391,6 +397,7 @@ const managedAccounts = relayConfig.factoryAccount
       factoryId: relayConfig.factoryAccount,
       fundYocto: relayConfig.fundYocto,
       topupCapYocto: relayConfig.topupCapYocto,
+      subsidyBudget: new SubsidyBudget(db, { dailyYocto: relayConfig.subsidyDailyYocto, dailyOperations: relayConfig.subsidyDailyOperations, gasReserveYocto: relayConfig.subsidyGasReserveYocto }),
     })
   : null;
 // Experimental NEAR Intents market (docs/NEAR-INTENTS-MARKET.md): on only when
@@ -414,7 +421,7 @@ const qgoldTokenForRelay = (() => {
   return settings.enabled ? settings.manifest?.tokenContract || settings.contract : undefined;
 })();
 const relayerService =
-  managedAccounts && relayConfig.enabled
+  managedAccounts && relayConfig.enabled && secureSigningOrigin
     ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
     : null;
 const relayer = managedAccounts
@@ -487,6 +494,7 @@ const intentsMarket =
     : null;
 const intentsRoutes = createIntentsRoutes(intentsMarket);
 const relayerRoutes = createRelayerRoutes({
+  authorizeEnrollment: req => allowEnrollment(req, identitySessions.authenticate(sessionToken(req))),
   relayer,
   accounts: managedAccounts,
 });
@@ -786,7 +794,8 @@ const goldSpendRoutes = createGoldSpendRoutes({
           if (!account) return 0;
           return Number((await qgoldVault.account(account)).balance || 0);
         },
-        txStatus: (hash, account) => provider.txStatus(hash, account, "FINAL"),
+        txStatus: (hash, account) => provider.viewTransactionStatusWithReceipts({ txHash: hash, accountId: account, waitUntil: "FINAL" }),
+        relayerId: relayer?.relayerId,
       }
     : null,
 });
@@ -851,8 +860,6 @@ const marketRoutes = createMarketRoutes({
   db,
   isModerator: (player) => {
     if (marketModerators.has(player)) return true;
-    const p = db.prepare("SELECT native_account FROM players WHERE id=?").get(player);
-    if (p?.native_account && marketModerators.has(p.native_account)) return true;
     return db
       .prepare("SELECT account_id FROM wallet_links WHERE player_id=?")
       .all(player)
@@ -1104,8 +1111,9 @@ async function refreshOriginals(address) {
     originalLookups.delete(address);
   }
 }
+const readPublicDistribution = publicDistribution(nativeRewards, auditDistribution);
 const listeners = new Set(),
-  rates = new Map();
+  rates = new RateWindows();
 // Per-minute counters: keys end with ":<minute>". `limit` throws 429 past `max`.
 function limit(scope, who, max, message) {
   const key = `${scope}:${who}:${Math.floor(Date.now() / 60_000)}`,
@@ -1117,7 +1125,7 @@ function limit(scope, who, max, message) {
 // events only go to streams of explorers on that world: broadcasting every
 // pick-up in Czechia to every phone was most of the server's socket writes
 // with 500 walkers (npm run load:test). A stream whose explorer has not
-// loaded a world yet still gets everything.
+// loaded a world yet receives only world-independent notifications.
 const viewing = new Map();
 function viewWorld(player, worldId) {
   if (!worldId || viewing.get(player) === worldId) return;
@@ -1126,10 +1134,15 @@ function viewWorld(player, worldId) {
   viewing.set(player, worldId);
 }
 function emit(type, data, worldId = null) {
+  const recipients = [...listeners].filter(client => !worldId || viewing.get(client.questlayerPlayer) === worldId);
+  if (!recipients.length) return;
+  const live = new Set(db.prepare(
+    "SELECT token_hash FROM sessions WHERE token_hash IN (SELECT value FROM json_each(?)) AND expires_at>?",
+  ).all(JSON.stringify(recipients.map(client => client.questlayerSession)), Date.now()).map(row => row.token_hash));
   const event = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
-  for (const client of listeners) {
-    const at = worldId && viewing.get(client.questlayerPlayer);
-    if (!at || at === worldId) client.write(event);
+  for (const client of recipients) {
+    if (live.has(client.questlayerSession)) client.write(event);
+    else client.end();
   }
 }
 const coinWorld = (coinId) => String(coinId).split(":coin:")[0] || null;
@@ -1138,13 +1151,15 @@ const questWorld = (questId) =>
 function cookie(token) {
   return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
+function sessionTokens(req) {
+  const header = req.headers.cookie || "";
+  return [
+    /(?:^|;\s*)questlayer-hackathon=([a-f0-9]{64})(?:;|$)/.exec(header)?.[1],
+    /(?:^|;\s*)auratrail=([a-f0-9]{64})(?:;|$)/.exec(header)?.[1],
+  ].filter(Boolean);
+}
 function sessionToken(req) {
-  return (
-    req.headers.cookie?.match(
-      /(?:^|; )questlayer-hackathon=([a-f0-9]{64})(?:;|$)/,
-    )?.[1] ||
-    req.headers.cookie?.match(/(?:^|; )auratrail=([a-f0-9]{64})(?:;|$)/)?.[1]
-  );
+  return sessionTokens(req)[0];
 }
 function auth(req) {
   return identitySessions.authenticate(sessionToken(req)).playerId;
@@ -1194,6 +1209,34 @@ function consumeChallenge(challengeId) {
     401,
   );
 }
+// Credential changes on an already secured explorer require a short-lived proof
+// issued after interactive sign-in. The ordinary game cookie is sufficient to play.
+function managementCookies(token) {
+  const ticket = randomBytes(32).toString("hex");
+  const expires = Date.now() + 300_000;
+  db.prepare("INSERT INTO auth_challenges VALUES(?,?,?,0)").run(
+    "manage_" + hash(ticket), JSON.stringify({purpose: "credential-management", sessionHash: hash(token)}), expires,
+  );
+  return [cookie(token), `questlayer-management=${ticket}; HttpOnly; SameSite=Strict; Path=/api; Max-Age=300${origin.startsWith("https:") ? "; Secure" : ""}`];
+}
+function allowEnrollment(req, current) {
+  const {playerId, tokenHash} = current;
+  const secured = db.prepare(`SELECT 1 FROM passkeys WHERE player_id=?
+    UNION ALL SELECT 1 FROM wallet_links WHERE player_id=?
+    UNION ALL SELECT 1 FROM evm_links WHERE player_id=? LIMIT 1`).get(playerId, playerId, playerId);
+  if (!secured) {
+    assert(managedAccounts?.row(playerId)?.state !== "creating",
+      "Your account is still being created. Try again once it is ready.", 409, "ACCOUNT_SETUP_PENDING");
+    return;
+  }
+  const ticket = /(?:^|;\s*)questlayer-management=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || "")?.[1];
+  const row = ticket && db.prepare(
+    "SELECT nonce FROM auth_challenges WHERE id=? AND used=0 AND expires_at>?",
+  ).get("manage_" + hash(ticket), Date.now());
+  const grant = row && JSON.parse(row.nonce);
+  assert(grant?.purpose === "credential-management" && grant.sessionHash === tokenHash,
+    "Sign in again with an existing passkey or wallet before adding a sign-in method.", 403, "ACCOUNT_REAUTH_REQUIRED");
+}
 async function body(req) {
   let size = 0;
   const chunks = [];
@@ -1206,6 +1249,7 @@ async function body(req) {
     );
     chunks.push(c);
   }
+  if (req.questlayerPlayer) assert(auth(req) === req.questlayerPlayer, "Please sign in again.", 401);
   try {
     return JSON.parse(Buffer.concat(chunks).toString() || "{}");
   } catch {
@@ -1274,9 +1318,12 @@ function profile(player) {
 async function api(req, res, url) {
   const path = url.pathname,
     method = req.method || "GET";
+  const fromVault = vaultCors(req, res, path, secureSigningOrigin);
+  if (fromVault && method === "OPTIONS") return;
   if (method !== "GET") {
     const allowed = new Set([
       origin,
+      ...(fromVault ? [secureSigningOrigin] : []),
       ...(process.env.NODE_ENV === "production"
         ? []
         : [
@@ -1287,12 +1334,13 @@ async function api(req, res, url) {
           ]),
     ]);
     assert(
-      !req.headers.origin || allowed.has(req.headers.origin),
+      (!req.headers.origin || allowed.has(req.headers.origin)) &&
+        (req.headers["sec-fetch-site"] !== "cross-site" || fromVault),
       "Request origin is not allowed.",
       403,
     );
     assert(
-      req.headers["content-type"]?.startsWith("application/json"),
+      /^application\/json(?:\s*;|$)/i.test(req.headers["content-type"] || ""),
       "JSON is required.",
       415,
     );
@@ -1330,7 +1378,7 @@ async function api(req, res, url) {
         ? nativeRewards.workerStatus()
         : { status: "not-configured" },
       distribution: nativeRewards
-        ? auditSummary(nativeRewards.lastAudit)
+        ? auditSummary(publicAudit(nativeRewards.lastAudit))
         : { status: "not-configured" },
       yieldBackedDays: nativeRewards?.yieldBackedDays === true,
       relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
@@ -1364,10 +1412,7 @@ async function api(req, res, url) {
   if (path === "/api/native/distribution" && method === "GET") {
     assert(nativeRewards, "Native rewards are not configured yet.", 503);
     // Public chain facts only; fresh on request, cached result otherwise.
-    const fresh =
-      url.searchParams.get("refresh") === "1" || !nativeRewards.lastAudit;
-    if (fresh) nativeRewards.lastAudit = await auditDistribution(nativeRewards);
-    return respond(res, nativeRewards.lastAudit);
+    return respond(res, await readPublicDistribution(url.searchParams.get("refresh") === "1"));
   }
   if (path === "/api/map/rewards" && method === "GET") {
     // Coin counts and value per area for the map overlay and heatmap.
@@ -1421,8 +1466,9 @@ async function api(req, res, url) {
     return respond(res, {
       mode: "demo",
       network: NETWORK,
+      signingVaultOrigin: secureSigningOrigin,
       features: ENABLED_FEATURES,
-      rpcUrl: rpc,
+      rpcUrl: browserRpc,
       coinValue: 0.01,
       coinSplit: 50,
       zoneSplit: 50,
@@ -1459,18 +1505,25 @@ async function api(req, res, url) {
   }
   if (path === "/api/logout" && method === "POST") {
     const player = auth(req);
-    const token = sessionToken(req);
-    if (token)
-      db.prepare("DELETE FROM sessions WHERE token_hash=?").run(hash(token));
+    // Both host cookie names can coexist. Revoke only this player's presented credentials.
+    const hashes = sessionTokens(req).map(hash);
+    db.prepare("DELETE FROM sessions WHERE player_id=? AND token_hash IN (SELECT value FROM json_each(?))")
+      .run(player, JSON.stringify(hashes));
+    for (const stream of listeners) {
+      if (stream.questlayerPlayer === player && hashes.includes(stream.questlayerSession)) stream.end();
+    }
     db.prepare("DELETE FROM presence WHERE player_id=?").run(player);
     return respond(res, { ok: true }, 200, {
       "Set-Cookie": [
         cookie("").replace("Max-Age=2592000", "Max-Age=0"),
+        "questlayer-management=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0",
         "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
       ],
     });
   }
   if (path === "/api/passkey/options" && method === "POST") {
+    limit("passkey-options", clientAddress(req, process.env.TRUST_PROXY === "loopback"), 30,
+      "Please wait before starting another passkey request.");
     const input = await body(req);
     assert(
       input.action === "register" || input.action === "login",
@@ -1479,7 +1532,9 @@ async function api(req, res, url) {
     if (input.action === "register") {
       // "Play first, secure later": a signed-in explorer attaches the passkey
       // to the existing player instead of creating a second one.
-      const attachTo = input.attach === true ? auth(req) : null;
+      const current = input.attach === true ? identitySessions.authenticate(sessionToken(req)) : null;
+      if (current) allowEnrollment(req, current);
+      const attachTo = current?.playerId ?? null;
       assert(
         input.attach !== true || attachTo,
         "Sign in before securing this explorer.",
@@ -1510,6 +1565,8 @@ async function api(req, res, url) {
         action: "register",
         name,
         attachTo,
+        sessionHash: current?.tokenHash ?? null,
+        player: attachTo,
         challenge: options.challenge,
       });
       return respond(res, { options, challengeId: c.id });
@@ -1540,6 +1597,7 @@ async function api(req, res, url) {
       "The passkey response is missing.",
       400,
     );
+    let token;
     let player;
     if (c.action === "register") {
       const v = await verifyRegistrationResponse({
@@ -1554,13 +1612,14 @@ async function api(req, res, url) {
         "The passkey could not be verified.",
         401,
       );
-      if (c.attachTo)
-        assert(
-          auth(req) === c.attachTo,
-          "Sign in with the same explorer to secure it.",
-          401,
-        );
       player = atomic(db, () => {
+        if (c.attachTo) {
+          const current = identitySessions.authenticate(sessionToken(req));
+          assert(current.playerId === c.attachTo && current.tokenHash === c.sessionHash,
+            "Finish passkey setup in the browser where it was started.", 403);
+          allowEnrollment(req, current);
+          db.prepare("DELETE FROM sessions WHERE token_hash=?").run(current.tokenHash);
+        }
         consumeChallenge(input.challengeId);
         const p = c.attachTo || createPlayer(db, c.name);
         const credential = v.registrationInfo.credential;
@@ -1571,6 +1630,7 @@ async function api(req, res, url) {
           credential.counter,
           JSON.stringify(credential.transports || []),
         );
+        token = newSession(p, "demo-passkey");
         return p;
       });
     } else {
@@ -1606,11 +1666,12 @@ async function api(req, res, url) {
           "The passkey changed during verification. Please sign in again.",
           401,
         );
+        token = newSession(saved.player_id, "demo-passkey");
       });
       player = saved.player_id;
     }
     return respond(res, { player: profile(player) }, 200, {
-      "Set-Cookie": cookie(newSession(player, "demo-passkey")),
+      "Set-Cookie": managementCookies(token),
     });
   }
   if (path === "/api/auth/near/challenge" && method === "POST") {
@@ -1680,7 +1741,7 @@ async function api(req, res, url) {
         network: NETWORK,
       },
       200,
-      { "Set-Cookie": cookie(result.token) },
+      { "Set-Cookie": managementCookies(result.token) },
     );
   }
   if (path === "/api/auth/evm/challenge" && method === "POST") {
@@ -1710,7 +1771,9 @@ async function api(req, res, url) {
     const issuedAt = Date.now(),
       expiresAt = issuedAt + 300_000,
       nonce = siweNonce(randomBytes(16));
+    if (current) allowEnrollment(req, current);
     const message = signInMessage({
+      linkPlayerId: current?.playerId,
       origin,
       address,
       chainId,
@@ -1725,7 +1788,7 @@ async function api(req, res, url) {
       wallet: walletLabel(input.wallet),
       message,
       player: current?.playerId ?? null,
-      sessionId: current?.sessionId ?? null,
+      sessionHash: current?.tokenHash ?? null,
     });
     return respond(res, { challengeId: c.id, message, address, chainId });
   }
@@ -1738,19 +1801,21 @@ async function api(req, res, url) {
       401,
     );
     const link = c.purpose === "evm-link";
-    if (link)
-      assert(
-        identitySessions.authenticate(sessionToken(req)).sessionId ===
-          c.sessionId,
-        "Finish linking in the browser where it was started.",
-        403,
-      );
+    function checkLink() {
+      const current = identitySessions.authenticate(sessionToken(req));
+      assert(current.tokenHash === c.sessionHash && current.playerId === c.player &&
+        c.message.split("\n").includes(evmLinkStatement(current.playerId)),
+        "Start a new wallet link in this browser.", 403);
+      allowEnrollment(req, current);
+    }
+    if (link) checkLink();
     const key = await verifyEvmSignature({
       message: c.message,
       signature: input.signature,
       address: c.address,
     });
     const result = atomic(db, () => {
+      if (link) checkLink();
       consumeChallenge(input.challengeId);
       const existing = db
         .prepare("SELECT player_id FROM evm_links WHERE address=?")
@@ -1774,9 +1839,10 @@ async function api(req, res, url) {
       db.prepare(
         "INSERT OR IGNORE INTO external_links VALUES (?,?,?,?)",
       ).run(key.address, player, "{}", 0);
+      if (link) db.prepare("DELETE FROM sessions WHERE token_hash=?").run(c.sessionHash);
       return {
         player,
-        token: link ? null : newSession(player, "evm-wallet", key.address),
+        token: newSession(player, "evm-wallet", key.address),
         returning: !!existing,
       };
     });
@@ -1791,7 +1857,7 @@ async function api(req, res, url) {
         network: NETWORK,
       },
       200,
-      result.token ? { "Set-Cookie": cookie(result.token) } : {},
+      { "Set-Cookie": managementCookies(result.token) },
     );
   }
   if (path === "/api/identity/evm" && method === "GET") {
@@ -1806,6 +1872,36 @@ async function api(req, res, url) {
   }
   if (path === "/api/identity/sessions" && method === "GET")
     return respond(res, identitySessions.view(sessionToken(req)));
+  if (path === "/api/identity/management/challenge" && method === "POST") {
+    const input = await body(req);
+    const current = identitySessions.authenticate(sessionToken(req));
+    const accountId = nearAccountId(input.accountId);
+    identitySessions.assertLinked(current.playerId, accountId);
+    limit("account-management", current.sessionId, 20, "Please wait before starting another account change.");
+    const message = `Authorize management of sign-in methods for explorer ${current.playerId} with ${accountId} on ${NETWORK_LABEL} for five minutes. No transaction or transfer.`;
+    const c = challenge("management", {purpose:"authorize-management", player:current.playerId,
+      sessionHash:current.tokenHash, accountId, recipient:origin, network:NETWORK, message});
+    return respond(res, {challengeId:c.id, playerId:current.playerId, nonce:c.nonce, recipient:origin, message});
+  }
+  if (path === "/api/identity/management/verify" && method === "POST") {
+    const input = await body(req), c = readChallenge(input.challengeId);
+    const token = sessionToken(req);
+    function authorize() {
+      const current = identitySessions.authenticate(token);
+      assert(c.purpose === "authorize-management" && c.recipient === origin &&
+        c.player === current.playerId && c.sessionHash === current.tokenHash,
+        "Start a new account authorization in this browser.", 403);
+      identitySessions.assertLinked(current.playerId, c.accountId);
+    }
+    authorize();
+    await verifyNearIdentity(c, input, provider);
+    const headers = atomic(db, () => {
+      authorize();
+      consumeChallenge(input.challengeId);
+      return managementCookies(token);
+    });
+    return respond(res, {ok:true}, 200, {"Set-Cookie":headers});
+  }
   if (path === "/api/identity/recovery/challenge" && method === "POST") {
     const input = await body(req);
     return respond(
@@ -1818,8 +1914,12 @@ async function api(req, res, url) {
       sessionToken(req),
       await body(req),
     );
+    const recoveredPlayer = identitySessions.authenticate(recovered.token, false).playerId;
+    for (const stream of listeners) {
+      if (stream.questlayerPlayer === recoveredPlayer) stream.end();
+    }
     return respond(res, recovered.result, 200, {
-      "Set-Cookie": cookie(recovered.token),
+      "Set-Cookie": managementCookies(recovered.token),
     });
   }
   if (path === "/api/dashboard") return respond(res, game.dashboard(db));
@@ -1907,6 +2007,7 @@ async function api(req, res, url) {
     return res.end(svg);
   }
   const player = auth(req);
+  req.questlayerPlayer = player;
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
   )
@@ -2666,11 +2767,12 @@ async function api(req, res, url) {
     if (testSeedActive) testSeed.grantKit(player);
     return respond(res, { player: profile(player) });
   }
-  if (path === "/api/events") {
+  if (path === "/api/events" && method === "GET") {
     // Each open stream holds a socket: a few per explorer is plenty.
     const open = [...listeners].filter((r) => r.questlayerPlayer === player).length;
     assert(open < 4, "Too many open live connections. Close another tab.", 429, "RATE_LIMITED");
     res.questlayerPlayer = player;
+    res.questlayerSession = hash(sessionToken(req));
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
@@ -2679,7 +2781,10 @@ async function api(req, res, url) {
     });
     res.write(": connected\n\n");
     listeners.add(res);
-    const tick = setInterval(() => res.write(": ping\n\n"), 20_000);
+    const tick = setInterval(() => {
+      try { auth(req); res.write(": ping\n\n"); }
+      catch { res.end(); }
+    }, 20_000);
     req.on("close", () => {
       clearInterval(tick);
       listeners.delete(res);
@@ -2922,7 +3027,10 @@ async function api(req, res, url) {
     const i = await body(req);
     nearAccountId(i.accountId);
     const message = `Linking a NEAR account to explorer ${player}. Network: ${NETWORK}. No funds will be transferred.`;
+    const current = identitySessions.authenticate(sessionToken(req));
+    allowEnrollment(req, current);
     const c = challenge("near", {
+      sessionHash: current.tokenHash,
       purpose: "near-link",
       network: NETWORK,
       player,
@@ -2958,8 +3066,10 @@ async function api(req, res, url) {
       403,
     );
     await verifyNearIdentity(c, i, provider);
-    atomic(db, () => {
-      assert(auth(req) === player, "Please sign in again.", 401);
+    const token = atomic(db, () => {
+      const current = identitySessions.authenticate(sessionToken(req));
+      assert(current.playerId === player && current.tokenHash === c.sessionHash, "Start a new wallet link.", 403);
+      allowEnrollment(req, current);
       const old = db
         .prepare("SELECT player_id FROM wallet_links WHERE account_id=?")
         .get(c.accountId);
@@ -2974,8 +3084,10 @@ async function api(req, res, url) {
         player,
         Date.now(),
       );
+      db.prepare("DELETE FROM sessions WHERE token_hash=?").run(current.tokenHash);
+      return newSession(player, "near-wallet", c.accountId);
     });
-    return respond(res, { player: profile(player) });
+    return respond(res, { player: profile(player) }, 200, { "Set-Cookie": managementCookies(token) });
   }
   if (path === "/api/wallet/balance") {
     await assertTestnetRpc(provider);
