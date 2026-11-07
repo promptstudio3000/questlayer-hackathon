@@ -63,11 +63,6 @@
       "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
       "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
     },
-    "public/native-rewards-testnet.json:wasmSha256": {
-      "contract": "questlayer_rewards",
-      "sha256": "cac54fdc555d9e5e0033e7c6c578118a1e128fd114ff42e101b9b9cc96610f36",
-      "note": "Public testnet still runs the prior Rewards build. The candidate includes audited callback recovery and UTC world reservations; no deployment is implied."
-    },
     "public/native-qgold-vault-testnet.json:wasmSha256": {
       "contract": "questlayer_qgold",
       "sha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",

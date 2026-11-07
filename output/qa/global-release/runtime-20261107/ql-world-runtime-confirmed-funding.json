@@ -1,0 +1,24 @@
+{
+  "globalRewards": {
+    "enabled": false,
+    "rewardsCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+    "qgoldContractId": "questlayer-qgold-vault-20261104.testnet",
+    "qgoldCodeHash": "F4p3S4cuvTScZXBWbqssNUxohgDN3rBGQq8gRS74jj4A",
+    "fundingTransactions": [
+      {
+        "hash": "2hAcJpBfstwzYVt1ewpSP8zsg4S4UVYijGBvbr9QUMmQ",
+        "signerId": "questlayer-dev-20261101.testnet"
+      },
+      {
+        "hash": "Ai9HKsve62DNX4bxLJ6PHe1MAGUKChKQH4rbPWudUkGL",
+        "signerId": "questlayer-rewards-20261101b.testnet"
+      },
+      {
+        "hash": "GSjfp1xjeXkpj8o5tqxwXARxeTgDd3yRT2HZ7QPBAYJx",
+        "signerId": "questlayer-rewards-20261101b.testnet"
+      }
+    ],
+    "fundingRpcUrl": "https://archival-rpc.testnet.near.org"
+  },
+  "note": "Disabled until current reviewed QGOLD proposal is actually applied and a complete day is reserved before opening."
+}

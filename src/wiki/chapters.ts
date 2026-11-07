@@ -827,6 +827,9 @@ export const CHAPTERS: Chapter[] = [
         note: "The existing nightly payout runs on testnet. The prepared Atlas adapter separately reserves a UTC day before opening, records exact earned NEAR, releases only unearned rewards and transfers original reservations into payouts without charging the date cap twice. Unlinked and small earnings retain their source and day. World payouts use a reviewed QGOLD conversion method that keeps fractional NEAR as account-bound credit and stores a durable conversion receipt. This requires both reviewed testnet contract upgrades, including QGOLD's existing 48-hour governance timelock. Until confirmed activation, Atlas quests award personal XP only; prepared coins and item stock are not yet supported by this adapter.",
         tone: "info",
       },
+      {
+        p: "Funding inputs are refreshed from finalized NEAR receipts and reconciled against the shared treasury, including prior liabilities. [NearBlocks](https://testnet.nearblocks.io) supplies transaction discovery hints; its indexed amounts never authorize a reward. Incomplete evidence blocks new financial activation. The refresh cannot sign transactions or change an already opened day's promises.",
+      },
     ],
   },
   {

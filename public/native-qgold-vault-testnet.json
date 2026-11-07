@@ -121,5 +121,23 @@
       "label": "Smoke: redeem 1 QGOLD instantly",
       "transaction": "BG33ZUX5qMW15mDXhCSbpDdE46MsKPUEFu66xgzpPYpk"
     }
-  ]
+  ],
+  "pendingWorldUpgrade": {
+    "proposalId": 2,
+    "codeSha256": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f",
+    "executableAt": "1794244870054",
+    "proposer": "questlayer-dev-20261101.testnet",
+    "transaction": "GgXTWDQ3W6jFRD4HcQJo1EZernvQ9K1hFJ2My563ewGN",
+    "state": "timelocked",
+    "sourceCommit": "346cf9dc8a9a5de8494b422f5d0e7ed40cbee709"
+  },
+  "supersededWorldUpgrade": {
+    "proposalId": 1,
+    "codeSha256": "6932b7985cb90fec7220b374b4815f6f1dc67cbc600c66cc03d578a0b10629cd",
+    "executableAt": "1794239522525",
+    "proposer": "questlayer-dev-20261101.testnet",
+    "transaction": "JsRFAYdTj8NAfr2WD4pQZZ1meRgJ92uZXdCLb6AUr3o",
+    "state": "cancelled",
+    "cancelTransaction": "3FUjjXLfY7VZDS8s1ggau1TBTFixnPBMEcfvReVQ3yhJ"
+  }
 }
