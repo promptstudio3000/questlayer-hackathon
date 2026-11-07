@@ -1,0 +1,131 @@
+/* Secondary routes share the approved Profile/collection treatment.
+   Wallet QGOLD balances and pending-transaction widgets keep their owner's styles. */
+.app-shell[data-screen] .panel-heading h1 { font-size: 24px; font-weight: 500; }
+.app-shell :is(.native-tasks,.reward-funding) :is(h2,h3,h4) { font-weight: 500; }
+.app-shell :is(.native-tasks,.reward-funding) :is(.primary-button,.secondary-button,.task-action,.task-icon) { border-radius: 10px; box-shadow: none; min-height: 48px; }
+.app-shell :is(.native-tasks,.reward-funding) :is(.task-card,.funding-card) { border-color: var(--decorative-border); border-radius: 12px; box-shadow: none; }
+.app-shell :is(.stake-today,.inner-vault) { padding: 16px; border: 1px solid var(--decorative-border); border-radius: 12px; }
+.app-shell :is(.stake-today,.inner-vault) :is(h3,h4) { font-size: 20px; text-transform: none; letter-spacing: normal; font-weight: 500; }
+.app-shell :is(.stake-today-numbers dt,.stake-note,.stake-coins,.stake-chip) { font-size: 14px; opacity: 1; color: var(--ink-secondary); }
+.app-shell .stake-ceremony-item { background: var(--success-surface); color: var(--success); border-radius: 12px; box-shadow: none; }
+.app-shell .stake-ceremony-item button { min-height: 48px; color: var(--on-action); background: var(--action); }
+.secondary-load-error { color: var(--error); }
+.secondary-load-error .illustrated-empty-text { color: var(--error); }
+.app-shell :is(.settings-group,.native-profile,.account-sessions,.account-devices,.native-market,.gold-shop,.place-messages,.place-thread,.creator-community,.play-economy,.native-tasks,.staking-panel,.fuel) .fine-print { font-size: 14px !important; line-height: 1.5; }
+.app-shell :is(.settings-group,.badge-book,.staking-panel,.fuel,.native-profile,.account-sessions,.account-devices,.native-market,.gold-shop,.place-messages,.place-thread,.creator-community,.play-economy) {
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+  min-width: 0;
+}
+.app-shell :is(.settings-group,.badge-book,.staking-panel,.fuel,.native-profile,.account-sessions,.account-devices,.native-market,.gold-shop,.place-messages,.place-thread,.creator-community,.play-economy) :is(h2,h3,h4) { font-weight: 500; text-transform: none; letter-spacing: normal; line-height: 1.25; }
+.app-shell :is(.badge-book,.fuel,.native-market,.play-economy) h2 { font-size: 24px; }
+.app-shell :is(.native-profile,.account-sessions,.account-devices,.gold-shop,.place-thread,.creator-community) h3 { font-size: 20px; }
+.app-shell :is(.settings-group,.badge-book,.staking-panel,.native-profile,.account-sessions,.account-devices,.native-market,.gold-shop,.place-messages,.place-thread,.creator-community,.play-economy) :is(button,select,input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea) { min-height: 48px; font-size: 16px; border-radius: 10px; box-shadow: none; }
+.app-shell :is(.settings-group,.badge-book,.staking-panel,.native-profile,.account-sessions,.account-devices,.native-market,.gold-shop,.place-messages,.place-thread,.creator-community,.play-economy) :is(.primary-button,.staking-primary,.gold-primary) { min-height: 52px; border: 0; background: var(--action); color: var(--on-action); box-shadow: none; }
+.app-shell :is(.native-profile,.account-sessions,.account-devices,.creator-community,.place-messages,.place-thread,.staking-panel) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea) { border: 1px solid var(--control-border); background: var(--surface-raised); color: var(--ink); padding: 10px 12px; }
+.app-shell :is(.settings-group,.badge-book,.staking-panel,.native-profile,.account-sessions,.account-devices,.native-market,.gold-shop,.place-messages,.place-thread,.creator-community,.play-economy) :is(small,.fine-print,.creator-hint,.gold-shop-note,.staking-secondary) { font-size: 14px; line-height: 1.5; color: var(--ink-secondary); }
+.app-shell :is(.native-profile,.account-sessions,.account-devices,.native-market,.creator-community,.play-economy) p[role="alert"] { padding: 12px 16px; border: 1px solid var(--error); border-radius: 10px; color: var(--error); background: var(--error-surface); }
+.app-shell :is(.native-profile,.account-sessions,.account-devices,.native-market,.creator-community) p[role="status"] { padding: 12px 16px; border-radius: 10px; background: var(--surface-soft); color: var(--ink-secondary); }
+.app-shell :is(.settings-group,.native-profile,.account-sessions,.account-devices,.native-market,.staking-panel) { padding: 20px 0; border: 0; border-bottom: 1px solid var(--decorative-border); border-radius: 0; background: transparent; box-shadow: none; }
+.app-shell .settings-group { margin: 0; }
+.app-shell .settings-group > h2 { margin: 0 0 12px; color: var(--ink-secondary); font-size: 14px; font-weight: 500; }
+.app-shell .settings-row { min-height: 56px; padding: 12px 0; background: transparent; border-color: var(--decorative-border); font-size: 16px; font-weight: 500; }
+.app-shell .settings-group > summary { padding: 12px 0; min-height: 48px; font-size: 16px; }
+.app-shell .settings-pad { padding: 0; }
+.app-shell .presence-consent { margin: 0; padding: 0; }
+.app-shell .presence-consent > summary { min-height: 48px; display: flex; align-items: center; font-size: 14px; color: var(--ink-secondary); }
+.app-shell .presence-consent p { margin: 0 0 16px; font-size: 14px; line-height: 1.5; }
+.app-shell :is(.session-review,.device-review,.creator-accepted,.creator-quote,.staking-management) { border-radius: 12px; border-color: var(--decorative-border); background: var(--surface-soft); }
+.app-shell :is(.session-list,.device-list) > li { padding-block: 16px; border-color: var(--decorative-border); }
+.app-shell :is(.session-check,.profile-consent,.creator-check) { min-height: 48px; font-size: 16px; line-height: 1.5; }
+.app-shell .badge-book { padding: 12px 0; }
+.app-shell :is(.badge-tabs,.badge-filter) button { padding: 8px 12px; border: 0; background: var(--surface-soft); color: var(--ink); font-weight: 400; }
+.app-shell :is(.badge-tabs,.badge-filter) button[aria-selected="true"],
+.app-shell .badge-filter button[aria-pressed="true"] { background: var(--action); color: var(--on-action); }
+.app-shell .badge-lead { font-size: 16px; color: var(--ink-secondary); }
+.app-shell .badge-medal-name { font-size: 14px; font-weight: 400; }
+.app-shell .creator-toolbar { margin-block: 12px 20px; }
+.app-shell .creator-toolbar .creator-icon { min-width: 48px; width: 48px; height: 48px; }
+.app-shell .creator-toolbar .creator-tabs button { padding-inline: 12px; background: transparent; color: var(--ink-secondary); border-radius: 8px; }
+.app-shell .creator-toolbar .creator-tabs button[aria-current="page"] { background: var(--surface-soft); color: var(--action); }
+.app-shell .creator-form { gap: 20px; }
+.app-shell .creator-form > label { font-size: 16px; }
+.app-shell .creator-template { align-items: flex-start; font-size: 16px; line-height: 1.5; text-transform: none; letter-spacing: normal; }
+.app-shell .creator-template strong { color: var(--ink); font-size: 16px; font-weight: 500; }
+.app-shell .creator-template small { color: var(--ink-secondary); font-size: 14px; }
+.app-shell .creator-template input[type="radio"] { flex: none; width: 20px; height: 20px; min-width: 20px; min-height: 20px; margin: 2px 0; accent-color: var(--action); }
+.app-shell .creator-quest-row { border-color: var(--decorative-border); }
+.app-shell .creator-quest-open h4 { font-size: 20px; }
+.app-shell .creator-quote { padding: 16px; }
+.app-shell .gold-shop h3 { font-size: 20px; }
+.app-shell :is(.gold-frame,.gold-gear-list > li,.place-feed button) { border: 0; border-bottom: 1px solid var(--decorative-border); border-radius: 0; background: transparent; padding-block: 16px; }
+.app-shell :is(.gold-emote,.place-compose) { border: 1px solid var(--decorative-border); background: var(--surface-soft); box-shadow: none; }
+.app-shell .gold-emote.owned { border-color: var(--action); }
+.app-shell :is(.place-filters,.place-compose-row) { gap: 8px; flex-wrap: wrap; }
+.app-shell .place-filters button { min-width: 48px; }
+.app-shell .place-feed-body small { color: var(--ink-secondary); font-size: 14px; }
+.app-shell .staking-panel { --staking-control: var(--control-border); --staking-line: var(--decorative-border); }
+.app-shell :is(.staking-position,.staking-create,.fuel-meter-card) { border: 1px solid var(--decorative-border); border-radius: 12px; background: var(--surface-raised); box-shadow: none; }
+.app-shell :is(.native-market .market-refresh,.badge-pages button) { min-width: 48px; }
+.app-shell :is(.native-listing,.native-sell-form) { border-color: var(--decorative-border); border-radius: 12px; box-shadow: none; }
+.app-shell .native-sell-form { background: var(--surface-soft); }
+.app-shell .play-economy :is(.two-stats,.three-stats,.bucket-card) { border-color: var(--decorative-border); border-radius: 12px; background: var(--surface-soft); box-shadow: none; }
+.app-shell[data-screen="fund"] :is(.fund-hero,.bucket-card) { border: 1px solid var(--decorative-border); border-radius: 16px; background: var(--surface-soft); color: var(--ink); box-shadow: none; }
+.app-shell[data-screen="fund"] .fund-hero { gap: 16px; padding: 20px; }
+.app-shell[data-screen="fund"] .fund-donut > span { color: var(--ink); background: var(--surface); }
+.app-shell[data-screen="fund"] :is(.fund-hero h2,.fund-donut b,.bucket-card > strong) { color: var(--ink); font-size: 28px; font-weight: 500; }
+.app-shell[data-screen="fund"] :is(.fund-hero small,.fund-hero p,.fund-hero h2 span,.bucket-card small,.bucket-card dt,.bucket-card dd) { color: var(--ink-secondary); font-size: 14px; line-height: 1.5; letter-spacing: normal; }
+.app-shell[data-screen="fund"] .bucket-card { padding: 16px; }
+.app-shell[data-screen="fund"] .bucket-card :is(h3,dd) { color: var(--ink); }
+.app-shell[data-screen="fund"] :is(.two-stats,.three-stats) > div { background: var(--surface-raised); border: 1px solid var(--decorative-border); border-radius: 12px; }
+.app-shell[data-screen="fund"] :is(.two-stats,.three-stats) b { color: var(--ink); font-size: 20px; }
+.app-shell[data-screen="fund"] :is(.two-stats,.three-stats) small { font-size: 14px; color: var(--ink-secondary); }
+.app-shell[data-screen="fund"] :is(.native-proof,.projections,.info-banner) { font-size: 14px; line-height: 1.5; color: var(--ink-secondary); }
+.app-shell :is(.staking-balances,.native-profile,.session-list,.native-market) :is(dd,.native-address,.native-account-id) { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+/* Encounter content keeps its actual portrait, tasks and challenge input. */
+dialog.game-dialog-encounter:has(> .npc-sheet) { background: var(--surface); color: var(--ink); border-color: var(--decorative-border); }
+.game-dialog .npc-sheet { color: var(--ink); }
+.game-dialog .npc-sheet .npc-hero { background: var(--surface-soft); border-radius: 16px; padding-block: 12px; }
+.game-dialog .npc-portrait img { filter: none; }
+.game-dialog .npc-plate h2 { color: var(--ink); font-size: 24px; }
+.game-dialog .npc-role { background: var(--surface-raised); color: var(--ink-secondary); font-size: 14px; }
+.game-dialog .npc-bubble { padding: 16px; background: var(--surface-raised); color: var(--ink); border: 1px solid var(--decorative-border); border-radius: 12px; line-height: 1.5; }
+.game-dialog .npc-bubble::before { display: none; }
+.game-dialog .npc-tabs { background: transparent; border-bottom: 1px solid var(--decorative-border); border-radius: 0; gap: 8px; padding: 0; }
+.game-dialog .npc-tabs button { min-height: 48px; border-radius: 0; font-size: 14px; color: var(--ink-secondary); background: transparent; }
+.game-dialog .npc-tabs button.active { color: var(--ink); box-shadow: inset 0 -3px 0 var(--action); }
+.game-dialog .npc-sheet .screen-tabs { margin: 0; padding: 0; gap: 8px; background: transparent; border: 0; border-bottom: 1px solid var(--decorative-border); border-radius: 0; }
+.game-dialog .npc-sheet .screen-tabs button { min-width: 48px; min-height: 48px; padding: 8px; border-radius: 0; color: var(--ink-secondary); background: transparent; box-shadow: none; font-size: 14px; }
+.game-dialog .npc-sheet .screen-tabs button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -3px 0 var(--action); }
+.game-dialog .npc-action { border: 1px solid var(--decorative-border); border-radius: 10px; padding: 12px; color: var(--ink); background: var(--surface-raised); box-shadow: none; }
+.game-dialog .npc-action.suggested { border-color: var(--action); box-shadow: none; }
+.game-dialog .npc-action.turn-in { background: var(--success-surface); color: var(--success); border-color: var(--success); }
+.game-dialog .npc-action-icon { background: var(--surface-soft); color: var(--action); }
+.game-dialog .npc-action-label { font-weight: 500; -webkit-line-clamp: unset; overflow: visible; }
+.game-dialog .npc-action small { font-size: 14px; color: var(--ink); background: var(--surface-soft); white-space: normal; }
+.game-dialog :is(.npc-link,.npc-fine,.npc-empty) { color: var(--ink-secondary); opacity: 1; }
+.game-dialog .npc-sheet h3 { color: var(--ink-secondary); font-size: 16px; text-transform: none; letter-spacing: normal; }
+.game-dialog .npc-task { padding: 16px; border: 1px solid var(--decorative-border); border-radius: 12px; }
+.game-dialog .npc-chat { background: var(--surface); padding-block: 8px; }
+.game-dialog .npc-chat input { border: 1px solid var(--control-border); border-radius: 10px; }
+.game-dialog .npc-chat button { background: var(--action); color: var(--on-action); min-width: 48px; border-radius: 10px; }
+.game-dialog .npc-panel .locked-chip-face small { color: var(--ink-secondary); }
+.game-dialog .actor-stage { background: var(--surface-soft); }
+.game-dialog :is(.monster-result,.monster-tell,.monster-fair) { border-radius: 12px; box-shadow: none; }
+.game-dialog .player-card { padding: 0; width: 100%; max-width: 100%; min-width: 0; }
+.game-dialog .player-card header { align-items: center; gap: 16px; }
+.game-dialog .player-card header > div:not(.player-card-avatar) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.game-dialog .player-card-close { flex: none; }
+.game-dialog .player-card-avatar { background: var(--surface-soft); border-radius: 12px; box-shadow: none; }
+.game-dialog .player-card-waves { gap: 8px; }
+.game-dialog .player-card-waves button { min-height: 48px; padding: 10px 12px; border: 1px solid var(--decorative-border); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
+.game-dialog .player-card-actions button { min-height: 48px; border-radius: 10px; }
+.game-dialog .player-card-actions .danger { color: var(--error); background: var(--error-surface); border-color: var(--error); }
+.game-dialog :is(.badge-detail,.record-dialog,.secure-share) { color: var(--ink); }
+.game-dialog :is(.sheet-close,.season-sheet .close) { min-width: 48px; min-height: 48px; width: 48px; height: 48px; border: 0; border-radius: 12px; background: var(--surface-soft); color: var(--ink); box-shadow: none; }
+.game-dialog :is(.daily-board-sheet,.season-sheet) h2 { padding-inline-end: 56px; }
+.game-dialog :is(.daily-board-sheet,.season-sheet) :is(li,.season-me,.season-pot) { border-color: var(--decorative-border); box-shadow: none; }
+.game-dialog :is(.daily-board-error,.season-error) { color: var(--error); background: var(--error-surface); padding: 12px 16px; border-radius: 10px; }
+.game-dialog :is(.daily-board-done,.season-done) { color: var(--success); background: var(--success-surface); padding: 12px 16px; border-radius: 10px; }

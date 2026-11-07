@@ -148,6 +148,31 @@
 .adventure-result-list svg {
   flex-shrink: 0;
 }
+.reward-moment { display: grid; justify-items: center; gap: 12px; padding: 16px 0 24px; text-align: center; }
+.reward-moment-art { width: 184px; height: 184px; border-radius: 50%; background: var(--surface-soft); display: grid; place-items: center; }
+.reward-moment-art .aura-art { width: 144px; height: 144px; }
+.adventure-results-dialog .reward-moment h3 { margin: 0; font-size: 28px; }
+.reward-moment p { margin: 0; }
+.reward-edition { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; color: var(--ink-secondary); font-size: 14px; }
+.reward-moment-values { font-size: 18px; color: var(--ink); }
+.reward-equipped { color: var(--success); }
+.reward-more { margin-block: 8px; color: var(--ink-secondary); }
+.reward-more > summary { min-height: 48px; display: flex; align-items: center; justify-content: center; color: var(--action); cursor: pointer; text-decoration: underline; }
+.reward-more > summary::-webkit-details-marker { display: none; }
+.reward-more > button { width: 100%; margin-block: 4px; }
+.reward-outfit-preview { display: flex; justify-content: center; padding-block: 16px; }
+.wearable-moment { display: grid; gap: 16px; text-align: center; padding: 8px; }
+.wearable-moment > p { margin: 0; color: var(--ink-secondary); }
+.wearable-moment h2 { margin: 0; }
+.wearable-moment-art { display: grid; place-items: center; width: 184px; height: 184px; margin-inline: auto; border-radius: 50%; background: var(--surface-soft); }
+.wearable-moment-art img { width: 144px; height: 144px; object-fit: contain; image-rendering: pixelated; }
+.wearable-moment > .primary-button { width: 100%; }
+@media (max-height: 500px) and (min-width: 600px) {
+  .reward-moment { grid-template-columns: 120px minmax(0, 1fr); text-align: start; justify-items: start; padding-block: 8px 16px; }
+  .reward-moment-art { width: 112px; height: 112px; grid-column: 1; grid-row: 1 / 5; }
+  .reward-moment-art .aura-art { width: 96px; height: 96px; }
+  .reward-edition { justify-content: flex-start; }
+}
 @media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
   .sheet-compact:has(.adventure-result-resume) > .sheet-peek,
   .sheet-compact:has(.adventure-result-resume)

@@ -1,0 +1,55 @@
+{
+  "provenance": "Real browser controls; deterministic clock; actual server scorers; duel response fixture",
+  "results": [
+    {
+      "format": "quiz",
+      "input": "keyboard",
+      "passed": true
+    },
+    {
+      "format": "memory",
+      "input": "keyboard",
+      "passed": true
+    },
+    {
+      "format": "rhythm",
+      "input": "keyboard",
+      "passed": true
+    },
+    {
+      "format": "trace",
+      "input": "keyboard",
+      "passed": true
+    },
+    {
+      "format": "duel",
+      "input": "keyboard",
+      "passed": true
+    },
+    {
+      "format": "quiz",
+      "input": "touch",
+      "passed": true
+    },
+    {
+      "format": "memory",
+      "input": "touch",
+      "passed": true
+    },
+    {
+      "format": "rhythm",
+      "input": "touch",
+      "passed": true
+    },
+    {
+      "format": "trace",
+      "input": "touch",
+      "passed": true
+    },
+    {
+      "format": "duel",
+      "input": "touch",
+      "passed": true
+    }
+  ]
+}

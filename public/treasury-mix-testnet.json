@@ -1,0 +1,276 @@
+{
+  "network": "testnet",
+  "account": "questlayer-dev-20261101.testnet",
+  "vault": "questlayer-yield-20261102.testnet",
+  "rewardsContract": "questlayer-rewards-20261101b.testnet",
+  "policy": {
+    "target": {
+      "lst": 5000,
+      "stable": 4000,
+      "near": 1000
+    },
+    "maxProtocolBps": 4000,
+    "maxUtilBps": 9500,
+    "maxMoveBps": 2500
+  },
+  "standIn": {
+    "nearHeld": "798900446600960269540506"
+  },
+  "runs": [
+    {
+      "at": "2026-11-04T13:59:59.738Z",
+      "before": [
+        {
+          "bucket": "lst",
+          "current": "1998749999999999999999997",
+          "target": "799499999999999999999998",
+          "currentBps": 10000,
+          "targetBps": 3999,
+          "policyBps": 5000
+        },
+        {
+          "bucket": "stable",
+          "current": "0",
+          "target": "799499999999999999999998",
+          "currentBps": 0,
+          "targetBps": 3999,
+          "policyBps": 4000
+        },
+        {
+          "bucket": "near",
+          "current": "0",
+          "target": "399750000000000000000001",
+          "currentBps": 0,
+          "targetBps": 2000,
+          "policyBps": 1000
+        }
+      ],
+      "steps": [
+        {
+          "op": "sell-lst",
+          "asset": "stnear",
+          "value": "499687499999999999999996",
+          "units": "156213254264066721220557",
+          "received": "498188437499999999999997",
+          "transaction": "FRGwhyhEpLtiD27KzdmccK5V2bkKRbzyLS63untaJzck"
+        },
+        {
+          "op": "buy-stable",
+          "asset": "usdc",
+          "value": "498188437499999999999997",
+          "units": "940324",
+          "route": "testnet-mint",
+          "priceNearUsdE8": "188705142",
+          "transaction": "FA3pTRwtA2ZPX7SdFJxKRBczqoyzPtkokpDjf3YKi3sA"
+        },
+        {
+          "op": "deposit-vault",
+          "asset": "usdc",
+          "value": "498188318165066217432485",
+          "units": "940324",
+          "transaction": "7BM2tM7v5MyHjWq6XoaRRnqUMQb2DTpzkW2hj6f3W9su",
+          "supplyTransaction": "9JWy39CKZESrNJtk9Cba1AsEnLmpNyvSFEpqmr6ducv6"
+        }
+      ],
+      "notes": [
+        "LiNEAR: its share is below the 1 NEAR minimum stake, so it waits in NEAR.",
+        "Liquid staking is below its target: the 40 % cap per protocol keeps the rest in NEAR."
+      ],
+      "after": [
+        {
+          "bucket": "lst",
+          "current": "1499062500000000000000001",
+          "target": "798900327266026486972994",
+          "currentBps": 7505,
+          "targetBps": 3999,
+          "policyBps": 5000
+        },
+        {
+          "bucket": "stable",
+          "current": "498188318165066217432485",
+          "target": "798900327266026486972994",
+          "currentBps": 2494,
+          "targetBps": 3999,
+          "policyBps": 4000
+        },
+        {
+          "bucket": "near",
+          "current": "0",
+          "target": "399450163633013243486498",
+          "currentBps": 0,
+          "targetBps": 2000,
+          "policyBps": 1000
+        }
+      ]
+    },
+    {
+      "at": "2026-11-05T05:30:05.975Z",
+      "before": [
+        {
+          "bucket": "lst",
+          "current": "1499062500000000000000001",
+          "target": "798900327266026486972994",
+          "currentBps": 7505,
+          "targetBps": 3999,
+          "policyBps": 5000
+        },
+        {
+          "bucket": "stable",
+          "current": "498188318165066217432485",
+          "target": "798900327266026486972994",
+          "currentBps": 2494,
+          "targetBps": 3999,
+          "policyBps": 4000
+        },
+        {
+          "bucket": "near",
+          "current": "0",
+          "target": "399450163633013243486498",
+          "currentBps": 0,
+          "targetBps": 2000,
+          "policyBps": 1000
+        }
+      ],
+      "steps": [
+        {
+          "op": "sell-lst",
+          "asset": "stnear",
+          "value": "499312704541266554358119",
+          "units": "156096084996690320429531",
+          "received": "497814766427642754695045",
+          "transaction": "59oTa4vTaqMvM16UvLTWNQLva58J2UWnNsdLJcM6W49s"
+        },
+        {
+          "op": "buy-stable",
+          "asset": "usdc",
+          "value": "300712009100960269540509",
+          "units": "567590",
+          "route": "testnet-mint",
+          "priceNearUsdE8": "188705142",
+          "transaction": "FZRTSRbjGdMj6hE1RobFex5AzaM5YUmFxCG8gRjbJj2D"
+        },
+        {
+          "op": "deposit-vault",
+          "asset": "usdc",
+          "value": "300711996617453063361675",
+          "units": "567590",
+          "transaction": "DvPid1dGQj94fN6YTW8sqDAeC9EA9nP26aLCddDhezF",
+          "supplyTransaction": "3szEH7bmrooBjKmguPexedssQ4C9gHYpWbZHMDoqQCaz"
+        },
+        {
+          "op": "wrap",
+          "asset": "wnear",
+          "value": "197102757326682485154536",
+          "transaction": "8EPnhPoWzM1H2Tnc4xLU9ebMKNanin8yrHd2dKds3XY4"
+        }
+      ],
+      "notes": [
+        "LiNEAR: its share is below the 1 NEAR minimum stake, so it waits in NEAR.",
+        "Liquid staking is below its target: the 40 % cap per protocol keeps the rest in NEAR."
+      ],
+      "after": [
+        {
+          "bucket": "lst",
+          "current": "999749795458733445641881",
+          "target": "798301147027174084636230",
+          "currentBps": 5009,
+          "targetBps": 3999,
+          "policyBps": 5000
+        },
+        {
+          "bucket": "stable",
+          "current": "798900314782519280794160",
+          "target": "798301147027174084636230",
+          "currentBps": 4003,
+          "targetBps": 3999,
+          "policyBps": 4000
+        },
+        {
+          "bucket": "near",
+          "current": "197102757326682485154536",
+          "target": "399150573513587042318117",
+          "currentBps": 987,
+          "targetBps": 2000,
+          "policyBps": 1000
+        }
+      ]
+    },
+    {
+      "at": "2026-11-06T05:30:04.990Z",
+      "before": [
+        {
+          "bucket": "lst",
+          "current": "999749795458733445641881",
+          "target": "798301147027174084636230",
+          "currentBps": 5009,
+          "targetBps": 3999,
+          "policyBps": 5000
+        },
+        {
+          "bucket": "stable",
+          "current": "798900314782519280794160",
+          "target": "798301147027174084636230",
+          "currentBps": 4003,
+          "targetBps": 3999,
+          "policyBps": 4000
+        },
+        {
+          "bucket": "near",
+          "current": "197102757326682485154536",
+          "target": "399150573513587042318117",
+          "currentBps": 987,
+          "targetBps": 2000,
+          "policyBps": 1000
+        }
+      ],
+      "steps": [
+        {
+          "op": "sell-lst",
+          "asset": "stnear",
+          "value": "201448648431559361005650",
+          "units": "62977258663848441600977",
+          "received": "200844302486264682922634",
+          "transaction": "BURJ251G741t7ABQrT63JG1kJQM3322e2bcPbhzz5rKF"
+        },
+        {
+          "op": "wrap",
+          "asset": "wnear",
+          "value": "200844302486264682922634",
+          "transaction": "Do6F57xxM1CFrmrCp8otqXtUaSRrau4sEDWGe2GC4mfo"
+        }
+      ],
+      "notes": [
+        "LiNEAR: its share is below the 1 NEAR minimum stake, so it waits in NEAR.",
+        "Liquid staking is below its target: the 40 % cap per protocol keeps the rest in NEAR."
+      ],
+      "after": [
+        {
+          "bucket": "lst",
+          "current": "798301147027174084636231",
+          "target": "798059408649056213403024",
+          "currentBps": 4001,
+          "targetBps": 3999,
+          "policyBps": 5000
+        },
+        {
+          "bucket": "stable",
+          "current": "798900314782519280794160",
+          "target": "798059408649056213403024",
+          "currentBps": 4004,
+          "targetBps": 3999,
+          "policyBps": 4000
+        },
+        {
+          "bucket": "near",
+          "current": "397947059812947168077170",
+          "target": "399029704324528106701513",
+          "currentBps": 1994,
+          "targetBps": 2000,
+          "policyBps": 1000
+        }
+      ]
+    }
+  ],
+  "stableYield": [],
+  "updatedAt": "2026-11-06T05:30:17.151Z"
+}

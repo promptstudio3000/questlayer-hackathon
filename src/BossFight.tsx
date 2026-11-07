@@ -1,3 +1,4 @@
+import { ActorPortrait } from "./ActorPortrait";
 // Weekly co-op boss sheet (NPC-PLAN §13.1, §13.4). Opened from the encounter
 // sheet when the boss offers "Strike". Every player chips at one shared HP
 // pool with a short mini-game; the server replays the inputs and turns the
@@ -146,10 +147,10 @@ export function BossFight({
   const nextAt = ev?.you?.nextHitAt ?? null;
   const waiting = !!nextAt && nextAt > Date.now();
   return (
-    <Dialog label={tr("Weekly boss {0}", { 0: actor.name })} onClose={onClose}>
+    <Dialog presentation="encounter" label={tr("Weekly boss {0}", { 0: actor.name })} onClose={onClose}>
       <div className="monster-challenge monster-boss">
         <header className="monster-head">
-          <span className="monster-sigil" aria-hidden="true" />
+          <div className="monster-portrait"><ActorPortrait model={actor.model} label={actor.name} /></div>
           <div>
             <h2>{actor.name}</h2>
             <p className="monster-sub">{tr("Weekly boss at the Great Portal")}{ev ? tr(" · week {0}", { 0: ev.weekId.split("-W")[1] }) : ""}</p>

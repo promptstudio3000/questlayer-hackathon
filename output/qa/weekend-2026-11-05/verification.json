@@ -1,0 +1,129 @@
+{
+  "base": "e9160028637cda7785cae02acd9ea3e299525c17",
+  "implementationCommit": "68497805f5a0505f8dd1a6e70cb1393661a52d59",
+  "published": false,
+  "deployed": false,
+  "applicationTests": {
+    "passed": 1278,
+    "failed": 0
+  },
+  "mainnetConfigurationTests": {
+    "passed": 1109,
+    "skipped": 19,
+    "failed": 0,
+    "usesFakes": true
+  },
+  "bundle": {
+    "jsGzipKB": 201,
+    "jsRawKB": 673,
+    "cssGzipKB": 35
+  },
+  "firstSession": {
+    "phone-390": {
+      "passed": true,
+      "report": "first-session/phone-390/report.json"
+    },
+    "iphone": {
+      "passed": true,
+      "report": "first-session/iphone/report.json"
+    },
+    "pixel": {
+      "passed": true,
+      "report": "first-session/pixel/report.json"
+    }
+  },
+  "languages": {
+    "count": 11,
+    "screens": 165,
+    "problems": 0,
+    "keysPerDictionary": 2934
+  },
+  "ui": {
+    "viewports": [
+      "phone-360",
+      "phone-390",
+      "landscape",
+      "desktop"
+    ],
+    "axeScans": 14,
+    "axeViolations": 0,
+    "mapTargetsMinimumCSSpx": 48,
+    "deniedAndInaccurateGPS": "synthetic callbacks",
+    "cameraRestored": true,
+    "draftsRetained": true
+  },
+  "minigames": {
+    "provenance": "Real browser controls; deterministic clock; actual server scorers; duel response fixture",
+    "results": [
+      {
+        "format": "quiz",
+        "input": "keyboard",
+        "passed": true
+      },
+      {
+        "format": "memory",
+        "input": "keyboard",
+        "passed": true
+      },
+      {
+        "format": "rhythm",
+        "input": "keyboard",
+        "passed": true
+      },
+      {
+        "format": "trace",
+        "input": "keyboard",
+        "passed": true
+      },
+      {
+        "format": "duel",
+        "input": "keyboard",
+        "passed": true
+      },
+      {
+        "format": "quiz",
+        "input": "touch",
+        "passed": true
+      },
+      {
+        "format": "memory",
+        "input": "touch",
+        "passed": true
+      },
+      {
+        "format": "rhythm",
+        "input": "touch",
+        "passed": true
+      },
+      {
+        "format": "trace",
+        "input": "touch",
+        "passed": true
+      },
+      {
+        "format": "duel",
+        "input": "touch",
+        "passed": true
+      }
+    ]
+  },
+  "encounters": {
+    "fixture": "synthetic position; real local API and UI",
+    "results": [
+      {
+        "kind": "npc",
+        "accepted": "accepted",
+        "draftRestored": true,
+        "keyboardViewport": true,
+        "enlargedText": true
+      },
+      {
+        "kind": "monster",
+        "outcome": "won",
+        "score": 3
+      }
+    ]
+  },
+  "physicalDevicesVerified": false,
+  "localPreview": "http://127.0.0.1:8788"
+}

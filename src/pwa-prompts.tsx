@@ -45,7 +45,7 @@ const playing = () => !!document.querySelector(".main-panel");
 function calmMoment(): boolean {
   if (document.visibilityState !== "visible" || !navigator.onLine) return false;
   if (modalOpen()) return false;
-  if (document.querySelector(".sheet-expanded, .app-shell > .toast"))
+  if (document.querySelector(".app-shell.sheet-open, .app-shell > .toast"))
     return false;
   const active = document.activeElement as HTMLElement | null;
   return !(
@@ -76,8 +76,8 @@ function useBarAnchors(active: boolean) {
     if (!active) return;
     const measure = () => {
       const next: Record<string, string> = {};
-      const bar = document.querySelector(".topbar")?.getBoundingClientRect();
-      if (bar?.height) next["--pwa-top"] = `${Math.round(bar.bottom) + 8}px`;
+      const topEdges = [...document.querySelectorAll(".topbar, .map-toolbar, .map-status-chip")].filter(el => (el as HTMLElement).checkVisibility()).map(el => el.getBoundingClientRect().bottom);
+      if (topEdges.length) next["--pwa-top"] = `${Math.round(Math.max(...topEdges)) + 8}px`;
       const railEl = document.querySelector(".nav-rail");
       const rail = railEl?.getBoundingClientRect();
       // An open sheet slides the tab bar off screen with a transform, which
@@ -86,9 +86,10 @@ function useBarAnchors(active: boolean) {
         ? new DOMMatrix(getComputedStyle(railEl).transform === "none" ? undefined : getComputedStyle(railEl).transform).m42
         : 0;
       const railTop = rail ? rail.top - shift : 0;
-      if (rail && rail.width > rail.height && railTop > window.innerHeight / 2)
-        next["--pwa-bottom"] =
-          `${Math.max(0, Math.round(window.innerHeight - railTop)) + 8}px`;
+      const controlTops = [railTop, ...[...document.querySelectorAll(".demo-pad, .demo-pad-open, .main-panel.sheet-compact:not([hidden]), .nearby-open")].filter(el => (el as HTMLElement).checkVisibility()).map(el => el.getBoundingClientRect().top)]
+        .filter(top => top > window.innerHeight / 2);
+      if (controlTops.length)
+        next["--pwa-bottom"] = `${Math.round(window.innerHeight - Math.min(...controlTops)) + 8}px`;
       setVars((prev) =>
         JSON.stringify(prev) === JSON.stringify(next) ? prev : next,
       );
@@ -97,7 +98,7 @@ function useBarAnchors(active: boolean) {
     const bars = new ResizeObserver(measure);
     let watched: Element[] = [];
     const observe = () => {
-      const now = [...document.querySelectorAll(".topbar, .nav-rail")];
+      const now = [...document.querySelectorAll(".topbar, .nav-rail, .demo-pad, .demo-pad-open, .map-toolbar, .map-status-chip, .main-panel.sheet-compact:not([hidden]), .nearby-open")];
       if (
         now.length === watched.length &&
         now.every((el, i) => el === watched[i])

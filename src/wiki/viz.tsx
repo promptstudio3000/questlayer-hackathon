@@ -3,6 +3,7 @@
 // message, line/bar/stacked/donut charts and a 24-hour timeline. Motion is
 // CSS only and stops under prefers-reduced-motion (see wiki.css).
 import React, { useId } from "react";
+import { scrollRegionKeys } from "../scroll-region";
 
 export type Tone = "core" | "chain" | "money" | "player" | "ai" | "world" | "muted" | "warn";
 
@@ -54,7 +55,7 @@ export function Flow({
   const full = new Map(nodes.map((n) => [n.id, { ...n, w: n.w ?? 132, h: n.h ?? (n.sub ? 52 : 38) }]));
   return (
     <figure className="wk-fig">
-      <div className="wk-scroll">
+      <div className="wk-scroll" tabIndex={0} role="group" aria-label={title} onKeyDown={scrollRegionKeys}>
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title} className="wk-svg">
         <defs>
           <marker id={`arr-${uid}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -117,7 +118,7 @@ export function Sequence({ lanes, msgs, title }: { lanes: string[]; msgs: SeqMsg
   const total = msgs.length * 0.7 + 2;
   return (
     <figure className="wk-fig">
-      <div className="wk-scroll">
+      <div className="wk-scroll" tabIndex={0} role="group" aria-label={title} onKeyDown={scrollRegionKeys}>
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title} className="wk-svg wk-seq">
         {lanes.map((l, i) => (
           <g key={l}>
@@ -201,7 +202,7 @@ export function LineChart({
   const xt = xTicks ?? [x0, x0 + (x1 - x0) / 4, x0 + (x1 - x0) / 2, x0 + ((x1 - x0) * 3) / 4, x1];
   return (
     <figure className="wk-fig">
-      <div className="wk-scroll">
+      <div className="wk-scroll" tabIndex={0} role="group" aria-label={title} onKeyDown={scrollRegionKeys}>
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={title} className="wk-svg">
         {yt.map((v, i) => (
           <g key={i}>
@@ -364,7 +365,7 @@ export function Timeline24({ rows, title, now }: { rows: TimeRow[]; title: strin
   const sx = (h: number) => L + (h / 24) * (W - L - R);
   return (
     <figure className="wk-fig">
-      <div className="wk-scroll">
+      <div className="wk-scroll" tabIndex={0} role="group" aria-label={title} onKeyDown={scrollRegionKeys}>
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={title} className="wk-svg">
         {[0, 3, 6, 9, 12, 15, 18, 21, 24].map((h) => (
           <g key={h}>

@@ -1,3 +1,4 @@
+import type { NearbyActor } from "./nearby-action";
 // Map layer for roaming NPCs and monsters (docs/NPC-PLAN.md §9, §14).
 // Loaded on demand by GameMap, so it never enters the first-load bundle.
 // The server sends each actor's deterministic segments for the next 20 min;
@@ -65,17 +66,17 @@ function markerNode(actor: ActorView, onSelect: (a: ActorView) => void) {
   node.type = "button";
   node.className = `actor-marker actor-${actor.kind} actor-${actor.archetype}`;
   node.dataset.actorId = actor.id;
-  node.setAttribute(
-    "aria-label",
-    `${actor.name}, ${actorRoleLabel(actor)}${actor.state === "defeated" ? ", beaten today" : ""}`,
-  );
   const badge = document.createElement("span");
   badge.className = "actor-badge";
+  badge.setAttribute("aria-hidden", "true");
   badge.textContent = actor.name.slice(0, 1);
   const label = document.createElement("span");
   label.className = "actor-label";
   label.textContent = actor.name;
-  node.append(badge, label);
+  const role = document.createElement("span");
+  role.className = "sr-only";
+  role.textContent = `, ${actorRoleLabel(actor)}`;
+  node.append(badge, label, role);
   node.addEventListener("click", (e) => {
     e.stopPropagation();
     onSelect(actor);
@@ -90,9 +91,10 @@ export type ActorsLayer = {
 
 export function attachActorsLayer(
   map: maplibregl.Map,
-  { onSelect }: { onSelect: (actor: ActorView) => void },
+  { onSelect, onNearby }: { onSelect: (actor: ActorView) => void; onNearby?: (actors: NearbyActor[]) => void },
 ): ActorsLayer {
   const markers = new Map<string, { marker: maplibregl.Marker; actor: ActorView; node: HTMLElement }>();
+  let nearbyKey = "";
   let actors: ActorView[] = [],
     skew = 0,
     worldId: string | null = null,
@@ -214,6 +216,14 @@ export function attachActorsLayer(
   function tick() {
     const now = Date.now() + skew,
       street = map.getZoom() >= MIN_ZOOM;
+    const nearby: NearbyActor[] = visible && position ? actors.flatMap(actor => {
+      const p = actorPositionAt(actor.segments, now);
+      const distanceM = p ? meters(position!, p) : Infinity;
+      return p && distanceM <= 60 ? [{actor, distanceM, stationary:p.dwell}] : [];
+    }) : [];
+    const key = nearby.map(a => `${a.actor.id}:${Math.round(a.distanceM)}:${a.stationary}:${a.actor.state}`).join("|");
+    if (key !== nearbyKey || nearby.length > 0) { nearbyKey = key; onNearby?.(nearby); }
+
     for (const { marker } of arenas.values()) {
       if (!visible || !street) marker.remove();
       else if (!(marker as unknown as { _map?: unknown })._map) marker.addTo(map);

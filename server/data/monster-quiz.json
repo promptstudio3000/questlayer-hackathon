@@ -49,6 +49,54 @@
       "prompt": "Can you buy or sell XP and levels?",
       "choices": ["No, they stay with your account", "Yes, on the market", "Only at the trader", "Only on mainnet"],
       "answer": 0
+    },
+    {
+      "id": "lore-first-adventure",
+      "prompt": "What do you need for your first adventure?",
+      "choices": ["Just an explorer name", "A rare Aura", "Another player", "A deposit"],
+      "answer": 0
+    },
+    {
+      "id": "lore-demo-movement",
+      "prompt": "How do you move in the city demo?",
+      "choices": ["With the demo pad or arrow keys", "By tapping any street", "By buying a mount", "By changing your name"],
+      "answer": 0
+    },
+    {
+      "id": "lore-gps-movement",
+      "prompt": "What moves your explorer during real outdoor play?",
+      "choices": ["Your phone GPS", "The demo pad", "A map screenshot", "Your inventory filters"],
+      "answer": 0
+    },
+    {
+      "id": "lore-two-slots",
+      "prompt": "Where can you wear an Aura?",
+      "choices": ["Above or below your explorer", "Only on a weapon", "Only inside a chest", "In a trade offer"],
+      "answer": 0
+    },
+    {
+      "id": "lore-safe-path",
+      "prompt": "A marker seems to lead across private ground. What should you do?",
+      "choices": ["Stay on public paths and choose another discovery", "Climb the nearest fence", "Follow the straight line regardless", "Turn off GPS to finish"],
+      "answer": 0
+    },
+    {
+      "id": "lore-profile-shortcut",
+      "prompt": "Where can you open your explorer profile from the map?",
+      "choices": ["Tap your avatar", "Tap a street coin", "Finish every quest", "Buy a wardrobe slot"],
+      "answer": 0
+    },
+    {
+      "id": "lore-return-to-map",
+      "prompt": "You found an Aura. What can you do next?",
+      "choices": ["Try it on and return to the map", "Trade away your XP", "Buy a stronger attack", "Erase your explorer"],
+      "answer": 0
+    },
+    {
+      "id": "lore-local-posts",
+      "prompt": "Who can read a public nearby post?",
+      "choices": ["Other explorers in the area", "Only the person you name", "Only your own device", "Nobody after you close the panel"],
+      "answer": 0
     }
   ],
   "cities": {

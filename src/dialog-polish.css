@@ -1,0 +1,38 @@
+/* Shared native-dialog chrome. Content, consent and action handlers stay with each feature. */
+dialog.game-dialog {
+  border: 1px solid var(--decorative-border);
+  border-radius: var(--radius-sheet);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 16px 64px #1a033526;
+  overscroll-behavior: contain;
+  scroll-padding-block: 64px 24px;
+}
+dialog.game-dialog::backdrop { background: #1a033566; }
+.game-dialog :is(h2,h3) { font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
+.game-dialog h2 { font-size: 24px; }
+.game-dialog h3 { font-size: 20px; }
+.game-dialog :is(p,label,input,textarea,select) { font-size: 16px; line-height: 1.5; }
+.game-dialog :is(small,.fine-print) { font-size: 14px; line-height: 1.5; }
+.game-dialog :is(.primary-button,.secondary-button,.text-button,.button) { min-height: 48px; font-size: 16px; border-radius: 10px; box-shadow: none; }
+.game-dialog .primary-button { min-height: 52px; border: 0; background: var(--action); color: var(--on-action); }
+.game-dialog .secondary-button { background: var(--surface-raised); color: var(--ink); border: 1px solid var(--control-border); }
+.game-dialog :is(.dialog-dismiss,.inv-detail-close,.player-card-close,.close) { width: 48px; height: 48px; min-width: 48px; min-height: 48px; border: 0; border-radius: 12px; background: var(--surface-soft); color: var(--ink); box-shadow: none; }
+.game-dialog .inv-detail-head { padding-inline-end: 56px; }
+.game-dialog .npc-modal .close { top: 0; inset-inline-end: 0; }
+dialog.game-dialog :is(.npc-modal,.actor-sheet) .close { width: 48px; height: 48px; min-width: 48px; min-height: 48px; border: 0; border-radius: 12px; background: var(--surface-soft); color: var(--ink); box-shadow: none; }
+.game-dialog .npc-modal h2 { padding-inline-end: 52px; }
+.game-dialog .npc-modal { background: transparent; color: var(--ink); }
+.game-dialog .npc-answer { background: var(--surface-soft); color: var(--ink-secondary); line-height: 1.5; }
+.game-dialog .npc-modal .badge { color: var(--ink); background: var(--surface-soft); border: 0; font-size: 14px; letter-spacing: normal; }
+.game-dialog .npc-modal form > .primary-button { min-width: 48px; width: 48px; }
+.game-dialog .npc-modal form input { font-size: 16px !important; }
+.game-dialog .fine-print { font-size: 14px !important; }
+.game-dialog :is(input,textarea)::placeholder { color: var(--ink-secondary); opacity: 1; }
+.game-dialog :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea) { min-height: 48px; border: 1px solid var(--control-border); border-radius: 10px; color: var(--ink); background: var(--surface-raised); }
+.game-dialog :is(p[role="alert"],.inline-error) { padding: 12px 16px; border: 1px solid var(--error); border-radius: 10px; background: var(--error-surface); color: var(--error); overflow-wrap: anywhere; }
+.game-dialog p[role="status"] { padding: 12px 16px; border-radius: 10px; background: var(--surface-soft); color: var(--ink-secondary); }
+.game-dialog :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+@media (max-width: 600px) {
+  dialog.game-dialog:not(.game-dialog-map):not(.game-dialog-encounter) { width: calc(100vw - 24px); max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 20px; }
+}
