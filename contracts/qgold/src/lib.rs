@@ -77,6 +77,13 @@ fn now_ms() -> u64 {
 fn s(v: u128) -> String {
     v.to_string()
 }
+// Namespaced external state keeps the deployed contract layout unchanged.
+// Unconverted game earnings are liabilities, never backing or insurance.
+const MINT_CARRY_TOTAL:&[u8]=b"world-mint-carry-total";
+fn stored_amount(key:&[u8])->u128 {
+    env::storage_read(key).map(|b|u128::from_le_bytes(b.try_into().expect("Invalid mint carry"))).unwrap_or(0)
+}
+fn mint_carry_key(minter:&AccountId,account:&AccountId)->Vec<u8>{format!("world-mint-carry:{minter}:{account}").into_bytes()}
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug)]
@@ -339,6 +346,40 @@ impl QGold {
         self.after_change();
         U128(q)
     }
+
+    /// Converts game earnings at the actual receipt-time ratio. The fraction
+    /// below a token unit remains a covered NEAR credit for this exact account
+    /// and approved minter, and joins its next conversion. No refund promise
+    /// or stale exchange-rate quote can lose or duplicate that remainder.
+    #[payable]
+    pub fn mint_with_carry_for(&mut self,account_id:AccountId,memo:Option<String>)->Value {
+        self.assert_running();let minter=env::predecessor_account_id();
+        assert!(self.minters.contains(&minter),"Approved minter only");
+        let receipt=memo.as_ref().expect("A unique game conversion memo is required");
+        assert!(!receipt.is_empty()&&receipt.len()<=MAX_MEMO,"Invalid conversion memo");
+        let receipt_key=format!("world-mint-receipt:{minter}:{receipt}").into_bytes();
+        assert!(!env::storage_has_key(&receipt_key),"Game conversion already recorded");
+        let key=mint_carry_key(&minter,&account_id);let previous=stored_amount(&key);
+        let deposit=env::attached_deposit().as_yoctonear();
+        let input=previous.checked_add(deposit).expect("Mint carry overflow");assert!(input>0,"No earning to convert");
+        let q=self.shares_for(input);
+        let used=if q==0{0}else if self.supply==0{mul_div_up(q,self.rate(),ONE)}else{mul_div_up(q,self.backing,self.supply)};
+        assert!(used<=input,"Conversion exceeds earnings");let carry=input-used;
+        let total=stored_amount(MINT_CARRY_TOTAL).checked_sub(previous).expect("Carry total mismatch").checked_add(carry).expect("Carry total overflow");
+        if carry==0{env::storage_remove(&key);}else{env::storage_write(&key,&carry.to_le_bytes());}
+        env::storage_write(MINT_CARRY_TOTAL,&total.to_le_bytes());
+        if q>0{self.backing=self.backing.checked_add(used).expect("Backing overflow");self.ensure_holder(&account_id,0);self.credit(&account_id,q,memo);}
+        let result=json!({"minter":minter,"account_id":account_id,"depositedYocto":s(deposit),"previousCarryYocto":s(previous),"consumedYocto":s(used),"carryYocto":s(carry),"qgoldU":s(q)});
+        env::storage_write(&receipt_key,&near_sdk::serde_json::to_vec(&result).expect("Conversion receipt"));
+        self.after_change();
+        self.event("game_earning_converted",result.clone());result
+    }
+    /// A finalized receipt survives a worker losing the transaction response.
+    pub fn get_game_conversion(&self,minter_id:AccountId,memo:String)->Option<Value>{
+        assert!(memo.len()<=MAX_MEMO,"Memo too long");
+        env::storage_read(format!("world-mint-receipt:{minter_id}:{memo}").as_bytes()).map(|b|near_sdk::serde_json::from_slice(&b).expect("Conversion receipt"))
+    }
+    pub fn get_mint_carry(&self,minter_id:AccountId,account_id:AccountId)->U128 {U128(stored_amount(&mint_carry_key(&minter_id,&account_id)))}
 
     /// Buys QGOLD: the attached NEAR minus the 1 % fee is added to the backing
     /// and mints at R. A new holder's NEP-145 fee is taken from the deposit.
@@ -773,6 +814,8 @@ impl QGold {
             "version": 1,
             "network": "testnet",
             "backing": s(self.backing),
+            "mint_carry_total":s(stored_amount(MINT_CARRY_TOTAL)),
+            "exact_game_mint":1,
             "supply": s(self.supply),
             "rate": s(self.rate()),
             "r_peak": s(self.r_peak),
@@ -910,7 +953,7 @@ impl QGold {
         // `in_flight` is not owed here: a NEAR transfer leaves the balance when
         // its promise is created. If it fails, the refund comes back and the
         // callback books it as a claimable exit (or treasury fee) again.
-        self.backing + self.insurance + self.treasury_due + self.queued + self.storage_deposits
+        self.backing + self.insurance + self.treasury_due + self.queued + self.storage_deposits + stored_amount(MINT_CARRY_TOTAL)
     }
 
     fn storage_cost(&self) -> u128 {

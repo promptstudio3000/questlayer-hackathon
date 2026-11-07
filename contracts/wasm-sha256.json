@@ -9,9 +9,9 @@
     "questlayer_ledger": "3c4df45cdfa8854dc37553fc13be261fef09acd00a283d4c7fac0aa26704ffa5",
     "questlayer_market": "1642a65af521b17b9d46786d66d1606c223cbf68d6a53cd90d620ce8ce225435",
     "questlayer_npc_games": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
-    "questlayer_qgold": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
+    "questlayer_qgold": "6932b7985cb90fec7220b374b4815f6f1dc67cbc600c66cc03d578a0b10629cd",
     "questlayer_qgold_escrow": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da",
-    "questlayer_rewards": "cac54fdc555d9e5e0033e7c6c578118a1e128fd114ff42e101b9b9cc96610f36",
+    "questlayer_rewards": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
     "questlayer_soulbound_ft": "2746a77ec1de90c9b9a8054769922d0a2027cec8c15f743fcd66b89b3c572293",
     "questlayer_tasks": "055954f30c81b4dfd56b3bd9a88c469aeb74c50d5eb4eb83f9aeb5b8bbc51751",
     "questlayer_vault": "9bc4ffa8d4b7c2f403efa7ebb2cc1bc20e086039d5c690fdbdd82aaff93347d5",
@@ -62,6 +62,16 @@
       "contract": "questlayer_collectibles",
       "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
       "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
+    },
+    "public/native-rewards-testnet.json:wasmSha256": {
+      "contract": "questlayer_rewards",
+      "sha256": "cac54fdc555d9e5e0033e7c6c578118a1e128fd114ff42e101b9b9cc96610f36",
+      "note": "Public testnet still runs the prior Rewards build. The candidate includes audited callback recovery and UTC world reservations; no deployment is implied."
+    },
+    "public/native-qgold-vault-testnet.json:wasmSha256": {
+      "contract": "questlayer_qgold",
+      "sha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
+      "note": "Public testnet still runs the prior QGOLD build. Exact NEAR game carry and durable conversion receipts require the existing council upgrade process and its 48-hour timelock. No deployment is implied."
     }
   }
 }

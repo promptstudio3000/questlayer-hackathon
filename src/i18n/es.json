@@ -2928,5 +2928,13 @@
  "· saved rewards": "· recompensas guardadas",
  "· share it with the people who come": "· compártelo con quienes vengan",
  "· tier active": "· grado activo",
- "🔒 The inner vault": "🔒 La bóveda interior"
+ "🔒 The inner vault": "🔒 La bóveda interior",
+ "Map-derived discoveries by Atlas. Public access and paths have not been checked on foot: follow local signs and skip blocked places. These activities award personal XP; no monetary or item reward is promised.": "Descubrimientos de Atlas basados en datos del mapa. El acceso público y los caminos no se han comprobado sobre el terreno: respeta las señales y omite los lugares bloqueados. Estas actividades otorgan XP personales; no se promete dinero ni objetos.",
+ "Funded Atlas zones: the first confirmed completion earns the fixed NEAR prize shown in the objective. QGOLD is calculated at settlement; fractional NEAR stays credited. Follow local signs and skip blocked places.": "Zonas Atlas financiadas: la primera finalización confirmada gana el premio fijo en NEAR indicado en el objetivo. El QGOLD se calcula al liquidar; el resto de NEAR queda abonado. Respeta las señales y evita los lugares cerrados.",
+ "No monetary budget today. Atlas discoveries still award personal XP. Follow local signs and skip blocked places.": "Hoy no hay presupuesto monetario. Los descubrimientos Atlas siguen dando XP personales. Respeta las señales y evita los lugares cerrados.",
+ "First confirmed completion: {0} NEAR, converted to QGOLD at settlement.": "Primera finalización confirmada: {0} NEAR, convertidos a QGOLD al liquidar.",
+ "The shared NEAR prize was already earned. Personal XP is still available.": "El premio NEAR compartido ya se ha ganado. Los XP personales siguen disponibles.",
+ "Converted to QGOLD": "Convertido a QGOLD",
+ "Fractional NEAR remains credited": "El resto de NEAR queda abonado",
+ "Awaiting QGOLD settlement": "Pendiente de liquidación en QGOLD"
 }

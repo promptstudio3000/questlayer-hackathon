@@ -2928,5 +2928,13 @@
  "· saved rewards": "· gespeicherte Belohnungen",
  "· share it with the people who come": "· teile es mit den Leuten, die kommen",
  "· tier active": "· Stufe aktiv",
- "🔒 The inner vault": "🔒 Der innere Tresor"
+ "🔒 The inner vault": "🔒 Der innere Tresor",
+ "Map-derived discoveries by Atlas. Public access and paths have not been checked on foot: follow local signs and skip blocked places. These activities award personal XP; no monetary or item reward is promised.": "Entdeckungen von Atlas auf Basis von Kartendaten. Der öffentliche Zugang und die Wege wurden nicht vor Ort geprüft: Beachte die Beschilderung und überspringe gesperrte Orte. Diese Aktivitäten bringen persönliche XP; Geld- oder Gegenstandsbelohnungen werden nicht zugesagt.",
+ "Funded Atlas zones: the first confirmed completion earns the fixed NEAR prize shown in the objective. QGOLD is calculated at settlement; fractional NEAR stays credited. Follow local signs and skip blocked places.": "Finanzierte Atlas-Zonen: Der erste bestätigte Abschluss erhält den festen NEAR-Preis der Aufgabe. QGOLD wird bei der Abrechnung berechnet; NEAR-Restbeträge bleiben gutgeschrieben. Beachte örtliche Schilder und meide gesperrte Orte.",
+ "No monetary budget today. Atlas discoveries still award personal XP. Follow local signs and skip blocked places.": "Heute gibt es kein Budget für Geldprämien. Atlas-Entdeckungen bringen weiterhin persönliche XP. Beachte örtliche Schilder und meide gesperrte Orte.",
+ "First confirmed completion: {0} NEAR, converted to QGOLD at settlement.": "Erster bestätigter Abschluss: {0} NEAR, bei der Abrechnung in QGOLD umgerechnet.",
+ "The shared NEAR prize was already earned. Personal XP is still available.": "Der gemeinsame NEAR-Preis wurde bereits verdient. Persönliche XP sind weiterhin verfügbar.",
+ "Converted to QGOLD": "In QGOLD umgerechnet",
+ "Fractional NEAR remains credited": "NEAR-Restbetrag bleibt gutgeschrieben",
+ "Awaiting QGOLD settlement": "QGOLD-Abrechnung ausstehend"
 }

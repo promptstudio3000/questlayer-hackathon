@@ -35,6 +35,8 @@ for (const relative of [
   "./npc/trader-ledger.mjs",
   "./operator/world-controls.mjs",
   "./poi-quests.mjs",
+  "./global-activities.mjs",
+  "./global-rewards.mjs",
   "./landmark-clue.mjs",
   "./map-rewards/schema.mjs",
   "./map-rewards/budget.mjs",

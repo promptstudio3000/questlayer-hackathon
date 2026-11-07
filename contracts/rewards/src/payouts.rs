@@ -11,11 +11,12 @@
 //!   A leaf already paid (or in flight) is skipped, so retries are safe. If the
 //!   vault refuses (paused, dust), the callback clears the bit and returns the
 //!   NEAR to the day, so the same leaf can be claimed again.
-//! - `close_payout_day` (publisher, after the grace period) returns what was
-//!   not claimed to the available buckets and frees the bitmap.
+//! - `close_payout_day` (publisher, after the grace period and only after all
+//!   leaves are paid) returns surplus reservations and frees the claim bitmap.
+//!   Final paid bits remain available for worker recovery after closure.
 //!
-//! Per day the contract stores only the root, the totals and a bitmap of
-//! claimed leaves (32-byte chunks of 256 leaves). No receipt per account, so
+//! Per day the contract stores the root, totals, settlement counters and two
+//! bitmaps (claimed and paid, 32-byte chunks of 256 leaves). No receipt per account, so
 //! there is no per-day receipt limit: a day can pay every player.
 //!
 //! Leaf: sha256("payout|<day_id>|<index>|<account>|<amount_yocto>"), hex. The
@@ -24,7 +25,7 @@
 //! it numbers the bitmap bit.
 use crate::*;
 
-/// Grace after publication before an unclaimed day can be closed.
+/// Minimum age before a fully settled day can be closed; rights do not expire.
 pub const PAYOUT_GRACE_MS: u64 = 3 * DAY_MS;
 /// Leaves claimed in one transaction (each is one vault call plus a callback).
 pub const PAYOUT_MAX_BATCH: usize = 10;
@@ -69,6 +70,26 @@ pub struct PayoutLeaf {
     pub proof: Vec<String>,
 }
 
+// Kept outside PayoutDay so existing day/state serialization is unchanged.
+// An absent record is unknown, never evidence of a completed payment.
+#[derive(BorshDeserialize, BorshSerialize, Clone)]
+#[borsh(crate = "near_sdk::borsh")]
+struct Settlement {
+    paid: u32,
+    pending: u32,
+}
+
+#[derive(Serialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct PayoutProgress {
+    pub root: String,
+    pub leaves: u32,
+    pub closed: bool,
+    pub paid_leaves: u32,
+    pub pending_leaves: u32,
+    pub statuses: Vec<String>,
+}
+
 mod u128_str {
     use near_sdk::serde::Serializer;
     pub fn serialize<S: Serializer>(v: &u128, s: S) -> Result<S::Ok, S::Error> {
@@ -82,11 +103,17 @@ trait PayoutCallbacks {
     fn on_payout(&mut self, day_id: String, index: u32, account_id: AccountId, coins: U128, zones: U128) -> bool;
 }
 
-fn payout_days() -> LookupMap<String, PayoutDay> {
+pub(crate) fn payout_days() -> LookupMap<String, PayoutDay> {
     LookupMap::new(b"native-payout-days-v1".to_vec())
 }
 fn payout_bits() -> LookupMap<String, Vec<u8>> {
     LookupMap::new(b"native-payout-bits-v1".to_vec())
+}
+fn payout_settlements() -> LookupMap<String, Settlement> {
+    LookupMap::new(b"native-payout-settlements".to_vec())
+}
+fn payout_paid_bits() -> LookupMap<String, Vec<u8>> {
+    LookupMap::new(b"native-payout-paid-bits".to_vec())
 }
 fn chunk_key(day_id: &str, index: u32) -> String {
     format!("{day_id}|{}", index / CHUNK_BITS)
@@ -124,13 +151,8 @@ pub fn verify_payout_proof(leaf: &str, proof: &[String], root: &str) -> bool {
     hex(&node) == root
 }
 
-#[near_bindgen]
 impl Rewards {
-    /// Commits one day's per-account payout root and reserves its NEAR:
-    /// `coins_yocto` from the coin bucket, `zones_yocto` from the zone bucket.
-    /// The leaves must sum to at most their total; claims can never pay more.
-    pub fn publish_payout_day(&mut self, day_id: String, root: String, leaves: u32, coins_yocto: U128, zones_yocto: U128) {
-        self.publisher();
+    pub(crate) fn create_payout_day(&mut self, day_id:String, root:String, leaves:u32, coins_yocto:U128, zones_yocto:U128, pre_reserved:bool) {
         assert!(!self.paused, "Publication paused");
         valid_id(&day_id);
         assert!(day_id.len() <= 40 && day_id.starts_with("payout-"), "Payout day id is payout-YYYY-MM-DD-v<n>");
@@ -140,19 +162,23 @@ impl Rewards {
         let (coins, zones) = (coins_yocto.0, zones_yocto.0);
         let total = coins.checked_add(zones).expect("Overflow");
         assert!(total >= PAYOUT_MIN_YOCTO, "Empty payout day");
-        assert!(coins <= self.coins.available && zones <= self.zones.available, "Insufficient liquid funding");
-        self.add_to_date_total(&day_id, coins, zones);
-        // The bitmap is the only storage a day adds; claims add none.
+        if !pre_reserved {
+            assert!(coins <= self.coins.available && zones <= self.zones.available, "Insufficient liquid funding");
+            self.add_to_date_total(&day_id, coins, zones);
+        }
+        // Budget both sparse bitmaps before publication, separately from funds owed.
         let bytes = env::storage_usage()
             + storage_slots().get(&"__total".to_string()).unwrap_or(0) * CLAIM_STORAGE
-            + chunks(leaves) as u64 * CHUNK_STORAGE
+            + chunks(leaves) as u64 * CHUNK_STORAGE * 2
             + 8192;
         let required = bytes as u128 * env::storage_byte_cost().as_yoctonear() + (self.funded - self.withdrawn) + NEAR / 2;
         assert!(env::account_balance().as_yoctonear() >= required, "Top up separate storage and gas funding before publication");
-        self.coins.available -= coins;
-        self.coins.reserved += coins;
-        self.zones.available -= zones;
-        self.zones.reserved += zones;
+        if !pre_reserved {
+            self.coins.available -= coins;
+            self.coins.reserved += coins;
+            self.zones.available -= zones;
+            self.zones.reserved += zones;
+        }
         payout_days().insert(
             &day_id,
             &PayoutDay {
@@ -168,11 +194,23 @@ impl Rewards {
                 closed: false,
             },
         );
+        payout_settlements().insert(&day_id, &Settlement { paid: 0, pending: 0 });
         self.check();
         event(
             "payout_day_published",
             near_sdk::serde_json::json!({"day_id":day_id,"root":root,"leaves":leaves,"coins":coins.to_string(),"zones":zones.to_string()}),
         );
+        }
+}
+
+#[near_bindgen]
+impl Rewards {
+    /// Commits one day's per-account payout root and reserves its NEAR:
+    /// `coins_yocto` from the coin bucket, `zones_yocto` from the zone bucket.
+    /// The leaves must sum to at most their total; claims can never pay more.
+    pub fn publish_payout_day(&mut self, day_id: String, root: String, leaves: u32, coins_yocto: U128, zones_yocto: U128) {
+        self.publisher();
+        self.create_payout_day(day_id,root,leaves,coins_yocto,zones_yocto,false);
     }
 
     /// Pays up to PAYOUT_MAX_BATCH leaves of one day into the QGOLD vault.
@@ -185,6 +223,7 @@ impl Rewards {
         let mut days = payout_days();
         let mut day = days.get(&day_id).expect("Unknown payout day");
         assert!(!day.closed, "Day closed");
+        let mut settlement = payout_settlements().get(&day_id).expect("Payout settlement status unavailable");
         let mut bits = payout_bits();
         let mut started = Vec::with_capacity(claims.len());
         for c in claims {
@@ -214,12 +253,13 @@ impl Rewards {
             self.pending += amount;
             day.paid += amount;
             day.paid_leaves += 1;
+            settlement.pending += 1;
             chunk[byte] |= mask;
             bits.insert(&key, &chunk);
             Promise::new(vault.clone())
                 .function_call(
-                    "mint_for",
-                    near_sdk::serde_json::json!({"account_id": c.account_id, "memo": format!("daily payout {day_id}")})
+                    if world_days::is_world_payout(&day_id){"mint_with_carry_for"}else{"mint_for"},
+                    near_sdk::serde_json::json!({"account_id": c.account_id, "memo": if world_days::is_world_payout(&day_id){format!("world payout {day_id}:{}",c.index)}else{format!("daily payout {day_id}")}})
                         .to_string()
                         .into_bytes(),
                     NearToken::from_yoctonear(amount),
@@ -231,10 +271,11 @@ impl Rewards {
                     c.account_id,
                     U128(from_coins),
                     U128(from_zones),
-                ));
+                )).detach();
             started.push(true);
         }
         days.insert(&day_id, &day);
+        payout_settlements().insert(&day_id, &settlement);
         self.check();
         started
     }
@@ -242,12 +283,25 @@ impl Rewards {
     #[private]
     pub fn on_payout(&mut self, day_id: String, index: u32, account_id: AccountId, coins: U128, zones: U128) -> bool {
         let amount = coins.0 + zones.0;
-        self.pending -= amount;
-        let ok = env::promise_result_checked(0, 64).is_ok();
         let mut days = payout_days();
         let mut day = days.get(&day_id).expect("Unknown payout day");
+        let mut settlement = payout_settlements().get(&day_id).expect("Payout settlement status unavailable");
+        let key = chunk_key(&day_id, index);
+        let (byte, mask) = bit_of(index);
+        let mut claimed = payout_bits().get(&key).expect("Payout callback is not pending");
+        let mut paid = payout_paid_bits().get(&key).unwrap_or_else(|| vec![0; (CHUNK_BITS / 8) as usize]);
+        assert!(index < day.leaves && !day.closed && settlement.pending > 0
+            && claimed[byte] & mask != 0 && paid[byte] & mask == 0,
+            "Payout callback is not pending");
+        self.pending -= amount;
+        settlement.pending -= 1;
+        // Successful mint_for returns JSON U128; an unread payload is not a failure.
+        let ok = !matches!(env::promise_result_checked(0, 0), Err(near_sdk::PromiseError::Failed));
         if ok {
             self.withdrawn += amount;
+            settlement.paid += 1;
+            paid[byte] |= mask;
+            payout_paid_bits().insert(&key, &paid);
             event(
                 "payout_paid",
                 near_sdk::serde_json::json!({"day_id":day_id,"index":index,"account_id":account_id,"amount":amount.to_string()}),
@@ -258,34 +312,25 @@ impl Rewards {
             self.zones.awarded -= zones.0;
             day.paid -= amount;
             day.paid_leaves -= 1;
-            if day.closed {
-                self.coins.available += coins.0;
-                self.zones.available += zones.0;
-            } else {
-                self.coins.reserved += coins.0;
-                self.zones.reserved += zones.0;
-                day.coins_left += coins.0;
-                day.zones_left += zones.0;
-                let mut bits = payout_bits();
-                let key = chunk_key(&day_id, index);
-                if let Some(mut chunk) = bits.get(&key) {
-                    let (byte, mask) = bit_of(index);
-                    chunk[byte] &= !mask;
-                    bits.insert(&key, &chunk);
-                }
-            }
+            self.coins.reserved += coins.0;
+            self.zones.reserved += zones.0;
+            day.coins_left += coins.0;
+            day.zones_left += zones.0;
+            claimed[byte] &= !mask;
+            payout_bits().insert(&key, &claimed);
             days.insert(&day_id, &day);
             event(
                 "payout_failed",
                 near_sdk::serde_json::json!({"day_id":day_id,"index":index,"account_id":account_id,"amount":amount.to_string()}),
             );
         }
+        payout_settlements().insert(&day_id, &settlement);
         self.check();
         ok
     }
 
-    /// After the grace period: unclaimed NEAR goes back to the available
-    /// buckets and the day's bitmap is deleted (claims are refused from now).
+    /// After the grace period and every successful mint: surplus NEAR goes back
+    /// to available buckets. Final paid bits survive for durable reconciliation.
     pub fn close_payout_day(&mut self, day_id: String) {
         self.publisher();
         let mut days = payout_days();
@@ -294,6 +339,8 @@ impl Rewards {
             return;
         }
         assert!(now_ms() >= day.published_at + PAYOUT_GRACE_MS, "Payout grace period");
+        let settlement = payout_settlements().get(&day_id).expect("Payout settlement status unavailable");
+        assert!(settlement.pending == 0 && settlement.paid == day.leaves, "Payouts remain unsettled");
         self.coins.reserved -= day.coins_left;
         self.coins.available += day.coins_left;
         self.zones.reserved -= day.zones_left;
@@ -315,6 +362,30 @@ impl Rewards {
         payout_days().get(&day_id)
     }
 
+    /// Durable finalized mint status, including after closure. A missing record
+    /// is deliberately unknown; a claimed bit alone includes pending receipts.
+    pub fn get_payout_progress(&self, day_id: String, indexes: Vec<u32>) -> Option<PayoutProgress> {
+        assert!(indexes.len() <= 1024, "At most 1024 indexes");
+        let day = payout_days().get(&day_id)?;
+        let settlement = payout_settlements().get(&day_id)?;
+        let claimed = payout_bits();
+        let paid = payout_paid_bits();
+        let statuses = indexes.into_iter().map(|index| {
+            assert!(index < day.leaves, "Invalid leaf index");
+            let key = chunk_key(&day_id, index);
+            let (byte, mask) = bit_of(index);
+            if paid.get(&key).is_some_and(|c| c[byte] & mask != 0) {
+                "paid"
+            } else if claimed.get(&key).is_some_and(|c| c[byte] & mask != 0) {
+                "pending"
+            } else {
+                "unclaimed"
+            }.to_string()
+        }).collect();
+        Some(PayoutProgress { root: day.root, leaves: day.leaves, closed: day.closed,
+            paid_leaves: settlement.paid, pending_leaves: settlement.pending, statuses })
+    }
+
     /// Whether each leaf index is claimed (paid or in flight) on an open day.
     pub fn payout_claimed(&self, day_id: String, indexes: Vec<u32>) -> Vec<bool> {
         assert!(indexes.len() <= 1024, "At most 1024 indexes");
@@ -329,7 +400,7 @@ impl Rewards {
     }
 
     pub fn get_payout_config(&self) -> near_sdk::serde_json::Value {
-        near_sdk::serde_json::json!({"leaf":"payout|<day_id>|<index>|<account>|<amount_yocto>","max_batch":PAYOUT_MAX_BATCH,"max_leaves":PAYOUT_MAX_LEAVES,"min_yocto":PAYOUT_MIN_YOCTO.to_string(),"grace_ms":PAYOUT_GRACE_MS})
+        near_sdk::serde_json::json!({"leaf":"payout|<day_id>|<index>|<account>|<amount_yocto>","max_batch":PAYOUT_MAX_BATCH,"max_leaves":PAYOUT_MAX_LEAVES,"min_yocto":PAYOUT_MIN_YOCTO.to_string(),"grace_ms":PAYOUT_GRACE_MS,"settlement_status":true})
     }
 }
 
@@ -519,31 +590,107 @@ mod payout_tests {
     }
 
     #[test]
-    fn close_returns_the_unclaimed_rest_after_the_grace() {
+    fn closure_waits_for_every_mint_and_preserves_final_status() {
         let (mut r, claims) = setup();
         ctx("anyone.testnet", 2, 0, None);
-        r.claim_payout(DAY.into(), vec![claims[0].clone()]);
+        r.claim_payout(DAY.into(), claims.clone());
+        let progress = r.get_payout_progress(DAY.into(), vec![0, 1, 2]).unwrap();
+        assert_eq!(progress.statuses, vec!["pending", "pending", "pending"]);
+        assert_eq!((progress.paid_leaves, progress.pending_leaves), (0, 3));
         let early = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             ctx("publisher.testnet", 3, 0, None);
             r.close_payout_day(DAY.into());
         }));
         assert!(early.is_err(), "grace period");
-        let avail = r.coins.available + r.zones.available;
+        let pending = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("publisher.testnet", 1 + PAYOUT_GRACE_MS, 0, None);
+            r.close_payout_day(DAY.into());
+        }));
+        assert!(pending.is_err(), "pending mints must prevent closure");
+        ctx("rewards.testnet", 2 + PAYOUT_GRACE_MS, 0, Some(PromiseResult::Successful(b"\"1\"".to_vec())));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
+        r.on_payout(DAY.into(), 1, a("bob.testnet"), U128(5 * Y), U128(0));
+        ctx("rewards.testnet", 2 + PAYOUT_GRACE_MS, 0, Some(PromiseResult::Failed));
+        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y));
+        let failed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("publisher.testnet", 3 + PAYOUT_GRACE_MS, 0, None);
+            r.close_payout_day(DAY.into());
+        }));
+        assert!(failed.is_err(), "failed mints keep their reserved right after grace");
+        assert_eq!(r.get_payout_progress(DAY.into(), vec![0, 1, 2]).unwrap().statuses,
+            vec!["paid", "paid", "unclaimed"]);
+        ctx("anyone.testnet", 4 + PAYOUT_GRACE_MS, 0, None);
+        assert_eq!(r.claim_payout(DAY.into(), claims), vec![false, false, true]);
+        ctx("rewards.testnet", 5 + PAYOUT_GRACE_MS, 0, Some(PromiseResult::Successful(vec![1; 100])));
+        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y));
+        let before = r.withdrawn;
+        ctx("publisher.testnet", 6 + PAYOUT_GRACE_MS, 0, None);
+        r.close_payout_day(DAY.into());
+        r.close_payout_day(DAY.into());
+        let progress = r.get_payout_progress(DAY.into(), vec![0, 1, 2]).unwrap();
+        assert!(progress.closed);
+        assert_eq!(progress.statuses, vec!["paid", "paid", "paid"]);
+        assert_eq!((progress.paid_leaves, progress.pending_leaves), (3, 0));
+        assert_eq!((r.pending, r.withdrawn), (0, before));
+        r.check();
+    }
+
+    #[test]
+    #[should_panic(expected = "Payouts remain unsettled")]
+    fn even_unsubmitted_leaves_cannot_expire_after_grace() {
+        let (mut r, _) = setup();
         ctx("publisher.testnet", 1 + PAYOUT_GRACE_MS, 0, None);
         r.close_payout_day(DAY.into());
-        assert_eq!(r.coins.available + r.zones.available, avail + 9 * Y);
-        assert_eq!(r.coins.reserved + r.zones.reserved, 0);
-        assert_eq!(r.payout_claimed(DAY.into(), vec![0]), vec![false]);
-        let late = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            ctx("anyone.testnet", 2 + PAYOUT_GRACE_MS, 0, None);
-            r.claim_payout(DAY.into(), vec![claims[1].clone()]);
-        }));
-        assert!(late.is_err(), "closed day");
-        // A mint refused after close returns its NEAR to the available buckets.
-        ctx("rewards.testnet", 2 + PAYOUT_GRACE_MS, 0, Some(PromiseResult::Failed));
+    }
+
+    #[test]
+    #[should_panic(expected = "Payout callback is not pending")]
+    fn duplicate_success_callback_cannot_account_a_second_payment() {
+        let (mut r, claims) = setup();
+        ctx("anyone.testnet", 2, 0, None);
+        r.claim_payout(DAY.into(), vec![claims[0].clone()]);
+        ctx("rewards.testnet", 3, 0, Some(PromiseResult::Successful(b"\"3\"".to_vec())));
         r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
-        assert_eq!(r.coins.available + r.zones.available, avail + 12 * Y);
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
+    }
+
+    #[test]
+    #[should_panic(expected = "Payout callback is not pending")]
+    fn duplicate_failure_callback_cannot_restore_credit_twice() {
+        let (mut r, claims) = setup();
+        ctx("anyone.testnet", 2, 0, None);
+        r.claim_payout(DAY.into(), vec![claims[0].clone()]);
+        ctx("rewards.testnet", 3, 0, Some(PromiseResult::Failed));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
+    }
+
+    #[test]
+    fn absent_settlement_record_is_unknown_not_a_payment() {
+        let (mut r, claims) = setup();
+        payout_settlements().remove(&DAY.to_string());
+        assert!(r.get_payout_progress(DAY.into(), vec![0]).is_none());
+        let attempt = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("anyone.testnet", 2, 0, None);
+            r.claim_payout(DAY.into(), vec![claims[0].clone()]);
+        }));
+        assert!(attempt.is_err());
         assert_eq!(r.pending, 0);
+    }
+
+    #[test]
+    fn settlement_host_work_fits_the_callback_gas_allowance() {
+        let (mut r, claims) = setup();
+        ctx("anyone.testnet", 2, 0, None);
+        r.claim_payout(DAY.into(), claims);
+        ctx("rewards.testnet", 3, 0, Some(PromiseResult::Successful(b"\"3\"".to_vec())));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
+        assert!(env::used_gas() < CALLBACK_GAS, "successful callback host work");
+        ctx("rewards.testnet", 4, 0, Some(PromiseResult::Failed));
+        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y));
+        assert!(env::used_gas() < CALLBACK_GAS, "failed callback host work");
+        // Native host metering does not include compiled WASM instruction gas;
+        // the release still requires a cross-contract WASM gas rehearsal.
     }
 
     #[test]
