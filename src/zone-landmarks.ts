@@ -1,13 +1,13 @@
 // Zone landmarks: what makes a quest zone stand out on the map.
 //
-// Every zone gets a tall totem at its centre (its shape says the zone type,
-// its height says the tier), a translucent wall rising from its edge, a glow
+// Every zone gets a small altar at its centre (its shape says the activity,
+// its height says the tier), a high open aura rising from its edge, a glow
 // on the ground and the items it holds scattered inside. A countdown says
 // when it opens or closes, also for zones the player cannot play yet.
 //
-// Everything here is plain GeoJSON for MapLibre's own layers (fill-extrusion,
-// line, symbol): no extra WebGL context, no per-frame work and no DOM node per
-// item, so the phone budget stays at a handful of extra draw calls.
+// GeoJSON keeps the authoritative footprints intact. The shared WebGL layer
+// turns boundary paths into open, translucent curtains; other map layers draw
+// ground outlines, fallback totems and loot. No additional canvas is needed.
 import { AURA_CATALOG, AURA_ENTITLEMENTS } from "./aura-catalog.ts";
 import type { AuraCatalogEdition, AuraRarity } from "./aura-catalog.ts";
 import { zoneObjectPresentation } from "./game-object-art-data.ts";
@@ -36,11 +36,11 @@ const RARITY_LABEL: Record<AuraRarity, string> = {
 };
 
 // Rarer zones are taller so they read from further away.
-const TOTEM_HEIGHT = { 1: 42, 2: 56, 3: 72 } as Record<number, number>;
-// Walls are tall enough to read over the rooftops from a few streets away;
-// a fainter halo band continues above them so the aura fades into the sky.
-const WALL_HEIGHT = { 1: 34, 2: 46, 3: 60 } as Record<number, number>;
-const WALL_HALO = 1.9;
+const TOTEM_HEIGHT = { 1: 14, 2: 18, 3: 22 } as Record<number, number>;
+// Presentation heights: the boundary aura is the long-distance signal.
+// Its upper halo fades smoothly into the sky; it has no horizontal cap.
+const WALL_HEIGHT = { 1: 120, 2: 155, 3: 190 } as Record<number, number>;
+const WALL_HALO = 1.55;
 /** Totem height in metres; the map lifts the zone pin onto its top. */
 export const totemHeight = (tier: number) =>
   TOTEM_HEIGHT[tier] || TOTEM_HEIGHT[1];
@@ -194,49 +194,31 @@ export function zoneRadius(zone: Zone) {
   return r || Math.max(zone.radius, 20);
 }
 
-/** A thin band along an outer ring: the footprint of the zone's wall. */
-function band(ring: Ring, widthM: number): Polygon {
-  const n = ring.length - 1 || 1;
-  const cx = ring.slice(0, n).reduce((s, p) => s + p[0], 0) / n,
-    cy = ring.slice(0, n).reduce((s, p) => s + p[1], 0) / n;
-  const k = Math.cos((cy * Math.PI) / 180);
-  const inner = ring
-    .map(([x, y]) => {
-      const d = Math.hypot((x - cx) * k, y - cy) * M_PER_DEG;
-      const f = d > widthM * 2 ? 1 - widthM / d : 0.5;
-      return [cx + (x - cx) * f, cy + (y - cy) * f] as [number, number];
-    })
-    .reverse();
-  return [ring, inner];
-}
-
 type Feature = {
   type: "Feature";
   properties: Record<string, string | number | boolean>;
   geometry:
     | { type: "Polygon"; coordinates: Polygon }
-    | { type: "Point"; coordinates: [number, number] };
+    | { type: "Point"; coordinates: [number, number] }
+    | { type: "LineString"; coordinates: Ring };
 };
 
-/** Translucent walls along each zone edge. Upcoming zones get a low wall; spent ones none. */
-export function zoneWallFeatures(
-  zones: readonly Zone[],
-  quests: readonly Quest[],
-  now: number,
-): Feature[] {
+/** Presentation-only tint of the existing maximum chest rarity (not a reward promise). */
+export function zoneAuraColor(tier: number) {
+  return {common: "#45d6a0", rare: "#45d6a0", epic: "#ae77ff", legendary: "#ffd25a"}[zoneRarity(tier)];
+}
+
+/** Boundary paths for open sky curtains. No filled polygon, roof or offset footprint. */
+export function zoneWallFeatures(zones: readonly Zone[], quests: readonly Quest[], now: number): Feature[] {
   const out: Feature[] = [];
   for (const z of zones) {
     const phase = zonePhase(z, quests, now);
     if (phase === "closed" || phase === "done" || phase === "unknown") continue;
-    const height =
-      (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (phase === "open" ? 1 : 0.4);
-    for (const poly of zonePolygons(z))
-      if (poly[0]?.length > 3)
-        out.push({
-          type: "Feature",
-          properties: { id: z.id, color: z.color, height, halo: height * WALL_HALO },
-          geometry: { type: "Polygon", coordinates: band(poly[0], 1.6) },
-        });
+    const height = (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (phase === "open" ? 1 : .82);
+    for (const poly of zonePolygons(z)) for (const ring of poly) {
+      if (ring.length < 4) continue;
+      out.push({type:"Feature",properties:{id:z.id,color:zoneAuraColor(z.tier),height,halo:height*WALL_HALO,dim:phase!=="open",rarity:zoneRarity(z.tier)},geometry:{type:"LineString",coordinates:ring}});
+    }
   }
   return out;
 }
@@ -254,7 +236,8 @@ export function zoneTotemFeatures(
   const out: Feature[] = [];
   for (const z of zones) {
     const phase = zonePhase(z, quests, context.now);
-    const h = totemHeight(z.tier),
+    const h = ({1:42,2:56,3:72} as Record<number,number>)[z.tier] || 42,
+      visualScale = totemHeight(z.tier) / h,
       kind = zoneObjectPresentation(z, quests, context).kind;
     const spent = phase === "closed" || phase === "done" || phase === "unknown";
     const color = spent ? "#a59aa9" : z.color;
@@ -267,10 +250,10 @@ export function zoneTotemFeatures(
     ) =>
       out.push({
         type: "Feature",
-        properties: { id: z.id, color: c, base, height: top },
+        properties: { id: z.id, color: c, base: base * visualScale, height: top * visualScale },
         geometry: {
           type: "Polygon",
-          coordinates: [circle(z.lng, z.lat, r, sides)],
+          coordinates: [circle(z.lng, z.lat, r * visualScale, sides)],
         },
       });
     // Stepped plinth, a banded shaft, a crown shaped by the zone type and a
@@ -295,7 +278,7 @@ export function zoneTotemFeatures(
 }
 
 /** Height of a sky beam in metres: visible over the city from far away. */
-export const BEAM_HEIGHT = { zone: 420, event: 300, find: 160, actor: 260 };
+export const BEAM_HEIGHT = { zone: 420, event: 300, find: 48, actor: 260 };
 export type BeamKind = keyof typeof BEAM_HEIGHT;
 export type BeamSpot = {
   id: string;

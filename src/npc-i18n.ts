@@ -18,6 +18,7 @@ const strings = () => ({
   send: tr("Send"),
   thinking: "…",
   error: tr("Something went wrong."),
+  retry: tr("Try again"),
   aiVoice: tr("AI voice · answers only from game data"),
   stdVoice: tr("Standard replies"),
   privateVoice: tr("Private AI on NEAR · runs in a sealed enclave, answers only from game data"),

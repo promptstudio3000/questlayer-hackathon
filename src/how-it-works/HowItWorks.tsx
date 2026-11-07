@@ -54,6 +54,7 @@ import {
   type ChapterId,
 } from "./content";
 import "./how-it-works.css";
+import "../public-polish.css";
 import { tr } from "../i18n";
 
 const PLAY_URL = "/";

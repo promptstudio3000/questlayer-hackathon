@@ -5,6 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./economy.css";
 import "./treasury.css";
+import "../public-polish.css";
 import { shortNear } from "./format";
 import { arc, blendedApr, niceScale, num, rateNear, simulate, tickLabel, toNear, toUnits } from "./treasury-model";
 

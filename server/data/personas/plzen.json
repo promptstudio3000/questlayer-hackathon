@@ -12,8 +12,8 @@
       "backstory": "A floating lantern spirit who has walked every street of Plzeň for a hundred years and keeps a pocket map of places worth a visit.",
       "likes": ["parks", "riverbanks", "old churches"],
       "greeting": {
-        "cs": "Zdravím, poutníku! Mám pro tebe pár cest po dnešním městě.",
-        "en": "Greetings, traveller! I have a few walks across today's city for you."
+        "cs": "Malou procházku, průzkumníku? Vyber si označenou zastávku a pak mi přijď říct, co jsi našel.",
+        "en": "A little walk, explorer? Pick a marked stop, then come back and tell me what you found."
       },
       "refusal": {
         "cs": "To ti dát nemohu, poutníku. Vyber si z cest, které nabízím.",
@@ -41,8 +41,8 @@
         "en": "That is not in my chronicle. I can only offer the chapters written there."
       },
       "idle": {
-        "cs": "Každé místo má svůj příběh, jen ho musí někdo navštívit.",
-        "en": "Every place has a story; someone just has to visit it."
+        "cs": "I obyčejný kout může skrývat dobrý příběh. Dívej se pozorně; vyprávíme jen to, co víme.",
+        "en": "An ordinary corner can hold a good story. Look closely; we only tell what we know."
       }
     },
     {

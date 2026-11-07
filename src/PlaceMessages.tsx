@@ -17,6 +17,7 @@ import {
   type PlaceThread,
 } from "./gold-spend-client";
 import "./gold-spend.css";
+import { EmptyState } from "./EmptyState";
 
 // Place messages (QGOLD stream 4): a shout is a short bubble at a place, paid
 // per day (at most 7). A topic is a discussion anyone can write in from
@@ -53,6 +54,7 @@ export function PlaceMessages({
   const [radiusKm, setRadius] = useState(3);
   const [sort, setSort] = useState<PlaceSort>("latest");
   const [feed, setFeed] = useState<PlaceFeed | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [open, setOpen] = useState<PlaceThread | null>(null);
   const [compose, setCompose] = useState<"shout" | "topic" | null>(null);
   const [text, setText] = useState("");
@@ -62,7 +64,10 @@ export function PlaceMessages({
   const [busy, setBusy] = useState(false);
   const { lat, lng } = position;
   const load = useCallback(
-    () => placeFeed(lat, lng, radiusKm, sort).then(setFeed, (e) => notify(e.message, true)),
+    () => placeFeed(lat, lng, radiusKm, sort).then(
+      value => { setFeed(value); setLoadError(""); },
+      e => { setLoadError(e.message); notify(e.message, true); },
+    ),
     // Re-read on a ~100 m move, not every GPS tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [Math.round(lat * 1000), Math.round(lng * 1000), radiusKm, sort, notify],
@@ -270,8 +275,11 @@ export function PlaceMessages({
           ))}
         </select>
       </div>
-      {!feed ? null : !feed.items.length ? (
-        <p className="gold-shop-empty">{tr("No messages around you yet. Leave the first one.")}</p>
+      {loadError && <div className="secondary-load-error" role="alert">
+        <EmptyState title={tr("Places")} action={{ label: tr("Try again"), onClick: () => { setLoadError(""); void load(); } }}>{loadError}</EmptyState>
+      </div>}
+      {!feed ? (!loadError && <EmptyState title={tr("Loading…")} status />) : !feed.items.length ? (
+        <EmptyState title={tr("No messages around you yet. Leave the first one.")} />
       ) : (
         <ul className="place-feed">
           {feed.items.map((t) => (

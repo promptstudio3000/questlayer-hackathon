@@ -1,10 +1,12 @@
+import { EmptyState } from "./EmptyState";
+import type { ReactNode } from "react";
 import { ChainLink } from "./ChainLink";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Medal,
   X,
 } from "@phosphor-icons/react";
-import { ArrowRight } from "./dir-icons";
+import { ArrowLeft, ArrowRight } from "./dir-icons";
 import { api } from "./api";
 import { Dialog } from "./Dialog";
 import type { Fix } from "./types";
@@ -94,19 +96,23 @@ function km(m: number) {
 const date = (t: number) => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 const freshFix = (fix: Fix | null) => (fix && Date.now() - fix.timestamp < 15_000 ? fix : null);
 
-export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; arena: boolean; onConnectNear?: () => void }) {
+export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: Fix | null; arena: boolean; onConnectNear?: () => void; inline?: boolean }) {
   const [data, setData] = useState<Overview | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"places" | "player">("places");
   const [kind, setKind] = useState<Kind | "all">("all");
+  const [badgePage, setBadgePage] = useState(0);
+  const badgeGrid = useRef<HTMLUListElement>(null);
   const [detail, setDetail] = useState<PlaceBadge | null>(null);
   const gps = arena ? null : fix;
   const at = gps ? `?lat=${gps.lat.toFixed(5)}&lng=${gps.lng.toFixed(5)}` : "";
   const load = useCallback(async () => {
+    setLoadError(false);
     try {
       setData(await api<Overview>(`/badges${at}`));
     } catch {
-      /* The entry just keeps its last state. */
+      setLoadError(true);
     }
   }, [at]);
   useEffect(() => {
@@ -122,11 +128,22 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
     () => (places ? places.badges.filter((b) => kind === "all" || b.kind === kind) : []),
     [places, kind],
   );
-  if (!data?.enabled || !places) return null;
+  const pageSize = inline ? 12 : Math.max(1, shown.length);
+  const pages = Math.max(1, Math.ceil(shown.length / pageSize));
+  const page = Math.min(badgePage, pages - 1);
+  function turnPage(next: number) {
+    setBadgePage(next);
+    requestAnimationFrame(() => badgeGrid.current?.focus());
+  }
+  if (!data?.enabled || !places) return inline ? (
+    <EmptyState art="place" title={tr("Badges")} status action={loadError ? { label: tr("Try again"), onClick: () => void load() } : undefined}>
+      {loadError ? tr("Something went wrong.") : data ? tr("Nothing here yet") : tr("Loading…")}
+    </EmptyState>
+  ) : null;
   const byId = new Map(places.badges.map((b) => [b.id, b]));
   return (
     <>
-      <button className="play-entry" onClick={() => setOpen(true)}>
+      {!inline && <button className="play-entry" onClick={() => setOpen(true)}>
         <Medal size={24} />
         <span>
           <b>{tr("Badges")}</b>
@@ -136,13 +153,13 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
           </small>
         </span>
         <ArrowRight size={20} />
-      </button>
-      {open && (
-        <Dialog label={tr("Badges")} onClose={() => setOpen(false)}>
+      </button>}
+      {(open || inline) && (
+        <BadgeSurface inline={inline} onClose={() => setOpen(false)}>
           <section className="badge-book">
-            <button className="sheet-close" aria-label={tr("Close")} onClick={() => setOpen(false)}>
+            {!inline && <button className="sheet-close" aria-label={tr("Close")} onClick={() => setOpen(false)}>
               <X size={16} aria-hidden="true" />
-            </button>
+            </button>}
             <h2>{tr("Badges")}</h2>
             <div className="badge-tabs" role="tablist" aria-label={tr("Badge kind")}>
               <button role="tab" aria-selected={view === "places"} onClick={() => setView("places")}>
@@ -177,7 +194,7 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
                 {arena && <p className="fine-print">{tr("Badges need real GPS. Turn on your location on the map to collect them.")}</p>}
                 <div className="badge-filter" role="group" aria-label={tr("Filter")}>
                   {KINDS.map((k) => (
-                    <button key={k.id} aria-pressed={kind === k.id} onClick={() => setKind(k.id)}>
+                    <button key={k.id} aria-pressed={kind === k.id} onClick={() => { setKind(k.id); setBadgePage(0); }}>
                       {k.label}
                       {k.id !== "all" && (
                         <small>
@@ -187,8 +204,8 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
                     </button>
                   ))}
                 </div>
-                <ul className="badge-grid">
-                  {shown.map((b) => (
+                <ul className="badge-grid" ref={badgeGrid} tabIndex={-1} aria-label={tr("Badges")}>
+                  {shown.slice(page * pageSize, (page + 1) * pageSize).map((b) => (
                     <li key={b.id}>
                       <button
                         className={`badge-medal rarity-${b.rarity}${b.earnedAt ? " is-earned" : ""}`}
@@ -203,12 +220,17 @@ export function BadgeBook({ fix, arena, onConnectNear }: { fix: Fix | null; aren
                     </li>
                   ))}
                 </ul>
+                {pages > 1 && <div className="badge-pages" role="group" aria-label={tr("Badges")}>
+                  <button disabled={page === 0} aria-label={tr("Previous page")} onClick={() => turnPage(page - 1)}><ArrowLeft size={20} aria-hidden="true" /></button>
+                  <span aria-live="polite">{tr("Page {0} of {1}", {0:page+1,1:pages})}</span>
+                  <button disabled={page === pages - 1} aria-label={tr("Next page")} onClick={() => turnPage(page + 1)}><ArrowRight size={20} aria-hidden="true" /></button>
+                </div>}
               </>
             ) : (
               <PlayerBadges data={data} gps={freshFix(gps)} reload={load} onConnectNear={onConnectNear} />
             )}
           </section>
-        </Dialog>
+        </BadgeSurface>
       )}
       {detail && (
         <Dialog label={detail.nameCs} onClose={() => setDetail(null)}>
@@ -567,4 +589,8 @@ function CreateBadge({
       </div>
     </form>
   );
+}
+
+function BadgeSurface({ inline, onClose, children }: { inline: boolean; onClose: () => void; children: ReactNode }) {
+  return inline ? <>{children}</> : <Dialog label={tr("Badges")} onClose={onClose}>{children}</Dialog>;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
   ArrowArcLeft,
   ArrowArcRight,
@@ -23,7 +23,7 @@ function storedOpen() {
 
 function direction(relative: number) {
   const r = ((relative + 540) % 360) - 180;
-  if (Math.abs(r) <= 20) return "ahead";
+  if (Math.abs(r) <= 20) return tr("ahead");
   if (Math.abs(r) >= 150) return tr("behind you");
   return r > 0 ? tr("to your right") : tr("to your left");
 }
@@ -45,12 +45,21 @@ export function DemoControls({
   running: boolean;
   run: boolean;
   setRun: (run: boolean) => void;
-  press: (control: DemoControl, down: boolean) => void;
+  press: (control: DemoControl, down: boolean, source?: string) => void;
   release: () => void;
   /** Distance to the place the explorer was last turned toward. */
   target?: { label: string; meters: number; relative: number } | null;
 }) {
   const [open, setOpen] = useState(storedOpen);
+  const opener = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLElement>(null);
+  const focusOnToggle = useRef(false);
+  const toggle = (next: boolean) => { focusOnToggle.current = true; setOpen(next); };
+  useEffect(() => {
+    if (!focusOnToggle.current) return;
+    focusOnToggle.current = false;
+    (open ? panel.current?.querySelector<HTMLButtonElement>(".demo-forward") : opener.current)?.focus();
+  }, [open]);
   useEffect(() => {
     try {
       localStorage.setItem(STORE, open ? "1" : "0");
@@ -59,27 +68,36 @@ export function DemoControls({
     }
     if (!open) release();
   }, [open, release]);
+  const hint = target
+    ? `${target.label} · ${target.meters < 1000 ? `${Math.round(target.meters)} m` : `${(target.meters / 1000).toFixed(1)} km`} ${direction(target.relative)}`
+    : tr("Arrows or WASD · Shift walks");
   if (!open)
     return (
+      <>
       <button
+        ref={opener}
         className="demo-pad-open"
         aria-label={tr("Demo controls")}
         title={tr("Demo controls (arrows or WASD)")}
-        onClick={() => setOpen(true)}
+        aria-expanded={false}
+        onClick={() => toggle(true)}
       >
         <GameController size={22} weight="fill" />
+        <span>{tr("Demo controls")}</span>
       </button>
+      <p className="demo-pad-hint sr-only">{hint}</p>
+      </>
     );
   const hold = (control: DemoControl) => ({
     "aria-pressed": held.has(control),
     onPointerDown: (e: PointerEvent<HTMLButtonElement>) => {
       e.preventDefault();
       e.currentTarget.setPointerCapture?.(e.pointerId);
-      press(control, true);
+      press(control, true, `pointer:${e.pointerId}`);
     },
-    onPointerUp: () => press(control, false),
-    onPointerCancel: () => press(control, false),
-    onLostPointerCapture: () => press(control, false),
+    onPointerUp: (e: PointerEvent<HTMLButtonElement>) => press(control, false, `pointer:${e.pointerId}`),
+    onPointerCancel: (e: PointerEvent<HTMLButtonElement>) => press(control, false, `pointer:${e.pointerId}`),
+    onLostPointerCapture: (e: PointerEvent<HTMLButtonElement>) => press(control, false, `pointer:${e.pointerId}`),
     onContextMenu: (e: { preventDefault: () => void }) => e.preventDefault(),
     // Keyboard and switch users: Enter / Space takes one step or turn.
     onClick: (e: { detail: number }) => {
@@ -90,29 +108,24 @@ export function DemoControls({
   });
   return (
     <section
+      ref={panel}
       className="demo-pad"
       aria-label={tr("Demo controls")}
       data-running={running || undefined}
       data-target={target ? "" : undefined}
     >
-      <header>
-        <span>
-          <GameController size={14} weight="fill" /> {" "}{tr("Demo walk")}</span>
-        <button
-          className="demo-pad-min"
-          aria-label={tr("Hide demo controls")}
-          title={tr("Hide demo controls")}
-          onClick={() => setOpen(false)}
-        >
-          <Minus size={14} weight="bold" />
-        </button>
-      </header>
       <div className="demo-pad-grid">
+        <button className="demo-left" aria-label={tr("Turn left")} title={tr("Turn left (← / A)")} {...hold("left")}>
+          <ArrowArcLeft size={22} weight="bold" />
+        </button>
         <button className="demo-forward" aria-label={tr("Walk forward")} title={tr("Forward (↑ / W)")} {...hold("forward")}>
           <ArrowFatUp size={22} weight="fill" />
         </button>
-        <button className="demo-left" aria-label={tr("Turn left")} title={tr("Turn left (← / A)")} {...hold("left")}>
-          <ArrowArcLeft size={22} weight="bold" />
+        <button className="demo-back" aria-label={tr("Step back")} title={tr("Back (↓ / S)")} {...hold("back")}>
+          <ArrowFatDown size={22} weight="fill" />
+        </button>
+        <button className="demo-right" aria-label={tr("Turn right")} title={tr("Turn right (→ / D)")} {...hold("right")}>
+          <ArrowArcRight size={22} weight="bold" />
         </button>
         <button
           className="demo-run"
@@ -123,17 +136,12 @@ export function DemoControls({
         >
           <PersonSimpleRun size={22} weight={running ? "fill" : "regular"} />
         </button>
-        <button className="demo-right" aria-label={tr("Turn right")} title={tr("Turn right (→ / D)")} {...hold("right")}>
-          <ArrowArcRight size={22} weight="bold" />
-        </button>
-        <button className="demo-back" aria-label={tr("Step back")} title={tr("Back (↓ / S)")} {...hold("back")}>
-          <ArrowFatDown size={22} weight="fill" />
-        </button>
       </div>
-      <p className="demo-pad-hint">
-        {target
-          ? `${target.label} · ${target.meters < 1000 ? `${Math.round(target.meters)} m` : `${(target.meters / 1000).toFixed(1)} km`} ${direction(target.relative)}`
-          : tr("Arrows or WASD · Shift walks")}
+      <button className="demo-pad-min" aria-label={tr("Hide demo controls")} title={tr("Hide demo controls")} onClick={() => toggle(false)}>
+        <Minus size={18} weight="bold" />
+      </button>
+      <p className="demo-pad-hint sr-only">
+        {hint}
       </p>
     </section>
   );

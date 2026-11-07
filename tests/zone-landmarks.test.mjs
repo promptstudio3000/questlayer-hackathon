@@ -84,12 +84,14 @@ test("loot lists only what loaded data backs, rarest first", () => {
   );
 });
 
-test("walls rise for open zones, stay low for upcoming ones, vanish when spent", () => {
+test("walls keep boundary paths open, dim upcoming ones, vanish when spent", () => {
   const open = zoneWallFeatures([zone()], [], now);
   const upcoming = zoneWallFeatures([zone({ opensAt: now + H })], [], now);
   const closed = zoneWallFeatures([zone({ closesAt: now - 1 })], [], now);
   assert.equal(open.length, 1);
-  assert.equal(open[0].geometry.coordinates.length, 2, "wall is a ring band");
+  assert.equal(open[0].geometry.type, "LineString", "no filled roof polygon");
+  assert.equal(open[0].geometry.coordinates.length, 49, "keeps the published circle boundary");
+  assert.equal(upcoming[0].properties.dim, true);
   assert.ok(upcoming[0].properties.height < open[0].properties.height);
   assert.equal(closed.length, 0);
 });

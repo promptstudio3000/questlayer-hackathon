@@ -2,28 +2,26 @@
 .illustrated-empty {
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: 12px;
   margin: 12px 0;
-  padding: 20px 16px;
+  padding: 24px 8px;
   text-align: center;
-  border: 2px dashed var(--decorative-border, #d7cbe9);
-  border-radius: 16px;
-  background: var(--surface-raised, #fcf9fd);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--ink, #1a0335);
 }
 .illustrated-empty-stage {
   position: relative;
-  width: 88px;
-  height: 88px;
+  width: 112px;
+  height: 112px;
   margin-bottom: 4px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 78%, #1a033522 0 22%, transparent 23%),
-    radial-gradient(circle at 50% 45%, #f3ecff 0 55%, #e4d6fa 56% 100%);
-  border: 2px solid var(--ink, #1a0335);
-  box-shadow: 3px 3px 0 #1a033540;
+  background: var(--surface-soft);
+  border: 0;
+  box-shadow: none;
 }
 .illustrated-empty-stage .ghost-art {
   width: 52px;
@@ -65,19 +63,20 @@
   background: #e4b348;
 }
 .illustrated-empty-title {
-  font-size: 16px;
+  font-size: 24px;
+  font-weight: 500;
   line-height: 1.25;
 }
 .illustrated-empty-text {
   margin: 0;
   max-width: 32ch;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 1.45;
   color: var(--ink-secondary, #5a4b6e);
 }
 .illustrated-empty .secondary-button {
   margin-top: 6px;
-  min-height: 44px;
+  min-height: 48px;
 }
 @media (prefers-reduced-motion: no-preference) {
   .illustrated-empty-stage > .ghost-art,
@@ -90,3 +89,5 @@
     transform: translateY(-3px);
   }
 }
+
+.panel-loading { min-height: 180px; }

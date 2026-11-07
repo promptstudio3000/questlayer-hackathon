@@ -1,3 +1,5 @@
+import { EmptyState } from "./EmptyState";
+import { tr } from "./i18n";
 // Screens that only exist after the name step (market, creator feed,
 // wardrobe, wallet and signing panels, ...) are split into their own chunks so
 // the welcome screen ships without them. Each export keeps the original
@@ -5,6 +7,7 @@
 // `preloadPanels()` fetches them all in the background once a player exists,
 // so opening a tab later does not wait for the network.
 import {
+  Component,
   lazy,
   Suspense,
   type ComponentProps,
@@ -15,7 +18,7 @@ import {
 type AnyComponent = ComponentType<any>;
 const loaders: Array<() => Promise<unknown>> = [];
 
-function lazyNamed<M, K extends keyof M>(load: () => Promise<M>, key: K): M[K] {
+function lazyNamed<M, K extends keyof M>(load: () => Promise<M>, key: K, compact = false): M[K] {
   let pending: Promise<M> | undefined;
   const loadOnce = () =>
     (pending ??= load().catch((error) => {
@@ -28,9 +31,11 @@ function lazyNamed<M, K extends keyof M>(load: () => Promise<M>, key: K): M[K] {
   }));
   function Deferred(props: ComponentProps<AnyComponent>): JSX.Element {
     return (
-      <Suspense fallback={null}>
-        <Lazy {...props} />
-      </Suspense>
+      <PanelBoundary>
+        <Suspense fallback={compact ? <span className="sr-only" role="status">{tr("Loading…")}</span> : <EmptyState title={tr("Loading…")} status className="panel-loading" />}>
+          <Lazy {...props} />
+        </Suspense>
+      </PanelBoundary>
     );
   }
   Deferred.displayName = `Deferred(${String(key)})`;
@@ -45,6 +50,8 @@ export function preloadPanels() {
 }
 
 const adventureResults = () => import("./AdventureResults");
+export const QuestBrief = lazyNamed(() => import("./QuestBrief"), "QuestBrief");
+export const WearableMoment = lazyNamed(() => import("./WearableMoment"), "WearableMoment");
 export const AdventureResultDialog = lazyNamed(
   adventureResults,
   "AdventureResultDialog",
@@ -55,7 +62,7 @@ export const AdventureResultResume = lazyNamed(
 );
 export const AdventureResultHistoryButton = lazyNamed(
   adventureResults,
-  "AdventureResultHistoryButton",
+  "AdventureResultHistoryButton", true,
 );
 export const PendingNativeTransactions = lazyNamed(
   () => import("./PendingNativeTransactions"),
@@ -138,9 +145,9 @@ export const ActorSheet = lazyNamed(
 // On-chain proof (docs/CHAIN-PROOF.md): one chunk for the icon, the
 // Settings feed and the background SocialDB profile, never with the map.
 const chainProof = () => import("./ChainFeed");
-export const ChainLink = lazyNamed(chainProof, "ChainLink");
+export const ChainLink = lazyNamed(chainProof, "ChainLink", true);
 export const ChainSettings = lazyNamed(chainProof, "ChainSettings");
-export const AutoSocialProfile = lazyNamed(chainProof, "AutoSocialProfile");
+export const AutoSocialProfile = lazyNamed(chainProof, "AutoSocialProfile", true);
 // Practice wallet, fund and bounty screens (split from App.tsx).
 const walletScreens = () => import("./WalletScreens");
 export const WalletPanel = lazyNamed(walletScreens, "WalletPanel");
@@ -157,3 +164,19 @@ export const EmotePicker = lazyNamed(
   () => import("./EmotePicker"),
   "EmotePicker",
 );
+
+export const ZoneActivities = lazyNamed(() => import("./ZoneActivities"), "ZoneActivities");
+
+class PanelBoundary extends Component<{ children: import("react").ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    return this.state.failed ? <EmptyState art="ghost" title={tr("Something went wrong.")} action={{ label: tr("Reload game"), onClick: () => window.location.reload() }} /> : this.props.children;
+  }
+}
+
+export const DailyBoard = lazyNamed(() => import("./DailyBoard"), "DailyBoard", true);
+export const SeasonCard = lazyNamed(() => import("./Season"), "SeasonCard");
+export const LandmarkClue = lazyNamed(() => import("./LandmarkClue"), "default");
+
+export const FindDetails = lazyNamed(() => import("./FindDetails"), "FindDetails");

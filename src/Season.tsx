@@ -111,7 +111,7 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
         </span>
         <span className="season-card-body">
           <span className="season-card-title">
-            <strong>{season.name}</strong>
+            <strong>{tr("Season")}</strong>
             <span className="season-chip">{when}</span>
           </span>
           <span className="season-card-line">
@@ -124,9 +124,9 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
         <ArrowRight size={20} aria-hidden="true" className="season-card-go" />
       </button>
       {open && (
-        <Dialog label={season.name || tr("Season")} onClose={() => setOpen(false)}>
+        <Dialog label={tr("Season")} onClose={() => setOpen(false)}>
           <section className="season-sheet">
-            <h2>{season.name}</h2>
+            <h2>{tr("Season")}</h2>
             <p className="season-lead">
               {tr("Until")}{" "}{new Date(season.endsAt).toUTCString().replace(":59 GMT", " UTC").replace(/:\d\d UTC$/, " UTC")}{tr(". Points for hunts (")}{p.hunt}{tr("), zone visits (")}{p.visit}{tr(") and NPC lines (")}{p.line}{tr("). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.")}</p>
             {me && (
