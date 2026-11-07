@@ -2957,5 +2957,13 @@
  "· saved rewards": "· सेव किए गए इनाम",
  "· share it with the people who come": "· आने वालों के साथ इसे बाँटो",
  "· tier active": "· टियर सक्रिय",
- "🔒 The inner vault": "🔒 अंदर की तिजोरी"
+ "🔒 The inner vault": "🔒 अंदर की तिजोरी",
+ "Map-derived discoveries by Atlas. Public access and paths have not been checked on foot: follow local signs and skip blocked places. These activities award personal XP; no monetary or item reward is promised.": "मानचित्र के डेटा पर आधारित Atlas की खोजें। सार्वजनिक पहुँच और रास्तों की मौके पर जाँच नहीं की गई है: स्थानीय संकेतों का पालन करें और बंद जगहों को छोड़ दें। इन गतिविधियों से व्यक्तिगत XP मिलता है; पैसे या वस्तु के पुरस्कार का वादा नहीं है।",
+ "Funded Atlas zones: the first confirmed completion earns the fixed NEAR prize shown in the objective. QGOLD is calculated at settlement; fractional NEAR stays credited. Follow local signs and skip blocked places.": "वित्तपोषित Atlas क्षेत्र: सबसे पहले पुष्टि के साथ पूरा करने पर लक्ष्य में दिखाया गया तय NEAR पुरस्कार मिलता है। QGOLD की गणना निपटान के समय होती है; बचा हुआ छोटा NEAR शेष जमा रहता है। स्थानीय संकेतों का पालन करें और बंद जगहों से बचें।",
+ "No monetary budget today. Atlas discoveries still award personal XP. Follow local signs and skip blocked places.": "आज धन पुरस्कार का बजट नहीं है। Atlas खोजों से व्यक्तिगत XP अब भी मिलता है। स्थानीय संकेतों का पालन करें और बंद जगहों से बचें।",
+ "First confirmed completion: {0} NEAR, converted to QGOLD at settlement.": "पहली पुष्ट पूर्णता: {0} NEAR, निपटान के समय QGOLD में बदले जाएंगे।",
+ "The shared NEAR prize was already earned. Personal XP is still available.": "साझा NEAR पुरस्कार पहले ही अर्जित किया जा चुका है। व्यक्तिगत XP अब भी उपलब्ध है।",
+ "Converted to QGOLD": "QGOLD में बदल दिया गया",
+ "Fractional NEAR remains credited": "छोटा NEAR शेष जमा रहता है",
+ "Awaiting QGOLD settlement": "QGOLD निपटान की प्रतीक्षा में"
 }

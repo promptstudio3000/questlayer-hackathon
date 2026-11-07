@@ -43,6 +43,8 @@ export function QuestBrief({ compact = false, quest: q, zone, position, now, tie
     <h2 className={compact ? "sr-only" : undefined} ref={heading} tabIndex={-1}>{title}</h2>
     <p className="quest-brief-description activity-objective">{q.activity?.objective || q.description}</p>
     {zone.operatorPause && <p role="status">{zone.operatorPause.reason}</p>}
+    {q.nearPrize && <p className="quest-brief-requirement"><strong>{tr("NEAR testnet")}. </strong>{q.nearPrize.available ? tr("First confirmed completion: {0} NEAR, converted to QGOLD at settlement.", {0:q.nearPrize.amountNear}) : tr("The shared NEAR prize was already earned. Personal XP is still available.")}</p>}
+
     <div className="quest-brief-rewards" aria-label={tr("Rewards")}>
       <span><Sparkle aria-hidden="true" />{q.xp} XP</span>
       {q.kind === "chest" && <span><GameObjectArt kind="chest" size={24} />{q.completed ? tr("Completed") : q.itemAvailable === true ? tr("Aura chest") : q.itemAvailable === false ? tr("XP only · all Auras found") : tr("Aura not confirmed yet")}</span>}

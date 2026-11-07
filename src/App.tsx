@@ -3156,7 +3156,7 @@ export default function App() {
     !nativePlay && streetFindTarget
       ? world?.coins.find((c) => c.id === streetFindTarget && c.find) || null
       : null;
-  const coachActive = firstSession.visible && !nativePlay;
+  const coachActive = firstSession.visible && !nativePlay && !world?.globalPreparation;
   const coachStep = coachActive ? firstSession.progress.current?.id : undefined;
   const coachChest = coachStep === "chest" ? nearestChest() : null;
   const coachLabel =
@@ -3842,22 +3842,28 @@ export default function App() {
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
-              <TodaysPot practice onOpen={() => setTab("funding")} />
+              {!world?.globalPreparation && <TodaysPot practice onOpen={() => setTab("funding")} />}
               <div className="section-label">
                 <h2>{tr("Places today")}</h2>
                 <span>{world?.cityZoneCount ?? activeZones.length}</span>
               </div>
               {world?.quality && (
                 <details
-                  className={`coverage-note${world.cityStatus === "auto" ? " unverified" : ""}`}
-                  open={world.cityStatus === "auto" || undefined}
+                  className={`coverage-note${world.cityStatus === "auto" || world.globalPreparation ? " unverified" : ""}`}
+                  open={world.cityStatus === "auto" || !!world.globalPreparation || undefined}
                 >
                   <summary>
-                    {world.cityStatus === "auto"
+                    {world.cityStatus === "auto" || world.globalPreparation
                       ? tr("Unverified map: generated automatically")
                       : tr("About this map")}
                   </summary>
-                  <p>{world.quality.notice}</p>
+                  <p>{world.globalPreparation?.financialActivation && <strong>{tr("NEAR testnet")}. </strong>}{world.globalPreparation?.financialActivation
+                    ? world.quality.funded
+                      ? tr("Funded Atlas zones: the first confirmed completion earns the fixed NEAR prize shown in the objective. QGOLD is calculated at settlement; fractional NEAR stays credited. Follow local signs and skip blocked places.")
+                      : tr("No monetary budget today. Atlas discoveries still award personal XP. Follow local signs and skip blocked places.")
+                    : world.globalPreparation
+                    ? tr("Map-derived discoveries by Atlas. Public access and paths have not been checked on foot: follow local signs and skip blocked places. These activities award personal XP; no monetary or item reward is promised.")
+                    : world.quality.notice}</p>
                 </details>
               )}
               <div className="zone-list">

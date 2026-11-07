@@ -94,6 +94,7 @@ import {
   startNpcRollWorker,
 } from "./npc/rolls.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
+import { startGlobalActivityLoader, globalActivityStatus } from "./global-activities.mjs";
 import { startFlavourWorker } from "./ai/flavour-batch.mjs";
 import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
@@ -1312,6 +1313,7 @@ async function api(req, res, url) {
       ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
+      globalActivities: { ...globalActivityStatus(db), worker: globalActivityLoader?.status() || null },
       autoCities: AUTO_CITIES.entries.length
         ? {
             status: "on",
@@ -3620,6 +3622,7 @@ const server = createServer(async (req, res) => {
 const worldPlanner = backgroundWorkersDisabled
   ? null
   : startWorldPlanner(db, { afterPreparation: () => retryStreetWorlds(db) });
+const globalActivityLoader = startGlobalActivityLoader(db, { directory: process.env.GLOBAL_ACTIVITY_DAYS_DIR, catalogFile: process.env.GLOBAL_ACTIVITY_CATALOG });
 // Nightly quest flavour texts (docs/QUEST-FLAVOUR.md); never on a request path.
 const flavourWorker = backgroundWorkersDisabled ? null : startFlavourWorker(db);
 const rewardWorker =
@@ -3741,6 +3744,7 @@ async function close() {
   clearInterval(maintenance);
   if (testSeedWorker) clearInterval(testSeedWorker);
   await worldPlanner?.stop();
+  globalActivityLoader?.stop();
   await rewardWorker?.stop();
   flavourWorker?.stop();
   await relayWorker?.stop?.();

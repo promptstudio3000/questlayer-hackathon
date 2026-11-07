@@ -490,6 +490,48 @@
       "indexes": {
         "creator_bonus_votes_quest": "CREATE INDEX IF NOT EXISTS creator_bonus_votes_quest ON creator_bonus_votes(day,quest_id)"
       }
+    },
+    {
+      "name": "map-payouts",
+      "version": 1,
+      "tables": {
+        "payout_carry": "CREATE TABLE payout_carry(account_id TEXT PRIMARY KEY, amount_yocto TEXT NOT NULL, updated_at INTEGER NOT NULL)",
+        "payout_claims": "CREATE TABLE payout_claims(day_id TEXT NOT NULL, idx INTEGER NOT NULL, account_id TEXT NOT NULL, amount_yocto TEXT NOT NULL, proof TEXT NOT NULL, state TEXT NOT NULL CHECK(state IN ('queued','sent','failed')), tx TEXT, attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, run_after INTEGER NOT NULL, PRIMARY KEY(day_id,idx))",
+        "payout_days": "CREATE TABLE payout_days(day_id TEXT PRIMARY KEY, date TEXT NOT NULL UNIQUE, root TEXT, publish TEXT, total_yocto TEXT NOT NULL, leaves INTEGER NOT NULL, state TEXT NOT NULL CHECK(state IN ('pending','published','closed','empty')), tx TEXT, close_tx TEXT, published_at INTEGER, last_error TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)",
+        "payout_items": "CREATE TABLE payout_items(ref TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK(kind IN ('coin','zone')), day_id TEXT NOT NULL, player_id TEXT NOT NULL, account_id TEXT NOT NULL, amount_yocto TEXT NOT NULL, created_at INTEGER NOT NULL)"
+      },
+      "indexes": {
+        "payout_items_player": "CREATE INDEX IF NOT EXISTS payout_items_player ON payout_items(player_id)",
+        "payout_claims_state": "CREATE INDEX IF NOT EXISTS payout_claims_state ON payout_claims(state,run_after)"
+      }
+    },
+    {
+      "name": "payout-settlement",
+      "version": 1,
+      "tables": {
+        "payout_confirmations": "CREATE TABLE payout_confirmations(day_id TEXT NOT NULL,idx INTEGER NOT NULL,confirmed_at INTEGER NOT NULL,PRIMARY KEY(day_id,idx))",
+        "payout_worker_lease": "CREATE TABLE payout_worker_lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT,until_ms INTEGER NOT NULL DEFAULT 0)"
+      },
+      "indexes": {}
+    },
+    {
+      "name": "global-rewards",
+      "version": 1,
+      "tables": {
+        "global_reward_attempts": "CREATE TABLE global_reward_attempts(payout_id TEXT NOT NULL,idx INTEGER NOT NULL,run_after INTEGER NOT NULL,attempts INTEGER NOT NULL,PRIMARY KEY(payout_id,idx))",
+        "global_reward_candidates": "CREATE TABLE global_reward_candidates(day TEXT NOT NULL,object_id TEXT PRIMARY KEY,quest_id TEXT NOT NULL UNIQUE,cell TEXT NOT NULL,potential INTEGER NOT NULL CHECK(potential>=0))",
+        "global_reward_claims": "CREATE TABLE global_reward_claims(object_id TEXT PRIMARY KEY REFERENCES global_reward_objects(object_id),player_id TEXT NOT NULL,account_id TEXT,amount_yocto TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('earned','assigned','credited')),payout_id TEXT,created_at INTEGER NOT NULL)",
+        "global_reward_consumed": "CREATE TABLE global_reward_consumed(object_id TEXT NOT NULL,receipt_id TEXT NOT NULL,amount_yocto TEXT NOT NULL,PRIMARY KEY(object_id,receipt_id))",
+        "global_reward_conversions": "CREATE TABLE global_reward_conversions(payout_id TEXT NOT NULL,idx INTEGER NOT NULL,account_id TEXT NOT NULL,receipt_id TEXT NOT NULL UNIQUE,qgold_u TEXT NOT NULL,consumed_yocto TEXT NOT NULL,carry_yocto TEXT NOT NULL,previous_carry_yocto TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(payout_id,idx))",
+        "global_reward_days": "CREATE TABLE global_reward_days(day TEXT PRIMARY KEY,manifest_hash TEXT NOT NULL UNIQUE,content_hash TEXT NOT NULL,starts_at INTEGER NOT NULL,ends_at INTEGER NOT NULL,body TEXT NOT NULL,reservation TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('active','closed')))",
+        "global_reward_objects": "CREATE TABLE global_reward_objects(object_id TEXT PRIMARY KEY,day TEXT NOT NULL REFERENCES global_reward_days(day),quest_id TEXT NOT NULL UNIQUE,amount_yocto TEXT NOT NULL,funding TEXT NOT NULL)",
+        "global_reward_payouts": "CREATE TABLE global_reward_payouts(id TEXT PRIMARY KEY,body TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('planned','published','confirmed')),created_at INTEGER NOT NULL,last_error TEXT)",
+        "global_reward_plans": "CREATE TABLE global_reward_plans(day TEXT PRIMARY KEY,body TEXT NOT NULL)",
+        "global_reward_worker": "CREATE TABLE global_reward_worker(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT,until_ms INTEGER NOT NULL DEFAULT 0,last_success INTEGER,last_error TEXT)"
+      },
+      "indexes": {
+        "global_reward_claims_player": "CREATE INDEX global_reward_claims_player ON global_reward_claims(player_id,state)"
+      }
     }
   ]
 }

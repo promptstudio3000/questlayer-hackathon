@@ -128,6 +128,7 @@ export type QuestActivity = {
   safety: { instruction: string; fieldReview: string };
   distanceLowerBoundM: number;
   durationMinutes: null;
+  rewardConstraint?: string;
 };
 /** Landmark clue (server/landmark-clue.mjs): answers come from Wikidata. */
 export type QuestClue = {
@@ -139,7 +140,9 @@ export type QuestClue = {
   result?: { choice: string; correct: boolean; answer: string };
 };
 export type Quest = Point & {
+  author?: { id: string; name: string };
   activity?: QuestActivity;
+  nearPrize?: {amountYocto:string;amountNear:string;available:boolean;settlementAsset:'QGOLD';manifestHash:string};
   clue?: QuestClue;
   id: string;
   title: string;
@@ -179,11 +182,20 @@ export type World = {
   cityZoneCount?: number;
   coinRadius?: number;
   streetFindXp?: number;
+  globalPreparation?: {
+    policy: string;
+    day: string;
+    inputHash: string;
+    systemZones: number;
+    financialActivation: boolean;
+    rewardManifestHash?: string;
+    rewardBudgetYocto?: string;
+  };
   quality?: {
     notice: string;
     fieldReview: string;
     status?: "auto";
-    funded?: false;
+    funded?: boolean;
   };
   /** Street cells: today's POI quests (W6). "empty" = nothing here yet. */
   poiQuests?: {
