@@ -97,15 +97,17 @@ async function startServer() {
   const port = await freePort();
   const dir = mkdtempSync(join(tmpdir(), "questlayer-e2e-"));
   const url = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, ["server/index.mjs"], {
-    cwd: ROOT,
+  const child = spawn(process.execPath, [join(ROOT, "server/index.mjs")], {
+    cwd: dir,
     env: {
-      ...process.env,
+      PATH: process.env.PATH,
       PORT: String(port),
       HOST: "127.0.0.1",
       APP_ORIGIN: url,
       DATABASE_PATH: join(dir, "e2e.sqlite"),
       DISABLE_RELAYER: "1",
+      DISABLE_NATIVE_ATTESTATIONS: "1",
+      NEAR_RPC_URL: "http://127.0.0.1:9",
       CREATOR_COMMUNITY_ENABLED: "1",
       CREATOR_POLICY_VERSION: "e2e-journey-v1",
       CREATOR_XP_COMMITMENT: "200",
@@ -167,9 +169,14 @@ async function walkToTarget(page) {
   await page
     .waitForFunction(() => / m |km /.test(document.querySelector(".demo-pad-hint")?.textContent || ""), null, { timeout: 2000 })
     .catch(() => {});
-  for (let i = 0; i < 20; i++) {
+  // Citywide targets can be several kilometres away; keep following the
+  // selected target instead of opening an unrelated encounter along the way.
+  for (let i = 0; i < 100; i++) {
     // The pad drops the target within 3 m (zones can be thin path strips).
+    const found = page.locator(".wearable-moment");
+    if(await found.isVisible()) await found.getByRole("button",{name:"Continue",exact:true}).click();
     const left = await remainingMeters(page);
+    if (i % 5 === 0) console.log(`  walking: ${left} m left`);
     if (!left) return;
     // Run (14 m/s) while far, then walk (5 m/s) the last metres;
     // src/map-motion.ts DEMO_RUN_MPS / DEMO_WALK_MPS.
@@ -181,6 +188,7 @@ async function walkToTarget(page) {
     );
     await page.waitForTimeout(150);
   }
+  assert.ok(await remainingMeters(page) <= 3, "The selected target is reached before opening it");
 }
 
 // Toasts sit over the sheet for a few seconds; wait so screenshots show it.
@@ -248,6 +256,8 @@ async function cardOverlaps(page, where) {
         "top bar": document.querySelectorAll(".topbar"),
         "profile menu": document.querySelectorAll(".profile-menu"),
         "tab bar": document.querySelectorAll(".nav-rail"),
+        "map tools": document.querySelectorAll(".map-toolbar"),
+        "demo controls": document.querySelectorAll(".demo-pad"),
         "Market entry": [...document.querySelectorAll(".profile-tiles button")].filter((e) =>
           /^Market/.test(e.textContent.trim()),
         ),
@@ -269,16 +279,6 @@ async function dismissInstallOffer(page, layout) {
   await page.addLocatorHandler(page.locator(CARD), async (card) => {
     const shown = await cardOverlaps(page, "card");
     layout.problems.push(...shown.hits);
-    const profile = page.getByRole("button", { name: "Explorer profile" });
-    const modal = await page.locator("dialog[open], [aria-modal='true']").count();
-    if (!modal && (await profile.isVisible().catch(() => false))) {
-      const open = (await profile.getAttribute("aria-expanded")) === "true";
-      if (!open) await profile.click();
-      await page.locator(".profile-menu").waitFor();
-      layout.problems.push(...(await cardOverlaps(page, "profile menu open")).hits);
-      if (!open) await profile.click();
-      await page.locator(".profile-menu").waitFor({ state: "detached" });
-    }
     layout.checks += 1;
     console.log(`  checked a home-screen card clears the bars (${shown.hits.length ? "OVERLAP" : "clear"}), dismissed it`);
     await card.getByRole("button", { name: /Got it|Not now/ }).click();
@@ -378,6 +378,7 @@ async function a11y(page, screen, report) {
     ? result.map((v) => `${v.id}(${v.impact}×${v.count})`).join(", ")
     : "clean";
   console.log(`  a11y ${screen}: ${note}`);
+  if (blocking.length) console.log(JSON.stringify(blocking));
   return blocking;
 }
 
@@ -460,14 +461,19 @@ async function runDevice(name, server) {
         await button.click();
         break;
       }
-      assert.match(label, /Turn toward it/, `unexpected chest action: ${label}`);
+      assert.match(label, /Start quest|Guide me/, `unexpected chest action: ${label}`);
       await button.click();
+      if (await detail.isVisible()) continue;
+      await page.locator(".map-guide-key").waitFor();
+      assert.equal(await detail.isVisible(), false, "Guidance folds the detail to reveal the map");
       await walkToTarget(page);
       await page.waitForTimeout(400);
-      // "Turn toward it" folds the sheet so the pad is free; the folded
+      // Guidance folds the sheet so the pad is free; the folded
       // sheet keeps the chosen place, one tap opens it again.
       if (!(await detail.isVisible())) {
-        await page.locator(".compact-selection").click();
+        const nearby = page.locator(".nearby-open");
+        if (await nearby.isVisible()) await nearby.click();
+        else await page.locator(".compact-selection").click();
         await detail.waitFor();
       }
     }
@@ -495,7 +501,16 @@ async function runDevice(name, server) {
     const dialog = page.getByRole("dialog");
     await dialog.waitFor();
     const share = dialog.getByRole("button", { name: /Share your Aura/ });
-    await share.waitFor();
+    try {
+      await share.waitFor();
+    } catch (error) {
+      await capture(page, "secure-share-unavailable");
+      writeFileSync(join(shots, "secure-share-unavailable.json"), JSON.stringify({
+        online: await page.evaluate(() => navigator.onLine),
+        dialog: await dialog.innerText(),
+      }, null, 2));
+      throw error;
+    }
     await capture(page, "secure-share-dialog");
     await scan(page, "secure-share");
     const download = page.waitForEvent("download", { timeout: 15_000 }).catch(() => null);
@@ -519,8 +534,7 @@ async function runDevice(name, server) {
     console.log(`  ${vibrations} haptic cues`);
 
     console.log("7. Sound, vibration and motion settings");
-    await page.getByRole("button", { name: "Explorer profile" }).click();
-    await page.getByRole("button", { name: "Profile and settings" }).click();
+    await page.locator(".topbar .profile-pill").click();
     await page.getByRole("tab", { name: "Settings" }).click();
     const settings = page.getByRole("tabpanel");
     await settings.scrollIntoViewIfNeeded();
@@ -606,7 +620,7 @@ async function runDevice(name, server) {
     await cardPage.goto(server.url);
     await cardPage.getByPlaceholder("Your explorer name").fill(`${TAG}Card ${name}`);
     await cardPage.getByRole("button", { name: "Start exploring" }).click();
-    await cardPage.getByRole("button", { name: "Hide first steps" }).click();
+    await cardPage.getByRole("button", { name: "Hide objective", exact: true }).click();
     await cardPage.clock.runFor(50_000);
     const card = cardPage.locator(".pwa-install");
     if (await card.isVisible()) {
@@ -618,13 +632,7 @@ async function runDevice(name, server) {
       };
       await check("map");
       await capture(cardPage, "home-screen-card-map");
-      const profileButton = cardPage.getByRole("button", { name: "Explorer profile" });
-      await profileButton.click();
-      await cardPage.locator(".profile-menu").waitFor();
-      await check("profile menu open");
-      await capture(cardPage, "home-screen-card-profile-menu");
-      await profileButton.click();
-      await openScreen(cardPage, "Profile");
+      await cardPage.locator(".topbar .profile-pill").click();
       await cardPage.getByRole("tab", { name: "Character" }).click();
       await cardPage.locator(".profile-tiles button").filter({ hasText: /^Market/ }).waitFor();
       await check("Profile screen");

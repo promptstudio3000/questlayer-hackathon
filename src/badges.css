@@ -17,7 +17,10 @@
 .badge-sub {
   margin: 0;
   color: var(--ink-secondary);
+  font-size: 16px;
 }
+.badge-sub { font-size: 14px; }
+.badge-book > .fine-print { font-size: 14px; }
 .badge-tabs,
 .badge-filter {
   display: flex;
@@ -26,7 +29,7 @@
 }
 .badge-tabs button,
 .badge-filter button {
-  min-height: 40px;
+  min-height: 48px;
   padding: 6px 12px;
   border-radius: 20px;
   border: 1px solid var(--decorative-border);
@@ -43,7 +46,8 @@
   color: var(--on-action);
 }
 .badge-filter small {
-  opacity: 0.8;
+  font-size: 14px;
+  color: inherit;
 }
 .badge-next {
   background: var(--surface-soft);
@@ -59,7 +63,7 @@
 }
 .badge-next button {
   width: 100%;
-  min-height: 40px;
+  min-height: 48px;
   display: flex;
   gap: 8px;
   align-items: center;
@@ -78,7 +82,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
   gap: 6px;
 }
 .badge-medal {
@@ -128,7 +132,8 @@
   color: var(--ink);
 }
 .badge-medal-name {
-  font-size: 12px;
+  overflow-wrap: anywhere;
+  font-size: 14px;
   line-height: 1.2;
   text-align: center;
 }
@@ -276,3 +281,7 @@
   background: none;
   overflow: hidden;
 }
+
+.badge-pages { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--ink-secondary); }
+.badge-pages button { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid var(--control-border); border-radius: 12px; background: var(--surface-soft); color: var(--ink); }
+.badge-pages button:disabled { opacity: .5; }

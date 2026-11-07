@@ -1,34 +1,17 @@
-/* NPC conversation: a dark game dialog centred on the portrait. */
-.game-dialog:has(> .npc-sheet) {
-  width: min(420px, calc(100vw - 16px));
-  max-height: calc(100dvh - 16px);
-  padding: 0;
-  border: 2px solid #8348ff;
-  border-radius: 22px;
-  background: #1a0335;
-  color: #f4ecff;
-  overflow: auto;
-}
-.npc-sheet { display: grid; gap: 10px; padding: 0 12px 12px; }
-.npc-hero {
-  position: relative;
-  margin: 0 -12px;
-  height: min(240px, 34dvh);
-  background: radial-gradient(circle at 50% 58%, #8348ff88 0, #3d0981 42%, #1a0335 78%);
-  border-radius: 20px 20px 0 0;
-  overflow: hidden;
-}
+/* A bounded conversation surface keeps the complete portrait above its name. */
+.game-dialog-encounter:has(> .npc-sheet) { background: #1a0335; color: #f4ecff; border-color: #8348ff; }
+.npc-sheet { color: #f4ecff; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 0; }
+.npc-hero { position: relative; display: grid; gap: 8px; padding: 8px 0 12px; border-radius: 12px; background: radial-gradient(circle at 50% 58%, #8348ff66 0, #3d0981 42%, #1a0335 78%); }
 .npc-quest_giver .npc-hero { background: radial-gradient(circle at 50% 58%, #ff1dff66 0, #3d0981 42%, #1a0335 78%); }
 .npc-trader .npc-hero { background: radial-gradient(circle at 50% 58%, #ffd01f55 0, #3d0981 42%, #1a0335 78%); }
 .npc-keeper .npc-hero { background: radial-gradient(circle at 50% 58%, #37f4f155 0, #3d0981 42%, #1a0335 78%); }
 .npc-wandering_rare .npc-hero { background: radial-gradient(circle at 50% 58%, #7dffc466 0, #3d0981 42%, #1a0335 78%); }
-.npc-portrait { position: absolute; inset: 8px 0 34px; display: grid; place-items: center; }
-.npc-portrait img { height: 100%; width: auto; max-width: 100%; object-fit: contain; filter: drop-shadow(0 10px 14px #0008); animation: npc-bob 3.2s ease-in-out infinite; }
-.npc-emote { position: absolute; top: 14px; left: calc(50% + 50px); font-size: 28px; animation: npc-pop 240ms var(--ease-out, ease-out); }
-.npc-plate { position: absolute; left: 12px; right: 12px; bottom: 8px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.npc-plate h2 { margin: 0; font-size: 22px; line-height: 1.1; color: #fff; text-shadow: 0 2px 0 #1a0335, 0 0 12px #1a0335; }
-.npc-role { order: 2; padding: 2px 8px; border-radius: 99px; background: #1a0335cc; color: #fef87d; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
-.npc-close { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #1a033599; color: #fff; font-size: 20px; cursor: pointer; }
+.npc-portrait { position: relative; display: grid; place-items: center; height: clamp(128px, 22dvh, 184px); padding: 8px; }
+.npc-portrait img { position: absolute; inset: 8px; display: block; height: calc(100% - 16px); width: calc(100% - 16px); object-fit: contain; filter: drop-shadow(0 8px 12px #0006); }
+.npc-emote { position: absolute; top: 12px; left: calc(50% + 70px); font-size: 28px; }
+.npc-plate { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; padding-inline: 8px; }
+.npc-plate h2 { margin: 0; font-size: 22px; line-height: 1.25; color: #fff; text-align: center; }
+.npc-role { order: 2; padding: 2px 8px; border-radius: 99px; background: #1a0335cc; color: #fef87d; font-size: 14px; }
 .npc-bubble {
   position: relative;
   margin: 0;
@@ -36,16 +19,16 @@
   border-radius: 16px;
   background: #fcfaff;
   color: #1a0335;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: unset;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .npc-bubble::before { content: ""; position: absolute; top: -8px; left: 50%; margin-left: -8px; border: 8px solid transparent; border-top: 0; border-bottom-color: #fcfaff; }
 .npc-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: #ffffff12; }
-.npc-tabs button { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 44px; padding: 4px 2px; border: 0; border-radius: 9px; background: transparent; color: #cbb8ef; font: inherit; font-size: 12px; cursor: pointer; }
+.npc-tabs button { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 48px; padding: 4px 2px; border: 0; border-radius: 9px; background: transparent; color: #cbb8ef; font: inherit; font-size: 12px; cursor: pointer; }
 .npc-tabs button svg { font-size: 18px; }
 .npc-tabs button.active { background: #672eeb; color: #fff; }
 .npc-badge { position: absolute; top: 2px; right: calc(50% - 22px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: #ff1dff; color: #1a0335; font-size: 11px; line-height: 16px; }
@@ -78,9 +61,9 @@
 .npc-action.turn-in { border-color: #37f4a0; background: linear-gradient(#176553, #0f4639); }
 .npc-action.turn-in .npc-action-icon { color: #7dffc4; }
 .npc-action.patron, .npc-task.patron { border-color: #ffd01f; }
-.npc-link { justify-self: start; min-height: 36px; padding: 0 4px; border: 0; background: none; color: #cbb8ef; font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
+.npc-link { justify-self: start; min-height: 48px; padding: 0 4px; border: 0; background: none; color: #cbb8ef; font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
 .npc-empty, .npc-fine { margin: 0; font-size: 14px; opacity: 0.8; }
-.npc-fine { font-size: 13px; opacity: 0.65; }
+.npc-fine { font-size: 14px; opacity: 1; color: #d9c9f0; }
 .npc-about p { margin: 0; }
 .npc-sheet h3 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: #cbb8ef; }
 .npc-task { display: grid; gap: 6px; padding: 8px; border-radius: 14px; border: 1px solid #8348ff; }
@@ -94,8 +77,8 @@
 .npc-notice { margin: 0; padding: 8px 12px; border: 0; border-radius: 12px; background: #e3f6ee; color: #176553; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
 .npc-error { margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff0f3; color: #a32947; font-size: 14px; }
 .npc-chat { position: sticky; bottom: 0; display: flex; gap: 6px; padding-top: 4px; background: #1a0335; }
-.npc-chat input { flex: 1; min-width: 0; min-height: 46px; padding: 0 14px; border: 2px solid #8348ff; border-radius: 23px; background: #fcfaff; color: #1a0335; font: inherit; font-size: 16px; }
-.npc-chat button { display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 50%; background: #ff1dff; color: #1a0335; font-size: 20px; cursor: pointer; }
+.npc-chat input { flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; border: 2px solid #8348ff; border-radius: 23px; background: #fcfaff; color: #1a0335; font: inherit; font-size: 16px; }
+.npc-chat button { display: grid; place-items: center; width: 48px; height: 48px; border: 0; border-radius: 50%; background: #ff1dff; color: #1a0335; font-size: 20px; cursor: pointer; }
 .npc-chat button:disabled { opacity: 0.45; cursor: default; }
 .npc-sheet :focus-visible { outline: 3px solid #fef87d; outline-offset: 2px; }
 @keyframes npc-bob { 50% { transform: translateY(-6px); } }
@@ -105,7 +88,7 @@
   .npc-action { transition: none; }
 }
 .npc-task-title { margin: 0; font-weight: 600; }
-.npc-turnin { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: #37f4a0; color: #0f4639; font: inherit; font-weight: 600; cursor: pointer; }
+.npc-turnin { min-height: 48px; padding: 0 14px; border: 0; border-radius: 12px; background: #37f4a0; color: #0f4639; font: inherit; font-weight: 600; cursor: pointer; }
 .npc-turnin:disabled { background: #ffffff1a; color: #cbb8ef; cursor: default; }
 /* Grid tracks default to their widest content, so one long locked chip
    ("Reach Tier 2 (50 NEAR matured) · Reach level 5") pushed the whole
@@ -119,6 +102,33 @@
 .npc-panel .locked-chip-face { flex-wrap: wrap; row-gap: 2px; }
 .npc-panel .locked-chip-face .locked-chip-label { flex: 1 1 0; min-width: 0; }
 .npc-panel .locked-chip-face small { flex-basis: 100%; padding-left: 24px; white-space: normal; }
-/* Dropped-in portraits (art/portraits/) fill their square edge to edge, so
-   keep a little headroom for the idle bob and let the name plate breathe. */
-.npc-portrait img.npc-portrait-art { height: calc(100% - 12px); margin-top: 12px; }
+.npc-sheet .screen-tabs { margin: 0; background: #ffffff12; }
+.npc-sheet .screen-tabs button { color: #e2d5ff; font-size: 14px; }
+.npc-sheet .screen-tabs button[aria-selected=true] { color: #fff; }
+
+@media (max-height: 500px) and (min-width: 600px) {
+  .npc-hero { grid-template-columns: 120px minmax(0, 1fr); align-items: center; }
+  .npc-portrait { height: 112px; }
+  .npc-plate { justify-content: flex-start; padding-inline-end: 48px; }
+  .npc-plate h2 { text-align: start; }
+}
+
+/* The greeting is a playable step. Conversation, records and the full menu are opt-in. */
+.game-dialog .npc-linear { gap: 16px; }
+.game-dialog .npc-linear .npc-hero { background: var(--surface-soft); }
+.game-dialog .npc-linear .npc-bubble { text-align: center; border: 0; background: transparent; padding: 4px 8px; }
+.npc-linear .npc-continue, .npc-story-step .primary-button { width: 100%; justify-content: center; gap: 12px; }
+.npc-story-step { display: grid; gap: 12px; }
+.game-dialog .npc-story-step h3 { font-size: 22px; text-transform: none; color: var(--ink); }
+.npc-choice { display: grid; grid-template-columns: minmax(0, 1fr) 24px; gap: 6px 12px; text-align: start; padding: 16px; min-height: 64px; background: var(--surface-soft); color: var(--ink); border: 0; border-radius: 12px; font-size: 16px; }
+.npc-choice small { grid-column: 1; color: var(--ink-secondary); font-size: 14px; }
+.npc-choice > svg { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+.npc-offer-reward { display: flex; gap: 8px; align-items: center; color: var(--action); }
+.npc-offer-brief ol { padding-inline-start: 24px; margin: 0; color: var(--ink-secondary); font-size: 16px; }
+.npc-more { display: grid; min-width: 0; }
+.npc-more > summary { display: flex; align-items: center; justify-content: center; min-height: 48px; cursor: pointer; color: var(--action); text-decoration: underline; font-size: 16px; }
+.npc-more > summary::-webkit-details-marker { display: none; }
+.npc-more[open] > :not(summary) { margin-block: 12px; }
+.game-dialog .npc-linear .npc-chat { position: static; }
+.game-dialog .npc-linear .npc-notice { color: var(--success); background: var(--success-surface); font-size: 16px; }
+.npc-linear .text-button { min-height: 48px; }

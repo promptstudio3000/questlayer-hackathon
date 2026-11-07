@@ -28,11 +28,11 @@ export type DemoNavigationTarget = {
   questId: string | null;
   realm: "arena" | "gps";
 };
-export type ProfileView = "character" | "settings";
+export type ProfileView = "character" | "badges" | "settings";
 // Every Aura trade is on NEAR: the old database "practice" market is gone and
 // a stored "practice" view opens the secured market instead.
 export type MarketView = "secured" | "offers";
-export const PROFILE_VIEWS: readonly ProfileView[] = ["character", "settings"];
+export const PROFILE_VIEWS: readonly ProfileView[] = ["character", "badges", "settings"];
 export const MARKET_VIEWS: readonly MarketView[] = ["secured", "offers"];
 export type AppNavigation = {
   tab: AppTab;

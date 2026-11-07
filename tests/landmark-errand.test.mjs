@@ -183,7 +183,7 @@ test("a clue takes one answer with the visit: right pays more, wrong shows the a
   assert.equal(right.reward, 0);
   // Czech view.
   const cs = worldView(db, w.id, bob, { now: NOW, lang: "cs" }).quests.find((x) => x.id === q.id);
-  assert.match(cs.clue.question, /Ve kterém století|Který krátký popis/);
+  assert.match(cs.clue.question, /Ve kterém století|Který popis odpovídá místu/);
   // A clue quest keeps its rule text (no flavour that could give the answer away).
   assert.match(after.title, /^Clue at /);
 });

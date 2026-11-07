@@ -1,4 +1,4 @@
-import { tr } from "./i18n";
+import { rtl, tr } from "./i18n";
 // Shared screen tabs for panels (Profile, Market, Community, Inventory).
 // WAI-ARIA tabs pattern: role=tablist/tab/tabpanel, roving tabindex,
 // Arrow/Home/End move focus and select (automatic activation).
@@ -45,11 +45,11 @@ export function ScreenTabs<T extends string>({
   function move(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const last = tabs.length - 1;
     const next =
-      event.key === "ArrowRight"
+      event.key === (rtl ? "ArrowLeft" : "ArrowRight")
         ? index === last
           ? 0
           : index + 1
-        : event.key === "ArrowLeft"
+        : event.key === (rtl ? "ArrowRight" : "ArrowLeft")
           ? index === 0
             ? last
             : index - 1
@@ -61,9 +61,9 @@ export function ScreenTabs<T extends string>({
     if (next < 0) return;
     event.preventDefault();
     onChange(tabs[next].id);
-    list.current
-      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-      [next]?.focus();
+    const target = list.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next];
+    target?.focus();
+    target?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   return (
     <div

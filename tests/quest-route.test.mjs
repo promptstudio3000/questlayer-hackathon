@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { activeQuestRoute } from "../src/quest-route.ts";
+import { activeQuestRoute, questStopMarkers, questTarget } from "../src/quest-route.ts";
 
 const here = { lat: 49.7475, lng: 13.3776 };
 const base = { completed: 0, closes_at: Date.now() + 3600_000, opens_at: 0, kind: "route" };
@@ -55,4 +55,28 @@ test("finished, closed and single-stop quests draw nothing", () => {
     walk("single", [a], { checkpointCount: 1 }),
   ])
     assert.equal(activeQuestRoute([q], { position: here, now, questId: q.id }), null);
+});
+
+test("confirmed stops disappear without renumbering later checkpoints",()=>{
+ const route=activeQuestRoute([walk("ordered",[b,c])],{position:here,now:Date.now(),questId:"ordered"});
+ assert.deepEqual(route.stops.map(s=>s.number),[2,3]);
+ assert.deepEqual(questStopMarkers(route).map(s=>({numbers:s.numbers,next:s.next})),[{numbers:[3],next:false},{numbers:[2],next:true}]);
+});
+test("a future return at the same location cannot cover the next marker",()=>{
+ const q=walk("return",[a,b,a]);
+ const route=activeQuestRoute([q],{position:here,now:Date.now(),questId:q.id});
+ assert.deepEqual(questStopMarkers(route).at(-1),{point:{...a,number:1},numbers:[1,3],next:true});
+ const later=activeQuestRoute([walk("return",[b,a])],{position:a,now:Date.now(),questId:q.id});
+ assert.deepEqual(later.stops.map(s=>s.number),[2,3]);
+ assert.deepEqual(questTarget(walk("return",[b,a]),a),b);
+});
+test("any-order hunts preserve original stop identities and can confirm the nearby unvisited stop",()=>{
+ const q=walk("hunt",[a,c],{checkpointCount:3,checkpoint:1,visitedStops:[1],nextPoint:a});
+ assert.deepEqual(questTarget(q,c),c);
+ const route=activeQuestRoute([q],{position:c,now:Date.now(),questId:q.id});
+ assert.equal(route.unordered,true);assert.deepEqual(route.stops.map(s=>s.number),[3,1]);
+});
+test("a selected single-stop quest cannot display another walk's checkpoint markers",()=>{
+ const single={...walk("chest",[a]),kind:"chest",checkpointCount:0,zone_id:"zone-one"};
+ assert.equal(activeQuestRoute([walk("one",[a,b,c]),single],{position:here,now:Date.now(),questId:single.id,zoneId:"zone-one"}),null);
 });

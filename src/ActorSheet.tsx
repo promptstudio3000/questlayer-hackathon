@@ -12,10 +12,13 @@ import { tr } from "./i18n";
 
 type Location = { lat: number; lng: number; accuracy?: number; timestamp?: number };
 type HandoffProps = {
+  playerId: string;
+  draftRealm: string;
   actor: ActorView;
   actorId: string;
   encounter: string | ActorEncounter;
   onClose: () => void;
+  onQuest?: (questId: string) => void;
 };
 
 // Optional slices: NPC talk (N1/N2) and monster challenges (M1/M2).
@@ -43,13 +46,17 @@ const PROBLEM: Record<string, string> = {
 
 export function ActorSheet({
   actor,
+  playerId,
   worldId,
   location,
+  onQuest,
   onClose,
 }: {
   actor: ActorView;
+  playerId: string;
   worldId: string;
   location: Location | null;
+  onQuest?: (questId: string) => void;
   onClose: () => void;
 }) {
   const [state, setState] = useState<
@@ -111,7 +118,7 @@ export function ActorSheet({
   if (ready && handoff === "npc" && NpcSheet)
     return (
       <Suspense fallback={null}>
-        <NpcSheet actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} />
+        <NpcSheet playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} onQuest={onQuest} />
       </Suspense>
     );
   if (ready && handoff === "boss")
@@ -123,15 +130,12 @@ export function ActorSheet({
   if (ready && handoff === "challenge" && MonsterChallenge)
     return (
       <Suspense fallback={null}>
-        <MonsterChallenge actor={ready.actor} actorId={actor.id} encounter={ready.encounter} onClose={onClose} />
+        <MonsterChallenge playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready.encounter} onClose={onClose} />
       </Suspense>
     );
   return (
-    <Dialog label={actor.name} onClose={onClose}>
+    <Dialog presentation="encounter" label={actor.name} onClose={onClose}>
       <section className={`actor-sheet actor-sheet-${actor.kind}`}>
-        <button className="icon-button close" onClick={onClose} aria-label={tr("Close")}>
-          ×
-        </button>
         <div className="actor-stage" ref={stage} aria-hidden="true" />
         <header>
           <p className="actor-role">

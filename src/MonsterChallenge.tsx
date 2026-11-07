@@ -1,3 +1,5 @@
+import { ActorPortrait } from "./ActorPortrait";
+import { prefersReducedMotion } from "./feedback";
 // Monster challenge sheet (NPC-PLAN §13.2). Opened from the actors map layer
 // for a monster the player has an encounter token for. Every outcome comes
 // from the server; this file only shows cues and records the player's inputs.
@@ -13,6 +15,7 @@ import {
   addSample,
   retryLabel,
   unitPoint,
+  moveTraceCursor,
   type Challenge,
   type ChallengeFormat,
   type ChallengeMenu,
@@ -47,12 +50,17 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const sending = useRef(false);
+  const lastInput = useRef<unknown>(null);
+  const completed = useRef(new Set<string>());
 
+  const [menuAttempt, setMenuAttempt] = useState(0);
   useEffect(() => {
+    setError(null);
     api<ChallengeMenu>(`${path(monster)}?encounter=${encodeURIComponent(encounter)}`)
       .then(setMenu)
       .catch((e) => setError(e instanceof ApiError ? e.message : tr("Could not reach the monster.")));
-  }, [monster, encounter]);
+  }, [monster, encounter, menuAttempt]);
 
   async function start(format: ChallengeFormat) {
     setBusy(true);
@@ -68,27 +76,33 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
   }
 
   async function submit(input: unknown) {
-    if (!challenge) return;
+    if (!challenge || sending.current) return;
+    sending.current = true;
+    lastInput.current = input;
+    setError(null);
     setBusy(true);
     try {
       done(await api<ChallengeResult>(`${path(monster)}/${challenge.id}/submit`, input));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : tr("Your moves did not reach the monster."));
     } finally {
+      sending.current = false;
       setBusy(false);
     }
   }
 
   function done(out: ChallengeResult) {
+    if (completed.current.has(out.result.challengeId)) return;
+    completed.current.add(out.result.challengeId);
     setResult(out);
     onResult?.(out);
   }
 
   return (
-    <Dialog label={tr("Challenge {0}", { 0: monster.name })} onClose={onClose}>
+    <Dialog presentation="encounter" label={tr("Challenge {0}", { 0: monster.name })} onClose={onClose}>
       <div className={`monster-challenge monster-${monster.archetype}`}>
         <header className="monster-head">
-          <span className="monster-sigil" aria-hidden="true" />
+          <div className="monster-portrait"><ActorPortrait model={monster.model} label={monster.name} /></div>
           <div>
             <h2>{monster.name}</h2>
             <p className="monster-sub">
@@ -103,7 +117,7 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
             </p>
           </div>
         </header>
-        {error && <p className="monster-error" role="alert">{error}</p>}
+        {error && <div className="monster-error" role="alert"><p>{error}</p>{!menu && !challenge && <button className="monster-secondary" onClick={() => setMenuAttempt(n => n+1)}>{tr("Try again")}</button>}{challenge && lastInput.current !== null && !result && <button className="monster-secondary" disabled={busy} onClick={() => submit(lastInput.current)}>{tr("Try again")}</button>}</div>}
         {result ? (
           <ResultView result={result} onClose={onClose} />
         ) : challenge ? (
@@ -239,15 +253,17 @@ function Quiz({ c, busy, submit }: PlayProps & { c: QuizChallenge }) {
   const [left, setLeft] = useState(c.secondsPerQuestion);
   const q = c.questions[index];
   useEffect(() => {
+    if (!q) return;
     setLeft(c.secondsPerQuestion);
     const id = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
   }, [index, c.secondsPerQuestion]);
   function answer(choice: number) {
+    if (!q || busy) return;
     const next = [...answers, { id: q.id, choice }];
     setAnswers(next);
     if (index + 1 < c.questions.length) setIndex(index + 1);
-    else submit({ answers: next });
+    else { setIndex(index + 1); submit({ answers: next }); }
   }
   useEffect(() => {
     if (left === 0 && !busy) answer(-1);
@@ -295,6 +311,7 @@ function Rhythm({ c, busy, submit }: PlayProps & { c: RhythmChallenge }) {
     setCount(taps.current.length);
   };
   const lead = 1200;
+  const reduced = prefersReducedMotion();
   return (
     <div className="monster-rhythm">
       <p>{now < c.beats[0] - 600 ? tr("Get ready…") : tr("Tap as each beat reaches the ring.")}</p>
@@ -302,8 +319,8 @@ function Rhythm({ c, busy, submit }: PlayProps & { c: RhythmChallenge }) {
         <span className="rhythm-ring" />
         {c.beats.map((b) => {
           const d = (b - now) / lead;
-          if (d < -0.2 || d > 1) return null;
-          return <span key={b} className="rhythm-beat" style={{ left: `${10 + d * 85}%` }} />;
+          if (reduced ? Math.abs(b - now) > 120 : d < -0.2 || d > 1) return null;
+          return <span key={b} className="rhythm-beat" style={{ left: reduced ? "10%" : `${10 + d * 85}%` }} />;
         })}
       </div>
       <button
@@ -331,6 +348,9 @@ function Trace({ c, busy, submit }: PlayProps & { c: TraceChallenge }) {
   const t0 = useRef(0);
   const [drawn, setDrawn] = useState<[number, number][]>([]);
   const [drawing, setDrawing] = useState(false);
+  const cursor = useRef<[number, number]>(c.points[0] ?? [0.5, 0.5]);
+  const [cursorPoint, setCursorPoint] = useState(cursor.current);
+  const started = useRef(false);
   function point(e: ReactPointerEvent<SVGSVGElement>) {
     const p = unitPoint(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect());
     addSample(samples.current, p, performance.now() - t0.current);
@@ -338,12 +358,35 @@ function Trace({ c, busy, submit }: PlayProps & { c: TraceChallenge }) {
   }
   return (
     <div className="monster-trace">
-      <p>{tr("Start on rune 1 and drag through every rune in order, then let go.")}</p>
+      <p id="trace-instructions">{tr("Start on rune 1 and drag through every rune in order, then let go.")} {tr("Use arrow keys to trace; press Space to start or finish.")}</p>
       <svg
         viewBox="0 0 1 1"
         className="trace-board"
-        role="img"
+        role="application"
+        tabIndex={0}
         aria-label={tr("Rune path with {0} runes", { 0: c.points.length })}
+        aria-describedby="trace-instructions"
+        onKeyDown={(e) => {
+          if (busy || e.altKey || e.metaKey || e.ctrlKey) return;
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            if (e.repeat) return;
+            if (started.current) {
+              started.current = false; setDrawing(false); submit({ samples: samples.current });
+            } else {
+              started.current = true; samples.current = []; t0.current = performance.now();
+              setDrawing(true); addSample(samples.current, cursor.current, 0);
+            }
+          } else if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+            e.preventDefault(); cursor.current = moveTraceCursor(cursor.current, e.key);
+            setCursorPoint(cursor.current);
+            if (started.current) {
+              addSample(samples.current, cursor.current, performance.now() - t0.current);
+              setDrawn(samples.current.map(([x,y]) => [x,y]));
+            }
+          }
+        }}
+        onPointerCancel={() => { started.current = false; setDrawing(false); samples.current = []; setDrawn([]); }}
         onPointerDown={(e) => {
           if (busy) return;
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -369,6 +412,7 @@ function Trace({ c, busy, submit }: PlayProps & { c: TraceChallenge }) {
           </g>
         ))}
         <polyline className="trace-ink" points={drawn.map((p) => p.join(",")).join(" ")} />
+        <circle className="trace-cursor" cx={cursorPoint[0]} cy={cursorPoint[1]} r="0.025" />
       </svg>
     </div>
   );
@@ -457,7 +501,7 @@ function Duel({ c, monster, onDone, onError }: PlayProps & { c: DuelChallenge })
       )}
       <div className="duel-ring" aria-hidden="true">
         <span className="duel-target" />
-        <span className="duel-closing" style={{ transform: `scale(${1 + closing * 1.6})`, opacity: closing > 0 ? 1 : 0.4 }} />
+        <span className="duel-closing" style={prefersReducedMotion() ? { transform: "none", opacity: closing < 0.12 ? 1 : 0.3 } : { transform: `scale(${1 + closing * 1.6})`, opacity: closing > 0 ? 1 : 0.4 }} />
       </div>
       <p className="duel-hint">{tr("Pick your stance as the ring meets the circle. Strike beats Trick, Trick beats Guard, Guard beats Strike.")}</p>
       <div className="duel-stances">

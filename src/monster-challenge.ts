@@ -85,3 +85,10 @@ export function retryLabel(retryAt: number | undefined, now = Date.now()) {
   const min = Math.max(1, Math.ceil((retryAt - now) / 60000));
   return tr("You can try this monster again in {0} min.", { 0: min });
 }
+
+/** The same bounded board coordinates are used for keyboard and pointer input. */
+export function moveTraceCursor(point: [number, number], key: string): [number, number] {
+  const dx = key === "ArrowRight" ? 0.025 : key === "ArrowLeft" ? -0.025 : 0;
+  const dy = key === "ArrowDown" ? 0.025 : key === "ArrowUp" ? -0.025 : 0;
+  return [Math.max(0, Math.min(1, point[0] + dx)), Math.max(0, Math.min(1, point[1] + dy))];
+}
