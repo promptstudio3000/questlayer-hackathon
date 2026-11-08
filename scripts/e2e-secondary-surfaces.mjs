@@ -42,7 +42,7 @@ try{
    saved.filter(([el])=>el.matches('input,textarea,select')||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,,,size])=>el.style.setProperty('font-size',`${size*2}px`,'important'));
   });
   if (!process.env.E2E_PUBLIC_ONLY) {
-  await page.goto(url);await page.getByLabel('What should we call you?',{exact:true}).fill('Mira');await page.getByRole('button',{name:'Start exploring',exact:true}).click();await page.locator('.topbar .profile-pill').waitFor();await page.locator('.world-loading').waitFor({state:'detached'});
+  await page.goto(url);await page.getByLabel('What should we call you?',{exact:true}).fill('Mira');await page.getByRole('button',{name:'Start exploring',exact:true}).click();await page.getByRole('button',{name:"Let's explore",exact:true}).click();await page.locator('.topbar .profile-pill').waitFor();await page.locator('.world-loading').waitFor({state:'detached'});
   await profile();await page.getByRole('tab',{name:'Badges',exact:true}).click();await page.locator('.badge-medal').first().waitFor();await shot('badges');await page.locator('.badge-medal').first().click();await page.getByRole('dialog').waitFor();await shot('badge-detail');await page.keyboard.press('Escape');
   await page.getByRole('tab',{name:'Settings',exact:true}).click();await shot('settings');
   await page.getByText('Account and devices',{exact:true}).click();await page.locator('.account-sessions').waitFor();await page.locator('.account-sessions').scrollIntoViewIfNeeded();await shot('account-devices');

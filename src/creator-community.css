@@ -569,3 +569,5 @@
   min-height: 48px;
   font-size: 16px;
 }
+
+.creator-empty-line { margin: 4px 0 16px; padding: 12px 14px; border: 1px dashed var(--decorative-border, #d9d2ea); border-radius: 12px; color: var(--muted, #5f5873); font-size: 14px; line-height: 1.45; }

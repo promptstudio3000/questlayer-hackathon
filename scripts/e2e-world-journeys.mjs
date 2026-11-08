@@ -183,6 +183,7 @@ async function journey(browser, server, device, j, expected) {
     await page.goto(server.url);
     await page.getByPlaceholder("Your explorer name").fill(`World ${j.id}`);
     await page.getByRole("button", { name: "Start exploring" }).click();
+    await page.getByRole("button", { name: "Let's explore", exact: true }).click();
     const coach = page.locator(".first-session");
     await coach
       .getByRole("heading", { name: "Reach the nearest find" })
@@ -262,6 +263,7 @@ async function journey(browser, server, device, j, expected) {
         })
         .first()
         .or(nearbyOpen)
+        .filter({visible:true})
         .first()
         .waitFor({ timeout: 15_000 });
       // Let the auto pick-up of spawn-side coins settle before reading it.
@@ -362,6 +364,16 @@ async function journey(browser, server, device, j, expected) {
     assert.deepEqual(errors, [], "no page errors");
     console.log(`  ${JSON.stringify(result)}`);
     return result;
+  } catch (error) {
+    await page.screenshot({path:join(shots, `${j.id}-failure.png`)}).catch(() => {});
+    writeFileSync(join(shots, `${j.id}-failure.json`),JSON.stringify(await page.evaluate(() => ({
+      text:document.body.innerText.slice(-6000),
+      coach:document.querySelector(".first-session")?.outerHTML,
+      panelHidden:document.querySelector(".main-panel")?.hidden,
+      panelClass:document.querySelector(".main-panel")?.className,
+      dialogs:[...document.querySelectorAll("dialog[open]")].map(el=>el.getAttribute("aria-label")),
+    })).catch(() => ({})),null,2));
+    throw error;
   } finally {
     await context.close();
   }
