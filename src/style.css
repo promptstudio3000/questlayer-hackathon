@@ -4033,3 +4033,5 @@ a.settings-row:hover {
   height: 40px;
   width: auto;
 }
+/* One loading message at a time: while the world loads, its message replaces the map's. */
+.app-shell:has(.world-loading) .map-loading:not(.map-failure) { display: none; }

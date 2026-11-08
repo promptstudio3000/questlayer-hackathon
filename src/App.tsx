@@ -4380,7 +4380,7 @@ export default function App() {
                   />
                 }
                 name={player.name}
-                appearanceLabel={`${player.nativeOutfit ? tr("Secured outfit") : tr("Practice outfit")} · ${player.appearance.originTokenId ? tr("Original") : tr("Starter ghost")}`}
+                appearanceLabel={`${player.nativeOutfit ? tr("Secured outfit") : tr("Game outfit")} · ${player.appearance.originTokenId ? tr("Original") : tr("Starter ghost")}`}
                 level={hudLevel}
                 progress={
                   hudXp !== null && hudLevel !== null

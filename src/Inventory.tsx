@@ -434,7 +434,7 @@ export function Inventory({
             ) : (
               <Check size={14} aria-hidden="true" />
             )}
-            {player.nativeOutfit ? tr("Secured outfit") : tr("Practice outfit")} ·{" "}
+            {player.nativeOutfit ? tr("Secured outfit") : tr("Game outfit")} ·{" "}
             {player.appearance?.originTokenId ? tr("Original") : tr("Starter ghost")}
           </span>
         </div>
@@ -994,7 +994,7 @@ export function Inventory({
         >
           {adventureResults || (
             <p className="inv-grid-caption">
-              {tr("Practice adventure results appear here.")}</p>
+              {tr("Adventure results appear here.")}</p>
           )}
           <AuraCatalog items={auras} />
         </section>
@@ -1096,7 +1096,7 @@ export function Inventory({
                       {selected.serial != null ? ` · #${selected.serial}` : ""}
                     </p>
                     <span className="inventory-source">
-                      {tr("Practice Aura")}{selected.equipped ? tr(" · Equipped") : ""}
+                      {tr("Not on NEAR yet")}{selected.equipped ? tr(" · Equipped") : ""}
                       {!selected.equipped && selectedCount > 1
                         ? ` · ${selectedCount} held`
                         : ""}
