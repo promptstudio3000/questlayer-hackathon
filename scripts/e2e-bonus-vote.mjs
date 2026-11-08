@@ -9,13 +9,13 @@
 // Usage:  npm run build && npm run e2e:bonus-vote
 // Screenshots land in output/qa/2026-11-bonus-vote/ (override with E2E_SHOTS).
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { closeOpenSheet, openScreen } from "./lib/e2e-nav.mjs";
+import { openScreen, closeOpenSheet } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -141,6 +141,7 @@ async function main() {
   mkdirSync(SHOTS, { recursive: true });
   const server = await startServer();
   const browser = await chromium.launch();
+  let page;
   try {
     const context = await browser.newContext({
       viewport: { width: 390, height: 844 },
@@ -150,7 +151,7 @@ async function main() {
       reducedMotion: "reduce",
       locale: "en-GB",
     });
-    const page = await context.newPage();
+    page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
 
@@ -175,8 +176,8 @@ async function main() {
     console.log("3. Ballot shown and votes saved");
     const stub = stubBallot();
     await page.route("**/api/creators/bonus-vote", (r) => stub.handle(r));
-    // Leave Community for the map (the map is home; there is no Explore tab).
     await closeOpenSheet(page);
+    await page.locator('.app-shell[data-screen="explore"]').waitFor();
     await openCommunity(page);
     const panel = page.locator(".bonus-vote");
     await panel.waitFor({ timeout: 10_000 });
@@ -214,6 +215,13 @@ async function main() {
     assert.doesNotMatch(copy.join("\n"), CHAIN, "chain word in the vote panel");
     assert.deepEqual(errors, [], "no page errors");
     console.log("Bonus vote check passed.");
+  } catch (error) {
+    if (page) {
+      await page.screenshot({path:join(SHOTS,"failure.png")}).catch(()=>{});
+      writeFileSync(join(SHOTS,"failure.html"),await page.content());
+      console.log("VISIBLE STATE",await page.locator("body").innerText());
+    }
+    throw error;
   } finally {
     await browser.close();
     server.stop();

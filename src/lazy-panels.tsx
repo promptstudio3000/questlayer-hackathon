@@ -165,6 +165,8 @@ export const EmotePicker = lazyNamed(
   "EmotePicker",
 );
 
+export const ZoneActivities = lazyNamed(() => import("./ZoneActivities"), "ZoneActivities");
+
 class PanelBoundary extends Component<{ children: import("react").ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }

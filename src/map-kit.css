@@ -1,0 +1,190 @@
+/* The map kit decorates game objects, never the explorer's verified appearance. */
+.map-kit-pin-art {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.game-object-map-pin:has(.map-kit-pin-art) {
+  padding: 3px;
+}
+.map-kit-pin-art[data-state="locked"] {
+  filter: grayscale(0.65);
+  opacity: 0.72;
+}
+.game-object-map-pin:has([data-state="completed"])::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 12px;
+  height: 7px;
+  border: solid #176553;
+  border-width: 0 0 4px 4px;
+  transform: rotate(-45deg);
+  background: #fcfaff;
+}
+.native-target-pin > .map-kit-pin-art {
+  width: 32px;
+  height: 32px;
+}
+.actor-marker {
+  position: relative;
+}
+.actor-marker > .map-kit-service {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  bottom: 20px;
+  right: -8px;
+  pointer-events: none;
+  z-index: 1;
+}
+.gold-place-pin .map-kit-note {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  vertical-align: middle;
+  margin-inline-end: 6px;
+}
+.map-kit-checkpoint {
+  position: relative;
+  width: 36px;
+  height: 42px;
+  pointer-events: none;
+}
+.map-kit-checkpoint img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.map-kit-checkpoint b {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #441c6c;
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  min-width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  font: 700 14px/1 system-ui;
+}
+.map-guide-key {
+  position: absolute;
+  right: 18px;
+  bottom: 76px;
+  z-index: 10;
+  max-width: min(320px, calc(100% - 24px));
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #fcfaff;
+  border: 1px solid #bda4ff;
+  border-radius: 8px;
+  color: #441c6c;
+  font-size: 14px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+.map-guide-key img {
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex: none;
+}
+@media (max-width: 760px), (max-height: 500px) {
+  .map-guide-key {
+    left: 12px;
+    bottom: auto;
+    top: max(calc(env(safe-area-inset-top) + 164px), 164px);
+    max-width: calc(100% - 24px);
+  }
+}
+
+/* Offset the selected activity buttons in screen space to leave the altar
+   body visible. The tether ends at the unchanged geographic target. */
+.quest-map-pin.game-object-map-pin:not(.creator-map-pin):has(
+    .map-kit-pin-art
+  )::before {
+  content: "";
+  position: absolute;
+  right: 100%;
+  bottom: 0;
+  width: 64px;
+  border-top: 2px solid #bda4ff;
+  pointer-events: none;
+}
+@media (min-width: 761px) and (min-height: 501px) {
+  .map-guide-key {
+    right: 180px;
+    bottom: 28px;
+  }
+}
+
+.gold-place-pin:has(.map-kit-note) {
+  min-height: 48px;
+  font-size: 14px;
+}
+.gold-place-pin.kind-topic:has(.map-kit-note)::before {
+  content: none;
+}
+@media (max-width: 760px) and (min-height: 501px) {
+  .map-guide-key {
+    left: 54px;
+    right: 12px;
+    top: calc(env(safe-area-inset-top) + 148px);
+    max-width: calc(100% - 66px);
+  }
+}
+@media (max-height: 500px) {
+  .map-guide-key {
+    left: auto;
+    right: 12px;
+    top: calc(env(safe-area-inset-top) + 80px);
+    max-width: min(320px, calc(100% - 24px));
+  }
+}
+
+.map-kit-checkpoint::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 36px;
+  border-top: 1px dashed #bda4ff;
+}
+
+.actor-arena {
+  position: relative;
+}
+.actor-arena > .map-kit-portal {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  top: -8px;
+  right: -4px;
+  z-index: 1;
+}
+
+/* Rarity remains legible when a city-scale curtain is only a few pixels high. */
+.zone-map-pin.map-overview-pin { box-shadow: 0 0 0 3px color-mix(in srgb, var(--zone-aura, #672eeb) 42%, transparent); }
+
+@media (min-width: 901px) and (min-height: 501px) {
+  .map-guide-key {
+    top: calc(env(safe-area-inset-top) + 80px);
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+}

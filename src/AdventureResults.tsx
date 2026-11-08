@@ -230,8 +230,7 @@ export function AdventureResultDialog({
                     <span>{item.slot === "above" ? tr("Above character") : tr("Below character")}</span>
                   </p>}
                   {result.reward && <p className="reward-moment-values"><strong>+{result.reward.xp} XP</strong>{result.reward.goldU > 0 && <> · {gold(result.reward.goldU, 6)} {tr("practice GOLD")}</>}</p>}
-                  {result.reward?.near && <p className="reward-moment-values"><strong>+{result.reward.near.amountNear} {tr("NEAR testnet")}</strong><br />
-                    {result.reward.near.state === "converted" ? tr("Converted to QGOLD") : result.reward.near.state === "conversion-carry" ? tr("Fractional NEAR remains credited") : tr("Awaiting QGOLD settlement")}</p>}
+                  {result.reward?.near && <p className="reward-moment-values"><strong>+{result.reward.near.amountNear} {tr("NEAR testnet")}</strong><br />{result.reward.near.state === "converted" ? tr("Converted to QGOLD") : result.reward.near.state === "conversion-carry" ? tr("Fractional NEAR remains credited") : tr("Awaiting QGOLD settlement")}</p>}
                   {!item && result.reward && <p>{tr("No Aura this time. XP still counts.")}</p>}
                   {note && <p>{note}</p>}
                   {item && (!online || !selection.fresh) && <p role="status">{selection.checking ? tr("Checking what you own…") : tr("Go online to check you still own it before trying it on.")}</p>}

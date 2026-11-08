@@ -16,6 +16,7 @@ import {
   gameObjectArtUrl,
   questObjectPresentation,
   zoneObjectPresentation,
+  type GameObjectOptions,
 } from "./game-object-art";
 import {
   zoneCountdown,
@@ -25,7 +26,7 @@ import {
   totemHeight,
   zoneTotemFeatures,
   zoneWallFeatures,
-  zoneBeamSpots,
+  zoneAuraColor,
   beamFeatures,
 } from "./zone-landmarks";
 import type { NearbyExplorer, WornWearable } from "./types";
@@ -52,6 +53,10 @@ import "./secondary-surfaces.css";
 import "./wearables.css";
 import { tr } from "./i18n";
 import type { QuestRoute } from "./quest-route";
+import { mapKitUrl, questPinKind, questPinMarkup, mapGuidePoints } from "./map-kit";
+import { representativeZoneQuest } from "./game-object-art-data";
+import type { ZoneAltarLayer } from "./zone-altar-layer";
+import "./map-kit.css";
 import { questStopMarkers } from "./quest-route";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
@@ -66,6 +71,8 @@ export type GameMapProps = {
   focusZone: Zone | null;
   /** The one place the player should head to next (coach / nearest quest). */
   nextZoneId?: string | null;
+  selectedQuestId?: string | null;
+  guideRequest?: { questId: string; revision: number } | null;
   insideZoneId?: string | null;
   nativeTarget?: (Point & { label: string }) | null;
   nativeTargetKind?: "coin" | "route" | "discovery";
@@ -119,16 +126,20 @@ export type CreatorMapPlace = {
   lat: number;
   lng: number;
 };
-const CREATOR_PIN_KIND = {
-  visit: "place",
-  trail: "route",
-  chest: "chest",
-} as const;
 const CREATOR_PIN_NAME = {
   get visit() { return tr("Creator place"); },
   get trail() { return tr("Creator trail"); },
   get chest() { return tr("Creator chest"); },
 };
+function paintQuestPin(node: HTMLElement, kind: string, fallback: GameObjectOptions) {
+  node.innerHTML = questPinMarkup(kind, fallback.state);
+  const image = node.querySelector("img");
+  image?.addEventListener("error", () => {
+    const template = document.createElement("template");
+    template.innerHTML = gameObjectMarkup(fallback);
+    image.replaceWith(template.content);
+  }, { once: true });
+}
 const COIN_TIER_SCALE = ["match", ["get", "tier"], "rare", 1.45, "medium", 1.2, 1];
 function phoneLayout() {
   return (
@@ -239,6 +250,7 @@ export function GameMap(props: GameMapProps) {
     avatar = useRef<maplibregl.Marker | null>(null),
     labels = useRef<maplibregl.Marker[]>([]),
     lootRevision = useRef(0);
+  const altars = useRef<ZoneAltarLayer | null>(null);
   const pawn = useRef<PawnScene | null>(null),
     heading = useRef(180);
   const wasOverview = useRef(props.overview);
@@ -304,10 +316,8 @@ export function GameMap(props: GameMapProps) {
     if (!m || !ready || !target || props.globe) return;
     const node = document.createElement("div");
     node.className = "native-target-pin";
-    node.innerHTML = gameObjectMarkup({
-      kind: props.nativeTargetKind || "discovery",
-      selected: true,
-    });
+    if (props.nativeTargetKind === "coin") node.innerHTML = gameObjectMarkup({ kind: "coin", selected: true });
+    else paintQuestPin(node, props.nativeTargetKind === "route" ? "trail" : "visit", { kind: props.nativeTargetKind || "discovery", selected: true });
     const targetText = document.createElement("span");
     targetText.textContent = target.label;
     node.append(targetText);
@@ -350,6 +360,12 @@ export function GameMap(props: GameMapProps) {
       attributionControl: false,
     });
     map.current = m;
+    // Network completion precedes vector-tile worker rendering. Expose the
+    // actual map idle state for local visual review and integration journeys.
+    const renderState = (state: string) => { m.getContainer().dataset.mapRenderState = state; };
+    m.on("movestart", () => renderState("moving"));
+    m.on("sourcedataloading", () => renderState("loading"));
+    m.on("idle", () => renderState("idle"));
     m.addControl(
       new maplibregl.AttributionControl({
         compact: true,
@@ -491,7 +507,7 @@ export function GameMap(props: GameMapProps) {
         source: "zones",
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": ["case", ["get", "inside"], 0.38, ["get", "lit"], 0.24, 0.12],
+          "fill-opacity": ["case", ["get", "inside"], 0.08, ["get", "lit"], 0.055, 0.025],
         },
       });
       // Ground aura: a soft glow along the edge, under the dashed outline.
@@ -513,11 +529,11 @@ export function GameMap(props: GameMapProps) {
         paint: {
           "line-color": ["get", "color"],
           "line-width": ["case", ["get", "inside"], 4, 2],
-          "line-dasharray": [3, 2],
+          "line-opacity": 0.7,
         },
       });
-      // Multi-stop walks (src/quest-route.ts): a glowing dashed path from the
-      // explorer to the next stop and on, so the way onward is always shown.
+      // Ordered objective guidance, explicitly dashed and labelled as non-routed.
+      // Geometry is not pedestrian connectivity (src/quest-route.ts).
       m.addSource("quest-route", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -528,10 +544,10 @@ export function GameMap(props: GameMapProps) {
         source: "quest-route",
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": "#ff1dff",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 13, 8, 18, 22],
-          "line-blur": 6,
-          "line-opacity": ["case", ["get", "next"], 0.8, 0.4],
+          "line-color": "#441c6c",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 13, 6, 18, 12],
+          "line-opacity": 0.32,
+          "line-dasharray": [1.2, 1.6],
         },
       });
       m.addLayer({
@@ -540,42 +556,38 @@ export function GameMap(props: GameMapProps) {
         source: "quest-route",
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": ["case", ["get", "next"], "#ffffff", "#ffd6ff"],
+          "line-color": ["case", ["get", "next"], "#bda4ff", "#e1d5ff"],
           "line-width": ["interpolate", ["linear"], ["zoom"], 13, 3.5, 18, 8],
           "line-dasharray": [1.2, 1.6],
           "line-opacity": ["case", ["get", "next"], 1, 0.7],
         },
       });
+      const chevron = new Image();
+      chevron.onload = () => {
+        if (gone || m.hasImage("map-kit-chevron")) return;
+        m.addImage("map-kit-chevron", chevron, { pixelRatio: 4 });
+        m.addLayer({
+          id: "quest-route-arrows", type: "symbol", source: "quest-route", minzoom: 14,
+          layout: {
+            "symbol-placement": "line", "symbol-spacing": 90,
+            "icon-image": "map-kit-chevron", "icon-size": 0.8,
+            "icon-rotation-alignment": "map", "icon-rotate": 90, "icon-keep-upright": false,
+            "icon-allow-overlap": true, "icon-ignore-placement": true,
+          },
+        }, m.getLayer("coin-icons") ? "coin-icons" : undefined);
+      };
+      chevron.src = mapKitUrl("navigation/chevron.png");
       // Zone landmarks (src/zone-landmarks.ts): wall, totem and the items inside.
-      for (const id of ["zone-walls", "zone-totems", "zone-loot", "sky-beams", "find-beams"])
+      for (const id of ["zone-walls", "zone-totems", "zone-loot", "find-beams"])
         m.addSource(id, {
           type: "geojson",
           data: { type: "FeatureCollection", features: [] },
         });
-      m.addLayer({
-        id: "zone-walls",
-        type: "fill-extrusion",
-        source: "zone-walls",
-        minzoom: 14,
-        paint: {
-          "fill-extrusion-color": ["get", "color"],
-          "fill-extrusion-height": ["get", "height"],
-          "fill-extrusion-base": 0,
-          "fill-extrusion-opacity": 0.45,
-        },
-      });
-      // The aura keeps rising above the wall as a fainter band.
-      m.addLayer({
-        id: "zone-walls-halo",
-        type: "fill-extrusion",
-        source: "zone-walls",
-        minzoom: 13,
-        paint: {
-          "fill-extrusion-color": ["get", "color"],
-          "fill-extrusion-height": ["get", "halo"],
-          "fill-extrusion-base": ["get", "height"],
-          "fill-extrusion-opacity": 0.16,
-        },
+      // Roofless fallback: the same authoritative boundary as a ground line.
+      // The shared WebGL layer supplies the open sky curtains above it.
+      m.addLayer({ id: "zone-walls", type: "line", source: "zone-walls", minzoom: 11.5,
+        layout: {"line-cap":"round","line-join":"round"},
+        paint: {"line-color":["get","color"],"line-width":1.5,"line-opacity":.55},
       });
       m.addLayer({
         id: "zone-totems",
@@ -589,10 +601,9 @@ export function GameMap(props: GameMapProps) {
           "fill-extrusion-opacity": 0.92,
         },
       });
-      // Sky beams (src/zone-landmarks.ts beamFeatures): a faint wide halo and
-      // a bright core, for open zones, rare events and street finds.
+      // Street finds keep a short glint. High open boundary curtains, rather
+      // than central columns, are the long-distance zone signal.
       for (const [source, minzoom] of [
-        ["sky-beams", 11],
         ["find-beams", 13],
       ] as const)
         for (const part of ["halo", "core"] as const)
@@ -606,7 +617,7 @@ export function GameMap(props: GameMapProps) {
               "fill-extrusion-color": ["get", "color"],
               "fill-extrusion-height": ["get", "height"],
               "fill-extrusion-base": ["get", "base"],
-              "fill-extrusion-opacity": part === "core" ? 0.78 : 0.22,
+              "fill-extrusion-opacity": part === "core" ? 0.4 : 0.1,
               "fill-extrusion-vertical-gradient": false,
             },
           });
@@ -755,7 +766,7 @@ export function GameMap(props: GameMapProps) {
       features: props.world.zones.map((z) => ({
         type: "Feature",
         properties: {
-          color: z.id === props.insideZoneId ? "#672eeb" : z.color,
+          color: zoneAuraColor(z.tier),
           inside: z.id === props.insideZoneId,
           lit: zoneCountdown(z, zoneQuests, zoneNow).phase === "open",
         },
@@ -783,9 +794,6 @@ export function GameMap(props: GameMapProps) {
     (m.getSource("zone-totems") as GeoJSONSource)?.setData(
       collection(zoneTotemFeatures(props.world.zones, zoneQuests, objectContext)),
     );
-    (m.getSource("sky-beams") as GeoJSONSource)?.setData(
-      collection(beamFeatures(zoneBeamSpots(props.world.zones, zoneQuests, zoneNow))),
-    );
     const lootFeatures = zoneLootFeatures(
       props.world.zones,
       zoneQuests,
@@ -812,11 +820,15 @@ export function GameMap(props: GameMapProps) {
       const countdown = zoneCountdown(z, zoneQuests, zoneNow);
       wrap.className = `zone-totem-marker tier-${z.tier} phase-${countdown.phase}${props.overview ? " map-overview" : ""}${props.globe ? " hidden" : ""}`;
       node.className = `zone-map-pin game-object-map-pin tier-${z.tier}${next ? " zone-map-pin-next" : ""}${props.overview ? " map-overview-pin" : ""}`;
+      node.dataset.zoneId = z.id;
+      node.style.setProperty("--zone-aura", zoneAuraColor(z.tier));
+      node.style.borderColor = zoneAuraColor(z.tier);
       node.title = `${z.name} · ${art.label}${next ? " · next quest" : ""}`;
       const detail = zoneLandmarkLabel(z, zoneQuests, zoneNow);
       node.setAttribute("aria-label", `${node.title}${detail ? ` · ${detail}` : ""}`);
       node.setAttribute("aria-pressed", String(selected));
-      node.innerHTML = gameObjectMarkup({ ...art, selected });
+      const zoneQuest = props.world.quests.find(q => q.id === props.selectedQuestId && q.zone_id === z.id) || representativeZoneQuest(z, props.world.quests, objectContext);
+      paintQuestPin(node, questPinKind(zoneQuest), { ...art, selected });
       if (next) {
         node.dataset.next = "true";
         const tag = document.createElement("i");
@@ -853,8 +865,27 @@ export function GameMap(props: GameMapProps) {
     props.globe,
     props.focusZone?.id,
     props.nextZoneId,
+    props.selectedQuestId,
     zoneArtKey,
   ]);
+  // Lazy shared-context GLBs. Mount once; individual failures keep the extrusion.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    let gone = false;
+    const sync = () => {
+      const p = latest.current;
+      altars.current?.update({ zones: p.world?.zones || [], quests: p.world?.quests || [], now: p.now ?? Date.now(), playerTier: p.playerTier, visible: !p.globe, selectedQuestId: p.selectedQuestId });
+    };
+    import("./zone-altar-layer").then(({ attachZoneAltars }) => {
+      if (gone) return;
+      altars.current = attachZoneAltars(m); sync();
+    }).catch(() => {});
+    return () => { gone = true; altars.current?.destroy(); altars.current = null; };
+  }, [ready]);
+  useEffect(() => {
+    altars.current?.update({ zones: props.world?.zones || [], quests: props.world?.quests || [], now: objectContext.now, playerTier: props.playerTier, visible: !props.globe, selectedQuestId: props.selectedQuestId });
+  }, [ready, props.world, zoneArtKey, props.globe, props.playerTier, props.selectedQuestId]);
   // Countdown chips tick with the app clock; only their text changes.
   useEffect(() => {
     const world = props.world;
@@ -937,6 +968,7 @@ export function GameMap(props: GameMapProps) {
       .then(({ attachMapRewardsLayer }) => {
         if (gone || rewardsLayer.current) return;
         rewardsLayer.current = attachMapRewardsLayer(m);
+        rewardsLayer.current.setVisible(!latest.current.overview && !latest.current.globe);
       })
       .catch(() => {});
     return () => {
@@ -945,6 +977,11 @@ export function GameMap(props: GameMapProps) {
       rewardsLayer.current = null;
     };
   }, [ready]);
+  // City overview is about actual zones; the coin-cell fog returns when
+  // leaving it. This prevents its gold tint being mistaken for a gold zone.
+  useEffect(() => {
+    rewardsLayer.current?.setVisible(!props.overview && !props.globe);
+  }, [ready, props.overview, props.globe]);
   useEffect(() => {
     if (props.active === false) map.current?.stop();
   }, [props.active, ready]);
@@ -1253,14 +1290,14 @@ export function GameMap(props: GameMapProps) {
                     };
               })()
             : { top: 180, bottom: 100, left: 450, right: 55 },
-          pitch: 0,
+          pitch: 35,
           bearing: 0,
           duration: prefersReducedMotion()
             ? 0
             : 650,
         });
       }
-    } else if (props.focusZone && !props.follow)
+    } else if (props.focusZone && !props.follow && !props.guideRequest)
       m.easeTo({
         center: [props.focusZone.lng, props.focusZone.lat],
         offset: cameraOffset(),
@@ -1273,46 +1310,76 @@ export function GameMap(props: GameMapProps) {
       });
   }, [
     props.overview,
-    props.focusZone,
+    props.focusZone?.id,
+    props.guideRequest?.questId,
     ready,
     props.world?.id,
     props.sheetExpanded,
     props.panelMode,
     viewportRevision,
   ]);
-  const routeKey = props.route
-    ? `${props.route.questId}:${props.route.points
-        .map((p) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)
-        .join(";")}`
-    : "";
+  const guidePoints = props.globe ? [] : mapGuidePoints({
+    position: props.position, route: props.route, target: props.nativeTarget, selectedQuestId: props.selectedQuestId,
+    zone: props.focusZone || props.world?.zones.find((z) => z.id === props.nextZoneId),
+    quests: props.world?.quests || [], now: objectContext.now, playerTier: props.playerTier,
+  });
+  const routeKey = JSON.stringify(guidePoints);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
-    const points = props.globe ? [] : props.route?.points || [];
     (m.getSource("quest-route") as GeoJSONSource | undefined)?.setData({
       type: "FeatureCollection",
-      features: points.slice(1).map((p, i) => ({
-        type: "Feature",
-        properties: { next: i === 0 },
-        geometry: {
-          type: "LineString",
-          coordinates: [
-            [points[props.route?.unordered ? 0 : i].lng, points[props.route?.unordered ? 0 : i].lat],
-            [p.lng, p.lat],
-          ],
-        },
+      features: guidePoints.slice(1).map((p, i) => ({
+        type: "Feature", properties: { next: i === 0 },
+        geometry: { type: "LineString", coordinates: [[guidePoints[props.route?.unordered ? 0 : i].lng, guidePoints[props.route?.unordered ? 0 : i].lat], [p.lng, p.lat]] },
       })),
-    } as Parameters<GeoJSONSource["setData"]>[0]);
-  }, [ready, routeKey, props.globe]);
-  // Numbered stop badges; the stops only change when one is confirmed.
-  const stopsKey = props.route
-    ? `${props.route.questId}:${props.route.stops
-        .map((p) => `${p.number}:${p.lat},${p.lng}`)
-        .join(";")}`
-    : "";
+    });
+  }, [ready, routeKey]);
   useEffect(() => {
     const m = map.current;
-    if (!m || !ready || props.globe || !props.route) return;
+    if (!m || !ready || !props.guideRequest || props.active === false || props.follow || guidePoints.length < 2) return;
+    const bounds = new maplibregl.LngLatBounds();
+    for (const p of guidePoints) bounds.extend([p.lng, p.lat]);
+    const box = el.current!.getBoundingClientRect();
+    const panel = document.querySelector(".main-panel")?.getBoundingClientRect();
+    const phone = window.innerWidth <= 900;
+    const landscape = phone && window.innerWidth > window.innerHeight;
+    const pad = document.querySelector(".demo-pad")?.getBoundingClientRect();
+    const rail = document.querySelector(".nav-rail")?.getBoundingClientRect();
+    const header = document.querySelector(".topbar")?.getBoundingClientRect();
+    const legend = document.querySelector(".map-guide-key")?.getBoundingClientRect();
+    // The compact objective is centered at the bottom. Reserve actual occupied
+    // space rather than treating its right edge as a left sidebar.
+    const lower = [panel, pad, rail].filter((r): r is DOMRect => !!r && r.height > 0 && r.top > box.top + box.height * .35);
+    const occupiedTop = Math.min(box.bottom, ...lower.map(r => r.top));
+    const top = Math.min(box.height * (landscape ? .46 : phone ? .36 : .34), Math.max((header?.bottom || box.top + 70) - box.top + 100, (legend?.bottom || box.top + 100) - box.top + 100));
+    const bottom = Math.min(landscape ? 90 : Math.max(90, box.bottom - occupiedTop + 32), box.height * .48, Math.max(40, box.height - top - 120));
+    const left = 38;
+    const right = landscape && panel ? Math.min(box.width * .6, box.right - panel.left + 30, box.width - left - 140) : 38;
+    m.fitBounds(bounds, {
+      padding: { top, bottom, left, right },
+      maxZoom: 17, pitch: 35, bearing: 0,
+      duration: prefersReducedMotion() ? 0 : 550,
+    });
+    // Reframe only for an explicit request or a changed visible layout.
+    // Position updates and manual panning keep control of the camera.
+  }, [ready, props.guideRequest?.revision, props.active, viewportRevision]);
+  const stopsKey = JSON.stringify([props.route?.stops, guidePoints.slice(1)]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || props.globe) return;
+    if (!props.route) {
+      const markers = guidePoints.slice(1).map((p, i, stops) => {
+        const node = document.createElement("div");
+        node.className = `map-kit-checkpoint${i === 0 ? " next" : ""}`;
+        const img = document.createElement("img");
+        img.src = mapKitUrl(`navigation/${i === stops.length - 1 ? "route-end" : "checkpoint"}.png`); img.alt = "";
+        const number = document.createElement("b"); number.textContent = String(i + 1);
+        node.append(img, number); node.setAttribute("aria-hidden", "true");
+        return new maplibregl.Marker({ element: node, anchor: "bottom", offset: [-36, 0] }).setLngLat([p.lng, p.lat]).addTo(m);
+      });
+      return () => markers.forEach(marker => marker.remove());
+    }
     const route = props.route;
     const markers = questStopMarkers(route).map(({ point: p, numbers, next }) => {
       const node = document.createElement("button");
@@ -1338,8 +1405,8 @@ export function GameMap(props: GameMapProps) {
         .setLngLat([p.lng, p.lat])
         .addTo(m);
     });
-    return () => markers.forEach((x) => x.remove());
-  }, [ready, stopsKey, props.globe]);
+    return () => markers.forEach((marker) => marker.remove());
+  }, [ready, stopsKey]);
   const creatorPlaceKey = JSON.stringify(props.creatorPlaces || []);
   useEffect(() => {
     const m = map.current;
@@ -1350,10 +1417,7 @@ export function GameMap(props: GameMapProps) {
       node.className = "quest-map-pin game-object-map-pin creator-map-pin";
       node.setAttribute("aria-label", label);
       node.title = label;
-      node.innerHTML = gameObjectMarkup({
-        kind: CREATOR_PIN_KIND[place.template],
-        state: "ready",
-      });
+      paintQuestPin(node, place.template === "trail" ? "trail" : place.template === "chest" ? "chest" : "community", { kind: place.template === "trail" ? "route" : place.template === "chest" ? "chest" : "place" });
       node.addEventListener("click", (e) => {
         e.stopPropagation();
         latest.current.onCreatorPlace?.(place.questId);
@@ -1376,7 +1440,7 @@ export function GameMap(props: GameMapProps) {
         node.className = "quest-map-pin game-object-map-pin";
         node.setAttribute("aria-label", `${q.title} · ${art.label}`);
         node.title = `${q.title} · ${art.label}`;
-        node.innerHTML = gameObjectMarkup(art);
+        paintQuestPin(node, questPinKind(q), art);
         node.addEventListener("click", (e) => {
           e.stopPropagation();
           latest.current.onQuest(q.id);
@@ -1386,7 +1450,7 @@ export function GameMap(props: GameMapProps) {
               ?.scrollIntoView({ block: "start", behavior: "auto" }),
           );
         });
-        return new maplibregl.Marker({ element: node, anchor: "bottom" })
+        return new maplibregl.Marker({ element: node, anchor: "bottom", offset: [64, 0] })
           .setLngLat([p.lng, p.lat])
           .addTo(m);
       });
@@ -1420,6 +1484,12 @@ export function GameMap(props: GameMapProps) {
               {nextWaveText}
             </span>
           )}
+        </div>
+      )}
+      {!props.globe && guidePoints.length > 1 && (
+        <div className="map-guide-key" role="note">
+          <img src={mapKitUrl("navigation/arrow-forward.png")} width="24" height="24" alt="" aria-hidden />
+          <span>{tr("Direction guide · not a walking route")}</span>
         </div>
       )}
       {!ready && (
