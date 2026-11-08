@@ -53,6 +53,36 @@ test("zero callback with restored credit is retryable, not paid", () => {
   assert.equal(assessEscrowDelivery(attempt, spoof).state, "pending");
 });
 
+test("a send to an account the token does not know waits instead of burning retries", async (t) => {
+  // The escrow sponsors the token registration only of earned payees
+  // (workers, creators); a send recipient must be registered already.
+  const f = setup(t); f.enqueue("fresh.testnet");
+  const registered = new Set(["alice.testnet"]), earned = new Set();
+  const view = async (method, args) => method === "is_earned" ? earned.has(args.account_id) : "100";
+  const tokenView = async (_method, args) => registered.has(args.account_id) ? { total: "1250000000000000000000", available: "0" } : null;
+  const call = mockDelivery();
+  let r = await f.run(call, { view, tokenView });
+  assert.deepEqual([r.deferred, r.sent, r.failed], [1, 0, 0]);
+  let [op] = f.ops();
+  assert.equal(op.state, "queued"); assert.equal(op.last_error, "recipient_unregistered"); assert.equal(op.attempts, 0);
+  assert.equal(op.run_after, NOW + 15 * 60_000, "it is looked at again later, not retried with backoff");
+  assert.equal(f.attempts().length, 0, "nothing was signed");
+  assert.equal(chain.escrowHealth(f.db).awaitingRegistration, 1);
+  // The first QGOLD payout registered the account: the send goes out.
+  registered.add("fresh.testnet");
+  r = await f.run(call, { view, tokenView, now: op.run_after });
+  assert.deepEqual([r.deferred, r.sent], [0, 1]);
+  assert.equal(f.ops()[0].state, "sent");
+  // An earned payee is pushed at once even when the token does not know it yet: withdraw_for registers it.
+  earned.add("worker.testnet"); f.enqueue("worker.testnet");
+  r = await f.run(call, { view, tokenView, now: op.run_after });
+  assert.deepEqual([r.deferred, r.sent], [0, 1]);
+  // Without a token view (tests, a vault-less deployment) nothing is held back.
+  f.enqueue("other.testnet");
+  r = await f.run(call, { view, now: op.run_after });
+  assert.deepEqual([r.deferred, r.sent], [0, 1]);
+});
+
 test("failed token delivery retains a retry and later delivers without manual recovery", async (t) => {
   const f = setup(t); f.enqueue(); let paused = true;
   const call = mockDelivery(async () => ({ failed: paused }));
@@ -181,7 +211,7 @@ test("legacy attempted rows require reconciliation before any new publisher tran
 test("a FINAL contract rejection of an escrow call is terminal, recorded for the operator and re-queueable", async (t) => {
   const f = setup(t); chain.enqueue(f.db, "task", "approve_task", { id: "task", worker: "alice.testnet" }, NOW);
   let rejected = true; const call = mockDelivery(async () => ({ rejected }));
-  assert.deepEqual(await f.run(call), { sent: 0, failed: 0, rejected: 1, pending: 0 });
+  assert.deepEqual(await f.run(call), { sent: 0, failed: 0, rejected: 1, pending: 0, deferred: 0 });
   assert.equal(f.attempts()[0].state, "retry"); assert.ok(f.attempts()[0].outcome, "the FINAL receipt is recorded");
   assert.equal(f.ops()[0].state, "failed"); assert.equal(f.ops()[0].last_error, "final_contract_rejection");
   // No panic text is interpreted and nothing is re-sent on its own, even hours later.
@@ -205,11 +235,11 @@ test("one permanently rejected escrow call does not delay unrelated withdrawals 
   chain.enqueue(f.db, "task-B", "confirm_visit", { id: "task-B", worker: "carol.testnet" }, NOW);
   const call = mockDelivery(async (method) => ({ rejected: method === "approve_task" }));
   const first = await f.run(call);
-  assert.deepEqual(first, { sent: 3, failed: 0, rejected: 1, pending: 0 });
+  assert.deepEqual(first, { sent: 3, failed: 0, rejected: 1, pending: 0, deferred: 0 });
   assert.deepEqual(f.ops().map((o) => `${o.method}:${o.state}`),
     ["approve_task:failed", "withdraw_for:sent", "withdraw_for:sent", "confirm_visit:sent"]);
   // Later passes within and beyond the old backoff window never touch the rejected call again.
-  for (const dt of [10_000, 3_000_000, 3_700_000]) assert.deepEqual(await f.run(call, { now: NOW + dt }), { sent: 0, failed: 0, rejected: 0, pending: 0 });
+  for (const dt of [10_000, 3_000_000, 3_700_000]) assert.deepEqual(await f.run(call, { now: NOW + dt }), { sent: 0, failed: 0, rejected: 0, pending: 0, deferred: 0 });
   assert.equal(f.attempts().filter((a) => a.method === "approve_task").length, 1);
   // A later payout for the same recipient still gets its own durable push.
   f.enqueue("alice.testnet"); await f.run(call, { now: NOW + 3_800_000 });
@@ -219,7 +249,7 @@ test("one permanently rejected escrow call does not delay unrelated withdrawals 
 test("a rejected withdraw_for keeps its capped retry and never blocks other recipients", async (t) => {
   const f = setup(t); f.enqueue("alice.testnet"); f.enqueue("bob.testnet");
   let reject = true; const call = mockDelivery(async (_m, args) => ({ rejected: args.account_id === "alice.testnet" && reject }));
-  assert.deepEqual(await f.run(call), { sent: 1, failed: 1, rejected: 0, pending: 0 });
+  assert.deepEqual(await f.run(call), { sent: 1, failed: 1, rejected: 0, pending: 0, deferred: 0 });
   assert.deepEqual(f.ops().map((o) => `${JSON.parse(o.args).account_id}:${o.state}`), ["alice.testnet:queued", "bob.testnet:sent"]);
   reject = false; await f.run(call, { now: NOW + 60_000 });
   assert.ok(f.ops().every((o) => o.state === "sent")); assert.equal(f.attempts().length, 3);

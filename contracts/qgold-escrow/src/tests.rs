@@ -69,7 +69,7 @@ fn fails<F: FnOnce()>(f: F) -> String {
 /// deposit on the escrow (M6: funders pay for their agreements' storage).
 fn deposit(c: &mut QgoldEscrow, from: &str, amount: u128, msg: Value) -> U128 {
     ctx_full(from, NOW, NearToken::from_near(1).as_yoctonear(), 300);
-    c.storage_deposit(None);
+    c.storage_deposit(None, None);
     ctx(TOKEN, NOW);
     c.ft_on_transfer(a(from), U128(amount), msg.to_string())
 }
@@ -1136,7 +1136,7 @@ fn an_agreement_needs_the_funders_native_storage_deposit() {
     // first deposit also pays ENTRY_BYTES for its own record.)
     let need = u128::from(task_growth(1)) * byte_cost();
     ctx_full("poster.testnet", NOW, need + u128::from(ENTRY_BYTES) * byte_cost() - 1, 300);
-    c.storage_deposit(None);
+    c.storage_deposit(None, None);
     assert_eq!(c.storage_balance_of(a("poster.testnet")).unwrap()["total"], json!(U128(need - 1)));
     let e = fails(|| {
         deposit_unfunded(&mut c, "poster.testnet", 11, task_msg("t1", 10, 1));
@@ -1144,7 +1144,7 @@ fn an_agreement_needs_the_funders_native_storage_deposit() {
     assert!(e.contains("storage_deposit"), "{e}");
     // Anyone may top up a funder (the game server can sponsor a first deposit).
     ctx_full("sponsor.testnet", NOW, 1, 300);
-    c.storage_deposit(Some(a("poster.testnet")));
+    c.storage_deposit(Some(a("poster.testnet")), None);
     assert_eq!(deposit_unfunded(&mut c, "poster.testnet", 11, task_msg("t1", 10, 1)).0, 0);
     let b = c.storage_balance_of(a("poster.testnet")).unwrap();
     // RECORD_BYTES are consumed for good, the rest is locked while the task is open.
@@ -1189,7 +1189,7 @@ fn funder_deposits_are_owed_and_agreements_do_not_spend_the_escrows_near() {
     let free0 = free(&c);
     let d = NearToken::from_near(2).as_yoctonear();
     ctx_full("poster.testnet", NOW, d, 300);
-    c.storage_deposit(None);
+    c.storage_deposit(None, None);
     // (The mock keeps the balance at 100 NEAR, so the deposit shows up only as
     // what is owed; ENTRY_BYTES of it paid for the deposit record itself.)
     let owed = d - u128::from(ENTRY_BYTES) * byte_cost();
@@ -1244,6 +1244,49 @@ fn only_earned_payees_get_a_sponsored_token_registration() {
     ctx("anyone.testnet", NOW);
     let _ = c.withdraw_for(a("creator.testnet"));
     assert!(called_methods().iter().any(|(m, _)| m == "storage_deposit_sponsored"));
+    assert_conserved(&c);
+}
+
+/// M6 follow-up: a deposit the game makes for a player pays for that player's
+/// agreements but can never be withdrawn as NEAR, so sponsoring storage through
+/// the relayer is not a way to hand out NEAR.
+#[test]
+fn a_sponsored_storage_deposit_pays_for_agreements_but_is_never_withdrawable() {
+    let mut c = fresh();
+    let need = u128::from(task_growth(1) + ENTRY_BYTES) * byte_cost();
+    ctx_full("game.testnet", NOW, need, 300);
+    c.storage_deposit(Some(a("poster.testnet")), None);
+    let b = c.storage_balance_of(a("poster.testnet")).unwrap();
+    assert_eq!(b["granted"], json!(U128(need - u128::from(ENTRY_BYTES) * byte_cost())));
+    assert_eq!(b["withdrawable"], json!(U128(0)));
+    let e = fails(|| {
+        ctx_full("poster.testnet", NOW, 1, 300);
+        c.storage_withdraw(None);
+    });
+    assert!(e.contains("yours"), "{e}");
+    // The grant admits the agreement like an own deposit would.
+    assert_eq!(deposit_unfunded(&mut c, "poster.testnet", 11, task_msg("t1", 10, 1)).0, 0);
+    // A relayed call arrives with the player as predecessor: `grant: true`
+    // (which the relayer policy requires) still books it as a grant.
+    ctx_full("poster.testnet", NOW, 5, 300);
+    c.storage_deposit(None, Some(true));
+    assert_eq!(c.storage_balance_of(a("poster.testnet")).unwrap()["withdrawable"], json!(U128(0)));
+    // Own NEAR on top stays withdrawable while the grant covers the lock.
+    ctx_full("poster.testnet", NOW, 7, 300);
+    c.storage_deposit(None, None);
+    assert_eq!(c.storage_balance_of(a("poster.testnet")).unwrap()["withdrawable"], json!(U128(7)));
+    ctx_full("poster.testnet", NOW, 1, 300);
+    c.storage_withdraw(None);
+    assert_eq!(c.storage_balance_of(a("poster.testnet")).unwrap()["withdrawable"], json!(U128(0)));
+    // Closing returns the lock to the grant, still not withdrawable.
+    ctx("publisher.testnet", NOW);
+    c.approve_task("t1".into(), a("worker.testnet"));
+    let b = c.storage_balance_of(a("poster.testnet")).unwrap();
+    assert_eq!(b["locked_bytes"], json!(0));
+    assert_eq!(b["withdrawable"], json!(U128(0)));
+    assert_eq!(b["available"], b["granted"]);
+    assert!(c.is_earned(a("worker.testnet")));
+    assert!(!c.is_earned(a("poster.testnet")));
     assert_conserved(&c);
 }
 

@@ -62,11 +62,36 @@ const NATIVE_TOTAL_KEY: &[u8] = b"native-deposit-total";
 #[derive(BorshDeserialize, BorshSerialize, Default, Clone, Copy)]
 #[borsh(crate = "near_sdk::borsh")]
 struct NativeDeposit {
-    /// NEAR this account deposited and has not consumed or withdrawn.
+    /// NEAR deposited for this account and not consumed or withdrawn.
     total: u128,
     /// Bytes of headroom locked for its open agreements (priced at the
     /// current byte cost whenever it matters).
     locked_bytes: u64,
+    /// The part of `total` that someone else deposited for this account (the
+    /// game sponsoring a player). It pays for agreements but can never be
+    /// withdrawn as NEAR, so sponsoring storage is not handing out NEAR.
+    granted: u128,
+}
+impl NativeDeposit {
+    fn locked_yocto(&self) -> u128 {
+        u128::from(self.locked_bytes) * byte_cost()
+    }
+    /// What new agreements can still use.
+    fn available(&self) -> u128 {
+        self.total.saturating_sub(self.locked_yocto())
+    }
+    /// What the account may take back: locks and the grant are both served
+    /// from the same NEAR, so only what exceeds the larger of them is free.
+    fn withdrawable(&self) -> u128 {
+        self.total.saturating_sub(self.granted.max(self.locked_yocto()))
+    }
+    /// Permanently spends `amount` (a record or an entry), grant first.
+    fn consume(&mut self, amount: u128) -> u128 {
+        let taken = amount.min(self.total);
+        self.total -= taken;
+        self.granted -= taken.min(self.granted);
+        taken
+    }
 }
 /// Funder deposits (prefix `nd`), lock per open agreement (`lk`, keyed by
 /// kind:id) and payees who earned a task or Secret payout (`er`).
@@ -865,11 +890,15 @@ impl QgoldEscrow {
     // -------------------------------------------------------- native storage
 
     /// Adds the attached NEAR to `account_id`'s (default: the caller's) native
-    /// storage deposit. Anyone may top up anyone: the game server can sponsor a
-    /// player's first deposit. Opening an agreement needs its whole growth
-    /// (`get_storage_reserve`) available in the funder's deposit.
+    /// storage deposit. Anyone may top up anyone. Opening an agreement needs
+    /// its whole growth (`get_storage_reserve`) available in the funder's
+    /// deposit. A deposit made by someone else, or with `grant: true`, is a
+    /// grant: it pays for agreements but is never withdrawable. The game's
+    /// relayer sponsors players' deposits with `grant: true` (a relayed call
+    /// arrives with the player as predecessor), so sponsored storage never
+    /// turns into NEAR the player can take out.
     #[payable]
-    pub fn storage_deposit(&mut self, account_id: Option<AccountId>) -> Value {
+    pub fn storage_deposit(&mut self, account_id: Option<AccountId>, grant: Option<bool>) -> Value {
         let account = account_id.unwrap_or_else(env::predecessor_account_id);
         self.not_self(&account);
         let d = env::attached_deposit().as_yoctonear();
@@ -885,9 +914,14 @@ impl QgoldEscrow {
             }
         };
         nd.total = nd.total.checked_add(kept).expect("Deposit overflow");
+        let sponsor = env::predecessor_account_id();
+        let granted = sponsor != account || grant == Some(true);
+        if granted {
+            nd.granted = nd.granted.checked_add(kept).expect("Grant overflow");
+        }
         deposits.insert(&account, &nd);
         set_native_total(native_total().checked_add(kept).expect("Native total overflow"));
-        Self::event("storage_deposited", json!({"account_id":account,"amount":U128(kept),"by":env::predecessor_account_id()}));
+        Self::event("storage_deposited", json!({"account_id":account,"amount":U128(kept),"by":sponsor,"granted":granted}));
         self.storage_balance_of(account).expect("deposit")
     }
 
@@ -900,9 +934,9 @@ impl QgoldEscrow {
         let account = env::predecessor_account_id();
         let mut deposits = native_deposits();
         let mut nd = deposits.get(&account).expect("No storage deposit");
-        let available = nd.total.saturating_sub(u128::from(nd.locked_bytes) * byte_cost());
+        let available = nd.withdrawable();
         let take = amount.map(|a| a.0).unwrap_or(available);
-        assert!(take > 0 && take <= available, "Only {available} yoctoNEAR of the storage deposit is not locked by open agreements");
+        assert!(take > 0 && take <= available, "Only {available} yoctoNEAR of the storage deposit is yours and not locked by open agreements");
         nd.total -= take;
         if nd.total == 0 && nd.locked_bytes == 0 {
             deposits.remove(&account);
@@ -918,10 +952,17 @@ impl QgoldEscrow {
 
     pub fn storage_balance_of(&self, account_id: AccountId) -> Option<Value> {
         native_deposits().get(&account_id).map(|nd| {
-            let locked = u128::from(nd.locked_bytes) * byte_cost();
-            json!({"total": U128(nd.total), "available": U128(nd.total.saturating_sub(locked)),
+            let locked = nd.locked_yocto();
+            json!({"total": U128(nd.total), "available": U128(nd.available()),
+                "withdrawable": U128(nd.withdrawable()), "granted": U128(nd.granted),
                 "locked": U128(locked.min(nd.total)), "locked_bytes": nd.locked_bytes})
         })
+    }
+
+    /// Whether `withdraw_for` registers this account on the token: true once it
+    /// has been paid as a worker or a Secret creator.
+    pub fn is_earned(&self, account_id: AccountId) -> bool {
+        earned().get(&account_id).unwrap_or(false)
     }
     pub fn get_stats(&self) -> StatsView {
         StatsView {
@@ -1021,13 +1062,12 @@ impl QgoldEscrow {
         let mut deposits = native_deposits();
         let mut nd = deposits.get(account).unwrap_or_default();
         let need = u128::from(growth) * c;
-        let available = nd.total.saturating_sub(u128::from(nd.locked_bytes) * c);
+        let available = nd.available();
         assert!(
             available >= need,
             "Storage deposit: this agreement needs {need} yoctoNEAR available in the funder's native deposit on the escrow ({available} available; call storage_deposit)"
         );
-        let consumed = u128::from(RECORD_BYTES) * c;
-        nd.total -= consumed;
+        let consumed = nd.consume(u128::from(RECORD_BYTES) * c);
         let lock = growth - RECORD_BYTES;
         nd.locked_bytes = nd.locked_bytes.checked_add(lock).expect("Lock overflow");
         deposits.insert(account, &nd);
@@ -1051,8 +1091,7 @@ impl QgoldEscrow {
         let c = byte_cost();
         let mut deposits = native_deposits();
         let mut nd = deposits.get(account).unwrap_or_default();
-        let consumed = (u128::from(take) * c).min(nd.total);
-        nd.total -= consumed;
+        let consumed = nd.consume(u128::from(take) * c);
         nd.locked_bytes = nd.locked_bytes.saturating_sub(take);
         deposits.insert(account, &nd);
         set_native_total(native_total() - consumed);

@@ -3067,5 +3067,7 @@
  "Your workshop": "Deine Werkstatt",
  "Your workshop is out of reach": "Deine Werkstatt ist nicht erreichbar",
  "{0} / 3 blocks shaped": "{0} / 3 Blöcke verändert",
- "{0}’s workshop": "Werkstatt von {0}"
+ "{0}’s workshop": "Werkstatt von {0}",
+ "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Sendungen und Rückzahlungen erreichen dieses Konto, sobald seine erste QGOLD-Auszahlung es beim Token registriert.",
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "Das Escrow braucht {0} Speicher für diese Vereinbarung, und er konnte gerade nicht hinzugefügt werden: {1}"
 }

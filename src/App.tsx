@@ -2170,6 +2170,30 @@ export default function App() {
     const { signer, accountId } = await signerForAccount(call.signerId);
     if (accountId !== call.signerId)
       throw Error(tr("Pay with the account that holds your QGOLD: {0}", { 0: call.signerId }));
+    // The escrow holds each funder's storage for their open agreements. When
+    // the server says this one is short, the deposit goes first (sponsored on
+    // the explorer account; the escrow keeps it as a grant for agreements).
+    if (call.storageDeposit) {
+      const d = call.storageDeposit;
+      try {
+        await signer.send(
+          {
+            network: NEAR_NETWORK,
+            signerId: accountId,
+            receiverId: d.receiverId,
+            actions: [{ type: "FunctionCall", params: { methodName: d.methodName, args: d.args, gas: d.gas, deposit: d.deposit } }],
+          },
+          { playerId: player!.id },
+        );
+      } catch (e) {
+        throw Error(
+          tr("The escrow needs {0} of storage for this agreement and it could not be added right now: {1}", {
+            0: d.near,
+            1: (e as Error).message,
+          }),
+        );
+      }
+    }
     await signer.send(
       {
         network: NEAR_NETWORK,

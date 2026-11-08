@@ -101,6 +101,18 @@ type Transfer = {
   expiresAt: number;
   incoming: boolean;
 };
+/** The funder's escrow storage deposit, signed before the funding call when the escrow holds too little. */
+export type MarketStorageDeposit = {
+  signerId: string;
+  receiverId: string;
+  methodName: "storage_deposit";
+  args: { account_id: string; grant: true };
+  gas: string;
+  deposit: string;
+  near: string;
+  /** False above the relayed ladder: the player's own account pays the deposit. */
+  sponsored: boolean;
+};
 /** The exact call the player signs to pay QGOLD into the market escrow. */
 export type MarketFunding = {
   id: string;
@@ -110,9 +122,10 @@ export type MarketFunding = {
   args: { receiver_id: string; amount: string; memo: null; msg: string };
   gas: string;
   deposit: "1";
+  storageDeposit?: MarketStorageDeposit | null;
 };
 type Nearby = {
-  wallet?: { account: string | null; balance: number | null };
+  wallet?: { account: string | null; balance: number | null; registered?: boolean | null };
   tasks: MarketTask[];
   forMe: MarketTask[];
   taking: MarketTask[];
@@ -260,6 +273,11 @@ export function NearbyMarket({
         {tr("Real QGOLD from your account, held by the escrow contract until the task is done. Posting a task adds a 10 % fee on top; sends are free.")}
         {data.wallet?.balance != null && ` ${tr("You hold {0} QGOLD.", { 0: gold(data.wallet.balance) })}`}
       </p>
+      {data.wallet?.registered === false && (
+        <p className="nearby-note" role="status">
+          {tr("Sends and refunds reach this account once its first QGOLD payout registers it on the token.")}
+        </p>
+      )}
 
       {active.length > 0 && (
         <TaskSection title={tr("Your active tasks")} tasks={active} onOpen={(t) => setOpenTask({ id: t.id })} />

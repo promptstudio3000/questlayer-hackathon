@@ -30,10 +30,26 @@ const DUE_OPS = `SELECT o.* FROM mk_chain_ops o WHERE o.state='queued' OR (o.sta
 const terminalRejection = (op, proof) =>
   proof.state === "retry" && proof.reason === "final_contract_rejection" && op.method !== "withdraw_for";
 
+// The escrow sponsors the token registration only of payees who earned a task
+// or Secret payout. A send or refund to an account the token does not know
+// yet would fail its ft_transfer and burn retries, so it waits here instead:
+// the account is registered by its first QGOLD payout, or by the player.
+export const REGISTRATION_WAIT_MS = 15 * 60_000;
+export const RECIPIENT_UNREGISTERED = "recipient_unregistered";
+/** True when `withdraw_for(account)` would push to an account the token cannot credit yet. */
+export async function awaitsRegistration(view, tokenView, account) {
+  if (!tokenView) return false;
+  const [earned, registered] = await Promise.all([
+    view("is_earned", { account_id: account }).catch(() => false),
+    tokenView("storage_balance_of", { account_id: account }),
+  ]);
+  return earned !== true && !registered;
+}
+
 /** One durable publisher lease, immutable signed attempts, and receipt-based acknowledgement. */
-export async function runEscrowDelivery(db, { call, view, now, maxOps, clock }) {
+export async function runEscrowDelivery(db, { call, view, now, maxOps, clock, tokenView = null }) {
   ensureEscrowDeliverySchema(db);
-  const result = { sent: 0, failed: 0, rejected: 0, pending: 0 };
+  const result = { sent: 0, failed: 0, rejected: 0, pending: 0, deferred: 0 };
   if (!maxOps || !call?.prepare || !call?.send || !call?.status || !call?.verify) return result;
   const start = Date.now(), tick = clock ?? (() => now + Date.now() - start), owner = randomUUID(), scope = call.scope;
   const claim = db.prepare(`INSERT INTO mk_delivery_lease VALUES(?,?,?) ON CONFLICT(scope)
@@ -88,6 +104,12 @@ export async function runEscrowDelivery(db, { call, view, now, maxOps, clock }) 
               }); result.sent++; continue;
             }
             if (typeof credit !== "string" || !/^[1-9][0-9]{0,38}$/.test(credit)) throw Error("Invalid escrow credit view");
+            if (await awaitsRegistration(view, tokenView, JSON.parse(op.args).account_id)) {
+              current(op, attempt);
+              atomic(db, () => { current(op, attempt);
+                db.prepare("UPDATE mk_chain_ops SET last_error=?,run_after=? WHERE id=?").run(RECIPIENT_UNREGISTERED, now + REGISTRATION_WAIT_MS, op.id);
+              }); result.deferred++; continue;
+            }
           }
           const prepared = await call.prepare(op); fence();
           call.verify(prepared, op);

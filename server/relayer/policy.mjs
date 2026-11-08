@@ -6,6 +6,21 @@ import { isNativeEdition } from "../aura-catalog.mjs";
 
 export const SOCIAL_CONTRACT = SOCIAL_CONTRACT_ID;
 export const STORAGE_DEPOSIT = 50000000000000000000000n; // 0.05 NEAR
+/**
+ * Escrow storage deposits (contracts/qgold-escrow `storage_deposit`) are
+ * relayed on a ladder of 0.05 NEAR steps up to 0.5 NEAR (a 50-slot task needs
+ * about 0.43 NEAR): fixed storage-class amounts, like every other relayed deposit.
+ */
+export const ESCROW_STORAGE_DEPOSIT_MAX = 500000000000000000000000n; // 0.5 NEAR
+export const escrowStorageLadder = (deposit) => {
+  let d;
+  try {
+    d = BigInt(deposit);
+  } catch {
+    return false;
+  }
+  return d > 0n && d % STORAGE_DEPOSIT === 0n && d <= ESCROW_STORAGE_DEPOSIT_MAX;
+};
 export const MAX_ARGS_BYTES = 8192;
 export const MAX_METHOD_NAME = 64;
 
@@ -611,6 +626,29 @@ export function validateDelegate(decoded, context) {
       "RELAY_ARGS",
       "QGOLD can be sent only into the market escrow.",
     );
+  } else if (c.qgoldEscrow != null && receiverId === c.qgoldEscrow) {
+    // The funder's native storage deposit for one market agreement
+    // (contracts/qgold-escrow `storage_deposit`). The relayer carries the NEAR
+    // within its daily deposit budget; `grant: true` makes the escrow book it
+    // as a grant the player can spend on agreements but never withdraw, so a
+    // relayed call (predecessor = the player) cannot turn sponsorship into NEAR.
+    demand(
+      method === "storage_deposit",
+      "RELAY_METHOD",
+      `${method} on ${receiverId} is not sponsored.`,
+    );
+    demand(
+      escrowStorageLadder(deposit),
+      "RELAY_DEPOSIT",
+      "An escrow storage deposit is a multiple of 0.05 NEAR, at most 0.5 NEAR.",
+    );
+    demand(
+      keysOf(args, ["account_id", "grant"]) &&
+        args.account_id === senderId &&
+        args.grant === true,
+      "RELAY_ARGS",
+      "An escrow storage deposit is a grant for your own account.",
+    );
   } else if (c.intents != null && receiverId === c.intents) {
     // Registering or removing the key that signs intents; trades and
     // withdrawals are signed intents the solver submits, never relayed calls.
@@ -670,9 +708,14 @@ export function validateDelegate(decoded, context) {
       "Only the game's own profile, note and place records are published through the relayer.",
     );
   } else fail("RELAY_RECEIVER", "This contract is not sponsored.");
-  // Defense in depth: the branches above only accept these amounts.
+  // Defense in depth: the branches above only accept these amounts (plus the
+  // escrow storage ladder, bounded above).
   demand(
-    RELAYED_DEPOSITS.includes(deposit),
+    RELAYED_DEPOSITS.includes(deposit) ||
+      (c.qgoldEscrow != null &&
+        receiverId === c.qgoldEscrow &&
+        method === "storage_deposit" &&
+        escrowStorageLadder(deposit)),
     "RELAY_DEPOSIT",
     "Only storage-class deposits are relayed.",
   );

@@ -355,6 +355,26 @@ export class Relayer {
         409,
         "RELAY_SOCIAL_STORAGE",
       );
+    } else if (
+      this.contracts.qgoldEscrow &&
+      call.receiverId === this.contracts.qgoldEscrow &&
+      call.methodName === "storage_deposit"
+    ) {
+      // The market server sizes the deposit as the shortfall for one
+      // agreement; a deposit the escrow already covers is not sponsored twice.
+      const balance = await this.chainView(
+        this.contracts.qgoldEscrow,
+        "storage_balance_of",
+        { account_id: call.senderId },
+      );
+      assert(
+        !balance ||
+          (/^\d{1,39}$/.test(String(balance.available)) &&
+            BigInt(balance.available) < BigInt(call.deposit)),
+        "Your escrow storage deposit already covers this agreement. Prepare it again.",
+        409,
+        "RELAY_ESCROW_STORAGE",
+      );
     }
   }
   /** Only a real, unredeemed, unexpired award voucher for this account. */

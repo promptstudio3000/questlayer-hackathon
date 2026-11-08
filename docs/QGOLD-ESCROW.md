@@ -100,10 +100,20 @@ owner; the game server calls it after every payout.
 
 The funder of a task, Secret or send holds a native NEAR deposit on the escrow:
 
-- `storage_deposit({account_id?})` + NEAR — anyone may top up anyone (the game can sponsor a player's
-  first deposit). The first deposit of an account also pays 256 bytes for its own record.
-- `storage_withdraw({amount?})` with 1 yocto — returns what is not locked; works while paused.
-- `storage_balance_of(account_id)` → `total`, `available`, `locked`, `locked_bytes`.
+- `storage_deposit({account_id?, grant?})` + NEAR — anyone may top up anyone. A deposit made by
+  someone else, or with `grant: true`, is a **grant**: it pays for agreements but is never
+  withdrawable. The game's relayer sponsors players' deposits with `grant: true` (a relayed
+  NEP-366 call arrives with the player as predecessor), on a ladder of 0.05 NEAR steps up to
+  0.5 NEAR (`server/relayer/policy.mjs`), only for the signer's own account and only while the
+  escrow does not already cover the amount; so sponsoring storage never hands out NEAR. The first
+  deposit of an account also pays 256 bytes for its own record.
+- `storage_withdraw({amount?})` with 1 yocto — returns what is the account's own and not locked
+  (`withdrawable`); works while paused.
+- `storage_balance_of(account_id)` → `total`, `available`, `withdrawable`, `granted`, `locked`,
+  `locked_bytes`.
+- `is_earned(account_id)` → whether `withdraw_for` registers this account on the token (paid as a
+  worker or a Secret creator). The market worker holds sends and refunds to accounts the token does
+  not know yet (`recipient_unregistered`, re-checked every 15 min) instead of burning retries.
 
 Opening an agreement needs its whole storage headroom available in the funder's deposit (a one-slot
 task about 5.9 KB ≈ 0.059 NEAR, a Secret or send 4.6 KB ≈ 0.046 NEAR at 1e19 yocto per byte;
@@ -148,6 +158,8 @@ operator) and `questlayer-escrow-pub-20261105.testnet` (publisher = moderator = 
 registers the escrow on QGOLD, gives the publisher account a function-call key for the escrow's
 release/refund methods only (`.data/escrow-publisher.json`), deletes every escrow access key, and
 smoke-tests fund → publisher release → `withdraw_for`. The escrow keeps ~3 NEAR for its own storage
-and for registering earning payees on the token (0.0025 NEAR each). The smoke test and the game server
-must give each funder a native `storage_deposit` on the escrow before its first agreement; this
-candidate has not been deployed, so the script and the server flow still need that step.
+and for registering earning payees on the token (0.0025 NEAR each). The smoke test gives the operator
+a native `storage_deposit` on the escrow before its send and registers the publisher on the token
+(a send recipient is not registered by the escrow). In the game the market adds the funder's missing
+storage deposit to every funding response (`docs/TASK-MARKET.md`). This candidate has not been
+deployed; the release hash comes from the reproducible CI build.
