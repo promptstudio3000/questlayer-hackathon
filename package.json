@@ -25,6 +25,7 @@
     "world:preview": "node server/prepare-worlds.mjs --preview",
     "world:validate": "node server/cli/world-validate.mjs",
     "world:pilot": "node scripts/run-world-pilot.mjs",
+    "verify:money-flow": "node scripts/verify-money-flow-testnet.mjs",
     "staking:probe": "node scripts/probe-staking-testnet.mjs",
     "funding:simulate": "node scripts/simulate-native-funding.mjs",
     "e2e:first-session": "node scripts/e2e-first-session.mjs",
