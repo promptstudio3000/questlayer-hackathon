@@ -869,8 +869,8 @@ export default function App() {
     collecting = useRef(new Set<string>()),
     collectionRun = useRef<AbortController | null>(null),
     gps = useRef<number | null>(null),
-    latest = useRef({ world, position, fix, arena, player, nativePlay });
-  latest.current = { world, position, fix, arena, player, nativePlay };
+    latest = useRef({ world, position, fix, arena, player, nativePlay, introOpen });
+  latest.current = { world, position, fix, arena, player, nativePlay, introOpen };
   const pickupFeedback = usePickupFeedback(
     nativePlay ? "" : demoPickupScope(player?.id, world?.id, arena),
     tab !== "explore" ||
@@ -892,7 +892,7 @@ export default function App() {
       endsAt: state.world?.endsAt,
       nativePlay: state.nativePlay,
       loading: worldLoading.current,
-      visible: !document.hidden,
+      visible: !document.hidden && !state.introOpen,
       online: navigator.onLine,
     };
   }
@@ -3223,7 +3223,7 @@ export default function App() {
   const mapFullOn = mapFull && tab === "explore" && !sheetExpanded && !globe;
   const mapVisible = tab === "explore";
   const wearableReady = !!wearableMoment && wearableMoment.scope === demoPickupScope(player?.id, world?.id, arena) && !nativePlay;
-  const showWearableMoment = wearableReady && mapVisible && !sheetExpanded && !actorOpen && !showNpc && !discovery && !findInspect;
+  const showWearableMoment = wearableReady && mapVisible && !introOpen && !sheetExpanded && !actorOpen && !showNpc && !discovery && !findInspect;
   const mapInteractive = mapVisible && !introOpen && !sheetExpanded && !actorOpen && !showNpc && !showWearableMoment && !(findInspect && findInspect.worldId === world?.id);
   const objective = mapObjective({
     selection: !!selected,
