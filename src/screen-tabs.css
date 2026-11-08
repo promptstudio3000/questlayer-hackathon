@@ -447,3 +447,6 @@ button.settings-row:hover {
   padding-top: 0;
   border-top: 0;
 }
+.settings-links { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 0 4px; }
+.settings-links a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--control-border); border-radius: 999px; color: var(--ink); font-size: 14px; text-decoration: none; }
+.settings-links a:hover { background: var(--surface-soft); }
