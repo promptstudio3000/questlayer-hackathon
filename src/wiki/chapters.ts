@@ -703,7 +703,7 @@ export const CHAPTERS: Chapter[] = [
     summary: "Where fees go, what GOLD can buy, and how tasks, Secrets and conditional sends settle.",
     status: "partial",
     updated: "2026-11-06",
-    sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json"],
+    sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts"],
     blocks: [
       { viz: "fees" },
       {
@@ -728,7 +728,7 @@ export const CHAPTERS: Chapter[] = [
           "**Secrets:** a creator hides a place; finders pay to reveal it and the creator gets 90 % after a GPS visit or 7 days without dispute. A sponsor can prepay finder rewards so the reveal is free.",
           "**Conditional sends:** escrow that releases on a condition, no fee.",
           "In the security candidate, each shop purchase keeps one saved reference from price quote through burn and delivery. The server verifies direct or relayed payment receipts; retries return the saved result. If an item becomes unavailable after payment, its credit stays recorded for resolution.",
-          "Everything settles in real QGOLD. The poster, buyer or sender pays it from their own NEAR account into the `qgold-escrow` contract with one sponsored `ft_transfer_call` (task/Secret payments stay seamless; peer transfers use protected account approval in the security candidate). The server confirms the exact payment, recipient, deadline and conditions before opening the task, Secret or send.",
+          "Everything settles in real QGOLD. The poster, buyer or sender pays it from their own NEAR account into the `qgold-escrow` contract with one sponsored `ft_transfer_call` (with the secure account, every escrow payment, whether a task, a Secret or a send, opens its approval window, which names the contract, method, amount and who can be paid, decoded from the exact message; a game page alone can never fund one). The server confirms the exact payment, recipient, deadline and conditions before opening the task, Secret or send.",
           "A returned payment never opens a paid Secret or creates a new reward. A completed payment stays completed after a restart, and existing confirmations are preserved. An uncertain payment waits for verification without another approval from the player; normal exploration stays available.",
           "In the security candidate, sponsored token registration is a lifetime grant that cannot be cashed out by unregistering. Escrow admission reserves storage before accepting a payment; genuine appeals remain available, while unrelated workers cannot freeze an unassigned slot.",
           "If a reward or refund transfer fails, the escrow keeps the credit and the worker retries after verifying the failure. Restart recovery checks the same payment before sending again. New rewards remain owed even while an earlier payment is in progress; no extra player confirmation is required.",

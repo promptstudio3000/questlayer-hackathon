@@ -21,6 +21,7 @@ import {
   signOutOtherSessions,
 } from "../account-recovery.ts";
 import {
+  describeReview,
   needsProtection,
   trustedVaultMessage,
   validateVaultCall,
@@ -194,7 +195,6 @@ async function reviewed(request: Request, record: PlayerKeyRecord) {
     call,
     config,
     (memo) => api(`/gold/burn/intent?memo=${encodeURIComponent(memo)}`),
-    (id) => api(`/market/funding-intent?id=${encodeURIComponent(id)}`),
   );
   return { protected: protectedAction, review: call };
 }
@@ -416,79 +416,25 @@ if (location.pathname === "/approve") {
     intro.textContent =
       "Review the account, destination and amount. Approve only the action you started in QuestLayer.";
     const review = document.createElement("section"),
-      data = pending.review as Partial<VaultCall> & {
-        account?: string;
-        operation?: string;
-        keyToRemove?: string;
-        recipient?: string;
-        authorization?: string;
-      };
+      view = describeReview(pending.review, config);
+    if (view.warnings.length) {
+      const warnings = document.createElement("ul");
+      warnings.className = "warnings";
+      warnings.setAttribute("role", "alert");
+      for (const warning of view.warnings) {
+        const item = document.createElement("li");
+        item.textContent = warning;
+        warnings.append(item);
+      }
+      review.append(warnings);
+    }
     const fields = document.createElement("dl");
-    const pair = (label: string, value: string) => {
+    for (const [label, value] of view.lines) {
       const term = document.createElement("dt"),
         description = document.createElement("dd");
       term.textContent = label;
       description.textContent = value;
       fields.append(term, description);
-    };
-    const units = (value: string, decimals: number) => {
-      if (!/^[0-9]{1,39}$/.test(value)) return value;
-      const digits = value.padStart(decimals + 1, "0"),
-        fraction = digits.slice(-decimals).replace(/0+$/, "");
-      return `${digits.slice(0, -decimals)}${fraction ? `.${fraction}` : ""}`;
-    };
-    pair(
-      "Your account",
-      data.accountId ?? data.account ?? "Selected recovery passkey",
-    );
-    const action = data.actions?.[0];
-    if (action?.kind === "functionCall") {
-      const labels: Record<string, string> = {
-        ft_transfer: "Transfer tokens",
-        ft_transfer_call: "Fund a contract",
-        redeem: "Withdraw QGOLD",
-        withdraw: "Withdraw funds",
-        claim_exit: "Collect queued withdrawal",
-        nft_transfer: "Transfer collectible",
-        nft_approve: "Authorize collectible transfer",
-      };
-      pair(
-        "Action",
-        labels[action.methodName] ?? `Contract action: ${action.methodName}`,
-      );
-      pair("Contract", data.receiverId!);
-      if (typeof action.args.receiver_id === "string")
-        pair("Recipient", action.args.receiver_id);
-      if (typeof action.args.amount === "string")
-        pair(
-          "Amount",
-          data.receiverId === config.contracts.qgold
-            ? `${units(action.args.amount, 6)} QGOLD`
-            : `${action.args.amount} token base units`,
-        );
-      if (action.deposit !== "0" && action.deposit !== "1")
-        pair("Attached NEAR", units(action.deposit, 24));
-      if (typeof action.args.token_id === "string")
-        pair("Collectible", action.args.token_id);
-    } else if (action) {
-      pair(
-        "Action",
-        action.kind === "addKey" ? "Add account key" : "Remove account key",
-      );
-      pair("Public key", action.publicKey);
-    } else {
-      const labels: Record<string, string> = {
-        setupRecovery: "Create recovery passkey",
-        restoreRecovery: "Recover account",
-        revokeKey: "Remove device key",
-        revokeSessions: "Sign out other game sessions",
-      };
-      pair(
-        "Action",
-        labels[data.operation ?? ""] ?? "Authorize signed message",
-      );
-      if (data.keyToRemove) pair("Public key to remove", data.keyToRemove);
-      if (data.recipient) pair("Authorization recipient", data.recipient);
     }
     const details = document.createElement("details"),
       summary = document.createElement("summary"),
