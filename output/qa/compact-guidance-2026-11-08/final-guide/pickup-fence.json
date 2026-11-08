@@ -1,0 +1,7 @@
+{
+  "provenance": "Actual App; one synthetic UI coin at spawn, every claim intercepted and aborted",
+  "introClaimRequests": 0,
+  "afterContinueClaimRequests": 1,
+  "serverClaims": 0,
+  "oneIntroDialog": true
+}
