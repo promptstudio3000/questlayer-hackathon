@@ -1,0 +1,18 @@
+{
+  "fixture": "synthetic position; real local API and UI",
+  "results": [
+    {
+      "kind": "npc",
+      "accepted": "accepted",
+      "draftRestored": true,
+      "keyboardViewport": true,
+      "enlargedText": true,
+      "nextQuestFocused": true
+    },
+    {
+      "kind": "monster",
+      "outcome": "won",
+      "score": 3
+    }
+  ]
+}

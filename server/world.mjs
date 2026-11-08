@@ -1,4 +1,6 @@
 import { getOrPrepareCityPlan } from "./world-planner.mjs";
+import { preparedActivityWorld, assertGlobalActivityReady } from "./global-activities.mjs";
+import { decorateGlobalRewardWorld,globalPrizeForQuest } from './global-rewards.mjs';
 import { localDateBounds } from "./spatial/calendar.mjs";
 import tzLookup from "tz-lookup";
 import { latLngToCell, cellToLatLng, cellToBoundary } from "h3-js";
@@ -25,6 +27,7 @@ import {
 import { AUTO_CITY_NOTICE } from "./spatial/auto-cities.mjs";
 import { describeStoredQuest } from "./quest-templates.mjs";
 import { STREET_FIND_XP, streetFindIds } from "./street-finds.mjs";
+import { wearableFinds } from "./gotchi-wearables.mjs";
 import { publicPathSnapshot } from "./spatial/map-data.mjs";
 import {
   worldQuery,
@@ -60,6 +63,7 @@ import {
   materializeCellRewards,
   nextWave,
 } from "./map-rewards/service.mjs";
+import { ensureMapRewardsSchema } from "./map-rewards/schema.mjs";
 export const HOME = DEFAULT_CITY.center;
 export const ZONE_NAMES = DEFAULT_CITY.candidates.map((c) => c.name);
 const databasePending = new WeakMap();
@@ -221,8 +225,12 @@ export async function ensureWorld(
   location = HOME,
   arena = true,
   now = Date.now(),
-  { mapData = {}, poiSource, cellAt = null } = {},
+  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR } = {},
 ) {
+  // An installed global day is read-only on player arrival. Plzen retains its
+  // reviewed citywide six-slot world; the arena remains its existing simulation.
+  if (globalActivities && !arena && cityFor(location)?.id !== "plzen")
+    return preparedActivityWorld(db, cellAt || location, now);
   const world = await ensureBaseWorld(db, location, arena, now, { mapData });
   if (!world.cityId && arena) return world;
   // A searched spot must lie in the same city; otherwise the player's own cell.
@@ -483,10 +491,11 @@ export function worldView(db, id, player = null, options = {}) {
     })();
   const row = db.prepare("SELECT manifest FROM worlds WHERE id=?").get(id);
   if (!row) return null;
+  assertGlobalActivityReady(db, JSON.parse(row.manifest));
   const query = worldQuery(options),
     near = query.limit ? null : nearQuery(options.near),
     now = options.now ?? Date.now(),
-    manifest = publicManifest(db, JSON.parse(row.manifest)),
+    manifest = publicManifest(db, decorateGlobalRewardWorld(db,JSON.parse(row.manifest))),
     closed = closedPlaces(db, manifest.cityId),
     paused = pauseState(db, manifest.cityId, manifest.day);
   mark("wmanifest");
@@ -497,7 +506,7 @@ export function worldView(db, id, player = null, options = {}) {
     .all(player, player, id)
     .map((q) => {
       const meta = JSON.parse(q.metadata || "{}");
-      const cps = meta.checkpoints || [];
+      const cps = meta.checkpoints || [], nearPrize=globalPrizeForQuest(db,q.id);
       // A category hunt takes its stops in any order: point at the first open one.
       const visited = meta.unordered ? huntVisited(db, q.id, player) : null;
       return {
@@ -509,7 +518,19 @@ export function worldView(db, id, player = null, options = {}) {
           ? cps.find((_, i) => !visited.has(i)) || null
           : cps[q.checkpoint] || null,
         ...(visited ? { visitedStops: [...visited].sort((a, b) => a - b) } : {}),
-        activity: describeStoredQuest(q, meta),
+        // Stops still ahead, so the map can draw the walk to the next one and
+        // beyond (ordered walks in order; hunts list every unvisited stop).
+        ...(cps.length > 1
+          ? {
+              stops: (visited
+                ? cps.filter((_, i) => !visited.has(i))
+                : cps.slice(q.checkpoint)
+              ).map((p) => ({ lat: p.lat, lng: p.lng })),
+            }
+          : {}),
+        activity: {...describeStoredQuest(q, meta),...(nearPrize?{rewardConstraint:nearPrize.available?`Personal XP for everyone. The first confirmed completion also earns ${nearPrize.amountNear} NEAR, converted to QGOLD at settlement; fractional NEAR stays credited.`:'The shared NEAR prize was already earned. You can still finish for personal XP.'}:{})},
+        ...(nearPrize?{nearPrize}:{}),
+        ...(meta.author ? { author: meta.author } : {}),
         ...(meta.clue ? { clue: clueView(db, q.id, meta.clue, player, options.lang) } : {}),
       };
     });
@@ -594,7 +615,8 @@ export function worldView(db, id, player = null, options = {}) {
   const hidden = manifest.mapRewards ? hiddenCoinIds(db, id, now) : null,
     tiers = manifest.mapRewards ? coinTiers(db, id) : null;
   if (hidden?.size) rows = rows.filter((c) => !hidden.has(c.id));
-  const finds = streetFindIds(db, id);
+  const finds = streetFindIds(db, id),
+    wearables = wearableFinds(db, id);
   mark("wfinds");
   const more = !!query.limit && rows.length > query.limit,
     page = query.limit ? rows.slice(0, query.limit) : rows;
@@ -611,7 +633,11 @@ export function worldView(db, id, player = null, options = {}) {
       .map((c) => {
         const tier = tiers?.get(c.id);
         const out = tier && tier !== "small" ? { ...c, tier } : c;
-        return finds.has(c.id) ? { ...out, find: true } : out;
+        if (!finds.has(c.id)) return out;
+        const w = wearables.get(c.id);
+        return w
+          ? { ...out, find: true, wearable: { id: w.id, name: w.name, rarity: w.rarity } }
+          : { ...out, find: true };
       }),
     streetFindXp: STREET_FIND_XP,
     ...(manifest.mapRewards
@@ -649,6 +675,7 @@ export function worldView(db, id, player = null, options = {}) {
   return view;
 }
 export function expireWorlds(db, now = Date.now()) {
+  ensureMapRewardsSchema(db);
   return atomic(db, () => {
     // Worlds already closed out are skipped in SQL, so this stays cheap as
     // past days pile up (it runs on every POST /api/world).
@@ -664,12 +691,14 @@ export function expireWorlds(db, now = Date.now()) {
         continue;
       const coins = db
           .prepare(
-            "SELECT COALESCE(SUM(value_u),0) AS n FROM coins WHERE world_id=? AND claimant IS NULL",
+            // Map coins and cell zones are backed by the day's chain budget,
+            // not by this treasury, so they never roll back into it.
+            "SELECT COALESCE(SUM(value_u),0) AS n FROM coins c WHERE world_id=? AND claimant IS NULL AND NOT EXISTS(SELECT 1 FROM map_coin_meta m WHERE m.coin_id=c.id)",
           )
           .get(row.id).n,
         quests = db
           .prepare(
-            "SELECT COALESCE(SUM(gold_u),0) AS n FROM quests WHERE world_id=? AND claimant IS NULL",
+            "SELECT COALESCE(SUM(gold_u),0) AS n FROM quests WHERE world_id=? AND claimant IS NULL AND NOT (json_valid(metadata) AND json_extract(metadata,'$.cellZone.cell') IS NOT NULL)",
           )
           .get(row.id).n;
       for (const [bucket, n] of [

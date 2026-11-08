@@ -1,0 +1,30 @@
+# The owner reviews every change to these paths. Enforced only when branch
+# protection "Require review from Code Owners" is on; the Protected paths
+# workflow (.github/workflows/guard.yml) enforces the same list in CI.
+/contracts/            @promptstudio3000
+/rust-toolchain.toml   @promptstudio3000
+/.github/              @promptstudio3000
+/deploy/               @promptstudio3000
+/package.json          @promptstudio3000
+/package-lock.json     @promptstudio3000
+/scripts/lib/          @promptstudio3000
+/server/native/        @promptstudio3000
+/server/payouts/       @promptstudio3000
+/server/qgold/         @promptstudio3000
+/server/relayer/       @promptstudio3000
+/server/market/        @promptstudio3000
+/server/chain-ledger/  @promptstudio3000
+/server/identity/      @promptstudio3000
+/server/map-rewards/   @promptstudio3000
+/AGENTS.md             @promptstudio3000
+/GEMINI.md             @promptstudio3000
+/docs/HANDOFF-WEEKEND.md @promptstudio3000
+/server/index.mjs      @promptstudio3000
+/server/signing-vault.mjs @promptstudio3000
+/server/signing-vault-cors.mjs @promptstudio3000
+/signing-vault.html    @promptstudio3000
+/src/signing-vault/    @promptstudio3000
+/src/player-key.ts     @promptstudio3000
+/src/native-signer.ts  @promptstudio3000
+/src/qgold-burn.ts     @promptstudio3000
+/src/account-recovery.ts @promptstudio3000

@@ -1,0 +1,91 @@
+/* Approved mobile study: quieter map chrome and a focused discovery surface.
+   Geometry stays independent of open overlays; map and reward logic are unchanged. */
+.app-shell[data-screen] .rail-links button {
+  min-height: 56px;
+  border: 0;
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+  box-shadow: 0 2px 12px #1a033514;
+}
+.app-shell[data-screen] .rail-links button span { font-size: 16px; }
+.app-shell[data-screen] .topbar .profile-pill,
+.app-shell[data-screen] .topbar .daily-board-chip,
+.app-shell[data-screen] .map-toolbar > button {
+  border: 0;
+  box-shadow: 0 2px 12px #1a033514;
+  background: var(--surface-raised);
+}
+.app-shell[data-screen] .topbar .profile-pill { padding: 4px 12px 4px 6px; }
+.app-shell[data-screen] .hud-xp-text b { display: flex; align-items: baseline; gap: 8px; line-height: 1.5; }
+.hud-player-name { display: inline-block; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.5; }
+.app-shell[data-screen] .hud-xp-text b > span:last-child { font-size: 14px; font-weight: 400; color: var(--ink-secondary); }
+.app-shell[data-screen] .hud-xp-text small { font-size: 12px; color: var(--ink-secondary); }
+.app-shell[data-screen] .hud-xp-level { border: 2px solid var(--surface-raised); }
+.app-shell[data-screen] .map-toolbar > button { border-radius: var(--radius-item); }
+.app-shell .map-stage[aria-hidden="true"] .maplibregl-ctrl-attrib { visibility: hidden; }
+.app-shell[data-screen] .map-status-chip { border: 0; border-radius: 10px; background: var(--surface-raised); box-shadow: 0 2px 12px #1a03350c; }
+.app-shell[data-screen] .map-status-chip button { background: transparent; font-weight: 500; font-size: 14px; }
+.app-shell[data-screen] .main-panel.explore-panel.sheet-compact {
+  padding: 16px;
+  border: 0;
+  border-radius: var(--radius-sheet);
+  background: var(--surface-raised);
+  box-shadow: 0 4px 24px #1a03351a;
+}
+.app-shell[data-screen] .sheet-compact .first-session h2 { font-size: 20px; font-weight: 500; }
+.app-shell[data-screen] .sheet-compact .primary-button { border: 0; border-radius: 10px; min-height: 52px; box-shadow: none; font-size: 16px; font-weight: 500; }
+.app-shell[data-screen] .sheet-compact .compact-selection,
+.app-shell[data-screen] .sheet-compact .recommended-quest { gap: 12px; }
+.app-shell[data-screen] .sheet-compact strong { font-size: 20px; font-weight: 500; }
+.app-shell[data-screen] .sheet-compact .game-object-art { flex: none; }
+.app-shell[data-screen] .demo-pad,
+.app-shell[data-screen] .demo-pad-open {
+  border: 0;
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+  box-shadow: 0 2px 12px #1a033514;
+}
+.app-shell[data-screen] .demo-pad-grid button { border: 0; background: var(--surface-soft); border-radius: var(--radius-control); }
+.app-shell[data-screen] .demo-pad-grid button[aria-pressed="true"] { background: var(--action); color: var(--on-action); }
+.app-shell[data-screen] .demo-pad-open { display: inline-flex; align-items: center; gap: 8px; width: auto; min-width: 48px; padding: 8px 14px; color: var(--ink); font-size: 14px; }
+
+/* Existing native dialog: sticky close, truthful requirement and one main action. */
+.game-dialog-map:has(.quest-detail) { background: var(--surface); border-color: var(--decorative-border); border-radius: var(--radius-sheet); }
+.game-dialog-map .main-panel .quest-detail { border-top: 0; padding-top: 4px; margin-top: 0; }
+.game-dialog-map .quest-detail-art { width: 152px; height: 152px; padding: 12px; margin: 12px auto 24px; border-radius: 50%; background: var(--surface-soft); }
+.game-dialog-map .quest-detail-art .game-object-art { width: 112px; height: 112px; }
+.game-dialog-map .quest-detail .section-label { align-items: start; gap: 12px; flex-wrap: wrap; }
+.game-dialog-map .quest-detail h2 { font-size: 28px; line-height: 1.2; font-weight: 500; margin: 0; }
+.game-dialog-map .quest-detail > p { font-size: 16px; line-height: 1.5; color: var(--ink-secondary); margin: 12px 0 20px; }
+.game-dialog-map .quest-detail .play-facts { border: 0; padding: 0; background: none; font-size: 16px; }
+.game-dialog-map .quest-prizes { display: flex; flex-wrap: wrap; gap: 12px 20px; padding: 18px 0; border-top: 1px solid var(--decorative-border); border-bottom: 1px solid var(--decorative-border); margin: 20px 0; }
+.game-dialog-map .quest-prizes > span { font-size: 16px; font-weight: 500; }
+.game-dialog-map .quest-location { display: flex; align-items: flex-start; gap: 10px; margin: 20px 0; font-size: 16px; color: var(--ink-secondary); }
+.game-dialog-map .quest-location > svg { flex: none; margin-top: 4px; width: 20px; height: 20px; }
+.game-dialog-map .quest-location strong { display: block; margin-bottom: 4px; color: var(--ink); font-size: 14px; font-weight: 500; }
+.game-dialog-map .quest-detail > .primary-button { width: 100%; min-height: 52px; border: 0; border-radius: 10px; box-shadow: none; font-size: 16px; font-weight: 500; }
+.game-dialog-map .quest-detail .fine-print { font-size: 14px; line-height: 1.5; }
+.game-dialog-map .quest-detail .quest-requirement { margin: 0 0 16px; }
+.game-dialog-encounter .find-details-art { width: 160px; min-height: 160px; margin: 16px auto; border-radius: 50%; background: var(--surface-soft); }
+.game-dialog-encounter .find-details-art img { width: 128px; height: 128px; }
+.game-dialog-encounter .find-details h2 { font-size: 28px; font-weight: 500; line-height: 1.2; }
+.game-dialog-encounter .find-details p { font-size: 16px; color: var(--ink-secondary); }
+.app-shell[data-screen="inventory"] .screen-tabs-primary { background: transparent; border: 0; border-bottom: 1px solid var(--decorative-border); border-radius: 0; padding: 0; box-shadow: none; }
+.app-shell[data-screen="inventory"] .screen-tabs-primary button { background: transparent; border-radius: 0; min-height: 48px; font-size: 16px; box-shadow: none; }
+.app-shell[data-screen="inventory"] .screen-tabs-primary button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -3px 0 var(--action); }
+.app-shell[data-screen="inventory"] .screen-tabs-primary .screen-tab-icon { display: none; }
+/* phone-map.css owns control anchors for both expanded and collapsed movement. */
+@media (max-width: 390px) {
+  .app-shell[data-screen] .hud-xp-text .hud-player-name { max-width: 60px; font-size: 14px; }
+  .app-shell[data-screen] .topbar .profile-pill { padding-inline-end: 8px; }
+  .app-shell[data-screen] .hud-xp-text b { gap: 5px; }
+}
+@media (max-width: 600px) {
+  .game-dialog-map:has(.quest-detail) { max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .game-dialog-map .quest-detail h2 { font-size: 28px; }
+}
+@media (max-height: 500px) and (min-width: 600px) {
+  .app-shell[data-screen] .rail-links button { font-size: 14px; }
+  .game-dialog-map .quest-detail-art { width: 112px; height: 112px; float: inline-start; margin: 4px 20px 12px 0; }
+  .game-dialog-map .quest-detail-art .game-object-art { width: 88px; height: 88px; }
+}

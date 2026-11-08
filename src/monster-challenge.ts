@@ -36,7 +36,7 @@ export type HuntWinRewards = {
   xp: number;
   shards: { element: string; count: number } | null;
   rollTicket: boolean;
-  unlocks: { zoneId: string } | null;
+  unlocks: { zoneId: string; questId?: string } | null;
   /** Monster/NPC-only edition paid on the first win of this kind (once per player). */
   edition?: { id: string; name: string; rarity: string; edition: string } | null;
 };
@@ -84,4 +84,11 @@ export function retryLabel(retryAt: number | undefined, now = Date.now()) {
   if (!retryAt) return "";
   const min = Math.max(1, Math.ceil((retryAt - now) / 60000));
   return tr("You can try this monster again in {0} min.", { 0: min });
+}
+
+/** The same bounded board coordinates are used for keyboard and pointer input. */
+export function moveTraceCursor(point: [number, number], key: string): [number, number] {
+  const dx = key === "ArrowRight" ? 0.025 : key === "ArrowLeft" ? -0.025 : 0;
+  const dy = key === "ArrowDown" ? 0.025 : key === "ArrowUp" ? -0.025 : 0;
+  return [Math.max(0, Math.min(1, point[0] + dx)), Math.max(0, Math.min(1, point[1] + dy))];
 }

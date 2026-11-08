@@ -15,9 +15,11 @@ import {
   type Shop,
 } from "./gold-spend-client";
 import "./gold-spend.css";
+import { EmptyState } from "./EmptyState";
 
 // GOLD shop (QGOLD stream 4): everything here burns GOLD. Nothing pays another
-// player or changes odds. Until the QGOLD vault is live it spends practice GOLD.
+// player or changes odds. With the QGOLD vault open each purchase burns the
+// player's own QGOLD on chain first (src/qgold-burn.ts).
 const FRAME_NAME: Record<string, () => string> = {
   "frame-ember": () => tr("Ember frame"),
   "frame-frost": () => tr("Frost frame"),
@@ -48,9 +50,13 @@ export function GoldShop({
   onEmote?: (emote: string, until: number) => void;
 }) {
   const [shop, setShop] = useState<Shop | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState("");
   const [quote, setQuote] = useState<LureQuote | null>(null);
-  const load = useCallback(() => goldShop().then(setShop, (e) => notify(e.message, true)), [notify]);
+  const load = useCallback(() => goldShop().then(
+    value => { setShop(value); setLoadError(""); },
+    e => { setLoadError(e.message); notify(e.message, true); },
+  ), [notify]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -66,8 +72,12 @@ export function GoldShop({
       setBusy("");
     }
   };
-  if (!shop) return <p className="gold-shop-empty">{tr("Opening the shop…")}</p>;
-  const can = (price: number) => shop.balanceU >= price * GOLD;
+  if (!shop) return loadError ? (
+    <div className="secondary-load-error" role="alert">
+      <EmptyState art="coin" title={tr("Shop")} action={{ label: tr("Try again"), onClick: () => { setLoadError(""); void load(); } }}>{loadError}</EmptyState>
+    </div>
+  ) : <EmptyState art="coin" title={tr("Opening the shop…")} status />;
+  const can = (price: number) => shop.balanceU >= Math.round(price * GOLD);
   const priceTag = (price: number) => tr("{0} GOLD", { 0: price });
   const showEmote = (id: string) =>
     run(`show:${id}`, async () => {
@@ -81,8 +91,12 @@ export function GoldShop({
         <Sparkle weight="duotone" /> {tr("Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.")}
       </p>
       <p className="gold-shop-balance">
-        {tr("Your GOLD")}: <b>{gold(shop.balanceU, 0)}</b>
-        {shop.realm === "practice" && <small> · {tr("practice GOLD until the QGOLD vault opens")}</small>}
+        {shop.realm === "qgold" ? tr("Your QGOLD") : tr("Your GOLD")}: <b>{gold(shop.balanceU, shop.realm === "qgold" ? 6 : 0)}</b>
+        {shop.realm === "qgold" ? (
+          <small> · {tr("each purchase burns QGOLD from your NEAR account")}</small>
+        ) : (
+          <small> · {tr("practice GOLD until the QGOLD vault opens")}</small>
+        )}
       </p>
 
       <section aria-labelledby="gold-emotes">
@@ -98,7 +112,7 @@ export function GoldShop({
               className={`gold-emote${e.owned ? " owned" : ""}`}
               disabled={!!busy || (!e.owned && !can(e.price))}
               onClick={() => (e.owned ? showEmote(e.id) : run(`buy:${e.id}`, () => goldBuy(`emote:${e.id}`)))}
-              aria-label={e.owned ? tr("Show emote {0}", { 0: e.id }) : tr("Unlock emote {0} for {1} GOLD", { 0: e.id, 1: e.price })}
+              aria-label={`${e.owned ? tr("Show emote {0}", { 0: e.id }) : tr("Unlock emote {0} for {1} GOLD", { 0: e.id, 1: e.price })}, ${e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}`}
             >
               <span className="gold-emote-glyph" aria-hidden="true">
                 {EMOTE_GLYPH[e.id]}

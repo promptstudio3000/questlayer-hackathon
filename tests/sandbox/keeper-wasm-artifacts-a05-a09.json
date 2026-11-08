@@ -1,0 +1,19 @@
+{
+  "qgold": {
+    "filename": "questlayer_qgold.wasm",
+    "sha256": "16bd009ab92a5fe27257b492f8c21838941316f6479aa6a95af466c6f4b30327",
+    "source": "A06 lifetime registration candidate built locally from this ninth patch; not a release pin or current deployment claim."
+  },
+  "wnear": {
+    "filename": "w_near.wasm",
+    "sha256": "bf42d41cfe1ee902c117f198f39456c7c5aec37969ee0fd52057cee52a357f55",
+    "url": "https://raw.githubusercontent.com/near/core-contracts/1b0436c96379c63aee7d2429c6d5d24019031ab8/w-near/res/w_near.wasm"
+  },
+  "rhea": {
+    "filename": "ref_exchange_release_v1919.wasm",
+    "sha256": "8918c505017ceb57646bdd863c34e4fe56e2edc7756963d6f4a1f38d6f9c34d2",
+    "url": "https://raw.githubusercontent.com/xTRPs/ref-contracts/864513b6c2f7acdcb6a084ee9cb7c0dcd6507774/releases/ref_exchange_release.wasm",
+    "matchingArchiveUrl": "https://raw.githubusercontent.com/shawn10359/rhea-contracts/20b5f7e5be18099cee0ff94cdd5147092dc36f10/releases/ref_exchange_release_v1919.wasm",
+    "limitation": "Archived Ref/Rhea exchange 1.9.19 WASM. Two public copies match. Official source repositories return 404; origin authenticity and equivalence to any current deployment are NOT independently established. No public-chain query is performed."
+  }
+}

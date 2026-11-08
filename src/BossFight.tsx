@@ -1,3 +1,4 @@
+import { ActorPortrait } from "./ActorPortrait";
 // Weekly co-op boss sheet (NPC-PLAN §13.1, §13.4). Opened from the encounter
 // sheet when the boss offers "Strike". Every player chips at one shared HP
 // pool with a short mini-game; the server replays the inputs and turns the
@@ -6,9 +7,14 @@
 import { useEffect, useState } from "react";
 import { Lightning, Trophy, Timer } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
+import { withQgoldBurn } from "./qgold-burn";
 import { Dialog } from "./Dialog";
+import { ActivityHelp } from "./ActivityHelp";
+import { ChallengeExample } from "./ChallengeExample";
+import { useLearning } from "./useLearning";
+import { helpText } from "./activity-help";
 import { ChallengePlay } from "./MonsterChallenge";
-import { retryLabel, type Challenge, type MonsterRef } from "./monster-challenge";
+import { FORMAT_COPY, retryLabel, type Challenge, type ChallengeFormat, type MonsterRef } from "./monster-challenge";
 import "./monster-challenge.css";
 import { tr } from "./i18n";
 
@@ -65,13 +71,17 @@ export function BossFight({
   actor,
   encounter,
   worldId,
+  playerId,
   onClose,
 }: {
   actor: MonsterRef;
   encounter: string;
   worldId: string;
+  playerId?: string;
   onClose: () => void;
 }) {
+  const learning = useLearning(playerId);
+  const [exampleFormat, setExampleFormat] = useState<ChallengeFormat>("rhythm");
   const base = `/actors/${encodeURIComponent(actor.id)}/boss`;
   const [event, setEvent] = useState<BossEvent | null>(null);
   const [hit, setHit] = useState<Hit | null>(null);
@@ -103,6 +113,7 @@ export function BossFight({
       const r = await api<{ hit: Hit; event: BossEvent }>(base, { encounter });
       setEvent(r.event);
       setHit({ ...r.hit, actorId: actor.id });
+      learning.acknowledge("boss");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : tr("The boss is out of reach."));
     } finally {
@@ -131,7 +142,7 @@ export function BossFight({
     setBusy(true);
     setError(null);
     try {
-      const r = await api<Pouch & { crafted: { item: { name: string } } }>("/hunt/craft", { worldId, ...(recipe ? { recipe } : {}) });
+      const r = await withQgoldBurn<Pouch & { crafted: { item: { name: string } } }>("/hunt/craft", { worldId, ...(recipe ? { recipe } : {}) });
       setPouch(r);
       setCrafted(r.crafted.item.name);
     } catch (e) {
@@ -145,10 +156,10 @@ export function BossFight({
   const nextAt = ev?.you?.nextHitAt ?? null;
   const waiting = !!nextAt && nextAt > Date.now();
   return (
-    <Dialog label={tr("Weekly boss {0}", { 0: actor.name })} onClose={onClose}>
+    <Dialog presentation="encounter" label={tr("Weekly boss {0}", { 0: actor.name })} onClose={onClose}>
       <div className="monster-challenge monster-boss">
         <header className="monster-head">
-          <span className="monster-sigil" aria-hidden="true" />
+          <div className="monster-portrait"><ActorPortrait model={actor.model} label={actor.name} /></div>
           <div>
             <h2>{actor.name}</h2>
             <p className="monster-sub">{tr("Weekly boss at the Great Portal")}{ev ? tr(" · week {0}", { 0: ev.weekId.split("-W")[1] }) : ""}</p>
@@ -198,6 +209,15 @@ export function BossFight({
             <p className="monster-fair">
               {tr("Everyone hits the same health bar. One hit every 10 minutes; damage comes from your level and skill only. Land")}{" "}
               {ev?.hitsForEdition ?? 3} {" "}{tr("hits before it falls to earn the Bossbane Fangring.")}</p>
+            {learning.visible("boss") && <p className="learning-hint">{helpText("boss")}</p>}
+            <ActivityHelp topic="boss" onAcknowledge={() => learning.acknowledge("boss")}>
+              <label className="example-format-label">{tr("Choose an example")}
+                <select value={exampleFormat} onChange={event => setExampleFormat(event.target.value as ChallengeFormat)}>
+                  {(Object.keys(FORMAT_COPY) as ChallengeFormat[]).map(format => <option key={format} value={format}>{FORMAT_COPY[format].label}</option>)}
+                </select>
+              </label>
+              <ChallengeExample key={exampleFormat} format={exampleFormat} renderPlay={(c, submitExample) => <ChallengePlay challenge={c} busy={false} submit={submitExample} monster={actor} onDone={() => {}} onError={() => {}} />} />
+            </ActivityHelp>
             {waiting ? (
               <p className="monster-tell">
                 <Timer size={18} aria-hidden="true" /> {retryLabel(nextAt ?? undefined)}

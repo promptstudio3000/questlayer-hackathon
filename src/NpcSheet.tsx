@@ -1,9 +1,17 @@
+import { ArrowRight } from "./dir-icons";
+import { ActivityHelp } from "./ActivityHelp";
+import { useLearning } from "./useLearning";
+import { helpText } from "./activity-help";
+import { tr } from "./i18n";
+import { ActorPortrait } from "./ActorPortrait";
+import { useFormDraft } from "./useFormDraft";
+import { ScreenTabs, type ScreenTab } from "./ScreenTabs";
 // Encounter sheet for a roaming NPC, built like a game dialog: a big portrait
 // with the NPC's line in a speech bubble, the actions the server computed
 // (they always work without AI) and a box to write to them. Everything else
 // (open tasks, the keeper's vault, the character profile) lives in tabs.
 import { NpcGear } from "./NpcGear";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   BookOpen,
   CheckCircle,
@@ -17,10 +25,8 @@ import {
   Swap,
   Sword,
   Vault,
-  X,
 } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
-import { artUrl } from "./art-registry";
 import "./art-world";
 import LockedChip, { openStakeScreen } from "./LockedChip";
 import type { ActorEncounter, ActorOffer } from "./actor-types";
@@ -54,25 +60,12 @@ const ICON: Record<string, ReactNode> = {
   roll: <DiceFive weight="duotone" />,
   challenge: <Sword weight="duotone" />,
 };
-/** Portraits baked from the original models (scripts/bake-npc-portraits.mjs). */
-const BAKED = new Set(["chronicler", "merchant", "keeper", "pilgrim", "wisp"]);
 type Tab = "talk" | "tasks" | "vault" | "about";
 
 function Portrait({ model, label, emote }: { model: string; label: string; emote: string }) {
-  // A dropped-in portrait (art/portraits/<model>, then art/actors/<model>) wins over the baked one.
-  const dropped = artUrl(`portraits/${model}`, `actors/${model}`);
-  const [src, setSrc] = useState(dropped || (BAKED.has(model) ? `/art/npc/${model}.png` : ""));
-  useEffect(() => {
-    if (dropped || BAKED.has(model)) return;
-    let gone = false;
-    import("./actor-models").then(({ actorSprite }) => actorSprite(model, 384)).then((url) => !gone && setSrc(url), () => {});
-    return () => {
-      gone = true;
-    };
-  }, [model, dropped]);
   return (
     <div className="npc-portrait">
-      {src && <img className={dropped ? "npc-portrait-art" : undefined} src={src} alt={label} width={384} height={384} />}
+      <ActorPortrait model={model} label={label} />
       {emote && (
         <span className="npc-emote" aria-hidden="true">
           {emote}
@@ -82,16 +75,30 @@ function Portrait({ model, label, emote }: { model: string; label: string; emote
   );
 }
 
-export default function NpcSheet({ actorId, encounter, onClose }: { actorId: string; encounter: ActorEncounter; onClose: () => void }) {
+export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onClose, onQuest }: { onQuest?: (questId: string) => void; playerId: string; draftRealm: string; actorId: string; encounter: ActorEncounter; onClose: () => void }) {
   const t = npcStrings();
+  const learning = useLearning(playerId);
   const [reply, setReply] = useState<NpcReply | null>(null);
-  const [message, setMessage] = useState("");
+  const draft = useFormDraft({playerId, form:`npc-message:${actorId}`, realm:draftRealm, fields:{message:300}, initial:{message:""}});
+  const message = draft.values.message;
+  const latestMessage = useRef(message);
+  latestMessage.current = message;
+  const setMessage = (value: string) => draft.setField("message", value);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [trades, setTrades] = useState<Record<string, NpcTrade>>({});
   const [vault, setVault] = useState<KeeperView | null>(null);
   const [tab, setTab] = useState<Tab>("talk");
+  const [flow, setFlow] = useState<"greeting" | "choices" | "offer" | "accepted">("greeting");
+  const [selectedOffer, setSelectedOffer] = useState<ActorOffer | null>(null);
+  const flowHost = useRef<HTMLDivElement>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  useEffect(() => {
+    if (flow === "greeting") return;
+    const frame = requestAnimationFrame(() => flowHost.current?.querySelector<HTMLElement>(".npc-story-step h3, .npc-continue")?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [flow]);
   const token = encounter.encounter;
   const run = async (task: () => Promise<void>) => {
     setBusy(true);
@@ -150,8 +157,11 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
         return;
       }
       await npcAccept(actorId, token, offer.id);
+      learning.acknowledge("npc");
       setNotice(t.accepted(offer.label));
+      setSelectedOffer(offer);
       await refresh();
+      setFlow("accepted");
     });
   const turnIn = (line: NpcActiveLine) =>
     run(async () => {
@@ -164,11 +174,12 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   const send = (event: React.FormEvent) => {
     event.preventDefault();
     const text = message.trim();
+    const draftRevision = draft.revision;
     if (!text) return;
     run(async () => {
       const r = await npcTalk(actorId, token, text);
       setReply((old) => ({ ...r, npc: r.npc ?? old?.npc }));
-      setMessage("");
+      if (latestMessage.current.trim() === text) draft.discard(draftRevision);
       setNotice("");
     });
   };
@@ -179,11 +190,11 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   const active = reply?.active ?? [];
   const ready = active.filter((line) => line.steps.every((s) => s.done));
   const pendingHandOver = Object.entries(trades).filter(([, x]) => x.kind === "trade_up" && x.state === "issued");
-  const tabs: { id: Tab; label: string; icon: ReactNode; badge?: number }[] = [
-    { id: "talk", label: t.tabTalk, icon: <Sparkle weight="duotone" /> },
-    { id: "tasks", label: t.tabTasks, icon: <ListChecks weight="duotone" />, badge: active.length || undefined },
-    ...(vault ? [{ id: "vault" as Tab, label: t.tabVault, icon: <Vault weight="duotone" /> }] : []),
-    { id: "about", label: t.tabAbout, icon: <IdentificationCard weight="duotone" /> },
+  const tabs: ScreenTab<Tab>[] = [
+    { id: "talk", label: t.tabTalk, icon: Sparkle },
+    { id: "tasks", label: t.tabTasks, icon: ListChecks, count: active.length || undefined },
+    ...(vault ? [{ id: "vault" as Tab, label: t.tabVault, icon: Vault }] : []),
+    { id: "about", label: t.tabAbout, icon: IdentificationCard },
   ];
 
   const offerMeta = (offer: ActorOffer) => {
@@ -193,6 +204,12 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
     return t.reward(terms.xp, !!terms.aura) || t.offerTag[offer.kind] || "";
   };
 
+  const nextAcceptedStep = selectedOffer ? active.find(line => line.offerId === selectedOffer.id)?.steps.find(step => !step.done) : null;
+  const questOffers = (reply?.menu || []).filter((offer) => offer.kind === "quest" || offer.kind === "chapter");
+  const openServices = (next: Tab) => { setTab(next); setDetailsOpen(true); };
+  const offerSteps = selectedOffer && Array.isArray(selectedOffer.terms.steps)
+    ? selectedOffer.terms.steps.filter((step): step is { title: string } => !!step && typeof step === "object" && typeof step.title === "string")
+    : [];
   const turnInButton = (line: NpcActiveLine) => (
     <button type="button" className="npc-action turn-in" disabled={busy} onClick={() => turnIn(line)}>
       <span className="npc-action-icon">
@@ -204,42 +221,49 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
   );
 
   return (
-    <Dialog label={t.talkTo(name)} onClose={onClose}>
-      <div className={`npc-sheet npc-${archetype}`}>
+    <Dialog presentation="encounter" label={t.talkTo(name)} onClose={onClose}>
+      <div className={`npc-sheet npc-linear npc-${archetype}`} ref={flowHost}>
         <header className="npc-hero">
           <Portrait model={encounter.actor.model} label={name} emote={reply ? EMOTE[reply.emote] || "" : ""} />
           <div className="npc-plate">
             <span className="npc-role">{t.role[archetype] || archetype}</span>
             <h2>{name}</h2>
           </div>
-          <button type="button" className="npc-close" onClick={onClose} aria-label={t.close}>
-            <X weight="bold" />
-          </button>
         </header>
 
         <p className="npc-bubble" aria-live="polite">
-          {reply ? reply.say : t.thinking}
+          {flow === "accepted" ? notice : reply ? reply.say : t.thinking}
         </p>
 
-        <nav className="npc-tabs" role="tablist">
-          {tabs.map((x) => (
-            <button
-              type="button"
-              role="tab"
-              key={x.id}
-              aria-selected={tab === x.id}
-              className={tab === x.id ? "active" : ""}
-              onClick={() => setTab(x.id)}
-            >
-              {x.icon}
-              <span>{x.label}</span>
-              {x.badge ? <b className="npc-badge">{x.badge}</b> : null}
-            </button>
-          ))}
-        </nav>
+        {reply && flow === "greeting" && (ready.length > 0 || active.length > 0) && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices("tasks")}>{tr("Your tasks")}<ArrowRight aria-hidden="true" /></button>}
+        {reply && flow === "greeting" && !questOffers.length && !active.length && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices(vault ? "vault" : "talk")}>{vault ? tr("Open vault") : tr("Continue")}<ArrowRight aria-hidden="true" /></button>}
+        {reply && (flow === "greeting" || flow === "choices") && questOffers.length > 0 && <section className="npc-story-step" aria-label={tr("Choose a quest")}>
+          <h3 tabIndex={-1}>{tr("Choose a quest")}</h3>
+          {questOffers.slice(0, 2).map((offer) => <button key={offer.id} className="npc-choice" disabled={busy} onClick={() => { setSelectedOffer(offer); setFlow("offer"); }}>
+            <span>{offer.label}</span><small>{offerMeta(offer)}</small><ArrowRight aria-hidden="true" />
+          </button>)}
+        </section>}
+        {flow === "offer" && selectedOffer && <section className="npc-story-step npc-offer-brief" aria-label={selectedOffer.label}>
+          <h3 tabIndex={-1}>{selectedOffer.label}</h3>
+          <p className="npc-offer-reward"><Sparkle aria-hidden="true" />{offerMeta(selectedOffer)}</p>
+          {learning.visible("npc") && <p className="learning-hint">{helpText("npc")}</p>}
+          {offerSteps.length > 0 && <ol>{offerSteps.map((step, i) => <li key={i}>{step.title}</li>)}</ol>}
+          <button className="primary-button" disabled={busy} onClick={() => accept(selectedOffer)}>{busy ? tr("Saving…") : tr("Start quest")}<ArrowRight aria-hidden="true" /></button>
+          <button className="text-button" disabled={busy} onClick={() => setFlow("choices")}>{tr("Back")}</button>
+        </section>}
+        {flow === "offer" && <ActivityHelp topic="npc" onAcknowledge={() => learning.acknowledge("npc")} />}
+        {flow === "accepted" && nextAcceptedStep && <p className="npc-next-step">{nextAcceptedStep.title}</p>}
+        {flow === "accepted" && <button className="primary-button npc-continue" onClick={() => { onClose(); if (nextAcceptedStep) onQuest?.(nextAcceptedStep.questId); }}>{tr("Back to map")}<ArrowRight aria-hidden="true" /></button>}
+        {notice && flow !== "accepted" && <p className="npc-notice" role="status">{notice}</p>}
+        {error && <div className="npc-error" role="alert"><p>{error}</p>
+          {!reply && <button className="secondary-button" disabled={busy} onClick={() => run(refresh)}>{t.retry}</button>}
+        </div>}
+        <details className="npc-more" open={detailsOpen} onToggle={(e) => setDetailsOpen(e.currentTarget.open)}>
+          <summary>{tr("Learn more")}</summary>
+        <ScreenTabs label={t.talkTo(name)} idBase={`npc-${actorId}`} tabs={tabs} value={tab} onChange={setTab} sticky={false} />
 
         {tab === "talk" && (
-          <div className="npc-panel" role="tabpanel">
+          <div className="npc-panel" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
             <div className="npc-actions">
               {ready.map((line) => (
                 <div key={line.offerId}>{turnInButton(line)}</div>
@@ -289,7 +313,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
         )}
 
         {tab === "tasks" && (
-          <div className="npc-panel" role="tabpanel">
+          <div className="npc-panel" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
             {!active.length && <p className="npc-empty">{t.noTasks}</p>}
             {active.map((line) => {
               const done = line.steps.every((s) => s.done);
@@ -322,7 +346,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
         )}
 
         {tab === "vault" && vault && (
-          <div className="npc-panel npc-vault" role="tabpanel">
+          <div className="npc-panel npc-vault" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
             {vault.stake && (
               <>
                 <StakeTodayCard
@@ -355,7 +379,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
         )}
 
         {tab === "about" && (
-          <div className="npc-panel npc-about" role="tabpanel">
+          <div className="npc-panel npc-about" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
             <h3>{t.about}</h3>
             {title && <p>{title}</p>}
             {reply?.note && <p>{reply.note}</p>}
@@ -374,11 +398,6 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
           </div>
         )}
 
-        {notice && (
-          <button type="button" className="npc-notice" role="status" onClick={() => setNotice("")}>
-            {notice}
-          </button>
-        )}
         {proofs.length > 0 && (
           <p className="npc-fine npc-proof">
             {t.onChainProof}{" "}
@@ -390,12 +409,6 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
             ))}
           </p>
         )}
-        {error && (
-          <p className="npc-error" role="alert">
-            {error}
-          </p>
-        )}
-
         <form className="npc-chat" onSubmit={send}>
           <input
             value={message}
@@ -409,6 +422,7 @@ export default function NpcSheet({ actorId, encounter, onClose }: { actorId: str
             <PaperPlaneRight weight="fill" />
           </button>
         </form>
+        </details>
       </div>
     </Dialog>
   );

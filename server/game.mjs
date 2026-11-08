@@ -1,4 +1,6 @@
+import { grantWearableFind } from "./gotchi-wearables.mjs";
 import { coinMeta } from "./map-rewards/service.mjs";
+import { earnGlobalQuest } from './global-rewards.mjs';
 import { randomBytes } from "node:crypto";
 import {
   GOLD,
@@ -14,6 +16,7 @@ import {
   positionTier,
   tierFor,
   validateFix,
+  GPS_MAX_AGE_MS,
   splitYield,
   COIN_ARENA_RADIUS_M,
 } from "./domain.mjs";
@@ -142,9 +145,12 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       "This coin was just collected. Pick another one nearby.",
       409,
     );
-    db.prepare(
-      "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
-    ).run(coin.value_u, coin.value_u, "coins");
+    // Map coins are backed by the day's on-chain budget (map-rewards budget),
+    // never by the game database's treasury.
+    if (!wave)
+      db.prepare(
+        "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
+      ).run(coin.value_u, coin.value_u, "coins");
     const find = streetFindIds(db, coin.world_id).has(coinId),
       { xp, cap } = capLocationXp(
         db,
@@ -158,6 +164,10 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       xp,
       player,
     );
+    // A wearable find also gives a cosmetic Aavegotchi wearable clone.
+    const wearable = find
+      ? grantWearableFind(db, player, coin.world_id, coinId, now)
+      : null;
     const chain = recordChainAction(db, {
       player,
       kind: find ? "find" : "coin",
@@ -174,7 +184,7 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       "coin",
       find ? "Street find" : "Street coin",
       coin.value_u,
-      { coin: coinId, ...(find ? { find: true } : {}), ...(cap ? { xpCap: cap } : {}), ...(chain ? { chain: { id: chain.id, status: chain.status, tx: null } } : {}) },
+      { coin: coinId, ...(find ? { find: true } : {}), ...(wearable ? { wearable: wearable.id } : {}), ...(cap ? { xpCap: cap } : {}), ...(chain ? { chain: { id: chain.id, status: chain.status, tx: null } } : {}) },
     );
     return {
       value: coin.value_u,
@@ -182,6 +192,7 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
       ...(wave && wave.tier !== "small" ? { tier: wave.tier } : {}),
       ...(chain ? { chain } : {}),
       ...(find ? { find: true } : {}),
+      ...(wearable ? { wearable } : {}),
       ...(cap ? { xpCap: cap, note: XP_CAP_NOTES[cap] } : {}),
     };
   });
@@ -190,6 +201,9 @@ export function claimQuest(db, player, questId, fix, now = Date.now(), { answer 
   ensureFairPlaySchema(db);
   const results = createAdventureResults(db);
   return atomic(db, () => settleQuest(db, player, questId, fix, now, results, null, answer));
+}
+function questEvidenceTime(q,fix,now) {
+  return now>=q.closes_at&&JSON.parse(q.metadata||"{}").globalActivity&&Number.isFinite(fix?.timestamp)&&fix.timestamp<q.closes_at&&now-fix.timestamp<=GPS_MAX_AGE_MS?fix.timestamp:now;
 }
 function settleQuest(db, player, questId, fix, now, results, target = null, answer = null) {
   const q = db
@@ -206,7 +220,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
   )
     return replayAdventureResult(results.forQuest(player, q.id));
   assert(
-    now >= q.opens_at && now < q.closes_at,
+    questEvidenceTime(q,fix,now) >= q.opens_at && questEvidenceTime(q,fix,now) < q.closes_at,
     "This place is closed for today. Find another discovery.",
     410,
   );
@@ -237,12 +251,13 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
       now,
       q.id,
     );
-    if (reward)
+    if (reward && !meta.cellZone)
       db.prepare(
         "UPDATE treasury SET reserved_u=reserved_u-?,paid_u=paid_u+? WHERE bucket=?",
       ).run(reward, reward, "zones");
   }
   db.prepare("INSERT INTO quest_claims VALUES (?,?,?)").run(q.id, player, now);
+  const nearReward=earnGlobalQuest(db,player,q,questEvidenceTime(q,fix,now));
   const { xp, cap } = capLocationXp(db, player, earned, target || q, now);
   db.prepare("UPDATE players SET gold_u=gold_u+?,xp=xp+? WHERE id=?").run(
     reward,
@@ -285,6 +300,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
     reward,
     xp,
     item,
+    ...(nearReward?{nearReward}:{}),
     ...(chain ? { chain } : {}),
     ...(clue ? { clue } : {}),
     result: results.get(player, resultId),
@@ -294,7 +310,7 @@ function settleQuest(db, player, questId, fix, now, results, target = null, answ
 }
 function validateQuestEvidence(db, player, q, fix, now, target) {
   assert(
-    now >= q.opens_at && now < q.closes_at,
+    questEvidenceTime(q,fix,now) >= q.opens_at && questEvidenceTime(q,fix,now) < q.closes_at,
     "This place is closed for today. Find another discovery.",
     410,
   );

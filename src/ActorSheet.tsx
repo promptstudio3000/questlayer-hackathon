@@ -9,13 +9,18 @@ import type { ActorEncounter, ActorView } from "./actor-types";
 import { actorRoleLabel } from "./actors-layer";
 import "./actors.css";
 import { tr } from "./i18n";
+import { FORMAT_COPY, type ChallengeFormat } from "./monster-challenge";
 
 type Location = { lat: number; lng: number; accuracy?: number; timestamp?: number };
 type HandoffProps = {
+  playerId: string;
+  draftRealm: string;
   actor: ActorView;
   actorId: string;
   encounter: string | ActorEncounter;
   onClose: () => void;
+  onQuest?: (questId: string) => void;
+  format?: ChallengeFormat | null;
 };
 
 // Optional slices: NPC talk (N1/N2) and monster challenges (M1/M2).
@@ -43,13 +48,17 @@ const PROBLEM: Record<string, string> = {
 
 export function ActorSheet({
   actor,
+  playerId,
   worldId,
   location,
+  onQuest,
   onClose,
 }: {
   actor: ActorView;
+  playerId: string;
   worldId: string;
   location: Location | null;
+  onQuest?: (questId: string) => void;
   onClose: () => void;
 }) {
   const [state, setState] = useState<
@@ -58,6 +67,8 @@ export function ActorSheet({
     | { kind: "error"; message: string; retry: boolean }
   >({ kind: "loading" });
   const [handoff, setHandoff] = useState<"npc" | "challenge" | "boss" | null>(null);
+  // The format picked here starts right away: the challenge sheet never asks again.
+  const [format, setFormat] = useState<ChallengeFormat | null>(null);
   const stage = useRef<HTMLDivElement>(null);
   const attempt = useRef(0);
 
@@ -111,27 +122,24 @@ export function ActorSheet({
   if (ready && handoff === "npc" && NpcSheet)
     return (
       <Suspense fallback={null}>
-        <NpcSheet actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} />
+        <NpcSheet playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} onQuest={onQuest} />
       </Suspense>
     );
   if (ready && handoff === "boss")
     return (
       <Suspense fallback={null}>
-        <BossFight actor={ready.actor} encounter={ready.encounter} worldId={worldId} onClose={onClose} />
+        <BossFight playerId={playerId} actor={ready.actor} encounter={ready.encounter} worldId={worldId} onClose={onClose} />
       </Suspense>
     );
   if (ready && handoff === "challenge" && MonsterChallenge)
     return (
       <Suspense fallback={null}>
-        <MonsterChallenge actor={ready.actor} actorId={actor.id} encounter={ready.encounter} onClose={onClose} />
+        <MonsterChallenge playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready.encounter} format={format} onClose={onClose} onQuest={onQuest} />
       </Suspense>
     );
   return (
-    <Dialog label={actor.name} onClose={onClose}>
+    <Dialog presentation="encounter" label={actor.name} onClose={onClose}>
       <section className={`actor-sheet actor-sheet-${actor.kind}`}>
-        <button className="icon-button close" onClick={onClose} aria-label={tr("Close")}>
-          ×
-        </button>
         <div className="actor-stage" ref={stage} aria-hidden="true" />
         <header>
           <p className="actor-role">
@@ -172,15 +180,21 @@ export function ActorSheet({
                 {ready.menu.map((offer) => {
                   const isBoss = offer.kind === "challenge" && offer.terms.format === "boss-hit";
                   const canChallenge = isBoss || (offer.kind === "challenge" && !!MonsterChallenge);
+                  const picked = typeof offer.terms.format === "string" && offer.terms.format in FORMAT_COPY ? (offer.terms.format as ChallengeFormat) : null;
                   return (
                     <li key={offer.id}>
                       <button
                         className="primary-button"
                         disabled={!canChallenge}
-                        onClick={() => canChallenge && setHandoff(isBoss ? "boss" : "challenge")}
+                        onClick={() => {
+                          if (!canChallenge) return;
+                          setFormat(picked);
+                          setHandoff(isBoss ? "boss" : "challenge");
+                        }}
                       >
                         {offer.label}
                       </button>
+                      {picked && <small className="actor-offer-hint">{FORMAT_COPY[picked].hint}</small>}
                       {!canChallenge && <small>{tr("Opens in an upcoming update.")}</small>}
                     </li>
                   );

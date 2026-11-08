@@ -83,11 +83,11 @@ test("original art failures do not poison retries and cache memory remains bound
   const big = new GotchiItemArt({
     read: async () => "<svg>" + " ".repeat(179980) + "</svg>",
   });
-  for (let i = 1; i <= 15; i++) await big.get(String(i));
-  assert.ok(big.bytes <= 2 * 1024 * 1024);
+  for (let i = 1; i <= 50; i++) await big.get(String(i));
+  assert.ok(big.bytes <= 8 * 1024 * 1024);
   const tiny = new GotchiItemArt({ read: async () => svg });
-  for (let i = 1; i <= 70; i++) await tiny.get(String(i));
-  assert.ok(tiny.cache.size <= 64);
+  for (let i = 1; i <= 410; i++) await tiny.get(String(i));
+  assert.ok(tiny.cache.size <= 400);
   const huge = new GotchiItemArt({
     read: async () => "<svg>" + " ".repeat(200000) + "</svg>",
   });

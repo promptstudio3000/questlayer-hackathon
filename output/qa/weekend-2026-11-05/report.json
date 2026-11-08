@@ -1,0 +1,509 @@
+[
+  {
+    "name": "phone-360",
+    "faults": [],
+    "mapReady": true,
+    "resources": [
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "targets": [
+      {
+        "label": "Inventory",
+        "width": 88.703125,
+        "height": 58
+      },
+      {
+        "label": "Community",
+        "width": 88.71875,
+        "height": 58
+      },
+      {
+        "label": "Today's board: 0/3  goals done",
+        "width": 68.15625,
+        "height": 48
+      },
+      {
+        "label": "120,000GOLD",
+        "width": 92,
+        "height": 48
+      },
+      {
+        "label": "Profile, explorer profile1Lv 1 0/100 XP",
+        "width": 82.921875,
+        "height": 48
+      },
+      {
+        "label": "Show discoveries",
+        "width": 310,
+        "height": 48
+      },
+      {
+        "label": "Point me there",
+        "width": 310,
+        "height": 48
+      },
+      {
+        "label": "Use GPS, my location",
+        "width": 84.109375,
+        "height": 48
+      },
+      {
+        "label": "Turn left",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Walk forward",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Step back",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Turn right",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Run",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Hide demo controls",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Map tools",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "My location",
+        "width": 48,
+        "height": 48
+      }
+    ],
+    "scans": []
+  },
+  {
+    "name": "phone-390",
+    "faults": [],
+    "mapReady": true,
+    "resources": [
+      {
+        "url": "http://127.0.0.1:57949/api/session",
+        "error": "net::ERR_FAILED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/account",
+        "error": "net::ERR_INTERNET_DISCONNECTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/account",
+        "error": "net::ERR_INTERNET_DISCONNECTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "targets": [
+      {
+        "label": "Inventory",
+        "width": 88.703125,
+        "height": 58
+      },
+      {
+        "label": "Community",
+        "width": 88.71875,
+        "height": 58
+      },
+      {
+        "label": "Today's board: 0/3  goals done",
+        "width": 68.15625,
+        "height": 48
+      },
+      {
+        "label": "120,000GOLD",
+        "width": 92,
+        "height": 48
+      },
+      {
+        "label": "Profile, explorer profile1Lv 1 0/100 XP",
+        "width": 82.921875,
+        "height": 48
+      },
+      {
+        "label": "Show discoveries",
+        "width": 340,
+        "height": 48
+      },
+      {
+        "label": "Point me there",
+        "width": 340,
+        "height": 48
+      },
+      {
+        "label": "Use GPS, my location",
+        "width": 90.53125,
+        "height": 48
+      },
+      {
+        "label": "Turn left",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Walk forward",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Step back",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Turn right",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Run",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Hide demo controls",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Map tools",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "My location",
+        "width": 48,
+        "height": 48
+      }
+    ],
+    "scans": [
+      {
+        "label": "map",
+        "violations": [],
+        "contentHeight": 136
+      },
+      {
+        "label": "Inventory-0",
+        "violations": [],
+        "contentHeight": 1211
+      },
+      {
+        "label": "Inventory-1",
+        "violations": [],
+        "contentHeight": 1540
+      },
+      {
+        "label": "Inventory-2",
+        "violations": [],
+        "contentHeight": 844
+      },
+      {
+        "label": "Community-0",
+        "violations": [],
+        "contentHeight": 844
+      },
+      {
+        "label": "Community-1",
+        "violations": [],
+        "contentHeight": 844
+      },
+      {
+        "label": "Community-2",
+        "violations": [],
+        "contentHeight": 844
+      },
+      {
+        "label": "Community-3",
+        "violations": [],
+        "contentHeight": 844
+      },
+      {
+        "label": "Community-4",
+        "violations": [],
+        "contentHeight": 844
+      },
+      {
+        "label": "Profile-0",
+        "violations": [],
+        "contentHeight": 844
+      },
+      {
+        "label": "Profile-1",
+        "violations": [],
+        "contentHeight": 1086
+      },
+      {
+        "label": "Profile-2",
+        "violations": [],
+        "contentHeight": 844
+      },
+      {
+        "label": "Profile-3",
+        "violations": [],
+        "contentHeight": 844
+      },
+      {
+        "label": "Profile-4",
+        "violations": [],
+        "contentHeight": 1140
+      }
+    ]
+  },
+  {
+    "name": "landscape",
+    "faults": [],
+    "mapReady": true,
+    "resources": [
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "targets": [
+      {
+        "label": "Inventory",
+        "width": 95.375,
+        "height": 58
+      },
+      {
+        "label": "Community",
+        "width": 95.375,
+        "height": 58
+      },
+      {
+        "label": "Today's board: 0/3  goals done",
+        "width": 73.5,
+        "height": 48
+      },
+      {
+        "label": "120,000GOLD",
+        "width": 115.28125,
+        "height": 48
+      },
+      {
+        "label": "Profile, explorer profile1Lv 1 0/100 XP",
+        "width": 110.1875,
+        "height": 48
+      },
+      {
+        "label": "Show discoveries",
+        "width": 311.59375,
+        "height": 48
+      },
+      {
+        "label": "Point me there",
+        "width": 311.59375,
+        "height": 48
+      },
+      {
+        "label": "Use GPS, my location",
+        "width": 90.53125,
+        "height": 48
+      },
+      {
+        "label": "Turn left",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Walk forward",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Step back",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Turn right",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Run",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Hide demo controls",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Map tools",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "My location",
+        "width": 48,
+        "height": 48
+      }
+    ],
+    "scans": []
+  },
+  {
+    "name": "desktop",
+    "faults": [],
+    "mapReady": true,
+    "resources": [
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:57949/api/actors",
+        "error": "net::ERR_ABORTED"
+      }
+    ],
+    "targets": [
+      {
+        "label": "Inventory",
+        "width": 95.375,
+        "height": 58.796875
+      },
+      {
+        "label": "Community",
+        "width": 95.375,
+        "height": 58.796875
+      },
+      {
+        "label": "Today's board: 0/3  goals done",
+        "width": 73.5,
+        "height": 48
+      },
+      {
+        "label": "120,000GOLD",
+        "width": 137.484375,
+        "height": 48
+      },
+      {
+        "label": "Profile, explorer profile1Lv 1 0/100 XP",
+        "width": 110.1875,
+        "height": 48
+      },
+      {
+        "label": "Show discoveries",
+        "width": 154.421875,
+        "height": 48
+      },
+      {
+        "label": "Point me there",
+        "width": 404,
+        "height": 48
+      },
+      {
+        "label": "Use GPS, my location",
+        "width": 90.53125,
+        "height": 48
+      },
+      {
+        "label": "Turn left",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Walk forward",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Step back",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Turn right",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Run",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Hide demo controls",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "Map tools",
+        "width": 48,
+        "height": 48
+      },
+      {
+        "label": "My location",
+        "width": 48,
+        "height": 48
+      }
+    ],
+    "scans": []
+  }
+]

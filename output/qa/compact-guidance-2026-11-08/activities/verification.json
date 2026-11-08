@@ -1,0 +1,30 @@
+{
+  "provenance": "Actual local App/API; isolated data, no wallet or physical-device claim",
+  "browser": "chromium",
+  "cases": [
+    {
+      "name": "phone-360",
+      "preservedThroughBrowse": true,
+      "preservedThroughReload": true,
+      "claims": 0
+    },
+    {
+      "name": "phone-390",
+      "preservedThroughBrowse": true,
+      "preservedThroughReload": true,
+      "claims": 0
+    },
+    {
+      "name": "landscape",
+      "preservedThroughBrowse": true,
+      "preservedThroughReload": true,
+      "claims": 0
+    },
+    {
+      "name": "desktop",
+      "preservedThroughBrowse": true,
+      "preservedThroughReload": true,
+      "claims": 0
+    }
+  ]
+}

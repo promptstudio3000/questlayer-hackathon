@@ -41,6 +41,9 @@ export type NativeConfirmationContext = {
   legacyStorage?: Storage | null;
   getAnchor?: (accountId: string) => Promise<number>;
   withLock?: <T>(name: string, work: () => T | Promise<T>) => Promise<T>;
+  // Domain-specific financial confirmation still uses this durable wallet journal.
+  confirm?: (transactionHash: string) => Promise<{ confirmed: boolean; network: string; accountId: string; contractId: string; transactionHash: string }>;
+  recoveryKey?: string;
 };
 export const NATIVE_PENDING_EVENT = "questlayer:native-pending";
 export const NATIVE_PENDING_STORAGE_PREFIX = "questlayer:native-pending:v1:";
@@ -489,6 +492,10 @@ async function verify(
     ok: boolean,
     status: number;
   try {
+    if (context.confirm) {
+      result = await context.confirm(transactionHash);
+      ok = true; status = 200;
+    } else {
     const response = await fetch("/api/native/transactions/confirm", {
       method: "POST",
       credentials: "same-origin",
@@ -506,7 +513,12 @@ async function verify(
     ok = response.ok;
     status = response.status;
     result = await response.json();
-  } catch {
+    }
+  } catch (error) {
+    if (context.confirm && (error as { code?: string })?.code === "BURN_REJECTED") {
+      await mutate(context, entry, () => null);
+      throw new NativeConfirmationError("The burn was rejected. Your purchase is saved.", { ...entry, transactionHash }, "BURN_REJECTED", true);
+    }
     const message =
       tr("Confirmation is unavailable. Your transaction may already be complete; check it in Wallet before trying another action.");
     await mutate(context, entry, (current) => ({ ...current, error: message }));
@@ -657,7 +669,7 @@ export async function sendConfirmedNative(
   let { entry } = reserved;
   if (reserved.existing) {
     await verify(context, entry);
-    return;
+    return entry.transactionHash;
   }
   try {
     let afterBlock: number;
@@ -762,4 +774,5 @@ export async function sendConfirmedNative(
     );
   }
   await verify(context, submitted);
+  return transactionHash;
 }

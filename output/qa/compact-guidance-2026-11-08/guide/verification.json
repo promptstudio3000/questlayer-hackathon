@@ -1,0 +1,47 @@
+{
+  "language": "en",
+  "browser": "chromium",
+  "provenance": "Local App/API; simulated viewport/keyboard, no physical-device or newcomer-study claim",
+  "cases": [
+    {
+      "name": "phone-360",
+      "continue": true,
+      "skip": true,
+      "reload": true,
+      "manualHelp": true,
+      "focusReturn": true,
+      "claims": 0,
+      "guideRequests": 0
+    },
+    {
+      "name": "phone-390",
+      "continue": true,
+      "skip": true,
+      "reload": true,
+      "manualHelp": true,
+      "focusReturn": true,
+      "claims": 0,
+      "guideRequests": 0
+    },
+    {
+      "name": "landscape",
+      "continue": true,
+      "skip": true,
+      "reload": true,
+      "manualHelp": true,
+      "focusReturn": true,
+      "claims": 0,
+      "guideRequests": 0
+    },
+    {
+      "name": "desktop",
+      "continue": true,
+      "skip": true,
+      "reload": true,
+      "manualHelp": true,
+      "focusReturn": true,
+      "claims": 0,
+      "guideRequests": 0
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-// Practice wallet, fund and bounty screens, split from App.tsx so the map
+// Wallet (QGOLD balance and payouts), fund and bounty screens, split from App.tsx so the map
 // screen loads without them (first-screen JS budget).
 import { ChainLink } from "./ChainLink";
 import { useEffect, useState } from "react";
@@ -53,19 +53,9 @@ export function WalletPanel({
   const weighted = Math.floor((units(deposit) * share) / 100);
   return (
     <>
-      <div className="wallet-hero">
-        <span>{tr("PRACTICE GOLD")}</span>
-        <div>
-          <CoinIcon />
-          <strong>{gold(player.gold_u)}</strong>
-        </div>
-        <small>
-          {tr("Play money ·")}{" "}{near(player.gold_u)} {" "}{tr("NEAR equivalent · no monetary value")}</small>
-        <div>
-          <Badge tone="gold">{tr("TIER {0}", { 0: player.tier })}</Badge>
-          <Badge>{tr("50% coins / 50% zones")}</Badge>
-        </div>
-      </div>
+      <QgoldWallet player={player} />
+      <details className="play-details">
+        <summary>{tr("Zone tier stake (simulation)")}</summary>
       <div className="two-stats">
         <div>
           <small>{tr("Practice stake")}</small>
@@ -261,6 +251,7 @@ export function WalletPanel({
             </div>
           ))}
       </section>
+      </details>
       <section className="form-section">
         <div className="section-label">
           <h2>{tr("NEAR account")}</h2>
@@ -304,7 +295,7 @@ export function WalletPanel({
             {tr("Check NEAR balance")}</button>
         )}
         <p className="fine-print">
-          {tr("Walks and Aura trading on the test network are a project pilot. Practice GOLD never mixes with secured rewards. Never enter a recovery phrase here.")}</p>
+          {tr("Walks and Aura trading on the test network are a project pilot. Map coins and zone prizes are paid in QGOLD to the linked account. Never enter a recovery phrase here.")}</p>
       </section>
       <section className="form-section">
         <h2>{tr("Adventure history")}</h2>
@@ -687,5 +678,60 @@ export function Bounties({
         ))}
       </div>
     </>
+  );
+}
+
+type PendingQgold = {
+  accountId: string | null;
+  units: number;
+  items: number;
+  awaitingAccount: number;
+  enabled: boolean;
+};
+
+/**
+ * Real QGOLD: what is on the player's NEAR account and what the nightly
+ * payout still owes them for map coins and zone prizes (docs/DAILY-PAYOUTS.md).
+ */
+export function QgoldWallet({ player }: { player: Player }) {
+  const [pending, setPending] = useState<PendingQgold | null>(null),
+    [balance, setBalance] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    void api<PendingQgold>("/qgold/pending")
+      .then(async (p) => {
+        if (!live) return;
+        setPending(p);
+        if (!p.accountId) return;
+        const a = await api<{ balance: string | null }>(
+          `/qgold/account?account=${encodeURIComponent(p.accountId)}`,
+        );
+        if (live) setBalance(Number(a.balance || 0));
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [player.id, player.gold_u]);
+  return (
+    <div className="wallet-hero">
+      <span>{tr("QGOLD")}</span>
+      <div>
+        <CoinIcon />
+        <strong>{balance === null ? "…" : gold(balance, 6)}</strong>
+      </div>
+      <small>
+        {pending?.accountId
+          ? tr("On your NEAR account {0}", { 0: pending.accountId })
+          : tr("Sign in with a NEAR account to receive QGOLD.")}
+      </small>
+      {!!pending?.units && (
+        <small>
+          {pending.awaitingAccount
+            ? tr("{0} QGOLD collected waits for your NEAR account.", { 0: gold(pending.units, 6) })
+            : tr("+{0} QGOLD arrives with the payout after midnight.", { 0: gold(pending.units, 6) })}
+        </small>
+      )}
+    </div>
   );
 }

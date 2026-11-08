@@ -1,3 +1,4 @@
+import { EmptyState } from "./EmptyState";
 import {
   useEffect,
   useMemo,
@@ -536,24 +537,9 @@ function CreatorCommunitySession({
   }
   if (!state.capability?.enabled)
     return (
-      <details className="creator-feature">
-        <summary>
-          <UsersThree size={22} /> {" "}{tr("Creator quests")}</summary>
-        <p>
-          {state.loading
-            ? tr("Checking creator quests…")
-            : state.error ||
-              tr("Creator quests are not enabled on this host yet. Map notes and sponsored tasks remain available in the Notes and Tasks tabs.")}
-        </p>
-        {!state.loading && (
-          <button
-            className="secondary-button"
-            onClick={() => setRefresh((n) => n + 1)}
-          >
-            {tr("Check availability")}{" "}<ArrowClockwise size={20} />
-          </button>
-        )}
-      </details>
+      <EmptyState art="ghost" title={tr("Creator quests")} status action={state.loading ? undefined : { label: tr("Check availability"), onClick: () => setRefresh(n => n + 1) }}>
+        {state.loading ? tr("Checking creator quests…") : state.error || tr("Creator quests are not enabled on this host yet. Nearby posts and sponsored tasks remain available in the Local chat and Tasks tabs.")}
+      </EmptyState>
     );
   const data = state.data;
   const allTabs = [
@@ -1034,10 +1020,9 @@ function Back({
 }
 function Empty({ children }: { children: ReactNode }) {
   return (
-    <div className="creator-empty">
-      <Ghost />
-      <p>{children}</p>
-    </div>
+    // One quiet line per empty list: several stacked illustrations with the same
+    // title read as content and push the real lists off a phone screen.
+    <p className="creator-empty-line" role="status">{children}</p>
   );
 }
 function More({ busy, onClick }: { busy: boolean; onClick: () => void }) {

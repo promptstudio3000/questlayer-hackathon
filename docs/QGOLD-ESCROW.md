@@ -1,9 +1,10 @@
 # QGOLD escrow (`contracts/qgold-escrow`)
 
-Status: **not deployed.** It is deployed to testnet after the QGOLD token
-(`contracts/soulbound-ft`) becomes a transferable NEP-141 token with
-`ft_transfer_call`. WASM sha256 is pinned in `contracts/wasm-sha256.json` as
-`questlayer_qgold_escrow`.
+Status: deployed on testnet by `scripts/deploy-qgold-escrow-testnet.mjs`
+(`public/native-qgold-escrow-testnet.json`), token = the QGOLD vault
+`questlayer-qgold-vault-20261104.testnet`. WASM sha256 is pinned in
+`contracts/wasm-sha256.json` as `questlayer_qgold_escrow`. The game's task market, Secrets and
+conditional sends settle only here (docs/TASK-MARKET.md).
 
 ## Purpose
 
@@ -49,7 +50,7 @@ while the contract is paused (the token refunds it).
 | Role | Can |
 |---|---|
 | `owner_id` | `set_publisher`, `set_moderator`, `set_guardian`, `set_treasury`, `pause`, `unpause`. Nothing else: **no admin withdrawal exists.** |
-| `publisher_id` (game server) | `approve_task` (after off-chain GPS/photo check), `confirm_visit`, `confirm_transfer_gps` |
+| `publisher_id` (game server) | `approve_task` (after off-chain GPS/photo check), `confirm_visit`, `confirm_transfer_gps`; on behalf of its signed-in players: `cancel_task`, `open_dispute`, `dispute_secret`, `confirm_transfer` (releases once the game recorded both confirmations), `refund_transfer` (after expiry), `decline_transfer`. Every one of these refunds the funder or pays the named counterparty. |
 | `moderator_id` | `resolve_dispute`, `resolve_secret` |
 | `guardian_id` | `pause` |
 | `treasury_id` | receives fee credit; withdraws it like any account |
@@ -86,6 +87,12 @@ the escrow calls `token.ft_transfer(account, credit)` with 1 yocto and then
 be registered on the token (`storage_deposit`); the game server pre-registers
 players, creators and the treasury.
 
+`withdraw_for(account_id)` — anyone, no deposit, ≥ 60 Tgas: pushes that account's whole credit
+to it. The escrow first calls `storage_deposit(account_id, registration_only)` on the token from
+its own NEAR balance (the token refunds it when the account is registered already), then
+`ft_transfer`, then `on_withdraw`. The tokens can only go to the credit's owner; the game server
+calls it after every payout.
+
 ## Safety invariants
 
 - `total_held` = accepted deposits − completed withdrawals.
@@ -94,7 +101,8 @@ players, creators and the treasury.
 - Only the configured token can deposit; amounts must match exactly.
 - Funds only move to the funder (refund) or the named counterparty/treasury per the rules above.
 - Paused blocks every call except views, admin calls and the `on_withdraw` callback; deposits are refunded.
-- Bounds: id ≤ 64 bytes, ≤ 50 slots, ≤ 100 disputes per task, ≤ 200 open escrows per funding account, deadlines ≤ 365 days.
+- Bounds: id ≤ 64 bytes, ≤ 50 slots, disputes plus resolved disputes per task ≤ 2 × slots + 4 (at most 100), ≤ 20 open escrows per funding account, deadlines ≤ 365 days.
+- Storage reserve: each open agreement reserves native storage headroom sized by what it can still add (a one-slot task about 5.9 KB, a Secret or send 4.6 KB, a 50-slot task 42.5 KB); the sum is kept under its own key and released on close. A new agreement is refused (the token refunds it) while the escrow's NEAR balance cannot cover current storage plus all reservations. Monitor `get_storage_reserve().free_yocto` and top up before it nears zero.
 - QGOLD sent with plain `ft_transfer` (not `ft_transfer_call`) is not accounted and cannot be recovered.
 
 ## Views
@@ -106,15 +114,17 @@ Events: NEP-297 logs `EVENT_JSON:{"standard":"questlayer-escrow","version":"1.0.
 with `funded`, `paid`, `refunded`, `disputed`, `resolved`, `withdraw_started`,
 `withdrawn`, `withdraw_failed`, `deposit_refunded`, `paused`, `unpaused`, `config_changed`.
 
-## Testnet deploy (after QGOLD is transferable)
+## Testnet deploy
 
 ```sh
-bash scripts/build-contracts.sh            # or npm run contracts:docker for the pinned hash
-near deploy escrow.questlayer.testnet contracts/target/wasm32-unknown-unknown/release/questlayer_qgold_escrow.wasm \
-  --initFunction new --initArgs '{"owner_id":"…","token_id":"<qgold>.testnet","publisher_id":"…","moderator_id":"…","guardian_id":"…","treasury_id":"…"}'
-near call <qgold>.testnet storage_deposit '{"account_id":"escrow.questlayer.testnet"}' --deposit 0.0125 --accountId …
+npm run contracts:docker                      # or scripts/build-contracts.sh on linux/amd64
+node scripts/deploy-qgold-escrow-testnet.mjs --reviewed   # on the Mac, operator key in .data/
+bash scripts/install-escrow-publisher-vps.sh              # publisher key → VPS state dir
 ```
 
-The escrow account must be registered on the token and keep a NEAR balance for
-its own storage (records are kept forever so ids stay unique).
-Storage is paid by the escrow account, since `ft_on_transfer` carries no NEAR.
+The script creates `questlayer-qgold-escrow-20261105.testnet` (owner, guardian and treasury =
+operator) and `questlayer-escrow-pub-20261105.testnet` (publisher = moderator = the game server),
+registers the escrow on QGOLD, gives the publisher account a function-call key for the escrow's
+release/refund methods only (`.data/escrow-publisher.json`), deletes every escrow access key, and
+smoke-tests fund → publisher release → `withdraw_for`. The escrow keeps ~3 NEAR for its own storage
+and for registering new payees on the token.

@@ -29,6 +29,7 @@ import {
   readCell,
   readDay,
 } from "./day-plan.mjs";
+import { recordMapBudget } from "./budget.mjs";
 import { MAP_REWARDS_POLICY } from "./policy.mjs";
 
 export const MAP_DAY_VERSION = 1;
@@ -98,6 +99,24 @@ export function publishArgs(
     zones_u: zonesU.toString(),
     yocto_per_u: rate.toString(),
   };
+}
+
+/**
+ * The map's share of a date's cap: half of the contract's per-date cap
+ * (which grows with funding), never more than what city days left of it.
+ * Without a chain view it keeps the fixed testnet half (0.05 NEAR).
+ */
+export async function mapDayCaps(view, date) {
+  if (!view) return {};
+  try {
+    const t = await view("get_date_totals", { date });
+    const cap = BigInt(t.cap),
+      half = cap / 2n,
+      room = (used) => (cap - BigInt(used) < half ? cap - BigInt(used) : half);
+    return { coinCap: room(t.coins), zoneCap: room(t.zones) };
+  } catch {
+    return {};
+  }
 }
 
 /** Same text as the contract's map_claim_message. */
@@ -269,11 +288,23 @@ export function queueMapClaims(db, { signer, contractId, day, now = Date.now() }
  */
 export async function runMapChainWorker(
   db,
-  { call, signer, contractId, now = Date.now(), maxClaims = 20 },
+  { call, view = null, signer, contractId, now = Date.now(), maxClaims = 20, qgoldRate = null, budgetOnly = false },
 ) {
   ensureMapChainSchema(db);
-  const result = { published: null, queued: 0, sent: 0, closed: 0, failed: 0 };
+  const result = { published: null, queued: 0, sent: 0, closed: 0, failed: 0, budget: false };
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: MAP_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  // The next plans price coins from what the chain allows: the map's share of
+  // the per-date cap and the vault's backing rate R.
+  if (view && qgoldRate) {
+    try {
+      const [caps, rate] = await Promise.all([mapDayCaps(view, today), qgoldRate()]);
+      result.budget = recordMapBudget(db, { coinYocto: caps.coinCap, zoneYocto: caps.zoneCap, rateYocto: rate }, now);
+    } catch {
+      // keep the last report
+    }
+  }
+  // Nightly payouts pay map coins instead (server/payouts/worker.mjs).
+  if (budgetOnly) return result;
   const plan = readDay(db, today);
   if (plan?.root) {
     const dayId = mapDayId(today);
@@ -282,7 +313,7 @@ export async function runMapChainWorker(
       db.prepare("INSERT OR IGNORE INTO map_chain_days VALUES(?,?,?,'pending',NULL,NULL,NULL,?)").run(
         dayId,
         today,
-        JSON.stringify(publishArgs(plan)),
+        JSON.stringify(publishArgs(plan, await mapDayCaps(view, today))),
         now,
       );
       row = db.prepare("SELECT * FROM map_chain_days WHERE day_id=?").get(dayId);

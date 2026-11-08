@@ -1,0 +1,236 @@
+.quest-thumbnail {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.quest-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.zone-explore-panel .panel-heading {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--surface);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.zone-explore-panel .panel-heading > div {
+  min-width: 0;
+  flex: 1;
+}
+.zone-explore-panel .panel-heading h1 {
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.app-shell .zone-explore-panel .panel-heading .panel-close {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  flex: none;
+}
+.zone-activity-panel .zone-access {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+.zone-activity-list {
+  display: grid;
+  gap: 8px;
+}
+.zone-activity {
+  border: 1px solid var(--decorative-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface-raised);
+}
+.zone-activity.is-selected {
+  border-color: var(--control-border);
+  background: var(--surface-soft);
+}
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 72px;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  text-align: start;
+  color: inherit;
+}
+.activity-row-copy {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.activity-row strong {
+  font-size: 16px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.activity-row small {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+.activity-row > svg {
+  flex: none;
+}
+.zone-activity-panel .quest-detail {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  padding: 0 12px 12px;
+  box-shadow: none;
+}
+.zone-activity-panel .quest-detail p {
+  margin: 0 0 8px;
+}
+.zone-activity-panel .quest-detail .activity-objective {
+  font-size: 16px;
+  line-height: 1.4;
+}
+.zone-activity-panel .quest-detail .activity-step {
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+.zone-activity-panel .quest-prizes {
+  margin: 8px 0;
+  gap: 6px 12px;
+  font-size: 14px;
+}
+.zone-activity-panel .distance-note {
+  margin: 8px 0;
+  font-size: 14px;
+}
+.zone-activity-panel .quest-detail .fine-print {
+  font-size: 14px;
+  margin: 8px 0 0;
+}
+.zone-activity-panel .primary-button {
+  min-height: 48px;
+}
+.zone-explore-panel .sheet-peek-hide {
+  min-width: 48px;
+  min-height: 48px;
+}
+@media (min-width: 901px) {
+  .app-shell .main-panel.explore-panel {
+    width: 420px;
+  }
+  .app-shell .main-panel.zone-explore-panel {
+    bottom: auto;
+    max-height: calc(100dvh - 230px);
+  }
+  .app-shell .player-bottom {
+    left: 111px;
+    width: 420px;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .app-shell .zone-explore-panel.sheet-compact {
+    bottom: auto;
+    max-height: calc(100dvh - 230px);
+  }
+  .app-shell .zone-explore-panel.sheet-compact > :not(.sheet-peek-selection) {
+    display: none;
+  }
+  .app-shell .zone-explore-panel.sheet-compact .sheet-peek-selection {
+    display: flex;
+  }
+  .app-shell .zone-explore-panel.sheet-compact .compact-selection {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+  }
+  .app-shell .zone-explore-panel.sheet-compact .sheet-peek-hide {
+    display: flex;
+  }
+}
+@media (max-width: 900px) {
+  .app-shell .zone-explore-panel.sheet-expanded {
+    padding-top: 0;
+  }
+  .zone-explore-panel.sheet-expanded > .sheet-toggle {
+    position: static;
+    min-height: 48px;
+  }
+  .zone-explore-panel .panel-heading {
+    top: -1px;
+  }
+}
+
+.zone-explore-panel .sheet-peek-selection {
+  align-items: center;
+  gap: 8px;
+}
+.zone-explore-panel .compact-selection {
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: start;
+  min-height: 56px;
+}
+.zone-explore-panel .compact-selection > span:not(.quest-thumbnail) {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.zone-explore-panel .compact-selection strong {
+  font-size: 16px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.zone-explore-panel .compact-selection small {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+.zone-explore-panel .compact-selection > svg {
+  flex: none;
+}
+.zone-explore-panel .sheet-peek-hide {
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  padding: 0;
+}
+
+.app-shell .zone-explore-panel > .sheet-toggle {
+  display: none;
+}
+.app-shell .zone-explore-panel .zone-map-collapse {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  flex: none;
+}
+
+@media (max-width: 900px) {
+  .app-shell .main-panel.zone-explore-panel.sheet-expanded {
+    height: auto;
+  }
+}
+/* Desktop: the place panel opens inside the map dialog; fill the dialog instead
+   of keeping the 420 px side-sheet width with an empty band beside it. */
+@media (min-width: 901px) {
+  .game-dialog.game-dialog-map:has(.zone-explore-panel) { width: min(520px, calc(100vw - 32px)); }
+  .app-shell .game-dialog-map .main-panel.explore-panel { width: auto; }
+}
+/* The heading takes focus programmatically for screen readers (tabIndex -1);
+   a focus ring there looked like an editable search field. */
+.main-panel .panel-heading h1[tabindex="-1"]:focus { outline: none; }

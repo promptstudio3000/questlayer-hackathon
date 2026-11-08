@@ -123,7 +123,8 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     rmSync(dir, { recursive: true, force: true });
   });
   let ready = false;
-  const startupDeadline = Date.now() + 15000;
+  // Generous: four servers boot at once under npm test on a laptop.
+  const startupDeadline = Date.now() + 30000;
   while (Date.now() < startupDeadline) {
     try {
       const r = await fetch(base + "/api/health");
@@ -152,7 +153,7 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     return {
       status: r.status,
       data: await r.json(),
-      cookie: r.headers.get("set-cookie")?.split(";")[0],
+      cookie: r.headers.getSetCookie().map(c => c.split(";")[0]).join("; ") || undefined,
     };
   }
   const a = await request("/session", { name: "HTTP Alice" }),
@@ -331,6 +332,9 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
         a.cookie,
       )
     ).data.quests.find((q) => q.id === route.id);
+    // The map draws the walk ahead: the next stop first, then the rest.
+    assert.equal(current.stops.length, current.checkpointCount - checkpoint);
+    assert.deepEqual(current.stops[0], { lat: current.nextPoint.lat, lng: current.nextPoint.lng });
     const r = await request(
       "/quests/checkpoint",
       { questId: route.id, checkpoint, fix: current.nextPoint },
@@ -527,6 +531,15 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     response: assertion(attachKey2, attachedLogin.data.options.challenge),
   });
   assert.equal(attachedRecovered.data.player.id, guest.data.player.id);
+  await t.test("attaching a passkey rotates the guest bearer and binds the next attachment to the exact session", async () => {
+    assert.equal((await request("/me", undefined, guest.cookie)).status, 401);
+    const options = await request("/passkey/options", {action: "register", attach: true}, attached.cookie);
+    assert.equal(options.status, 200);
+    const newKey = credential(options.data.options.challenge);
+    const finish = {challengeId: options.data.challengeId, response: newKey.registration};
+    assert.equal((await request("/passkey/verify", finish, attachedRecovered.cookie)).status, 403);
+    assert.equal((await request("/passkey/verify", finish, attached.cookie)).status, 200);
+  });
   const wrong = await request("/passkey/options", {
     action: "register",
     name: "Wrong Origin",

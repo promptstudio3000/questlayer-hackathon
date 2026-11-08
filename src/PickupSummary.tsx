@@ -8,7 +8,7 @@ export function PickupSummary({ totals }: { totals: PickupTotals }) {
   return (
     <small className="pickup-summary">
       {totals.count} {totals.count === 1 ? "coin" : "coins"} ·{" "}
-      {gold(totals.amount, 6)} {" "}{tr("practice GOLD this session")}{totals.capped && (
+      {gold(totals.amount, 6)} {" "}{tr("QGOLD this session")}{totals.capped && (
         <span>{tr("Counter paused. See Rewards for your balance.")}</span>
       )}
     </small>

@@ -1,7 +1,8 @@
 // Map rewards in a world (docs/MAP-REWARDS.md): when the first player opens
 // an H3 cell on a day, its coins, zone prizes and pioneer bonus are drawn
-// from the day plan and written once. Everything is practice GOLD until the
-// QGOLD vault (build plan stream 1) can mint real QGOLD for a claim.
+// from the day plan and written once. Every coin is backed QGOLD of the same
+// value (pioneer coins count twice). The demo arena gives XP only, and cells
+// outside the plan (outside Czechia) get no coins.
 import { mapChainEnabled, mapChainStatus } from "./chain.mjs";
 import {
   latLngToCell,
@@ -14,7 +15,7 @@ import {
 import { poiQuestActivity } from "../quest-templates.mjs";
 import { shiftDate } from "../spatial/calendar.mjs";
 import { atomic } from "../database.mjs";
-import { COIN_VALUE, distance } from "../domain.mjs";
+import { distance } from "../domain.mjs";
 import { isCzechiaCell } from "./czechia.mjs";
 import {
   cellSeed,
@@ -25,15 +26,17 @@ import {
   readDay,
 } from "./day-plan.mjs";
 import { placeCellCoins, unit, waveTimes } from "./placement.mjs";
-import { MAP_REWARDS_POLICY, PIONEER_MULT, WAVES } from "./policy.mjs";
+import {
+  CELL_COINS,
+  COIN_TIER,
+  MAP_REWARDS_POLICY,
+  PIONEER_COIN_TIER,
+  PIONEER_MULT,
+  WAVES,
+} from "./policy.mjs";
 import { ensureMapRewardsSchema } from "./schema.mjs";
 
-// Outside Czechia (no plan yet): a small practice budget per cell, potential only.
-export const OUTSIDE_CELL_U = 50 * COIN_VALUE;
 export const PIONEER_CHEST_XP = 80;
-// The demo arena (remote visitors, any time zone) is practice for everyone:
-// a fixed floor per cell and every coin visible at once, no waves.
-export const ARENA_CELL_U = 300 * COIN_VALUE;
 
 export function mapRewardsEnabled(env = process.env) {
   return env.MAP_REWARDS !== "off";
@@ -63,17 +66,6 @@ function circle(p, radius, steps = 20) {
   return ring;
 }
 
-const available = (db, bucket) =>
-  db.prepare("SELECT available_u FROM treasury WHERE bucket=?").get(bucket)
-    ?.available_u || 0;
-const reserve = (db, bucket, n) =>
-  n > 0 &&
-  db
-    .prepare(
-      "UPDATE treasury SET available_u=available_u-?,reserved_u=reserved_u+? WHERE bucket=?",
-    )
-    .run(n, n, bucket);
-
 /** Promote 1-3 of the cell's POI quests to funded cell zones. Returns zone ids. */
 function promoteCellZones(db, world, cell, count, zonesU, seed) {
   if (count < 1) return [];
@@ -90,9 +82,7 @@ function promoteCellZones(db, world, cell, count, zonesU, seed) {
     .sort((a, b) => unit(seed, `zone:${a.id}`) - unit(seed, `zone:${b.id}`))
     .slice(0, count);
   if (!candidates.length) return [];
-  const prize = Math.floor(
-    Math.min(zonesU, available(db, "zones")) / candidates.length,
-  );
+  const prize = Math.floor(Math.max(0, zonesU) / candidates.length);
   for (const z of candidates) {
     z.cellZone = true;
     z.kind = "expedition";
@@ -109,14 +99,13 @@ function promoteCellZones(db, world, cell, count, zonesU, seed) {
     if (!q || prize <= 0) continue;
     const meta = JSON.parse(q.metadata || "{}");
     if (meta.activity)
-      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${(prize / 1e6).toFixed(2)} practice GOLD from this area's daily budget.`;
+      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${(prize / 1e6).toFixed(6)} QGOLD from this area's daily budget.`;
     meta.cellZone = { policy: MAP_REWARDS_POLICY, cell, prizeU: prize };
     db.prepare("UPDATE quests SET gold_u=?,metadata=? WHERE id=?").run(
       prize,
       JSON.stringify(meta),
       q.id,
     );
-    reserve(db, "zones", prize);
     z.prizeU = prize;
   }
   return candidates.map((z) => z.id);
@@ -255,29 +244,19 @@ export async function materializeCellRewards(
       .prepare("SELECT 1 FROM map_cell_drops WHERE day=? AND cell=?")
       .get(day, cell);
     const pioneer = !!leaf?.pioneer && firstToday && !current.arena;
-    let budget = leaf ? leaf.coinsU : plan ? 0 : OUTSIDE_CELL_U;
-    if (current.arena) budget = Math.max(budget, ARENA_CELL_U);
-    let pioneerU = 0;
-    if (pioneer) {
-      const left =
-        db
-          .prepare("SELECT pioneer_left_u FROM map_reward_days WHERE day=?")
-          .get(day)?.pioneer_left_u || 0;
-      // At most x2 of the cell's leaf: the rewards contract pays a pioneer
-      // cell up to twice its coinsU (contracts/rewards map_days.rs).
-      pioneerU = Math.min(left, budget * (PIONEER_MULT - 1));
-      if (pioneerU > 0)
-        db.prepare(
-          "UPDATE map_reward_days SET pioneer_left_u=pioneer_left_u-? WHERE day=?",
-        ).run(pioneerU, day);
-    }
-    budget = Math.min(budget + pioneerU, available(db, "coins"));
+    // Backed coins only: the demo arena gives XP-only coins, a cell outside
+    // the plan gets none.
+    const count = current.arena ? CELL_COINS : leaf?.coins || 0;
+    const valueU =
+      current.arena || !leaf
+        ? 0
+        : (plan.summary.coinValueU || 0) * (pioneer ? PIONEER_MULT : 1);
     // Zones first, so coins gather around them.
     const zoneIds = promoteCellZones(
       db,
       current,
       cell,
-      leaf?.zones ?? (plan ? 0 : 1),
+      leaf?.zones ?? 0,
       leaf?.zonesU || 0,
       seed,
     );
@@ -300,9 +279,12 @@ export async function materializeCellRewards(
       samples: inCell,
       zones,
       seed,
-      budgetU: budget,
+      count,
+      valueU,
+      tier: pioneer ? PIONEER_COIN_TIER : COIN_TIER,
       waves,
     });
+    const pioneerU = pioneer ? spentU - spentU / PIONEER_MULT : 0;
     const base = db
       .prepare("SELECT COUNT(*) n FROM coins WHERE world_id=?")
       .get(current.id).n;
@@ -321,14 +303,6 @@ export async function materializeCellRewards(
         c.wave,
         times[c.wave] ?? times[0],
       );
-    }
-    reserve(db, "coins", spentU);
-    // Pioneer money that did not fit returns to the day's reserve.
-    if (pioneerU > 0 && spentU < budget) {
-      const back = Math.min(pioneerU, budget - spentU);
-      db.prepare(
-        "UPDATE map_reward_days SET pioneer_left_u=pioneer_left_u+? WHERE day=?",
-      ).run(back, day);
     }
     db.prepare("INSERT INTO map_cell_drops VALUES(?,?,?,?,?,?,?,?,?)").run(
       current.id,
@@ -517,7 +491,8 @@ export function mapRewardsView(db, { bounds, res = 7, now = Date.now() } = {}) {
     day: plan.day,
     root: plan.root,
     res,
-    currency: "practice-gold",
+    currency: "qgold",
+    coinValueU: plan.summary.coinValueU || 0,
     totals: {
       coinsU: plan.coinsU,
       zonesU: plan.zonesU,

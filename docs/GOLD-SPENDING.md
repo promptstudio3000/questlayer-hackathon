@@ -9,27 +9,56 @@ vault, so every burn raises the backing rate R for all holders.
 
 ## Realms
 
-- **Now: practice GOLD.** `burnGold()` (`server/gold-spend/ledger.mjs`) takes the
-  amount out of `players.gold_u` inside the caller's transaction and writes a
-  `gold_burns` row with a memo `questlayer:burn:<kind>:<ref>` (at most 200 bytes).
-- **Once the QGOLD vault is live** (stream 1, `docs/QGOLD-VAULT.md`): the player's
-  account calls `ft_burn({amount, memo})` with 1 yocto on the QGOLD contract read
-  from `public/native-qgold-vault-testnet.json`. The same `gold_burns` rows carry
-  `realm='qgold'` and the memo. Until that manifest exists, spending stays on
-  practice GOLD.
+- **QGOLD (default whenever the QGOLD vault manifest exists).** Every spend burns
+  the player's own QGOLD on chain first:
+  1. The client saves a purchase UUID and sends it as `X-Questlayer-Purchase`.
+     The server binds the request and its own quoted price; identical open requests
+     share one intent. Refreshed GPS/encounter evidence can be supplied on retry.
+  2. `POST /api/gold/burn/prepare {purchaseId, submitterId}` returns the same memo,
+     account, contract and amount across reloads. The signed delegate and relay job
+     are saved before submission. An untouched job blocked by an earlier failure
+     resumes that same delegate rather than allocating another payment.
+  3. `POST /api/gold/burn/confirm {purchaseId, txHash}` requires exact FINAL direct
+     or delegated actions, hash, receipt ancestry and one successful NEP-141 burn
+     event. An unknown outcome stays pending. Only proved non-execution permits a
+     fresh submission for the same intent.
+  4. The business effect, exact intent's credit consumption and cached response
+     commit together. Retrying after a lost response returns that response and
+     cannot deliver another item or burn again. Other players and purchases
+     cannot consume the credit.
+
+  The isolated signing origin checks the authenticated, read-only
+  `GET /api/gold/burn/intent?memo=...` before signing a normal purchase silently.
+  External-wallet burns retain the existing durable transaction journal and use
+  this domain-specific confirmation. If a wallet loses its hash, the journal holds
+  the operation for reconciliation instead of signing again.
+
+  If availability or geography changes after payment, the exact purchase credit
+  remains recorded. It is not silently reassigned to a different item. Delivery
+  can resume with fresh valid gameplay evidence; a permanently unavailable item
+  needs an operator-reviewed remedy. No automated refund/reassignment policy is
+  introduced by this candidate.
+- **Practice (local testing only).** With no QGOLD vault, or
+  `GOLD_SPEND_REALM=practice`, `burnGold()` takes the amount out of
+  `players.gold_u` as before.
 
 Public totals: `GET /api/gold/burns`.
 
 ## What GOLD buys
 
-Prices are a tuning proposal in `server/data/gold-spend.json` (whole GOLD).
+Prices live in `server/data/gold-spend.json` and are QGOLD (set 5 Nov 2026,
+`gold-spend-v2`). They are sized to what play earns on testnet: a map coin is
+worth about 0.0004 QGOLD (the day's coin budget split over every coin in
+Czechia) and a cell-zone prize a few hundredths. So a premium emote
+(0.025–0.075) is about one good walk, a frame (0.1–0.3) a few days, NPC gear
+0.75 (rare) or 2 (epic), a lure 0.01–0.06, a shout 0.005 and a topic 0.01 a day.
 
 | Spend | Rule |
 | --- | --- |
 | Emotes above the character | 6 basic emotes are free for everyone. 10 premium emotes are unlocked once. An emote shows to nearby players for 30 s (presence carries it). |
 | Cosmetics | Marker frames, unlocked once, one worn at a time. Visible to nearby players. |
 | Trader premium gear | At a trader (encounter token required). Burn first, then a chest-edition Aura (`polar`, `bloom`, `storm`, `moon`, `comet`) from the shared supply lands in the wardrobe; it is secured as an NFT through the ordinary `redeem_aura` claim. One a day. |
-| Golden Altar fee | 5 GOLD per offering, 10 for epic recipes (`GOLD_ALTAR_FEE=0` turns it off). |
+| Golden Altar fee | 0.025 QGOLD per offering, 0.05 for epic recipes (`GOLD_ALTAR_FEE=0` turns it off). |
 | Lure | See below. |
 | Place messages | See below. |
 

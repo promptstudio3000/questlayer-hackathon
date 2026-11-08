@@ -1,0 +1,83 @@
+/* Equipment first; catalog, ownership and transaction behavior stay intact. */
+.inventory-experience .inv-hero {
+  position: relative;
+  grid-template-columns: minmax(64px, 1fr) minmax(112px, 1.5fr) minmax(64px, 1fr);
+  grid-template-areas: "info info info" "above stage below" "details details details";
+  gap: 4px;
+  padding: 12px;
+  background: var(--surface-soft);
+  border: 0;
+  border-radius: 16px;
+}
+.inventory-experience .inv-hero-info { gap: 2px; padding-inline-end: 40px; }
+.inv-identity { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.inventory-experience .inv-identity h2 { font-size: 18px; font-weight: 500; white-space: normal; overflow-wrap: anywhere; }
+.inv-identity > span { font-size: 14px; color: var(--ink-secondary); }
+.inventory-experience .inv-hero-source { font-size: 14px; white-space: normal; overflow: visible; }
+.inventory-experience .inv-hero-stage { height: 128px; border: 0; background: none; overflow: visible; }
+.inventory-experience .inv-hero-stage > .character-composition { width: 112px; height: 128px; }
+.inventory-experience .inv-hero-stage .character-composition > .ghost-art,
+.inventory-experience .inv-hero-stage .character-composition > img { width: 64px; height: 80px; object-fit: contain; }
+.inventory-experience .inv-hero-stage .character-aura { filter: none; }
+.inventory-experience .inv-hero-stage .character-aura.above { top: 0; }
+.inventory-experience .inv-hero-stage .character-aura.below { bottom: 0; }
+.inventory-experience .inv-hero-stage .character-aura .aura-sprite { width: 104px; height: auto; }
+.inventory-experience .inv-hero-gear { display: contents; }
+.inventory-experience .inv-gear { align-self: center; justify-self: center; gap: 6px; min-width: 0; }
+.inventory-experience .inv-gear:first-child { grid-area: above; }
+.inventory-experience .inv-gear:nth-child(2) { grid-area: below; }
+.inventory-experience .inv-gear-tile { width: 60px; height: 48px; min-height: 48px; padding: 6px; background: var(--surface-raised); border-width: 1px; border-radius: 10px; box-shadow: none; }
+.inventory-experience .inv-gear-tile.empty { border: 1px dashed var(--control-border); }
+.inventory-experience .inv-character-details { grid-area: details; min-width: 0; }
+.inv-character-details > summary { position: absolute; top: 8px; inset-inline-end: 8px; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 10px; color: var(--ink-secondary); list-style: none; cursor: pointer; }
+.inv-character-details > summary::-webkit-details-marker { display: none; }
+.inv-character-details[open] > summary { background: var(--surface-raised); color: var(--action); }
+.inv-character-metrics { display: grid; gap: 12px; padding: 16px 0 4px; border-top: 1px solid var(--decorative-border); }
+.inventory-experience .inv-hero-3d { position: static; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: auto; padding: 10px 12px; border-radius: 8px; color: var(--ink); background: var(--surface-raised); }
+.inventory-experience .inv-level-label small { font-size: 14px; white-space: normal; }
+.inventory-experience .inv-level-bar { height: 6px; border: 0; background: var(--surface-raised); }
+.inventory-experience .inv-level-bar > span { min-width: 0; background: var(--action); box-shadow: none; }
+.inventory-experience .inv-actions { display: flex; gap: 16px; border-bottom: 1px solid var(--decorative-border); }
+.inventory-experience .inv-actions > button { flex: 1; min-height: 48px; border: 0; border-radius: 0; padding: 8px 4px; background: none; font-size: 16px; font-weight: 400; box-shadow: none; }
+.inventory-experience .inv-chips { gap: 4px; align-items: center; }
+.inventory-experience .inv-chip { min-width: 48px; min-height: 48px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font-weight: 400; }
+.inventory-experience .inv-chip[aria-pressed="true"],
+.inventory-experience .inv-chip[aria-expanded="true"] { background: var(--surface-soft); color: var(--action); font-weight: 500; }
+.inventory-experience .inv-chip-icon { padding: 0 8px; margin-inline-start: auto; margin-left: 0; }
+.inventory-experience .inv-filter-more label { font-size: 14px; }
+.inventory-experience .inv-filter-more select { min-height: 48px; }
+.inventory-experience .inv-grid,
+.inventory-experience .inv-catalog-grid { display: grid; gap: 12px; padding: 0; background: none; border-radius: 0; box-shadow: none; }
+.inv-item { display: grid; align-content: start; justify-items: stretch; gap: 4px; min-width: 0; }
+.inventory-experience .inv-item .inv-cell { width: 100%; }
+.inventory-experience .inv-cell { min-height: 48px; border-width: 1px; background: var(--surface-soft); box-shadow: none; }
+.inventory-experience .inv-cell.worn { outline: 2px solid var(--action); outline-offset: -3px; }
+.inventory-experience .inv-cell:focus-visible { outline-color: var(--focus); outline-offset: 3px; }
+.inventory-experience .inv-cell.rarity-rare { background: color-mix(in srgb, var(--inv-rare) 8%, var(--surface-raised)); }
+.inventory-experience .inv-cell.rarity-epic { background: color-mix(in srgb, var(--inv-epic) 8%, var(--surface-raised)); }
+.inventory-experience .inv-cell.rarity-legendary { background: color-mix(in srgb, var(--inv-legendary) 12%, var(--surface-raised)); box-shadow: none; }
+.inventory-experience .inv-cell.empty { border: 1px dashed var(--decorative-border); background: var(--surface-soft); box-shadow: none; }
+.inv-item-name { font-size: 14px; line-height: 1.3; text-align: center; overflow-wrap: anywhere; }
+.inv-item-rarity { font-size: 14px; line-height: 1.4; color: var(--ink-secondary); text-align: center; }
+.inventory-experience .inv-cell-pip { display: none; }
+.inventory-experience .inv-cell-worn { background: var(--action); border: 0; }
+.inventory-experience .inv-empty-compact { text-align: center; justify-items: center; padding: 12px 0; gap: 12px; background: none; border: 0; }
+.inventory-experience .inv-empty-compact > .game-object-art { width: 72px; height: 72px; }
+.inventory-experience .inv-empty-compact .inventory-action { width: 100%; font-weight: 500; border: 0; border-radius: 10px; box-shadow: none; }
+.inv-catalog { min-width: 0; margin-top: 8px; border-top: 1px solid var(--decorative-border); }
+.inv-catalog > summary { padding: 14px 0; color: var(--ink-secondary); font-size: 14px; cursor: pointer; }
+.inv-catalog-grid { padding-block: 8px 16px!important; }
+.inventory-experience .inv-catalog .inv-cell.locked { background: var(--surface-soft); border: 1px dashed var(--control-border); }
+.inventory-experience .inv-catalog .aura-sprite { filter: grayscale(1); opacity: .55; }
+.inventory-experience .inv-catalog .inv-cell-lock { color: var(--on-action); background: var(--action); }
+@media (min-width: 700px) {
+  .inventory-experience .inv-hero { grid-template-columns: 1fr 1.5fr 1fr; }
+  .inventory-experience .inv-hero-stage { height: 160px; }
+  .inventory-experience .inv-hero-stage > .character-composition { width: 144px; height: 152px; }
+  .inventory-experience .inv-hero-stage .character-composition > .ghost-art,
+  .inventory-experience .inv-hero-stage .character-composition > img { width: 88px; height: 100px; }
+  .inventory-experience .inv-hero-stage .character-aura .aura-sprite { width: 128px; }
+}
+/* Wearable pickups live in the Wardrobe: say so where players look first. */
+.inv-wearable-hint { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; margin: 0 0 8px; padding: 8px 12px; border: 1px solid var(--control-border); border-radius: 12px; background: var(--surface-soft); color: var(--ink); font-size: 14px; line-height: 1.4; text-align: start; }
+.inv-wearable-hint > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }

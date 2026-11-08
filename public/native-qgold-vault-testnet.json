@@ -1,6 +1,6 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-11-04T15:20:16.169Z",
+  "verifiedAt": "2026-11-05T13:34:14.144Z",
   "vaultContract": "questlayer-qgold-vault-20261104.testnet",
   "tokenContract": "questlayer-qgold-vault-20261104.testnet",
   "symbol": "QGOLD",
@@ -32,9 +32,9 @@
     "near_queue"
   ],
   "smoke": {
-    "rate": "1020824900564815759573",
-    "supply": "4945212498",
-    "backing": "5048196056542734153312592"
+    "rate": "1023291843833565826885",
+    "supply": "5030456099",
+    "backing": "5147624696869516754775589"
   },
   "transactions": [
     {
@@ -84,6 +84,60 @@
     {
       "label": "Smoke: redeem 1 QGOLD instantly",
       "transaction": "GaPyj58E88c1TaoBmo862Mbvz5KFNs14yajhE5QvfyLz"
+    },
+    {
+      "label": "Upgrade rewards: claims pay into the QGOLD vault",
+      "transaction": "4k94jNgy71sDQo783AGjp6zGCCRd4HtsTykAuW6QKYZx"
+    },
+    {
+      "label": "Smoke: deposit 0.05 NEAR for QGOLD",
+      "transaction": "5f8JD7SG7ZLQ8LiVWk1VVqfLRpjJDPVRrVj5bjwemA74"
+    },
+    {
+      "label": "Smoke: burn 1 QGOLD (in-game spend)",
+      "transaction": "BdZCumjZ6LE72At6K9wXE5uSiEJfqpAEyixCeHmCTavU"
+    },
+    {
+      "label": "Smoke: redeem 1 QGOLD instantly",
+      "transaction": "DQjpmT5mLMCr4DuXcx27pfainJbrfAvfS2L9EvRKM1vr"
+    },
+    {
+      "label": "Upgrade rewards: claims pay into the QGOLD vault",
+      "transaction": "6jJffQAxn7MYEdRYehGU7pRmEPw1a49x8ktgE1BqrgcW"
+    },
+    {
+      "label": "Let the reward worker key publish, claim and close map and payout days",
+      "transaction": "GysX4dwLmD6YRhHoEA8N1viQBA6oSieCDrqjSqQWcVFa"
+    },
+    {
+      "label": "Smoke: deposit 0.05 NEAR for QGOLD",
+      "transaction": "3nx6ghvqM1qQ7KCpFHgxtTkH2ZmtAfQW8fDLdouo1nyM"
+    },
+    {
+      "label": "Smoke: burn 1 QGOLD (in-game spend)",
+      "transaction": "7vGwZk3kUQgzURct9tckKF6VyJC15scmmrkSWX8H8Jz2"
+    },
+    {
+      "label": "Smoke: redeem 1 QGOLD instantly",
+      "transaction": "BG33ZUX5qMW15mDXhCSbpDdE46MsKPUEFu66xgzpPYpk"
     }
-  ]
+  ],
+  "pendingWorldUpgrade": {
+    "proposalId": 2,
+    "codeSha256": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f",
+    "executableAt": "1794244870054",
+    "proposer": "questlayer-dev-20261101.testnet",
+    "transaction": "GgXTWDQ3W6jFRD4HcQJo1EZernvQ9K1hFJ2My563ewGN",
+    "state": "timelocked",
+    "sourceCommit": "346cf9dc8a9a5de8494b422f5d0e7ed40cbee709"
+  },
+  "supersededWorldUpgrade": {
+    "proposalId": 1,
+    "codeSha256": "6932b7985cb90fec7220b374b4815f6f1dc67cbc600c66cc03d578a0b10629cd",
+    "executableAt": "1794239522525",
+    "proposer": "questlayer-dev-20261101.testnet",
+    "transaction": "JsRFAYdTj8NAfr2WD4pQZZ1meRgJ92uZXdCLb6AUr3o",
+    "state": "cancelled",
+    "cancelTransaction": "3FUjjXLfY7VZDS8s1ggau1TBTFixnPBMEcfvReVQ3yhJ"
+  }
 }

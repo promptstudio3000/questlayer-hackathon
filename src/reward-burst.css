@@ -31,8 +31,9 @@
   line-height: 1.15;
 }
 .reward-burst small {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
+  color: inherit;
 }
 .reward-burst.tone-coin {
   font-size: 14px;

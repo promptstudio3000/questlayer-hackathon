@@ -1,0 +1,60 @@
+{
+  "source": "npm run e2e:languages after introduction; mini-game examples checked separately in English, Czech and Arabic",
+  "languages": [
+    {
+      "lang": "ar",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "cs",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "de",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "en",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "es",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "fr",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "hi",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "ja",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "pt",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "ru",
+      "screens": 16,
+      "problems": []
+    },
+    {
+      "lang": "zh",
+      "screens": 16,
+      "problems": []
+    }
+  ]
+}

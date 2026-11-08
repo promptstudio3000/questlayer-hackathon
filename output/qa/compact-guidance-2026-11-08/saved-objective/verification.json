@@ -1,0 +1,13 @@
+{
+  "provenance": "Actual local App/API; isolated data, no wallet or physical-device claim",
+  "browser": "chromium",
+  "cases": [
+    {
+      "name": "phone-390",
+      "preservedThroughBrowse": true,
+      "preservedThroughReload": true,
+      "nearbyActorAfterReload": true,
+      "claims": 0
+    }
+  ]
+}

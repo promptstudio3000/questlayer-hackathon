@@ -19,6 +19,38 @@ export const STARTER_SPRITE = artUrl("player/explorer") || "/assets/aavegotchi-s
 export const starterMarkerMarkup = () =>
   `<img class="starter-player" src="${STARTER_SPRITE}" alt="Aavegotchi starter appearance" draggable="false"/>`;
 
+const WEARABLE_LAYER = ["body", "face", "eyes", "head", "hand", "pet"];
+/** Public, catalogue-checked artwork route for an Aavegotchi wearable. */
+export const wearableArtUrl = (id: number) =>
+  Number.isSafeInteger(id) && id > 0 && id < 100000
+    ? `/api/wearables/art/${id}.svg`
+    : "";
+/**
+ * The starter Aavegotchi with wearable clones layered the way the Aavegotchi
+ * contract does it: each item at its own x, y, width, height on the 64×64
+ * canvas, in body → face → eyes → head → hand → pet order.
+ */
+export function wearableStarterMarkup(
+  wearables: { id: number; slot: string; dims: number[] }[],
+) {
+  const layers = [...wearables]
+    .filter(
+      (w) =>
+        wearableArtUrl(w.id) &&
+        Array.isArray(w.dims) &&
+        w.dims.length === 4 &&
+        w.dims.every((n) => Number.isInteger(n) && n >= 0 && n <= 64),
+    )
+    .sort((a, b) => WEARABLE_LAYER.indexOf(a.slot) - WEARABLE_LAYER.indexOf(b.slot))
+    .slice(0, 8)
+    .map(
+      (w) =>
+        `<image href="${wearableArtUrl(w.id)}" x="${w.dims[0]}" y="${w.dims[1]}" width="${w.dims[2]}" height="${w.dims[3]}" preserveAspectRatio="none"/>`,
+    )
+    .join("");
+  return `<svg class="starter-player" viewBox="8 4 48 54" role="img" aria-label="Aavegotchi starter with wearables"><image href="${STARTER_SPRITE}" x="8" y="4" width="48" height="54"/>${layers}</svg>`;
+}
+
 export function characterMarkerMarkup({
   above,
   below,
@@ -26,6 +58,7 @@ export function characterMarkerMarkup({
   belowEdition,
   scale = 1,
   skinUrl,
+  wearables,
 }: {
   color?: string;
   above?: string | null;
@@ -36,6 +69,8 @@ export function characterMarkerMarkup({
   /** Integer pixel scale of the Aura sprites (1 for small markers). */
   scale?: number;
   skinUrl?: string;
+  /** Aavegotchi wearable clones on the starter (an original skin wears its own). */
+  wearables?: { id: number; slot: string; dims: number[] }[];
 }) {
   const safe = (value: string | undefined | null) =>
     /^#[a-fA-F0-9]{6}$/.test(value || "") ? value : null;
@@ -49,5 +84,5 @@ export function characterMarkerMarkup({
         : null;
   const sprite = (slot: "above" | "below", color: string, edition?: string | null) =>
     `<div class="marker-aura ${slot === "above" ? "top" : "bottom"}" style="--aura-color:${color}">${auraMarkup(auraEdition({ edition, color }), slot, color, scale)}</div>`;
-  return `${top ? sprite("above", top, aboveEdition) : ""}${skin ? `<img class="origin-player" src="${skin}" alt="Chosen original Aavegotchi appearance"/>` : starterMarkerMarkup()}${bottom ? sprite("below", bottom, belowEdition) : ""}`;
+  return `${top ? sprite("above", top, aboveEdition) : ""}${skin ? `<img class="origin-player" src="${skin}" alt="Chosen original Aavegotchi appearance"/>` : wearables?.length ? wearableStarterMarkup(wearables) : starterMarkerMarkup()}${bottom ? sprite("below", bottom, belowEdition) : ""}`;
 }

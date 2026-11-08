@@ -1,0 +1,57 @@
+{
+  "poiWorld": {
+    "version": "cz-fixture",
+    "status": "ready"
+  },
+  "results": [
+    {
+      "device": "phone-390",
+      "journey": "Play in Brno",
+      "cell": "871e06942ffffff",
+      "worldId": "demo:871e06942ffffff:2026-11-07:v2",
+      "cityId": null,
+      "coins": 8,
+      "poiQuests": "ready",
+      "poiZones": 3,
+      "poiQuestsInCell": 3,
+      "nearestPoiQuestM": 9,
+      "cast": [
+        "npc",
+        "monster"
+      ],
+      "coachQuest": "Visit Brněnský orloj",
+      "coachQuestKind": "visit"
+    },
+    {
+      "device": "phone-390",
+      "journey": "Play in a village",
+      "cell": "871e306d6ffffff",
+      "worldId": "demo:871e306d6ffffff:2026-11-07:v2",
+      "cityId": null,
+      "coins": 14,
+      "poiQuests": "ready",
+      "poiZones": 2,
+      "poiQuestsInCell": 2,
+      "nearestPoiQuestM": 0,
+      "cast": [
+        "npc",
+        "monster"
+      ],
+      "coachQuest": "Chest at Památková rezervace Holašovice",
+      "coachQuestKind": "chest"
+    },
+    {
+      "device": "phone-390",
+      "journey": "Play in an empty spot",
+      "cell": "871e32b31ffffff",
+      "worldId": "demo:871e32b31ffffff:2026-11-07:v2",
+      "cityId": null,
+      "coins": 16,
+      "poiQuests": "empty",
+      "poiZones": 0,
+      "poiQuestsInCell": 0,
+      "nearestPoiQuestM": null,
+      "coachNote": "No quests in this spot today."
+    }
+  ]
+}

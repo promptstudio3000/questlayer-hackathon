@@ -1,22 +1,24 @@
-// The daily Czechia-wide reward plan (docs/MAP-REWARDS.md).
+// The daily Czechia-wide reward plan (docs/MAP-REWARDS.md, map-rewards-v2).
 //
-// Once per local day (Europe/Prague) the server takes a fixed share of the
-// coin and zone treasuries and splits it over every res-7 cell of Czechia:
+// Once per local day (Europe/Prague) the server takes the day's real budget
+// (budget.mjs: the map's share of the rewards contract's per-date cap, in
+// micro-QGOLD) and lays it over every res-7 cell of Czechia:
 //
+// Coins: every coin on the map is backed and worth the same. Each cell holds
+//   CELL_COINS shares (a pioneer cell, nobody there for 30 days, twice that),
+//   one coin = coin budget / all shares. Cells with fewer paths place fewer
+//   coins; their shares stay in the treasury.
+// Zones: the zone budget follows the formula
 //   votes     up to 50 %  (stream 7; unused share goes to the others)
 //   demand        20 %    distinct players who collected there, last 7 days
 //   random        15 %    3 % of cells, picked from the day seed
 //   potential     10 %    1 + sqrt(checked public places in the cell)
 //   stake          5 %    distinct stakers who collected there, last 30 days
-//   pioneer        5 %    off the top, for the first visit of a cell nobody
-//                         has visited for 30 days (x2 coins and a chest)
+//   with at most 1 % per cell and 25 % per res-5 area.
 //
-// A cell takes at most 1 % and a res-5 area at most 25 % of the day; the
-// excess is offered to the other cells, and what still does not fit stays in
-// the treasury for the next days. The result is one leaf per funded cell and
-// one Merkle root per day. A cell's coins are derived from its leaf (budget,
-// seed) when the first player opens it, so the root fixes the whole day's map
-// money before anyone plays.
+// The result is one leaf per cell and one Merkle root per day. A cell's coins
+// are derived from its leaf (value, seed) when the first player opens it, so
+// the root fixes the whole day's map money before anyone plays.
 import { cellToParent, latLngToCell } from "h3-js";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
@@ -27,23 +29,20 @@ import { merkle, sha256Hex } from "../chain-ledger/merkle.mjs";
 import { shiftDate } from "../spatial/calendar.mjs";
 import { czechiaCells } from "./czechia.mjs";
 import { ensureMapRewardsSchema } from "./schema.mjs";
+import { mapDayBudget } from "./budget.mjs";
 import {
   AREA_CAP_BPS,
   CELL_CAP_BPS,
+  CELL_COINS,
   CELL_ZONE_STEPS,
-  DAILY_SHARE_BPS,
   DEMAND_DAYS,
   FORMULA,
   MAP_REWARDS_POLICY,
   MAX_CELL_ZONES,
-  MAX_COINS_PER_CELL,
-  MEAN_MULT,
-  MIN_UNIT_U,
   PIONEER_DAYS,
-  PIONEER_RESERVE_BPS,
+  PIONEER_MULT,
   RANDOM_CELLS_BPS,
   STAKE_DAYS,
-  ZONE_SHARE_BPS,
 } from "./policy.mjs";
 import { unit } from "./placement.mjs";
 
@@ -76,9 +75,14 @@ export function zonesForPotential(pois = 0) {
   return Math.min(MAX_CELL_ZONES, n);
 }
 
-/** Estimated coin count of a cell budget (the real count depends on paths). */
-export const estimateCoins = (coinsU) =>
-  Math.min(MAX_COINS_PER_CELL, Math.floor(coinsU / (MIN_UNIT_U * MEAN_MULT)));
+/**
+ * One coin's value: the coin budget split into equal shares, CELL_COINS per
+ * cell and twice that for a pioneer cell. Integer micro-QGOLD, rounded down.
+ */
+export function coinValue(coinsU, cellCount, pioneerCount) {
+  const shares = CELL_COINS * (cellCount + pioneerCount * (PIONEER_MULT - 1));
+  return shares > 0 ? Math.floor(Math.max(0, coinsU) / shares) : 0;
+}
 
 /**
  * Cap cells at cellCap and res-5 areas at areaCap, offering what a capped
@@ -116,25 +120,7 @@ function capped(weights, pool, cellCap, areaCap) {
   return out;
 }
 
-/**
- * Pure plan of one day. `demand`, `stake` and `potential` map cell -> score
- * (players or place counts); `pioneers` is the set of cells nobody visited for
- * PIONEER_DAYS. Returns totals, per-cell rows and the Merkle root.
- */
-export function buildDayPlan({
-  day,
-  seed,
-  cells = czechiaCells(),
-  coinsU,
-  zonesU,
-  demand = new Map(),
-  stake = new Map(),
-  potential = new Map(),
-  votes = new Map(),
-  pioneers = new Set(),
-}) {
-  const pioneerU = bps(coinsU, PIONEER_RESERVE_BPS),
-    pool = coinsU - pioneerU;
+export function zoneAllocationWeights({ seed, cells, demand=new Map(), stake=new Map(), potential=new Map(), votes=new Map() }) {
   const random = new Set(
     cells.filter((c) => unit(seed, `random:${c}`) * 10000 < RANDOM_CELLS_BPS),
   );
@@ -160,12 +146,30 @@ export function buildDayPlan({
     for (const k of used) w += (FORMULA[k] / share) * (scores[k](c) / sums[k]);
     if (w > 0) weights.set(c, w);
   }
-  const coins = capped(
-    weights,
-    pool,
-    bps(coinsU, CELL_CAP_BPS),
-    bps(coinsU, AREA_CAP_BPS),
-  );
+  return {random,used,share,weights};
+}
+
+/**
+ * Pure plan of one day. `demand`, `stake` and `potential` map cell -> score
+ * (players or place counts); `pioneers` is the set of cells nobody visited for
+ * PIONEER_DAYS. Returns totals, per-cell rows and the Merkle root.
+ */
+export function buildDayPlan({
+  day,
+  seed,
+  cells = czechiaCells(),
+  coinsU,
+  zonesU,
+  demand = new Map(),
+  stake = new Map(),
+  potential = new Map(),
+  votes = new Map(),
+  pioneers = new Set(),
+}) {
+  const pioneerCount = cells.filter((c) => pioneers.has(c)).length;
+  const valueU = coinValue(coinsU, cells.length, pioneerCount),
+    cellCoinsU = CELL_COINS * valueU;
+  const {random,used,share,weights}=zoneAllocationWeights({seed,cells,demand,stake,potential,votes});
   const zones = capped(
     weights,
     zonesU,
@@ -174,7 +178,7 @@ export function buildDayPlan({
   );
   const rows = [];
   for (const cell of cells) {
-    const c = coins.get(cell) || 0,
+    const c = cellCoinsU,
       z = zones.get(cell) || 0,
       pioneer = pioneers.has(cell);
     if (!c && !z && !pioneer) continue;
@@ -184,7 +188,7 @@ export function buildDayPlan({
       coinsU: c,
       zonesU: z,
       zones: zoneCount,
-      coins: estimateCoins(c),
+      coins: c > 0 ? CELL_COINS : 0,
       pioneer,
     };
     row.leaf = cellLeaf({
@@ -200,7 +204,13 @@ export function buildDayPlan({
   }
   const { root } = merkle(rows.map((r) => r.leaf));
   const spentCoins = rows.reduce((n, r) => n + r.coinsU, 0),
-    spentZones = rows.reduce((n, r) => n + r.zonesU, 0);
+    spentZones = rows.reduce((n, r) => n + r.zonesU, 0),
+    // A pioneer cell's coins are worth double: the contract pays such a cell
+    // up to twice its leaf, so the day reserves that extra share too.
+    pioneerU = rows.reduce(
+      (n, r) => n + (r.pioneer ? r.coinsU * (PIONEER_MULT - 1) : 0),
+      0,
+    );
   return {
     day,
     policy: MAP_REWARDS_POLICY,
@@ -222,7 +232,12 @@ export function buildDayPlan({
         ]),
       ),
       budget: { coinsU, zonesU },
-      unplacedU: { coins: pool - spentCoins, zones: zonesU - spentZones },
+      coinValueU: valueU,
+      coinsPerCell: CELL_COINS,
+      unplacedU: {
+        coins: coinsU - spentCoins - pioneerU,
+        zones: zonesU - spentZones,
+      },
     },
   };
 }
@@ -239,7 +254,7 @@ function safeAll(db, sql, ...args) {
 }
 
 /** Distinct players per cell from coin and quest claims since `since`. */
-function claimersByCell(db, since, { stakersOnly = false } = {}) {
+export function claimersByCell(db, since, { stakersOnly = false } = {}) {
   const stakers = stakersOnly
     ? new Set(
         safeAll(
@@ -267,7 +282,7 @@ function claimersByCell(db, since, { stakersOnly = false } = {}) {
     add(latLngToCell(r.lat, r.lng, 7), r.claimant);
   for (const r of safeAll(
     db,
-    "SELECT q.lat,q.lng,c.player_id FROM quest_claims c JOIN quests q ON q.id=c.quest_id WHERE c.claimed_at>=?",
+    "SELECT q.lat,q.lng,c.player_id FROM quest_claims c JOIN quests q ON q.id=c.quest_id WHERE c.created_at>=?",
     since,
   ))
     add(latLngToCell(r.lat, r.lng, 7), r.player_id);
@@ -328,21 +343,9 @@ export function mapDaySeed(
     .digest("hex");
 }
 
-function treasuryAvailable(db, bucket) {
-  return (
-    db.prepare("SELECT available_u FROM treasury WHERE bucket=?").get(bucket)
-      ?.available_u || 0
-  );
-}
-
-const shareBps = (name, fallback) => {
-  const n = Number(process.env[name]);
-  return Number.isInteger(n) && n >= 0 && n <= 5000 ? n : fallback;
-};
-
 /**
- * Today's stored plan, built once from the treasury and claims of the
- * previous days. `potential` (cell -> POI count) defaults to the POI file.
+ * Today's stored plan, built once from the day's real budget and the claims
+ * of the previous days. `potential` (cell -> POI count) defaults to the POI file.
  */
 export function ensureDayPlan(
   db,
@@ -354,17 +357,12 @@ export function ensureDayPlan(
   if (found) return found;
   const start = Date.parse(`${day}T00:00:00Z`);
   const visited = recentlyVisited(db, day);
+  const budget = mapDayBudget(db);
   const plan = buildDayPlan({
     day,
     seed: mapDaySeed(day),
-    coinsU: bps(
-      treasuryAvailable(db, "coins"),
-      shareBps("MAP_DAILY_SHARE_BPS", DAILY_SHARE_BPS),
-    ),
-    zonesU: bps(
-      treasuryAvailable(db, "zones"),
-      shareBps("MAP_ZONE_SHARE_BPS", ZONE_SHARE_BPS),
-    ),
+    coinsU: budget.coinsU,
+    zonesU: budget.zonesU,
     demand: claimersByCell(db, start - DEMAND_DAYS * 86400000),
     stake: claimersByCell(db, start - STAKE_DAYS * 86400000, {
       stakersOnly: true,
@@ -372,6 +370,13 @@ export function ensureDayPlan(
     potential: potential || defaultPotential(),
     pioneers: new Set(czechiaCells().filter((c) => !visited.has(c))),
   });
+  plan.summary.budget = {
+    ...plan.summary.budget,
+    coinYocto: budget.coinYocto,
+    zoneYocto: budget.zoneYocto,
+    rateYocto: budget.rateYocto,
+    source: budget.source,
+  };
   return atomic(db, () => {
     const again = readDay(db, day);
     if (again) return again;

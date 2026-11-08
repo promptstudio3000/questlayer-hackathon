@@ -11,15 +11,6 @@
 .pickup-summary > span {
   display: block;
 }
-.sheet-toggle > .sheet-toggle-label {
-  text-align: left;
-  min-width: 0;
-  font-size: 16px;
-  line-height: 1.5;
-}
-.sheet-toggle .pickup-summary {
-  margin: 0;
-}
 .pickup-announcement {
   position: absolute;
   width: 1px;

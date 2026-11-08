@@ -5,6 +5,8 @@
 import React, { useEffect, useState } from "react";
 import { exactNear, priceLabel, shortAccount, shortHash, shortNear } from "./format";
 import "./economy.css";
+import "../public-polish.css";
+import { scrollRegionKeys } from "../scroll-region";
 import QgoldSection from "./QgoldSection";
 import TreasuryMix from "./TreasuryMix";
 
@@ -177,6 +179,7 @@ export default function EconomyPage() {
       <header className="eco-top">
         <a className="eco-brand" href="/">QuestLayer</a>
         <nav>
+          <a href="/treasury">Treasury</a>
           <a href="/how-it-works">How it works</a>
           <a className="eco-play" href="/">Play</a>
         </nav>
@@ -279,7 +282,7 @@ export default function EconomyPage() {
                     <Amount yocto={data.realizedYield.free} digits={6} /> <Yocto value={data.realizedYield.free} />
                   </dd>
                 </dl>
-                <div className="eco-table-wrap">
+                <div className="eco-table-wrap" tabIndex={0} onKeyDown={scrollRegionKeys}>
                   <table className="eco-table">
                     <thead>
                       <tr><th>Vault</th><th>Paid to the prize pool</th></tr>
@@ -394,7 +397,7 @@ export default function EconomyPage() {
             <h2 id="eco-budget">Daily prize budget</h2>
             <p className="eco-muted">One budget per day for the whole map, split between live cities by player demand.</p>
             {data.budget.length ? (
-              <div className="eco-table-wrap">
+              <div className="eco-table-wrap" tabIndex={0} onKeyDown={scrollRegionKeys}>
                 <table className="eco-table">
                   <thead>
                     <tr><th>Date</th><th>Cities</th><th>Coins</th><th>Zones</th><th>Total</th><th>From yield</th></tr>
@@ -419,7 +422,7 @@ export default function EconomyPage() {
             {data.days.length ? (
               <details className="eco-details">
                 <summary>Published days ({data.days.length})</summary>
-                <div className="eco-table-wrap">
+                <div className="eco-table-wrap" tabIndex={0} onKeyDown={scrollRegionKeys}>
                   <table className="eco-table">
                     <thead>
                       <tr><th>Day</th><th>State</th><th>Paid from</th><th>Total</th><th>Publish tx</th></tr>
@@ -448,7 +451,7 @@ export default function EconomyPage() {
               {Object.entries(data.payouts.byKind).map(([k, v]) => ` · ${v.count} ${k}`).join("")}.
             </p>
             {data.payouts.recent.length ? (
-              <div className="eco-table-wrap">
+              <div className="eco-table-wrap" tabIndex={0} onKeyDown={scrollRegionKeys}>
                 <table className="eco-table">
                   <thead>
                     <tr><th>When</th><th>Kind</th><th>Player account</th><th>Amount</th><th>Claim tx</th></tr>
@@ -498,7 +501,7 @@ export default function EconomyPage() {
                   </li>
                 ))}
               </ol>
-              <div className="eco-table-wrap">
+              <div className="eco-table-wrap" tabIndex={0} onKeyDown={scrollRegionKeys}>
                 <table className="eco-table">
                   <thead>
                     <tr><th>Vault</th><th>Paid</th><th>Flush tx</th></tr>

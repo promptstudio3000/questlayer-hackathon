@@ -8,9 +8,13 @@ use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, Promise,
 };
 mod map_days;
+mod payouts;
+mod world_days;
 const NEAR: u128 = 10u128.pow(24);
 const DAY_MS: u64 = 86_400_000;
 const CLAIM_LIMIT: u16 = 256;
+/// Share of each bucket's funding that one date may commit (see date_cap).
+const DATE_CAP_BPS: u128 = 1000;
 const CLAIM_STORAGE: u64 = 1024;
 const SPONSOR_STORAGE_FEE: u128 = 5 * 10u128.pow(21);
 /// Plain street coin XP (unchanged since v1).
@@ -286,10 +290,8 @@ impl Rewards {
             zone_cost = zone_cost.checked_add(q.reward.0).expect("Overflow");
         }
         // The restricted publisher can never publish an unbounded testnet day.
-        assert!(
-            coin_cost <= NEAR / 10 && zone_cost <= NEAR / 10,
-            "Daily testnet cap"
-        );
+        let cap = self.date_cap();
+        assert!(coin_cost <= cap && zone_cost <= cap, "Daily testnet cap");
         assert!(
             coin_cost <= self.coins.available && zone_cost <= self.zones.available,
             "Insufficient liquid funding"
@@ -539,7 +541,12 @@ impl Rewards {
         assert_eq!(p.pending, amount.0, "Callback mismatch");
         p.pending = 0;
         self.pending -= amount.0;
-        let ok = env::promise_result_checked(0, 0).is_ok();
+        // mint_for returns a JSON U128. TooLong with a zero-byte read still
+        // means the mint succeeded; only a failed receipt restores the credit.
+        let ok = !matches!(
+            env::promise_result_checked(0, 0),
+            Err(near_sdk::PromiseError::Failed)
+        );
         if ok {
             p.withdrawn += amount.0;
             self.withdrawn += amount.0;
@@ -582,7 +589,7 @@ impl Rewards {
     }
     pub fn get_date_totals(&self, date: String) -> near_sdk::serde_json::Value {
         let (coins, zones) = date_totals().get(&date).unwrap_or((0, 0));
-        near_sdk::serde_json::json!({"date":date,"coins":coins.to_string(),"zones":zones.to_string(),"cap":(NEAR / 10).to_string()})
+        near_sdk::serde_json::json!({"date":date,"coins":coins.to_string(),"zones":zones.to_string(),"cap":self.date_cap().to_string()})
     }
     fn add_to_date_total(&self, day_id: &str, coin_cost: u128, zone_cost: u128) {
         let date = day_date(day_id);
@@ -591,12 +598,22 @@ impl Rewards {
         let mut totals = date_totals();
         let (coins, zones) = totals.get(&date).unwrap_or((0, 0));
         let (coins, zones) = (coins + coin_cost, zones + zone_cost);
-        assert!(
-            coins <= NEAR / 10 && zones <= NEAR / 10,
-            "Daily cap across cities"
-        );
+        let cap = self.date_cap();
+        assert!(coins <= cap && zones <= cap, "Daily cap across cities");
         totals.insert(&date, &(coins, zones));
         seen.insert(&day_id.to_string(), &true);
+    }
+    /// Per-date cap for each bucket: 0.1 NEAR, or a tenth of what was ever
+    /// funded into that bucket (half of `funded`, 50/50 policy) once the
+    /// treasury is larger. It grows with funding and never shrinks, so a
+    /// date's recorded total always stays within it.
+    fn date_cap(&self) -> u128 {
+        let scaled = self.funded / 2 * DATE_CAP_BPS / 10_000;
+        if scaled > NEAR / 10 {
+            scaled
+        } else {
+            NEAR / 10
+        }
     }
     fn publisher(&self) {
         assert_eq!(
@@ -928,11 +945,156 @@ mod tests {
             "rewards.testnet",
             7,
             0,
-            Some(PromiseResult::Successful(vec![])),
+            Some(PromiseResult::Successful(
+                near_sdk::serde_json::to_vec(&U128(10)).unwrap(),
+            )),
         );
         assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
         assert_eq!(r.withdrawn, 10);
         r.check();
+    }
+    #[test]
+    fn qgold_withdrawal_success_with_return_value_consumes_credit_once() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "withdraw-json");
+        r.claim(c.clone(), signed(&r, &c));
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        // mint_for returns JSON U128 shares, not an empty response or the
+        // deposited NEAR amount. The SDK reports TooLong for our zero-byte read.
+        context("rewards.testnet", 5, 0, Some(PromiseResult::Successful(
+            near_sdk::serde_json::to_vec(&U128(7)).unwrap(),
+        )));
+        assert!(matches!(env::promise_result_checked(0, 0),
+            Err(near_sdk::PromiseError::TooLong(_))));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
+        let p = r.players.get(&a("alice.testnet")).unwrap();
+        assert_eq!((p.credit, p.pending, p.withdrawn), (0, 0, 10));
+        assert_eq!((r.owed, r.pending, r.withdrawn), (0, 0, 10));
+        r.check();
+        // Retrying the original earned-reward receipt also must not recreate credit.
+        context("relayer.testnet", 6, 0, None);
+        r.claim(c.clone(), signed(&r, &c));
+        assert_eq!(r.players.get(&a("alice.testnet")).unwrap().credit, 0);
+        r.check();
+    }
+    #[test]
+    #[should_panic(expected = "No available rewards or pending withdrawal")]
+    fn qgold_withdrawal_cannot_repeat_after_successful_mint() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "withdraw-repeat");
+        r.claim(c.clone(), signed(&r, &c));
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        context("rewards.testnet", 5, 0, Some(PromiseResult::Successful(
+            near_sdk::serde_json::to_vec(&U128(7)).unwrap(),
+        )));
+        r.on_withdraw(a("alice.testnet"), U128(10));
+        context("alice.testnet", 6, 1, None);
+        let _ = r.withdraw();
+    }
+    #[test]
+    fn qgold_withdrawal_success_preserves_new_rewards_earned_while_pending() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "withdraw-first");
+        r.claim(c.clone(), signed(&r, &c));
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        context("relayer.testnet", 5, 0, None);
+        let c = claim("coin", 1, "alice.testnet", "withdraw-new");
+        r.claim(c.clone(), signed(&r, &c));
+        context("rewards.testnet", 6, 0, Some(PromiseResult::Successful(
+            near_sdk::serde_json::to_vec(&U128(u128::MAX)).unwrap(),
+        )));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
+        let p = r.players.get(&a("alice.testnet")).unwrap();
+        assert_eq!((p.credit, p.pending, p.withdrawn), (10, 0, 10));
+        assert_eq!((r.owed, r.pending, r.withdrawn), (10, 0, 10));
+        r.check();
+        context("alice.testnet", 7, 1, None);
+        let _ = r.withdraw();
+        assert_eq!(r.pending, 10);
+        // Even an empty successful response remains a successful transfer.
+        context("rewards.testnet", 8, 0, Some(PromiseResult::Successful(vec![])));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
+        let p = r.players.get(&a("alice.testnet")).unwrap();
+        assert_eq!((p.credit, p.pending, p.withdrawn), (0, 0, 20));
+        assert_eq!((r.owed, r.pending, r.withdrawn), (0, 0, 20));
+        r.check();
+    }
+    #[test]
+    fn qgold_withdrawal_failure_preserves_new_rewards_and_retry_settles_once() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "withdraw-fail");
+        r.claim(c.clone(), signed(&r, &c));
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        context("relayer.testnet", 5, 0, None);
+        let c = claim("coin", 1, "alice.testnet", "withdraw-during-fail");
+        r.claim(c.clone(), signed(&r, &c));
+        context("rewards.testnet", 6, 0, Some(PromiseResult::Failed));
+        assert!(!r.on_withdraw(a("alice.testnet"), U128(10)));
+        let p = r.players.get(&a("alice.testnet")).unwrap();
+        assert_eq!((p.credit, p.pending, p.withdrawn), (20, 0, 0));
+        assert_eq!((r.owed, r.pending, r.withdrawn), (20, 0, 0));
+        r.check();
+        context("alice.testnet", 7, 1, None);
+        let _ = r.withdraw();
+        context("rewards.testnet", 8, 0, Some(PromiseResult::Successful(
+            near_sdk::serde_json::to_vec(&U128(14)).unwrap(),
+        )));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(20)));
+        let p = r.players.get(&a("alice.testnet")).unwrap();
+        assert_eq!((p.credit, p.pending, p.withdrawn), (0, 0, 20));
+        assert_eq!((r.owed, r.pending, r.withdrawn), (0, 0, 20));
+        r.check();
+    }
+    #[test]
+    #[should_panic(expected = "No available rewards or pending withdrawal")]
+    fn qgold_withdrawal_pending_blocks_a_second_withdrawal_of_new_credit() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "pending-first");
+        r.claim(c.clone(), signed(&r, &c));
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        context("relayer.testnet", 5, 0, None);
+        let c = claim("coin", 1, "alice.testnet", "pending-second");
+        r.claim(c.clone(), signed(&r, &c));
+        context("alice.testnet", 6, 1, None);
+        let _ = r.withdraw();
+    }
+    #[test]
+    #[should_panic(expected = "Callback mismatch")]
+    fn qgold_withdrawal_duplicate_success_callback_is_rejected() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "duplicate-success");
+        r.claim(c.clone(), signed(&r, &c));
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        context("rewards.testnet", 5, 0, Some(PromiseResult::Successful(
+            near_sdk::serde_json::to_vec(&U128(7)).unwrap(),
+        )));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
+        r.on_withdraw(a("alice.testnet"), U128(10));
+    }
+    #[test]
+    #[should_panic(expected = "Callback mismatch")]
+    fn qgold_withdrawal_duplicate_failure_callback_is_rejected() {
+        let mut r = setup();
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "duplicate-failure");
+        r.claim(c.clone(), signed(&r, &c));
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        context("rewards.testnet", 5, 0, Some(PromiseResult::Failed));
+        assert!(!r.on_withdraw(a("alice.testnet"), U128(10)));
+        r.on_withdraw(a("alice.testnet"), U128(10));
     }
     #[test]
     fn maximum_pilot_receipt_fits_its_sponsored_storage() {
@@ -1081,6 +1243,20 @@ mod tests {
         assert_eq!(t["zones"], "300");
         assert_eq!(t["cap"], (NEAR / 10).to_string());
         assert_eq!(r.get_date_totals("2026-11-02".into())["coins"], "0");
+        r.check();
+    }
+    #[test]
+    fn the_date_cap_grows_with_funding() {
+        let mut r = big_funding();
+        context("sponsor.testnet", 1, 10 * NEAR + SPONSOR_STORAGE_FEE, None);
+        r.fund_rewards("sponsor".into(), "fund-bigger".into());
+        // About 11 NEAR funded → 5.5 per bucket → a tenth is 0.55 NEAR a date.
+        let cap = r.funded / 2 / 10;
+        assert!(cap > NEAR / 2);
+        assert_eq!(r.get_date_totals("2026-11-05".into())["cap"], cap.to_string());
+        publish(&mut r, "brno-2026-11-05-v1", NEAR / 40, 0); // 10 coins: 0.25 NEAR
+        publish(&mut r, "ostrava-2026-11-05-v1", NEAR / 40, 0);
+        assert_eq!(r.get_date_totals("2026-11-05".into())["coins"], (NEAR / 2).to_string());
         r.check();
     }
     #[test]

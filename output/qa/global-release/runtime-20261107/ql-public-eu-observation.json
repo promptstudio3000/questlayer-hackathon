@@ -1,0 +1,71 @@
+{
+  "at": "2026-11-07T15:44:03.761Z",
+  "base": "https://questlayer.promptstudio3000.com",
+  "source": {
+    "buildId": "f984e6b212e179aed5ede8fce1d8097be068e944",
+    "recorded": true
+  },
+  "globalActivities": {
+    "state": "configured",
+    "financialActivation": false,
+    "rewards": {
+      "state": "not-configured"
+    },
+    "days": [
+      {
+        "day": "2026-11-07",
+        "state": "ready",
+        "regions": 2,
+        "loadedRegions": 2,
+        "financialActivation": false
+      }
+    ],
+    "worker": {
+      "state": "awaiting-content",
+      "missingRegions": [],
+      "problems": [
+        "No complete daily manifest has been supplied."
+      ],
+      "day": "2026-11-08",
+      "days": [
+        {
+          "state": "ready",
+          "missingRegions": [],
+          "problems": [],
+          "day": "2026-11-07",
+          "processedRegions": 2,
+          "regions": 2,
+          "failures": 0,
+          "retryAt": null
+        },
+        {
+          "state": "awaiting-content",
+          "missingRegions": [],
+          "problems": [
+            "No complete daily manifest has been supplied."
+          ],
+          "day": "2026-11-08"
+        }
+      ]
+    }
+  },
+  "worlds": [
+    {
+      "country": "FR",
+      "worldId": "demo:global-851f8033fffffff:2026-11-07:v2",
+      "quests": 102,
+      "financialActivation": false,
+      "reportedCityZoneCount": 102,
+      "polygonZones": 3
+    },
+    {
+      "country": "LU",
+      "worldId": "demo:global-851fa3cffffffff:2026-11-07:v2",
+      "quests": 175,
+      "financialActivation": false,
+      "reportedCityZoneCount": 175,
+      "polygonZones": 7
+    }
+  ],
+  "scope": "Public HTTPS reads; test observer session, no GPS claim or monetary action."
+}

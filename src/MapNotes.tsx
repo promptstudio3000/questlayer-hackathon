@@ -537,7 +537,7 @@ export function MapNotes({
     );
   }
   return (
-    <section className="map-notes" aria-label={tr("Map notes")}>
+    <section className="map-notes" aria-label={tr("Local chat")}>
       <div className="map-notes-heading">
         {view !== "browse" && (
           <button

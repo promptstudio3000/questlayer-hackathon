@@ -5,8 +5,9 @@ client overlay `src/map-rewards-layer.ts`, tests `tests/map-rewards.test.mjs`.
 Policy id: `map-rewards-v1` (`server/map-rewards/policy.mjs`). Numbers are tuning values; a change bumps the
 policy id so a published day never changes meaning.
 
-Everything here is **practice GOLD** until the QGOLD vault (stream 1) can mint real QGOLD for a claim.
-Plzeň's native NEAR days (`server/native/`) are unchanged.
+Since policy `map-rewards-v2` (5 Nov 2026, Lubos) there is no practice money on the map: **every coin is
+backed QGOLD and all coins of a day are worth the same**. The demo arena gives XP only and cells outside the
+plan (outside Czechia) get no coins. Plzeň's native NEAR days (`server/native/`) are unchanged.
 
 ## 1. One plan per day for all of Czechia
 
@@ -14,11 +15,16 @@ At the first request of a local day (Europe/Prague) the server builds the day pl
 (`map_reward_days`, `map_reward_cells`):
 
 - **Cells:** every H3 res-7 cell of Czechia (16,346 cells, coarse border outline in `czechia.mjs`).
-- **Budget:** 10 % of the available coin treasury and 4 % of the zone treasury (`MAP_DAILY_SHARE_BPS`,
-  `MAP_ZONE_SHARE_BPS`). Only cells a player opens reserve money, so the plan never drains the treasury;
-  everything else stays for the next days.
-- **Pioneer reserve:** 5 % off the top.
-- **Formula** for the rest, per cell:
+- **Budget** (`server/map-rewards/budget.mjs`): the map's share of the rewards contract's per-date cap
+  (half of it, within what city days left; the cap grows with treasury funding), priced in micro-QGOLD at the
+  vault's backing rate R. The reward worker records both from chain (`map_budget`); until it has, the testnet
+  defaults apply: 0.05 NEAR for coins, 0.05 NEAR for zones, R = 0.001 NEAR (`MAP_COIN_DAY_YOCTO`,
+  `MAP_ZONE_DAY_YOCTO`, `QGOLD_RATE_YOCTO`). The game database's `treasury` table is not used by the map.
+- **Coins: equal shares.** Every cell holds 400 coin shares (`CELL_COINS`), a pioneer cell twice that.
+  One coin = coin budget ÷ all shares, rounded down to whole micro-QGOLD, the same for every coin of the
+  day (`summary.coinValueU`). Example: 0.05 NEAR at R 0.001 = 50 QGOLD over about 6.5 to 13 million shares,
+  so a coin is 3 to 7 micro-QGOLD. A cell whose paths hold fewer coins leaves its shares in the treasury.
+- **Zones: formula.** The zone budget is split per cell:
 
 | Part | Share | Score |
 | --- | --- | --- |
@@ -28,8 +34,8 @@ At the first request of a local day (Europe/Prague) the server builds the day pl
 | potential | 10 % | 1 + √(checked public places in the cell, from the POI file) |
 | stake | 5 % | distinct stakers who collected in the cell, last 30 days |
 
-- **Caps:** at most 1 % of the day per cell and 25 % per res-5 area. What a capped cell cannot take is
-  offered to the others; the rest stays in the treasury.
+- **Zone caps:** at most 1 % of the zone budget per cell and 25 % per res-5 area. What a capped cell cannot
+  take is offered to the others; the rest stays in the treasury.
 - **Merkle root:** one leaf per funded cell,
   `sha256("qlmap1|policy|day|cell|coinsU|zonesU|zones|pioneer|cellSeed")`, sorted by cell, same tree as the
   chain ledger (`server/chain-ledger/merkle.mjs`). `GET /api/map/rewards/day` shows the root;
@@ -46,16 +52,15 @@ writes its rewards once (`map_cell_drops`):
    Plzeň keeps its six reviewed city zones and gets no cell zones. Big cities (Praha, Brno, …) scale by their
    cells instead of six zones per city.
 2. **Coins:** Poisson-disc spots on mapped public paths, 95–120 m apart, 60 m within 300 m of a zone
-   (3× denser), never two coins closer than 60 m. Values are small ×1, medium ×3 and rare ×10 of one unit
-   (rare more often near zones); the unit is at least 0.01 and at most 0.2 GOLD, and money that would need
-   bigger coins stays in the treasury.
+   (3× denser), never two coins closer than 60 m, at most the cell's 400. Every coin has the day's one value;
+   a pioneer coin (drawn as "medium") counts two shares.
 3. **Waves:** each coin belongs to one of six waves between 07:00 and 22:00 local, each start moved by up
    to ±30 min from the day seed. A later wave's coins are hidden and cannot be claimed (`WAVE_NOT_OPEN`).
    The demo arena has no waves (remote visitors in any time zone). `MAP_COIN_WAVES=1..12|off`.
 4. **Pioneer:** a cell nobody visited for 30 days (`map_cell_visits`) shows gold fog. Its first drop of the
-   day doubles the coins from the pioneer reserve and adds a pioneer chest (XP, Aura while edition supply
-   lasts).
-5. Outside Czechia a cell gets a small fixed practice budget (0.5 GOLD) until more countries have a plan.
+   day pays two shares per coin and adds a pioneer chest (XP, Aura while edition supply lasts).
+5. The demo arena (no GPS) places coins worth 0: XP only. Outside Czechia a cell gets no coins until more
+   countries have a plan; its POI quests still give XP.
 
 ## 3. On the map
 
@@ -68,7 +73,6 @@ bigger. The sky chip shows the time of the next coin wave.
 ## 4. Switches
 
 - `MAP_REWARDS=off`: new worlds use the old per-world coin seeding.
-- `MAP_DAILY_SHARE_BPS`, `MAP_ZONE_SHARE_BPS` (0–5000).
 - `MAP_COIN_WAVES` (1–12, `off` = all at once).
 - `MAP_REWARDS_SEED`: secret mixed into the day seed.
 - `MAP_CHAIN=1` (off by default): the reward worker also publishes each day's root with
@@ -76,11 +80,18 @@ bigger. The sky chip shows the time of the next coin wave.
   collected in GPS worlds as `claim_map` (leaf fields, proof, coin or zone index, attestor signature;
   at most 240 a day), and closes the day after one day of grace (`server/map-rewards/chain.mjs`).
   It needs the rewards upgrade with `map_days.rs` and a worker key that allows the three map
-  methods next to the four native ones. The demo arena stays practice. Status:
+  methods next to the four native ones. The demo arena gives XP only, so it never goes on chain. Status:
   `chain` in `GET /api/map/rewards/day`. Every published day (city or map) holds 256 receipt slots
   (about 2.6 NEAR of storage) until it closes, so the contract needs about five days of separate storage
   reserve; `node scripts/topup-rewards-storage.mjs [--send]` tops it up from the operator. Without it
   `publish_map_day` traps ("Top up separate storage and gas funding before publication").
+- `MAP_PAYOUTS=1`: map coins and cell zones are paid by the nightly payout (docs/DAILY-PAYOUTS.md), one
+  leaf per account per day, and `claim_map` is no longer sent (the map day worker only records the budget).
+- **Caps grow with the treasury.** The rewards contract caps each date at max(0.1 NEAR, 10 % of each
+  bucket's funding) (`date_cap`). City days together take at most max(0.006 NEAR, 4 % of a bucket's
+  funding) (`scaledBucketCap`), and a map day at most half of the date cap, within what the city days
+  left (`mapDayCaps`). With 0.2 NEAR funded nothing changes; with 1,000 NEAR a date may commit 50 NEAR
+  per bucket: 20 to cities, 25 to the map.
 
 Worlds created before the deploy keep their coins until midnight; the next day uses map rewards.
 
@@ -89,7 +100,7 @@ Worlds created before the deploy keep their coins until midnight; the next day u
 - `publish_map_day({day_id: "map-YYYY-MM-DD-v<n>", policy, root, starts_at, ends_at, coins_u, zones_u,
   yocto_per_u})`: publisher only. It reserves `coins_u × yocto_per_u` and `zones_u × yocto_per_u` NEAR from
   the coin and zone treasury. The same per-date cap applies across cities and the map (0.1 NEAR each on
-  testnet), together with the receipt storage reservation. `coins_u` must already include the pioneer reserve.
+  testnet), together with the receipt storage reservation. `coins_u` includes the pioneer cells' second share.
 - `claim_map({claim, signature})`: the attestor signs `map_claim_message(claim)`. A claim carries the leaf
   fields (`cell, coins_u, zones_u, zones, pioneer, seed`), the `proof`, `kind` ("coin" or "zone"),
   `index` and `value_u`. The contract:

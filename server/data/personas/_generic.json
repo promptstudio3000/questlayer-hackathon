@@ -12,8 +12,8 @@
       "backstory": "A lantern spirit who drifts from street to street and remembers which corners are worth a visit today.",
       "likes": ["parks", "squares", "viewpoints"],
       "greeting": {
-        "cs": "Ahoj, průzkumníku! Dnes jsem tu nová, ukážu ti, kam se vydat.",
-        "en": "Hello, explorer! I'm new around here today; let me show you where to go."
+        "cs": "Malou procházku, průzkumníku? Vyber si označenou zastávku a pak mi přijď říct, co jsi našel.",
+        "en": "A little walk, explorer? Pick a marked stop, then come back and tell me what you found."
       },
       "refusal": {
         "cs": "To ti dát nemohu. Vyber si z toho, co dnes nabízím.",
@@ -41,8 +41,8 @@
         "en": "That I have not heard yet. I can only offer the chapters I know."
       },
       "idle": {
-        "cs": "Příběhy nejsou jen ve velkých městech.",
-        "en": "Stories are not only in big cities."
+        "cs": "I obyčejný kout může skrývat dobrý příběh. Dívej se pozorně; vyprávíme jen to, co víme.",
+        "en": "An ordinary corner can hold a good story. Look closely; we only tell what we know."
       }
     },
     {
@@ -83,8 +83,8 @@
         "en": "That I won't tell you. I only keep watch over what I know."
       },
       "idle": {
-        "cs": "Ve dne vypráví Tobiáš, v noci já.",
-        "en": "Tobiáš tells the stories by day, I tell them by night."
+        "cs": "I obyčejný kout může skrývat dobrý příběh. Dívej se pozorně; vyprávíme jen to, co víme.",
+        "en": "An ordinary corner can hold a good story. Look closely; we only tell what we know."
       }
     }
   ]

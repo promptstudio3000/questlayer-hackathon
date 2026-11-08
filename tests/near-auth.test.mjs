@@ -184,7 +184,8 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
     rmSync(dir, { recursive: true, force: true });
   });
   let ready = false;
-  const startupDeadline = Date.now() + 15000;
+  // Generous: four servers boot at once under npm test on a laptop.
+  const startupDeadline = Date.now() + 30000;
   while (Date.now() < startupDeadline) {
     try {
       if ((await fetch(base + "/api/health")).ok) {
@@ -209,7 +210,7 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
     return {
       status: response.status,
       data: await response.json(),
-      cookie: response.headers.get("set-cookie")?.split(";")[0],
+      cookie: response.headers.getSetCookie().map(c => c.split(";")[0]).join("; ") || undefined,
     };
   }
   async function signed(
@@ -263,6 +264,18 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
   assert.equal(restored.data.player.id, playerId);
   assert.equal(restored.data.player.name, "Native Alice");
   assert.equal(restored.data.player.gold_u, login.data.player.gold_u);
+  await t.test("device management proof is bound to purpose, account and live session and is single-use", async () => {
+    const bearer = login.cookie.split("; ")[0];
+    const pending = await request("/identity/management/challenge",{accountId:"alice.testnet"},bearer);
+    const signature = await signed(pending.data);
+    assert.equal((await request("/auth/near/verify",signature)).status,401);
+    assert.equal((await request("/identity/management/verify",signature,restored.cookie)).status,403);
+    const authorized = await request("/identity/management/verify",signature,bearer);
+    assert.equal(authorized.status,200);
+    assert.ok(authorized.cookie.includes("questlayer-management="));
+    assert.equal((await request("/identity/management/verify",signature,bearer)).status,401);
+    assert.equal((await request("/identity/management/challenge",{accountId:"other.testnet"},bearer)).status,403);
+  });
   const wardrobe = await request(
     "/native/wardrobe",
     undefined,
@@ -340,10 +353,9 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
     ),
     linkProof = await signed(link.data, "bob.testnet", bobKey);
   assert.equal((await request("/auth/near/verify", linkProof)).status, 401);
-  assert.equal(
-    (await request("/wallet/verify", linkProof, guest.cookie)).status,
-    200,
-  );
+  const linkedGuest = await request("/wallet/verify", linkProof, guest.cookie);
+  assert.equal(linkedGuest.status, 200);
+  assert.equal((await request("/me", undefined, guest.cookie)).status, 401);
   const bob = await request("/auth/near/challenge", {
       accountId: "bob.testnet",
     }),
@@ -399,14 +411,14 @@ test("NEAR sign-in verifies real signatures, restores one explorer, isolates pur
   const conflictingLink = await request(
     "/wallet/challenge",
     { accountId: "alice.testnet" },
-    guest.cookie,
+    linkedGuest.cookie,
   );
   assert.equal(
     (
       await request(
         "/wallet/verify",
         await signed(conflictingLink.data),
-        guest.cookie,
+        linkedGuest.cookie,
       )
     ).status,
     409,

@@ -342,7 +342,7 @@ test("shape, identity, nonce, expiry, gas and argument bounds", async () => {
   );
   await rejects(decoded({ nonce: 100n }), "RELAY_NONCE");
   await rejects(decoded({ nonce: 102n }), "RELAY_NONCE");
-  await rejects(decoded({ maxBlockHeight: 5000n }), "RELAY_EXPIRY");
+  await rejects(decoded({ maxBlockHeight: 5000n }), "RELAY_EXPIRED");
   await rejects(decoded({ maxBlockHeight: 5121n }), "RELAY_EXPIRY");
   assert.equal(
     validateDelegate(await decoded({ maxBlockHeight: 5120n }), ctx())
@@ -684,5 +684,31 @@ test("an accepted NPC trade-up sponsors exactly its Auras to that trader", async
     decoded({ action: call("nft_transfer", { receiver_id: TRADER, token_id: "aura:ember:2" }, 1n) }),
     "RELAY_TRANSFER_TARGET",
     { ...withTrade, tradeUpHandovers: [{ ...withTrade.tradeUpHandovers[0], accountId: "bob.players.questlayer.testnet" }] },
+  );
+});
+
+test("a QGOLD burn with the game's memo is sponsored; anything else on the token is not", async () => {
+  const QGOLD = "qgold.questlayer.testnet";
+  const context = { ...ctx(), contracts: { ...CONTRACTS, qgold: QGOLD } };
+  const memo = "questlayer:burn:emote:0123456789abcdef";
+  const ok = validateDelegate(
+    await decoded({ receiverId: QGOLD, action: call("ft_burn", { amount: "500000", memo }, 1n) }),
+    context,
+  );
+  assert.equal(ok.receiverId, QGOLD);
+  await rejects(
+    decoded({ receiverId: QGOLD, action: call("ft_burn", { amount: "500000", memo: "gift" }, 1n) }),
+    "RELAY_ARGS",
+    context,
+  );
+  await rejects(
+    decoded({ receiverId: QGOLD, action: call("ft_burn", { amount: "500000", memo }, 0n) }),
+    "RELAY_DEPOSIT",
+    context,
+  );
+  await rejects(
+    decoded({ receiverId: QGOLD, action: call("ft_transfer", { receiver_id: "x.testnet", amount: "1" }, 1n) }),
+    "RELAY_RECEIVER",
+    context,
   );
 });

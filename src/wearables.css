@@ -1,0 +1,210 @@
+/* Aavegotchi wearable clones: map finds, verified check, wardrobe and explorer
+   card. Lazy: imported by the map chunk, the wardrobe and the card only. */
+.rarity-common { --wearable-rarity: #806afb; }
+.rarity-uncommon { --wearable-rarity: #98dbe5; }
+.rarity-rare { --wearable-rarity: #59bcff; }
+.rarity-legendary { --wearable-rarity: #ffc36b; }
+.rarity-mythical { --wearable-rarity: #ff96ff; }
+.rarity-godlike { --wearable-rarity: #51ffa8; }
+
+.wearable-find-marker {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 3px solid var(--wearable-rarity, #806afb);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffaf0 0 55%, #2c0a56 100%);
+  box-shadow: 0 0 0 2px #2c0a56, 0 0 14px var(--wearable-rarity, #806afb);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  animation: wearable-bob 2.4s ease-in-out infinite;
+}
+.wearable-find-marker img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.wearable-find-marker:focus-visible {
+  outline: 3px solid #fffa65;
+  outline-offset: 2px;
+}
+.wearable-find-marker.is-far {
+  display: none;
+}
+/* MapLibre positions a marker with `transform` on this same element, so the
+   bob must use the separate `translate` property. Animating `transform` here
+   overwrote the marker position and the find flew across the map. */
+@keyframes wearable-bob {
+  50% { translate: 0 -5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wearable-find-marker { animation: none; }
+}
+
+/* Gold "verified original" check. */
+.verified-check {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  background: #f3bd54 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3.2L15 7' fill='none' stroke='%232c0a56' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat;
+  box-shadow: 0 0 0 2px #fffaf0, 0 0 8px #ffd01f;
+}
+.other-player-marker > .verified-check {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  z-index: 3;
+}
+.other-player-marker[role="button"] {
+  cursor: pointer;
+}
+.other-player-marker[role="button"]:focus-visible {
+  outline: 3px solid #fffa65;
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+/* Wearable tile (wardrobe and explorer card). */
+.wearable-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+.wearable-tile {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 48px;
+  padding: 10px 6px 8px;
+  border: 2px solid var(--wearable-rarity, #806afb);
+  border-radius: 12px;
+  background: var(--surface, #fffaf0);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: center;
+}
+button.wearable-tile {
+  cursor: pointer;
+}
+.wearable-tile.equipped {
+  box-shadow: 0 0 0 3px var(--wearable-rarity, #806afb);
+}
+.wearable-tile img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.wearable-tile strong {
+  font-size: 14px;
+  line-height: 1.2;
+}
+.wearable-tile small {
+  font-size: 12px;
+  opacity: 0.8;
+}
+.wearable-tile > .verified-check,
+.wearable-tile > .clone-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.clone-badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #e3c8ff;
+  color: #2c0a56;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.wearable-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 14px;
+}
+.wearable-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Explorer card (inside the shared game dialog). */
+.player-card {
+  width: min(420px, calc(100vw - 64px));
+}
+.player-card header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.player-card header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.player-card header .player-card-close {
+  margin-left: auto;
+  min-width: 48px;
+  min-height: 48px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.player-card-avatar {
+  width: 64px;
+  height: 72px;
+  flex: none;
+}
+.player-card-avatar .starter-player,
+.player-card-avatar img {
+  width: 64px;
+  height: 72px;
+}
+.player-card h3 {
+  margin: 14px 0 4px;
+  font-size: 16px;
+}
+.player-card p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+.player-card-waves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.player-card-waves button,
+.player-card-actions button {
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid #8348ff;
+  background: #fff;
+  color: #2c0a56;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.player-card-waves button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.player-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.player-card-actions .danger {
+  border-color: #c82ac2;
+}

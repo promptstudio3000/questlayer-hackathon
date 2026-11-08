@@ -19,7 +19,7 @@ pub const FEE_BPS: u128 = 1000;
 pub const BPS: u128 = 10_000;
 pub const MAX_ID: usize = 64;
 pub const MAX_SLOTS: u32 = 50;
-pub const MAX_OPEN_PER_ACCOUNT: u32 = 200;
+pub const MAX_OPEN_PER_ACCOUNT: u32 = 20;
 /// Open plus rejected disputes per task.
 pub const MAX_DISPUTES: usize = 100;
 pub const MAX_RADIUS_M: u32 = 10_000;
@@ -31,6 +31,36 @@ const VERSION: &str = "1.0.0";
 const GAS_FT_TRANSFER: Gas = Gas::from_tgas(20);
 const GAS_ON_WITHDRAW: Gas = Gas::from_tgas(15);
 const GAS_WITHDRAW_MIN: Gas = Gas::from_tgas(50);
+const GAS_STORAGE_DEPOSIT: Gas = Gas::from_tgas(10);
+const GAS_WITHDRAW_FOR_MIN: Gas = Gas::from_tgas(60);
+/// NEP-145 registration on the QGOLD vault (0.00125 NEAR, contracts/qgold STORAGE_FEE).
+const STORAGE_DEPOSIT_YOCTO: u128 = 1_250_000_000_000_000_000_000;
+// Native storage headroom per open agreement, sized by what that agreement can
+// still add: one bounded account id plus credit record (256 bytes) per possible
+// worker, dispute or payee, plus 4 KiB for the fixed record, keys and callbacks.
+// Sizing per agreement (not by the largest possible task) keeps the service
+// open: a flat 42 KiB per agreement let a few 1-unit sends block every new
+// task. This is native storage headroom, not a token price or fee.
+const ENTRY_BYTES: u64 = 256;
+const FIXED_BYTES: u64 = 4096;
+/// Sum of the headroom reserved for open agreements. Kept under its own key so
+/// the contract state layout is unchanged.
+const RESERVED_GROWTH_KEY: &[u8] = b"reserved-growth-bytes";
+/// Disputes plus resolved disputes a task can hold: two per slot plus four,
+/// capped at MAX_DISPUTES.
+pub fn task_dispute_cap(slots: u32) -> usize {
+    (2 * slots as usize + 4).min(MAX_DISPUTES)
+}
+fn task_growth(slots: u32) -> u64 {
+    (u64::from(slots) + task_dispute_cap(slots) as u64) * ENTRY_BYTES + FIXED_BYTES
+}
+/// Secrets and sends credit at most the payee and the payer.
+const PAIR_GROWTH: u64 = 2 * ENTRY_BYTES + FIXED_BYTES;
+fn reserved_growth() -> u64 {
+    env::storage_read(RESERVED_GROWTH_KEY)
+        .map(|b| u64::from_le_bytes(b.try_into().expect("Invalid reserved growth")))
+        .unwrap_or(0)
+}
 
 /// Platform fee, rounded up: ceil(amount * FEE_BPS / BPS).
 pub fn fee_of(amount: u128) -> u128 {
@@ -244,6 +274,7 @@ pub struct ConfigView {
 #[allow(dead_code)]
 trait FungibleToken {
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
+    fn storage_deposit_sponsored(&mut self, account_id: AccountId);
 }
 #[ext_contract(ext_self)]
 #[allow(dead_code)]
@@ -360,6 +391,9 @@ impl QgoldEscrow {
         self.escrowed = self.escrowed.checked_add(amount.0).expect("Overflow");
         self.open_escrows += 1;
         self.check();
+        // Reject before accepting tokens when the service cannot fund their
+        // complete settlement state. ft_transfer_call then refunds the sender.
+        self.require_native_reserve(0);
         U128(0)
     }
 
@@ -384,11 +418,17 @@ impl QgoldEscrow {
         self.save_task(&id, task)
     }
 
-    /// Poster refunds every unpaid slot (reward + fee) while no dispute is open.
+    /// Poster (or the publisher on the poster's request in the game) refunds
+    /// every unpaid slot (reward + fee) while no dispute is open. Refunds only
+    /// ever go to the poster.
     pub fn cancel_task(&mut self, id: String) -> TaskView {
         self.not_paused();
         let mut task = self.task(&id);
-        assert_eq!(env::predecessor_account_id(), task.poster, "Only the poster can cancel");
+        let caller = env::predecessor_account_id();
+        assert!(
+            caller == task.poster || caller == self.publisher_id,
+            "Only the poster or the publisher can cancel"
+        );
         assert!(task.disputes.is_empty(), "A dispute is open");
         assert!(!task.closed(), "Task is closed");
         let n = task.free_slots();
@@ -407,21 +447,26 @@ impl QgoldEscrow {
         self.save_task(&id, task)
     }
 
-    /// Worker or poster disputes a submission; this reserves one slot.
+    /// Worker, poster or publisher (a proof waiting for review in the game)
+    /// reserves one slot for `worker`, so cancel/expire cannot take it.
     pub fn open_dispute(&mut self, id: String, worker: AccountId) -> TaskView {
         self.not_paused();
         let mut task = self.task(&id);
         let caller = env::predecessor_account_id();
         assert!(
-            caller == worker || caller == task.poster,
-            "Only the worker or the poster can open a dispute"
+            caller == worker || caller == task.poster || caller == self.publisher_id,
+            "Only the worker, the poster or the publisher can open a dispute"
         );
+        if caller == worker && caller != task.poster && caller != self.publisher_id {
+            assert!(task.assignee.as_ref() == Some(&worker), "Unassigned participation must be verified by the publisher or poster");
+            assert!(Self::now() < task.deadline_ms, "Ask the publisher to verify a proof submitted before the deadline");
+        }
         Self::check_worker(&task, &worker);
         assert!(!task.disputes.contains(&worker), "Dispute already open");
         assert!(!task.rejected.contains(&worker), "Dispute already resolved for this worker");
         assert!(task.free_slots() > 0, "No open slot left");
         assert!(
-            task.disputes.len() + task.rejected.len() < MAX_DISPUTES,
+            task.disputes.len() + task.rejected.len() < task_dispute_cap(task.slots),
             "Dispute capacity reached"
         );
         task.disputes.push(worker.clone());
@@ -484,11 +529,12 @@ impl QgoldEscrow {
         self.save_secret(&id, s)
     }
 
-    /// Buyer disputes within 7 days of the purchase.
+    /// Buyer (or the publisher for a dispute filed in the game) within 7 days.
     pub fn dispute_secret(&mut self, id: String) -> SecretView {
         self.not_paused();
         let mut s = self.secret(&id);
-        assert_eq!(env::predecessor_account_id(), s.buyer, "Only the buyer");
+        let caller = env::predecessor_account_id();
+        assert!(caller == s.buyer || caller == self.publisher_id, "Only the buyer or the publisher");
         assert!(s.status == Status::Held, "Secret purchase is not held");
         assert!(
             Self::now() < s.funded_at_ms + SECRET_HOLD_MS,
@@ -522,7 +568,8 @@ impl QgoldEscrow {
 
     // --------------------------------------------------------------- transfers
 
-    /// both_confirm: sender and receiver each confirm before expiry; the second confirmation releases.
+    /// both_confirm: sender and receiver each confirm before expiry; the second
+    /// confirmation releases. The publisher releases once the game recorded both.
     pub fn confirm_transfer(&mut self, id: String) -> TransferView {
         self.not_paused();
         let mut t = self.transfer(&id);
@@ -530,7 +577,11 @@ impl QgoldEscrow {
         assert!(t.status == Status::Held, "Transfer is not held");
         assert!(Self::now() < t.expires_ms, "Transfer expired");
         let caller = env::predecessor_account_id();
-        if caller == t.sender {
+        if caller == self.publisher_id {
+            // The game recorded both confirmations of its signed-in players.
+            t.sender_confirmed = true;
+            t.receiver_confirmed = true;
+        } else if caller == t.sender {
             t.sender_confirmed = true;
         } else if caller == t.to {
             t.receiver_confirmed = true;
@@ -570,22 +621,24 @@ impl QgoldEscrow {
         self.save_transfer(&id, t)
     }
 
-    /// Sender takes the funds back once the transfer expired unreleased.
+    /// Sender (or the publisher for them) takes the funds back once the transfer expired unreleased.
     pub fn refund_transfer(&mut self, id: String) -> TransferView {
         self.not_paused();
         let mut t = self.transfer(&id);
-        assert_eq!(env::predecessor_account_id(), t.sender, "Only the sender");
+        let caller = env::predecessor_account_id();
+        assert!(caller == t.sender || caller == self.publisher_id, "Only the sender or the publisher");
         assert!(t.status == Status::Held, "Transfer is not held");
         assert!(Self::now() >= t.expires_ms, "Transfer has not expired");
         self.refund_transfer_funds(&id, &mut t, "expired");
         self.save_transfer(&id, t)
     }
 
-    /// Receiver declines at any time: the sender is refunded.
+    /// Receiver (or the publisher for them) declines at any time: the sender is refunded.
     pub fn decline_transfer(&mut self, id: String) -> TransferView {
         self.not_paused();
         let mut t = self.transfer(&id);
-        assert_eq!(env::predecessor_account_id(), t.to, "Only the receiver");
+        let caller = env::predecessor_account_id();
+        assert!(caller == t.to || caller == self.publisher_id, "Only the receiver or the publisher");
         assert!(t.status == Status::Held, "Transfer is not held");
         self.refund_transfer_funds(&id, &mut t, "declined");
         self.save_transfer(&id, t)
@@ -601,17 +654,38 @@ impl QgoldEscrow {
         self.not_paused();
         assert!(env::prepaid_gas() >= GAS_WITHDRAW_MIN, "Attach at least 50 Tgas");
         let account_id = env::predecessor_account_id();
-        let amount = self.credits.get(&account_id).unwrap_or(0);
-        assert!(amount > 0, "No credit to withdraw");
-        self.credits.remove(&account_id);
-        self.credits_total -= amount;
-        self.pending_total += amount;
-        self.check();
-        Self::event("withdraw_started", json!({"account_id":account_id,"amount":U128(amount)}));
+        let amount = self.start_withdraw(&account_id);
         ext_ft::ext(self.token_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(GAS_FT_TRANSFER)
             .ft_transfer(account_id.clone(), U128(amount), Some("QuestLayer escrow withdrawal".into()))
+            .then(
+                ext_self::ext(env::current_account_id())
+                    .with_static_gas(GAS_ON_WITHDRAW)
+                    .on_withdraw(account_id, U128(amount)),
+            )
+    }
+
+    /// Pushes `account_id`'s whole credit to that account. Anyone may call it
+    /// (the game server does after every payout): the tokens can only go to
+    /// the credit's owner. The escrow first registers the account on the token
+    /// with a nonrefundable lifetime grant. The token refunds the deposit when
+    /// already registered or previously sponsored. Attach at least 60 Tgas.
+    pub fn withdraw_for(&mut self, account_id: AccountId) -> Promise {
+        self.not_paused();
+        assert!(env::prepaid_gas() >= GAS_WITHDRAW_FOR_MIN, "Attach at least 60 Tgas");
+        self.require_native_reserve(STORAGE_DEPOSIT_YOCTO + 1);
+        let amount = self.start_withdraw(&account_id);
+        ext_ft::ext(self.token_id.clone())
+            .with_attached_deposit(NearToken::from_yoctonear(STORAGE_DEPOSIT_YOCTO))
+            .with_static_gas(GAS_STORAGE_DEPOSIT)
+            .storage_deposit_sponsored(account_id.clone())
+            .then(
+                ext_ft::ext(self.token_id.clone())
+                    .with_attached_deposit(NearToken::from_yoctonear(1))
+                    .with_static_gas(GAS_FT_TRANSFER)
+                    .ft_transfer(account_id.clone(), U128(amount), Some("QuestLayer escrow payout".into())),
+            )
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_static_gas(GAS_ON_WITHDRAW)
@@ -708,6 +782,16 @@ impl QgoldEscrow {
     pub fn get_open_count(&self, account_id: AccountId) -> u32 {
         self.open_by_account.get(&account_id).unwrap_or(0)
     }
+    /// Native storage headroom for monitoring: new agreements are refused
+    /// while `free_yocto` is below what the next one needs, so top up early.
+    pub fn get_storage_reserve(&self) -> Value {
+        let reserved = reserved_growth();
+        let required = (u128::from(env::storage_usage()) + u128::from(reserved)) * env::storage_byte_cost().as_yoctonear();
+        let balance = env::account_balance().as_yoctonear();
+        json!({"reserved_growth_bytes": reserved, "required_yocto": required.to_string(),
+            "balance_yocto": balance.to_string(), "free_yocto": balance.saturating_sub(required).to_string(),
+            "pair_growth_bytes": PAIR_GROWTH, "one_slot_task_growth_bytes": task_growth(1)})
+    }
     pub fn get_stats(&self) -> StatsView {
         StatsView {
             total_held: U128(self.total_held),
@@ -750,6 +834,17 @@ impl QgoldEscrow {
     fn not_paused(&self) {
         assert!(!self.paused, "Escrow is paused");
     }
+    /// Moves the account's whole credit to pending (the token transfer follows).
+    fn start_withdraw(&mut self, account_id: &AccountId) -> u128 {
+        let amount = self.credits.get(account_id).unwrap_or(0);
+        assert!(amount > 0, "No credit to withdraw");
+        self.credits.remove(account_id);
+        self.credits_total -= amount;
+        self.pending_total += amount;
+        self.check();
+        Self::event("withdraw_started", json!({"account_id":account_id,"amount":U128(amount)}));
+        amount
+    }
     fn owner_only(&self) {
         assert_eq!(env::predecessor_account_id(), self.owner_id, "Only the owner");
     }
@@ -785,12 +880,17 @@ impl QgoldEscrow {
         }
         assert!(!task.paid.contains(worker), "Worker already paid for this task");
     }
-    fn open_inc(&mut self, account: &AccountId) {
+    fn open_inc(&mut self, account: &AccountId, growth: u64) {
         let n = self.open_by_account.get(account).unwrap_or(0);
         assert!(n < MAX_OPEN_PER_ACCOUNT, "Too many open escrows for this account");
         self.open_by_account.insert(account, &(n + 1));
+        let total = reserved_growth().checked_add(growth).expect("Reserved growth overflow");
+        env::storage_write(RESERVED_GROWTH_KEY, &total.to_le_bytes());
     }
-    fn open_dec(&mut self, account: &AccountId) {
+    fn open_dec(&mut self, account: &AccountId, growth: u64) {
+        // Agreements opened before this accounting existed reserved nothing.
+        let total = reserved_growth().saturating_sub(growth);
+        env::storage_write(RESERVED_GROWTH_KEY, &total.to_le_bytes());
         let n = self.open_by_account.get(account).expect("Open count underflow");
         if n <= 1 {
             self.open_by_account.remove(account);
@@ -843,7 +943,7 @@ impl QgoldEscrow {
             reward.checked_add(fee).expect("Overflow"),
             "Amount must equal reward plus the 10% fee exactly"
         );
-        self.open_inc(&poster);
+        self.open_inc(&poster, task_growth(slots));
         let task = Task {
             poster: poster.clone(),
             reward,
@@ -878,7 +978,7 @@ impl QgoldEscrow {
         assert_ne!(m.creator, buyer, "The creator cannot buy their own Secret");
         self.check_party(&m.creator);
         assert_eq!(amount, m.price.0, "Amount must equal the price exactly");
-        self.open_inc(&buyer);
+        self.open_inc(&buyer, PAIR_GROWTH);
         self.secrets.insert(
             &m.id,
             &Secret {
@@ -917,7 +1017,7 @@ impl QgoldEscrow {
                 );
             }
         }
-        self.open_inc(&sender);
+        self.open_inc(&sender, PAIR_GROWTH);
         self.transfers.insert(
             &m.id,
             &Transfer {
@@ -965,7 +1065,7 @@ impl QgoldEscrow {
             json!({"kind":"task","id":id,"worker":worker,"amount":U128(r),"fee":U128(f),"treasury":self.treasury_id}),
         );
         if task.closed() {
-            self.open_dec(&poster);
+            self.open_dec(&poster, task_growth(task.slots));
         }
         self.check();
     }
@@ -986,7 +1086,7 @@ impl QgoldEscrow {
             json!({"kind":"task","id":id,"to":poster,"slots":n,"amount":U128(total),"reason":reason}),
         );
         if task.closed() {
-            self.open_dec(&poster);
+            self.open_dec(&poster, task_growth(task.slots));
         }
         self.check();
     }
@@ -996,7 +1096,7 @@ impl QgoldEscrow {
         let buyer = s.buyer.clone();
         self.unlock(&[(s.creator.clone(), share)], fee);
         s.status = Status::Released;
-        self.open_dec(&buyer);
+        self.open_dec(&buyer, PAIR_GROWTH);
         Self::event(
             "paid",
             json!({"kind":"secret","id":id,"creator":s.creator,"amount":U128(share),"fee":U128(fee),"treasury":self.treasury_id,"reason":reason}),
@@ -1007,7 +1107,7 @@ impl QgoldEscrow {
         let sender = t.sender.clone();
         self.unlock(&[(t.to.clone(), t.amount)], 0);
         t.status = Status::Released;
-        self.open_dec(&sender);
+        self.open_dec(&sender, PAIR_GROWTH);
         Self::event(
             "paid",
             json!({"kind":"transfer","id":id,"to":t.to,"amount":U128(t.amount),"reason":reason}),
@@ -1018,7 +1118,7 @@ impl QgoldEscrow {
         let sender = t.sender.clone();
         self.unlock(&[(sender.clone(), t.amount)], 0);
         t.status = Status::Refunded;
-        self.open_dec(&sender);
+        self.open_dec(&sender, PAIR_GROWTH);
         Self::event(
             "refunded",
             json!({"kind":"transfer","id":id,"to":sender,"amount":U128(t.amount),"reason":reason}),
@@ -1062,6 +1162,13 @@ impl QgoldEscrow {
     /// accounted token balance (deposits - completed withdrawals).
     fn check(&self) {
         assert!(self.conserved(), "Escrow conservation invariant failed");
+    }
+
+    fn require_native_reserve(&self, outgoing: u128) {
+        let bytes = u128::from(env::storage_usage()) + u128::from(reserved_growth());
+        let required = bytes.checked_mul(env::storage_byte_cost().as_yoctonear())
+            .and_then(|cost| cost.checked_add(outgoing)).expect("Native storage reserve overflow");
+        assert!(env::account_balance().as_yoctonear() >= required, "Escrow storage reserve is insufficient; existing token rights remain saved");
     }
 
     fn task_view(id: String, t: Task) -> TaskView {

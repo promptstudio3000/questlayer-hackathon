@@ -63,75 +63,6 @@
     top: calc(66px + env(safe-area-inset-top));
   }
 
-  /* ---- An open sheet owns the bottom of the screen ------------------
-     The bottom menu and the header step aside until the sheet closes,
-     so the sheet and the map above it get the room. */
-  .nav-rail {
-    transition: transform 180ms var(--ease-out, ease-out);
-  }
-  .app-shell.sheet-open .topbar {
-    transform: translateY(-100%);
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
-  }
-  .app-shell.sheet-open .nav-rail {
-    transform: translateY(100%);
-    pointer-events: none;
-    visibility: hidden;
-  }
-  .app-shell.sheet-open .map-top-chip,
-  .app-shell.sheet-open .map-controls.map-toolbar {
-    top: calc(10px + env(safe-area-inset-top));
-  }
-  .app-shell.sheet-open .main-panel {
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 20px 20px 0 0;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  }
-  /* Screens (Inventory, Community, Profile) are bottom sheets sized to
-     their content, so short screens leave most of the map in view. */
-  .app-shell.sheet-open .main-panel:not(.explore-panel) {
-    top: auto;
-    max-height: min(82dvh, calc(100dvh - 64px - env(safe-area-inset-top)));
-  }
-  /* The home-screen offer docks above the bottom menu; while a sheet owns
-     that space the offer waits and comes back when the sheet closes. */
-  body:has(.app-shell.sheet-open) .pwa-install {
-    visibility: hidden;
-  }
-  /* The map tools column would hide behind a screen sheet. */
-  .app-shell.sheet-open:not(:has(.sheet-expanded)) .map-controls.map-toolbar {
-    visibility: hidden;
-  }
-  /* Discoveries: a tall sheet with the map and character still in view. */
-  .app-shell.sheet-open .main-panel.explore-panel.sheet-expanded {
-    top: auto;
-    height: min(66dvh, calc(100dvh - 140px));
-    max-height: none;
-  }
-
-  /* ---- Back is always an arrow pointing left ------------------------ */
-  .sheet-toggle {
-    justify-content: flex-start;
-    gap: 10px;
-  }
-  .sheet-toggle > svg {
-    margin-left: auto;
-  }
-  .sheet-toggle-back {
-    display: inline-grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--surface-soft, #f2ebff);
-    color: var(--action, #672eeb);
-  }
-
   /* ---- Dialogs: one frame and one padding, not two ------------------ */
   .game-dialog {
     width: calc(100vw - 16px);
@@ -175,17 +106,6 @@
   }
   .game-dialog .badge-filter button {
     flex-shrink: 0;
-  }
-  /* Monster and "too far" sheets keep their own frame; the dialog adds none. */
-  .game-dialog:has(> .actor-sheet) {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-  .game-dialog > .actor-sheet {
-    width: 100%;
-    padding: 16px;
   }
 }
 

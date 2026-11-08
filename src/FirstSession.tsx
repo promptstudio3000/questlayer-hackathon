@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Check, Sparkle, X } from "@phosphor-icons/react";
+import { Check, X } from "@phosphor-icons/react";
 import { ArrowRight } from "./dir-icons";
-import { api } from "./api";
 import { cue } from "./feedback";
 import {
   firstSessionProgress,
@@ -13,19 +12,8 @@ import {
   type FirstSessionProgress,
   type FirstStepId,
 } from "./first-session";
-import type { Point } from "./types";
 import "./first-session.css";
 import { tr } from "./i18n";
-
-const HINT_REFRESH_MS = 8000;
-const HINT_MOVE_M = 40;
-
-function metersBetween(a: Point, b: Point) {
-  const r = Math.PI / 180,
-    x = (b.lng - a.lng) * r * Math.cos(((a.lat + b.lat) / 2) * r),
-    y = (b.lat - a.lat) * r;
-  return Math.sqrt(x * x + y * y) * 6_371_000;
-}
 
 /** Tracks first-session progress and local marks for one player. */
 export function useFirstSession(player: FirstSessionPlayer | null) {
@@ -85,51 +73,9 @@ export function useFirstSession(player: FirstSessionPlayer | null) {
   };
 }
 
-/** Live one-line hint from the grounded guide for the current step. */
-function useGuideHint(
-  step: FirstStepId | undefined,
-  worldId: string | undefined,
-  position: Point,
-  enabled: boolean,
-) {
-  const [hint, setHint] = useState<{ step: string; text: string } | null>(
-    null,
-  );
-  const asked = useRef<{ step?: string; worldId?: string; at: number; where: Point | null }>({
-    at: 0,
-    where: null,
-  });
-  useEffect(() => {
-    if (!enabled || !step || !worldId) return;
-    const last = asked.current;
-    const moved = !last.where || metersBetween(last.where, position) > HINT_MOVE_M;
-    const stale = Date.now() - last.at > HINT_REFRESH_MS;
-    if (last.step === step && last.worldId === worldId && !(moved && stale))
-      return;
-    asked.current = { step, worldId, at: Date.now(), where: position };
-    let alive = true;
-    api<{ hint: string | null }>("/guide/hint", {
-      step,
-      worldId,
-      location: { lat: position.lat, lng: position.lng },
-    })
-      .then((r) => {
-        if (alive) setHint(r.hint ? { step, text: r.hint } : null);
-      })
-      .catch(() => {
-        if (alive) setHint(null);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [step, worldId, position.lat, position.lng, enabled]);
-  return hint && hint.step === step ? hint.text : null;
-}
-
 export function FirstSessionCoach({
   session,
-  worldId,
-  position,
+  hint,
   busy,
   onAction,
   actionLabel,
@@ -137,8 +83,7 @@ export function FirstSessionCoach({
   aside,
 }: {
   session: ReturnType<typeof useFirstSession>;
-  worldId?: string;
-  position: Point;
+  hint?: string;
   busy: boolean;
   onAction: (step: FirstStepId) => void;
   /** Override for the current step's button, e.g. when nothing is open. */
@@ -149,7 +94,6 @@ export function FirstSessionCoach({
 }) {
   const { progress, celebration } = session;
   const current = progress.current;
-  const hint = useGuideHint(current?.id, worldId, position, session.visible);
   if (!session.visible) return null;
   const index = current
     ? progress.steps.findIndex((s) => s.step.id === current.id)
@@ -186,19 +130,7 @@ export function FirstSessionCoach({
       {current ? (
         <>
           <h2 id="first-session-title">{current.title}</h2>
-          <p className="first-session-hint">
-            {hint ? (
-              <>
-                <Sparkle size={16} weight="fill" aria-hidden="true" />
-                <span>
-                  <span className="sr-only">{tr("Guide:")}{" "}</span>
-                  {hint}
-                </span>
-              </>
-            ) : (
-              <span>{current.hint}</span>
-            )}
-          </p>
+          {hint && <p className="first-session-hint learning-hint">{hint}</p>}
           <button
             className="primary-button first-session-action"
             disabled={busy || actionDisabled}

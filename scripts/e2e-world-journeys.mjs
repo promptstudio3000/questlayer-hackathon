@@ -10,9 +10,10 @@
 // generic NPC cast must be out too. In the empty cell the coach must say so
 // truthfully and the map marks nothing. The server runs on a throwaway
 // database with the Czechia POI fixture (tests/fixtures/world-coverage) as
-// POI_DB_PATH, the cells' path snapshots are pre-seeded (no map network), and
-// server and browser clocks are moved into play hours (scripts/lib/
-// e2e-clock.mjs) so the run gives the same answer at 02:00 as at noon.
+// POI_DB_PATH; the cells' path snapshots are pre-seeded (no map network).
+// Server and browser clocks use a fixed afternoon on the same fixture date
+// (scripts/lib/e2e-clock.mjs). Several coin waves must be open as well as POI
+// quests, so the same checks apply at 02:00 and at noon on the CI host.
 //
 // Usage:  npm run build && npm run e2e:world [-- --device=<name>]
 //   --device=phone-390  Chromium at 390 x 844 (default)
@@ -39,7 +40,6 @@ import {
   pathsAround,
 } from "../tests/fixtures/world-coverage/czechia.mjs";
 import { coverageReport, openPoiDb } from "../server/poi/coverage.mjs";
-import { daytimeOffset } from "./lib/e2e-clock.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -81,8 +81,10 @@ function chosenDevices() {
   assert.ok(DEVICES[name], `Unknown device "${name}".`);
   return [name];
 }
-// Server and browsers share one shifted clock (0 inside 09:00-18:00 Prague).
-const CLOCK_OFFSET_MS = daytimeOffset("Europe/Prague");
+// Freeze the fixture date and wave phase, while keeping elapsed time flowing.
+// Moving an evening run to 11:00 hid later coin waves and made the unchanged
+// minimum-count assertions fail depending on when CI happened to run.
+const CLOCK_OFFSET_MS = Date.parse("2026-11-07T16:00:00.000Z") - Date.now();
 
 async function freePort() {
   return new Promise((done, fail) => {
@@ -181,6 +183,7 @@ async function journey(browser, server, device, j, expected) {
     await page.goto(server.url);
     await page.getByPlaceholder("Your explorer name").fill(`World ${j.id}`);
     await page.getByRole("button", { name: "Start exploring" }).click();
+    await page.getByRole("button", { name: "Let's explore", exact: true }).click();
     const coach = page.locator(".first-session");
     await coach
       .getByRole("heading", { name: "Reach the nearest find" })
@@ -251,10 +254,16 @@ async function journey(browser, server, device, j, expected) {
       // be on "Open your first chest". When that chest is the same POI quest
       // the coach hides its "Nearest quest" line and its main action opens
       // the quest instead, so either button counts.
+      // With the one-objective map, a quest within reach replaces the
+      // compact coach with a single "Open <quest>" action, so that counts too.
+      const nearbyOpen = page.locator("button.nearby-open");
       await coach
         .getByRole("button", {
           name: /^(Nearest quest|Open the chest|Walk to the chest)/,
         })
+        .first()
+        .or(nearbyOpen)
+        .filter({visible:true})
         .first()
         .waitFor({ timeout: 15_000 });
       // Let the auto pick-up of spawn-side coins settle before reading it.
@@ -262,9 +271,27 @@ async function journey(browser, server, device, j, expected) {
       const chestButton = coach.getByRole("button", {
         name: /^(Open the chest|Walk to the chest)/,
       });
-      const opener = (await chestButton.count())
-        ? chestButton.first()
-        : coach.getByRole("button", { name: /^Nearest quest/ });
+      const nearbyLabel = (await nearbyOpen.isVisible())
+        ? await nearbyOpen.innerText()
+        : "";
+      const nearbyQuest =
+        !!nearbyLabel && world.quests.some((q) => nearbyLabel.includes(q.title));
+      // An NPC or find within reach takes the single objective slot instead;
+      // then the map's next-quest marker itself is the way in.
+      // The coach can switch lines while spawn-side pickups settle (WebKit is
+      // slower), so read whichever coach button is there once, and fall back
+      // to the marker when the coach no longer offers one.
+      const pinLocator = page.locator('.zone-map-pin[data-next="true"]');
+      const nearestButton = coach.getByRole("button", { name: /^Nearest quest/ });
+      let opener = nearbyOpen;
+      let label = nearbyQuest ? nearbyLabel : "";
+      for (const candidate of nearbyQuest ? [] : [chestButton.first(), nearestButton]) {
+        if (!(await candidate.count())) continue;
+        label = await candidate.innerText({ timeout: 5_000 }).catch(() => "");
+        if (label) { opener = candidate; break; }
+      }
+      const pinOnly = !label;
+      if (pinOnly) opener = pinLocator;
       // …the map marks the same place…
       const pin = page.locator('.zone-map-pin[data-next="true"]');
       // Attached, not visible: map markers re-render on every world update
@@ -277,9 +304,11 @@ async function journey(browser, server, device, j, expected) {
       const pinLabel = (await pin.getAttribute("aria-label")) || "";
       const zone = poiZones.find((z) => pinLabel.startsWith(`${z.name} · `));
       assert.ok(zone, `the next-quest marker "${pinLabel}" is a POI quest`);
-      const label = await opener.innerText();
       let quest;
-      if (/^Nearest quest/.test(label)) {
+      if (pinOnly) {
+        quest = world.quests.find((q) => q.zone_id === zone.id);
+        assert.ok(quest, "the next-quest marker is one of today's quests");
+      } else if (/^(Nearest quest|Open (?!the chest))/.test(label)) {
         quest = world.quests.find((q) => label.includes(q.title));
         assert.ok(quest, `coach quest "${label}" is one of today's quests`);
         assert.equal(
@@ -299,7 +328,8 @@ async function journey(browser, server, device, j, expected) {
       await page.waitForTimeout(1200);
       await page.screenshot({ path: join(shots, `${j.id}-coach.png`) });
       // …and the coach opens it.
-      await opener.click();
+      if (pinOnly) await opener.dispatchEvent("click");
+      else await opener.click();
       await page
         .getByRole("heading", { level: 1, name: zone.name })
         .waitFor({ timeout: 10_000 });
@@ -334,6 +364,16 @@ async function journey(browser, server, device, j, expected) {
     assert.deepEqual(errors, [], "no page errors");
     console.log(`  ${JSON.stringify(result)}`);
     return result;
+  } catch (error) {
+    await page.screenshot({path:join(shots, `${j.id}-failure.png`)}).catch(() => {});
+    writeFileSync(join(shots, `${j.id}-failure.json`),JSON.stringify(await page.evaluate(() => ({
+      text:document.body.innerText.slice(-6000),
+      coach:document.querySelector(".first-session")?.outerHTML,
+      panelHidden:document.querySelector(".main-panel")?.hidden,
+      panelClass:document.querySelector(".main-panel")?.className,
+      dialogs:[...document.querySelectorAll("dialog[open]")].map(el=>el.getAttribute("aria-label")),
+    })).catch(() => ({})),null,2));
+    throw error;
   } finally {
     await context.close();
   }

@@ -1,23 +1,18 @@
 // Deterministic coin placement in one H3 cell (docs/MAP-REWARDS.md).
 //
 // Input: candidate points on mapped public paths (every ~16 m), the zones of
-// the cell, a seed and the cell's budget. Output: coins at least 60-120 m
-// apart (Poisson disc; 60 m within 300 m of a zone, so 3x denser there), with
-// small/medium/rare values that add up to at most the budget, each in one of
-// the day's six waves. Same input, same coins: the seed comes from the day
+// the cell, a seed, a coin count and one coin value. Output: coins at least
+// 60-120 m apart (Poisson disc; 60 m within 300 m of a zone, so 3x denser
+// there), all worth the same, each in one of the day's six waves. Same input, same coins: the seed comes from the day
 // plan, so a cell's coins can be recomputed and checked against its leaf.
 import { createHash } from "node:crypto";
 import { distance } from "../domain.mjs";
 import { localDateBounds } from "../spatial/calendar.mjs";
 import {
-  COIN_ODDS,
   COIN_SPACING_M,
   COIN_SPACING_NEAR_ZONE_M,
-  COIN_TIERS,
+  COIN_TIER,
   MAX_COINS_PER_CELL,
-  MAX_UNIT_U,
-  MEAN_MULT,
-  MIN_UNIT_U,
   WAVES,
   ZONE_PULL_M,
 } from "./policy.mjs";
@@ -98,53 +93,34 @@ export function spaceCoins(
   return kept;
 }
 
-function tierOf(seed, i, near) {
-  const odds = near ? COIN_ODDS.nearZone : COIN_ODDS.far,
-    roll = Math.floor(unit(seed, `tier:${i}`) * 10000);
-  return roll < odds[0]
-    ? COIN_TIERS[0]
-    : roll < odds[0] + odds[1]
-      ? COIN_TIERS[1]
-      : COIN_TIERS[2];
-}
-
 /**
- * Coins of one cell for one day. Returns { coins, spentU }: spentU <= budgetU,
- * and the rest stays in the treasury. Each coin: { i, lat, lng, valueU, tier, wave }.
+ * Coins of one cell for one day: at most `count` spots, every coin worth the
+ * same `valueU` (0 = XP only, e.g. the demo arena). Returns { coins, spentU };
+ * what the paths cannot hold stays in the treasury.
+ * Each coin: { i, lat, lng, valueU, tier, wave }.
  */
 export function placeCellCoins({
   samples,
   zones = [],
   seed,
-  budgetU,
+  count = MAX_COINS_PER_CELL,
+  valueU = 0,
+  tier = COIN_TIER,
   waves = WAVES.count,
 }) {
-  const budget = Math.max(0, Math.floor(Number(budgetU) || 0));
-  const want = Math.min(
-    MAX_COINS_PER_CELL,
-    Math.floor(budget / (MIN_UNIT_U * MEAN_MULT)),
-  );
-  if (want < 1 || !samples?.length) return { coins: [], spentU: 0 };
-  const spots = spaceCoins(samples, zones, { seed, max: want });
-  if (!spots.length) return { coins: [], spentU: 0 };
-  let tiers = spots.map((s, i) => tierOf(seed, i, s.nearZone));
-  let total = tiers.reduce((n, t) => n + t.mult, 0);
-  // A small budget drops spots (last first) until the smallest coin fits.
-  while (spots.length && Math.floor(budget / total) < MIN_UNIT_U) {
-    spots.pop();
-    total -= tiers.pop().mult;
-  }
-  if (!spots.length) return { coins: [], spentU: 0 };
-  const unitU = Math.min(MAX_UNIT_U, Math.floor(budget / total));
+  const max = Math.max(0, Math.min(MAX_COINS_PER_CELL, Math.floor(count)));
+  const value = Math.max(0, Math.floor(Number(valueU) || 0));
+  if (max < 1 || !samples?.length) return { coins: [], spentU: 0 };
+  const spots = spaceCoins(samples, zones, { seed, max });
   const coins = spots.map((s, i) => ({
     i,
     lat: Number(s.lat.toFixed(7)),
     lng: Number(s.lng.toFixed(7)),
-    valueU: unitU * tiers[i].mult,
-    tier: tiers[i].id,
+    valueU: value,
+    tier,
     wave: waves > 1 ? Math.floor(unit(seed, `wave:${i}`) * waves) : 0,
   }));
-  return { coins, spentU: coins.reduce((n, c) => n + c.valueU, 0) };
+  return { coins, spentU: coins.length * value };
 }
 
 const minutes = (hhmm) => {

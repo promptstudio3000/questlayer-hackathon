@@ -3,6 +3,7 @@
 // countdown, shouts as speech bubbles, topics as chat pins (tap opens them).
 import * as maplibregl from "maplibre-gl";
 import { tr } from "./i18n";
+import { mapKitUrl } from "./map-kit";
 import type { GoldMap } from "./gold-spend-client";
 
 export function attachGoldLayer(map: maplibregl.Map, onPlace: (id: string) => void) {
@@ -38,7 +39,9 @@ export function attachGoldLayer(map: maplibregl.Map, onPlace: (id: string) => vo
           const node = document.createElement("button");
           node.type = "button";
           node.className = `gold-place-pin kind-${p.kind}`;
-          node.textContent = p.text;
+          const img = document.createElement("img"); img.src = mapKitUrl("pins/note.png"); img.alt = ""; img.className = "map-kit-note"; img.onerror = () => img.remove();
+          const text = document.createElement("span"); text.textContent = p.text;
+          node.append(img, text);
           node.setAttribute("aria-label", p.kind === "shout" ? tr("Shout: {0}", { 0: p.text }) : tr("Topic: {0}", { 0: p.text }));
           node.addEventListener("click", (e) => {
             e.stopPropagation();

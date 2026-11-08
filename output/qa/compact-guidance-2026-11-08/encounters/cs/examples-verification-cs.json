@@ -1,0 +1,68 @@
+{
+  "lang": "cs",
+  "browser": "chromium",
+  "provenance": "Actual UI with synthetic browser responses; no real attempt, wallet or physical device",
+  "formats": [
+    {
+      "format": "quiz",
+      "examplePosts": 0,
+      "explicitStartPosts": 1,
+      "keyboard": true,
+      "touch": true
+    },
+    {
+      "format": "rhythm",
+      "examplePosts": 0,
+      "explicitStartPosts": 1,
+      "keyboard": true,
+      "touch": true
+    },
+    {
+      "format": "trace",
+      "examplePosts": 0,
+      "explicitStartPosts": 1,
+      "keyboard": true,
+      "touch": true
+    },
+    {
+      "format": "memory",
+      "examplePosts": 0,
+      "explicitStartPosts": 1,
+      "keyboard": true,
+      "touch": true
+    },
+    {
+      "format": "duel",
+      "examplePosts": 0,
+      "explicitStartPosts": 1,
+      "keyboard": true,
+      "touch": true
+    }
+  ],
+  "viewports": [
+    {
+      "name": "phone-360",
+      "manualHelp": true,
+      "posts": 0
+    },
+    {
+      "name": "phone-390",
+      "manualHelp": true,
+      "posts": 0
+    },
+    {
+      "name": "landscape",
+      "manualHelp": true,
+      "posts": 0
+    },
+    {
+      "name": "desktop",
+      "manualHelp": true,
+      "posts": 0
+    }
+  ],
+  "boss": {
+    "examplePosts": 0,
+    "explicitStrikePosts": 1
+  }
+}

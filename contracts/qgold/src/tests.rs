@@ -73,6 +73,45 @@ fn rewards_mint_at_r_without_fee() {
 }
 
 #[test]
+fn world_earning_carries_every_unconverted_yocto_for_its_account() {
+    let mut c=Chain::new();let mut q=fresh(&mut c);let unit=MILLI/ONE;
+    let first=c.call("rewards.testnet",unit+7,||q.mint_with_carry_for(a("alice.testnet"),Some("alice-1".into())));
+    assert_eq!(num(&first,"qgoldU"),1);assert_eq!(num(&first,"consumedYocto"),unit);assert_eq!(num(&first,"carryYocto"),7);
+    assert_eq!(q.get_game_conversion(a("rewards.testnet"),"alice-1".into()).unwrap(),first);
+    assert_eq!(q.backing,unit);assert_eq!(q.get_mint_carry(a("rewards.testnet"),a("alice.testnet")).0,7);
+    assert_eq!(stored_amount(MINT_CARRY_TOTAL),7);
+    let second=c.call("rewards.testnet",unit-7,||q.mint_with_carry_for(a("alice.testnet"),Some("alice-2".into())));
+    assert_eq!(num(&second,"qgoldU"),1);assert_eq!(num(&second,"carryYocto"),0);assert_eq!(q.backing,2*unit);assert_eq!(stored_amount(MINT_CARRY_TOTAL),0);
+}
+
+#[test]
+fn world_dust_is_not_backing_and_other_accounts_cannot_consume_it() {
+    let mut c=Chain::new();let mut q=fresh(&mut c);let unit=MILLI/ONE;
+    let first=c.call("rewards.testnet",unit-1,||q.mint_with_carry_for(a("alice.testnet"),Some("alice-3".into())));
+    assert_eq!(num(&first,"qgoldU"),0);assert_eq!(q.backing,0);assert_eq!(q.supply,0);
+    let bob=c.call("rewards.testnet",1,||q.mint_with_carry_for(a("bob.testnet"),Some("bob-1".into())));
+    assert_eq!(num(&bob,"qgoldU"),0);assert_eq!(num(&bob,"carryYocto"),1);assert_eq!(stored_amount(MINT_CARRY_TOTAL),unit);
+    assert_eq!(q.get_mint_carry(a("rewards.testnet"),a("alice.testnet")).0,unit-1);
+    let before=stored_amount(MINT_CARRY_TOTAL);c.call("viewer.testnet",0,||q.reconcile());assert_eq!(stored_amount(MINT_CARRY_TOTAL),before);assert_eq!(q.backing,0);
+}
+
+#[test]
+fn world_carry_converts_at_the_new_ratio_without_repricing_old_near() {
+    let mut c=Chain::new();let mut q=fresh(&mut c);let unit=MILLI/ONE;
+    c.call("rewards.testnet",2*unit+9,||q.mint_with_carry_for(a("alice.testnet"),Some("alice-4".into())));
+    c.call("alice.testnet",1,||q.ft_burn(U128(1),None));
+    let ratio=q.rate();assert_eq!(ratio,2*MILLI);
+    let next=c.call("rewards.testnet",2*unit-9,||q.mint_with_carry_for(a("alice.testnet"),Some("alice-5".into())));
+    assert_eq!(num(&next,"qgoldU"),1);assert_eq!(num(&next,"consumedYocto"),2*unit);assert_eq!(num(&next,"carryYocto"),0);assert!(q.rate()>=ratio);
+}
+
+#[test]
+#[should_panic(expected="Approved minter only")]
+fn unapproved_minter_cannot_redirect_world_carry() {
+    let mut c=Chain::new();let mut q=fresh(&mut c);c.call("mallory.testnet",1,||q.mint_with_carry_for(a("alice.testnet"),Some("alice-6".into())));
+}
+
+#[test]
 #[should_panic(expected = "Approved minter only")]
 fn nobody_else_mints_for_free() {
     let mut c = Chain::new();
@@ -430,6 +469,40 @@ fn unregister_refunds_only_what_was_paid() {
     let before = c.bal;
     assert!(c.call("alice.testnet", 1, || q.storage_unregister(None)));
     assert_eq!(before + 1, c.bal);
+}
+
+#[test]
+fn lifetime_storage_grant_cannot_be_cashed_out_or_charged_twice() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    let initial_reserve = q.storage_deposits;
+    c.call("escrow.testnet", STORAGE_FEE, || q.storage_deposit_sponsored(a("recipient.testnet")));
+    assert_eq!(q.storage_deposits, initial_reserve + STORAGE_FEE);
+    for _ in 0..8 {
+        let before = c.bal;
+        assert!(c.call("recipient.testnet", 1, || q.storage_unregister(None)));
+        assert_eq!(c.bal, before + 1, "recipient receives no native refund");
+        assert_eq!(q.storage_deposits, initial_reserve + STORAGE_FEE, "grant remains reserved");
+        let before = c.bal;
+        c.call("escrow.testnet", STORAGE_FEE, || q.storage_deposit_sponsored(a("recipient.testnet")));
+        assert_eq!(c.bal, before, "repeat sponsor payment is refunded in full");
+        assert_eq!(q.storage_deposits, initial_reserve + STORAGE_FEE);
+    }
+    // An ordinary player's refundable deposit keeps its existing semantics.
+    c.call("player.testnet", STORAGE_FEE, || q.storage_deposit(None, None));
+    let before = c.bal;
+    c.call("escrow.testnet", STORAGE_FEE, || q.storage_deposit_sponsored(a("player.testnet")));
+    assert_eq!(c.bal, before);
+    c.call("player.testnet", 1, || q.storage_unregister(None));
+    assert_eq!(c.bal, before + 1 - STORAGE_FEE);
+}
+
+#[test]
+#[should_panic(expected = "Attach at least the storage grant")]
+fn first_storage_grant_requires_funding() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("escrow.testnet", 0, || q.storage_deposit_sponsored(a("recipient.testnet")));
 }
 
 #[test]

@@ -8,6 +8,15 @@ import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
 import { createMarketRoutes } from "./market/routes.mjs";
+import {
+  escrowHealth,
+  escrowTransport,
+  escrowView,
+  loadEscrowManifest,
+  runEscrowWorker,
+  setEscrowConfig,
+} from "./market/chain.mjs";
+import { ACTIVATE as marketActivate, DROP as marketDrop } from "./market/service.mjs";
 import { createGuide, guideFacts, guideHint } from "./ai/guide.mjs";
 import { nearAiStatus } from "./ai/near-ai.mjs";
 import { createAdventureResults } from "./adventure-results.mjs";
@@ -27,7 +36,11 @@ import {
   linkedItemId,
   originalInventoryView,
 } from "./gotchi-items.mjs";
-import { publicAppearances, sharedOriginalSvg } from "./appearance.mjs";
+import {
+  publicAppearance,
+  publicAppearances,
+  sharedOriginalSvg,
+} from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
 import {
   SignedOrderIndex,
@@ -40,11 +53,14 @@ import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
+import { payoutsEnabled, payoutStatus, pendingPayout } from "./payouts/worker.mjs";
 import { allocationSettings } from "./native/allocation.mjs";
 import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
 import { ManagedAccounts } from "./relayer/accounts.mjs";
+import { SubsidyBudget } from "./relayer/subsidy-budget.mjs";
+import { signingVaultOrigin, vaultCors } from "./signing-vault-cors.mjs";
 import { Relayer, startRelayWorker } from "./relayer/relay.mjs";
 import { createRelayerRoutes } from "./relayer/routes.mjs";
 import {
@@ -59,6 +75,7 @@ import {
   bonusVoteSettings,
   createBonusVoteRoutes,
 } from "./creators/bonus-vote.mjs";
+import { publicDistribution, publicAudit } from "./public-distribution.mjs";
 import { auditDistribution, auditSummary } from "./native/distribution.mjs";
 import { createPublicLedger } from "./native/public-ledger.mjs";
 import { readYieldBacking } from "./native/day-publication.mjs";
@@ -80,14 +97,22 @@ import {
   startNpcRollWorker,
 } from "./npc/rolls.mjs";
 import { startWorldPlanner, worldPreparationStatus } from "./world-planner.mjs";
+import { startGlobalActivityLoader, globalActivityStatus } from "./global-activities.mjs";
 import { startFlavourWorker } from "./ai/flavour-batch.mjs";
 import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
+import {
+  WEARABLES,
+  equipWearable,
+  wardrobe,
+  wornWearables,
+} from "./gotchi-wearables.mjs";
+import { playerCard, sendWave, takeWaves } from "./player-waves.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
 import { chainFeed, chainItems } from "./native/chain-feed.mjs";
-import { clientAddress, pruneRateWindows } from "./http-security.mjs";
+import { clientAddress, RateWindows, pruneRateWindows, publicRpcUrl } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -101,6 +126,10 @@ import {
 } from "./native/network.mjs";
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+// The relayer is built before the market; it reads the same escrow manifest.
+function escrowManifestForRelay() {
+  return loadEscrowManifest(APP_ROOT, NETWORK);
+}
 import { createHash, randomBytes } from "node:crypto";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
@@ -122,6 +151,7 @@ import {
   evmAddress,
   evmChainId,
   signInMessage,
+  evmLinkStatement,
   siweNonce,
   verifyEvmSignature,
   walletLabel,
@@ -178,6 +208,7 @@ import { createGoldSpend } from "./gold-spend/service.mjs";
 import { createPlaces } from "./gold-spend/places.mjs";
 import { createPlaceSocial } from "./gold-spend/social.mjs";
 import { createGoldSpendRoutes } from "./gold-spend/routes.mjs";
+import { setSpendRealm } from "./gold-spend/ledger.mjs";
 import { defaultPoiSource } from "./poi-quests.mjs";
 import { chainLedgerSettings, createChainLedger } from "./chain-ledger/service.mjs";
 import { createLedgerChain, startLedgerWorker } from "./chain-ledger/chain.mjs";
@@ -219,6 +250,7 @@ const moderation = new Moderation(db, { evidence: taskEvidence });
 const port = Number(process.env.PORT || 8787),
   origin = process.env.APP_ORIGIN || "http://localhost:5173",
   rpID = new URL(origin).hostname;
+const secureSigningOrigin = signingVaultOrigin(process.env.SIGNING_VAULT_ORIGIN, origin);
 const creatorRuntime = createCreatorRuntime(db, {
   origin,
   authenticate: auth,
@@ -228,6 +260,7 @@ const creatorRuntime = createCreatorRuntime(db, {
 });
 const guide = createGuide(db);
 const rpc = process.env.NEAR_RPC_URL || DEFAULT_RPC;
+const browserRpc = publicRpcUrl(process.env.PUBLIC_NEAR_RPC_URL, DEFAULT_RPC);
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
 const deploymentManifestPath = existsSync(
@@ -354,7 +387,7 @@ const nativeVaults =
 const relayConfig = relayerConfiguration(
   featureEnabled("relayer") ? process.env : { DISABLE_RELAYER: "1" },
 );
-const factoryService = relayConfig.accountsEnabled
+const factoryService = relayConfig.accountsEnabled && secureSigningOrigin
   ? await loadServiceAccount(provider, relayConfig.factoryKeyPath, {
       expectAccountId: relayConfig.factoryAccount,
     })
@@ -364,6 +397,7 @@ const managedAccounts = relayConfig.factoryAccount
       factoryId: relayConfig.factoryAccount,
       fundYocto: relayConfig.fundYocto,
       topupCapYocto: relayConfig.topupCapYocto,
+      subsidyBudget: new SubsidyBudget(db, { dailyYocto: relayConfig.subsidyDailyYocto, dailyOperations: relayConfig.subsidyDailyOperations, gasReserveYocto: relayConfig.subsidyGasReserveYocto }),
     })
   : null;
 // Experimental NEAR Intents market (docs/NEAR-INTENTS-MARKET.md): on only when
@@ -377,8 +411,17 @@ const intentsManifest =
   intentsManifestPath && process.env.INTENTS_MARKET_ENABLED !== "0"
     ? JSON.parse(readFileSync(intentsManifestPath, "utf8"))
     : null;
+// The QGOLD token the relayer may sponsor burns on (and escrow funding).
+const qgoldTokenForRelay = (() => {
+  const path = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+  const settings = qgoldVaultSettings(
+    process.env,
+    existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null,
+  );
+  return settings.enabled ? settings.manifest?.tokenContract || settings.contract : undefined;
+})();
 const relayerService =
-  managedAccounts && relayConfig.enabled
+  managedAccounts && relayConfig.enabled && secureSigningOrigin
     ? await loadServiceAccount(provider, relayConfig.relayerKeyPath)
     : null;
 const relayer = managedAccounts
@@ -410,6 +453,8 @@ const relayer = managedAccounts
           npcGames: npcRolls?.contractId || undefined,
           intents: intentsManifest?.verifierContract || undefined,
           wnear: intentsManifest?.wnear || undefined,
+          qgold: escrowManifestForRelay()?.tokenId || qgoldTokenForRelay,
+          qgoldEscrow: escrowManifestForRelay()?.contractId || undefined,
           rewards: !featureEnabled("rewards")
             ? undefined
             : rewardsConfig?.contractId ||
@@ -449,6 +494,7 @@ const intentsMarket =
     : null;
 const intentsRoutes = createIntentsRoutes(intentsMarket);
 const relayerRoutes = createRelayerRoutes({
+  authorizeEnrollment: req => allowEnrollment(req, identitySessions.authenticate(sessionToken(req))),
   relayer,
   accounts: managedAccounts,
 });
@@ -723,11 +769,35 @@ const goldSpend = createGoldSpend(db, {
 const placeMessages = createPlaces(db, {
   levelOf: (player) => demoProgression(db, player).level,
 });
+// With the QGOLD vault open every spend burns the player's own QGOLD on chain
+// (server/gold-spend/qgold-burn.mjs); GOLD_SPEND_REALM=practice keeps the old
+// practice balance for local testing only.
+const qgoldSpending = qgoldVault && process.env.GOLD_SPEND_REALM !== "practice";
+setSpendRealm(qgoldSpending ? "qgold" : "practice");
+const playerAccounts = (player) =>
+  db
+    .prepare("SELECT account_id FROM wallet_links WHERE player_id=? ORDER BY rowid DESC")
+    .all(player)
+    .map((r) => r.account_id);
 const goldSpendRoutes = createGoldSpendRoutes({
   gold: goldSpend,
   places: placeMessages,
   social: createPlaceSocial(db, featureEnabled("social") ? socialRecords : null),
   linkedAccount,
+  db,
+  qgold: qgoldSpending
+    ? {
+        contract: qgoldConfig.manifest?.tokenContract || qgoldConfig.contract,
+        accountIds: playerAccounts,
+        async balanceU(player) {
+          const account = playerAccounts(player)[0];
+          if (!account) return 0;
+          return Number((await qgoldVault.account(account)).balance || 0);
+        },
+        txStatus: (hash, account) => provider.viewTransactionStatusWithReceipts({ txHash: hash, accountId: account, waitUntil: "FINAL" }),
+        relayerId: relayer?.relayerId,
+      }
+    : null,
 });
 // Daily board of three goals (docs/DAILY-BOARD.md): on by default except on
 // mainnet; DAILY_BOARD_* settings change the goals and bonus. No streak.
@@ -746,12 +816,50 @@ const marketModerators = new Set(
     .map((x) => x.trim())
     .filter(Boolean),
 );
+// Every market amount is real QGOLD in contracts/qgold-escrow
+// (public/native-qgold-escrow-<network>.json). The publisher key (a
+// function-call key for the escrow) lives at <state dir>/escrow-publisher.json
+// or QGOLD_ESCROW_PUBLISHER_KEY_PATH; without it fundings are still
+// confirmed but payouts wait in the queue.
+const escrowManifest = loadEscrowManifest(APP_ROOT, NETWORK);
+setEscrowConfig(escrowManifest);
+const marketEscrowView = escrowManifest ? escrowView(provider, escrowManifest.contractId) : null;
+if (escrowManifest && process.env.QGOLD_ESCROW_WORKER !== "0") {
+  const keyPath =
+    process.env.QGOLD_ESCROW_PUBLISHER_KEY_PATH ||
+    resolve(dirname(defaultDatabasePath()), "escrow-publisher.json");
+  let send = null,
+    running = false;
+  const tick = async () => {
+    if (running) return;
+    running = true;
+    try {
+      if (!send && existsSync(keyPath)) {
+        const nearApi = await import("near-api-js");
+        send = await escrowTransport(provider, escrowManifest, keyPath, nearApi);
+      }
+      await runEscrowWorker(db, {
+        view: marketEscrowView,
+        call: send || (async () => { throw Error("Escrow publisher key is not installed."); }),
+        activate: marketActivate,
+        drop: marketDrop,
+        now: Date.now(),
+      });
+    } catch (error) {
+      console.error("Market escrow worker:", String(error?.message || error).slice(0, 200));
+    } finally {
+      running = false;
+    }
+  };
+  setInterval(() => void tick(), 15_000).unref();
+  void tick();
+}
 const marketRoutes = createMarketRoutes({
+  escrowView: marketEscrowView,
+  tokenView: escrowManifest ? escrowView(provider, escrowManifest.tokenId) : null,
   db,
   isModerator: (player) => {
     if (marketModerators.has(player)) return true;
-    const p = db.prepare("SELECT native_account FROM players WHERE id=?").get(player);
-    if (p?.native_account && marketModerators.has(p.native_account)) return true;
     return db
       .prepare("SELECT account_id FROM wallet_links WHERE player_id=?")
       .all(player)
@@ -1003,8 +1111,9 @@ async function refreshOriginals(address) {
     originalLookups.delete(address);
   }
 }
+const readPublicDistribution = publicDistribution(nativeRewards, auditDistribution);
 const listeners = new Set(),
-  rates = new Map();
+  rates = new RateWindows();
 // Per-minute counters: keys end with ":<minute>". `limit` throws 429 past `max`.
 function limit(scope, who, max, message) {
   const key = `${scope}:${who}:${Math.floor(Date.now() / 60_000)}`,
@@ -1016,7 +1125,7 @@ function limit(scope, who, max, message) {
 // events only go to streams of explorers on that world: broadcasting every
 // pick-up in Czechia to every phone was most of the server's socket writes
 // with 500 walkers (npm run load:test). A stream whose explorer has not
-// loaded a world yet still gets everything.
+// loaded a world yet receives only world-independent notifications.
 const viewing = new Map();
 function viewWorld(player, worldId) {
   if (!worldId || viewing.get(player) === worldId) return;
@@ -1025,10 +1134,15 @@ function viewWorld(player, worldId) {
   viewing.set(player, worldId);
 }
 function emit(type, data, worldId = null) {
+  const recipients = [...listeners].filter(client => !worldId || viewing.get(client.questlayerPlayer) === worldId);
+  if (!recipients.length) return;
+  const live = new Set(db.prepare(
+    "SELECT token_hash FROM sessions WHERE token_hash IN (SELECT value FROM json_each(?)) AND expires_at>?",
+  ).all(JSON.stringify(recipients.map(client => client.questlayerSession)), Date.now()).map(row => row.token_hash));
   const event = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
-  for (const client of listeners) {
-    const at = worldId && viewing.get(client.questlayerPlayer);
-    if (!at || at === worldId) client.write(event);
+  for (const client of recipients) {
+    if (live.has(client.questlayerSession)) client.write(event);
+    else client.end();
   }
 }
 const coinWorld = (coinId) => String(coinId).split(":coin:")[0] || null;
@@ -1037,13 +1151,15 @@ const questWorld = (questId) =>
 function cookie(token) {
   return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
+function sessionTokens(req) {
+  const header = req.headers.cookie || "";
+  return [
+    /(?:^|;\s*)questlayer-hackathon=([a-f0-9]{64})(?:;|$)/.exec(header)?.[1],
+    /(?:^|;\s*)auratrail=([a-f0-9]{64})(?:;|$)/.exec(header)?.[1],
+  ].filter(Boolean);
+}
 function sessionToken(req) {
-  return (
-    req.headers.cookie?.match(
-      /(?:^|; )questlayer-hackathon=([a-f0-9]{64})(?:;|$)/,
-    )?.[1] ||
-    req.headers.cookie?.match(/(?:^|; )auratrail=([a-f0-9]{64})(?:;|$)/)?.[1]
-  );
+  return sessionTokens(req)[0];
 }
 function auth(req) {
   return identitySessions.authenticate(sessionToken(req)).playerId;
@@ -1093,6 +1209,34 @@ function consumeChallenge(challengeId) {
     401,
   );
 }
+// Credential changes on an already secured explorer require a short-lived proof
+// issued after interactive sign-in. The ordinary game cookie is sufficient to play.
+function managementCookies(token) {
+  const ticket = randomBytes(32).toString("hex");
+  const expires = Date.now() + 300_000;
+  db.prepare("INSERT INTO auth_challenges VALUES(?,?,?,0)").run(
+    "manage_" + hash(ticket), JSON.stringify({purpose: "credential-management", sessionHash: hash(token)}), expires,
+  );
+  return [cookie(token), `questlayer-management=${ticket}; HttpOnly; SameSite=Strict; Path=/api; Max-Age=300${origin.startsWith("https:") ? "; Secure" : ""}`];
+}
+function allowEnrollment(req, current) {
+  const {playerId, tokenHash} = current;
+  const secured = db.prepare(`SELECT 1 FROM passkeys WHERE player_id=?
+    UNION ALL SELECT 1 FROM wallet_links WHERE player_id=?
+    UNION ALL SELECT 1 FROM evm_links WHERE player_id=? LIMIT 1`).get(playerId, playerId, playerId);
+  if (!secured) {
+    assert(managedAccounts?.row(playerId)?.state !== "creating",
+      "Your account is still being created. Try again once it is ready.", 409, "ACCOUNT_SETUP_PENDING");
+    return;
+  }
+  const ticket = /(?:^|;\s*)questlayer-management=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || "")?.[1];
+  const row = ticket && db.prepare(
+    "SELECT nonce FROM auth_challenges WHERE id=? AND used=0 AND expires_at>?",
+  ).get("manage_" + hash(ticket), Date.now());
+  const grant = row && JSON.parse(row.nonce);
+  assert(grant?.purpose === "credential-management" && grant.sessionHash === tokenHash,
+    "Sign in again with an existing passkey or wallet before adding a sign-in method.", 403, "ACCOUNT_REAUTH_REQUIRED");
+}
 async function body(req) {
   let size = 0;
   const chunks = [];
@@ -1105,6 +1249,7 @@ async function body(req) {
     );
     chunks.push(c);
   }
+  if (req.questlayerPlayer) assert(auth(req) === req.questlayerPlayer, "Please sign in again.", 401);
   try {
     return JSON.parse(Buffer.concat(chunks).toString() || "{}");
   } catch {
@@ -1158,6 +1303,7 @@ function profile(player) {
   }
   return {
     ...p,
+    wearables: wornWearables(db, player),
     nativeOutfit: !!p.native_outfit,
     nativeAccount: p.native_account || p.wallets[0]?.account_id || null,
     coinsCollected: db
@@ -1172,9 +1318,12 @@ function profile(player) {
 async function api(req, res, url) {
   const path = url.pathname,
     method = req.method || "GET";
+  const fromVault = vaultCors(req, res, path, secureSigningOrigin);
+  if (fromVault && method === "OPTIONS") return;
   if (method !== "GET") {
     const allowed = new Set([
       origin,
+      ...(fromVault ? [secureSigningOrigin] : []),
       ...(process.env.NODE_ENV === "production"
         ? []
         : [
@@ -1185,12 +1334,13 @@ async function api(req, res, url) {
           ]),
     ]);
     assert(
-      !req.headers.origin || allowed.has(req.headers.origin),
+      (!req.headers.origin || allowed.has(req.headers.origin)) &&
+        (req.headers["sec-fetch-site"] !== "cross-site" || fromVault),
       "Request origin is not allowed.",
       403,
     );
     assert(
-      req.headers["content-type"]?.startsWith("application/json"),
+      /^application\/json(?:\s*;|$)/i.test(req.headers["content-type"] || ""),
       "JSON is required.",
       415,
     );
@@ -1211,6 +1361,7 @@ async function api(req, res, url) {
       ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
       worldPreparation: worldPreparationStatus(db),
+      globalActivities: { ...globalActivityStatus(db), worker: globalActivityLoader?.status() || null },
       autoCities: AUTO_CITIES.entries.length
         ? {
             status: "on",
@@ -1227,7 +1378,7 @@ async function api(req, res, url) {
         ? nativeRewards.workerStatus()
         : { status: "not-configured" },
       distribution: nativeRewards
-        ? auditSummary(nativeRewards.lastAudit)
+        ? auditSummary(publicAudit(nativeRewards.lastAudit))
         : { status: "not-configured" },
       yieldBackedDays: nativeRewards?.yieldBackedDays === true,
       relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
@@ -1248,6 +1399,7 @@ async function api(req, res, url) {
       season: season ? season.status() : { status: "off" },
       badges: badgeService ? badgeService.status() : { status: "off" },
       qgoldVault: qgoldVault ? qgoldVault.status() : { status: "not-configured" },
+      marketEscrow: escrowHealth(db),
       chainLedger: chainLedger
         ? { ...chainLedger.status(), contract: ledgerChain.contractId, recorder: ledgerChain.ready ? "ready" : ledgerChain.error }
         : { mode: "off" },
@@ -1260,10 +1412,7 @@ async function api(req, res, url) {
   if (path === "/api/native/distribution" && method === "GET") {
     assert(nativeRewards, "Native rewards are not configured yet.", 503);
     // Public chain facts only; fresh on request, cached result otherwise.
-    const fresh =
-      url.searchParams.get("refresh") === "1" || !nativeRewards.lastAudit;
-    if (fresh) nativeRewards.lastAudit = await auditDistribution(nativeRewards);
-    return respond(res, nativeRewards.lastAudit);
+    return respond(res, await readPublicDistribution(url.searchParams.get("refresh") === "1"));
   }
   if (path === "/api/map/rewards" && method === "GET") {
     // Coin counts and value per area for the map overlay and heatmap.
@@ -1287,7 +1436,7 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/map/rewards/day" && method === "GET") {
-    const day = mapRewardsDay(db);
+    const day = { ...mapRewardsDay(db), payouts: payoutsEnabled() ? payoutStatus(db) : null };
     return respond(res, day, 200, { "Cache-Control": "public, max-age=60" });
   }
   if (path === "/api/map/rewards/proof" && method === "GET") {
@@ -1317,8 +1466,9 @@ async function api(req, res, url) {
     return respond(res, {
       mode: "demo",
       network: NETWORK,
+      signingVaultOrigin: secureSigningOrigin,
       features: ENABLED_FEATURES,
-      rpcUrl: rpc,
+      rpcUrl: browserRpc,
       coinValue: 0.01,
       coinSplit: 50,
       zoneSplit: 50,
@@ -1355,18 +1505,25 @@ async function api(req, res, url) {
   }
   if (path === "/api/logout" && method === "POST") {
     const player = auth(req);
-    const token = sessionToken(req);
-    if (token)
-      db.prepare("DELETE FROM sessions WHERE token_hash=?").run(hash(token));
+    // Both host cookie names can coexist. Revoke only this player's presented credentials.
+    const hashes = sessionTokens(req).map(hash);
+    db.prepare("DELETE FROM sessions WHERE player_id=? AND token_hash IN (SELECT value FROM json_each(?))")
+      .run(player, JSON.stringify(hashes));
+    for (const stream of listeners) {
+      if (stream.questlayerPlayer === player && hashes.includes(stream.questlayerSession)) stream.end();
+    }
     db.prepare("DELETE FROM presence WHERE player_id=?").run(player);
     return respond(res, { ok: true }, 200, {
       "Set-Cookie": [
         cookie("").replace("Max-Age=2592000", "Max-Age=0"),
+        "questlayer-management=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0",
         "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
       ],
     });
   }
   if (path === "/api/passkey/options" && method === "POST") {
+    limit("passkey-options", clientAddress(req, process.env.TRUST_PROXY === "loopback"), 30,
+      "Please wait before starting another passkey request.");
     const input = await body(req);
     assert(
       input.action === "register" || input.action === "login",
@@ -1375,7 +1532,9 @@ async function api(req, res, url) {
     if (input.action === "register") {
       // "Play first, secure later": a signed-in explorer attaches the passkey
       // to the existing player instead of creating a second one.
-      const attachTo = input.attach === true ? auth(req) : null;
+      const current = input.attach === true ? identitySessions.authenticate(sessionToken(req)) : null;
+      if (current) allowEnrollment(req, current);
+      const attachTo = current?.playerId ?? null;
       assert(
         input.attach !== true || attachTo,
         "Sign in before securing this explorer.",
@@ -1406,6 +1565,8 @@ async function api(req, res, url) {
         action: "register",
         name,
         attachTo,
+        sessionHash: current?.tokenHash ?? null,
+        player: attachTo,
         challenge: options.challenge,
       });
       return respond(res, { options, challengeId: c.id });
@@ -1436,6 +1597,7 @@ async function api(req, res, url) {
       "The passkey response is missing.",
       400,
     );
+    let token;
     let player;
     if (c.action === "register") {
       const v = await verifyRegistrationResponse({
@@ -1450,13 +1612,14 @@ async function api(req, res, url) {
         "The passkey could not be verified.",
         401,
       );
-      if (c.attachTo)
-        assert(
-          auth(req) === c.attachTo,
-          "Sign in with the same explorer to secure it.",
-          401,
-        );
       player = atomic(db, () => {
+        if (c.attachTo) {
+          const current = identitySessions.authenticate(sessionToken(req));
+          assert(current.playerId === c.attachTo && current.tokenHash === c.sessionHash,
+            "Finish passkey setup in the browser where it was started.", 403);
+          allowEnrollment(req, current);
+          db.prepare("DELETE FROM sessions WHERE token_hash=?").run(current.tokenHash);
+        }
         consumeChallenge(input.challengeId);
         const p = c.attachTo || createPlayer(db, c.name);
         const credential = v.registrationInfo.credential;
@@ -1467,6 +1630,7 @@ async function api(req, res, url) {
           credential.counter,
           JSON.stringify(credential.transports || []),
         );
+        token = newSession(p, "demo-passkey");
         return p;
       });
     } else {
@@ -1502,11 +1666,12 @@ async function api(req, res, url) {
           "The passkey changed during verification. Please sign in again.",
           401,
         );
+        token = newSession(saved.player_id, "demo-passkey");
       });
       player = saved.player_id;
     }
     return respond(res, { player: profile(player) }, 200, {
-      "Set-Cookie": cookie(newSession(player, "demo-passkey")),
+      "Set-Cookie": managementCookies(token),
     });
   }
   if (path === "/api/auth/near/challenge" && method === "POST") {
@@ -1576,7 +1741,7 @@ async function api(req, res, url) {
         network: NETWORK,
       },
       200,
-      { "Set-Cookie": cookie(result.token) },
+      { "Set-Cookie": managementCookies(result.token) },
     );
   }
   if (path === "/api/auth/evm/challenge" && method === "POST") {
@@ -1606,7 +1771,9 @@ async function api(req, res, url) {
     const issuedAt = Date.now(),
       expiresAt = issuedAt + 300_000,
       nonce = siweNonce(randomBytes(16));
+    if (current) allowEnrollment(req, current);
     const message = signInMessage({
+      linkPlayerId: current?.playerId,
       origin,
       address,
       chainId,
@@ -1621,7 +1788,7 @@ async function api(req, res, url) {
       wallet: walletLabel(input.wallet),
       message,
       player: current?.playerId ?? null,
-      sessionId: current?.sessionId ?? null,
+      sessionHash: current?.tokenHash ?? null,
     });
     return respond(res, { challengeId: c.id, message, address, chainId });
   }
@@ -1634,19 +1801,21 @@ async function api(req, res, url) {
       401,
     );
     const link = c.purpose === "evm-link";
-    if (link)
-      assert(
-        identitySessions.authenticate(sessionToken(req)).sessionId ===
-          c.sessionId,
-        "Finish linking in the browser where it was started.",
-        403,
-      );
+    function checkLink() {
+      const current = identitySessions.authenticate(sessionToken(req));
+      assert(current.tokenHash === c.sessionHash && current.playerId === c.player &&
+        c.message.split("\n").includes(evmLinkStatement(current.playerId)),
+        "Start a new wallet link in this browser.", 403);
+      allowEnrollment(req, current);
+    }
+    if (link) checkLink();
     const key = await verifyEvmSignature({
       message: c.message,
       signature: input.signature,
       address: c.address,
     });
     const result = atomic(db, () => {
+      if (link) checkLink();
       consumeChallenge(input.challengeId);
       const existing = db
         .prepare("SELECT player_id FROM evm_links WHERE address=?")
@@ -1670,9 +1839,10 @@ async function api(req, res, url) {
       db.prepare(
         "INSERT OR IGNORE INTO external_links VALUES (?,?,?,?)",
       ).run(key.address, player, "{}", 0);
+      if (link) db.prepare("DELETE FROM sessions WHERE token_hash=?").run(c.sessionHash);
       return {
         player,
-        token: link ? null : newSession(player, "evm-wallet", key.address),
+        token: newSession(player, "evm-wallet", key.address),
         returning: !!existing,
       };
     });
@@ -1687,7 +1857,7 @@ async function api(req, res, url) {
         network: NETWORK,
       },
       200,
-      result.token ? { "Set-Cookie": cookie(result.token) } : {},
+      { "Set-Cookie": managementCookies(result.token) },
     );
   }
   if (path === "/api/identity/evm" && method === "GET") {
@@ -1702,6 +1872,36 @@ async function api(req, res, url) {
   }
   if (path === "/api/identity/sessions" && method === "GET")
     return respond(res, identitySessions.view(sessionToken(req)));
+  if (path === "/api/identity/management/challenge" && method === "POST") {
+    const input = await body(req);
+    const current = identitySessions.authenticate(sessionToken(req));
+    const accountId = nearAccountId(input.accountId);
+    identitySessions.assertLinked(current.playerId, accountId);
+    limit("account-management", current.sessionId, 20, "Please wait before starting another account change.");
+    const message = `Authorize management of sign-in methods for explorer ${current.playerId} with ${accountId} on ${NETWORK_LABEL} for five minutes. No transaction or transfer.`;
+    const c = challenge("management", {purpose:"authorize-management", player:current.playerId,
+      sessionHash:current.tokenHash, accountId, recipient:origin, network:NETWORK, message});
+    return respond(res, {challengeId:c.id, playerId:current.playerId, nonce:c.nonce, recipient:origin, message});
+  }
+  if (path === "/api/identity/management/verify" && method === "POST") {
+    const input = await body(req), c = readChallenge(input.challengeId);
+    const token = sessionToken(req);
+    function authorize() {
+      const current = identitySessions.authenticate(token);
+      assert(c.purpose === "authorize-management" && c.recipient === origin &&
+        c.player === current.playerId && c.sessionHash === current.tokenHash,
+        "Start a new account authorization in this browser.", 403);
+      identitySessions.assertLinked(current.playerId, c.accountId);
+    }
+    authorize();
+    await verifyNearIdentity(c, input, provider);
+    const headers = atomic(db, () => {
+      authorize();
+      consumeChallenge(input.challengeId);
+      return managementCookies(token);
+    });
+    return respond(res, {ok:true}, 200, {"Set-Cookie":headers});
+  }
   if (path === "/api/identity/recovery/challenge" && method === "POST") {
     const input = await body(req);
     return respond(
@@ -1714,8 +1914,12 @@ async function api(req, res, url) {
       sessionToken(req),
       await body(req),
     );
+    const recoveredPlayer = identitySessions.authenticate(recovered.token, false).playerId;
+    for (const stream of listeners) {
+      if (stream.questlayerPlayer === recoveredPlayer) stream.end();
+    }
     return respond(res, recovered.result, 200, {
-      "Set-Cookie": cookie(recovered.token),
+      "Set-Cookie": managementCookies(recovered.token),
     });
   }
   if (path === "/api/dashboard") return respond(res, game.dashboard(db));
@@ -1779,7 +1983,31 @@ async function api(req, res, url) {
   }
   if (path === "/api/native/collection" && method === "GET")
     return respond(res, await nativeCollectibles.collection());
+  const wearableArt = path.match(/^\/api\/wearables\/art\/([1-9]\d{0,4})\.svg$/);
+  if (wearableArt && method === "GET") {
+    // Public: official artwork of a catalogued wearable, read from the
+    // Aavegotchi contract on Base and cached (server/gotchi-items.mjs).
+    const itemId = Number(wearableArt[1]);
+    assert(WEARABLES.has(itemId), "Unknown wearable.", 404);
+    limit(
+      "wearable-art",
+      clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      240,
+      "Please wait before loading more wearables.",
+    );
+    const svg = await gotchiItemArt.get(String(itemId));
+    res.writeHead(200, {
+      "Content-Type": "image/svg+xml",
+      "Content-Length": svg.length,
+      "Content-Security-Policy":
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "public,max-age=86400",
+    });
+    return res.end(svg);
+  }
   const player = auth(req);
+  req.questlayerPlayer = player;
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
   )
@@ -1835,6 +2063,10 @@ async function api(req, res, url) {
   if (url.pathname === "/api/qgold/account" && req.method === "GET") {
     assert(qgoldVault, "The QGOLD vault is not open here.", 503, "QGOLD_DISABLED");
     return respond(res, await qgoldVault.account(url.searchParams.get("account") || ""));
+  }
+  // QGOLD this player collected that the nightly payout has not minted yet.
+  if (url.pathname === "/api/qgold/pending" && req.method === "GET") {
+    return respond(res, { ...pendingPayout(db, player), enabled: payoutsEnabled() });
   }
   if (url.pathname === "/api/yield/position" && req.method === "GET") {
     assert(yieldVaultReader, "The yield vault is not open here.", 503, "YIELD_VAULT_DISABLED");
@@ -2535,11 +2767,12 @@ async function api(req, res, url) {
     if (testSeedActive) testSeed.grantKit(player);
     return respond(res, { player: profile(player) });
   }
-  if (path === "/api/events") {
+  if (path === "/api/events" && method === "GET") {
     // Each open stream holds a socket: a few per explorer is plenty.
     const open = [...listeners].filter((r) => r.questlayerPlayer === player).length;
     assert(open < 4, "Too many open live connections. Close another tab.", 429, "RATE_LIMITED");
     res.questlayerPlayer = player;
+    res.questlayerSession = hash(sessionToken(req));
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
@@ -2548,7 +2781,10 @@ async function api(req, res, url) {
     });
     res.write(": connected\n\n");
     listeners.add(res);
-    const tick = setInterval(() => res.write(": ping\n\n"), 20_000);
+    const tick = setInterval(() => {
+      try { auth(req); res.write(": ping\n\n"); }
+      catch { res.end(); }
+    }, 20_000);
     req.on("close", () => {
       clearInterval(tick);
       listeners.delete(res);
@@ -2767,9 +3003,7 @@ async function api(req, res, url) {
     const lat = Number(url.searchParams.get("lat") || HOME.lat),
       lng = Number(url.searchParams.get("lng") || HOME.lng);
     point({ lat, lng });
-    return respond(
-      res,
-      await readNearbyPresence(
+    const nearby = await readNearbyPresence(
         db,
         player,
         { lat, lng },
@@ -2785,14 +3019,18 @@ async function api(req, res, url) {
           assertSession: () =>
             assert(auth(req) === player, "Please sign in again.", 401),
         },
-      ),
-    );
+      );
+    // Waves to this explorer ride the same poll; only while they share.
+    return respond(res, { ...nearby, waves: takeWaves(db, player) });
   }
   if (path === "/api/wallet/challenge" && method === "POST") {
     const i = await body(req);
     nearAccountId(i.accountId);
     const message = `Linking a NEAR account to explorer ${player}. Network: ${NETWORK}. No funds will be transferred.`;
+    const current = identitySessions.authenticate(sessionToken(req));
+    allowEnrollment(req, current);
     const c = challenge("near", {
+      sessionHash: current.tokenHash,
       purpose: "near-link",
       network: NETWORK,
       player,
@@ -2828,8 +3066,10 @@ async function api(req, res, url) {
       403,
     );
     await verifyNearIdentity(c, i, provider);
-    atomic(db, () => {
-      assert(auth(req) === player, "Please sign in again.", 401);
+    const token = atomic(db, () => {
+      const current = identitySessions.authenticate(sessionToken(req));
+      assert(current.playerId === player && current.tokenHash === c.sessionHash, "Start a new wallet link.", 403);
+      allowEnrollment(req, current);
       const old = db
         .prepare("SELECT player_id FROM wallet_links WHERE account_id=?")
         .get(c.accountId);
@@ -2844,8 +3084,10 @@ async function api(req, res, url) {
         player,
         Date.now(),
       );
+      db.prepare("DELETE FROM sessions WHERE token_hash=?").run(current.tokenHash);
+      return newSession(player, "near-wallet", c.accountId);
     });
-    return respond(res, { player: profile(player) });
+    return respond(res, { player: profile(player) }, 200, { "Set-Cookie": managementCookies(token) });
   }
   if (path === "/api/wallet/balance") {
     await assertTestnetRpc(provider);
@@ -2922,6 +3164,35 @@ async function api(req, res, url) {
       );
     });
     return respond(res, { address: c.address, verified: true });
+  }
+  if (path === "/api/wearables" && method === "GET")
+    return respond(res, wardrobe(db, player));
+  if (path === "/api/wearables/equip" && method === "POST") {
+    limit("wearable-equip", player, 60, "Please wait before changing wearables again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const result = equipWearable(db, player, i.itemId, !!i.equipped);
+    return respond(res, { ...result, player: profile(player) });
+  }
+  if (path === "/api/players/card" && method === "GET") {
+    limit("player-card", player, 60, "Please wait before opening more explorer cards.");
+    const target = url.searchParams.get("playerId");
+    let look = null;
+    if (/^player_[a-f0-9-]{36}$/.test(target || "")) {
+      const row = db
+        .prepare(
+          "SELECT id,appearance,native_outfit,native_account FROM players WHERE id=?",
+        )
+        .get(target);
+      if (row) look = await publicAppearance(db, row, nativeCollectibles);
+    }
+    return respond(res, playerCard(db, player, target, look));
+  }
+  if (path === "/api/players/wave" && method === "POST") {
+    limit("wave", player, 20, "Please wait before waving again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    return respond(res, sendWave(db, player, i.playerId, i.phrase));
   }
   if (path === "/api/aavegotchi" && method === "GET") {
     const link = db
@@ -3452,6 +3723,7 @@ const server = createServer(async (req, res) => {
         {
           error: e.status ? e.message : "The request could not be completed.",
           code: e.code || "SERVER_ERROR",
+          ...(e.status && e.details ? { details: e.details } : {}),
         },
         e.status || 500,
       );
@@ -3462,6 +3734,7 @@ const server = createServer(async (req, res) => {
 const worldPlanner = backgroundWorkersDisabled
   ? null
   : startWorldPlanner(db, { afterPreparation: () => retryStreetWorlds(db) });
+const globalActivityLoader = startGlobalActivityLoader(db, { directory: process.env.GLOBAL_ACTIVITY_DAYS_DIR, catalogFile: process.env.GLOBAL_ACTIVITY_CATALOG });
 // Nightly quest flavour texts (docs/QUEST-FLAVOUR.md); never on a request path.
 const flavourWorker = backgroundWorkersDisabled ? null : startFlavourWorker(db);
 const rewardWorker =
@@ -3470,6 +3743,10 @@ const rewardWorker =
   process.env.REWARD_WORKER_KEY_PATH
     ? startRewardWorker(nativeRewards, {
         keyPath: process.env.REWARD_WORKER_KEY_PATH,
+        // Map coins are priced in QGOLD at the vault's backing rate R.
+        qgoldRate: qgoldVault
+          ? async () => (await qgoldVault.read()).state?.rate
+          : null,
       })
     : null;
 const chainLedgerWorker =
@@ -3579,6 +3856,7 @@ async function close() {
   clearInterval(maintenance);
   if (testSeedWorker) clearInterval(testSeedWorker);
   await worldPlanner?.stop();
+  globalActivityLoader?.stop();
   await rewardWorker?.stop();
   flavourWorker?.stop();
   await relayWorker?.stop?.();

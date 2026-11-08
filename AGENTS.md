@@ -4,6 +4,15 @@ The canonical repository/project name is `questlayer-hackathon`; the game brand 
 Read `docs/CLOUD-DEVELOPMENT.md` for cloud setup and legacy identifier boundaries.
 Use `npm ci` with Node.js 24+, then `npm run check`. Do not access production state or signing keys to develop the demo.
 
+## Agents other than the owner's Claude threads
+
+Cursor, Codex, Gemini, Copilot and any other coding agent: read `docs/HANDOFF-WEEKEND.md` before any change.
+Its hard rules are not negotiable: no changes to `contracts/` or WASM hashes, deploy/signing/chain scripts,
+money and reward server code, economy numbers, deployment records, CI or dependencies; never touch keys,
+`runtime.env`, secrets or mainnet; no VPS deploys. One task per `weekend/<task-id>-<slug>` branch, PR into
+`claude/upbeat-gauss-5czir7`, all CI green including the Protected paths job. Only the owner adds the
+`owner-approved` label.
+
 ## Product and design context
 
 Read `ROADMAP.md`, the active milestone and `docs/GAME-RULES.md` before implementation.
@@ -22,6 +31,10 @@ action and result. The goal is a coherent, authored game with recognizable chara
 not a generic dashboard with game illustrations.
 
 ## Working agreements
+
+- The project wiki at `/wiki` (`src/wiki/`, rules in `docs/WIKI.md`) describes every mechanism in
+  force. Any change that adds or changes a mechanism updates its chapter in `src/wiki/chapters.ts` in
+  the same pull request, then runs `npm run wiki:stamp`. `tests/wiki.test.mjs` fails otherwise.
 
 - Product text, source comments and repository documentation use English. Discussion
   with the user may use Czech.
