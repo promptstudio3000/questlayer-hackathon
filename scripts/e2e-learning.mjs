@@ -86,6 +86,14 @@ try {
     report.cases.push({name,continue:true,skip:true,reload:true,manualHelp:true,focusReturn:true,claims,guideRequests});
     await skipped.close();
   }
+  const linked = await browser.newContext({viewport:{width:390,height:844},serviceWorkers:"block"});
+  const linkPage=await linked.newPage();await linkPage.goto(url+"/?lang="+language+"#task=local-example");
+  await linkPage.getByLabel(t("What should we call you?"),{exact:true}).fill("Mira linked");
+  await linkPage.getByRole("button",{name:t("Start exploring"),exact:true}).click();
+  await linkPage.locator(".topbar .profile-pill").waitFor();
+  assert.equal(await linkPage.locator(".game-intro").count(),0,"New account at a deep link is not interrupted by the intro");
+  assert.equal(await linkPage.locator(".first-session").count(),0,"Deep-link entry does not enable automatic teaching");
+  report.deepLinkUninterrupted=true;await linked.close();
 }catch(error){for(const context of browser?.contexts()||[])for(const page of context.pages()){console.error((await page.locator("body").innerText()).slice(-5000));await page.screenshot({path:join(shots,"failure.png")}).catch(()=>{});}throw error;}
 finally{await browser?.close();server.kill("SIGTERM");writeFileSync(join(shots,"verification.json"),JSON.stringify(report,null,2));}
 console.log(JSON.stringify(report,null,2));

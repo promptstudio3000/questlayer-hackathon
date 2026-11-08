@@ -43,3 +43,15 @@
   .game-dialog-map .quest-brief .activity-help { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) { .intro-scene-walk .ghost-art { animation: none; } }
+
+.challenge-example { display: grid; gap: 12px; min-width: 0; text-align: start; }
+.challenge-example :is(h3,p) { margin: 0; }
+.challenge-example h3 { font-size: 22px; line-height: 1.25; }
+.challenge-example p { font-size: 16px; line-height: 1.45; }
+.challenge-example .example-disclosure { font-size: 14px; color: var(--ink-secondary); }
+.example-format-label { display: grid; gap: 8px; font-size: 16px; margin-block: 12px; }
+.example-format-label select { width: 100%; min-height: 48px; font: inherit; }
+.monster-formats > li { display: grid; grid-template-columns: minmax(0, 1fr) 48px; gap: 8px; }
+.monster-formats .format-help { display: grid; place-items: center; padding: 0; text-align: center; }
+.monster-challenge .activity-help, .npc-linear .activity-help { color: var(--ink); }
+.reward-cosmetic-note { font-size: 14px; color: var(--ink-secondary); }

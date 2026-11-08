@@ -1,0 +1,89 @@
+{
+  "phase": "after",
+  "language": "en",
+  "engine": "chromium",
+  "provenance": "Actual local App/API and confirmed demo claims; disposable data, synthetic GPS",
+  "cases": [
+    {
+      "name": "phone-360",
+      "width": 360,
+      "height": 780,
+      "claims": 1,
+      "item": "Ember Wisp",
+      "equipped": true,
+      "replay": true,
+      "scans": [],
+      "zoneEntryExitAndUncertainty": true,
+      "confirmedWearableAndNoReplay": true
+    },
+    {
+      "name": "phone-390",
+      "width": 390,
+      "height": 844,
+      "claims": 2,
+      "item": "Ember Wisp",
+      "equipped": true,
+      "replay": true,
+      "scans": [
+        {
+          "label": "quest-overview",
+          "issues": []
+        },
+        {
+          "label": "quest-ready",
+          "issues": []
+        },
+        {
+          "label": "quest-outside-zone",
+          "issues": []
+        },
+        {
+          "label": "quest-uncertain-gps",
+          "issues": []
+        },
+        {
+          "label": "quest-offline",
+          "issues": []
+        },
+        {
+          "label": "quest-retry",
+          "issues": []
+        },
+        {
+          "label": "reward",
+          "issues": []
+        },
+        {
+          "label": "reward-more",
+          "issues": []
+        }
+      ],
+      "zoneEntryExitAndUncertainty": true,
+      "confirmedWearableAndNoReplay": true
+    },
+    {
+      "name": "landscape",
+      "width": 844,
+      "height": 390,
+      "claims": 1,
+      "item": "Ember Wisp",
+      "equipped": true,
+      "replay": true,
+      "scans": [],
+      "zoneEntryExitAndUncertainty": true,
+      "confirmedWearableAndNoReplay": true
+    },
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "claims": 1,
+      "item": "Ember Wisp",
+      "equipped": true,
+      "replay": true,
+      "scans": [],
+      "zoneEntryExitAndUncertainty": true,
+      "confirmedWearableAndNoReplay": true
+    }
+  ]
+}

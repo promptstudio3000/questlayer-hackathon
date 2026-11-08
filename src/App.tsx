@@ -89,7 +89,7 @@ import {
 } from "./game-object-art";
 import { makeNativeObjective } from "./native-objective";
 import { useAdventureSelection } from "./useAdventureSelection";
-import { activityLabel, activityProgress, questsInZone } from "./activity-view";
+import { activityLabel, activityProgress, activityRequirement, questsInZone } from "./activity-view";
 import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
 import { walletSigner, type NativeSigner } from "./native-signer";
 import type { MarketFunding } from "./NearbyMarket";
@@ -3211,6 +3211,7 @@ export default function App() {
       (q) => !q.completed && q.opens_at <= now && q.closes_at > now,
     ) ||
     zoneQuests[0];
+  const selectedRequirement = zoneQuest && selected ? activityRequirement(zoneQuest, selected, position, now, arena, fix, online) : null;
   const questRoute =
     world && !nativePlay
       ? activeQuestRoute(world.quests, {
@@ -3575,6 +3576,7 @@ export default function App() {
                 <strong>{zoneQuest && selectedQuestId === zoneQuest.id ? questDisplayTitle(zoneQuest.title) : selected.name}</strong>
                 <small>{zoneQuest ? activityProgress(zoneQuest, position) : tr("See what's here")}</small>
                 <small>{distanceLabel(meters(position, zoneQuest ? questPoint(zoneQuest) : selected))} · {tr("Straight-line distance")}</small>
+                {selectedRequirement && <small className="compact-requirement">{selectedRequirement}</small>}
                 {zoneQuest && learning.visible(questHelpTopic(zoneQuest)) && <small className="learning-hint">{helpText(questHelpTopic(zoneQuest))}</small>}
               </span>
               <ArrowRight />
@@ -5086,7 +5088,10 @@ export default function App() {
           onQuest={(id) => {
             const quest = world.quests.find(q => q.id === id);
             if (!quest) return;
-            chooseZoneQuest(id);
+            const zone = world.zones.find(z => z.id === quest.zone_id);
+            if (!zone) return;
+            setSelected(zone, id);
+            setCatalogView(null);
             setStartedQuestKey(`${player.id}:${world.id}:${id}`);
             setSheetExpanded(false);
             if (arena) faceToward(questPoint(quest), quest.title, {questId:id});

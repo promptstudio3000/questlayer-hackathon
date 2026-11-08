@@ -132,3 +132,21 @@
 .game-dialog .npc-linear .npc-chat { position: static; }
 .game-dialog .npc-linear .npc-notice { color: var(--success); background: var(--success-surface); font-size: 16px; }
 .npc-linear .text-button { min-height: 48px; }
+
+/* Keep the available action close to a compact, original portrait. */
+.game-dialog .npc-linear .npc-portrait { height: 144px; }
+.game-dialog .npc-linear .npc-choice { padding: 12px; min-height: 56px; }
+.game-dialog .npc-linear .npc-story-step h3 { margin: 0; font-size: 20px; }
+.game-dialog .npc-linear .npc-next-step { margin: 0; font-size: 16px; color: var(--ink-secondary); }
+@media (max-height: 500px) and (min-width: 600px) {
+  .game-dialog .npc-linear .npc-portrait { height: 80px; }
+}
+
+@media (max-width: 600px) {
+  .game-dialog .npc-linear .npc-hero { grid-template-columns: 80px minmax(0,1fr); align-items: center; gap: 12px; padding: 8px; }
+  .game-dialog .npc-linear .npc-portrait { height: 96px; }
+  .game-dialog .npc-linear .npc-plate { min-width: 0; justify-content: flex-start; padding: 0; padding-inline-end: 40px; }
+  .game-dialog .npc-linear .npc-plate h2 { max-width: 100%; font-size: 20px; text-align: start; white-space: normal; overflow-wrap: anywhere; }
+  .game-dialog .npc-linear .npc-role { font-size: 14px; }
+  .game-dialog .npc-linear .npc-emote { top: 0; left: 52px; font-size: 20px; }
+}

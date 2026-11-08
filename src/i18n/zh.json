@@ -2985,7 +2985,7 @@
  "Reach the place, choose an answer, then confirm.": "到达地点，选择答案，然后确认。",
  "Short help for new activities.": "为新活动提供简短帮助。",
  "Skip": "跳过",
- "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "攻击克制诡计，诡计克制防御，防御克制攻击。看准圆环选择。",
+ "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "攻击克制诀窍，诀窍克制防守，防守克制攻击。看准圆环选择。",
  "Tap when the beat reaches the ring.": "节拍到达圆环时点击。",
  "Trace the numbered runes in order, then release.": "按编号顺序描画符文，完成后松开。",
  "Try an Aura on your ghost. It changes your look, not your power.": "给幽灵试穿光环。它只改变外观，不提升实力。",
@@ -2996,5 +2996,12 @@
  "Wear your finds": "穿戴你的发现",
  "You can reopen this guide in Help.": "你可以在帮助中重新打开本指南。",
  "Your city has stories.": "你的城市藏着故事。",
- "Your phone's GPS moves your ghost as you walk.": "步行时，手机GPS会带动幽灵移动。"
+ "Your phone's GPS moves your ghost as you walk.": "步行时，手机GPS会带动幽灵移动。",
+ "Which changes your look?": "什么能改变你的外观？",
+ "Example · no attempt used": "示例 · 不消耗挑战次数",
+ "Example finished. No reward or attempt was used.": "示例已结束。没有奖励，也未消耗挑战次数。",
+ "Play example": "试玩示例",
+ "Start challenge": "开始挑战",
+ "How this works: {0}": "玩法说明：{0}",
+ "Choose an example": "选择示例"
 }

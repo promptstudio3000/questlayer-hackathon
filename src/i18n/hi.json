@@ -2985,7 +2985,7 @@
  "Reach the place, choose an answer, then confirm.": "जगह पहुँचो, जवाब चुनो और पुष्टि करो।",
  "Short help for new activities.": "नई गतिविधियों के लिए छोटी मदद।",
  "Skip": "छोड़ें",
- "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "वार चाल को, चाल बचाव को और बचाव वार को हराता है। घेरे के साथ सही समय पर चुनो।",
+ "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "वार करतब को, करतब गार्ड को और गार्ड वार को हराता है। घेरे के साथ सही समय पर चुनो।",
  "Tap when the beat reaches the ring.": "ताल का बिंदु घेरे तक पहुँचे तो टैप करो।",
  "Trace the numbered runes in order, then release.": "क्रमांक के अनुसार रून जोड़ो, फिर उँगली हटाओ।",
  "Try an Aura on your ghost. It changes your look, not your power.": "अपने भूत पर ऑरा पहनकर देखो। रूप बदलता है, ताकत नहीं।",
@@ -2996,5 +2996,12 @@
  "Wear your finds": "अपनी खोज पहनें",
  "You can reopen this guide in Help.": "इस गाइड को मदद में फिर खोल सकते हो।",
  "Your city has stories.": "तुम्हारे शहर में कहानियाँ हैं।",
- "Your phone's GPS moves your ghost as you walk.": "चलते समय फ़ोन का GPS तुम्हारे भूत को आगे बढ़ाता है।"
+ "Your phone's GPS moves your ghost as you walk.": "चलते समय फ़ोन का GPS तुम्हारे भूत को आगे बढ़ाता है।",
+ "Which changes your look?": "आपका रूप किससे बदलता है?",
+ "Example · no attempt used": "उदाहरण · कोई प्रयास खर्च नहीं होता",
+ "Example finished. No reward or attempt was used.": "उदाहरण समाप्त। न कोई इनाम मिला, न प्रयास खर्च हुआ।",
+ "Play example": "उदाहरण खेलें",
+ "Start challenge": "चुनौती शुरू करें",
+ "How this works: {0}": "यह कैसे काम करता है: {0}",
+ "Choose an example": "एक उदाहरण चुनें"
 }

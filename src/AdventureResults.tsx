@@ -234,6 +234,7 @@ export function AdventureResultDialog({
                     {result.reward.near.state === "converted" ? tr("Converted to QGOLD") : result.reward.near.state === "conversion-carry" ? tr("Fractional NEAR remains credited") : tr("Awaiting QGOLD settlement")}</p>}
                   {!item && result.reward && <p>{tr("No Aura this time. XP still counts.")}</p>}
                   {note && <p>{note}</p>}
+                  {item && <p className="reward-cosmetic-note">{tr("Auras change your look, not your power.")}</p>}
                   {item && (!online || !selection.fresh) && <p role="status">{selection.checking ? tr("Checking what you own…") : tr("Go online to check you still own it before trying it on.")}</p>}
                   {item && selection.fresh && result.itemCurrent.status !== "owned" && <p role="status">{result.itemCurrent.reason || tr("Awarded Aura · as it looked then")}</p>}
                   {item && selection.fresh && result.itemCurrent.equipped && <p className="reward-equipped">{tr("Equipped")}</p>}

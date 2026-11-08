@@ -124,7 +124,7 @@ export function ActorSheet({
   if (ready && handoff === "boss")
     return (
       <Suspense fallback={null}>
-        <BossFight actor={ready.actor} encounter={ready.encounter} worldId={worldId} onClose={onClose} />
+        <BossFight playerId={playerId} actor={ready.actor} encounter={ready.encounter} worldId={worldId} onClose={onClose} />
       </Suspense>
     );
   if (ready && handoff === "challenge" && MonsterChallenge)

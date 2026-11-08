@@ -84,10 +84,11 @@ try{
       assert.deepEqual(issues,[],"NPC accessibility");
       await page.screenshot({path:join(shots,"npc-greeting.png")});
       assert.equal(await page.locator(".npc-more[open]").count(),0,"NPC starts with a greeting, not a service menu");
-      for(const [name,width,height] of [["360",360,780],["390",390,844],["landscape",844,390],["desktop",1440,900]]){
+      for(const [name,width,height] of [["360",360,780],["390",390,844],["short-phone",390,664],["landscape",844,390],["desktop",1440,900]]){
         await page.setViewportSize({width,height});
         assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
-        assert.equal(await page.locator(".npc-linear > .primary-button:visible").count(),1,"Greeting has one continuation");
+        assert.ok(await page.locator(".npc-choice:visible").count() > 0,"Greeting exposes the current task choices");
+        if(name==="short-phone") assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollHeight>el.clientHeight+1),false,"Greeting choices fit a short phone without inner scrolling");
         await page.screenshot({path:join(shots,`npc-greeting-${name}.png`)});
       }
       await page.setViewportSize({width:390,height:844});
@@ -109,7 +110,7 @@ try{
         assert.equal(await image.evaluate(el=>getComputedStyle(el).objectFit),"contain","Whole portrait is fitted without cropping");
         const frame=await page.locator(".npc-portrait").boundingBox(), art=await image.boundingBox(), plate=await page.locator(".npc-plate").boundingBox();
         assert.ok(art.y>=frame.y&&art.y+art.height<=frame.y+frame.height+1,"Portrait stays inside its frame");
-        if(height>500)assert.ok(plate.y>=frame.y+frame.height,"Name stays below the whole portrait");
+        assert.ok(plate.y>=frame.y+frame.height || plate.x>=frame.x+frame.width || plate.x+plate.width<=frame.x,"Name stays beside or below the whole portrait");
         const box=await dialog.boundingBox();if(width>1000)assert.ok(box.width<=642&&box.height<=height*.85);
         await dialog.evaluate(el=>el.scrollTop=el.scrollHeight);
         const close=await page.getByRole("button",{name:"Close",exact:true}).boundingBox();
@@ -119,7 +120,6 @@ try{
       }
       await page.setViewportSize({width:390,height:844});
       await page.locator(".npc-more > summary").click();
-      await page.locator(".npc-continue").click();
       const accepted=page.waitForResponse(r=>decodeURIComponent(new URL(r.url()).pathname).endsWith(`/offers/${offer.id}/accept`));
       await page.getByRole("button",{name:new RegExp(offer.label.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))}).click();
       await page.getByRole("button",{name:"Start quest",exact:true}).click();
@@ -144,7 +144,7 @@ try{
     }else{
       await page.locator(".actor-offers button").first().click();
       const started=page.waitForResponse(r=>r.url().endsWith(`/${actor.id}/challenge`)&&r.request().method()==="POST");
-      await page.getByRole("button",{name:/Answer its riddles/}).click();
+      await page.locator('.monster-formats button:not(.format-help)').filter({hasText:"Answer its riddles"}).click();
       const {challenge}=await (await started).json();assert.equal(challenge.format,"quiz");
       const submitted=page.waitForResponse(r=>r.url().endsWith(`/${challenge.id}/submit`));
       for(const question of challenge.questions){

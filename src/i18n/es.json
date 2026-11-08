@@ -2985,7 +2985,7 @@
  "Reach the place, choose an answer, then confirm.": "Llega al lugar, elige una respuesta y confirma.",
  "Short help for new activities.": "Ayuda breve para actividades nuevas.",
  "Skip": "Saltar",
- "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "Golpe vence a Truco, Truco a Defensa y Defensa a Golpe. Elige al ritmo del anillo.",
+ "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "Golpe vence a Truco, Truco a Guardia y Guardia a Golpe. Elige al ritmo del anillo.",
  "Tap when the beat reaches the ring.": "Toca cuando el pulso llegue al anillo.",
  "Trace the numbered runes in order, then release.": "Traza las runas numeradas en orden y luego suelta.",
  "Try an Aura on your ghost. It changes your look, not your power.": "Pruébate un Aura. Cambia el aspecto de tu fantasma, no su poder.",
@@ -2996,5 +2996,12 @@
  "Wear your finds": "Luce tus hallazgos",
  "You can reopen this guide in Help.": "Puedes volver a abrir esta guía en Ayuda.",
  "Your city has stories.": "Tu ciudad tiene historias.",
- "Your phone's GPS moves your ghost as you walk.": "El GPS del móvil mueve a tu fantasma mientras caminas."
+ "Your phone's GPS moves your ghost as you walk.": "El GPS del móvil mueve a tu fantasma mientras caminas.",
+ "Which changes your look?": "¿Qué cambia tu aspecto?",
+ "Example · no attempt used": "Ejemplo · no consume intentos",
+ "Example finished. No reward or attempt was used.": "Ejemplo terminado. Sin recompensa ni consumo de intentos.",
+ "Play example": "Probar ejemplo",
+ "Start challenge": "Iniciar desafío",
+ "How this works: {0}": "Cómo funciona: {0}",
+ "Choose an example": "Elige un ejemplo"
 }

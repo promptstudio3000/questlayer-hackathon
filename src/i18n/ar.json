@@ -2985,7 +2985,7 @@
  "Reach the place, choose an answer, then confirm.": "صل إلى المكان، واختر إجابة، ثم أكّدها.",
  "Short help for new activities.": "مساعدة موجزة للأنشطة الجديدة.",
  "Skip": "تخطّ",
- "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "الضربة تهزم الخدعة، والخدعة تهزم الدفاع، والدفاع يهزم الضربة. اضبط اختيارك مع الحلقة.",
+ "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "«اضرب» يهزم «خدعة»، و«خدعة» تهزم «صدّ»، و«صدّ» يهزم «اضرب». اضبط اختيارك مع الحلقة.",
  "Tap when the beat reaches the ring.": "انقر عندما تصل النبضة إلى الحلقة.",
  "Trace the numbered runes in order, then release.": "ارسم الرموز المرقمة بالترتيب ثم ارفع إصبعك.",
  "Try an Aura on your ghost. It changes your look, not your power.": "جرّب هالة على شبحك. إنها تغيّر مظهره لا قوته.",
@@ -2996,5 +2996,12 @@
  "Wear your finds": "ارتدِ ما تجده",
  "You can reopen this guide in Help.": "يمكنك فتح هذا الدليل مجدداً من المساعدة.",
  "Your city has stories.": "لمدينتك قصص ترويها.",
- "Your phone's GPS moves your ghost as you walk.": "يحرّك GPS الهاتف شبحك أثناء المشي."
+ "Your phone's GPS moves your ghost as you walk.": "يحرّك GPS الهاتف شبحك أثناء المشي.",
+ "Which changes your look?": "ما الذي يغيّر مظهرك؟",
+ "Example · no attempt used": "مثال · لا تُستهلك أي محاولة",
+ "Example finished. No reward or attempt was used.": "انتهى المثال. دون مكافأة أو استهلاك محاولة.",
+ "Play example": "جرّب المثال",
+ "Start challenge": "ابدأ التحدي",
+ "How this works: {0}": "كيف يعمل: {0}",
+ "Choose an example": "اختر مثالًا"
 }

@@ -2985,7 +2985,7 @@
  "Reach the place, choose an answer, then confirm.": "Dojdi na místo, vyber odpověď a potvrď ji.",
  "Short help for new activities.": "Krátká pomoc u nových aktivit.",
  "Skip": "Přeskočit",
- "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "Úder porazí Trik, Trik porazí Obranu a Obrana porazí Úder. Načasuj volbu podle kruhu.",
+ "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "Úder porazí Lest, Lest porazí Obranu a Obrana porazí Úder. Načasuj volbu podle kruhu.",
  "Tap when the beat reaches the ring.": "Klepni, když rytmický bod dorazí do kruhu.",
  "Trace the numbered runes in order, then release.": "Spoj očíslované runy v pořadí a pak pusť.",
  "Try an Aura on your ghost. It changes your look, not your power.": "Vyzkoušej Auru na své postavě. Mění vzhled, ne sílu.",
@@ -2996,5 +2996,12 @@
  "Wear your finds": "Nos, co najdeš",
  "You can reopen this guide in Help.": "Průvodce znovu otevřeš v Nápovědě.",
  "Your city has stories.": "Tvé město má příběhy.",
- "Your phone's GPS moves your ghost as you walk.": "Při chůzi pohybuje postavou GPS tvého telefonu."
+ "Your phone's GPS moves your ghost as you walk.": "Při chůzi pohybuje postavou GPS tvého telefonu.",
+ "Which changes your look?": "Co mění tvůj vzhled?",
+ "Example · no attempt used": "Ukázka · bez spotřeby pokusu",
+ "Example finished. No reward or attempt was used.": "Ukázka skončila. Bez odměny a bez spotřeby pokusu.",
+ "Play example": "Vyzkoušet ukázku",
+ "Start challenge": "Spustit výzvu",
+ "How this works: {0}": "Jak to funguje: {0}",
+ "Choose an example": "Vyber ukázku"
 }

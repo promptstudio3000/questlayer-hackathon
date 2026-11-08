@@ -53,6 +53,7 @@ try {
     assert.equal(await page.locator(".quest-brief-more[open]").count(), 0);
     assert.equal(await picker.locator("button").count(), world.quests.filter(q => q.zone_id === zone.id).length);
     const capture = async label => {
+      if(label === "active-map") { await page.locator(".maplibregl-canvas").waitFor(); await page.locator(".map-loading").waitFor({state:"hidden",timeout:30000}); }
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, label + ": no horizontal overflow");
       await page.screenshot({ path:join(shots, `${name}-${label}.png`) });
     };

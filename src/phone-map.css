@@ -144,3 +144,5 @@ body:has(.app-shell.map-full) .pwa-install {
 .app-shell .sheet-compact .compact-selection strong, .app-shell .sheet-compact .compact-selection small { display: block; }
 .app-shell[data-screen] .sheet-compact .compact-selection { text-align: start; }
 .app-shell[data-screen] .sheet-compact .compact-selection strong { font-size: 16px; }
+
+.app-shell[data-screen] .compact-selection .compact-requirement { color: var(--ink); font-size: 14px; line-height: 1.4; }

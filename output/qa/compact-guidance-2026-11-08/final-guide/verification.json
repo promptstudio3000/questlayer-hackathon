@@ -1,0 +1,18 @@
+{
+  "language": "en",
+  "browser": "chromium",
+  "provenance": "Local App/API; simulated viewport/keyboard, no physical-device or newcomer-study claim",
+  "cases": [
+    {
+      "name": "phone-390",
+      "continue": true,
+      "skip": true,
+      "reload": true,
+      "manualHelp": true,
+      "focusReturn": true,
+      "claims": 0,
+      "guideRequests": 0
+    }
+  ],
+  "deepLinkUninterrupted": true
+}

@@ -2985,7 +2985,7 @@
  "Reach the place, choose an answer, then confirm.": "その場所に近づき、答えを選んで確認しよう。",
  "Short help for new activities.": "新しい遊びに短いヒントを表示します。",
  "Skip": "スキップ",
- "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "攻撃は策略に、策略は防御に、防御は攻撃に勝ちます。リングに合わせて選ぼう。",
+ "Strike beats Trick, Trick beats Guard, Guard beats Strike. Time your choice with the ring.": "攻撃はトリックに、トリックはガードに、ガードは攻撃に勝ちます。リングに合わせて選ぼう。",
  "Tap when the beat reaches the ring.": "リズムの印がリングに届いたらタップ。",
  "Trace the numbered runes in order, then release.": "番号順にルーンをなぞり、最後に指を離そう。",
  "Try an Aura on your ghost. It changes your look, not your power.": "ゴーストにオーラを試着しよう。見た目だけが変わります。",
@@ -2996,5 +2996,12 @@
  "Wear your finds": "見つけたものを着よう",
  "You can reopen this guide in Help.": "このガイドはヘルプから開き直せます。",
  "Your city has stories.": "街には物語がある。",
- "Your phone's GPS moves your ghost as you walk.": "歩くとスマートフォンのGPSに合わせてゴーストが移動します。"
+ "Your phone's GPS moves your ghost as you walk.": "歩くとスマートフォンのGPSに合わせてゴーストが移動します。",
+ "Which changes your look?": "見た目を変えるのは？",
+ "Example · no attempt used": "練習例 · 挑戦回数は減りません",
+ "Example finished. No reward or attempt was used.": "練習例が終了しました。報酬や挑戦回数への影響はありません。",
+ "Play example": "練習例を試す",
+ "Start challenge": "挑戦を始める",
+ "How this works: {0}": "遊び方：{0}",
+ "Choose an example": "練習例を選ぶ"
 }
