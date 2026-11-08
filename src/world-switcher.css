@@ -1,0 +1,166 @@
+.world-switcher {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  padding: 0 8px;
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+}
+.app-shell .topbar {
+  gap: 12px;
+}
+.app-shell .topbar .topbar-right {
+  width: auto;
+  min-width: 0;
+  flex: 1;
+}
+@media (max-width: 760px) {
+  .app-shell .topbar {
+    gap: 8px;
+  }
+  .world-switcher {
+    position: relative;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    padding: 6px;
+    border-radius: 12px;
+    background: var(--surface);
+    justify-content: center;
+  }
+  .world-switcher-name {
+    display: none;
+  }
+  .world-switcher > svg {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    inset: auto 2px 2px auto;
+    background: var(--surface);
+  }
+}
+.world-switcher .brand-logo,
+.world-switcher .ghost-art {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+.world-switcher img {
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
+}
+.world-switcher-name {
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.1;
+  letter-spacing: 0.3px;
+}
+.world-switcher-name small {
+  display: block;
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--ink-secondary);
+}
+.world-picker {
+  width: min(100%, 520px);
+  padding: 24px;
+}
+.world-picker .panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.world-picker h2 {
+  font-size: 24px;
+  margin: 0;
+}
+.world-choice {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 20px;
+  text-align: start;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+.world-choice[aria-pressed="true"] {
+  border: 2px solid var(--action);
+  background: var(--surface-soft);
+}
+.world-choice svg {
+  flex-shrink: 0;
+  color: var(--action);
+}
+.world-choice strong {
+  display: block;
+  font-size: 20px;
+}
+.world-choice small {
+  display: block;
+  font-size: 16px;
+  line-height: 1.45;
+  margin-top: 5px;
+  color: var(--ink-secondary);
+}
+.world-choice:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.world-switcher:focus-visible,
+.world-choice:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .world-picker {
+    padding: 18px;
+  }
+  .world-switcher {
+    gap: 6px;
+    padding-inline: 2px;
+  }
+  .world-switcher .brand-logo,
+  .world-switcher .ghost-art {
+    width: 30px;
+    height: 30px;
+  }
+  .world-switcher-name {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 430px) {
+  .app-shell .topbar .profile-pill {
+    width: 56px;
+    min-width: 56px;
+    max-width: 56px;
+    padding: 4px;
+  }
+  .app-shell .topbar .profile-pill .hud-xp-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .app-shell .topbar .profile-pill .hud-xp {
+    gap: 0;
+  }
+}

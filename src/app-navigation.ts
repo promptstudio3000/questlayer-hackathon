@@ -8,6 +8,7 @@ import {
 } from "./native-objective.ts";
 
 export type AppTab =
+  | "gotchiverse"
   | "explore"
   | "inventory"
   | "market"
@@ -71,6 +72,7 @@ export function parseAppNavigation(
   if (
     typeof v.tab !== "string" ||
     ![
+      "gotchiverse",
       "explore",
       "inventory",
       "market",
