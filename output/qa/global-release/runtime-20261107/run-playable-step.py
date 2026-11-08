@@ -56,17 +56,23 @@ def main():
   try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
   except BlockingIOError:raise SystemExit(0)
   free,available,current=resources()
-  if free<8*1024**3 or available<512*1024**2 or current>4*1024**3:
+  utc=time.gmtime();minute=utc.tm_hour*60+utc.tm_min
+  prepare_only=free<9*1024**3 or minute>=config.get('nextDayMinuteUTC',1410)
+  # Publication can use the headroom, while retaining the service floor.
+  floor=8*1024**3 if prepare_only else 9*1024**3
+  minimum=floor+(128*1024**2 if prepare_only else 0)
+  if free<minimum or available<512*1024**2 or current>4*1024**3:
    status('waiting-resources',freeBytes=free,availableMemory=available,containerMemory=current);raise SystemExit(0)
   with (root/'worker.log').open('ab') as log:
-   child=subprocess.Popen([a.node,'--max-old-space-size=512',str(a.source/'scripts/continue-playable-world.mjs'),str(a.config)],cwd=a.source,stdout=log,stderr=log,start_new_session=True)
+   command=[a.node,'--max-old-space-size=512',str(a.source/'scripts/continue-playable-world.mjs'),str(a.config)]+(['--prepare-only'] if prepare_only else [])
+   child=subprocess.Popen(command,cwd=a.source,stdout=log,stderr=log,start_new_session=True)
    try:os.setpriority(os.PRIO_PROCESS,child.pid,10)
    except ProcessLookupError:pass
-   status('running',pid=child.pid);start=time.monotonic();started_at=time.time();reason=None
+   status('running',pid=child.pid,prepareOnly=prepare_only);start=time.monotonic();started_at=time.time();reason=None
    while child.poll() is None:
     free,available,current=resources()
-    if free<8*1024**3 or available<256*1024**2 or current>4600*1024**2:reason='resource-floor'
-    if reason is None and time.monotonic()-start>1200:reason='time-slice'
+    if free<floor or available<256*1024**2 or current>4600*1024**2:reason='resource-floor'
+    if reason is None and time.monotonic()-start>(3300 if prepare_only else 1200):reason='time-slice'
     if reason:
      # Child has its own session/group, inherited by its osmium subprocesses.
      # No process-name matching and no signals outside this exact group.
