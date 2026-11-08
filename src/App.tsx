@@ -355,7 +355,7 @@ export default function App() {
     ),
     // Visual course from a moving GPS fix, or reliable successive positions.
     [gpsCourse, setGpsCourse] = useState<number | null>(null),
-    [arena, setArena] = useState(true),
+    [arena, setArenaState] = useState(true),
     [globe, setGlobe] = useState(false),
     [overview, setOverview] = useState(false),
     [follow, setFollow] = useState(true),
@@ -385,6 +385,12 @@ export default function App() {
       }
     }),
     [now, setNow] = useState(Date.now());
+  // Read guards follow the requested mode before React commits its next render.
+  const arenaIntent = useRef(arena);
+  function setArena(value: boolean) {
+    arenaIntent.current = value;
+    setArenaState(value);
+  }
   const [nearActors, setNearActors] = useState<{worldId:string | null; actors:NearbyActor[]; at:number}>({worldId:null, actors:[], at:0});
   const [wearableMoment, setWearableMoment] = useState<{scope: string; id: number; name: string; detail: string; chain?: ChainRef | null} | null>(null);
   const [startedQuestKey, setStartedQuestKey] = useState("");
@@ -887,7 +893,7 @@ export default function App() {
     return {
       playerId: state.player?.id,
       worldId: state.world?.id,
-      arena: state.arena,
+      arena: arenaIntent.current,
       worldArena: state.world?.arena,
       endsAt: state.world?.endsAt,
       nativePlay: state.nativePlay,
@@ -902,7 +908,7 @@ export default function App() {
   const worldContext = (kind: "replace" | "refresh") =>
     JSON.stringify([
       ownerContext(),
-      latest.current.arena,
+      arenaIntent.current,
       kind,
       ...(kind === "refresh" ? [latest.current.world?.id] : []),
     ]);
@@ -1140,6 +1146,7 @@ export default function App() {
     asArena: boolean,
     explore?: Point,
   ) {
+    if (asArena !== arenaIntent.current) return;
     collectionRun.current?.abort();
     collectionRun.current = null;
     const token = worldReads.current.begin(
@@ -1201,6 +1208,7 @@ export default function App() {
       !state.player ||
       !state.world ||
       state.world.arena !== state.arena ||
+      state.arena !== arenaIntent.current ||
       worldLoading.current
     )
       return;
@@ -3248,7 +3256,7 @@ export default function App() {
     preferredQuestId:selectedQuestId}) : null;
   const nearName = near?.kind === "actor" ? near.actor.name : near?.kind === "quest" ? questDisplayTitle(near.quest.title) : near?.coin.wearable?.name || tr("Street find");
   const objectiveKey = [objective, selected?.id, selectedQuestId, nativeObjective.reference?.kind, nativeObjective.reference?.index, nativeObjective.reference?.dayId, nativeObjective.view.status, adventureResults.unread?.id, coachStep || "done", recommended?.id, recommendedFind?.coin.id].join(":");
-  const showNearby = !!near && canOfferNearbyAction(objective, coachStep, dismissedObjective === objectiveKey, !!zoneQuest && startedQuestKey === `${player?.id}:${world?.id}:${zoneQuest.id}`, near.kind === "quest" && near.quest.id === zoneQuest?.id);
+  const showNearby = !!near && canOfferNearbyAction(objective, coachStep, dismissedObjective === objectiveKey, !!zoneQuest && (selectedQuestId === zoneQuest.id || startedQuestKey === `${player?.id}:${world?.id}:${zoneQuest.id}`), near.kind === "quest" && near.quest.id === zoneQuest?.id);
   const compactHidden = tab === "explore" && !sheetExpanded && (showNearby || objective === "empty" || dismissedObjective === objectiveKey);
   const title =
     tab === "explore"

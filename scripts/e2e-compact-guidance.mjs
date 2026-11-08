@@ -68,8 +68,22 @@ try {
     await page.locator(".zone-card").filter({ hasText:other.name }).click();
     await page.getByRole("button", { name:"Close panel", exact:true }).click();
     assert.equal(await page.locator(".compact-selection").innerText(), original, "Inspecting another place preserves the current adventure");
+    // An incidental nearby actor must not replace the saved adventure on reload.
+    if(width === 390) await page.route(/\/api\/actors\?/, route => {
+      const at=Date.now();
+      return route.fulfill({json:{enabled:true,worldId:world.id,dayId:world.dayId,now:at,actors:[{
+        id:"local-guide",kind:"npc",archetype:"quest_giver",name:"Local guide",model:"pilgrim",
+        segments:[{from:at-60000,to:at+3600000,dwell:true,path:[[13.3774,49.74755],[13.3774,49.74755]]}],
+      }]}});
+    });
     await page.reload();
     await page.locator(".sheet-compact .compact-selection").waitFor();
+    if(width === 390) {
+      await page.locator('[data-actor-id="local-guide"]').waitFor({timeout:20000});
+      await page.waitForTimeout(800);
+      assert.equal(await page.locator(".compact-selection").isVisible(),true,"A nearby actor does not hide a restored active objective");
+      assert.equal(await page.locator(".nearby-open").count(),0);
+    }
     assert.equal(await page.locator(".compact-selection").innerText(), original, "Reload restores the same activity and next step");
     if (width === 390) {
       await page.addScriptTag({ content:axe });
@@ -79,7 +93,7 @@ try {
       assert.deepEqual(small, [], "Essential controls retain 48px targets");
     }
     assert.deepEqual(errors, []);
-    report.cases.push({ name, preservedThroughBrowse:true, preservedThroughReload:true, claims });
+    report.cases.push({ name, preservedThroughBrowse:true, preservedThroughReload:true, nearbyActorAfterReload:width===390, claims });
     await context.close();
   }
 } catch (error) {

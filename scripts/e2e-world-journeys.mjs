@@ -263,6 +263,7 @@ async function journey(browser, server, device, j, expected) {
         })
         .first()
         .or(nearbyOpen)
+        .filter({visible:true})
         .first()
         .waitFor({ timeout: 15_000 });
       // Let the auto pick-up of spawn-side coins settle before reading it.

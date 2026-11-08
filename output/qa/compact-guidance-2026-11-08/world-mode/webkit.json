@@ -1,0 +1,7 @@
+{
+  "browser": "webkit",
+  "fastGpsResponseAccepted": true,
+  "demoReturn": true,
+  "staleGpsResponseIgnored": true,
+  "provenance": "Actual local App/API; asynchronous synthetic GPS and immediate browser world-read response"
+}
