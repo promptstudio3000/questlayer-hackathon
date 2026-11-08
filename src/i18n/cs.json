@@ -2500,7 +2500,6 @@
  "XP is yours.": "XP jsou tvoje.",
  "XP only · all Auras found": "Jen XP · všechny Aury nalezeny",
  "XP to level": "XP do úrovně",
- "XP visit": "Návštěva za XP",
  "XP ·": "XP ·",
  "XP.": "XP.",
  "YOU": "TY",
@@ -2946,7 +2945,6 @@
  "Not open now": "Teď není otevřeno",
  "Open vault": "Otevřít trezor",
  "Ready to start": "Můžeš začít",
- "Time varies": "Doba se liší",
  "Your tasks": "Tvoje úkoly",
  "{0} activities here": "Aktivity v okolí: {0}",
  "{0} stops": "Počet zastávek: {0}",
@@ -2962,5 +2960,9 @@
  "The shared NEAR prize was already earned. Personal XP is still available.": "Sdílenou odměnu NEAR už někdo získal. Osobní XP jsou stále dostupné.",
  "Converted to QGOLD": "Převedeno na QGOLD",
  "Fractional NEAR remains credited": "Drobný zbytek NEAR zůstává připsaný",
- "Awaiting QGOLD settlement": "Čeká na vypořádání v QGOLD"
+ "Awaiting QGOLD settlement": "Čeká na vypořádání v QGOLD",
+ "Landmark clue": "Indicie u památky",
+ "Place hunt": "Hledání míst",
+ "Return": "Návrat",
+ "There and back": "Tam a zpět"
 }

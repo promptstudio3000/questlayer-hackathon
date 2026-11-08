@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { Clock, Flag, Footprints, MapPin, Question, Sparkle } from "@phosphor-icons/react";
+import { Flag, Footprints, MapPin, Question, Sparkle } from "@phosphor-icons/react";
 import { ArrowRight } from "./dir-icons";
 import { GameObjectArt, questObjectPresentation } from "./game-object-art";
 import { distanceLabel } from "./app-bits";
@@ -9,6 +9,7 @@ import LandmarkClue from "./LandmarkClue";
 import { tr } from "./i18n";
 import { zoneInteriorMargin } from "./zone-presence";
 import { questTarget, remainingQuestStops } from "./quest-route";
+import { activityKind } from "./activity-view";
 import type { Fix, Point, Quest, Zone } from "./types";
 import "./quest-brief.css";
 
@@ -38,10 +39,17 @@ export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, on
     ? q.opens_at > now ? tr("opens in {0}", { 0: remaining(q.opens_at) }) : tr("Closed for today")
     : activity ? tr("In progress") : tr("Ready to start");
   return <section className="quest-detail quest-brief" role="region" aria-label={title} tabIndex={-1} id={"quest-" + q.id}>
-    <div className="quest-detail-art" aria-hidden="true"><GameObjectArt {...questObjectPresentation(q, { now, playerTier: tier })} size={112} /></div>
+    {children}
+    <div className="quest-detail-art" aria-hidden="true"><GameObjectArt {...questObjectPresentation(q, { now, playerTier: tier })} size={80} /></div>
     <p className={`quest-brief-status${q.kind === "route" && !q.completed && open && online ? " quest-brief-progress" : ""}`}>{q.kind === "route" && !q.completed && open && online ? <><strong>{q.visitedStops ? tr("Any order") : tr("Next stop")} · {tr("Stop {0} of {1}", {0: targetNumber, 1: steps})}</strong><br />{tr("Completed")} · {q.checkpoint || 0}/{steps}</> : status}</p>
     <h2 ref={heading} tabIndex={-1}>{title}</h2>
     <p className="quest-brief-description">{q.activity?.objective || q.description}</p>
+    {q.kind === "route" && <ol className="activity-step-diagram" aria-label={q.visitedStops ? tr("Any order") : tr("Activity overview")}>
+      {Array.from({ length: steps }, (_, i) => <li key={i} data-done={(q.visitedStops ? q.visitedStops.includes(i) : i < (q.checkpoint || 0)) || undefined}>
+        <span>{activityKind(q) === "return" && i === steps - 1 ? 1 : i + 1}</span>
+        {activityKind(q) === "return" && i === steps - 1 && <small>{tr("Return")}</small>}
+      </li>)}
+    </ol>}
     {q.nearPrize && <p className="quest-brief-prize"><strong>{tr("NEAR testnet")}. </strong>{q.nearPrize.available
       ? tr("First confirmed completion: {0} NEAR, converted to QGOLD at settlement.", { 0: q.nearPrize.amountNear })
       : tr("The shared NEAR prize was already earned. Personal XP is still available.")}</p>}
@@ -52,7 +60,6 @@ export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, on
       {q.gold_u > 0 && <span>{q.claimant ? tr("GOLD already collected") : `${gold(q.gold_u)} GOLD`}</span>}
     </div>
     <ul className="quest-brief-facts" aria-label={tr("Activity overview")}>
-      <li><Clock aria-hidden="true" /><span>{tr("Time varies")}</span></li>
       <li><Flag aria-hidden="true" /><span>{steps === 1 ? tr("1 stop") : tr("{0} stops", { 0: steps })}</span></li>
       <li><Footprints aria-hidden="true" /><span>{distanceLabel(distance)} · {tr("Straight-line distance")}</span></li>
       {typeof minimum === "number" && minimum > 0 && <li><Footprints aria-hidden="true" /><span>{tr("At least {0} m between stops", { 0: Math.round(minimum) })}</span></li>}
@@ -82,7 +89,6 @@ export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, on
       {q.activity?.safety.instruction && <p>{q.activity.safety.instruction}</p>}
       {q.gold_u > 0 && <p>{tr("The GOLD prize goes to the first explorer to finish. Your XP is always yours.")}</p>}
       {q.clue?.result && <LandmarkClue clue={q.clue} choice={q.clue.result.choice} disabled onChoose={() => {}} />}
-      {children}
     </details>
   </section>;
 }

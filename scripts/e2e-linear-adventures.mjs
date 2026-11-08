@@ -80,8 +80,8 @@ try {
     const details = page.locator(".quest-detail"); await details.waitFor();
     const expectedTitle = quest.title === "Path chest" ? t("A chest along the path") : quest.title;
     if (!(await details.innerText()).includes(expectedTitle)) {
-      await page.locator(phase === "before" ? ".zone-activities > summary" : ".quest-brief-more > summary").click();
-      await page.locator(".walk-picker button").filter({ has: page.locator('[data-object-kind="chest"]') }).first().click();
+      if (phase === "before") await page.locator(".zone-activities > summary").click();
+      await page.locator(phase === "before" ? ".walk-picker button" : ".activity-picker button").filter({ has: page.locator('[data-object-kind="chest"]') }).first().click();
     }
     await details.getByRole("heading", { name: expectedTitle, exact: true }).waitFor();
     const scans = [];

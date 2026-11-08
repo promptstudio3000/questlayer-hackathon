@@ -79,9 +79,11 @@
 .zone-presence-uncertain > button, .zone-presence-closed > button, .zone-presence-locked > button { border-color: var(--control-border); box-shadow: none; }
 .app-shell.map-full .zone-presence, .app-shell.sheet-open .zone-presence { display: none; }
 @media (max-width: 600px) {
-  .app-shell .nav-rail { left: 12px; right: 12px; bottom: calc(80px + env(safe-area-inset-bottom)); }
-  .app-shell .nav-rail .rail-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .app-shell .demo-pad { left: 50%; right: auto; transform: translateX(-50%); }
+  .app-shell .nav-rail { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .app-shell .nav-rail .rail-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 4px; border: 1px solid var(--control-border); border-radius: 16px; background: var(--surface); }
+  .app-shell .rail-links button { flex-direction: column; gap: 2px; min-width: 0; padding: 4px; border: 0; box-shadow: none; background: transparent; }
+  .app-shell .rail-links button.active { color: var(--action); background: var(--surface-soft); }
+  .app-shell .demo-pad, .app-shell .demo-pad-open { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); }
   .app-shell .main-panel.explore-panel.sheet-compact, .nearby-open { bottom: calc(150px + env(safe-area-inset-bottom)); }
 }
 @media (min-width: 601px) and (max-width: 1100px) and (min-height: 501px) {
@@ -138,3 +140,5 @@ body:has(.app-shell.map-full) .pwa-install {
 
 .app-shell .sheet-compact .compact-selection > span { min-width: 0; flex: 1; }
 .app-shell .sheet-compact .compact-selection strong, .app-shell .sheet-compact .compact-selection small { display: block; }
+.app-shell[data-screen] .sheet-compact .compact-selection { text-align: start; }
+.app-shell[data-screen] .sheet-compact .compact-selection strong { font-size: 16px; }

@@ -2500,7 +2500,6 @@
  "XP is yours.": "XP لك.",
  "XP only · all Auras found": "XP فقط · وُجدت كل الهالات",
  "XP to level": "XP للمستوى",
- "XP visit": "زيارة XP",
  "XP ·": "XP ·",
  "XP.": "XP.",
  "YOU": "أنت",
@@ -2946,7 +2945,6 @@
  "Not open now": "غير مفتوح الآن",
  "Open vault": "فتح الخزنة",
  "Ready to start": "جاهز للبدء",
- "Time varies": "المدة متفاوتة",
  "Your tasks": "مهامك",
  "{0} activities here": "{0} أنشطة هنا",
  "{0} stops": "{0} محطات",
@@ -2962,5 +2960,9 @@
  "The shared NEAR prize was already earned. Personal XP is still available.": "سبق الحصول على جائزة NEAR المشتركة. ما زالت XP الشخصية متاحة.",
  "Converted to QGOLD": "تم التحويل إلى QGOLD",
  "Fractional NEAR remains credited": "يبقى كسر NEAR رصيدًا محفوظًا",
- "Awaiting QGOLD settlement": "بانتظار التسوية بعملة QGOLD"
+ "Awaiting QGOLD settlement": "بانتظار التسوية بعملة QGOLD",
+ "Landmark clue": "لغز المعلم",
+ "Place hunt": "البحث عن أماكن",
+ "Return": "العودة",
+ "There and back": "ذهاب وعودة"
 }

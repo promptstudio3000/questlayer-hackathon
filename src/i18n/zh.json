@@ -2500,7 +2500,6 @@
  "XP is yours.": "XP 归你了。",
  "XP only · all Auras found": "仅 XP · 已找到全部 Aura",
  "XP to level": "XP 升至等级",
- "XP visit": "XP 到访",
  "XP ·": "XP ·",
  "XP.": "XP。",
  "YOU": "你",
@@ -2946,7 +2945,6 @@
  "Not open now": "当前未开放",
  "Open vault": "打开金库",
  "Ready to start": "可以开始了",
- "Time varies": "时长因情况而异",
  "Your tasks": "你的任务",
  "{0} activities here": "此处有{0}项活动",
  "{0} stops": "{0}个站点",
@@ -2962,5 +2960,9 @@
  "The shared NEAR prize was already earned. Personal XP is still available.": "共享 NEAR 奖励已被领取。仍可获得个人 XP。",
  "Converted to QGOLD": "已转换为 QGOLD",
  "Fractional NEAR remains credited": "NEAR 零头仍保留在余额中",
- "Awaiting QGOLD settlement": "等待 QGOLD 结算"
+ "Awaiting QGOLD settlement": "等待 QGOLD 结算",
+ "Landmark clue": "地标线索",
+ "Place hunt": "地点寻访",
+ "Return": "返回",
+ "There and back": "往返探索"
 }

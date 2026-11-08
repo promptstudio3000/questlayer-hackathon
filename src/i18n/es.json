@@ -2500,7 +2500,6 @@
  "XP is yours.": "La XP es tuya.",
  "XP only · all Auras found": "Solo XP · todas las Auras encontradas",
  "XP to level": "XP para subir de nivel",
- "XP visit": "Visita de XP",
  "XP ·": "XP ·",
  "XP.": "XP.",
  "YOU": "TÚ",
@@ -2946,7 +2945,6 @@
  "Not open now": "Ahora está cerrado",
  "Open vault": "Abrir la bóveda",
  "Ready to start": "Todo listo para empezar",
- "Time varies": "La duración varía",
  "Your tasks": "Tus tareas",
  "{0} activities here": "{0} actividades aquí",
  "{0} stops": "{0} paradas",
@@ -2962,5 +2960,9 @@
  "The shared NEAR prize was already earned. Personal XP is still available.": "El premio NEAR compartido ya se ha ganado. Los XP personales siguen disponibles.",
  "Converted to QGOLD": "Convertido a QGOLD",
  "Fractional NEAR remains credited": "El resto de NEAR queda abonado",
- "Awaiting QGOLD settlement": "Pendiente de liquidación en QGOLD"
+ "Awaiting QGOLD settlement": "Pendiente de liquidación en QGOLD",
+ "Landmark clue": "Pista del lugar",
+ "Place hunt": "Búsqueda de lugares",
+ "Return": "Volver",
+ "There and back": "Ida y vuelta"
 }

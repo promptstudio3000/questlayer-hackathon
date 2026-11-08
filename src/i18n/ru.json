@@ -2500,7 +2500,6 @@
  "XP is yours.": "XP твой.",
  "XP only · all Auras found": "Только XP · все Ауры найдены",
  "XP to level": "XP до уровня",
- "XP visit": "XP за посещение",
  "XP ·": "XP ·",
  "XP.": "XP.",
  "YOU": "ТЫ",
@@ -2946,7 +2945,6 @@
  "Not open now": "Сейчас закрыто",
  "Open vault": "Открыть хранилище",
  "Ready to start": "Можно начинать",
- "Time varies": "Время зависит от условий",
  "Your tasks": "Твои задания",
  "{0} activities here": "Здесь доступно заданий: {0}",
  "{0} stops": "Остановок: {0}",
@@ -2962,5 +2960,9 @@
  "The shared NEAR prize was already earned. Personal XP is still available.": "Общая награда NEAR уже получена. Личные XP по-прежнему доступны.",
  "Converted to QGOLD": "Переведено в QGOLD",
  "Fractional NEAR remains credited": "Остаток NEAR сохранён на счёте",
- "Awaiting QGOLD settlement": "Ожидает выплаты в QGOLD"
+ "Awaiting QGOLD settlement": "Ожидает выплаты в QGOLD",
+ "Landmark clue": "Подсказка у памятника",
+ "Place hunt": "Поиск мест",
+ "Return": "Возврат",
+ "There and back": "Туда и обратно"
 }

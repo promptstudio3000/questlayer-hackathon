@@ -194,7 +194,7 @@ async function runLanguage(browser, url, lang) {
   await page.waitForTimeout(2500);
   await check(page, lang, dir, "map", report);
   const destinations = [
-    ["inventory", ".rail-links button:first-child"],
+    ["inventory", ".rail-links button:nth-child(2)"],
     ["community", ".rail-links button:last-child"],
     ["profile", ".topbar .profile-pill"],
   ];

@@ -2500,7 +2500,6 @@
  "XP is yours.": "XP 獲得！",
  "XP only · all Auras found": "XPのみ · Auraはすべて発見済み",
  "XP to level": "XP でレベル",
- "XP visit": "XP 訪問",
  "XP ·": "XP ·",
  "XP.": "XP。",
  "YOU": "あなた",
@@ -2946,7 +2945,6 @@
  "Not open now": "現在は閉じています",
  "Open vault": "金庫を開く",
  "Ready to start": "開始できます",
- "Time varies": "所要時間は状況によります",
  "Your tasks": "あなたのタスク",
  "{0} activities here": "ここには{0}件のアクティビティ",
  "{0} stops": "{0}地点",
@@ -2962,5 +2960,9 @@
  "The shared NEAR prize was already earned. Personal XP is still available.": "共有NEAR報酬はすでに獲得されています。個人XPは引き続き獲得できます。",
  "Converted to QGOLD": "QGOLDに換算済み",
  "Fractional NEAR remains credited": "NEARの端数は残高に保持されます",
- "Awaiting QGOLD settlement": "QGOLDの精算待ち"
+ "Awaiting QGOLD settlement": "QGOLDの精算待ち",
+ "Landmark clue": "名所の手がかり",
+ "Place hunt": "場所探し",
+ "Return": "戻る",
+ "There and back": "往復の冒険"
 }

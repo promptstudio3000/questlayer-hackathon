@@ -2500,7 +2500,6 @@
  "XP is yours.": "XP तुम्हारा है।",
  "XP only · all Auras found": "सिर्फ़ XP · सारे ऑरा मिल गए",
  "XP to level": "लेवल तक XP",
- "XP visit": "XP विज़िट",
  "XP ·": "XP ·",
  "XP.": "XP।",
  "YOU": "तुम",
@@ -2946,7 +2945,6 @@
  "Not open now": "अभी खुला नहीं है",
  "Open vault": "तिजोरी खोलो",
  "Ready to start": "शुरू करने के लिए तैयार",
- "Time varies": "समय अलग-अलग हो सकता है",
  "Your tasks": "तुम्हारे काम",
  "{0} activities here": "यहाँ {0} गतिविधियाँ",
  "{0} stops": "{0} पड़ाव",
@@ -2962,5 +2960,9 @@
  "The shared NEAR prize was already earned. Personal XP is still available.": "साझा NEAR पुरस्कार पहले ही अर्जित किया जा चुका है। व्यक्तिगत XP अब भी उपलब्ध है।",
  "Converted to QGOLD": "QGOLD में बदल दिया गया",
  "Fractional NEAR remains credited": "छोटा NEAR शेष जमा रहता है",
- "Awaiting QGOLD settlement": "QGOLD निपटान की प्रतीक्षा में"
+ "Awaiting QGOLD settlement": "QGOLD निपटान की प्रतीक्षा में",
+ "Landmark clue": "स्थल का सुराग",
+ "Place hunt": "जगहों की खोज",
+ "Return": "वापसी",
+ "There and back": "जाना और लौटना"
 }
