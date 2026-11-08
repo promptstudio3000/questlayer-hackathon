@@ -417,6 +417,7 @@ async function runDevice(name, server) {
     await scan(page, "welcome");
     await page.getByPlaceholder("Your explorer name").fill(explorer);
     await page.getByRole("button", { name: "Start exploring" }).click();
+    await page.getByRole("button", { name: "Let's explore", exact: true }).click();
     await waitForStep(page, STEP_TITLES.find);
     assert.match(await page.locator(".first-session-count").innerText(), /1 of 6/);
     assert.equal(
@@ -424,12 +425,9 @@ async function runDevice(name, server) {
       "reduce",
       "system reduced motion reaches the page",
     );
-    // The live hint comes from the grounded guide.
-    await page.waitForFunction(
-      () => /m away/.test(document.querySelector(".first-session-hint")?.textContent || ""),
-      null,
-      { timeout: 10_000 },
-    );
+    // Deterministic teaching is visible before moving and requires no AI reply.
+    await page.locator(".first-session-hint").waitFor();
+    assert.match(await page.locator(".first-session-hint").innerText(), /Use the pad|sparkling find/);
     await capture(page, "coach-nearest-find");
     await assertNoChainWords(page, "find step");
     await scan(page, "map-coach");
@@ -491,13 +489,17 @@ async function runDevice(name, server) {
 
     console.log("5. Aura");
     await page.locator(".first-session-action").click();
-    await waitForStep(page, STEP_TITLES.secure);
+    await page.locator(".first-session").waitFor({ state: "hidden" });
     await assertNoChainWords(page, "aura step");
     await quietToast(page);
-    await capture(page, "coach-secure-share");
+    await capture(page, "first-adventure-complete");
 
-    console.log("6. Secure or share");
-    await page.locator(".first-session-action").click();
+    console.log("6. Optional secure or share from the durable receipt");
+    await page.getByRole("button", { name: "Inventory", exact: true }).click();
+    await page.getByRole("button", { name: "History", exact: true }).click();
+    await page.getByRole("button", { name: "Adventure results", exact: true }).click();
+    await page.locator(".adventure-result-list button").first().click();
+    await page.locator(".reward-more > summary").click();
     const dialog = page.getByRole("dialog");
     await dialog.waitFor();
     const share = dialog.getByRole("button", { name: /Share your Aura/ });
@@ -620,6 +622,7 @@ async function runDevice(name, server) {
     await cardPage.goto(server.url);
     await cardPage.getByPlaceholder("Your explorer name").fill(`${TAG}Card ${name}`);
     await cardPage.getByRole("button", { name: "Start exploring" }).click();
+    await cardPage.getByRole("button", { name: "Let's explore", exact: true }).click();
     await cardPage.getByRole("button", { name: "Hide objective", exact: true }).click();
     await cardPage.clock.runFor(50_000);
     const card = cardPage.locator(".pwa-install");

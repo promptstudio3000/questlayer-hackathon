@@ -1,4 +1,7 @@
 import { ArrowRight } from "./dir-icons";
+import { ActivityHelp } from "./ActivityHelp";
+import { useLearning } from "./useLearning";
+import { helpText } from "./activity-help";
 import { tr } from "./i18n";
 import { ActorPortrait } from "./ActorPortrait";
 import { useFormDraft } from "./useFormDraft";
@@ -74,6 +77,7 @@ function Portrait({ model, label, emote }: { model: string; label: string; emote
 
 export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onClose, onQuest }: { onQuest?: (questId: string) => void; playerId: string; draftRealm: string; actorId: string; encounter: ActorEncounter; onClose: () => void }) {
   const t = npcStrings();
+  const learning = useLearning(playerId);
   const [reply, setReply] = useState<NpcReply | null>(null);
   const draft = useFormDraft({playerId, form:`npc-message:${actorId}`, realm:draftRealm, fields:{message:300}, initial:{message:""}});
   const message = draft.values.message;
@@ -153,6 +157,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
         return;
       }
       await npcAccept(actorId, token, offer.id);
+      learning.acknowledge("npc");
       setNotice(t.accepted(offer.label));
       setSelectedOffer(offer);
       await refresh();
@@ -230,25 +235,24 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
           {flow === "accepted" ? notice : reply ? reply.say : t.thinking}
         </p>
 
-        {reply && flow === "greeting" && <button className="primary-button npc-continue" disabled={busy} onClick={() => {
-          if (ready.length || (active.length && !questOffers.length)) openServices("tasks");
-          else if (questOffers.length) setFlow("choices");
-          else openServices(vault ? "vault" : "talk");
-        }}>{ready.length || (active.length && !questOffers.length) ? tr("Your tasks") : questOffers.length ? tr("Continue") : vault ? tr("Open vault") : tr("Continue")}<ArrowRight aria-hidden="true" /></button>}
-        {flow === "choices" && <section className="npc-story-step" aria-label={tr("Choose a quest")}>
+        {reply && flow === "greeting" && (ready.length > 0 || active.length > 0) && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices("tasks")}>{tr("Your tasks")}<ArrowRight aria-hidden="true" /></button>}
+        {reply && flow === "greeting" && !questOffers.length && !active.length && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices(vault ? "vault" : "talk")}>{vault ? tr("Open vault") : tr("Continue")}<ArrowRight aria-hidden="true" /></button>}
+        {reply && (flow === "greeting" || flow === "choices") && questOffers.length > 0 && <section className="npc-story-step" aria-label={tr("Choose a quest")}>
           <h3 tabIndex={-1}>{tr("Choose a quest")}</h3>
-          {questOffers.slice(0, 3).map((offer) => <button key={offer.id} className="npc-choice" onClick={() => { setSelectedOffer(offer); setFlow("offer"); }}>
+          {questOffers.slice(0, 2).map((offer) => <button key={offer.id} className="npc-choice" disabled={busy} onClick={() => { setSelectedOffer(offer); setFlow("offer"); }}>
             <span>{offer.label}</span><small>{offerMeta(offer)}</small><ArrowRight aria-hidden="true" />
           </button>)}
-          <button className="text-button" onClick={() => setFlow("greeting")}>{tr("Back")}</button>
         </section>}
         {flow === "offer" && selectedOffer && <section className="npc-story-step npc-offer-brief" aria-label={selectedOffer.label}>
           <h3 tabIndex={-1}>{selectedOffer.label}</h3>
           <p className="npc-offer-reward"><Sparkle aria-hidden="true" />{offerMeta(selectedOffer)}</p>
+          {learning.visible("npc") && <p className="learning-hint">{helpText("npc")}</p>}
           {offerSteps.length > 0 && <ol>{offerSteps.map((step, i) => <li key={i}>{step.title}</li>)}</ol>}
           <button className="primary-button" disabled={busy} onClick={() => accept(selectedOffer)}>{busy ? tr("Saving…") : tr("Start quest")}<ArrowRight aria-hidden="true" /></button>
           <button className="text-button" disabled={busy} onClick={() => setFlow("choices")}>{tr("Back")}</button>
         </section>}
+        {flow === "offer" && <ActivityHelp topic="npc" onAcknowledge={() => learning.acknowledge("npc")} />}
+        {flow === "accepted" && nextAcceptedStep && <p className="npc-next-step">{nextAcceptedStep.title}</p>}
         {flow === "accepted" && <button className="primary-button npc-continue" onClick={() => { onClose(); if (nextAcceptedStep) onQuest?.(nextAcceptedStep.questId); }}>{tr("Back to map")}<ArrowRight aria-hidden="true" /></button>}
         {notice && flow !== "accepted" && <p className="npc-notice" role="status">{notice}</p>}
         {error && <div className="npc-error" role="alert"><p>{error}</p>

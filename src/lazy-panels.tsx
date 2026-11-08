@@ -50,6 +50,7 @@ export function preloadPanels() {
 }
 
 const adventureResults = () => import("./AdventureResults");
+export const GameIntro = lazyNamed(() => import("./GameIntro"), "GameIntro", true);
 export const QuestBrief = lazyNamed(() => import("./QuestBrief"), "QuestBrief");
 export const WearableMoment = lazyNamed(() => import("./WearableMoment"), "WearableMoment");
 export const AdventureResultDialog = lazyNamed(

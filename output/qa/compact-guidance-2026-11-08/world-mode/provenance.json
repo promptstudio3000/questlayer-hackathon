@@ -1,0 +1,6 @@
+{
+  "before": "Immediate decoded world response fixture stayed loading; remote WebKit run also retained the loading state",
+  "remoteRun": "https://github.com/promptstudio3000/questlayer-hackathon/actions/runs/42436307257",
+  "after": "chromium.json and webkit.json; real local API world payload, synthetic GPS and response timing",
+  "geographyAndEligibility": "unchanged"
+}

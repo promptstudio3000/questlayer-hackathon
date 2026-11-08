@@ -5,7 +5,7 @@ import { prefersReducedMotion } from "./feedback";
 // from the server; this file only shows cues and records the player's inputs.
 // Auras and items are not sent: power is level plus skill.
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Lightning, Shield, Sparkle, Trophy, Timer } from "@phosphor-icons/react";
+import { Lightning, Shield, Sparkle, Trophy, Timer, Question } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
 import { Dialog } from "./Dialog";
 import {
@@ -30,6 +30,8 @@ import {
   type Stance,
   type TraceChallenge,
 } from "./monster-challenge";
+import { ChallengeExample } from "./ChallengeExample";
+import { useLearning } from "./useLearning";
 import "./monster-challenge.css";
 import { tr } from "./i18n";
 
@@ -40,6 +42,7 @@ type Props = {
   encounter: string;
   /** The format already picked in the encounter sheet: it starts at once. */
   format?: ChallengeFormat | null;
+  playerId?: string;
   onClose: () => void;
   onResult?: (result: ChallengeResult) => void;
   /** Point the map at a quest (the guarded chest after a guardian win). */
@@ -48,7 +51,12 @@ type Props = {
 
 const path = (monster: MonsterRef) => `/actors/${encodeURIComponent(monster.id)}/challenge`;
 
-export function MonsterChallenge({ actor: monster, encounter, format: picked = null, onClose, onResult, onQuest }: Props) {
+export function MonsterChallenge({ actor: monster, encounter, format: picked = null, playerId, onClose, onResult, onQuest }: Props) {
+  const learning = useLearning(playerId);
+  const [preview, setPreview] = useState<ChallengeFormat | null>(null);
+  const starting = useRef(false);
+  const formatTrigger = useRef<{ format: ChallengeFormat; help: boolean } | null>(null);
+  const menuHost = useRef<HTMLDivElement>(null);
   const [menu, setMenu] = useState<ChallengeMenu | null>(null);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [result, setResult] = useState<ChallengeResult | null>(null);
@@ -72,20 +80,30 @@ export function MonsterChallenge({ actor: monster, encounter, format: picked = n
   useEffect(() => {
     if (!menu || !picked || autoStarted.current) return;
     autoStarted.current = true;
-    if (menu.status.state === "active" && menu.formats.includes(picked)) void start(picked);
+    // An unfamiliar format still gets its example first; Start challenge then
+    // sends the real attempt, so the format menu is never shown twice.
+    if (menu.status.state === "active" && menu.formats.includes(picked)) {
+      if (learning.visible(picked)) { formatTrigger.current = null; setPreview(picked); }
+      else void start(picked);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menu, picked]);
-  const waitingForPick = !!picked && !challenge && !error && menu?.status.state === "active" && menu.formats.includes(picked);
+  const waitingForPick = !!picked && !challenge && !preview && !error && menu?.status.state === "active" && menu.formats.includes(picked);
 
   async function start(format: ChallengeFormat) {
+    if (starting.current) return;
+    starting.current = true;
     setBusy(true);
     setError(null);
     try {
       const out = await api<{ challenge: Challenge }>(path(monster), { encounter, format });
       setChallenge(out.challenge);
+      setPreview(null);
+      learning.acknowledge(format);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : tr("Could not start the challenge."));
     } finally {
+      starting.current = false;
       setBusy(false);
     }
   }
@@ -113,9 +131,23 @@ export function MonsterChallenge({ actor: monster, encounter, format: picked = n
     onResult?.(out);
   }
 
+  function closePreview() {
+    if (preview) learning.acknowledge(preview);
+    // The example of a format picked in the encounter sheet goes back there.
+    if (!formatTrigger.current) { onClose(); return; }
+    setPreview(null);
+    requestAnimationFrame(() => {
+      const trigger = formatTrigger.current;
+      if (trigger) menuHost.current?.querySelector<HTMLButtonElement>(`[data-challenge-format="${trigger.format}"]${trigger.help ? ".format-help" : ":not(.format-help)"}`)?.focus();
+    });
+  }
+  function leave() {
+    if (preview) learning.acknowledge(preview);
+    onClose();
+  }
   return (
-    <Dialog presentation="encounter" label={tr("Challenge {0}", { 0: monster.name })} onClose={onClose}>
-      <div className={`monster-challenge monster-${monster.archetype}`}>
+    <Dialog presentation="encounter" label={tr("Challenge {0}", { 0: monster.name })} onClose={leave}>
+      <div ref={menuHost} className={`monster-challenge monster-${monster.archetype}`}>
         <header className="monster-head">
           <div className="monster-portrait"><ActorPortrait model={monster.model} label={monster.name} /></div>
           <div>
@@ -137,15 +169,23 @@ export function MonsterChallenge({ actor: monster, encounter, format: picked = n
           <ResultView result={result} onClose={onClose} onChest={onQuest ? (id) => { onQuest(id); onClose(); } : undefined} />
         ) : challenge ? (
           <Play challenge={challenge} busy={busy} submit={submit} monster={monster} onDone={done} onError={setError} />
+) : preview ? (
+          <>
+            <ChallengeExample key={preview} format={preview} renderPlay={(c, submitExample) => <Play challenge={c} busy={false} submit={submitExample} monster={monster} onDone={() => {}} onError={() => {}} />} />
+            <button className="monster-primary" disabled={busy} onClick={() => void start(preview)}>{tr("Start challenge")}</button>
+            <button className="monster-secondary" disabled={busy} onClick={closePreview}>{tr("Back")}</button>
+          </>
         ) : waitingForPick ? (
           <p aria-live="polite">{tr("The monster is sizing you up…")}</p>
         ) : menu ? (
-          <Menu menu={menu} busy={busy} start={start} />
+          <Menu menu={menu} busy={busy}
+            start={(format) => { formatTrigger.current = { format, help: false }; if (learning.visible(format)) setPreview(format); else void start(format); }}
+            help={(format) => { formatTrigger.current = { format, help: true }; setPreview(format); }} />
         ) : (
           !error && <p aria-live="polite">{tr("The monster is sizing you up…")}</p>
         )}
-        {!result && (
-          <button type="button" className="monster-secondary" onClick={onClose}>
+        {!result && !preview && (
+          <button type="button" className="monster-secondary" onClick={leave}>
             {challenge ? tr("Run away (counts as your try)") : tr("Leave it")}
           </button>
         )}
@@ -154,7 +194,7 @@ export function MonsterChallenge({ actor: monster, encounter, format: picked = n
   );
 }
 
-function Menu({ menu, busy, start }: { menu: ChallengeMenu; busy: boolean; start: (f: ChallengeFormat) => void }) {
+function Menu({ menu, busy, start, help }: { menu: ChallengeMenu; busy: boolean; start: (f: ChallengeFormat, trigger: HTMLButtonElement) => void; help: (f: ChallengeFormat, trigger: HTMLButtonElement) => void }) {
   if (menu.status.state === "defeated") return <p>{tr("You already beat this monster today. It will be back tomorrow.")}</p>;
   if (menu.status.state === "cooldown") return <p>{retryLabel(menu.status.retryAt)}</p>;
   return (
@@ -170,10 +210,11 @@ function Menu({ menu, busy, start }: { menu: ChallengeMenu; busy: boolean; start
       <ul className="monster-formats">
         {menu.formats.map((f) => (
           <li key={f}>
-            <button type="button" disabled={busy} onClick={() => start(f)}>
+            <button type="button" data-challenge-format={f} disabled={busy} onClick={event => start(f, event.currentTarget)}>
               <strong>{FORMAT_COPY[f].label}</strong>
               <span>{FORMAT_COPY[f].hint}</span>
             </button>
+            <button className="format-help" data-challenge-format={f} disabled={busy} aria-label={tr("How this works: {0}", { 0: FORMAT_COPY[f].label })} onClick={event => help(f, event.currentTarget)}><Question size={22} aria-hidden="true" /></button>
           </li>
         ))}
       </ul>

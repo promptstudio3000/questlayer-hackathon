@@ -6,7 +6,8 @@
       "accepted": "accepted",
       "draftRestored": true,
       "keyboardViewport": true,
-      "enlargedText": true
+      "enlargedText": true,
+      "nextQuestFocused": true
     },
     {
       "kind": "monster",

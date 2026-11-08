@@ -413,6 +413,7 @@ async function newPlayer(browser, device, name, spot, { account = false, cookie 
   if (!cookie) {
     await page.getByPlaceholder("Your explorer name").fill(name);
     await page.getByRole("button", { name: "Start exploring" }).click();
+    await page.getByRole("button", { name: "Let's explore", exact: true }).click();
   }
   await page.locator(".first-session, .main-panel").first().waitFor({ timeout: 20_000 });
   let world = null;

@@ -1,0 +1,57 @@
+/* Learning stays inside existing native dialogs and objective surfaces. */
+.game-dialog:has(.game-intro) { width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 20px; }
+.game-intro { display: grid; gap: 16px; text-align: start; }
+.game-intro-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: -20px; z-index: 1; background: var(--surface); }
+.game-intro-brand { display: inline-flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 600; }
+.game-intro-brand .ghost-art { width: 28px; height: 34px; }
+.game-intro :is(h1,h2,p) { margin: 0; }
+.game-intro h1 { font-size: 28px; line-height: 1.2; margin-bottom: 8px; }
+.game-intro h2 { font-size: 20px; margin-bottom: 4px; }
+.game-intro p { font-size: 16px; line-height: 1.45; }
+.game-intro-principles { display: grid; gap: 12px; }
+.game-intro-principle { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 16px; min-height: 96px; }
+.intro-scene { position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; height: 96px; min-width: 0; background: var(--surface-soft); border-radius: 12px; overflow: hidden; }
+.intro-scene .ghost-art { width: 40px; height: 50px; flex: none; }
+.intro-scene > img { width: 48px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+.intro-scene-walk .ghost-art { animation: intro-approach 900ms ease-out 1; }
+.intro-scene-wear .aura-art { transform: scale(.7); flex: none; margin: 0; }
+.game-intro .game-intro-note, .game-intro .game-intro-foot { font-size: 14px; line-height: 1.45; color: var(--ink-secondary); }
+.game-intro .primary-button { width: 100%; justify-content: center; gap: 12px; }
+.game-intro .text-button { min-width: 48px; min-height: 48px; }
+.activity-help { text-align: start; font-size: 16px; }
+.activity-help > summary { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; color: var(--action); cursor: pointer; }
+.activity-help > summary::-webkit-details-marker { display: none; }
+.activity-help p { font-size: 16px; line-height: 1.45; }
+.activity-help > .text-button { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; }
+.learning-hint { display: block; font-size: 14px; line-height: 1.4; color: var(--ink-secondary); }
+.learning-hint[hidden] { display: none; }
+@keyframes intro-approach { from { transform: translateX(-16px); } to { transform: translateX(0); } }
+@media (max-width: 390px) {
+  .game-intro { gap: 12px; }
+  .game-intro-principle { grid-template-columns: 80px minmax(0,1fr); gap: 12px; min-height: 88px; }
+  .intro-scene { height: 88px; }
+  .game-intro h1 { font-size: 26px; }
+}
+@media (min-width: 600px) and (max-height: 500px) {
+  .game-dialog:has(.game-intro) { width: min(780px, calc(100vw - 24px)); }
+  .game-intro-principles { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .game-intro-principle { grid-template-columns: 52px minmax(0,1fr); gap: 10px; }
+  .intro-scene { height: 64px; }
+  .intro-scene-meet .ghost-art { display: none; }
+  .intro-scene-walk .ghost-art { width: 28px; }
+  .intro-scene-walk .game-object-art { position: absolute; opacity: .3; }
+  .game-dialog-map .quest-brief .activity-help { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .intro-scene-walk .ghost-art { animation: none; } }
+
+.challenge-example { display: grid; gap: 12px; min-width: 0; text-align: start; }
+.challenge-example :is(h3,p) { margin: 0; }
+.challenge-example h3 { font-size: 22px; line-height: 1.25; }
+.challenge-example p { font-size: 16px; line-height: 1.45; }
+.challenge-example .example-disclosure { font-size: 14px; color: var(--ink-secondary); }
+.example-format-label { display: grid; gap: 8px; font-size: 16px; margin-block: 12px; }
+.example-format-label select { width: 100%; min-height: 48px; font: inherit; }
+.monster-formats > li { display: grid; grid-template-columns: minmax(0, 1fr) 48px; gap: 8px; }
+.monster-formats .format-help { display: grid; place-items: center; padding: 0; text-align: center; }
+.monster-challenge .activity-help, .npc-linear .activity-help { color: var(--ink); }
+.reward-cosmetic-note { font-size: 14px; color: var(--ink-secondary); }

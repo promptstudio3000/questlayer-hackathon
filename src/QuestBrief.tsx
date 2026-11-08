@@ -9,15 +9,20 @@ import LandmarkClue from "./LandmarkClue";
 import { tr } from "./i18n";
 import { zoneInteriorMargin } from "./zone-presence";
 import { questTarget, remainingQuestStops } from "./quest-route";
+import { activityKind } from "./activity-view";
+import { ActivityHelp } from "./ActivityHelp";
+import { questHelpTopic } from "./activity-help";
+import { useLearning } from "./useLearning";
 import type { Fix, Point, Quest, Zone } from "./types";
 import "./quest-brief.css";
 
 /** Presentation only. Start focuses an activity; only onComplete can request its existing claim. */
-export function QuestBrief({ compact = false, quest: q, zone, position, now, tier, arena, fix, online, distance, busy, started, choice, onChoose, onStart, onPoint, onLocate, onComplete, onMap, children }: {
-  compact?: boolean; quest: Quest; zone: Zone; now: number; tier: number; arena: boolean; distance: number; busy: boolean;
+export function QuestBrief({ compact = false, playerId, quest: q, zone, position, now, tier, arena, fix, online, distance, busy, started, choice, onChoose, onStart, onPoint, onLocate, onComplete, onMap, children }: {
+  compact?: boolean; playerId?: string; quest: Quest; zone: Zone; now: number; tier: number; arena: boolean; distance: number; busy: boolean;
   started: boolean; position: Point; fix: Fix | null; online: boolean; choice?: string; onChoose: (choice: string) => void;
   onStart: () => void; onPoint: () => void; onLocate: () => void; onComplete: () => void; onMap: () => void; children?: ReactNode;
 }) {
+  const learning = useLearning(playerId);
   const heading = useRef<HTMLHeadingElement>(null);
   const wasStarted = useRef(started);
   useEffect(() => {
@@ -42,6 +47,12 @@ export function QuestBrief({ compact = false, quest: q, zone, position, now, tie
     <p className={`quest-brief-status${q.kind === "route" && !q.completed && open && online ? " quest-brief-progress" : ""}`}>{q.kind === "route" && !q.completed && open && online ? <><strong>{q.visitedStops ? tr("Any order") : tr("Next stop")} · {tr("Stop {0} of {1}", {0: targetNumber, 1: steps})}</strong><br />{tr("Completed")} · {q.checkpoint || 0}/{steps}</> : status}</p>
     <h2 className={compact ? "sr-only" : undefined} ref={heading} tabIndex={-1}>{title}</h2>
     <p className="quest-brief-description activity-objective">{q.activity?.objective || q.description}</p>
+    {q.kind === "route" && <ol className="activity-step-diagram" aria-label={q.visitedStops ? tr("Any order") : tr("Activity overview")}>
+      {Array.from({ length: steps }, (_, i) => <li key={i} data-done={(q.visitedStops ? q.visitedStops.includes(i) : i < (q.checkpoint || 0)) || undefined}>
+        <span>{activityKind(q) === "return" && i === steps - 1 ? 1 : i + 1}</span>
+        {activityKind(q) === "return" && i === steps - 1 && <small>{tr("Return")}</small>}
+      </li>)}
+    </ol>}
     {zone.operatorPause && <p role="status">{zone.operatorPause.reason}</p>}
     {q.nearPrize && <p className="quest-brief-requirement"><strong>{tr("NEAR testnet")}. </strong>{q.nearPrize.available ? tr("First confirmed completion: {0} NEAR, converted to QGOLD at settlement.", {0:q.nearPrize.amountNear}) : tr("The shared NEAR prize was already earned. Personal XP is still available.")}</p>}
 
@@ -72,6 +83,7 @@ export function QuestBrief({ compact = false, quest: q, zone, position, now, tie
         {busy ? tr("Checking visit…") : q.kind === "route" ? (q.checkpoint || 0) >= steps ? tr("Finish walk") : tr("Confirm stop {0}", { 0: targetNumber }) : q.kind === "chest" && q.itemAvailable === true ? tr("Open chest") : q.activity?.actionLabel || tr("Confirm visit")}<ArrowRight aria-hidden="true" />
       </button>}
     {q.clue && activity && !far && !outside && !choice && <p className="quest-brief-requirement">{tr("Choose an answer to continue.")}</p>}
+    <ActivityHelp topic={questHelpTopic(q)} onAcknowledge={() => learning.acknowledge(questHelpTopic(q))} />
     <details className="quest-brief-more">
       <summary>{tr("Learn more")}</summary>
       <p>{tr("Straight-line distance")}: {distanceLabel(distance)} · {q.opens_at > now ? tr("opens in {0}", { 0: remaining(q.opens_at) }) : q.closes_at <= now ? tr("Closed for today") : tr("closes in {0}", { 0: remaining(q.closes_at) })}</p>
