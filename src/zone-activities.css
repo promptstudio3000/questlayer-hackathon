@@ -225,3 +225,12 @@
     height: auto;
   }
 }
+/* Desktop: the place panel opens inside the map dialog; fill the dialog instead
+   of keeping the 420 px side-sheet width with an empty band beside it. */
+@media (min-width: 901px) {
+  .game-dialog.game-dialog-map:has(.zone-explore-panel) { width: min(520px, calc(100vw - 32px)); }
+  .app-shell .game-dialog-map .main-panel.explore-panel { width: auto; }
+}
+/* The heading takes focus programmatically for screen readers (tabIndex -1);
+   a focus ring there looked like an editable search field. */
+.main-panel .panel-heading h1[tabindex="-1"]:focus { outline: none; }

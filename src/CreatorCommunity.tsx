@@ -1020,7 +1020,9 @@ function Back({
 }
 function Empty({ children }: { children: ReactNode }) {
   return (
-    <EmptyState art="place" title={tr("Nearby discoveries")} status>{children}</EmptyState>
+    // One quiet line per empty list: several stacked illustrations with the same
+    // title read as content and push the real lists off a phone screen.
+    <p className="creator-empty-line" role="status">{children}</p>
   );
 }
 function More({ busy, onClick }: { busy: boolean; onClick: () => void }) {

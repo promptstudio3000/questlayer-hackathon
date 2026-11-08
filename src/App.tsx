@@ -3679,7 +3679,6 @@ export default function App() {
             </div>
           )}
           <div className="panel-heading">
-            {tab === "explore" && detailZone && <button className="icon-button zone-map-collapse" onClick={() => { setSheetExpanded(false); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(".compact-selection")?.focus({ preventScroll: true })); }} aria-label={tr("Show map")} title={tr("Show map")}><ArrowLeft size={20} /></button>}
             {tab === "explore" && detailZone ? (
               <button className="panel-back" aria-label={tr("All discoveries")} onClick={openDiscoveries}><ArrowLeft size={20} aria-hidden="true" /></button>
             ) : tab === "fund" ? (
@@ -3709,10 +3708,10 @@ export default function App() {
                 {tab === "explore" && detailZone ? detailZone.name : title}
               </h1>
             </div>
-            {(tab !== "explore" || selected || sheetExpanded) && (
+            {(tab !== "explore" || sheetExpanded) && (
               <button
                 className="icon-button panel-close"
-                onClick={tab === "explore" ? selected ? closeZone : closeMapPanel : returnToAdventure}
+                onClick={tab === "explore" ? closeMapPanel : returnToAdventure}
                 aria-label={tr("Close panel")}
               >
                 <X size={18} />
