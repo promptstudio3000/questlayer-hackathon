@@ -171,13 +171,36 @@ permits a replacement payment. Account creation and native topups have the same
 durable journal; balance changes are not proof that another transfer is owed.
 Writes and sends are fenced by the worker lease.
 
+A saved transaction can become impossible to include: its send failed transiently,
+a later job of the same service key landed with a higher nonce, and access-key
+nonces only increase. Such an attempt is re-signed only on proof of non-inclusion:
+the RPC does not know its hash, the node rejects the exact bytes with
+`InvalidTxError::InvalidNonce`, the key's final nonce on chain is at or past the
+saved nonce, and the same evidence recurs at least 30 s after it was first recorded
+(`RELAY_NONCE_CHECK` / `FUNDING_PENDING` while observing). Then the attempt is
+`rejected`, its unspent reservation released, and the next pass signs a fresh
+attempt (`RELAY_RESIGN` / `FUNDING_RESIGN`). An attempt whose hash RPC knows is
+acknowledged, never replaced.
+
 A shared SQLite reservation budget covers initial account funding, attached
 deposits, gas reserves and topups across all players. Configure
 `SUBSIDY_DAILY_YOCTO`, `SUBSIDY_DAILY_OPERATIONS` and
 `SUBSIDY_GAS_RESERVE_YOCTO` from the operator's actual reserve/workload; defaults
-disable sponsorship. Unknown reservations carry across UTC midnight. Final
-refunds are not recycled into new allowances. A verified retry consumes another
-reservation. Observed receipt fees above their reserve trigger a persistent
+disable sponsorship. Unknown reservations (signed bytes without a FINAL receipt)
+carry across UTC midnight. A reservation whose job ends terminally before any
+transaction was signed (`RELAY_BLOCKED` cascade, pre-send `ACCOUNT_TAKEN`, policy
+refusal) or whose signed attempt is proved superseded is `released` and returns to
+the day's budget; nothing left the treasury. Final refunds are not recycled into
+new allowances. A verified retry consumes another reservation.
+
+`POST /api/account/create` is the costliest sponsored action (factory transfer plus
+gas) and a guest cookie is free, so it requires proof of play: the explorer must
+have earned XP on the map (a GPS-verified find, coin or quest; the test seed kit
+grants it too), answered otherwise with `403 ACCOUNT_PLAY_FIRST`. Creations are also
+capped at 20 per network address per UTC day (`429 RATE_LIMITED`). The client
+treats `ACCOUNT_PLAY_FIRST` as "not yet" and asks again when XP arrives, so a new
+explorer plays the first steps solo and finds the account prepared by the time the
+first Aura needs it. A retry after a failed creation is not gated again. Observed receipt fees above their reserve trigger a persistent
 `SUBSIDY_GAS_OVERRUN` breaker; existing signed submissions can still reconcile.
 The estimate is not a protocol gas-price cap: keep a bounded service-account
 balance and monitor it. The first overrun/in-flight operations can exceed the

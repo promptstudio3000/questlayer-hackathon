@@ -32,6 +32,17 @@ const missing = (error) =>
   /does not exist|UNKNOWN_TRANSACTION|UnknownTransaction/i.test(
     `${error?.name}: ${rpcErrorText(error)}`,
   );
+// The node refused the outer transaction itself (InvalidTxError::InvalidNonce):
+// its signing key already has a nonce at or above the transaction's.
+const invalidNonce = (error) =>
+  /^InvalidNonceError\b|InvalidTxError.*InvalidNonce|Invalid nonce \(ak:/i.test(
+    `${error?.name}: ${rpcErrorText(error)}`,
+  );
+// A saved transaction is re-signed only after the same evidence (hash unknown
+// to RPC, nonce rejected, key nonce confirmed past it) is seen twice this far apart.
+export const SUPERSEDED_CONFIRM_MS = 30000;
+const reservationId = (jobId, attempt) =>
+  attempt === 1 ? jobId : `${jobId}:attempt:${attempt}`;
 function jobView(row) {
   if (!row) return null;
   const call = JSON.parse(row.call);
@@ -541,6 +552,11 @@ export class Relayer {
               );
               // Later actions of this account were signed with following nonces; they
               // cannot execute anymore and would only consume the player's day budget.
+              const cascade = db
+                .prepare(
+                  `SELECT id,kind FROM relay_jobs WHERE account_id=? AND kind='relay' AND state IN ${OPEN} AND seq>?`,
+                )
+                .all(job.account_id, job.seq);
               db.prepare(
                 `UPDATE relay_jobs SET state='failed',error_code='RELAY_BLOCKED',last_error=?,updated_at=? WHERE account_id=? AND kind='relay' AND state IN ${OPEN} AND seq>?`,
               ).run(
@@ -549,6 +565,11 @@ export class Relayer {
                 job.account_id,
                 job.seq,
               );
+              // A job that ends without ever signing a transaction spent nothing:
+              // its sponsorship reservation returns to the shared budget. Jobs with
+              // signed bytes keep their conservative carry-over until a FINAL receipt.
+              for (const ended of [job, ...cascade])
+                if (!this.signedAttempt(ended)) this.accounts.subsidyBudget.release(ended.id);
               if (job.kind === "create-account")
                 this.accounts.markFailed(job.account_id, verdict, {
                   write: (work) => work(),
@@ -589,6 +610,66 @@ export class Relayer {
   }
   async finalizeAccount(job, { write }) {
     return this.accounts.finalize(job, { write });
+  }
+  /** Has this job ever persisted signed transaction bytes? */
+  signedAttempt(job) {
+    return job.kind === "create-account"
+      ? !!this.accounts.funding.latest(job.id)
+      : !!this.db
+          .prepare("SELECT 1 FROM relay_submissions WHERE job_id=?")
+          .get(job.id);
+  }
+  // A saved outer transaction can become impossible to include: its send failed
+  // transiently, another job of this service key landed with a higher nonce, and
+  // NEAR access-key nonces only increase. Replaying the exact bytes then fails
+  // forever. Re-signing is allowed only when (1) the RPC does not know the hash
+  // (checked before every replay), (2) the node rejects the bytes with
+  // InvalidNonce, (3) the key's final nonce on chain is at or past the saved
+  // nonce, and (4) the same evidence was already recorded at least
+  // SUPERSEDED_CONFIRM_MS earlier. Then the attempt is `rejected`, its unspent
+  // reservation released, and the next pass signs a fresh attempt.
+  async supersededSubmission(job, submission, signed, error, write) {
+    if (!invalidNonce(error) || typeof signed?.nonce !== "bigint") return false;
+    if (typeof this.transport.keyNonce !== "function") return false;
+    let keyNonce;
+    try {
+      keyNonce = BigInt(await this.transport.keyNonce());
+    } catch {
+      return false;
+    }
+    if (keyNonce < signed.nonce) return false;
+    const now = this.clock();
+    let seen = null;
+    try {
+      seen = JSON.parse(submission.outcome ?? "null")?.superseded ?? null;
+    } catch {
+      seen = null;
+    }
+    const observation = {
+      superseded: {
+        firstAt: seen?.firstAt ?? now,
+        lastAt: now,
+        count: (seen?.count ?? 0) + 1,
+        keyNonce: keyNonce.toString(),
+        txNonce: signed.nonce.toString(),
+        error: rpcErrorText(error).slice(0, 160),
+      },
+    };
+    const proven = seen && now - seen.firstAt >= SUPERSEDED_CONFIRM_MS;
+    write(() => {
+      const current = this.db
+        .prepare("SELECT state FROM relay_submissions WHERE job_id=? AND hash=?")
+        .get(job.id, submission.hash);
+      assert(current?.state === "prepared", "Saved relay submission changed.", 503, "RELAY_RECOVERY");
+      this.db
+        .prepare("UPDATE relay_submissions SET state=?,outcome=? WHERE job_id=? AND hash=? AND state='prepared'")
+        .run(proven ? "rejected" : "prepared", JSON.stringify(observation), job.id, submission.hash);
+      if (proven) {
+        this.db.prepare("UPDATE relay_jobs SET transaction_hash=NULL WHERE id=?").run(job.id);
+        this.accounts.subsidyBudget.release(reservationId(job.id, submission.attempt));
+      }
+    });
+    return !!proven;
   }
   async relay(job, { renew, write }) {
     this.requireEnabled();
@@ -633,7 +714,10 @@ export class Relayer {
       try {
         outcome = await signed.send("FINAL");
       } catch (error) {
-        throw retryLater("RELAY_NETWORK", rpcErrorText(error).slice(0, 160));
+        // `submission` is set only for replayed bytes whose hash RPC did not know.
+        if (submission && (await this.supersededSubmission(job, submission, signed, error, write)))
+          throw retryLater("RELAY_RESIGN", "The saved transaction was superseded by a later nonce; it will be signed again.");
+        throw retryLater(submission && invalidNonce(error) ? "RELAY_NONCE_CHECK" : "RELAY_NETWORK", rpcErrorText(error).slice(0, 160));
       }
       renew();
     }

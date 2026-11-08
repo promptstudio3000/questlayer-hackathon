@@ -61,8 +61,15 @@ must be reconciled to their original agreement, not retried as a new purchase bl
 escrow. Each operation's immutable signed bytes, hash, signer/configuration identity and outcome
 are stored in `mk_delivery_attempts` before broadcast. Restart recovery queries that hash, or
 rebroadcasts those exact bytes; it never silently signs a replacement after an unknown outcome.
-A definitive FINAL contract rejection permits a new attempt after backoff. Ambiguous or incomplete
-receipts remain pending and block later publisher nonces until reconciled.
+A definitive FINAL contract rejection of an escrow-bound publisher call (`approve_task`,
+`cancel_task`, `confirm_visit`, ...) is terminal: the operation becomes `failed` with its receipt
+recorded, is listed under `marketEscrow.rejected` in `/api/health` and logged, and never blocks or
+delays unrelated operations (the server's view of that one agreement drifted from the chain, for
+example a poster cancelled on chain before the approval was sent). An operator re-queues it after
+reconciling the agreement (`UPDATE mk_chain_ops SET state='queued'`). A rejected `withdraw_for`
+keeps its capped backoff retry, because it pushes one recipient's existing credit and nothing waits
+behind it. Only ambiguous or incomplete receipts remain pending and block later publisher nonces
+until reconciled.
 
 A withdrawal is delivered only when the matching FINAL transaction links the escrow's start event,
 the configured token's transfer to the correct account for the exact amount, and the escrow's

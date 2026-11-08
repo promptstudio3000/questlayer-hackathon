@@ -276,6 +276,15 @@ export function escrowHealth(db) {
     waitingFunding: n("SELECT COUNT(*) AS n FROM mk_fundings WHERE state='waiting'"),
     queued: n("SELECT COUNT(*) AS n FROM mk_chain_ops WHERE state='queued'"),
     failed: n("SELECT COUNT(*) AS n FROM mk_chain_ops WHERE state='failed'"),
+    // Operator surface: publisher calls the contract rejected with a FINAL
+    // receipt. They never block other operations; re-queue one after
+    // reconciling its agreement (UPDATE mk_chain_ops SET state='queued').
+    rejected: db
+      .prepare(`SELECT o.id,o.method,o.escrow_id,o.tx,o.last_error,o.attempts,o.created_at FROM mk_chain_ops o
+        WHERE o.state='failed' AND (SELECT a.state FROM mk_delivery_attempts a WHERE a.op_id=o.id ORDER BY a.attempt DESC LIMIT 1)='retry'
+        ORDER BY o.seq LIMIT 20`)
+      .all()
+      .map((o) => ({ id: o.id, method: o.method, escrowId: o.escrow_id, tx: o.tx, reason: o.last_error, attempts: o.attempts, createdAt: o.created_at })),
   };
 }
 

@@ -125,6 +125,12 @@ export function useInvisibleAccount(
         keyRef.current = { ...key, accountId: account.accountId };
         setStatus("ready");
       } catch (e) {
+        if (e instanceof ApiError && e.code === "ACCOUNT_PLAY_FIRST") {
+          // Not an error: the account is earned with the first find or quest.
+          // The caller runs ensure() again once the explorer has XP.
+          setStatus("idle");
+          return;
+        }
         setError(e instanceof ApiError ? e.message : (e as Error).message);
         setStatus("error");
       } finally {
