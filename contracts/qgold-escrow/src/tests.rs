@@ -65,7 +65,16 @@ fn fails<F: FnOnce()>(f: F) -> String {
             .unwrap_or_default(),
     }
 }
+/// Funds an agreement as `from`, who first holds 1 NEAR of native storage
+/// deposit on the escrow (M6: funders pay for their agreements' storage).
 fn deposit(c: &mut QgoldEscrow, from: &str, amount: u128, msg: Value) -> U128 {
+    ctx_full(from, NOW, NearToken::from_near(1).as_yoctonear(), 300);
+    c.storage_deposit(None);
+    ctx(TOKEN, NOW);
+    c.ft_on_transfer(a(from), U128(amount), msg.to_string())
+}
+/// Funds without any native storage deposit for `from`.
+fn deposit_unfunded(c: &mut QgoldEscrow, from: &str, amount: u128, msg: Value) -> U128 {
     ctx(TOKEN, NOW);
     c.ft_on_transfer(a(from), U128(amount), msg.to_string())
 }
@@ -1051,7 +1060,8 @@ fn reserve_is_sized_per_agreement_and_released_on_close() {
     let mut c = fresh();
     let before = reserved_growth();
     fund_task(&mut c, "small", 10, 1);
-    assert_eq!(reserved_growth() - before, task_growth(1));
+    // The record's bytes are consumed from the funder for good; the headroom stays reserved.
+    assert_eq!(reserved_growth() - before, task_growth(1) - RECORD_BYTES);
     assert!(task_growth(1) < 8 * 1024, "a one-slot task must not reserve the 50-slot maximum");
     assert_eq!(task_growth(MAX_SLOTS), (50 + 100) * 256 + 4096);
     ctx("poster.testnet", NOW);
@@ -1094,5 +1104,161 @@ fn worst_case_one_slot_task_fits_its_reserve() {
     ctx("publisher.testnet", NOW);
     c.approve_task("one".into(), a(&format!("p{}", "a".repeat(60))));
     assert!(env::storage_usage() - before < task_growth(1));
+    assert_conserved(&c);
+}
+
+// ------------------------------------------------- funder-paid storage (M6, security review 8 Nov 2026)
+
+fn called_methods() -> Vec<(String, u128)> {
+    near_sdk::test_utils::get_created_receipts()
+        .iter()
+        .flat_map(|r| r.actions.iter())
+        .filter_map(|x| match x {
+            near_sdk::mock::MockAction::FunctionCallWeight { method_name, attached_deposit, .. } => {
+                Some((String::from_utf8(method_name.clone()).unwrap(), attached_deposit.as_yoctonear()))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// M6: three sybil funders with sixty 1-unit, 365-day agreements used to
+/// reserve about 3.5 NEAR of the escrow's own balance and block every new
+/// task. Now each agreement needs its growth in the funder's native deposit.
+#[test]
+fn an_agreement_needs_the_funders_native_storage_deposit() {
+    let mut c = fresh();
+    let e = fails(|| {
+        deposit_unfunded(&mut c, "poster.testnet", 11, task_msg("t1", 10, 1));
+    });
+    assert!(e.contains("storage_deposit"), "{e}");
+    // The whole growth must be available; one yocto short is refused. (The
+    // first deposit also pays ENTRY_BYTES for its own record.)
+    let need = u128::from(task_growth(1)) * byte_cost();
+    ctx_full("poster.testnet", NOW, need + u128::from(ENTRY_BYTES) * byte_cost() - 1, 300);
+    c.storage_deposit(None);
+    assert_eq!(c.storage_balance_of(a("poster.testnet")).unwrap()["total"], json!(U128(need - 1)));
+    let e = fails(|| {
+        deposit_unfunded(&mut c, "poster.testnet", 11, task_msg("t1", 10, 1));
+    });
+    assert!(e.contains("storage_deposit"), "{e}");
+    // Anyone may top up a funder (the game server can sponsor a first deposit).
+    ctx_full("sponsor.testnet", NOW, 1, 300);
+    c.storage_deposit(Some(a("poster.testnet")));
+    assert_eq!(deposit_unfunded(&mut c, "poster.testnet", 11, task_msg("t1", 10, 1)).0, 0);
+    let b = c.storage_balance_of(a("poster.testnet")).unwrap();
+    // RECORD_BYTES are consumed for good, the rest is locked while the task is open.
+    assert_eq!(b["total"], json!(U128(need - u128::from(RECORD_BYTES) * byte_cost())));
+    assert_eq!(b["locked_bytes"], json!(task_growth(1) - RECORD_BYTES));
+    assert_eq!(b["available"], json!(U128(0)));
+    assert_eq!(reserved_growth(), task_growth(1) - RECORD_BYTES);
+    let e = fails(|| {
+        ctx_full("poster.testnet", NOW, 1, 300);
+        c.storage_withdraw(None);
+    });
+    assert!(e.contains("not locked"), "{e}");
+    let e = fails(|| {
+        deposit_unfunded(&mut c, "poster.testnet", 11, task_msg("t2", 10, 1));
+    });
+    assert!(e.contains("storage_deposit"), "a second agreement needs its own deposit: {e}");
+    assert_eq!(c.get_open_count(a("poster.testnet")), 1, "a refused agreement is not counted");
+    // Paying the worker consumes one permanent entry; closing releases the rest.
+    ctx("publisher.testnet", NOW);
+    c.approve_task("t1".into(), a("worker.testnet"));
+    let b = c.storage_balance_of(a("poster.testnet")).unwrap();
+    assert_eq!(b["locked_bytes"], json!(0));
+    let left = need - u128::from(RECORD_BYTES + ENTRY_BYTES) * byte_cost();
+    assert_eq!(b["available"], json!(U128(left)));
+    assert_eq!(reserved_growth(), 0);
+    ctx_full("poster.testnet", NOW, 1, 300);
+    c.storage_withdraw(None);
+    assert!(c.storage_balance_of(a("poster.testnet")).is_none());
+    assert_eq!(native_total(), 0);
+    assert_conserved(&c);
+}
+
+/// M6: funder deposits are owed back, so they never count as the escrow's free
+/// reserve, and opening an agreement never spends the escrow's own NEAR.
+#[test]
+fn funder_deposits_are_owed_and_agreements_do_not_spend_the_escrows_near() {
+    let mut c = fresh();
+    let free = |c: &QgoldEscrow| -> u128 {
+        ctx("viewer.testnet", NOW);
+        c.get_storage_reserve()["free_yocto"].as_str().unwrap().parse().unwrap()
+    };
+    let free0 = free(&c);
+    let d = NearToken::from_near(2).as_yoctonear();
+    ctx_full("poster.testnet", NOW, d, 300);
+    c.storage_deposit(None);
+    // (The mock keeps the balance at 100 NEAR, so the deposit shows up only as
+    // what is owed; ENTRY_BYTES of it paid for the deposit record itself.)
+    let owed = d - u128::from(ENTRY_BYTES) * byte_cost();
+    assert_eq!(c.storage_balance_of(a("poster.testnet")).unwrap()["total"], json!(U128(owed)));
+    let taken = free0 - free(&c);
+    assert!(taken >= owed && taken <= d, "a funder's deposit is not free reserve: {taken}");
+    let before = free(&c);
+    deposit_unfunded(&mut c, "poster.testnet", 1100, task_msg("big", 1000, 10));
+    assert!(free(&c) >= before, "the funder's consumed record bytes cover the task record");
+    for i in 0..3 {
+        ctx("publisher.testnet", NOW);
+        c.approve_task("big".into(), a(&format!("w{i}.testnet")));
+        ctx("publisher.testnet", NOW);
+        c.open_dispute("big".into(), a(&format!("d{i}.testnet")));
+    }
+    assert!(free(&c) >= before, "paid and disputed entries are consumed from the funder");
+    let b = c.storage_balance_of(a("poster.testnet")).unwrap();
+    assert_eq!(b["locked_bytes"], json!(task_growth(10) - RECORD_BYTES - 6 * ENTRY_BYTES));
+    assert_conserved(&c);
+}
+
+/// M6: a conditional send to a fresh id must not make the escrow pay that id's
+/// token registration (0.0025 NEAR per id, unbounded); a worker or creator who
+/// earned a payout is still registered with the lifetime grant.
+#[test]
+fn only_earned_payees_get_a_sponsored_token_registration() {
+    let mut c = fresh();
+    let fresh_id = a(&format!("{}.testnet", "f".repeat(56)));
+    deposit(&mut c, "alice.testnet", 5, json!({"kind":"transfer","id":"x1","to":fresh_id,
+        "condition":{"type":"after","at_ms":U64(NOW)},"expires_ms":U64(NOW + 10 * HOUR)}));
+    ctx("anyone.testnet", NOW + 1);
+    c.release_transfer("x1".into());
+    ctx("anyone.testnet", NOW + 1);
+    let _ = c.withdraw_for(fresh_id.clone());
+    let methods = called_methods();
+    assert!(methods.iter().any(|(m, d)| m == "ft_transfer" && *d == 1));
+    assert!(!methods.iter().any(|(m, _)| m == "storage_deposit_sponsored"), "a send recipient registers themself: {methods:?}");
+    assert_eq!(c.get_stats().pending_withdrawals.0, 5);
+    // A worker who earned a task payout is sponsored with the lifetime grant.
+    fund_task(&mut c, "t1", 100, 1);
+    ctx("publisher.testnet", NOW);
+    c.approve_task("t1".into(), a("worker.testnet"));
+    ctx("anyone.testnet", NOW);
+    let _ = c.withdraw_for(a("worker.testnet"));
+    let methods = called_methods();
+    assert!(methods.iter().any(|(m, d)| m == "storage_deposit_sponsored" && *d == STORAGE_DEPOSIT_YOCTO), "{methods:?}");
+    assert!(methods.iter().any(|(m, _)| m == "ft_transfer"));
+    // So is a Secret creator.
+    deposit(&mut c, "buyer.testnet", 100, secret_msg("p1", 100));
+    ctx("publisher.testnet", NOW);
+    c.confirm_visit("p1".into());
+    ctx("anyone.testnet", NOW);
+    let _ = c.withdraw_for(a("creator.testnet"));
+    assert!(called_methods().iter().any(|(m, _)| m == "storage_deposit_sponsored"));
+    assert_conserved(&c);
+}
+
+/// A refunded Secret is closed: its slot and its funder's lock are released.
+#[test]
+fn a_refunded_secret_releases_its_slot_and_lock() {
+    let mut c = fresh();
+    deposit(&mut c, "buyer.testnet", 100, secret_msg("p1", 100));
+    ctx("buyer.testnet", NOW);
+    c.dispute_secret("p1".into());
+    ctx("moderator.testnet", NOW);
+    c.resolve_secret("p1".into(), true);
+    assert_eq!(c.get_open_count(a("buyer.testnet")), 0);
+    assert_eq!(c.get_stats().open_escrows, 0);
+    assert_eq!(reserved_growth(), 0);
+    assert_eq!(c.storage_balance_of(a("buyer.testnet")).unwrap()["locked_bytes"], json!(0));
     assert_conserved(&c);
 }
