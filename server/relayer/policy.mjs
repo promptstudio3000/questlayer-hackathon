@@ -2,6 +2,7 @@ import { isDeepStrictEqual } from "node:util";
 import { GameError } from "../domain.mjs";
 import { publicKeyString } from "./delegate.mjs";
 import { SOCIAL_CONTRACT_ID } from "../native/network.mjs";
+import { isNativeEdition } from "../aura-catalog.mjs";
 
 export const SOCIAL_CONTRACT = SOCIAL_CONTRACT_ID;
 export const STORAGE_DEPOSIT = 50000000000000000000000n; // 0.05 NEAR
@@ -149,6 +150,52 @@ function parseArgs(bytes) {
     400,
   );
   return args;
+}
+// SocialDB writes the game quotes itself (server/native/social-profile.mjs,
+// server/native/social-records.mjs, server/gold-spend/social.mjs). Anything
+// else under the player's namespace is not sponsored: the relayer would pay
+// the gas and the storage of arbitrary writes.
+export const SOCIAL_MAX_ARGS_BYTES = 4096;
+const SOCIAL_RECORDS = {
+  profile: {
+    fields: ["schema", "name", "avatar_contract", "avatar_token_id", "updated_at", "mutation_id"],
+    valid: (r) => r.schema === "1" && /^profile_[a-f0-9-]{36}$/.test(r.mutation_id),
+  },
+  notes: {
+    key: /^message_[a-f0-9-]{36}$/,
+    fields: ["schema", "note_id", "state", "text", "lat", "lng", "anchor", "author_fix", "image", "image_sha256", "created_at", "updated_at", "mutation_id"],
+    valid: (r, key) =>
+      r.schema === "1" &&
+      r.note_id === key &&
+      ["published", "removed"].includes(r.state) &&
+      /^record_[a-f0-9-]{36}$/.test(r.mutation_id),
+  },
+  places: {
+    key: /^(place|post)_[a-f0-9-]{36}$/,
+    fields: ["schema", "kind", "thread", "title", "text", "cell", "place", "paid", "created_at", "mutation_id"],
+    valid: (r) =>
+      r.schema === "questlayer.place/1" &&
+      /^record_[a-f0-9-]{36}$/.test(r.mutation_id),
+  },
+};
+function gameSocialWrite(namespace) {
+  if (!keysOf(namespace, ["questlayer"]) || !plainObject(namespace.questlayer))
+    return false;
+  const sections = Object.keys(namespace.questlayer);
+  if (sections.length !== 1 || !Object.hasOwn(SOCIAL_RECORDS, sections[0]))
+    return false;
+  const spec = SOCIAL_RECORDS[sections[0]],
+    section = namespace.questlayer[sections[0]];
+  const record = (r, key) =>
+    keysOf(r, spec.fields) &&
+    spec.fields.every((f) => typeof r[f] === "string") &&
+    spec.valid(r, key);
+  if (!spec.key) return record(section);
+  if (!plainObject(section)) return false;
+  const keys = Object.keys(section);
+  return (
+    keys.length === 1 && spec.key.test(keys[0]) && record(section[keys[0]], keys[0])
+  );
 }
 function keyActionPublicKey(value) {
   try {
@@ -344,6 +391,17 @@ export function validateDelegate(decoded, context) {
         args.receiver_id === senderId && typeof args.claim_id === "string",
         "RELAY_ARGS",
         "An Aura can be redeemed only to the signing account.",
+      );
+      // The relayer checks the voucher itself before admission (relay.mjs).
+      demand(
+        keysOf(args, ["claim_id", "edition", "receiver_id", "expires_at_ms", "signature"]) &&
+          /^earned:[!-~]{1,153}$/.test(args.claim_id) &&
+          isNativeEdition(args.edition) &&
+          integer(args.expires_at_ms) &&
+          typeof args.signature === "string" &&
+          /^[A-Za-z0-9+/]{86}==$/.test(args.signature),
+        "RELAY_ARGS",
+        "An Aura redemption takes one award-signed claim.",
       );
     } else if (method === "equip_aura" || method === "unequip_aura")
       depositIs(0n, "Equipment");
@@ -604,6 +662,12 @@ export function validateDelegate(decoded, context) {
       keysOf(args, ["data"]) && keysOf(args.data, [senderId]),
       "RELAY_ARGS",
       "Only your own SocialDB namespace can be published.",
+    );
+    demand(
+      Buffer.byteLength(JSON.stringify(args)) <= SOCIAL_MAX_ARGS_BYTES &&
+        gameSocialWrite(args.data[senderId]),
+      "RELAY_SOCIAL_SHAPE",
+      "Only the game's own profile, note and place records are published through the relayer.",
     );
   } else fail("RELAY_RECEIVER", "This contract is not sponsored.");
   // Defense in depth: the branches above only accept these amounts.

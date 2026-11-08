@@ -884,6 +884,7 @@ export const CHAPTERS: Chapter[] = [
           "Game actions are signed as NEP-366 meta-transactions. The relayer checks a strict policy (one action, allowed receiver + method + deposit, nonce, expiry, gas) and pays the gas.",
           "Attached deposits retain the per-account cap. The security candidate also reserves one service-wide budget for new accounts, relays and topups. Unknown payments retain their reservation across restarts and midnight; refunds are not counted as new allowance. A reservation for an action that never reached the chain is released back to the day's budget. Free solo play remains available without sponsorship.",
           "A saved sponsored transaction that a later one of the same service key overtook is signed again only after the network has rejected the exact bytes by nonce, does not know the transaction, and confirms the key nonce passed it, twice over at least 30 seconds. Nothing is paid twice.",
+          "Some sponsored calls are checked against game and chain state first, so the relayer never pays for a call that only leaks its budget. NEAR Social writes are sponsored only for the game's own profile, map-note and place records (at most 4 KiB), and the 0.05 NEAR storage deposit only while the account's Social storage is short. `redeem_aura` is sponsored only for a voucher the game signed for that account, still valid and not yet redeemed. Cancelling one signed market order is sponsored only for your own open order in the game's book, at most 4 a day per account (16 across the game); Cancel all orders has no such limit.",
           "Adding a sign-in method to a secured explorer requires a recent sign-in with an existing method. Ordinary play uses the game session. A NEAR wallet links with a NEP-413 signature; MetaMask or Rabby sign in with SIWE and can sign Intents trades (erc191). A SocialDB profile is published once per account.",
           "Passkeys sign in to the game identity; they are not NEAR keys. Recovery restores the explorer by signing again with the linked wallet.",
           "A wallet transaction counts only after the server reads it as FINAL and matches it against the terms reviewed before signing. Unresolved transactions survive reloads in a local journal so a retry never signs twice.",
@@ -898,7 +899,7 @@ export const CHAPTERS: Chapter[] = [
     title: "NEAR Intents market",
     summary: "Auras trade peer to peer through a NEAR Intents verifier, with a 2 % fee to the treasury.",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-08",
     sources: ["docs/NEAR-INTENTS-MARKET.md", "docs/ONCHAIN-TRADES.md", "docs/SIGNED-AURA-ORDERS.md", "docs/NATIVE-MARKET.md", "src/intents-order.ts"],
     blocks: [
       {
@@ -909,6 +910,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "Fee: 20,000 pips (2 %) on the buyer's wNEAR leg, collected for the treasury.",
           "NPC traders keep their stock and purse inside the verifier; a fill pairs the player's signed diff with a server-signed trader intent.",
+          "The solver's gas counts against the game's shared daily sponsorship budget, like every relayed action. When that budget is used up, fills and withdrawals wait for the next day (`SUBSIDY_BUDGET`); signed orders stay in the book.",
           "Signed market-v2 orders (NEP-413) remain as a fallback. The old practice GOLD market is closed (`410 MARKET_ON_CHAIN`).",
           "Mainnet `intents.near` is planned; it needs the owner's go.",
         ],
