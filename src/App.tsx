@@ -4555,6 +4555,8 @@ export default function App() {
                     onSetupRecovery={setupRecoveryPasskey}
                     onRevoke={revokeDevice}
                     onRestore={restoreThisDevice}
+                    error={invisible.error}
+                    onRetry={() => void invisible.ensure()}
                   />
                 </div>
               </details>

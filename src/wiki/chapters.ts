@@ -872,7 +872,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Accounts, wallets and the relayer",
     summary: "Play without a wallet: an invisible NEAR account with a key that never leaves the device, and gas paid by the game.",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-08",
     sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs"],
     blocks: [
       { viz: "account-seq" },
@@ -885,6 +885,7 @@ export const CHAPTERS: Chapter[] = [
           "Adding a sign-in method to a secured explorer requires a recent sign-in with an existing method. Ordinary play uses the game session. A NEAR wallet links with a NEP-413 signature; MetaMask or Rabby sign in with SIWE and can sign Intents trades (erc191). A SocialDB profile is published once per account.",
           "Passkeys sign in to the game identity; they are not NEAR keys. Recovery restores the explorer by signing again with the linked wallet.",
           "A wallet transaction counts only after the server reads it as FINAL and matches it against the terms reviewed before signing. Unresolved transactions survive reloads in a local journal so a retry never signs twice.",
+          "The device key lives in the signing origin's own storage, which browsers partition per game site. If a browser blocks that storage (some private windows, blocked site data), no account is created and Profile → Account and devices says so, with Try again; free play continues. `npm run e2e:signing-vault` covers creation, a sponsored signature, reload and blocked storage on Chromium and WebKit.",
         ],
       },
     ],
