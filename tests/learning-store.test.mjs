@@ -15,6 +15,16 @@ test("session restoration alone never opens onboarding or enables automatic help
   assert.equal(values.has(learningKey("returning-explorer")), false);
 });
 
+test("restoring an interrupted introduction stays quiet without opting into tips", async () => {
+  beginLearning("interrupted-explorer");
+  assert.equal(readLearning("interrupted-explorer").intro, "new");
+  const restored = await import("../src/learning-store.ts?restore-interrupted");
+  assert.deepEqual(restored.readLearning("interrupted-explorer"), { version:1, intro:"done", enabled:false, seen:{} });
+  finishLearningIntro("interrupted-explorer", true);
+  const continued = await import("../src/learning-store.ts?restore-continued");
+  assert.equal(continued.readLearning("interrupted-explorer").enabled, true);
+});
+
 test("a new explorer can skip onboarding without losing access to manual help", async () => {
   beginLearning("skip-explorer");
   assert.equal(readLearning("skip-explorer").intro, "new");

@@ -32,7 +32,10 @@ export function readLearning(playerId: string): LearningState {
 function save(playerId: string, state: LearningState) {
   if (!playerId) return;
   cache.set(playerId, state);
-  try { globalThis.localStorage?.setItem(learningKey(playerId), JSON.stringify(state)); } catch { /* Keep this session usable. */ }
+  // Showing the intro is a creation-time event. A reload is a restored session,
+  // and only an explicit Continue opts into automatic tips.
+  const persisted = state.intro === "new" ? { ...state, intro: "done", enabled: false } : state;
+  try { globalThis.localStorage?.setItem(learningKey(playerId), JSON.stringify(persisted)); } catch { /* Keep this session usable. */ }
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LEARNING_EVENT, { detail: playerId }));
 }
 
