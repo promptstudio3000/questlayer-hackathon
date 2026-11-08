@@ -29,6 +29,12 @@ const missing = (e) =>
   /UNKNOWN_TRANSACTION|UnknownTransaction|does not exist/.test(
     `${e?.name}: ${rpcErrorText(e)}`,
   );
+const invalidNonce = (e) =>
+  /^InvalidNonceError\b|InvalidTxError.*InvalidNonce|Invalid nonce \(ak:/i.test(
+    `${e?.name}: ${rpcErrorText(e)}`,
+  );
+// Same two-sighting rule as the relayer (server/relayer/relay.mjs).
+export const FUNDING_SUPERSEDED_CONFIRM_MS = 30000;
 const hash = (signed) =>
   baseEncode(
     createHash("sha256").update(encodeTransaction(signed.transaction)).digest(),
@@ -165,6 +171,16 @@ async function transport(factory, request) {
     send(row) {
       return factory.provider.sendTransactionUntil(this.verify(row), "FINAL");
     },
+    nonce: (row) => BigInt(decodeSignedTransaction(Buffer.from(row.signed_tx, "base64")).transaction.nonce),
+    async keyNonce() {
+      const key = await factory.provider.query({
+        request_type: "view_access_key",
+        account_id: factory.accountId,
+        public_key: publicKey,
+        finality: "final",
+      });
+      return BigInt(key.nonce);
+    },
   };
 }
 export class FundingJournal {
@@ -249,6 +265,11 @@ export class FundingJournal {
         outcome = await t.send(row);
       } catch (error) {
         if (error.transactionResult) outcome = error.transactionResult;
+        else if (!newlyPrepared && (await this.superseded(t, row, error, write)))
+          throw retryLater(
+            "FUNDING_RESIGN",
+            "The saved funding transaction was superseded by a later nonce; it will be signed again.",
+          );
         else
           throw retryLater(
             "FUNDING_PENDING",
@@ -271,5 +292,53 @@ export class FundingJournal {
       this.budget.settle(row.budget_id, row.hash, outcome);
     });
     return outcome.final_execution_outcome ?? outcome;
+  }
+  // A saved factory transaction that another funding of the same key overtook
+  // (its nonce is now at or below the key's final nonce) cannot be included any
+  // more. Only when RPC does not know its hash, the node rejects the bytes with
+  // InvalidNonce and the key nonce confirms it, twice at least
+  // FUNDING_SUPERSEDED_CONFIRM_MS apart, is the attempt `rejected`, its unspent
+  // reservation released and a fresh attempt signed by the next perform().
+  async superseded(t, row, error, write) {
+    if (!invalidNonce(error) || typeof t.keyNonce !== "function" || typeof t.nonce !== "function") return false;
+    let keyNonce, txNonce;
+    try {
+      txNonce = BigInt(t.nonce(row));
+      keyNonce = BigInt(await t.keyNonce());
+    } catch {
+      return false;
+    }
+    if (keyNonce < txNonce) return false;
+    const now = this.clock();
+    let seen = null;
+    try {
+      seen = JSON.parse(row.outcome ?? "null")?.superseded ?? null;
+    } catch {
+      seen = null;
+    }
+    const proven = !!seen && now - seen.firstAt >= FUNDING_SUPERSEDED_CONFIRM_MS;
+    const observation = {
+      superseded: {
+        firstAt: seen?.firstAt ?? now,
+        lastAt: now,
+        count: (seen?.count ?? 0) + 1,
+        keyNonce: keyNonce.toString(),
+        txNonce: txNonce.toString(),
+        error: rpcErrorText(error).slice(0, 160),
+      },
+    };
+    write(() => {
+      assert(
+        this.latest(row.id)?.hash === row.hash && this.latest(row.id).state === "prepared",
+        "Saved funding attempt changed.",
+        503,
+        "FUNDING_RECOVERY",
+      );
+      this.db
+        .prepare("UPDATE native_funding_attempts SET state=?,outcome=? WHERE id=? AND attempt=? AND state='prepared'")
+        .run(proven ? "rejected" : "prepared", JSON.stringify(observation), row.id, row.attempt);
+      if (proven) this.budget.release(row.budget_id);
+    });
+    return proven;
   }
 }

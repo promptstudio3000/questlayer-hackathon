@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { KeyPair, PublicKey, actions } from "near-api-js";
-import { backoff } from "../server/relayer/relay.mjs";
+import { backoff, SUPERSEDED_CONFIRM_MS } from "../server/relayer/relay.mjs";
+import { createPlayer } from "../server/database.mjs";
 import {
   CONTRACTS,
   FACTORY,
@@ -12,6 +13,111 @@ import {
   fixture,
   outcomeFor,
 } from "./relayer-fixture.mjs";
+
+test("a funded account is created only through the creation guard; key changes keep the enrollment guard (F2)", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  const { createRelayerRoutes } = await import("../server/relayer/routes.mjs");
+  const { assert: gameAssert } = await import("../server/domain.mjs");
+  let played = false, creationChecks = 0, enrollmentChecks = 0;
+  const routes = createRelayerRoutes({
+    authorizeEnrollment: () => { enrollmentChecks++; },
+    authorizeAccountCreation: () => { creationChecks++; gameAssert(played, "Finish your first find or quest.", 403, "ACCOUNT_PLAY_FIRST"); },
+    relayer: f.relayer,
+    accounts: f.accounts,
+  });
+  const call = async (method, path, input) => {
+    const out = {};
+    await routes.handle({ method }, {}, new URL(path, "http://localhost:8787"),
+      { player: f.player, body: async () => input, respond: (res, data, status = 200) => Object.assign(out, { data, status }), assert: gameAssert });
+    return out;
+  };
+  const publicKey = KeyPair.fromRandom("ed25519").getPublicKey().toString();
+  await assert.rejects(call("POST", "/api/account/create", { publicKey }), (e) => e.code === "ACCOUNT_PLAY_FIRST" && e.status === 403);
+  assert.equal(f.rows("managed_accounts").length, 0);
+  assert.equal(f.rows("subsidy_reservations").length, 0, "a refused guest reserves no sponsorship");
+  assert.equal(enrollmentChecks, 0);
+  played = true;
+  const created = await call("POST", "/api/account/create", { publicKey });
+  assert.equal(created.status, 201);
+  assert.equal(created.data.account.state, "creating");
+  assert.ok(creationChecks >= 2, "the guard runs before and inside the creation transaction");
+  // Repeating the request returns the same account without a new guard decision.
+  const again = await call("POST", "/api/account/create", { publicKey });
+  assert.equal(again.data.account.accountId, created.data.account.accountId);
+  assert.equal(f.rows("managed_accounts").length, 1);
+});
+
+const invalidNonceError = (ak, tx) =>
+  Object.assign(Error(`Invalid nonce (ak: ${ak}, tx: ${tx})`), { name: "InvalidNonceError", accessKeyNonce: ak, transactionNonce: tx });
+
+test("a saved outer transaction overtaken by a later relayer nonce is proven superseded and signed again (N3)", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  const alice = f.ready(f.player, "alice"), bob = createPlayer(f.db, "Bob", NOW), bobAcct = f.ready(bob, "bob");
+  const a = await f.relayer.submit(f.player, { signedDelegateBase64: await f.sign(alice) });
+  const b = await f.relayer.submit(bob, { signedDelegateBase64: await f.sign({ ...bobAcct, playerId: bob }) });
+  const sends = [];
+  // Alice's send (nonce 1) times out after signing; Bob's job signs nonce 2 and lands,
+  // so the relayer key's nonce passes Alice's saved transaction for good.
+  f.transport.onSend = async ({ hash, signedDelegate, nonce }) => {
+    sends.push(hash);
+    if (hash === "T1") throw sends.filter((h) => h === "T1").length === 1 ? Error("fetch failed: ETIMEDOUT") : invalidNonceError(2, 1);
+    f.transport.keyNonceValue = nonce;
+    return outcomeFor(signedDelegate, { hash });
+  };
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 1, failed: 0, retried: 1 });
+  assert.equal(f.job(b.id).state, "confirmed");
+  assert.deepEqual([f.job(a.id).state, f.job(a.id).transaction_hash, f.job(a.id).error_code], ["retrying", "T1", "RELAY_NETWORK"]);
+  const sub = () => f.db.prepare("SELECT * FROM relay_submissions WHERE job_id=? ORDER BY attempt").all(a.id);
+  // First sighting: the exact bytes are replayed, rejected by nonce, and only recorded.
+  f.advance(backoff(0));
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 0, failed: 0, retried: 1 });
+  assert.deepEqual([f.job(a.id).error_code, f.job(a.id).transaction_hash], ["RELAY_NONCE_CHECK", "T1"]);
+  assert.equal(sub()[0].state, "prepared");
+  assert.equal(JSON.parse(sub()[0].outcome).superseded.count, 1);
+  // A second sighting inside the confirmation window still replays and does not re-sign.
+  f.advance(backoff(1));
+  await f.relayer.runRelayJobs();
+  assert.equal(sub()[0].state, "prepared");
+  assert.equal(JSON.parse(sub()[0].outcome).superseded.count, 2);
+  assert.equal(f.job(a.id).transaction_hash, "T1");
+  // Proven: unknown hash + InvalidNonce + key nonce past it, seen again after the window.
+  f.advance(Math.max(backoff(2), SUPERSEDED_CONFIRM_MS));
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 0, failed: 0, retried: 1 });
+  assert.deepEqual([f.job(a.id).error_code, f.job(a.id).transaction_hash], ["RELAY_RESIGN", null]);
+  assert.equal(sub()[0].state, "rejected");
+  assert.equal(f.db.prepare("SELECT state FROM subsidy_reservations WHERE id=?").get(a.id).state, "released");
+  // The next pass signs fresh bytes with a new nonce; the job confirms once.
+  f.advance(backoff(3));
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 1, failed: 0, retried: 0 });
+  assert.deepEqual([f.job(a.id).state, f.job(a.id).transaction_hash], ["confirmed", "T3"]);
+  assert.deepEqual(sub().map((s) => [s.attempt, s.hash, s.state]), [[1, "T1", "rejected"], [2, "T3", "succeeded"]]);
+  assert.equal(f.db.prepare("SELECT state FROM subsidy_reservations WHERE id=?").get(`${a.id}:attempt:2`).state, "spent");
+  assert.equal(sends.filter((h) => h === "T1").length, 4, "every replay before the proof used the identical bytes");
+});
+
+test("an InvalidNonce rejection alone never re-signs: the key nonce must confirm and the hash must stay unknown", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  const alice = f.ready(f.player, "alice");
+  const a = await f.relayer.submit(f.player, { signedDelegateBase64: await f.sign(alice) });
+  let first = true;
+  f.transport.onSend = async () => { if (first) { first = false; throw Error("fetch failed: ETIMEDOUT"); } throw invalidNonceError(0, 1); };
+  await f.relayer.runRelayJobs();
+  // The chain's key nonce is still below the saved nonce: a lagging or wrong node, not proof.
+  for (let i = 0; i < 4; i++) { f.advance(SUPERSEDED_CONFIRM_MS + backoff(i)); await f.relayer.runRelayJobs(); }
+  assert.deepEqual([f.job(a.id).state, f.job(a.id).transaction_hash, f.job(a.id).error_code], ["retrying", "T1", "RELAY_NONCE_CHECK"]);
+  assert.equal(f.rows("relay_submissions").length, 1);
+  assert.deepEqual([f.rows("relay_submissions")[0].state, f.rows("relay_submissions")[0].outcome], ["prepared", null]);
+  // Once the hash is known the original transaction is acknowledged without any new signature.
+  f.transport.keyNonceValue = 5n;
+  f.transport.onStatus = async (hash) => outcomeFor(f.transport.sends[0].signedDelegate, { hash });
+  f.advance(backoff(5));
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 1, failed: 0, retried: 0 });
+  assert.equal(f.job(a.id).transaction_hash, "T1");
+  assert.equal(f.rows("relay_submissions").length, 1);
+});
 
 test("prepare, submit, pre-flight funding and verified confirmation of a sponsored mint", async (t) => {
   const f = fixture();

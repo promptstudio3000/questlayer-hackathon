@@ -60,7 +60,7 @@ import { allocationSettings } from "./native/allocation.mjs";
 import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
-import { ManagedAccounts } from "./relayer/accounts.mjs";
+import { ManagedAccounts, hasPlayedFirstAdventure } from "./relayer/accounts.mjs";
 import { SubsidyBudget } from "./relayer/subsidy-budget.mjs";
 import { signingVaultOrigin, vaultCors } from "./signing-vault-cors.mjs";
 import { Relayer, startRelayWorker } from "./relayer/relay.mjs";
@@ -513,6 +513,11 @@ const intentsMarket =
 const intentsRoutes = createIntentsRoutes(intentsMarket);
 const relayerRoutes = createRelayerRoutes({
   authorizeEnrollment: req => allowEnrollment(req, identitySessions.authenticate(sessionToken(req))),
+  authorizeAccountCreation: req => {
+    const current = identitySessions.authenticate(sessionToken(req));
+    allowEnrollment(req, current);
+    allowAccountCreation(req, current);
+  },
   relayer,
   accounts: managedAccounts,
 });
@@ -1266,6 +1271,31 @@ function allowEnrollment(req, current) {
   const grant = row && JSON.parse(row.nonce);
   assert(grant?.purpose === "credential-management" && grant.sessionHash === tokenHash,
     "Sign in again with an existing passkey or wallet before adding a sign-in method.", 403, "ACCOUNT_REAUTH_REQUIRED");
+}
+// A sponsored, funded NEAR account is the most expensive thing the game gives a
+// new explorer (factory transfer plus gas), and a guest cookie costs nothing. The
+// account is prepared once the explorer has finished a first adventure step on the
+// map (any XP: a GPS-verified find, coin or quest), and creations from one network
+// address are bounded per UTC day on top of the shared sponsorship budget. A retry
+// after a failed creation passed this bar already.
+const ACCOUNT_CREATIONS_PER_IP_PER_DAY = 20;
+function allowAccountCreation(req, current) {
+  if (managedAccounts?.row(current.playerId)) return;
+  assert(hasPlayedFirstAdventure(db, current.playerId),
+    "Finish your first find or quest on the map; your explorer account is prepared right after.", 403, "ACCOUNT_PLAY_FIRST");
+  if (req.questlayerCreationCounted) return;
+  req.questlayerCreationCounted = true;
+  limitDaily("account-create", clientAddress(req, process.env.TRUST_PROXY === "loopback"), ACCOUNT_CREATIONS_PER_IP_PER_DAY,
+    "Too many new explorer accounts from this network today. Your progress is saved; try again tomorrow.");
+}
+// Per-UTC-day counters share the minute-keyed windows: the key ends with the day's
+// last minute, so pruning keeps it until the day is over.
+function limitDaily(scope, who, max, message) {
+  const day = Math.floor(Date.now() / 86_400_000),
+    key = `${scope}:${who}:${(day + 1) * 1440 - 1}`,
+    n = (rates.get(key) || 0) + 1;
+  rates.set(key, n);
+  assert(n <= max, message, 429, "RATE_LIMITED");
 }
 async function body(req) {
   let size = 0;

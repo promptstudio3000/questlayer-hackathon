@@ -643,8 +643,10 @@ export default function App() {
     invisibleStatus = invisible.status;
   useEffect(() => {
     // Prepare the invisible account in the background; play never waits for it.
-    if (player?.id) void invisibleEnsure();
-  }, [player?.id, invisibleEnsure]);
+    // A new explorer earns it with the first find or quest, so try again when XP
+    // arrives while the account is still not prepared.
+    if (player?.id && invisibleStatus === "idle") void invisibleEnsure();
+  }, [player?.id, player?.xp, invisibleStatus, invisibleEnsure]);
   useEffect(() => {
     // The managed account appears in the player's linked accounts once ready.
     // When the host also attests native rewards, play moves to the real
