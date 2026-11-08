@@ -5,6 +5,7 @@ import {
   DeviceMobile,
   Fingerprint,
   Key,
+  ArrowClockwise,
   ShieldCheck,
   Trash,
   WarningCircle,
@@ -26,9 +27,13 @@ export function DeviceKeys({
   onSetupRecovery,
   onRevoke,
   onRestore,
+  error = null,
+  onRetry,
 }: {
   status: InvisibleAccountStatus;
   accountId: string | null;
+  error?: string | null;
+  onRetry?: () => void;
   keys: AccountKey[];
   localPublicKey: string | null;
   busy: string;
@@ -39,6 +44,31 @@ export function DeviceKeys({
   const [confirm, setConfirm] = useState<string | null>(null),
     [lost, setLost] = useState(false),
     [signOut, setSignOut] = useState(true);
+  if (status === "error")
+    // Without this the player never learns why the account did not appear.
+    return (
+      <section
+        className="play-native account-devices"
+        aria-label={tr("Devices and recovery")}
+      >
+        <div className="play-section-heading">
+          <h2>
+            <WarningCircle size={22} /> {" "}{tr("Secure account unavailable on this device")}</h2>
+        </div>
+        <p className="play-hint" role="status">
+          {/storage is blocked/.test(error ?? "")
+            ? tr("This browser is blocking the storage your explorer account key needs, as happens in some private windows or when site data is blocked. Allow site data for QuestLayer or open it in your usual browser, then try again. Free play keeps working.")
+            : tr("Your explorer account could not be prepared on this device. Free play keeps working.")}
+        </p>
+        {error && !/storage is blocked/.test(error) && <p className="play-hint"><small>{error}</small></p>}
+        {onRetry && (
+          <button className="secondary-button" disabled={!!busy} onClick={onRetry}>
+            <ArrowClockwise size={20} />
+            {tr("Try again")}
+          </button>
+        )}
+      </section>
+    );
   if (status === "unavailable" || status === "idle" || !accountId) return null;
   if (status === "needs-recovery")
     return (
