@@ -27,6 +27,9 @@ const amount = (n) => {
 /** One treasury-wide boundary, shared by account creation, relays and topups.
  * Unknown reservations carry across UTC midnight; a timeout never frees money.
  * Final refunds are deliberately not reclaimed, including refunds to a player.
+ * A reservation whose job ended before any transaction was signed, or whose
+ * signed transaction is proved never includable, is released: nothing left the
+ * treasury, so it must not consume the shared daily budget.
  */
 export class SubsidyBudget {
   constructor(
@@ -54,7 +57,7 @@ export class SubsidyBudget {
     const start = Math.floor(this.clock() / 86400000) * 86400000;
     const rows = this.db
       .prepare(
-        "SELECT reserved,state FROM subsidy_reservations WHERE created_at>=? OR state='reserved'",
+        "SELECT reserved,state FROM subsidy_reservations WHERE (created_at>=? AND state!='released') OR state='reserved'",
       )
       .all(start);
     return {
@@ -92,7 +95,9 @@ export class SubsidyBudget {
           503,
           "SUBSIDY_MISMATCH",
         );
-        return old;
+        // A released id that is reserved again competes for today's budget
+        // like a new reservation; it never rides on the released row.
+        if (old.state !== "released") return old;
       }
       assert(
         this.dailyYocto > 0n &&
@@ -111,24 +116,41 @@ export class SubsidyBudget {
         429,
         "SUBSIDY_BUDGET",
       );
-      this.db
-        .prepare(
-          "INSERT INTO subsidy_reservations(id,kind,account_id,principal,gas_reserve,reserved,created_at) VALUES(?,?,?,?,?,?,?)",
-        )
-        .run(
-          id,
-          kind,
-          accountId,
-          String(value),
-          String(this.gasReserve),
-          String(total),
-          this.clock(),
-        );
+      if (old)
+        this.db
+          .prepare(
+            "UPDATE subsidy_reservations SET state='reserved',gas_reserve=?,reserved=?,tx_hash=NULL,created_at=?,settled_at=NULL WHERE id=? AND state='released'",
+          )
+          .run(String(this.gasReserve), String(total), this.clock(), id);
+      else
+        this.db
+          .prepare(
+            "INSERT INTO subsidy_reservations(id,kind,account_id,principal,gas_reserve,reserved,created_at) VALUES(?,?,?,?,?,?,?)",
+          )
+          .run(
+            id,
+            kind,
+            accountId,
+            String(value),
+            String(this.gasReserve),
+            String(total),
+            this.clock(),
+          );
       return this.db
         .prepare("SELECT * FROM subsidy_reservations WHERE id=?")
         .get(id);
     };
     return this.db.isTransaction ? work() : atomic(this.db, work);
+  }
+  /** Frees a reservation whose operation provably never reached the chain. */
+  release(id) {
+    return (
+      this.db
+        .prepare(
+          "UPDATE subsidy_reservations SET state='released',reserved='0',settled_at=? WHERE id=? AND state='reserved'",
+        )
+        .run(this.clock(), id).changes === 1
+    );
   }
   settle(id, txHash, response = null) {
     // Call only after the owning journal proves a final outcome for its exact

@@ -12,6 +12,7 @@ import {
   registerModuleSchema,
   ensureModuleVersion,
 } from "../schema-compatibility.mjs";
+import { actions } from "near-api-js";
 import { assert, id } from "../domain.mjs";
 import {
   auraOrderTerms,
@@ -247,16 +248,22 @@ export class IntentsMarket {
     // The solver's gas is treasury spend like any relayed action: reserve it
     // from the shared daily budget (throws SUBSIDY_BUDGET once used up). An
     // unknown outcome keeps its reservation; a final one is settled at its fees.
+    // Signing happens before anything is sent: if it fails, nothing reached
+    // the chain and the reservation goes back to the day's budget.
     const reservation = id("intents");
     this.subsidyBudget.reserve(reservation, { kind: "intents", accountId: this.solver.accountId, principal: "0" });
-    const result = await this.solver.account.callFunctionRaw({
-      contractId: this.verifierId,
-      methodName: "execute_intents",
-      args: { signed: signedList },
-      gas,
-      deposit: 0n,
-      waitUntil: "FINAL",
-    });
+    const { account } = this.solver;
+    let signedTx;
+    try {
+      signedTx = await account.createSignedTransaction({
+        receiverId: this.verifierId,
+        actions: [actions.functionCall("execute_intents", { signed: signedList }, BigInt(gas), 0n)],
+      });
+    } catch (error) {
+      this.subsidyBudget.release(reservation);
+      throw error;
+    }
+    const result = await account.provider.sendTransactionUntil(signedTx, "FINAL");
     const hash = txHash(result);
     this.subsidyBudget.settle(reservation, hash, result);
     assert(!failed(result), `The verifier rejected the intents (transaction ${hash}).`, 409);

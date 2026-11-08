@@ -163,6 +163,15 @@ function chain({ fee = TREASURY_FEE_PIPS, now = () => Date.now() } = {}) {
       },
     },
   };
+  // The solver signs first, then sends the exact transaction; the mock runs the call on send.
+  solver.account.createSignedTransaction = async ({ receiverId, actions }) => ({ receiverId, call: actions[0].functionCall });
+  solver.account.provider = {
+    sendTransactionUntil: async (tx, waitUntil) => {
+      assert.equal(waitUntil, "FINAL");
+      const { methodName, args, gas, deposit } = tx.call;
+      return solver.account.callFunctionRaw({ contractId: tx.receiverId, methodName, args: JSON.parse(Buffer.from(args).toString()), gas, deposit });
+    },
+  };
   const nfts = {
     contractId: NFTS,
     view: async (method, args = {}) => {

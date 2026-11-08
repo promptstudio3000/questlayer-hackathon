@@ -37,6 +37,16 @@ function devicePublicKey(value) {
   return key.toString();
 }
 
+/**
+ * Proof of play before the game sponsors a funded NEAR account: the explorer
+ * earned XP (a GPS-verified find, coin or quest; the test seed kit grants it
+ * too). A fresh guest cookie alone is not enough to draw on the factory.
+ */
+export function hasPlayedFirstAdventure(db, playerId) {
+  const row = db.prepare("SELECT xp FROM players WHERE id=?").get(playerId);
+  return !!row && Number(row.xp) > 0;
+}
+
 // One sponsored sub-account per player under the factory. The player's device key
 // is the only full-access key; the service holds no player key.
 export class ManagedAccounts {

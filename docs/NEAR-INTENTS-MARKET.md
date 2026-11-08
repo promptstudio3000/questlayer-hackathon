@@ -68,7 +68,8 @@ seller (device key)                     buyer (device key)
   `SUBSIDY_GAS_RESERVE_YOCTO` from the service-wide sponsorship budget
   (`SUBSIDY_DAILY_*`, the same budget as relays and account creation) and is
   refused with `SUBSIDY_BUDGET` once that is used up; without a configured
-  budget the solver sends nothing (`SUBSIDY_DISABLED`).
+  budget the solver sends nothing (`SUBSIDY_DISABLED`). The solver signs the exact transaction before sending it: a failure while signing
+  releases the reservation, while a send with an unknown outcome keeps it.
 - The **relayer policy** (`server/relayer/policy.mjs`) sponsors only:
   `add_public_key`/`remove_public_key` (1 yocto) on the verifier,
   `nft_transfer_call` of an Aura to the verifier for the sender's own account,

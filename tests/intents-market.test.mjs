@@ -87,6 +87,15 @@ function fakeVerifier(now, fees = { fee: 0, collector: "questlayer-dev-20261101.
       },
     },
   };
+  // The solver signs first, then sends the exact transaction; the mock runs the call on send.
+  solver.account.createSignedTransaction = async ({ receiverId, actions }) => ({ receiverId, call: actions[0].functionCall });
+  solver.account.provider = {
+    sendTransactionUntil: async (tx, waitUntil) => {
+      assert.equal(waitUntil, "FINAL");
+      const { methodName, args, gas, deposit } = tx.call;
+      return solver.account.callFunctionRaw({ contractId: tx.receiverId, methodName, args: JSON.parse(Buffer.from(args).toString()), gas, deposit });
+    },
+  };
   return { reader, solver, setBal, bal, used, fees };
 }
 
@@ -258,4 +267,36 @@ test("solver transactions reserve from the shared sponsorship budget and stop on
   const unbudgeted = new IntentsMarket(openDatabase(":memory:"), { verifier: v.reader, nftContract: NFT, wnear: WNEAR, solver: v.solver, now });
   await assert.rejects(unbudgeted.execute([], 1n), (e) => e.code === "SUBSIDY_DISABLED");
   assert.deepEqual(v.solver.sent, [2]);
+});
+
+test("a solver transaction that fails before it is signed gives its reservation back", async () => {
+  const { v, market, db, now } = setup({ budget: { dailyOperations: 1 } });
+  v.setBal("alice.testnet", nft, 1n);
+  v.setBal("bob.testnet", ft, BigInt(PRICE));
+  const order = await market.submit(signed("alice.testnet", [sell()], now()));
+  const sign = v.solver.account.createSignedTransaction;
+  v.solver.account.createSignedTransaction = async () => {
+    throw new Error("access key lookup failed");
+  };
+  await assert.rejects(market.fill(order.id, signed("bob.testnet", [buy()], now())), /access key lookup failed/);
+  assert.deepEqual(v.solver.sent, []);
+  assert.deepEqual(db.prepare("SELECT state FROM subsidy_reservations").all().map((r) => r.state), ["released"]);
+  // The released operation is available again: the same fill now settles.
+  v.solver.account.createSignedTransaction = sign;
+  await market.fill(order.id, signed("bob.testnet", [buy()], now()));
+  assert.deepEqual(v.solver.sent, [2]);
+  const states = db.prepare("SELECT state FROM subsidy_reservations ORDER BY created_at").all().map((r) => r.state);
+  assert.deepEqual(states.sort(), ["released", "spent"]);
+});
+
+test("a solver transaction lost after it was sent keeps its reservation", async () => {
+  const { v, market, db, now } = setup({ budget: { dailyOperations: 2 } });
+  v.setBal("alice.testnet", nft, 1n);
+  v.setBal("bob.testnet", ft, BigInt(PRICE));
+  const order = await market.submit(signed("alice.testnet", [sell()], now()));
+  v.solver.account.provider.sendTransactionUntil = async () => {
+    throw new Error("RPC timeout after send");
+  };
+  await assert.rejects(market.fill(order.id, signed("bob.testnet", [buy()], now())), /RPC timeout/);
+  assert.deepEqual(db.prepare("SELECT state FROM subsidy_reservations").all().map((r) => r.state), ["reserved"]);
 });

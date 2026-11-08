@@ -6,6 +6,60 @@ import { FACTORY, NEAR, NOW, fixture } from "./relayer-fixture.mjs";
 
 const key = () => KeyPair.fromRandom("ed25519").getPublicKey().toString();
 
+test("proof of play for a sponsored account is earned XP, which the first find or the seed kit grants (F2)", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  const { hasPlayedFirstAdventure } = await import("../server/relayer/accounts.mjs");
+  assert.equal(hasPlayedFirstAdventure(f.db, f.player), false, "a fresh guest has not played yet");
+  assert.equal(hasPlayedFirstAdventure(f.db, "nobody"), false);
+  f.db.prepare("UPDATE players SET xp=xp+2 WHERE id=?").run(f.player);
+  assert.equal(hasPlayedFirstAdventure(f.db, f.player), true);
+});
+
+test("a creation transaction overtaken by another factory funding is signed again instead of staying 'creating' forever (N3)", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  const { FUNDING_SUPERSEDED_CONFIRM_MS } = await import("../server/relayer/funding-journal.mjs");
+  const { backoff } = await import("../server/relayer/relay.mjs");
+  const a = (await f.accounts.create(f.player, { publicKey: key() })).account.accountId;
+  const bob = createPlayer(f.db, "Bob", NOW);
+  const b = (await f.accounts.create(bob, { publicKey: key() })).account.accountId;
+  const job = f.db.prepare("SELECT * FROM relay_jobs WHERE account_id=?").get(a);
+  // The factory's first send (F1, nonce 1) times out after signing; Bob's creation (F2, nonce 2) lands.
+  let f1 = 0;
+  f.factory.fail = (_receiver, _list, _n, hash) => {
+    if (hash !== "F1") return null;
+    return ++f1 === 1 ? Error("fetch failed: ETIMEDOUT")
+      : Object.assign(Error("Invalid nonce (ak: 2, tx: 1)"), { name: "InvalidNonceError" });
+  };
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 1, failed: 0, retried: 1 });
+  assert.equal(f.accounts.view(bob).account.state, "ready");
+  assert.deepEqual([f.accounts.view(f.player).account.state, f.job(job.id).error_code], ["creating", "FUNDING_PENDING"]);
+  const attempts = () => f.db.prepare("SELECT attempt,hash,state,outcome FROM native_funding_attempts WHERE id=? ORDER BY attempt").all(job.id);
+  // Two sightings inside the window: exact bytes replayed, recorded, nothing re-signed.
+  f.advance(backoff(0)); await f.relayer.runRelayJobs();
+  f.advance(backoff(1)); await f.relayer.runRelayJobs();
+  assert.equal(attempts().length, 1); assert.equal(attempts()[0].state, "prepared");
+  assert.equal(JSON.parse(attempts()[0].outcome).superseded.count, 2);
+  assert.equal(f.accounts.view(f.player).account.state, "creating");
+  // Proven after the window: the attempt is rejected and its reservation released.
+  f.advance(Math.max(backoff(2), FUNDING_SUPERSEDED_CONFIRM_MS));
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 0, failed: 0, retried: 1 });
+  assert.equal(f.job(job.id).error_code, "FUNDING_RESIGN");
+  assert.equal(attempts()[0].state, "rejected");
+  assert.equal(f.db.prepare("SELECT state FROM subsidy_reservations WHERE id=?").get(job.id).state, "released");
+  // A fresh factory transaction creates the account; the player's device key gets full access once.
+  f.advance(backoff(3));
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 1, failed: 0, retried: 0 });
+  const view = f.accounts.view(f.player).account;
+  assert.deepEqual([view.state, view.transactionHash], ["ready", "F3"]);
+  assert.deepEqual(attempts().map((x) => [x.attempt, x.hash, x.state]), [[1, "F1", "rejected"], [2, "F3", "succeeded"]]);
+  assert.equal(f.db.prepare("SELECT state FROM subsidy_reservations WHERE id=?").get(`${job.id}:attempt:2`).state, "spent");
+  assert.equal(f.rows("managed_account_funding").filter((r) => r.account_id === a).length, 1);
+  assert.equal(f.state.accounts.get(a).amount, NEAR / 10n, "funded exactly once");
+  assert.equal(f.state.accounts.get(b).amount, NEAR / 10n);
+});
+
 test("slugs are lowercase ASCII, dash separated, bounded and never empty", (t) => {
   const f = fixture();
   t.after(() => f.db.close());
