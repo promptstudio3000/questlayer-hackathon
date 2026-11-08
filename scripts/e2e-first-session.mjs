@@ -97,15 +97,17 @@ async function startServer() {
   const port = await freePort();
   const dir = mkdtempSync(join(tmpdir(), "questlayer-e2e-"));
   const url = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, ["server/index.mjs"], {
-    cwd: ROOT,
+  const child = spawn(process.execPath, [join(ROOT, "server/index.mjs")], {
+    cwd: dir,
     env: {
-      ...process.env,
+      PATH: process.env.PATH,
       PORT: String(port),
       HOST: "127.0.0.1",
       APP_ORIGIN: url,
       DATABASE_PATH: join(dir, "e2e.sqlite"),
       DISABLE_RELAYER: "1",
+      DISABLE_NATIVE_ATTESTATIONS: "1",
+      NEAR_RPC_URL: "http://127.0.0.1:9",
       CREATOR_COMMUNITY_ENABLED: "1",
       CREATOR_POLICY_VERSION: "e2e-journey-v1",
       CREATOR_XP_COMMITMENT: "200",
@@ -167,8 +169,12 @@ async function walkToTarget(page) {
   await page
     .waitForFunction(() => / m |km /.test(document.querySelector(".demo-pad-hint")?.textContent || ""), null, { timeout: 2000 })
     .catch(() => {});
-  for (let i = 0; i < 20; i++) {
+  // Citywide targets can be several kilometres away; keep following the
+  // selected target instead of opening an unrelated encounter along the way.
+  for (let i = 0; i < 100; i++) {
     // The pad drops the target within 3 m (zones can be thin path strips).
+    const found = page.locator(".wearable-moment");
+    if(await found.isVisible()) await found.getByRole("button",{name:"Continue",exact:true}).click();
     const left = await remainingMeters(page);
     if (i % 5 === 0) console.log(`  walking: ${left} m left`);
     if (!left) return;
@@ -182,6 +188,7 @@ async function walkToTarget(page) {
     );
     await page.waitForTimeout(150);
   }
+  assert.ok(await remainingMeters(page) <= 3, "The selected target is reached before opening it");
 }
 
 // Toasts sit over the sheet for a few seconds; wait so screenshots show it.
@@ -454,14 +461,17 @@ async function runDevice(name, server) {
         await button.click();
         break;
       }
-      assert.match(label, /Turn toward it/, `unexpected chest action: ${label}`);
+      assert.match(label, /Start quest|Turn toward it/, `unexpected chest action: ${label}`);
       await button.click();
+      if (await detail.isVisible()) continue;
       await walkToTarget(page);
       await page.waitForTimeout(400);
       // "Turn toward it" folds the sheet so the pad is free; the folded
       // sheet keeps the chosen place, one tap opens it again.
       if (!(await detail.isVisible())) {
-        await page.locator(".compact-selection").click();
+        const nearby = page.locator(".nearby-open");
+        if (await nearby.isVisible()) await nearby.click();
+        else await page.locator(".compact-selection").click();
         await detail.waitFor();
       }
     }
@@ -489,7 +499,16 @@ async function runDevice(name, server) {
     const dialog = page.getByRole("dialog");
     await dialog.waitFor();
     const share = dialog.getByRole("button", { name: /Share your Aura/ });
-    await share.waitFor();
+    try {
+      await share.waitFor();
+    } catch (error) {
+      await capture(page, "secure-share-unavailable");
+      writeFileSync(join(shots, "secure-share-unavailable.json"), JSON.stringify({
+        online: await page.evaluate(() => navigator.onLine),
+        dialog: await dialog.innerText(),
+      }, null, 2));
+      throw error;
+    }
     await capture(page, "secure-share-dialog");
     await scan(page, "secure-share");
     const download = page.waitForEvent("download", { timeout: 15_000 }).catch(() => null);
@@ -599,9 +618,7 @@ async function runDevice(name, server) {
     await cardPage.goto(server.url);
     await cardPage.getByPlaceholder("Your explorer name").fill(`${TAG}Card ${name}`);
     await cardPage.getByRole("button", { name: "Start exploring" }).click();
-    await cardPage.locator(".sheet-toggle").click();
-    await cardPage.getByRole("button", { name: "Hide first steps" }).click();
-    await cardPage.locator(".sheet-toggle[aria-expanded=true]").click();
+    await cardPage.getByRole("button", { name: "Hide objective", exact: true }).click();
     await cardPage.clock.runFor(50_000);
     const card = cardPage.locator(".pwa-install");
     if (await card.isVisible()) {

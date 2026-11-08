@@ -172,7 +172,9 @@
   white-space: nowrap;
 }
 /* Full-screen content owns the viewport; the install offer resumes on the map. */
-body:has(.app-shell.sheet-open) .pwa-stack {
+body:has(.app-shell.sheet-open) .pwa-stack,
+body:has(dialog[open]) .pwa-stack,
+body:has(.map-toolbar.tools-open) .pwa-stack {
   visibility: hidden;
 }
 /* Phones (the tab bar runs along the bottom): dock just above the tab bar,
@@ -255,3 +257,5 @@ body:has(.app-shell.sheet-open) .pwa-stack {
     transition: none;
   }
 }
+
+@media (max-height: 500px) { .pwa-install { display: none; } }

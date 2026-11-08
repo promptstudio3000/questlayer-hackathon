@@ -1,3 +1,4 @@
+import { ActorPortrait } from "./ActorPortrait";
 import { prefersReducedMotion } from "./feedback";
 // Monster challenge sheet (NPC-PLAN §13.2). Opened from the actors map layer
 // for a monster the player has an encounter token for. Every outcome comes
@@ -98,10 +99,10 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
   }
 
   return (
-    <Dialog presentation="screen" label={tr("Challenge {0}", { 0: monster.name })} onClose={onClose}>
+    <Dialog presentation="encounter" label={tr("Challenge {0}", { 0: monster.name })} onClose={onClose}>
       <div className={`monster-challenge monster-${monster.archetype}`}>
         <header className="monster-head">
-          <span className="monster-sigil" aria-hidden="true" />
+          <div className="monster-portrait"><ActorPortrait model={monster.model} label={monster.name} /></div>
           <div>
             <h2>{monster.name}</h2>
             <p className="monster-sub">

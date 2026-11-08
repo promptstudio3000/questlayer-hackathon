@@ -5,6 +5,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { CHAPTERS, GROUPS, STATUS_LABEL, type Block, type Chapter } from "./chapters";
 import { Viz } from "./diagrams";
 import "./wiki.css";
+import "../public-polish.css";
+import { scrollRegionKeys } from "../scroll-region";
 
 /** **bold**, `code` and [label](/path) — the only markup chapters use. */
 export function inline(text: string): React.ReactNode[] {
@@ -37,7 +39,7 @@ function BlockView({ b }: { b: Block }) {
     );
   if ("table" in b)
     return (
-      <div className="wk-table-wrap">
+      <div className="wk-table-wrap" tabIndex={0} role="group" aria-label={b.table.head.join(", ")} onKeyDown={scrollRegionKeys}>
         <table className="wk-table">
           <thead>
             <tr>

@@ -1,3 +1,4 @@
+import type { NearbyActor } from "./nearby-action";
 import { applyGoldLook } from "./gold-emotes";
 import type { GoldMap } from "./gold-spend-client";
 import {
@@ -45,9 +46,13 @@ import { Coins, MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
 import "./map-sky.css";
 // Phone map-first layout; lazy with the map, so the welcome screen skips it.
 import "./phone-map.css";
+import "./mobile-adventure.css";
+import "./profile-community.css";
+import "./secondary-surfaces.css";
 import "./wearables.css";
 import { tr } from "./i18n";
 import type { QuestRoute } from "./quest-route";
+import { questStopMarkers } from "./quest-route";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
 >;
@@ -61,6 +66,7 @@ export type GameMapProps = {
   focusZone: Zone | null;
   /** The one place the player should head to next (coach / nearest quest). */
   nextZoneId?: string | null;
+  insideZoneId?: string | null;
   nativeTarget?: (Point & { label: string }) | null;
   nativeTargetKind?: "coin" | "route" | "discovery";
   playerTier?: number;
@@ -81,10 +87,11 @@ export type GameMapProps = {
   map3D?: boolean;
   /**
    * Compass heading the explorer faces. The city demo pad sets it; real play
-   * passes the GPS course when the device reports one. Without it the
-   * character turns toward its last step.
+   * passes a reliable GPS course. Unknown direction keeps the last facing.
    */
   facing?: number;
+  /** Chase view after movement/turning; independent of the initial portrait pose. */
+  followBearing?: number;
   onZone: (z: Zone) => void;
   follow: boolean;
   onPan: () => void;
@@ -96,6 +103,7 @@ export type GameMapProps = {
   /** Today's demo world for roaming NPCs and monsters; null hides them. */
   actorsWorldId?: string | null;
   onActor?: (actor: ActorView) => void;
+  onNearbyActors?: (worldId: string | null, actors: NearbyActor[]) => void;
   /** GOLD spending (QGOLD stream 4): own emote and frame, lures and place pins. */
   emote?: string | null;
   frame?: string | null;
@@ -233,6 +241,7 @@ export function GameMap(props: GameMapProps) {
     lootRevision = useRef(0);
   const pawn = useRef<PawnScene | null>(null),
     heading = useRef(180);
+  const wasOverview = useRef(props.overview);
   const latest = useRef(props);
   latest.current = props;
   const objectContext = {
@@ -482,7 +491,7 @@ export function GameMap(props: GameMapProps) {
         source: "zones",
         paint: {
           "fill-color": ["get", "color"],
-          "fill-opacity": ["case", ["get", "lit"], 0.24, 0.12],
+          "fill-opacity": ["case", ["get", "inside"], 0.38, ["get", "lit"], 0.24, 0.12],
         },
       });
       // Ground aura: a soft glow along the edge, under the dashed outline.
@@ -494,7 +503,7 @@ export function GameMap(props: GameMapProps) {
           "line-color": ["get", "color"],
           "line-width": ["interpolate", ["linear"], ["zoom"], 14, 6, 18, 22],
           "line-blur": ["interpolate", ["linear"], ["zoom"], 14, 5, 18, 18],
-          "line-opacity": ["case", ["get", "lit"], 0.55, 0.18],
+          "line-opacity": ["case", ["get", "inside"], 0.95, ["get", "lit"], 0.55, 0.18],
         },
       });
       m.addLayer({
@@ -503,7 +512,7 @@ export function GameMap(props: GameMapProps) {
         source: "zones",
         paint: {
           "line-color": ["get", "color"],
-          "line-width": 2,
+          "line-width": ["case", ["get", "inside"], 4, 2],
           "line-dasharray": [3, 2],
         },
       });
@@ -746,7 +755,8 @@ export function GameMap(props: GameMapProps) {
       features: props.world.zones.map((z) => ({
         type: "Feature",
         properties: {
-          color: z.color,
+          color: z.id === props.insideZoneId ? "#672eeb" : z.color,
+          inside: z.id === props.insideZoneId,
           lit: zoneCountdown(z, zoneQuests, zoneNow).phase === "open",
         },
         geometry: z.geometry || {
@@ -836,7 +846,7 @@ export function GameMap(props: GameMapProps) {
           .addTo(m),
       );
     }
-  }, [
+  }, [props.insideZoneId,
     props.world,
     ready,
     props.overview,
@@ -950,6 +960,7 @@ export function GameMap(props: GameMapProps) {
         if (gone) return;
         actorsLayer.current = attachActorsLayer(m, {
           onSelect: (a) => latest.current.onActor?.(a),
+          onNearby: actors => { if (!gone) latest.current.onNearbyActors?.(latest.current.actorsWorldId || null, actors); },
         });
         const p = latest.current;
         actorsLayer.current.update({
@@ -973,33 +984,12 @@ export function GameMap(props: GameMapProps) {
     });
   }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe]);
   function cameraOffset(): [number, number] {
-    const box = el.current?.getBoundingClientRect(),
-      panel = document.querySelector(".main-panel")?.getBoundingClientRect(),
-      header = document.querySelector(".topbar")?.getBoundingClientRect();
-    if (!box) return [0, -90];
-    const top = Math.max(box.top, header?.bottom || box.top),
-      bottom = Math.max(
-        top + 80,
-        Math.min(box.bottom, panel?.top || box.bottom),
-      );
-    if (window.innerWidth >= 760 && panel && panel.width < box.width / 2)
-      return [
-        (116 + panel.left - box.left) / 2 - box.width / 2,
-        (top + box.bottom - 84) / 2 - box.top - box.height / 2 + 35,
-      ];
-    return [0, (top + bottom) / 2 - box.top - box.height / 2 + 35];
+    // Leave room ahead; overlay height never changes this framing.
+    return props.follow && Number.isFinite(props.followBearing) ? [0, Math.min(72, (el.current?.clientHeight || 0) * 0.1)] : [0, 0];
   }
   useEffect(() => {
     if (!avatar.current) return;
-    const previous = avatar.current.getLngLat(),
-      north = props.position.lat - previous.lat,
-      east =
-        (props.position.lng - previous.lng) *
-        Math.cos((props.position.lat * Math.PI) / 180),
-      travelled = Math.hypot(north, east) * 111320;
-    if (props.facing !== undefined) heading.current = props.facing;
-    else if (travelled >= 2 && travelled <= 80)
-      heading.current = (Math.atan2(east, north) * 180) / Math.PI;
+    if (props.facing !== undefined && Number.isFinite(props.facing)) heading.current = props.facing;
     const m = map.current;
     if (m && !props.globe)
       pawn.current?.setMapView(m.getBearing(), m.getPitch(), heading.current);
@@ -1008,9 +998,9 @@ export function GameMap(props: GameMapProps) {
       // Demo pad steps arrive every tick; glide one tick so they join up.
       duration: props.arena && props.facing !== undefined ? DEMO_TICK_MS + 30 : 450,
     });
-  }, [props.position, ready]);
+  }, [props.position.lat, props.position.lng, props.active, ready]);
   useEffect(() => {
-    if (props.facing === undefined) return;
+    if (props.facing === undefined || !Number.isFinite(props.facing)) return;
     heading.current = props.facing;
     const m = map.current;
     if (m && !props.globe)
@@ -1018,13 +1008,17 @@ export function GameMap(props: GameMapProps) {
   }, [props.facing, ready]);
   useEffect(() => {
     if (!map.current) return;
+    const leavingOverview = wasOverview.current && !props.overview;
+    wasOverview.current = props.overview;
     const demoGlide = props.arena && props.facing !== undefined;
     if (props.active !== false && props.follow && !props.globe && !props.overview)
       map.current.easeTo({
         center: [props.position.lng, props.position.lat],
+        ...(Number.isFinite(props.followBearing) ? { bearing: props.followBearing } : {}),
+        ...(leavingOverview ? { zoom: 16.9, pitch: 43 } : {}),
         offset: cameraOffset(),
         padding: { top: 0, bottom: 0, left: 0, right: 0 },
-        duration: prefersReducedMotion()
+        duration: leavingOverview || prefersReducedMotion()
           ? 0
           : demoGlide
             ? DEMO_TICK_MS + 30
@@ -1032,10 +1026,14 @@ export function GameMap(props: GameMapProps) {
         ...(demoGlide ? { easing: (t: number) => t } : {}),
       });
   }, [
-    props.position,
+    props.position.lat,
+    props.position.lng,
+    props.arena ? props.position : null,
     props.follow,
+    props.followBearing,
     props.active,
     props.globe,
+    props.overview,
     props.sheetExpanded,
     props.panelMode,
     viewportRevision,
@@ -1204,7 +1202,7 @@ export function GameMap(props: GameMapProps) {
             padding: { top: 0, bottom: 0, left: 0, right: 0 },
             zoom: 16.9,
             pitch: 43,
-            bearing: -14,
+            bearing: props.follow && Number.isFinite(props.followBearing) ? props.followBearing : -14,
             duration: prefersReducedMotion()
               ? 0
               : 1400,
@@ -1299,7 +1297,7 @@ export function GameMap(props: GameMapProps) {
         geometry: {
           type: "LineString",
           coordinates: [
-            [points[i].lng, points[i].lat],
+            [points[props.route?.unordered ? 0 : i].lng, points[props.route?.unordered ? 0 : i].lat],
             [p.lng, p.lat],
           ],
         },
@@ -1308,19 +1306,34 @@ export function GameMap(props: GameMapProps) {
   }, [ready, routeKey, props.globe]);
   // Numbered stop badges; the stops only change when one is confirmed.
   const stopsKey = props.route
-    ? `${props.route.questId}:${props.route.points
-        .slice(1)
-        .map((p) => `${p.lat},${p.lng}`)
+    ? `${props.route.questId}:${props.route.stops
+        .map((p) => `${p.number}:${p.lat},${p.lng}`)
         .join(";")}`
     : "";
   useEffect(() => {
     const m = map.current;
     if (!m || !ready || props.globe || !props.route) return;
-    const markers = props.route.points.slice(1).map((p, i) => {
-      const node = document.createElement("div");
-      node.className = `quest-route-stop${i === 0 ? " next" : ""}`;
-      node.textContent = String(i + 1);
-      node.setAttribute("aria-hidden", "true");
+    const route = props.route;
+    const markers = questStopMarkers(route).map(({ point: p, numbers, next }) => {
+      const node = document.createElement("button");
+      node.type = "button";
+      node.className = `quest-route-stop${next ? " next" : ""}`;
+      node.dataset.stops = numbers.join(",");
+      node.dataset.questId = route.questId;
+      const ordinal = numbers.join(" · ");
+      const label = tr("Stop {0} of {1}", {0: ordinal, 1: route.total});
+      node.setAttribute("aria-label", ordinal + (next ? " " + tr("Next stop") : "") + " · " + label);
+      node.title = next ? tr("Next stop") + " · " + label : label;
+      const badge = document.createElement("span");
+      badge.textContent = ordinal;
+      node.append(badge);
+      if (next) {
+        node.append(document.createTextNode(" "));
+        const caption = document.createElement("small");
+        caption.textContent = tr("Next stop");
+        node.append(caption);
+      }
+      node.addEventListener("click", event => { event.stopPropagation(); latest.current.onQuest(route.questId); });
       return new maplibregl.Marker({ element: node, anchor: "center" })
         .setLngLat([p.lng, p.lat])
         .addTo(m);

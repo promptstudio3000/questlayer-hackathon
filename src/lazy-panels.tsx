@@ -50,6 +50,8 @@ export function preloadPanels() {
 }
 
 const adventureResults = () => import("./AdventureResults");
+export const QuestBrief = lazyNamed(() => import("./QuestBrief"), "QuestBrief");
+export const WearableMoment = lazyNamed(() => import("./WearableMoment"), "WearableMoment");
 export const AdventureResultDialog = lazyNamed(
   adventureResults,
   "AdventureResultDialog",
@@ -174,3 +176,10 @@ class PanelBoundary extends Component<{ children: import("react").ReactNode }, {
 export const DailyBoard = lazyNamed(() => import("./DailyBoard"), "DailyBoard", true);
 export const SeasonCard = lazyNamed(() => import("./Season"), "SeasonCard");
 export const LandmarkClue = lazyNamed(() => import("./LandmarkClue"), "default");
+
+export const FindDetails = lazyNamed(() => import("./FindDetails"), "FindDetails");
+
+const LazyGotchiverse = lazy(() => import("./Gotchiverse").then((m) => ({ default: m.Gotchiverse })));
+export function Gotchiverse(props: ComponentProps<typeof import("./Gotchiverse").Gotchiverse>) {
+  return <PanelBoundary><Suspense fallback={<EmptyState title={tr("Opening Gotchiverse…")} status />}><LazyGotchiverse {...props} /></Suspense></PanelBoundary>;
+}

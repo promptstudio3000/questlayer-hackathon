@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light"><title>QuestLayer · Gotchiverse design prototype</title><style>:root{font-family:system-ui,sans-serif;font-size:16px;color:#291744;background:#f6f2fa;--purple:#5429b5;--muted:#62526f;--line:#d8cee8;--pink:#efbde9}*{box-sizing:border-box}body{margin:0}header{background:#291445;color:white;padding:20px max(20px,calc((100vw - 1280px)/2));display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{color:white;text-decoration:none;font-weight:900;font-size:24px;letter-spacing:-1px}.brand span{display:block;font-size:12px;letter-spacing:2px;margin-top:4px}.tag{font-size:12px;border:1px solid #a88dc8;padding:8px;letter-spacing:1px}nav{display:flex;gap:8px;max-width:1280px;margin:16px auto;padding:0 20px;overflow:auto}button,a,input,summary{touch-action:manipulation}button{font:inherit;font-weight:650;min-height:48px;border:1px solid #b6a4ce;background:white;border-radius:10px;padding:10px 16px;color:#361b60;cursor:pointer}button:hover{background:#eee5ff}button[aria-pressed=true],button.primary{background:var(--purple);color:white;border-color:var(--purple)}button:disabled{background:#eee9f2;color:#776985;border-color:#d7cfe0;cursor:default}button:focus-visible,a:focus-visible,canvas:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #a729aa;outline-offset:4px}main{max-width:1280px;margin:auto;padding:0 20px 30px}.disclosure{font-size:14px;color:var(--muted);margin:20px 0 28px}.eyebrow{font-size:14px;font-weight:750;letter-spacing:1.5px;color:#64419a;margin:0 0 12px}h1{font-size:clamp(28px,4vw,46px);line-height:1.08;letter-spacing:-1.5px;margin:0 0 18px}h2{font-size:22px;line-height:1.2;margin:0 0 12px}p{line-height:1.55;margin:0 0 16px}.intro{max-width:820px;margin:40px auto}.intro>p{max-width:620px;font-size:18px}.journey{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0}.journey span{padding:14px;background:#e8def6;border-radius:8px;font-weight:700}article{background:white;border:1px solid var(--line);padding:28px;border-radius:16px;margin:24px 0}.world-heading{display:flex;justify-content:space-between;gap:16px;align-items:center}output{padding:12px 16px;background:#f7e4a4;border:1px solid #dbbf61;border-radius:8px;white-space:nowrap;font-weight:700}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:20px}.landscape{background:#e9ddf5;border:1px solid #c4b3dc;border-radius:16px;overflow:hidden;align-self:start}.map-bar,.map-foot{padding:14px 16px;display:flex;justify-content:space-between;gap:12px;font-size:14px}.map-bar{border-bottom:1px solid #c4b3dc;background:#f5effb}.map-foot{background:#f5effb;flex-wrap:wrap}canvas{width:100%;height:480px;display:block;touch-action:pan-y}.compass{display:flex;justify-content:center;flex-wrap:wrap;padding:12px;gap:8px;border-top:1px solid #c4b3dc}aside{display:flex;flex-direction:column;gap:16px}.claim,.tools{background:white;border:1px solid var(--line);border-radius:14px;padding:20px}.claim .primary{width:100%}.tool-grid,.selection{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tool-grid button,.selection button{padding:10px 7px}.small{font-size:14px;color:var(--muted);margin-top:12px}.selection{border-top:1px solid var(--line);padding-top:16px}.selection button{font-size:14px}label{display:flex;gap:12px;align-items:center;min-height:48px;margin-top:10px;line-height:1.4}input[type=checkbox]{width:24px;height:24px;flex-shrink:0;accent-color:var(--purple)}.notice{margin:20px 0;background:#e8def6;border-left:4px solid var(--purple);padding:16px;min-height:58px}details{border:1px solid var(--line);border-radius:12px;padding:16px;background:white}summary{cursor:pointer;font-weight:700;min-height:48px;display:flex;align-items:center}details>p{margin-top:12px}.test-buttons{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}footer{max-width:1280px;margin:auto;padding:24px 20px;color:var(--muted);font-size:14px}[hidden]{display:none!important}@media(max-width:760px){header{padding:16px}.brand{font-size:21px}.brand span{font-size:10px;letter-spacing:1px}.tag{font-size:10px;max-width:88px;text-align:center}main{padding:0 16px 24px}nav{padding:0 16px}nav button{white-space:nowrap;padding:10px 13px}.disclosure{margin:16px 0 24px}.world-heading{display:block}output{display:inline-block;margin-bottom:16px}.workspace{grid-template-columns:1fr}canvas{height:360px}aside{gap:14px}.map-bar{padding:12px}.map-foot span:last-child{display:none}.claim,.tools{padding:18px}.intro{margin:26px auto}.intro>p{font-size:16px}article{padding:20px}.selection{grid-template-columns:1fr 1fr}.compass button{padding:10px 13px;flex:1}.world-heading h1{margin-bottom:14px}}@media(max-height:450px) and (min-width:761px){canvas{height:300px}.world-heading h1{font-size:30px}header{padding:10px 20px}nav{margin:8px auto}.disclosure{margin:12px 0}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+:root{overflow-wrap:break-word}.workspace>*{min-width:0}.tool-grid,.selection{grid-template-columns:repeat(2,minmax(0,1fr))}.tool-grid button{overflow-wrap:anywhere}.map-bar{flex-wrap:wrap}@media(max-width:760px){.workspace{grid-template-columns:minmax(0,1fr)}}
+</style></head>
+<body><header><a class="brand" href="#">QUESTLAYER<span>ONE ADVENTURE. TWO WORLDS.</span></a><span class="tag">LOCAL PROTOTYPE</span></header>
+<nav aria-label="World layers"><button data-realm="questlayer" aria-pressed="true">QuestLayer</button><button data-realm="gotchiverse" aria-pressed="false">Gotchiverse</button><button data-realm="geocaching" aria-pressed="false">Geocaching · demo</button></nav>
+<main><p class="disclosure">Design playground · saved on this browser · no real GPS, funds, yield or NFT ownership.</p>
+<section id="outdoor" class="intro"><div class="eyebrow">01 / GO OUT. BRING SOMETHING BACK.</div><h1>The world is your first quest.</h1><p>Explore in QuestLayer. Bring an outdoor permit into Gotchiverse, then shape a small piece of its landscape.</p><div class="journey"><span>Find a quest</span><span>Earn a permit</span><span>Build your world</span></div><article><p class="eyebrow">SAMPLE OUTDOOR QUEST</p><h2>A little further, a new beginning.</h2><p>This sample stands in for a verified outdoor quest. It awards one local test permit, once.</p><button id="sample-quest" class="primary">Complete sample quest</button><p id="quest-result" role="status"></p></article><button id="enter-world" class="primary">Enter Gotchiverse</button></section>
+<section id="virtual" hidden><div class="world-heading"><div><p class="eyebrow">02 / GOTCHIVERSE</p><h1>Make a place of your own.</h1></div><output id="permits"></output></div>
+<div class="workspace"><section class="landscape" aria-label="Editable virtual landscape"><div class="map-bar"><strong id="chunk-name"></strong><span>16 × 16 blocks</span></div><canvas id="world" tabindex="0" aria-label="Virtual terrain. Tap to select a block, or use arrow keys. W A S D moves your character. Use the named buttons to edit." aria-describedby="cell-description"></canvas><div class="map-foot"><span id="cell-description"></span><span>Tap a block to select</span></div><div class="compass" aria-label="Browse neighboring grid cells"><button data-pan="0,-1">North</button><button data-pan="-1,0">West</button><button data-pan="1,0">East</button><button data-pan="0,1">South</button></div></section>
+<aside><section class="claim"><p class="eyebrow">YOUR SPACE TO MAKE</p><h2 id="lease-label">An open piece of the world.</h2><p id="lease-help"></p><button id="claim" class="primary">Claim with a sample permit</button><label id="friends-row" hidden><input type="checkbox" id="friends">Let my friends build here</label></section>
+<section class="tools"><p class="eyebrow">SHAPE THE LAND</p><p>Pick a block. Raise it, carve it, change its surface.</p><div class="tool-grid"><button data-edit="raise">Raise</button><button data-edit="lower">Lower</button><button data-edit="grass">Grass</button><button data-edit="stone">Stone</button><button data-edit="water">Water</button><button data-edit="collectible">Place collectible</button><button data-edit="remove">Remove collectible</button></div><p class="small">The sample collectible is a display object. Placing it never transfers an NFT.</p><div class="selection" aria-label="Select a block without precision tapping"><button data-select="0,-1">Block north</button><button data-select="-1,0">Block west</button><button data-select="1,0">Block east</button><button data-select="0,1">Block south</button></div></section></aside></div>
+<p id="status" class="notice" role="status" aria-live="polite">Every adventure can leave a mark.</p><details><summary>Try the lease lifecycle</summary><p>These controls simulate time and a different claimant. They do not use QGOLD or change the live game. Export a blueprint before closing; archived previews are kept only in this session.</p><label><input type="checkbox" id="visitor">Preview as a visiting friend</label><div class="test-buttons"><button id="expire">Preview expiration</button><button id="renew">Renew expired claim</button><button id="takeover">Preview another player’s takeover</button><button id="export">Export blueprint</button></div><p id="archive-count"></p></details></section>
+<section id="geocache" class="intro" hidden><p class="eyebrow">NEXT LAYER / GEOCACHING</p><h1>Leave a clue. Find a story.</h1><article><h2>The stone that remembers.</h2><p>At the edge of an old path, find the stone with a small spiral. Look beneath the fallen leaf.</p><p class="small">Fictional clue. No physical cache or real route is being claimed.</p><button id="cache">Open sample cache</button><p id="cache-result" role="status"></p></article></section>
+</main><footer>QuestLayer / Gotchiverse · a local interaction study, ready for integration review.</footer><script type="module">// Local design prototype. This module has no financial or GPS authority.
+const SIZE = 16;
+const MAX_HEIGHT = 5;
+const KEY = 'questlayer-gotchiverse-design-1';
+const cellKey = (x, y) => `${x},${y}`;
+function natural(x, y, cx = 0, cy = 0) {
+  const n = Math.abs(Math.sin((x + cx * SIZE) * 12.9898 + (y + cy * SIZE) * 78.233));
+  return { height: n > .96 ? 2 : 1, material: n < .05 ? 'water' : 'grass', object: null };
+}
+function createState() {
+  return { version: 1, realm: 'questlayer', cx: 0, cy: 0, selected: [7, 7], player: [8, 8],
+    permits: 0, completed: false, cells: {}, leases: {}, archives: [], friend: false, cacheFound: false };
+}
+function chunk(s) { return cellKey(s.cx, s.cy); }
+function cell(s, x, y) { return s.cells[`${chunk(s)}:${cellKey(x, y)}`] ?? natural(x, y, s.cx, s.cy); }
+function mayEdit(s, now = Date.now()) {
+  const lease = s.leases[chunk(s)];
+  return !!lease && lease.until > now && (s.friend ? lease.friends : lease.owner === 'me');
+}
+function outdoor(s) {
+  if (s.completed) return false;
+  s.completed = true; s.permits++; return true;
+}
+function claim(s, now = Date.now()) {
+  if (s.permits < 1 || s.friend) return false;
+  const old = s.leases[chunk(s)];
+  if (old && old.until > now) return false;
+  if (old) return false; // Expired builds require a deliberate renew or takeover choice.
+  s.permits--; s.leases[chunk(s)] = { owner: 'me', until: now + 30 * 86400000, friends: false }; return true;
+}
+function renew(s, now = Date.now()) {
+  const old = s.leases[chunk(s)];
+  if (!old || old.owner !== 'me' || old.until > now || s.friend || s.permits < 1) return false;
+  s.permits--; old.until = now + 30 * 86400000; return true;
+}
+function edit(s, action, now = Date.now()) {
+  if (!mayEdit(s, now)) return false;
+  const [x, y] = s.selected;
+  const c = { ...cell(s, x, y) };
+  if (action === 'raise') { if (c.height >= MAX_HEIGHT) return false; c.height++; }
+  else if (action === 'lower') { if (c.height <= 0) return false; c.height--; }
+  else if (['grass', 'stone', 'water'].includes(action)) c.material = action;
+  else if (action === 'collectible') c.object = 'sample-collectible';
+  else if (action === 'remove') c.object = null;
+  else return false;
+  s.cells[`${chunk(s)}:${cellKey(x, y)}`] = c; return true;
+}
+function takeover(s, now = Date.now()) {
+  const key = chunk(s), old = s.leases[key];
+  if (!old || old.until > now || s.friend) return false;
+  const terrain = Object.fromEntries(Object.entries(s.cells).filter(([k]) => k.startsWith(`${key}:`)));
+  s.archives.push({ chunk: key, at: now, terrain });
+  s.archives = s.archives.slice(-20);
+  for (const k of Object.keys(terrain)) delete s.cells[k];
+  s.leases[key] = { owner: 'other', until: now + 30 * 86400000, friends: false }; return true;
+}
+// Persisted data is only a bounded convenience, never a trusted claim or inventory.
+function restore(raw) {
+  try {
+    if (typeof raw !== 'string' || raw.length > 1000000) return createState();
+    const v = JSON.parse(raw);
+    const coord = n => Number.isInteger(n) && Math.abs(n) <= 100000;
+    const point = p => Array.isArray(p) && p.length === 2 && p.every(n => Number.isInteger(n) && n >= 0 && n < SIZE);
+    if (v.version !== 1 || !coord(v.cx) || !coord(v.cy) || !point(v.selected) || !point(v.player)) return createState();
+    if (!['questlayer', 'gotchiverse', 'geocaching'].includes(v.realm) || !Number.isInteger(v.permits) || v.permits < 0 || v.permits > 100) return createState();
+    if (typeof v.completed !== 'boolean' || typeof v.friend !== 'boolean' || typeof v.cacheFound !== 'boolean') return createState();
+    const validKey = /^-?\d{1,6},-?\d{1,6}:[0-9]{1,2},[0-9]{1,2}$/;
+    if (!v.cells || typeof v.cells !== 'object' || Array.isArray(v.cells) || Object.keys(v.cells).length > 4096) return createState();
+    for (const [k, c] of Object.entries(v.cells)) {
+      if (!validKey.test(k) || !c || !Number.isInteger(c.height) || c.height < 0 || c.height > MAX_HEIGHT || !['grass', 'stone', 'water'].includes(c.material) || ![null, 'sample-collectible'].includes(c.object)) return createState();
+      const [x,y] = k.split(':')[1].split(',').map(Number); if (x >= SIZE || y >= SIZE) return createState();
+    }
+    if (!v.leases || typeof v.leases !== 'object' || Array.isArray(v.leases) || Object.keys(v.leases).length > 100) return createState();
+    for (const [k, l] of Object.entries(v.leases)) if (!/^-?\d{1,6},-?\d{1,6}$/.test(k) || !l || !['me','other'].includes(l.owner) || !Number.isSafeInteger(l.until) || typeof l.friends !== 'boolean') return createState();
+    // Archived JSON is not loaded back into editable terrain. Export first if needed.
+    return { ...createState(), realm:v.realm, cx:v.cx, cy:v.cy, selected:v.selected, player:v.player,
+      permits:v.permits, completed:v.completed, cells:v.cells, leases:v.leases, friend:v.friend, cacheFound:v.cacheFound };
+  } catch { return createState(); }
+}
+
+const $ = id => document.getElementById(id);
+let state = createState(), storageOK = true;
+try { const raw = localStorage.getItem(KEY); if (raw) state = restore(raw); } catch { storageOK = false; }
+const canvas = $('world'), ctx = canvas.getContext('2d');
+let faces = [], width = 0, height = 0;
+function announce(message) { $('status').textContent = message; }
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch { storageOK = false; announce('Browser storage is unavailable. Keep this tab open or export your blueprint.'); }
+}
+function selectRealm(realm) {
+  state.realm = realm;
+  for (const b of document.querySelectorAll('[data-realm]')) b.setAttribute('aria-pressed', String(b.dataset.realm === realm));
+  $('outdoor').hidden = realm !== 'questlayer'; $('virtual').hidden = realm !== 'gotchiverse'; $('geocache').hidden = realm !== 'geocaching';
+  save(); update();
+}
+function update() {
+  $('permits').textContent = `${state.permits} sample permit${state.permits === 1 ? '' : 's'}`;
+  $('sample-quest').disabled = state.completed;
+  $('quest-result').textContent = state.completed ? 'One sample permit is yours. Take it into Gotchiverse.' : '';
+  $('cache').disabled = state.cacheFound;
+  $('cache-result').textContent = state.cacheFound ? 'Sample cache found. A story collected, with no payment or yield.' : '';
+  $('chunk-name').textContent = `Grid ${state.cx} / ${state.cy}`;
+  const lease = state.leases[chunk(state)], active = !!lease && lease.until > Date.now(), editable = mayEdit(state);
+  $('lease-label').textContent = !lease ? 'An open piece of the world.' : !active ? 'Your build stays. Editing rests.' : lease.owner === 'other' ? 'A new player is building here.' : 'A little world, made by you.';
+  $('lease-help').textContent = !lease ? 'Use an outdoor test permit to try a 30-day local claim. Real claims will also require QGOLD.' : !active ? 'Renew before another player claims it. Your terrain remains visible while this claim is expired.' : lease.owner === 'other' ? 'The previous terrain was archived before this new claim. Your personal collectibles were not transferred.' : `Claimed until ${new Date(lease.until).toLocaleDateString('en-GB')}. Shape the terrain or invite your friends.`;
+  $('claim').hidden = !!lease; $('claim').disabled = state.permits < 1 || state.friend;
+  $('friends-row').hidden = !active || lease?.owner !== 'me' || state.friend;
+  $('friends').checked = !!lease?.friends;
+  $('visitor').checked = state.friend;
+  for (const b of document.querySelectorAll('[data-edit]')) b.disabled = !editable;
+  $('expire').disabled = !active || state.friend || lease.owner !== 'me';
+  $('renew').disabled = !lease || active || lease.owner !== 'me' || state.friend || state.permits < 1;
+  $('takeover').disabled = !lease || active || state.friend;
+  $('archive-count').textContent = `${state.archives.length} archived blueprint${state.archives.length === 1 ? '' : 's'} in this session.`;
+  const [x,y] = state.selected, c = cell(state,x,y);
+  $('cell-description').textContent = `Block ${x + 1}, ${y + 1} · ${c.material} · height ${c.height}`;
+  if (state.realm === 'gotchiverse') draw();
+}
+function polygon(points, color, stroke) {
+  ctx.beginPath(); ctx.moveTo(...points[0]); for (const p of points.slice(1)) ctx.lineTo(...p); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+}
+function draw() {
+  const rect = canvas.getBoundingClientRect(); if (!rect.width || !rect.height) return;
+  width = rect.width; height = rect.height;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = width * dpr; canvas.height = height * dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  const sky = ctx.createLinearGradient(0,0,0,height); sky.addColorStop(0,'#e8d9f6'); sky.addColorStop(1,'#d6c2eb'); ctx.fillStyle=sky; ctx.fillRect(0,0,width,height);
+  const unit = Math.min((width - 24) / 32, (height - 68) / 19), rise = unit * .68, ox = width / 2, oy = 44;
+  faces = [];
+  for (let sum = 0; sum <= 30; sum++) for (let y = 0; y < SIZE; y++) {
+    const x = sum - y; if (x < 0 || x >= SIZE) continue;
+    const c = cell(state,x,y), px = ox+(x-y)*unit, py = oy+(x+y)*unit*.5, top = py-c.height*rise;
+    const colors = c.material === 'grass' ? ['#a5ce8d','#637b68','#778f70'] : c.material === 'stone' ? ['#c9bce1','#776585','#9583a7'] : ['#8bcad8','#52879b','#69a6b8'];
+    polygon([[px-unit,top],[px,top+unit*.5],[px,py+unit*.5+rise],[px-unit,py+rise]],colors[1]);
+    polygon([[px,top+unit*.5],[px+unit,top],[px+unit,py+rise],[px,py+unit*.5+rise]],colors[2]);
+    const points = [[px,top-unit*.5],[px+unit,top],[px,top+unit*.5],[px-unit,top]];
+    polygon(points, colors[0], '#6f5c8c33'); faces.push({x,y,points});
+    if (x===state.selected[0] && y===state.selected[1]) { polygon(points,'#ffe78c99','#5429b5'); ctx.lineWidth=1; }
+    if (c.object) {
+      ctx.fillStyle='#5b318b';ctx.fillRect(px-unit*.4,top-unit*1.7,unit*.8,unit*1.5);
+      ctx.fillStyle='#f4d56d';ctx.fillRect(px-unit*.6,top-unit*2,unit*1.2,unit*.45);
+      ctx.fillStyle='#ffebac';ctx.fillRect(px-unit*.15,top-unit*2.9,unit*.3,unit*.65);
+    }
+    if (x===state.player[0] && y===state.player[1]) {
+      const p = Math.max(unit*.23,3); ctx.fillStyle='#fff7ff';
+      ctx.fillRect(px-p*2,top-p*7,p*4,p*5);ctx.fillRect(px-p*3,top-p*6,p*6,p*3);
+      ctx.fillStyle='#5429b5';ctx.fillRect(px-p*1.5,top-p*5,p,p);ctx.fillRect(px+p*.5,top-p*5,p,p);
+      ctx.fillStyle='#ed8cd7';ctx.fillRect(px-p*2.5,top-p*3.8,p,p*.7);ctx.fillRect(px+p*1.5,top-p*3.8,p,p*.7);
+    }
+  }
+  if (!mayEdit(state)) { ctx.fillStyle='#40215d';ctx.font='600 14px system-ui';ctx.fillText(state.leases[chunk(state)] ? 'VIEWING · editing is paused' : 'OPEN LAND · claim to build',16,height-18); }
+}
+function pointInside(x,y,points) { let inside=false; for(let i=0,j=points.length-1;i<points.length;j=i++) { const [xi,yi]=points[i],[xj,yj]=points[j];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;}return inside; }
+function moveSelection(dx,dy) { state.selected=[Math.max(0,Math.min(15,state.selected[0]+dx)),Math.max(0,Math.min(15,state.selected[1]+dy))];save();update(); }
+for (const b of document.querySelectorAll('[data-realm]')) b.onclick=()=>selectRealm(b.dataset.realm);
+$('sample-quest').onclick=()=>{outdoor(state);save();update();};
+$('enter-world').onclick=()=>{selectRealm('gotchiverse');document.querySelector('[data-realm="gotchiverse"]').focus();};
+$('claim').onclick=()=>{if(claim(state)){announce('This grid is yours in the local prototype. Select a block and start building.');save();update();}};
+for(const b of document.querySelectorAll('[data-edit]')) b.onclick=()=>{if(edit(state,b.dataset.edit)){announce(`${b.textContent}: block ${state.selected.map(n=>n+1).join(', ')} updated locally.`);save();update();}else announce('This action is unavailable: check your claim or the block height.');};
+for(const b of document.querySelectorAll('[data-select]')) b.onclick=()=>moveSelection(...b.dataset.select.split(',').map(Number));
+for(const b of document.querySelectorAll('[data-pan]')) b.onclick=()=>{const [dx,dy]=b.dataset.pan.split(',').map(Number);state.cx=Math.max(-100000,Math.min(100000,state.cx+dx));state.cy=Math.max(-100000,Math.min(100000,state.cy+dy));save();update();};
+$('friends').onchange=()=>{const l=state.leases[chunk(state)];if(l&&l.owner==='me'&&!state.friend){l.friends=$('friends').checked;save();update();}};
+$('visitor').onchange=()=>{state.friend=$('visitor').checked;save();update();announce(state.friend?'Previewing a friend. Editing follows this claim’s friends setting.':'Returned to your own local profile.');};
+$('expire').onclick=()=>{const l=state.leases[chunk(state)];if(l&&l.owner==='me'&&!state.friend){l.until=Date.now()-1;state.permits=Math.max(1,state.permits);save();update();announce('Expiration simulated. One test renewal permit supplied. The existing terrain stays visible.');}};
+$('renew').onclick=()=>{if(renew(state)){save();update();announce('Claim renewed locally. Your terrain was preserved.');}};
+$('takeover').onclick=()=>{if(takeover(state)){save();update();announce('Old blueprint archived for this session. Another player’s claim starts from natural terrain. Personal NFT ownership is outside this prototype.');}};
+$('export').onclick=()=>{const blob=new Blob([JSON.stringify({prototype:true,chunk:chunk(state),cells:state.cells,archives:state.archives},null,2)],{type:'application/json'});const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='gotchiverse-local-blueprint.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
+$('cache').onclick=()=>{state.cacheFound=true;save();update();};
+canvas.addEventListener('click',e=>{const r=canvas.getBoundingClientRect(),f=[...faces].reverse().find(f=>pointInside(e.clientX-r.left,e.clientY-r.top,f.points));if(f){state.selected=[f.x,f.y];save();update();}});
+canvas.addEventListener('keydown',e=>{const arrows={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]},walk={w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};if(arrows[e.key]){e.preventDefault();moveSelection(...arrows[e.key]);}else if(walk[e.key.toLowerCase()]){e.preventDefault();const [dx,dy]=walk[e.key.toLowerCase()];state.player=[Math.max(0,Math.min(15,state.player[0]+dx)),Math.max(0,Math.min(15,state.player[1]+dy))];save();update();}});
+new ResizeObserver(()=>{if(state.realm==='gotchiverse')draw();}).observe(canvas);
+selectRealm(state.realm);
+if(!storageOK)announce('Browser storage is unavailable. Export your blueprint before leaving.');
+</script></body></html>

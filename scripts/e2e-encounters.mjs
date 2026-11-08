@@ -78,26 +78,54 @@ try{
       await page.getByRole("button",{name:"Try again",exact:true}).click();
       const greeting=await (await greet).json();
       const offer=greeting.menu.find(o=>o.terms.errand);assert.ok(offer,"quest giver has a real errand");
-      const bounds=await page.locator("dialog[open]").boundingBox();assert.ok(bounds.x<2&&bounds.y<2&&bounds.width>=389&&bounds.height>=843,"NPC owns the full screen");
+      const bounds=await page.locator("dialog[open]").boundingBox();assert.ok(bounds.x>=7&&bounds.width<=375&&bounds.height<844,"NPC uses a bounded dialog");
       await page.addScriptTag({content:axeSource});
       const issues=await page.evaluate(async()=> (await window.axe.run()).violations.filter(v=>["serious","critical"].includes(v.impact)).map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})));
       assert.deepEqual(issues,[],"NPC accessibility");
+      await page.screenshot({path:join(shots,"npc-greeting.png")});
+      assert.equal(await page.locator(".npc-more[open]").count(),0,"NPC starts with a greeting, not a service menu");
+      for(const [name,width,height] of [["360",360,780],["390",390,844],["landscape",844,390],["desktop",1440,900]]){
+        await page.setViewportSize({width,height});
+        assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
+        assert.equal(await page.locator(".npc-linear > .primary-button:visible").count(),1,"Greeting has one continuation");
+        await page.screenshot({path:join(shots,`npc-greeting-${name}.png`)});
+      }
+      await page.setViewportSize({width:390,height:844});
+      await page.locator(".npc-more > summary").click();
       await page.locator(".npc-chat input").fill("An unsent question for the wayfinder.");
-      await page.locator("dialog[open]").click({position:{x:380,y:830}});
-      assert.equal(await page.locator(".npc-chat input").isVisible(),true,"Blank screen area does not dismiss a page");
+      await page.locator("dialog[open]").click({position:{x:4,y:4}});
+      assert.equal(await page.locator(".npc-chat input").isVisible(),true,"Blank dialog padding does not dismiss a conversation");
       await page.reload();
+      await page.locator(".npc-more > summary").click();
       await page.locator(".npc-chat input").waitFor();
       assert.equal(await page.locator(".npc-chat input").inputValue(),"An unsent question for the wayfinder.");
       await page.screenshot({path:join(shots,"npc-ready.png")});
       for (const [name,width,height] of [["360",360,780],["landscape",844,390],["desktop",1440,900]]) {
         await page.setViewportSize({width,height});
-        assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
+        const dialog=page.locator("dialog[open]");
+        assert.equal(await dialog.evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
+        const image=page.locator(".npc-portrait img");await image.waitFor();
+        await image.evaluate(el=>el.decode());
+        assert.equal(await image.evaluate(el=>getComputedStyle(el).objectFit),"contain","Whole portrait is fitted without cropping");
+        const frame=await page.locator(".npc-portrait").boundingBox(), art=await image.boundingBox(), plate=await page.locator(".npc-plate").boundingBox();
+        assert.ok(art.y>=frame.y&&art.y+art.height<=frame.y+frame.height+1,"Portrait stays inside its frame");
+        if(height>500)assert.ok(plate.y>=frame.y+frame.height,"Name stays below the whole portrait");
+        const box=await dialog.boundingBox();if(width>1000)assert.ok(box.width<=642&&box.height<=height*.85);
+        await dialog.evaluate(el=>el.scrollTop=el.scrollHeight);
+        const close=await page.getByRole("button",{name:"Close",exact:true}).boundingBox();
+        assert.ok(close.y>=0&&close.y+close.height<=height,"Close remains visible");
+        await dialog.evaluate(el=>el.scrollTop=0);
         await page.screenshot({path:join(shots,`npc-${name}.png`)});
       }
       await page.setViewportSize({width:390,height:844});
+      await page.locator(".npc-more > summary").click();
+      await page.locator(".npc-continue").click();
       const accepted=page.waitForResponse(r=>decodeURIComponent(new URL(r.url()).pathname).endsWith(`/offers/${offer.id}/accept`));
       await page.getByRole("button",{name:new RegExp(offer.label.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))}).click();
+      await page.getByRole("button",{name:"Start quest",exact:true}).click();
       const receipt=await (await accepted).json();assert.equal(receipt.state,"accepted");
+      await page.screenshot({path:join(shots,"npc-confirmed-acceptance.png")});
+      await page.locator(".npc-more > summary").click();
       await page.getByRole("tab",{name:/Tasks/}).click();
       await page.screenshot({path:join(shots,"npc-accepted.png")});
       await page.setViewportSize({width:390,height:420});
@@ -109,7 +137,10 @@ try{
       await page.locator(".npc-sheet *").evaluateAll(elements=>elements.map(el=>[el,getComputedStyle(el).fontSize]).filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,size])=>el.style.setProperty("font-size",`${parseFloat(size)*2}px`,"important")));
       assert.equal(await page.locator("dialog[open]").evaluate(el=>el.scrollWidth>el.clientWidth+1),false);
       await page.screenshot({path:join(shots,"npc-enlarged-text.png")});
-      results.push({kind,accepted:receipt.state,draftRestored:true,keyboardViewport:true,enlargedText:true});
+      await page.locator(".npc-continue").click();
+      await page.getByText("Encounter closed",{exact:true}).waitFor();
+      assert.equal(await page.evaluate(()=>window.__focusedQuest),offer.terms.steps[0].questId,"The confirmed NPC task supplies the next map target");
+      results.push({kind,accepted:receipt.state,draftRestored:true,keyboardViewport:true,enlargedText:true,nextQuestFocused:true});
     }else{
       await page.locator(".actor-offers button").first().click();
       const started=page.waitForResponse(r=>r.url().endsWith(`/${actor.id}/challenge`)&&r.request().method()==="POST");

@@ -124,13 +124,29 @@ const premiumEmotes = GOLD.emotes.premium.map((e) => `${e.id} ${e.price}`).join(
 
 export const CHAPTERS: Chapter[] = [
   {
+    id: "gotchiverse", group: "world", title: "Gotchiverse workshops",
+    summary: "A virtual building space for your explorer and invited friends.",
+    status: "off", updated: "2026-11-07",
+    sources: ["docs/GOTCHIVERSE.md", "src/realms.ts", "src/Gotchiverse.tsx", "src/gotchiverse-model.ts", "server/gotchiverse/store.mjs", "server/gotchiverse/routes.mjs", "server/gotchiverse/model.mjs"],
+    blocks: [
+      { note: "Implemented in this source build. Public activation has not been verified. Public land claims and virtual financial rewards are not active.", tone: "info" },
+      { p: "Choose a world from the logo. Gotchiverse uses your current explorer and equipped appearance; returning to QuestLayer keeps the physical quest and its progress. Virtual movement is separate from GPS and cannot claim physical rewards. Your first workshop works without a wallet or deposit." },
+      { p: "Each explorer can open a free 16 × 16 workshop. Raise or lower terrain, choose its surface and place a garden lantern. Shape three blocks and place a lantern to finish the first building activity. Its saved completion grants no XP, currency or item. The workshop does not claim public land." },
+      { p: "Terrain is saved by the game server. A revision check prevents a stale edit from overwriting a friend's work; an actor-bound request receipt makes retries safe. A save awaiting confirmation blocks another edit until retried. Offline, storage failure and lost access retain an explanation and a next action." },
+      { p: "The owner shares a one-use invitation and can revoke a friend's access. Friends can edit, but cannot invite others or manage permissions. Workshop visitors see only virtual block positions and names; no physical GPS is shared here. Peer markers currently use the starter appearance." },
+      { p: "A garden lantern is a free library prop, not an owned NFT. Equipment, original appearances, economic balances and staking rights stay in their existing systems. Public claims, personal NFT placement, Aura yield and treasury voting are separate future integrations." },
+      { note: "Workshop files need coordinated backup/restore before release. An interrupted file lock fails closed and requires operator recovery with writers stopped. Physical device checks remain open.", tone: "warn" },
+    ],
+  },
+
+  {
     id: "overview",
     group: "start",
     title: "What QuestLayer is",
     summary: "A location game on real streets: walk, collect, meet NPCs, earn collectibles, with a real prize pool settled on NEAR.",
     status: "live",
-    updated: "2026-11-05",
-    sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx"],
+    updated: "2026-11-07",
+    sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx", "src/useDemoWalk.ts", "src/MapSurface.tsx", "src/nearby-action.ts", "src/Dialog.tsx", "src/QuestBrief.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx", "src/zone-presence.ts", "src/ZonePresence.tsx"],
     blocks: [
       {
         p: "QuestLayer turns the streets around you into a daily adventure. Coins lie along public paths, six quest zones open across the city every day, NPCs walk the map and offer errands, monsters guard chests, and everything you earn becomes yours: XP and levels on your account, Auras as NFTs, and coin rewards paid from one global prize pool that is funded by staking yield and sponsors, never by players losing money.",
@@ -138,7 +154,9 @@ export const CHAPTERS: Chapter[] = [
       {
         p: "This wiki is the know-how center of the project. Every chapter describes a mechanism **that is in force today**, the numbers it uses, how it connects to the rest and where it lives in the code. Status chips say honestly what is live on testnet, what is built but switched off and what is only planned.",
       },
-      { p: "The map is home: the avatar opens Profile, and compact shortcuts open Inventory and Community. One objective holds the next action. Content screens keep the map camera and adventure selection; returning from a confirmed completion releases that finished target. Profile has Character, Badges, Stake, Rewards and Settings; Community has Quests, Tasks, Local chat, Places and Creators." },
+      { p: "The map is home: the avatar opens Profile, and compact shortcuts open Inventory and Community. One dismissible objective holds the next action. Nearby actors, quest checkpoints and street finds offer an Open action without requiring a marker tap. Confirmed results, recovery notices and the first equipment/share steps keep priority over nearby suggestions until the player explicitly hides that objective. Discovery details and encounters open content-sized overlays with a persistent close action; the desktop map remains visible around them. Map controls and camera framing never depend on overlay height. The demo starts with one open row of movement controls and remembers an explicit collapse or reopen. Opening a modal releases held demo movement; closing it does not resume the previous input. A dismissed first-steps objective can be restored from Profile Settings without resetting its progress. Inventory, Profile and Community keep their own screens. Returning from a confirmed completion releases that finished target. Profile has Character, Badges, Stake, Rewards and Settings; Community has Quests, Tasks, Local chat, Places and Creators." },
+      { p: "Game moments use progressive disclosure. An activity opens with its illustration, objective, real reward availability and Start quest; starting only focuses that activity and never reserves or claims a reward. An active activity keeps its objective ahead of incidental nearby suggestions; its own nearby target or an explicit dismissal can still open the floating action. The next step shows its existing location or question requirement before confirmation. A nearby target still requires entering its actual zone footprint before the interface offers confirmation. Learn more holds timing, safety, evidence and alternative activities. Duration stays unknown when the published activity has no duration; a minimum distance between stops is never described as a verified walking route. The confirmed result replaces the quest overlay rather than stacking dialogs or repeating success toasts. Confirmed Aura results prioritize the item, series limit when matched to the catalog, and one next action. Receipt history, ownership refresh, proofs and optional secure/share actions remain under Learn more; choosing the first-session share step opens those actions deliberately." },
+      { p: "A new server-confirmed wearable pickup opens a short, closable item moment when the map is free. Routine coins and duplicate wearables keep calm pickup feedback. This live moment is not reconstructed from inventory or replayed on reload. The zone currently containing the map position receives a stronger static outline and a compact activity cue. In GPS mode this hint needs a fresh finite fix and reports uncertainty when its accuracy overlaps the boundary. Closed, paused, locked or completed zones do not advertise available activities. The hint never attests presence or changes server eligibility; no reward is granted merely by entering the footprint." },
       { viz: "architecture" },
       { h: "Three kinds of value" },
       {
@@ -173,8 +191,8 @@ export const CHAPTERS: Chapter[] = [
     title: "Walking, coins and finds",
     summary: "GPS-only movement, street coins in daily waves, street finds and calm reward feedback.",
     status: "live",
-    updated: "2026-11-05",
-    sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/map-motion.ts", "src/RewardBursts.tsx"],
+    updated: "2026-11-07",
+    sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/map-motion.ts", "src/gps-facing.ts", "src/quest-route.ts", "src/QuestBrief.tsx", "src/GameMap.tsx", "src/RewardBursts.tsx"],
     blocks: [
       { viz: "core-loop" },
       { h: "Movement" },
@@ -183,7 +201,9 @@ export const CHAPTERS: Chapter[] = [
           "**Real play moves only with the phone's GPS.** There is no tap-to-walk anywhere.",
           "The city demo has an open, collapsible single row of controls (arrows / WASD). Up and down walk along the character's facing, left and right turn it. Running (14 m/s) is the default and Shift walks (5 m/s), both under the 15 m/s fair-play jump cap.",
           "Quest buttons only turn the explorer toward the target. Within 3 m the demo snaps onto it so thin path zones count.",
-          "The 3D character follows map rotation and, in GPS play, the device heading.",
+          "Starting demo movement or turning puts the camera behind the character, looking along its facing with room ahead. Movement after the city overview restores street zoom and perspective. Arrows and WASD still control the demo when the map canvas has focus; these keys do not pan the map, while native map zoom shortcuts remain available. Separate held keys and pointer contacts cannot cancel one another. Dialogs, editable fields, other interactive widgets, hidden pages and window blur release movement; closing them never resumes an old key press. The globe keeps map navigation instead of demo movement.",
+          "In GPS play the character and follow camera share a fresh moving course. When the device omits it, meaningful successive accurate fixes supply a direction. Stationary jitter, stale/inaccurate observations and large jumps do not invent a turn. This is course over ground, not a stationary phone compass. Manual map exploration pauses follow; My location, resumed walking after a pause, or movement after showing a quest restores it. Reduced motion uses immediate camera updates without animated travel. GPS fixes and server eligibility checks are unchanged.",
+          "Multi-stop walks keep their original checkpoint numbers after each confirmation. The next required stop is prominent; later stops are quieter. Co-located departure and return steps share a badge so a future number cannot cover the current one. Tapping a checkpoint opens the quest, never confirms it automatically. Ordered walks accept only the server's next point; any-order hunts explicitly say Any order and use the nearest remaining point consistently for the map, distance and confirmation. Confirmation still requires the existing 25 m range, zone footprint and current GPS evidence; the server alone advances progress and confirms the final reward.",
         ],
       },
       { h: "Coins" },
@@ -299,9 +319,11 @@ export const CHAPTERS: Chapter[] = [
     title: "NPCs, monsters and mini-games",
     summary: "Roaming NPCs with AI voices, monsters beaten by skill, an altar for crafting and earned dice rolls on chain.",
     status: "live",
-    updated: "2026-11-05",
-    sources: ["docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
+    updated: "2026-11-07",
+    sources: ["docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
     blocks: [
+      { p: "NPC and monster portraits are shown completely in bounded, scrollable encounter dialogs. The title sits beside or below the image. The close control remains reachable when content scrolls; desktop encounters leave the map visible around the modal. Nearby Open cues only open the existing encounter: the server still checks location, timing and availability." },
+      { p: "NPC greetings initially show one continuation. Quest offers can be previewed before Start quest calls the existing accept endpoint; only its confirmed response shows acceptance. Returning to the map focuses the first unfinished step from that confirmed active task when it belongs to the current world. The full offer menu, active tasks, trader and keeper surfaces, conversation input and reply provenance remain under Learn more. Closing or folding that area preserves the current explorer/actor/world text draft. Financial actions and their terms keep their original handlers and checks." },
       { p: "Unsent NPC messages are kept as bounded local text drafts for the current explorer, world and actor. Returning or reloading restores the text; a successful send clears only that submitted revision. Drafts never store encounter tokens or prove consent, position or a completed action." },
       {
         p: "Actors walk real pedestrian paths on a schedule. Reviewed cities have a hand-cast list; every other city and street cell gets a generic cast (quest giver, storyteller, wandering rare, one roamer, two lurkers). Actors are out **07:00–22:00 local** and switch between day and night casts by the real sun.",
@@ -361,12 +383,14 @@ export const CHAPTERS: Chapter[] = [
     title: "Auras and collectibles",
     summary: `${EDITIONS.length} Aura editions, ${SUPPLY_PER_EDITION} per edition, minted on NEAR and secured automatically.`,
     status: "live",
-    updated: "2026-11-05",
-    sources: ["docs/NATIVE-AURA-CLAIMS.md", "docs/COLLECTIBLES-REVIEW.md", "docs/ASSET-CATALOG.md", "server/data/aura-catalog.json", "server/earned-editions.mjs"],
+    updated: "2026-11-07",
+    sources: ["docs/NATIVE-AURA-CLAIMS.md", "docs/COLLECTIBLES-REVIEW.md", "docs/ASSET-CATALOG.md", "server/data/aura-catalog.json", "server/earned-editions.mjs", "src/Inventory.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx"],
     blocks: [
+      { p: "Confirmed Aura results present the awarded item and one equipment or map action first. Matched catalog editions show their set, serial and configured edition limit; that limit is never labelled as remaining stock. Full receipts, ownership refresh, optional secure/share actions and outfit previews remain under Learn more. Newly collected wearable clones have a separate short live pickup moment, with the original-network distinction and proof available in its details. Neither a result preview nor zone entry changes ownership or claims another reward." },
       {
         p: "Auras are wearable effects in two slots (above and below the character). Each edition is capped on chain. The catalog in `server/data/aura-catalog.json` is the single source for the server, the client and this page.",
       },
+      { p: "Inventory puts owned Auras and the two equipped slots first. Unowned editions remain available in a separate expandable catalog; catalog art does not imply ownership or current reward availability. Character details retain progression and the optional 3D preview. Item actions still wait for the existing server confirmation." },
       { viz: "aura-catalog" },
       {
         table: {

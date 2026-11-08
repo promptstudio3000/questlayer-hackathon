@@ -1,0 +1,1629 @@
+{
+  "createdAt": "2026-11-07T20:06:40.288715+00:00",
+  "scope": "Combined D2 provenance, R1 runtime evidence and P1 documentation plan. Draft for later evening recapture. Review pack, not a complete checkout. Excludes itself and outer archive metadata.",
+  "base": "e9160028637cda7785cae02acd9ea3e299525c17",
+  "runtimeBaselineHead": "9dbed6f6709cdbc95fc214ee36733366fc515114",
+  "branch": "weekend/r1-gotchiverse-integration",
+  "files": {
+    "CLAUDE-START-HERE.md": {
+      "sha256": "e4c88e9e5256d7f93409ef1fc39e414f0514cc149b4c860b488a79a0e191911a",
+      "bytes": 5621
+    },
+    "docs/CLAUDE-RETURN-HANDOFF-2026-11-07.md": {
+      "sha256": "448fdf674bf7d2e9fb0d4a62529a99540afdd6c6e9920719bbd6516a2945071c",
+      "bytes": 25651
+    },
+    "docs/GOTCHIVERSE-SHARED-WORLD-PLAN-2026-11-07.md": {
+      "sha256": "7a91bdab61351fc5f001f2376c5085caf0e689cbf125c7ecf48fee10431570b6",
+      "bytes": 16490
+    },
+    "docs/GOTCHIVERSE.md": {
+      "sha256": "5a64a240a6d3d403bb6e016ffcb40f372388d1d8b0f4cc8d6baebbdbe3a6b0c2",
+      "bytes": 6898
+    },
+    "docs/HACKATHON-RESEARCH-2026-11-07.md": {
+      "sha256": "5704225991e10444fff29365e1baa39cd39c024efb72af95eac5bf4955e4e388",
+      "bytes": 13539
+    },
+    "docs/QUESTLAYER-INTEGRATION-PLAN-2026-11-07.md": {
+      "sha256": "54b41bff71cc3206f71f71510bc1a2e8b28545585bc0a8f5d0255e7003459947",
+      "bytes": 26699
+    },
+    "docs/wiki-coverage.json": {
+      "sha256": "4f62fb83c5479945cfeed28ac4d79a6208d31e2c23fe7202d0ec6cf476c6de8c",
+      "bytes": 2574
+    },
+    "docs/wiki-stamps.json": {
+      "sha256": "a6b697877d616df639c2665f0f899bf6cc0fd6508bce11b16a1b5822d8cfd7b4",
+      "bytes": 4260
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/README.md": {
+      "sha256": "b92f67b95268d035d36f9530828e5b8550a6aed54a9505f23dab82af7bf2b5d4",
+      "bytes": 3036
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/baseline.json": {
+      "sha256": "5c3b3488bade7ac0c322f0f790e2ff68f8b2e22f037a2cc9568a99f933ee5975",
+      "bytes": 3773
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/baseline/CLAUDE-START-HERE.md": {
+      "sha256": "4ecb7d784fd32cc1b6baec9cd67119cf4387674642cdfd449373711694b4ce8a",
+      "bytes": 5000
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/baseline/docs/CLAUDE-RETURN-HANDOFF-2026-11-07.md": {
+      "sha256": "61660c88780ca4beb95b6bcbb77c90dfd6ec2ff69d8081d3e861034f12a80678",
+      "bytes": 24597
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/baseline/docs/QUESTLAYER-INTEGRATION-PLAN-2026-11-07.md": {
+      "sha256": "e2b69cfaf24d73fb70e85e13899bc179c763a4d2197a9f3940cce1a1b526ea39",
+      "bytes": 26252
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/baseline/docs/wiki-coverage.json": {
+      "sha256": "7d80df6e1ceec13da6218b63615a7112df67b1be6f541d06da70c4d46b361f7b",
+      "bytes": 2440
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/baseline/output/qa/claude-return-2026-11-07/change-ledger.json": {
+      "sha256": "5eb29ba05c2f6c6b0cf868a4e9a5295b37dc6f11f2f472dde13a7c0883879384",
+      "bytes": 5201
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/changes.json": {
+      "sha256": "02e271046ce0386ba70fec31e7dd2bd3a1a09a026a613dcfc5539a13b62621d3",
+      "bytes": 2315
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/changes.patch": {
+      "sha256": "944d304cf947f23c6d59f31223c4d209b8a55ad0482cd740168900e4a187ed27",
+      "bytes": 34553
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/document-links.json": {
+      "sha256": "ebf2eea427a90842667aa1a7088761656841c92f48a48727f398c4998e24b9a8",
+      "bytes": 5018
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/refresh-review.py": {
+      "sha256": "cf850fbfc4ab79167c91900a7f2c8884574a151620550381c9207192f5249a69",
+      "bytes": 8078
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/verification.json": {
+      "sha256": "88c8f750c18a8d63580476986b52d96a510eabf3a776c41df88930e6dbbbfb34",
+      "bytes": 940
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/wiki-check.log": {
+      "sha256": "f794a1a8c04e32473fa5598f60c984d97f1354bc4057f6d4904ad74f5dc89aae",
+      "bytes": 111
+    },
+    "output/qa/claude-evening-handoff-2026-11-07/wiki-tests.log": {
+      "sha256": "28efb119ebd941ce182d0fc355a98395790ef87fa188f25175d42bd0344ed823",
+      "bytes": 516
+    },
+    "output/qa/claude-return-2026-11-07/README.md": {
+      "sha256": "8d5d9adcb2e7bd0e9fc6787d0eda6a33d0a2db59149004eee3f70f852caef909",
+      "bytes": 2277
+    },
+    "output/qa/claude-return-2026-11-07/audit-verification.json": {
+      "sha256": "ced7178fdb2df0ffb1d9265711bd29bac4d2f6dcf107f50d54348a89dda0e883",
+      "bytes": 3049
+    },
+    "output/qa/claude-return-2026-11-07/capture-inventory.py": {
+      "sha256": "37fece47545a8ac2c7d159cb5135b07dfa1ce173369a96a8cf601dfc3ee89349",
+      "bytes": 9703
+    },
+    "output/qa/claude-return-2026-11-07/change-ledger.json": {
+      "sha256": "25a6b8e1e5d7d019077a4035db6f4a6d38e6e047d48fa9f99eb022cad84c6f46",
+      "bytes": 6463
+    },
+    "output/qa/claude-return-2026-11-07/document-link-checks.json": {
+      "sha256": "5fa0f5be1d0ec769fdbf6ffd8fc2b54af9c88e9ec1148f99260d3f24c1c31a88",
+      "bytes": 3241
+    },
+    "output/qa/claude-return-2026-11-07/external-evidence/art/output/imagegen/questlayer-map-kit-2026-11-07/manifest.json": {
+      "sha256": "1b4452857a3ef73c0a049df42fde4c26f0df7229d184dfd98d21d973b7e7d0ef",
+      "bytes": 45744
+    },
+    "output/qa/claude-return-2026-11-07/external-evidence/art/output/imagegen/questlayer-map-kit-2026-11-07/verification.json": {
+      "sha256": "387f4724f1f99d9036c871ca69c08af212bf636cc5afd25c493a7b7f69e93a4d",
+      "bytes": 4408
+    },
+    "output/qa/claude-return-2026-11-07/external-evidence/art/output/qa/zone-aura-2026-11-07/README.md": {
+      "sha256": "fbf73e2dd514e43524b09e44b82a4ac092ca385a396d470a0c95245164e5ce59",
+      "bytes": 7545
+    },
+    "output/qa/claude-return-2026-11-07/external-evidence/world/output/qa/global-playable-collector/README.md": {
+      "sha256": "4be16c656a3920bd862e333dcd5c939fe56ae122217fd44ad97b63e867e2ed7e",
+      "bytes": 8693
+    },
+    "output/qa/claude-return-2026-11-07/external-evidence/world/output/qa/global-release/README.md": {
+      "sha256": "2d1502817adbcbe756831e9a1e7ec93d7cb77b220a4b0858d95c7ba1c036e003",
+      "bytes": 7438
+    },
+    "output/qa/claude-return-2026-11-07/external-streams.json": {
+      "sha256": "853512f747409082bc2de453bef862795327839f6747f83b5c1edc129b7d0639",
+      "bytes": 51289
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/integrated-2026-11-06/README.md": {
+      "sha256": "de26cfcba57acf9394e7e97b35467fbb5f54af555c56b5bc2758c69cfee82426",
+      "bytes": 9813
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/integrated-2026-11-06/source-fingerprints.json": {
+      "sha256": "9330a78504303057c30c16990c84cd1a0a799f3442ab34967bef37b6363a4e69",
+      "bytes": 4982
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/integrated-2026-11-06/verification.json": {
+      "sha256": "13b2bb665d74828be251c9ac69a08f8e643f78be780947815ff9f02d57ce1606",
+      "bytes": 2298
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/linear-adventures-2026-11-07/README.md": {
+      "sha256": "b28722f9d6941c2e150197c64740f6fdb8ba9f51220a379673bf0ba027afb593",
+      "bytes": 9730
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/linear-adventures-2026-11-07/preview-verification.json": {
+      "sha256": "004fc1e29e7c1e7a210075f6a48ca7598bef7bebfb48f5946809c8092d0c797d",
+      "bytes": 255
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/linear-adventures-2026-11-07/source-fingerprints.json": {
+      "sha256": "e3c40d75e0657f1183764cf060215994df681da3ff1875556f6af1196c228176",
+      "bytes": 73320
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/linear-adventures-2026-11-07/verification.json": {
+      "sha256": "858829fb2dea870033b6470408ecb0b67c86ef2a427968220e870d73002a3d31",
+      "bytes": 6320
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/map-overlays-2026-11-06/README.md": {
+      "sha256": "c36ec569d0347826cfbbeeb526d7d039f9c97c079783b39bf38f80aa5e267978",
+      "bytes": 7953
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/map-overlays-2026-11-06/verification.json": {
+      "sha256": "256faead54da9326c1093f18a60cb68ce99e42adceaa8e484640ab276334f580",
+      "bytes": 1477
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/map-play-2026-11-07/README.md": {
+      "sha256": "6bd00ad3bd24514c05a497d531540067223817b11b43c610624706b3e2a1bf4d",
+      "bytes": 11053
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/map-play-2026-11-07/preview-verification.json": {
+      "sha256": "2baaa528ef6c94dde7cc9f159d73559c96c1f8e1e6853b94d4e73074659fab29",
+      "bytes": 229
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/map-play-2026-11-07/source-fingerprints.json": {
+      "sha256": "4e748995518fd7d83381d17b1f5918e33f22f95cef6b71fdb6c20ec9014e20fd",
+      "bytes": 73608
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/map-play-2026-11-07/verification.json": {
+      "sha256": "e9934c96ff5ebcd7e9cb5295d86ace6fa03ae0c343b46b8260e9985c6cc13617",
+      "bytes": 7130
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/mobile-polish-2026-11-06/scope.json": {
+      "sha256": "0c29677c8594387dbdf0d581652755dee8be2124499f7ea4dafdd91ef54f8384",
+      "bytes": 1048
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/mobile-polish-2026-11-06/verification.json": {
+      "sha256": "477a41d19cc3b44bf7050d60528b30ca76fa20569f1fd5b5c64a8477fa337842",
+      "bytes": 4854
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/profile-community-2026-11-06/scope.json": {
+      "sha256": "27eb7355d0491301d8cee583e600cfe5bed567d21ba48641484c1172464ee0ee",
+      "bytes": 887
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/profile-community-2026-11-06/verification.json": {
+      "sha256": "2214ca8d4ca0d269827dd2b621c3169f162dcaff2cd60a0d4350867c0fd9008d",
+      "bytes": 3169
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/secondary-surfaces-2026-11-06/scope.json": {
+      "sha256": "45bc437dfa35a989b9320c3e98da01aa8057fa0a3052e5657367841a3d04ca6e",
+      "bytes": 1555
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/secondary-surfaces-2026-11-06/verification.json": {
+      "sha256": "b92d9741525edb0adcb8d4462b9a9f16dd01196b971ad0c77b517d6414e714ae",
+      "bytes": 6199
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/weekend-2026-11-05/README.md": {
+      "sha256": "cc6fa6eb64f903f7e0a9285f97da4a9d3baa1a6247969a51dda5be4df9e6220e",
+      "bytes": 14241
+    },
+    "output/qa/claude-return-2026-11-07/historical-evidence/weekend-2026-11-05/verification.json": {
+      "sha256": "ad76eb6ef5a1020a4248b601c23ddb890bf0e450744a46529bfdf35cf4739b1e",
+      "bytes": 2693
+    },
+    "output/qa/claude-return-2026-11-07/historical-ui-drift.json": {
+      "sha256": "9e352c7d777fa85bce8cc7cee5e35b7e6bb286473cd3bc3e99edf13339356421",
+      "bytes": 13267
+    },
+    "output/qa/claude-return-2026-11-07/main-committed.patch": {
+      "sha256": "2e2eeb93f36ae8166bcf0cb3fe983eae4d13f542492c6e62aa8b63e97e4da7b3",
+      "bytes": 299249
+    },
+    "output/qa/claude-return-2026-11-07/main-working.patch": {
+      "sha256": "adc48ca3dde4ccf7dde746f600a75349ea40b6b24baa5fbb9a353811675fc3c9",
+      "bytes": 304014
+    },
+    "output/qa/claude-return-2026-11-07/own-implementation.patch": {
+      "sha256": "85ae8d7e3ad84a6083037b26d77272922e280bf7559fb8cb50198fbee26d6d13",
+      "bytes": 126572
+    },
+    "output/qa/claude-return-2026-11-07/patch-checks.json": {
+      "sha256": "c8a107258d60f2d1a02a624441a55f8ce64adab9496be8d26b801374cbf0c0ae",
+      "bytes": 511
+    },
+    "output/qa/claude-return-2026-11-07/post-capture-drift.json": {
+      "sha256": "debdf31a7171402f9147fb50588c011a7cd8c4b8ac776213b82fa74ddb34e781",
+      "bytes": 191
+    },
+    "output/qa/claude-return-2026-11-07/prototype-browser-checks.mjs": {
+      "sha256": "2a63dff2d8774239bd8920db28fdae4115dc5b05277e48045af7ebca779ecf7f",
+      "bytes": 5562
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-desktop-before-claim.png": {
+      "sha256": "85f8159785fa10ef618bfc0b7b16d24f6725477e87b8339af99901ee24a76e8b",
+      "bytes": 225830
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-desktop-building.png": {
+      "sha256": "4b0e0dcb58a51a150e20bbdbfb666cfe7d138883a3f2346f56a388673f85104c",
+      "bytes": 221129
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-desktop-enlarged.png": {
+      "sha256": "fedebd223ee6e646ca69c1add201497a961664240a5675bcba4f905d56e6dc29",
+      "bytes": 372019
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-desktop-expired.png": {
+      "sha256": "ddf08d14116f84bbb8fa03e9e924908a551fc4fac4caa4b2cf6418fd4d6097f2",
+      "bytes": 263705
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-landscape-before-claim.png": {
+      "sha256": "dd1e3f72b3ba31182e7aac9050e9e7a7ec2d8ad815e1190f3a2a3cc76dfbfe9c",
+      "bytes": 179454
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-landscape-building.png": {
+      "sha256": "c76df7ae52b34e9743cde9e6366a574d703de9e3fa47be8137ba349189410079",
+      "bytes": 174371
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-landscape-enlarged.png": {
+      "sha256": "58004eb12855c466d05a1dd42c20681b7e48d4d16401583ed5afe084547f5a22",
+      "bytes": 329969
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-landscape-expired.png": {
+      "sha256": "1cb02b703d542601face85062bd17f9c51f1c1d7f4de4862800b8404b20a7578",
+      "bytes": 217187
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-phone-360-before-claim.png": {
+      "sha256": "08e228568b07a0f127056937d2b88d0f12a0da1b6c6ca891742a76be699c1e20",
+      "bytes": 150628
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-phone-360-building.png": {
+      "sha256": "125fbe15da2fe735631db05805ad5708227582d97accc4e094ed0aa58b730b05",
+      "bytes": 146215
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-phone-360-enlarged.png": {
+      "sha256": "a4acb1d423de6ba57413d14aff5e1674a07e4c2ae596af7738c2a922b1407c4b",
+      "bytes": 310510
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-phone-360-expired.png": {
+      "sha256": "02aada26858270ec9243382f45c5c701cb226afae0c1d4ccba37c345042027ba",
+      "bytes": 191569
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-phone-390-before-claim.png": {
+      "sha256": "7e73a5afa25b8f408e1b54296b7bc7cd38dfb381efdccb50667661e69b7ce71c",
+      "bytes": 149104
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-phone-390-building.png": {
+      "sha256": "d54ea620bcd5def95c2ad557252d946113f6fa2300269a387c343d4441312c36",
+      "bytes": 145570
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-phone-390-enlarged.png": {
+      "sha256": "a5e2bdc90677ad3ed99dd6c5327ed8775263a21cb239d11851a70447b02d4e0c",
+      "bytes": 305900
+    },
+    "output/qa/claude-return-2026-11-07/prototype/chromium-phone-390-expired.png": {
+      "sha256": "e9488b8308b4108621a125883995b623ec7edf3794ed5dd44e8337caf998049e",
+      "bytes": 188643
+    },
+    "output/qa/claude-return-2026-11-07/prototype/model-tests.log": {
+      "sha256": "8e816131e408e5bf5e289780e499694f206743d18c90a6a254b4795fa594e7dc",
+      "bytes": 684
+    },
+    "output/qa/claude-return-2026-11-07/prototype/verification.json": {
+      "sha256": "b6043ed245413d4df39a09246231df0493576915b4cd58dfc4eca7ef19779b28",
+      "bytes": 7373
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-desktop-before-claim.png": {
+      "sha256": "9d6e88bcddc9ddda7306657ccbefe220ba0111c13eb4f4aabdc124aec681eb04",
+      "bytes": 298269
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-desktop-building.png": {
+      "sha256": "383de7eda903960bb0cf0be4cd28ec496137693fec5674a77a4c4a09f474d824",
+      "bytes": 295549
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-desktop-enlarged.png": {
+      "sha256": "0e90be2248bd3e5d3f241cbce0998825d4260ea6c351f68cb6a25a6b89cbc8c8",
+      "bytes": 474700
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-desktop-expired.png": {
+      "sha256": "6a38aa6636a6625786849a3c32db47ac60a10136cba81c2314f6bc4a6cc698ef",
+      "bytes": 345811
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-landscape-before-claim.png": {
+      "sha256": "329b08b1eb6b2bbd808dbab8333e24e7349f5c64e8239246557522051b28b4f2",
+      "bytes": 229755
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-landscape-building.png": {
+      "sha256": "0daa889974b5b5ff0edd994be97289ea989b677204ad55dfdb5ae4a40dcc91a5",
+      "bytes": 225249
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-landscape-enlarged.png": {
+      "sha256": "212855a668d8b563d11f21712b3c95fb3286e4cb394c224040cd6c6f7b67da7d",
+      "bytes": 403584
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-landscape-expired.png": {
+      "sha256": "38b797e4198df5166d67f1476db12c82349221c191f09211df2842f1b1859faf",
+      "bytes": 276988
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-phone-360-before-claim.png": {
+      "sha256": "af9c205c67edfa1dd254a8fa086570d0acfb5875f97b793f48848ad23e80c4d3",
+      "bytes": 198476
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-phone-360-building.png": {
+      "sha256": "178c783b56c284106bb46edae2464823ccd68f66388b207d42ad67dfda8f2d07",
+      "bytes": 195175
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-phone-360-enlarged.png": {
+      "sha256": "676993766c6b0c60e49545dd784cf768881853e9fd72cf285ec60f9064ccc050",
+      "bytes": 384971
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-phone-360-expired.png": {
+      "sha256": "7839a8d319661272994d1240dbca3d3b4a8142b3ea304b7a47db514e632ad29d",
+      "bytes": 254613
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-phone-390-before-claim.png": {
+      "sha256": "002e31d65b947c552fe9f6f8ce1be3c3e102a6f031b801cb0575540ff06cac12",
+      "bytes": 202224
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-phone-390-building.png": {
+      "sha256": "27e1bd15f55cdb382bedc4a05733cb8e9e21af26b8dd3447d4daea539430a7ac",
+      "bytes": 199620
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-phone-390-enlarged.png": {
+      "sha256": "d52b8e6e01a08c3ce309723962ff50078388d3bacdee7d82b299d8f3dd424556",
+      "bytes": 384096
+    },
+    "output/qa/claude-return-2026-11-07/prototype/webkit-phone-390-expired.png": {
+      "sha256": "32d49a4506af7126a5ed3dc1f1f5fad33eac51fd8789f0df793629b7bdeb59ee",
+      "bytes": 256678
+    },
+    "output/qa/claude-return-2026-11-07/research/ALL-PROJECTS.md": {
+      "sha256": "57d2446c057b35d2a6e83077ba468cd8911625264292ef734162faeee9cc80bd",
+      "bytes": 25570
+    },
+    "output/qa/claude-return-2026-11-07/research/demo-posts.json": {
+      "sha256": "d86a535d3c7b438986159f0b143b922ef49b69187b2290ed31d90b4fb9d35ac3",
+      "bytes": 23844
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-01.json": {
+      "sha256": "07f705fe183cc8d98ab97b2be0962aba648d5a7e881fb2c6105e7752666dc15f",
+      "bytes": 2051
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-02.json": {
+      "sha256": "5fb0e56385d29586dbc232e3857fc9a82c359c8ef8388c03bfcef69657634c4a",
+      "bytes": 2049
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-03.json": {
+      "sha256": "a702fcabd904717729b9e6f137c571d99d766d8688f3a5061398c38ffd499a53",
+      "bytes": 2136
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-04.json": {
+      "sha256": "76a9117741944f6f2b827ce257b6bd5c2f9d62914bfb25a4588b97b1277568a9",
+      "bytes": 2037
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-05.json": {
+      "sha256": "0d7b75ee36f818e4a4fb4849ecec2c019597b9fef23aec1f85ee86de6409a452",
+      "bytes": 2107
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-06.json": {
+      "sha256": "e4e874a6712273380d4477f440d5aa2015ff90c31013c42687711c0d931e61b7",
+      "bytes": 2104
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-07.json": {
+      "sha256": "483f90c1de27bdf00e8ae5bc7e63be7cf70dcc3b2dee8171209f8d7512f5ef61",
+      "bytes": 2007
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-08.json": {
+      "sha256": "3efdff19d38d930d1b8d0d85145ad1f29660e9d6714024f8bcc2a684547081fc",
+      "bytes": 2009
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-09.json": {
+      "sha256": "4fdc9c6f67440d1939b768af6e7b0920b0d6ab96882906448ec975a61f6daeeb",
+      "bytes": 2205
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-10.json": {
+      "sha256": "63d7c62ad2112a3c20b6268e7c571c034eea678e9d8dcd768ff5e6a6a5099421",
+      "bytes": 2105
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-11.json": {
+      "sha256": "c6a20cd9d616708ac872ddb67e33fbbc1984c7ebe3ea24ab334b4de2c0b9a74a",
+      "bytes": 2274
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-12.json": {
+      "sha256": "3bce8e8d1cd3a98f61b1c4aa847c41f6e0423705ac890df463de21ffec695bda",
+      "bytes": 2109
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-13.json": {
+      "sha256": "e5c364f7277baac9c27e1713ac0fe3cd6a246a76f6257dffa660c0ff09a86b67",
+      "bytes": 2135
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-14.json": {
+      "sha256": "cd6413a1c916fd514361f408403cfba2ec352b8fde9a2e64db5a334d563f5cae",
+      "bytes": 2095
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-15.json": {
+      "sha256": "54f6ee61cc4781bbbdf9bacd23e66e5c2c7dc8ec3f3d3eadec5fd08df36adb4b",
+      "bytes": 2027
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-16.json": {
+      "sha256": "ba4c53f9af08fb52577a269567b3c9f62ce71d82ed407bee6f3acd7d02a093b7",
+      "bytes": 1997
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-17.json": {
+      "sha256": "ae099f9df888afeed7a7828d9ff0c0541c92c8680d7c210cd0eda94d94bab983",
+      "bytes": 2065
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-18.json": {
+      "sha256": "dccd9ceb3cff8df1743dce0d49f9a1a35734d4d7f50f2162a6fdd862223d0cc7",
+      "bytes": 2289
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-19.json": {
+      "sha256": "84614e2ecaa816e452948be9538688634ef69a2a5e53c9ee6492aa9781c63ddd",
+      "bytes": 2047
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-20.json": {
+      "sha256": "7046e9162ada10dd725dc6f577307fb3f76a360ddc6721f5acc68c54a29c7ae7",
+      "bytes": 2091
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-21.json": {
+      "sha256": "dacf40874b3a2d72e414610a1291aae4856a16dc63ab6af53f61da4c1fc9b03c",
+      "bytes": 2042
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-22.json": {
+      "sha256": "432dc2731b1a2d9d8f8b789d1105098eff58804cf8e704678fb5ecf4f2ef4698",
+      "bytes": 2036
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-23.json": {
+      "sha256": "4d110da7a737a331823109cf7344b9636ec8baf90479ede9335c3800b94864cd",
+      "bytes": 1932
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-24.json": {
+      "sha256": "a9f45b0d2ae4ae1a9ac98ef827a4a3e1f3e96d558bf5ffb88ae35ce3c031268b",
+      "bytes": 2096
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-25.json": {
+      "sha256": "e61c328e33ad799f52b61e666fd8595af9151bc95f4e5209fc9528943d93463e",
+      "bytes": 2034
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-26.json": {
+      "sha256": "b3e665115fb8b52e1601f6bc4516cadfa739262ffbfdfeb19652d59d227760e5",
+      "bytes": 2120
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-27.json": {
+      "sha256": "a6e06b5516950f987b56e32846e2b24a2213f3c2c11ec67edd807aef67c38ec0",
+      "bytes": 2086
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-28.json": {
+      "sha256": "adbc7e9b4a43735dc9dd1b9d21df726b550a5f376162f8feea7192b3f2ff141b",
+      "bytes": 1943
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-29.json": {
+      "sha256": "e8e01ac02c7513294aed470a2e11217ebd49d7507acccee9d0b12e79c5c76f12",
+      "bytes": 2082
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-30.json": {
+      "sha256": "d69b5a0145538737861dbb82bdef800bff0aa3e6b24bb57f130a7d166c41362f",
+      "bytes": 1951
+    },
+    "output/qa/claude-return-2026-11-07/research/directory-page-31.json": {
+      "sha256": "385312f2ebb7af86263985f051b6ad53af319da999a38cacccc49621a910c502",
+      "bytes": 573
+    },
+    "output/qa/claude-return-2026-11-07/research/directory.json": {
+      "sha256": "26fcfa9899e1e8663f8cbc6998d48a1aae84ce7e011a37055777ef6c8e41549b",
+      "bytes": 60686
+    },
+    "output/qa/claude-return-2026-11-07/security-status.json": {
+      "sha256": "74415c7bd997bfd7d89b874e047c593d4ee8ead7eb84d83d1e2f674b9ebd4a1f",
+      "bytes": 6005
+    },
+    "output/qa/claude-return-2026-11-07/security/questlayer-claude-security-2026-11-07-a05-a09.manifest.json": {
+      "sha256": "c55cff7f2f2b6e69c87c8fdd794ea9db02e95ace621df9e4863938bb56a9e51b",
+      "bytes": 29710
+    },
+    "output/qa/claude-return-2026-11-07/security/questlayer-claude-security-2026-11-07-a05-a09.sha256": {
+      "sha256": "f52c30ae6d9d4ced2474089e1f3c1e8ab87ade1e40b29a4d63ecc56457e718ac",
+      "bytes": 116
+    },
+    "output/qa/claude-return-2026-11-07/security/questlayer-claude-security-2026-11-07-a05-a09.zip": {
+      "sha256": "f20002007bdfb1a649dd5f2cda21737444d9264a8f3d04a5ce7be468805c9512",
+      "bytes": 5245685
+    },
+    "output/qa/claude-return-2026-11-07/security/questlayer-claude-security-2026-11-07-final-auth.manifest.json": {
+      "sha256": "a6e00dd8ba3ae543511ad1cf1e11b120cae28dddfab6ca8bb12a4a98b5706dee",
+      "bytes": 35949
+    },
+    "output/qa/claude-return-2026-11-07/security/questlayer-claude-security-2026-11-07-final-auth.sha256": {
+      "sha256": "fe4cb0dd687b1c22b819d53dd5f4b75ca7046cbc2ee54399a3ac39e28501dd0f",
+      "bytes": 119
+    },
+    "output/qa/claude-return-2026-11-07/security/questlayer-claude-security-2026-11-07-final-auth.zip": {
+      "sha256": "3d34f9535133d6b53caecceb7c0e46da387d600213f22e88e4f2c61bf9f623fd",
+      "bytes": 5672791
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-a05-a09/README.md": {
+      "sha256": "4a631565fad02f31c903387319f28bfbeb3ab0923a86b0ed8ecfb29119c7114b",
+      "bytes": 4675
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-a05-a09/REPRODUCE.md": {
+      "sha256": "ffecb3736c86d0d6b60a17ec17e57334c8a332096f9904619ee542fe2600c379",
+      "bytes": 5069
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-a05-a09/SAFE-REVIEW.md": {
+      "sha256": "dfa99cfa54a8cc2dcc6e23e85a7a066e548fee17ade6d67a628f0b05d9cfab12",
+      "bytes": 5558
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-a05-a09/UI-REVIEW.md": {
+      "sha256": "b58b8d42018539378e750c1688f69cff5d5fb6e660d3bb45244a92a1560d620e",
+      "bytes": 2759
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-a05-a09/patch-order.json": {
+      "sha256": "2c5539d900396f812787e85ef5830c4ab321c789e3add86ed622930fe05f7aca",
+      "bytes": 1447
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-a05-a09/verification.json": {
+      "sha256": "4b22302bfec8225d3a8ccefd375855de7008ae45aa03ee181939069eefb60444",
+      "bytes": 13769
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-final-auth/README.md": {
+      "sha256": "de9a60671a957b4155d42bbe5d696f1eb6b6d8b17bcb9a30c6de03bb97eb601a",
+      "bytes": 8814
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-final-auth/REPRODUCE.md": {
+      "sha256": "61aabf0310e6798fdf2e572ee018036b900bf21c7466a4309f9f17c21a931853",
+      "bytes": 1747
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-final-auth/patch-order.json": {
+      "sha256": "2a0e1d1040d6073b5d5bde67d3ee49591f5846e4660c2339ae876aa14529751a",
+      "bytes": 1602
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-07-final-auth/verification.json": {
+      "sha256": "a2a54586bb4c5ca0e54cd2455481d595fdfd3fd85fb1a32e63527cdfd23cb404",
+      "bytes": 4240
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-08-claude-review/CLAUDE-START.txt": {
+      "sha256": "071f1b4dadb1d3e5cfd071c06d30048fdadd253dc3edaf1dd29a624fbeabe3f8",
+      "bytes": 1527
+    },
+    "output/qa/claude-return-2026-11-07/security/reports/2026-11-08-claude-review/README.md": {
+      "sha256": "a62ff8416c819e6934002eb742c51c55d0aad8699e762945b895e6d39817d7e5",
+      "bytes": 1464
+    },
+    "output/qa/claude-return-2026-11-07/source-inventory.json": {
+      "sha256": "ec337d5e4d8bf70ab15feb1705c049773252e843e5f7b9082f72d0b510613a25",
+      "bytes": 46163
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/scripts/e2e-linear-adventures.mjs": {
+      "sha256": "6a85f0166a7aa8cbf8f9939be7ebb1ab78fa27988065b78e958547f77d0114b2",
+      "bytes": 18395
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/scripts/e2e-map-overlays.mjs": {
+      "sha256": "778048c03251e8e3c90dab1487f528bea1323810538e62c97a5cb602240f2ef7",
+      "bytes": 13448
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/scripts/e2e-map-play.mjs": {
+      "sha256": "7581cf2f2ca45958c862f3e6286d53c1cae9bb3d09a7d2eb09f293699ec5ee02",
+      "bytes": 20040
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/scripts/e2e-mobile-polish.mjs": {
+      "sha256": "141d40d1a5fe655d44b8117dd252f787ee80cd8ea03e64b6f136135c69a7c720",
+      "bytes": 14170
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/scripts/e2e-profile-community.mjs": {
+      "sha256": "af9fa54a5e7d0086296b542d2472971e64af8a99a2255e13e876277f3815c38f",
+      "bytes": 11605
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/scripts/e2e-secondary-states.mjs": {
+      "sha256": "fcc354a5f443508f6a88b433375e0d8dd7f65fa181b7f552ca3be5db16ee1fdd",
+      "bytes": 8537
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/scripts/e2e-secondary-surfaces.mjs": {
+      "sha256": "80538428639068305ca2bb8c9c86cec075444c8d5e24426bccb7525d27cee833",
+      "bytes": 10799
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/ActorPortrait.tsx": {
+      "sha256": "fd12824738f04d877904ff0234d52835afee150c92dd1a52cbd823913688ba50",
+      "bytes": 959
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/FindDetails.tsx": {
+      "sha256": "7f4a2f7981aea7ee64ffe2db98b0823a52d477369219e971324bbddc15208413",
+      "bytes": 1382
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/MapSurface.tsx": {
+      "sha256": "00c96cb5485856fa73f9753d160a9a29f61469cea20f2dd0663edb7020edbfe0",
+      "bytes": 456
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/QuestBrief.tsx": {
+      "sha256": "311431700d6c0ac46aaf785568688ede93cc03e379986506b6a21ddf72eb633e",
+      "bytes": 7784
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/WearableMoment.tsx": {
+      "sha256": "d64724c4e9d04209193766b1794ae2cac3b670d2acde4a6e046eae87d94c44ff",
+      "bytes": 1576
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/ZonePresence.tsx": {
+      "sha256": "02e291c2fb84105349fa4b71af5013fd66c16bd23c1e492419d2cb18d62c64cf",
+      "bytes": 1153
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/dialog-polish.css": {
+      "sha256": "06e7b5893a14cad73a8a4459402893ce953e624ba87b423839b052ce485ae11d",
+      "bytes": 3307
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/gps-facing.ts": {
+      "sha256": "7439dae0fd96affee4c0299bd942702ddbba8dfdb615ffc688955d9f341f9fd7",
+      "bytes": 2287
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/inventory-polish.css": {
+      "sha256": "1e7e83832ab97807690c17792275a2bf9c687725bcec7549f0a606e785e0570a",
+      "bytes": 7288
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/mobile-adventure.css": {
+      "sha256": "b3e86db96b9c4f8f8bb732c8bdc987e66955d61fe17e34f3a3c60c3a093a80c3",
+      "bytes": 7009
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/nearby-action.ts": {
+      "sha256": "2a7732d525a771e3d15f487abcde3b095b423ec546576344b1983d87605b1481",
+      "bytes": 2310
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/profile-community.css": {
+      "sha256": "c5356389c59699af81cb9cd41cd1bd031fd9d57a5018e07e12d2e107fdb08872",
+      "bytes": 10186
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/public-polish.css": {
+      "sha256": "df985b66b55a498e63600267391e1b5b7b040ac642b02f3631f887d625aeb5e3",
+      "bytes": 7363
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/quest-brief.css": {
+      "sha256": "3961c43111c9b9431d9e08bd4845fd9c8b646fee422d961c13eef40ab99cebed",
+      "bytes": 2535
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/scroll-region.ts": {
+      "sha256": "7fc2c17f524754e51cff30a32c626d00d9ba7f49393f23a8069e1522e895e3d4",
+      "bytes": 876
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/secondary-surfaces.css": {
+      "sha256": "8325f276f4263e34b66a6ad8eca4f18b41b1c5a3f77b2f2fc3b5252ce6d8759f",
+      "bytes": 15599
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/src/zone-presence.ts": {
+      "sha256": "0f02999140967df30648198aac195604a26022a92018a7fcf452c3725d7eeba8",
+      "bytes": 3431
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/tests/fixtures/secondary-surfaces.tsx": {
+      "sha256": "3fab25f8092a26e26ae1fea726399d77af77dbda34585957d42cdd2aabd61b56",
+      "bytes": 5819
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/tests/gps-facing.test.mjs": {
+      "sha256": "4f26b23e7f1233bae90b0883a6f253c985b51d140b1de5ae60b066c3d0ae4bd9",
+      "bytes": 2807
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/tests/nearby-action.test.mjs": {
+      "sha256": "4f01f1071ad96e9d5976afc29cb2259050befa7d9bd0fdabb4da534f56389a08",
+      "bytes": 3050
+    },
+    "output/qa/claude-return-2026-11-07/untracked-source/tests/zone-presence.test.mjs": {
+      "sha256": "acc4464138e685f39e3e1c4d8873a87eb57aecc633a6f8915daa94eace907e69",
+      "bytes": 3322
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/README.md": {
+      "sha256": "b7832f0e306673292a9f61f55be623b711f69f86508e80dec965a69252711586",
+      "bytes": 13249
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/application-tests.log": {
+      "sha256": "fdb566dcc6236bc152c900eae01e680e0b81cab08992ec2194e7fdab2e4c6e2c",
+      "bytes": 120741
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/attempts/01-world-switcher-before.png": {
+      "sha256": "5a745b3a92ae27a43249da95354e048485fc1f46fdc4e81a2476ac04082057fa",
+      "bytes": 139253
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/attempts/01-world-switcher-pointer.log": {
+      "sha256": "601f8d153dd056b5362e094d0ea9c66c31b36c3049f34ea0da669caad24a1d4e",
+      "bytes": 4644
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/attempts/02-picker-inherited-pointer.log": {
+      "sha256": "4c7e35068064c253d6216fb2fd3d45c29331b285b247c54c7918a343b89b78ba",
+      "bytes": 3087
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/attempts/03-contrast.log": {
+      "sha256": "8d14fa43377005f0ece7dcd08c5f1106a9437b2f6e1dfbde67811aa6f0f76996",
+      "bytes": 562
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/attempts/04-webkit-focus-return.log": {
+      "sha256": "522c5993642a8b298db65cbacff453fe9938c15a517abcc4851507ff8e34bb16",
+      "bytes": 425
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/attempts/05-main-height-before.png": {
+      "sha256": "c35ba7bd32aaaac7a945becdeda73b5ab06d33df12b980da54b1b2fc917be70a",
+      "bytes": 81832
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/attempts/application-tests-restricted.log": {
+      "sha256": "9d5141868ab353baf639ff363e3bf2acf471e569539a40b29c9bb911f114ac57",
+      "bytes": 129788
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline.json": {
+      "sha256": "80433f7398b8332391e1ff281b2265bdd2b7208ba487f1be5a6ffd62dbd493d0",
+      "bytes": 2601
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/CLAUDE-START-HERE.md": {
+      "sha256": "acf8e59bdec45abffad74eff6e95bebc08d3589e404f3865608d047b229c690c",
+      "bytes": 4024
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/docs/CLAUDE-RETURN-HANDOFF-2026-11-07.md": {
+      "sha256": "435331f4087e226c4d0e3b0df2edbe9282fe784fc83c1ca0c64b6df8cdaf598a",
+      "bytes": 23757
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/docs/QUESTLAYER-INTEGRATION-PLAN-2026-11-07.md": {
+      "sha256": "a6e0b1d8f10a910eed24634b0445e5420e8ec2972fd8462fdbc94c84dc752b7f",
+      "bytes": 25473
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/docs/wiki-coverage.json": {
+      "sha256": "e4b64a2c299d89e2c2db902c87e12b8c0a15f4a65ff740a3503dc2a205cd2711",
+      "bytes": 2118
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/docs/wiki-stamps.json": {
+      "sha256": "2e9fa240c04662b5be9d27962da4348937a3117685c04050cab137bffabb00bb",
+      "bytes": 4213
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/output/qa/claude-return-2026-11-07/change-ledger.json": {
+      "sha256": "a5b9b9209d28ff750d048da64afa6cbbc794fbc449bba1663e7e0fb0e95ebe65",
+      "bytes": 3862
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/server/index.mjs": {
+      "sha256": "2312282209effcb4b0eb55ed599074a4a6d537f74c77afc2e361671a652ddd1d",
+      "bytes": 138050
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/App.tsx": {
+      "sha256": "865df4c8b6508072099c197d922950f61234eb200d9e3149f6f2eac03d7a16cd",
+      "bytes": 199142
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/app-navigation.ts": {
+      "sha256": "cd677fad824915c081eec415e06c81cc99e4a6d5bd009a13eff9e6abe99aefb8",
+      "bytes": 7957
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/ar.json": {
+      "sha256": "fcc0b1507a70390b56fb3568eb261fa5aae347d335010d90d0ede594feacf7b1",
+      "bytes": 275720
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/cs.json": {
+      "sha256": "422591a124fb38a11c0e05be21bb24ca70a8a1c39ffbcc6fa87aeabd39aa03a2",
+      "bytes": 234180
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/de.json": {
+      "sha256": "3071a4e1d6c7bac8d552ca5ed24bbaf7c8a33c9341c913ae02ff646f9011d957",
+      "bytes": 239047
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/es.json": {
+      "sha256": "01e0de85036102c2c52b0f3c1b794a0319d9a4a30bdcd59f59fdf4108ef42ad1",
+      "bytes": 238374
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/fr.json": {
+      "sha256": "c084aa6648c1628650e499472edeaf7e7a18fd2a7ee06174682c50c85a540d47",
+      "bytes": 245694
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/hi.json": {
+      "sha256": "cf0d241cbca507130a3c7b11db521ba05328241dc0783f71b3f19bfca9bce429",
+      "bytes": 382264
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/ja.json": {
+      "sha256": "e184275aeda19897d2211e960d54e8cff08fde35e8d7d42fd0f3ca8771523824",
+      "bytes": 270277
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/pt.json": {
+      "sha256": "107c434a069364438b17b2d846069695c21b96ad1c96fc7c286737ad48ca033a",
+      "bytes": 236689
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/ru.json": {
+      "sha256": "3ae4725793852c0b805b5b1a7ec1d992f10dae5086e163e1d0d415b7a95db45d",
+      "bytes": 320283
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/i18n/zh.json": {
+      "sha256": "b251f994bcab5b2b2fe08fd9dd6207961f6e8cd4cc4b383b7bfbf79f849c8a29",
+      "bytes": 220489
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/lazy-panels.tsx": {
+      "sha256": "37b828cfcb7d3294e64b4b7c579a72b084a9cd6ecd81d53042db3c7c335c1f7a",
+      "bytes": 6723
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/baseline/src/wiki/chapters.ts": {
+      "sha256": "744144012aca8ce7d18df5e268d000c7d82222444a073811aff5957dcb171ad8",
+      "bytes": 65942
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser-run.log": {
+      "sha256": "0afcac2c3f9099a36ca00bb28ffd79edc5382dfe78c80476b7641074431be4c9",
+      "bytes": 166
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-desktop-axe.json": {
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bytes": 2
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-desktop-before.png": {
+      "sha256": "48e491f93f1330804553d8bca828d4c58988812c9bbca84cc87d63822d154c87",
+      "bytes": 219278
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-desktop-building.png": {
+      "sha256": "5d56b69a0adde068c8842b15cd1019e50f5e7475505d747e989b8ea4dbf41b94",
+      "bytes": 150000
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-desktop-enlarged.png": {
+      "sha256": "b651bc7594a1b773862ac025c271b7d8ec7dc324b9438d3b2e6126e3b73b7a51",
+      "bytes": 166477
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-desktop-entered.png": {
+      "sha256": "d75b76c93136babb6870cffcfc0cff90a8a335a92c521240a2546004660c336e",
+      "bytes": 152388
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-desktop-invite-keyboard.png": {
+      "sha256": "59e5fc872e0d26a10fd0e770fbe17601f6f7a140b146dd9f10646513d83894a3",
+      "bytes": 157226
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-landscape-axe.json": {
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bytes": 2
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-landscape-before.png": {
+      "sha256": "10363a3d29835a3480dc21e518d9f98c986500e5ebad7cedfa3fabd1a6f7aa61",
+      "bytes": 70673
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-landscape-building.png": {
+      "sha256": "1a6fb1bad7bc4ac232a551c5a141d570fd9c35abc468ce65d5b33ffcd48c037f",
+      "bytes": 49042
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-landscape-enlarged.png": {
+      "sha256": "9666ca03207814e22bb00b43d21544ac4639fa60072ac2a0e8cc2644dcf698d7",
+      "bytes": 51249
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-landscape-entered.png": {
+      "sha256": "3a6d9c6a49cf571eafa2697ac5537a8b8aaaa179de5e0daa8a71bf0625dc8598",
+      "bytes": 50646
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-landscape-invite-keyboard.png": {
+      "sha256": "a9e0044450bbe83c644988e9dace38209a6df83eb1ed1504ed2b5da4b301837a",
+      "bytes": 52169
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-360-axe.json": {
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bytes": 2
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-360-before.png": {
+      "sha256": "3b3666850836f616539e00f5f5f541c0f1af1e7f56285c0431eb01917a88901e",
+      "bytes": 146931
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-360-building.png": {
+      "sha256": "5cda02bd7d565e82817fdd7bd28dfbb7e75a3051c75cd77ac35e204949220564",
+      "bytes": 82165
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-360-enlarged.png": {
+      "sha256": "25fbeadec30b34938547aacc3f70d4ca2d0876890d0e85addc97b3dda7ba9b61",
+      "bytes": 51852
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-360-entered.png": {
+      "sha256": "64c50a3742bee541dd9ec860137c29bab6976ed6624934602b3cdff52388f908",
+      "bytes": 80658
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-360-invite-keyboard.png": {
+      "sha256": "1a5ebc11403808709f2dd7779c78f6f01a907fd4f1ff447b50cce6f5d99e9e5d",
+      "bytes": 53713
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-390-axe.json": {
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bytes": 2
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-390-before.png": {
+      "sha256": "0137f68fd21074c7817dbb46d51c36e0bed5c3e535e8b3c25c1ca5fa5dc54c33",
+      "bytes": 71228
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-390-building.png": {
+      "sha256": "79f58d828df59831178681ce06f8e0f47a29dc3822bcab2911778efcdfd9e0a5",
+      "bytes": 84580
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-390-enlarged.png": {
+      "sha256": "33adcacd99d045b8ed035c1ba8007c6b43e7399aa7cd75fa5b315fd4414076d5",
+      "bytes": 62715
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-390-entered.png": {
+      "sha256": "1c6a0a94633fd575475d16edbca6d66c71d8c8ebeaf5c2a3931e8f11137742ef",
+      "bytes": 85611
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/chromium-phone-390-invite-keyboard.png": {
+      "sha256": "d574b50c13ee7af4a2ac0bd246e1abd9e09ce8f31a59a45ad297ef67e73e5eb0",
+      "bytes": 58189
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-ar.png": {
+      "sha256": "8070d038444ca6e5bdcd2a96ad208edfafd21a4c85c85c25ff1115a9317bb5df",
+      "bytes": 81153
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-cs.png": {
+      "sha256": "acef9e96cda46e456dcf30163c48ebdbbf7c3a99e342f372a4968131a4a167fc",
+      "bytes": 87300
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-de.png": {
+      "sha256": "08bb0785b3cf12c0b707a9b1e54c7ff45fe0f8dd24d506929f55a1c3af12aa2f",
+      "bytes": 88970
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-en.png": {
+      "sha256": "1c6a0a94633fd575475d16edbca6d66c71d8c8ebeaf5c2a3931e8f11137742ef",
+      "bytes": 85611
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-es.png": {
+      "sha256": "6b669983e608b62d5a21b827a2a4002627d6c69bff189e5919817c2722cf5397",
+      "bytes": 84722
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-fr.png": {
+      "sha256": "b2444522e0acc76d5df352b468ea8f5deb382a46eff26bc2ea013abbdf8efc3f",
+      "bytes": 87938
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-hi.png": {
+      "sha256": "5c600bc774997efb700db03d5b02c0400977d4fd04236d3be3fb9b5ed6b75712",
+      "bytes": 88469
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-ja.png": {
+      "sha256": "e028d0386e1f77b588bb127a340138d4c6f6bed43262d034540c8db8a09055d8",
+      "bytes": 98483
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-pt.png": {
+      "sha256": "40af479f6597aa81aedb2285a9eb0e5977a163859615ef367608980f584af0bf",
+      "bytes": 85222
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-ru.png": {
+      "sha256": "76901e6a7d6a92a264630b71c595155b59527d7d9bec460bb9e32910adaa418b",
+      "bytes": 89067
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/locale-zh.png": {
+      "sha256": "2232f2b8af28aba1731666127927b7ed27f8034879f9f05fa61719d6adb2786b",
+      "bytes": 90657
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/lost-save-reply.png": {
+      "sha256": "9c12d5bdd9ea0334cff20211df1862f84798f9a46659b6350c06173c4beee164",
+      "bytes": 85272
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/server.log": {
+      "sha256": "3869414da1c7c14097509b478df5a4c97cb6f41d938cca836c4461e4b82e9aba",
+      "bytes": 5552
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/verification.json": {
+      "sha256": "fedeaf63a3beb44325af11bebc80ffb575419a8e561e911bfddb0416adfea9a1",
+      "bytes": 5044
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-desktop-axe.json": {
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bytes": 2
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-desktop-before.png": {
+      "sha256": "37be0d46dd4dd15dd57773f16c98fec5b7243edfa3af4fdcd10ec04391ebe744",
+      "bytes": 866018
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-desktop-building.png": {
+      "sha256": "fee38d27ab6d15f9f8a19bae15012bc4acb4cd506c217532f956e4a000bc7bcd",
+      "bytes": 217153
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-desktop-enlarged.png": {
+      "sha256": "4457ac856e2b241878ab47afa8bc0ba9baf00cfd6b63b240b10d3620728943f6",
+      "bytes": 193873
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-desktop-entered.png": {
+      "sha256": "73ad1f4fccf1c2309bd4022709e6c8fd8cfa759b1bc0d48251c19db779a0a4db",
+      "bytes": 218679
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-desktop-invite-keyboard.png": {
+      "sha256": "16be52eb74af390f67ccae9f610aa1cb4e98ba13afb505ae10e86461f5fec725",
+      "bytes": 224184
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-landscape-axe.json": {
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bytes": 2
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-landscape-before.png": {
+      "sha256": "685deee0bd2b3949c1139792f0018f3794ebf72910428740f66cce4ee9813dc8",
+      "bytes": 82497
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-landscape-building.png": {
+      "sha256": "10cb406b6a68c6061bda50fb4e763537acd3f0e457cbf477dd7b179efe2ba5a1",
+      "bytes": 64930
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-landscape-enlarged.png": {
+      "sha256": "4de2d3aa07e340c2921be989a3f9743353a3af32c13e6bde5e43b6b5958f40dc",
+      "bytes": 64891
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-landscape-entered.png": {
+      "sha256": "87ea1e0e0f1ee986f2e309f8bd2593759a5d507cee72d73bff9d4246eeac86df",
+      "bytes": 66504
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-landscape-invite-keyboard.png": {
+      "sha256": "5a805016243e863a88ac188080091c43115d8f1f031820dadd61a64e7cf582d1",
+      "bytes": 67789
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-360-axe.json": {
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bytes": 2
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-360-before.png": {
+      "sha256": "bef292764b86d6e10a282bc3fff441525b11b1539cda7349025ddd688c0f6ccc",
+      "bytes": 99080
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-360-building.png": {
+      "sha256": "25d5dc15b4df1cd6abb73e8d1e56d64047f5177e97e2287f0caa2aee8302daa4",
+      "bytes": 107371
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-360-enlarged.png": {
+      "sha256": "2804a11744675bc5b2834ed7aded3ba8a9f24ba29b4f2918315ad31ae4b4af9d",
+      "bytes": 71255
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-360-entered.png": {
+      "sha256": "14486b0b9dad1031f4719019796960fd43857284f7852caa1f5de7e5c601dcd0",
+      "bytes": 104829
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-360-invite-keyboard.png": {
+      "sha256": "5f568b56e3848156e39618a1fe6b2f231650477284d6840053bce04ab2c8ead7",
+      "bytes": 67475
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-390-axe.json": {
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bytes": 2
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-390-before.png": {
+      "sha256": "6a8e5bd7145f8e3a6d5bf1970b7b176c54adc6d05014ce07e3205fbe2d656124",
+      "bytes": 107622
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-390-building.png": {
+      "sha256": "efdc8199167d194976a346fde384a5175db3a34ee5f0a3e8b6234b50ccb98da4",
+      "bytes": 121784
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-390-enlarged.png": {
+      "sha256": "c6aa7758076a72e3f0686a73a2ebd827fd2dbe9bf9c6304cfdc94bfd18c788a5",
+      "bytes": 82570
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-390-entered.png": {
+      "sha256": "4cfcab00a7b7626daf312fb73698283bc0bdce7720a2c1c44572558dbabdc5c7",
+      "bytes": 122115
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/browser/webkit-phone-390-invite-keyboard.png": {
+      "sha256": "9feada3c228e21b1348cf04216e6e1e2834ec77670e465c283e048f35f920cde",
+      "bytes": 78367
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/budget.log": {
+      "sha256": "80153529dde6094a821f52f5c99b8c87a97eb41dd3ddb48e4477964ca6d58261",
+      "bytes": 669
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/build-initial.log": {
+      "sha256": "727b27776c8e1d0510c930f2967bb503a8e7aed31b68ea61dfe5ad80d98ed96e",
+      "bytes": 17629
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/build.log": {
+      "sha256": "f63215661addcf48e0efee0c5174ef7da82a9f1996803638b89b45494a398432",
+      "bytes": 17629
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/document-links.json": {
+      "sha256": "6256d9acef3504b0017850995236b15b08d0f04a61f6ede8a9cfbf00e6d2a62f",
+      "bytes": 3487
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/export-review.py": {
+      "sha256": "c7dc00b9f14949cfb57acf3eb8f1586179d4a7e9e39acc17162123206bd6aa6f",
+      "bytes": 4865
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/external-status.json": {
+      "sha256": "f5a82407d42fa0b9089616c3951df2f0202991555fbdf1b10e3a5374ac77eaaa",
+      "bytes": 690
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-iphone-recheck.log": {
+      "sha256": "704fa58643fbf7381823c63cb2ac372f1c9e461c9d120467e05a8242b7841f14",
+      "bytes": 4318
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-phone-recheck.log": {
+      "sha256": "f0b854a2377c8a184f6d71c69863f052de056201504e10e5133e4c9c5a74d22b",
+      "bytes": 3790
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-pixel.log": {
+      "sha256": "376adb3d2b93bee581f6d1607eb69c3383c564a98ec070703a153578dab26886",
+      "bytes": 4188
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/01-welcome.png": {
+      "sha256": "6a9a3185c4e5942a2969ccaebafd071dcb443cc2c9dea7e42e3ab10d97e2a94d",
+      "bytes": 386064
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/02-coach-nearest-find.png": {
+      "sha256": "e089f9b0638a1bc9ee804246fda3aba0f7f7b9fcb558cf2122722b81556f7d7c",
+      "bytes": 1295970
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/03-coach-first-chest.png": {
+      "sha256": "b028fb84a2aaa121ede1b8f336f8b5612a19871a03d4d81542d0525cddf605c7",
+      "bytes": 1632797
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/04-chest-detail.png": {
+      "sha256": "92d5d55df410a6c26f9cefe7f9eaca6667f9661250ba0bbe24d3aa8dbf2e2dd3",
+      "bytes": 374939
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/05-chest-reward.png": {
+      "sha256": "7a7b71584c9bf62a0a1193069276f1feda993cbf3da983aead1b7b4683d5eb46",
+      "bytes": 470923
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/06-coach-wear-aura.png": {
+      "sha256": "0e83e0718c009181cf0f281cb2f4b2af560173ce89e5d3909c856e68198c75bd",
+      "bytes": 1414168
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/07-coach-secure-share.png": {
+      "sha256": "2d85ca44a6df3a9024ca10204afe091fc85e68b6ec37a3dcb28ca93d8c646716",
+      "bytes": 1543031
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/08-secure-share-dialog.png": {
+      "sha256": "d36ed4eba3d3010e8ae1454ae01971ea90dd2f4941dd6c0216bb9169bca0f32e",
+      "bytes": 482657
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/09-coach-done.png": {
+      "sha256": "155657c3a6105f86d9735006672ea608a0ff309757a00d20e5248be8019975a4",
+      "bytes": 1551292
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/10-settings-feedback.png": {
+      "sha256": "a0a65e5f01216dce5d61a259e3652a1321a0aa3d7e6e77d72e380896f9e39cd5",
+      "bytes": 193596
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/11-inventory-equipped.png": {
+      "sha256": "1a148c970a00b80ca69fbb2d3fc2ad2346312ebaeeebe58c03cbd79447d69a83",
+      "bytes": 262416
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/12-market-secured.png": {
+      "sha256": "63c7278d18c418ddac50d125b2fdef11f51806fad372435c305271f2276f0809",
+      "bytes": 99391
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/13-creator-feed.png": {
+      "sha256": "08bd5804a791cf652d083d45c8afaa9d71b33b83fb7016ea32f29d2fc45dc578",
+      "bytes": 162991
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/14-creator-section.png": {
+      "sha256": "b451da522eb7ea7654f35fb0c4287b3c75fe9801f5b9e1ac97c2b07b1ad61482",
+      "bytes": 159760
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/15-home-screen-card-map.png": {
+      "sha256": "f1c9b3a5ede5080f4039586e25853a8d4ce77ce9c09de19d2162e88274a17150",
+      "bytes": 1407354
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/16-home-screen-card-profile-screen.png": {
+      "sha256": "202283c0fafec7cbd5c6d5629cca7f27f4a51a6167d1b79830806af32879b605",
+      "bytes": 123449
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/iphone/report.json": {
+      "sha256": "a7523e877a98093e49f2b716f19325cc9f25f83d96be0944ec74d5341152ae5f",
+      "bytes": 1136
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/01-welcome.png": {
+      "sha256": "70d92c9987aa18b8b15aec66a9b61957172316540d334623f6636e6db05c4082",
+      "bytes": 161723
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/02-coach-nearest-find.png": {
+      "sha256": "5a3b8c9d0d132a203e0d7fc96123b7b32381c140fd62f8afe9ced6144485b0ed",
+      "bytes": 511015
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/03-coach-first-chest.png": {
+      "sha256": "ae3adeef1cc2d7167c4922e2380538ba60e1acb8594965af8fc7cf33b06cbd97",
+      "bytes": 698553
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/04-chest-detail.png": {
+      "sha256": "8b9445f41c7234cd178d073fee4e1726fb461debc6b3efce425601dd25284a49",
+      "bytes": 271361
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/05-chest-reward.png": {
+      "sha256": "5c4f88ea75de41149322f8e73eceecba5c3d4e2bddc981cc944584ddf265ce0d",
+      "bytes": 244903
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/06-coach-wear-aura.png": {
+      "sha256": "110df579116f1f9c74c2e3b928e457e8ff1f7fbe82750e8a1d674314cceac8b9",
+      "bytes": 656533
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/07-coach-secure-share.png": {
+      "sha256": "026241f879674d3a8d402f7c23636ff02e38a82b97e90bd457ec2fa725354c6b",
+      "bytes": 712633
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/08-secure-share-dialog.png": {
+      "sha256": "56484c63745494ee1b819e01f2e1e197d6ae8c9a133cf6a84b384f9d26a59e5b",
+      "bytes": 221698
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/09-coach-done.png": {
+      "sha256": "3a3ddd1b1d46515bab97c16d2fba30e3c973e855827fa2e90a648d607c77675c",
+      "bytes": 684739
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/10-settings-feedback.png": {
+      "sha256": "d89e468e4815eac5b7faf6cec63e0fe03494b873a67aa64372f98207fcb4200e",
+      "bytes": 107023
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/11-inventory-equipped.png": {
+      "sha256": "78caf95eabf0c4f895ba0f80f2a4099b95c58e4fe8b295021267edf684e44e14",
+      "bytes": 129938
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/12-market-secured.png": {
+      "sha256": "f45c14eb76853af0eb65147b37826db6819548265c757a7ea108b7a4f44ec126",
+      "bytes": 36662
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/13-creator-feed.png": {
+      "sha256": "3eabc8ff5862e359fb82769d16350c58c175f577bd0dabe946d3ae5fc2882a1d",
+      "bytes": 105231
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/14-creator-section.png": {
+      "sha256": "b7eecd2c9c85f864f2f97177ed6e76e06ef9a540ced9b404216699d061fb0d53",
+      "bytes": 79250
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/phone-390/report.json": {
+      "sha256": "56c9644ed7c311f9fd9735534102be6046610e8e963069bb3b6a347a83854996",
+      "bytes": 921
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/01-welcome.png": {
+      "sha256": "4a7c42b3d946096b5016470718a00c97b17a3e186c3d4912ff1f9e36fae261d6",
+      "bytes": 224458
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/02-coach-nearest-find.png": {
+      "sha256": "64ecbdd292d58d7a42da975940f6f03e519634adad5dc12a53d16b7f1d6f03a9",
+      "bytes": 832515
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/03-coach-first-chest.png": {
+      "sha256": "e39dcfeba71c9a71550bc5b204d92e6baf83042394592d9c483c111884b6f657",
+      "bytes": 1075466
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/04-chest-detail.png": {
+      "sha256": "3c9ca1ee9d3f0500a5489a1c36df14f8a2791fc58137d7d771a912a4b5d6018c",
+      "bytes": 351040
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/05-chest-reward.png": {
+      "sha256": "76ec2c410c5946cfb6b350b76eb3d87db7517539d6e8c2b9dc5559a35fdd6e50",
+      "bytes": 325295
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/06-coach-wear-aura.png": {
+      "sha256": "47e10ef1dc7c92b1412464f334b1fae5495231ae92def87a78959b5615f91dd1",
+      "bytes": 922638
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/07-coach-secure-share.png": {
+      "sha256": "d4421d0d734ec95111328eb53e564d5f44cd157fcbed72cb9f81a429178a2c05",
+      "bytes": 994045
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/08-secure-share-dialog.png": {
+      "sha256": "74c2d2b2e0ee84c734b84acc773e3c6ffa475039f2ef98cf97ecff64af1118eb",
+      "bytes": 299921
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/09-coach-done.png": {
+      "sha256": "331a00e34dca11e414443861aaf34ff1e8d648f5b3ba78b043da0a9b75fe4dda",
+      "bytes": 964656
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/10-settings-feedback.png": {
+      "sha256": "0d54519fa30fafa6390796d7b63877f831b5e8de9c04e8af86f7e7f7d70dade3",
+      "bytes": 143556
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/11-inventory-equipped.png": {
+      "sha256": "b07370d9c9ee69a8c5a6291069ee64ec52a500362c125823126b65e80c25d8b5",
+      "bytes": 183148
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/12-market-secured.png": {
+      "sha256": "8c51ce09bd981f9d053dd7c8c25b9d0ce4473bcab1fee65cc8c540a2f5e363cd",
+      "bytes": 85619
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/13-creator-feed.png": {
+      "sha256": "f4ffca7b2b642f3c4f37bbf1ab9e15bff6454395df34a1fd584b854b4d4f6201",
+      "bytes": 141051
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/14-creator-section.png": {
+      "sha256": "3051e45d82ba0ca9fc7229c20c6fa8bb8075df5f0fcf99cc8d531d46a829e821",
+      "bytes": 106848
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session-recheck/pixel/report.json": {
+      "sha256": "e224507666c18e8ac701aa1c8095b3db6af979a86a4608b78f9e367d3a1baee2",
+      "bytes": 1127
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session.log": {
+      "sha256": "af13e6ac71af8813904234627e56c4316b555ce16a56947ad8e2a6390b97fb13",
+      "bytes": 8175
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/01-welcome.png": {
+      "sha256": "6a9a3185c4e5942a2969ccaebafd071dcb443cc2c9dea7e42e3ab10d97e2a94d",
+      "bytes": 386064
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/02-coach-nearest-find.png": {
+      "sha256": "e089f9b0638a1bc9ee804246fda3aba0f7f7b9fcb558cf2122722b81556f7d7c",
+      "bytes": 1295970
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/03-coach-first-chest.png": {
+      "sha256": "2128e83f564a425bb5d6962017472ead84c846d08cdce09bc06060551e561ecb",
+      "bytes": 1605033
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/04-chest-detail.png": {
+      "sha256": "b0c716fcb4174939ff830f795180e2e35309c035e3d84c60f7d9d8acac605347",
+      "bytes": 361623
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/05-chest-reward.png": {
+      "sha256": "2c51718f97d5c9ba9f8bc204edcd22cdbb2087fc51b491fc209369867b8d7153",
+      "bytes": 480875
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/06-coach-wear-aura.png": {
+      "sha256": "cfde5e2f1ec35d21860069cf047588c50547ebf3c138998c315aeee602932d4f",
+      "bytes": 1427676
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/07-coach-secure-share.png": {
+      "sha256": "b5e598c6366321aa7a6755ec8e784c08c4970b860d87144e79b7f6c394489eed",
+      "bytes": 1558616
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/08-secure-share-dialog.png": {
+      "sha256": "6963e1d80c743f4c0e04877ee09f7a2c9513b7fc0e960616e15eeae6185d09d7",
+      "bytes": 482838
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/09-coach-done.png": {
+      "sha256": "01664d3a24ffcd3c0f10e36b5e3cb6a8c87ccde8a80a2616c7ee35536059f150",
+      "bytes": 1568841
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/10-settings-feedback.png": {
+      "sha256": "a0a65e5f01216dce5d61a259e3652a1321a0aa3d7e6e77d72e380896f9e39cd5",
+      "bytes": 193596
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/11-inventory-equipped.png": {
+      "sha256": "35ab4bb77e9502e745f0bf683b84d1924df8a7627c279b6fdb60fccfc2774460",
+      "bytes": 262900
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/12-market-secured.png": {
+      "sha256": "63c7278d18c418ddac50d125b2fdef11f51806fad372435c305271f2276f0809",
+      "bytes": 99391
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/13-creator-feed.png": {
+      "sha256": "08bd5804a791cf652d083d45c8afaa9d71b33b83fb7016ea32f29d2fc45dc578",
+      "bytes": 162991
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/14-creator-section.png": {
+      "sha256": "b451da522eb7ea7654f35fb0c4287b3c75fe9801f5b9e1ac97c2b07b1ad61482",
+      "bytes": 159760
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/iphone/report.json": {
+      "sha256": "28d81b14d9f3d65c7def0f02bdc1fb0de67491636944b3f337a8f4de19d86809",
+      "bytes": 1136
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/01-welcome.png": {
+      "sha256": "70d92c9987aa18b8b15aec66a9b61957172316540d334623f6636e6db05c4082",
+      "bytes": 161723
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/02-coach-nearest-find.png": {
+      "sha256": "5a3b8c9d0d132a203e0d7fc96123b7b32381c140fd62f8afe9ced6144485b0ed",
+      "bytes": 511015
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/03-coach-first-chest.png": {
+      "sha256": "496524d1fbc6d2c7387425131f0e72607ae4f552503a53b256f26383c014e586",
+      "bytes": 752900
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/04-chest-detail.png": {
+      "sha256": "810bafe8ec42f368b4305a7d23e33f04cd7ee941fd336c0d188270e73beb5a23",
+      "bytes": 260791
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/05-chest-reward.png": {
+      "sha256": "3bcd20c4ab7e78fc8aab01219f2207ebf63b7a21b7ed2dab5b783b5235ec91b8",
+      "bytes": 240157
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/06-coach-wear-aura.png": {
+      "sha256": "860b89c06f097d0e38cd0cd8e98dee4d5572be4444e5166c7101023587995a0d",
+      "bytes": 629953
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/07-coach-secure-share.png": {
+      "sha256": "997eabd10ebb7c7f6d58c1655eea61360e45675e1744808f5109e619f417d682",
+      "bytes": 681498
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/08-secure-share-dialog.png": {
+      "sha256": "abb7724d7401a4702ad5db8b0fe438b405e068fd72a753ac17c44c1a728c4590",
+      "bytes": 221441
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/09-coach-done.png": {
+      "sha256": "d069a542bdfd1dd83523a336866ba6f9189eb4c237c84ca2a7819e9b45d82a33",
+      "bytes": 659140
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/10-settings-feedback.png": {
+      "sha256": "d89e468e4815eac5b7faf6cec63e0fe03494b873a67aa64372f98207fcb4200e",
+      "bytes": 107023
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/11-inventory-equipped.png": {
+      "sha256": "78caf95eabf0c4f895ba0f80f2a4099b95c58e4fe8b295021267edf684e44e14",
+      "bytes": 129938
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/12-market-secured.png": {
+      "sha256": "62f1dfa2ee4691b5353186ba531c83043bd659d8a72d6bae776cfb945531c322",
+      "bytes": 64258
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/13-creator-feed.png": {
+      "sha256": "3eabc8ff5862e359fb82769d16350c58c175f577bd0dabe946d3ae5fc2882a1d",
+      "bytes": 105231
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/14-creator-section.png": {
+      "sha256": "b7eecd2c9c85f864f2f97177ed6e76e06ef9a540ced9b404216699d061fb0d53",
+      "bytes": 79250
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/first-session/phone-390/report.json": {
+      "sha256": "5c33acbc84652b71dabf43713f5318f07dc45050172c4d2e80cef17219c8e599",
+      "bytes": 922
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/i18n.log": {
+      "sha256": "d21f108e679a210001ec39059874c4a1ff3b2d5d0d3df634da75b4b66ba70794",
+      "bytes": 482
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/integration.patch": {
+      "sha256": "f6842859105889c60415ade229aebf48d45dd09b838c19dfbb61814c91afe67f",
+      "bytes": 5612326
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/patch-verification.json": {
+      "sha256": "cd28a382353b4d8e9e22d1b32bbd24419f1def6f5a01b0071da0073b6b862642",
+      "bytes": 461
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/protected-paths.log": {
+      "sha256": "fddc13f04a4f28a7194cc34773192e405fe5c076ba612980a0b54ae58eabf2ac",
+      "bytes": 420
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/reconstruction-verification.json": {
+      "sha256": "db7629e0d4be225006062d88cd705b7d7ce13b1c40f1c5841e4a04213671042d",
+      "bytes": 515
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/smoke.log": {
+      "sha256": "6155e93556a54e8315fc98dd56b7c42475e598483c79e1bd0d64972cc4bed289",
+      "bytes": 165
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/source-files.json": {
+      "sha256": "98b0dad9f279a9c344446c036f40ce2ba5190c5f64b8a22c019fbb3eaf797235",
+      "bytes": 9478
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/source-import-status.json": {
+      "sha256": "6737876ac24a2210509fb86a776cb1d22a21c44cf72a0e9fa2669692d9d5a6e9",
+      "bytes": 278
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/verification.json": {
+      "sha256": "e9e6582147153a5bc177323c3450e8da56fcc37579134608380412a1bc91dfa0",
+      "bytes": 5295
+    },
+    "output/qa/gotchiverse-integration-2026-11-07/wiki.log": {
+      "sha256": "f794a1a8c04e32473fa5598f60c984d97f1354bc4057f6d4904ad74f5dc89aae",
+      "bytes": 111
+    },
+    "prototypes/gotchiverse/README.md": {
+      "sha256": "d722b6c755e734a28ed1694820abfa5c77a7e08288f4ec246f0935302777e0cf",
+      "bytes": 1948
+    },
+    "prototypes/gotchiverse/app.mjs": {
+      "sha256": "174035aa22c647c123f9413a5d903902aad6a9f6f0993c47855ad2358272491b",
+      "bytes": 9698
+    },
+    "prototypes/gotchiverse/build-preview.py": {
+      "sha256": "5031c9d92dc296cfd72145bb0449e111a83cc97c1c5b0f5682cc0449b8d02dbf",
+      "bytes": 768
+    },
+    "prototypes/gotchiverse/index.html": {
+      "sha256": "f78e8ee081b2c5fab30c0e1db8c77310e0d20eff7d98148094752a7f2cb585bc",
+      "bytes": 4978
+    },
+    "prototypes/gotchiverse/model.mjs": {
+      "sha256": "072234508fd307bcbda5ce6c4011d3723f294c038d5a49868a75bee6cfa44dc7",
+      "bytes": 5006
+    },
+    "prototypes/gotchiverse/model.test.mjs": {
+      "sha256": "3ac80b53c6f04c517fcbbf0490ef42b463b5c6b6ada8b7d490df29d85561cc09",
+      "bytes": 2557
+    },
+    "prototypes/gotchiverse/preview.html": {
+      "sha256": "c2e9e226ef7bc5678ab6e09efda84d288d7809e98ac1dc32a730e6c92572cbfc",
+      "bytes": 24474
+    },
+    "prototypes/gotchiverse/style.css": {
+      "sha256": "f0d1d236e50174a631fba380d31e96fa065489812a13d37de58b0bc43e5f9ffd",
+      "bytes": 5063
+    },
+    "scripts/e2e-gotchiverse.mjs": {
+      "sha256": "04332c44ff0c80751edc1ab1f29660a7b177ac5f19d2abbec44db0b3b6225090",
+      "bytes": 19061
+    },
+    "server/gotchiverse/model.d.mts": {
+      "sha256": "cc9076e910d3164b6d7b9e833b72b975ec0e240799b236aa9570fa3010027ad8",
+      "bytes": 1025
+    },
+    "server/gotchiverse/model.mjs": {
+      "sha256": "16b575829e0e5df9ce1de4b413b0961ae4f8d9e62caaabe288b0a68a60f158dd",
+      "bytes": 1245
+    },
+    "server/gotchiverse/routes.mjs": {
+      "sha256": "2e2eede2531cd8410ebe1b286f6db0edac434e08af62e7864f735b46ca1b717a",
+      "bytes": 2742
+    },
+    "server/gotchiverse/store.mjs": {
+      "sha256": "028010bb0154a83ffd88ec33603290744a0ba7c2eca8aaa1b486650d7f9e466d",
+      "bytes": 10402
+    },
+    "server/index.mjs": {
+      "sha256": "bee55e4f5a78bde266ad5c0408773c99954f43ef50b36a8184788ca8738c0058",
+      "bytes": 138707
+    },
+    "src/App.tsx": {
+      "sha256": "af197e6907734ecb33b1c7ecf60f7db682399dee8997e0ec545d519ad8e02a99",
+      "bytes": 199752
+    },
+    "src/Gotchiverse.tsx": {
+      "sha256": "c6bd92206aacfff82af6234383cebb975a39c9b0d12cd766f9e4c4c874c19700",
+      "bytes": 27372
+    },
+    "src/WorldSwitcher.tsx": {
+      "sha256": "86262e4260319e0824356c3397164a5d31933a9c223624abdbdec98fb9c5a4c3",
+      "bytes": 3085
+    },
+    "src/app-navigation.ts": {
+      "sha256": "b98ff49cb00acbfae65e39d71ef187ad7d24d019f67dd9919182a96dd63faca2",
+      "bytes": 7996
+    },
+    "src/gotchiverse-canvas.ts": {
+      "sha256": "929d9aa046586ef2f4349a47c048776aefb837abef70b501f6cab4bdf86faf96",
+      "bytes": 3795
+    },
+    "src/gotchiverse-model.ts": {
+      "sha256": "95bcbbbc8869e36c068f8edbc9f082e4feb561a31617b6a90c369f069b1a7dd7",
+      "bytes": 295
+    },
+    "src/gotchiverse.css": {
+      "sha256": "ea40de2c69e62a571b0bfa285316752d397d48c8df73ed88926c1903439c7de1",
+      "bytes": 10286
+    },
+    "src/i18n/ar.json": {
+      "sha256": "649687f030172088c6dfb9c582e53cf16ce071a62af54f930758d39dc2397f48",
+      "bytes": 284172
+    },
+    "src/i18n/cs.json": {
+      "sha256": "eee0bd20eb0dca4bb58bdae07703b0b6f1fca0ba5f588de28491b9e6a8ac6b09",
+      "bytes": 241935
+    },
+    "src/i18n/de.json": {
+      "sha256": "4658f34788d04b9ecde58a5390b05cd47774a86d09ae8d9bbd054282ea78edb6",
+      "bytes": 246973
+    },
+    "src/i18n/es.json": {
+      "sha256": "ecbbde6f7d1f6fc88aa5037f54b6357efba4423942e51571a7e07580e3448e20",
+      "bytes": 246141
+    },
+    "src/i18n/fr.json": {
+      "sha256": "f34cf55555e34e73459bf1c3bfd89624b77aa47dd8389a31420966f310b392aa",
+      "bytes": 253589
+    },
+    "src/i18n/hi.json": {
+      "sha256": "93205ba2078ee52d6fc60935a051ce24bfcc3d39c90bf9889d1fd7863244da8f",
+      "bytes": 392836
+    },
+    "src/i18n/ja.json": {
+      "sha256": "d0b52be08c049573ba8f742e9ac92385ef750675303b239bfd56491088b3b262",
+      "bytes": 278606
+    },
+    "src/i18n/pt.json": {
+      "sha256": "e487ff704647c4141aa778aa3236eca9234cb21042bc6cacc520bb5e6da4137c",
+      "bytes": 244481
+    },
+    "src/i18n/ru.json": {
+      "sha256": "475ba25af21d1343f32cf7469ada348e971b118ad3c06c4ee95d0e9b29b7adc7",
+      "bytes": 329754
+    },
+    "src/i18n/zh.json": {
+      "sha256": "03410de482053f815cf079f7e566ad9421d5e8040aadbc22d38f850af51dcf87",
+      "bytes": 227929
+    },
+    "src/lazy-panels.tsx": {
+      "sha256": "6e99a34b23f9ddd69c6dfa23b9dfb07462da1728f9958c01072edf9c0e913b39",
+      "bytes": 7089
+    },
+    "src/realms.ts": {
+      "sha256": "be2d9d4053e573c1e1ae185fff7d0aa85713017422790ffb273cc97752f50841",
+      "bytes": 360
+    },
+    "src/wiki/chapters.ts": {
+      "sha256": "cb060b2f54d4b519aaa4842acd6c4437c133b6f25762154030e417c62d50c7f5",
+      "bytes": 68281
+    },
+    "src/world-switcher.css": {
+      "sha256": "62dd278101a14966784747126f1ba1786eb65e0c64dea83cecc22b14b1cdbd5b",
+      "bytes": 3087
+    },
+    "tests/gotchiverse.test.mjs": {
+      "sha256": "bce842cd57a5d1e9231390c035e8d7c46b4564dc2c8d13de4a4ab0d22e6891aa",
+      "bytes": 9782
+    },
+    "verify-delivery.py": {
+      "sha256": "2d14d286b260c3285d3dd9a63ea02fb2038d3111f0c4f347c608a915f3b60871",
+      "bytes": 1595
+    }
+  }
+}

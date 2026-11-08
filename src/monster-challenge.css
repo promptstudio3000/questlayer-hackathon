@@ -257,7 +257,11 @@
 
 .trace-board:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 .trace-cursor { fill: #fff; stroke: #ff1dff; stroke-width: 0.012; }
-.game-dialog-screen .monster-challenge { max-width: 640px; margin: 0 auto; }
+.game-dialog-encounter .monster-challenge { max-width: 640px; margin: 0 auto; }
 @media (prefers-reduced-motion: reduce) {
   .rhythm-beat, .duel-closing { transition: none; }
 }
+
+.monster-head { padding-inline-end: 48px; }
+.monster-portrait { flex: 0 0 96px; width: 96px; height: 112px; display: grid; place-items: center; }
+.monster-portrait img { width: 100%; height: 100%; object-fit: contain; }

@@ -63,25 +63,6 @@
     top: calc(66px + env(safe-area-inset-top));
   }
 
-  /* ---- Back is always an arrow pointing left ------------------------ */
-  .sheet-toggle {
-    justify-content: flex-start;
-    gap: 10px;
-  }
-  .sheet-toggle > svg {
-    margin-left: auto;
-  }
-  .sheet-toggle-back {
-    display: inline-grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--surface-soft, #f2ebff);
-    color: var(--action, #672eeb);
-  }
-
   /* ---- Dialogs: one frame and one padding, not two ------------------ */
   .game-dialog {
     width: calc(100vw - 16px);
@@ -126,17 +107,6 @@
   .game-dialog .badge-filter button {
     flex-shrink: 0;
   }
-  /* Monster and "too far" sheets keep their own frame; the dialog adds none. */
-  .game-dialog:has(> .actor-sheet) {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-  .game-dialog > .actor-sheet {
-    width: 100%;
-    padding: 16px;
-  }
 }
 
 @media (max-width: 760px) and (prefers-reduced-motion: reduce) {
@@ -145,5 +115,3 @@
     transition: none;
   }
 }
-
-.sheet-target-distance { margin-inline-start: auto; font-size: 14px; white-space: nowrap; }

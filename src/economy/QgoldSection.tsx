@@ -5,6 +5,7 @@
 // only, never invented numbers.
 import React, { useEffect, useMemo, useState } from "react";
 import { shortHash, shortNear } from "./format";
+import { scrollRegionKeys } from "../scroll-region";
 import { buyQuote, parseUnits, sellQuote, type ExitPath } from "./qgold-quote";
 
 type Path = { id: ExitPath; label: string; available: boolean; note: string; left24h?: string | null; safeWindowMs?: number | null };
@@ -287,7 +288,7 @@ export default function QgoldSection() {
               {k.ladder.map((l) => `${qgoldLabel(l.amount, 0)} QGOLD at ${nearPrice(l.price)} NEAR`).join(" · ")}
             </p>
           ) : null}
-          <div className="eco-table-wrap">
+          <div className="eco-table-wrap" tabIndex={0} onKeyDown={scrollRegionKeys}>
             <table className="eco-table">
               <thead><tr><th>Day</th><th>Commitment</th><th>Revealed times</th></tr></thead>
               <tbody>
@@ -320,7 +321,7 @@ export default function QgoldSection() {
       ) : null}
 
       <h3>Fees</h3>
-      <div className="eco-table-wrap">
+      <div className="eco-table-wrap" tabIndex={0} onKeyDown={scrollRegionKeys}>
         <table className="eco-table">
           <tbody>
             {data.fees.map((f) => (

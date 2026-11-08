@@ -1,6 +1,6 @@
 # QuestLayer status
 
-Updated 5 November 2026. This is the single start page for the current state of the project. Older status
+Updated 6 November 2026. This is the single start page for the current state of the project. Older status
 documents (`DEVELOPMENT-STATUS.md`, `V1-REMAINING.md`, `NEXT-DEVELOPMENT-PLAN.md`, `NEAR-INTEGRATION-STATUS.md`,
 `PROJECT-REVIEW-*`) are kept as dated history and are superseded by this page.
 
@@ -36,14 +36,16 @@ this UI work. Their source presence and public health are separate from a fresh 
 
 ## Local weekend implementation — not deployed
 
-Map home now has one objective, two compact shortcuts and full-screen inventory, community, profile and encounter
-screens. The five profile sections and five community sections share accessible tabs. NPC and monster screens,
+Map home has fixed control anchors, one dismissible objective and a nearby Open action. Inventory, community and
+profile use their own screens; discovery details and encounters use bounded dialogs with complete artwork and a
+persistent close control. The former Show discoveries footer has been removed; the list lives in Map tools. The five profile sections and five community sections share accessible tabs. NPC and monster screens,
 keyboard rune tracing, retry handling, quiz/NPC copy and display-only fallback quest titles are implemented.
-Deferred panels reduce the measured first-screen bundle from 206 to 201 KB gzip on this checkout.
+Deferred panels keep first-screen JavaScript below the budget: 204 KB gzip and 679 KB raw in the 6 November local build.
 
 New local checks cover landmark boundaries, keyboard trace scoring, an NPC errand acceptance and a server-confirmed
 monster quiz. Final verification, screenshots and the status of all 16 tasks are recorded in
-`output/qa/weekend-2026-11-05/README.md`. Physical iOS Safari and Android Chrome checks remain outstanding.
+`output/qa/weekend-2026-11-05/README.md`; the map-dialog follow-up is recorded in
+`output/qa/map-overlays-2026-11-06/README.md`. Physical iOS Safari and Android Chrome checks remain outstanding.
 No weekend change has been pushed, merged or deployed.
 
 ## Remaining release gates

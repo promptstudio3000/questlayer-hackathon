@@ -1,3 +1,5 @@
+import { createWorkshopStore } from "./gotchiverse/store.mjs";
+import { createWorkshopRoutes } from "./gotchiverse/routes.mjs";
 import { defaultDatabasePath } from "./state-path.mjs";
 import {
   cellProof,
@@ -231,6 +233,14 @@ const nativeAttestationsDisabled =
 const backgroundWorkersDisabled =
   process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
+const workshopStore = createWorkshopStore({ directory: resolve(dirname(db.prepare("PRAGMA database_list").get().file), "gotchiverse") });
+const workshopRoutes = createWorkshopRoutes({ store: workshopStore, authenticate: auth,
+  actorFor: (playerId) => {
+    const row = db.prepare("SELECT name FROM players WHERE id=?").get(playerId);
+    assert(row, "Please sign in again.", 401);
+    return { id: playerId, name: row.name };
+  },
+});
 ensureMapReadIndexes(db);
 ensureHotPathIndexes(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
@@ -1905,6 +1915,7 @@ async function api(req, res, url) {
     return res.end(svg);
   }
   const player = auth(req);
+  if (await workshopRoutes.handle(req, res, url, { player, body, respond, assert })) return;
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
   )

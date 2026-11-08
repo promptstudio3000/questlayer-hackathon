@@ -80,6 +80,7 @@ try {
     }
     const targets = await page.locator(".topbar button, .rail-links button, .map-toolbar button, .map-status-chip button, .demo-pad button, .demo-pad-open, .sheet-compact button").evaluateAll(elements => elements.map(el => ({label:el.getAttribute("aria-label") || el.textContent.trim(), rect:el.getBoundingClientRect(), visible:el.checkVisibility()})).filter(x => x.visible).map(x => ({label:x.label,width:x.rect.width,height:x.rect.height})));
     assert.deepEqual(targets.filter(x => x.width < 47.9 || x.height < 47.9), [], "Essential map controls have 48px targets");
+    assert.ok(await page.locator(".demo-pad").isVisible(), "Demo movement starts open");
     const pad = await page.locator(".demo-pad").boundingBox();
     assert.ok(pad.height <= 60, "Demo controls occupy one row");
     if (width === 390) await scan("map");
@@ -185,9 +186,7 @@ try {
     const page=await context.newPage();await page.clock.install();await page.goto(url);
     await page.locator("#nickname").fill("Install explorer");
     await page.getByRole("button",{name:"Start exploring",exact:true}).click();
-    await page.locator(".sheet-toggle").click();
-    await page.getByRole("button",{name:"Hide first steps",exact:true}).click();
-    await page.locator(".sheet-toggle[aria-expanded=true]").click();
+    await page.getByRole("button",{name:"Hide objective",exact:true}).click();
     await page.clock.runFor(50000);
     const card=page.locator(".pwa-install");await card.waitFor();
     const overlaps=await page.evaluate(()=>{

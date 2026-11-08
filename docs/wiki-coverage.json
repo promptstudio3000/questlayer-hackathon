@@ -38,6 +38,10 @@
     "docs/UI-UX-RESEARCH.md": "research",
     "docs/V1-REMAINING.md": "plan",
     "docs/VPS-MIGRATION.md": "operations history",
-    "docs/YIELD-CREDIT-PROPOSAL.md": "proposal"
+    "docs/YIELD-CREDIT-PROPOSAL.md": "proposal",
+    "docs/CLAUDE-RETURN-HANDOFF-2026-11-07.md": "dated audit and hand-off; source behavior has its own chapters",
+    "docs/QUESTLAYER-INTEGRATION-PLAN-2026-11-07.md": "staged product plan; does not activate proposed economics",
+    "docs/HACKATHON-RESEARCH-2026-11-07.md": "dated public research and positioning report",
+    "docs/GOTCHIVERSE-SHARED-WORLD-PLAN-2026-11-07.md": "next implementation plan and Claude hand-off; enables no runtime mechanism"
   }
 }
