@@ -58,6 +58,10 @@ Expected: `network: testnet`, `relayer.enabled: true`, `distribution.status: ver
 `socialRecords.contractId` set and `nativeRewards.last_error: null`. The release archive includes `public/*.json`
 because the server reads the network manifests from there.
 
+A testnet deploy then reinstalls the signing vault (`scripts/install-signing-vault-vps.sh`) on its own when
+`scripts/signing-vault-fingerprint.sh` (vault sources, its server, the installer and the contract manifests)
+differs from the installed release; `SKIP_SIGNING_VAULT=1` leaves the vault as it is.
+
 ## 5. Optional: reuse MapOS credentials
 
 The map works without keys (OpenFreeMap). Only if a keyed provider is wanted later, read the MapOS runtime

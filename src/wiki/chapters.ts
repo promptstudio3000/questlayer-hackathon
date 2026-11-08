@@ -966,7 +966,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Runtime and operations",
     summary: "One Node service with SQLite, background workers, daily jobs and the CI gates every change passes.",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-08",
     sources: ["docs/RUNTIME-RELIABILITY.md", "docs/PERFORMANCE-BUDGET.md", "docs/STATE-RECOVERY.md", "docs/OWNER-RUNBOOK.md", "docs/TEST-SEED.md", ".github/workflows/check.yml", "scripts/check-bundle-budget.mjs"],
     blocks: [
       {
@@ -981,6 +981,7 @@ export const CHAPTERS: Chapter[] = [
           "Phone budget: welcome-screen JS and CSS are capped; every big screen, this wiki included, loads lazily.",
           "English is the default language; other languages are opt-in dictionaries, checked on 390 px phones in CI.",
           "The testnet runs a removable test seed (bots, quests, starter kit); every seeded row has a `seed-` id.",
+          "A deploy reinstalls the separate signing-vault origin by itself whenever its code or contract list changed.",
         ],
       },
       { viz: "ci-gates" },

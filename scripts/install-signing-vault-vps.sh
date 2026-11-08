@@ -10,7 +10,8 @@
 # Run on the Mac from a clean checkout:  bash scripts/install-signing-vault-vps.sh
 # Then set SIGNING_VAULT_ORIGIN (and the SUBSIDY_* budget) in runtime.env and
 # restart questlayer-hackathon. Re-run this script whenever a contract in the
-# config changes (for example a new escrow account).
+# config changes (for example a new escrow account). scripts/deploy-vps.sh runs
+# it automatically when the fingerprint of its inputs differs from the installed one.
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 HOST_TARGET="${DEPLOY_HOST:-root@72.61.188.39}"
@@ -51,6 +52,7 @@ cp -R dist/signing-vault/assets "$STAGE/dist/signing-vault/"
 cp server/signing-vault.mjs "$STAGE/server/"
 cp src/signing-vault/policy.ts "$STAGE/src/signing-vault/"
 printf 'SIGNING_VAULT_PUBLIC_CONFIG=%s\nPORT=%s\n' "$CONFIG" "$PORT" > "$STAGE/signer.env"
+bash scripts/signing-vault-fingerprint.sh > "$STAGE/inputs.sha256"
 
 RELEASE="$(date -u +%Y%m%dT%H%M%SZ)"
 ssh -o BatchMode=yes "$HOST_TARGET" "install -d -m 755 $ROOT/releases/$RELEASE"

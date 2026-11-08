@@ -169,3 +169,16 @@ trap - ERR
 printf '\nDeployed release: %s\nBackup: %s\n' "$RELEASE_DIR" "$BACKUP_DIR"
 REMOTE
 rm -f "$ARCHIVE_PATH"
+# The signing vault is its own origin and release (install-signing-vault-vps.sh).
+# Reinstall it whenever its sources, installer or contract manifests changed
+# since the installed release; SKIP_SIGNING_VAULT=1 leaves it as it is.
+if [[ "$TARGET" == testnet && "${SKIP_SIGNING_VAULT:-0}" != 1 ]]; then
+ WANT="$(bash scripts/signing-vault-fingerprint.sh)"
+ HAVE="$(ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST_TARGET" 'cat /opt/ps3000/apps/questlayer-signer/current/inputs.sha256 2>/dev/null || true')"
+ if [[ "$WANT" != "$HAVE" ]]; then
+  echo "Signing vault inputs changed (${HAVE:-none installed} -> $WANT); reinstalling the vault."
+  bash scripts/install-signing-vault-vps.sh
+ else
+  echo "Signing vault unchanged ($WANT)."
+ fi
+fi
