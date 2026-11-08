@@ -2157,7 +2157,7 @@ export default function App() {
       notify(
         account
           ? tr("Your secured outfit is on the map.")
-          : tr("Your practice outfit is on the map."),
+          : tr("Your game outfit is on the map."),
       );
     });
   }
