@@ -10,6 +10,7 @@ import type { ActorSegment, ActorView, ActorsResponse } from "./actor-types";
 import { api, meters } from "./api";
 import "./actors.css";
 import { tr } from "./i18n.ts";
+import { servicePin, mapKitUrl } from "./map-kit";
 
 type LngLat = { lng: number; lat: number };
 
@@ -73,6 +74,11 @@ function markerNode(actor: ActorView, onSelect: (a: ActorView) => void) {
   const label = document.createElement("span");
   label.className = "actor-label";
   label.textContent = actor.name;
+  const pin = servicePin(actor.archetype);
+  if (pin) {
+    const img = document.createElement("img"); img.src = pin; img.alt = "";
+    img.className = "map-kit-service"; img.onerror = () => img.remove(); node.append(img);
+  }
   const role = document.createElement("span");
   role.className = "sr-only";
   role.textContent = `, ${actorRoleLabel(actor)}`;
@@ -114,11 +120,11 @@ export function attachActorsLayer(
     for (const { node, model } of arenas.values()) paintArena(node, model);
   });
   function paint(actor: ActorView, node: HTMLElement) {
-    if (!art?.actorSprite || node.querySelector("img")) return;
+    if (!art?.actorSprite || node.querySelector(".actor-sprite")) return;
     art
       .actorSprite(actor.model, 96)
       .then((url) => {
-        if (gone || !url || node.querySelector("img")) return;
+        if (gone || !url || node.querySelector(".actor-sprite")) return;
         const img = document.createElement("img");
         img.src = url;
         img.alt = "";
@@ -159,6 +165,10 @@ export function attachActorsLayer(
       if (arenas.has(id)) continue;
       const node = document.createElement("div");
       node.className = "actor-arena";
+      if (arena.model === "great-portal") {
+        const pin = document.createElement("img"); pin.src = mapKitUrl("pins/portal.png");
+        pin.alt = ""; pin.className = "map-kit-portal"; pin.onerror = () => pin.remove(); node.append(pin);
+      }
       node.setAttribute("aria-hidden", "true");
       const marker = new maplibregl.Marker({ element: node, anchor: "bottom" }).setLngLat([arena.lng, arena.lat]);
       arenas.set(id, { marker, node, model: arena.model });
@@ -166,11 +176,11 @@ export function attachActorsLayer(
     }
   }
   function paintArena(node: HTMLElement, model: string) {
-    if (!art?.actorSprite || node.querySelector("img")) return;
+    if (!art?.actorSprite || node.querySelector(".actor-sprite")) return;
     art
       .actorSprite(model, 128)
       .then((url) => {
-        if (gone || !url || node.querySelector("img")) return;
+        if (gone || !url || node.querySelector(".actor-sprite")) return;
         const img = document.createElement("img");
         img.src = url;
         img.alt = "";

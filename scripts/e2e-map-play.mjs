@@ -56,9 +56,24 @@ async function selectRoute(page,zone,q){
  await dismissPickup(page);await page.getByRole("button",{name:"Map tools",exact:true}).click();await page.getByRole("button",{name:"Nearby discoveries",exact:true}).click();
  await page.locator(".zone-card").filter({hasText:zone.name}).first().click();
  if(!await page.locator(".quest-detail").getByRole("heading",{name:q.title,exact:true}).count()){
-  await page.locator(".quest-brief-more > summary").click();await page.locator(".walk-picker button").filter({hasText:q.title}).first().click();
+  await page.locator(`.activity-row[data-quest-id="${q.id}"]`).click();
  }
  await page.locator(".quest-detail").getByRole("heading",{name:q.title,exact:true}).waitFor();
+}
+async function assertGuideFraming(page,target,name){
+ const framing = await page.evaluate(target => {
+      const m=window.__testMap, project=p=>{const v=m.project([p.lng,p.lat]);return {x:v.x,y:v.y};};
+      const panel=document.querySelector(".main-panel")?.getBoundingClientRect(), pad=document.querySelector(".demo-pad")?.getBoundingClientRect();
+      const rect=r=>r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom}:null;
+      return {player:project(window.__testPosition),target:project(target),width:innerWidth,height:innerHeight,header:document.querySelector(".topbar")?.getBoundingClientRect().bottom||70,panel:rect(panel),pad:rect(pad),zoneBanners:document.querySelectorAll(".zone-presence").length};
+    },target);
+    assert.equal(framing.zoneBanners,0,"A selected guide owns the objective surface");
+    assert.ok(framing.player.y>framing.header+65,"The framed player has room below the header");
+    for(const point of [framing.player,framing.target]){
+      assert.ok(point.x>20&&point.x<framing.width-20&&point.y>framing.header&&point.y<framing.height-20,"Both guide endpoints stay on the visible map");
+      for(const obstacle of [framing.panel,framing.pad])if(obstacle)assert.ok(!(point.x>obstacle.left&&point.x<obstacle.right&&point.y>obstacle.top&&point.y<obstacle.bottom),"A guide endpoint is not hidden by the objective or controls");
+    }
+    report.checks.push({name,passed:true,framing});
 }
 async function travel(page,from,to){
  const distance=metersBetween(from,to),heading=headingTo(from,to),steps=Math.max(1,Math.ceil(distance/1.6));
@@ -102,7 +117,7 @@ try{
   await p.keyboard.press("-");await p.waitForFunction(z=>Math.abs(window.__testMap.getZoom()-z)<.1&&!window.__testMap.isMoving(),zoom,{timeout:15000});
   report.checks.push({name:"native-keyboard-zoom-retained",passed:true});
   await p.getByRole("button",{name:"Map tools",exact:true}).click();await p.getByRole("button",{name:"City overview",exact:true}).click();
-  await p.waitForFunction(()=>window.__testMap.getPitch()<1&&!window.__testMap.isMoving(),null,{timeout:15000});
+  await p.waitForFunction(()=>Math.abs(window.__testMap.getPitch()-35)<1&&!window.__testMap.isMoving(),null,{timeout:15000});
   await p.locator(".maplibregl-canvas").focus();await p.keyboard.down("w");
   await p.waitForFunction(()=>window.__testMap.getPitch()>40&&window.__testMap.getZoom()>16.5,null,{timeout:15000});
   await p.keyboard.up("w");await p.waitForFunction(()=>!window.__testMap.isMoving(),null,{timeout:15000});
@@ -145,7 +160,17 @@ try{
   let location=targets[0];
   for(let i=0;i<targets.length;i++){
    if(i){
-    await page.locator(".quest-detail").getByRole("button",{name:"Show on map",exact:true}).click();
+    await page.locator(".quest-detail").getByRole("button",{name:"Guide me",exact:true}).click();
+    await page.waitForFunction(()=>!window.__testMap.isMoving(),null,{timeout:15000});
+    if(i===1){
+      for(const [name,width,height] of [["360",360,780],["390",390,844],["landscape",844,390],["desktop",1440,900]]){
+        await page.setViewportSize({width,height});
+        await page.waitForFunction(()=>!window.__testMap.isMoving(),null,{timeout:15000});
+        await assertGuideFraming(page,targets[i],`guide-framing-${name}`);
+      }
+      await page.setViewportSize({width:390,height:844});
+    } else await assertGuideFraming(page,targets[i],`guide-framing-stop-${i+1}`);
+
     const near=Array.from({length:24},(_,j)=>stepFrom(targets[i],j*15,8)).find(p=>containsPoint(zone.geometry,[p.lng,p.lat]))||targets[i];
     await travel(page,location,near);location=near;await dismissPickup(page);
     if(i===1){for(const [name,width,height] of [["360",360,780],["390",390,844],["landscape",844,390],["desktop",1440,900]]){await page.setViewportSize({width,height});await pause(150);await page.screenshot({path:join(shots,`${name}-checkpoint-current-map.png`)});}await page.setViewportSize({width:390,height:844});}

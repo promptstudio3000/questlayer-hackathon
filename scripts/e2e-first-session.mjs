@@ -461,12 +461,14 @@ async function runDevice(name, server) {
         await button.click();
         break;
       }
-      assert.match(label, /Start quest|Turn toward it/, `unexpected chest action: ${label}`);
+      assert.match(label, /Start quest|Guide me/, `unexpected chest action: ${label}`);
       await button.click();
       if (await detail.isVisible()) continue;
+      await page.locator(".map-guide-key").waitFor();
+      assert.equal(await detail.isVisible(), false, "Guidance folds the detail to reveal the map");
       await walkToTarget(page);
       await page.waitForTimeout(400);
-      // "Turn toward it" folds the sheet so the pad is free; the folded
+      // Guidance folds the sheet so the pad is free; the folded
       // sheet keeps the chosen place, one tap opens it again.
       if (!(await detail.isVisible())) {
         const nearby = page.locator(".nearby-open");

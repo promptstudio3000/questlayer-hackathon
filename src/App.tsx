@@ -10,6 +10,7 @@ import { EmptyState } from "./EmptyState";
 import { useLevelTable } from "./XpBar";
 import { levelProgress } from "./levels";
 import {
+  ZoneActivities,
   DailyBoard,
   SeasonCard,
   QuestBrief,
@@ -269,6 +270,7 @@ import {
   subscribeFeedback,
   type FeedbackPreferences,
 } from "./feedback";
+import { QuestThumbnail } from "./QuestThumbnail";
 import { headingTo, metersBetween } from "./map-motion.ts";
 import { advanceGpsFacing, initialGpsFacing } from "./gps-facing";
 import { useDemoWalk } from "./useDemoWalk";
@@ -1741,6 +1743,45 @@ export default function App() {
     demoWalk.face(headingTo(latest.current.position, p));
     setDemoTarget({ lat: p.lat, lng: p.lng, label, ...ref });
   }
+  const [guideRequest, setGuideRequest] = useState<{ questId: string; revision: number; worldId: string; playerId: string } | null>(null);
+  function guideToQuest(q: Quest) {
+    const zone = world?.zones.find(z => z.id === q.zone_id);
+    if (!world || !player || !zone) return;
+    if (arena && !nativePlay) {
+      demoWalk.face(headingTo(latest.current.position, questPoint(q)));
+      setDemoTarget({ ...questPoint(q), label: q.title, questId: q.id });
+    }
+    setStartedQuestKey(`${player.id}:${world.id}:${q.id}`);
+    selectAdventure(zone, q.id);
+    navigation.update({ demoTarget: { worldId: world.id, zoneId: zone.id, questId: q.id, realm: arena ? "arena" : "gps" }, sheetExpanded: false });
+    setGlobe(false);
+    setOverview(false);
+    setFollow(false);
+    if (!arena && !nativePlay) gpsResumeOnMovement.current = true;
+    setGuideRequest({ questId: q.id, revision: Date.now(), worldId: world.id, playerId: player.id });
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(".compact-selection")?.focus({ preventScroll: true }));
+  }
+  function closeZone() {
+    const zoneId = selected?.id;
+    setGuideRequest(null);
+    setDemoTarget(null);
+    selectAdventure(null);
+    navigation.update({ demoTarget: null, sheetExpanded: false });
+    requestAnimationFrame(() => {
+      const origin = Array.from(document.querySelectorAll<HTMLButtonElement>(".zone-map-pin, .zone-card")).find(node => node.dataset.zoneId === zoneId);
+      (origin || document.querySelector<HTMLButtonElement>(".sheet-toggle"))?.focus({ preventScroll: true });
+    });
+  }
+  useEffect(() => {
+    if (!selected || tab !== "explore") return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || document.querySelector('[role="dialog"], dialog[open]')) return;
+      event.preventDefault();
+      closeZone();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selected, tab]);
   function chooseNativeQuest(index: number) {
     const q = nativeGame.state?.day?.quests.find((q) => q.index === index);
     if (!q) return;
@@ -1752,6 +1793,8 @@ export default function App() {
     setTab("expeditions");
   }
   function chooseZoneQuest(questId: string) {
+    setGuideRequest(null);
+    setDemoTarget(null);
     const quest = world?.quests.find((q) => q.id === questId);
     const zone = world?.zones.find(
       (z) =>
@@ -1768,6 +1811,8 @@ export default function App() {
     });
   }
   function selectZone(z: Zone, questId?: string) {
+    setGuideRequest(null);
+    setDemoTarget(null);
     setSheetExpanded(true);
     setSelected(z, questId || null);
     setTab("explore");
@@ -3356,6 +3401,8 @@ export default function App() {
           emote={myEmote && myEmote.until > now ? myEmote.id : null}
           frame={myFrame}
           goldMap={goldMapData}
+          selectedQuestId={selectedQuestId}
+          guideRequest={guideRequest && guideRequest.worldId === world?.id && guideRequest.playerId === player?.id && selected && zoneQuest?.id === guideRequest.questId && zoneQuests.some(q => q.id === guideRequest.questId && !q.completed && q.opens_at <= now && q.closes_at > now) ? guideRequest : null}
           route={questRoute}
           onPlacePin={(id) => {
             setPlaceOpenId(id);
@@ -3491,19 +3538,19 @@ export default function App() {
           )}
         </div>
       </header>
-      {player && zonePresence && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone, zonePresence.questId)} />}
+      {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone, zonePresence.questId)} />}
       {player && tab !== "explore" && (
         // Desktop: Inventory, Community and Profile open as a card over the
         // map; a click beside the card closes it like the panel's close button.
         <div className="sheet-backdrop" aria-hidden="true" onClick={returnToAdventure} />
       )}
       {player && (
-        <MapSurface overlay={tab === "explore" && sheetExpanded} label={selected?.name || title} onClose={closeMapPanel}>
+        <MapSurface overlay={tab === "explore" && sheetExpanded} label={selected?.name || title} onClose={selected ? closeZone : closeMapPanel}>
         <main
           hidden={compactHidden}
           ref={mainPanel}
           tabIndex={-1}
-          className={`main-panel ${tab === "explore" ? `explore-panel ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
+          className={`main-panel ${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
             <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => setDismissedObjective(objectiveKey)}><X size={20} aria-hidden="true" /></button>
@@ -3533,8 +3580,7 @@ export default function App() {
             </button>
           )}
           {tab === "explore" &&
-            coachActive && showObjective("coach") &&
-            !(selected && coachStep === "chest") && (
+            coachActive && showObjective("coach") && !selected && (
               <FirstSessionCoach
                 session={firstSession}
                 worldId={world?.id}
@@ -3551,18 +3597,20 @@ export default function App() {
               className="compact-selection"
               onClick={() => setSheetExpanded(true)}
             >
-              <GameObjectArt
-                {...zoneObjectPresentation(selected, world?.quests || [], {
-                  now,
-                  playerTier: player.tier,
-                })}
-                size={32}
-              />
+              <QuestThumbnail quest={zoneQuest} now={now} playerTier={player.tier} size={40} />
               <span>
-                <strong>{zoneQuest && startedQuestKey === `${player.id}:${world?.id}:${zoneQuest.id}` ? questDisplayTitle(zoneQuest.title) : selected.name}</strong>
-                <small>{distanceLabel(meters(position, zoneQuest ? questPoint(zoneQuest) : selected))} · {zoneQuest && startedQuestKey === `${player.id}:${world?.id}:${zoneQuest.id}` ? tr("In progress") : tr("See what's here")}</small>
+                <strong>{zoneQuest ? questDisplayTitle(zoneQuest.title) : selected.name}</strong>
+                <small>{zoneQuest ? `${distanceLabel(meters(position, questPoint(zoneQuest)))} · ${selected.name}` : tr("See what's here")}</small>
               </span>
               <ArrowRight />
+            </button>
+            <button
+              className="sheet-peek-hide"
+              aria-label={tr("Close")}
+              title={tr("Close")}
+              onClick={closeZone}
+            >
+              <X size={16} aria-hidden="true" />
             </button>
             </div>
           )}
@@ -3591,9 +3639,8 @@ export default function App() {
             </div>
           )}
           <div className="panel-heading">
-            {tab === "explore" && selected ? (
-              <button className="panel-back" aria-label={tr("All discoveries")} onClick={() => setSelected(null)}><ArrowLeft size={20} aria-hidden="true" /></button>
-            ) : tab === "fund" ? (
+            {tab === "explore" && selected && <button className="icon-button zone-map-collapse" onClick={() => { setSheetExpanded(false); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(".compact-selection")?.focus({ preventScroll: true })); }} aria-label={tr("Show map")} title={tr("Show map")}><ArrowLeft size={20} /></button>}
+            {tab === "fund" ? (
               <button
                 className="panel-back"
                 onClick={() => setTab("settings")}
@@ -3620,10 +3667,10 @@ export default function App() {
                 {tab === "explore" && selected ? selected.name : title}
               </h1>
             </div>
-            {(tab !== "explore" || sheetExpanded) && (
+            {(tab !== "explore" || selected || sheetExpanded) && (
               <button
                 className="icon-button panel-close"
-                onClick={tab === "explore" ? closeMapPanel : returnToAdventure}
+                onClick={tab === "explore" ? selected ? closeZone : closeMapPanel : returnToAdventure}
                 aria-label={tr("Close panel")}
               >
                 <X size={18} />
@@ -3785,13 +3832,7 @@ export default function App() {
                     onClick={() => selectZone(recommendedZone, recommended.id)}
                   >
                     <span className="recommended-art">
-                      <GameObjectArt
-                        {...questObjectPresentation(recommended, {
-                          now,
-                          playerTier: player.tier,
-                        })}
-                        size={32}
-                      />
+                      <QuestThumbnail quest={recommended} now={now} playerTier={player.tier} size={40} />
                     </span>
                     <span>
                       <small>{tr("Nearest discovery")}</small>
@@ -3858,19 +3899,14 @@ export default function App() {
                   return (
                     <button
                       className="zone-card"
+                      data-zone-id={z.id}
                       key={z.id}
                       onClick={() => selectZone(z)}
                     >
                       <div className={`zone-illustration art-${z.kind}`}>
                         <span className="illustration-orb" />
                         <span>
-                          <GameObjectArt
-                            {...zoneObjectPresentation(z, world?.quests || [], {
-                              now,
-                              playerTier: player.tier,
-                            })}
-                            size={64}
-                          />
+                          <QuestThumbnail quest={q} now={now} playerTier={player.tier} size={64} />
                         </span>
                         <i />
                         <i />
@@ -3931,14 +3967,18 @@ export default function App() {
             </>
           )}
           {tab === "explore" && selected && (
-            <>
-              {selected.tier > player.tier && <div className="zone-access">
-                <Badge tone={selected.tier === 1 ? "green" : "purple"}>
-                  {selected.tier === 1 ? tr("Free zone") : tr("Tier {0}", { 0: selected.tier })}
-                </Badge>
-                <span>{tr("{0} activities", { 0: zoneQuests.length })}</span>
-              </div>}
-              {selected.tier > player.tier ? (
+            <ZoneActivities zone={selected} quests={zoneQuests} selectedQuest={zoneQuest}
+              playerTier={player.tier} position={position} now={now} busy={busy}
+              choices={clueChoice} onChoose={chooseZoneQuest}
+              onClue={(id, choice) => setClueChoice(all => ({ ...all, [id]: choice }))}
+              onGuide={guideToQuest} onComplete={id => void complete(id)}
+              renderDetail={q => <QuestBrief compact quest={q} zone={selected} position={position} now={now} tier={player.tier} arena={arena} fix={fix} online={online}
+                distance={meters(position, questPoint(q))} busy={!!busy} started={startedQuestKey === `${player.id}:${world?.id}:${q.id}`}
+                choice={clueChoice[q.id]} onChoose={choice => setClueChoice(all => ({ ...all, [q.id]: choice }))}
+                onStart={() => { setStartedQuestKey(`${player.id}:${world?.id}:${q.id}`); if (meters(position, questPoint(q)) > 25 || (selected.geometry && zoneInteriorMargin(selected, position) === null)) guideToQuest(q); }}
+                onPoint={() => guideToQuest(q)} onLocate={() => void locate()} onComplete={() => void complete(q.id)} onMap={q.completed ? closeZone : closeMapPanel} />}
+
+              lockedContent={
                 <div className="locked-panel">
                   <LockKey size={25} />
                   <h3>{tr("Opens at Tier")}{" "}{selected.tier}</h3>
@@ -3957,63 +3997,8 @@ export default function App() {
                     {tr("Try practice staking")}{" "}<ArrowRight />
                   </button>
                 </div>
-              ) : (
-                (zoneQuest ? [zoneQuest] : []).map((q) => (
-                  <QuestBrief key={q.id} quest={q} zone={selected} position={position} now={now} tier={player.tier} arena={arena} fix={fix} online={online}
-                    distance={meters(position, questPoint(q))} busy={!!busy}
-                    started={startedQuestKey === `${player.id}:${world?.id}:${q.id}`}
-                    choice={clueChoice[q.id]}
-                    onChoose={(choice) => setClueChoice((all) => ({ ...all, [q.id]: choice }))}
-                    onStart={() => {
-                      setStartedQuestKey(`${player.id}:${world?.id}:${q.id}`);
-                      if (meters(position, questPoint(q)) > 25 || (selected.geometry && zoneInteriorMargin(selected, position) === null)) {
-                        if (arena) faceToward(questPoint(q), q.title, { questId: q.id });
-                        else { gpsResumeOnMovement.current = true; setSheetExpanded(false); setFollow(false); }
-                      }
-                    }}
-                    onPoint={() => {
-                      if (arena) faceToward(questPoint(q), q.title, { questId: q.id });
-                      else { gpsResumeOnMovement.current = true; setSheetExpanded(false); setFollow(false); }
-                    }}
-                    onLocate={() => void locate()}
-                    onComplete={() => void complete(q.id)} onMap={closeMapPanel}
-                  >
-                    {zoneQuests.length > 1 && <>
-                      <h3>{tr("Choose another activity")}</h3>
-                  <div className="walk-picker">
-                    {zoneQuests
-                      .filter((q) => q.id !== zoneQuest?.id)
-                      .map((q) => (
-                        <button
-                          key={q.id}
-                          onClick={() => chooseZoneQuest(q.id)}
-                        >
-                          <span className="play-object">
-                            <GameObjectArt
-                              {...questObjectPresentation(q, {
-                                now,
-                                playerTier: player.tier,
-                              })}
-                              size={32}
-                            />
-                          </span>
-                          <span>
-                            <b>{questDisplayTitle(q.title)}</b>
-                            <small>
-                              {q.completed
-                                ? tr("Completed")
-                                : `${q.xp} XP · ${q.kind === "route" ? `${q.checkpointCount} stops` : "1 stop"}`}
-                            </small>
-                          </span>
-                          <ArrowRight size={20} />
-                        </button>
-                      ))}
-                  </div>
-                    </>}
-                  </QuestBrief>
-                ))
-              )}
-            </>
+              }
+            />
           )}
           {tab === "wallet" && (
             <PendingNativeTransactions
@@ -4712,7 +4697,7 @@ export default function App() {
         </main>
         </MapSurface>
       )}
-      {player && mapInteractive && showNearby && near && !mapFullOn && <button className="nearby-open" onClick={() => {
+      {player && mapInteractive && showNearby && near && !mapFullOn && <button className="nearby-open" data-quest-id={near.kind === "quest" ? near.quest.id : undefined} onClick={() => {
         if (near.kind === "actor") setActorOpen(near.actor);
         else if (near.kind === "quest") selectZone(near.zone, near.quest.id);
         else if (world) setFindInspect({worldId:world.id,coin:near.coin});
@@ -5062,6 +5047,7 @@ export default function App() {
           onMap={() => {
             if (discovery.result && world?.quests.some(q => q.id === discovery.result?.questId && q.zone_id === selected?.id)) setSelected(null);
             adventureResults.close();
+            if (zoneQuest?.completed) closeZone();
             setTab("explore");
             setSheetExpanded(false);
             setFollow(true);

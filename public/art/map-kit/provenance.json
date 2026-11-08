@@ -1,0 +1,242 @@
+{
+  "project": "QuestLayer",
+  "adopted": "2026-11-07",
+  "sourcePackage": "output/imagegen/questlayer-map-kit-2026-11-07",
+  "authoring": "Original image_gen pixel artwork; original procedural GLB geometry and navigation motifs. No upstream mesh or texture copied.",
+  "sources": [
+    {
+      "title": "Official Aavegotchi Unity SDK Aaltars",
+      "url": "https://github.com/aavegotchi/unity-sdk/tree/1397ed55611804fbd3fd5cf528caae4f3cbea852/Runtime/Gotchiverse/Assets/Models/ImportedModels/Installations/Aaltars",
+      "revision": "1397ed55611804fbd3fd5cf528caae4f3cbea852",
+      "studies": [
+        "10_aaltar_1.fbx",
+        "14_aaltar_5.fbx",
+        "18_aaltar_9.fbx"
+      ],
+      "adopted": "Stepped plinths, tier-dependent articulation, compact ghost architecture and distinct crowns; original QuestLayer geometry was authored separately.",
+      "distributed": false
+    },
+    {
+      "title": "Golden Altar in GotchiGuardiansInverse",
+      "url": "https://github.com/aavegotchi/GotchiGuardiansInverse/blob/dc413dd43fb73c2d6b965abf6c818ba3e7e7a186/Assets/PlayableAssets/Towers/Deprecated/SlowTower/Meshes/Aavegotchi_Golden_Altar.fbx",
+      "revision": "dc413dd43fb73c2d6b965abf6c818ba3e7e7a186",
+      "distributed": false
+    },
+    {
+      "title": "Accepted QuestLayer pixel-art pack, 4 November 2026",
+      "path": "../questlayer-2026-11-04/",
+      "adopted": "Palette, stepped outlines, ghost face grammar, upper-left highlights; no original avatar or wearable was replaced."
+    }
+  ],
+  "scope": "Map pins, directional guidance, zone altars. Character, wearables and minted media unchanged.",
+  "files": [
+    {
+      "path": "models/chest-tier-1.glb",
+      "sha256": "711e4d30bc9687ccffe2a81ad1db2d1892d7f4266d1a0970da170fd0505ac5dd"
+    },
+    {
+      "path": "models/chest-tier-2.glb",
+      "sha256": "1ae4223ec2d04b3492d79ed5e3e98000c3689cef2df35ad24e875e84022bd02a"
+    },
+    {
+      "path": "models/chest-tier-3.glb",
+      "sha256": "56144902ad5954a06d66948284f3aa09a612bcad26eb255fa8c8be30fe409af4"
+    },
+    {
+      "path": "models/discovery-tier-1.glb",
+      "sha256": "2b3d1c17df187b19258759df0c94e8eeccecc89aaafc0e9696ac6e0e7565ef35"
+    },
+    {
+      "path": "models/discovery-tier-2.glb",
+      "sha256": "ee92f6d84dce0517f14f3e13ad6d00bae1f76cf8b1d17891bbe5caf4fcd9dc72"
+    },
+    {
+      "path": "models/discovery-tier-3.glb",
+      "sha256": "1a82f72e47aae5dfa92ee37861e5ad571800321000707dc82eb4a687eb4c9558"
+    },
+    {
+      "path": "models/guardian-tier-1.glb",
+      "sha256": "2b55e9ab5df35fed6adb2080dccea181726712395daee5ab2d5c791a894b4e63"
+    },
+    {
+      "path": "models/guardian-tier-2.glb",
+      "sha256": "273239f4e2932b8e52f23f8c41ff15df75f551113629994730290e9e45c80ecf"
+    },
+    {
+      "path": "models/guardian-tier-3.glb",
+      "sha256": "743e4312aa7a69c28d12442a842f374fbea5dfd779932d697f27ce646cba03b9"
+    },
+    {
+      "path": "models/keeper-tier-2.glb",
+      "sha256": "b7d7b47e4adc17ff3dd15f35e7f13c0bef2f16e3c83a564923c8f23133f22f75"
+    },
+    {
+      "path": "models/landmark-tier-1.glb",
+      "sha256": "ab53a532155b572286394959e09317b887ca04f713cb199cca0a8eb85361803f"
+    },
+    {
+      "path": "models/landmark-tier-2.glb",
+      "sha256": "eeff3e14721775390dde59ffa8daf579e80e0e43d8e0927ba95c1e8d7c253e02"
+    },
+    {
+      "path": "models/landmark-tier-3.glb",
+      "sha256": "5d11e54af88d7df20e2fb7f6d11e6dd458c433ef29170b063165961d4f693086"
+    },
+    {
+      "path": "models/merchant-tier-2.glb",
+      "sha256": "9acd95a9fe4db7fb108aa4899617faabe29e3fe8acd04ff0d9bd3e208a04f286"
+    },
+    {
+      "path": "models/return-tier-1.glb",
+      "sha256": "d8bba6dcfd1b92a3af6f9ec368b71f48193ffded85857ec959909bca3fa8ebd7"
+    },
+    {
+      "path": "models/return-tier-2.glb",
+      "sha256": "3fc7789d5ed061f590921b25c9ddb2f44abc4632ddd8b8b5511741264760a5c5"
+    },
+    {
+      "path": "models/return-tier-3.glb",
+      "sha256": "a1f824b2ed7989d87fea9a936df4b969fd7c5ffa45b90f1d81c4426ff3f1853c"
+    },
+    {
+      "path": "models/task-tier-1.glb",
+      "sha256": "d39eef68f5b5e311bf6ed133af07f6ee1e0a62491441388cdbc4637555f86011"
+    },
+    {
+      "path": "models/task-tier-2.glb",
+      "sha256": "fba04b30498bbca82df31eafcf6264207c4398c0e3bea9bb517ff84f4a5ab33e"
+    },
+    {
+      "path": "models/task-tier-3.glb",
+      "sha256": "080dd51a4bce3b4dd80ace8c20977a1c69a109fed752326d298f97534fde68a5"
+    },
+    {
+      "path": "models/trail-tier-1.glb",
+      "sha256": "40283ea1eeafa3211f2fc82784a27c1dd6d4bb07ed96a657e1825c777db16ad2"
+    },
+    {
+      "path": "models/trail-tier-2.glb",
+      "sha256": "757c17374947eb91f4d1676c9131b6be7aac6789e8183014408d253d0a80cdba"
+    },
+    {
+      "path": "models/trail-tier-3.glb",
+      "sha256": "c0ce47388a10b4d6c7a05a5818c672eb8edeb67e9a0c52d274911ae7168dc4e0"
+    },
+    {
+      "path": "navigation/arrow-back.png",
+      "sha256": "2e02351d7814fe5b3a00f683fa823be64324793c4d6a9e12fbc9b3658fe438c6"
+    },
+    {
+      "path": "navigation/arrow-forward.png",
+      "sha256": "25fdc2bfb4c2497fc8e26b1113dac39d8ec72c38e46bd677e14faf7cd2c54a2b"
+    },
+    {
+      "path": "navigation/arrow-left.png",
+      "sha256": "c45458d14ef2685555397a1bc203dda62d8dc47024fb1ec230327888b6ff49fd"
+    },
+    {
+      "path": "navigation/arrow-right.png",
+      "sha256": "34c31239759f852a5497003971cccaafb1eb9f017b6f47b34dd4a898c733ff29"
+    },
+    {
+      "path": "navigation/checkpoint-completed.png",
+      "sha256": "7a1c1b29782118141f2599bd595034c29b02c9c91c7b557c195291dd40a1b02c"
+    },
+    {
+      "path": "navigation/checkpoint.png",
+      "sha256": "9c9f50cb2b52add8c64b2312643508eb1fa0f0b6c9ae29b9f83cb5885c4776d8"
+    },
+    {
+      "path": "navigation/chevron.png",
+      "sha256": "58ce167a39f6303e23fa928af39056ecfea567a751f75a3b9f9b5a6bdb86045e"
+    },
+    {
+      "path": "navigation/goal-ring.png",
+      "sha256": "60a11c8ea8dac59912fa6b63e05f338f86279274b653f84e191aa7a8c1959357"
+    },
+    {
+      "path": "navigation/route-end.png",
+      "sha256": "053b4215f4e9162bca7bf2dce8f6d969d146e781b8b26b72d0f2eb96759a2aa7"
+    },
+    {
+      "path": "navigation/route-guide-tile.png",
+      "sha256": "7e7199dfa8b0d3651e81a257bfe4f8fb95eca7a5f031ad5b832c5cb6b7812927"
+    },
+    {
+      "path": "navigation/route-guide-turn.png",
+      "sha256": "10bd2889df872a59ed1133da39abb48c6560a836d1a98be705a7663ceb37dc8e"
+    },
+    {
+      "path": "navigation/route-start.png",
+      "sha256": "08c52108afdbebe9271b6b636e1a65c1331950f04d503ea8d6194fabf9a71bba"
+    },
+    {
+      "path": "navigation/route-walk-tile.png",
+      "sha256": "3adb7811c444a1c6878573fd4e9e2c5a7988c7515bec63666a1aab88135e53b9"
+    },
+    {
+      "path": "navigation/route-walk-turn.png",
+      "sha256": "50c6d717b952bbf9bcf94bb72e1f8cad85a651bfbe942164a070c0b198fd725e"
+    },
+    {
+      "path": "pins/event.png",
+      "sha256": "3ee651e9d9fcf0f6dd90d042ca2bca91e5628a3ee1ae765473a2da001addfe7f"
+    },
+    {
+      "path": "pins/keeper.png",
+      "sha256": "532b858cf9ca5c7a91eb99f8099fbf106bfd65fcd5c26e9ad090e85d77b3ac89"
+    },
+    {
+      "path": "pins/merchant.png",
+      "sha256": "653c3d98c244f15ef74e24b7527cd1558ce3dbf880d95bbbc27d6de7c4a1600f"
+    },
+    {
+      "path": "pins/note.png",
+      "sha256": "e9c5aa447111fd855c87d3d33823f5cce3a31db6d521522039dcc08951b407a3"
+    },
+    {
+      "path": "pins/portal.png",
+      "sha256": "2d7c1a74bf4d3f2c8295eb7650a4774cfbbe8b304e6722e322b0262faf5babd5"
+    },
+    {
+      "path": "pins/quest-giver.png",
+      "sha256": "e39aa4d8b1657cc167380446f65860d0a0c6ff0c7f97a3312a27da50358d97b0"
+    },
+    {
+      "path": "pins/storyteller.png",
+      "sha256": "653200dbbd82ad64456dd7b289d6174112a98cdf09c75ef43370b125837a635f"
+    },
+    {
+      "path": "quests/chest.png",
+      "sha256": "c31fbe50bd86ab0cd20cfe6d63d6b898868ea0002b36a264a256d7c5b449c8c9"
+    },
+    {
+      "path": "quests/clue.png",
+      "sha256": "d66952f28ea650177b378d171e156ba9d990d57c0229ea1bd66d7230e7ed7eba"
+    },
+    {
+      "path": "quests/community.png",
+      "sha256": "61c6a10113677a710d56e9de080363b1cee4a4b67f202635124c92dd3a660bc8"
+    },
+    {
+      "path": "quests/guardian.png",
+      "sha256": "e93bb95772948ad60b1e43d780ee418c836cd99a1f07c5f1b4a02f3b07475421"
+    },
+    {
+      "path": "quests/return.png",
+      "sha256": "aa6f4ad70344c6e974850d9e7a0f83a4be393bf1b64ad8d644daa41dcbd5633d"
+    },
+    {
+      "path": "quests/task.png",
+      "sha256": "1c73f1f05d29a25ca20ec571788b85941bb985fa1e17131751baedb5c414d684"
+    },
+    {
+      "path": "quests/trail.png",
+      "sha256": "ba0fa9414029ce87f59f765d2a36f61afc13154f03d8b6dd5e9f9ec87f7d48d9"
+    },
+    {
+      "path": "quests/visit.png",
+      "sha256": "257793f2b265442856696334cbb814eb50413969675f423c48aa60afd708a789"
+    }
+  ]
+}

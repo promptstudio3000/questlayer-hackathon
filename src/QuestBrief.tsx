@@ -13,8 +13,8 @@ import type { Fix, Point, Quest, Zone } from "./types";
 import "./quest-brief.css";
 
 /** Presentation only. Start focuses an activity; only onComplete can request its existing claim. */
-export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, online, distance, busy, started, choice, onChoose, onStart, onPoint, onLocate, onComplete, onMap, children }: {
-  quest: Quest; zone: Zone; now: number; tier: number; arena: boolean; distance: number; busy: boolean;
+export function QuestBrief({ compact = false, quest: q, zone, position, now, tier, arena, fix, online, distance, busy, started, choice, onChoose, onStart, onPoint, onLocate, onComplete, onMap, children }: {
+  compact?: boolean; quest: Quest; zone: Zone; now: number; tier: number; arena: boolean; distance: number; busy: boolean;
   started: boolean; position: Point; fix: Fix | null; online: boolean; choice?: string; onChoose: (choice: string) => void;
   onStart: () => void; onPoint: () => void; onLocate: () => void; onComplete: () => void; onMap: () => void; children?: ReactNode;
 }) {
@@ -38,26 +38,25 @@ export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, on
     ? q.opens_at > now ? tr("opens in {0}", { 0: remaining(q.opens_at) }) : tr("Closed for today")
     : activity ? tr("In progress") : tr("Ready to start");
   return <section className="quest-detail quest-brief" role="region" aria-label={title} tabIndex={-1} id={"quest-" + q.id}>
-    <div className="quest-detail-art" aria-hidden="true"><GameObjectArt {...questObjectPresentation(q, { now, playerTier: tier })} size={112} /></div>
+    {!compact && <div className="quest-detail-art" aria-hidden="true"><GameObjectArt {...questObjectPresentation(q, { now, playerTier: tier })} size={112} /></div>}
     <p className={`quest-brief-status${q.kind === "route" && !q.completed && open && online ? " quest-brief-progress" : ""}`}>{q.kind === "route" && !q.completed && open && online ? <><strong>{q.visitedStops ? tr("Any order") : tr("Next stop")} · {tr("Stop {0} of {1}", {0: targetNumber, 1: steps})}</strong><br />{tr("Completed")} · {q.checkpoint || 0}/{steps}</> : status}</p>
-    <h2 ref={heading} tabIndex={-1}>{title}</h2>
-    <p className="quest-brief-description">{q.activity?.objective || q.description}</p>
-    {q.nearPrize && <p className="quest-brief-prize"><strong>{tr("NEAR testnet")}. </strong>{q.nearPrize.available
-      ? tr("First confirmed completion: {0} NEAR, converted to QGOLD at settlement.", { 0: q.nearPrize.amountNear })
-      : tr("The shared NEAR prize was already earned. Personal XP is still available.")}</p>}
+    <h2 className={compact ? "sr-only" : undefined} ref={heading} tabIndex={-1}>{title}</h2>
+    <p className="quest-brief-description activity-objective">{q.activity?.objective || q.description}</p>
     {zone.operatorPause && <p role="status">{zone.operatorPause.reason}</p>}
+    {q.nearPrize && <p className="quest-brief-requirement"><strong>{tr("NEAR testnet")}. </strong>{q.nearPrize.available ? tr("First confirmed completion: {0} NEAR, converted to QGOLD at settlement.", {0:q.nearPrize.amountNear}) : tr("The shared NEAR prize was already earned. Personal XP is still available.")}</p>}
+
     <div className="quest-brief-rewards" aria-label={tr("Rewards")}>
       <span><Sparkle aria-hidden="true" />{q.xp} XP</span>
       {q.kind === "chest" && <span><GameObjectArt kind="chest" size={24} />{q.completed ? tr("Completed") : q.itemAvailable === true ? tr("Aura chest") : q.itemAvailable === false ? tr("XP only · all Auras found") : tr("Aura not confirmed yet")}</span>}
       {q.gold_u > 0 && <span>{q.claimant ? tr("GOLD already collected") : `${gold(q.gold_u)} GOLD`}</span>}
     </div>
-    <ul className="quest-brief-facts" aria-label={tr("Activity overview")}>
+    {!compact && <ul className="quest-brief-facts" aria-label={tr("Activity overview")}>
       <li><Clock aria-hidden="true" /><span>{tr("Time varies")}</span></li>
       <li><Flag aria-hidden="true" /><span>{steps === 1 ? tr("1 stop") : tr("{0} stops", { 0: steps })}</span></li>
       <li><Footprints aria-hidden="true" /><span>{distanceLabel(distance)} · {tr("Straight-line distance")}</span></li>
       {typeof minimum === "number" && minimum > 0 && <li><Footprints aria-hidden="true" /><span>{tr("At least {0} m between stops", { 0: Math.round(minimum) })}</span></li>}
       {q.clue && <li><Question aria-hidden="true" /><span>{tr("1 question")}</span></li>}
-    </ul>
+    </ul>}
     {!q.completed && open && activity && <>
       {q.clue && !far && !outside && <LandmarkClue clue={q.clue} choice={choice} disabled={busy} onChoose={onChoose} />}
       {far && <p className="quest-brief-requirement">{tr("Be within {0} m of the pinned place to complete it.", { 0: 25 })}</p>}
@@ -66,8 +65,8 @@ export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, on
     </>}
     {q.completed || !open ? <button className="primary-button" onClick={onMap}>{tr("Back to map")}<ArrowRight aria-hidden="true" /></button>
       : !online ? <button className="primary-button" disabled>{tr("You're offline")}</button>
-      : !activity ? <button className="primary-button" disabled={busy} onClick={onStart}>{tr("Start quest")}<ArrowRight aria-hidden="true" /></button>
-      : far || outside ? <button className="primary-button" disabled={busy} onClick={onPoint}>{arena ? tr("Turn toward it") : tr("Show on map")}<ArrowRight aria-hidden="true" /></button>
+      : !activity ? <button className="primary-button" disabled={busy} onClick={onStart}>{far || outside ? tr("Guide me") : tr("Start quest")}<ArrowRight aria-hidden="true" /></button>
+      : far || outside ? <button className="primary-button" disabled={busy} onClick={onPoint}>{tr("Guide me")}<ArrowRight aria-hidden="true" /></button>
       : !gpsReady ? <button className="primary-button" disabled={busy} onClick={onLocate}>{tr("Update location")}<MapPin aria-hidden="true" /></button>
       : <button className="primary-button" disabled={busy || (!!q.clue && !choice)} onClick={onComplete}>
         {busy ? tr("Checking visit…") : q.kind === "route" ? (q.checkpoint || 0) >= steps ? tr("Finish walk") : tr("Confirm stop {0}", { 0: targetNumber }) : q.kind === "chest" && q.itemAvailable === true ? tr("Open chest") : q.activity?.actionLabel || tr("Confirm visit")}<ArrowRight aria-hidden="true" />
