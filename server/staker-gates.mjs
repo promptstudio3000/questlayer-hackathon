@@ -223,7 +223,26 @@ export function readStakerStatus(db, player) {
   }
 }
 
-/** Access for a player from the cache plus the world's (demo) tier and level. */
+/**
+ * The player's stake tier (1–3) for Tier 2/3 places: only the vault contract's
+ * reading recorded above counts. The old simulated staking never grants a tier.
+ */
+export function playerStakeTier(db, player) {
+  const t = player ? readStakerStatus(db, player)?.tier : null;
+  return Number.isInteger(t) ? Math.max(1, Math.min(3, t)) : 1;
+}
+
+/**
+ * Tier for opening Tier 2/3 places on the map. Owner decision 8 Nov 2026:
+ * places are open to everyone until launch, so this is 3 unless
+ * TIER_PLACES=stake, which gates them by the real vault tier instead.
+ * Staker gates (NPC menus, patron content) always use playerStakeTier.
+ */
+export function placeTier(db, player, env = process.env) {
+  return env.TIER_PLACES === "stake" ? playerStakeTier(db, player) : 3;
+}
+
+/** Access for a player from the cache plus the world's tier and level. */
 export function playerStakerAccess(db, player, { worldTier = 1, level = 1, settings = defaultStakerGates() } = {}) {
   const s = player ? readStakerStatus(db, player) : null;
   return stakerAccess(

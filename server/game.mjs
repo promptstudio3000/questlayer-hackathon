@@ -13,8 +13,6 @@ import {
   point,
   dayKey,
   levelFor,
-  positionTier,
-  tierFor,
   validateFix,
   GPS_MAX_AGE_MS,
   splitYield,
@@ -38,6 +36,7 @@ import {
   streetFindIds,
 } from "./street-finds.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
+import { placeTier } from "./staker-gates.mjs";
 import { recordChainAction, fixEvidence } from "./chain-ledger/service.mjs";
 import {
   XP_CAP_NOTES,
@@ -314,10 +313,7 @@ function validateQuestEvidence(db, player, q, fix, now, target) {
     "This place is closed for today. Find another discovery.",
     410,
   );
-  const positions = db
-      .prepare("SELECT * FROM positions WHERE player_id=?")
-      .all(player),
-    tier = tierFor(positions.reduce((sum, p) => sum + positionTier(p, now), 0));
+  const tier = placeTier(db, player);
   assert(
     tier >= q.tier,
     `This place opens at Tier ${q.tier}. Try a free place nearby.`,

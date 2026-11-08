@@ -221,6 +221,7 @@ import { createSeasonRoutes } from "./season/routes.mjs";
 import { ensureFairPlaySchema, guardTravel } from "./fair-play.mjs";
 import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
 import { poiWorldStatus } from "./poi/coverage.mjs";
+import { placeTier } from "./staker-gates.mjs";
 import {
   GOLD,
   DAY,
@@ -228,7 +229,6 @@ import {
   id,
   hash,
   point,
-  tierFor,
   positionTier,
 } from "./domain.mjs";
 
@@ -630,6 +630,18 @@ if (PRACTICE_MARKET_ON_CHAIN) {
     .prepare("UPDATE listings SET state='cancelled' WHERE state='open'")
     .run().changes;
   if (closed) console.log(`Practice market moved on chain: closed ${closed} database listing(s).`);
+}
+// Simulated staking (practice GOLD positions) is closed: since 5 Nov all GOLD
+// is real QGOLD, and its fake yield fed the coin and zone budgets that payouts
+// turn into QGOLD. SIMULATED_STAKING=1 brings it back for local tests only.
+const SIMULATED_STAKING = process.env.SIMULATED_STAKING === "1";
+function assertSimulatedStakingOpen() {
+  assert(
+    SIMULATED_STAKING,
+    "Practice staking has closed. Tier places open with a real stake in the vault.",
+    410,
+    "SIMULATED_STAKING_CLOSED",
+  );
 }
 function assertPracticeMarketOpen() {
   assert(
@@ -1328,7 +1340,7 @@ function profile(player) {
       .prepare("SELECT COUNT(*) AS n FROM coins WHERE claimant=?")
       .get(player).n,
     level: p.level,
-    tier: tierFor(p.positions.reduce((s, x) => s + positionTier(x), 0)),
+    tier: placeTier(db, player),
     weighted_u: p.positions.reduce((s, x) => s + positionTier(x), 0),
   };
 }
@@ -2890,11 +2902,13 @@ async function api(req, res, url) {
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/stake" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     const result = game.stake(db, player, i.amount, i.contribution, i.pool);
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/contribution" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     return respond(res, {
       ...game.contribution(db, player, i.positionId, i.contribution),
@@ -2902,6 +2916,7 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/unstake" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     return respond(res, {
       ...game.unstake(db, player, i.positionId),
@@ -2909,6 +2924,7 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/withdraw" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     return respond(res, {
       ...game.redeem(db, player, i.withdrawalId),
@@ -3847,7 +3863,7 @@ const maintenance = setInterval(() => {
   if (backgroundWorkersDisabled) return;
   try {
     expireWorlds(db);
-    game.harvestDemo(db);
+    if (SIMULATED_STAKING) game.harvestDemo(db);
     db.prepare("DELETE FROM presence WHERE expires_at<? OR updated_at<?").run(
       Date.now(),
       Date.now() - 30_000,

@@ -1,4 +1,5 @@
 import { getOrPrepareCityPlan } from "./world-planner.mjs";
+import { placeTier, playerStakeTier } from "./staker-gates.mjs";
 import { preparedActivityWorld, assertGlobalActivityReady } from "./global-activities.mjs";
 import { decorateGlobalRewardWorld,globalPrizeForQuest } from './global-rewards.mjs';
 import { localDateBounds } from "./spatial/calendar.mjs";
@@ -11,8 +12,6 @@ import {
   GOLD,
   assert,
   dayKey,
-  positionTier,
-  tierFor,
   levelFor,
 } from "./domain.mjs";
 import { chestAuraAvailable } from "./aura-catalog.mjs";
@@ -555,14 +554,7 @@ export function worldView(db, id, player = null, options = {}) {
     visibleZones = zones.filter((z) => zoneInBounds(z, query.bounds)),
     visibleIds = new Set(visibleZones.map((z) => z.id)),
     zoneById = new Map(zones.map((z) => [z.id, z]));
-  const tier = player
-    ? tierFor(
-        db
-          .prepare("SELECT * FROM positions WHERE player_id=?")
-          .all(player)
-          .reduce((n, p) => n + positionTier(p, now), 0),
-      )
-    : 1;
+  const tier = placeTier(db, player);
   const eligible = new Set(
     quests
       .filter(
@@ -626,7 +618,7 @@ export function worldView(db, id, player = null, options = {}) {
     cityZoneCount: zones.length,
     visibleZoneCount: visibleZones.length,
     openEligibleCount: eligible.size,
-    playerTier: tier,
+    playerTier: playerStakeTier(db, player),
     ...(paused.day ? { operatorPause: { reason: paused.day.reason } } : {}),
     coins: (paused.day ? [] : page)
       .filter((p) => !pointClosed(closed, p))
