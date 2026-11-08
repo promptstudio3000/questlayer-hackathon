@@ -269,9 +269,6 @@ async function journey(browser, server, device, j, expected) {
       const chestButton = coach.getByRole("button", {
         name: /^(Open the chest|Walk to the chest)/,
       });
-      const coachButton = coach
-        .getByRole("button", { name: /^(Nearest quest|Open the chest|Walk to the chest)/ })
-        .first();
       const nearbyLabel = (await nearbyOpen.isVisible())
         ? await nearbyOpen.innerText()
         : "";
@@ -279,14 +276,20 @@ async function journey(browser, server, device, j, expected) {
         !!nearbyLabel && world.quests.some((q) => nearbyLabel.includes(q.title));
       // An NPC or find within reach takes the single objective slot instead;
       // then the map's next-quest marker itself is the way in.
-      const pinOnly = !nearbyQuest && !(await coachButton.isVisible());
-      const opener = nearbyQuest
-        ? nearbyOpen
-        : pinOnly
-          ? page.locator('.zone-map-pin[data-next="true"]')
-          : (await chestButton.count())
-            ? chestButton.first()
-            : coach.getByRole("button", { name: /^Nearest quest/ });
+      // The coach can switch lines while spawn-side pickups settle (WebKit is
+      // slower), so read whichever coach button is there once, and fall back
+      // to the marker when the coach no longer offers one.
+      const pinLocator = page.locator('.zone-map-pin[data-next="true"]');
+      const nearestButton = coach.getByRole("button", { name: /^Nearest quest/ });
+      let opener = nearbyOpen;
+      let label = nearbyQuest ? nearbyLabel : "";
+      for (const candidate of nearbyQuest ? [] : [chestButton.first(), nearestButton]) {
+        if (!(await candidate.count())) continue;
+        label = await candidate.innerText({ timeout: 5_000 }).catch(() => "");
+        if (label) { opener = candidate; break; }
+      }
+      const pinOnly = !label;
+      if (pinOnly) opener = pinLocator;
       // …the map marks the same place…
       const pin = page.locator('.zone-map-pin[data-next="true"]');
       // Attached, not visible: map markers re-render on every world update
@@ -299,7 +302,6 @@ async function journey(browser, server, device, j, expected) {
       const pinLabel = (await pin.getAttribute("aria-label")) || "";
       const zone = poiZones.find((z) => pinLabel.startsWith(`${z.name} · `));
       assert.ok(zone, `the next-quest marker "${pinLabel}" is a POI quest`);
-      const label = pinOnly ? "" : await opener.innerText();
       let quest;
       if (pinOnly) {
         quest = world.quests.find((q) => q.zone_id === zone.id);
