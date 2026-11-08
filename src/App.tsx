@@ -13,6 +13,7 @@ import {
   DailyBoard,
   SeasonCard,
   QuestBrief,
+  GameIntro,
   WearableMoment,
   FindDetails,
   AdventureResultDialog,
@@ -259,6 +260,9 @@ import {
 } from "./near-network.ts";
 import { nearestDiscovery, poiQuestOutlook } from "./nearest-discovery.ts";
 import { FirstSessionCoach, useFirstSession } from "./FirstSession";
+import { useLearning } from "./useLearning";
+import { beginLearning, type HelpTopic } from "./learning-store";
+import { helpText, questHelpTopic } from "./activity-help";
 import type { FirstStepId } from "./first-session";
 import {
   cue,
@@ -407,6 +411,15 @@ export default function App() {
     idle(() => preloadPanels());
   }, [hasPlayer]);
   const firstSession = useFirstSession(player);
+  const learning = useLearning(player?.id);
+  const [manualIntro, setManualIntro] = useState<string | null>(null);
+  const introOpen = !!player && (manualIntro === player.id || (learning.state.intro === "new" && !location.hash));
+  const learnedSteps = firstSession.progress.steps.map(s => s.done ? s.step.id : "").join(":");
+  useEffect(() => {
+    for (const { step, done } of firstSession.progress.steps) {
+      if (done && ["find", "coin", "chest", "aura"].includes(step.id)) learning.acknowledge(step.id as HelpTopic);
+    }
+  }, [player?.id, learnedSteps]);
   const world =
     worldOwner.current === player?.id && worldData?.arena === arena
       ? worldData
@@ -808,7 +821,8 @@ export default function App() {
       !nativeVisitBusy &&
       !walletChoices &&
       !discovery &&
-      !showNpc,
+      !showNpc &&
+      !introOpen,
     arena,
     fix,
     state: nativeGame.state,
@@ -3012,6 +3026,7 @@ export default function App() {
         );
         if (latest.current.player?.id !== owner) return;
         updateOwnedPlayer(r.player);
+        if (q) learning.acknowledge(questHelpTopic(q));
         if (latest.current.arena !== realm || latest.current.nativePlay) return;
         const sameView =
           adventureResults.isCurrentInspection(inspection) &&
@@ -3117,8 +3132,11 @@ export default function App() {
     !nativePlay && streetFindTarget
       ? world?.coins.find((c) => c.id === streetFindTarget && c.find) || null
       : null;
-  const coachActive = firstSession.visible && !nativePlay && !world?.globalPreparation;
+  const coachActive = learning.state.enabled && firstSession.visible && firstSession.progress.current?.id !== "secure" && !nativePlay && !world?.globalPreparation;
   const coachStep = coachActive ? firstSession.progress.current?.id : undefined;
+  const movementTopic: HelpTopic = arena ? "movement-arena" : "movement-gps";
+  const coachTopic: HelpTopic = coachStep === "find" && !learning.state.seen[movementTopic] ? movementTopic
+    : coachStep === "aura" ? "aura" : coachStep === "chest" ? "chest" : coachStep === "coin" ? "coin" : "find";
   const coachChest = coachStep === "chest" ? nearestChest() : null;
   const coachLabel =
     coachStep === "chest"
@@ -3206,7 +3224,7 @@ export default function App() {
   const mapVisible = tab === "explore";
   const wearableReady = !!wearableMoment && wearableMoment.scope === demoPickupScope(player?.id, world?.id, arena) && !nativePlay;
   const showWearableMoment = wearableReady && mapVisible && !sheetExpanded && !actorOpen && !showNpc && !discovery && !findInspect;
-  const mapInteractive = mapVisible && !sheetExpanded && !actorOpen && !showNpc && !showWearableMoment && !(findInspect && findInspect.worldId === world?.id);
+  const mapInteractive = mapVisible && !introOpen && !sheetExpanded && !actorOpen && !showNpc && !showWearableMoment && !(findInspect && findInspect.worldId === world?.id);
   const objective = mapObjective({
     selection: !!selected,
     native: !!nativeObjective.reference,
@@ -3502,7 +3520,7 @@ export default function App() {
           className={`main-panel ${tab === "explore" ? `explore-panel ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
-            <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => setDismissedObjective(objectiveKey)}><X size={20} aria-hidden="true" /></button>
+            <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => { if (objective === "coach") learning.acknowledge(coachTopic); else if (zoneQuest) learning.acknowledge(questHelpTopic(zoneQuest)); setDismissedObjective(objectiveKey); }}><X size={20} aria-hidden="true" /></button>
           </div>}
           {tab === "explore" && !nativePlay && adventureResults.unread && showObjective("receipt") && (
             <AdventureResultResume
@@ -3533,8 +3551,7 @@ export default function App() {
             !(selected && coachStep === "chest") && (
               <FirstSessionCoach
                 session={firstSession}
-                worldId={world?.id}
-                position={position}
+                hint={learning.visible(coachTopic) ? helpText(coachTopic) : undefined}
                 busy={!!busy}
                 onAction={runFirstStep}
                 actionLabel={coachLabel}
@@ -3558,6 +3575,7 @@ export default function App() {
                 <strong>{zoneQuest && selectedQuestId === zoneQuest.id ? questDisplayTitle(zoneQuest.title) : selected.name}</strong>
                 <small>{zoneQuest ? activityProgress(zoneQuest, position) : tr("See what's here")}</small>
                 <small>{distanceLabel(meters(position, zoneQuest ? questPoint(zoneQuest) : selected))} · {tr("Straight-line distance")}</small>
+                {zoneQuest && learning.visible(questHelpTopic(zoneQuest)) && <small className="learning-hint">{helpText(questHelpTopic(zoneQuest))}</small>}
               </span>
               <ArrowRight />
             </button>
@@ -3957,7 +3975,7 @@ export default function App() {
                 </div>
               ) : (
                 (detailQuest ? [detailQuest] : []).map((q) => (
-                  <QuestBrief key={q.id} quest={q} zone={detailZone} position={position} now={now} tier={player.tier} arena={arena} fix={fix} online={online}
+                  <QuestBrief key={q.id} playerId={player.id} quest={q} zone={detailZone} position={position} now={now} tier={player.tier} arena={arena} fix={fix} online={online}
                     distance={meters(position, questPoint(q))} busy={!!busy}
                     started={startedQuestKey === `${player.id}:${world?.id}:${q.id}` || (!browsing && selectedQuestId === q.id)}
                     choice={clueChoice[q.id]}
@@ -4405,6 +4423,10 @@ export default function App() {
                 aria-labelledby="settings-help-title"
               >
                 <h2 id="settings-help-title">{tr("Help")}</h2>
+                <button type="button" className="settings-row" onClick={() => setManualIntro(player.id)}>
+                  <BookOpen size={22} aria-hidden="true" /><span>{tr("How to play")}</span><ArrowRight size={18} aria-hidden="true" />
+                </button>
+                <SettingsSwitch icon={Question} label={tr("First-time tips")} hint={tr("Short help for new activities.")} checked={learning.state.enabled} onChange={learning.enable} />
                 <button
                   type="button"
                   className="settings-row"
@@ -4432,6 +4454,7 @@ export default function App() {
                     className="settings-row"
                     onClick={() => {
                       setDismissedObjective("");
+                      learning.enable(true);
                       firstSession.show();
                       setTab("explore");
                       setSheetExpanded(false);
@@ -4755,7 +4778,7 @@ export default function App() {
               running={demoWalk.running}
               run={demoWalk.run}
               setRun={demoWalk.setRun}
-              press={demoWalk.press}
+              press={(control, down, source) => { if (down) learning.acknowledge("movement-arena"); demoWalk.press(control, down, source); }}
               release={demoWalk.release}
               target={
                 demoTarget
@@ -4995,6 +5018,9 @@ export default function App() {
           onRestore={restoreThisDevice}
         />
       )}
+      {introOpen && player && <GameIntro key={player.id} manual={manualIntro === player.id}
+        onStart={() => { if (manualIntro !== player.id) learning.finishIntro(true); else returnToAdventure(); setManualIntro(null); }}
+        onSkip={() => { if (manualIntro !== player.id) learning.finishIntro(false); setManualIntro(null); }} />}
       {discovery && player && !nativePlay && (
         <AdventureResultDialog
           results={adventureResults}
@@ -5104,6 +5130,7 @@ function Welcome({
       const r = await api<{ player: Player }>("/session", {
         name: name || tr("Explorer"),
       });
+      if (!location.hash) beginLearning(r.player.id);
       onPlayer(r.player);
     });
   }
@@ -5120,6 +5147,7 @@ function Welcome({
         challengeId: r.challengeId,
         response,
       });
+      if (!existing && !location.hash) beginLearning(verified.player.id);
       onPlayer(verified.player);
     });
   }

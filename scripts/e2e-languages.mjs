@@ -162,9 +162,9 @@ async function dismissOverlays(page) {
   if (await page.locator("dialog[open]").count()) await page.keyboard.press("Escape");
 }
 
-async function check(page, lang, dir, shot, report) {
+async function check(page, lang, dir, shot, report, keepDialog = false) {
   await page.waitForTimeout(700);
-  await dismissOverlays(page);
+  if (!keepDialog) await dismissOverlays(page);
   const file = `${String(report.screens.length + 1).padStart(2, "0")}-${shot}.png`;
   await page.screenshot({ path: join(dir, file) });
   const layout = await page.evaluate(layoutProblems);
@@ -190,6 +190,9 @@ async function runLanguage(browser, url, lang) {
   await check(page, lang, dir, "welcome", report);
   await page.fill("#nickname", `Lang ${lang}`);
   await page.locator("form button[type=submit]").click();
+  await page.locator(".game-intro").waitFor();
+  await check(page, lang, dir, "how-to-play", report, true);
+  await page.locator(".game-intro-head button").click();
   await page.locator(".rail-links button").first().waitFor({ timeout: 30_000 });
   await page.waitForTimeout(2500);
   await check(page, lang, dir, "map", report);

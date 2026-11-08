@@ -65,6 +65,7 @@ try {
       await page.screenshot({ path: join(SHOTS, "welcome-lost-response.png") });
     }
     await page.getByRole("button", { name: "Start exploring", exact: true }).click();
+    await page.getByRole("button", { name: "Let's explore", exact: true }).click();
     await page.getByRole("button", { name: "Inventory", exact: true }).waitFor();
     await page.locator(".maplibregl-canvas").waitFor({ timeout: 30000 });
     await page.locator(".world-loading").waitFor({ state: "hidden", timeout: 60000 });
@@ -186,6 +187,7 @@ try {
     const page=await context.newPage();await page.clock.install();await page.goto(url);
     await page.locator("#nickname").fill("Install explorer");
     await page.getByRole("button",{name:"Start exploring",exact:true}).click();
+    await page.getByRole("button",{name:"Let's explore",exact:true}).click();
     await page.getByRole("button",{name:"Hide objective",exact:true}).click();
     await page.clock.runFor(50000);
     const card=page.locator(".pwa-install");await card.waitFor();

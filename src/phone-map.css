@@ -42,7 +42,9 @@
 .objective-dismiss-bar { position: sticky; top: 0; height: 0; display: flex; justify-content: flex-end; z-index: 2; pointer-events: none; }
 .objective-dismiss { pointer-events: auto; display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 12px; background: var(--surface); color: var(--ink-secondary); }
 .app-shell .sheet-compact .first-session { margin: 0; padding: 0 48px 0 0; border: 0; box-shadow: none; background: none; gap: 8px; }
-.app-shell .sheet-compact .first-session-head, .app-shell .sheet-compact .first-session-hint { display: none; }
+.app-shell .sheet-compact .first-session-head { display: none; }
+.app-shell[data-screen] .main-panel.sheet-compact .first-session-hint { display: block; font-size: 14px; line-height: 1.4; }
+.app-shell[data-screen] .main-panel.sheet-compact .first-session h2 { font-size: 16px; }
 .app-shell .sheet-compact .first-session h2 { font-size: 16px; line-height: 1.35; }
 .app-shell .sheet-compact .first-session-action { min-height: 48px; margin: 0; padding: 8px 12px; }
 .app-shell .sheet-compact .recommended-quest, .app-shell .sheet-compact .compact-selection { display: flex; width: 100%; align-items: center; gap: 10px; min-height: 64px; margin: 0; padding: 0 48px 0 0; border: 0; box-shadow: none; background: none; }

@@ -10,15 +10,20 @@ import { tr } from "./i18n";
 import { zoneInteriorMargin } from "./zone-presence";
 import { questTarget, remainingQuestStops } from "./quest-route";
 import { activityKind } from "./activity-view";
+import { ActivityHelp } from "./ActivityHelp";
+import { questHelpTopic } from "./activity-help";
+import { useLearning } from "./useLearning";
 import type { Fix, Point, Quest, Zone } from "./types";
 import "./quest-brief.css";
 
 /** Presentation only. Start focuses an activity; only onComplete can request its existing claim. */
-export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, online, distance, busy, started, choice, onChoose, onStart, onPoint, onLocate, onComplete, onMap, children }: {
+export function QuestBrief({ playerId, quest: q, zone, position, now, tier, arena, fix, online, distance, busy, started, choice, onChoose, onStart, onPoint, onLocate, onComplete, onMap, children }: {
+  playerId?: string;
   quest: Quest; zone: Zone; now: number; tier: number; arena: boolean; distance: number; busy: boolean;
   started: boolean; position: Point; fix: Fix | null; online: boolean; choice?: string; onChoose: (choice: string) => void;
   onStart: () => void; onPoint: () => void; onLocate: () => void; onComplete: () => void; onMap: () => void; children?: ReactNode;
 }) {
+  const learning = useLearning(playerId);
   const heading = useRef<HTMLHeadingElement>(null);
   const wasStarted = useRef(started);
   useEffect(() => {
@@ -80,6 +85,7 @@ export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, on
         {busy ? tr("Checking visit…") : q.kind === "route" ? (q.checkpoint || 0) >= steps ? tr("Finish walk") : tr("Confirm stop {0}", { 0: targetNumber }) : q.kind === "chest" && q.itemAvailable === true ? tr("Open chest") : q.activity?.actionLabel || tr("Confirm visit")}<ArrowRight aria-hidden="true" />
       </button>}
     {q.clue && activity && !far && !outside && !choice && <p className="quest-brief-requirement">{tr("Choose an answer to continue.")}</p>}
+    <ActivityHelp topic={questHelpTopic(q)} onAcknowledge={() => learning.acknowledge(questHelpTopic(q))} />
     <details className="quest-brief-more">
       <summary>{tr("Learn more")}</summary>
       <p>{tr("Straight-line distance")}: {distanceLabel(distance)} · {q.opens_at > now ? tr("opens in {0}", { 0: remaining(q.opens_at) }) : q.closes_at <= now ? tr("Closed for today") : tr("closes in {0}", { 0: remaining(q.closes_at) })}</p>
