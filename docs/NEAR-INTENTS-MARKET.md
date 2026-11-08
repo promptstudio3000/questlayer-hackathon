@@ -63,7 +63,13 @@ seller (device key)                     buyer (device key)
   balance. The server cannot move anything a player did not sign.
 - The **solver** is the existing relayer account. It only pays gas for
   `execute_intents` (deposit 0). Before sending it runs `simulate_intents` and
-  refuses any batch that does not net to zero.
+  refuses any batch that does not net to zero. Every solver transaction (book
+  fill, NPC trade, withdrawal) reserves one operation plus
+  `SUBSIDY_GAS_RESERVE_YOCTO` from the service-wide sponsorship budget
+  (`SUBSIDY_DAILY_*`, the same budget as relays and account creation) and is
+  refused with `SUBSIDY_BUDGET` once that is used up; without a configured
+  budget the solver sends nothing (`SUBSIDY_DISABLED`). The solver signs the exact transaction before sending it: a failure while signing
+  releases the reservation, while a send with an unknown outcome keeps it.
 - The **relayer policy** (`server/relayer/policy.mjs`) sponsors only:
   `add_public_key`/`remove_public_key` (1 yocto) on the verifier,
   `nft_transfer_call` of an Aura to the verifier for the sender's own account,

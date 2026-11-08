@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import { KeyPair } from "near-api-js";
 import { openDatabase, createPlayer } from "../server/database.mjs";
 import { IntentsMarket } from "../server/native/intents-market.mjs";
+import { SubsidyBudget } from "../server/relayer/subsidy-budget.mjs";
 import {
   TREASURY_FEE_PIPS,
   auraTokenDiff,
@@ -162,6 +163,15 @@ function chain({ fee = TREASURY_FEE_PIPS, now = () => Date.now() } = {}) {
       },
     },
   };
+  // The solver signs first, then sends the exact transaction; the mock runs the call on send.
+  solver.account.createSignedTransaction = async ({ receiverId, actions }) => ({ receiverId, call: actions[0].functionCall });
+  solver.account.provider = {
+    sendTransactionUntil: async (tx, waitUntil) => {
+      assert.equal(waitUntil, "FINAL");
+      const { methodName, args, gas, deposit } = tx.call;
+      return solver.account.callFunctionRaw({ contractId: tx.receiverId, methodName, args: JSON.parse(Buffer.from(args).toString()), gas, deposit });
+    },
+  };
   const nfts = {
     contractId: NFTS,
     view: async (method, args = {}) => {
@@ -188,7 +198,8 @@ function setup(t, { now = Date.now(), fee = TREASURY_FEE_PIPS } = {}) {
   t.after(() => db.close());
   let clock = now;
   const c = chain({ fee, now: () => clock });
-  const intents = new IntentsMarket(db, { verifier: c.reader, nftContract: NFTS, wnear: WNEAR, solver: c.solver, now: () => clock });
+  const subsidyBudget = new SubsidyBudget(db, { dailyYocto: 10n ** 24n, dailyOperations: 1000, gasReserveYocto: 3n * 10n ** 22n, clock: () => clock });
+  const intents = new IntentsMarket(db, { verifier: c.reader, nftContract: NFTS, wnear: WNEAR, solver: c.solver, subsidyBudget, now: () => clock });
   const traders = parseTraders({
     network: "testnet",
     traders: [

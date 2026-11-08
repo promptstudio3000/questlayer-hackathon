@@ -486,6 +486,8 @@ const relayer = managedAccounts
         blockTtl: relayConfig.blockTtl,
         maxJobsPerDay: relayConfig.maxJobsPerDay,
         maxDepositYoctoPerDay: relayConfig.maxDepositYoctoPerDay,
+        maxCancelsPerDay: relayConfig.maxCancelsPerDay,
+        maxCancelsGlobalPerDay: relayConfig.maxCancelsGlobalPerDay,
         maxGas: relayConfig.maxGas,
         vaults: nativeVaults,
         factorySetupDeposit: rewardsConfig?.factory?.setupDeposit ?? null,
@@ -507,6 +509,8 @@ const intentsMarket =
         nftContract: intentsManifest.nftContract || nativeMarket.nfts.contractId,
         wnear: intentsManifest.wnear,
         solver: relayerService,
+        // Solver gas counts against the service-wide sponsorship budget.
+        subsidyBudget: managedAccounts?.subsidyBudget ?? null,
         manifest: intentsManifest,
       })
     : null;

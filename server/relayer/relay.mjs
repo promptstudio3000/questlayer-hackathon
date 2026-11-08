@@ -1,6 +1,8 @@
 import { ensurePurchases, existingPurchaseRelay } from "../gold-spend/purchases.mjs";
 import { ensureRelaySubmissions } from "./submissions.mjs";
 import { actions } from "near-api-js";
+import { createPublicKey, verify as verifySignature } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { atomic } from "../database.mjs";
 import { assert, dayKey, id } from "../domain.mjs";
 import { nearAccountId } from "../identity/near.mjs";
@@ -15,8 +17,10 @@ import {
 import {
   RelayPolicyError,
   SOCIAL_CONTRACT,
+  STORAGE_DEPOSIT,
   validateDelegate,
 } from "./policy.mjs";
+import { awardMessage } from "../native/award-vouchers.mjs";
 import { initializeManagedAccounts } from "./schema.mjs";
 import { relayTransport } from "./key-transport.mjs";
 import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
@@ -28,6 +32,27 @@ export const backoff = (attempts) =>
 // Sender-side headroom for the account's own state when a sponsored deposit is attached.
 const STATE_MARGIN = 10n ** 22n; // 0.01 NEAR
 const integer = (value) => Number.isSafeInteger(value) && value > 0;
+// A voucher must outlive admission plus the relayer's first send.
+const CLAIM_MARGIN_MS = 60000;
+// SocialDB storage the game already considers enough for a 1 yocto write
+// (server/native/social-profile.mjs quotes 0.05 NEAR only below it).
+const SOCIAL_STORAGE_FLOOR = 10n ** 22n;
+const ED25519_SPKI = Buffer.from("302a300506032b6570032100", "hex");
+function awardSignatureValid(publicKeyBase64, message, signatureBase64) {
+  try {
+    const raw = Buffer.from(publicKeyBase64, "base64"),
+      signature = Buffer.from(signatureBase64, "base64");
+    if (raw.length !== 32 || signature.length !== 64) return false;
+    const key = createPublicKey({
+      key: Buffer.concat([ED25519_SPKI, raw]),
+      format: "der",
+      type: "spki",
+    });
+    return verifySignature(null, Buffer.from(message), key, signature);
+  } catch {
+    return false;
+  }
+}
 const missing = (error) =>
   /does not exist|UNKNOWN_TRANSACTION|UnknownTransaction/i.test(
     `${error?.name}: ${rpcErrorText(error)}`,
@@ -88,6 +113,12 @@ export class Relayer {
       // So storage deposits are a per-account daily budget too (0.5 NEAR =
       // ten 0.05 NEAR storage deposits), not only the job count.
       maxDepositYoctoPerDay = 500000000000000000000000n,
+      // Each sponsored cancel_order takes one of the market v2's 1024 nonce
+      // slots until the order's deadline (up to 30 days), and fills need those
+      // slots too. Capped per account and service-wide (16 a day keeps
+      // sponsored cancels below half the table); cancel_all_orders uses none.
+      maxCancelsPerDay = 4,
+      maxCancelsGlobalPerDay = 16,
       policyContext = null,
       vaults = null,
       factorySetupDeposit = null,
@@ -105,7 +136,11 @@ export class Relayer {
       503,
     );
     assert(
-      integer(blockTtl) && blockTtl <= 1000 && integer(maxJobsPerDay),
+      integer(blockTtl) &&
+        blockTtl <= 1000 &&
+        integer(maxJobsPerDay) &&
+        integer(maxCancelsPerDay) &&
+        integer(maxCancelsGlobalPerDay),
       "Invalid relayer limits.",
       503,
     );
@@ -129,6 +164,8 @@ export class Relayer {
     this.maxJobsPerDay = maxJobsPerDay;
     this.maxGas = BigInt(maxGas);
     this.maxDepositYoctoPerDay = BigInt(maxDepositYoctoPerDay);
+    this.maxCancelsPerDay = maxCancelsPerDay;
+    this.maxCancelsGlobalPerDay = maxCancelsGlobalPerDay;
     this.customContext = policyContext;
     initializeManagedAccounts(db);
     ensurePurchases(db);
@@ -270,6 +307,163 @@ export class Relayer {
       ? await this.customContext(base, { playerId, publicKey: key })
       : base;
   }
+  async chainView(contractId, method, args) {
+    try {
+      const r = await this.provider.query({
+        request_type: "call_function",
+        account_id: contractId,
+        method_name: method,
+        args_base64: Buffer.from(JSON.stringify(args)).toString("base64"),
+        finality: "final",
+      });
+      return JSON.parse(Buffer.from(r.result).toString());
+    } catch {
+      assert(
+        false,
+        `${NETWORK_LABEL} is unavailable. Try again shortly.`,
+        503,
+        "RPC_UNAVAILABLE",
+      );
+    }
+  }
+  /**
+   * Chain checks for calls whose attached deposit the relayer would carry and
+   * a failed or no-op call would refund to the player (NEP-366: the refund
+   * goes to the delegate's sender). Runs before any budget is reserved.
+   */
+  async admit(call) {
+    if (call.kind !== "call") return;
+    if (
+      call.receiverId === this.contracts.collectibles &&
+      call.methodName === "redeem_aura"
+    )
+      await this.admitClaim(call);
+    else if (
+      call.receiverId === this.contracts.social &&
+      call.deposit === STORAGE_DEPOSIT.toString()
+    ) {
+      const balance = await this.chainView(
+        this.contracts.social,
+        "storage_balance_of",
+        { account_id: call.senderId },
+      );
+      assert(
+        !balance ||
+          (/^\d{1,39}$/.test(String(balance.available)) &&
+            BigInt(balance.available) < SOCIAL_STORAGE_FLOOR),
+        "Your NEAR Social storage already covers this record. Prepare it again.",
+        409,
+        "RELAY_SOCIAL_STORAGE",
+      );
+    }
+  }
+  /** Only a real, unredeemed, unexpired award voucher for this account. */
+  async admitClaim(call) {
+    const a = call.args,
+      contractId = this.contracts.collectibles;
+    assert(
+      a.expires_at_ms > this.clock() + CLAIM_MARGIN_MS,
+      "This Aura claim has expired. Secure the Aura again.",
+      409,
+      "RELAY_CLAIM_EXPIRED",
+    );
+    const [signer, claim, minted] = await Promise.all([
+      this.chainView(contractId, "get_award_signer", {}),
+      this.chainView(contractId, "get_claim", { claim_id: a.claim_id }),
+      this.chainView(contractId, "edition_minted", { edition: a.edition }),
+    ]);
+    assert(
+      typeof signer === "string" &&
+        awardSignatureValid(
+          signer,
+          awardMessage(contractId, {
+            claim_id: a.claim_id,
+            receiver_id: a.receiver_id,
+            edition: a.edition,
+            expires_at: a.expires_at_ms,
+          }),
+          a.signature,
+        ),
+      "This Aura claim was not issued by the game.",
+      403,
+      "RELAY_CLAIM_SIGNATURE",
+    );
+    assert(
+      claim == null,
+      "This Aura is already secured on NEAR.",
+      409,
+      "RELAY_CLAIM_USED",
+    );
+    assert(
+      Number.isSafeInteger(minted) && minted < 256,
+      "This Aura edition is fully minted on NEAR.",
+      409,
+      "RELAY_CLAIM_SUPPLY",
+    );
+  }
+  /** Admission that must hold inside the submit transaction (no awaits). */
+  admitLocked(call, senderId, day) {
+    if (call.kind !== "call") return;
+    if (
+      call.receiverId === this.contracts.collectibles &&
+      call.methodName === "redeem_aura"
+    )
+      assert(
+        !this.db
+          .prepare(
+            "SELECT 1 FROM relay_jobs WHERE account_id=? AND method_name='redeem_aura' AND state!='failed' AND json_extract(call,'$.args.claim_id')=?",
+          )
+          .get(senderId, call.args.claim_id),
+        "This Aura is already being secured.",
+        409,
+        "RELAY_CLAIM_PENDING",
+      );
+    else if (
+      call.receiverId === this.contracts.market &&
+      call.methodName === "cancel_order"
+    ) {
+      const order = call.args.order,
+        indexed = this.db
+          .prepare(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='signed_market_orders'",
+          )
+          .get();
+      const row = indexed
+        ? this.db
+            .prepare(
+              "SELECT signed_order,deadline_ms FROM signed_market_orders WHERE market=? AND maker=? AND nonce=? AND state='open'",
+            )
+            .get(this.contracts.market, senderId, String(order.nonce))
+        : null;
+      assert(
+        row &&
+          row.deadline_ms > this.clock() &&
+          isDeepStrictEqual(JSON.parse(row.signed_order), order),
+        "Only an open order in the game's order book can be cancelled through the relayer. Cancel all orders instead.",
+        409,
+        "RELAY_ORDER_UNKNOWN",
+      );
+      const start = Date.parse(`${day}T00:00:00Z`),
+        cancels = this.db
+          .prepare(
+            "SELECT COUNT(*) AS total, COALESCE(SUM(account_id=?),0) AS mine, COALESCE(SUM(account_id=? AND state!='failed' AND json_extract(call,'$.args.order.nonce')=?),0) AS same FROM relay_jobs WHERE method_name='cancel_order' AND created_at>=? AND created_at<?",
+          )
+          .get(senderId, senderId, String(order.nonce), start, start + 86400000);
+      assert(
+        cancels.same === 0,
+        "This order is already being cancelled.",
+        409,
+        "RELAY_ORDER_PENDING",
+      );
+      assert(
+        cancels.mine < this.maxCancelsPerDay &&
+          cancels.total < this.maxCancelsGlobalPerDay,
+        "Today's sponsored single-order cancellations are used up. Cancel all orders instead, or let the order expire.",
+        429,
+        "RELAY_CANCEL_BUDGET",
+      );
+    }
+  }
   async prepare(
     playerId,
     { accountId, receiverId, methodName, publicKey } = {},
@@ -354,6 +548,7 @@ export class Relayer {
         "RELAY_PREVIEW_MISMATCH",
       );
     }
+    await this.admit(call);
     const now = this.clock(),
       day = dayKey(now, "UTC"),
       jobId = id("relay");
@@ -375,6 +570,7 @@ export class Relayer {
       const purchase = call.methodName === "ft_burn" && call.receiverId === this.contracts.qgold
         ? existingPurchaseRelay(this.db, playerId, call) : null;
       if (purchase?.job) return purchase.job;
+      this.admitLocked(call, senderId, day);
       this.accounts.subsidyBudget.reserve(jobId, { kind: "relay", accountId: senderId, principal: call.deposit });
       const used =
         this.db

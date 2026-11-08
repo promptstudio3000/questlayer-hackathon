@@ -79,6 +79,26 @@ gas above `RELAY_MAX_GAS`, JSON arguments above 8 KiB, purchase prices, mainnet.
   `RELAY_INSUFFICIENT_BALANCE` (one margin-funded retry for state storage), `RELAY_SELF_PAID`, `RELAY_CONTRACT_FAILED`,
   `RELAY_OUTCOME`; network errors retry with `min(300 s, 5 s·2^min(attempts,6))`.
 - Daily budgets: `RELAY_MAX_JOBS_PER_DAY` submissions, `RELAY_MAX_DEPOSIT_YOCTO_PER_DAY` of attached storage deposits and `RELAY_TOPUP_CAP_YOCTO` per account. The deposit budget matters because a relayed call that fails refunds its deposit to the player's account, not to the relayer.
+- Admission checks against game and chain state, before any budget is reserved:
+  - SocialDB `set` is sponsored only for the records the game quotes itself: exactly one
+    `<account>/questlayer/profile`, `questlayer/notes/<message id>` or `questlayer/places/<place|post id>`
+    record with its exact field set, at most 4 KiB of arguments (`RELAY_SOCIAL_SHAPE`). The 0.05 NEAR
+    storage deposit is carried only while the account's SocialDB storage has less than 0.01 NEAR
+    available (`RELAY_SOCIAL_STORAGE`); otherwise the record is signed with 1 yocto.
+  - `redeem_aura` is sponsored only for a voucher signed by the collection's award key
+    (`get_award_signer`) for this account, unexpired for at least another minute, not yet redeemed
+    (`get_claim`), with edition supply left and no other open job for the same claim
+    (`RELAY_CLAIM_SIGNATURE`, `RELAY_CLAIM_EXPIRED`, `RELAY_CLAIM_USED`, `RELAY_CLAIM_SUPPLY`,
+    `RELAY_CLAIM_PENDING`). A fake or repeated claim would otherwise refund the relayer-carried
+    0.05 NEAR to the player.
+  - Market v2 `cancel_order` is sponsored only for the sender's own open, unexpired order in the game's
+    order book (`signed_market_orders`, exact signed body; `RELAY_ORDER_UNKNOWN`, `RELAY_ORDER_PENDING`),
+    at most `RELAY_MAX_CANCELS_PER_DAY` per account and `RELAY_MAX_CANCELS_GLOBAL_PER_DAY` service-wide
+    per UTC day (`RELAY_CANCEL_BUDGET`). Each cancel takes one of the market's 1024 nonce slots until
+    the order's deadline (up to 30 days), which fills need too; `cancel_all_orders` uses none and stays
+    sponsored.
+- The NEAR Intents solver (the relayer account) reserves every `execute_intents` transaction from the
+  same service-wide sponsorship budget (docs/NEAR-INTENTS-MARKET.md).
 
 ## Provisioning
 
@@ -94,6 +114,8 @@ mode `0600`; both keys must be full-access keys of their account on testnet.
 | `RELAY_TOPUP_CAP_YOCTO`       | Max sponsored top-up per account per day                 | `2e23`                |
 | `RELAY_MAX_JOBS_PER_DAY`      | Max submissions per account per day                      | `40`                  |
 | `RELAY_MAX_DEPOSIT_YOCTO_PER_DAY` | Max attached deposits the relayer carries per account per UTC day | `0.5 NEAR` |
+| `RELAY_MAX_CANCELS_PER_DAY`   | Max sponsored market v2 `cancel_order` per account per UTC day | `4`             |
+| `RELAY_MAX_CANCELS_GLOBAL_PER_DAY` | Max sponsored `cancel_order` across all accounts per UTC day | `16`          |
 | `RELAY_MAX_GAS`               | Max gas per delegated action                             | `300000000000000`     |
 | `RELAY_BLOCK_TTL`             | Max blocks a delegate may stay valid                     | `120`                 |
 | `DISABLE_RELAYER`             | `1` disables accounts and relaying                       | unset                 |

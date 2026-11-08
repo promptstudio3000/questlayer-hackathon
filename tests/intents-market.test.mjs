@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { KeyPair } from "near-api-js";
 import { openDatabase } from "../server/database.mjs";
 import { IntentsMarket, createIntentsRoutes } from "../server/native/intents-market.mjs";
+import { SubsidyBudget } from "../server/relayer/subsidy-budget.mjs";
 import {
   TREASURY_FEE_PIPS,
   auraTokenDiff,
@@ -86,6 +87,15 @@ function fakeVerifier(now, fees = { fee: 0, collector: "questlayer-dev-20261101.
       },
     },
   };
+  // The solver signs first, then sends the exact transaction; the mock runs the call on send.
+  solver.account.createSignedTransaction = async ({ receiverId, actions }) => ({ receiverId, call: actions[0].functionCall });
+  solver.account.provider = {
+    sendTransactionUntil: async (tx, waitUntil) => {
+      assert.equal(waitUntil, "FINAL");
+      const { methodName, args, gas, deposit } = tx.call;
+      return solver.account.callFunctionRaw({ contractId: tx.receiverId, methodName, args: JSON.parse(Buffer.from(args).toString()), gas, deposit });
+    },
+  };
   return { reader, solver, setBal, bal, used, fees };
 }
 
@@ -97,13 +107,14 @@ function signed(signerId, intents, now, ttl = 3600_000) {
     recipient: VERIFIER,
   });
 }
-function setup({ fee = 0 } = {}) {
+function setup({ fee = 0, budget = {} } = {}) {
   let t = Date.parse("2026-11-04T03:00:00Z");
   const now = () => t;
   const db = openDatabase(":memory:");
   const v = fakeVerifier(now, { fee, collector: "questlayer-dev-20261101.testnet" });
-  const market = new IntentsMarket(db, { verifier: v.reader, nftContract: NFT, wnear: WNEAR, solver: v.solver, now });
-  return { db, v, market, now, advance: (ms) => (t += ms) };
+  const subsidyBudget = new SubsidyBudget(db, { dailyYocto: 10n ** 24n, dailyOperations: 1000, gasReserveYocto: 3n * 10n ** 22n, clock: now, ...budget });
+  const market = new IntentsMarket(db, { verifier: v.reader, nftContract: NFT, wnear: WNEAR, solver: v.solver, subsidyBudget, now });
+  return { db, v, market, subsidyBudget, now, advance: (ms) => (t += ms) };
 }
 const nft = `nep171:${NFT}:${AURA}`,
   ft = `nep141:${WNEAR}`;
@@ -231,4 +242,61 @@ test("routes report disabled without a verifier and require sign-in for writes",
     on.handle(req("POST"), {}, new URL("http://x/api/native/intents/orders"), { player: null, body: async () => ({}), respond, assert: check }),
     /Sign in/,
   );
+});
+
+test("solver transactions reserve from the shared sponsorship budget and stop once it is used up", async () => {
+  const { v, market, db, now } = setup({ budget: { dailyOperations: 1 } });
+  v.setBal("alice.testnet", nft, 1n);
+  v.setBal("bob.testnet", ft, BigInt(PRICE));
+  const order = await market.submit(signed("alice.testnet", [sell()], now()));
+  await market.fill(order.id, signed("bob.testnet", [buy()], now()));
+  const rows = db.prepare("SELECT kind,account_id,principal,state,tx_hash FROM subsidy_reservations").all();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].kind, "intents");
+  assert.equal(rows[0].account_id, "relayer.testnet");
+  assert.equal(rows[0].principal, "0");
+  assert.equal(rows[0].state, "spent");
+  assert.match(rows[0].tx_hash, /^TX1/);
+  // The day's single operation is spent: the next solver transaction is refused before sending.
+  await assert.rejects(
+    market.withdraw(signed("bob.testnet", [{ intent: "nft_withdraw", token: NFT, token_id: AURA, receiver_id: "bob.testnet" }], now())),
+    (e) => e.code === "SUBSIDY_BUDGET",
+  );
+  assert.deepEqual(v.solver.sent, [2]);
+  // Without a budget the solver never sends at all.
+  const unbudgeted = new IntentsMarket(openDatabase(":memory:"), { verifier: v.reader, nftContract: NFT, wnear: WNEAR, solver: v.solver, now });
+  await assert.rejects(unbudgeted.execute([], 1n), (e) => e.code === "SUBSIDY_DISABLED");
+  assert.deepEqual(v.solver.sent, [2]);
+});
+
+test("a solver transaction that fails before it is signed gives its reservation back", async () => {
+  const { v, market, db, now } = setup({ budget: { dailyOperations: 1 } });
+  v.setBal("alice.testnet", nft, 1n);
+  v.setBal("bob.testnet", ft, BigInt(PRICE));
+  const order = await market.submit(signed("alice.testnet", [sell()], now()));
+  const sign = v.solver.account.createSignedTransaction;
+  v.solver.account.createSignedTransaction = async () => {
+    throw new Error("access key lookup failed");
+  };
+  await assert.rejects(market.fill(order.id, signed("bob.testnet", [buy()], now())), /access key lookup failed/);
+  assert.deepEqual(v.solver.sent, []);
+  assert.deepEqual(db.prepare("SELECT state FROM subsidy_reservations").all().map((r) => r.state), ["released"]);
+  // The released operation is available again: the same fill now settles.
+  v.solver.account.createSignedTransaction = sign;
+  await market.fill(order.id, signed("bob.testnet", [buy()], now()));
+  assert.deepEqual(v.solver.sent, [2]);
+  const states = db.prepare("SELECT state FROM subsidy_reservations ORDER BY created_at").all().map((r) => r.state);
+  assert.deepEqual(states.sort(), ["released", "spent"]);
+});
+
+test("a solver transaction lost after it was sent keeps its reservation", async () => {
+  const { v, market, db, now } = setup({ budget: { dailyOperations: 2 } });
+  v.setBal("alice.testnet", nft, 1n);
+  v.setBal("bob.testnet", ft, BigInt(PRICE));
+  const order = await market.submit(signed("alice.testnet", [sell()], now()));
+  v.solver.account.provider.sendTransactionUntil = async () => {
+    throw new Error("RPC timeout after send");
+  };
+  await assert.rejects(market.fill(order.id, signed("bob.testnet", [buy()], now())), /RPC timeout/);
+  assert.deepEqual(db.prepare("SELECT state FROM subsidy_reservations").all().map((r) => r.state), ["reserved"]);
 });
