@@ -64,6 +64,7 @@ try {
     await page.goto(url);
     await page.getByLabel("What should we call you?", { exact: true }).fill("Mira");
     await page.getByRole("button", { name: "Start exploring", exact: true }).click();
+    await page.getByRole("button", { name: "Let's explore", exact: true }).click();
     await page.locator(".topbar .profile-pill").waitFor();
     await openProfile();
     await page.locator(".world-loading").waitFor({ state: "detached" });

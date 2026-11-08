@@ -158,6 +158,7 @@ async function main() {
     await page.goto(server.url);
     await page.getByPlaceholder("Your explorer name").fill("Vera");
     await page.getByRole("button", { name: "Start exploring" }).click();
+    await page.getByRole("button", { name: "Let's explore", exact: true }).click();
     await page.locator("#first-session-title").waitFor({ timeout: 20_000 });
     const skip = page
       .getByRole("button", { name: /Skip|Not now|Later/ })

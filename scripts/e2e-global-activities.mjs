@@ -54,6 +54,7 @@ try {
   const page=await context.newPage();page.on("pageerror",e=>report.pageErrors.push(e.message));
   await page.goto(url);
   await page.getByPlaceholder("Your explorer name").fill("Atlas browser pilot");await page.getByRole("button",{name:"Start exploring",exact:true}).click();
+  await page.getByRole("button",{name:"Let's explore",exact:true}).click();
   const worldResponse=page.waitForResponse(r=>r.url().endsWith("/api/world") && r.request().postDataJSON()?.arena===false && r.status()===200);
   await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();await worldResponse;
   await page.waitForFunction(()=>document.querySelector(".coverage-note")?.textContent?.includes("Map-derived discoveries by Atlas"));

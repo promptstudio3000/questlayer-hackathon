@@ -183,6 +183,7 @@ async function journey(browser, server, device, j, expected) {
     await page.goto(server.url);
     await page.getByPlaceholder("Your explorer name").fill(`World ${j.id}`);
     await page.getByRole("button", { name: "Start exploring" }).click();
+    await page.getByRole("button", { name: "Let's explore", exact: true }).click();
     const coach = page.locator(".first-session");
     await coach
       .getByRole("heading", { name: "Reach the nearest find" })
