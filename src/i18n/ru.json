@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "(необязательно, только при включённом GPS)",
  "(paid out through later days).": "(выплачивается в последующие дни).",
  ") and NPC lines (": ") и реплики NPC (",
- ") is in your wardrobe. Secure it on NEAR from there.": ") в твоём гардеробе. Закрепи её в NEAR оттуда.",
  "), zone visits (": "), посещения зон (",
  "). Check every stop and edit the text before you save.": "). Проверь каждую остановку и отредактируй текст перед сохранением.",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": "). Никогда не GOLD, NEAR или стейк. Ранги — косметические титулы; они не меняют ни награды, ни шансы, ни урон.",
@@ -2182,7 +2181,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "Кошелёк не вернул аккаунт. Попробуй снова или выбери другой кошелёк.",
  "The wisp gave you": "Огонёк дал тебе",
  "The wisp is drawing…": "Огонёк тянет жребий…",
- "The zone chest it guarded is open for you now.": "Сундук зоны, который он охранял, теперь открыт для тебя.",
  "There is a find near here.": "Рядом есть находка.",
  "These keys can act for your explorer account": "Эти ключи могут действовать за твой аккаунт исследователя",
  "These receipts are already saved. Use Check confirmation to see their result.": "Эти квитанции уже сохранены. Нажми «Проверить подтверждение», чтобы увидеть результат.",
@@ -2993,5 +2991,9 @@
  "Fractional NEAR remains credited": "Остаток NEAR сохранён на счёте",
  "Awaiting QGOLD settlement": "Ожидает выплаты в QGOLD",
  "Show map": "Показать карту",
- "{0}/{1} stops": "{0}/{1} остановок"
+ "{0}/{1} stops": "{0}/{1} остановок",
+ "It dropped the chest it guarded, right next to you. Open it now.": "Он уронил сундук, который охранял, прямо рядом с тобой. Открой его.",
+ ") is in your Inventory. Secure it on NEAR from there.": ") в твоём инвентаре. Закрепи его в NEAR оттуда.",
+ "Wearables you pick up on the map are in your Wardrobe.": "Предметы одежды, подобранные на карте, лежат в твоём гардеробе.",
+ "See it in your Wardrobe": "Посмотреть в гардеробе"
 }

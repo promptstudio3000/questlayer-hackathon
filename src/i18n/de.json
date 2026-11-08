@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "(optional, nur mit GPS an)",
  "(paid out through later days).": "(an späteren Tagen ausgezahlt).",
  ") and NPC lines (": ") und NPC-Dialoge (",
- ") is in your wardrobe. Secure it on NEAR from there.": ") ist in deiner Garderobe. Sichere es dort auf NEAR.",
  "), zone visits (": "), Zonenbesuche (",
  "). Check every stop and edit the text before you save.": "). Prüfe jeden Halt und bearbeite den Text, bevor du speicherst.",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": "). Niemals GOLD, NEAR oder Stake. Ränge sind kosmetische Titel; sie ändern weder Belohnung, Chancen noch Schaden.",
@@ -2182,7 +2181,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "Die Wallet hat kein Konto geliefert. Versuch es erneut oder wähle eine andere Wallet.",
  "The wisp gave you": "Das Irrlicht gab dir",
  "The wisp is drawing…": "Das Irrlicht zieht…",
- "The zone chest it guarded is open for you now.": "Die Zonentruhe, die es bewachte, ist jetzt für dich offen.",
  "There is a find near here.": "Hier in der Nähe gibt es einen Fund.",
  "These keys can act for your explorer account": "Diese Schlüssel können für dein Entdeckerkonto handeln",
  "These receipts are already saved. Use Check confirmation to see their result.": "Diese Belege sind schon gespeichert. Nutze „Bestätigung prüfen“, um ihr Ergebnis zu sehen.",
@@ -2993,5 +2991,9 @@
  "Fractional NEAR remains credited": "NEAR-Restbetrag bleibt gutgeschrieben",
  "Awaiting QGOLD settlement": "QGOLD-Abrechnung ausstehend",
  "Show map": "Karte zeigen",
- "{0}/{1} stops": "{0}/{1} Halte"
+ "{0}/{1} stops": "{0}/{1} Halte",
+ "It dropped the chest it guarded, right next to you. Open it now.": "Es hat die bewachte Truhe direkt neben dir fallen lassen. Öffne sie jetzt.",
+ ") is in your Inventory. Secure it on NEAR from there.": ") ist in deinem Inventar. Sichere es dort auf NEAR.",
+ "Wearables you pick up on the map are in your Wardrobe.": "Wearables, die du auf der Karte aufsammelst, findest du in deiner Garderobe.",
+ "See it in your Wardrobe": "In der Garderobe ansehen"
 }

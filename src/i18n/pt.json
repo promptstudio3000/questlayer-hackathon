@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "(opcional, só com o GPS ligado)",
  "(paid out through later days).": "(pago nos dias seguintes).",
  ") and NPC lines (": ") e falas de NPC (",
- ") is in your wardrobe. Secure it on NEAR from there.": ") está no seu guarda-roupa. Proteja na NEAR por lá.",
  "), zone visits (": "), visitas a zonas (",
  "). Check every stop and edit the text before you save.": "). Confira cada parada e edite o texto antes de salvar.",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": "). Nunca GOLD, NEAR ou stake. Ranks são títulos cosméticos; não mudam recompensas, chances ou dano.",
@@ -2182,7 +2181,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "A carteira não retornou nenhuma conta. Tente de novo ou escolha outra carteira.",
  "The wisp gave you": "O fogo-fátuo te deu",
  "The wisp is drawing…": "O fogo-fátuo está sorteando…",
- "The zone chest it guarded is open for you now.": "O baú da zona que ele guardava agora está aberto para você.",
  "There is a find near here.": "Tem um achado aqui perto.",
  "These keys can act for your explorer account": "Estas chaves podem agir pela sua conta de explorador",
  "These receipts are already saved. Use Check confirmation to see their result.": "Estes recibos já estão salvos. Use Verificar confirmação para ver o resultado.",
@@ -2993,5 +2991,9 @@
  "Fractional NEAR remains credited": "O restante NEAR continua creditado",
  "Awaiting QGOLD settlement": "A aguardar liquidação em QGOLD",
  "Show map": "Mostrar mapa",
- "{0}/{1} stops": "{0}/{1} paradas"
+ "{0}/{1} stops": "{0}/{1} paradas",
+ "It dropped the chest it guarded, right next to you. Open it now.": "Ele largou o baú que guardava bem ao seu lado. Abra-o agora.",
+ ") is in your Inventory. Secure it on NEAR from there.": ") está no seu inventário. Proteja-o na NEAR a partir de lá.",
+ "Wearables you pick up on the map are in your Wardrobe.": "Os acessórios que você pega no mapa ficam no seu guarda-roupa.",
+ "See it in your Wardrobe": "Ver no guarda-roupa"
 }

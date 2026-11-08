@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "(اختياري، فقط مع تشغيل GPS)",
  "(paid out through later days).": "(يُدفع على مدى الأيام اللاحقة).",
  ") and NPC lines (": ") وسلاسل الشخصيات (",
- ") is in your wardrobe. Secure it on NEAR from there.": ") في خزانة ملابسك. أمّنها على NEAR من هناك.",
  "), zone visits (": ")، وزيارات المناطق (",
  "). Check every stop and edit the text before you save.": "). راجع كل محطة وعدّل النص قبل الحفظ.",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": "). وليس GOLD أو NEAR أو الحصة أبدًا. الرتب ألقاب تجميلية؛ لا تغيّر أي مكافأة أو احتمالات أو ضرر.",
@@ -2182,7 +2181,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "لم تُرجع المحفظة حسابًا. حاول مجددًا أو اختر محفظة أخرى.",
  "The wisp gave you": "منحتك الشعلة",
  "The wisp is drawing…": "الشعلة تسحب…",
- "The zone chest it guarded is open for you now.": "صندوق المنطقة الذي كان يحرسه مفتوح لك الآن.",
  "There is a find near here.": "هناك عثور قريب من هنا.",
  "These keys can act for your explorer account": "يمكن لهذه المفاتيح التصرف نيابةً عن حساب المستكشف",
  "These receipts are already saved. Use Check confirmation to see their result.": "هذه الإيصالات محفوظة مسبقًا. استخدم «تحقق من التأكيد» لرؤية نتيجتها.",
@@ -2993,5 +2991,9 @@
  "Fractional NEAR remains credited": "يبقى كسر NEAR رصيدًا محفوظًا",
  "Awaiting QGOLD settlement": "بانتظار التسوية بعملة QGOLD",
  "Show map": "اعرض الخريطة",
- "{0}/{1} stops": "{0}/{1} محطات"
+ "{0}/{1} stops": "{0}/{1} محطات",
+ "It dropped the chest it guarded, right next to you. Open it now.": "أسقط الصندوق الذي كان يحرسه بجانبك مباشرة. افتحه الآن.",
+ ") is in your Inventory. Secure it on NEAR from there.": ") موجود في مخزونك. أمّنه على NEAR من هناك.",
+ "Wearables you pick up on the map are in your Wardrobe.": "الملابس التي تلتقطها على الخريطة موجودة في خزانتك.",
+ "See it in your Wardrobe": "شاهده في خزانتك"
 }

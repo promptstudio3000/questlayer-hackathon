@@ -58,6 +58,7 @@ import {
 } from "./lazy-panels";
 import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
 import type { RollCall } from "./WispRolls";
+import type { InventoryTab } from "./Inventory";
 // Styles of the split-off screens stay in the main stylesheet, in their old
 // order, so nothing shifts while a screen's script is still loading.
 import "./adventure-results.css";
@@ -383,6 +384,8 @@ export default function App() {
     }),
     [now, setNow] = useState(Date.now());
   const [nearActors, setNearActors] = useState<{worldId:string | null; actors:NearbyActor[]; at:number}>({worldId:null, actors:[], at:0});
+  // A wearable pickup is a Wardrobe item: "see it" opens Inventory there.
+  const [inventoryStart, setInventoryStart] = useState<InventoryTab>("items");
   const [wearableMoment, setWearableMoment] = useState<{scope: string; id: number; name: string; detail: string; chain?: ChainRef | null} | null>(null);
   const [startedQuestKey, setStartedQuestKey] = useState("");
   const [rewardNote, setRewardNote] = useState("");
@@ -453,6 +456,13 @@ export default function App() {
     setNotesView = navigation.setter("notesView"),
     setCreatorView = navigation.setter("creatorView"),
     setMarketView = navigation.setter("marketView");
+  useEffect(() => {
+    if (tab !== "inventory") setInventoryStart("items");
+  }, [tab]);
+  function openWardrobe() {
+    setInventoryStart("wardrobe");
+    setTab("inventory");
+  }
   const profileTab = profileTabOf(tab, profileView);
   const showProfileTabs = tab === "settings" || tab === "fuel" || tab === "wallet";
   function chooseProfileTab(next: ProfileTab) {
@@ -3529,6 +3539,11 @@ export default function App() {
         </div>
       </header>
       {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone, zonePresence.questId)} />}
+      {player && tab !== "explore" && (
+        // Desktop: Inventory, Community and Profile open as a card over the
+        // map; a click beside the card closes it like the panel's close button.
+        <div className="sheet-backdrop" aria-hidden="true" onClick={returnToAdventure} />
+      )}
       {player && (
         <MapSurface overlay={tab === "explore" && sheetExpanded} label={selected?.name || title} onClose={selected ? closeZone : closeMapPanel}>
         <main
@@ -4010,6 +4025,7 @@ export default function App() {
                   )
                 }
                 onWearables={(next) => updateOwnedPlayer(next)}
+                initialTab={inventoryStart}
                 map3D={map3D}
                 onMap3D={toggleMap3D}
                 initialCollection={nativePlay ? "near" : "demo"}
@@ -5038,12 +5054,12 @@ export default function App() {
           }}
         />
       )}
-      {showWearableMoment && wearableMoment && <WearableMoment wearable={wearableMoment} onClose={() => setWearableMoment(null)} onWardrobe={() => { setWearableMoment(null); setTab("inventory"); }} />}
+      {showWearableMoment && wearableMoment && <WearableMoment wearable={wearableMoment} onClose={() => setWearableMoment(null)} onWardrobe={() => { setWearableMoment(null); openWardrobe(); }} />}
       {findInspect && world?.id === findInspect.worldId && <FindDetails key={findInspect.coin.id}
         coin={findInspect.coin} available={!!world.coins.find(c => c.id === findInspect.coin.id && !c.claimant)}
         distanceM={meters(position, findInspect.coin)} onClose={() => setFindInspect(null)}
         onPoint={() => { goToStreetFind(findInspect.coin); setFindInspect(null); }}
-        onInventory={() => { setFindInspect(null); setTab("inventory"); }} />}
+        onInventory={() => { const wearable = !!findInspect.coin.wearable; setFindInspect(null); if (wearable) openWardrobe(); else setTab("inventory"); }} />}
       {actorOpen && world && player && (
         <ActorSheet
           playerId={player.id}

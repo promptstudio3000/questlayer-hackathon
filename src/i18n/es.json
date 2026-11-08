@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "(opcional, solo con el GPS activado)",
  "(paid out through later days).": "(pagado en los días siguientes).",
  ") and NPC lines (": ") y diálogos de NPC (",
- ") is in your wardrobe. Secure it on NEAR from there.": ") está en tu vestuario. Asegúralo en NEAR desde allí.",
  "), zone visits (": "), visitas a zonas (",
  "). Check every stop and edit the text before you save.": "). Revisa cada parada y edita el texto antes de guardar.",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": "). Nunca GOLD, NEAR ni stake. Los rangos son títulos cosméticos; no cambian recompensas, probabilidades ni daño.",
@@ -2182,7 +2181,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "El monedero no devolvió ninguna cuenta. Inténtalo de nuevo o elige otro monedero.",
  "The wisp gave you": "El fuego fatuo te dio",
  "The wisp is drawing…": "El fuego fatuo está sorteando…",
- "The zone chest it guarded is open for you now.": "El cofre de zona que custodiaba ya está abierto para ti.",
  "There is a find near here.": "Hay un hallazgo cerca de aquí.",
  "These keys can act for your explorer account": "Estas claves pueden actuar en nombre de tu cuenta de explorador",
  "These receipts are already saved. Use Check confirmation to see their result.": "Estos recibos ya están guardados. Usa Comprobar confirmación para ver su resultado.",
@@ -2993,5 +2991,9 @@
  "Fractional NEAR remains credited": "El resto de NEAR queda abonado",
  "Awaiting QGOLD settlement": "Pendiente de liquidación en QGOLD",
  "Show map": "Mostrar mapa",
- "{0}/{1} stops": "{0}/{1} paradas"
+ "{0}/{1} stops": "{0}/{1} paradas",
+ "It dropped the chest it guarded, right next to you. Open it now.": "Soltó el cofre que custodiaba justo a tu lado. Ábrelo ahora.",
+ ") is in your Inventory. Secure it on NEAR from there.": ") está en tu inventario. Asegúralo en NEAR desde allí.",
+ "Wearables you pick up on the map are in your Wardrobe.": "Los accesorios que recoges en el mapa están en tu armario.",
+ "See it in your Wardrobe": "Verlo en tu armario"
 }

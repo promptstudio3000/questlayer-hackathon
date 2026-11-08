@@ -9,6 +9,7 @@ import type { ActorEncounter, ActorView } from "./actor-types";
 import { actorRoleLabel } from "./actors-layer";
 import "./actors.css";
 import { tr } from "./i18n";
+import { FORMAT_COPY, type ChallengeFormat } from "./monster-challenge";
 
 type Location = { lat: number; lng: number; accuracy?: number; timestamp?: number };
 type HandoffProps = {
@@ -19,6 +20,7 @@ type HandoffProps = {
   encounter: string | ActorEncounter;
   onClose: () => void;
   onQuest?: (questId: string) => void;
+  format?: ChallengeFormat | null;
 };
 
 // Optional slices: NPC talk (N1/N2) and monster challenges (M1/M2).
@@ -65,6 +67,8 @@ export function ActorSheet({
     | { kind: "error"; message: string; retry: boolean }
   >({ kind: "loading" });
   const [handoff, setHandoff] = useState<"npc" | "challenge" | "boss" | null>(null);
+  // The format picked here starts right away: the challenge sheet never asks again.
+  const [format, setFormat] = useState<ChallengeFormat | null>(null);
   const stage = useRef<HTMLDivElement>(null);
   const attempt = useRef(0);
 
@@ -130,7 +134,7 @@ export function ActorSheet({
   if (ready && handoff === "challenge" && MonsterChallenge)
     return (
       <Suspense fallback={null}>
-        <MonsterChallenge playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready.encounter} onClose={onClose} />
+        <MonsterChallenge playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready.encounter} format={format} onClose={onClose} onQuest={onQuest} />
       </Suspense>
     );
   return (
@@ -176,15 +180,21 @@ export function ActorSheet({
                 {ready.menu.map((offer) => {
                   const isBoss = offer.kind === "challenge" && offer.terms.format === "boss-hit";
                   const canChallenge = isBoss || (offer.kind === "challenge" && !!MonsterChallenge);
+                  const picked = typeof offer.terms.format === "string" && offer.terms.format in FORMAT_COPY ? (offer.terms.format as ChallengeFormat) : null;
                   return (
                     <li key={offer.id}>
                       <button
                         className="primary-button"
                         disabled={!canChallenge}
-                        onClick={() => canChallenge && setHandoff(isBoss ? "boss" : "challenge")}
+                        onClick={() => {
+                          if (!canChallenge) return;
+                          setFormat(picked);
+                          setHandoff(isBoss ? "boss" : "challenge");
+                        }}
                       >
                         {offer.label}
                       </button>
+                      {picked && <small className="actor-offer-hint">{FORMAT_COPY[picked].hint}</small>}
                       {!canChallenge && <small>{tr("Opens in an upcoming update.")}</small>}
                     </li>
                   );

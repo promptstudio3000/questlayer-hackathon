@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "（可选，仅在开启 GPS 时）",
  "(paid out through later days).": "（在之后几天内发放）。",
  ") and NPC lines (": "）和 NPC 剧情线（",
- ") is in your wardrobe. Secure it on NEAR from there.": "）已在你的衣橱中。可在那里将它上链到 NEAR。",
  "), zone visits (": "）、区域探访（",
  "). Check every stop and edit the text before you save.": "）。保存前请检查每一站并编辑文字。",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": "）。绝不是 GOLD、NEAR 或质押。排名只是装饰性称号，不会改变奖励、概率或伤害。",
@@ -2182,7 +2181,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "钱包没有返回账户。请重试或选择其他钱包。",
  "The wisp gave you": "精灵给了你",
  "The wisp is drawing…": "鬼火正在抽取…",
- "The zone chest it guarded is open for you now.": "它守护的区域宝箱现在为你打开了。",
  "There is a find near here.": "附近有一个发现。",
  "These keys can act for your explorer account": "这些密钥可以代表你的探险者账户操作",
  "These receipts are already saved. Use Check confirmation to see their result.": "这些凭证已保存。使用“检查确认”查看结果。",
@@ -2993,5 +2991,9 @@
  "Fractional NEAR remains credited": "NEAR 零头仍保留在余额中",
  "Awaiting QGOLD settlement": "等待 QGOLD 结算",
  "Show map": "显示地图",
- "{0}/{1} stops": "{0}/{1} 个站点"
+ "{0}/{1} stops": "{0}/{1} 个站点",
+ "It dropped the chest it guarded, right next to you. Open it now.": "它把守护的宝箱掉在了你身边。现在打开它吧。",
+ ") is in your Inventory. Secure it on NEAR from there.": ")已在你的背包中。可在那里将其保存到 NEAR。",
+ "Wearables you pick up on the map are in your Wardrobe.": "你在地图上拾取的穿戴物品在衣橱里。",
+ "See it in your Wardrobe": "在衣橱中查看"
 }

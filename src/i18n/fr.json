@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "(facultatif, seulement avec le GPS activé)",
  "(paid out through later days).": "(versé au cours des jours suivants).",
  ") and NPC lines (": ") et répliques de PNJ (",
- ") is in your wardrobe. Secure it on NEAR from there.": ") est dans ta garde-robe. Sécurise-la sur NEAR depuis là.",
  "), zone visits (": "), visites de zones (",
  "). Check every stop and edit the text before you save.": "). Vérifie chaque étape et modifie le texte avant d’enregistrer.",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": "). Jamais de GOLD, de NEAR ni de stake. Les rangs sont des titres cosmétiques ; ils ne changent ni récompense, ni chances, ni dégâts.",
@@ -2182,7 +2181,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "Le wallet n'a renvoyé aucun compte. Réessaie ou choisis un autre wallet.",
  "The wisp gave you": "Le feu follet t'a donné",
  "The wisp is drawing…": "Le feu follet tire au sort…",
- "The zone chest it guarded is open for you now.": "Le coffre de zone qu'il gardait est maintenant ouvert pour toi.",
  "There is a find near here.": "Il y a une trouvaille près d’ici.",
  "These keys can act for your explorer account": "Ces clés peuvent agir pour ton compte d'explorateur",
  "These receipts are already saved. Use Check confirmation to see their result.": "Ces reçus sont déjà enregistrés. Utilise Vérifier la confirmation pour voir leur résultat.",
@@ -2993,5 +2991,9 @@
  "Fractional NEAR remains credited": "Le reliquat en NEAR reste crédité",
  "Awaiting QGOLD settlement": "En attente du règlement en QGOLD",
  "Show map": "Afficher la carte",
- "{0}/{1} stops": "{0}/{1} étapes"
+ "{0}/{1} stops": "{0}/{1} étapes",
+ "It dropped the chest it guarded, right next to you. Open it now.": "Il a lâché le coffre qu'il gardait, juste à côté de toi. Ouvre-le maintenant.",
+ ") is in your Inventory. Secure it on NEAR from there.": ") est dans ton inventaire. Sécurise-le sur NEAR depuis là.",
+ "Wearables you pick up on the map are in your Wardrobe.": "Les accessoires ramassés sur la carte sont dans ta garde-robe.",
+ "See it in your Wardrobe": "Le voir dans ta garde-robe"
 }

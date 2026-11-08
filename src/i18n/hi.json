@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "(वैकल्पिक, सिर्फ़ GPS चालू होने पर)",
  "(paid out through later days).": "(बाद के दिनों में दिया जाता है)।",
  ") and NPC lines (": ") और NPC लाइनें (",
- ") is in your wardrobe. Secure it on NEAR from there.": ") तुम्हारी वॉर्डरोब में है। वहाँ से इसे NEAR पर सुरक्षित करो।",
  "), zone visits (": "), ज़ोन विज़िट (",
  "). Check every stop and edit the text before you save.": ")। सेव करने से पहले हर स्टॉप जाँचो और टेक्स्ट ठीक करो।",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": ")। कभी GOLD, NEAR या स्टेक नहीं। रैंक सिर्फ़ दिखावटी टाइटल हैं; इनसे इनाम, संभावना या डैमेज नहीं बदलता।",
@@ -2182,7 +2181,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "वॉलेट ने कोई अकाउंट नहीं लौटाया। फिर से कोशिश करो या कोई दूसरा वॉलेट चुनो।",
  "The wisp gave you": "विस्प ने तुम्हें दिया",
  "The wisp is drawing…": "विस्प चुन रहा है…",
- "The zone chest it guarded is open for you now.": "जिस ज़ोन संदूक की वह रखवाली कर रहा था, वह अब तुम्हारे लिए खुला है।",
  "There is a find near here.": "यहाँ पास में एक खोज है।",
  "These keys can act for your explorer account": "ये चाबियाँ तुम्हारे खोजी अकाउंट की ओर से काम कर सकती हैं",
  "These receipts are already saved. Use Check confirmation to see their result.": "ये रसीदें पहले से सेव हैं। उनका नतीजा देखने के लिए पुष्टि जाँचो इस्तेमाल करो।",
@@ -2993,5 +2991,9 @@
  "Fractional NEAR remains credited": "छोटा NEAR शेष जमा रहता है",
  "Awaiting QGOLD settlement": "QGOLD निपटान की प्रतीक्षा में",
  "Show map": "मैप दिखाओ",
- "{0}/{1} stops": "{0}/{1} स्टॉप"
+ "{0}/{1} stops": "{0}/{1} स्टॉप",
+ "It dropped the chest it guarded, right next to you. Open it now.": "इसने जिस संदूक की रखवाली की थी, उसे आपके ठीक पास गिरा दिया। अभी खोलें।",
+ ") is in your Inventory. Secure it on NEAR from there.": ") आपकी इन्वेंटरी में है। वहीं से इसे NEAR पर सुरक्षित करें।",
+ "Wearables you pick up on the map are in your Wardrobe.": "नक्शे पर उठाए गए पहनने योग्य आइटम आपकी वॉर्डरोब में हैं।",
+ "See it in your Wardrobe": "वॉर्डरोब में देखें"
 }
