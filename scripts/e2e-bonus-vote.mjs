@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { openScreen } from "./lib/e2e-nav.mjs";
+import { closeOpenSheet, openScreen } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -175,7 +175,8 @@ async function main() {
     console.log("3. Ballot shown and votes saved");
     const stub = stubBallot();
     await page.route("**/api/creators/bonus-vote", (r) => stub.handle(r));
-    await openScreen(page, "Explore");
+    // Leave Community for the map (the map is home; there is no Explore tab).
+    await closeOpenSheet(page);
     await openCommunity(page);
     const panel = page.locator(".bonus-vote");
     await panel.waitFor({ timeout: 10_000 });
