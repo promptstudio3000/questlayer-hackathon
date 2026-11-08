@@ -73,9 +73,9 @@ test("wins pay XP, shards and roll tickets once, with a daily shard cap", () => 
   const rewards = createHuntRewards(db);
   const p = createPlayer(db, "Hunter");
   const xp0 = db.prepare("SELECT xp FROM players WHERE id=?").get(p).xp;
-  const g = rewards.onChallengeResult(win(p, "guardian", "lick-brute-1", { guards: { zoneId: "z1" } }));
+  const g = rewards.onChallengeResult(win(p, "guardian", "lick-brute-1", { guards: { zoneId: "z1", questId: "chest-z1" } }));
   assert.deepEqual(g.shards, { element: "frost", count: 2 });
-  assert.deepEqual(g.unlocks, { zoneId: "z1" });
+  assert.deepEqual(g.unlocks, { zoneId: "z1", questId: "chest-z1" }, "the guardian drops the chest it stood on");
   assert.equal(rewards.onChallengeResult(win(p, "guardian", "lick-brute-1")).xp, 0, "replay pays nothing");
   const l = rewards.onChallengeResult(win(p, "lurker", "pocket-wisp-1", { element: "ember" }));
   assert.equal(l.rollTicket, true);
@@ -87,6 +87,19 @@ test("wins pay XP, shards and roll tickets once, with a daily shard cap", () => 
   assert.equal(s.shardTotal, DAILY_SHARD_CAP);
   assert.equal(s.rollTickets, 1);
   assert.equal(s.guardianWins, 1);
+});
+
+test("a guardian win announces its chest only while it is still unopened", () => {
+  const db = setup();
+  const rewards = createHuntRewards(db);
+  const p = createPlayer(db, "Opener");
+  db.exec("PRAGMA foreign_keys=OFF");
+  db.prepare("INSERT INTO quest_claims VALUES (?,?,?)").run("chest-z2", p, Date.now());
+  db.exec("PRAGMA foreign_keys=ON");
+  const opened = rewards.onChallengeResult(win(p, "guardian", "lick-brute-2", { guards: { zoneId: "z2", questId: "chest-z2" } }));
+  assert.equal(opened.unlocks, null, "an opened chest is not announced again");
+  const none = rewards.onChallengeResult(win(p, "guardian", "lick-brute-3", { guards: { zoneId: "z3" } }));
+  assert.equal(none.unlocks, null, "no chest, no chest message");
 });
 
 test("crafting turns 10 shards and a common Aura into Wardbreaker Horns", () => {

@@ -38,13 +38,17 @@ type Props = {
   actor: MonsterRef;
   /** Encounter token (enc_…) from POST /api/actors/:id/encounter. */
   encounter: string;
+  /** The format already picked in the encounter sheet: it starts at once. */
+  format?: ChallengeFormat | null;
   onClose: () => void;
   onResult?: (result: ChallengeResult) => void;
+  /** Point the map at a quest (the guarded chest after a guardian win). */
+  onQuest?: (questId: string) => void;
 };
 
 const path = (monster: MonsterRef) => `/actors/${encodeURIComponent(monster.id)}/challenge`;
 
-export function MonsterChallenge({ actor: monster, encounter, onClose, onResult }: Props) {
+export function MonsterChallenge({ actor: monster, encounter, format: picked = null, onClose, onResult, onQuest }: Props) {
   const [menu, setMenu] = useState<ChallengeMenu | null>(null);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [result, setResult] = useState<ChallengeResult | null>(null);
@@ -61,6 +65,17 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
       .then(setMenu)
       .catch((e) => setError(e instanceof ApiError ? e.message : tr("Could not reach the monster.")));
   }, [monster, encounter, menuAttempt]);
+
+  // A format picked in the encounter sheet starts once the menu confirms it is
+  // still on offer, so the same three choices are never asked twice.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!menu || !picked || autoStarted.current) return;
+    autoStarted.current = true;
+    if (menu.status.state === "active" && menu.formats.includes(picked)) void start(picked);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menu, picked]);
+  const waitingForPick = !!picked && !challenge && !error && menu?.status.state === "active" && menu.formats.includes(picked);
 
   async function start(format: ChallengeFormat) {
     setBusy(true);
@@ -119,9 +134,11 @@ export function MonsterChallenge({ actor: monster, encounter, onClose, onResult 
         </header>
         {error && <div className="monster-error" role="alert"><p>{error}</p>{!menu && !challenge && <button className="monster-secondary" onClick={() => setMenuAttempt(n => n+1)}>{tr("Try again")}</button>}{challenge && lastInput.current !== null && !result && <button className="monster-secondary" disabled={busy} onClick={() => submit(lastInput.current)}>{tr("Try again")}</button>}</div>}
         {result ? (
-          <ResultView result={result} onClose={onClose} />
+          <ResultView result={result} onClose={onClose} onChest={onQuest ? (id) => { onQuest(id); onClose(); } : undefined} />
         ) : challenge ? (
           <Play challenge={challenge} busy={busy} submit={submit} monster={monster} onDone={done} onError={setError} />
+        ) : waitingForPick ? (
+          <p aria-live="polite">{tr("The monster is sizing you up…")}</p>
         ) : menu ? (
           <Menu menu={menu} busy={busy} start={start} />
         ) : (
@@ -164,8 +181,10 @@ function Menu({ menu, busy, start }: { menu: ChallengeMenu; busy: boolean; start
   );
 }
 
-function ResultView({ result, onClose }: { result: ChallengeResult; onClose: () => void }) {
+function ResultView({ result, onClose, onChest }: { result: ChallengeResult; onClose: () => void; onChest?: (questId: string) => void }) {
   const won = result.result.outcome === "won";
+  // A beaten guardian drops the zone chest it stood on: the main action goes there.
+  const chest = won && onChest ? result.rewards?.unlocks?.questId : undefined;
   const reason = result.detail.reason ? REASON_COPY[result.detail.reason] : null;
   return (
     <div className={`monster-result ${won ? "won" : "lost"}`} role="status">
@@ -181,7 +200,11 @@ function ResultView({ result, onClose }: { result: ChallengeResult; onClose: () 
           {tr("Its moves were fixed before you started:")}{" "}{result.detail.reveal.picks.map((s) => STANCE_COPY[s].label).join(", ")}.
         </p>
       )}
-      <button type="button" className="monster-primary" onClick={onClose}>
+      {chest && (
+        <button type="button" className="monster-primary" onClick={() => onChest!(chest)}>
+          {tr("Open the chest")}</button>
+      )}
+      <button type="button" className={chest ? "monster-secondary" : "monster-primary"} onClick={onClose}>
         {tr("Back to the map")}</button>
     </div>
   );
@@ -196,10 +219,10 @@ function RewardLine({ rewards }: { rewards: NonNullable<ChallengeResult["rewards
   return (
     <>
       {parts.length > 0 && <p className="monster-rewards">{tr("You earned")}{" "}{parts.join(", ")}.</p>}
-      {rewards.unlocks && <p className="monster-rewards">{tr("The zone chest it guarded is open for you now.")}</p>}
+      {rewards.unlocks && <p className="monster-rewards">{tr("It dropped the chest it guarded, right next to you. Open it now.")}</p>}
       {rewards.edition && (
         <p className="monster-rewards">
-          {tr("First win:")}{" "}{rewards.edition.name} ({rewards.edition.rarity}{tr(") is in your wardrobe. Secure it on NEAR from there.")}</p>
+          {tr("First win:")}{" "}{rewards.edition.name} ({rewards.edition.rarity}{tr(") is in your Inventory. Secure it on NEAR from there.")}</p>
       )}
     </>
   );

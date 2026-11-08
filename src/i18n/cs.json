@@ -48,7 +48,6 @@
  "(optional, only with GPS on)": "(nepovinné, jen se zapnutou GPS)",
  "(paid out through later days).": "(vyplaceno v dalších dnech).",
  ") and NPC lines (": ") a linie postav (",
- ") is in your wardrobe. Secure it on NEAR from there.": ") je ve tvém šatníku. Odtud ji můžeš zajistit na NEAR.",
  "), zone visits (": "), návštěvy zón (",
  "). Check every stop and edit the text before you save.": "). Před uložením zkontroluj každou zastávku a uprav text.",
  "). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.": "). Nikdy GOLD, NEAR ani vklad. Hodnosti jsou kosmetické tituly; nemění odměny, šance ani poškození.",
@@ -2157,7 +2156,6 @@
  "The wallet did not return an account. Try again or pick another wallet.": "Peněženka nevrátila účet. Zkus to znovu nebo vyber jinou peněženku.",
  "The wisp gave you": "Bludička ti dala",
  "The wisp is drawing…": "Bludička losuje…",
- "The zone chest it guarded is open for you now.": "Truhla zóny, kterou hlídala, je teď pro tebe otevřená.",
  "There is a find near here.": "Tady blízko je nález.",
  "These keys can act for your explorer account": "Tyto klíče mohou jednat za tvůj účet průzkumníka",
  "These receipts are already saved. Use Check confirmation to see their result.": "Tyto potvrzenky už jsou uložené. Výsledek uvidíš přes Zkontrolovat potvrzení.",
@@ -2962,5 +2960,9 @@
  "The shared NEAR prize was already earned. Personal XP is still available.": "Sdílenou odměnu NEAR už někdo získal. Osobní XP jsou stále dostupné.",
  "Converted to QGOLD": "Převedeno na QGOLD",
  "Fractional NEAR remains credited": "Drobný zbytek NEAR zůstává připsaný",
- "Awaiting QGOLD settlement": "Čeká na vypořádání v QGOLD"
+ "Awaiting QGOLD settlement": "Čeká na vypořádání v QGOLD",
+ "It dropped the chest it guarded, right next to you. Open it now.": "Upustil truhlu, kterou hlídal, hned vedle tebe. Otevři ji.",
+ ") is in your Inventory. Secure it on NEAR from there.": ") je ve tvém inventáři. Odtud ho můžeš zajistit na NEAR.",
+ "Wearables you pick up on the map are in your Wardrobe.": "Oblečení, které sebereš na mapě, najdeš v Šatníku.",
+ "See it in your Wardrobe": "Zobrazit v Šatníku"
 }

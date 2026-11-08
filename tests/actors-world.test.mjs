@@ -6,7 +6,7 @@ import { localDateStart } from "../server/spatial/calendar.mjs";
 import { distance } from "../server/domain.mjs";
 import { loadCityActors } from "../server/actors/definitions.mjs";
 import { pathGraph, planDay, positionAt } from "../server/actors/schedule.mjs";
-import { planSpawns } from "../server/actors/spawns.mjs";
+import { planSpawns, GUARDIAN_CHEST_RADIUS_M } from "../server/actors/spawns.mjs";
 import { createActorService } from "../server/actors/service.mjs";
 
 const DAY = "2026-11-02",
@@ -55,13 +55,15 @@ test("positions interpolate inside segments and are null outside hours", () => {
 
 test("monster spawns respect spacing, closures and open zones", () => {
   const zones = [
-    { id: "z1", slot: 0, lat: 49.74799, lng: 13.3819, sourceId: "a" },
-    { id: "z2", slot: 1, lat: 49.74499, lng: 13.37484, sourceId: "b", placeStatus: "closed" },
+    { id: "z1", slot: 0, lat: 49.74799, lng: 13.3819, sourceId: "a", chest: { questId: "q1", lat: 49.74799, lng: 13.3819 } },
+    { id: "z2", slot: 1, lat: 49.74499, lng: 13.37484, sourceId: "b", placeStatus: "closed", chest: { questId: "q2", lat: 49.74499, lng: 13.37484 } },
+    { id: "z3", slot: 2, lat: 49.7412, lng: 13.3702, sourceId: "c" },
   ];
   const a = planSpawns(city, PLZEN, "seed", DAY, { zones });
   assert.deepEqual(a, planSpawns(city, PLZEN, "seed", DAY, { zones }));
   const guardians = a.filter((s) => s.def.archetype === "guardian");
-  assert.deepEqual(guardians.map((s) => s.guards.zoneId), ["z1"]);
+  assert.deepEqual(guardians.map((s) => s.guards), [{ zoneId: "z1", questId: "q1" }], "only open zones with a chest get a guardian");
+  assert.ok(distance(guardians[0].home, zones[0].chest) <= GUARDIAN_CHEST_RADIUS_M, "the guardian stands on its chest");
   const monsters = a.filter((s) => s.def.kind === "monster");
   for (let i = 0; i < monsters.length; i++)
     for (let j = i + 1; j < monsters.length; j++)

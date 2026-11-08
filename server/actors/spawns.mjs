@@ -11,11 +11,14 @@ export const MONSTER_SPACING_M = 150;
 // Lurkers hide within this distance of a street find (§13.1).
 export const LURKER_FIND_RADIUS_M = 40;
 const ROAMER_SPACING_M = 300;
+// A guardian stands on the path point nearest its chest, never further than this.
+export const GUARDIAN_CHEST_RADIUS_M = 40;
 
 /**
  * planSpawns(city, pack, worldSeed, dayId, { zones, closed, finds })
  *   -> [{ def, id, home: {lat,lng}, guards?, near? }]
- * `zones` are the world's zones with placeStatus; closed ones get no guardian.
+ * `zones` are the world's zones with placeStatus and `chest` ({questId,lat,lng},
+ * the zone's chest quest); closed zones and zones without a chest get no guardian.
  * `finds` are today's street finds ({id, lat, lng}); lurkers hide next to a
  * seeded subset of them, or on seeded path points when there are none.
  */
@@ -68,17 +71,18 @@ export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = 
       continue;
     }
     if (def.archetype === "guardian") {
+      // A guardian stands on the zone chest it guards, so beating it "drops"
+      // the chest right where the fight was. Zones without a chest get none.
       const open = zones
-        .filter((z) => z.placeStatus !== "closed" && Number.isFinite(z.lat))
+        .filter((z) => z.placeStatus !== "closed" && Number.isFinite(z.chest?.lat) && Number.isFinite(z.chest?.lng))
         .sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
       let n = 0;
       for (const zone of open) {
         if (n >= count) break;
-        const anchor = zone.walking?.entry || { lat: zone.lat, lng: zone.lng };
-        const at = nearestNode(g, anchor, 250);
+        const at = nearestNode(g, zone.chest, GUARDIAN_CHEST_RADIUS_M);
         if (at < 0 || !spaced(node(at), MONSTER_SPACING_M, monsters)) continue;
         n++;
-        const instance = { def, id: instanceId(def, n), home: node(at), guards: { zoneId: zone.id } };
+        const instance = { def, id: instanceId(def, n), home: node(at), guards: { zoneId: zone.id, questId: zone.chest.questId } };
         out.push(instance);
         monsters.push(instance.home);
       }

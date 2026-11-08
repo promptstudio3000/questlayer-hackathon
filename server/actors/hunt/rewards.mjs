@@ -100,6 +100,9 @@ export function createHuntRewards(db, { now = () => Date.now(), altarFees = fals
     return xp;
   }
 
+  const openedChest = db.prepare("SELECT 1 FROM quest_claims WHERE quest_id=? AND player_id=?");
+  const chestOpened = (questId, player) => !!openedChest.get(questId, player);
+
   // Challenge results from server/actors/challenges/service.mjs (onResult).
   function onChallengeResult(result) {
     if (result?.outcome !== "won" || !WIN_XP[result.archetype]) return null;
@@ -119,7 +122,11 @@ export function createHuntRewards(db, { now = () => Date.now(), altarFees = fals
         out.shards = { element, count: shards };
       }
       if (archetype === "lurker") out.rollTicket = grant(player, source, "roll", 1, dayId, {}, at);
-      if (archetype === "guardian" && result.guards?.zoneId) out.unlocks = { zoneId: result.guards.zoneId };
+      // The guardian drops the chest it stood on. Only a chest this player has
+      // not opened yet is announced; an opened one has nothing left to open.
+      const chestId = result.guards?.questId;
+      if (archetype === "guardian" && result.guards?.zoneId && typeof chestId === "string" && !chestOpened(chestId, player))
+        out.unlocks = { zoneId: result.guards.zoneId, questId: chestId };
       const editionId = FIRST_WIN_EDITION[archetype];
       if (editionId) {
         const item = awardEditionOnce(db, player, editionId, `monster:${source}`, at);
