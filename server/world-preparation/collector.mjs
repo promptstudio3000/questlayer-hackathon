@@ -74,7 +74,7 @@ export async function extractPlayableSource({pbf,sha,root,osmium='osmium'}) {
 }
 function receiptPath(root,path){const base=realpathSync(root),rel=relative(base,realpathSync(path));requireValue(rel&&!isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('../'),'Acquisition receipt must stay in its isolated root.');return inputFile(base,rel);}
 
-export async function collectorStep(config,{now=Date.now(),extract=extractPlayableSource,resourceCheck=resources}={}) {
+export async function collectorStep(config,{now=Date.now(),extract=extractPlayableSource,resourceCheck=resources,prepareOnly=false}={}) {
   const {acquisitionDir,workDir,daysDir,sourceCommit}=config;
   requireValue([acquisitionDir,workDir,daysDir].every(p=>typeof p==='string'&&isAbsolute(p))&&/^[a-f0-9]{40}$/.test(sourceCommit),'Explicit isolated directories and source commit required.');
   const release=lockDirectory(workDir),stateFile=resolve(workDir,'state.json');
@@ -115,7 +115,7 @@ export async function collectorStep(config,{now=Date.now(),extract=extractPlayab
     // Three turns favor ready indexed work, one favors a new extraction.
     const readyJobs=jobs.filter(s=>s.stage!=='extract'),extractJobs=jobs.filter(s=>s.stage==='extract');
     const turn=state.workTurns??0;
-    const s=(turn%4===0?extractJobs[0]:readyJobs[0])??readyJobs[0]??extractJobs[0];
+    const s=prepareOnly?null:((turn%4===0?extractJobs[0]:readyJobs[0])??readyJobs[0]??extractJobs[0]);
     if(s){
       state.workTurns=turn+1;
       const root=resolve(workDir,'sources',s.key);mkdirSync(root,{recursive:true});s.steps++;s.attempts++;save();

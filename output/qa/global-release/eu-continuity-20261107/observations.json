@@ -1,0 +1,144 @@
+{
+  "observedAt": "2026-11-07T19:44:09.050986+00:00",
+  "mergedPr": 215,
+  "mergeCommit": "c2ddaf967082588a57a67860251b590958e6790d",
+  "publicUrl": "https://questlayer.promptstudio3000.com",
+  "publicHealth": {
+    "network": "testnet",
+    "source": {
+      "buildId": "f984e6b212e179aed5ede8fce1d8097be068e944",
+      "recorded": true
+    },
+    "globalActivities": {
+      "state": "configured",
+      "financialActivation": false,
+      "rewards": {
+        "state": "not-configured"
+      },
+      "days": [
+        {
+          "day": "2026-11-08",
+          "state": "ready",
+          "regions": 8,
+          "loadedRegions": 8,
+          "financialActivation": false
+        },
+        {
+          "day": "2026-11-07",
+          "state": "ready",
+          "regions": 2,
+          "loadedRegions": 2,
+          "financialActivation": false
+        }
+      ],
+      "worker": {
+        "state": "ready",
+        "missingRegions": [],
+        "problems": [],
+        "day": "2026-11-08",
+        "processedRegions": 8,
+        "regions": 8,
+        "failures": 0,
+        "retryAt": null,
+        "days": [
+          {
+            "state": "ready",
+            "missingRegions": [],
+            "problems": [],
+            "day": "2026-11-07",
+            "failures": 0,
+            "retryAt": null
+          },
+          {
+            "state": "ready",
+            "missingRegions": [],
+            "problems": [],
+            "day": "2026-11-08",
+            "processedRegions": 8,
+            "regions": 8,
+            "failures": 0,
+            "retryAt": null
+          }
+        ]
+      }
+    }
+  },
+  "nextDay": {
+    "epoch": {
+      "day": "2026-11-08",
+      "endsAt": 1794182400000,
+      "id": "utc:2026-11-08",
+      "startsAt": 1794096000000
+    },
+    "counts": {
+      "chest": 0,
+      "coin": 0,
+      "item": 0,
+      "npc": 0,
+      "quest": 734,
+      "zone": 57
+    },
+    "regions": 8,
+    "countries": [
+      "ES",
+      "FR",
+      "LU"
+    ],
+    "inputHash": "1d6826f60a9f5918435a48b8360dd86fc05b28f169a652952fb4bfec9819fa77",
+    "manifestSha256": "f17c4708b36f445e259d602c0283d3261b41e3dbea62831602037a4ceeb1d5be",
+    "runtimeAcceptance": {
+      "regions": 8,
+      "scope": "Isolated runtime and simulated GPS; not field/device or financial verification.",
+      "state": "passed",
+      "status": {
+        "days": [
+          {
+            "day": "2026-11-08",
+            "loadedRegions": 8,
+            "regions": 8,
+            "state": "ready"
+          }
+        ],
+        "financialActivation": false,
+        "state": "configured"
+      },
+      "visits": 8,
+      "zones": 57
+    }
+  },
+  "acquisition": {
+    "selection": "eu-only",
+    "scopeHash": "fdc306cee56d26eb7fb1cd627f392e28a9ff9acd52283ad06fc99c23cffc0988",
+    "selected": 141,
+    "acquired": 137,
+    "wholeEuReady": false
+  },
+  "retention": {
+    "files": 49,
+    "originalBytes": 4377819425,
+    "archiveBytes": 1083308504,
+    "rawPbfWritesByRetention": 0,
+    "freeGiB": 10.092
+  },
+  "funding": {
+    "state": "qgold-upgrade-pending",
+    "checkedAt": "2026-11-07T19:30:19.776427+00:00",
+    "receivedYocto": "200007071903508359582359",
+    "fundingProofs": 3,
+    "qgoldProposalId": 2,
+    "qgoldExecutableAt": "1794244870054",
+    "activationArmed": false,
+    "changed": false,
+    "applied": false,
+    "attribution": {
+      "name": "NearBlocks",
+      "url": "https://testnet.nearblocks.io",
+      "role": "funding discovery hints; finalized amounts verified by NEAR RPC"
+    }
+  },
+  "fundingProofTotalsYocto": {
+    "sponsor": "200000000000000000000000",
+    "realized_yield": "7071903508359582359"
+  },
+  "scope": "Public HTTPS reads and source operations; no public GPS claim, financial activation or physical device verification."
+}

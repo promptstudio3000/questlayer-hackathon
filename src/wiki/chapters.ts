@@ -486,7 +486,7 @@ export const CHAPTERS: Chapter[] = [
       },
       { h: "Global Atlas discoveries" },
       {
-        p: "When a geographic catalog is connected, a background worker selects mapped zones and Atlas quests for today and tomorrow before players load them. It checks public-path targets, exclusions, polygon boundaries and the whole supplied region inventory. The live game opens only a completely imported UTC day. Loading a place does not generate extra activities. Missing or incomplete regions remain unavailable.",
+        p: "When a geographic catalog is connected, a background worker selects mapped zones and Atlas quests for today and tomorrow before players load them. It checks public-path targets, exclusions, polygon boundaries and the whole supplied region inventory. The live game opens only a completely imported UTC day. Already checked regions can form the next day while additional map-data processing waits for resources. Loading a place does not generate extra activities. Missing or incomplete regions remain unavailable.",
       },
       {
         p: "The game imports regions in separate steps so it can handle other requests between them. An interrupted import resumes the same day without opening partial content or duplicating quests. Preparation reports each date separately and identifies regions whose content failed validation. A failed date retries with increasing pauses and does not stop work on the next day.",
