@@ -5,6 +5,8 @@ import {
   validateVaultOrigins,
   needsProtection,
   trustedVaultMessage,
+  describeReview,
+  formatUnits,
 } from "../src/signing-vault/policy.ts";
 import {
   signingVaultOrigin,
@@ -207,7 +209,7 @@ test("credentialed CORS is restricted to the isolated origin and necessary recov
   assert.equal(vaultCors(req, res, "/api/account/keys", null), false);
 });
 
-test("ordinary task and Secret funding matches an independent intent; peer transfers still require approval", async () => {
+test("every escrow payment (task, Secret, send) and every token send needs the approval window; background game calls stay seamless", async () => {
   const c = {
     ...config,
     contracts: {
@@ -217,46 +219,44 @@ test("ordinary task and Secret funding matches an independent intent; peer trans
       social: "social.testnet",
     },
   };
-  const args = {
-    receiver_id: "escrow.testnet",
-    amount: "1100000",
-    memo: null,
-    msg: JSON.stringify({ kind: "task", id: "task-1" }),
+  const purchase = async () => {
+    throw Error("no purchase lookup for escrow payments");
   };
-  const request = call(action("ft_transfer_call", args));
-  const intent = {
-    signerId: "alice.testnet",
-    receiverId: "qgold.testnet",
-    methodName: "ft_transfer_call",
-    args,
-    gas: request.actions[0].gas,
-    deposit: "1",
-  };
-  assert.equal(
-    await needsProtection(request, c, undefined, async () => intent),
-    false,
-  );
-  await assert.rejects(
-    needsProtection(request, c, undefined, async () => ({
-      ...intent,
-      args: { ...args, amount: "1200000" },
-    })),
-    /exact escrow payment/,
-  );
-  assert.equal(
-    await needsProtection(
-      call(
-        action("ft_transfer_call", {
-          ...args,
-          msg: JSON.stringify({ kind: "transfer", id: "send-1" }),
-        }),
+  // F1: a compromised game script creates a task naming itself as the worker
+  // (the server would happily return a matching funding intent for it).
+  for (const msg of [
+    { kind: "task", id: "task-1", reward: "1000000", assignee: "eve.testnet", deadline_ms: "1893456000000" },
+    { kind: "task", id: "task-2", reward: "1000000", deadline_ms: "1893456000000" },
+    { kind: "secret", id: "s-1", secret_id: "sec", creator: "eve.testnet", price: "1100000" },
+    { kind: "transfer", id: "send-1", to: "eve.testnet", condition: { type: "both_confirm" }, expires_ms: "1893456000000" },
+    { kind: "unknown" },
+  ])
+    assert.equal(
+      await needsProtection(
+        call(
+          action("ft_transfer_call", {
+            receiver_id: "escrow.testnet",
+            amount: "1100000",
+            memo: null,
+            msg: JSON.stringify(msg),
+          }),
+        ),
+        c,
+        purchase,
       ),
-      c,
-      undefined,
-      async () => intent,
-    ),
-    true,
-  );
+      true,
+      msg.kind,
+    );
+  for (const [method, args] of [
+    ["ft_transfer", { receiver_id: "eve.testnet", amount: "1" }],
+    ["ft_transfer_call", { receiver_id: "eve.testnet", amount: "1", msg: "" }],
+    ["ft_transfer_call", { receiver_id: "alice.testnet", amount: "1", msg: "" }],
+  ])
+    assert.equal(
+      await needsProtection(call(action(method, args)), c, purchase),
+      true,
+      method,
+    );
   for (const method of ["start_roll", "resolve_roll", "claim_timeout"])
     assert.equal(
       await needsProtection(call(action(method, {}, "0"), "games.testnet"), c),
@@ -280,5 +280,198 @@ test("ordinary task and Secret funding matches an independent intent; peer trans
       c,
     ),
     true,
+  );
+});
+
+const escrowConfig = {
+  ...config,
+  contracts: { ...config.contracts, qgoldEscrow: "escrow.testnet" },
+};
+const shown = (view) =>
+  [...view.lines.map(([k, v]) => `${k}: ${v}`), ...view.warnings].join("\n");
+
+test("the approval window names the escrow task's beneficiary, the amount, the contract and the method", () => {
+  const view = describeReview(
+    call(
+      action("ft_transfer_call", {
+        receiver_id: "escrow.testnet",
+        amount: "9900000",
+        memo: null,
+        msg: JSON.stringify({
+          kind: "task",
+          id: "task-1",
+          reward: "9000000",
+          assignee: "eve.testnet",
+          deadline_ms: "1893456000000",
+        }),
+      }),
+    ),
+    escrowConfig,
+  );
+  const t = shown(view);
+  assert.match(t, /Contract: qgold\.testnet/);
+  assert.match(t, /Method: ft_transfer_call/);
+  assert.match(t, /Paid into \(escrow\): escrow\.testnet/);
+  assert.match(t, /Amount: 9\.9 QGOLD/);
+  assert.match(t, /Task reward: 9 QGOLD/);
+  assert.match(t, /Market fee: 0\.9 QGOLD/);
+  assert.match(t, /Reward goes to: eve\.testnet \(named worker\)/);
+  assert.match(t, /Deadline: 2030-01-01 00:00 UTC/);
+  assert.ok(
+    view.warnings.some((w) => w.includes("eve.testnet") && w.includes("9 QGOLD")),
+  );
+});
+
+test("escrow sends, Secrets, plain token sends and unreadable messages are decoded, never blind", () => {
+  const send = shown(
+    describeReview(
+      call(
+        action("ft_transfer_call", {
+          receiver_id: "escrow.testnet",
+          amount: "2500000",
+          msg: JSON.stringify({
+            kind: "transfer",
+            id: "send-1",
+            to: "bob.testnet",
+            condition: { type: "gps", place_id: "place-1", radius_m: 50 },
+            expires_ms: "1893456000000",
+          }),
+        }),
+      ),
+      escrowConfig,
+    ),
+  );
+  assert.match(send, /Paid to: bob\.testnet/);
+  assert.match(send, /Amount: 2\.5 QGOLD/);
+  assert.match(send, /within 50 m of place place-1/);
+  assert.match(
+    send,
+    /2\.5 QGOLD leaves your account and can be released to bob\.testnet/,
+  );
+  const secret = shown(
+    describeReview(
+      call(
+        action("ft_transfer_call", {
+          receiver_id: "escrow.testnet",
+          amount: "1000000",
+          msg: JSON.stringify({
+            kind: "secret",
+            id: "s",
+            secret_id: "x",
+            creator: "carol.testnet",
+            price: "1000000",
+          }),
+        }),
+      ),
+      escrowConfig,
+    ),
+  );
+  assert.match(secret, /Paid to \(creator\): carol\.testnet/);
+  assert.match(secret, /Price: 1 QGOLD/);
+  const raw = describeReview(
+    call(
+      action("ft_transfer_call", {
+        receiver_id: "escrow.testnet",
+        amount: "1",
+        msg: "not json",
+      }),
+    ),
+    escrowConfig,
+  );
+  assert.match(shown(raw), /Escrow message: not json/);
+  assert.ok(raw.warnings.length > 0);
+  const plain = describeReview(
+    call(
+      action("ft_transfer", { receiver_id: "eve.testnet", amount: "123456789" }),
+    ),
+    escrowConfig,
+  );
+  assert.match(shown(plain), /Recipient: eve\.testnet/);
+  assert.match(shown(plain), /Amount: 123\.456789 QGOLD/);
+  assert.ok(plain.warnings.some((w) => w.includes("eve.testnet")));
+  const deposit = shown(
+    describeReview(
+      call(
+        action("buy", { item: "x" }, "1500000000000000000000000"),
+        "shop.testnet",
+      ),
+      escrowConfig,
+    ),
+  );
+  assert.match(deposit, /Attached NEAR: 1\.5 NEAR/);
+  assert.match(deposit, /Other details: \{"item":"x"\}/);
+  assert.equal(formatUnits("0", 6), "0");
+  assert.equal(formatUnits("-1500000", 6), "-1.5");
+});
+
+test("signed messages show their content; NEAR Intents are decoded with target and amounts", () => {
+  const intents = describeReview(
+    {
+      account: "alice.testnet",
+      recipient: "intents.testnet",
+      authorization: JSON.stringify({
+        signer_id: "alice.testnet",
+        deadline: "2030-01-01T00:00:00.000Z",
+        intents: [
+          {
+            intent: "transfer",
+            receiver_id: "eve.testnet",
+            tokens: {
+              "nep141:wrap.testnet": "2000000000000000000000000",
+              "nep141:qgold.testnet": "5000000",
+            },
+          },
+          {
+            intent: "token_diff",
+            diff: {
+              "nep171:nft.testnet:aura:1": "-1",
+              "nep141:wrap.testnet": "100000000000000000000000",
+            },
+          },
+          {
+            intent: "native_withdraw",
+            receiver_id: "alice.testnet",
+            amount: "1000000000000000000000000",
+          },
+        ],
+      }),
+    },
+    escrowConfig,
+  );
+  const t = shown(intents);
+  assert.match(t, /Action: Sign NEAR Intents/);
+  assert.match(t, /Intent 1: Transfer 2 wNEAR, 5 QGOLD to eve\.testnet/);
+  assert.match(
+    t,
+    /Intent 2: Trade: you give 1 × collectible aura:1 \(nft\.testnet\); you receive 0\.1 wNEAR/,
+  );
+  assert.match(t, /Intent 3: Withdraw 1 NEAR to alice\.testnet/);
+  assert.match(t, /Valid until: 2030-01-01/);
+  assert.deepEqual(intents.warnings, ["This intent sends value to eve.testnet."]);
+  assert.match(
+    shown(
+      describeReview(
+        {
+          account: "alice.testnet",
+          recipient: "game.example.com",
+          authorization: "Sign in to QuestLayer",
+        },
+        escrowConfig,
+      ),
+    ),
+    /Message: Sign in to QuestLayer/,
+  );
+  assert.match(
+    shown(
+      describeReview(
+        {
+          operation: "revokeKey",
+          account: "alice.testnet",
+          keyToRemove: "ed25519:abc",
+        },
+        escrowConfig,
+      ),
+    ),
+    /Action: Remove device key[\s\S]*Public key to remove: ed25519:abc/,
   );
 });
