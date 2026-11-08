@@ -181,3 +181,9 @@ export const SeasonCard = lazyNamed(() => import("./Season"), "SeasonCard");
 export const LandmarkClue = lazyNamed(() => import("./LandmarkClue"), "default");
 
 export const FindDetails = lazyNamed(() => import("./FindDetails"), "FindDetails");
+
+// Gotchiverse-test-app (docs/GOTCHIVERSE.md), shown only when the server enables it.
+const LazyGotchiverse = lazy(() => import("./Gotchiverse").then((m) => ({ default: m.Gotchiverse })));
+export function Gotchiverse(props: ComponentProps<typeof import("./Gotchiverse").Gotchiverse>) {
+  return <PanelBoundary><Suspense fallback={<EmptyState title={tr("Opening Gotchiverse…")} status />}><LazyGotchiverse {...props} /></Suspense></PanelBoundary>;
+}

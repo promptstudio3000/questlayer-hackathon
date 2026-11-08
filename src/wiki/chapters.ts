@@ -445,6 +445,25 @@ export const CHAPTERS: Chapter[] = [
   },
   // ----------------------------------------------------------------- world
   {
+    id: "gotchiverse-test-app",
+    group: "play",
+    title: "Gotchiverse-test-app",
+    summary: "A free 16 × 16 voxel workshop behind a server switch: shape terrain, place a lantern and build with invited friends.",
+    status: "partial",
+    updated: "2026-11-08",
+    sources: ["docs/GOTCHIVERSE.md", "server/gotchiverse/store.mjs", "server/gotchiverse/routes.mjs", "src/Gotchiverse.tsx", "src/WorldSwitcher.tsx"],
+    blocks: [
+      {
+        list: [
+          "**Switch:** off unless the server runs with `GOTCHIVERSE_TEST_APP=1`. When it is on, the logo opens a world picker with QuestLayer and **Gotchiverse-test-app**; when it is off, the logo and the API routes behave as before.",
+          "**Play:** each explorer opens one private workshop, raises and lowers blocks, paints grass, stone, sand or water and places a garden lantern. The first activity asks for three changed blocks and a lantern. Owners invite friends with a one-day link and can remove them again.",
+          "**No money:** the workshop has no QGOLD, XP, item grants, land claims or permits. Virtual movement never counts as GPS and the outdoor map pauses its requests while the workshop is open.",
+          "**Storage:** one JSON file per workshop in a `gotchiverse` folder next to the game database, written under a lock with an atomic rename. Edits carry a revision and a request id, so a retry never applies twice.",
+        ],
+      },
+    ],
+  },
+  {
     id: "world-and-places",
     group: "world",
     title: "Cities, cells and places",

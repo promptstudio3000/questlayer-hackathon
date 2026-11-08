@@ -4,6 +4,7 @@ import { MapSurface } from "./MapSurface";
 import { ActorPortrait } from "./ActorPortrait";
 import { nearbyAction, type NearbyActor } from "./nearby-action";
 import type { Coin } from "./types";
+import { WorldSwitcher } from "./WorldSwitcher";
 import { questDisplayTitle } from "./quest-copy";
 import { mapObjective, canOfferNearbyAction } from "./map-objective";
 import { EmptyState } from "./EmptyState";
@@ -11,6 +12,7 @@ import { useLevelTable } from "./XpBar";
 import { levelProgress } from "./levels";
 import {
   ZoneActivities,
+  Gotchiverse,
   DailyBoard,
   SeasonCard,
   QuestBrief,
@@ -284,6 +286,7 @@ import { registerChainTrades } from "./chain-trades";
 import { tr } from "./i18n";
 
 type Tab =
+  | "gotchiverse"
   | "explore"
   | "inventory"
   | "market"
@@ -387,7 +390,14 @@ export default function App() {
         return false;
       }
     }),
-    [now, setNow] = useState(Date.now());
+    [now, setNow] = useState(Date.now()),
+    // Server switch GOTCHIVERSE_TEST_APP: adds the workshop to the logo world picker.
+    [gotchiverseTestApp, setGotchiverseTestApp] = useState(false);
+  useEffect(() => {
+    void api<{ gotchiverseTestApp?: boolean }>("/config")
+      .then((c) => setGotchiverseTestApp(c.gotchiverseTestApp === true))
+      .catch(() => {});
+  }, []);
   // Read guards follow the requested mode before React commits its next render.
   const arenaIntent = useRef(arena);
   function setArena(value: boolean) {
@@ -510,6 +520,16 @@ export default function App() {
             : { page: next === "creators" ? "creators" : "community" },
       });
   }
+  useEffect(() => {
+    if (tab === "gotchiverse") { setPresence(false); setOthers([]); }
+  }, [tab]);
+  // A workshop invitation link opens the workshop once the explorer exists.
+  useEffect(() => {
+    if (gotchiverseTestApp && player && navigation.ready && /^#gotchi-invite=w_[a-f0-9]{32}\.[a-f0-9]{48}$/.test(location.hash)) {
+      setTab("gotchiverse");
+      setSheetExpanded(false);
+    }
+  }, [gotchiverseTestApp, player?.id, navigation.ready]);
   // Locked staker chips (src/LockedChip.tsx) open the stake screen.
   useEffect(() => {
     const open = () => setTab("fuel");
@@ -887,8 +907,8 @@ export default function App() {
     collecting = useRef(new Set<string>()),
     collectionRun = useRef<AbortController | null>(null),
     gps = useRef<number | null>(null),
-    latest = useRef({ world, position, fix, arena, player, nativePlay, introOpen });
-  latest.current = { world, position, fix, arena, player, nativePlay, introOpen };
+    latest = useRef({ world, position, fix, arena, player, nativePlay, introOpen, tab });
+  latest.current = { world, position, fix, arena, player, nativePlay, introOpen, tab };
   const pickupFeedback = usePickupFeedback(
     nativePlay ? "" : demoPickupScope(player?.id, world?.id, arena),
     tab !== "explore" ||
@@ -910,7 +930,7 @@ export default function App() {
       endsAt: state.world?.endsAt,
       nativePlay: state.nativePlay,
       loading: worldLoading.current,
-      visible: !document.hidden && !state.introOpen,
+      visible: !document.hidden && !state.introOpen && state.tab !== "gotchiverse",
       online: navigator.onLine,
     };
   }
@@ -3333,6 +3353,7 @@ export default function App() {
           fund: tr("Game economy"),
           funding: tr("How rewards are funded"),
           fuel: tr("Fuel the prize pool"),
+          gotchiverse: "Gotchiverse-test-app",
           expeditions: tr("Nearby walks"),
           inventory: tr("Inventory"),
           market: tr("Market"),
@@ -3487,6 +3508,9 @@ export default function App() {
         </div>
       </aside>
       <header className="topbar">
+        {gotchiverseTestApp && player ? (
+          <WorldSwitcher virtual={tab === "gotchiverse"} enabled onChoose={(virtual) => { setTab(virtual ? "gotchiverse" : "explore"); setSheetExpanded(false); }} />
+        ) : (
         <div className="wordmark" onClick={() => setTab("explore")}>
           <img className="wordmark-logo" src="/icon.svg" alt="" width={36} height={36} />
           {artUrl("brand/wordmark") ? (
@@ -3499,10 +3523,11 @@ export default function App() {
             </span>
           )}
         </div>
+        )}
         <div className="realm-label">
           <span className="status-dot" />
           <span>
-            {nativePlay || !arena
+            {tab === "gotchiverse" ? tr("Virtual world") : nativePlay || !arena
               ? world?.cityName || tr("Your surroundings")
               : tr("Plzeň · city demo")}
           </span>
@@ -3590,6 +3615,7 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
+          {tab === "gotchiverse" && <Gotchiverse key={player.id} player={player} items={equipped} onExit={() => setTab("explore")} />}
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
             <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => { if (objective === "coach") learning.acknowledge(coachTopic); else if (zoneQuest) learning.acknowledge(questHelpTopic(zoneQuest)); setDismissedObjective(objectiveKey); }}><X size={20} aria-hidden="true" /></button>
           </div>}

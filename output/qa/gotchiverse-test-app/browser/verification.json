@@ -1,0 +1,260 @@
+{
+  "verifiedAt": "2026-11-08T16:04:58.427Z",
+  "reports": [
+    {
+      "engine": "chromium",
+      "name": "phone-360",
+      "viewport": [
+        360,
+        800
+      ],
+      "flow": "passed",
+      "revisions": [
+        0,
+        3,
+        3
+      ],
+      "geometry": {
+        "overflow": false,
+        "smallButtons": [],
+        "inputFont": "16px"
+      },
+      "axeSerious": [],
+      "physicalClaimsInVirtual": [],
+      "pageErrors": []
+    },
+    {
+      "engine": "chromium",
+      "name": "phone-390",
+      "viewport": [
+        390,
+        844
+      ],
+      "flow": "passed",
+      "revisions": [
+        0,
+        3,
+        3
+      ],
+      "geometry": {
+        "overflow": false,
+        "smallButtons": [],
+        "inputFont": "16px"
+      },
+      "axeSerious": [],
+      "physicalClaimsInVirtual": [],
+      "pageErrors": []
+    },
+    {
+      "engine": "chromium",
+      "name": "landscape",
+      "viewport": [
+        844,
+        390
+      ],
+      "flow": "passed",
+      "revisions": [
+        0,
+        3,
+        3
+      ],
+      "geometry": {
+        "overflow": false,
+        "smallButtons": [],
+        "inputFont": "16px"
+      },
+      "axeSerious": [],
+      "physicalClaimsInVirtual": [],
+      "pageErrors": []
+    },
+    {
+      "engine": "chromium",
+      "name": "desktop",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "flow": "passed",
+      "revisions": [
+        0,
+        3,
+        3
+      ],
+      "geometry": {
+        "overflow": false,
+        "smallButtons": [],
+        "inputFont": "16px"
+      },
+      "axeSerious": [],
+      "physicalClaimsInVirtual": [],
+      "pageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "name": "phone-360",
+      "viewport": [
+        360,
+        800
+      ],
+      "flow": "passed",
+      "revisions": [
+        0,
+        3,
+        3
+      ],
+      "geometry": {
+        "overflow": false,
+        "smallButtons": [],
+        "inputFont": "16px"
+      },
+      "axeSerious": [],
+      "physicalClaimsInVirtual": [],
+      "pageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "name": "phone-390",
+      "viewport": [
+        390,
+        844
+      ],
+      "flow": "passed",
+      "revisions": [
+        0,
+        3,
+        3
+      ],
+      "geometry": {
+        "overflow": false,
+        "smallButtons": [],
+        "inputFont": "16px"
+      },
+      "axeSerious": [],
+      "physicalClaimsInVirtual": [],
+      "pageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "name": "landscape",
+      "viewport": [
+        844,
+        390
+      ],
+      "flow": "passed",
+      "revisions": [
+        0,
+        3,
+        3
+      ],
+      "geometry": {
+        "overflow": false,
+        "smallButtons": [],
+        "inputFont": "16px"
+      },
+      "axeSerious": [],
+      "physicalClaimsInVirtual": [],
+      "pageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "name": "desktop",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "flow": "passed",
+      "revisions": [
+        0,
+        3,
+        3
+      ],
+      "geometry": {
+        "overflow": false,
+        "smallButtons": [],
+        "inputFont": "16px"
+      },
+      "axeSerious": [],
+      "physicalClaimsInVirtual": [],
+      "pageErrors": []
+    },
+    {
+      "flow": "two-player-server-building-and-revocation",
+      "passed": true
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "en",
+      "passed": true,
+      "rtl": false
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "cs",
+      "passed": true,
+      "rtl": false
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "de",
+      "passed": true,
+      "rtl": false
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "es",
+      "passed": true,
+      "rtl": false
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "fr",
+      "passed": true,
+      "rtl": false
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "pt",
+      "passed": true,
+      "rtl": false
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "ru",
+      "passed": true,
+      "rtl": false
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "zh",
+      "passed": true,
+      "rtl": false
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "ja",
+      "passed": true,
+      "rtl": false
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "ar",
+      "passed": true,
+      "rtl": true
+    },
+    {
+      "flow": "locale-layout",
+      "lang": "hi",
+      "passed": true,
+      "rtl": false
+    }
+  ],
+  "status": "passed",
+  "scope": "Actual built App and authenticated loopback API; temporary synthetic explorers and separate workshop files. No production, signing, financial or chain action.",
+  "hardware": false,
+  "limits": [
+    "Browser engines are emulated viewports, not real phones",
+    "Focused readonly invitation input is not a physical keyboard-open test",
+    "Enlarged font fixture is not native OS scaling",
+    "Other visitors use a starter marker, not verified original appearances"
+  ]
+}
