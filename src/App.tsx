@@ -4055,18 +4055,15 @@ export default function App() {
                   <LockKey size={25} />
                   <h3>{tr("Opens at Tier")}{" "}{detailZone.tier}</h3>
                   <p>
-                    {tr("This place needs")}{" "}
-                    {detailZone.tier === 2 ? "50 000" : "100 000"} {" "}{tr("GOLD of weighted practice stake. Free places nearby are open to everyone.")}</p>
-                  <p>
-                    {tr("Practice stake is play money you can withdraw. It does not promise a GOLD prize in every place.")}</p>
+                    {tr("This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.", { 0: detailZone.tier, 1: detailZone.tier === 2 ? 50 : 100 })}</p>
                   <button
                     className="primary-button"
                     onClick={() => {
-                      setWalletView("demo");
+                      setWalletView("staking");
                       setTab("wallet");
                     }}
                   >
-                    {tr("Try practice staking")}{" "}<ArrowRight />
+                    {tr("Staking")}{" "}<ArrowRight />
                   </button>
                 </div>
               }
@@ -5348,7 +5345,7 @@ function WalletNavigation({
         [
           { id: "rewards", label: tr("Rewards"), icon: Wallet },
           { id: "staking", label: tr("Staking"), icon: Leaf },
-          { id: "demo", label: tr("Practice"), icon: Compass },
+          { id: "demo", label: "QGOLD", icon: Compass },
         ] as const
       ).map((v) => (
         <button

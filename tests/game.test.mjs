@@ -158,9 +158,7 @@ test("a funded quest has one GOLD payout while everyone can still earn personal 
   const { db, a, b } = setup();
   const w = await ensureWorld(db, HOME, true, now),
     q = worldView(db, w.id).quests.find((q) => q.tier === 2);
-  stake(db, a, 100_000 * GOLD, 50, "meadow", now);
-  stake(db, b, 100_000 * GOLD, 50, "river", now);
-  assert.throws(() => claimQuest(db, a, q.id, q, now), /Tier/);
+  // Tier places are open to everyone until launch (owner decision 8 Nov).
   const r = claimQuest(db, a, q.id, q, now + 31_000),
     r2 = claimQuest(db, b, q.id, q, now + 32_000);
   assert.equal(r.reward, 1000 * GOLD);
@@ -327,5 +325,17 @@ test("city snapshots share a fixed public center and never record the first visi
   assert.equal(second.id, w.id);
   // Six reviewed city zones; pioneer chests of first-visited cells come on top.
   assert.equal(second.zones.filter((z) => z.source !== "pioneer").length, 6);
+  db.close();
+});
+
+test("Tier places open to everyone until launch; TIER_PLACES=stake uses only the vault tier", async () => {
+  const { placeTier, recordStakerStatus } = await import("../server/staker-gates.mjs");
+  const { db, a } = setup();
+  stake(db, a, 100_000 * GOLD, 50, "meadow", now);
+  assert.equal(placeTier(db, a, {}), 3);
+  // Simulated positions never count toward the real tier.
+  assert.equal(placeTier(db, a, { TIER_PLACES: "stake" }), 1);
+  recordStakerStatus(db, a, { tier: 2 });
+  assert.equal(placeTier(db, a, { TIER_PLACES: "stake" }), 2);
   db.close();
 });
