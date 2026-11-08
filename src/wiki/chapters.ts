@@ -608,7 +608,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Treasury, yield and the mix",
     summary: "The treasury holds liquid staking tokens, lent stablecoins and a NEAR reserve, and only the yield is ever spent.",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-09",
     sources: ["docs/STNEAR-TREASURY.md", "docs/TREASURY-MIX.md", "docs/TREASURY-PAGE.md", "docs/YIELD-VAULT.md", "docs/YIELD-VAULT-PLAN.md", "docs/NATIVE-REWARDS-AND-VAULT.md", "docs/LIQUID-STAKE.md", "server/native/treasury-mix.mjs"],
     blocks: [
       {
@@ -633,8 +633,8 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**stNEAR treasury.** The operator holds stNEAR (Meta Pool). Harvest sells only growth above the recorded principal and funds the rewards contract (`fund_rewards`, source sponsor).",
-          "**Yield vault** `questlayer-yield-20261102.testnet`. Players or the treasury deposit stNEAR, LiNEAR, USDC or USDT. A deposit makes the player a Staker at once; withdrawal opens after 24 h. Stables keep a 20 % buffer and are supplied to Rhea only below 95 % utilization; LST growth goes to the treasury.",
-          "**Staking vaults.** A personal keyless vault per player stakes NEAR with a validator and gives a chosen 0–100 % share of the yield to the game. Harvest → unlock (4+ epochs) → withdraw → flush to the treasury, all permissionless calls.",
+          "**Yield vault** `questlayer-yield-20261102.testnet`. Players or the treasury deposit stNEAR, LiNEAR, USDC or USDT. A deposit makes the player a Staker at once; withdrawal opens after 24 h. Stables keep a 20 % buffer and are supplied to Rhea only below 95 % utilization, and never while a Rhea withdrawal is still on its way back (that would make the withdrawal look bounced and strand it); LST growth goes to the treasury. The contract pays position storage (about 0.007 NEAR each, 1 000 at most) and refunds new deposits once that reserve is short; a permissionless `reconcile_idle` can only raise the tracked balance to what the token reports, so no held principal stays untracked.",
+          "**Staking vaults.** A personal keyless vault per player stakes NEAR with a validator and gives a chosen 0–100 % share of the yield to the game. Harvest → unlock (4+ epochs) → withdraw → flush to the treasury, all permissionless calls. A harvest needs a fee of at least 0.001 test NEAR and waits 4 epochs after the previous one cashed; the basis then moves only by the gain whose fee was actually settled, so yield that grew during the unlock still pays its share later. An operation whose callback never ran can be settled by anyone after 2 epochs with `recover_stuck`, which settles a lost transfer from the account balance and a lost pool step from the next pool read, never paying twice. A position the pool no longer holds anything for closes instead of waiting for cash forever.",
         ],
       },
       { viz: "staking-vault" },

@@ -105,3 +105,46 @@ All funding, including approved realized-yield deposits, also checks actual stor
   `set_contribution({contribution_bps})` with exactly those arguments and 1 yocto, and the
   confirmation also requires live state version 2. A returned `false` is shown as not
   completed (for example, a change that waits on a fee that cannot be unstaked yet).
+
+## v3 vault (9 November 2026): stuck-operation recovery, harvest limits, settled basis
+
+Review findings H5 and M1–M3 of the November contract review. `get_state.version` stays 2
+(the app keys partial exit and contribution change on it); the new fields are additive.
+
+- **Recovery (H5).** `recover_stuck()` (anyone, no deposit) settles an operation whose
+  callback never ran, once it has been pending for 2 epochs (`recoverable_at_epoch` in
+  `get_state`; `busy_since` records the start of every operation and payout). Nothing is
+  paid by it. A lost owner payout, game flush or pool deposit is judged from the account
+  balance against the floor recorded when it was issued: back at the floor plus the amount
+  means refunded (credit restored), at the floor means delivered (`owner_paid`/`game_paid`/
+  stake recorded, the tranche dated now). A lost pool read returns to its origin stage, a
+  lost unstake goes to `unlocking` for 4 epochs and a lost `withdraw_all` to `awaiting_cash`;
+  the next pool read then re-derives the truth: the "withdraw" read sends a position whose
+  `withdraw_all` already ran to the cash check, ends an operation whose unstake never ran,
+  and the "cash" read re-issues a `withdraw_all` the pool still shows as unstaked. The late
+  callback, if it ever runs, fails its nonce or stage check and changes nothing. `unlocking`
+  and `awaiting_cash` are not stuck states and stay with `advance`. Payout callbacks now get
+  30 TGas instead of 15.
+- **Harvest limits (M2).** A permissionless `harvest` unstakes only a fee of at least
+  0.001 test NEAR (`min_harvest`) and starts no earlier than 4 epochs after the previous
+  harvest cashed (`next_harvest_epoch`); it returns `false` otherwise. Exits, partial exits
+  and contribution changes settle any amount. The reward worker reads both fields.
+- **Settled basis (M1).** At cash the basis advances only by the gain whose fee the cash
+  actually settled (`settled = min(gain, ceil(game_share / contribution))`), then drops by
+  the cash taken out. Gain that grew during the unlock stays chargeable at the next harvest
+  instead of being forgiven; fees, rates and tiers are unchanged.
+- **Empty position (M3).** When the pool reports zero staked and zero unstaked for a vault
+  with principal (a loss took the rest), the exit closes the position at once instead of
+  waiting for cash forever; `request_partial_exit` is measured against the observed stake
+  as well as principal, so it can no longer unstake everything.
+- **Storage.** `Vault` keeps its deployed layout byte for byte; the new fields live in the
+  `vault-ext-v2` record, which reads both the v2 and the v3 layout
+  (`v2_extension_record_reads_with_the_new_fields`). A standalone vault with an operator
+  key is upgraded by a plain code deploy.
+- **Keyless children cannot be upgraded.** Factory children have no access keys and no
+  upgrade method; the factory embeds the vault WASM at build time. Existing children keep
+  the code they were deployed with (v1 or v2) and cannot receive these fixes. New children
+  get them only from a new factory generation built with this vault, deployed and recorded
+  like `questlayer-vaults-20261101b.testnet` was (deposits into the old generation should
+  stop first). The reproducible WASM hashes in `contracts/wasm-sha256.json` must be
+  regenerated with the Docker build after this change.
