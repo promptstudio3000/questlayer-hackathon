@@ -11,8 +11,8 @@ Implemented UI, not concept art. Actual isolated App/API with disposable local e
 
 ## Verified
 
-- `npm run check`: 1559 application tests passed; 1377 isolated guard tests passed, 19 skipped; build and unchanged bundle budget passed.
-- Five storage tests cover restored sessions, Skip, per-player and movement separation, malformed and blocked browser storage.
+- `npm run check`: 1560 application tests passed; 1378 isolated guard tests passed, 19 skipped; build and unchanged bundle budget passed.
+- Six storage tests cover restored and interrupted sessions, Skip, per-player and movement separation, malformed and blocked browser storage.
 - `scripts/e2e-learning.mjs`: Continue, Skip/Escape, reload, manual Help, focus return and zero claim/AI-guide requests at 360, 390, 844×390 and 1440×900. 390 serious/critical accessibility scan passed.
 - Enlarged-text and reduced-height input captures are browser simulations. Reduced motion was enabled for interaction runs.
 - Full first-session and language journeys are run again with the completed combined change; their final results are recorded in the encounter delivery evidence.
