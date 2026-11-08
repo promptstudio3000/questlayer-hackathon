@@ -12,7 +12,7 @@ import {
   registerModuleSchema,
   ensureModuleVersion,
 } from "../schema-compatibility.mjs";
-import { assert } from "../domain.mjs";
+import { assert, id } from "../domain.mjs";
 import {
   auraOrderTerms,
   checkWithdrawal,
@@ -72,8 +72,10 @@ export class IntentsMarket {
   /**
    * @param verifier NativeContractReader for the verifier account
    * @param solver   service account ({account, accountId}) that pays gas, or null
+   * @param subsidyBudget the service-wide SubsidyBudget (server/relayer/subsidy-budget.mjs);
+   *                 every solver transaction reserves from it and is refused once it is used up
    */
-  constructor(db, { verifier, nftContract, wnear, solver = null, manifest = {}, now = () => Date.now() }) {
+  constructor(db, { verifier, nftContract, wnear, solver = null, subsidyBudget = null, manifest = {}, now = () => Date.now() }) {
     ensureModuleVersion(db, INTENTS_MARKET_SCHEMA);
     this.db = db;
     this.verifier = verifier;
@@ -81,6 +83,7 @@ export class IntentsMarket {
     this.nftContract = nftContract;
     this.wnear = wnear;
     this.solver = solver;
+    this.subsidyBudget = subsidyBudget;
     this.manifest = manifest;
     this.now = now;
     this.locks = new Set();
@@ -234,12 +237,18 @@ export class IntentsMarket {
 
   async execute(signedList, gas) {
     assert(this.solver, "The intents solver is not configured on this host.", 503);
+    assert(this.subsidyBudget, "The intents solver has no sponsorship budget on this host.", 503, "SUBSIDY_DISABLED");
     const simulation = await this.verifier.view("simulate_intents", { signed: signedList }, true);
     assert(
       !simulation.invariant_violated,
       "The verifier would not settle this trade (unmatched amounts).",
       409,
     );
+    // The solver's gas is treasury spend like any relayed action: reserve it
+    // from the shared daily budget (throws SUBSIDY_BUDGET once used up). An
+    // unknown outcome keeps its reservation; a final one is settled at its fees.
+    const reservation = id("intents");
+    this.subsidyBudget.reserve(reservation, { kind: "intents", accountId: this.solver.accountId, principal: "0" });
     const result = await this.solver.account.callFunctionRaw({
       contractId: this.verifierId,
       methodName: "execute_intents",
@@ -249,6 +258,7 @@ export class IntentsMarket {
       waitUntil: "FINAL",
     });
     const hash = txHash(result);
+    this.subsidyBudget.settle(reservation, hash, result);
     assert(!failed(result), `The verifier rejected the intents (transaction ${hash}).`, 409);
     return hash;
   }

@@ -53,6 +53,10 @@ export function relayerConfiguration(env = process.env) {
       "RELAY_MAX_DEPOSIT_YOCTO_PER_DAY",
     ),
     maxGas: yocto(env.RELAY_MAX_GAS, "300000000000000", "RELAY_MAX_GAS"),
+    // Sponsored single-order cancels (market v2 nonce slots), per account and
+    // service-wide per UTC day.
+    maxCancelsPerDay: count(env.RELAY_MAX_CANCELS_PER_DAY, 4, "RELAY_MAX_CANCELS_PER_DAY", 100),
+    maxCancelsGlobalPerDay: count(env.RELAY_MAX_CANCELS_GLOBAL_PER_DAY, 16, "RELAY_MAX_CANCELS_GLOBAL_PER_DAY", 500),
     blockTtl: count(env.RELAY_BLOCK_TTL, 120, "RELAY_BLOCK_TTL", 1000),
     // No guessed treasury allowance: financial sponsorship fails closed until
     // an operator reviews all three limits. Solo play has no dependency on it.

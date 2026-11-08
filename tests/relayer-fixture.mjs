@@ -69,6 +69,11 @@ export function chain() {
           block_height: state.height,
         };
       }
+      if (q.request_type === "call_function" && state.view) {
+        const args = JSON.parse(Buffer.from(q.args_base64, "base64").toString());
+        const value = await state.view(q.account_id, q.method_name, args);
+        return { result: [...Buffer.from(JSON.stringify(value ?? null))], block_height: state.height };
+      }
       throw Error(`unsupported ${q.request_type}`);
     },
     async viewBlock() {
@@ -279,6 +284,7 @@ export function fixture({
   maxDepositYoctoPerDay,
   factoryOptions,
   subsidyLimits = {},
+  relayerOptions = {},
 } = {}) {
   const db = openDatabase(":memory:"),
     state = chain(),
@@ -302,6 +308,7 @@ export function fixture({
     blockTtl: 120,
     maxJobsPerDay,
     ...(maxDepositYoctoPerDay === undefined ? {} : { maxDepositYoctoPerDay }),
+    ...relayerOptions,
   });
   return {
     db,
