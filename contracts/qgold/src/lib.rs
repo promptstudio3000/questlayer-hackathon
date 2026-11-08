@@ -15,13 +15,18 @@
 //!   `claim_exit` to the account that burned, never to anyone else.
 //! - Fees: 10 % to the insurance fund, the rest to the fixed treasury account.
 //! - No admin withdraw exists. The guardian (and any council member) can only
-//!   pause, for at most 72 h. Upgrades and parameter changes go through the
-//!   council (multisig threshold) and a fixed 48 h timelock.
-//! - Every state change ends in `check()`: the contract balance must cover
-//!   backing + insurance + treasury fees + queued exits + refundable storage
-//!   deposits + storage cost. A drain by any bug makes
-//!   every later call fail until `reconcile()` books the loss (insurance first)
-//!   and refills R from the insurance fund.
+//!   pause, for at most 72 h and once per 7 days per account; unpausing and
+//!   cancelling a proposal take the council threshold. Upgrades and parameter
+//!   changes go through the council (multisig threshold) and a fixed 48 h timelock.
+//! - Every state change ends in `after_change()`: the contract balance must
+//!   cover backing + insurance + treasury fees + queued exits (less their
+//!   storage bonds) + refundable storage deposits + unconverted game earnings
+//!   + storage cost. A drain by any bug makes every later call fail until
+//!   `reconcile()` books the missing money as a loss (insurance first) and
+//!   refills R from the insurance fund. Storage is never a loss: sponsored
+//!   records stop at `MIN_OPERATING_SLACK` and `fund_operating()` refills it.
+//! - A burn or redeem leaves no supply or at least `MIN_SUPPLY`, and `r_peak`
+//!   returns to the initial rate once nobody holds QGOLD (H1 of the 8 Nov review).
 use near_sdk::{
     collections::LookupMap,
     env, ext_contract,
@@ -53,6 +58,23 @@ pub const MAX_OPEN_EXITS: usize = 20;
 pub const MAX_MEMO: usize = 200;
 pub const MAX_COUNCIL: usize = 9;
 pub const MAX_MINTERS: usize = 8;
+/// A burn or redeem leaves either no supply at all or at least this much. A
+/// near-100 % holder could otherwise leave one unit behind a large backing,
+/// which makes R so high that ordinary coins mint nothing (H1).
+pub const MIN_SUPPLY: u128 = ONE;
+/// Storage bond held out of a queued exit while its record exists; it is paid
+/// back with the claim. Sized for a 64-byte account id (see tests).
+pub const EXIT_STORAGE_BOND: u128 = 5_000_000_000_000_000_000_000; // 0.005 NEAR
+/// A lifetime grant pays for the holder record and its grant marker. It is
+/// not refundable to anyone, so it is not an obligation.
+pub const SPONSORED_STORAGE_FEE: u128 = 2 * STORAGE_FEE; // 0.0025 NEAR
+/// Contract-paid storage (sponsored holder records, game conversion receipts)
+/// may not take the operating slack below this; `fund_operating` refills it.
+pub const MIN_OPERATING_SLACK: u128 = NEAR / 10;
+/// Anyone may prune a game conversion receipt this long after it was written.
+pub const RECEIPT_RETENTION_MS: u64 = 30 * DAY_MS;
+/// One guardian or council account can start or extend a pause once per this.
+pub const PAUSE_COOLDOWN_MS: u64 = 7 * DAY_MS;
 const PAY_GAS: Gas = Gas::from_tgas(10);
 const RESOLVE_GAS: Gas = Gas::from_tgas(10);
 const RECEIVER_GAS: Gas = Gas::from_tgas(35);
@@ -80,10 +102,38 @@ fn s(v: u128) -> String {
 // Namespaced external state keeps the deployed contract layout unchanged.
 // Unconverted game earnings are liabilities, never backing or insurance.
 const MINT_CARRY_TOTAL:&[u8]=b"world-mint-carry-total";
+/// Sum of the storage bonds held out of open queued exits.
+const EXIT_BOND_TOTAL: &[u8] = b"exit-bond-total";
 fn stored_amount(key:&[u8])->u128 {
-    env::storage_read(key).map(|b|u128::from_le_bytes(b.try_into().expect("Invalid mint carry"))).unwrap_or(0)
+    env::storage_read(key).map(|b|u128::from_le_bytes(b.try_into().expect("Invalid stored amount"))).unwrap_or(0)
+}
+fn write_amount(key: &[u8], v: u128) {
+    if v == 0 {
+        env::storage_remove(key);
+    } else {
+        env::storage_write(key, &v.to_le_bytes());
+    }
 }
 fn mint_carry_key(minter:&AccountId,account:&AccountId)->Vec<u8>{format!("world-mint-carry:{minter}:{account}").into_bytes()}
+fn receipt_key(minter: &AccountId, memo: &str) -> Vec<u8> {
+    format!("world-mint-receipt:{minter}:{memo}").into_bytes()
+}
+/// Bond per open exit id (prefix `eb`).
+fn exit_bonds() -> LookupMap<u64, u128> {
+    LookupMap::new(b"eb".to_vec())
+}
+/// Council cancel votes per proposal id (prefix `cv`).
+fn cancel_votes() -> LookupMap<u64, Vec<AccountId>> {
+    LookupMap::new(b"cv".to_vec())
+}
+/// Council unpause votes per pause instance (`paused_until`, prefix `uv`).
+fn unpause_votes() -> LookupMap<u64, Vec<AccountId>> {
+    LookupMap::new(b"uv".to_vec())
+}
+/// When each guardian or council account last called `pause` (prefix `lp`).
+fn last_pause() -> LookupMap<AccountId, u64> {
+    LookupMap::new(b"lp".to_vec())
+}
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug)]
@@ -341,9 +391,13 @@ impl QGold {
         let q = self.shares_for(b);
         assert!(q > 0, "Amount below one QGOLD unit");
         self.backing += b;
+        let sponsored = self.holders.get(&account_id).is_none();
         self.ensure_holder(&account_id, 0);
         self.credit(&account_id, q, memo);
         self.after_change();
+        if sponsored {
+            self.assert_operating_slack();
+        }
         U128(q)
     }
 
@@ -357,7 +411,7 @@ impl QGold {
         assert!(self.minters.contains(&minter),"Approved minter only");
         let receipt=memo.as_ref().expect("A unique game conversion memo is required");
         assert!(!receipt.is_empty()&&receipt.len()<=MAX_MEMO,"Invalid conversion memo");
-        let receipt_key=format!("world-mint-receipt:{minter}:{receipt}").into_bytes();
+        let receipt_key=receipt_key(&minter,receipt);
         assert!(!env::storage_has_key(&receipt_key),"Game conversion already recorded");
         let key=mint_carry_key(&minter,&account_id);let previous=stored_amount(&key);
         let deposit=env::attached_deposit().as_yoctonear();
@@ -369,15 +423,43 @@ impl QGold {
         if carry==0{env::storage_remove(&key);}else{env::storage_write(&key,&carry.to_le_bytes());}
         env::storage_write(MINT_CARRY_TOTAL,&total.to_le_bytes());
         if q>0{self.backing=self.backing.checked_add(used).expect("Backing overflow");self.ensure_holder(&account_id,0);self.credit(&account_id,q,memo);}
-        let result=json!({"minter":minter,"account_id":account_id,"depositedYocto":s(deposit),"previousCarryYocto":s(previous),"consumedYocto":s(used),"carryYocto":s(carry),"qgoldU":s(q)});
+        let result=json!({"minter":minter,"account_id":account_id,"depositedYocto":s(deposit),"previousCarryYocto":s(previous),"consumedYocto":s(used),"carryYocto":s(carry),"qgoldU":s(q),"ts":now_ms()});
         env::storage_write(&receipt_key,&near_sdk::serde_json::to_vec(&result).expect("Conversion receipt"));
         self.after_change();
+        // The receipt (and a first holder record) is contract-paid storage.
+        self.assert_operating_slack();
         self.event("game_earning_converted",result.clone());result
     }
     /// A finalized receipt survives a worker losing the transaction response.
     pub fn get_game_conversion(&self,minter_id:AccountId,memo:String)->Option<Value>{
         assert!(memo.len()<=MAX_MEMO,"Memo too long");
-        env::storage_read(format!("world-mint-receipt:{minter_id}:{memo}").as_bytes()).map(|b|near_sdk::serde_json::from_slice(&b).expect("Conversion receipt"))
+        env::storage_read(&receipt_key(&minter_id,&memo)).map(|b|near_sdk::serde_json::from_slice(&b).expect("Conversion receipt"))
+    }
+    /// Frees a conversion receipt older than `RECEIPT_RETENTION_MS`. Anyone may
+    /// call it: the receipt only served the worker's recovery window, and the
+    /// rewards contract never pays the same leaf twice, so the minter cannot
+    /// replay a pruned memo with new NEAR by accident.
+    pub fn prune_game_conversion(&mut self, minter_id: AccountId, memo: String) {
+        assert!(memo.len() <= MAX_MEMO, "Memo too long");
+        let key = receipt_key(&minter_id, &memo);
+        let bytes = env::storage_read(&key).expect("Unknown conversion receipt");
+        let v: Value = serde_json::from_slice(&bytes).expect("Conversion receipt");
+        let ts = v["ts"].as_u64().unwrap_or(0);
+        assert!(now_ms() >= ts + RECEIPT_RETENTION_MS, "Receipt is still within its retention window");
+        env::storage_remove(&key);
+        self.event("conversion_receipt_pruned", json!({"minter": minter_id, "memo": memo}));
+    }
+
+    /// Adds NEAR to the operating balance that pays for contract-sponsored
+    /// storage (holder records of `mint_for`, conversion receipts). It is not
+    /// owed to anyone; `audit().operating_slack` shows what is left. It never
+    /// fails on the invariant: more NEAR cannot make the books worse, and it
+    /// is how a storage-frozen vault is unfrozen.
+    #[payable]
+    pub fn fund_operating(&mut self) {
+        let d = env::attached_deposit().as_yoctonear();
+        assert!(d > 0, "Attach NEAR");
+        self.event("operating_funded", json!({"sender": env::predecessor_account_id(), "amount": s(d), "operating_slack": s(self.operating_slack())}));
     }
     pub fn get_mint_carry(&self,minter_id:AccountId,account_id:AccountId)->U128 {U128(stored_amount(&mint_carry_key(&minter_id,&account_id)))}
 
@@ -420,18 +502,23 @@ impl QGold {
         assert!(path == "near_instant" || path == "near_queue", "Exit path not enabled: {path}");
         let q = amount.0;
         assert!(q > 0 && self.supply > 0, "Nothing to redeem");
+        self.assert_no_dust_supply_after(q);
         self.roll_window();
         let gross = mul_div(q, self.backing, self.supply);
         assert!(gross >= MIN_REDEEM, "Redeem at least 0.001 NEAR");
         let fee = mul_div(gross, REDEEM_FEE_BPS, BPS);
         let net = gross - fee;
         assert!(net >= min_out.map(|m| m.0).unwrap_or(0), "Price moved: less than min_out");
+        let instant = path == "near_instant" && self.fits_instant(&account_id, gross);
+        if !instant {
+            // The record's storage is held out of the exit itself until the claim.
+            assert!(net >= EXIT_STORAGE_BOND, "A queued exit is at least 0.005 NEAR after the fee (its storage bond)");
+        }
         // Burn first: the caller's balance is the only source.
         self.debit(&account_id, q);
         self.supply -= q;
         self.backing -= gross;
         self.redeemed_total += q;
-        let instant = path == "near_instant" && self.fits_instant(&account_id, gross);
         let result = if instant {
             self.use_instant(&account_id, gross);
             self.take_fee(fee);
@@ -456,9 +543,10 @@ impl QGold {
         self.assert_running();
         let e = self.exits.get(&exit_id.0).expect("Unknown exit");
         assert!(now_ms() >= e.ready_at.0, "Exit is still in its safe window");
-        self.remove_exit(&e);
+        let bond = self.remove_exit(&e);
         let gross = e.gross.0;
-        self.queued -= gross;
+        // The bond was never in `queued`; the freed record pays it back here.
+        self.queued -= gross - bond;
         let fee = if e.fee_free { 0 } else { mul_div(gross, REDEEM_FEE_BPS, BPS) };
         self.take_fee(fee);
         let net = gross - fee;
@@ -476,8 +564,8 @@ impl QGold {
         self.assert_council();
         assert!(self.is_paused(), "Only while paused");
         let e = self.exits.get(&exit_id.0).expect("Unknown exit");
-        self.remove_exit(&e);
-        self.queued -= e.gross.0;
+        let bond = self.remove_exit(&e);
+        self.queued -= e.gross.0 - bond;
         self.backing += e.gross.0;
         self.redeemed_total -= e.qgold.0.min(self.redeemed_total);
         self.ensure_holder(&e.account_id, 0);
@@ -510,6 +598,7 @@ impl QGold {
         }
         let account_id = env::predecessor_account_id();
         assert!(amount.0 > 0, "Burn amount must be positive");
+        self.assert_no_dust_supply_after(amount.0);
         self.debit(&account_id, amount.0);
         self.supply -= amount.0;
         self.burned_total += amount.0;
@@ -557,10 +646,15 @@ impl QGold {
     /// it owes, the shortfall is booked against the insurance fund first and the
     /// backing second. Then the insurance fund refills the backing back to the
     /// highest R reached (`r_peak`), as far as it can.
+    ///
+    /// Only money owed counts as a loss. Storage that has outgrown the operating
+    /// balance keeps the vault frozen (`after_change`) until `fund_operating`,
+    /// but it never debits the insurance fund or the backing.
     pub fn reconcile(&mut self) -> Value {
         let have = self.balance();
-        let owed = self.obligations() + self.storage_cost();
+        let owed = self.obligations();
         let shortfall = owed.saturating_sub(have);
+        let storage_shortfall = (owed + self.storage_cost()).saturating_sub(have) - shortfall;
         if shortfall > 0 {
             let from_ins = shortfall.min(self.insurance);
             self.insurance -= from_ins;
@@ -584,25 +678,48 @@ impl QGold {
         // the books stay short and every other call keeps failing (frozen) until
         // a council upgrade; reconcile itself must still be able to record it.
         self.settle();
-        json!({"shortfall": s(shortfall), "refilled": s(refill), "rate": s(self.rate()), "r_peak": s(self.r_peak)})
+        json!({"shortfall": s(shortfall), "storage_shortfall": s(storage_shortfall), "refilled": s(refill), "rate": s(self.rate()), "r_peak": s(self.r_peak)})
     }
 
     // ------------------------------------------------------------- pause
 
     /// Guardian or council member: pauses mints, transfers, burns and exits for
-    /// up to 72 h. It moves no funds.
+    /// up to 72 h. It moves no funds. One account can start or extend a pause
+    /// only once per `PAUSE_COOLDOWN_MS`, so a single compromised key cannot
+    /// keep the vault paused; another guardian or member must take over.
     pub fn pause(&mut self) {
         let who = env::predecessor_account_id();
         assert!(who == self.guardian || self.council.contains(&who), "Guardian or council only");
-        self.paused_until = now_ms() + MAX_PAUSE_MS;
+        let now = now_ms();
+        let mut last = last_pause();
+        if let Some(t) = last.get(&who) {
+            assert!(now >= t + PAUSE_COOLDOWN_MS, "This account paused recently: another guardian or council member must pause, or wait for the cooldown");
+        }
+        last.insert(&who, &now);
+        if !self.is_paused() {
+            // Votes against a pause that already ended are void.
+            unpause_votes().remove(&self.paused_until);
+        }
+        self.paused_until = self.paused_until.max(now + MAX_PAUSE_MS);
         self.event("paused", json!({"by": who, "until": U64(self.paused_until)}));
     }
 
-    /// Council member: ends a pause early.
+    /// Council member: votes to end a pause early. The pause ends once
+    /// `threshold` current members have voted on this same pause.
     pub fn unpause(&mut self) {
         self.assert_council();
-        self.paused_until = 0;
-        self.event("unpaused", json!({"by": env::predecessor_account_id()}));
+        assert!(self.is_paused(), "Not paused");
+        let who = env::predecessor_account_id();
+        let key = self.paused_until;
+        let mut votes = unpause_votes();
+        let n = self.record_vote(&mut votes, key, &who);
+        if n >= self.threshold as usize {
+            votes.remove(&key);
+            self.paused_until = 0;
+            self.event("unpaused", json!({"by": who, "votes": n}));
+        } else {
+            self.event("unpause_voted", json!({"by": who, "votes": n, "threshold": self.threshold}));
+        }
     }
 
     // ------------------------------------------------------------- council (multisig + 48 h timelock)
@@ -645,13 +762,29 @@ impl QGold {
         self.proposals.insert(&id.0, &p);
     }
 
+    /// Cancels a proposal: by its proposer alone, or once `threshold` current
+    /// council members have voted to cancel it. A single member cannot veto
+    /// the rest of the council.
     pub fn cancel(&mut self, id: U64) {
         self.assert_council();
         let mut p = self.proposals.get(&id.0).expect("Unknown proposal");
         assert!(!p.done, "Proposal finished");
-        p.done = true;
-        self.proposals.insert(&id.0, &p);
-        self.event("cancelled", json!({"id": id}));
+        let who = env::predecessor_account_id();
+        let mut votes = cancel_votes();
+        let n = self.record_vote(&mut votes, id.0, &who);
+        if who == p.proposer || n >= self.threshold as usize {
+            p.done = true;
+            self.proposals.insert(&id.0, &p);
+            votes.remove(&id.0);
+            self.event("cancelled", json!({"id": id, "by": who}));
+        } else {
+            self.event("cancel_voted", json!({"id": id, "by": who, "votes": n, "threshold": self.threshold}));
+        }
+    }
+
+    /// Current-member cancel votes on a proposal (for the UI).
+    pub fn get_cancel_votes(&self, id: U64) -> Vec<AccountId> {
+        cancel_votes().get(&id.0).unwrap_or_default().into_iter().filter(|a| self.council.contains(a)).collect()
     }
 
     /// Executes a ready proposal (all but upgrades). Anyone may call.
@@ -731,12 +864,17 @@ impl QGold {
         }
         let back = self.holders.get(&receiver_id).map(|h| h.balance.min(unused)).unwrap_or(0);
         if back > 0 {
-            self.debit(&receiver_id, back);
             if self.holders.get(&sender_id).is_some() {
+                self.debit(&receiver_id, back);
                 self.add_balance(&sender_id, back);
                 self.ft_event_transfer(&receiver_id, &sender_id, back, Some("refund".into()));
+            } else if self.supply - back > 0 && self.supply - back < MIN_SUPPLY {
+                // Burning the refund would leave a dust supply (MIN_SUPPLY): the
+                // receiver keeps it instead, as if it had been used.
+                return amount;
             } else {
                 // Sender unregistered meanwhile: the refund is burned (R rises).
+                self.debit(&receiver_id, back);
                 self.supply -= back;
                 self.burned_total += back;
                 self.ft_event("ft_burn", &receiver_id, back, Some("refund to unregistered sender".into()));
@@ -780,8 +918,10 @@ impl QGold {
     }
 
     /// Application-funded lifetime registration. Unlike NEP-145 deposits, this
-    /// explicit grant is not redeemable by the recipient. Its reserve survives
-    /// unregister/register cycles and is excluded from backing reconciliation.
+    /// explicit grant is not redeemable by the recipient, so it is not booked as
+    /// an obligation: it stays on the balance and pays for the grant marker and
+    /// the holder record (`SPONSORED_STORAGE_FEE`). The marker survives
+    /// unregister/register cycles.
     #[payable]
     pub fn storage_deposit_sponsored(&mut self, account_id: AccountId) -> StorageBalance {
         let d = env::attached_deposit().as_yoctonear();
@@ -789,10 +929,9 @@ impl QGold {
         let mut retained = 0;
         if self.holders.get(&account_id).is_none() {
             if !grants.get(&account_id).unwrap_or(false) {
-                assert!(d >= STORAGE_FEE, "Attach at least the storage grant");
+                assert!(d >= SPONSORED_STORAGE_FEE, "Attach at least the storage grant");
                 grants.insert(&account_id, &true);
-                self.storage_deposits = self.storage_deposits.checked_add(STORAGE_FEE).expect("Storage reserve overflow");
-                retained = STORAGE_FEE;
+                retained = SPONSORED_STORAGE_FEE;
             }
             self.ensure_holder(&account_id, 0);
         }
@@ -821,6 +960,7 @@ impl QGold {
         assert_eq!(h.balance, 0, "Balance must be zero (send or redeem it first)");
         assert!(self.account_exits.get(&account).map(|v| v.is_empty()).unwrap_or(true), "Claim open exits first");
         self.holders.remove(&account);
+        self.account_windows.remove(&account);
         self.holder_count -= 1;
         self.storage_deposits -= h.storage_paid;
         if h.storage_paid > 0 {
@@ -863,6 +1003,7 @@ impl QGold {
                 "window_resets_at": U64(if used == 0 { 0 } else { self.window.start + DAY_MS }),
                 "safe_window_ms": self.params.safe_window_ms,
                 "queue_pending": s(self.queued),
+                "queue_bonds": s(stored_amount(EXIT_BOND_TOTAL)),
                 "queue_count": self.open_exits,
                 "in_flight": s(self.in_flight),
                 "paths": ["near_instant", "near_queue"],
@@ -875,7 +1016,9 @@ impl QGold {
     /// The invariant monitor: what the contract holds against what it owes.
     pub fn audit(&self) -> Value {
         let have = self.balance();
-        let owed = self.obligations() + self.storage_cost();
+        let money = self.obligations();
+        let storage = self.storage_cost();
+        let owed = money + storage;
         let rate = self.rate();
         json!({
             "ok": have >= owed && rate >= self.r_peak,
@@ -883,6 +1026,10 @@ impl QGold {
             "owed": s(owed),
             "slack": s(have.saturating_sub(owed)),
             "shortfall": s(owed.saturating_sub(have)),
+            "monetary_shortfall": s(money.saturating_sub(have)),
+            "storage_cost": s(storage),
+            "operating_slack": s(have.saturating_sub(owed)),
+            "min_operating_slack": s(MIN_OPERATING_SLACK),
             "backing": s(self.backing),
             "supply": s(self.supply),
             "rate": s(rate),
@@ -903,7 +1050,13 @@ impl QGold {
             "timelock_ms": U64(TIMELOCK_MS),
             "max_pause_ms": U64(MAX_PAUSE_MS),
             "storage_fee": s(STORAGE_FEE),
+            "sponsored_storage_fee": s(SPONSORED_STORAGE_FEE),
             "min_redeem": s(MIN_REDEEM),
+            "min_supply": s(MIN_SUPPLY),
+            "exit_storage_bond": s(EXIT_STORAGE_BOND),
+            "min_operating_slack": s(MIN_OPERATING_SLACK),
+            "receipt_retention_ms": U64(RECEIPT_RETENTION_MS),
+            "pause_cooldown_ms": U64(PAUSE_COOLDOWN_MS),
             "transferable": true,
         })
     }
@@ -992,15 +1145,48 @@ impl QGold {
     }
 
     fn settle(&mut self) {
-        if self.supply == 0 && self.backing > 0 {
-            // Nobody holds QGOLD: leftover backing would be a gift to the next minter.
-            self.insurance += self.backing;
-            self.backing = 0;
+        if self.supply == 0 {
+            if self.backing > 0 {
+                // Nobody holds QGOLD: leftover backing would be a gift to the next minter.
+                self.insurance += self.backing;
+                self.backing = 0;
+            }
+            // With no holders there is nobody whose R the peak protects, and
+            // the next minter is backed only by their own NEAR. Keeping a peak
+            // reached by a dust supply would price every later coin at zero.
+            self.r_peak = self.initial_rate;
         }
         let rate = self.rate();
         if rate > self.r_peak {
             self.r_peak = rate;
         }
+    }
+
+    /// A burn or redeem of `q` must leave no supply or at least `MIN_SUPPLY`.
+    fn assert_no_dust_supply_after(&self, q: u128) {
+        let left = self.supply.checked_sub(q).unwrap_or(0);
+        assert!(left == 0 || left >= MIN_SUPPLY, "Would leave less than 1 QGOLD in supply: take all of it or leave at least 1 QGOLD");
+    }
+
+    /// NEAR above everything owed and the storage cost: what pays for
+    /// contract-sponsored storage.
+    fn operating_slack(&self) -> u128 {
+        self.balance().saturating_sub(self.obligations() + self.storage_cost())
+    }
+
+    fn assert_operating_slack(&self) {
+        assert!(self.operating_slack() >= MIN_OPERATING_SLACK, "Operating balance is low: sponsored storage waits for fund_operating()");
+    }
+
+    /// Records `who`'s vote under `key` and returns how many current council
+    /// members have voted there.
+    fn record_vote(&self, votes: &mut LookupMap<u64, Vec<AccountId>>, key: u64, who: &AccountId) -> usize {
+        let mut v = votes.get(&key).unwrap_or_default();
+        if !v.contains(who) {
+            v.push(who.clone());
+            votes.insert(&key, &v);
+        }
+        v.iter().filter(|a| self.council.contains(a)).count()
     }
 
     fn assert_running(&self) {
@@ -1134,13 +1320,23 @@ impl QGold {
         self.exits.insert(&id, &e);
         ids.push(id);
         self.account_exits.insert(account_id, &ids);
-        self.queued += gross;
+        // The first EXIT_STORAGE_BOND of the exit is not owed while the record
+        // exists: it stays on the balance and covers the record's storage. A
+        // fee-free retry smaller than the bond is bonded in full.
+        let bond = EXIT_STORAGE_BOND.min(gross);
+        if bond > 0 {
+            exit_bonds().insert(&id, &bond);
+            write_amount(EXIT_BOND_TOTAL, stored_amount(EXIT_BOND_TOTAL) + bond);
+        }
+        self.queued += gross - bond;
         self.open_exits += 1;
-        self.event("exit_queued", json!({"exit_id": U64(id), "account_id": account_id, "qgold": s(q), "gross": s(gross), "ready_at": U64(ready)}));
+        self.event("exit_queued", json!({"exit_id": U64(id), "account_id": account_id, "qgold": s(q), "gross": s(gross), "bond": s(bond), "ready_at": U64(ready)}));
         (id, ready)
     }
 
-    fn remove_exit(&mut self, e: &Exit) {
+    /// Removes the exit record and returns its storage bond (0 for exits that
+    /// were queued before bonds existed).
+    fn remove_exit(&mut self, e: &Exit) -> u128 {
         self.exits.remove(&e.id);
         let mut ids = self.account_exits.get(&e.account_id).unwrap_or_default();
         ids.retain(|i| *i != e.id);
@@ -1150,6 +1346,11 @@ impl QGold {
             self.account_exits.insert(&e.account_id, &ids);
         }
         self.open_exits -= 1;
+        let bond = exit_bonds().remove(&e.id).unwrap_or(0);
+        if bond > 0 {
+            write_amount(EXIT_BOND_TOTAL, stored_amount(EXIT_BOND_TOTAL) - bond);
+        }
+        bond
     }
 
     fn pay(&self, account_id: AccountId, net: u128, qgold: u128) {

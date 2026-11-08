@@ -58,6 +58,15 @@ after the safe window (24 h by default, bounded to 24–48 h). Anyone may call `
 the NEAR goes only to the account that burned. If a payout transfer fails, the NEAR becomes a claimable
 exit again, with no second fee.
 
+A queued exit must be worth at least 0.005 NEAR after the fee. That first 0.005 NEAR (`EXIT_STORAGE_BOND`)
+is a storage bond: it is not counted as owed while the exit record exists, so the record never costs the
+vault's operating balance, and it is paid back as part of the claim. `get_state().exit.queue_bonds` shows
+the bonds held. A fee-free retry smaller than the bond is bonded in full and still paid in full.
+
+**Dust supply.** A burn or redeem leaves either no supply at all or at least 1 QGOLD (`MIN_SUPPLY`).
+Without this rule one early holder could burn all but one unit, leave R at backing per unit (about a
+billion times the start) and make every later coin mint zero.
+
 **Quotes.** `quote_redeem({account_id, amount})` tells the UI whether an exit would be instant.
 `get_account_exits({account_id})` lists that account's open exits.
 
@@ -73,18 +82,25 @@ and it pays nobody else.
   their exact share. There is no admin withdraw, and no method sends NEAR to an address the contract
   chose itself.
 - **R never falls through a call.** Mints round down and redeems round down. A burn raises R. When
-  supply reaches 0, any leftover backing moves to the insurance fund, so the next minter pays the peak R
-  and gets no gift.
+  supply reaches 0, any leftover backing moves to the insurance fund, so the next minter gets no gift;
+  `r_peak` then returns to the initial R, because with no holders there is nobody whose R the peak
+  protects, and the next minter is backed only by their own NEAR.
 - **Invariant check on every change.** `after_change()` asserts this:
-  balance ≥ backing + insurance + treasury_due + queued exits + refundable storage deposits + storage cost.
+  balance ≥ backing + insurance + treasury_due + queued exits (less their bonds) + refundable storage
+  deposits + unconverted game earnings + storage cost.
   If any bug drains NEAR, every later state change fails, so the vault freezes itself.
-- **Recovery after an incident.** `reconcile()` (anyone may call it) books the shortfall against the
-  insurance fund first and against the backing second. It then refills the backing from the insurance
-  fund back to the highest R reached (`r_peak`).
+- **Recovery after an incident.** `reconcile()` (anyone may call it) books the shortfall of *money owed*
+  against the insurance fund first and against the backing second. It then refills the backing from the
+  insurance fund back to the highest R reached (`r_peak`). Storage that outgrew the operating balance is
+  reported (`storage_shortfall`) but never booked as a loss: it keeps the vault frozen until
+  `fund_operating()` (see "Storage and the operating balance").
 - **Monitor.** `audit()` is the invariant monitor. Its `ok` field means the balance covers everything
-  owed and R is at or above its peak.
+  owed and R is at or above its peak; `operating_slack` is what is left for sponsored storage.
 - **Pause only.** The guardian, or any council member, can `pause()` for at most 72 h. A pause stops
-  mints, transfers, burns and exits, but moves no funds. A council member can `unpause()`.
+  mints, transfers, burns and exits, but moves no funds. One account can start or extend a pause only
+  once per 7 days (`PAUSE_COOLDOWN_MS`), so a single compromised key cannot keep the vault paused; another
+  guardian or member must take over. `unpause()` ends a pause once `threshold` council members have
+  voted on it (one member, when the threshold is 1).
   - While paused, a council member can `void_exit` a queued exit. The NEAR goes back to the backing, and
     the same QGOLD is minted back to the same account, so nothing leaves the contract.
 - **Council and 48 h timelock.** The council is a multisig with a threshold. All of these go through
@@ -93,6 +109,8 @@ and it pays nobody else.
   - changes to the parameter bounds;
   - changes to the guardian, treasury, minters or council.
   - The timelock is a constant in the code.
+  - `cancel` works for the proposer alone, or once `threshold` members have voted to cancel
+    (`get_cancel_votes`); one member cannot veto the others' proposals.
 - **No access keys.** The deploy script deletes the vault account's full-access key. Code can then change
   only through the council and the timelock.
 
@@ -157,11 +175,37 @@ Then commit both manifests and `contracts/wasm-sha256.json`, and deploy the VPS.
 ## Local security candidate: sponsored registration
 
 `storage_deposit_sponsored(account_id)` is an explicit application-funded lifetime
-grant. Its reserve and marker survive empty-holder unregister/register cycles; the
-recipient cannot withdraw the grant as NEAR. Repeated grants refund the sponsor.
-Standard NEP-145 `storage_deposit` remains refundable to the holder, including when
-a sponsor subsequently encounters an already registered player. Existing root
-Borsh layout is unchanged; the new grant map uses a separate `sg` prefix. Historical
-sponsored deposits are not reclassified automatically. The paired escrow candidate
-requires this token method before its new `withdraw_for` path can run. Release
-hashes and on-chain state have not been updated or inspected.
+grant of 0.0025 NEAR (`SPONSORED_STORAGE_FEE`: the holder record plus the grant
+marker). It is not refundable to anyone, so it is not booked as an obligation; it
+stays on the balance and pays for exactly the storage it created. The marker
+survives empty-holder unregister/register cycles; the recipient cannot withdraw the
+grant as NEAR. Repeated grants refund the sponsor. Standard NEP-145 `storage_deposit`
+(0.00125 NEAR) remains refundable to the holder, including when a sponsor
+subsequently encounters an already registered player. Existing root Borsh layout is
+unchanged; the grant map uses a separate `sg` prefix. Grants recorded before this
+change were added to `storage_deposits` and are not reclassified: that only
+over-reserves. The paired escrow candidate requires this token method before its
+`withdraw_for` path can run. Release hashes and on-chain state have not been updated
+or inspected.
+
+## Storage and the operating balance
+
+Every record the vault stores is paid by someone, or bounded (security review of
+8 Nov 2026, H2):
+
+| Record | Paid by |
+|---|---|
+| Holder record of `deposit` / `storage_deposit` | the holder's refundable 0.00125 NEAR |
+| Holder record of `storage_deposit_sponsored` | the sponsor's 0.0025 NEAR grant |
+| Queued exit record | the exit's own 0.005 NEAR bond, returned with the claim |
+| Instant-exit window record | freed with the holder record on `storage_unregister`; at most one per holder |
+| Holder record created by `mint_for` (a player's first coin) | the operating balance |
+| Game conversion receipt (`mint_with_carry_for`) | the operating balance; anyone may `prune_game_conversion` after 30 days |
+
+The operating balance is NEAR above everything owed and the storage cost
+(`audit().operating_slack`). Contract-paid storage may not take it below 0.1 NEAR
+(`MIN_OPERATING_SLACK`): a `mint_for` for a new player or a world conversion then
+fails with "Operating balance is low" and the rewards contract keeps the credit, while
+exits, deposits and transfers keep working. `fund_operating()` (anyone, attach NEAR)
+refills it and is the one call that never fails on the invariant. The deploy script's
+1 NEAR top-up is this balance; `/api/health` should alert on `operating_slack`.
