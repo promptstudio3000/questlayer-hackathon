@@ -14,5 +14,6 @@
       "guideRequests": 0
     }
   ],
+  "interruptedIntroRestoresQuietly": true,
   "deepLinkUninterrupted": true
 }

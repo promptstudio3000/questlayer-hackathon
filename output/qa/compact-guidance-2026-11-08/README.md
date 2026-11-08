@@ -27,8 +27,8 @@ Open [the screen gallery](review.html) for rendered UI, rather than the earlier 
 
 ## Verification
 
-- `npm run check`: build, unchanged bundle budget, 1561 application tests passed; 1379 isolated guard tests passed, 19 skipped. No real chain operation was used. First screen: 210 KB gzip JS, 694 KB raw, 35 KB gzip CSS; unchanged limits passed.
-- `scripts/e2e-learning.mjs`: Continue, Skip/Escape, reload, manual Help, focus return, quiet experienced flow, zero reward/AI-guide requests at 360/390, short landscape and desktop. Additional final 390 run confirms deep-link creation is uninterrupted. Enlarged text and reduced-height input are simulations.
+- `npm run check`: build, unchanged bundle budget, 1562 application tests passed; 1380 isolated guard tests passed, 19 skipped. No real chain operation was used. First screen: 210 KB gzip JS, 694 KB raw, 35 KB gzip CSS; unchanged limits passed.
+- `scripts/e2e-learning.mjs`: Continue, Skip/Escape, reload, manual Help, focus return, quiet experienced flow, zero reward/AI-guide requests at 360/390, short landscape and desktop. Additional final 390 runs confirm deep-link creation is uninterrupted and reloading an unfinished introduction restores a usable, quiet session. Enlarged text and reduced-height input are simulations.
 - `scripts/e2e-intro-pickups.mjs`: an explicitly synthetic UI coin at spawn sends zero requests while the intro is open and resumes only after Continue. Every resulting claim is intercepted and aborted; no reward request reaches the server. The introduction remains the only modal.
 - `scripts/e2e-compact-guidance.mjs`: actual isolated App/API at 360/390/844×390/1440×900. Activity selection sends zero claims; browsing/reload preserves the same next step. Serious/critical 390 accessibility and 48px essential-control checks passed.
 - `scripts/e2e-encounters.mjs`: actual isolated server accepted an NPC errand and supplied the unfinished target; message draft reload, reduced-height input, enlarged text, four widths and a 390×664 greeting passed. A real quiz response confirmed one win. Original portrait stays contained.

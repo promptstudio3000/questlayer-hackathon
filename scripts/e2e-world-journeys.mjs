@@ -361,6 +361,16 @@ async function journey(browser, server, device, j, expected) {
     assert.deepEqual(errors, [], "no page errors");
     console.log(`  ${JSON.stringify(result)}`);
     return result;
+  } catch (error) {
+    await page.screenshot({path:join(shots, `${j.id}-failure.png`)}).catch(() => {});
+    writeFileSync(join(shots, `${j.id}-failure.json`),JSON.stringify(await page.evaluate(() => ({
+      text:document.body.innerText.slice(-6000),
+      coach:document.querySelector(".first-session")?.outerHTML,
+      panelHidden:document.querySelector(".main-panel")?.hidden,
+      panelClass:document.querySelector(".main-panel")?.className,
+      dialogs:[...document.querySelectorAll("dialog[open]")].map(el=>el.getAttribute("aria-label")),
+    })).catch(() => ({})),null,2));
+    throw error;
   } finally {
     await context.close();
   }

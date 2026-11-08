@@ -86,6 +86,20 @@ try {
     report.cases.push({name,continue:true,skip:true,reload:true,manualHelp:true,focusReturn:true,claims,guideRequests});
     await skipped.close();
   }
+  const interrupted = await browser.newContext({viewport:{width:390,height:844},serviceWorkers:"block"});
+  const interruptedPage=await interrupted.newPage();await interruptedPage.goto(url+"/?lang="+language);
+  await interruptedPage.getByLabel(t("What should we call you?"),{exact:true}).fill("Mira interrupted");
+  await interruptedPage.getByRole("button",{name:t("Start exploring"),exact:true}).click();
+  await interruptedPage.locator(".game-intro").waitFor();await interruptedPage.reload();
+  await interruptedPage.locator(".topbar .profile-pill").waitFor();
+  assert.equal((await learningState(interruptedPage)).enabled,false,"Unfinished introduction never opts into teaching on restore");
+  assert.equal((await learningState(interruptedPage)).intro,"done");
+  await interruptedPage.locator(".topbar .profile-pill").click();
+  await interruptedPage.getByRole("tab",{name:t("Settings"),exact:true}).click();
+  await interruptedPage.getByRole("button",{name:t("How to play"),exact:true}).waitFor();
+  assert.equal(await interruptedPage.locator(".game-intro").count(),0,"Restoring an unfinished introduction leaves the UI usable");
+  assert.equal(await interruptedPage.locator(".first-session").count(),0);
+  report.interruptedIntroRestoresQuietly=true;await interrupted.close();
   const linked = await browser.newContext({viewport:{width:390,height:844},serviceWorkers:"block"});
   const linkPage=await linked.newPage();await linkPage.goto(url+"/?lang="+language+"#task=local-example");
   await linkPage.getByLabel(t("What should we call you?"),{exact:true}).fill("Mira linked");
