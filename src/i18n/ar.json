@@ -3069,5 +3069,17 @@
  "{0} / 3 blocks shaped": "عُدّل {0} / 3 مكعبات",
  "{0}’s workshop": "ورشة {0}",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "تصل التحويلات والمبالغ المستردة إلى هذا الحساب بعد أن تسجّله أول دفعة QGOLD في الرمز.",
- "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "يحتاج الضمان إلى {0} من التخزين لهذا الاتفاق ولم يمكن إضافته الآن: {1}"
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "يحتاج الضمان إلى {0} من التخزين لهذا الاتفاق ولم يمكن إضافته الآن: {1}",
+ "No quest is open near you right now. Check Discoveries for opening times.": "لا توجد مهمة مفتوحة بالقرب منك الآن. راجع أوقات الفتح في الاكتشافات.",
+ "No street find is left near you today.": "لم يتبق اليوم أي اكتشاف شارع بالقرب منك.",
+ "No coin is left near you right now. More appear in the next wave.": "لم تتبق أي عملة بالقرب منك الآن. ستظهر المزيد في الموجة التالية.",
+ "the character who gave it": "الشخصية التي أعطتها",
+ "Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.": "أنجزت المهمة. عُد إلى {0} لتقديم التقرير: +{1} XP. ابحث عن «قدّم التقرير» على الخريطة.",
+ "All steps done. Go back to {0} to turn it in. Look for Report back on the map.": "اكتملت كل الخطوات. عُد إلى {0} لتسليمها. ابحث عن «قدّم التقرير» على الخريطة.",
+ "{0}: {1}. Marked on the map.": "{0}: {1}. مُعلَّم على الخريطة.",
+ "They are not out right now. Characters walk between 07:00 and 22:00.": "ليس في الخارج الآن. تتجول الشخصيات بين 07:00 و22:00.",
+ "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "لا أحد من هذا النوع بالقرب منك الآن. تتجول الشخصيات بين 07:00 و22:00.",
+ "Show me": "أرني",
+ "Player task": "مهمة لاعب",
+ "Report back": "قدّم التقرير"
 }

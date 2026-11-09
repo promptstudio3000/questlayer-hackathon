@@ -3069,5 +3069,17 @@
  "{0} / 3 blocks shaped": "変更したブロック {0} / 3",
  "{0}’s workshop": "{0}の工房",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "送金と返金は、最初の QGOLD 支払いでこのアカウントがトークンに登録されると届きます。",
- "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "この取り決めにはエスクローに {0} のストレージが必要ですが、今は追加できませんでした: {1}"
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "この取り決めにはエスクローに {0} のストレージが必要ですが、今は追加できませんでした: {1}",
+ "No quest is open near you right now. Check Discoveries for opening times.": "近くで開いているクエストは今ありません。開始時刻は「発見」で確認できます。",
+ "No street find is left near you today.": "今日は近くにストリートの発見物が残っていません。",
+ "No coin is left near you right now. More appear in the next wave.": "近くにコインは今残っていません。次のウェーブで現れます。",
+ "the character who gave it": "依頼したキャラクター",
+ "Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.": "おつかい完了。{0}のところへ戻って報告しよう：+{1} XP。マップの「報告する」を探そう。",
+ "All steps done. Go back to {0} to turn it in. Look for Report back on the map.": "すべてのステップ完了。{0}のところへ戻って渡そう。マップの「報告する」を探そう。",
+ "{0}: {1}. Marked on the map.": "{0}：{1}。マップに印があります。",
+ "They are not out right now. Characters walk between 07:00 and 22:00.": "今は外にいません。キャラクターは07:00〜22:00に歩いています。",
+ "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "近くに該当するキャラクターは今いません。キャラクターは07:00〜22:00に歩いています。",
+ "Show me": "場所を見る",
+ "Player task": "プレイヤーの依頼",
+ "Report back": "報告する"
 }

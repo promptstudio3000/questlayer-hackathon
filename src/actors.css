@@ -205,3 +205,30 @@
 .actor-stage > img.actor-scene-art {
   object-fit: contain;
 }
+/* An NPC waiting for this player's report: a gold chip above the name. */
+.actor-report-chip {
+  order: -1;
+  margin-bottom: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ffd84a;
+  color: #230e4f;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  white-space: nowrap;
+  box-shadow: 0 0 0 2px #230e4f, 0 0 12px #ffd84aa6;
+}
+.actor-report .actor-label {
+  border-color: #ffd84a;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .actor-report-chip {
+    animation: actor-report-pulse 1.6s ease-in-out infinite;
+  }
+}
+@keyframes actor-report-pulse {
+  50% {
+    translate: 0 -3px;
+  }
+}

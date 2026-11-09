@@ -3069,5 +3069,17 @@
  "{0} / 3 blocks shaped": "{0} / 3 Blöcke verändert",
  "{0}’s workshop": "Werkstatt von {0}",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Sendungen und Rückzahlungen erreichen dieses Konto, sobald seine erste QGOLD-Auszahlung es beim Token registriert.",
- "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "Das Escrow braucht {0} Speicher für diese Vereinbarung, und er konnte gerade nicht hinzugefügt werden: {1}"
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "Das Escrow braucht {0} Speicher für diese Vereinbarung, und er konnte gerade nicht hinzugefügt werden: {1}",
+ "No quest is open near you right now. Check Discoveries for opening times.": "Gerade ist keine Quest in deiner Nähe offen. Öffnungszeiten findest du unter Entdeckungen.",
+ "No street find is left near you today.": "Heute ist kein Straßenfund mehr in deiner Nähe übrig.",
+ "No coin is left near you right now. More appear in the next wave.": "Gerade ist keine Münze mehr in deiner Nähe. In der nächsten Welle kommen neue.",
+ "the character who gave it": "der Figur, die sie vergeben hat",
+ "Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.": "Botengang erledigt. Geh zurück zu {0} und berichte: +{1} XP. Achte auf der Karte auf Berichten.",
+ "All steps done. Go back to {0} to turn it in. Look for Report back on the map.": "Alle Schritte erledigt. Geh zurück zu {0} und gib sie ab. Achte auf der Karte auf Berichten.",
+ "{0}: {1}. Marked on the map.": "{0}: {1}. Auf der Karte markiert.",
+ "They are not out right now. Characters walk between 07:00 and 22:00.": "Gerade nicht unterwegs. Figuren sind zwischen 07:00 und 22:00 unterwegs.",
+ "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "Gerade ist niemand davon in deiner Nähe. Figuren sind zwischen 07:00 und 22:00 unterwegs.",
+ "Show me": "Zeig es mir",
+ "Player task": "Spieleraufgabe",
+ "Report back": "Berichten"
 }

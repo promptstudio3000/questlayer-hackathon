@@ -382,5 +382,20 @@ export function createNpcService(
     accept,
     complete,
     active: ({ player, actor, world }) => activeView(store.offersFor(player, actor.id), world),
+    // The player's open lines in one world, for the map: which NPC is waiting
+    // for a report (every step done) and which places still need a visit.
+    // Information only: turning in still needs a fresh encounter.
+    tasks: ({ player, world }) =>
+      store
+        .acceptedFor(player)
+        .filter((r) => r.terms.worldId === world?.id)
+        .map((r) => {
+          const [view] = activeView([r], world);
+          return {
+            actorId: r.actor_id,
+            ...view,
+            ready: view.steps.length > 0 && view.steps.every((s) => s.done),
+          };
+        }),
   };
 }

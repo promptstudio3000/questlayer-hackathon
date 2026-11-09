@@ -118,6 +118,27 @@ export type GameMapProps = {
   onPlacePin?: (id: string) => void;
   /** A multi-stop walk: drawn from the explorer to the next stop and on. */
   route?: QuestRoute | null;
+  /** NPCs waiting for the player's report (every step of their line done). */
+  actorReports?: readonly string[];
+  /** "Show me": pan to the nearest matching character (any distance). */
+  actorFocus?: { revision: number; match: ActorFocusMatch } | null;
+  onActorFocus?: (found: { name: string; distanceM: number } | null, match: ActorFocusMatch) => void;
+  /** Player tasks and Secrets near the explorer; tap opens them in Nearby. */
+  marketPins?: readonly MarketMapPin[];
+  onMarketPin?: (pin: MarketMapPin) => void;
+};
+export type ActorFocusMatch =
+  | { actorId: string }
+  | { kinds: readonly string[] };
+export type MarketMapPin = {
+  kind: "task" | "secret";
+  id: string;
+  title: string;
+  lat: number;
+  lng: number;
+  radiusM: number;
+  /** Share key of a private task or Secret, so the tap can open it. */
+  k?: string | null;
 };
 export type CreatorMapPlace = {
   questId: string;
@@ -1004,6 +1025,7 @@ export function GameMap(props: GameMapProps) {
           worldId: p.actorsWorldId || null,
           position: p.position,
           visible: !p.globe,
+          reports: p.actorReports,
         });
       })
       .catch(() => {});
@@ -1013,13 +1035,53 @@ export function GameMap(props: GameMapProps) {
       actorsLayer.current = null;
     };
   }, [ready, actorsEnabled]);
+  const reportsKey = (props.actorReports || []).join(",");
   useEffect(() => {
     actorsLayer.current?.update({
       worldId: props.actorsWorldId || null,
       position: props.position,
       visible: !props.globe,
+      reports: props.actorReports,
     });
-  }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe]);
+  }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe, reportsKey]);
+  useEffect(() => {
+    const m = map.current, request = props.actorFocus;
+    if (!m || !ready || !request) return;
+    const { match } = request;
+    const found = actorsLayer.current?.find((a) =>
+      "actorId" in match ? a.id === match.actorId : match.kinds.includes(a.archetype),
+    );
+    latest.current.onActorFocus?.(found ? { name: found.actor.name, distanceM: found.distanceM } : null, match);
+    if (!found) return;
+    latest.current.onPan();
+    m.easeTo({
+      center: [found.lng, found.lat],
+      zoom: Math.max(m.getZoom(), 16),
+      duration: prefersReducedMotion() ? 0 : 900,
+    });
+    // Only the revision triggers a new "show me".
+  }, [props.actorFocus?.revision, ready]);
+  const marketKey = JSON.stringify(props.marketPins || []);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || props.globe || !props.marketPins?.length) return;
+    const markers = props.marketPins.map((pin) => {
+      const node = document.createElement("button");
+      const kindLabel = pin.kind === "task" ? tr("Player task") : tr("Secret");
+      node.className = `quest-map-pin game-object-map-pin market-map-pin market-map-pin-${pin.kind}`;
+      node.setAttribute("aria-label", `${pin.title} · ${kindLabel}`);
+      node.title = `${pin.title} · ${kindLabel}`;
+      paintQuestPin(node, pin.kind === "task" ? "task" : "clue", { kind: "place" });
+      node.addEventListener("click", (e) => {
+        e.stopPropagation();
+        latest.current.onMarketPin?.(pin);
+      });
+      return new maplibregl.Marker({ element: node, anchor: "bottom" })
+        .setLngLat([pin.lng, pin.lat])
+        .addTo(m);
+    });
+    return () => markers.forEach((x) => x.remove());
+  }, [ready, props.globe, marketKey]);
   function cameraOffset(): [number, number] {
     // Leave room ahead; overlay height never changes this framing.
     return props.follow && Number.isFinite(props.followBearing) ? [0, Math.min(72, (el.current?.clientHeight || 0) * 0.1)] : [0, 0];

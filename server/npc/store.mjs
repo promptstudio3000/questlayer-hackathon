@@ -66,6 +66,12 @@ export function createNpcStore(db, { clock = Date.now } = {}) {
         .all(player, actor)
         .map((r) => ({ ...r, terms: JSON.parse(r.terms) }));
     },
+    /** Every accepted (not yet turned in) line of this player, with any NPC. */
+    acceptedFor(player) {
+      return q("SELECT * FROM actor_offers WHERE player_id=? AND state='accepted' ORDER BY created_at")
+        .all(player)
+        .map((r) => ({ ...r, terms: JSON.parse(r.terms) }));
+    },
     insertOffer(o) {
       q(
         "INSERT INTO actor_offers(id,actor_id,player_id,encounter_id,kind,terms,menu_hash,state,expires_at,created_at,completed_at) VALUES (?,?,?,?,?,?,?,'accepted',?,?,NULL)",

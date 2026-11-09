@@ -59,6 +59,16 @@ export interface NpcTurnIn {
   replay?: boolean;
 }
 
+/** An open NPC line in one world, for the map ("Report back" signs). */
+export interface NpcMapTask extends NpcActiveLine {
+  actorId: string;
+  actorName: string | null;
+  /** Every step is done: the NPC waits for a report (a fresh meeting). */
+  ready: boolean;
+}
+export const npcMapTasks = (worldId: string) =>
+  api<{ worldId: string; tasks: NpcMapTask[] }>(`/actors/tasks?worldId=${encodeURIComponent(worldId)}`);
+
 const base = (actorId: string) => `/actors/${encodeURIComponent(actorId)}`;
 export const npcGreet = (actorId: string, encounter: string) => api<NpcReply>(`${base(actorId)}/greet`, { encounter });
 export const npcTalk = (actorId: string, encounter: string, message: string) =>
