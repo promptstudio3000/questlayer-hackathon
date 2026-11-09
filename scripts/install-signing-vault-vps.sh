@@ -106,7 +106,11 @@ SITE
   caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
   systemctl reload caddy
 fi
-sleep 2
+# Node needs a few seconds to start under load; wait up to 30 s for the port.
+for _ in $(seq 30); do
+  curl -fsS -H "Host: $VAULT_HOST" "http://127.0.0.1:$PORT/vault-config.json" >/dev/null 2>&1 && break
+  sleep 1
+done
 systemctl is-active questlayer-signer.service
 curl -fsS -H "Host: $VAULT_HOST" "http://127.0.0.1:$PORT/vault-config.json" >/dev/null
 # Keep the three newest vault releases.
