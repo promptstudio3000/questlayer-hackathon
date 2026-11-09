@@ -3069,5 +3069,17 @@
  "{0} / 3 blocks shaped": "{0} / 3 blocs modifiés",
  "{0}’s workshop": "Atelier de {0}",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Les envois et remboursements atteignent ce compte dès que son premier paiement QGOLD l'enregistre auprès du jeton.",
- "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "L'escrow a besoin de {0} de stockage pour cet accord et il n'a pas pu être ajouté pour l'instant : {1}"
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "L'escrow a besoin de {0} de stockage pour cet accord et il n'a pas pu être ajouté pour l'instant : {1}",
+ "No quest is open near you right now. Check Discoveries for opening times.": "Aucune quête n'est ouverte près de toi pour l'instant. Vois les horaires dans Découvertes.",
+ "No street find is left near you today.": "Il ne reste plus de trouvaille de rue près de toi aujourd'hui.",
+ "No coin is left near you right now. More appear in the next wave.": "Il ne reste plus de pièce près de toi pour l'instant. D'autres arrivent à la prochaine vague.",
+ "the character who gave it": "le personnage qui l'a donnée",
+ "Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.": "Course terminée. Retourne voir {0} pour faire ton rapport : +{1} XP. Cherche Rapport sur la carte.",
+ "All steps done. Go back to {0} to turn it in. Look for Report back on the map.": "Toutes les étapes sont faites. Retourne voir {0} pour la rendre. Cherche Rapport sur la carte.",
+ "{0}: {1}. Marked on the map.": "{0} : {1}. Marqué sur la carte.",
+ "They are not out right now. Characters walk between 07:00 and 22:00.": "Pas de sortie pour l'instant. Les personnages se promènent entre 07:00 et 22:00.",
+ "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "Personne de ce genre n'est près de toi pour l'instant. Les personnages se promènent entre 07:00 et 22:00.",
+ "Show me": "Montre-moi",
+ "Player task": "Tâche de joueur",
+ "Report back": "Rapport"
 }

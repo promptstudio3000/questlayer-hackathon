@@ -88,7 +88,7 @@
       ],
       "persona": "poutnice-rada",
       "enabled": true,
-      "phase": "day"
+      "phase": "any"
     },
     {
       "id": "bludicka",

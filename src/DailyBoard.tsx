@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle, Circle, Target, X } from "@phosphor-icons/react";
+import { CheckCircle, Circle, MapPin, Target, X } from "@phosphor-icons/react";
 import { api, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import "./daily-board.css";
@@ -25,10 +25,13 @@ export function DailyBoard({
   worldId,
   refreshKey,
   onClaimed,
+  onGoal,
 }: {
   worldId?: string;
   refreshKey?: string | number;
   onClaimed?: () => void;
+  /** "Show me": point the map at the nearest thing this goal needs. */
+  onGoal?: (kind: string) => void;
 }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [open, setOpen] = useState(false);
@@ -112,6 +115,19 @@ export function DailyBoard({
                   <small>
                     {g.progress}/{g.target}
                   </small>
+                  {!g.done && onGoal && (
+                    <button
+                      className="daily-board-go secondary-button"
+                      aria-label={`${tr("Show me")} · ${g.label}`}
+                      onClick={() => {
+                        setOpen(false);
+                        onGoal(g.kind);
+                      }}
+                    >
+                      <MapPin size={18} aria-hidden="true" />
+                      <span>{tr("Show me")}</span>
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

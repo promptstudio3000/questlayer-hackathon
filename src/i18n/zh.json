@@ -3069,5 +3069,17 @@
  "{0} / 3 blocks shaped": "已修改 {0} / 3 个方块",
  "{0}’s workshop": "{0}的工坊",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "此账户在首次 QGOLD 支付将其登记到代币后，才能收到转账和退款。",
- "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "此协议需要托管合约提供 {0} 的存储，现在无法添加：{1}"
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "此协议需要托管合约提供 {0} 的存储，现在无法添加：{1}",
+ "No quest is open near you right now. Check Discoveries for opening times.": "附近现在没有开放的任务。开放时间请看「发现」。",
+ "No street find is left near you today.": "今天附近已经没有街头发现了。",
+ "No coin is left near you right now. More appear in the next wave.": "附近现在没有金币了。下一波会出现更多。",
+ "the character who gave it": "给你任务的角色",
+ "Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.": "差事完成。回到{0}那里汇报：+{1} XP。在地图上找「汇报」。",
+ "All steps done. Go back to {0} to turn it in. Look for Report back on the map.": "所有步骤完成。回到{0}那里交付。在地图上找「汇报」。",
+ "{0}: {1}. Marked on the map.": "{0}：{1}。已在地图上标出。",
+ "They are not out right now. Characters walk between 07:00 and 22:00.": "现在不在外面。角色在07:00到22:00之间出没。",
+ "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "附近现在没有这样的角色。角色在07:00到22:00之间出没。",
+ "Show me": "给我看",
+ "Player task": "玩家任务",
+ "Report back": "汇报"
 }

@@ -3069,5 +3069,17 @@
  "{0} / 3 blocks shaped": "{0} / 3 ब्लॉक बदले गए",
  "{0}’s workshop": "{0} की कार्यशाला",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "भेजी गई राशियाँ और रिफ़ंड इस खाते तक तब पहुँचते हैं जब इसका पहला QGOLD भुगतान इसे टोकन पर पंजीकृत कर देता है।",
- "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "इस समझौते के लिए एस्क्रो को {0} स्टोरेज चाहिए और उसे अभी जोड़ा नहीं जा सका: {1}"
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "इस समझौते के लिए एस्क्रो को {0} स्टोरेज चाहिए और उसे अभी जोड़ा नहीं जा सका: {1}",
+ "No quest is open near you right now. Check Discoveries for opening times.": "अभी आपके पास कोई क्वेस्ट खुला नहीं है। खुलने का समय डिस्कवरी में देखें।",
+ "No street find is left near you today.": "आज आपके पास कोई स्ट्रीट फाइंड नहीं बचा।",
+ "No coin is left near you right now. More appear in the next wave.": "अभी आपके पास कोई सिक्का नहीं बचा। अगली लहर में और आएँगे।",
+ "the character who gave it": "जिस किरदार ने इसे दिया",
+ "Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.": "काम पूरा। रिपोर्ट करने के लिए {0} के पास वापस जाएँ: +{1} XP। नक्शे पर रिपोर्ट करें देखें।",
+ "All steps done. Go back to {0} to turn it in. Look for Report back on the map.": "सभी चरण पूरे। जमा करने के लिए {0} के पास वापस जाएँ। नक्शे पर रिपोर्ट करें देखें।",
+ "{0}: {1}. Marked on the map.": "{0}: {1}। नक्शे पर चिह्नित।",
+ "They are not out right now. Characters walk between 07:00 and 22:00.": "अभी बाहर नहीं है। किरदार 07:00 से 22:00 के बीच घूमते हैं।",
+ "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "अभी आपके पास ऐसा कोई नहीं है। किरदार 07:00 से 22:00 के बीच घूमते हैं।",
+ "Show me": "दिखाओ",
+ "Player task": "खिलाड़ी का काम",
+ "Report back": "रिपोर्ट करें"
 }

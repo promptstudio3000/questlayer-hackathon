@@ -34,6 +34,8 @@ import type { ActorView } from "./actor-types";
 import type { ActorsLayer } from "./actors-layer";
 import type { MapRewardsLayer } from "./map-rewards-layer";
 import { useEffect, useRef, useState } from "react";
+import { api } from "./api";
+import { distanceLabel } from "./app-bits";
 import * as maplibregl from "maplibre-gl";
 import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 maplibregl.setWorkerUrl(mapWorkerUrl);
@@ -118,6 +120,28 @@ export type GameMapProps = {
   onPlacePin?: (id: string) => void;
   /** A multi-stop walk: drawn from the explorer to the next stop and on. */
   route?: QuestRoute | null;
+  /** NPCs waiting for the player's report (every step of their line done). */
+  actorReports?: readonly string[];
+  /** "Show me": pan to the nearest matching character (any distance). */
+  actorFocus?: { revision: number; match: ActorFocusMatch } | null;
+  /** The "show me" result as player text; `found` false is a notice, not an error. */
+  onActorFocus?: (text: string, found: boolean) => void;
+  /** Draw player tasks and Secrets near the explorer (GPS play); tap opens them in Nearby. */
+  marketPins?: boolean;
+  onMarketPin?: (pin: MarketMapPin) => void;
+};
+export type ActorFocusMatch =
+  | { actorId: string }
+  | { kinds: readonly string[] };
+export type MarketMapPin = {
+  kind: "task" | "secret";
+  id: string;
+  title: string;
+  lat: number;
+  lng: number;
+  radiusM: number;
+  /** Share key of a private task or Secret, so the tap can open it. */
+  k?: string | null;
 };
 export type CreatorMapPlace = {
   questId: string;
@@ -1004,6 +1028,7 @@ export function GameMap(props: GameMapProps) {
           worldId: p.actorsWorldId || null,
           position: p.position,
           visible: !p.globe,
+          reports: p.actorReports,
         });
       })
       .catch(() => {});
@@ -1013,13 +1038,102 @@ export function GameMap(props: GameMapProps) {
       actorsLayer.current = null;
     };
   }, [ready, actorsEnabled]);
+  const reportsKey = (props.actorReports || []).join(",");
   useEffect(() => {
     actorsLayer.current?.update({
       worldId: props.actorsWorldId || null,
       position: props.position,
       visible: !props.globe,
+      reports: props.actorReports,
     });
-  }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe]);
+  }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe, reportsKey]);
+  useEffect(() => {
+    const request = props.actorFocus;
+    if (!ready || !request) return;
+    const { match } = request;
+    // The layer may still be attaching or loading the cast (e.g. right after a
+    // sheet closed): retry for a few seconds before saying nobody is out.
+    let tries = 0, timer = 0;
+    const attempt = () => {
+      const m = map.current;
+      if (!m) return;
+      const found = actorsLayer.current?.find((a) =>
+        "actorId" in match ? a.id === match.actorId : match.kinds.includes(a.archetype),
+      );
+      if (!found && ++tries < 12) {
+        timer = window.setTimeout(attempt, 500);
+        return;
+      }
+      latest.current.onActorFocus?.(
+        found
+          ? tr("{0}: {1}. Marked on the map.", { 0: found.actor.name, 1: distanceLabel(found.distanceM) })
+          : "actorId" in match
+            ? tr("They are not out right now. Characters walk between 07:00 and 22:00.")
+            : tr("Nobody like that is out near you right now. Characters walk between 07:00 and 22:00."),
+        !!found,
+      );
+      if (!found) return;
+      latest.current.onPan();
+      m.easeTo({
+        center: [found.lng, found.lat],
+        zoom: Math.max(m.getZoom(), 16),
+        duration: prefersReducedMotion() ? 0 : 900,
+      });
+    };
+    attempt();
+    return () => window.clearTimeout(timer);
+    // Only the revision triggers a new "show me".
+  }, [props.actorFocus?.revision, ready]);
+  // Player tasks and Secrets around the explorer (~55 m steps, like Nearby).
+  const [marketPins, setMarketPins] = useState<MarketMapPin[]>([]);
+  const marketLat = Math.round(props.position.lat * 2000) / 2000,
+    marketLng = Math.round(props.position.lng * 2000) / 2000,
+    marketOn = !!props.marketPins && !props.globe;
+  useEffect(() => {
+    if (!marketOn) { setMarketPins([]); return; }
+    const controller = new AbortController();
+    type Near = { lat: number; lng: number; id: string; title: string; state: string; radiusM: number; linkKey?: string | null };
+    api<{ tasks: Near[]; forMe: Near[]; taking: Near[]; secrets: (Omit<Near, "lat" | "lng" | "radiusM"> & { fog: Point & { radiusM: number } })[] }>(
+      `/market/nearby?lat=${marketLat}&lng=${marketLng}`, undefined, { signal: controller.signal },
+    )
+      .then((r) => {
+        const tasks = new Map<string, MarketMapPin>();
+        for (const t of [...r.taking, ...r.forMe, ...r.tasks])
+          if (t.state === "open" && !tasks.has(t.id))
+            tasks.set(t.id, { kind: "task", id: t.id, title: t.title, lat: t.lat, lng: t.lng, radiusM: t.radiusM, k: t.linkKey });
+        setMarketPins([
+          ...tasks.values(),
+          ...r.secrets.filter((x) => x.state === "open").map((x) => ({ kind: "secret" as const, id: x.id, title: x.title, lat: x.fog.lat, lng: x.fog.lng, radiusM: x.fog.radiusM, k: x.linkKey })),
+        ].slice(0, 40));
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [marketOn, marketLat, marketLng]);
+  const marketKey = JSON.stringify(marketPins);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || props.globe || !marketPins.length) return;
+    const markers = marketPins.map((pin) => {
+      const node = document.createElement("button");
+      const kindLabel = pin.kind === "task" ? tr("Player task") : tr("Secret");
+      node.className = `quest-map-pin game-object-map-pin market-map-pin market-map-pin-${pin.kind}`;
+      node.setAttribute("aria-label", `${pin.title} · ${kindLabel}`);
+      node.title = `${pin.title} · ${kindLabel}`;
+      paintQuestPin(node, pin.kind === "task" ? "task" : "clue", { kind: "place" });
+      node.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const hash = `${pin.kind}=${encodeURIComponent(pin.id)}${pin.k ? `&k=${encodeURIComponent(pin.k)}` : ""}`;
+        // The same pin twice: the hash does not change, so announce it again.
+        if (location.hash === `#${hash}`) dispatchEvent(new HashChangeEvent("hashchange"));
+        else location.hash = hash;
+        latest.current.onMarketPin?.(pin);
+      });
+      return new maplibregl.Marker({ element: node, anchor: "bottom" })
+        .setLngLat([pin.lng, pin.lat])
+        .addTo(m);
+    });
+    return () => markers.forEach((x) => x.remove());
+  }, [ready, props.globe, marketKey]);
   function cameraOffset(): [number, number] {
     // Leave room ahead; overlay height never changes this framing.
     return props.follow && Number.isFinite(props.followBearing) ? [0, Math.min(72, (el.current?.clientHeight || 0) * 0.1)] : [0, 0];
