@@ -1,14 +1,14 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-11-05T13:59:29.169Z",
-  "contractId": "questlayer-qgold-escrow-20261105.testnet",
+  "verifiedAt": "2026-11-09T03:31:38.614Z",
+  "contractId": "questlayer-qgold-escrow-20261109.testnet",
   "tokenId": "questlayer-qgold-vault-20261104.testnet",
-  "publisherId": "questlayer-escrow-pub-20261105.testnet",
-  "moderatorId": "questlayer-escrow-pub-20261105.testnet",
+  "publisherId": "questlayer-escrow-pub-20261109.testnet",
+  "moderatorId": "questlayer-escrow-pub-20261109.testnet",
   "ownerId": "questlayer-dev-20261101.testnet",
   "guardianId": "questlayer-dev-20261101.testnet",
   "treasuryId": "questlayer-dev-20261101.testnet",
-  "publisherKey": "ed25519:Av9GeaqH9ptNnsztp3m2uLQujNB83bUT31w2E88U4ZkN",
+  "publisherKey": "ed25519:B86n7fExBksRY4RiSbJTdpFBN7cigk5Td1sGNtSRjx77",
   "publisherMethods": [
     "approve_task",
     "cancel_task",
@@ -25,12 +25,12 @@
     "decline_transfer",
     "withdraw_for"
   ],
-  "codeHash": "9TyapRKoVwC8XAukFocxAGFXGjt2uhebhDeq7C74AE9X",
-  "wasmSha256": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da",
+  "codeHash": "Cc1qhL3h8ifLxMo7f6pRCDha6Mktv74uNC7FkgW16dKj",
+  "wasmSha256": "ac68d5750d96fae0e087be5881f3fd9f394aba07fdd659b3a4abcadab5b76876",
   "accessKeys": 0,
   "feeBps": 1000,
   "smoke": {
-    "id": "smoke-1793887153800",
+    "id": "smoke-1794195085281",
     "stats": {
       "total_held": "0",
       "escrowed": "0",
@@ -49,31 +49,39 @@
   "transactions": [
     {
       "label": "Deploy and initialize the QGOLD escrow",
-      "transaction": "2jbnqAJVf1SmAT6SrB4LP5rUZCp3Qr2Nbo3KEwhPnCcN"
+      "transaction": "FEchzxThNv4TLRiQhQiAkSU6uoFSdRJNS7WoWHy1CLfy"
     },
     {
-      "label": "Register questlayer-qgold-escrow-20261105.testnet on QGOLD",
-      "transaction": "GbHXXxcM3zcnAGp8inCuWbw2eQrZ72PR2dCw3qNWKBQd"
+      "label": "Register questlayer-qgold-escrow-20261109.testnet on QGOLD",
+      "transaction": "ESb4BW7FhaDNZ21E9TYfeXgbf5fJFNVuJfGcgxWbLHzq"
+    },
+    {
+      "label": "Register questlayer-escrow-pub-20261109.testnet on QGOLD",
+      "transaction": "B8J2aN3eqwXJNXRA2pNpXnjZJKMW2kEzLpJZcCyaVwvL"
     },
     {
       "label": "Add the escrow publisher key (function-call only)",
-      "transaction": "Ecb8HTuHkiHrVocuwC18VDjPt4NmPnzn5aAMoEkvrH3Y"
+      "transaction": "E1tiTHJb7jn7oqt3fcB23Atg33G3WdijWc21uy69PZJm"
     },
     {
       "label": "Delete escrow access key ed25519:6ZXCmMJRRM8RLiaXSyZ1LFXUkPKtgphLdkD8m5QXckge",
-      "transaction": "FL3hjpkUsfwncbLjo4gfXMmsi7V61QZQb1HWctXn88Es"
+      "transaction": "HRpwZPzVHnMsxmVFvHrWT6NzpQui65HpPKrWtYcSxsTN"
+    },
+    {
+      "label": "Smoke: operator storage deposit on the escrow",
+      "transaction": "78k3MDTTsstMAeiBfxkV3DAsV1FBav1FqTwekh7FMSK6"
     },
     {
       "label": "Smoke: fund a both_confirm transfer",
-      "transaction": "3apCi5LxCp6LYqFMXGGhdX9Y52rmntf8D49fzHE5seNj"
+      "transaction": "FGD2kGMbMm2yFWvKwdxjY5ZeVqjEpZdhiWUJYwYDC3Ed"
     },
     {
       "label": "Smoke: publisher releases the transfer",
-      "transaction": "tAPVkKdvh7rbWk8x6omMiXGHqfqoeidiF1QDcmBNnxN"
+      "transaction": "8aQQaU7exBZLPxxAezkEvFnhwe8rP35WjM6AdS3p8hWe"
     },
     {
       "label": "Smoke: publisher pushes the payout",
-      "transaction": "9HdF75W9wZvgeAqnMCT77tBVfpKMncWt68he9mWSySm"
+      "transaction": "45p3ErRnfzbBy1aZADj8UbrvRKHunW42gkPQnCvQC5D8"
     }
   ]
 }
