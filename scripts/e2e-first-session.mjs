@@ -92,15 +92,26 @@ async function freePort() {
   });
 }
 
+// The day's world (coins, street finds, quests) is generated from the date,
+// and NPCs and POI quests keep local play hours. A real-time run therefore
+// changed with every calendar day: on 10 Nov 2026 a street find lies within
+// 60 m of the Plzeň start, its "Open Street find" button replaces the coach
+// and the journey stalls. The local server and every browser page run on one
+// fixed day and hour instead (time still flows from there); see
+// scripts/lib/e2e-clock.mjs. A remote E2E_BASE_URL keeps real time.
+const E2E_NOW = Date.parse("2026-11-09T10:00:00Z"); // 11:00 Prague
+const CLOCK_OFFSET_MS = process.env.E2E_BASE_URL ? 0 : E2E_NOW - Date.now();
+
 async function startServer() {
   if (process.env.E2E_BASE_URL) return { url: process.env.E2E_BASE_URL, stop() {} };
   const port = await freePort();
   const dir = mkdtempSync(join(tmpdir(), "questlayer-e2e-"));
   const url = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, [join(ROOT, "server/index.mjs")], {
+  const child = spawn(process.execPath, ["--import", join(ROOT, "scripts/lib/e2e-clock.mjs"), join(ROOT, "server/index.mjs")], {
     cwd: dir,
     env: {
       PATH: process.env.PATH,
+      E2E_CLOCK_OFFSET_MS: String(CLOCK_OFFSET_MS),
       PORT: String(port),
       HOST: "127.0.0.1",
       APP_ORIGIN: url,
@@ -214,6 +225,17 @@ async function newExplorerContext(browser, profile) {
     acceptDownloads: true,
     locale: "en-GB",
   });
+  // Same fixed day as the server (see CLOCK_OFFSET_MS).
+  if (CLOCK_OFFSET_MS) {
+    await context.addInitScript((offset) => {
+      const RealDate = Date;
+      const realNow = RealDate.now.bind(RealDate);
+      globalThis.Date = class extends RealDate {
+        constructor(...args) { super(...(args.length ? args : [realNow() + offset])); }
+        static now() { return realNow() + offset; }
+      };
+    }, CLOCK_OFFSET_MS);
+  }
   // Record vibration calls; headless browsers have no vibration motor.
   await context.addInitScript(() => {
     window.__vibrations = [];
@@ -618,7 +640,7 @@ async function runDevice(name, server) {
     // card without a real install prompt; elsewhere this step is skipped.
     const cardContext = await newExplorerContext(browser, profile);
     const cardPage = await cardContext.newPage();
-    await cardPage.clock.install();
+    await cardPage.clock.install({ time: Date.now() + CLOCK_OFFSET_MS });
     await cardPage.goto(server.url);
     await cardPage.getByPlaceholder("Your explorer name").fill(`${TAG}Card ${name}`);
     await cardPage.getByRole("button", { name: "Start exploring" }).click();
