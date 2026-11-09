@@ -66,8 +66,6 @@ export interface NpcMapTask extends NpcActiveLine {
   /** Every step is done: the NPC waits for a report (a fresh meeting). */
   ready: boolean;
 }
-export const npcMapTasks = (worldId: string) =>
-  api<{ worldId: string; tasks: NpcMapTask[] }>(`/actors/tasks?worldId=${encodeURIComponent(worldId)}`);
 
 const base = (actorId: string) => `/actors/${encodeURIComponent(actorId)}`;
 export const npcGreet = (actorId: string, encounter: string) => api<NpcReply>(`${base(actorId)}/greet`, { encounter });

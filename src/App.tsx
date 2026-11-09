@@ -112,9 +112,8 @@ import {
 import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
 import type { ActorView } from "./actor-types";
-import type { ActorFocusMatch, MarketMapPin } from "./GameMap";
+import type { ActorFocusMatch } from "./GameMap";
 import type { NpcMapTask } from "./npc-client";
-import type { MarketSecret, MarketTask } from "./NearbyMarket";
 import "./inventory.css";
 import { indexedDbKeyStore } from "./player-key";
 import type { NativeMilestone, Progress } from "./NativeLevelRewards";
@@ -412,8 +411,7 @@ export default function App() {
   const [npcTasks, setNpcTasks] = useState<{ worldId: string; tasks: NpcMapTask[] } | null>(null);
   // "Show me" on the map for a character (daily board goals, report back).
   const [actorFocus, setActorFocus] = useState<{ revision: number; match: ActorFocusMatch } | null>(null);
-  // Player tasks and Secrets near the explorer, drawn on the map.
-  const [marketPins, setMarketPins] = useState<MarketMapPin[]>([]);
+
   // A wearable pickup is a Wardrobe item: "see it" opens Inventory there.
   const [inventoryStart, setInventoryStart] = useState<InventoryTab>("items");
   const [wearableMoment, setWearableMoment] = useState<{scope: string; id: number; name: string; detail: string; chain?: ChainRef | null} | null>(null);
@@ -957,11 +955,11 @@ export default function App() {
     ]);
   // NPC lines for the map. Returns the tasks so a claim can tell the player
   // whom to report to; failures keep the last known signs.
+  const guide = () => import("./goal-guide");
   async function loadNpcTasks(worldId = latest.current.world?.id) {
     if (!worldId) return null;
     try {
-      const { npcMapTasks } = await import("./npc-client");
-      const r = await npcMapTasks(worldId);
+      const r = await (await guide()).npcMapTasks(worldId);
       if (latest.current.world?.id === worldId) setNpcTasks({ worldId, tasks: r.tasks });
       return r.tasks;
     } catch {
@@ -974,48 +972,14 @@ export default function App() {
     if (!actorOpen) void loadNpcTasks(world.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world?.id, player?.id, nativePlay, actorOpen]);
-  // Player tasks and Secrets as map pins (GPS play only; ~55 m steps like Nearby).
-  const marketLat = Math.round(position.lat * 2000) / 2000,
-    marketLng = Math.round(position.lng * 2000) / 2000;
-  useEffect(() => {
-    if (!player || arena || nativePlay || globe) { setMarketPins([]); return; }
-    const controller = new AbortController();
-    api<{ tasks: MarketTask[]; forMe: MarketTask[]; taking: MarketTask[]; secrets: MarketSecret[] }>(
-      `/market/nearby?lat=${marketLat}&lng=${marketLng}`, undefined, { signal: controller.signal },
-    )
-      .then((r) => {
-        const tasks = new Map<string, MarketTask>();
-        for (const t of [...r.taking, ...r.forMe, ...r.tasks]) if (t.state === "open" && !tasks.has(t.id)) tasks.set(t.id, t);
-        setMarketPins([
-          ...[...tasks.values()].map((t) => ({ kind: "task" as const, id: t.id, title: t.title, lat: t.lat, lng: t.lng, radiusM: t.radiusM, k: t.linkKey || null })),
-          ...r.secrets
-            .filter((x) => x.state === "open")
-            .map((x) => ({ kind: "secret" as const, id: x.id, title: x.title, lat: x.fog.lat, lng: x.fog.lng, radiusM: x.fog.radiusM, k: x.linkKey || null })),
-        ].slice(0, 40));
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, [player?.id, arena, nativePlay, globe, marketLat, marketLng]);
   // Today's board "Show me": the nearest thing each goal needs.
-  function showGoal(kind: string) {
+  async function showGoal(goal: string) {
     setTab("explore");
-    if (kind === "monster") return showActor({ kinds: ["roamer", "guardian"] });
-    if (kind === "boss") return showActor({ kinds: ["boss"] });
-    if (kind === "npc") return showActor({ kinds: ["quest_giver", "storyteller", "trader", "keeper", "wandering_rare"] });
-    if (kind === "quest") {
-      const tier = latest.current.player?.tier || 1, at = Date.now();
-      let best: Quest | null = null;
-      for (const q of world?.quests || []) {
-        const zone = world?.zones.find((z) => z.id === q.zone_id);
-        if (q.completed || !zone || zone.tier > tier || q.opens_at > at || q.closes_at <= at) continue;
-        if (!best || meters(position, questPoint(q)) < meters(position, questPoint(best))) best = q;
-      }
-      if (best) return guideToQuest(best);
-      return notify(tr("No quest is open near you right now. Check Discoveries for opening times."), true);
-    }
-    const coin = nearestCoin(kind === "finds");
-    if (coin) return goToStreetFind(coin);
-    notify(kind === "finds" ? tr("No street find is left near you today.") : tr("No coin is left near you right now. More appear in the next wave."), true);
+    const t = (await guide()).goalTarget(goal, { world, position, tier: latest.current.player?.tier || 1, now: Date.now(), point: questPoint });
+    if (t.kind === "actor") showActor({ kinds: t.archetypes });
+    else if (t.kind === "quest") guideToQuest(t.quest);
+    else if (t.kind === "coin") goToStreetFind(t.coin);
+    else notify(t.text, true);
   }
   function showActor(match: ActorFocusMatch) {
     setOverview(false);
@@ -3265,12 +3229,8 @@ export default function App() {
         await refreshWorld();
         // A finished NPC line: say whom to report to (their map sign is on).
         if (!r.replayed && !r.awaiting) {
-          const report = (await loadNpcTasks())?.find((t) => t.ready && t.steps.some((s) => s.questId === qId));
-          if (report && latest.current.player?.id === owner) {
-            const who = report.actorName || tr("the character who gave it");
-            const text = report.errand
-              ? tr("Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.", { 0: who, 1: report.xp })
-              : tr("All steps done. Go back to {0} to turn it in. Look for Report back on the map.", { 0: who });
+          const text = (await guide()).reportNote(await loadNpcTasks(), qId);
+          if (text && latest.current.player?.id === owner) {
             if (sameView && r.result) setRewardNote((note) => [note, text].filter(Boolean).join(" "));
             else notify(text);
           }
@@ -3583,22 +3543,9 @@ export default function App() {
           }}
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
           actorFocus={actorFocus}
-          onActorFocus={(found, match) =>
-            notify(
-              found
-                ? tr("{0}: {1}. Marked on the map.", { 0: found.name, 1: distanceLabel(found.distanceM) })
-                : "actorId" in match
-                  ? tr("They are not out right now. Characters walk between 07:00 and 22:00.")
-                  : tr("Nobody like that is out near you right now. Characters walk between 07:00 and 22:00."),
-              !found,
-            )
-          }
-          marketPins={marketPins}
-          onMarketPin={(pin) => {
-            const hash = `${pin.kind}=${encodeURIComponent(pin.id)}${pin.k ? `&k=${encodeURIComponent(pin.k)}` : ""}`;
-            // The same pin twice: the hash does not change, so announce it again.
-            if (location.hash === `#${hash}`) dispatchEvent(new HashChangeEvent("hashchange"));
-            else location.hash = hash;
+          onActorFocus={(text, found) => notify(text, !found)}
+          marketPins={!!player && !arena && !nativePlay}
+          onMarketPin={() => {
             setTab("explore");
             setExploreView("nearby");
             setSheetExpanded(true);
