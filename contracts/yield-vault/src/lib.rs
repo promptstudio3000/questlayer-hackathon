@@ -33,14 +33,23 @@ const OP_TIMEOUT_MS: u64 = 15 * 60_000;
 /// Blocks after a Rhea withdrawal before `confirm_inbound` decides it: Rhea's
 /// detached transfer and its `after_ft_transfer` finish within a few blocks.
 const INBOUND_SETTLE_BLOCKS: u64 = 30;
-/// Positions the contract pays storage for (about 2 NEAR at 200 B each).
+/// Positions the contract pays storage for. A full position (16 tranches) is
+/// about 420 B of value plus its key and trie overhead, measured in
+/// `position_storage_estimate_covers_a_full_position`; with its queue entry the
+/// contract needs about 0.007 NEAR per position, so 1 000 positions need about
+/// 7 NEAR of reserve, not the 2 NEAR an earlier 200 B guess suggested.
 const MAX_POSITIONS: u64 = 1_000;
+/// Storage one position may grow to (16 tranches, key, map overhead).
+const POSITION_BYTES: u64 = 600;
+/// Storage of one queued-withdrawal entry (key, account, amount, overhead).
+const QUEUE_ENTRY_BYTES: u64 = 180;
 const PRICE_SCALE: u128 = 1_000_000_000_000_000_000_000_000;
 const NEAR: u128 = PRICE_SCALE;
 
 const OP_HARVEST: u8 = 1;
 const OP_REBALANCE: u8 = 2;
 const OP_CONFIRM: u8 = 3;
+const OP_RECONCILE: u8 = 4;
 
 fn tgas(n: u64) -> Gas {
     Gas::from_tgas(n)
@@ -234,6 +243,7 @@ trait Callbacks {
     fn on_supplied(&mut self, token_id: AccountId, nonce: U64, amount: U128) -> bool;
     fn on_rhea_withdraw(&mut self, token_id: AccountId, nonce: U64, amount: U128, threshold: U128) -> bool;
     fn on_confirm(&mut self, token_id: AccountId, nonce: U64) -> bool;
+    fn on_reconcile(&mut self, token_id: AccountId, nonce: U64) -> bool;
 }
 
 #[allow(dead_code)]
@@ -385,6 +395,9 @@ impl YieldVault {
         assert!(!self.deposits_paused, "Deposits paused");
         let t = self.find(&token_id).expect("Token not allowlisted");
         assert!(amount.0 >= t.min_deposit, "Below minimum deposit");
+        // Our token balance just changed under a running balance read.
+        self.cancel_reconcile(&token_id);
+        let t = self.find(&token_id).unwrap();
         if t.lst {
             let method = t.price_method.clone();
             return PromiseOrValue::Promise(
@@ -493,9 +506,15 @@ impl YieldVault {
     #[private]
     pub fn on_paid(&mut self, token_id: AccountId, account_id: AccountId, tokens: U128, value: U128) -> bool {
         let ok = succeeded(0);
+        // A payout settled under a running balance read: that read is stale.
+        self.cancel_reconcile(&token_id);
         let t = self.token_mut(&token_id);
         t.outgoing -= tokens.0;
-        if !ok {
+        if ok {
+            // The position record was kept while the payout was in flight so a
+            // failure could restore it without allocating; drop it only now.
+            self.drop_if_empty(&Self::pkey(&account_id, &token_id));
+        } else {
             t.idle += tokens.0;
             t.principal += value.0;
             self.restore(&account_id, &token_id, value.0);
@@ -641,8 +660,12 @@ impl YieldVault {
         } else {
             u128::MAX
         };
+        // No supply while a Rhea withdrawal is still inbound: `confirm_inbound`
+        // judges that withdrawal from our Rhea supply, and a supply of at least
+        // half the amount would make a real transfer look bounced and strand it.
         if t.rhea
             && !paused
+            && t.inbound == 0
             && t.idle > target.saturating_add(t.min_deposit)
             && asset.config.can_deposit
             && asset.util_bps() < t.max_util_bps as u128
@@ -767,6 +790,47 @@ impl YieldVault {
         arrived
     }
 
+    /// Credits tokens this contract holds but the accounting lost (for example a
+    /// Rhea withdrawal once misjudged as bounced, or a plain `ft_transfer` sent
+    /// without `msg = "deposit"`). It can only raise `idle`, up to the token's
+    /// own `ft_balance_of(self)`, and only while nothing is in flight: no keeper
+    /// operation, no outgoing payout, no inbound Rhea transfer. A deposit or a
+    /// payout that settles during the read cancels it (the read is stale). Anyone.
+    pub fn reconcile_idle(&mut self, token_id: AccountId) -> Promise {
+        let t = self.find(&token_id).expect("Unknown token");
+        assert!(t.outgoing == 0 && t.inbound == 0, "Transfers in flight");
+        let nonce = self.start_op(&token_id, OP_RECONCILE);
+        ext_ft::ext(token_id.clone())
+            .with_static_gas(tgas(10))
+            .ft_balance_of(env::current_account_id())
+            .then(
+                ext_self::ext(env::current_account_id())
+                    .with_static_gas(tgas(10))
+                    .on_reconcile(token_id, U64(nonce)),
+            )
+    }
+
+    #[private]
+    pub fn on_reconcile(&mut self, token_id: AccountId, nonce: U64) -> bool {
+        let balance = result_u128(0);
+        let t = self.token_mut(&token_id);
+        if t.op != OP_RECONCILE || t.op_nonce != nonce.0 {
+            // Cancelled by a deposit or payout during the read: nothing to trust.
+            return false;
+        }
+        t.op = 0;
+        let Some(balance) = balance else { return false };
+        if t.outgoing != 0 || t.inbound != 0 {
+            return false;
+        }
+        if balance > t.idle {
+            env::log_str(&format!("reconcile {} {}: idle {} -> {}", token_id, nonce.0, t.idle, balance));
+            t.idle = balance;
+            return true;
+        }
+        false
+    }
+
     /// Frees a keeper slot whose callback never ran. Anyone, after 15 min.
     pub fn reset_op(&mut self, token_id: AccountId) {
         let now = env::block_timestamp_ms();
@@ -787,6 +851,9 @@ impl YieldVault {
             "max_tranches": MAX_TRANCHES,
             "positions": self.position_count,
             "max_positions": MAX_POSITIONS,
+            "position_bytes": POSITION_BYTES,
+            "queue_entry_bytes": QUEUE_ENTRY_BYTES,
+            "storage_reserve_ok": Self::storage_reserve_ok(self.position_count + 1),
         })
     }
 
@@ -830,6 +897,10 @@ impl YieldVault {
             .iter()
             .filter_map(|t| {
                 let mut p = self.positions.get(&Self::pkey(&account_id, &t.id))?;
+                if p.total() == 0 && p.queued == 0 {
+                    // Kept only while a payout is in flight.
+                    return None;
+                }
                 p.fold(now);
                 Some(json!({
                     "token_id": t.id,
@@ -865,13 +936,36 @@ impl YieldVault {
     fn token_mut(&mut self, id: &AccountId) -> &mut Token {
         self.tokens.iter_mut().find(|t| &t.id == id).expect("Unknown token")
     }
+    /// Writes the record even when it is empty: an empty record only exists
+    /// while a payout is in flight, so a failed payout restores into existing
+    /// storage (a `u128` keeps its size) and never allocates inside a callback.
     fn save_position(&mut self, key: &String, p: Position) {
-        if p.total() == 0 && p.queued == 0 {
-            if self.positions.remove(key).is_some() {
+        if self.positions.insert(key, &p).is_none() {
+            self.position_count += 1;
+        }
+    }
+    fn drop_if_empty(&mut self, key: &String) {
+        if let Some(p) = self.positions.get(key) {
+            if p.total() == 0 && p.queued == 0 && self.positions.remove(key).is_some() {
                 self.position_count -= 1;
             }
-        } else if self.positions.insert(key, &p).is_none() {
-            self.position_count += 1;
+        }
+    }
+    /// The contract pays position storage. Before it takes a deposit it must
+    /// still be able to pay for `positions` full positions and their queue
+    /// entries, so a later write (a queue entry, a restored payout) cannot fail
+    /// for lack of balance and leave principal untracked.
+    fn storage_reserve_ok(positions: u64) -> bool {
+        let cost = env::storage_byte_cost().as_yoctonear();
+        let used = env::storage_usage() as u128;
+        let reserve = (POSITION_BYTES as u128) * 2 + (QUEUE_ENTRY_BYTES as u128) * (positions as u128);
+        env::account_balance().as_yoctonear() >= (used + reserve) * cost
+    }
+    fn cancel_reconcile(&mut self, token_id: &AccountId) {
+        let t = self.token_mut(token_id);
+        if t.op == OP_RECONCILE {
+            t.op = 0;
+            t.op_nonce += 1;
         }
     }
     fn restore(&mut self, account: &AccountId, token: &AccountId, value: u128) {
@@ -898,6 +992,9 @@ impl YieldVault {
         }
         if p.total() == 0 && p.queued == 0 && self.position_count >= MAX_POSITIONS {
             return Err("Vault is full (testnet position limit)");
+        }
+        if !Self::storage_reserve_ok(self.position_count + 1) {
+            return Err("Vault storage reserve exhausted; deposits resume after a top-up");
         }
         let t = self.token_mut(token_id);
         if p.tranches.len() >= MAX_TRANCHES {
