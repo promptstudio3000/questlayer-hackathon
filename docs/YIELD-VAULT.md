@@ -92,3 +92,36 @@ reviewed upgrade path).
   `reconcile_idle`; they then count as idle (backing principal first, surplus second) and are never
   attributed to a player.
 - LST surplus is skimmed in full; the player gets the deposit's NEAR value back, not the LST growth.
+
+## Upgrading the live vault (prepared 9 November 2026, not yet run)
+
+`questlayer-yield-20261102.testnet` holds live stNEAR and USDC deposits. The 9 November fixes (H4, M5)
+are a code-only upgrade: the contract has no `migrate` method, and the Borsh layouts of `YieldVault`,
+`Token`, `Position` and `QueueEntry` are unchanged (`reconcile_idle` reuses `op` with a new value).
+`scripts/upgrade-yield-vault-testnet.mjs` proves this on the account instead of assuming it. Dry run
+by default, `--execute` to send, testnet only (`--network testnet` required):
+
+1. **Pre-flight.** The WASM equals the pin in `contracts/wasm-sha256.json` (Docker build or
+   `--wasm-dir` with the CI artifact), drops no method of the live code and exports no `migrate`;
+   the live code hash equals the manifest; no token has a keeper operation, outgoing payout, inbound
+   Rhea withdrawal or pending LST read; token principal and queued equal the sum of the positions;
+   the balance still meets the new storage reserve rule with the new code size.
+2. **Snapshot** (one block height, written to `output/qa/yield-vault-upgrade/`): the whole raw
+   storage and its digest, decoded with the source layout (every byte consumed, unknown keys fail),
+   `get_config`, `get_tokens`, `get_position` of every holder (found from the raw position keys),
+   `get_queue` of every token, the vault's balance on each token and its Rhea supply shares.
+3. **Pause** deposits with `set_deposits_paused(true)` (withdrawals never pause); only that flag may
+   differ from the first snapshot.
+4. **Deploy** after backing up the live WASM to `.data/contract-backups/<account>-<codeHash>.wasm`.
+5. **Post-check.** Storage must be byte-identical to the paused snapshot; every view, balance and
+   share must match, except the three new `get_config` fields (`storage_reserve_ok` must be true).
+6. **Resume** deposits if they were open, then the final snapshot must equal the first one.
+7. **Record** the new hashes in `public/native-yield-vault-testnet.json`, the old ones under
+   `previousDeployments`, and update `contracts/wasm-sha256.json` exceptions.
+
+Any failed check stops with deposits still paused and prints the rollback command:
+`--rollback .data/contract-backups/<account>-<oldCodeHash>.wasm --execute` runs the same checks and
+redeploys the old code without touching the manifest. A rollback after the new code ran is safe for
+the stored layout, but a reconcile started under the new code (`op` 4) is unknown to the old code
+until `reset_op` frees it after 15 minutes. Do not run the upgrade while the 06:30 stNEAR harvest and
+treasury-mix LaunchAgent is due; it calls this vault.

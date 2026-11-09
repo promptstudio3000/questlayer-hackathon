@@ -1,0 +1,333 @@
+{
+  "about": "Deployment records before the 9 Nov 2026 vault rollout (public/native-rewards-testnet.json, public/native-yield-vault-testnet.json, contracts/wasm-sha256.json at a0ffa888), frozen so the rollout tests keep working after the records change.",
+  "rewards": {
+    "network": "testnet",
+    "verifiedAt": "2026-11-01T12:31:34.699Z",
+    "contractId": "questlayer-rewards-20261101b.testnet",
+    "codeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+    "wasmSha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+    "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
+    "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
+    "factory": {
+      "contractId": "questlayer-vaults-20261101b.testnet",
+      "codeHash": "CuXpM81e398FHSfLeZ3JfgqXMnnNXgiQQizTiKFBvVJx",
+      "wasmSha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9",
+      "vaultCodeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
+      "vaultWasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7",
+      "setupDeposit": "3520000000000000000000000"
+    },
+    "vaults": [
+      {
+        "accountId": "questlayer-vault-20261101b.testnet",
+        "beneficiary": "questlayer-dev-20261101.testnet",
+        "pool": "aurora.pool.f863973.m0",
+        "codeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
+        "wasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
+      }
+    ],
+    "funding": "explicit sponsor; realized staking yield not yet demonstrated",
+    "vaultPolicy": "experimental keyless factory positions; owner-adjustable contribution settled at the old rate; full or partial exit; testnet only",
+    "state": {
+      "version": 1,
+      "network": "testnet",
+      "beneficiary": "questlayer-dev-20261101.testnet",
+      "pool": "aurora.pool.f863973.m0",
+      "rewards": "questlayer-rewards-20261101b.testnet",
+      "contribution_bps": 5000,
+      "stage": "idle",
+      "nonce": "1",
+      "operation": "",
+      "exit_requested": false,
+      "unlock_epoch": "0",
+      "epoch": "5401",
+      "observed_epoch": "5401",
+      "principal": "100000000000000000000000",
+      "high_water_basis": "100000000000000000000000",
+      "staked": "100000000000000000000000",
+      "unstaked": "0",
+      "pending_pool_cash": "0",
+      "owner_credit": "0",
+      "owner_pending": "0",
+      "game_credit": "0",
+      "game_pending": "0",
+      "deposited": "100000000000000000000000",
+      "owner_paid": "0",
+      "game_paid": "0",
+      "weighted_stake": "0",
+      "tier": 1,
+      "contribution_policy": "fixed-per-vault",
+      "tier_policy": "conservative-mature-principal-v1"
+    },
+    "poolPosition": {
+      "account_id": "questlayer-vault-20261101b.testnet",
+      "unstaked_balance": "3",
+      "staked_balance": "99999999999999999999997",
+      "can_withdraw": true
+    },
+    "transactions": [
+      {
+        "label": "Deploy and initialize questlayer-rewards-20261101b.testnet",
+        "transaction": "5rFMVYNnHgSNGsK7nuN4pijWuWMTQT2JHGLz8vae19Wm"
+      },
+      {
+        "label": "Install bounded publisher and claim relay key",
+        "transaction": "7m4ywEVgbcV1LFNCszxcaY3fLiEmWBrMzX8J872yMMvp"
+      },
+      {
+        "label": "Deploy and initialize questlayer-vault-20261101b.testnet",
+        "transaction": "xgZdPZJZzcoMzyhcmEWwtPyyhBBN4TWE9v1gSogrJbu"
+      },
+      {
+        "label": "Allow only the isolated native vault as yield source",
+        "transaction": "Fn5Jneh61mXC2GzUkctQiEGqydF21divTc52bcFVBdFx"
+      },
+      {
+        "label": "Sponsor 0.2 test NEAR with separate 50/50 accounting",
+        "transaction": "2hAcJpBfstwzYVt1ewpSP8zsg4S4UVYijGBvbr9QUMmQ"
+      },
+      {
+        "label": "Deposit 100000000000000000000000 yoctoNEAR into the validator through the vault",
+        "transaction": "FHrWszH73xEcLagpTuqCNgtXcJUv2EsunHrvXrEx7Szb"
+      },
+      {
+        "label": "Deploy and initialize questlayer-vaults-20261101b.testnet",
+        "transaction": "5zH4y2cDuN3SnN5R2sWeRfH8Rarc3nhSrjHVdcccn3RX"
+      },
+      {
+        "label": "Top up separate reward storage and gas reserve",
+        "transaction": "FjmiHkJfiCBAUapxzykwZYdBkvNDbs9TymMtCSMk6xFT"
+      },
+      {
+        "label": "Upgrade rewards v2: street find XP",
+        "transaction": "J6Y6FpN6oc91K7Pf9G1CBjzvRFwrfSj53B8E62bFK45N"
+      },
+      {
+        "label": "Upgrade vault v2: questlayer-vault-20261101b.testnet",
+        "transaction": "JBd9DSzYNeYnJwDEBrL2jwkbWM65PNbiBNsyietDFFYz"
+      },
+      {
+        "label": "Upgrade vault factory: new positions get vault v2",
+        "transaction": "2RrR6bc3ooMctap5KahqDzdCyQcdJkuPR8ehaRcJb1Gs"
+      },
+      {
+        "label": "Upgrade: reviewed UTC world reservations and callback recovery",
+        "transaction": "3kc5oS6HEyp5X3cxvuhZYDED1VR71mkLoevnPaioQBma"
+      },
+      {
+        "label": "Authorize only bounded UTC world reservation operations",
+        "transaction": "7dKjY7HRy9ZBgEi1aFdn1RNTXAMua7UKvynpfdce3iGr"
+      }
+    ],
+    "streetFinds": {
+      "since": "2026-11-01T12:31:34.699Z",
+      "coinXp": 2,
+      "findXp": 15,
+      "view": "get_day(day_id).finds",
+      "backfill": []
+    },
+    "qgoldVault": "questlayer-qgold-vault-20261104.testnet",
+    "workerMethods": [
+      "publish_day",
+      "close_day",
+      "claim",
+      "maintain_vault",
+      "publish_map_day",
+      "claim_map",
+      "close_map_day",
+      "publish_payout_day",
+      "claim_payout",
+      "close_payout_day",
+      "reserve_world_day",
+      "record_world_earned",
+      "move_world_to_payout",
+      "close_world_day"
+    ],
+    "globalRewards": {
+      "enabled": false,
+      "rewardsCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+      "qgoldContractId": "questlayer-qgold-vault-20261104.testnet",
+      "qgoldCodeHash": "F4p3S4cuvTScZXBWbqssNUxohgDN3rBGQq8gRS74jj4A",
+      "fundingTransactions": [
+        {
+          "hash": "2hAcJpBfstwzYVt1ewpSP8zsg4S4UVYijGBvbr9QUMmQ",
+          "signerId": "questlayer-dev-20261101.testnet"
+        },
+        {
+          "hash": "Ai9HKsve62DNX4bxLJ6PHe1MAGUKChKQH4rbPWudUkGL",
+          "signerId": "questlayer-rewards-20261101b.testnet"
+        },
+        {
+          "hash": "GSjfp1xjeXkpj8o5tqxwXARxeTgDd3yRT2HZ7QPBAYJx",
+          "signerId": "questlayer-rewards-20261101b.testnet"
+        }
+      ],
+      "fundingRpcUrl": "https://archival-rpc.testnet.near.org"
+    },
+    "worldReservationUpgrade": {
+      "verifiedAt": "2026-11-07T15:56:16.550Z",
+      "sourceCommit": "f984e6b212e179aed5ede8fce1d8097be068e944",
+      "previousCodeHash": "EeXroUJRzyAqpsaDsMN1KcH6yDpdHVU61w5LS2FvcDrd",
+      "newCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+      "treasuryUnchanged": true,
+      "worldReservationVersion": 1,
+      "workerAllowanceAtGrantYocto": "280890509269139100000000",
+      "globalFinancialActivation": false,
+      "awaitingQgoldProposal": 2
+    }
+  },
+  "yieldVault": {
+    "network": "testnet",
+    "verifiedAt": "2026-11-02T03:22:21.720Z",
+    "contractId": "questlayer-yield-20261102.testnet",
+    "codeHash": "Hy9RJ8LxDzzLMwWtp2c4MuFq26xi6DQYz4K6Su6S6xUo",
+    "wasmSha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
+    "ownerId": "questlayer-dev-20261101.testnet",
+    "treasuryId": "questlayer-dev-20261101.testnet",
+    "rheaId": "contract.burrow.testnet",
+    "lockMs": "86400000",
+    "tokens": [
+      {
+        "token_id": "meta-v2.pool.testnet",
+        "kind": "lst",
+        "value_unit": "yoctoNEAR",
+        "price_source": {
+          "contract": "meta-v2.pool.testnet",
+          "method": "get_st_near_price",
+          "scale": "1000000000000000000000000"
+        },
+        "strategy": "hold",
+        "cap": "100000000000000000000000000",
+        "account_cap": "10000000000000000000000000",
+        "min_deposit": "100000000000000000000000",
+        "buffer_bps": 2000,
+        "max_util_bps": 9500,
+        "safety_bps": 10
+      },
+      {
+        "token_id": "linear-protocol.testnet",
+        "kind": "lst",
+        "value_unit": "yoctoNEAR",
+        "price_source": {
+          "contract": "linear-protocol.testnet",
+          "method": "ft_price",
+          "scale": "1000000000000000000000000"
+        },
+        "strategy": "hold",
+        "cap": "100000000000000000000000000",
+        "account_cap": "10000000000000000000000000",
+        "min_deposit": "100000000000000000000000",
+        "buffer_bps": 2000,
+        "max_util_bps": 9500,
+        "safety_bps": 10
+      },
+      {
+        "token_id": "usdc.fakes.testnet",
+        "kind": "stable",
+        "value_unit": "token",
+        "price_source": null,
+        "strategy": "rhea",
+        "cap": "10000000000",
+        "account_cap": "1000000000",
+        "min_deposit": "100000",
+        "buffer_bps": 2000,
+        "max_util_bps": 9500,
+        "safety_bps": 10
+      },
+      {
+        "token_id": "usdt.fakes.testnet",
+        "kind": "stable",
+        "value_unit": "token",
+        "price_source": null,
+        "strategy": "rhea",
+        "cap": "10000000000",
+        "account_cap": "1000000000",
+        "min_deposit": "100000",
+        "buffer_bps": 2000,
+        "max_util_bps": 9500,
+        "safety_bps": 10
+      }
+    ],
+    "audited": false
+  },
+  "pins": {
+    "about": "sha256 of every contract WASM built by scripts/build-contracts-docker.sh (Docker rust:1.97.0, linux/amd64, path remapping). CI (reproducible-contracts) rebuilds them and fails on any difference. macOS aarch64 builds hash differently; use the Docker build or the CI artifact. After an intended contract change run `npm run contracts:docker -- --write` (or copy the hashes from the CI job summary).",
+    "toolchain": "rust:1.97.0 linux/amd64",
+    "contracts": {
+      "questlayer_badges": "23cc54a71915bac02d595b6880363491f9a341fc54756a77f7d5d4e1fd72797a",
+      "questlayer_collectibles": "52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16",
+      "questlayer_creators": "df12b5f9f544ebbfa545df7d80d0a7834fafc22605da366664472b063360c40b",
+      "questlayer_game": "c7ab37be026f1aa1ec0441b3fbf0ea40af4dcfd70f31197d2e0046ddccdba34f",
+      "questlayer_ledger": "3c4df45cdfa8854dc37553fc13be261fef09acd00a283d4c7fac0aa26704ffa5",
+      "questlayer_market": "1642a65af521b17b9d46786d66d1606c223cbf68d6a53cd90d620ce8ce225435",
+      "questlayer_npc_games": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
+      "questlayer_qgold": "da72f79698ad598c399d57f4616e21296dc4feb346dde261c900e5f29162017a",
+      "questlayer_qgold_escrow": "ac68d5750d96fae0e087be5881f3fd9f394aba07fdd659b3a4abcadab5b76876",
+      "questlayer_rewards": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+      "questlayer_soulbound_ft": "2746a77ec1de90c9b9a8054769922d0a2027cec8c15f743fcd66b89b3c572293",
+      "questlayer_tasks": "055954f30c81b4dfd56b3bd9a88c469aeb74c50d5eb4eb83f9aeb5b8bbc51751",
+      "questlayer_vault": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b",
+      "questlayer_vault_factory": "46e7579d5a542cb9980e92dfd4578b57b2ec6e8dbe8db9ef263b96fb953818c4",
+      "questlayer_yield_vault": "5110565f1f24df4746ad3ca6ba8180bbe0170ea693534f6bf49a9512ce347989"
+    },
+    "testnetDeploymentsNotFromThisBuild": {
+      "about": "Testnet records whose deployed WASM was built before reproducible builds (or from older source) and so cannot match today's build. Each entry pins the exact recorded hash: a new deployment record must either match the reproducible build or be added here on purpose. Mainnet deploys must never appear here.",
+      "public/native-creators-testnet.json:wasmSha256": {
+        "contract": "questlayer_creators",
+        "sha256": "f48999b1068f823644cf631e8fd3eab58afe7d0450257ed95a24ff8aa5532eed"
+      },
+      "public/native-market-testnet.json:wasmSha256": {
+        "contract": "questlayer_market",
+        "sha256": "bd1f74d2858e468b354c2bb174ca95d921e933898adb9738fced8b817a0439ee"
+      },
+      "public/native-rewards-testnet.json:factory.wasmSha256": {
+        "contract": "questlayer_vault_factory",
+        "sha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9"
+      },
+      "public/native-rewards-testnet.json:factory.vaultWasmSha256": {
+        "contract": "questlayer_vault",
+        "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
+      },
+      "public/native-rewards-testnet.json:vaults.0.wasmSha256": {
+        "contract": "questlayer_vault",
+        "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
+      },
+      "public/native-tasks-testnet.json:wasmSha256": {
+        "contract": "questlayer_tasks",
+        "sha256": "f5eef080158fa4b7e7ccd950365421fffe5d4d911fe4827906c9bf056ccdc2c1"
+      },
+      "public/native-wardrobe-testnet.json:wasmSha256": {
+        "contract": "questlayer_collectibles",
+        "sha256": "1cb649afccc9ccfb7ef2a99e29bf346e312b94915feb17fdd1c4fdfb8bf07488"
+      },
+      "public/native-intents-testnet.json:wasmSha256": {
+        "contract": "near_intents_defuse",
+        "sha256": "1098ca2fecdfdb4dbc21e9fdfc513351816d85ed75f88144abb0c78a64ac1d60",
+        "note": "External code, not ours: near/intents defuse v0.4.5 (commit 16d04f6), built by scripts/intents-verifier-testnet.mjs --build in its own pinned image sourcescan/cargo-near:0.22.0-rust-1.97.1. Experimental testnet verifier only."
+      },
+      "public/native-claims-testnet.json:wasmSha256": {
+        "contract": "questlayer_collectibles",
+        "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
+        "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
+      },
+      "public/native-editions-testnet.json:wasmSha256": {
+        "contract": "questlayer_collectibles",
+        "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
+        "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
+      },
+      "public/native-qgold-vault-testnet.json:wasmSha256": {
+        "contract": "questlayer_qgold",
+        "sha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
+        "note": "Public testnet still runs the prior QGOLD build. Exact NEAR game carry and durable conversion receipts require the existing council upgrade process and its 48-hour timelock. No deployment is implied."
+      },
+      "public/native-qgold-escrow-testnet.json:wasmSha256": {
+        "contract": "questlayer_qgold_escrow",
+        "sha256": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da"
+      },
+      "public/native-yield-vault-testnet.json:wasmSha256": {
+        "contract": "questlayer_yield_vault",
+        "sha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
+        "note": "Live yield vault before the 9 Nov H4/M5 fixes; redeploy and update the record to remove this entry."
+      }
+    }
+  }
+}
