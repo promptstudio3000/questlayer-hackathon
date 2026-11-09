@@ -144,7 +144,40 @@ Review findings H5 and M1–M3 of the November contract review. `get_state.versi
 - **Keyless children cannot be upgraded.** Factory children have no access keys and no
   upgrade method; the factory embeds the vault WASM at build time. Existing children keep
   the code they were deployed with (v1 or v2) and cannot receive these fixes. New children
-  get them only from a new factory generation built with this vault, deployed and recorded
-  like `questlayer-vaults-20261101b.testnet` was (deposits into the old generation should
-  stop first). The reproducible WASM hashes in `contracts/wasm-sha256.json` must be
-  regenerated with the Docker build after this change.
+  get them only from a factory that embeds this vault. The reproducible WASM hashes in
+  `contracts/wasm-sha256.json` are pinned from the CI build.
+
+### Factory v3 rollout (prepared 9 November 2026, not yet run)
+
+Rewards does not hold a configurable factory: `register_factory_vault` on
+`questlayer-rewards-<gen>` accepts children only from `questlayer-vaults-<gen>`, derived from its
+own account name, and no owner call repoints it. A factory under a new account name would create
+children that can never register (they stay `created`; the server lists only `ready` ones). So
+the v3 generation reuses the pinned account `questlayer-vaults-20261101b.testnet`: it still has
+its operator key, it has created **0** positions (read on 9 November) and the factory source and
+state layout are unchanged, so its code is replaced in place. The rewards contract needs no call;
+new children register exactly as before and start on vault v3. If the factory has created any
+position by then, the script stops: a v3 generation would then need a new rewards generation or a
+reviewed rewards change, because the server pins one vault code hash per factory.
+
+`scripts/rollout-vault-factory-v3-testnet.mjs` (dry run by default, `--execute` to send, testnet
+only, `--network testnet` required):
+
+1. Checks the vault and factory WASM against `contracts/wasm-sha256.json` (Docker build or the CI
+   artifact via `--wasm-dir`) and that the factory bytes embed the vault bytes.
+2. Checks the binding (rewards name ⇒ factory name, factory `rewards`), the live rewards and
+   factory code hashes against `public/native-rewards-testnet.json`, `created == 0` and the
+   factory balance for the new code.
+3. With `--execute`: backs up the deployed factory WASM to `.data/contract-backups/`, checks
+   `created` again, deploys, and requires `get_config` to be unchanged except `vault_sha256`, which
+   must equal the pinned vault build.
+4. Moves the old factory record to `factoryHistory` in `public/native-rewards-testnet.json`
+   (kept, never deleted), writes the new `codeHash`, `wasmSha256`, `vaultCodeHash` and
+   `vaultWasmSha256`, and moves the matching `testnetDeploymentsNotFromThisBuild` entries in
+   `contracts/wasm-sha256.json` to the history paths so `scripts/check-wasm-hashes.mjs` stays green.
+
+Between the deploy and the app deploy carrying the new manifest, the server sees a factory code
+hash it does not pin and answers vault creation with 503 (fail closed). The standalone treasury
+vault `questlayer-vault-20261101b.testnet` (v2, operator key) is not touched by this script.
+Rollback: redeploy the backed-up WASM to the factory while it still has created no position and
+revert the manifest commit.
