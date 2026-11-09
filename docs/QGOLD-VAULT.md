@@ -111,7 +111,8 @@ and it pays nobody else.
   - changes to the timelock itself (`SetTimelock { timelock_ms }`).
   - The timelock is 48 h (`TIMELOCK_MS`) until a `SetTimelock` proposal executes. It is stored under the
     namespaced key `council-timelock-ms`, outside the root Borsh state, so `apply_upgrade` → `migrate()`
-    keeps it; setting it back to 48 h removes the key. Bounds: 10 min to 48 h on a `.testnet` account,
+    keeps it. An executed `SetTimelock` always writes the key, 48 h included, so an absent key means
+    "never set". Bounds: 10 min to 48 h on a `.testnet` account,
     24 h to 48 h on any other account, so a mainnet vault always keeps a real delay.
   - A proposal's `executable_at` is fixed with the timelock in force when it is proposed. A
     `SetTimelock` proposal itself waits the old timelock, and a later change neither speeds up nor delays
@@ -119,7 +120,10 @@ and it pays nobody else.
   - `get_config` reports the effective `timelock_ms`, the `default_timelock_ms` and the
     `timelock_bounds_ms` that apply to this account.
   - A vault deployed before `SetTimelock` existed gains it only through an approved upgrade, which still
-    waits that vault's 48 h; the shorter timelock then needs its own 48 h `SetTimelock` proposal.
+    waits that vault's 48 h. On a `.testnet` account whose key is absent, `migrate()` (run by
+    `apply_upgrade`) then sets the timelock to 10 min and logs `timelock_set` with `"by": "migrate"`, so
+    testnet waits 48 h only once. On any other account, or when a value is already stored, `migrate()`
+    leaves the timelock unchanged; a mainnet vault stays at 48 h until a council proposal changes it.
   - `cancel` works for the proposer alone, or once `threshold` members have voted to cancel
     (`get_cancel_votes`); one member cannot veto the others' proposals.
 - **No access keys.** The deploy script deletes the vault account's full-access key. Code can then change

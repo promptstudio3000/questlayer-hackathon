@@ -393,10 +393,19 @@ impl QGold {
 
     /// Code-only upgrade target (the state layout is unchanged). A layout change
     /// ships its own migration in that release.
+    ///
+    /// On a `.testnet` account that never set a council timelock, the upgrade
+    /// that introduces `SetTimelock` also sets it to 10 min, so testnet waits
+    /// 48 h only once. Any other account, or a stored value, is left as it is.
     #[private]
     #[init(ignore_state)]
     pub fn migrate() -> Self {
-        env::state_read().expect("No state")
+        let c: Self = env::state_read().expect("No state");
+        if env::current_account_id().as_str().ends_with(".testnet") && !env::storage_has_key(COUNCIL_TIMELOCK) {
+            env::storage_write(COUNCIL_TIMELOCK, &MIN_TESTNET_TIMELOCK_MS.to_le_bytes());
+            c.event("timelock_set", json!({"timelock_ms": U64(MIN_TESTNET_TIMELOCK_MS), "by": "migrate"}));
+        }
+        c
     }
 
     // ------------------------------------------------------------- minting
@@ -834,11 +843,9 @@ impl QGold {
             Action::SetCouncil { members, threshold } => self.set_council(members, threshold),
             Action::SetTimelock { timelock_ms } => {
                 validate_timelock(timelock_ms.0);
-                if timelock_ms.0 == TIMELOCK_MS {
-                    env::storage_remove(COUNCIL_TIMELOCK);
-                } else {
-                    env::storage_write(COUNCIL_TIMELOCK, &timelock_ms.0.to_le_bytes());
-                }
+                // Always stored, even at 48 h: an absent key means "never set",
+                // which a testnet migrate() replaces with 10 min.
+                env::storage_write(COUNCIL_TIMELOCK, &timelock_ms.0.to_le_bytes());
                 self.event("timelock_set", json!({"timelock_ms": timelock_ms}));
             }
         }

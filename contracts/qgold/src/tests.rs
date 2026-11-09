@@ -887,11 +887,14 @@ fn testnet_timelock_can_drop_to_ten_minutes_and_back() {
     let mut q = fresh(&mut c);
     set_timelock(&mut c, &mut q, 10 * 60_000);
     assert_eq!(timelock_of(&c, &q), 10 * 60_000);
-    // Back to the default clears the stored key.
+    // Back to 48 h is stored explicitly, so a later testnet migrate() keeps it.
     set_timelock(&mut c, &mut q, 48 * HOUR_MS);
     assert_eq!(timelock_of(&c, &q), 48 * HOUR_MS);
-    c.ctx("v.testnet", 0);
-    assert!(!env::storage_has_key(b"council-timelock-ms"));
+    c.ctx("qgold.questlayer.testnet", 0);
+    assert!(env::storage_has_key(b"council-timelock-ms"));
+    env::state_write(&q);
+    let m = QGold::migrate();
+    assert_eq!(timelock_of(&c, &m), 48 * HOUR_MS);
 }
 
 #[test]
@@ -976,18 +979,54 @@ fn executable_at_uses_the_timelock_in_force_when_proposed() {
 fn a_short_upgrade_timelock_still_needs_the_approved_code_and_migrate_keeps_it() {
     let mut c = Chain::new();
     let mut q = fresh(&mut c);
-    set_timelock(&mut c, &mut q, 10 * 60_000);
+    set_timelock(&mut c, &mut q, 30 * 60_000);
     let hash: String = env::sha256(b"good code").iter().map(|b| format!("{b:02x}")).collect();
     let id = c.call("council.testnet", 0, || q.propose(Action::Upgrade { code_sha256: hash }));
-    c.now_ms += 10 * 60_000;
+    c.now_ms += 30 * 60_000;
     let _ = c.call("anyone.testnet", 0, || q.apply_upgrade(id, Base64VecU8(b"good code".to_vec())));
     // The root state is unchanged, so migrate() reads it back and the
     // namespaced timelock survives the code swap.
     c.ctx("qgold.questlayer.testnet", 0);
     env::state_write(&q);
     let m = QGold::migrate();
-    assert_eq!(timelock_of(&c, &m), 10 * 60_000);
+    // A stored value is kept, not replaced by the testnet 10 min.
+    assert_eq!(timelock_of(&c, &m), 30 * 60_000);
     c.ctx("v.testnet", 0);
     assert!(m.get_proposal(id).unwrap().done);
     assert_eq!(m.get_config()["council"][0], "council.testnet");
+}
+
+#[test]
+fn testnet_migrate_sets_ten_minutes_when_never_set() {
+    let mut c = Chain::new();
+    let q = fresh(&mut c);
+    c.ctx("qgold.questlayer.testnet", 0);
+    assert!(!env::storage_has_key(b"council-timelock-ms"));
+    env::state_write(&q);
+    let m = QGold::migrate();
+    assert!(near_sdk::test_utils::get_logs().iter().any(|l| l.contains("timelock_set") && l.contains("migrate")));
+    assert_eq!(timelock_of(&c, &m), 10 * 60_000);
+    // The next proposal waits 10 min.
+    let mut m = m;
+    let id = c.call("council.testnet", 0, || m.propose(Action::SetGuardian { account_id: a("g2.testnet") }));
+    c.ctx("v.testnet", 0);
+    assert_eq!(m.get_proposal(id).unwrap().executable_at.0, c.now_ms + 10 * 60_000);
+}
+
+#[test]
+fn non_testnet_migrate_keeps_48h() {
+    let mut c = Chain::new();
+    let q = fresh(&mut c);
+    let mut b = VMContextBuilder::new();
+    b.current_account_id(a("qgold.questlayer.near"))
+        .predecessor_account_id(a("qgold.questlayer.near"))
+        .account_balance(NearToken::from_yoctonear(c.bal))
+        .storage_usage(c.storage)
+        .block_timestamp(c.now_ms * 1_000_000);
+    testing_env!(b.build());
+    env::state_write(&q);
+    let m = QGold::migrate();
+    assert!(!env::storage_has_key(b"council-timelock-ms"));
+    assert!(!near_sdk::test_utils::get_logs().iter().any(|l| l.contains("timelock_set")));
+    assert_eq!(m.get_config()["timelock_ms"], (48 * HOUR_MS).to_string());
 }
