@@ -25,6 +25,7 @@ import { gzipSync } from "node:zlib";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
 import { closeOpenSheet, openScreen } from "./lib/e2e-nav.mjs";
+import { fixedDayOffset, shiftBrowserClock } from "./lib/e2e-clock.mjs";
 
 const require = createRequire(import.meta.url);
 const AXE_SOURCE = require("axe-core").source;
@@ -92,15 +93,9 @@ async function freePort() {
   });
 }
 
-// The day's world (coins, street finds, quests) is generated from the date,
-// and NPCs and POI quests keep local play hours. A real-time run therefore
-// changed with every calendar day: on 10 Nov 2026 a street find lies within
-// 60 m of the Plzeň start, its "Open Street find" button replaces the coach
-// and the journey stalls. The local server and every browser page run on one
-// fixed day and hour instead (time still flows from there); see
-// scripts/lib/e2e-clock.mjs. A remote E2E_BASE_URL keeps real time.
-const E2E_NOW = Date.parse("2026-11-09T10:00:00Z"); // 11:00 Prague
-const CLOCK_OFFSET_MS = process.env.E2E_BASE_URL ? 0 : E2E_NOW - Date.now();
+// One fixed day and hour for the server and every page, so the day's world
+// is the same on every run (scripts/lib/e2e-clock.mjs).
+const CLOCK_OFFSET_MS = fixedDayOffset();
 
 async function startServer() {
   if (process.env.E2E_BASE_URL) return { url: process.env.E2E_BASE_URL, stop() {} };
@@ -225,17 +220,7 @@ async function newExplorerContext(browser, profile) {
     acceptDownloads: true,
     locale: "en-GB",
   });
-  // Same fixed day as the server (see CLOCK_OFFSET_MS).
-  if (CLOCK_OFFSET_MS) {
-    await context.addInitScript((offset) => {
-      const RealDate = Date;
-      const realNow = RealDate.now.bind(RealDate);
-      globalThis.Date = class extends RealDate {
-        constructor(...args) { super(...(args.length ? args : [realNow() + offset])); }
-        static now() { return realNow() + offset; }
-      };
-    }, CLOCK_OFFSET_MS);
-  }
+  await shiftBrowserClock(context, CLOCK_OFFSET_MS);
   // Record vibration calls; headless browsers have no vibration motor.
   await context.addInitScript(() => {
     window.__vibrations = [];
