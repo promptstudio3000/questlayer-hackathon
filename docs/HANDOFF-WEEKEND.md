@@ -44,13 +44,12 @@ around a rule.
    between players (not approved), NPC trader prices.
 
 The **Protected paths** CI job (`.github/workflows/guard.yml`, rules in `.github/scripts/protected-paths.mjs`)
-fails any PR that touches the paths in rules 1, 2, 5, 6 and 7 or adds something that looks like a secret.
-Only the owner can allow an exception, by adding the `owner-approved` label himself. An agent never adds that
-label, never asks another agent to, and never uses a `claude/` branch name (those are the owner's Claude
-threads and skip the path rule). Sign-in, session and signing code (`server/index.mjs`, the signing vault,
-`src/player-key.ts`, `src/qgold-burn.ts`, the native transaction helpers) is protected too. CI runs the guard
-from the base branch, so editing the guard in a PR does not change the result; guard, CI and agent-rule
-changes need the label on every branch, `claude/` included.
+lists every protected path a PR touches (rules 1, 2, 5, 6 and 7, plus sign-in, session and signing code:
+`server/index.mjs`, the signing vault, `src/player-key.ts`, `src/qgold-burn.ts`, the native transaction
+helpers) so the owner sees them in review, and fails when a PR adds something that looks like a secret. Since
+9 Nov 2026 the owner no longer requires an `owner-approved` label; the hard rules above still bind outside
+agents, and the owner reviews their PRs before merging. Never use a `claude/` branch name (those are the
+owner's Claude threads).
 
 ## 2. Product rules every change keeps
 
