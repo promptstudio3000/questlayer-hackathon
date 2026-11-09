@@ -2,7 +2,7 @@
 """Refresh verified testnet funding inputs; never signs or allocates rewards."""
 import argparse,datetime,fcntl,hashlib,json,pathlib,subprocess,time,urllib.parse,urllib.request
 REWARDS='questlayer-rewards-20261101b.testnet';QGOLD='questlayer-qgold-vault-20261104.testnet'
-REWARDS_CODE='2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT';GOLD_CODE='F4p3S4cuvTScZXBWbqssNUxohgDN3rBGQq8gRS74jj4A';GOLD_SHA='d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f'
+REWARDS_CODE='2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT';GOLD_CODE='4iWCUy9qvQ9B57zVdqncQAycVP21JuDNYjVreBYiFAgG';GOLD_SHA='3734e361148e880ff1717edde0f774e541b8761fd8837bec690bde93ec49bf49'
 RPC='https://archival-rpc.testnet.near.org';INDEX='https://api-testnet.nearblocks.io/v3'
 
 def amount(v):
