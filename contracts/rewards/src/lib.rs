@@ -9,6 +9,7 @@ use near_sdk::{
 };
 mod map_days;
 mod payouts;
+mod reconcile;
 mod world_days;
 const NEAR: u128 = 10u128.pow(24);
 const DAY_MS: u64 = 86_400_000;
@@ -24,6 +25,10 @@ const COIN_XP: u16 = 2;
 const FIND_XP: u16 = 15;
 /// Manifest v2 spaces finds about 150 m apart and lists at most 60.
 const MAX_FINDS: usize = 60;
+/// `withdraw` mint and callback allowances. In the sandbox mint_for burned at
+/// most 2.24 TGas and on_withdraw 2.03; the player's wallet attaches 100.
+const WITHDRAW_MINT_GAS: Gas = Gas::from_tgas(30);
+const WITHDRAW_CALLBACK_GAS: Gas = Gas::from_tgas(20);
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Default)]
 #[borsh(crate = "near_sdk::borsh")]
 #[serde(crate = "near_sdk::serde")]
@@ -107,7 +112,7 @@ pub struct Rewards {
 #[allow(dead_code)]
 #[ext_contract(ext_self)]
 trait Callbacks {
-    fn on_withdraw(&mut self, account_id: AccountId, amount: U128) -> bool;
+    fn on_withdraw(&mut self, account_id: AccountId, amount: U128, nonce: Option<U64>) -> bool;
 }
 #[near_bindgen]
 impl Rewards {
@@ -509,6 +514,7 @@ impl Rewards {
         self.owed -= amount;
         self.pending += amount;
         self.players.insert(&account_id, &p);
+        let nonce = reconcile::record_withdraw_attempt(&account_id, amount);
         self.check();
         // Coin and zone rewards become QGOLD: the NEAR goes into the QGOLD
         // vault, which mints its share at R (no fee) to the player.
@@ -519,12 +525,12 @@ impl Rewards {
                     .to_string()
                     .into_bytes(),
                 NearToken::from_yoctonear(amount),
-                Gas::from_tgas(30),
+                WITHDRAW_MINT_GAS,
             )
             .then(
                 ext_self::ext(env::current_account_id())
-                    .with_static_gas(Gas::from_tgas(15))
-                    .on_withdraw(account_id, U128(amount)),
+                    .with_static_gas(WITHDRAW_CALLBACK_GAS)
+                    .on_withdraw(account_id, U128(amount), Some(U64(nonce))),
             )
     }
     /// Owner, once: the QGOLD vault that rewards are paid into. It can never be
@@ -535,28 +541,17 @@ impl Rewards {
         env::storage_write(QGOLD_VAULT_KEY, account_id.as_bytes());
         event("qgold_vault_set", near_sdk::serde_json::json!({"account_id": account_id}));
     }
+    /// `nonce` is absent only for withdrawals issued before attempts were recorded.
     #[private]
-    pub fn on_withdraw(&mut self, account_id: AccountId, amount: U128) -> bool {
-        let mut p = self.players.get(&account_id).expect("Unknown player");
-        assert_eq!(p.pending, amount.0, "Callback mismatch");
-        p.pending = 0;
-        self.pending -= amount.0;
+    pub fn on_withdraw(&mut self, account_id: AccountId, amount: U128, nonce: Option<U64>) -> bool {
+        reconcile::take_withdraw_attempt(&account_id, nonce.map(|n| n.0));
         // mint_for returns a JSON U128. TooLong with a zero-byte read still
         // means the mint succeeded; only a failed receipt restores the credit.
         let ok = !matches!(
             env::promise_result_checked(0, 0),
             Err(near_sdk::PromiseError::Failed)
         );
-        if ok {
-            p.withdrawn += amount.0;
-            self.withdrawn += amount.0;
-        } else {
-            p.credit += amount.0;
-            self.owed += amount.0;
-        }
-        self.players.insert(&account_id, &p);
-        self.check();
-        ok
+        self.settle_withdraw(&account_id, amount.0, ok)
     }
     pub fn claim_message(&self, claim: Claim) -> String {
         format!("QuestLayer native reward v1\nNetwork: testnet\nContract: {}\nReceipt: {}\nDay: {}\nKind: {}\nIndex: {}\nReceiver: {}\nReceived: {}\nEvidence: {}", env::current_account_id(), claim.receipt_id, claim.day_id, claim.kind, claim.index, claim.receiver_id, claim.received_at.0, claim.evidence_hash)
@@ -621,6 +616,23 @@ impl Rewards {
             self.publisher,
             "Publisher only"
         );
+    }
+    /// Books one issued withdrawal exactly once: paid, or refused and restored.
+    fn settle_withdraw(&mut self, account_id: &AccountId, amount: u128, ok: bool) -> bool {
+        let mut p = self.players.get(account_id).expect("Unknown player");
+        assert_eq!(p.pending, amount, "Callback mismatch");
+        p.pending = 0;
+        self.pending -= amount;
+        if ok {
+            p.withdrawn += amount;
+            self.withdrawn += amount;
+        } else {
+            p.credit += amount;
+            self.owed += amount;
+        }
+        self.players.insert(account_id, &p);
+        self.check();
+        ok
     }
     fn owner(&self) {
         assert_eq!(env::predecessor_account_id(), self.owner, "Owner only");
@@ -744,6 +756,10 @@ mod tests {
     use near_sdk::{test_utils::VMContextBuilder, testing_env, PromiseResult};
     fn a(s: &str) -> AccountId {
         s.parse().unwrap()
+    }
+    /// The nonce the issued withdrawal's callback carries.
+    fn wn(s: &str) -> Option<U64> {
+        reconcile::withdraw_nonce(&a(s))
     }
     fn context(who: &str, time: u64, deposit: u128, result: Option<PromiseResult>) {
         let mut b = VMContextBuilder::new();
@@ -937,7 +953,7 @@ mod tests {
         context("alice.testnet", 4, 1, None);
         let _ = r.withdraw();
         context("rewards.testnet", 5, 0, Some(PromiseResult::Failed));
-        assert!(!r.on_withdraw(a("alice.testnet"), U128(10)));
+        assert!(!r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet")));
         assert_eq!(r.owed, 10);
         context("alice.testnet", 6, 1, None);
         let _ = r.withdraw();
@@ -949,7 +965,7 @@ mod tests {
                 near_sdk::serde_json::to_vec(&U128(10)).unwrap(),
             )),
         );
-        assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet")));
         assert_eq!(r.withdrawn, 10);
         r.check();
     }
@@ -968,7 +984,7 @@ mod tests {
         )));
         assert!(matches!(env::promise_result_checked(0, 0),
             Err(near_sdk::PromiseError::TooLong(_))));
-        assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet")));
         let p = r.players.get(&a("alice.testnet")).unwrap();
         assert_eq!((p.credit, p.pending, p.withdrawn), (0, 0, 10));
         assert_eq!((r.owed, r.pending, r.withdrawn), (0, 0, 10));
@@ -991,7 +1007,7 @@ mod tests {
         context("rewards.testnet", 5, 0, Some(PromiseResult::Successful(
             near_sdk::serde_json::to_vec(&U128(7)).unwrap(),
         )));
-        r.on_withdraw(a("alice.testnet"), U128(10));
+        r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet"));
         context("alice.testnet", 6, 1, None);
         let _ = r.withdraw();
     }
@@ -1009,7 +1025,7 @@ mod tests {
         context("rewards.testnet", 6, 0, Some(PromiseResult::Successful(
             near_sdk::serde_json::to_vec(&U128(u128::MAX)).unwrap(),
         )));
-        assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet")));
         let p = r.players.get(&a("alice.testnet")).unwrap();
         assert_eq!((p.credit, p.pending, p.withdrawn), (10, 0, 10));
         assert_eq!((r.owed, r.pending, r.withdrawn), (10, 0, 10));
@@ -1019,7 +1035,7 @@ mod tests {
         assert_eq!(r.pending, 10);
         // Even an empty successful response remains a successful transfer.
         context("rewards.testnet", 8, 0, Some(PromiseResult::Successful(vec![])));
-        assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet")));
         let p = r.players.get(&a("alice.testnet")).unwrap();
         assert_eq!((p.credit, p.pending, p.withdrawn), (0, 0, 20));
         assert_eq!((r.owed, r.pending, r.withdrawn), (0, 0, 20));
@@ -1037,7 +1053,7 @@ mod tests {
         let c = claim("coin", 1, "alice.testnet", "withdraw-during-fail");
         r.claim(c.clone(), signed(&r, &c));
         context("rewards.testnet", 6, 0, Some(PromiseResult::Failed));
-        assert!(!r.on_withdraw(a("alice.testnet"), U128(10)));
+        assert!(!r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet")));
         let p = r.players.get(&a("alice.testnet")).unwrap();
         assert_eq!((p.credit, p.pending, p.withdrawn), (20, 0, 0));
         assert_eq!((r.owed, r.pending, r.withdrawn), (20, 0, 0));
@@ -1047,7 +1063,7 @@ mod tests {
         context("rewards.testnet", 8, 0, Some(PromiseResult::Successful(
             near_sdk::serde_json::to_vec(&U128(14)).unwrap(),
         )));
-        assert!(r.on_withdraw(a("alice.testnet"), U128(20)));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(20), wn("alice.testnet")));
         let p = r.players.get(&a("alice.testnet")).unwrap();
         assert_eq!((p.credit, p.pending, p.withdrawn), (0, 0, 20));
         assert_eq!((r.owed, r.pending, r.withdrawn), (0, 0, 20));
@@ -1080,8 +1096,8 @@ mod tests {
         context("rewards.testnet", 5, 0, Some(PromiseResult::Successful(
             near_sdk::serde_json::to_vec(&U128(7)).unwrap(),
         )));
-        assert!(r.on_withdraw(a("alice.testnet"), U128(10)));
-        r.on_withdraw(a("alice.testnet"), U128(10));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet")));
+        r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet"));
     }
     #[test]
     #[should_panic(expected = "Callback mismatch")]
@@ -1093,8 +1109,107 @@ mod tests {
         context("alice.testnet", 4, 1, None);
         let _ = r.withdraw();
         context("rewards.testnet", 5, 0, Some(PromiseResult::Failed));
-        assert!(!r.on_withdraw(a("alice.testnet"), U128(10)));
-        r.on_withdraw(a("alice.testnet"), U128(10));
+        assert!(!r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet")));
+        r.on_withdraw(a("alice.testnet"), U128(10), wn("alice.testnet"));
+    }
+    /// A withdrawal whose callback never ran (out of gas): the player is
+    /// blocked until the owner settles it from the finalized mint receipt.
+    fn stuck_withdrawal(r: &mut Rewards) -> Option<U64> {
+        context("relayer.testnet", 3, 0, None);
+        let c = claim("coin", 0, "alice.testnet", "stuck");
+        r.claim(c.clone(), signed(r, &c));
+        context("alice.testnet", 4, 1, None);
+        let _ = r.withdraw();
+        let n = wn("alice.testnet");
+        assert!(n.is_some());
+        let attempt = r.get_withdrawal_attempt(a("alice.testnet")).unwrap();
+        assert_eq!(attempt["amount"], "10");
+        assert_eq!(attempt["reconcile_after_ms"], (4 + DAY_MS).to_string());
+        n
+    }
+    #[test]
+    fn stuck_withdrawal_refused_mint_restores_credit_once() {
+        let mut r = setup();
+        let old = stuck_withdrawal(&mut r);
+        let early = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            context("owner.testnet", 3 + DAY_MS, 0, None);
+            r.owner_reconcile_withdrawal(a("alice.testnet"), false);
+        }));
+        assert!(early.is_err(), "still in flight");
+        let stranger = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            context("alice.testnet", 4 + DAY_MS, 0, None);
+            r.owner_reconcile_withdrawal(a("alice.testnet"), false);
+        }));
+        assert!(stranger.is_err(), "owner only");
+        context("owner.testnet", 4 + DAY_MS, 0, None);
+        assert!(!r.owner_reconcile_withdrawal(a("alice.testnet"), false));
+        assert_eq!((r.owed, r.pending, r.withdrawn), (10, 0, 0));
+        assert!(r.get_withdrawal_attempt(a("alice.testnet")).is_none());
+        // Reconciling twice or the late callback cannot restore it again.
+        let twice = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            context("owner.testnet", 5 + DAY_MS, 0, None);
+            r.owner_reconcile_withdrawal(a("alice.testnet"), false);
+        }));
+        assert!(twice.is_err());
+        let late = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            context("rewards.testnet", 5 + DAY_MS, 0, Some(PromiseResult::Failed));
+            r.on_withdraw(a("alice.testnet"), U128(10), old);
+        }));
+        assert!(late.is_err());
+        assert_eq!((r.owed, r.pending), (10, 0));
+        // The restored credit withdraws normally once more.
+        context("alice.testnet", 6 + DAY_MS, 1, None);
+        let _ = r.withdraw();
+        let retry = wn("alice.testnet");
+        assert_ne!(retry, old);
+        let stale = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            context("rewards.testnet", 7 + DAY_MS, 0, Some(PromiseResult::Successful(b"\"10\"".to_vec())));
+            r.on_withdraw(a("alice.testnet"), U128(10), old);
+        }));
+        assert!(stale.is_err(), "the first attempt's callback cannot settle the retry");
+        context("rewards.testnet", 7 + DAY_MS, 0, Some(PromiseResult::Successful(b"\"10\"".to_vec())));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10), retry));
+        assert_eq!((r.owed, r.pending, r.withdrawn), (0, 0, 10));
+        r.check();
+    }
+    #[test]
+    fn stuck_withdrawal_completed_mint_is_booked_paid_once() {
+        let mut r = setup();
+        let old = stuck_withdrawal(&mut r);
+        context("owner.testnet", 4 + DAY_MS, 0, None);
+        assert!(r.owner_reconcile_withdrawal(a("alice.testnet"), true));
+        assert_eq!((r.owed, r.pending, r.withdrawn), (0, 0, 10));
+        let late = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            context("rewards.testnet", 5 + DAY_MS, 0, Some(PromiseResult::Successful(b"\"10\"".to_vec())));
+            r.on_withdraw(a("alice.testnet"), U128(10), old);
+        }));
+        assert!(late.is_err());
+        assert_eq!(r.withdrawn, 10);
+        r.check();
+    }
+    #[test]
+    #[should_panic(expected = "Withdrawal callback is not pending")]
+    fn a_withdrawal_callback_without_its_nonce_is_stale() {
+        let mut r = setup();
+        stuck_withdrawal(&mut r);
+        context("rewards.testnet", 5, 0, Some(PromiseResult::Failed));
+        r.on_withdraw(a("alice.testnet"), U128(10), None);
+    }
+    #[test]
+    fn a_withdrawal_issued_before_attempt_records_still_settles() {
+        let mut r = setup();
+        stuck_withdrawal(&mut r);
+        reconcile::forget_attempts("none", 0, &a("alice.testnet"));
+        context("rewards.testnet", 5, 0, Some(PromiseResult::Successful(b"\"10\"".to_vec())));
+        assert!(r.on_withdraw(a("alice.testnet"), U128(10), None));
+        assert_eq!((r.pending, r.withdrawn), (0, 10));
+    }
+    #[test]
+    fn withdrawal_receipts_fit_the_wallet_gas() {
+        // The game wallet attaches 100 TGas to withdraw (src/App.tsx).
+        assert!(WITHDRAW_MINT_GAS.as_tgas() + WITHDRAW_CALLBACK_GAS.as_tgas() + 20 <= 100);
+        // Sandbox maxima: mint_for 2.24 TGas, on_withdraw 2.03 (docs/DAILY-PAYOUTS.md).
+        assert!(WITHDRAW_MINT_GAS.as_tgas() >= 13 * 224 / 100 && WITHDRAW_CALLBACK_GAS.as_tgas() >= 9 * 203 / 100);
     }
     #[test]
     fn maximum_pilot_receipt_fits_its_sponsored_storage() {

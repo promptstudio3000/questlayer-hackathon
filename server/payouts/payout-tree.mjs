@@ -11,7 +11,7 @@ import { merkle, sha256Hex, verifyProof } from "../chain-ledger/merkle.mjs";
 /** Smallest leaf the contract accepts (PAYOUT_MIN_YOCTO); smaller amounts carry over. */
 export const PAYOUT_MIN_YOCTO = 10n ** 16n;
 /** Leaves per claim_payout transaction (PAYOUT_MAX_BATCH). */
-export const PAYOUT_MAX_BATCH = 10;
+export const PAYOUT_MAX_BATCH = 8;
 export const PAYOUT_MAX_LEAVES = 262_144;
 /** close_payout_day is allowed this long after publication. */
 export const PAYOUT_GRACE_MS = 3 * 86_400_000;
