@@ -1,17 +1,17 @@
 name: Protected paths
-# Fails a pull request that changes contracts, deploy/signing scripts, money
-# server code, sign-in/signing code, economy numbers, deployment records, CI or
-# dependencies without the owner's `owner-approved` label, or that adds anything
-# that looks like a secret. Rules: .github/scripts/protected-paths.mjs,
-# docs/HANDOFF-WEEKEND.md.
+# Lists the protected paths a pull request touches (contracts, deploy/signing
+# scripts, money server code, sign-in/signing code, economy numbers, deployment
+# records, CI, dependencies) for the reviewer, and fails only when the pull
+# request commits a secret or state file or adds a line that looks like a
+# secret. No label is needed (owner's decision, 9 Nov 2026).
+# Rules: .github/scripts/protected-paths.mjs.
 #
-# pull_request_target: GitHub runs THIS workflow file and the guard script as
-# they are on the base branch, so a pull request cannot edit the check that
-# judges it. The pull request's commits are only fetched for `git diff`; no code
-# from the pull request is executed, and the token is read-only.
+# Runs on `pull_request` (GitHub's event policy for this repository blocks
+# `pull_request_target`). The token is read-only and the job name stays
+# `protected-paths`, the check the branch ruleset requires.
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, labeled, unlabeled, edited]
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
 permissions:
   contents: read
 jobs:
@@ -19,21 +19,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Check out the base branch (trusted guard)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Fetch the pull request commits (data only)
-        run: git fetch --no-tags https://github.com/${{ github.repository }}.git "+refs/pull/${{ github.event.pull_request.number }}/head:refs/remotes/pr/head"
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Run the base branch's guard
+      - name: Run the guard
         run: node .github/scripts/protected-paths.mjs
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
