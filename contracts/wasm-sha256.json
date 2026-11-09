@@ -28,14 +28,6 @@
       "contract": "questlayer_market",
       "sha256": "bd1f74d2858e468b354c2bb174ca95d921e933898adb9738fced8b817a0439ee"
     },
-    "public/native-rewards-testnet.json:factory.wasmSha256": {
-      "contract": "questlayer_vault_factory",
-      "sha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9"
-    },
-    "public/native-rewards-testnet.json:factory.vaultWasmSha256": {
-      "contract": "questlayer_vault",
-      "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
-    },
     "public/native-rewards-testnet.json:vaults.0.wasmSha256": {
       "contract": "questlayer_vault",
       "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
@@ -72,15 +64,25 @@
       "contract": "questlayer_qgold_escrow",
       "sha256": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da"
     },
-    "public/native-yield-vault-testnet.json:wasmSha256": {
-      "contract": "questlayer_yield_vault",
-      "sha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
-      "note": "Live yield vault before the 9 Nov H4/M5 fixes; redeploy and update the record to remove this entry."
-    },
     "public/native-rewards-testnet.json:wasmSha256": {
       "contract": "questlayer_rewards",
       "sha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
       "note": "Live rewards before the 9 Nov M4 gas/reconcile fix; upgrading rewards and updating the record removes this entry."
+    },
+    "public/native-rewards-testnet.json:factoryHistory.0.wasmSha256": {
+      "contract": "questlayer_vault_factory",
+      "sha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9",
+      "note": "Replaced on testnet; kept as history (2026-11-09T23:55:59.017Z)."
+    },
+    "public/native-rewards-testnet.json:factoryHistory.0.vaultWasmSha256": {
+      "contract": "questlayer_vault",
+      "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7",
+      "note": "Replaced on testnet; kept as history (2026-11-09T23:55:59.017Z)."
+    },
+    "public/native-yield-vault-testnet.json:previousDeployments.0.wasmSha256": {
+      "contract": "questlayer_yield_vault",
+      "sha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
+      "note": "Replaced on testnet; kept as history (2026-11-09T23:56:34.628Z)."
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-11-01T12:31:34.699Z",
+  "verifiedAt": "2026-11-09T23:55:59.040Z",
   "contractId": "questlayer-rewards-20261101b.testnet",
   "codeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
   "wasmSha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
@@ -8,11 +8,12 @@
   "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
   "factory": {
     "contractId": "questlayer-vaults-20261101b.testnet",
-    "codeHash": "CuXpM81e398FHSfLeZ3JfgqXMnnNXgiQQizTiKFBvVJx",
-    "wasmSha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9",
-    "vaultCodeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
-    "vaultWasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7",
-    "setupDeposit": "3520000000000000000000000"
+    "codeHash": "5mn94vZFGdvT43PEUpx3YrFjVNbtZTbEgcYHWTMeNRZD",
+    "wasmSha256": "46e7579d5a542cb9980e92dfd4578b57b2ec6e8dbe8db9ef263b96fb953818c4",
+    "vaultCodeHash": "4bnUo5Bn5MJqME8o5SrK9YfacYjzwmqFGPfQ4gxp3TbY",
+    "vaultWasmSha256": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b",
+    "setupDeposit": "3520000000000000000000000",
+    "generation": "v3-20261109"
   },
   "vaults": [
     {
@@ -114,6 +115,10 @@
     {
       "label": "Authorize only bounded UTC world reservation operations",
       "transaction": "7dKjY7HRy9ZBgEi1aFdn1RNTXAMua7UKvynpfdce3iGr"
+    },
+    {
+      "label": "Upgrade vault factory: new positions get vault v3 (stuck-op recovery, harvest limits, settled basis)",
+      "transaction": "6iVrzdtifvvRYcTGbxz3ubheM1HskWwpt61AYnJE4JXv"
     }
   ],
   "streetFinds": {
@@ -171,5 +176,19 @@
     "workerAllowanceAtGrantYocto": "280890509269139100000000",
     "globalFinancialActivation": false,
     "awaitingQgoldProposal": 2
-  }
+  },
+  "factoryHistory": [
+    {
+      "contractId": "questlayer-vaults-20261101b.testnet",
+      "codeHash": "CuXpM81e398FHSfLeZ3JfgqXMnnNXgiQQizTiKFBvVJx",
+      "wasmSha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9",
+      "vaultCodeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
+      "vaultWasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7",
+      "setupDeposit": "3520000000000000000000000",
+      "replacedAt": "2026-11-09T23:55:59.017Z",
+      "replacedBy": "6iVrzdtifvvRYcTGbxz3ubheM1HskWwpt61AYnJE4JXv",
+      "backup": ".data/contract-backups/questlayer-vaults-20261101b.testnet-CuXpM81e398FHSfLeZ3JfgqXMnnNXgiQQizTiKFBvVJx.wasm",
+      "createdPositions": 0
+    }
+  ]
 }
