@@ -3069,5 +3069,17 @@
  "{0} / 3 blocks shaped": "{0} / 3 bloques modificados",
  "{0}’s workshop": "Taller de {0}",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Los envíos y reembolsos llegan a esta cuenta cuando su primer pago de QGOLD la registra en el token.",
- "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "El escrow necesita {0} de almacenamiento para este acuerdo y no se pudo añadir ahora: {1}"
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "El escrow necesita {0} de almacenamiento para este acuerdo y no se pudo añadir ahora: {1}",
+ "No quest is open near you right now. Check Discoveries for opening times.": "Ahora no hay ninguna misión abierta cerca. Consulta los horarios en Descubrimientos.",
+ "No street find is left near you today.": "Hoy ya no queda ningún hallazgo callejero cerca.",
+ "No coin is left near you right now. More appear in the next wave.": "Ahora no queda ninguna moneda cerca. Aparecerán más en la próxima oleada.",
+ "the character who gave it": "el personaje que te la dio",
+ "Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.": "Encargo hecho. Vuelve con {0} para informar: +{1} XP. Busca Informar en el mapa.",
+ "All steps done. Go back to {0} to turn it in. Look for Report back on the map.": "Todos los pasos hechos. Vuelve con {0} para entregarlo. Busca Informar en el mapa.",
+ "{0}: {1}. Marked on the map.": "{0}: {1}. Marcado en el mapa.",
+ "They are not out right now. Characters walk between 07:00 and 22:00.": "Ahora no está fuera. Los personajes pasean entre las 07:00 y las 22:00.",
+ "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "Ahora no hay nadie así cerca. Los personajes pasean entre las 07:00 y las 22:00.",
+ "Show me": "Muéstramelo",
+ "Player task": "Tarea de jugador",
+ "Report back": "Informar"
 }

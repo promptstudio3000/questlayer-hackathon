@@ -3069,5 +3069,17 @@
  "{0} / 3 blocks shaped": "{0} / 3 upravené bloky",
  "{0}’s workshop": "Dílna hráče {0}",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Zásilky a vratky dorazí na tento účet, jakmile ho první výplata QGOLD zaregistruje u tokenu.",
- "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "Escrow potřebuje {0} na úložiště této dohody a teď se je nepodařilo přidat: {1}"
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "Escrow potřebuje {0} na úložiště této dohody a teď se je nepodařilo přidat: {1}",
+ "No quest is open near you right now. Check Discoveries for opening times.": "Poblíž teď není otevřený žádný quest. Časy otevření najdeš v Objevech.",
+ "No street find is left near you today.": "Poblíž už dnes nezbyl žádný pouliční nález.",
+ "No coin is left near you right now. More appear in the next wave.": "Poblíž teď nezbyla žádná mince. Další přibudou v příští vlně.",
+ "the character who gave it": "postavě, která ho zadala",
+ "Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.": "Pochůzka splněna. Vrať se za {0} a nahlas ji: +{1} XP. Na mapě hledej Nahlásit.",
+ "All steps done. Go back to {0} to turn it in. Look for Report back on the map.": "Všechny kroky hotové. Vrať se za {0} a odevzdej je. Na mapě hledej Nahlásit.",
+ "{0}: {1}. Marked on the map.": "{0}: {1}. Označeno na mapě.",
+ "They are not out right now. Characters walk between 07:00 and 22:00.": "Teď není venku. Postavy chodí mezi 07:00 a 22:00.",
+ "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "Nikdo takový teď poblíž není. Postavy chodí mezi 07:00 a 22:00.",
+ "Show me": "Ukaž kde",
+ "Player task": "Úkol hráče",
+ "Report back": "Nahlásit"
 }

@@ -90,7 +90,7 @@ test("a failed live import identifies its corrupt region without exposing privat
   assert.ok(!JSON.stringify(status).includes(root));assert.ok(!JSON.stringify(status).includes(broken.server.path));
 });
 
-test("uncovered places and missing next days never generate a fallback world",async(t)=>{
+test("uncovered places outside Czechia and missing next days never generate a fallback world",async(t)=>{
   const root=workspace(t), catalogFile=catalogAt(resolve(root,"input"),sites.slice(0,1)), outputDir=resolve(root,"days");
   await prepareGeographicDay({catalogFile,outputDir,day});
   const db=openDatabase(":memory:");t.after(()=>db.close());installGlobalActivityDay(db,resolve(outputDir,day,"manifest.json"));

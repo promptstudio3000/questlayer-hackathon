@@ -19,6 +19,22 @@ export function createNpcRoutes(npc, actors, db, { refreshStaker = null, clock =
   return {
     async handle(req, res, url, { player, body, respond, assert }) {
       const path = url.pathname;
+      //   GET /api/actors/tasks?worldId=   open NPC lines for the map
+      if ((req.method || "GET") === "GET" && path === "/api/actors/tasks") {
+        assert(npc && actors, "Characters on the map are not enabled here.", 503, "ACTORS_DISABLED");
+        const worldId = String(url.searchParams.get("worldId") || "").slice(0, 200);
+        const world = worldId ? worldView(db, worldId, player) : null;
+        const tasks = world ? npc.tasks({ player, world }) : [];
+        let names = new Map();
+        if (tasks.length)
+          try {
+            names = new Map(actors.castNow(worldId).actors.map((a) => [a.id, a.name]));
+          } catch {
+            /* An ended world has no cast; the tasks still list without names. */
+          }
+        respond(res, { worldId, tasks: tasks.map((t) => ({ ...t, actorName: names.get(t.actorId) || null })) });
+        return true;
+      }
       if ((req.method || "GET") !== "POST" || !path.startsWith("/api/actors/")) return false;
       const talk = path.match(TALK),
         offer = path.match(OFFER);

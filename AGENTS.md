@@ -10,8 +10,8 @@ Cursor, Codex, Gemini, Copilot and any other coding agent: read `docs/HANDOFF-WE
 Its hard rules are not negotiable: no changes to `contracts/` or WASM hashes, deploy/signing/chain scripts,
 money and reward server code, economy numbers, deployment records, CI or dependencies; never touch keys,
 `runtime.env`, secrets or mainnet; no VPS deploys. One task per `weekend/<task-id>-<slug>` branch, PR into
-`claude/upbeat-gauss-5czir7`, all CI green including the Protected paths job. Only the owner adds the
-`owner-approved` label.
+`claude/upbeat-gauss-5czir7`, all CI green including the Protected paths job. That job lists protected
+paths for review and fails only on committed secrets; no `owner-approved` label is needed (owner, 9 Nov 2026).
 
 ## Product and design context
 

@@ -222,8 +222,8 @@ export const CHAPTERS: Chapter[] = [
     title: "Zones, quests and the daily board",
     summary: "Six city zones a day, POI quests in every street cell, landmark clues, NPC errands and three daily goals.",
     status: "live",
-    updated: "2026-11-05",
-    sources: ["docs/WORLD-GENERATION.md", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs"],
+    updated: "2026-11-09",
+    sources: ["docs/WORLD-GENERATION.md", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts"],
     blocks: [
       {
         p: "A reviewed city (Plzeň today) gets **six citywide zone slots** every day: varied, non-overlapping polygons that need real movement between them. A zone is marked by a tall 3D totem showing its type, a translucent wall, an aura on the ground and the loot it holds. Rarer zones open for a shorter window, and the countdown is visible to everybody.",
@@ -253,13 +253,13 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "Up to 2 landmark clues per cell and day. The answer is a Wikidata fact (for example the century a building dates from). One answer per player: 70 XP right, 20 XP wrong.",
-          "Quest givers hand out one errand per day each: visit a place, then come back for a fresh encounter to turn it in. 40 XP, +10 for a right clue.",
+          "Quest givers hand out one errand per day each: visit a place, then come back for a fresh encounter to turn it in. 40 XP, +10 for a right clue. Once every step of an errand or quest line is done, the result names the NPC to go back to and that NPC carries a gold **Report back** sign on the map until the turn-in (`GET /api/actors/tasks`, information only).",
           "A zone guardian stands on its zone's chest (zones without a chest get no guardian). The chest returns `423 GUARDED` until the player beats it; the win then drops the chest right there and **Open the chest** points the map at it.",
         ],
       },
       { h: "Today's board" },
       {
-        p: "Three small goals per world day picked from today's world (default: 10 coins, 1 monster, 1 NPC; fallback finds, a quest, 20 coins). Finishing all three pays **+50 XP once**. There is no streak and no penalty for skipping a day.",
+        p: "Three small goals per world day picked from today's world (default: 10 coins, 1 monster, 1 NPC; fallback finds, a quest, 20 coins). Finishing all three pays **+50 XP once**. There is no streak and no penalty for skipping a day. Each unfinished goal has **Show me**: it closes the board and points the map at the nearest monster, NPC, boss, open quest, street find or coin (hidden lurkers are never revealed).",
       },
     ],
   },
@@ -304,7 +304,7 @@ export const CHAPTERS: Chapter[] = [
     title: "NPCs, monsters and mini-games",
     summary: "Roaming NPCs with AI voices, monsters beaten by skill, an altar for crafting and earned dice rolls on chain.",
     status: "live",
-    updated: "2026-11-08",
+    updated: "2026-11-09",
     sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
     blocks: [
       { p: "A monster encounter lists today's challenge formats once, with a one-line hint each; picking one starts that challenge directly, so the same choice is never asked twice. A guardian win names the chest it guarded only while the player has not opened it." },
@@ -318,7 +318,7 @@ export const CHAPTERS: Chapter[] = [
         table: {
           head: ["Archetype", "What it does"],
           rows: [
-            ["Quest giver", "Quest lines and one errand a day; patron lines for stakers"],
+            ["Quest giver", "Quest lines and one errand a day; patron lines for stakers. Out day and night (07:00–22:00), so errands work on winter evenings too"],
             ["Storyteller", "Story chapters; patron chapter for stakers"],
             ["Trader", "Buys and sells Auras on NEAR Intents with a purse that must grow"],
             ["Keeper", "Shows the player's stake, ceremonies and the inner vault (read-only)"],
@@ -469,7 +469,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Cities, cells and places",
     summary: "Reviewed cities, Czech map rewards and optional prepared Atlas discoveries in supplied global regions.",
     status: "live",
-    updated: "2026-11-07",
+    updated: "2026-11-09",
     sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
     blocks: [
       {
@@ -505,7 +505,7 @@ export const CHAPTERS: Chapter[] = [
       },
       { h: "Global Atlas discoveries" },
       {
-        p: "When a geographic catalog is connected, a background worker selects mapped zones and Atlas quests for today and tomorrow before players load them. It checks public-path targets, exclusions, polygon boundaries and the whole supplied region inventory. The live game opens only a completely imported UTC day. Already checked regions can form the next day while additional map-data processing waits for resources. Loading a place does not generate extra activities. Missing or incomplete regions remain unavailable.",
+        p: "When a geographic catalog is connected, a background worker selects mapped zones and Atlas quests for today and tomorrow before players load them. It checks public-path targets, exclusions, polygon boundaries and the whole supplied region inventory. The live game opens only a completely imported UTC day. Already checked regions can form the next day while additional map-data processing waits for resources. Loading a place does not generate extra activities. Missing or incomplete regions remain unavailable outside Czechia; inside Czechia the normal street world (POI quests, landmark clues, coins) takes over whenever no ready prepared day covers the spot, so a missed daily manifest never empties the country (`GLOBAL_CZECHIA_FALLBACK=off` disables this).",
       },
       {
         p: "The game imports regions in separate steps so it can handle other requests between them. An interrupted import resumes the same day without opening partial content or duplicating quests. Preparation reports each date separately and identifies regions whose content failed validation. A failed date retries with increasing pauses and does not stop work on the next day.",
@@ -704,7 +704,7 @@ export const CHAPTERS: Chapter[] = [
     summary: "Where fees go, what GOLD can buy, and how tasks, Secrets and conditional sends settle.",
     status: "partial",
     updated: "2026-11-09",
-    sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts"],
+    sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts", "src/GameMap.tsx"],
     blocks: [
       { viz: "fees" },
       {
@@ -727,6 +727,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "A poster pays the reward plus 10 % on top. The fee reaches the treasury only on payout; a refund returns both.",
           "**Secrets:** a creator hides a place; finders pay to reveal it and the creator gets 90 % after a GPS visit or 7 days without dispute. A sponsor can prepay finder rewards so the reveal is free.",
+          "Open player tasks (scroll pin) and Secrets (magnifier pin at the centre of their fog circle, never the hidden place) within the Nearby range are drawn on the GPS map; tapping one opens it in Explore · Nearby.",
           "**Conditional sends:** escrow that releases on a condition, no fee.",
           "In the security candidate, each shop purchase keeps one saved reference from price quote through burn and delivery. The server verifies direct or relayed payment receipts; retries return the saved result. If an item becomes unavailable after payment, its credit stays recorded for resolution.",
           "Everything settles in real QGOLD. The poster, buyer or sender pays it from their own NEAR account into the `qgold-escrow` contract with one sponsored `ft_transfer_call` (with the secure account, every escrow payment, whether a task, a Secret or a send, opens its approval window, which names the contract, method, amount and who can be paid, decoded from the exact message; a game page alone can never fund one). The server confirms the exact payment, recipient, deadline and conditions before opening the task, Secret or send.",
@@ -1005,7 +1006,7 @@ export const CHAPTERS: Chapter[] = [
           "A new doc must be added to a chapter's sources or explicitly marked as not a mechanism (plans, audits, hand-offs) in `docs/wiki-coverage.json`.",
           "Rule tables are imported from their owning files. Narrative examples and activation labels still need review against the current source and public checkpoint.",
           "The page never names events or contains secrets, keys or private hosts; the test checks the copy.",
-          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`. A protected-paths CI guard fails any pull request that touches contracts, deploy or signing scripts, money code, economy numbers, deployment records, CI or dependencies without the owner's `owner-approved` label, or that adds anything that looks like a secret. Sign-in, session and transaction-signing code is protected too, and the guard always runs as it is on the base branch, so a pull request cannot loosen its own check.",
+          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`. A protected-paths CI guard lists every protected file a pull request touches (contracts, deploy or signing scripts, money code, sign-in and transaction signing, economy numbers, deployment records, CI and dependencies) for review, and fails any pull request that adds anything that looks like a secret.",
         ],
       },
     ],

@@ -3069,5 +3069,17 @@
  "{0} / 3 blocks shaped": "Изменено блоков: {0} / 3",
  "{0}’s workshop": "Мастерская игрока {0}",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Переводы и возвраты поступят на этот аккаунт, как только первая выплата QGOLD зарегистрирует его в токене.",
- "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "Эскроу требует {0} хранилища для этого соглашения, и сейчас его не удалось добавить: {1}"
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "Эскроу требует {0} хранилища для этого соглашения, и сейчас его не удалось добавить: {1}",
+ "No quest is open near you right now. Check Discoveries for opening times.": "Рядом сейчас нет открытых квестов. Время открытия смотри в Находках.",
+ "No street find is left near you today.": "Сегодня рядом не осталось уличных находок.",
+ "No coin is left near you right now. More appear in the next wave.": "Рядом сейчас не осталось монет. Новые появятся в следующей волне.",
+ "the character who gave it": "персонажу, который его дал",
+ "Errand done. Go back to {0} to report: +{1} XP. Look for Report back on the map.": "Поручение выполнено. Вернись к {0} с отчётом: +{1} XP. Ищи на карте «Отчитаться».",
+ "All steps done. Go back to {0} to turn it in. Look for Report back on the map.": "Все шаги выполнены. Вернись к {0}, чтобы сдать. Ищи на карте «Отчитаться».",
+ "{0}: {1}. Marked on the map.": "{0}: {1}. Отмечен на карте.",
+ "They are not out right now. Characters walk between 07:00 and 22:00.": "Сейчас не на улице. Персонажи гуляют с 07:00 до 22:00.",
+ "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "Сейчас рядом никого такого нет. Персонажи гуляют с 07:00 до 22:00.",
+ "Show me": "Показать",
+ "Player task": "Задание игрока",
+ "Report back": "Отчитаться"
 }

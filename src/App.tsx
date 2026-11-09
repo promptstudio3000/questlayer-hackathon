@@ -112,6 +112,8 @@ import {
 import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
 import type { ActorView } from "./actor-types";
+import type { ActorFocusMatch } from "./GameMap";
+import type { NpcMapTask } from "./npc-client";
 import "./inventory.css";
 import { indexedDbKeyStore } from "./player-key";
 import type { NativeMilestone, Progress } from "./NativeLevelRewards";
@@ -405,6 +407,11 @@ export default function App() {
     setArenaState(value);
   }
   const [nearActors, setNearActors] = useState<{worldId:string | null; actors:NearbyActor[]; at:number}>({worldId:null, actors:[], at:0});
+  // Open NPC lines in today's world: NPCs waiting for a report carry a sign on the map.
+  const [npcTasks, setNpcTasks] = useState<{ worldId: string; tasks: NpcMapTask[] } | null>(null);
+  // "Show me" on the map for a character (daily board goals, report back).
+  const [actorFocus, setActorFocus] = useState<{ revision: number; match: ActorFocusMatch } | null>(null);
+
   // A wearable pickup is a Wardrobe item: "see it" opens Inventory there.
   const [inventoryStart, setInventoryStart] = useState<InventoryTab>("items");
   const [wearableMoment, setWearableMoment] = useState<{scope: string; id: number; name: string; detail: string; chain?: ChainRef | null} | null>(null);
@@ -946,6 +953,39 @@ export default function App() {
       kind,
       ...(kind === "refresh" ? [latest.current.world?.id] : []),
     ]);
+  // NPC lines for the map. Returns the tasks so a claim can tell the player
+  // whom to report to; failures keep the last known signs.
+  const guide = () => import("./goal-guide");
+  async function loadNpcTasks(worldId = latest.current.world?.id) {
+    if (!worldId) return null;
+    try {
+      const r = await (await guide()).npcMapTasks(worldId);
+      if (latest.current.world?.id === worldId) setNpcTasks({ worldId, tasks: r.tasks });
+      return r.tasks;
+    } catch {
+      return null;
+    }
+  }
+  // Reload the signs for a new world and whenever an NPC meeting ends.
+  useEffect(() => {
+    if (!world?.id || !player || nativePlay) return;
+    if (!actorOpen) void loadNpcTasks(world.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [world?.id, player?.id, nativePlay, actorOpen]);
+  // Today's board "Show me": the nearest thing each goal needs.
+  async function showGoal(goal: string) {
+    setTab("explore");
+    const t = (await guide()).goalTarget(goal, { world, position, tier: latest.current.player?.tier || 1, now: Date.now(), point: questPoint });
+    if (t.kind === "actor") showActor({ kinds: t.archetypes });
+    else if (t.kind === "quest") guideToQuest(t.quest);
+    else if (t.kind === "coin") goToStreetFind(t.coin);
+    else notify(t.text, true);
+  }
+  function showActor(match: ActorFocusMatch) {
+    setOverview(false);
+    setSheetExpanded(false);
+    setActorFocus({ revision: Date.now(), match });
+  }
   function notify(text: string, error = false) {
     setToast({ text, error });
   }
@@ -3187,6 +3227,14 @@ export default function App() {
           );
         else if (sameView) setToast(null);
         await refreshWorld();
+        // A finished NPC line: say whom to report to (their map sign is on).
+        if (!r.replayed && !r.awaiting) {
+          const text = (await guide()).reportNote(await loadNpcTasks(), qId);
+          if (text && latest.current.player?.id === owner) {
+            if (sameView && r.result) setRewardNote((note) => [note, text].filter(Boolean).join(" "));
+            else notify(text);
+          }
+        }
       } catch (error) {
         if (
           latest.current.player?.id === owner &&
@@ -3493,6 +3541,16 @@ export default function App() {
             setTab("places");
             setSheetExpanded(true);
           }}
+          actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
+          actorFocus={actorFocus}
+          onActorFocus={(text, found) => notify(text, !found)}
+          marketPins={!!player && !arena && !nativePlay}
+          onMarketPin={() => {
+            setTab("explore");
+            setExploreView("nearby");
+            setSheetExpanded(true);
+            setFollow(false);
+          }}
         />
       ) : (
         // MapLibre and the map style load only after the name step, so the
@@ -3565,6 +3623,7 @@ export default function App() {
                 worldId={world?.id}
                 refreshKey={`${player.xp}:${player.history?.[0]?.id ?? ""}`}
                 onClaimed={() => void me()}
+                onGoal={showGoal}
               />
               <button
                 className="balance-pill"
