@@ -103,12 +103,23 @@ and it pays nobody else.
   voted on it (one member, when the threshold is 1).
   - While paused, a council member can `void_exit` a queued exit. The NEAR goes back to the backing, and
     the same QGOLD is minted back to the same account, so nothing leaves the contract.
-- **Council and 48 h timelock.** The council is a multisig with a threshold. All of these go through
-  `propose` → `approve` → 48 h wait → `execute` or `apply_upgrade`:
+- **Council and timelock (48 h by default).** The council is a multisig with a threshold. All of these go
+  through `propose` → `approve` → timelock wait → `execute` or `apply_upgrade`:
   - upgrades, by the sha256 of the code;
   - changes to the parameter bounds;
-  - changes to the guardian, treasury, minters or council.
-  - The timelock is a constant in the code.
+  - changes to the guardian, treasury, minters or council;
+  - changes to the timelock itself (`SetTimelock { timelock_ms }`).
+  - The timelock is 48 h (`TIMELOCK_MS`) until a `SetTimelock` proposal executes. It is stored under the
+    namespaced key `council-timelock-ms`, outside the root Borsh state, so `apply_upgrade` → `migrate()`
+    keeps it; setting it back to 48 h removes the key. Bounds: 10 min to 48 h on a `.testnet` account,
+    24 h to 48 h on any other account, so a mainnet vault always keeps a real delay.
+  - A proposal's `executable_at` is fixed with the timelock in force when it is proposed. A
+    `SetTimelock` proposal itself waits the old timelock, and a later change neither speeds up nor delays
+    proposals already open.
+  - `get_config` reports the effective `timelock_ms`, the `default_timelock_ms` and the
+    `timelock_bounds_ms` that apply to this account.
+  - A vault deployed before `SetTimelock` existed gains it only through an approved upgrade, which still
+    waits that vault's 48 h; the shorter timelock then needs its own 48 h `SetTimelock` proposal.
   - `cancel` works for the proposer alone, or once `threshold` members have voted to cancel
     (`get_cancel_votes`); one member cannot veto the others' proposals.
 - **No access keys.** The deploy script deletes the vault account's full-access key. Code can then change

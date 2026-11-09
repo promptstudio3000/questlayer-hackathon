@@ -853,3 +853,141 @@ fn unpause_needs_the_threshold_and_another_account_can_still_pause() {
     c.call("guardian.testnet", 0, || q.pause());
     assert!(state(&c, &q)["paused"].as_bool().unwrap());
 }
+
+// ------------------------------------------------------------- council timelock
+
+fn timelock_of(c: &Chain, q: &QGold) -> u64 {
+    c.ctx("v.testnet", 0);
+    q.get_config()["timelock_ms"].as_str().unwrap().parse().unwrap()
+}
+
+/// Proposes and executes `SetTimelock` under the timelock currently in force.
+fn set_timelock(c: &mut Chain, q: &mut QGold, ms: u64) {
+    let wait = timelock_of(c, q);
+    let id = c.call("council.testnet", 0, || q.propose(Action::SetTimelock { timelock_ms: U64(ms) }));
+    c.now_ms += wait;
+    c.call("anyone.testnet", 0, || q.execute(id));
+}
+
+#[test]
+fn timelock_defaults_to_48h_when_unset() {
+    let mut c = Chain::new();
+    let q = fresh(&mut c);
+    assert_eq!(timelock_of(&c, &q), 48 * HOUR_MS);
+    c.ctx("v.testnet", 0);
+    let cfg = q.get_config();
+    assert_eq!(cfg["default_timelock_ms"], (48 * HOUR_MS).to_string());
+    assert_eq!(cfg["timelock_bounds_ms"][0], MIN_TESTNET_TIMELOCK_MS.to_string());
+    assert!(!env::storage_has_key(b"council-timelock-ms"));
+}
+
+#[test]
+fn testnet_timelock_can_drop_to_ten_minutes_and_back() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    set_timelock(&mut c, &mut q, 10 * 60_000);
+    assert_eq!(timelock_of(&c, &q), 10 * 60_000);
+    // Back to the default clears the stored key.
+    set_timelock(&mut c, &mut q, 48 * HOUR_MS);
+    assert_eq!(timelock_of(&c, &q), 48 * HOUR_MS);
+    c.ctx("v.testnet", 0);
+    assert!(!env::storage_has_key(b"council-timelock-ms"));
+}
+
+#[test]
+fn testnet_timelock_bounds_are_ten_minutes_to_48h() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    let short = c.fails("council.testnet", 0, || {
+        q.propose(Action::SetTimelock { timelock_ms: U64(10 * 60_000 - 1) });
+    });
+    assert!(short.contains("timelock_ms must be"), "{short}");
+    let long = c.fails("council.testnet", 0, || {
+        q.propose(Action::SetTimelock { timelock_ms: U64(48 * HOUR_MS + 1) });
+    });
+    assert!(long.contains("timelock_ms must be"), "{long}");
+}
+
+#[test]
+fn non_testnet_account_keeps_at_least_24h() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    let mainnet = |c: &Chain| {
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(a("qgold.questlayer.near"))
+            .predecessor_account_id(a("council.testnet"))
+            .account_balance(NearToken::from_yoctonear(c.bal))
+            .storage_usage(c.storage)
+            .block_timestamp(c.now_ms * 1_000_000);
+        testing_env!(b.build());
+    };
+    mainnet(&c);
+    let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        q.propose(Action::SetTimelock { timelock_ms: U64(10 * 60_000) });
+    }));
+    assert!(r.is_err(), "10 min is testnet only");
+    mainnet(&c);
+    let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        q.propose(Action::SetTimelock { timelock_ms: U64(24 * HOUR_MS - 1) });
+    }));
+    assert!(r.is_err(), "below 24 h is refused off testnet");
+    mainnet(&c);
+    let id = q.propose(Action::SetTimelock { timelock_ms: U64(24 * HOUR_MS) });
+    assert_eq!(q.get_config()["timelock_bounds_ms"][0], (24 * HOUR_MS).to_string());
+    assert_eq!(q.get_proposal(id).unwrap().executable_at.0, c.now_ms + 48 * HOUR_MS);
+}
+
+#[test]
+fn executable_at_uses_the_timelock_in_force_when_proposed() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    let lower = c.call("council.testnet", 0, || q.propose(Action::SetTimelock { timelock_ms: U64(30 * 60_000) }));
+    c.hours(1);
+    // Proposed under 48 h: lowering the timelock later does not speed it up.
+    let old = c.call("council.testnet", 0, || q.propose(Action::SetGuardian { account_id: a("g2.testnet") }));
+    let old_at = c.now_ms + 48 * HOUR_MS;
+    c.ctx("v.testnet", 0);
+    assert_eq!(q.get_proposal(old).unwrap().executable_at.0, old_at);
+    c.hours(47);
+    c.call("anyone.testnet", 0, || q.execute(lower));
+    assert_eq!(timelock_of(&c, &q), 30 * 60_000);
+    assert!(c.now_ms < old_at);
+    let early = c.fails("anyone.testnet", 0, || q.execute(old));
+    assert!(early.contains("Timelock"), "{early}");
+    // A new proposal waits only the new 30 min.
+    let new = c.call("council.testnet", 0, || q.propose(Action::SetTreasury { account_id: a("t2.testnet") }));
+    c.ctx("v.testnet", 0);
+    assert_eq!(q.get_proposal(new).unwrap().executable_at.0, c.now_ms + 30 * 60_000);
+    c.now_ms += 30 * 60_000 - 1;
+    let early = c.fails("anyone.testnet", 0, || q.execute(new));
+    assert!(early.contains("Timelock"), "{early}");
+    c.now_ms += 1;
+    c.call("anyone.testnet", 0, || q.execute(new));
+    c.ctx("v.testnet", 0);
+    assert_eq!(q.get_config()["treasury"], "t2.testnet");
+    // The older proposal still runs at its own executable_at.
+    c.now_ms = old_at;
+    c.call("anyone.testnet", 0, || q.execute(old));
+    c.ctx("v.testnet", 0);
+    assert_eq!(q.get_config()["guardian"], "g2.testnet");
+}
+
+#[test]
+fn a_short_upgrade_timelock_still_needs_the_approved_code_and_migrate_keeps_it() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    set_timelock(&mut c, &mut q, 10 * 60_000);
+    let hash: String = env::sha256(b"good code").iter().map(|b| format!("{b:02x}")).collect();
+    let id = c.call("council.testnet", 0, || q.propose(Action::Upgrade { code_sha256: hash }));
+    c.now_ms += 10 * 60_000;
+    let _ = c.call("anyone.testnet", 0, || q.apply_upgrade(id, Base64VecU8(b"good code".to_vec())));
+    // The root state is unchanged, so migrate() reads it back and the
+    // namespaced timelock survives the code swap.
+    c.ctx("qgold.questlayer.testnet", 0);
+    env::state_write(&q);
+    let m = QGold::migrate();
+    assert_eq!(timelock_of(&c, &m), 10 * 60_000);
+    c.ctx("v.testnet", 0);
+    assert!(m.get_proposal(id).unwrap().done);
+    assert_eq!(m.get_config()["council"][0], "council.testnet");
+}

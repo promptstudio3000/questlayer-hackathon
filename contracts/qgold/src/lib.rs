@@ -43,6 +43,12 @@ pub const DAY_MS: u64 = 86_400_000;
 pub const HOUR_MS: u64 = 3_600_000;
 /// Fixed upgrade / parameter timelock (Lubos's hard rule: 48 h).
 pub const TIMELOCK_MS: u64 = 48 * HOUR_MS;
+/// Shortest council timelock on a `.testnet` account (council-set, `SetTimelock`).
+pub const MIN_TESTNET_TIMELOCK_MS: u64 = 10 * 60_000;
+/// Shortest council timelock on any other account: mainnet keeps a real delay.
+pub const MIN_MAINNET_TIMELOCK_MS: u64 = 24 * HOUR_MS;
+/// Longest council timelock on every network.
+pub const MAX_TIMELOCK_MS: u64 = 48 * HOUR_MS;
 /// A guardian or council pause lasts at most this long unless renewed.
 pub const MAX_PAUSE_MS: u64 = 72 * HOUR_MS;
 /// Deposit (buy) and redeem (sell) fee: 1 % each, for everyone.
@@ -104,6 +110,21 @@ fn s(v: u128) -> String {
 const MINT_CARRY_TOTAL:&[u8]=b"world-mint-carry-total";
 /// Sum of the storage bonds held out of open queued exits.
 const EXIT_BOND_TOTAL: &[u8] = b"exit-bond-total";
+/// Council timelock in force, as little-endian u64 ms. Absent = `TIMELOCK_MS`.
+const COUNCIL_TIMELOCK: &[u8] = b"council-timelock-ms";
+fn timelock_ms() -> u64 {
+    env::storage_read(COUNCIL_TIMELOCK).map(|b| u64::from_le_bytes(b.try_into().expect("Invalid stored timelock"))).unwrap_or(TIMELOCK_MS)
+}
+/// Allowed timelock range for the current account: 10 min-48 h on `.testnet`,
+/// 24-48 h everywhere else.
+fn timelock_bounds() -> (u64, u64) {
+    let min = if env::current_account_id().as_str().ends_with(".testnet") { MIN_TESTNET_TIMELOCK_MS } else { MIN_MAINNET_TIMELOCK_MS };
+    (min, MAX_TIMELOCK_MS)
+}
+fn validate_timelock(ms: u64) {
+    let (min, max) = timelock_bounds();
+    assert!((min..=max).contains(&ms), "timelock_ms must be {min}-{max} ms on this account");
+}
 fn stored_amount(key:&[u8])->u128 {
     env::storage_read(key).map(|b|u128::from_le_bytes(b.try_into().expect("Invalid stored amount"))).unwrap_or(0)
 }
@@ -199,6 +220,9 @@ pub enum Action {
     SetTreasury { account_id: AccountId },
     SetMinter { account_id: AccountId, allowed: bool },
     SetCouncil { members: Vec<AccountId>, threshold: u8 },
+    /// Sets the council timelock for proposals made after it executes.
+    /// Appended last so stored proposals keep their Borsh tags.
+    SetTimelock { timelock_ms: U64 },
 }
 
 #[near(serializers = [borsh, json])]
@@ -722,7 +746,7 @@ impl QGold {
         }
     }
 
-    // ------------------------------------------------------------- council (multisig + 48 h timelock)
+    // ------------------------------------------------------------- council (multisig + timelock, 48 h by default)
 
     pub fn propose(&mut self, action: Action) -> U64 {
         self.assert_council();
@@ -731,6 +755,7 @@ impl QGold {
             Action::Upgrade { code_sha256 } => assert!(code_sha256.len() == 64 && code_sha256.chars().all(|c| c.is_ascii_hexdigit()), "code_sha256 is 64 hex chars"),
             Action::SetCouncil { members, threshold } => validate_council(members, *threshold),
             Action::SetMinter { allowed, .. } => assert!(!*allowed || self.minters.len() < MAX_MINTERS, "Too many minters"),
+            Action::SetTimelock { timelock_ms } => validate_timelock(timelock_ms.0),
             _ => {}
         }
         let id = self.next_proposal;
@@ -742,7 +767,8 @@ impl QGold {
             proposer: env::predecessor_account_id(),
             approvals: vec![env::predecessor_account_id()],
             created_at: U64(now),
-            executable_at: U64(now + TIMELOCK_MS),
+            // The timelock in force now; a later SetTimelock does not move it.
+            executable_at: U64(now + timelock_ms()),
             done: false,
         };
         self.event("proposed", json!({"id": U64(id), "action": p.action, "executable_at": p.executable_at}));
@@ -806,6 +832,15 @@ impl QGold {
                 }
             }
             Action::SetCouncil { members, threshold } => self.set_council(members, threshold),
+            Action::SetTimelock { timelock_ms } => {
+                validate_timelock(timelock_ms.0);
+                if timelock_ms.0 == TIMELOCK_MS {
+                    env::storage_remove(COUNCIL_TIMELOCK);
+                } else {
+                    env::storage_write(COUNCIL_TIMELOCK, &timelock_ms.0.to_le_bytes());
+                }
+                self.event("timelock_set", json!({"timelock_ms": timelock_ms}));
+            }
         }
         p.done = true;
         self.proposals.insert(&id.0, &p);
@@ -1047,7 +1082,9 @@ impl QGold {
             "treasury": self.treasury,
             "minters": self.minters,
             "params": self.params,
-            "timelock_ms": U64(TIMELOCK_MS),
+            "timelock_ms": U64(timelock_ms()),
+            "default_timelock_ms": U64(TIMELOCK_MS),
+            "timelock_bounds_ms": [U64(timelock_bounds().0), U64(timelock_bounds().1)],
             "max_pause_ms": U64(MAX_PAUSE_MS),
             "storage_fee": s(STORAGE_FEE),
             "sponsored_storage_fee": s(SPONSORED_STORAGE_FEE),
