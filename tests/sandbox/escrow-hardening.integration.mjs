@@ -12,7 +12,8 @@ const { Sandbox, GenesisAccount } = await import(
   pathToFileURL(resolve(helper))
 );
 const N = 10n ** 24n,
-  fee = 1250000000000000000000n,
+  fee = 1250000000000000000000n, // NEP-145 STORAGE_FEE (self-paid registration)
+  grant = 2500000000000000000000n, // SPONSORED_STORAGE_FEE (lifetime grant)
   token = "qgold.testnet",
   escrow = "escrow.testnet";
 const keys = new Map(),
@@ -167,11 +168,15 @@ try {
       "owner.testnet",
       fee,
     );
+    // M6: the funder holds native storage on the escrow for its agreements.
+    await call(contract, "storage_deposit", {}, "alice.testnet", N);
   }
   for (let i = 0; i < 4; i++) {
     const before = await native("grant.testnet");
-    await fund(`grant-${i}`, { to: "grant.testnet" });
-    await call(escrow, "confirm_transfer", { id: `grant-${i}` });
+    // Only an earned payout (task worker, Secret creator) is registered on the
+    // token by the escrow; a send recipient registers themself.
+    await fund(`grant-${i}`, { assignee: "grant.testnet" });
+    await call(escrow, "approve_task", { id: `grant-${i}`, worker: "grant.testnet" });
     await call(escrow, "withdraw_for", { account_id: "grant.testnet" });
     assert.equal(await balance("grant.testnet"), 1000n);
     await call(
@@ -200,7 +205,7 @@ try {
     "storage_deposit_sponsored",
     { account_id: "selfpaid.testnet" },
     "owner.testnet",
-    fee,
+    grant,
   );
   const beforeRefund = await native("selfpaid.testnet");
   await call(token, "storage_unregister", {}, "selfpaid.testnet", 1n);

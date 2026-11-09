@@ -13,8 +13,19 @@ test("settings come from the manifest or the env, and can be switched off", () =
   assert.equal(qgoldVaultSettings({ QGOLD_VAULT_ACCOUNT: "Bad Account" }, m).enabled, false);
 });
 
+test("the operating balance is a warning, never an impairment", () => {
+  const a = (slack) => audit({ operating_slack: slack, min_operating_slack: "100000000000000000000000" });
+  assert.deepEqual(assessVault(state(), a("500000000000000000000000")).warnings, []);
+  const low = assessVault(state(), a("150000000000000000000000"));
+  assert.deepEqual(low, { status: "ok", issues: [], warnings: ["operating-slack-low"] });
+  const gone = assessVault(state(), a("99999999999999999999999"));
+  assert.deepEqual(gone, { status: "ok", issues: [], warnings: ["operating-slack-exhausted"] });
+  // A vault that does not report its operating balance warns about nothing.
+  assert.deepEqual(assessVault(state(), audit()).warnings, []);
+});
+
 test("the monitor flags a short balance, a rate below its peak and a pause", () => {
-  assert.deepEqual(assessVault(state(), audit()), { status: "ok", issues: [] });
+  assert.deepEqual(assessVault(state(), audit()), { status: "ok", issues: [], warnings: [] });
   assert.equal(assessVault(state({ paused: true }), audit()).status, "paused");
   const short = assessVault(state(), audit({ shortfall: "7" }));
   assert.equal(short.status, "impaired");

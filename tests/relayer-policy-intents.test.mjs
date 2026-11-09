@@ -114,3 +114,22 @@ test("QGOLD goes only into the market escrow, with 1 yocto", async () => {
   // Without an escrow manifest nothing on the token is sponsored by this rule.
   await rejects(delegate(contracts.qgold, "ft_transfer_call", { receiver_id: contracts.qgoldEscrow, amount: "1", msg }, 1n), "RELAY_RECEIVER", ctx({ ...CONTRACTS, qgold: contracts.qgold }));
 });
+
+test("an escrow storage deposit is sponsored only as a bounded grant for the signer", async () => {
+  const contracts = { ...CONTRACTS, qgold: "questlayer-qgold-vault-20261104.testnet", qgoldEscrow: "questlayer-qgold-escrow-20261105.testnet" };
+  const me = SENDER, step = 50_000_000_000_000_000_000_000n;
+  for (const deposit of [step, 2n * step, 10n * step]) {
+    const ok = validateDelegate(await delegate(contracts.qgoldEscrow, "storage_deposit", { account_id: me, grant: true }, deposit), ctx(contracts));
+    assert.equal(ok.methodName, "storage_deposit");
+  }
+  // The relayer's NEAR must become a grant, for the signer only, on the 0.05 NEAR ladder up to 0.5 NEAR.
+  await rejects(delegate(contracts.qgoldEscrow, "storage_deposit", { account_id: me, grant: false }, step), "RELAY_ARGS", ctx(contracts));
+  await rejects(delegate(contracts.qgoldEscrow, "storage_deposit", { account_id: me }, step), "RELAY_ARGS", ctx(contracts));
+  await rejects(delegate(contracts.qgoldEscrow, "storage_deposit", { account_id: "eve.testnet", grant: true }, step), "RELAY_ARGS", ctx(contracts));
+  await rejects(delegate(contracts.qgoldEscrow, "storage_deposit", { account_id: me, grant: true }, 11n * step), "RELAY_DEPOSIT", ctx(contracts));
+  await rejects(delegate(contracts.qgoldEscrow, "storage_deposit", { account_id: me, grant: true }, 59_000_000_000_000_000_000_000n), "RELAY_DEPOSIT", ctx(contracts));
+  await rejects(delegate(contracts.qgoldEscrow, "storage_deposit", { account_id: me, grant: true }, 0n), "RELAY_DEPOSIT", ctx(contracts));
+  await rejects(delegate(contracts.qgoldEscrow, "storage_withdraw", {}, 1n), "RELAY_METHOD", ctx(contracts));
+  // Without an escrow manifest the escrow is not a sponsored receiver at all.
+  await rejects(delegate(contracts.qgoldEscrow, "storage_deposit", { account_id: me, grant: true }, step), "RELAY_RECEIVER", ctx(CONTRACTS));
+});

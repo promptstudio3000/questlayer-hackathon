@@ -652,7 +652,7 @@ export const CHAPTERS: Chapter[] = [
     title: "QGOLD token and vault",
     summary: "A transferable token that is always fully backed by NEAR. Burns and fees only push its rate up.",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-08",
     sources: ["docs/QGOLD-VAULT.md", "docs/QGOLD-MARKET.md", "contracts/qgold/src/lib.rs", "server/qgold/keeper.mjs", "server/qgold/token-page.mjs"],
     blocks: [
       {
@@ -675,11 +675,12 @@ export const CHAPTERS: Chapter[] = [
       { viz: "qgold-exit" },
       {
         list: [
-          "Instant exits: at most 5 % of the backing per 24 h (at least 1 NEAR) and 1 % per account (at least 0.2 NEAR). The rest queues for a 24–48 h safe window; `claim_exit` pays only the account that burned.",
+          "Instant exits: at most 5 % of the backing per 24 h (at least 1 NEAR) and 1 % per account (at least 0.2 NEAR). The rest queues for a 24–48 h safe window; `claim_exit` pays only the account that burned. A queued exit is at least 0.005 NEAR: that first 0.005 NEAR is a storage bond for its record and comes back with the claim.",
           "Every payout follows a burn of the payee's own QGOLD. There is **no admin withdraw**, and the vault account has no access keys.",
+          "A burn or redeem leaves either no supply or at least 1 QGOLD, so one early holder cannot leave a single unit behind a large backing and price every coin at zero. When the last QGOLD leaves, the leftover backing goes to insurance and R returns to its initial value for the next minter.",
           "After every change the contract asserts balance ≥ backing + insurance + treasury due + queued exits + storage. If anything ever drains NEAR, every later call fails and the vault freezes.",
-          "10 % of fees build an insurance fund; `reconcile` books any loss against insurance first and refills R to its peak.",
-          "A guardian can pause for at most 72 h. Upgrades and parameter changes need the council multisig and a fixed 48 h timelock.",
+          "10 % of fees build an insurance fund; `reconcile` books a missing-money loss against insurance first and refills R to its peak. Storage that outgrew the operating balance is not a loss: sponsored records (coin payouts to new players, conversion receipts) stop first, `fund_operating` refills the balance, and old receipts can be pruned after 30 days.",
+          "A guardian or council member can pause for at most 72 h, once per 7 days per account; ending a pause early, like cancelling a proposal, takes the council threshold (or the proposer). Upgrades and parameter changes need the council multisig and a fixed 48 h timelock.",
         ],
       },
       { h: "Market and keeper" },
@@ -702,7 +703,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Fees, spending and the task market",
     summary: "Where fees go, what GOLD can buy, and how tasks, Secrets and conditional sends settle.",
     status: "partial",
-    updated: "2026-11-06",
+    updated: "2026-11-09",
     sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts"],
     blocks: [
       { viz: "fees" },
@@ -730,7 +731,7 @@ export const CHAPTERS: Chapter[] = [
           "In the security candidate, each shop purchase keeps one saved reference from price quote through burn and delivery. The server verifies direct or relayed payment receipts; retries return the saved result. If an item becomes unavailable after payment, its credit stays recorded for resolution.",
           "Everything settles in real QGOLD. The poster, buyer or sender pays it from their own NEAR account into the `qgold-escrow` contract with one sponsored `ft_transfer_call` (with the secure account, every escrow payment, whether a task, a Secret or a send, opens its approval window, which names the contract, method, amount and who can be paid, decoded from the exact message; a game page alone can never fund one). The server confirms the exact payment, recipient, deadline and conditions before opening the task, Secret or send.",
           "A returned payment never opens a paid Secret or creates a new reward. A completed payment stays completed after a restart, and existing confirmations are preserved. An uncertain payment waits for verification without another approval from the player; normal exploration stays available.",
-          "In the security candidate, sponsored token registration is a lifetime grant that cannot be cashed out by unregistering. Escrow admission reserves storage before accepting a payment; genuine appeals remain available, while unrelated workers cannot freeze an unassigned slot.",
+          "In the security candidate, sponsored token registration is a lifetime grant that cannot be cashed out by unregistering; the escrow sponsors it only for workers and creators who earned a payout, never for the recipient of a send. A send or refund to an account the token does not know yet waits (the market shows this) until the account's first QGOLD payout registers it. The funder of a task, Secret or send holds a native NEAR storage deposit on the escrow: each agreement locks its storage headroom from that deposit, consumes about 0.01 NEAR for its permanent record and returns the rest when it closes, so dust agreements cannot exhaust the escrow's reserve. When the deposit is short, the funding response carries a `storage_deposit` the app signs first; the relayer pays it in 0.05 NEAR steps (at most 0.5 NEAR, only for the signer, only when the escrow does not already cover it) and the escrow keeps it as a grant that can never be withdrawn as NEAR. Genuine appeals remain available, while unrelated workers cannot freeze an unassigned slot.",
           "If a reward or refund transfer fails, the escrow keeps the credit and the worker retries after verifying the failure. Restart recovery checks the same payment before sending again. New rewards remain owed even while an earlier payment is in progress; no extra player confirmation is required.",
           "A publisher call the escrow contract rejects with a final receipt (for example an approval for a task its poster already cancelled on chain) is recorded as failed for the operator and never holds up other players' payouts; only payments with an unknown outcome pause the queue until they are verified.",
           "The game server is the escrow's publisher: it approves GPS-checked or reviewed completions, confirms Secret visits, releases or refunds sends and pushes each payout to the receiver's account (`withdraw_for`). It can only pay the named counterparty or refund the funder; there is no admin withdrawal and the escrow has no access keys.",

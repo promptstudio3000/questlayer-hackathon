@@ -3067,5 +3067,7 @@
  "Your workshop": "Твоя мастерская",
  "Your workshop is out of reach": "Твоя мастерская недоступна",
  "{0} / 3 blocks shaped": "Изменено блоков: {0} / 3",
- "{0}’s workshop": "Мастерская игрока {0}"
+ "{0}’s workshop": "Мастерская игрока {0}",
+ "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Переводы и возвраты поступят на этот аккаунт, как только первая выплата QGOLD зарегистрирует его в токене.",
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "Эскроу требует {0} хранилища для этого соглашения, и сейчас его не удалось добавить: {1}"
 }

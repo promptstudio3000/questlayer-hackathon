@@ -33,19 +33,88 @@ const GAS_ON_WITHDRAW: Gas = Gas::from_tgas(15);
 const GAS_WITHDRAW_MIN: Gas = Gas::from_tgas(50);
 const GAS_STORAGE_DEPOSIT: Gas = Gas::from_tgas(10);
 const GAS_WITHDRAW_FOR_MIN: Gas = Gas::from_tgas(60);
-/// NEP-145 registration on the QGOLD vault (0.00125 NEAR, contracts/qgold STORAGE_FEE).
-const STORAGE_DEPOSIT_YOCTO: u128 = 1_250_000_000_000_000_000_000;
+/// Lifetime registration grant on the QGOLD vault (0.0025 NEAR,
+/// contracts/qgold SPONSORED_STORAGE_FEE).
+const STORAGE_DEPOSIT_YOCTO: u128 = 2_500_000_000_000_000_000_000;
 // Native storage headroom per open agreement, sized by what that agreement can
 // still add: one bounded account id plus credit record (256 bytes) per possible
 // worker, dispute or payee, plus 4 KiB for the fixed record, keys and callbacks.
 // Sizing per agreement (not by the largest possible task) keeps the service
 // open: a flat 42 KiB per agreement let a few 1-unit sends block every new
 // task. This is native storage headroom, not a token price or fee.
-const ENTRY_BYTES: u64 = 256;
-const FIXED_BYTES: u64 = 4096;
-/// Sum of the headroom reserved for open agreements. Kept under its own key so
-/// the contract state layout is unchanged.
+//
+// The funder pays it (M6): every funding account holds a native NEAR storage
+// deposit on this contract (`storage_deposit`). Opening an agreement needs its
+// whole growth available; `RECORD_BYTES` of it are consumed for good (the
+// record is permanent), one `ENTRY_BYTES` more for every paid worker or dispute
+// entry, and the rest is locked until the agreement closes. Dust agreements
+// therefore cost NEAR, not only QGOLD units that come back on cancel.
+pub const ENTRY_BYTES: u64 = 256;
+pub const FIXED_BYTES: u64 = 4096;
+pub const RECORD_BYTES: u64 = 1024;
+/// Sum of the headroom still locked for open agreements. Kept under its own key
+/// so the contract state layout is unchanged.
 const RESERVED_GROWTH_KEY: &[u8] = b"reserved-growth-bytes";
+/// Sum of every funder's native storage deposit (what `storage_withdraw` can
+/// still owe once agreements close).
+const NATIVE_TOTAL_KEY: &[u8] = b"native-deposit-total";
+
+#[derive(BorshDeserialize, BorshSerialize, Default, Clone, Copy)]
+#[borsh(crate = "near_sdk::borsh")]
+struct NativeDeposit {
+    /// NEAR deposited for this account and not consumed or withdrawn.
+    total: u128,
+    /// Bytes of headroom locked for its open agreements (priced at the
+    /// current byte cost whenever it matters).
+    locked_bytes: u64,
+    /// The part of `total` that someone else deposited for this account (the
+    /// game sponsoring a player). It pays for agreements but can never be
+    /// withdrawn as NEAR, so sponsoring storage is not handing out NEAR.
+    granted: u128,
+}
+impl NativeDeposit {
+    fn locked_yocto(&self) -> u128 {
+        u128::from(self.locked_bytes) * byte_cost()
+    }
+    /// What new agreements can still use.
+    fn available(&self) -> u128 {
+        self.total.saturating_sub(self.locked_yocto())
+    }
+    /// What the account may take back: locks and the grant are both served
+    /// from the same NEAR, so only what exceeds the larger of them is free.
+    fn withdrawable(&self) -> u128 {
+        self.total.saturating_sub(self.granted.max(self.locked_yocto()))
+    }
+    /// Permanently spends `amount` (a record or an entry), grant first.
+    fn consume(&mut self, amount: u128) -> u128 {
+        let taken = amount.min(self.total);
+        self.total -= taken;
+        self.granted -= taken.min(self.granted);
+        taken
+    }
+}
+/// Funder deposits (prefix `nd`), lock per open agreement (`lk`, keyed by
+/// kind:id) and payees who earned a task or Secret payout (`er`).
+fn native_deposits() -> LookupMap<AccountId, NativeDeposit> {
+    LookupMap::new(b"nd".to_vec())
+}
+fn agreement_locks() -> LookupMap<String, u64> {
+    LookupMap::new(b"lk".to_vec())
+}
+fn earned() -> LookupMap<AccountId, bool> {
+    LookupMap::new(b"er".to_vec())
+}
+fn native_total() -> u128 {
+    env::storage_read(NATIVE_TOTAL_KEY)
+        .map(|b| u128::from_le_bytes(b.try_into().expect("Invalid native total")))
+        .unwrap_or(0)
+}
+fn set_native_total(v: u128) {
+    env::storage_write(NATIVE_TOTAL_KEY, &v.to_le_bytes());
+}
+fn byte_cost() -> u128 {
+    env::storage_byte_cost().as_yoctonear()
+}
 /// Disputes plus resolved disputes a task can hold: two per slot plus four,
 /// capped at MAX_DISPUTES.
 pub fn task_dispute_cap(slots: u32) -> usize {
@@ -470,6 +539,8 @@ impl QgoldEscrow {
             "Dispute capacity reached"
         );
         task.disputes.push(worker.clone());
+        let poster = task.poster.clone();
+        self.consume_entry(&poster, &format!("t:{id}"));
         Self::event(
             "disputed",
             json!({"kind":"task","id":id,"worker":worker,"by":caller}),
@@ -556,6 +627,8 @@ impl QgoldEscrow {
             let buyer = s.buyer.clone();
             self.unlock(&[(buyer.clone(), s.price)], 0);
             s.status = Status::Refunded;
+            // A refunded Secret is closed too: release its slot and lock.
+            self.open_dec(&buyer, &format!("s:{id}"));
             Self::event(
                 "refunded",
                 json!({"kind":"secret","id":id,"to":buyer,"amount":U128(s.price),"reason":"dispute"}),
@@ -668,12 +741,28 @@ impl QgoldEscrow {
 
     /// Pushes `account_id`'s whole credit to that account. Anyone may call it
     /// (the game server does after every payout): the tokens can only go to
-    /// the credit's owner. The escrow first registers the account on the token
-    /// with a nonrefundable lifetime grant. The token refunds the deposit when
-    /// already registered or previously sponsored. Attach at least 60 Tgas.
+    /// the credit's owner. For an account that earned a task or Secret payout
+    /// the escrow first registers it on the token with a nonrefundable lifetime
+    /// grant (the token refunds the deposit when already registered or
+    /// previously sponsored). Other credits (refunds, conditional sends) go to
+    /// accounts that registered themselves: a send to a fresh id must not be a
+    /// free way to spend the escrow's NEAR. Attach at least 60 Tgas.
     pub fn withdraw_for(&mut self, account_id: AccountId) -> Promise {
         self.not_paused();
         assert!(env::prepaid_gas() >= GAS_WITHDRAW_FOR_MIN, "Attach at least 60 Tgas");
+        if !earned().get(&account_id).unwrap_or(false) {
+            self.require_native_reserve(1);
+            let amount = self.start_withdraw(&account_id);
+            return ext_ft::ext(self.token_id.clone())
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .with_static_gas(GAS_FT_TRANSFER)
+                .ft_transfer(account_id.clone(), U128(amount), Some("QuestLayer escrow payout".into()))
+                .then(
+                    ext_self::ext(env::current_account_id())
+                        .with_static_gas(GAS_ON_WITHDRAW)
+                        .on_withdraw(account_id, U128(amount)),
+                );
+        }
         self.require_native_reserve(STORAGE_DEPOSIT_YOCTO + 1);
         let amount = self.start_withdraw(&account_id);
         ext_ft::ext(self.token_id.clone())
@@ -782,15 +871,98 @@ impl QgoldEscrow {
     pub fn get_open_count(&self, account_id: AccountId) -> u32 {
         self.open_by_account.get(&account_id).unwrap_or(0)
     }
-    /// Native storage headroom for monitoring: new agreements are refused
-    /// while `free_yocto` is below what the next one needs, so top up early.
+    /// Native storage headroom for monitoring: payouts that sponsor a token
+    /// registration are refused while `free_yocto` is below the grant, so top
+    /// up early. Funders pay for their own agreements (`storage_deposit`).
     pub fn get_storage_reserve(&self) -> Value {
         let reserved = reserved_growth();
-        let required = (u128::from(env::storage_usage()) + u128::from(reserved)) * env::storage_byte_cost().as_yoctonear();
+        let required = self.required_native(0);
         let balance = env::account_balance().as_yoctonear();
         json!({"reserved_growth_bytes": reserved, "required_yocto": required.to_string(),
+            "native_deposits_yocto": native_total().to_string(),
             "balance_yocto": balance.to_string(), "free_yocto": balance.saturating_sub(required).to_string(),
-            "pair_growth_bytes": PAIR_GROWTH, "one_slot_task_growth_bytes": task_growth(1)})
+            "pair_growth_bytes": PAIR_GROWTH, "one_slot_task_growth_bytes": task_growth(1),
+            "record_bytes": RECORD_BYTES, "entry_bytes": ENTRY_BYTES,
+            "sponsored_registration_yocto": STORAGE_DEPOSIT_YOCTO.to_string(),
+            "storage_byte_cost_yocto": byte_cost().to_string()})
+    }
+
+    // -------------------------------------------------------- native storage
+
+    /// Adds the attached NEAR to `account_id`'s (default: the caller's) native
+    /// storage deposit. Anyone may top up anyone. Opening an agreement needs
+    /// its whole growth (`get_storage_reserve`) available in the funder's
+    /// deposit. A deposit made by someone else, or with `grant: true`, is a
+    /// grant: it pays for agreements but is never withdrawable. The game's
+    /// relayer sponsors players' deposits with `grant: true` (a relayed call
+    /// arrives with the player as predecessor), so sponsored storage never
+    /// turns into NEAR the player can take out.
+    #[payable]
+    pub fn storage_deposit(&mut self, account_id: Option<AccountId>, grant: Option<bool>) -> Value {
+        let account = account_id.unwrap_or_else(env::predecessor_account_id);
+        self.not_self(&account);
+        let d = env::attached_deposit().as_yoctonear();
+        let mut deposits = native_deposits();
+        let (mut nd, kept) = match deposits.get(&account) {
+            Some(nd) => (nd, d),
+            // A new deposit record is storage too: ENTRY_BYTES of the first
+            // deposit pay for it and are not refundable.
+            None => {
+                let record = u128::from(ENTRY_BYTES) * byte_cost();
+                assert!(d > record, "Attach more than {record} yoctoNEAR: the first deposit also pays for its own record");
+                (NativeDeposit::default(), d - record)
+            }
+        };
+        nd.total = nd.total.checked_add(kept).expect("Deposit overflow");
+        let sponsor = env::predecessor_account_id();
+        let granted = sponsor != account || grant == Some(true);
+        if granted {
+            nd.granted = nd.granted.checked_add(kept).expect("Grant overflow");
+        }
+        deposits.insert(&account, &nd);
+        set_native_total(native_total().checked_add(kept).expect("Native total overflow"));
+        Self::event("storage_deposited", json!({"account_id":account,"amount":U128(kept),"by":sponsor,"granted":granted}));
+        self.storage_balance_of(account).expect("deposit")
+    }
+
+    /// Returns the caller's available (not locked) native deposit, or `amount`
+    /// of it. Attach exactly 1 yocto. Works while paused: nothing closes then,
+    /// so nothing locked can be taken.
+    #[payable]
+    pub fn storage_withdraw(&mut self, amount: Option<U128>) -> Promise {
+        assert_one_yocto();
+        let account = env::predecessor_account_id();
+        let mut deposits = native_deposits();
+        let mut nd = deposits.get(&account).expect("No storage deposit");
+        let available = nd.withdrawable();
+        let take = amount.map(|a| a.0).unwrap_or(available);
+        assert!(take > 0 && take <= available, "Only {available} yoctoNEAR of the storage deposit is yours and not locked by open agreements");
+        nd.total -= take;
+        if nd.total == 0 && nd.locked_bytes == 0 {
+            deposits.remove(&account);
+        } else {
+            deposits.insert(&account, &nd);
+        }
+        set_native_total(native_total() - take);
+        Self::event("storage_withdrawn", json!({"account_id":account,"amount":U128(take)}));
+        // Own funds first: what is left must still cover storage and deposits.
+        self.require_native_reserve(take);
+        Promise::new(account).transfer(NearToken::from_yoctonear(take))
+    }
+
+    pub fn storage_balance_of(&self, account_id: AccountId) -> Option<Value> {
+        native_deposits().get(&account_id).map(|nd| {
+            let locked = nd.locked_yocto();
+            json!({"total": U128(nd.total), "available": U128(nd.available()),
+                "withdrawable": U128(nd.withdrawable()), "granted": U128(nd.granted),
+                "locked": U128(locked.min(nd.total)), "locked_bytes": nd.locked_bytes})
+        })
+    }
+
+    /// Whether `withdraw_for` registers this account on the token: true once it
+    /// has been paid as a worker or a Secret creator.
+    pub fn is_earned(&self, account_id: AccountId) -> bool {
+        earned().get(&account_id).unwrap_or(false)
     }
     pub fn get_stats(&self) -> StatsView {
         StatsView {
@@ -880,17 +1052,64 @@ impl QgoldEscrow {
         }
         assert!(!task.paid.contains(worker), "Worker already paid for this task");
     }
-    fn open_inc(&mut self, account: &AccountId, growth: u64) {
+    /// Admits an agreement: the funder's native deposit must hold its whole
+    /// `growth`. `RECORD_BYTES` are consumed for good, the rest is locked under
+    /// `key` and in `reserved_growth` until `open_dec`.
+    fn open_inc(&mut self, account: &AccountId, key: &str, growth: u64) {
         let n = self.open_by_account.get(account).unwrap_or(0);
         assert!(n < MAX_OPEN_PER_ACCOUNT, "Too many open escrows for this account");
+        let c = byte_cost();
+        let mut deposits = native_deposits();
+        let mut nd = deposits.get(account).unwrap_or_default();
+        let need = u128::from(growth) * c;
+        let available = nd.available();
+        assert!(
+            available >= need,
+            "Storage deposit: this agreement needs {need} yoctoNEAR available in the funder's native deposit on the escrow ({available} available; call storage_deposit)"
+        );
+        let consumed = nd.consume(u128::from(RECORD_BYTES) * c);
+        let lock = growth - RECORD_BYTES;
+        nd.locked_bytes = nd.locked_bytes.checked_add(lock).expect("Lock overflow");
+        deposits.insert(account, &nd);
         self.open_by_account.insert(account, &(n + 1));
-        let total = reserved_growth().checked_add(growth).expect("Reserved growth overflow");
+        set_native_total(native_total() - consumed);
+        agreement_locks().insert(&key.to_string(), &lock);
+        let total = reserved_growth().checked_add(lock).expect("Reserved growth overflow");
         env::storage_write(RESERVED_GROWTH_KEY, &total.to_le_bytes());
     }
-    fn open_dec(&mut self, account: &AccountId, growth: u64) {
-        // Agreements opened before this accounting existed reserved nothing.
-        let total = reserved_growth().saturating_sub(growth);
+    /// A permanent entry (paid worker, dispute) was added to the agreement:
+    /// `ENTRY_BYTES` of its lock are consumed from the funder's deposit.
+    fn consume_entry(&mut self, account: &AccountId, key: &str) {
+        let mut locks = agreement_locks();
+        let k = key.to_string();
+        let lock = locks.get(&k).unwrap_or(0);
+        let take = lock.min(ENTRY_BYTES);
+        if take == 0 {
+            return;
+        }
+        locks.insert(&k, &(lock - take));
+        let c = byte_cost();
+        let mut deposits = native_deposits();
+        let mut nd = deposits.get(account).unwrap_or_default();
+        let consumed = nd.consume(u128::from(take) * c);
+        nd.locked_bytes = nd.locked_bytes.saturating_sub(take);
+        deposits.insert(account, &nd);
+        set_native_total(native_total() - consumed);
+        let total = reserved_growth().saturating_sub(take);
         env::storage_write(RESERVED_GROWTH_KEY, &total.to_le_bytes());
+    }
+    /// Closes an agreement: whatever is still locked under `key` returns to the
+    /// funder's available deposit.
+    fn open_dec(&mut self, account: &AccountId, key: &str) {
+        let lock = agreement_locks().remove(&key.to_string()).unwrap_or(0);
+        let total = reserved_growth().saturating_sub(lock);
+        env::storage_write(RESERVED_GROWTH_KEY, &total.to_le_bytes());
+        if lock > 0 {
+            let mut deposits = native_deposits();
+            let mut nd = deposits.get(account).unwrap_or_default();
+            nd.locked_bytes = nd.locked_bytes.saturating_sub(lock);
+            deposits.insert(account, &nd);
+        }
         let n = self.open_by_account.get(account).expect("Open count underflow");
         if n <= 1 {
             self.open_by_account.remove(account);
@@ -943,7 +1162,7 @@ impl QgoldEscrow {
             reward.checked_add(fee).expect("Overflow"),
             "Amount must equal reward plus the 10% fee exactly"
         );
-        self.open_inc(&poster, task_growth(slots));
+        self.open_inc(&poster, &format!("t:{}", m.id), task_growth(slots));
         let task = Task {
             poster: poster.clone(),
             reward,
@@ -978,7 +1197,7 @@ impl QgoldEscrow {
         assert_ne!(m.creator, buyer, "The creator cannot buy their own Secret");
         self.check_party(&m.creator);
         assert_eq!(amount, m.price.0, "Amount must equal the price exactly");
-        self.open_inc(&buyer, PAIR_GROWTH);
+        self.open_inc(&buyer, &format!("s:{}", m.id), PAIR_GROWTH);
         self.secrets.insert(
             &m.id,
             &Secret {
@@ -1017,7 +1236,7 @@ impl QgoldEscrow {
                 );
             }
         }
-        self.open_inc(&sender, PAIR_GROWTH);
+        self.open_inc(&sender, &format!("x:{}", m.id), PAIR_GROWTH);
         self.transfers.insert(
             &m.id,
             &Transfer {
@@ -1059,13 +1278,16 @@ impl QgoldEscrow {
         task.paid_slots += 1;
         task.paid.push(worker.clone());
         let poster = task.poster.clone();
+        let key = format!("t:{id}");
+        self.consume_entry(&poster, &key);
+        earned().insert(&worker, &true);
         self.unlock(&[(worker.clone(), r)], f);
         Self::event(
             "paid",
             json!({"kind":"task","id":id,"worker":worker,"amount":U128(r),"fee":U128(f),"treasury":self.treasury_id}),
         );
         if task.closed() {
-            self.open_dec(&poster, task_growth(task.slots));
+            self.open_dec(&poster, &key);
         }
         self.check();
     }
@@ -1086,7 +1308,7 @@ impl QgoldEscrow {
             json!({"kind":"task","id":id,"to":poster,"slots":n,"amount":U128(total),"reason":reason}),
         );
         if task.closed() {
-            self.open_dec(&poster, task_growth(task.slots));
+            self.open_dec(&poster, &format!("t:{id}"));
         }
         self.check();
     }
@@ -1094,9 +1316,10 @@ impl QgoldEscrow {
         let fee = fee_of(s.price);
         let share = s.price - fee;
         let buyer = s.buyer.clone();
+        earned().insert(&s.creator, &true);
         self.unlock(&[(s.creator.clone(), share)], fee);
         s.status = Status::Released;
-        self.open_dec(&buyer, PAIR_GROWTH);
+        self.open_dec(&buyer, &format!("s:{id}"));
         Self::event(
             "paid",
             json!({"kind":"secret","id":id,"creator":s.creator,"amount":U128(share),"fee":U128(fee),"treasury":self.treasury_id,"reason":reason}),
@@ -1107,7 +1330,7 @@ impl QgoldEscrow {
         let sender = t.sender.clone();
         self.unlock(&[(t.to.clone(), t.amount)], 0);
         t.status = Status::Released;
-        self.open_dec(&sender, PAIR_GROWTH);
+        self.open_dec(&sender, &format!("x:{id}"));
         Self::event(
             "paid",
             json!({"kind":"transfer","id":id,"to":t.to,"amount":U128(t.amount),"reason":reason}),
@@ -1118,7 +1341,7 @@ impl QgoldEscrow {
         let sender = t.sender.clone();
         self.unlock(&[(sender.clone(), t.amount)], 0);
         t.status = Status::Refunded;
-        self.open_dec(&sender, PAIR_GROWTH);
+        self.open_dec(&sender, &format!("x:{id}"));
         Self::event(
             "refunded",
             json!({"kind":"transfer","id":id,"to":sender,"amount":U128(t.amount),"reason":reason}),
@@ -1164,10 +1387,21 @@ impl QgoldEscrow {
         assert!(self.conserved(), "Escrow conservation invariant failed");
     }
 
+    /// What the balance must hold: current storage, the headroom locked for
+    /// open agreements, the funders' deposits that are not locked (locked
+    /// deposits are the money behind the headroom, counted once) and `outgoing`.
+    fn required_native(&self, outgoing: u128) -> u128 {
+        let c = byte_cost();
+        let reserved = u128::from(reserved_growth()) * c;
+        let storage = u128::from(env::storage_usage()) * c;
+        storage
+            .checked_add(reserved)
+            .and_then(|v| v.checked_add(native_total().saturating_sub(reserved)))
+            .and_then(|v| v.checked_add(outgoing))
+            .expect("Native storage reserve overflow")
+    }
     fn require_native_reserve(&self, outgoing: u128) {
-        let bytes = u128::from(env::storage_usage()) + u128::from(reserved_growth());
-        let required = bytes.checked_mul(env::storage_byte_cost().as_yoctonear())
-            .and_then(|cost| cost.checked_add(outgoing)).expect("Native storage reserve overflow");
+        let required = self.required_native(outgoing);
         assert!(env::account_balance().as_yoctonear() >= required, "Escrow storage reserve is insufficient; existing token rights remain saved");
     }
 

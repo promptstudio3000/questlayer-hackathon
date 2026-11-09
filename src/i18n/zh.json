@@ -3067,5 +3067,7 @@
  "Your workshop": "你的工坊",
  "Your workshop is out of reach": "无法连接到你的工坊",
  "{0} / 3 blocks shaped": "已修改 {0} / 3 个方块",
- "{0}’s workshop": "{0}的工坊"
+ "{0}’s workshop": "{0}的工坊",
+ "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "此账户在首次 QGOLD 支付将其登记到代币后，才能收到转账和退款。",
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "此协议需要托管合约提供 {0} 的存储，现在无法添加：{1}"
 }

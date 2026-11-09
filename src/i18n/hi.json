@@ -3067,5 +3067,7 @@
  "Your workshop": "आपकी कार्यशाला",
  "Your workshop is out of reach": "आपकी कार्यशाला उपलब्ध नहीं है",
  "{0} / 3 blocks shaped": "{0} / 3 ब्लॉक बदले गए",
- "{0}’s workshop": "{0} की कार्यशाला"
+ "{0}’s workshop": "{0} की कार्यशाला",
+ "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "भेजी गई राशियाँ और रिफ़ंड इस खाते तक तब पहुँचते हैं जब इसका पहला QGOLD भुगतान इसे टोकन पर पंजीकृत कर देता है।",
+ "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "इस समझौते के लिए एस्क्रो को {0} स्टोरेज चाहिए और उसे अभी जोड़ा नहीं जा सका: {1}"
 }

@@ -7,15 +7,16 @@ fn a(s: &str) -> AccountId {
     s.parse().unwrap()
 }
 
-/// A tiny chain: keeps the contract balance and the clock across calls.
+/// A tiny chain: keeps the contract balance, storage usage and the clock across calls.
 struct Chain {
     bal: u128,
+    storage: u64,
     now_ms: u64,
 }
 
 impl Chain {
     fn new() -> Self {
-        Self { bal: 5 * NEAR, now_ms: 1_800_000_000_000 }
+        Self { bal: 5 * NEAR, storage: 1024 * 300, now_ms: 1_800_000_000_000 }
     }
     fn ctx(&self, who: &str, deposit: u128) {
         let mut b = VMContextBuilder::new();
@@ -23,17 +24,36 @@ impl Chain {
             .predecessor_account_id(a(who))
             .signer_account_id(a(who))
             .account_balance(NearToken::from_yoctonear(self.bal))
+            .storage_usage(self.storage)
             .attached_deposit(NearToken::from_yoctonear(deposit))
             .block_timestamp(self.now_ms * 1_000_000)
             .prepaid_gas(Gas::from_tgas(300));
         testing_env!(b.build());
     }
-    /// Runs `f` as `who` with `deposit` and keeps the balance after it.
+    /// Runs `f` as `who` with `deposit` and keeps the balance and storage after it.
     fn call<R>(&mut self, who: &str, deposit: u128, f: impl FnOnce() -> R) -> R {
         self.ctx(who, deposit);
         let r = f();
         self.bal = env::account_balance().as_yoctonear();
+        self.storage = env::storage_usage();
         r
+    }
+    /// NEAR above everything owed plus the storage cost, as `audit()` reports it.
+    fn slack(&self, q: &QGold) -> u128 {
+        self.ctx("viewer.testnet", 0);
+        num(&q.audit(), "operating_slack")
+    }
+    /// Runs `f`, which must panic, and returns the message. The mock keeps the
+    /// writes made before the panic, so the balance and storage are kept too.
+    fn fails(&mut self, who: &str, deposit: u128, f: impl FnOnce()) -> String {
+        self.ctx(who, deposit);
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
+        self.bal = env::account_balance().as_yoctonear();
+        self.storage = env::storage_usage();
+        match r {
+            Ok(_) => panic!("expected a panic"),
+            Err(e) => e.downcast_ref::<String>().cloned().or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string())).unwrap_or_default(),
+        }
     }
     fn hours(&mut self, h: u64) {
         self.now_ms += h * HOUR_MS;
@@ -97,9 +117,10 @@ fn world_dust_is_not_backing_and_other_accounts_cannot_consume_it() {
 
 #[test]
 fn world_carry_converts_at_the_new_ratio_without_repricing_old_near() {
+    // 2 QGOLD are minted and 1 QGOLD burned (a burn may not leave a dust supply, MIN_SUPPLY).
     let mut c=Chain::new();let mut q=fresh(&mut c);let unit=MILLI/ONE;
-    c.call("rewards.testnet",2*unit+9,||q.mint_with_carry_for(a("alice.testnet"),Some("alice-4".into())));
-    c.call("alice.testnet",1,||q.ft_burn(U128(1),None));
+    c.call("rewards.testnet",2*MILLI+9,||q.mint_with_carry_for(a("alice.testnet"),Some("alice-4".into())));
+    c.call("alice.testnet",1,||q.ft_burn(U128(ONE),None));
     let ratio=q.rate();assert_eq!(ratio,2*MILLI);
     let next=c.call("rewards.testnet",2*unit-9,||q.mint_with_carry_for(a("alice.testnet"),Some("alice-5".into())));
     assert_eq!(num(&next,"qgoldU"),1);assert_eq!(num(&next,"consumedYocto"),2*unit);assert_eq!(num(&next,"carryYocto"),0);assert!(q.rate()>=ratio);
@@ -383,8 +404,9 @@ fn a_drain_freezes_the_vault_until_reconcile_and_insurance_refills_r() {
     c.call("alice.testnet", 10 * NEAR + STORAGE_FEE, || q.deposit(None, None));
     c.call("council.testnet", 2 * NEAR, || q.fund_insurance());
     let rate = num(&state(&c, &q), "rate");
-    // Something outside the books takes 6 NEAR (3 NEAR of operating slack + 3 more).
-    c.bal -= 6 * NEAR;
+    // Something outside the books takes 8 NEAR: the operating slack, the whole
+    // insurance fund (2.01 NEAR) and about 1 NEAR of the backing.
+    c.bal -= 8 * NEAR;
     let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         c.ctx("alice.testnet", 1);
         q.redeem(U128(ONE), None, None);
@@ -398,6 +420,11 @@ fn a_drain_freezes_the_vault_until_reconcile_and_insurance_refills_r() {
     assert!(num(&st, "rate") < rate);
     c.ctx("v.testnet", 0);
     assert!(!q.audit()["ok"].as_bool().unwrap());
+    // The operating slack that paid for storage went with it and is not a
+    // loss: it is funded back explicitly.
+    let storage_short = num(&q.audit(), "shortfall");
+    assert!(storage_short > 0);
+    c.call("ops.testnet", storage_short, || q.fund_operating());
     // New fees refill the insurance fund, which refills R towards its peak.
     c.call("council.testnet", 5 * NEAR, || q.fund_insurance());
     c.call("anyone.testnet", 0, || q.reconcile());
@@ -476,22 +503,25 @@ fn lifetime_storage_grant_cannot_be_cashed_out_or_charged_twice() {
     let mut c = Chain::new();
     let mut q = fresh(&mut c);
     let initial_reserve = q.storage_deposits;
-    c.call("escrow.testnet", STORAGE_FEE, || q.storage_deposit_sponsored(a("recipient.testnet")));
-    assert_eq!(q.storage_deposits, initial_reserve + STORAGE_FEE);
+    let slack = c.slack(&q);
+    c.call("escrow.testnet", SPONSORED_STORAGE_FEE, || q.storage_deposit_sponsored(a("recipient.testnet")));
+    // The grant is nobody's refund: it is not an obligation, and it pays for the
+    // marker and the holder record, so the operating slack does not shrink (H2).
+    assert_eq!(q.storage_deposits, initial_reserve);
+    assert!(c.slack(&q) >= slack, "a sponsored grant must pay for its own storage");
     for _ in 0..8 {
         let before = c.bal;
         assert!(c.call("recipient.testnet", 1, || q.storage_unregister(None)));
         assert_eq!(c.bal, before + 1, "recipient receives no native refund");
-        assert_eq!(q.storage_deposits, initial_reserve + STORAGE_FEE, "grant remains reserved");
         let before = c.bal;
-        c.call("escrow.testnet", STORAGE_FEE, || q.storage_deposit_sponsored(a("recipient.testnet")));
+        c.call("escrow.testnet", SPONSORED_STORAGE_FEE, || q.storage_deposit_sponsored(a("recipient.testnet")));
         assert_eq!(c.bal, before, "repeat sponsor payment is refunded in full");
-        assert_eq!(q.storage_deposits, initial_reserve + STORAGE_FEE);
+        assert_eq!(q.storage_deposits, initial_reserve);
     }
     // An ordinary player's refundable deposit keeps its existing semantics.
     c.call("player.testnet", STORAGE_FEE, || q.storage_deposit(None, None));
     let before = c.bal;
-    c.call("escrow.testnet", STORAGE_FEE, || q.storage_deposit_sponsored(a("player.testnet")));
+    c.call("escrow.testnet", SPONSORED_STORAGE_FEE, || q.storage_deposit_sponsored(a("player.testnet")));
     assert_eq!(c.bal, before);
     c.call("player.testnet", 1, || q.storage_unregister(None));
     assert_eq!(c.bal, before + 1 - STORAGE_FEE);
@@ -523,4 +553,303 @@ fn rounding_never_lowers_r() {
         peak = r;
         c.hours(1);
     }
+}
+
+// ------------------------------------------------------------- regression tests (security review 8 Nov 2026)
+
+fn catches(f: impl FnOnce()) -> bool {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).is_err()
+}
+
+fn council3(c: &mut Chain) -> QGold {
+    c.call("c1.testnet", 0, || {
+        QGold::new(vec![a("c1.testnet"), a("c2.testnet"), a("c3.testnet")], 2, a("guardian.testnet"), a("treasury.testnet"), vec![a("rewards.testnet")], U128(MILLI), meta())
+    })
+}
+
+/// H1: a near-100 % holder burns all but one unit. R would become backing per
+/// unit (about 1e9 times the start) and every coin below ~1 NEAR would mint 0.
+#[test]
+fn a_dust_supply_cannot_push_r_out_of_reach_of_ordinary_coins() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("mallory.testnet", NEAR + STORAGE_FEE, || q.deposit(None, None)); // 990 QGOLD, 100 % of supply
+    let held = q.ft_balance_of(a("mallory.testnet")).0;
+    assert!(catches(|| {
+        c.ctx("mallory.testnet", 1);
+        q.ft_burn(U128(held - 1), None);
+    }), "a burn may not leave one unit of supply");
+    assert!(catches(|| {
+        c.ctx("mallory.testnet", 1);
+        q.redeem(U128(held - 1), Some("near_queue".into()), None);
+    }), "a redeem may not leave one unit of supply");
+    // Leaving a whole QGOLD is allowed: R is then bounded by backing / 1 QGOLD.
+    c.call("mallory.testnet", 1, || q.ft_burn(U128(held - ONE), None));
+    let st = state(&c, &q);
+    assert_eq!(num(&st, "supply"), ONE);
+    assert_eq!(num(&st, "rate"), num(&st, "backing"));
+    // A 0.01 NEAR coin still mints a positive amount at that R.
+    let n = c.call("rewards.testnet", 10 * MILLI, || q.mint_for(a("alice.testnet"), None));
+    assert!(n.0 > 0);
+}
+
+/// H1: once nobody holds QGOLD, the peak reached by burns is not kept as the
+/// price for the next minter; the backing already went to insurance.
+#[test]
+fn r_peak_returns_to_the_initial_rate_once_nobody_holds_qgold() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("rewards.testnet", 100 * MILLI, || q.mint_for(a("alice.testnet"), None));
+    c.call("rewards.testnet", 100 * MILLI, || q.mint_for(a("bob.testnet"), None));
+    c.call("bob.testnet", 1, || q.ft_burn(U128(100 * ONE), None));
+    assert_eq!(num(&state(&c, &q), "r_peak"), 2 * MILLI);
+    let r = c.call("alice.testnet", 1, || q.redeem(U128(100 * ONE), None, None));
+    assert_eq!(r.status, "paid");
+    let st = state(&c, &q);
+    assert_eq!(num(&st, "supply"), 0);
+    assert_eq!(num(&st, "backing"), 0);
+    assert_eq!(num(&st, "r_peak"), MILLI, "no holder left: the peak returns to the initial rate");
+    assert_eq!(num(&st, "rate"), MILLI);
+    let n = c.call("rewards.testnet", 10 * MILLI, || q.mint_for(a("carol.testnet"), None));
+    assert_eq!(n.0, 10 * ONE, "the next coin mints at the initial rate, not at the dust peak");
+    c.ctx("v.testnet", 0);
+    assert!(q.audit()["ok"].as_bool().unwrap());
+}
+
+/// H2: storage that outgrows the operating balance freezes the vault, but
+/// `reconcile` must not book it as a loss against insurance or backing.
+#[test]
+fn storage_growth_is_never_booked_as_a_loss_and_fund_operating_unfreezes() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("alice.testnet", 10 * NEAR + STORAGE_FEE, || q.deposit(None, None));
+    c.call("council.testnet", 2 * NEAR, || q.fund_insurance());
+    // The operating slack is gone and the storage cost exceeds the balance by
+    // 0.05 NEAR, while every NEAR that is owed is still there.
+    let slack = c.slack(&q);
+    c.bal -= slack + 50 * MILLI;
+    let e = c.fails("alice.testnet", 1, || {
+        q.redeem(U128(ONE), None, None);
+    });
+    assert!(e.contains("Invariant"), "frozen while the storage is not covered: {e}");
+    // (The mock keeps the writes of the failed call; read the books after it.)
+    let st = state(&c, &q);
+    let (insurance, backing, rate) = (num(&st, "insurance"), num(&st, "backing"), num(&st, "rate"));
+    let out = c.call("anyone.testnet", 0, || q.reconcile());
+    assert_eq!(out["shortfall"].as_str().unwrap(), "0", "no money is missing");
+    assert!(num(&out, "storage_shortfall") > 0);
+    let st = state(&c, &q);
+    assert_eq!(num(&st, "insurance"), insurance, "insurance untouched");
+    assert_eq!(num(&st, "backing"), backing, "backing untouched");
+    assert_eq!(num(&st, "rate"), rate);
+    assert_eq!(num(&st, "losses_total"), 0);
+    let e = c.fails("alice.testnet", 1, || {
+        q.redeem(U128(ONE), None, None);
+    });
+    assert!(e.contains("Invariant"), "still frozen: reconcile cannot create NEAR: {e}");
+    c.call("ops.testnet", NEAR, || q.fund_operating());
+    let r = c.call("alice.testnet", 1, || q.redeem(U128(ONE), None, None));
+    assert_eq!(r.status, "paid");
+    c.ctx("v.testnet", 0);
+    assert!(q.audit()["ok"].as_bool().unwrap());
+}
+
+/// H2: a queued exit record is paid by a bond held out of the exit until the
+/// claim, so 560 dust exits from sybils cannot eat the operating slack.
+#[test]
+fn queued_exits_pay_for_their_own_storage_until_claimed() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    let whale = format!("{}.testnet", "w".repeat(56)); // 64-byte account id
+    c.call(&whale, 100 * NEAR + STORAGE_FEE, || q.deposit(None, None));
+    let held = q.ft_balance_of(a(&whale)).0;
+    let slack0 = c.slack(&q);
+    let storage0 = c.storage;
+    let r = c.call(&whale, 1, || q.redeem(U128(held / 2), Some("near_queue".into()), None));
+    assert_eq!(r.status, "queued");
+    let record_cost = (c.storage - storage0) as u128 * 10u128.pow(19);
+    assert!(EXIT_STORAGE_BOND >= record_cost, "bond {EXIT_STORAGE_BOND} must cover the record ({record_cost})");
+    let st = state(&c, &q);
+    assert_eq!(num(&st["exit"], "queue_bonds"), EXIT_STORAGE_BOND);
+    assert_eq!(num(&st["exit"], "queue_pending"), r.gross.0 - EXIT_STORAGE_BOND);
+    assert!(c.slack(&q) >= slack0, "an open exit must not reduce the operating slack");
+    c.hours(24);
+    let paid = c.call("anyone.testnet", 0, || q.claim_exit(r.exit_id.unwrap()));
+    assert_eq!(paid.0, r.amount.0, "the bond comes back with the claim");
+    let st = state(&c, &q);
+    assert_eq!(num(&st["exit"], "queue_pending"), 0);
+    assert_eq!(num(&st["exit"], "queue_bonds"), 0);
+    assert!(c.slack(&q) >= slack0);
+    c.ctx("v.testnet", 0);
+    assert!(q.audit()["ok"].as_bool().unwrap());
+}
+
+#[test]
+#[should_panic(expected = "storage bond")]
+fn dust_exits_cannot_be_queued() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("whale.testnet", 100 * NEAR + STORAGE_FEE, || q.deposit(None, None));
+    // 2 QGOLD = 0.002 NEAR: above MIN_REDEEM, below the bond.
+    c.call("whale.testnet", 1, || q.redeem(U128(2 * ONE), Some("near_queue".into()), None));
+}
+
+/// H2: a failed instant payout smaller than the bond is re-queued fee-free with
+/// the whole amount bonded, and the claim still pays it in full.
+#[test]
+fn a_small_failed_payout_is_bonded_in_full_and_paid_in_full() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("rewards.testnet", 100 * MILLI, || q.mint_for(a("alice.testnet"), None));
+    let r = c.call("alice.testnet", 1, || q.redeem(U128(2 * ONE), None, None));
+    assert_eq!(r.status, "paid");
+    c.bal += r.amount.0;
+    let mut b = VMContextBuilder::new();
+    b.current_account_id(a("qgold.questlayer.testnet"))
+        .predecessor_account_id(a("qgold.questlayer.testnet"))
+        .account_balance(NearToken::from_yoctonear(c.bal))
+        .storage_usage(c.storage)
+        .block_timestamp(c.now_ms * 1_000_000);
+    testing_env!(b.build(), near_sdk::test_vm_config(), near_sdk::RuntimeFeesConfig::test(), Default::default(), vec![PromiseResult::Failed]);
+    assert!(!q.on_payout(a("alice.testnet"), r.amount, r.qgold));
+    c.storage = env::storage_usage();
+    let st = state(&c, &q);
+    assert_eq!(num(&st["exit"], "queue_pending"), 0);
+    assert_eq!(num(&st["exit"], "queue_bonds"), r.amount.0);
+    let exits = q.get_account_exits(a("alice.testnet"));
+    let paid = c.call("bob.testnet", 0, || q.claim_exit(U64(exits[0].id)));
+    assert_eq!(paid.0, r.amount.0);
+}
+
+/// H2: contract-paid storage (sponsored holder records, conversion receipts)
+/// stops before the operating slack is gone instead of freezing the vault.
+#[test]
+fn sponsored_storage_stops_before_the_operating_slack_is_gone() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("rewards.testnet", 100 * MILLI, || q.mint_for(a("alice.testnet"), None));
+    let unit = MILLI / ONE;
+    let receipt = c.call("rewards.testnet", 10 * MILLI, || q.mint_with_carry_for(a("alice.testnet"), Some("world-1".into())));
+    assert_eq!(receipt["ts"].as_u64().unwrap(), c.now_ms);
+    // The receipt can be pruned by anyone, but only after its retention window.
+    let e = c.fails("anyone.testnet", 0, || q.prune_game_conversion(a("rewards.testnet"), "world-1".into()));
+    assert!(e.contains("retention"), "{e}");
+    c.hours(30 * 24);
+    let before = c.storage;
+    c.call("anyone.testnet", 0, || q.prune_game_conversion(a("rewards.testnet"), "world-1".into()));
+    assert!(c.storage < before);
+    c.ctx("v.testnet", 0);
+    assert!(q.get_game_conversion(a("rewards.testnet"), "world-1".into()).is_none());
+    // Leave just the minimum slack plus less than one holder record costs.
+    let slack = c.slack(&q);
+    c.bal -= slack - MIN_OPERATING_SLACK - 500 * unit;
+    // An existing holder still receives coins: no new storage is sponsored.
+    let n = c.call("rewards.testnet", 10 * MILLI, || q.mint_for(a("alice.testnet"), None));
+    assert_eq!(n.0, 10 * ONE);
+    // Exits keep working (their records are bonded or paid by the holder).
+    let r = c.call("alice.testnet", 1, || q.redeem(U128(ONE), None, None));
+    assert_eq!(r.status, "paid");
+    let e = c.fails("rewards.testnet", 10 * MILLI, || {
+        q.mint_for(a("bob.testnet"), None);
+    });
+    assert!(e.contains("Operating balance is low"), "a new sponsored holder record would take the slack below the minimum: {e}");
+    let e = c.fails("rewards.testnet", 10 * MILLI, || {
+        q.mint_with_carry_for(a("alice.testnet"), Some("world-2".into()));
+    });
+    assert!(e.contains("Operating balance is low"), "a conversion receipt is contract-paid storage too: {e}");
+    // The operating balance is refilled explicitly and sponsored storage resumes.
+    c.call("ops.testnet", NEAR, || q.fund_operating());
+    let n = c.call("rewards.testnet", 10 * MILLI, || q.mint_for(a("carol.testnet"), None));
+    assert_eq!(n.0, 10 * ONE);
+    let receipt = c.call("rewards.testnet", 10 * MILLI, || q.mint_with_carry_for(a("alice.testnet"), Some("world-3".into())));
+    assert_eq!(num(&receipt, "qgoldU"), 10 * ONE);
+}
+
+/// H2: the per-account instant window record is freed with the holder record.
+#[test]
+fn unregister_frees_the_instant_window_record() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("rewards.testnet", 100 * MILLI, || q.mint_for(a("alice.testnet"), None));
+    let storage0 = c.storage;
+    c.call("bob.testnet", NEAR + STORAGE_FEE, || q.deposit(None, None));
+    let r = c.call("bob.testnet", 1, || q.redeem(U128(10 * ONE), None, None));
+    assert_eq!(r.status, "paid");
+    let rest = q.ft_balance_of(a("bob.testnet")).0;
+    c.call("bob.testnet", 1, || q.ft_burn(U128(rest), None));
+    assert!(c.call("bob.testnet", 1, || q.storage_unregister(None)));
+    assert_eq!(c.storage, storage0, "holder and window records are both gone");
+}
+
+/// H3: a single council member cannot veto the rest of the council.
+#[test]
+fn one_member_cannot_cancel_another_members_proposal() {
+    let mut c = Chain::new();
+    let mut q = council3(&mut c);
+    let id = c.call("c1.testnet", 0, || q.propose(Action::SetGuardian { account_id: a("g2.testnet") }));
+    c.call("c2.testnet", 0, || q.cancel(id));
+    c.ctx("v.testnet", 0);
+    assert!(!q.get_proposal(id).unwrap().done, "one of three is below the threshold of two");
+    assert_eq!(q.get_cancel_votes(id), vec![a("c2.testnet")]);
+    c.call("c2.testnet", 0, || q.cancel(id));
+    c.ctx("v.testnet", 0);
+    assert!(!q.get_proposal(id).unwrap().done, "voting twice counts once");
+    c.call("c3.testnet", 0, || q.cancel(id));
+    c.ctx("v.testnet", 0);
+    assert!(q.get_proposal(id).unwrap().done);
+    assert!(q.get_cancel_votes(id).is_empty());
+    // The rogue cannot block the council from removing it either.
+    let id = c.call("c1.testnet", 0, || q.propose(Action::SetCouncil { members: vec![a("c1.testnet"), a("c3.testnet")], threshold: 2 }));
+    c.call("c2.testnet", 0, || q.cancel(id));
+    c.call("c3.testnet", 0, || q.approve(id));
+    c.hours(48);
+    c.call("anyone.testnet", 0, || q.execute(id));
+    c.ctx("v.testnet", 0);
+    assert_eq!(q.get_config()["council"].as_array().unwrap().len(), 2);
+}
+
+#[test]
+fn the_proposer_can_withdraw_their_own_proposal() {
+    let mut c = Chain::new();
+    let mut q = council3(&mut c);
+    let id = c.call("c1.testnet", 0, || q.propose(Action::SetGuardian { account_id: a("g2.testnet") }));
+    c.call("c1.testnet", 0, || q.cancel(id));
+    c.ctx("v.testnet", 0);
+    assert!(q.get_proposal(id).unwrap().done);
+}
+
+/// H3: one key cannot keep the vault paused by renewing before every expiry.
+#[test]
+#[should_panic(expected = "paused recently")]
+fn the_same_account_cannot_renew_a_pause() {
+    let mut c = Chain::new();
+    let mut q = fresh(&mut c);
+    c.call("guardian.testnet", 0, || q.pause());
+    c.hours(71);
+    c.call("guardian.testnet", 0, || q.pause());
+}
+
+#[test]
+fn unpause_needs_the_threshold_and_another_account_can_still_pause() {
+    let mut c = Chain::new();
+    let mut q = council3(&mut c);
+    c.call("guardian.testnet", 0, || q.pause());
+    c.call("c1.testnet", 0, || q.unpause());
+    assert!(state(&c, &q)["paused"].as_bool().unwrap(), "one vote of two does not end an incident pause");
+    c.call("c2.testnet", 0, || q.unpause());
+    assert!(!state(&c, &q)["paused"].as_bool().unwrap());
+    // A second incident within the cooldown: another member pauses.
+    c.hours(1);
+    assert!(catches(|| {
+        c.ctx("guardian.testnet", 0);
+        q.pause();
+    }));
+    c.call("c1.testnet", 0, || q.pause());
+    assert!(state(&c, &q)["paused"].as_bool().unwrap());
+    // It expires by itself, and after the cooldown the guardian can pause again.
+    c.hours(72);
+    assert!(!state(&c, &q)["paused"].as_bool().unwrap());
+    c.hours(7 * 24);
+    c.call("guardian.testnet", 0, || q.pause());
+    assert!(state(&c, &q)["paused"].as_bool().unwrap());
 }

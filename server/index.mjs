@@ -879,6 +879,8 @@ if (escrowManifest && process.env.QGOLD_ESCROW_WORKER !== "0") {
       }
       await runEscrowWorker(db, {
         view: marketEscrowView,
+        // Sends and refunds wait until the token knows their recipient.
+        tokenView: escrowView(provider, escrowManifest.tokenId),
         call: send || (async () => { throw Error("Escrow publisher key is not installed."); }),
         activate: marketActivate,
         drop: marketDrop,

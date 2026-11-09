@@ -12,6 +12,14 @@ All money is real QGOLD (6 decimals; 1 micro-GOLD = 1 base unit) held by `contra
 1. The server creates the row in state `funding` and returns the exact call the player signs:
    `ft_transfer_call(receiver_id = escrow, amount, msg)` on the QGOLD token, 1 yocto, 200 Tgas.
    The relayer sponsors it for the explorer account (policy: only into the escrow).
+   The escrow admits an agreement only when its funder holds the agreement's native storage
+   growth in a deposit on the escrow (`docs/QGOLD-ESCROW.md`, "Native storage deposits"). The
+   response therefore also carries `funding.storageDeposit` when that deposit is short: a
+   `storage_deposit({account_id, grant: true})` call on the escrow for the shortfall rounded up to
+   the relayer's 0.05 NEAR ladder (≤ 0.5 NEAR), which the app signs first. The relayer carries the
+   NEAR within its daily deposit budget and the escrow keeps it as a grant the player can spend on
+   agreements but never withdraw. `GET /api/market/funding-intent?id=` returns the same pair. If the
+   escrow cannot be read the request fails with a clear 503 instead of funding blind.
 2. The app signs it (`fundMarketEscrow` in `src/App.tsx`) and calls `POST /api/market/funded {id}`.
    The server reads `get_task` / `get_secret` / `get_transfer` from the configured escrow at FINAL
    finality and checks the full persisted intent and lifecycle before applying it atomically.
@@ -21,7 +29,12 @@ All money is real QGOLD (6 decimals; 1 micro-GOLD = 1 base unit) held by `contra
    written in the same database transaction as the row change and sent in order per escrow id.
    The worker persists the exact signed transaction before broadcast and acknowledges receipt evidence.
    After a payout the worker calls `withdraw_for(account)`, so QGOLD lands in the receiver's
-   account without them doing anything.
+   account without them doing anything. The escrow registers the account on the token only for
+   earned payouts (task workers, Secret creators; `is_earned`). A send or refund to an account the
+   token does not know yet is not sent: the worker marks it `recipient_unregistered`, looks again
+   every 15 minutes (`escrowHealth().awaitingRegistration`) and pushes it once the account's first
+   QGOLD payout, or the player, registered it. `/api/market/nearby` reports `wallet.registered`
+   and the market shows that state.
 
 ### Funding verification and recovery
 
@@ -215,7 +228,11 @@ flow's escrow calls; `contracts/qgold-escrow/src/tests.rs` checks the money.
   testnet account is `questlayer-qgold-vault-20261104.testnet`.
 - The escrow receives QGOLD through `ft_transfer_call`.
 - Before anyone can receive QGOLD they need a `storage_deposit` on QGOLD (0.00125 NEAR). That covers
-  the escrow account, the treasury, and every player who withdraws.
+  the escrow account, the treasury, and every player who withdraws. The vault registers a player
+  with their first coin payout, the escrow registers earned payees (0.0025 NEAR lifetime grant);
+  send recipients are not registered by the escrow.
+- Every funder (poster, buyer, sender) holds a native storage deposit on the escrow for their open
+  agreements; the market adds it to the funding response when it is short.
 - Fees stay in QGOLD and are credited to the treasury account (`questlayer-dev-20261101.testnet` on
   testnet).
 
