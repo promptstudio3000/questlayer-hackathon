@@ -9,7 +9,7 @@
 //   2. items are summed per account (plus yesterday's carry), the tree is
 //      built with server/payouts/payout-tree.mjs and published with
 //      publish_payout_day; amounts below one QGOLD unit carry to the next day;
-//   3. claim_payout sends the leaves in batches of 10: the contract mints each
+//   3. claim_payout sends the leaves in batches of PAYOUT_MAX_BATCH (8): the contract mints each
 //      account's QGOLD in the vault, so players sign nothing;
 //   4. reconcile finalized per-leaf mint status; close only fully paid days.
 // Items of players who have no account yet stay unassigned and join the first
@@ -28,6 +28,7 @@ import { MAP_TIMEZONE, readDay } from "../map-rewards/day-plan.mjs";
 import { DEFAULT_QGOLD_RATE_YOCTO } from "../map-rewards/policy.mjs";
 import {
   PAYOUT_GRACE_MS,
+  PAYOUT_MAX_BATCH,
   buildPayoutDay,
   payoutDayId,
 } from "./payout-tree.mjs";
@@ -477,9 +478,9 @@ export async function runPayoutWorker(
         for (
           let offset = 0;
           offset < retry.length && batchesLeft > 0;
-          offset += 10
+          offset += PAYOUT_MAX_BATCH
         ) {
-          const rowsToSend = retry.slice(offset, offset + 10);
+          const rowsToSend = retry.slice(offset, offset + PAYOUT_MAX_BATCH);
           const batch = {
             day_id: d.day_id,
             claims: rowsToSend.map((c) => ({

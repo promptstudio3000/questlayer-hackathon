@@ -828,8 +828,8 @@ export const CHAPTERS: Chapter[] = [
     title: "Daily QGOLD payouts",
     summary: "One Merkle root per day of what every account earned, paid straight into the QGOLD vault with no daily claim limit.",
     status: "live",
-    updated: "2026-11-07",
-    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "contracts/rewards/src/world_days.rs", "contracts/qgold/src/lib.rs", "server/global-rewards.mjs", "server/global-reward-worker.mjs", "server/map-rewards/global-plan.mjs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
+    updated: "2026-11-09",
+    sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "contracts/rewards/src/reconcile.rs", "contracts/rewards/src/world_days.rs", "contracts/qgold/src/lib.rs", "server/global-rewards.mjs", "server/global-reward-worker.mjs", "server/map-rewards/global-plan.mjs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
     blocks: [
       {
         p: "Every backed coin is real QGOLD. After the day ends the server sums each account's earnings in NEAR and the rewards contract pays every account once from a single published root, instead of one receipt per coin (which allowed only 240 claims a day).",
@@ -837,7 +837,9 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "`publish_payout_day` commits the root and reserves the day's total from the coin and zone treasury, under the same per-date cap as city and map days.",
-          "`claim_payout` (anyone, 10 leaves per transaction) checks each leaf against the root and calls the vault's `mint_for` for exactly that account and amount. A repeated leaf is skipped; a refused mint reopens the leaf, so nothing is lost or paid twice.",
+          "`claim_payout` (anyone, 8 leaves per transaction) checks each leaf against the root and calls the vault's `mint_for` for exactly that account and amount. A repeated leaf is skipped; a refused mint reopens the leaf, so nothing is lost or paid twice.",
+          "Gas allowances come from an actual-WASM sandbox run: 15 TGas per mint and 10 TGas per payout callback, about 5x and 3.7x what they burned there. A batch without enough gas for every leaf's mint and callback is refused before anything changes.",
+          "Each mint records an attempt with a nonce, so a callback settles it at most once. If a callback itself fails (for example out of gas), the attempt can be settled a day later: anyone settles a world payout leaf from QGOLD's durable conversion receipt, and the owner settles a daily leaf or a withdrawal from the finalized mint receipt. A paid mint is booked paid; a refused one reopens the leaf or restores the credit for an ordinary retry.",
           "`close_payout_day` can close a day after three days only when every leaf has a finalized successful mint and no mint is pending. Unpaid earned rights remain available.",
           "Amounts below 0.00000001 NEAR carry over to the next day: the vault cannot mint less than one QGOLD unit.",
         ],
@@ -847,14 +849,15 @@ export const CHAPTERS: Chapter[] = [
           ["Leaf", "`sha256(\"payout|<day_id>|<index>|<account>|<amount_yocto>\")`"],
           ["Tree", "Sorted-pair sha256, the same as map days and the QXP ledger"],
           ["Storage", "Root, totals and a bitmap of claimed leaves; no receipt per account"],
-          ["Limits", "Up to 262,144 accounts a day; 10 leaves per claim transaction"],
+          ["Limits", "Up to 262,144 accounts a day; 8 leaves per claim transaction"],
+          ["Recovery", "Attempts older than 1 day; world receipts decide within 29 days of the claim"],
         ],
       },
       { h: "The nightly worker" },
       {
         list: [
           "After local midnight (Europe/Prague) the reward worker collects every backed map coin and cell-zone prize of GPS worlds that is not paid yet, prices it in NEAR at the rate its day was planned with, sums it per account and publishes the day.",
-          "Then it submits `claim_payout` in batches of 10. Submission is not payment: finalized per-leaf chain status confirms each receipt. Failed mints restore the same reservation for retry. Restart recovery reconciles pending leaves before sending new ones; an exclusive fenced lease prevents overlapping workers from changing the same payout. A fully paid day may close after the grace period.",
+          "Then it submits `claim_payout` in batches of 8. Submission is not payment: finalized per-leaf chain status confirms each receipt. Failed mints restore the same reservation for retry. Restart recovery reconciles pending leaves before sending new ones; an exclusive fenced lease prevents overlapping workers from changing the same payout. A fully paid day may close after the grace period.",
           "A player without a NEAR account yet keeps their coins waiting; they join the first payout after the account exists. `GET /api/qgold/pending` shows what is still on its way (in micro-QGOLD `units`, with `awaitingAccount` for coins collected before an account existed).",
           "Profile · Rewards shows the QGOLD balance on the linked NEAR account and the amount the next payout brings. Pickup messages count QGOLD; there is no practice GOLD. The old practice stake is closed (its fake yield could have become real QGOLD). Tier 2 and Tier 3 places on the map are open to everyone until launch; after that they can be gated by the real vault tier (50 / 100 NEAR matured).",
           "While payouts are on, map days no longer send `claim_map`, so a coin is never paid twice. The demo arena gives XP only and never pays.",

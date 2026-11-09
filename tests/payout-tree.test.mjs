@@ -50,10 +50,10 @@ test("a day sums per account, carries dust and proves every leaf", () => {
   assert.equal(again.root, day.root);
 });
 
-test("claims go out in batches of ten", () => {
+test("claims go out in batches of eight", () => {
   const dayId = payoutDayId("2026-11-06");
   const entries = Array.from({ length: 23 }, (_, i) => ({ accountId: `p${String(i).padStart(2, "0")}.testnet`, amountYocto: PAYOUT_MIN_YOCTO }));
   const batches = claimBatches(buildPayoutDay({ dayId, entries }));
-  assert.deepEqual(batches.map((b) => b.claims.length), [10, 10, 3]);
+  assert.deepEqual(batches.map((b) => b.claims.length), [8, 8, 7]);
   assert.ok(batches.every((b) => b.day_id === dayId));
 });

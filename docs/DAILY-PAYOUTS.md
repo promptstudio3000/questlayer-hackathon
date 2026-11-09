@@ -65,7 +65,7 @@ Atlas adapter; their absence is never displayed as a funded promise.
    zone buckets. It counts against the same per-date cap as city and map days
    (`max(0.1 NEAR, 10 % of a bucket's funding)`). Day id
    `payout-YYYY-MM-DD-v<n>`.
-3. `claim_payout(day_id, claims)` (anyone, at most 10 leaves per transaction)
+3. `claim_payout(day_id, claims)` (anyone, at most 8 leaves per transaction)
    rebuilds each leaf, checks it against the root, sets its bit and calls the
    QGOLD vault's `mint_for(account)` with exactly the leaf's NEAR. The vault
    registers the holder itself and mints at R with no fee.
@@ -74,6 +74,8 @@ Atlas adapter; their absence is never displayed as a funded promise.
    - If the vault refuses (paused, below one unit), the callback clears the bit
      and returns the NEAR to the day; the same leaf can be claimed again.
    - The NEAR is drawn from the coin reservation first, then the zone one.
+   - Each issued mint records an attempt (nonce, time, account, coin/zone split);
+     the callback must carry that nonce. See "Callback recovery".
 4. The private callback records each successful mint in a separate paid bitmap.
    `get_payout_progress(day_id, indexes)` distinguishes `unclaimed`, `pending` and
    `paid`; the claimed bitmap alone is not proof of payment.
@@ -104,7 +106,7 @@ holds all 10 methods. Each pass:
 4. **Reconcile** up to 1,024 unresolved leaves per pass. Only an exact `paid`
    status creates a durable `payout_confirmations` row. Pending or unknown status
    stays pending for the player. Missing/invalid views never trigger a blind retry.
-5. **Claim** only leaves observed as `unclaimed`, at most 10 leaves per transaction
+5. **Claim** only leaves observed as `unclaimed`, at most 8 leaves per transaction
    and 10 batches per pass by default. Persist submission intent before sending.
    On timeout/restart, read the same leaf's state before retrying. Retry delays are
    bounded at 15 minutes; there is no five-attempt abandonment of an earned right.
@@ -127,6 +129,88 @@ include submitted, failed, unconfirmed and carried items. Original carried items
 follow the day that eventually includes their account's leaf, so they disappear
 only once that leaf is confirmed. Their coin funding attribution is preserved.
 There are no extra wallet confirmations, gameplay limits or changed reward rates.
+
+## Gas
+
+Measured on 9 November 2026 with actual release WASM (local `cargo build`, not the
+reproducible Docker artifact) of this branch's Rewards and QGOLD on a local NEAR
+sandbox 2.14.0 (protocol 88), `tests/sandbox/qgold.integration.mjs`, all ten
+scenarios passing. Maximum burnt gas per receipt in those fixtures:
+
+| Receipt | Observed TGas | Allocated TGas |
+| --- | ---: | ---: |
+| `mint_for` (daily payout) | 2.2578 | 15 (`MINT_GAS`) |
+| `mint_with_carry_for` (world payout) | 2.9666 | 15 (`MINT_GAS`) |
+| `on_payout` after a paid mint | 2.5755 | 10 (`CALLBACK_GAS`) |
+| `on_payout` after a refused mint | 2.7126 | 10 (`CALLBACK_GAS`) |
+| `mint_for` (withdraw) | 2.2416 | 30 |
+| `on_withdraw` | 2.0298 | 20 |
+| `claim_payout` parent, 8 leaves (own receipt only) | 13.9661 | 20 + 6 per leaf reserved |
+
+The earlier allowances (14 TGas mint, 6 TGas callback, 15 TGas `on_withdraw`) left the
+payout callback only about 2.2x its measured cost. The new ones keep about 5x on the
+mints and 3.7x on `on_payout`. Each leaf also makes the parent prepay the execution
+fees of its two receipts, so ten leaves at the new allowances exceed the 280 TGas the
+worker attaches (observed: "Exceeded the prepaid gas"). `PAYOUT_MAX_BATCH` is therefore
+8 in the contract and in `server/payouts/payout-tree.mjs`. `claim_payout` refuses,
+before any state change, a batch whose attached gas is below
+`20 + leaves x (15 + 10 + 6)` TGas (268 for 8 leaves). The game wallet attaches
+100 TGas to `withdraw`, enough for its 30 + 20.
+
+These are fixture measurements, not capacity limits: proofs were short and accounts
+few. A maximum-depth proof (18 siblings) adds hashing to the parent only. The
+reconcile receipts (`get_game_conversion` view, `on_payout_reconciled`) were not
+exercised on the sandbox because a callback cannot be made to run out of gas there
+without a test-only build; they are covered by unit tests only.
+
+## Callback recovery
+
+A callback receipt that fails, for example out of gas, reverts its own changes. The
+mint may have succeeded or failed, but the leaf stays `pending` (blocking
+`close_payout_day`), or the player's `pending` withdrawal blocks every later
+`withdraw`. `contracts/rewards/src/reconcile.rs` settles such an attempt from recorded
+state, never by a blind reset:
+
+- Every leaf claim and every withdrawal records an attempt: a contract-wide nonce,
+  the issue time and exactly what the callback books (account and coin/zone split, or
+  amount). Views: `get_payout_attempt(day_id, index)`,
+  `get_withdrawal_attempt(account_id)`; `get_payout_config` adds `mint_tgas`,
+  `callback_tgas` and `reconcile_after_ms`.
+- The callback must carry the attempt's nonce and consumes the record. A late,
+  duplicate or stale callback (for example the first attempt's callback after a
+  reopened leaf was claimed again) fails its nonce check and changes nothing.
+  Callbacks without a nonce are accepted only where no record exists, which keeps
+  mints issued by the previous code settleable after an upgrade.
+- An attempt can be reconciled only after `RECONCILE_AFTER_MS` (1 day); mint and
+  callback receipts execute within a few blocks.
+- **World payout leaves** (`mint_with_carry_for`): anyone calls
+  `reconcile_payout(day_id, index)`. It reads QGOLD
+  `get_game_conversion(rewards, "world payout <day_id>:<index>")`. A receipt whose
+  account and `depositedYocto` match the leaf books it paid; no receipt books it
+  failed and reopens the leaf. QGOLD keeps receipts for 30 days
+  (`RECEIPT_RETENTION_MS`), so the permissionless path is open only within 29 days
+  of the claim (`RECEIPT_EVIDENCE_MS`). A mismatching or unreadable receipt panics
+  and leaves the attempt pending. QGOLD also refuses a second conversion with the
+  same memo.
+- **Daily payout leaves and withdrawals** (`mint_for`) leave no on-chain receipt.
+  Only the owner may settle them, with `owner_reconcile_payout(day_id, index,
+  minted)` and `owner_reconcile_withdrawal(account_id, minted)`, after reading the
+  finalized mint receipt (the transaction's `receipts_outcome`). The contract
+  enforces timing, nonce and state and books exactly the recorded amount once; it
+  cannot verify the owner's `minted` statement. A false `minted: false` would let
+  that one amount be paid again, so this path relies on the owner, which already
+  holds the deployment key on testnet. The owner may also settle a world leaf, but
+  only once the receipt window has passed.
+- Nothing is paid by a reconcile: `minted` books the recorded amount as withdrawn,
+  not minted reopens the leaf (or restores the player's credit) for an ordinary
+  retry. Reward amounts, rates and treasury accounting are unchanged; the
+  conservation check runs after every step.
+- Attempts are new `LookupMap`s (`native-payout-attempts`, `native-withdraw-attempts`,
+  `native-callback-nonce`); the root state layout is unchanged and no migration is
+  needed. Attempts issued before the upgrade have no record and cannot be
+  reconciled here: drain pending callbacks before upgrading.
+- The worker does not call the reconcile methods yet, and its function-call key
+  does not include them.
 
 ## Leaf and tree
 
@@ -153,7 +237,8 @@ redirected to another account, and a forged amount fails the proof.
 ## Views
 
 `get_payout_day(day_id)`, `payout_claimed(day_id, indexes)` (max 1024),
-`get_payout_progress(day_id, indexes)` (max 1024), `get_payout_config()`.
+`get_payout_progress(day_id, indexes)` (max 1024), `get_payout_config()`,
+`get_payout_attempt(day_id, index)`, `get_withdrawal_attempt(account_id)`.
 Progress returns the root, leaf count, closed flag, paid/pending counts and the
 requested statuses in order. A missing settlement record returns `null`, never
 invented success. The config exposes `settlement_status: true`.

@@ -11,7 +11,7 @@
     "questlayer_npc_games": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
     "questlayer_qgold": "3734e361148e880ff1717edde0f774e541b8761fd8837bec690bde93ec49bf49",
     "questlayer_qgold_escrow": "ac68d5750d96fae0e087be5881f3fd9f394aba07fdd659b3a4abcadab5b76876",
-    "questlayer_rewards": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+    "questlayer_rewards": "3e6e8be931b0887a39b9ad038efd11ef015c879b896e37a2ddb97bd2f7a2faa8",
     "questlayer_soulbound_ft": "2746a77ec1de90c9b9a8054769922d0a2027cec8c15f743fcd66b89b3c572293",
     "questlayer_tasks": "055954f30c81b4dfd56b3bd9a88c469aeb74c50d5eb4eb83f9aeb5b8bbc51751",
     "questlayer_vault": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b",
@@ -76,6 +76,11 @@
       "contract": "questlayer_yield_vault",
       "sha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
       "note": "Live yield vault before the 9 Nov H4/M5 fixes; redeploy and update the record to remove this entry."
+    },
+    "public/native-rewards-testnet.json:wasmSha256": {
+      "contract": "questlayer_rewards",
+      "sha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+      "note": "Live rewards before the 9 Nov M4 gas/reconcile fix; upgrading rewards and updating the record removes this entry."
     }
   }
 }
