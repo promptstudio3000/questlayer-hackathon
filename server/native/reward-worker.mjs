@@ -373,13 +373,22 @@ export async function runRewardWorker(
           ) {
             if (BigInt(state.game_credit) > 0n) action = "flush_game";
             else if (state.exit_requested) action = "advance";
-            else if (BigInt(state.principal) > 0n)
-              action =
-                BigInt(state.staked) + BigInt(state.unstaked) >
-                  BigInt(state.high_water_basis) + 10n ** 18n &&
-                state.contribution_bps > 0
-                  ? "harvest"
-                  : "refresh";
+            else if (BigInt(state.principal) > 0n) {
+              // v3 vaults harvest only a fee of at least `min_harvest` and
+              // only after their cooldown; older states carry neither field.
+              const gain =
+                BigInt(state.staked) +
+                BigInt(state.unstaked) -
+                BigInt(state.high_water_basis);
+              const fee =
+                (gain * BigInt(state.contribution_bps)) / 10000n;
+              const worthIt =
+                gain > 10n ** 18n &&
+                state.contribution_bps > 0 &&
+                fee >= BigInt(state.min_harvest ?? "0") &&
+                BigInt(state.epoch) >= BigInt(state.next_harvest_epoch ?? "0");
+              action = worthIt ? "harvest" : "refresh";
+            }
           }
           if (action) {
             const transactionHash = await sendOwned("maintain_vault", {

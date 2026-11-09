@@ -547,3 +547,195 @@ fn confirm_waits_for_rhea_to_settle() {
     ctx_full("keeper.testnet", DAY, 105, 0, vec![]);
     let _ = v.confirm_inbound(a(USDC));
 }
+
+// ----- v3: no supply while Rhea tokens are inbound (H4), idle reconciliation,
+// position storage and safe exhaustion (M5) -----
+
+#[test]
+fn supply_waits_while_a_rhea_withdrawal_is_inbound() {
+    let mut v = supplied_vault(); // alice 1000: idle 200, Rhea 800
+    assert!(matches!(withdraw(&mut v, "alice.testnet", USDC, 500 * USD, DAY), PromiseOrValue::Value(false)));
+    ctx("keeper.testnet", DAY);
+    let _ = v.rebalance(a(USDC));
+    let n = token(&v, USDC).op_nonce;
+    cb(DAY, vec![ok(asset(1_000 * E12 * USD, 0, 0, true)), ok(rhea_account(800 * USD * E12))]);
+    assert!(matches!(v.on_rebalance(a(USDC), U64(n)), PromiseOrValue::Promise(_)));
+    cb(DAY, vec![ok(())]);
+    assert!(v.on_rhea_withdraw(a(USDC), U64(n), U128(500 * USD), U128(550 * USD * E12)));
+    assert_eq!((token(&v, USDC).inbound, token(&v, USDC).inbound_threshold), (500 * USD, 550 * USD * E12));
+    // Bob deposits 1000 while the 500 are inbound: idle 1200 is above the 900 target.
+    deposit_usdc(&mut v, "bob.testnet", 1_000 * USD, DAY + 1);
+    assert_eq!(token(&v, USDC).idle, 1_200 * USD);
+    ctx("keeper.testnet", DAY + 1);
+    let _ = v.rebalance(a(USDC));
+    let n = token(&v, USDC).op_nonce;
+    // Rhea already shows the 500 gone. Supplying 300 now would lift our supply back
+    // over the 550 threshold and make the real transfer look bounced (500 stranded).
+    cb(DAY + 1, vec![ok(asset(1_000 * E12 * USD, 0, 0, true)), ok(rhea_account(300 * USD * E12))]);
+    assert!(matches!(v.on_rebalance(a(USDC), U64(n)), PromiseOrValue::Value(false)));
+    let t = token(&v, USDC);
+    assert_eq!((t.idle, t.outgoing, t.op), (1_200 * USD, 0, 0));
+    let late = 100 + INBOUND_SETTLE_BLOCKS + 1;
+    ctx_full("keeper.testnet", DAY + 1, late, 0, vec![]);
+    let _ = v.confirm_inbound(a(USDC));
+    let n = token(&v, USDC).op_nonce;
+    ctx_full("yield.testnet", DAY + 1, late, 0, vec![ok(asset(1_000 * E12 * USD, 0, 0, true)), ok(rhea_account(300 * USD * E12))]);
+    assert!(v.on_confirm(a(USDC), U64(n)));
+    let t = token(&v, USDC);
+    assert_eq!((t.inbound, t.idle), (0, 1_700 * USD));
+    // Everything owed is tracked: principal 1500 + queued 500 = idle 1700 + Rhea 300.
+    assert_eq!(t.principal + t.queued, t.idle + 300 * USD);
+}
+
+#[test]
+fn reconcile_credits_tokens_the_accounting_lost_and_never_lowers_idle() {
+    let mut v = setup();
+    deposit_usdc(&mut v, "alice.testnet", 100 * USD, 0);
+    ctx("keeper.testnet", 1);
+    let _ = v.reconcile_idle(a(USDC));
+    let n = token(&v, USDC).op_nonce;
+    assert_eq!(token(&v, USDC).op, OP_RECONCILE);
+    // The token says we hold 150: 50 arrived outside the accounting.
+    cb(1, vec![ok(U128(150 * USD))]);
+    assert!(v.on_reconcile(a(USDC), U64(n)));
+    assert_eq!((token(&v, USDC).idle, token(&v, USDC).op), (150 * USD, 0));
+    ctx("keeper.testnet", 2);
+    let _ = v.reconcile_idle(a(USDC));
+    let n = token(&v, USDC).op_nonce;
+    cb(2, vec![ok(U128(120 * USD))]);
+    assert!(!v.on_reconcile(a(USDC), U64(n)));
+    assert_eq!((token(&v, USDC).idle, token(&v, USDC).op), (150 * USD, 0));
+}
+
+#[test]
+fn reconcile_is_cancelled_by_a_payout_or_deposit_during_the_read() {
+    let mut v = setup();
+    deposit_usdc(&mut v, "alice.testnet", 100 * USD, 0);
+    // A payout is still outgoing when the read comes back: not trusted.
+    ctx("keeper.testnet", DAY);
+    let _ = v.reconcile_idle(a(USDC));
+    let n = token(&v, USDC).op_nonce;
+    let _ = withdraw(&mut v, "alice.testnet", USDC, 40 * USD, DAY);
+    cb(DAY, vec![ok(U128(100 * USD))]);
+    assert!(!v.on_reconcile(a(USDC), U64(n)));
+    assert_eq!((token(&v, USDC).idle, token(&v, USDC).op), (60 * USD, 0));
+    cb(DAY, vec![ok(())]);
+    assert!(v.on_paid(a(USDC), a("alice.testnet"), U128(40 * USD), U128(40 * USD)));
+    // A payout settles while the read is in flight: the read saw the old balance.
+    ctx("keeper.testnet", DAY);
+    let _ = v.reconcile_idle(a(USDC));
+    let n = token(&v, USDC).op_nonce;
+    let _ = withdraw(&mut v, "alice.testnet", USDC, 20 * USD, DAY);
+    cb(DAY, vec![ok(())]);
+    assert!(v.on_paid(a(USDC), a("alice.testnet"), U128(20 * USD), U128(20 * USD)));
+    assert_eq!(token(&v, USDC).op, 0);
+    cb(DAY, vec![ok(U128(60 * USD))]);
+    assert!(!v.on_reconcile(a(USDC), U64(n)));
+    assert_eq!(token(&v, USDC).idle, 40 * USD);
+    // Same for a deposit that lands during the read.
+    ctx("keeper.testnet", DAY);
+    let _ = v.reconcile_idle(a(USDC));
+    let n = token(&v, USDC).op_nonce;
+    deposit_usdc(&mut v, "bob.testnet", 10 * USD, DAY);
+    assert_eq!(token(&v, USDC).op, 0);
+    cb(DAY, vec![ok(U128(80 * USD))]);
+    assert!(!v.on_reconcile(a(USDC), U64(n)));
+    assert_eq!(token(&v, USDC).idle, 50 * USD);
+}
+
+#[test]
+#[should_panic(expected = "Transfers in flight")]
+fn reconcile_refuses_while_rhea_tokens_are_inbound() {
+    let mut v = supplied_vault();
+    let _ = withdraw(&mut v, "alice.testnet", USDC, 500 * USD, DAY);
+    ctx("keeper.testnet", DAY);
+    let _ = v.rebalance(a(USDC));
+    let n = token(&v, USDC).op_nonce;
+    cb(DAY, vec![ok(asset(1_000 * E12 * USD, 0, 0, true)), ok(rhea_account(800 * USD * E12))]);
+    let _ = v.on_rebalance(a(USDC), U64(n));
+    cb(DAY, vec![ok(())]);
+    v.on_rhea_withdraw(a(USDC), U64(n), U128(500 * USD), U128(550 * USD * E12));
+    ctx("keeper.testnet", DAY);
+    let _ = v.reconcile_idle(a(USDC));
+}
+
+#[test]
+fn position_storage_estimate_covers_a_full_position() {
+    let p = Position {
+        free: u128::MAX,
+        tranches: (0..MAX_TRANCHES)
+            .map(|i| Tranche { amount: U128(u128::MAX - i as u128), locked_until_ms: U64(u64::MAX) })
+            .collect(),
+        queued: u128::MAX,
+    };
+    let value = near_sdk::borsh::to_vec(&p).unwrap().len();
+    // Longest key: the map prefix, a 64-character account, '#', the longest allowlisted token.
+    let key = 1 + 64 + 1 + "linear-protocol.testnet".len();
+    let overhead = 40; // trie node and length prefixes
+    let total = value + key + overhead;
+    assert!(total <= POSITION_BYTES as usize, "a full position needs {total} B");
+    assert!(total > 200, "the old 200 B estimate ({total} B measured) was too low");
+    let q = QueueEntry { account_id: "a".repeat(64).parse().unwrap(), amount: U128(u128::MAX) };
+    let qv = near_sdk::borsh::to_vec(&q).unwrap().len();
+    let qk = 1 + "linear-protocol.testnet".len() + 1 + 20;
+    assert!(qv + qk + overhead <= QUEUE_ENTRY_BYTES as usize, "a queue entry needs {} B", qv + qk + overhead);
+}
+
+fn ctx_balance(who: &str, ms: u64, balance: u128, results: Vec<PromiseResult>) {
+    let mut b = VMContextBuilder::new();
+    b.current_account_id(a("yield.testnet"))
+        .predecessor_account_id(a(who))
+        .signer_account_id(a(who))
+        .block_timestamp(ms * 1_000_000)
+        .block_height(100)
+        .account_balance(NearToken::from_yoctonear(balance));
+    testing_env!(b.build(), near_sdk::test_vm_config(), near_sdk::RuntimeFeesConfig::test(), std::collections::HashMap::default(), results);
+}
+
+#[test]
+#[should_panic(expected = "storage reserve exhausted")]
+fn stable_deposit_is_refused_when_the_storage_reserve_is_short() {
+    let mut v = setup();
+    ctx("x.testnet", 0);
+    assert_eq!(v.get_config()["storage_reserve_ok"], true);
+    // The balance barely covers what is stored: one more position could not be paid for.
+    let short = env::storage_usage() as u128 * env::storage_byte_cost().as_yoctonear();
+    ctx_balance(USDC, 0, short, vec![]);
+    assert_eq!(v.get_config()["storage_reserve_ok"], false);
+    let _ = v.ft_on_transfer(a("alice.testnet"), U128(100 * USD), "deposit".into());
+}
+
+#[test]
+fn lst_deposit_is_refunded_when_the_storage_reserve_is_short() {
+    let mut v = setup();
+    ctx("x.testnet", 0);
+    let short = env::storage_usage() as u128 * env::storage_byte_cost().as_yoctonear();
+    ctx_balance(STNEAR, 0, short, vec![]);
+    let _ = v.ft_on_transfer(a("bob.testnet"), U128(NEAR), "deposit".into());
+    ctx_balance("yield.testnet", 0, short, vec![ok(U128(NEAR))]);
+    assert_eq!(v.on_lst_deposit(a(STNEAR), a("bob.testnet"), U128(NEAR)), U128(NEAR));
+    assert_eq!((token(&v, STNEAR).principal, token(&v, STNEAR).idle, v.position_count), (0, 0, 0));
+}
+
+#[test]
+fn a_full_withdrawal_keeps_the_record_until_the_payout_settles() {
+    let mut v = setup();
+    deposit_usdc(&mut v, "alice.testnet", 100 * USD, 0);
+    let key = YieldVault::pkey(&a("alice.testnet"), &a(USDC));
+    let _ = withdraw(&mut v, "alice.testnet", USDC, 100 * USD, DAY);
+    // The empty record stays, so a failed payout restores into existing storage
+    // instead of allocating inside the callback.
+    assert!(v.positions.get(&key).is_some());
+    assert_eq!(v.position_count, 1);
+    ctx("x.testnet", DAY);
+    assert!(v.get_position(a("alice.testnet")).is_empty());
+    cb(DAY, vec![fail()]);
+    assert!(!v.on_paid(a(USDC), a("alice.testnet"), U128(100 * USD), U128(100 * USD)));
+    ctx("x.testnet", DAY);
+    assert_eq!(v.get_position(a("alice.testnet"))[0]["withdrawable"], "100000000");
+    let _ = withdraw(&mut v, "alice.testnet", USDC, 100 * USD, DAY);
+    cb(DAY, vec![ok(())]);
+    assert!(v.on_paid(a(USDC), a("alice.testnet"), U128(100 * USD), U128(100 * USD)));
+    assert!(v.positions.get(&key).is_none());
+    assert_eq!(v.position_count, 0);
+}
