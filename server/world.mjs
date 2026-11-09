@@ -3,6 +3,7 @@ import { placeTier, playerStakeTier } from "./staker-gates.mjs";
 import { preparedActivityWorld, assertGlobalActivityReady } from "./global-activities.mjs";
 import { decorateGlobalRewardWorld,globalPrizeForQuest } from './global-rewards.mjs';
 import { localDateBounds } from "./spatial/calendar.mjs";
+import { isInCzechia } from "./map-rewards/czechia.mjs";
 import tzLookup from "tz-lookup";
 import { latLngToCell, cellToLatLng, cellToBoundary } from "h3-js";
 import {
@@ -224,12 +225,27 @@ export async function ensureWorld(
   location = HOME,
   arena = true,
   now = Date.now(),
-  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR } = {},
+  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR, czechiaFallback = process.env.GLOBAL_CZECHIA_FALLBACK !== "off" } = {},
 ) {
   // An installed global day is read-only on player arrival. Plzen retains its
   // reviewed citywide six-slot world; the arena remains its existing simulation.
-  if (globalActivities && !arena && cityFor(location)?.id !== "plzen")
-    return preparedActivityWorld(db, cellAt || location, now);
+  if (globalActivities && !arena && cityFor(location)?.id !== "plzen") {
+    const at = cellAt || location;
+    try {
+      return preparedActivityWorld(db, at, now);
+    } catch (error) {
+      // Czechia keeps its street world (POI quests, landmark clues, errand
+      // targets, coins) whenever no ready prepared day covers the spot, so a
+      // missed daily manifest never empties the country. Elsewhere the
+      // prepared catalog stays the only source (docs/GLOBAL-WORLD-PREPARATION.md).
+      if (
+        error?.code !== "GLOBAL_COVERAGE_UNAVAILABLE" ||
+        !czechiaFallback ||
+        !isInCzechia(at.lat, at.lng)
+      )
+        throw error;
+    }
+  }
   const world = await ensureBaseWorld(db, location, arena, now, { mapData });
   if (!world.cityId && arena) return world;
   // A searched spot must lie in the same city; otherwise the player's own cell.

@@ -318,7 +318,7 @@ export const CHAPTERS: Chapter[] = [
         table: {
           head: ["Archetype", "What it does"],
           rows: [
-            ["Quest giver", "Quest lines and one errand a day; patron lines for stakers"],
+            ["Quest giver", "Quest lines and one errand a day; patron lines for stakers. Out day and night (07:00–22:00), so errands work on winter evenings too"],
             ["Storyteller", "Story chapters; patron chapter for stakers"],
             ["Trader", "Buys and sells Auras on NEAR Intents with a purse that must grow"],
             ["Keeper", "Shows the player's stake, ceremonies and the inner vault (read-only)"],
@@ -505,7 +505,7 @@ export const CHAPTERS: Chapter[] = [
       },
       { h: "Global Atlas discoveries" },
       {
-        p: "When a geographic catalog is connected, a background worker selects mapped zones and Atlas quests for today and tomorrow before players load them. It checks public-path targets, exclusions, polygon boundaries and the whole supplied region inventory. The live game opens only a completely imported UTC day. Already checked regions can form the next day while additional map-data processing waits for resources. Loading a place does not generate extra activities. Missing or incomplete regions remain unavailable.",
+        p: "When a geographic catalog is connected, a background worker selects mapped zones and Atlas quests for today and tomorrow before players load them. It checks public-path targets, exclusions, polygon boundaries and the whole supplied region inventory. The live game opens only a completely imported UTC day. Already checked regions can form the next day while additional map-data processing waits for resources. Loading a place does not generate extra activities. Missing or incomplete regions remain unavailable outside Czechia; inside Czechia the normal street world (POI quests, landmark clues, coins) takes over whenever no ready prepared day covers the spot, so a missed daily manifest never empties the country (`GLOBAL_CZECHIA_FALLBACK=off` disables this).",
       },
       {
         p: "The game imports regions in separate steps so it can handle other requests between them. An interrupted import resumes the same day without opening partial content or duplicating quests. Preparation reports each date separately and identifies regions whose content failed validation. A failed date retries with increasing pauses and does not stop work on the next day.",
