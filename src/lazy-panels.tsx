@@ -115,6 +115,10 @@ const rewardFunding = () => import("./RewardFunding");
 export const RewardFundingPage = lazyNamed(rewardFunding, "RewardFundingPage");
 export const TodaysPot = lazyNamed(rewardFunding, "TodaysPot");
 export const PotRow = lazyNamed(() => import("./PotRow"), "PotRow");
+const mapHud = () => import("./map-hud-controls");
+export const MapSettings = lazyNamed(mapHud, "MapSettings", true);
+export const MapActions = lazyNamed(mapHud, "MapActions", true);
+export const InfoTip = lazyNamed(mapHud, "InfoTip", true);
 export const SecureAndShare = lazyNamed(
   () => import("./SecureAndShare"),
   "SecureAndShare",

@@ -46,6 +46,9 @@ import {
   RewardFundingPage,
   TodaysPot,
   PotRow,
+  MapSettings,
+  MapActions,
+  InfoTip,
   SecureAndShare,
   FuelTheCity,
   NativeStaking,
@@ -289,9 +292,7 @@ import { headingTo, metersBetween } from "./map-motion.ts";
 import { advanceGpsFacing, initialGpsFacing } from "./gps-facing";
 import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
-import { MapSettings } from "./MapSettings";
-import { MapActions, type MapAction } from "./MapActions";
-import { InfoTip } from "./InfoTip";
+import type { MapAction } from "./MapActions";
 import { registerChainTrades } from "./chain-trades";
 import { tr } from "./i18n";
 
