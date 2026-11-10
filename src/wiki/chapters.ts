@@ -445,7 +445,31 @@ export const CHAPTERS: Chapter[] = [
           "**Demo bots:** the test world (TEST_SEED=1) keeps a few bots walking the map. Their dialog is the same, with a **demo-bot** tag after the name; they take no waves and cannot be blocked.",
           "**Write a message** opens the encrypted inbox (see the Encrypted player inbox chapter); it stays off for demo bots and for explorers whose account is not ready yet.",
           "Waves are six ready phrases, no free text. Limits: one per pair per minute, 20 sent and 30 received per hour; delivered by the presence poll and deleted after an hour.",
-          "Block hides presence, notes, waves, messages and the card both ways. The Local chat tab is the existing public nearby-note feed, with the same publication consent, reporting and blocking rules.",
+          "Block hides presence, notes, waves, messages and the card both ways. The Local chat tab holds the public nearby notes and the shouts and topics, with the same publication consent, reporting and blocking rules (see the Community chapter).",
+        ],
+      },
+    ],
+  },
+  {
+    id: "community-local",
+    group: "play",
+    title: "Community: local chat and places",
+    summary: "Free map notes that fade after a day or a week, shouts and topics, and community places, all created from small dialogs over the map.",
+    status: "live",
+    updated: "2026-11-10",
+    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/MapNotes.tsx", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
+    blocks: [
+      {
+        p: "The **Actions** button on the map opens three small create dialogs: **Leave a note**, **Open a topic** and **Add a place**. Each shows a message pinned into the ground, a text field, one small switch and one button; the map stays where it was. Community holds the lists: **Local chat** (sub tabs Notes, and Shouts & topics) and **Places**.",
+      },
+      {
+        list: [
+          "**Map notes** are free. The author picks how long a note stays: 1 day, 1 week (default) or Keep until removed. Expired notes leave every list. The author can edit the text of their own note; the pin, photo and time stay.",
+          "Every row shows author, time and time left, the text, and a **GPS line** with the pin coordinates and distance. Tapping it shows the spot on a plain map with only the pin, your position and an X back to the list.",
+          "**Shouts and topics** are the paid place messages (see Fees and spending): a shout is a short bubble for up to 7 days; a topic is a discussion that becomes free for good once 6 different players wrote in it.",
+          "**Community places** are free recommendations of spots worth a visit, nearest first within 10 km, with a kind (view, nature, history, art, food & drink, hidden gem, walk & play), a kind filter and sorting (nearest, newest, A to Z). The author edits or removes a place; three different reports hide it until a moderator looks. No links, contacts or private addresses. No GOLD or XP moves.",
+          "Blocks hide notes, shouts, topics and places both ways. Demo maps and the real GPS map keep separate notes and places.",
+          "The test world (TEST_SEED=1) seeds notes, community places, two shouts and two topics with replies around náměstí Republiky in Plzeň.",
         ],
       },
     ],

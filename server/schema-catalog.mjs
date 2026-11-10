@@ -53,6 +53,8 @@ for (const relative of [
   "./relayer/funding-journal.mjs",
   "./season/schema.mjs",
   "./spatial/place-safety.mjs",
+  "./social-note-expiry.mjs",
+  "./community-places.mjs",
   "./staker-gates.mjs",
   "./task-evidence.mjs",
 ]) {

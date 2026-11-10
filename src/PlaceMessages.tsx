@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChatsCircle, Flag, Megaphone, PaperPlaneRight, Trash, UserPlus } from "@phosphor-icons/react";
+import { ChatsCircle, Flag, Megaphone, PaperPlaneRight, Trash, UserPlus, X } from "@phosphor-icons/react";
+import { Dialog } from "./Dialog";
+import { NotePinArt } from "./NotePinArt";
+import { PinLine } from "./PinLine";
 import { remaining } from "./api";
 import { tr } from "./i18n";
 import {
@@ -17,6 +20,7 @@ import {
   type PlaceThread,
 } from "./gold-spend-client";
 import "./gold-spend.css";
+import "./local-chat.css";
 import { EmptyState } from "./EmptyState";
 
 // Place messages (QGOLD stream 4): a shout is a short bubble at a place, paid
@@ -57,9 +61,6 @@ export function PlaceMessages({
   const [loadError, setLoadError] = useState("");
   const [open, setOpen] = useState<PlaceThread | null>(null);
   const [compose, setCompose] = useState<"shout" | "topic" | null>(null);
-  const [text, setText] = useState("");
-  const [title, setTitle] = useState("");
-  const [days, setDays] = useState(1);
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
   const { lat, lng } = position;
@@ -91,7 +92,6 @@ export function PlaceMessages({
     }
   };
   const prices = feed?.prices;
-  const perDay = compose === "topic" ? prices?.topicPerDay : prices?.shoutPerDay;
 
   if (open)
     return (
@@ -104,6 +104,7 @@ export function PlaceMessages({
           <div>
             {open.title && <h3>{open.title}</h3>}
             <p className="place-text">{open.text}</p>
+            <PinLine at={open} you={position} title={open.title || open.text} />
             <small>
               {open.author.name} · {open.freeForever ? tr("free for good") : open.state === "live" ? tr("{0} left", { 0: remaining(open.paidUntil) }) : tr("no longer on the map")}
             </small>
@@ -205,61 +206,33 @@ export function PlaceMessages({
 
   return (
     <div className="place-messages">
-      <div className="place-compose-row">
-        <button type="button" className="gold-primary" onClick={() => setCompose(compose === "shout" ? null : "shout")}>
-          <Megaphone weight="duotone" /> {tr("Shout here")}
-        </button>
-        <button type="button" className="gold-primary" onClick={() => setCompose(compose === "topic" ? null : "topic")}>
-          <ChatsCircle weight="duotone" /> {tr("Open a topic")}
-        </button>
+      <div className="community-head">
+        <h2>{tr("Around you")}</h2>
+        <div className="community-head-actions">
+          <button type="button" className="is-quiet" onClick={() => setCompose("shout")}>
+            <Megaphone weight="duotone" aria-hidden="true" /> {tr("Shout")}
+          </button>
+          <button type="button" onClick={() => setCompose("topic")}>
+            <ChatsCircle weight="duotone" aria-hidden="true" /> {tr("Topic")}
+          </button>
+        </div>
       </div>
       {compose && (
-        <form
-          className="place-compose"
-          onSubmit={(e) => {
-            e.preventDefault();
-            run(async () => {
-              const r = await placeCreate({ kind: compose, title: compose === "topic" ? title : undefined, text, days, lat, lng, arena, fix: arena ? null : fix, publicConsent: true });
-              setCompose(null);
-              setText("");
-              setTitle("");
-              onSpent();
-              setOpen(r.thread);
-              void load();
-            });
+        <PlaceCompose
+          kind={compose}
+          position={position}
+          fix={fix}
+          arena={arena}
+          prices={prices}
+          notify={notify}
+          onClose={() => setCompose(null)}
+          onCreated={(thread) => {
+            setCompose(null);
+            onSpent();
+            setOpen(thread);
+            void load();
           }}
-        >
-          <p className="gold-shop-note">
-            {compose === "shout"
-              ? tr("A short bubble at this place for everyone nearby. No replies. Up to 7 days.")
-              : tr("An opening message with a discussion under it. Anyone from level {0} can write for free.", { 0: prices?.postLevel ?? 2 })}
-          </p>
-          {compose === "topic" && (
-            <input value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Topic title")} aria-label={tr("Topic title")} required />
-          )}
-          <textarea
-            value={text}
-            maxLength={compose === "shout" ? 140 : 280}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={compose === "shout" ? tr("What do you want to shout?") : tr("Your opening message")}
-            aria-label={tr("Message")}
-            required
-          />
-          <label className="place-days">
-            {tr("Days on the map")}
-            <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
-              {Array.from({ length: prices?.maxDays ?? 7 }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p className="gold-shop-note">{tr("Public at this map spot. GOLD is burned and not returned if the message is removed.")}</p>
-          <button type="submit" className="gold-primary" disabled={busy || !text.trim()}>
-            {tr("Post for {0} GOLD", { 0: Math.round((perDay ?? 0) * days * 1e6) / 1e6 })}
-          </button>
-        </form>
+        />
       )}
       <div className="place-filters" role="group" aria-label={tr("Feed")}>
         {SORTS.map((s) => (
@@ -279,28 +252,126 @@ export function PlaceMessages({
         <EmptyState title={tr("Places")} action={{ label: tr("Try again"), onClick: () => { setLoadError(""); void load(); } }}>{loadError}</EmptyState>
       </div>}
       {!feed ? (!loadError && <EmptyState title={tr("Loading…")} status />) : !feed.items.length ? (
-        <EmptyState title={tr("No messages around you yet. Leave the first one.")} />
+        <EmptyState title={tr("No shouts or topics around you yet. Open the first one.")} />
       ) : (
-        <ul className="place-feed">
+        <ul className="community-rows place-feed-rows">
           {feed.items.map((t) => (
-            <li key={t.id}>
-              <button
-                type="button"
-                onClick={() => run(async () => setOpen((await placeOpen(t.id)).thread))}
-              >
-                <span className={`place-kind place-kind-${t.kind}`}>{t.kind === "shout" ? <Megaphone weight="duotone" /> : <ChatsCircle weight="duotone" />}</span>
-                <span className="place-feed-body">
+            <li key={t.id} className="community-row">
+              <span className={`community-row-icon place-kind-${t.kind}`} aria-hidden="true">
+                {t.kind === "shout" ? <Megaphone weight="duotone" size={20} /> : <ChatsCircle weight="duotone" size={20} />}
+              </span>
+              <span className="community-row-body">
+                <button type="button" className="community-row-open" onClick={() => run(async () => setOpen((await placeOpen(t.id)).thread))}>
                   <b>{t.title || t.text}</b>
-                  {t.title && <span>{t.text}</span>}
-                  <small>
-                    {t.author.name} · {tr("{0} m", { 0: t.distanceM ?? 0 })}{t.kind === "topic" ? ` · ${tr("{0} posts", { 0: t.posts })}` : ""}
-                  </small>
-                </span>
-              </button>
+                  {t.title && <p>{t.text}</p>}
+                  <span className="community-row-meta">
+                    {t.mine ? tr("You") : t.author.name}
+                    {t.kind === "topic" ? ` · ${tr("{0} posts", { 0: t.posts })}` : ` · ${tr("Shout")}`}
+                  </span>
+                </button>
+                <PinLine at={t} you={position} title={t.title || t.text} />
+              </span>
             </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * Compact create dialog for a shout or a topic (Lubos, 10 Nov 2026): the
+ * pinned-message illustration, the text, a small days switch and the price on
+ * the button. Opens from Local chat and from the Actions button on the map.
+ */
+export function PlaceCompose({
+  kind,
+  position,
+  fix,
+  arena,
+  prices: known,
+  notify,
+  onClose,
+  onCreated,
+}: {
+  kind: "shout" | "topic";
+  position: { lat: number; lng: number };
+  fix: Fix | null;
+  arena: boolean;
+  prices?: PlaceFeed["prices"];
+  notify: (text: string, error?: boolean) => void;
+  onClose: () => void;
+  onCreated: (thread: PlaceThread) => void;
+}) {
+  const [prices, setPrices] = useState(known);
+  const [text, setText] = useState("");
+  const [title, setTitle] = useState("");
+  const [days, setDays] = useState(1);
+  const [busy, setBusy] = useState(false);
+  const [anchor] = useState({ lat: position.lat, lng: position.lng });
+  useEffect(() => {
+    if (prices) return;
+    placeFeed(anchor.lat, anchor.lng, 1, "latest").then(
+      (f) => setPrices(f.prices),
+      () => undefined,
+    );
+  }, [prices, anchor.lat, anchor.lng]);
+  const perDay = (kind === "topic" ? prices?.topicPerDay : prices?.shoutPerDay) ?? 0;
+  const maxDays = prices?.maxDays ?? 7;
+  const dayOptions = [1, 3, maxDays].filter((d, i, all) => d <= maxDays && all.indexOf(d) === i);
+  const label = kind === "topic" ? tr("Open a topic") : tr("Shout here");
+  return (
+    <Dialog label={label} onClose={() => !busy && onClose()}>
+      <form
+        className="quick-create"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setBusy(true);
+          placeCreate({ kind, title: kind === "topic" ? title : undefined, text, days, lat: anchor.lat, lng: anchor.lng, arena, fix: arena ? null : fix, publicConsent: true })
+            .then(
+              (r) => onCreated(r.thread),
+              (err) => notify(err instanceof Error ? err.message : tr("Could not connect to the game."), true),
+            )
+            .finally(() => setBusy(false));
+        }}
+      >
+        <button type="button" className="quick-create-close" aria-label={tr("Close")} disabled={busy} onClick={onClose}>
+          <X size={22} aria-hidden="true" />
+        </button>
+        <NotePinArt kind="topic" />
+        <h2>{label}</h2>
+        {kind === "topic" && (
+          <input type="text" value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} placeholder={tr("Topic title")} aria-label={tr("Topic title")} required autoFocus />
+        )}
+        <textarea
+          value={text}
+          rows={3}
+          maxLength={kind === "shout" ? 140 : 280}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={kind === "shout" ? tr("What do you want to shout?") : tr("Your opening message")}
+          aria-label={tr("Message")}
+          required
+          autoFocus={kind === "shout"}
+        />
+        <div className="quick-create-tools">
+          <div className="quick-create-days" role="radiogroup" aria-label={tr("Days on the map")}>
+            {dayOptions.map((d) => (
+              <button key={d} type="button" role="radio" aria-checked={days === d} disabled={busy} onClick={() => setDays(d)}>
+                {d === 1 ? tr("1 day") : tr("{0} days", { 0: d })}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="quick-create-fine">
+          {kind === "shout"
+            ? tr("A short bubble here for everyone nearby. No replies.")
+            : tr("Anyone from level {0} can write in it for free.", { 0: prices?.postLevel ?? 2 })}{" "}
+          {tr("Public at this map spot. GOLD is burned and not returned if the message is removed.")}
+        </p>
+        <button type="submit" className="gold-primary" disabled={busy || !text.trim() || (kind === "topic" && !title.trim())}>
+          {tr("Post for {0} GOLD", { 0: Math.round(perDay * days * 1e6) / 1e6 })}
+        </button>
+      </form>
+    </Dialog>
   );
 }
