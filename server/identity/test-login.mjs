@@ -1,7 +1,7 @@
 // Tester sign-in (testnet only): one named explorer the owner tests with can
 // sign in with a name and a password he chose. Only a salted scrypt hash is
 // stored (table tester_logins); the password never reaches git, logs or env.
-// Mainnet refuses this sign-in. Set it with scripts/tester-account.mjs.
+// Mainnet refuses this sign-in. Set it with server/cli/tester-account.mjs.
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import {
   registerModuleSchema,

@@ -5,6 +5,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createPlayer, history, openDatabase } from "../server/database.mjs";
+import { ensureModuleVersion } from "../server/schema-compatibility.mjs";
+import { INBOX_SCHEMA_MODULE } from "../server/inbox/service.mjs";
 import {
   hashTesterPassword,
   initializeTesterLogin,
@@ -13,7 +15,7 @@ import {
   verifyTesterPassword,
 } from "../server/identity/test-login.mjs";
 
-const SCRIPT = new URL("../scripts/tester-account.mjs", import.meta.url).pathname;
+const SCRIPT = new URL("../server/cli/tester-account.mjs", import.meta.url).pathname;
 const FAUCET_U = 120_000 * 1_000_000;
 
 test("tester sign-in stores only a salted hash and refuses mainnet", () => {
@@ -36,6 +38,8 @@ test("faucet cleanup removes only the old demo credit and keeps the tester", (t)
   const dir = mkdtempSync(join(tmpdir(), "tester-")), file = join(dir, "db.sqlite");
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   let db = openDatabase(file);
+  // A live database also holds feature-module tables; the CLI must accept them.
+  ensureModuleVersion(db, INBOX_SCHEMA_MODULE);
   const credit = (name, goldU) => {
     const p = createPlayer(db, name);
     db.prepare("UPDATE history SET gold_u=?, meta=? WHERE player_id=? AND kind='welcome'")
