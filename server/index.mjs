@@ -154,6 +154,7 @@ import {
 } from "./identity/near.mjs";
 import { createNearProvider } from "./near-provider.mjs";
 import { IdentitySessions } from "./identity/sessions.mjs";
+import { initializeTesterLogin, testerLogin } from "./identity/test-login.mjs";
 import {
   evmAddress,
   evmChainId,
@@ -287,6 +288,7 @@ const rpc = process.env.NEAR_RPC_URL || DEFAULT_RPC;
 const browserRpc = publicRpcUrl(process.env.PUBLIC_NEAR_RPC_URL, DEFAULT_RPC);
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
+initializeTesterLogin(db);
 const deploymentManifestPath = existsSync(
   resolve(APP_ROOT, `public/${NETWORK}-deployment.json`),
 )
@@ -1623,6 +1625,28 @@ async function api(req, res, url) {
     grantTestKit(result.player.id);
     return respond(res, { player: profile(result.player.id) }, 201, {
       "Set-Cookie": cookie(result.token),
+    });
+  }
+  if (path === "/api/auth/tester" && method === "POST") {
+    // Testnet tester sign-in (server/identity/test-login.mjs): name + the
+    // password the owner chose, stored only as a salted scrypt hash.
+    assert(NETWORK !== "mainnet", "Not found.", 404);
+    limit(
+      "tester-login",
+      clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      5,
+      "Please wait a minute before trying again.",
+    );
+    const input = await body(req);
+    const player = testerLogin(db, {
+      network: NETWORK,
+      name: input.name,
+      password: input.password,
+    });
+    assert(player, "That name and password do not match.", 401);
+    const token = newSession(player, "guest");
+    return respond(res, { player: profile(player), returning: true }, 200, {
+      "Set-Cookie": cookie(token),
     });
   }
   if (path === "/api/logout" && method === "POST") {

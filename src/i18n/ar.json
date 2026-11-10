@@ -1,4 +1,9 @@
 {
+ "Tester name": "اسم المختبر",
+ "Tester password": "كلمة مرور المختبر",
+ "Password": "كلمة المرور",
+ "Tester sign-in": "دخول المختبر",
+ "Signing in…": "جارٍ الدخول…",
  "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "يحتاج هذا المكان إلى المستوى {0}: {1} NEAR من الحصة المستحقة في الخزنة. الأماكن المجانية القريبة مفتوحة للجميع.",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " ({0} مرات يوميًا كحد أقصى للجميع؛ بعدها يمنح السحب الجائزة المضمونة)",
  " (create one above first).": " (أنشئ واحدة في الأعلى أولًا).",
