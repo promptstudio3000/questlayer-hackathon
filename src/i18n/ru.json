@@ -3081,5 +3081,11 @@
  "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "Сейчас рядом никого такого нет. Персонажи гуляют с 07:00 до 22:00.",
  "Show me": "Показать",
  "Player task": "Задание игрока",
- "Report back": "Отчитаться"
+ "Report back": "Отчитаться",
+ "{0} XP": "{0} XP",
+ "Exploring since": "Исследует с",
+ "A demo bot from the test world. It walks the map so you can see how other explorers look.": "Демо-бот из тестового мира. Он ходит по карте, чтобы вы видели, как выглядят другие исследователи.",
+ "Messages are coming soon.": "Сообщения скоро появятся.",
+ "Write a message": "Написать сообщение",
+ "You · open your profile": "Вы · открыть профиль"
 }

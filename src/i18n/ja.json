@@ -3081,5 +3081,11 @@
  "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "近くに該当するキャラクターは今いません。キャラクターは07:00〜22:00に歩いています。",
  "Show me": "場所を見る",
  "Player task": "プレイヤーの依頼",
- "Report back": "報告する"
+ "Report back": "報告する",
+ "{0} XP": "{0} XP",
+ "Exploring since": "探検開始",
+ "A demo bot from the test world. It walks the map so you can see how other explorers look.": "テストワールドのデモボットです。他の探検者の見た目がわかるようにマップを歩いています。",
+ "Messages are coming soon.": "メッセージはまもなく使えます。",
+ "Write a message": "メッセージを書く",
+ "You · open your profile": "あなた · プロフィールを開く"
 }

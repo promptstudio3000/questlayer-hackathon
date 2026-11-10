@@ -3081,5 +3081,11 @@
  "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "अभी आपके पास ऐसा कोई नहीं है। किरदार 07:00 से 22:00 के बीच घूमते हैं।",
  "Show me": "दिखाओ",
  "Player task": "खिलाड़ी का काम",
- "Report back": "रिपोर्ट करें"
+ "Report back": "रिपोर्ट करें",
+ "{0} XP": "{0} XP",
+ "Exploring since": "खोज शुरू",
+ "A demo bot from the test world. It walks the map so you can see how other explorers look.": "टेस्ट दुनिया का एक डेमो बॉट। यह नक्शे पर चलता है ताकि आप देख सकें कि दूसरे खोजी कैसे दिखते हैं।",
+ "Messages are coming soon.": "संदेश जल्द आ रहे हैं।",
+ "Write a message": "संदेश लिखें",
+ "You · open your profile": "आप · अपनी प्रोफ़ाइल खोलें"
 }

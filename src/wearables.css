@@ -208,3 +208,48 @@ button.wearable-tile {
 .player-card-actions .danger {
   border-color: #c82ac2;
 }
+.player-card-bot {
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ece3ff;
+  color: #4b1fa3;
+  font-size: 13px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.player-card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+}
+.player-card-stats div {
+  padding: 8px;
+  border-radius: 12px;
+  background: #f5f0ff;
+  text-align: center;
+}
+.player-card-stats dt {
+  font-size: 12px;
+  color: #5b4a75;
+}
+.player-card-stats dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #2c0a56;
+}
+.player-card-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.player-card-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.player-card-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
