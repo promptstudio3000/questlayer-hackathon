@@ -325,6 +325,7 @@ async function firstLoad(page, url, report) {
   }
   const perf = {
     scriptRawKb: Math.round(raw / 1024),
+    scriptRawBytes: raw,
     scriptGzipKb: Math.round(gzip / 1024),
     scripts: scripts.size,
     requests,
