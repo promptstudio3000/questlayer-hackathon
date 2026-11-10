@@ -25,6 +25,7 @@ import { gzipSync } from "node:zlib";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
 import { closeOpenSheet, openScreen } from "./lib/e2e-nav.mjs";
+import { fixedDayOffset, shiftBrowserClock } from "./lib/e2e-clock.mjs";
 
 const require = createRequire(import.meta.url);
 const AXE_SOURCE = require("axe-core").source;
@@ -92,15 +93,20 @@ async function freePort() {
   });
 }
 
+// One fixed day and hour for the server and every page, so the day's world
+// is the same on every run (scripts/lib/e2e-clock.mjs).
+const CLOCK_OFFSET_MS = fixedDayOffset();
+
 async function startServer() {
   if (process.env.E2E_BASE_URL) return { url: process.env.E2E_BASE_URL, stop() {} };
   const port = await freePort();
   const dir = mkdtempSync(join(tmpdir(), "questlayer-e2e-"));
   const url = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, [join(ROOT, "server/index.mjs")], {
+  const child = spawn(process.execPath, ["--import", join(ROOT, "scripts/lib/e2e-clock.mjs"), join(ROOT, "server/index.mjs")], {
     cwd: dir,
     env: {
       PATH: process.env.PATH,
+      E2E_CLOCK_OFFSET_MS: String(CLOCK_OFFSET_MS),
       PORT: String(port),
       HOST: "127.0.0.1",
       APP_ORIGIN: url,
@@ -214,6 +220,7 @@ async function newExplorerContext(browser, profile) {
     acceptDownloads: true,
     locale: "en-GB",
   });
+  await shiftBrowserClock(context, CLOCK_OFFSET_MS);
   // Record vibration calls; headless browsers have no vibration motor.
   await context.addInitScript(() => {
     window.__vibrations = [];
@@ -618,7 +625,7 @@ async function runDevice(name, server) {
     // card without a real install prompt; elsewhere this step is skipped.
     const cardContext = await newExplorerContext(browser, profile);
     const cardPage = await cardContext.newPage();
-    await cardPage.clock.install();
+    await cardPage.clock.install({ time: Date.now() + CLOCK_OFFSET_MS });
     await cardPage.goto(server.url);
     await cardPage.getByPlaceholder("Your explorer name").fill(`${TAG}Card ${name}`);
     await cardPage.getByRole("button", { name: "Start exploring" }).click();

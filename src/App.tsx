@@ -3497,7 +3497,10 @@ export default function App() {
           globe={globe}
           equipped={equipped}
           others={others}
-          onPlayer={setCardPlayer}
+          onPlayer={(id) =>
+            id === player?.id ? setTab("settings") : setCardPlayer(id)
+          }
+          onSelf={() => setTab("settings")}
           wearables={nativePlay ? undefined : player?.wearables}
           onWearableFind={(id) => {
             const coin = world?.coins.find((c) => c.id === id);

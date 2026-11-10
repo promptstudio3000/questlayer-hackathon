@@ -16,6 +16,11 @@ import { join, resolve } from "node:path";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { openScreen, closeOpenSheet } from "./lib/e2e-nav.mjs";
+import { fixedDayOffset, shiftBrowserClock } from "./lib/e2e-clock.mjs";
+
+// One fixed day and hour for the server and the page, so the day's world is
+// the same on every run (scripts/lib/e2e-clock.mjs).
+const CLOCK_OFFSET_MS = fixedDayOffset();
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -41,10 +46,11 @@ async function startServer() {
   const port = await freePort();
   const dir = mkdtempSync(join(tmpdir(), "questlayer-e2e-vote-"));
   const url = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, ["server/index.mjs"], {
+  const child = spawn(process.execPath, ["--import", "./scripts/lib/e2e-clock.mjs", "server/index.mjs"], {
     cwd: ROOT,
     env: {
       ...process.env,
+      E2E_CLOCK_OFFSET_MS: String(CLOCK_OFFSET_MS),
       PORT: String(port),
       HOST: "127.0.0.1",
       APP_ORIGIN: url,
@@ -151,6 +157,7 @@ async function main() {
       reducedMotion: "reduce",
       locale: "en-GB",
     });
+    await shiftBrowserClock(context, CLOCK_OFFSET_MS);
     page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
