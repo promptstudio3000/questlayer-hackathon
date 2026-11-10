@@ -40,6 +40,7 @@ import {
   pathsAround,
 } from "../tests/fixtures/world-coverage/czechia.mjs";
 import { coverageReport, openPoiDb } from "../server/poi/coverage.mjs";
+import { openMapSettings } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -195,7 +196,7 @@ async function journey(browser, server, device, j, expected) {
         r.request().postDataJSON()?.arena === false,
       { timeout: 30_000 },
     );
-    await page.getByRole("button", { name: "Use GPS, my location" }).click();
+    await (await openMapSettings(page)).getByRole("button", { name: "Use GPS, my location" }).click();
     const world = await (await gpsWorld).json();
     const cell = latLngToCell(j.spot.lat, j.spot.lng, 7);
     // A city pack for this place (W5 auto cities) may own it later; either

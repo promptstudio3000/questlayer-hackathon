@@ -8,6 +8,7 @@ import { resolve } from "node:path";
 import { createServer } from "node:net";
 import { chromium } from "playwright";
 import { readPreparedContent } from "../server/world-preparation/read.mjs";
+import { openMapSettings } from "./lib/e2e-nav.mjs";
 
 const arg = (key) => process.argv.includes(key) ? process.argv[process.argv.indexOf(key)+1] : null;
 assert.ok(arg("--days") && arg("--out"), "Use --days <prepared-days> --out <qa-output> after npm run build.");
@@ -56,7 +57,7 @@ try {
   await page.getByPlaceholder("Your explorer name").fill("Atlas browser pilot");await page.getByRole("button",{name:"Start exploring",exact:true}).click();
   await page.getByRole("button",{name:"Let's explore",exact:true}).click();
   const worldResponse=page.waitForResponse(r=>r.url().endsWith("/api/world") && r.request().postDataJSON()?.arena===false && r.status()===200);
-  await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();await worldResponse;
+  await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();await worldResponse;
   await page.waitForFunction(()=>document.querySelector(".coverage-note")?.textContent?.includes("Map-derived discoveries by Atlas"));
   assert.equal(await page.locator(".first-session").count(),0,"The arena coin/chest coach must not promise absent global objects.");
   await page.locator(".map-loading").waitFor({state:"hidden",timeout:45000});

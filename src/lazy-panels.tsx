@@ -114,6 +114,7 @@ export const NativeEconomyPanel = lazyNamed(
 const rewardFunding = () => import("./RewardFunding");
 export const RewardFundingPage = lazyNamed(rewardFunding, "RewardFundingPage");
 export const TodaysPot = lazyNamed(rewardFunding, "TodaysPot");
+export const PotRow = lazyNamed(() => import("./PotRow"), "PotRow");
 export const SecureAndShare = lazyNamed(
   () => import("./SecureAndShare"),
   "SecureAndShare",

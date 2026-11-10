@@ -45,7 +45,7 @@ import "./art-world";
 import type { Point, World, Zone, Item } from "./types";
 import { prefersReducedMotion } from "./feedback";
 import { paintMapSky, skyFor, skyLabel } from "./map-sky";
-import { Coins, MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
+import { Coins, MoonStars, Sun, SunHorizon, X } from "@phosphor-icons/react";
 import "./map-sky.css";
 // Phone map-first layout; lazy with the map, so the welcome screen skips it.
 import "./phone-map.css";
@@ -59,6 +59,7 @@ import { mapKitUrl, questPinKind, questPinMarkup, mapGuidePoints } from "./map-k
 import { representativeZoneQuest } from "./game-object-art-data";
 import type { ZoneAltarLayer } from "./zone-altar-layer";
 import "./map-kit.css";
+import "./map-hud.css";
 import { questStopMarkers } from "./quest-route";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
@@ -295,7 +296,9 @@ export function GameMap(props: GameMapProps) {
     props.world?.quests.map((q) => questObjectPresentation(q, objectContext)),
   );
   const [ready, setReady] = useState(false),
-    [error, setError] = useState(false);
+    [error, setError] = useState(false),
+    // Target key of a direction guide the explorer closed with its X.
+    [hiddenGuide, setHiddenGuide] = useState("");
   // Real day and night at the player's position; re-checked every minute.
   const [skyTick, setSkyTick] = useState(() => Date.now());
   useEffect(() => {
@@ -1456,11 +1459,14 @@ export function GameMap(props: GameMapProps) {
     props.panelMode,
     viewportRevision,
   ]);
-  const guidePoints = props.globe ? [] : mapGuidePoints({
+  const allGuidePoints = props.globe ? [] : mapGuidePoints({
     position: props.position, route: props.route, target: props.nativeTarget, selectedQuestId: props.selectedQuestId,
     zone: props.focusZone || props.world?.zones.find((z) => z.id === props.nextZoneId),
     quests: props.world?.quests || [], now: objectContext.now, playerTier: props.playerTier,
   });
+  // The guide's X hides the line until the guide points somewhere else.
+  const guideTargetKey = JSON.stringify(allGuidePoints.slice(1));
+  const guidePoints = hiddenGuide === guideTargetKey ? [] : allGuidePoints;
   const routeKey = JSON.stringify(guidePoints);
   useEffect(() => {
     const m = map.current;
@@ -1625,9 +1631,18 @@ export function GameMap(props: GameMapProps) {
         </div>
       )}
       {!props.globe && guidePoints.length > 1 && (
-        <div className="map-guide-key" role="note">
+        <div className="map-guide-key" role="note" title={tr("Straight-line direction, not a walking route")}>
           <img src={mapKitUrl("navigation/arrow-forward.png")} width="24" height="24" alt="" aria-hidden />
-          <span>{tr("Direction guide · not a walking route")}</span>
+          <span>{tr("Direction guide")}</span>
+          <button
+            type="button"
+            className="map-guide-close"
+            aria-label={tr("Hide direction guide")}
+            title={tr("Hide direction guide")}
+            onClick={() => setHiddenGuide(guideTargetKey)}
+          >
+            <X size={16} weight="bold" aria-hidden />
+          </button>
         </div>
       )}
       {!ready && (

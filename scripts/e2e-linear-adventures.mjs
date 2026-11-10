@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { chromium, webkit } from "playwright";
 import { daytimeOffset } from "./lib/e2e-clock.mjs";
 import { polygonsOf, containsPoint, nearestOnSegment } from "../server/poi/geo.mjs";
+import { openMapSettings } from "./lib/e2e-nav.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const phase = process.env.E2E_PHASE || "after";
@@ -70,9 +71,9 @@ try {
     const page = await context.newPage(); await page.setViewportSize({ width, height });
     const errors = []; page.on("pageerror", e => errors.push(e.message));
     // The first location fixes use the actual target, with no artificial travel claim.
-    await page.goto(url+"/?lang="+language); await page.getByRole("button", { name: t("Use GPS, my location"), exact: true }).waitFor();
+    await page.goto(url+"/?lang="+language); await (await openMapSettings(page)).getByRole("button", { name: t("Use GPS, my location"), exact: true }).waitFor();
     await page.evaluate(p => window.__moveTestGps(p), target);
-    await page.getByRole("button", { name: t("Use GPS, my location"), exact: true }).click();
+    await (await openMapSettings(page)).getByRole("button", { name: t("Use GPS, my location"), exact: true }).click();
     await page.locator(".world-loading").waitFor({ state: "hidden", timeout: 60000 });
     await page.getByRole("button", { name: t("Map tools"), exact: true }).click();
     await page.getByRole("button", { name: t("Nearby discoveries"), exact: true }).click();
@@ -173,7 +174,7 @@ try {
       const zpost = async (path, data) => { const r = await zoneContext.request.post(url + "/api" + path, { headers: { Origin: url }, data, maxRetries: 1 }); assert.ok(r.ok()); return r.json(); };
       await zpost("/session", { name: `Zone ${name}` });
       const zonePage = await zoneContext.newPage(); await zonePage.setViewportSize({width,height});
-      await zonePage.goto(url+"/?lang="+language); await zonePage.getByRole("button",{name: t("Use GPS, my location"),exact:true}).click();
+      await zonePage.goto(url+"/?lang="+language); await (await openMapSettings(zonePage)).getByRole("button",{name: t("Use GPS, my location"),exact:true}).click();
       await zonePage.locator(".world-loading").waitFor({state:"hidden",timeout:60000});
       await zonePage.locator(".zone-presence-ready").waitFor();
       await zonePage.locator(".map-loading").waitFor({state:"hidden",timeout:60000});
@@ -196,10 +197,10 @@ try {
       const finds=await ppost("/world",{arena:false,location:plzen});
       const find=finds.coins.find(c=>c.wearable&&!c.claimant);assert.ok(find,"An actual unclaimed wearable find exists");
       const pickupPage=await pickupContext.newPage();await pickupPage.setViewportSize({width,height});
-      await pickupPage.goto(url+"/?lang="+language);await pickupPage.getByRole("button",{name: t("Use GPS, my location"),exact:true}).waitFor();
+      await pickupPage.goto(url+"/?lang="+language);await (await openMapSettings(pickupPage)).getByRole("button",{name: t("Use GPS, my location"),exact:true}).waitFor();
       await pickupPage.evaluate(point=>window.__moveTestGps(point),find);
       const picked=pickupPage.waitForResponse(r=>r.url().endsWith("/api/coins/claim")&&r.request().postDataJSON()?.coinId===find.id);
-      await pickupPage.getByRole("button",{name: t("Use GPS, my location"),exact:true}).click();
+      await (await openMapSettings(pickupPage)).getByRole("button",{name: t("Use GPS, my location"),exact:true}).click();
       const confirmed=await(await picked).json();assert.equal(confirmed.wearable?.id,find.wearable.id);assert.equal(confirmed.wearable.duplicate,false);
       const moment=pickupPage.locator(".wearable-moment");await moment.waitFor();
       assert.equal(await moment.locator("details[open]").count(),0);assert.equal(await moment.locator(".primary-button:visible").count(),1);

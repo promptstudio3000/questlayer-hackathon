@@ -45,6 +45,7 @@ import {
   NativeEconomyPanel,
   RewardFundingPage,
   TodaysPot,
+  PotRow,
   SecureAndShare,
   FuelTheCity,
   NativeStaking,
@@ -189,6 +190,9 @@ import {
   Leaf,
   ChatCircle,
   Smiley,
+  NotePencil,
+  ClipboardText,
+  MapPinPlus,
   PaperPlane,
   SignOut,
   ShieldCheck,
@@ -285,6 +289,9 @@ import { headingTo, metersBetween } from "./map-motion.ts";
 import { advanceGpsFacing, initialGpsFacing } from "./gps-facing";
 import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
+import { MapSettings } from "./MapSettings";
+import { MapActions, type MapAction } from "./MapActions";
+import { InfoTip } from "./InfoTip";
 import { registerChainTrades } from "./chain-trades";
 import { tr } from "./i18n";
 
@@ -383,9 +390,17 @@ export default function App() {
     [goldMapData, setGoldMapData] = useState<GoldMap | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
     [emotePicker, setEmotePicker] = useState(false),
-    // Phones: the map tools fold into one button; "Full map" hides the
-    // header, menu and sheet so the map takes the whole screen.
-    [mapTools, setMapTools] = useState(false),
+    // The camera turns with the explorer unless switched off in Map settings.
+    [mapRotate, setMapRotate] = useState(() => {
+      try {
+        return localStorage.getItem("questlayer.mapRotate") !== "0";
+      } catch {
+        return true;
+      }
+    }),
+    // A create form the Actions button asked the Nearby list to open.
+    [marketForm, setMarketForm] = useState<"" | "task" | "secret">(""),
+    // "Full map" hides the header, menu and sheet so the map takes the whole screen.
     [mapFull, setMapFull] = useState(() => {
       try {
         return localStorage.getItem("questlayer.mapFull") === "1";
@@ -3405,11 +3420,41 @@ export default function App() {
   const showObjective = (kind: typeof objective) => !sheetExpanded && objective === kind;
   const closeMapPanel = () => { setCatalogView(null); setSheetExpanded(false); };
   function openDiscoveries() {
-    setMapTools(false); setMapFull(false); setDismissedObjective("");
+    setMapFull(false); setDismissedObjective("");
     if (nativePlay) { setTab("expeditions"); return; }
     setCatalogView({ scope: `${player?.id}:${world?.id}`, zoneId: null, questId: null });
     setTab("explore"); setSheetExpanded(true);
   }
+  function chooseMapRotate(next: boolean) {
+    setMapRotate(next);
+    try {
+      localStorage.setItem("questlayer.mapRotate", next ? "1" : "0");
+    } catch {
+      /* private mode: the choice lasts for this visit */
+    }
+  }
+  const clearMarketForm = () => setMarketForm("");
+  const openNearbyForm = (form: "task" | "secret") => {
+    setMapFull(false);
+    setSelected(null);
+    setTab("explore");
+    setExploreView("nearby");
+    setSheetExpanded(true);
+    setMarketForm(form);
+  };
+  const mapActions: MapAction[] = [
+    { id: "note", label: tr("Leave a note"), icon: NotePencil, onSelect: () => { setNotesView("compose"); setTab("messages"); } },
+    { id: "mood", label: tr("Change mood"), icon: Smiley, onSelect: () => setEmotePicker(true) },
+    ...(!nativePlay
+      ? [
+          { id: "task", label: tr("Post a task"), icon: ClipboardText, onSelect: () => openNearbyForm("task") },
+          { id: "secret", label: tr("Hide a Secret"), icon: LockKey, onSelect: () => openNearbyForm("secret") },
+        ]
+      : []),
+    ...(creatorsEnabled
+      ? [{ id: "quest", label: tr("Create a quest"), icon: MapPinPlus, onSelect: () => { setTab("community"); setCreatorView({ page: "edit", questId: null }); setSheetExpanded(true); } }]
+      : []),
+  ];
   const near = !nativePlay ? nearbyAction({world:world || null, position, tier:player?.tier || 1, now,
     actors:nearActors.worldId === world?.id && Date.now()-nearActors.at<3000 ? nearActors.actors : [],
     preferredQuestId:selectedQuestId}) : null;
@@ -3524,7 +3569,7 @@ export default function App() {
           facing={
             arena && !nativePlay ? demoWalk.heading : (gpsCourse ?? undefined)
           }
-          followBearing={arena && !nativePlay ? demoWalk.engaged ? demoWalk.heading : undefined : gpsCourse ?? undefined}
+          followBearing={!mapRotate ? undefined : arena && !nativePlay ? demoWalk.engaged ? demoWalk.heading : undefined : gpsCourse ?? undefined}
           onZone={(z) =>
             nativePlay
               ? chooseNativeQuest(Number(z.id.split(":zone:")[1]))
@@ -3629,74 +3674,138 @@ export default function App() {
               : tr("Plzeň · city demo")}
           </span>
         </div>
+        {player && (
+          <div className="hud-left">
+            {!gotchiverseTestApp && (
+              <button
+                className="hud-brand"
+                aria-label={tr("QuestLayer home")}
+                onClick={() => setTab("explore")}
+              >
+                <BrandLogo />
+              </button>
+            )}
+            <DailyBoard
+              worldId={world?.id}
+              refreshKey={`${player.xp}:${player.history?.[0]?.id ?? ""}`}
+              onClaimed={() => void me()}
+              onGoal={showGoal}
+            />
+          </div>
+        )}
         <div className="topbar-right">
           {player && (
             <>
-              <DailyBoard
-                worldId={world?.id}
-                refreshKey={`${player.xp}:${player.history?.[0]?.id ?? ""}`}
-                onClaimed={() => void me()}
-                onGoal={showGoal}
-              />
-              <button
-                className="balance-pill"
-                onClick={() => {
-                  setWalletView(nativePlay ? "rewards" : "demo");
-                  setTab("wallet");
+              <div className="hud-bubble">
+                <button
+                  className="profile-pill"
+                  onClick={() => setTab("settings")}
+                >
+                  <span className="sr-only">{tr("Profile")}</span>
+                  {hudProgress ? (
+                    <HudXpRing
+                      name={player.name}
+                      level={hudProgress.level}
+                      xp={hudProgress.xp}
+                      levelStartXp={hudProgress.levelStartXp}
+                      nextLevelXp={hudProgress.nextLevelXp}
+                      ring={hudProgress.ring}
+                    >
+                      <Character
+                        items={appearanceItems}
+                        // originTokenId and look (outfit tag) of the worn original.
+                      {...player.appearance}
+                        compact
+                      />
+                      <span className="sr-only">{tr(", explorer profile")}</span>
+                    </HudXpRing>
+                  ) : (
+                    <>
+                      <Character
+                        items={appearanceItems}
+                        // originTokenId and look (outfit tag) of the worn original.
+                      {...player.appearance}
+                        compact
+                      />
+                      <span>
+                        <b>{player.name}</b>
+                        <small>{tr("Explorer")}</small>
+                      </span>
+                    </>
+                  )}
+                </button>
+                <button
+                  className="balance-pill"
+                  onClick={() => {
+                    setWalletView(nativePlay ? "rewards" : "demo");
+                    setTab("wallet");
+                  }}
+                >
+                  <CoinIcon />
+                  <b>
+                    {nativePlay
+                      ? nativeGame.state?.balance
+                        ? (
+                            Number(
+                              BigInt(nativeGame.state.balance.credit) /
+                                1000000000000000n,
+                            ) / 1e6
+                          ).toLocaleString("en-US", { maximumFractionDigits: 3 })
+                        : "—"
+                      : gold(player.gold_u)}
+                  </b>
+                  <span>GOLD</span>
+                </button>
+              </div>
+              <MapSettings
+                demo={arena && !nativePlay}
+                status={
+                  nativePlay
+                    ? arena
+                      ? tr("Turn on location")
+                      : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
+                    : arena
+                      ? tr("City demo")
+                      : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
+                }
+                modeLabel={arena || nativePlay ? tr("Use GPS") : tr("Demo")}
+                modeAria={arena || nativePlay ? tr("Use GPS, my location") : tr("Demo, back to city demo")}
+                onModeSwitch={() => void (arena || nativePlay ? locate() : returnToArena())}
+                onLocate={() => {
+                  setFollow(true);
+                  setOverview(false);
+                  setGlobe(false);
+                  if (!arena || nativePlay) void locate();
+                  else setPosition((p) => ({ ...p }));
                 }}
-              >
-                <CoinIcon />
-                <b>
-                  {nativePlay
-                    ? nativeGame.state?.balance
-                      ? (
-                          Number(
-                            BigInt(nativeGame.state.balance.credit) /
-                              1000000000000000n,
-                          ) / 1e6
-                        ).toLocaleString("en-US", { maximumFractionDigits: 3 })
-                      : "—"
-                    : gold(player.gold_u)}
-                </b>
-                <span>GOLD</span>
-              </button>
-              <button
-                className="profile-pill"
-                onClick={() => setTab("settings")}
-              >
-                <span className="sr-only">{tr("Profile")}</span>
-                {hudProgress ? (
-                  <HudXpRing
-                    name={player.name}
-                    level={hudProgress.level}
-                    xp={hudProgress.xp}
-                    levelStartXp={hudProgress.levelStartXp}
-                    nextLevelXp={hudProgress.nextLevelXp}
-                    ring={hudProgress.ring}
-                  >
-                    <Character
-                      items={appearanceItems}
-                      // originTokenId and look (outfit tag) of the worn original.
-                    {...player.appearance}
-                      compact
-                    />
-                    <span className="sr-only">{tr(", explorer profile")}</span>
-                  </HudXpRing>
-                ) : (
-                  <>
-                    <Character
-                      items={appearanceItems}
-                      // originTokenId and look (outfit tag) of the worn original.
-                    {...player.appearance}
-                      compact
-                    />
-                    <span>
-                      <b>{player.name}</b>
-                      <small>{tr("Explorer")}</small>
-                    </span>
-                  </>
-                )}
-              </button>
+                rotate={mapRotate}
+                onRotate={chooseMapRotate}
+                fullAvailable={tab === "explore"}
+                onFull={() => {
+                  setSheetExpanded(false);
+                  setMapFull((v) => !v);
+                  // The camera re-centres the explorer in the bigger view.
+                  requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+                }}
+                overview={overview}
+                onOverview={() => {
+                  setOverview((v) => !v);
+                  setGlobe(false);
+                  setFollow(false);
+                  setSelected(null);
+                }}
+                globe={globe}
+                onGlobe={() => {
+                  if (!globe) {
+                    setTab("explore");
+                    setSheetExpanded(false);
+                    setSelected(null);
+                  }
+                  setGlobe((v) => !v);
+                  setOverview(false);
+                  setFollow(true);
+                }}
+              />
             </>
           )}
         </div>
@@ -3758,17 +3867,17 @@ export default function App() {
             <div className="sheet-peek sheet-peek-selection">
             <button
               className="compact-selection"
+              title={tr("Straight-line distance")}
               onClick={() => setSheetExpanded(true)}
             >
-              <QuestThumbnail quest={zoneQuest} now={now} playerTier={player.tier} size={40} />
-              <span>
+              <span className="peek-art" aria-hidden="true"><QuestThumbnail quest={zoneQuest} now={now} playerTier={player.tier} size={40} /></span>
+              <span className="peek-body">
                 <strong>{zoneQuest && selectedQuestId === zoneQuest.id ? questDisplayTitle(zoneQuest.title) : selected.name}</strong>
-                <small>{zoneQuest ? activityProgress(zoneQuest, position) : tr("See what's here")}</small>
-                <small>{distanceLabel(meters(position, zoneQuest ? questPoint(zoneQuest) : selected))} · {tr("Straight-line distance")}</small>
+                <small>{zoneQuest ? activityProgress(zoneQuest, position) : tr("See what's here")}{" · "}{distanceLabel(meters(position, zoneQuest ? questPoint(zoneQuest) : selected))}</small>
                 {selectedRequirement && <small className="compact-requirement">{selectedRequirement}</small>}
                 {zoneQuest && learning.visible(questHelpTopic(zoneQuest)) && <small className="learning-hint">{helpText(questHelpTopic(zoneQuest))}</small>}
               </span>
-              <ArrowRight />
+              <ArrowRight size={20} aria-hidden="true" />
             </button>
             <button
               className="sheet-peek-hide"
@@ -3933,6 +4042,9 @@ export default function App() {
                 fund={fundMarketEscrow}
                 notify={notify}
                 onBalance={() => void me()}
+                openForm={marketForm}
+                onFormOpened={clearMarketForm}
+                onCommunityTasks={() => setTab("bounties")}
               />
             </ScreenTabPanel>
           )}
@@ -4027,20 +4139,21 @@ export default function App() {
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
               </div>
-              {!world?.globalPreparation && <TodaysPot practice onOpen={() => setTab("funding")} />}
-              <div className="section-label">
+              {!world?.globalPreparation && <PotRow worldId={world?.id ?? null} position={position} onOpen={() => setTab("funding")} />}
+              <div className="section-label places-head">
                 <h2>{tr("Places today")}</h2>
-                <span>{world?.cityZoneCount ?? activeZones.length}</span>
+                {world?.quality && world.cityStatus !== "auto" && !world.globalPreparation && (
+                  <InfoTip label={tr("About this map")} align="start">{world.quality.notice}</InfoTip>
+                )}
+                <span className="places-count">{world?.cityZoneCount ?? activeZones.length}</span>
               </div>
-              {world?.quality && (
+              {world?.quality && (world.cityStatus === "auto" || world.globalPreparation) && (
                 <details
-                  className={`coverage-note${world.cityStatus === "auto" || world.globalPreparation ? " unverified" : ""}`}
-                  open={world.cityStatus === "auto" || !!world.globalPreparation || undefined}
+                  className="coverage-note unverified"
+                  open
                 >
                   <summary>
-                    {world.cityStatus === "auto" || world.globalPreparation
-                      ? tr("Unverified map: generated automatically")
-                      : tr("About this map")}
+                    {tr("Unverified map: generated automatically")}
                   </summary>
                   <p>{world.globalPreparation?.financialActivation && <strong>{tr("NEAR testnet")}. </strong>}{world.globalPreparation?.financialActivation
                     ? world.quality.funded
@@ -4065,63 +4178,46 @@ export default function App() {
                     : null;
                   return (
                     <button
-                      className="zone-card"
+                      className="zone-card zone-row"
                       data-zone-id={z.id}
                       key={z.id}
                       onClick={() => selectZone(z)}
                     >
-                      <div className={`zone-illustration art-${z.kind}`}>
-                        <span className="illustration-orb" />
-                        <span>
-                          <QuestThumbnail quest={q} now={now} playerTier={player.tier} size={64} />
-                        </span>
-                        <i />
-                        <i />
-                      </div>
-                      <div className="zone-info">
-                        <div>
+                      <span className={`zone-row-art art-${z.kind}`} aria-hidden="true">
+                        <QuestThumbnail quest={q} now={now} playerTier={player.tier} size={40} />
+                      </span>
+                      <span className="zone-row-body">
+                        <strong>{z.name}</strong>
+                        <small>
                           <Badge tone={z.tier === 1 ? "green" : "purple"}>
                             {z.tier === 1 ? tr("FREE") : tr("TIER {0}", { 0: z.tier })}
                           </Badge>
-                          {z.opensAt > now && (
-                            <small>{tr("Opens in")}{" "}{remaining(z.opensAt)}</small>
-                          )}
-                          <small>{distanceLabel(meters(position, z))}</small>
-                        </div>
-                        <h3>{z.name}</h3>
-                        <p className="zone-activity-kinds">{[...new Set(questsInZone(world?.quests || [], z).map(activityLabel))].join(" · ")}</p>
-                        <div className="zone-rewards">
-                          <span>
-                            <Sparkle size={12} />
-                            {q
-                              ? q.completed
-                                ? tr("Completed")
-                                : `${q.xp} XP`
-                              : tr("See what's here")}
-                          </span>
-                          {q?.gold_u && !q.claimant ? (
-                            <span>
-                              <CoinIcon />
-                              {gold(q.gold_u)} GOLD
-                            </span>
+                          <span>{distanceLabel(meters(position, z))}</span>
+                          {z.opensAt > now ? (
+                            <span>{tr("Opens in")}{" "}{remaining(z.opensAt)}</span>
                           ) : (
                             <span>
-                              <GameObjectArt kind="discovery" size={20} />
                               {!q
-                                ? tr("Details")
-                                : activityArt?.state === "locked"
-                                  ? activityArt.label
-                                  : q.completed
-                                    ? tr("Completed")
-                                    : q.kind === "chest" &&
-                                        q.itemAvailable === true
+                                ? tr("See what's here")
+                                : q.completed
+                                  ? tr("Completed")
+                                  : activityArt?.state === "locked"
+                                    ? activityArt.label
+                                    : q.kind === "chest" && q.itemAvailable === true
                                       ? tr("Aura chest")
                                       : activityLabel(q)}
                             </span>
                           )}
-                          <ArrowUpRight size={15} />
-                        </div>
-                      </div>
+                          {q && !q.completed && (
+                            q.gold_u && !q.claimant ? (
+                              <span><CoinIcon />{gold(q.gold_u)}</span>
+                            ) : (
+                              <span><Sparkle size={12} aria-hidden="true" />{q.xp} XP</span>
+                            )
+                          )}
+                        </small>
+                      </span>
+                      <ArrowRight size={18} aria-hidden="true" />
                     </button>
                   );
                 })}
@@ -4891,34 +4987,6 @@ export default function App() {
       </button>}
       {player && (
         <>
-          <div className={`map-top-chip map-status-chip${arena && !nativePlay ? " demo" : ""}`}>
-            <span className="status-dot" />
-            <span className="map-status-text" title={arena && !nativePlay ? tr("City demo · arrows or WASD") : undefined}>
-              {nativePlay
-                ? arena
-                  ? tr("Turn on location")
-                  : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
-                : arena
-                  ? tr("City demo")
-                  : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`}
-            </span>
-            <button
-              aria-label={
-                arena || nativePlay ? tr("Use GPS, my location") : tr("Demo, back to city demo")
-              }
-              onClick={() => (arena || nativePlay ? locate() : returnToArena())}
-            >
-              {arena || nativePlay ? (
-                <>
-                  <NavigationArrow size={14} weight="fill" />
-                  {tr("Use GPS")}</>
-              ) : (
-                <>
-                  <ArrowUpRight size={14} />
-                  {tr("Demo")}</>
-              )}
-            </button>
-          </div>
           {presence && (
             <button
               className="presence-chip"
@@ -4952,6 +5020,7 @@ export default function App() {
               setRun={demoWalk.setRun}
               press={(control, down, source) => { if (down) learning.acknowledge("movement-arena"); demoWalk.press(control, down, source); }}
               release={demoWalk.release}
+              steer={demoWalk.steer}
               target={
                 demoTarget
                   ? {
@@ -4978,111 +5047,21 @@ export default function App() {
               <ArrowsIn size={22} weight="bold" />
             </button>
           )}
-          <div
-            className={`map-controls map-toolbar${mapTools ? " tools-open" : ""}`}
-            role="toolbar"
-            aria-label={tr("Map tools")}
-            aria-orientation="vertical"
-          >
-            <button
-              className="map-tools-toggle"
-              aria-label={tr("Map tools")}
-              title={tr("Map tools")}
-              aria-expanded={mapTools}
-                            onClick={() => setMapTools((v) => !v)}
-            >
-              {mapTools ? <X size={20} /> : <SlidersHorizontal size={20} />}
-            </button>
-            {tab === "explore" && <button className="map-discoveries" aria-label={tr("Nearby discoveries")} title={tr("Nearby discoveries")} onClick={openDiscoveries}><Compass size={22} aria-hidden="true" /></button>}
-            {tab === "explore" && (
-              <button
-                className="map-full-toggle"
-                aria-label={tr("Full map")}
-                title={tr("Full map")}
-                aria-pressed={mapFullOn}
-                onClick={() => {
-                  setSheetExpanded(false);
-                  setMapTools(false);
-                  setMapFull((v) => !v);
-                  // The camera re-centres the explorer in the bigger view.
-                  requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
-                }}
-              >
-                <ArrowsOut size={20} />
-              </button>
-            )}
-            <button
-              aria-label={tr("City overview")}
-              title={tr("City overview")}
-              onClick={() => {
-                setOverview((v) => !v);
-                setGlobe(false);
-                setFollow(false);
-                setSelected(null);
-              }}
-            >
-              <Compass size={20} />
-            </button>
-            <button
-              className="map-recenter"
-              aria-label={tr("My location")}
-              title={tr("My location")}
-              onClick={() => {
-                setFollow(true);
-                setOverview(false);
-                setGlobe(false);
-                if (!arena || nativePlay) void locate();
-                else setPosition((p) => ({ ...p }));
-              }}
-            >
-              <Crosshair size={20} />
-            </button>
-            <button
-              aria-label={tr("Globe")}
-              aria-pressed={globe}
-              title={tr("Globe")}
-              className={globe ? "active" : ""}
-              onClick={() => {
-                if (!globe) {
-                  setTab("explore");
-                  setSheetExpanded(false);
-                  setSelected(null);
-                }
-                setGlobe((v) => !v);
-                setOverview(false);
-                setFollow(true);
-              }}
-            >
-              <GlobeHemisphereWest size={20} />
-            </button>
-            <button
-              aria-label={tr("Map notes")}
-              title={tr("Map notes")}
-              onClick={() => setTab("messages")}
-            >
-              <ChatCircle size={20} />
-            </button>
-            <button
-              aria-label={tr("Emotes")}
-              title={tr("Emotes")}
-              aria-expanded={emotePicker}
-              className={emotePicker ? "active" : ""}
-              onClick={() => setEmotePicker((v) => !v)}
-            >
-              <Smiley size={20} />
-            </button>
-            {emotePicker && (
-              <EmotePicker
-                onEmote={(id: string, until: number) => setMyEmote({ id, until })}
-                onShop={() => {
-                  setEmotePicker(false);
-                  setTab("shop");
-                  setSheetExpanded(true);
-                }}
-                onClose={() => setEmotePicker(false)}
-              />
-            )}
-          </div>
+          {tab === "explore" && !globe && (
+            <MapActions actions={mapActions}>
+              {emotePicker && (
+                <EmotePicker
+                  onEmote={(id: string, until: number) => setMyEmote({ id, until })}
+                  onShop={() => {
+                    setEmotePicker(false);
+                    setTab("shop");
+                    setSheetExpanded(true);
+                  }}
+                  onClose={() => setEmotePicker(false)}
+                />
+              )}
+            </MapActions>
+          )}
         </>
       )}
       <RewardBursts bursts={bursts} />

@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 import {BRNO,buildCzechiaFixture,pathsAround} from "../tests/fixtures/world-coverage/czechia.mjs";
 import {latLngToCell} from "h3-js";
 import {positionAt} from "../server/actors/schedule.mjs";
+import { openMapSettings } from "./lib/e2e-nav.mjs";
 
 const root=resolve(import.meta.dirname,".."), dir=mkdtempSync(join(tmpdir(),"questlayer-overlays-"));
 const shots=resolve(process.env.E2E_SHOTS||"output/qa/map-overlays-2026-11-06");mkdirSync(shots,{recursive:true});
@@ -105,7 +106,7 @@ try {
     navigator.geolocation.watchPosition=success=>{success(fix());return setInterval(()=>success(fix()),1000);};
     navigator.geolocation.clearWatch=timer=>clearInterval(timer);
   },chosen.position);
-  await page.goto(url);await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+  await page.goto(url);await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();
   const cue=page.locator(".nearby-open");
   await page.locator(".world-loading").waitFor({state:"hidden",timeout:60000});
   // First equipment/recovery prompts may own the objective; dismissing one is an explicit player choice.
