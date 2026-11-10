@@ -1,0 +1,28 @@
+{
+  "device": "pixel",
+  "browser": "chromium",
+  "a11y": {
+    "welcome-advanced": [],
+    "inventory-aavegotchis": [],
+    "profile": [],
+    "player-card": []
+  },
+  "scenarios": [
+    {
+      "name": "ethereum sign-in",
+      "address": "0x88919218bdF8a45D7b58dA3cB3955Cd2a3882EE1",
+      "gotchis": [
+        "Mirakulix",
+        "Bramblebee"
+      ],
+      "wearing": "Bramblebee"
+    },
+    {
+      "name": "player dialog",
+      "from": "Mira pixel",
+      "to": "Bob pixel",
+      "wave": "Hello!"
+    }
+  ],
+  "problems": []
+}

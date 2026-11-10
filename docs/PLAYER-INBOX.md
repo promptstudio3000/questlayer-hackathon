@@ -98,6 +98,6 @@ The inbox key lives in one browser on one device. A new device (or a cleared bro
 
 `npm run build && npm run e2e:signing-vault -- --device=all` (scenario 5) plays the inbox the way a player
 reaches it on phone-390 Chromium, iPhone 15 WebKit and Pixel 7: share the position, tap the explorer standing
-next to you, "Write a message" on their card, send (sealed in the vault, opened in Node with the peer's
+next to you, "Message" on their card, send (sealed in the vault, opened in Node with the peer's
 secret), read the peer's reply, then the envelope badge ("Messages: 1 new") → list → conversation, which is then
 read. NEAR, the relayer and NEAR Social are stubbed at the network layer; CI runs it on every device row.

@@ -14,7 +14,7 @@
 //   5. Encrypted inbox (docs/PLAYER-INBOX.md): the vault creates the X25519
 //      inbox key, the account publishes it through the relayer. The explorer
 //      shares their position, taps the peer standing next to them, and on
-//      the peer's card chooses "Write a message"; the message is sealed in
+//      the peer's card chooses "Message"; the message is sealed in
 //      the vault against the peer key it reads from (stubbed) NEAR Social and
 //      decrypts in Node with the peer's secret. The peer's reply, sealed in
 //      Node, opens in the vault and shows in the conversation; after closing,
@@ -479,6 +479,8 @@ async function placePeerNearby(context, appOrigin, peer) {
           body: JSON.stringify({
             id: peer.playerId, name: peer.name, level: 3, xp: 420, demoBot: false, joinedAt: Date.now() - 86_400_000,
             badges: 1, self: false, wearables: [], auras: { above: null, below: null }, original: false,
+            gotchi: null, stats: { finds: 4, quests: 2, monsters: 0, wearables: 0 },
+            slots: ["body", "face", "eyes", "head", "handLeft", "handRight", "pet"].map((slot) => ({ slot, item: null })),
             canWave: true, waveHint: null, phrases: [{ key: "hello", text: "Hello!" }],
           }),
         });
@@ -704,7 +706,7 @@ async function runDevice(name, servers) {
         assert.equal(context.pages().length, 1, "publishing the inbox key opens no approval window");
         const text = "Ahoj Bobe, jsem u kašny 🐉";
         // The way a player starts a conversation: share the position, tap Bob
-        // standing nearby, "Write a message" on his card.
+        // standing nearby, "Message" on his card.
         await sharePosition(page);
         const bob = page.getByRole("button", { name: /^Bob · nearby explorer/ });
         await bob.waitFor({ timeout: 30_000 });
@@ -712,7 +714,7 @@ async function runDevice(name, servers) {
         const card = page.getByRole("dialog", { name: peer.name });
         await card.getByText(/Level \d+/).first().waitFor();
         await capture(page, "inbox-player-card", card);
-        await card.getByRole("button", { name: "Write a message" }).click();
+        await card.getByRole("button", { name: "Message", exact: true }).click();
         const dialog = page.getByRole("dialog", { name: "Messages" });
         await dialog.getByLabel("Message to Bob").fill(text).catch(async (e) => {
           await capture(page, "inbox-compose-missing");
@@ -762,7 +764,7 @@ async function runDevice(name, servers) {
         await list.locator(".inbox-row", { hasText: peer.name }).waitFor();
         assert.equal(await list.locator(".inbox-row", { hasText: "1 new" }).count(), 0, "the conversation is read");
         await list.getByRole("button", { name: "Close" }).first().click();
-        report.scenarios.push({ name: "encrypted inbox", sent: log.inboxSends[0].messageId, received: replyId, via: "player card → Write a message; badge → list → conversation" });
+        report.scenarios.push({ name: "encrypted inbox", sent: log.inboxSends[0].messageId, received: replyId, via: "player card → Message; badge → list → conversation" });
       }
       assert.deepEqual(log.rejected, [], "every stubbed call was accepted");
       if (pageErrors.length) report.pageErrors = pageErrors;

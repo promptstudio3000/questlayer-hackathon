@@ -9,13 +9,14 @@
 //      so the explorer arrives dressed in the higher-BRS one and the
 //      Backpack lists both ("Your Aavegotchis"). Wearing the other one
 //      changes the look.
-//   2. Tap your own avatar on the map: the Profile opens; the linked wallet
+//   2. Tap your own avatar on the map: your profile card (worn original and
+//      its BRS, "Change outfit") opens; the linked wallet
 //      shows under Settings → Ethereum wallets.
 //   3. Player dialog: a second explorer shares their position next to the
 //      first; tapping their marker opens their card (name, level, wave
-//      phrases). A wave reaches the other explorer as a toast. Without a
-//      secure NEAR account the "Write a message" button stays off with the
-//      "coming soon" note (the encrypted inbox itself runs in
+//      play stats, equipment slots; "Wave" opens the ready phrases). A wave
+//      reaches the other explorer as a toast. Without a secure NEAR account
+//      the "Message" button stays off (the encrypted inbox itself runs in
 //      scripts/e2e-signing-vault.mjs, where the vault exists).
 //
 // Each key screen gets an axe scan (serious/critical WCAG A/AA fail).
@@ -323,15 +324,22 @@ async function runDevice(name, server, rpc, account) {
     console.log(`  wearing ${GOTCHIS[1].name}; Base RPC calls: ${[...new Set(rpc.calls)].join(", ")}`);
     report.scenarios.push({ name: "ethereum sign-in", address: account.address, gotchis: GOTCHIS.map((g) => g.name), wearing: GOTCHIS[1].name });
 
-    // 2. Own avatar → Profile; the linked wallet is listed.
-    console.log("2. Tap your own avatar: Profile opens with the linked wallet");
+    // 2. Own avatar → your public profile card (worn original, BRS, slots);
+    // the linked wallet is listed in Settings.
+    console.log("2. Tap your own avatar: your profile card, then the linked wallet");
     await closeOpenSheet(eth);
     const self = eth.getByRole("button", { name: /^You · open your profile: Your linked Aavegotchi/ });
     await self.waitFor({ timeout: 30_000 });
     await self.click();
-    await eth.getByRole("tablist", { name: "Profile", exact: true }).waitFor();
+    const own = eth.getByRole("dialog", { name: `Eth ${name}` });
+    await own.waitFor();
+    await own.getByText(`${GOTCHIS[1].name} · BRS ${GOTCHIS[1].brs}`).waitFor({ timeout: 15_000 });
+    await own.getByRole("button", { name: "Change outfit" }).waitFor();
+    assert.equal(await own.getByRole("button", { name: "Message", exact: true }).count(), 0, "no Message on your own card");
     await capture(eth, "own-avatar-profile");
     await scan(eth, "profile");
+    await own.getByRole("button", { name: "Close" }).first().click();
+    await own.waitFor({ state: "hidden" });
     await openSettings(eth);
     const account_ = eth.locator("details.settings-group", { hasText: "Account and devices" });
     if (!(await account_.evaluate((d) => d.open))) await account_.locator(":scope > summary").click();
@@ -374,9 +382,11 @@ async function runDevice(name, server, rpc, account) {
     const card = a.getByRole("dialog", { name: nameB });
     await card.waitFor();
     await card.getByText(/Level \d+/).first().waitFor();
-    const write = card.getByRole("button", { name: "Write a message" });
+    await card.getByText("Exploring since").waitFor();
+    assert.equal(await card.locator(".player-card-slots li").count() >= 7, true, "seven equipment slots");
+    const write = card.getByRole("button", { name: "Message", exact: true });
     assert.equal(await write.isDisabled(), true, "no inbox without a secure NEAR account");
-    await card.getByText("Messages are coming soon.").waitFor();
+    await card.getByRole("button", { name: "Wave", exact: true }).click();
     await capture(a, "player-card");
     await scan(a, "player-card");
     const hello = card.getByRole("button", { name: "Hello!", exact: true });
