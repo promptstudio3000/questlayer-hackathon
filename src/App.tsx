@@ -33,6 +33,7 @@ import {
   CommunityBonusVote,
   MapNotes,
   PlayerCard,
+  Inbox,
   NativeCollectionControl,
   NativeTasks,
   Inventory,
@@ -5064,6 +5065,10 @@ export default function App() {
       {invisible.signer && player && (
         <AutoSocialProfile signer={invisible.signer} player={player} />
       )}
+      {/* Encrypted player inbox (docs/PLAYER-INBOX.md). */}
+      {invisible.signer?.kind === "managed" && player && (
+        <Inbox signer={invisible.signer} player={player} />
+      )}
       {busy === "world" && (
         <div className="world-loading">
           <span className="spinner" /> {" "}{tr("Finding trails and today’s treasures…")}</div>
@@ -5075,6 +5080,17 @@ export default function App() {
           onClose={() => setCardPlayer(null)}
           onBlocked={() =>
             setOthers((list) => list.filter((p) => p.id !== cardPlayer))
+          }
+          // The encrypted inbox (src/inbox/Inbox.tsx) opens the conversation.
+          onMessage={
+            invisible.signer?.kind === "managed"
+              ? (playerId, name) => {
+                  setCardPlayer(null);
+                  window.dispatchEvent(
+                    new CustomEvent("questlayer:inbox-open", { detail: { playerId, name } }),
+                  );
+                }
+              : undefined
           }
         />
       )}

@@ -2,6 +2,7 @@ import { isDeepStrictEqual } from "node:util";
 import { GameError } from "../domain.mjs";
 import { publicKeyString } from "./delegate.mjs";
 import { SOCIAL_CONTRACT_ID } from "../native/network.mjs";
+import { MESSAGE_ID, validInboxKeyRecord, validInboxRecord } from "../inbox/crypto.mjs";
 import { isNativeEdition } from "../aura-catalog.mjs";
 
 export const SOCIAL_CONTRACT = SOCIAL_CONTRACT_ID;
@@ -185,6 +186,10 @@ const SOCIAL_RECORDS = {
       ["published", "removed"].includes(r.state) &&
       /^record_[a-f0-9-]{36}$/.test(r.mutation_id),
   },
+  // Encrypted player inbox (docs/PLAYER-INBOX.md): the public X25519 inbox key
+  // and one ciphertext message, both under the sender's own namespace.
+  inbox_key: { whole: validInboxKeyRecord },
+  inbox: { key: MESSAGE_ID, whole: validInboxRecord },
   places: {
     key: /^(place|post)_[a-f0-9-]{36}$/,
     fields: ["schema", "kind", "thread", "title", "text", "cell", "place", "paid", "created_at", "mutation_id"],
@@ -202,6 +207,7 @@ function gameSocialWrite(namespace) {
   const spec = SOCIAL_RECORDS[sections[0]],
     section = namespace.questlayer[sections[0]];
   const record = (r, key) =>
+    spec.whole ? spec.whole(r) :
     keysOf(r, spec.fields) &&
     spec.fields.every((f) => typeof r[f] === "string") &&
     spec.valid(r, key);
@@ -705,7 +711,7 @@ export function validateDelegate(decoded, context) {
       Buffer.byteLength(JSON.stringify(args)) <= SOCIAL_MAX_ARGS_BYTES &&
         gameSocialWrite(args.data[senderId]),
       "RELAY_SOCIAL_SHAPE",
-      "Only the game's own profile, note and place records are published through the relayer.",
+      "Only the game's own profile, note, place and inbox records are published through the relayer.",
     );
   } else fail("RELAY_RECEIVER", "This contract is not sponsored.");
   // Defense in depth: the branches above only accept these amounts (plus the
