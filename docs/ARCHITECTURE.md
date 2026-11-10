@@ -25,7 +25,7 @@ Never upload `.data`, `.env`, `.near-credentials`, operator keys or personal ses
 
 ## Native contracts
 
-The game contract separates available/reserved coin and zone funds, claimable balances, pending transfers and completed payouts. Their sum always equals accepted funding. A batch records fixed denomination, bounded supply, expiry and a claim bitmap. Withdrawals debit before the promise, then restore on failure without overwriting newer earnings.
+Retired: the first-alpha game contract (`contracts/game`, `game.questlayer-dev-20261101.testnet`) was retired on 10 November 2026. The live game never called it and its testnet account is being paused and deleted; the source and WASM pin stay for history. As built, the game contract separated available/reserved coin and zone funds, claimable balances, pending transfers and completed payouts. Their sum always equalled accepted funding. A batch recorded fixed denomination, bounded supply, expiry and a claim bitmap. Withdrawals debited before the promise, then restored on failure without overwriting newer earnings.
 
 The NEP-171 contract caps each Aura edition at 256, authorizes minting to the operator, delegates standard transfer/approval/enumeration behavior and clears equipped ownership on transfer. The equipment view also rechecks ownership.
 

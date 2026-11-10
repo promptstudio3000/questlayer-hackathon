@@ -95,7 +95,7 @@ These scripts send real testnet transactions and need a testnet operator key in 
 | Step | Command | What you should see |
 | --- | --- | --- |
 | Create operator | `node scripts/bootstrap-testnet.mjs` | `.data/near-operator.json` (mode 600) and an account on testnet |
-| Deploy game + collectibles | `node scripts/deploy-testnet.mjs` | updated `public/testnet-deployment.json` with transaction hashes |
+| Deploy game + collectibles (retired) | `node scripts/deploy-testnet.mjs` | refuses to run: the first-alpha game contract was retired on 10 November 2026; `public/testnet-deployment.json` keeps the 1 November record as history |
 | Player factory + relayer accounts | `node scripts/deploy-player-factory-testnet.mjs` | `.data/player-factory.json`, `.data/relayer.json` and the three env lines to add |
 | Prove invisible account | start the API with the relayer env, then `node scripts/prove-invisible-account-testnet.mjs` | `public/native-invisible-account-proof.json` with the account and transaction hashes |
 | Prove a public note record | same API, then `node scripts/prove-public-record-testnet.mjs` | `public/native-public-record-proof.json`; the record is readable under `<account>/questlayer/notes/<note>` on `v1.social08.testnet` |

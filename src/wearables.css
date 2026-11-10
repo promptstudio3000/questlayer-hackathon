@@ -27,6 +27,12 @@
   image-rendering: pixelated;
   pointer-events: none;
 }
+.wearable-find-marker.art-missing::after {
+  content: "✦";
+  color: #2c0a56;
+  font-size: 22px;
+  line-height: 1;
+}
 .wearable-find-marker:focus-visible {
   outline: 3px solid #fffa65;
   outline-offset: 2px;

@@ -89,3 +89,7 @@
   .game-dialog-map .quest-detail-art { width: 112px; height: 112px; float: inline-start; margin: 4px 20px 12px 0; }
   .game-dialog-map .quest-detail-art .game-object-art { width: 88px; height: 88px; }
 }
+/* Wearable finds: the official pixel art in its rarity ring, as on the map. */
+.find-details-art.wearable-art { background: radial-gradient(circle, #fffaf0 0 62%, #2c0a56 100%); border: 4px solid var(--wearable-rarity, #806afb); box-shadow: 0 0 0 3px #2c0a56, 0 0 20px var(--wearable-rarity, #806afb); }
+.game-dialog-encounter .find-details-art.wearable-art img { width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated; }
+.game-dialog-encounter .find-details .find-details-rarity { justify-self: start; padding: 2px 12px; border-radius: 99px; border: 2px solid var(--wearable-rarity, #806afb); color: var(--ink); font-size: 14px; font-weight: 600; }
