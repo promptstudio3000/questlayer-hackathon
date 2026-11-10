@@ -24,7 +24,7 @@ import { confirmQgoldBurn, ensureQgoldBurns, prepareQgoldBurn } from "./qgold-bu
 
 import { runPurchase, purchaseRow } from "./purchases.mjs";
 
-const ONE = /^\/api\/places\/((?:place|post)_[a-f0-9-]{36})(?:\/(extend|posts|report|social\/prepare|social\/confirm))?$/;
+const ONE = /^\/api\/places\/((?:place|post)_[a-f0-9-]{36}|seed-pt-[a-z0-9-]{1,40})(?:\/(extend|posts|report|social\/prepare|social\/confirm))?$/;
 
 export function createGoldSpendRoutes(
   { gold, places, social, linkedAccount = () => null, qgold = null, db = null },

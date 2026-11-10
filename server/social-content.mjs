@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { assert, hash, id, point, validateFix } from "./domain.mjs";
+import { initSocialNoteExpiry, NOTE_DAYS } from "./social-note-expiry.mjs";
 
 export const REPORT_REASONS = [
   "spam",
@@ -29,6 +30,7 @@ export function isSocialBlocked(db, first, second) {
 }
 export function initSocialContent(db) {
   initSocialBlocks(db);
+  initSocialNoteExpiry(db);
   db.exec(`CREATE TABLE IF NOT EXISTS social_note_meta (
     note_id TEXT PRIMARY KEY REFERENCES messages(id), arena INTEGER NOT NULL CHECK(arena IN(0,1)),
     state TEXT NOT NULL CHECK(state IN('published','hidden','deleted')), updated_at INTEGER NOT NULL);
@@ -127,9 +129,11 @@ export class SocialContent {
     assert(typeof input.arena === "boolean", "Choose the note map mode.");
     const rows = this.db
       .prepare(
-        `SELECT m.*,p.name AS author,s.arena,s.state FROM messages m
+        `SELECT m.*,p.name AS author,s.arena,s.state,e.expires_at FROM messages m
       JOIN players p ON p.id=m.player_id JOIN social_note_meta s ON s.note_id=m.id
+      LEFT JOIN social_note_expiry e ON e.note_id=m.id
       WHERE s.state='published' AND s.arena=? AND m.lat BETWEEN ? AND ? AND m.lng BETWEEN ? AND ?
+      AND (e.expires_at IS NULL OR e.expires_at>?)
       AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE
         (b.actor_id=? AND b.target_id=m.player_id) OR (b.target_id=? AND b.actor_id=m.player_id))
       ORDER BY m.created_at DESC,m.id DESC LIMIT 50`,
@@ -140,12 +144,14 @@ export class SocialContent {
         lat + 0.025,
         lng - 0.04,
         lng + 0.04,
+        this.clock(),
         player,
         player,
       );
     return {
-      messages: rows.map((row) => ({
+      messages: rows.map(({ expires_at, ...row }) => ({
         ...row,
+        expires_at: expires_at ?? null,
         arena: !!row.arena,
         own: row.player_id === player,
         author_fix: row.author_fix ? JSON.parse(row.author_fix) : null,
@@ -232,7 +238,9 @@ export class SocialContent {
       "Choose the map mode and GPS sharing preference.",
     );
     const text = line(input.text, "A note", 500),
-      image = input.image || null;
+      image = input.image || null,
+      days = input.days ?? 0;
+    assert(NOTE_DAYS.includes(days), "Choose how long the note stays: 1 day, 7 days or until you remove it.");
     assert(
       image === null ||
         (typeof image === "string" &&
@@ -272,11 +280,14 @@ export class SocialContent {
       fix,
       imageHash: image ? hash(image) : null,
       publicConsent: true,
+      // Older receipts hashed no duration; "stays" keeps their hash unchanged.
+      ...(days ? { days } : {}),
     };
     return {
       ...record,
       clientId: input.clientId,
       image,
+      days,
       requestHash: hash(JSON.stringify(record)),
     };
   }
@@ -411,6 +422,10 @@ export class SocialContent {
         this.db
           .prepare("INSERT INTO social_note_meta VALUES(?,?,'published',?)")
           .run(noteId, value.arena ? 1 : 0, this.clock());
+        if (value.days)
+          this.db
+            .prepare("INSERT INTO social_note_expiry VALUES(?,?)")
+            .run(noteId, this.clock() + value.days * 86400000);
         this.db
           .prepare(
             "UPDATE social_note_operations SET state='complete',note_id=?,lease_id=NULL,lease_until=NULL,updated_at=? WHERE player_id=? AND client_id=? AND lease_id=?",
@@ -437,6 +452,22 @@ export class SocialContent {
         }
       }
     }
+  }
+  /** The author rewrites the text of a published note; the pin stays. */
+  edit(player, noteId, input) {
+    this.player(player);
+    const text = line(input?.text, "A note", 500);
+    return transaction(this.db, () => {
+      const note = this.note(noteId);
+      assert(note.player_id === player, "Only the author can edit this note.", 403);
+      assert(note.state === "published", "This note is no longer on the map.", 409);
+      this.db.prepare("UPDATE messages SET text=? WHERE id=?").run(text, noteId);
+      this.db
+        .prepare("UPDATE social_note_meta SET updated_at=? WHERE note_id=?")
+        .run(this.clock(), noteId);
+      this.audit(player, "note-edited", noteId);
+      return { id: noteId, state: "published", text };
+    });
   }
   remove(player, noteId) {
     this.player(player);

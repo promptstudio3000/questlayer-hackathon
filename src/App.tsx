@@ -63,6 +63,9 @@ import {
   NearbyMarket,
   GoldShop,
   PlaceMessages,
+  PlaceCompose,
+  CommunityPlaces,
+  AddPlaceDialog,
   EmotePicker,
 } from "./lazy-panels";
 import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
@@ -180,6 +183,7 @@ import {
   ChartDonut,
   Wallet,
   MapPin,
+  ChatsCircle,
   NavigationArrow,
   GlobeHemisphereWest,
   Crosshair,
@@ -234,6 +238,8 @@ import {
   BAG_TABS,
   COMMUNITY_TABS,
   SHOP_TABS,
+  LOCAL_CHAT_TABS,
+  type LocalChatView,
   PROFILE_TABS,
   ProfileHero,
   ProfileTile,
@@ -393,6 +399,8 @@ export default function App() {
     [myFrame, setMyFrame] = useState<string | null>(null),
     [goldMapData, setGoldMapData] = useState<GoldMap | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
+    [chatView, setChatView] = useState<LocalChatView>("notes"),
+    [quickCreate, setQuickCreate] = useState<"note" | "topic" | "place" | null>(null),
     [emotePicker, setEmotePicker] = useState(false),
     // The camera turns with the explorer unless switched off in Map settings.
     [mapRotate, setMapRotate] = useState(() => {
@@ -635,9 +643,16 @@ export default function App() {
         ),
       );
   }
+  // Map coins pay QGOLD, so they are the default ledger. The NEAR test-network
+  // days only run when the player picked them in Settings or opened Expeditions;
+  // a saved "near" that the player never chose (older builds switched on sign-in)
+  // is dropped, because it hid the demo joystick and the map's objective.
   const [nativePlay, setNativePlay] = useState(() => {
     try {
-      return localStorage.getItem("questlayer-play-mode") === "near";
+      return (
+        localStorage.getItem("questlayer-play-mode") === "near" &&
+        localStorage.getItem("questlayer-play-mode-chosen") === "1"
+      );
     } catch {
       return false;
     }
@@ -685,25 +700,9 @@ export default function App() {
   }, [player?.id, player?.xp, invisibleStatus, invisibleEnsure]);
   useEffect(() => {
     // The managed account appears in the player's linked accounts once ready.
-    // When the host also attests native rewards, play moves to the real
-    // ledger automatically unless the player chose a ledger in Advanced.
+    // Play stays on map coins (QGOLD); the test-network ledger is opt-in.
     if (invisibleStatus !== "ready") return;
     void me();
-    let chosen = false;
-    try {
-      chosen = localStorage.getItem("questlayer-play-mode-chosen") === "1";
-    } catch {}
-    if (chosen) return;
-    void fetch("/api/health", { credentials: "same-origin" })
-      .then((r) => r.json())
-      .then((h) => {
-        if (
-          h?.nativeRewards?.status &&
-          h.nativeRewards.status !== "not-configured"
-        )
-          setNativePlay(true);
-      })
-      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invisibleStatus]);
   const setPlayAccount = nativeAccount.select;
@@ -2197,7 +2196,6 @@ export default function App() {
         },
       );
       setPlayer(r.player);
-      if (options.signIn) setNativePlay(true);
       notify(
         options.signIn
           ? r.returning
@@ -2231,7 +2229,6 @@ export default function App() {
       }
       const r = await evm.signInWithEthereum(choice, { name, link: !options.signIn });
       setPlayer(r.player);
-      if (options.signIn) setNativePlay(true);
       notify(
         options.signIn
           ? r.returning
@@ -3483,8 +3480,10 @@ export default function App() {
     receipt: !nativePlay && !!adventureResults.unread,
     notice: !!adventureNotice,
     coach: coachActive,
-    find: !!recommendedFind,
-    quest: !!recommended && !!recommendedZone,
+    // Street finds and quests of the map-coin day show only on that ledger;
+    // otherwise the folded card stayed as an empty bar on the map.
+    find: !nativePlay && !!recommendedFind,
+    quest: !nativePlay && !!recommended && !!recommendedZone,
   });
   const showObjective = (kind: typeof objective) => !sheetExpanded && objective === kind;
   const closeMapPanel = () => { setCatalogView(null); setSheetExpanded(false); };
@@ -3512,7 +3511,9 @@ export default function App() {
     setMarketForm(form);
   };
   const mapActions: MapAction[] = [
-    { id: "note", label: tr("Leave a note"), icon: NotePencil, onSelect: () => { setNotesView("compose"); setTab("messages"); } },
+    { id: "note", label: tr("Leave a note"), icon: NotePencil, onSelect: () => setQuickCreate("note") },
+    { id: "topic", label: tr("Open a topic"), icon: ChatsCircle, onSelect: () => setQuickCreate("topic") },
+    { id: "place", label: tr("Add a place"), icon: MapPin, onSelect: () => setQuickCreate("place") },
     { id: "mood", label: tr("Change mood"), icon: Smiley, onSelect: () => setEmotePicker(true) },
     ...(!nativePlay
       ? [
@@ -3665,7 +3666,8 @@ export default function App() {
           route={questRoute}
           onPlacePin={(id) => {
             setPlaceOpenId(id);
-            setTab("places");
+            setChatView("topics");
+            setTab("messages");
             setSheetExpanded(true);
           }}
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
@@ -4082,19 +4084,12 @@ export default function App() {
           )}
           {tab === "places" && (
             <ScreenTabPanel idBase="community" value="places">
-              <PlaceMessages
+              <CommunityPlaces
                 key={player.id}
                 position={position}
                 fix={fix}
                 arena={arena && !nativePlay}
                 notify={notify}
-                onSpent={() => {
-                  void me();
-                  void refreshGoldMap();
-                }}
-                openId={placeOpenId}
-                onOpened={clearPlaceOpen}
-                onPublish={recordAccount ? publishPlace : undefined}
               />
             </ScreenTabPanel>
           )}
@@ -4986,6 +4981,33 @@ export default function App() {
           )}
           {tab === "messages" && (
             <ScreenTabPanel idBase="community" value="notes">
+            <div className="local-chat">
+            <ScreenTabs
+              label={tr("Local chat")}
+              idBase="chat"
+              variant="sub"
+              sticky={false}
+              tabs={LOCAL_CHAT_TABS}
+              value={chatView}
+              onChange={setChatView}
+            />
+            <ScreenTabPanel idBase="chat" value={chatView}>
+            {chatView === "topics" ? (
+              <PlaceMessages
+                key={player.id}
+                position={position}
+                fix={fix}
+                arena={arena && !nativePlay}
+                notify={notify}
+                onSpent={() => {
+                  void me();
+                  void refreshGoldMap();
+                }}
+                openId={placeOpenId}
+                onOpened={clearPlaceOpen}
+                onPublish={recordAccount ? publishPlace : undefined}
+              />
+            ) : (
             <MapNotes
               key={player.id}
               playerId={player.id}
@@ -5002,6 +5024,9 @@ export default function App() {
                 window.dispatchEvent(new Event("questlayer:social-blocks"));
               }}
             />
+            )}
+            </ScreenTabPanel>
+            </div>
             </ScreenTabPanel>
           )}
           {tab === "bounties" && (
@@ -5127,6 +5152,43 @@ export default function App() {
                 />
               )}
             </MapActions>
+          )}
+          {quickCreate === "note" && (
+            <MapNotes
+              quick
+              playerId={player.id}
+              position={position}
+              fix={fix}
+              arena={arena}
+              notify={notify}
+              onDone={() => setQuickCreate(null)}
+            />
+          )}
+          {quickCreate === "topic" && (
+            <PlaceCompose
+              kind="topic"
+              position={position}
+              fix={fix}
+              arena={arena && !nativePlay}
+              notify={notify}
+              onClose={() => setQuickCreate(null)}
+              onCreated={(thread) => {
+                setQuickCreate(null);
+                void me();
+                void refreshGoldMap();
+                notify(tr("Your topic is on the map: {0}", { 0: thread.title }));
+              }}
+            />
+          )}
+          {quickCreate === "place" && (
+            <AddPlaceDialog
+              position={position}
+              fix={fix}
+              arena={arena && !nativePlay}
+              notify={notify}
+              onClose={() => setQuickCreate(null)}
+              onAdded={() => setQuickCreate(null)}
+            />
           )}
         </>
       )}
