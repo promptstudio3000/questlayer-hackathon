@@ -262,24 +262,22 @@
   .app-shell[data-screen] .rail-links button span { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .app-shell[data-screen] .rail-links button.active { background: transparent; color: var(--action); box-shadow: inset 0 3px 0 var(--action); }
   .app-shell[data-screen] .rail-links button svg { width: 22px; height: 22px; flex: none; }
-  .app-shell[data-screen] .demo-pad,
-  .app-shell[data-screen] .demo-pad-open,
-  .map-actions { bottom: calc(var(--hud-tabbar) + var(--hud-gap) + env(safe-area-inset-bottom)); }
-  .app-shell[data-screen] .demo-pad { left: calc(var(--hud-gap) + 4px); }
-  /* The objective card sits above the joystick and the Actions button. */
+  /* The objective card sits right on the tab bar; the joystick and the
+     Actions button ride on top of it (--hud-card from useHudCard) and drop
+     back down when the card closes. */
   .app-shell[data-screen] .main-panel.explore-panel.sheet-compact,
   .app-shell[data-screen] .nearby-open {
-    bottom: calc(var(--hud-tabbar) + var(--hud-gap) * 2 + 56px + env(safe-area-inset-bottom));
+    bottom: calc(var(--hud-tabbar) + var(--hud-gap) + env(safe-area-inset-bottom));
   }
-  .app-shell[data-screen]:has(.demo-pad) .main-panel.explore-panel.sheet-compact,
-  .app-shell[data-screen]:has(.demo-pad) .nearby-open {
-    bottom: calc(var(--hud-tabbar) + var(--hud-gap) * 2 + var(--hud-stick) + env(safe-area-inset-bottom));
-  }
+  .app-shell[data-screen] .demo-pad,
+  .app-shell[data-screen] .demo-pad-open,
+  .map-actions { bottom: calc(var(--hud-tabbar) + var(--hud-gap) + var(--hud-card, 0px) + env(safe-area-inset-bottom)); transition: bottom 0.15s ease-out; }
+  .app-shell[data-screen] .demo-pad { left: calc(var(--hud-gap) + 4px); }
   .app-shell[data-screen] .main-panel.explore-panel.sheet-compact { max-height: min(26dvh, 200px); }
   /* Map attribution: the free strip above the Actions button. */
   body:has(.app-shell[data-screen]) .maplibregl-ctrl-bottom-right,
   body:has(.app-shell[data-screen] .sheet-expanded) .maplibregl-ctrl-bottom-right {
-    bottom: calc(var(--hud-tabbar) + var(--hud-gap) + 64px + env(safe-area-inset-bottom)) !important; right: 18px !important;
+    bottom: calc(var(--hud-tabbar) + var(--hud-gap) + var(--hud-card, 0px) + 64px + env(safe-area-inset-bottom)) !important; right: 18px !important;
   }
   .app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 112px); left: 60px; right: auto; max-width: calc(100% - 72px); }
 }
@@ -325,3 +323,4 @@
 .app-shell[data-screen] .sheet-compact .sheet-peek { position: relative; }
 .app-shell[data-screen] .sheet-compact .sheet-peek-hide { position: absolute; top: 50%; right: 0; transform: translateY(-50%); }
 .app-shell[data-screen] .sheet-compact:has(.sheet-peek-hide) > .objective-dismiss-bar { display: none; }
+@media (prefers-reduced-motion: reduce) { .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open, .map-actions { transition: none; } }
