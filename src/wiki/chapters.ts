@@ -848,6 +848,10 @@ export const CHAPTERS: Chapter[] = [
         },
       },
       {
+        note: "Mainnet: nothing is deployed there yet. Once the base game is finished, every contract goes to mainnet with the owner's explicit go; the one-command deploy covers collectibles, the player factory and relayer, badges, NPC games and the stNEAR treasury today. Sponsored actions are capped at 2 NEAR a day (500 operations). See docs/MAINNET-PLAN.md §7.",
+        tone: "warn",
+      },
+      {
         note: "Retired: the first-alpha game contract `game.questlayer-dev-20261101.testnet` (coin batches, quests, `withdraw_reward`) was retired on 10 November 2026. The live game never called it; its account is being paused and deleted. Its source and WASM pin stay in the repository as history.",
       },
       { h: "The proof icon" },
@@ -1016,7 +1020,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Runtime and operations",
     summary: "One Node service with SQLite, background workers, daily jobs and the CI gates every change passes.",
     status: "live",
-    updated: "2026-11-08",
+    updated: "2026-11-10",
     sources: ["docs/RUNTIME-RELIABILITY.md", "docs/PERFORMANCE-BUDGET.md", "docs/STATE-RECOVERY.md", "docs/OWNER-RUNBOOK.md", "docs/TEST-SEED.md", ".github/workflows/check.yml", "scripts/check-bundle-budget.mjs"],
     blocks: [
       {
@@ -1026,6 +1030,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "Reward worker every 30 s (claims, publications, map days); trader and QGOLD keepers every 10 min; badge mint queue every 15 s.",
+          "Mainnet runs as a separate service (`deploy/questlayer-mainnet.service`, own database and keys) and is not started yet; the owner runbook §7 has the one-command deploy and the 10 November state.",
           "Backups at 03:20 UTC, after Prague midnight publication. After a restore, days whose chain count is ahead refuse new claims (`NATIVE_RECONCILING`) until they end.",
           "Capacity depends on the build and workload. Dated load-test measurements are recorded in the performance report; physical-phone acceptance is a separate check.",
           "Phone budget: welcome-screen JS and CSS are capped; every big screen, this wiki included, loads lazily.",
