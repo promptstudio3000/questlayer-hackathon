@@ -11,7 +11,7 @@ new operator. Generate service keys only on a machine that keeps them; a cloud c
 
 | File in `.data/` (Mac, mode 600) | Account / purpose |
 | --- | --- |
-| `near-operator.json` | `questlayer-dev-20261101.testnet`: owner of game, nfts, market, rewards, vaults, creators |
+| `near-operator.json` | `questlayer-dev-20261101.testnet`: owner of nfts, market, rewards, vaults, creators |
 | `player-factory.json` | `play-20261101.questlayer-dev-20261101.testnet`: creates and funds player sub-accounts |
 | `relayer.json` | `relay-20261101.questlayer-dev-20261101.testnet`: pays gas for relayed actions |
 | `creators-publisher.json` | publisher key of `questlayer-creators-20261101b.testnet` |
@@ -21,6 +21,13 @@ new operator. Generate service keys only on a machine that keeps them; a cloud c
 The award signer on `nfts.questlayer-dev-20261101.testnet` is the VPS application's existing
 `award-attestor.pem` (public key in `public/native-claims-testnet.json`); it was not replaced. The previous keys are
 archived in `.data/archive-20261101-before-rotation/`. Testnet only; back them up privately.
+
+Retired on 2026-11-10: the legacy game contract `game.questlayer-dev-20261101.testnet` (unused by the server;
+`get_treasury` showed `owed` 0 and `pending` 0). `set_paused` trapped on its old code, so the account was deleted
+directly into the operator (tx `GLYDVZ9RdyCvjXu5zKyUv3rYC6BJLKWRwDBKvFG2zEdD`, 3.197 NEAR returned). The previous
+escrow `questlayer-qgold-escrow-20261105.testnet` was empty and is retired; the live escrow is
+`questlayer-qgold-escrow-20261109.testnet` (publisher key file on the VPS: `escrow-publisher.json`, the old one kept
+as `escrow-publisher.json.retired-20261105`).
 
 ## 1. Keys
 
