@@ -18,8 +18,9 @@ Rewritten on 10 November 2026 for the current testnet. Checked against `GET /api
 111 confirmed jobs and a limit of 500 sponsored operations a day, `qgoldVault.status: ok`, `marketEscrow` on
 `questlayer-qgold-escrow-20261109.testnet`, `chainLedger` day roots confirmed for 7–9 November, `autoCities: on` with
 85 unfunded cities), the public `/treasury` page, and a fresh explorer at 390 px. That build already serves the
-encrypted inbox (PR #247) and the retired game contract (PR #249); the owned-Aavegotchi profile (PR #250) was merged
-but **not yet deployed** at that check. Re-check on recording day (see "Recording-day checks").
+encrypted inbox (PR #247) and the retired game contract (PR #249). The owned-Aavegotchi sign-in (PR #250) went live
+in release `20261110T013541Z` later that night, so shot 9 can be filmed. The fuller player profile (PR #252, phase 1)
+was not merged yet; shot 9 uses only the explorer on the map and Inventory → **Your Aavegotchis**. Re-check on recording day (see "Recording-day checks").
 
 ## Rules for the whole video
 
@@ -46,7 +47,7 @@ but **not yet deployed** at that check. Re-check on recording day (see "Recordin
 | Camera | Street B-roll: hand holding phone A, feet walking, the zone's real place. The edit is 16:9 with the phone screen as picture-in-picture |
 | Desktop (shots 7, 10, 11) | 1440×900 private window, zoom 100 %. Tabs: the game, `/treasury`, the Ledger page, `https://testnet.nearblocks.io/` |
 | Explorer on phone A | A fresh name (e.g. "Demo Nov 12"); a reused explorer may have opened today's chest already |
-| Ethereum wallet | The owner's MetaMask or Rabby with his Aavegotchis, for shot 9 (only if PR #250 is deployed) |
+| Ethereum wallet | The owner's MetaMask or Rabby with his Aavegotchis, for shot 9 |
 | Second location for shot 12 | Brno or wherever the owner really is outside Plzeň; on desktop, DevTools → Sensors, Brno `49.1952, 16.6080` |
 | Audio | Voice-over recorded separately; light music under it at −20 dB |
 
@@ -86,7 +87,7 @@ two desktop browsers (two private windows with two explorers); shot 1 becomes a 
 
 | Not ready | Instead |
 | --- | --- |
-| PR #250 not deployed (no **Your Aavegotchis** row after Ethereum sign-in) | Cut shot 9 and give its 12 seconds to shot 11 |
+| No **Your Aavegotchis** row after Ethereum sign-in (wallet read failed or gotchis not claimed) | Cut shot 9 and give its 12 seconds to shot 11 |
 | Inbox send stays on "Sent. Waiting for NEAR to confirm." | Keep the shot; the caption still holds. If it fails, show the player dialog and the wave only |
 | No guardian at the chosen chest | Film the riddles on any roamer and the chest separately |
 | Vojtěch shows no offers | Show his greeting and the Market's **Offers** tab |
@@ -116,7 +117,7 @@ two desktop browsers (two private windows with two explorers); shot 1 becomes a 
 | `GET /api/health` → `chainLedger.days` | yesterday's day `confirmed` |
 | `GET /api/inbox/summary` with phone A's cookie | 200 (401 without a session); the conversation with phone B is open |
 | `/treasury` | loads with live numbers; note the "Yield realized" figure for the voice-over |
-| Deployed build | contains PR #250 for shot 9 (Ethereum sign-in dresses the explorer in the highest-BRS gotchi) |
+| Shot 9 rehearsal | Ethereum sign-in dresses the explorer in the highest-BRS gotchi and Inventory → Items lists **Your Aavegotchis** (PR #250, live since release `20261110T013541Z`); if PR #252 is merged by then, the profile panel can replace the Inventory row |
 | Rehearsal | One full run 30 minutes before, on a different monster than the one you record (one try per hour per monster) |
 | Time of day | Daylight, between 07:00 and 22:00 Prague time (characters and most place quests are out), not in the last 30 minutes before midnight |
 

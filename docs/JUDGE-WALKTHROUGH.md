@@ -52,7 +52,7 @@ all day).
 | B5 | Tap another explorer on the map (bots wander the Plzeň demo) | The player dialog: level, XP, badges, since when, what they wear, wave phrases and **Write a message**. Test-world bots carry a **demo-bot** label and cannot receive messages |
 | B6 | Explore → **Nearby** | Player tasks and Secrets with rewards held in the QGOLD escrow contract |
 | B7 | With a second browser or phone and a second explorer: both wave at each other (or **Ask to message** → **Accept**), then **Write a message** | "End-to-end encrypted. Only you and the other explorer can read a message." The message is stored as ciphertext under the sender's NEAR Social account ([PLAYER-INBOX.md](PLAYER-INBOX.md)) |
-| B8 | Optional, with an Ethereum wallet that holds Aavegotchis: Profile → Settings → **Account and devices** → **Ethereum wallets** | The wallet signs a readable message only; once the profile update (PR #250) is deployed, the explorer wears your highest-rarity gotchi and Inventory → Items lists **Your Aavegotchis** |
+| B8 | Optional, with an Ethereum wallet that holds Aavegotchis: Profile → Settings → **Account and devices** → **Ethereum wallets** | The wallet signs a readable message only; the explorer then wears your highest-rarity gotchi and Inventory → Items lists **Your Aavegotchis** |
 
 ## Path C: verify the economy yourself (about 5 minutes, terminal)
 
