@@ -436,7 +436,13 @@ async function runDevice(name, server) {
     for (let i = 0; i < 12; i++) {
       const title = await coachTitle(page);
       if (title !== STEP_TITLES.find && title !== STEP_TITLES.coin) break;
-      await page.locator(".first-session-action").click();
+      // A street find already in reach replaces the coach with its one-tap
+      // card (src/map-objective.ts); whether one is depends on the day's world.
+      const nearby = page.locator(".nearby-open");
+      if (!(await page.locator(".first-session-action").isVisible()) && (await nearby.isVisible())) {
+        await nearby.click();
+        await page.getByRole("button", { name: "Point me there", exact: true }).click();
+      } else await page.locator(".first-session-action").click();
       // The action turns the explorer toward it; run there with the keys,
       // then the pickup loop claims coins within reach every 600 ms.
       await walkToTarget(page);
