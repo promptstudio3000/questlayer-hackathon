@@ -64,6 +64,12 @@ Mainnet needs the same upgrade and `set_royalty` with Lubos's go; nothing here t
 - History rows of kind `npc-trade` carry `meta.txHash`, `meta.txHashes` and `meta.network` ("testnet"), so a
   ChainLink icon can link `https://testnet.nearblocks.io/txns/<hash>`.
 - The NPC sheet shows an "On NEAR:" line with explorer links for the trades of the encounter.
+- P2P trades sold from the collection (Intents book fills) and Intents withdrawals write History rows of kind
+  `intents-trade` / `intents-withdraw` for both explorers with `meta.txHash` (the settlement), so History and
+  Settings → On chain link them; Market → Offers lists the explorer's own Intents trades with the same link
+  (docs/NEAR-INTENTS-MARKET.md, "Proof of every trade").
+- Aavegotchi wearables (wallet originals on Base and their map clones) have no trade path: originals stay in the
+  wallet and clones are game rows that are never NFTs (`server/gotchi-wearables.mjs`). Only Auras are traded.
 
 ## Pieces
 

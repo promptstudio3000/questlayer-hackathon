@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { KeyPair } from "near-api-js";
-import { openDatabase } from "../server/database.mjs";
+import { createPlayer, openDatabase } from "../server/database.mjs";
+import { chainFeed } from "../server/native/chain-feed.mjs";
+import { NETWORK } from "../server/native/network.mjs";
 import { IntentsMarket, createIntentsRoutes } from "../server/native/intents-market.mjs";
 import { SubsidyBudget } from "../server/relayer/subsidy-budget.mjs";
 import {
@@ -141,6 +143,59 @@ test("a funded sell intent is listed and a matching buy settles atomically throu
   assert.equal(market.list().length, 0);
   assert.equal(market.settlements()[0].kind, "trade");
   await assert.rejects(market.fill(order.id, signed("bob.testnet", [buy()], now())), /no longer open/);
+});
+
+test("a settled trade and a withdrawal land in both explorers' History with the transaction as proof", async () => {
+  const { v, market, db, now } = setup({ fee: TREASURY_FEE_PIPS });
+  const seller = createPlayer(db, "Alice", now()),
+    buyer = createPlayer(db, "Bob", now());
+  db.prepare("INSERT INTO wallet_links VALUES(?,?,?)").run("alice.testnet", seller, now());
+  db.prepare("INSERT INTO wallet_links VALUES(?,?,?)").run("bob.testnet", buyer, now());
+  const gross = grossForNet(PRICE, TREASURY_FEE_PIPS);
+  v.setBal("alice.testnet", nft, 1n);
+  v.setBal("bob.testnet", ft, gross);
+  const order = await market.submit(signed("alice.testnet", [sell()], now()));
+  const filled = await market.fill(order.id, signed("bob.testnet", [buy(PRICE, TREASURY_FEE_PIPS)], now()));
+  const rows = (player) => db.prepare("SELECT kind,title,meta FROM history WHERE player_id=? AND kind LIKE 'intents-%' ORDER BY created_at").all(player);
+  const [sold] = rows(seller),
+    [bought] = rows(buyer);
+  assert.equal(sold.kind, "intents-trade");
+  const unit = NETWORK === "mainnet" ? "NEAR" : "test NEAR";
+  assert.equal(sold.title, `Sold Northern Lights #1 for 0.010 ${unit}`);
+  assert.equal(bought.title, `Bought Northern Lights #1 for 0.010 ${unit}`);
+  for (const [row, account, side] of [[sold, "alice.testnet", "sell"], [bought, "bob.testnet", "buy"]]) {
+    const meta = JSON.parse(row.meta);
+    assert.equal(meta.txHash, filled.transactionHash);
+    assert.equal(meta.accountId, account);
+    assert.equal(meta.side, side);
+    assert.equal(meta.venue, "near-intents");
+  }
+  assert.equal(JSON.parse(bought.meta).paid, gross.toString());
+  // The On chain feed of each explorer now carries the settlement.
+  for (const player of [seller, buyer]) {
+    const item = chainFeed(db, player).items.find((i) => i.tx === filled.transactionHash);
+    assert.equal(item?.kind, "intents-trade");
+    assert.equal(item.status, "confirmed");
+  }
+  // The buyer's own orders list the filled order with its settlement.
+  assert.equal(market.mine("bob.testnet")[0].settlementTx, filled.transactionHash);
+  // Withdrawing the bought Aura is booked too.
+  const out = await market.withdraw(
+    signed("bob.testnet", [{ intent: "nft_withdraw", token: NFT, token_id: AURA, receiver_id: "bob.testnet" }], now()),
+  );
+  const withdrawn = rows(buyer).find((r) => r.kind === "intents-withdraw");
+  assert.equal(withdrawn.title, "Withdrew 1 Aura from NEAR Intents");
+  assert.equal(JSON.parse(withdrawn.meta).txHash, out.transactionHash);
+});
+
+test("accounts no explorer has linked get no History row and the trade still settles", async () => {
+  const { v, market, db, now } = setup();
+  v.setBal("alice.testnet", nft, 1n);
+  v.setBal("bob.testnet", ft, BigInt(PRICE));
+  const order = await market.submit(signed("alice.testnet", [sell()], now()));
+  const filled = await market.fill(order.id, signed("bob.testnet", [buy()], now()));
+  assert.equal(filled.state, "filled");
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM history WHERE kind LIKE 'intents-%'").get().n, 0);
 });
 
 test("unfunded, mismatched and self trades are refused before anything is sent", async () => {

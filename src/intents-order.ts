@@ -36,6 +36,7 @@ export type IntentOrder = {
   buyerPays?: string;
   deadlineMs: number;
   state: string;
+  taker?: string | null;
   settlementTx: string | null;
 };
 export type IntentsAccount = {
