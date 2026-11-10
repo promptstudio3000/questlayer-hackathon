@@ -3118,5 +3118,10 @@
  "{0} characters left": "Осталось символов: {0}",
  "{0} declined your request.": "{0} отклонил твой запрос.",
  "{0} new": "новых: {0}",
- "{0} wants to message you.": "{0} хочет тебе написать."
+ "{0} wants to message you.": "{0} хочет тебе написать.",
+ "Your Aavegotchis": "Твои Aavegotchi",
+ "Wearing {0}": "Сейчас: {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "1 предмет в кошельке",
+ "{0} wearables in your wallet": "Предметов в кошельке: {0}"
 }

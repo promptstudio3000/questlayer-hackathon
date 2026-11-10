@@ -3118,5 +3118,10 @@
  "{0} characters left": "还剩 {0} 个字符",
  "{0} declined your request.": "{0}拒绝了你的请求。",
  "{0} new": "{0} 条新消息",
- "{0} wants to message you.": "{0}想给你发消息。"
+ "{0} wants to message you.": "{0}想给你发消息。",
+ "Your Aavegotchis": "你的 Aavegotchi",
+ "Wearing {0}": "正在使用 {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "钱包里有 1 件可穿戴物品",
+ "{0} wearables in your wallet": "钱包里有 {0} 件可穿戴物品"
 }

@@ -3118,5 +3118,10 @@
  "{0} characters left": "{0} अक्षर बाकी",
  "{0} declined your request.": "{0} ने आपका अनुरोध अस्वीकार किया।",
  "{0} new": "{0} नए",
- "{0} wants to message you.": "{0} आपको संदेश भेजना चाहता है।"
+ "{0} wants to message you.": "{0} आपको संदेश भेजना चाहता है।",
+ "Your Aavegotchis": "आपके Aavegotchi",
+ "Wearing {0}": "{0} पहना है",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "आपके वॉलेट में 1 वियरेबल",
+ "{0} wearables in your wallet": "आपके वॉलेट में {0} वियरेबल"
 }

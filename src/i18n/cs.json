@@ -3118,5 +3118,10 @@
  "{0} characters left": "Zbývá znaků: {0}",
  "{0} declined your request.": "{0} tvou žádost odmítl.",
  "{0} new": "{0} nové",
- "{0} wants to message you.": "{0} ti chce psát."
+ "{0} wants to message you.": "{0} ti chce psát.",
+ "Your Aavegotchis": "Tvoji Aavegotchi",
+ "Wearing {0}": "Máš na sobě {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "1 wearable v peněžence",
+ "{0} wearables in your wallet": "{0} wearables v peněžence"
 }

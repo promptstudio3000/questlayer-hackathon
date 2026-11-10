@@ -3118,5 +3118,10 @@
  "{0} characters left": "残り{0}文字",
  "{0} declined your request.": "{0}は申請を断りました。",
  "{0} new": "新着{0}件",
- "{0} wants to message you.": "{0}がメッセージを送りたがっています。"
+ "{0} wants to message you.": "{0}がメッセージを送りたがっています。",
+ "Your Aavegotchis": "あなたの Aavegotchi",
+ "Wearing {0}": "{0} を着用中",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "ウォレットにウェアラブル 1 個",
+ "{0} wearables in your wallet": "ウォレットにウェアラブル {0} 個"
 }
