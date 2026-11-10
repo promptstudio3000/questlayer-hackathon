@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "./api";
-import { createNativeAutoCollector } from "./native-autocollect";
 import type {
+  createNativeAutoCollector,
   NativeAutoConfirmed,
   NativeAutoInput,
   NativeAutoView,
@@ -36,14 +36,30 @@ export function useNativeAutoCollect(input: Input) {
       online: navigator.onLine,
     });
   }, []);
+  // The collector loads once there is an explorer, never on the welcome
+  // screen (phone budget); a switch made before it arrives is applied then.
+  const wanted = useRef<boolean | null>(null);
+  const ready = !!input.playerId;
   useEffect(() => {
+    if (!ready) return;
+    let disposed = false;
+    let stop = () => {};
+    void import("./native-autocollect").then(({ createNativeAutoCollector }) => {
+      if (!disposed) stop = start(createNativeAutoCollector);
+    });
+    return () => {
+      disposed = true;
+      stop();
+    };
+  }, [sync, ready]);
+  function start(create: typeof createNativeAutoCollector) {
     let storage: Storage | null = null;
     try {
       storage = window.sessionStorage;
     } catch {
       /* The manual collect action remains available. */
     }
-    const instance = createNativeAutoCollector({
+    const instance = create({
       storage,
       submit: async (request): Promise<NativeReceipt> => {
         const abort = new AbortController();
@@ -78,6 +94,7 @@ export function useNativeAutoCollect(input: Input) {
       void instance.tick();
     };
     sync();
+    if (wanted.current !== null) instance.setEnabled(wanted.current);
     const timer = window.setInterval(run, 1000);
     document.addEventListener("visibilitychange", run);
     window.addEventListener("online", run);
@@ -90,11 +107,12 @@ export function useNativeAutoCollect(input: Input) {
       window.removeEventListener("online", run);
       window.removeEventListener("offline", run);
     };
-  }, [sync]);
+  }
   useEffect(sync);
   const setEnabled = useCallback(
     (enabled: boolean) => {
       sync();
+      wanted.current = enabled;
       controller.current?.setEnabled(enabled);
       void controller.current?.tick();
     },
