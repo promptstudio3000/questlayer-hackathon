@@ -7,6 +7,11 @@ export const MODEL_CDN = "https://dzqjok0x69zbl.cloudfront.net";
 export const STARTER_MODEL = "Eth-Common2-Common-0-0-0-0-0-0-0";
 export const MAX_MODEL_BYTES = 6 * 1024 * 1024;
 export const MAX_SOURCE_MODEL_BYTES = 12 * 1024 * 1024;
+const RENDERER = "https://www.aavegotchi.com/api/renderer/batch";
+// A missing look (e.g. an in-game outfit nobody wore before) is asked from the
+// official renderer at most once per 15 minutes per look, 40 looks an hour.
+const RENDER_RETRY_MS = 15 * 60_000;
+const RENDERS_PER_HOUR = 40;
 const GRAPH =
   "https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-core-base/prod/gn";
 const COLLATERALS = {
@@ -306,6 +311,27 @@ export class GotchiModels {
     this.sources = new Map();
     this.assets = new Map();
     this.pending = new Map();
+    this.renders = new Map();
+  }
+  /** Asks the official renderer to draw a look it has not drawn yet (bounded, best effort). */
+  async requestRender(hash) {
+    const now = this.clock();
+    for (const [key, at] of this.renders) if (at < now - 3600000) this.renders.delete(key);
+    if ((this.renders.get(hash) || 0) > now - RENDER_RETRY_MS) return false;
+    if (this.renders.size >= RENDERS_PER_HOUR) return false;
+    this.renders.set(hash, now);
+    try {
+      const r = await this.fetch(RENDERER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hashes: [hash], renderTypes: ["GLB_3DModel"], force: true, verify: false }),
+        signal: AbortSignal.timeout(10000),
+      });
+      await r.body?.cancel?.().catch?.(() => {});
+      return r.ok;
+    } catch {
+      return false;
+    }
   }
   async traits(tokenId) {
     assert(/^\d{1,12}$/.test(tokenId), "Invalid original.");
@@ -324,10 +350,16 @@ export class GotchiModels {
     assert(gotchi?.id === tokenId, "Original 3D traits are unavailable.", 503);
     return gotchi;
   }
-  async describe({ tokenId = null, expectedWearables } = {}) {
+  /**
+   * The 3D look: the starter, or an original with its verified gear. An
+   * in-game outfit (slot index -> item id over slots 0-6, server/gotchi-outfit.mjs)
+   * swaps those slots in the renderer identity.
+   */
+  async describe({ tokenId = null, expectedWearables, outfit = null } = {}) {
     let source = { hash: STARTER_MODEL, complete: true };
     if (tokenId) {
-      source = deriveGotchiModel(await this.traits(tokenId));
+      const traits = await this.traits(tokenId);
+      source = deriveGotchiModel(traits);
       assert(
         Array.isArray(expectedWearables) &&
           expectedWearables.length >= 7 &&
@@ -336,6 +368,14 @@ export class GotchiModels {
         "The 3D wardrobe is not yet synchronized with the verified appearance.",
         503,
       );
+      if (outfit && Object.keys(outfit).length) {
+        const worn = traits.equippedWearables.map(Number);
+        for (const [index, id] of Object.entries(outfit)) {
+          const i = Number(index);
+          if (Number.isInteger(i) && i >= 0 && i <= 6) worn[i] = Number(id) || 0;
+        }
+        source = deriveGotchiModel({ ...traits, equippedWearables: worn });
+      }
     }
     const cached = this.sources.get(source.hash);
     let asset = cached?.until > this.clock() && this.asset(cached.digest);
@@ -402,12 +442,17 @@ export class GotchiModels {
     const response = JSON.parse(
       (await readBounded(verify, 128 * 1024)).toString(),
     );
-    assert(
+    if (
       response.data?.results?.find((r) => r.hash === hash)?.availability
-        ?.GLB_3DModel?.exists === true,
-      "This 3D look has not been rendered yet.",
-      503,
-    );
+        ?.GLB_3DModel?.exists !== true
+    ) {
+      await this.requestRender(hash);
+      assert(
+        false,
+        "This 3D look has not been rendered yet. It was requested from the Aavegotchi renderer; try again in a few minutes. Your 2D look shows meanwhile.",
+        503,
+      );
+    }
     const url = `${MODEL_CDN}/${hash}/${hash}_GLB.glb`;
     const remote = await this.fetch(url, {
       signal: AbortSignal.timeout(20000),

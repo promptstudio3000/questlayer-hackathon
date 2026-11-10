@@ -250,3 +250,36 @@ test("serial texture optimization reduces mobile memory while preserving geometr
   );
   assert.ok(output.length < input.length);
 });
+
+test("an in-game outfit swaps slots 0-6 in the renderer look and a missing look is requested once", async () => {
+  const verified = [];
+  const kicks = [];
+  let now = 1_000_000;
+  const fetcher = async (url, options) => {
+    if (String(url).includes("goldsky")) return Response.json({ data: { aavegotchis: [original] } });
+    const body = JSON.parse(options.body);
+    if (body.force) {
+      kicks.push(body.hashes[0]);
+      return Response.json({ data: {} });
+    }
+    verified.push(body.hashes[0]);
+    return Response.json({
+      data: { results: [{ hash: body.hashes[0], availability: { GLB_3DModel: { exists: false } } }] },
+    });
+  };
+  const models = new GotchiModels({ fetcher, clock: () => now });
+  const ask = () =>
+    models.describe({ tokenId: "1", expectedWearables: original.equippedWearables, outfit: { 3: 77, 6: 0 } });
+  await assert.rejects(ask(), /requested from the Aavegotchi renderer/);
+  const plain = deriveGotchiModel(original).hash.split("-");
+  const dressed = verified[0].split("-");
+  assert.equal(dressed[6], "77");
+  assert.equal(dressed[9], "0");
+  assert.deepEqual(dressed.slice(0, 6), plain.slice(0, 6));
+  assert.deepEqual(kicks, [verified[0]]);
+  await assert.rejects(ask(), /not been rendered/);
+  assert.equal(kicks.length, 1);
+  now += 16 * 60_000;
+  await assert.rejects(ask(), /not been rendered/);
+  assert.equal(kicks.length, 2);
+});

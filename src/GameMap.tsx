@@ -1307,7 +1307,7 @@ export function GameMap(props: GameMapProps) {
     window.addEventListener("focus", reveal);
     document.addEventListener("visibilitychange", reveal);
     void (async () => {
-      const original = props.skinUrl?.match(/tokenId=(\d+)$/)?.[1];
+      const original = props.skinUrl?.match(/tokenId=(\d+)/)?.[1];
       const [{ descriptor, bytes }, module] = await Promise.all([
         loadCharacterModel(original, controller.signal, { forMap: true }),
         import("./character-3d-scene"),
