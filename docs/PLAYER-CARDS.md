@@ -67,6 +67,26 @@ signed in with an ETH wallet saw the starter ghost and no wearables.
   the wallet's wearables that opens the Wardrobe (`src/OwnedGotchis.tsx`).
 - QA: `node scripts/qa-gotchi-owner.mjs [outDir] [address]` (needs Base RPC).
 
+## Player profile (10 Nov 2026)
+
+The explorer card became a compact profile in the Aavegotchi style
+(`src/PlayerCard.tsx`, `playerCard` in `server/player-waves.mjs`). Lubos's
+rules (10 Nov 2026): the profile is always visible, never with a position;
+others see only what is worn; the header shows finds and stats.
+
+- Header: avatar, name, level + XP bar, worn original's name and BRS.
+- Stats: finds (claimed coins), quests (quest claims), monsters won
+  (`actor_challenges.state='won'`), wearables found (clones from finds),
+  badges, month started.
+- Slots in Aavegotchi order (`PROFILE_SLOTS`): the worn original's own gear
+  from the ownership snapshot, else worn clones; Auras above and below.
+- `profileOriginal` reads a snapshot at most a day old, so the original shows
+  while the explorer is offline; `/api/players/skin` serves its art without
+  presence (blocks respected).
+- Own avatar on the map opens the own profile with **Change outfit**.
+- Plan for the next phases (Wearables tab with dressing the gotchi in owned
+  items and clones, Badges, Messages): https://claude.ai/artifact/7ugX6XYGdTWUaz4k1Qzjpt
+
 ## Explorer card
 
 `GET /api/players/card?playerId=` (60 per minute). Available only while the
