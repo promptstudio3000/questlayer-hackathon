@@ -7,11 +7,14 @@ import { tr } from "./i18n";
 export function Character({
   items,
   originTokenId,
+  look,
   compact = false,
   preview = false,
 }: {
   items: Item[];
   originTokenId?: string;
+  /** Outfit tag of the worn gotchi (Player.appearance.look). */
+  look?: string;
   compact?: boolean;
   preview?: boolean;
 }) {
@@ -54,7 +57,7 @@ export function Character({
       )}
       {originTokenId && !failed ? (
         <img
-          src={`/api/aavegotchi/skin?tokenId=${encodeURIComponent(originTokenId)}`}
+          src={`/api/aavegotchi/skin?tokenId=${encodeURIComponent(originTokenId)}${look ? `&v=${encodeURIComponent(look)}` : ""}`}
           alt={tr("Verified original Aavegotchi")}
           onError={() => setFailed(true)}
         />

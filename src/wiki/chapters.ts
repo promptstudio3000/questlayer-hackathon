@@ -440,6 +440,7 @@ export const CHAPTERS: Chapter[] = [
           "Tapping any explorer on the map opens their **profile**: name, level and XP bar, the original Aavegotchi they wear with its rarity score (BRS), play stats (finds, quests, monsters won, wearables found, badges, month they started) and the equipment slots in Aavegotchi order (body, face, eyes, head, left and right hand, pet, Auras above and below) with what they wear now. A gold seal marks an original their wallet holds.",
           "A profile is public: it opens without either side sharing a position and never shows one. Others see only what is worn, never the wallet address or the rest of the collection; a block hides it both ways.",
           "Tapping **your own** explorer opens your own profile, with **Change outfit** leading to the Inventory.",
+          "On your own profile, tap a slot to dress it. While you wear one of your Aavegotchis you can restyle it with anything you own: wearables you found on the map as clones and originals your linked wallet holds now. A slot can also stay empty or go back to the gotchi's own gear. The outfit is only a look in the game and changes nothing on Base; items you no longer own drop out of it. Others see the outfit on the map and on your profile, but not the rest of your collection. A restyled gotchi shows in 2D.",
           "**Demo bots:** the test world (TEST_SEED=1) keeps a few bots walking the map. Their dialog is the same, with a **demo-bot** tag after the name; they take no waves and cannot be blocked.",
           "**Write a message** opens the encrypted inbox (see the Encrypted player inbox chapter); it stays off for demo bots and for explorers whose account is not ready yet.",
           "Waves are six ready phrases, no free text. Limits: one per pair per minute, 20 sent and 30 received per hour; delivered by the presence poll and deleted after an hour.",
@@ -953,7 +954,7 @@ export const CHAPTERS: Chapter[] = [
     title: "NEAR Intents market",
     summary: "Auras trade peer to peer through a NEAR Intents verifier, with a 2 % fee to the treasury.",
     status: "live",
-    updated: "2026-11-08",
+    updated: "2026-11-10",
     sources: ["docs/NEAR-INTENTS-MARKET.md", "docs/ONCHAIN-TRADES.md", "docs/SIGNED-AURA-ORDERS.md", "docs/NATIVE-MARKET.md", "src/intents-order.ts"],
     blocks: [
       {
@@ -965,6 +966,7 @@ export const CHAPTERS: Chapter[] = [
           "Fee: 20,000 pips (2 %) on the buyer's wNEAR leg, collected for the treasury.",
           "NPC traders keep their stock and purse inside the verifier; a fill pairs the player's signed diff with a server-signed trader intent.",
           "The solver's gas counts against the game's shared daily sponsorship budget, like every relayed action. When that budget is used up, fills and withdrawals wait for the next day (`SUBSIDY_BUDGET`); signed orders stay in the book.",
+          "Proof: every settled trade and withdrawal is a History row for both explorers with the settlement transaction, so History and Settings → On chain link it; Market → Offers lists your own Intents trades with the same link. Aavegotchi wearables are never traded (originals stay in the wallet, map clones are not NFTs).",
           "Signed market-v2 orders (NEP-413) remain as a fallback. The old practice GOLD market is closed (`410 MARKET_ON_CHAIN`).",
           "Mainnet `intents.near` is planned; it needs the owner's go.",
         ],

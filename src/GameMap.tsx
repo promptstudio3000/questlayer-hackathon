@@ -960,7 +960,7 @@ export function GameMap(props: GameMapProps) {
         above: look?.above,
         below: look?.below,
         skinUrl: look?.skinTokenId
-          ? `/api/presence/skin?playerId=${encodeURIComponent(p.id)}`
+          ? `/api/presence/skin?playerId=${encodeURIComponent(p.id)}${look.skinVersion ? `&v=${encodeURIComponent(look.skinVersion)}` : ""}`
           : undefined,
         wearables: look?.wearables,
       });

@@ -41,7 +41,7 @@ import {
 import {
   publicAppearance,
   publicAppearances,
-  sharedOriginalSvg,
+  sharedOriginal,
 } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
 import {
@@ -104,6 +104,7 @@ import { startFlavourWorker } from "./ai/flavour-batch.mjs";
 import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
 import { createOriginSync, dressDefault } from "./origin-sync.mjs";
+import { GotchiOutfitArt, ownedOutfit, setOutfitSlot, outfitVersion } from "./gotchi-outfit.mjs";
 import {
   WEARABLES,
   equipWearable,
@@ -1192,6 +1193,18 @@ async function refreshOriginals(address) {
     originalLookups.delete(address);
   }
 }
+const outfitArt = new GotchiOutfitArt();
+/** An explorer's original as drawn in the game: its own art, or the in-game outfit. */
+async function wornOriginalSvg(playerId, gotchi) {
+  if (!gotchi) return null;
+  const row = db.prepare("SELECT appearance FROM players WHERE id=?").get(playerId);
+  let appearance = {};
+  try {
+    appearance = JSON.parse(row?.appearance || "{}");
+  } catch {}
+  if (appearance.originTokenId !== gotchi.tokenId) return gotchi.svg || null;
+  return outfitArt.svg(gotchi, ownedOutfit(db, playerId, appearance.outfit));
+}
 const originSync = createOriginSync(db, { read: refreshOriginals, log: (m) => console.warn(m) });
 const readPublicDistribution = publicDistribution(nativeRewards, auditDistribution);
 const listeners = new Set(),
@@ -1407,6 +1420,7 @@ function profile(player) {
       )
     )
       p.appearance = {};
+    else p.appearance = { ...p.appearance, look: outfitVersion(ownedOutfit(db, player, p.appearance.outfit)) };
   }
   return {
     ...p,
@@ -3377,6 +3391,13 @@ async function api(req, res, url) {
       status: "verified",
     });
   }
+  if (path === "/api/aavegotchi/outfit" && method === "POST") {
+    limit("gotchi-outfit", player, 60, "Please wait before changing the outfit again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    setOutfitSlot(db, player, String(i.slot || ""), i.itemId ?? null);
+    return respond(res, { player: profile(player) });
+  }
   if (path === "/api/aavegotchi/equip" && method === "POST") {
     const i = await body(req);
     if (i.tokenId === null) {
@@ -3436,6 +3457,12 @@ async function api(req, res, url) {
         "Refresh original ownership before opening its 3D look.",
         403,
       );
+      // The 3D SDK draws only the gotchi's real gear; an in-game outfit stays 2D.
+      assert(
+        !Object.keys(ownedOutfit(db, player, appearance.outfit)).length,
+        "This outfit shows in 2D.",
+        409,
+      );
       return respond(
         res,
         await gotchiModels.describe({
@@ -3472,13 +3499,13 @@ async function api(req, res, url) {
       "This appearance is not available.",
       404,
     );
-    const svg = profileOriginal(db, explorer)?.svg;
+    const svg = await wornOriginalSvg(explorer, profileOriginal(db, explorer)?.gotchi);
     assert(svg, "This appearance is not available.", 404);
     res.writeHead(200, {
       "Content-Type": "image/svg+xml",
       "Content-Security-Policy":
         "default-src 'none'; style-src 'unsafe-inline'; sandbox",
-      "Cache-Control": "private,max-age=300",
+      "Cache-Control": "private,no-cache",
     });
     return res.end(svg);
   }
@@ -3493,7 +3520,7 @@ async function api(req, res, url) {
       "This shared appearance is no longer available.",
       404,
     );
-    const svg = sharedOriginalSvg(db, explorer);
+    const svg = await wornOriginalSvg(explorer, sharedOriginal(db, explorer));
     assert(svg, "This shared appearance is no longer available.", 404);
     res.writeHead(200, {
       "Content-Type": "image/svg+xml",
@@ -3569,13 +3596,14 @@ async function api(req, res, url) {
       (g) => g.tokenId === token,
     );
     assert(gotchi?.svg, "The appearance is unavailable.", 404);
+    const svg = (await wornOriginalSvg(player, gotchi)) || gotchi.svg;
     res.writeHead(200, {
       "Content-Type": "image/svg+xml",
       "Content-Security-Policy":
         "default-src 'none'; style-src 'unsafe-inline'; sandbox",
-      "Cache-Control": "private,max-age=60",
+      "Cache-Control": "private,no-cache",
     });
-    return res.end(gotchi.svg);
+    return res.end(svg);
   }
   if (path === "/api/guide/hint" && method === "POST") {
     // First-session coach: one grounded sentence for the player's current
