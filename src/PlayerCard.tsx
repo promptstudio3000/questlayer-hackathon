@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { ChatCircleText, X } from "@phosphor-icons/react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { ChatCircleText, HandWaving, Prohibit, SealCheck, X } from "@phosphor-icons/react";
 import { api } from "./api";
 import { tr } from "./i18n";
 import { Dialog } from "./Dialog";
 import { characterMarkerMarkup } from "./character-art";
-import { WearableTile } from "./GotchiWardrobe";
+import { levelProgress } from "./levels";
 import type { WornWearable } from "./types";
 import "./wearables.css";
 
@@ -18,6 +18,15 @@ export const WAVE_TEXT: Record<string, () => string> = {
   "see-you": () => tr("See you around!"),
 };
 const waveText = (key: string, fallback: string) => WAVE_TEXT[key]?.() || fallback;
+const SLOT_LABEL: Record<string, () => string> = {
+  body: () => tr("Body"),
+  face: () => tr("Face"),
+  eyes: () => tr("Eyes"),
+  head: () => tr("Head"),
+  handLeft: () => tr("Left hand"),
+  handRight: () => tr("Right hand"),
+  pet: () => tr("Pet"),
+};
 
 type Card = {
   id: string;
@@ -32,25 +41,32 @@ type Card = {
   wearables: (WornWearable & { name: string })[];
   auras: { above: string | null; below: string | null };
   original: boolean;
+  gotchi: { name: string; brs: number | null } | null;
+  stats: { finds: number; quests: number; monsters: number; wearables: number };
+  slots: { slot: string; item: (WornWearable & { name: string; source: "original" | "clone" }) | null }[];
   canWave: boolean;
   waveHint: string | null;
   phrases: { key: string; text: string }[];
 };
 
 /**
- * Another explorer, tapped on the map: name, level, XP, badges, what they
- * wear (gold check = their wallet holds the original), ready-phrase waves,
- * a "Write a message" slot (not open yet) and Block. Test-world bots get the
- * same card with a "demo-bot" tag. Only while they share their position; no
- * wallet address, no inventory.
+ * An explorer's public profile (docs/PLAYER-CARDS.md): name, level and XP,
+ * the worn original and its rarity score, play stats, and the equipment slots
+ * with what they wear now (gold seal = their wallet holds the original).
+ * Message, ready-phrase waves and Block for other explorers. Visible without
+ * sharing a position and never showing one; only what is worn, no wallet
+ * address and no inventory. Test-world bots carry a "demo-bot" tag.
  */
 export function PlayerCard({
   playerId,
   onClose,
   onBlocked,
   onMessage,
+  onEdit,
 }: {
   playerId: string;
+  /** Own profile: opens the Inventory to change what is worn. */
+  onEdit?: () => void;
   onClose: () => void;
   onBlocked?: () => void;
   /** Opens a conversation with this explorer; the button is disabled without it. */
@@ -100,7 +116,24 @@ export function PlayerCard({
       setBusy(false);
     }
   }
-  const verified = card?.wearables.filter((w) => w.verified).length || 0;
+  const [waving, setWaving] = useState(false);
+  const progress = card ? levelProgress(card.xp) : null;
+  const ratio = progress
+    ? Math.min(1, (card!.xp - progress.levelStartXp) / Math.max(1, progress.nextLevelXp - progress.levelStartXp))
+    : 0;
+  const stats = card
+    ? [
+        [tr("Finds"), card.stats.finds],
+        [tr("Quests"), card.stats.quests],
+        [tr("Monsters"), card.stats.monsters],
+        [tr("Wearables"), card.stats.wearables],
+        [tr("Badges"), card.badges],
+        [
+          tr("Exploring since"),
+          new Date(card.joinedAt).toLocaleDateString(undefined, { month: "short", year: "numeric" }),
+        ],
+      ]
+    : [];
   return (
     <Dialog label={card ? card.name : tr("Explorer")} onClose={onClose}>
       <div className="player-card">
@@ -115,23 +148,41 @@ export function PlayerCard({
                   above: card.auras.above,
                   below: card.auras.below,
                   skinUrl: card.original
-                    ? `/api/presence/skin?playerId=${encodeURIComponent(card.id)}`
+                    ? `/api/players/skin?playerId=${encodeURIComponent(card.id)}`
                     : undefined,
                   wearables: card.wearables,
                 }),
               }}
             />
           )}
-          <div>
+          <div className="player-card-who">
             <h2>
               {card?.name || tr("Explorer")}
               {card?.demoBot && <span className="player-card-bot">{"demo-bot"}</span>}
             </h2>
-            {card && (
-              <p>
-                {tr("Level {0}", { 0: card.level })} · {tr("{0} XP", { 0: card.xp.toLocaleString("en-US") })}
-                {verified ? ` · ${tr("{0} verified", { 0: verified })}` : ""}
-              </p>
+            {card && progress && (
+              <>
+                <p>
+                  {tr("Level {0}", { 0: card.level })} · {tr("{0} XP", { 0: card.xp.toLocaleString("en-US") })}
+                </p>
+                <div
+                  className="player-card-xp"
+                  role="progressbar"
+                  aria-label={tr("Level {0} progress", { 0: card.level })}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(ratio * 100)}
+                >
+                  <span style={{ width: `${Math.round(ratio * 100)}%` }} />
+                </div>
+                {card.gotchi && (
+                  <p className="player-card-gotchi">
+                    <SealCheck size={16} weight="fill" aria-hidden="true" />
+                    {card.gotchi.name || tr("Aavegotchi")}
+                    {card.gotchi.brs != null && <> · {tr("BRS {0}", { 0: card.gotchi.brs })}</>}
+                  </p>
+                )}
+              </>
             )}
           </div>
           <button className="player-card-close" onClick={onClose} aria-label={tr("Close")}>
@@ -142,94 +193,92 @@ export function PlayerCard({
         {card && (
           <>
             <dl className="player-card-stats">
-              <div>
-                <dt>{tr("Level")}</dt>
-                <dd>{card.level}</dd>
-              </div>
-              <div>
-                <dt>XP</dt>
-                <dd>{card.xp.toLocaleString("en-US")}</dd>
-              </div>
-              <div>
-                <dt>{tr("Badges")}</dt>
-                <dd>{card.badges}</dd>
-              </div>
-              <div>
-                <dt>{tr("Exploring since")}</dt>
-                <dd>
-                  {new Date(card.joinedAt).toLocaleDateString(undefined, {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </dd>
-              </div>
+              {stats.map(([label, value]) => (
+                <div key={String(label)}>
+                  <dt>{label}</dt>
+                  <dd>{typeof value === "number" ? value.toLocaleString("en-US") : value}</dd>
+                </div>
+              ))}
             </dl>
             {card.demoBot && (
               <p className="player-card-bot-note">
                 {tr("A demo bot from the test world. It walks the map so you can see how other explorers look.")}
               </p>
             )}
-            <h3>{tr("Wearing")}</h3>
-            {card.wearables.length ? (
-              <div className="wearable-grid">
-                {card.wearables.map((w) => (
-                  <WearableTile key={w.id} item={w} />
-                ))}
-              </div>
-            ) : (
-              <p>{tr("No Aavegotchi wearables on right now.")}</p>
-            )}
-            {card.original && <p>{tr("Wearing an original Aavegotchi from their wallet.")}</p>}
-            {!card.self && (
-              <div className="player-card-actions">
-                <button
-                  disabled={!onMessage || card.demoBot}
-                  onClick={() => onMessage?.(card.id, card.name)}
-                >
-                  <ChatCircleText size={18} aria-hidden="true" /> {tr("Write a message")}
-                </button>
-                {(!onMessage || card.demoBot) && <small>{tr("Messages are coming soon.")}</small>}
-              </div>
-            )}
             {!card.self && !card.demoBot && (
-              <>
-                <h3>{tr("Wave")}</h3>
-                {card.canWave ? (
-                  <div className="player-card-waves">
-                    {card.phrases.map((p) => (
-                      <button key={p.key} disabled={busy} onClick={() => void wave(p.key)}>
-                        {waveText(p.key, p.text)}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p>
-                    {card.waveHint === "You are in a different realm."
-                      ? tr("You are in a different realm.")
-                      : tr("Share your position to wave.")}
-                  </p>
-                )}
-                <p>
-                  <small>{tr("Waves are ready phrases only. No chat, no personal details.")}</small>
-                </p>
-                {status && <p role="status">{status}</p>}
-                <div className="player-card-actions">
-                  {confirmBlock ? (
-                    <>
-                      <button className="danger" disabled={busy} onClick={() => void block()}>
-                        {tr("Block {0}", { 0: card.name })}
-                      </button>
-                      <button onClick={() => setConfirmBlock(false)}>{tr("Cancel")}</button>
-                    </>
-                  ) : (
-                    <button className="danger" onClick={() => setConfirmBlock(true)}>
-                      {tr("Block")}
+              <div className="player-card-actions">
+                <button disabled={!onMessage} onClick={() => onMessage?.(card.id, card.name)}>
+                  <ChatCircleText size={18} aria-hidden="true" /> {tr("Message")}
+                </button>
+                <button aria-expanded={waving} onClick={() => setWaving((v) => !v)}>
+                  <HandWaving size={18} aria-hidden="true" /> {tr("Wave")}
+                </button>
+                {confirmBlock ? (
+                  <>
+                    <button className="danger" disabled={busy} onClick={() => void block()}>
+                      {tr("Block {0}", { 0: card.name })}
                     </button>
-                  )}
-                </div>
-              </>
+                    <button onClick={() => setConfirmBlock(false)}>{tr("Cancel")}</button>
+                  </>
+                ) : (
+                  <button className="danger" aria-label={tr("Block")} title={tr("Block")} onClick={() => setConfirmBlock(true)}>
+                    <Prohibit size={18} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
             )}
+            {waving && !card.self && !card.demoBot && (
+              card.canWave ? (
+                <div className="player-card-waves">
+                  {card.phrases.map((p) => (
+                    <button key={p.key} disabled={busy} onClick={() => void wave(p.key)}>
+                      {waveText(p.key, p.text)}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p>
+                  {card.waveHint === "You are in a different realm."
+                    ? tr("You are in a different realm.")
+                    : tr("Share your position to wave.")}
+                </p>
+              )
+            )}
+            {status && <p role="status">{status}</p>}
+            {card.self && onEdit && (
+              <div className="player-card-actions">
+                <button onClick={onEdit}>{tr("Change outfit")}</button>
+              </div>
+            )}
+            <h3>{tr("Wearing")}</h3>
+            <ul className="player-card-slots">
+              {card.slots.map(({ slot, item }) => (
+                <li key={slot} className={item ? `filled rarity-${item.rarity || "common"}` : "empty"}>
+                  {item ? (
+                    <img src={`/api/wearables/art/${item.id}.svg`} alt={item.name} loading="lazy" />
+                  ) : (
+                    <span aria-hidden="true" />
+                  )}
+                  {item?.verified && (
+                    <SealCheck className="player-card-verified" size={18} weight="fill" aria-label={tr("Verified original")} />
+                  )}
+                  <small>{SLOT_LABEL[slot]?.() || slot}</small>
+                </li>
+              ))}
+              {(["above", "below"] as const).map((slot) => {
+                const color = card.auras[slot];
+                return (
+                  <li key={slot} className={color ? "filled" : "empty"}>
+                    <span
+                      className="player-card-aura"
+                      aria-label={color ? tr("Aura") : undefined}
+                      style={color ? ({ "--aura": color } as CSSProperties) : undefined}
+                    />
+                    <small>{slot === "above" ? tr("Above") : tr("Below")}</small>
+                  </li>
+                );
+              })}
+            </ul>
           </>
         )}
       </div>

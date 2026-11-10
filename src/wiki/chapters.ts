@@ -415,7 +415,7 @@ export const CHAPTERS: Chapter[] = [
     summary: "Free Aavegotchi wearable clones on the map, a gold check for owned originals, and explorer cards with waves.",
     status: "live",
     updated: "2026-11-10",
-    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx"],
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx"],
     blocks: [
       {
         p: "About one street find in three becomes a **wearable find** (at most 12 per world): a free in-game clone of the official Aavegotchi wearable catalogue. The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. The find card shows that official pixel art inside the same rarity ring as its map marker, with the rarity named; if the art cannot be read, the marker shows a sparkle and the card a discovery picture instead of a broken image. Picking one up is a normal street coin claim (GPS check, travel guard, XP caps), logged like any street find. The clone is a database row, never an NFT, and lands in **Inventory → Wardrobe**, not in the Aura grid: the pickup moment's See it in your Wardrobe opens it there, and the backpack points to the Wardrobe too.",
@@ -437,8 +437,9 @@ export const CHAPTERS: Chapter[] = [
       { h: "Explorer cards and waves" },
       {
         list: [
-          "Tapping any explorer on the map opens a dialog with name, level, XP, badges, the day they started, worn wearables, verified flags and Aura colours. It works only while that explorer shares their position and neither side blocked the other.",
-          "Tapping **your own** explorer opens your profile overview (the same panel as the profile button in the top bar).",
+          "Tapping any explorer on the map opens their **profile**: name, level and XP bar, the original Aavegotchi they wear with its rarity score (BRS), play stats (finds, quests, monsters won, wearables found, badges, month they started) and the equipment slots in Aavegotchi order (body, face, eyes, head, left and right hand, pet, Auras above and below) with what they wear now. A gold seal marks an original their wallet holds.",
+          "A profile is public: it opens without either side sharing a position and never shows one. Others see only what is worn, never the wallet address or the rest of the collection; a block hides it both ways.",
+          "Tapping **your own** explorer opens your own profile, with **Change outfit** leading to the Inventory.",
           "**Demo bots:** the test world (TEST_SEED=1) keeps a few bots walking the map. Their dialog is the same, with a **demo-bot** tag after the name; they take no waves and cannot be blocked.",
           "**Write a message** opens the encrypted inbox (see the Encrypted player inbox chapter); it stays off for demo bots and for explorers whose account is not ready yet.",
           "Waves are six ready phrases, no free text. Limits: one per pair per minute, 20 sent and 30 received per hour; delivered by the presence poll and deleted after an hour.",
