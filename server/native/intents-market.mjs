@@ -14,6 +14,10 @@ import {
 } from "../schema-compatibility.mjs";
 import { actions } from "near-api-js";
 import { assert, id } from "../domain.mjs";
+import { history } from "../database.mjs";
+import { AURA_CATALOG } from "../aura-catalog.mjs";
+import { editionOf, formatNear } from "../npc/trader-pricing.mjs";
+import { NETWORK } from "./network.mjs";
 import {
   auraOrderTerms,
   checkWithdrawal,
@@ -68,6 +72,12 @@ const txHash = (r) => r?.transaction?.hash || r?.transaction_outcome?.id || null
 const failed = (r) =>
   Boolean(r?.status?.Failure) ||
   (r?.receipts_outcome || []).some((o) => o.outcome?.status?.Failure);
+const UNIT = NETWORK === "mainnet" ? "NEAR" : "test NEAR";
+const auraLabel = (tokenId) => {
+  const edition = editionOf(tokenId);
+  const name = AURA_CATALOG.find((e) => e.id === edition)?.name || edition || "Aura";
+  return `${name} #${String(tokenId).split(":")[2] ?? "?"}`;
+};
 
 export class IntentsMarket {
   /**
@@ -290,6 +300,33 @@ export class IntentsMarket {
       );
   }
 
+  /**
+   * A History row for the explorer behind a verifier account, so a trade the
+   * solver settled shows in History and the On chain feed with its
+   * transaction. Accounts no explorer has linked (NPC traders, outside
+   * wallets) get none. Booking never undoes a settlement that already
+   * happened on chain.
+   */
+  bookFor(accountId, kind, title, meta) {
+    try {
+      const link = this.db.prepare("SELECT player_id FROM wallet_links WHERE account_id=?").get(accountId);
+      if (link) history(this.db, link.player_id, kind, title, 0, { ...meta, accountId, venue: "near-intents", network: NETWORK });
+    } catch {
+      /* the trade stands; only its History line is missing */
+    }
+  }
+  /** The seller's and the buyer's History rows for one settled book trade. */
+  bookTrade(hash, { maker, taker, makerTerms, takerTerms, orderId }) {
+    const sells = makerTerms.side === "sell";
+    const seller = sells ? maker.signerId : taker.signerId,
+      buyer = sells ? taker.signerId : maker.signerId,
+      gross = sells ? takerTerms.gross : makerTerms.gross,
+      label = auraLabel(makerTerms.tokenId);
+    const meta = { txHash: hash, orderId, tokenId: makerTerms.tokenId, price: makerTerms.price };
+    this.bookFor(seller, "intents-trade", `Sold ${label} for ${formatNear(makerTerms.price)} ${UNIT}`, { ...meta, side: "sell" });
+    this.bookFor(buyer, "intents-trade", `Bought ${label} for ${formatNear(gross)} ${UNIT}`, { ...meta, side: "buy", paid: String(gross) });
+  }
+
   /** Verifies two signed Aura token_diffs and checks they are exact opposites. */
   async pair(makerSigned, takerSigned) {
     const maker = await this.verify(makerSigned);
@@ -328,6 +365,7 @@ export class IntentsMarket {
         .prepare("UPDATE intents_orders SET state='filled', settlement_tx=?, closed_at=?, checked_at=? WHERE id=?")
         .run(hash, now, now, row.id);
       this.recordTrade(hash, { ...p, orderId: row.id });
+      this.bookTrade(hash, { ...p, orderId: row.id });
       return { ...this.view(this.row(row.id)), transactionHash: hash };
     } finally {
       this.locks.delete(row.id);
@@ -356,6 +394,10 @@ export class IntentsMarket {
     this.db
       .prepare("INSERT OR IGNORE INTO intents_settlements(tx_hash,verifier,kind,accounts,detail,recorded_at) VALUES(?,?,'withdraw',?,?,?)")
       .run(hash, this.verifierId, JSON.stringify([body.signerId]), JSON.stringify({ intents }), this.now());
+    const auras = intents.filter((i) => i.intent === "nft_withdraw").length;
+    const near = intents.filter((i) => i.intent !== "nft_withdraw").reduce((sum, i) => sum + BigInt(i.amount), 0n);
+    const parts = [auras ? `${auras} Aura${auras === 1 ? "" : "s"}` : null, near ? `${formatNear(near)} ${UNIT}` : null].filter(Boolean);
+    this.bookFor(body.signerId, "intents-withdraw", `Withdrew ${parts.join(" and ")} from NEAR Intents`, { txHash: hash, auras, amount: near.toString() });
     // Withdrawing a listed Aura closes its open orders.
     void this.reconcile({ maker: body.signerId }).catch(() => {});
     return { transactionHash: hash };

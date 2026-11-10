@@ -1163,7 +1163,7 @@ export function Inventory({
                       />
                     </div>
                     <p className="inventory-sale-note">
-                      {tr("Every trade settles on NEAR. Cancel the listing any time in Market → Secured.")}</p>
+                      {tr("Every trade settles on NEAR, and History links the proof. Find or cancel your listing in Market.")}</p>
                     {priceDraft.hasDraft && (
                       <p className="inventory-sale-note" role="status">
                         {priceDraft.storageAvailable
