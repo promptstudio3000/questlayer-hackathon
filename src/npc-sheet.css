@@ -55,7 +55,7 @@
 .npc-action:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #10021f; }
 .npc-action:disabled { opacity: 0.5; cursor: default; }
 .npc-action-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #ffffff1a; font-size: 22px; color: #ff9dff; }
-.npc-action-label { font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.npc-action-label { min-width: 0; overflow-wrap: break-word; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .npc-action small { padding: 2px 8px; border-radius: 99px; background: #fef87d; color: #1a0335; font-weight: 600; font-size: 12px; white-space: nowrap; }
 .npc-action.suggested { border-color: #ff1dff; box-shadow: 0 3px 0 #10021f, 0 0 10px #ff1dff88; }
 .npc-action.turn-in { border-color: #37f4a0; background: linear-gradient(#176553, #0f4639); }

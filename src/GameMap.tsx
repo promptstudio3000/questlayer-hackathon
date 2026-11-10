@@ -758,6 +758,11 @@ export function GameMap(props: GameMapProps) {
       img.alt = "";
       img.draggable = false;
       img.loading = "lazy";
+      // A failed art read leaves a sparkle in the ring, never a broken image.
+      img.onerror = () => {
+        img.remove();
+        node.classList.add("art-missing");
+      };
       node.append(img);
       node.addEventListener("click", (event) => {
         event.stopPropagation();
