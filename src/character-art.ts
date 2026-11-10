@@ -79,7 +79,7 @@ export function characterMarkerMarkup({
     skin =
       skinUrl &&
       (/^\/api\/aavegotchi\/skin\?tokenId=\d{1,24}$/.test(skinUrl) ||
-        /^\/api\/presence\/skin\?playerId=player_[a-f0-9-]{36}$/.test(skinUrl))
+        /^\/api\/(presence|players)\/skin\?playerId=player_[a-f0-9-]{36}$/.test(skinUrl))
         ? skinUrl
         : null;
   const sprite = (slot: "above" | "below", color: string, edition?: string | null) =>

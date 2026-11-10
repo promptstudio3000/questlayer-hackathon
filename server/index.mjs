@@ -110,7 +110,7 @@ import {
   wardrobe,
   wornWearables,
 } from "./gotchi-wearables.mjs";
-import { isDemoBot, playerCard, sendWave, takeWaves } from "./player-waves.mjs";
+import { isDemoBot, playerCard, profileOriginal, sendWave, takeWaves } from "./player-waves.mjs";
 import { PlayerInbox, socialInboxReader } from "./inbox/service.mjs";
 import { createInboxRoutes } from "./inbox/routes.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
@@ -3462,6 +3462,25 @@ async function api(req, res, url) {
       "Cache-Control": "private,max-age=86400,immutable",
     });
     return res.end(asset.bytes);
+  }
+  if (path === "/api/players/skin" && method === "GET") {
+    // The original on an explorer's public profile; no presence needed.
+    const explorer = url.searchParams.get("playerId");
+    assert(explorer && /^player_[a-f0-9-]{36}$/.test(explorer), "Invalid explorer.");
+    assert(
+      explorer === player || !isSocialBlocked(db, player, explorer),
+      "This appearance is not available.",
+      404,
+    );
+    const svg = profileOriginal(db, explorer)?.svg;
+    assert(svg, "This appearance is not available.", 404);
+    res.writeHead(200, {
+      "Content-Type": "image/svg+xml",
+      "Content-Security-Policy":
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+      "Cache-Control": "private,max-age=300",
+    });
+    return res.end(svg);
   }
   if (path === "/api/presence/skin" && method === "GET") {
     const explorer = url.searchParams.get("playerId");

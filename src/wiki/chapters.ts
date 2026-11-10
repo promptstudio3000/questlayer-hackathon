@@ -415,7 +415,7 @@ export const CHAPTERS: Chapter[] = [
     summary: "Free Aavegotchi wearable clones on the map, a gold check for owned originals, and explorer cards with waves.",
     status: "live",
     updated: "2026-11-10",
-    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx"],
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx"],
     blocks: [
       {
         p: "About one street find in three becomes a **wearable find** (at most 12 per world): a free in-game clone of the official Aavegotchi wearable catalogue. The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. The find card shows that official pixel art inside the same rarity ring as its map marker, with the rarity named; if the art cannot be read, the marker shows a sparkle and the card a discovery picture instead of a broken image. Picking one up is a normal street coin claim (GPS check, travel guard, XP caps), logged like any street find. The clone is a database row, never an NFT, and lands in **Inventory → Wardrobe**, not in the Aura grid: the pickup moment's See it in your Wardrobe opens it there, and the backpack points to the Wardrobe too.",
@@ -437,8 +437,9 @@ export const CHAPTERS: Chapter[] = [
       { h: "Explorer cards and waves" },
       {
         list: [
-          "Tapping any explorer on the map opens a dialog with name, level, XP, badges, the day they started, worn wearables, verified flags and Aura colours. It works only while that explorer shares their position and neither side blocked the other.",
-          "Tapping **your own** explorer opens your profile overview (the same panel as the profile button in the top bar).",
+          "Tapping any explorer on the map opens their **profile**: name, level and XP bar, the original Aavegotchi they wear with its rarity score (BRS), play stats (finds, quests, monsters won, wearables found, badges, month they started) and the equipment slots in Aavegotchi order (body, face, eyes, head, left and right hand, pet, Auras above and below) with what they wear now. A gold seal marks an original their wallet holds.",
+          "A profile is public: it opens without either side sharing a position and never shows one. Others see only what is worn, never the wallet address or the rest of the collection; a block hides it both ways.",
+          "Tapping **your own** explorer opens your own profile, with **Change outfit** leading to the Inventory.",
           "**Demo bots:** the test world (TEST_SEED=1) keeps a few bots walking the map. Their dialog is the same, with a **demo-bot** tag after the name; they take no waves and cannot be blocked.",
           "**Write a message** opens the encrypted inbox (see the Encrypted player inbox chapter); it stays off for demo bots and for explorers whose account is not ready yet.",
           "Waves are six ready phrases, no free text. Limits: one per pair per minute, 20 sent and 30 received per hour; delivered by the presence poll and deleted after an hour.",
@@ -847,6 +848,10 @@ export const CHAPTERS: Chapter[] = [
         },
       },
       {
+        note: "Mainnet: nothing is deployed there yet. Once the base game is finished, every contract goes to mainnet with the owner's explicit go; the one-command deploy covers collectibles, the player factory and relayer, badges, NPC games and the stNEAR treasury today. Sponsored actions are capped at 2 NEAR a day (500 operations). See docs/MAINNET-PLAN.md §7.",
+        tone: "warn",
+      },
+      {
         note: "Retired: the first-alpha game contract `game.questlayer-dev-20261101.testnet` (coin batches, quests, `withdraw_reward`) was retired on 10 November 2026. The live game never called it; its account is being paused and deleted. Its source and WASM pin stay in the repository as history.",
       },
       { h: "The proof icon" },
@@ -1015,7 +1020,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Runtime and operations",
     summary: "One Node service with SQLite, background workers, daily jobs and the CI gates every change passes.",
     status: "live",
-    updated: "2026-11-08",
+    updated: "2026-11-10",
     sources: ["docs/RUNTIME-RELIABILITY.md", "docs/PERFORMANCE-BUDGET.md", "docs/STATE-RECOVERY.md", "docs/OWNER-RUNBOOK.md", "docs/TEST-SEED.md", ".github/workflows/check.yml", "scripts/check-bundle-budget.mjs"],
     blocks: [
       {
@@ -1025,6 +1030,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "Reward worker every 30 s (claims, publications, map days); trader and QGOLD keepers every 10 min; badge mint queue every 15 s.",
+          "Mainnet runs as a separate service (`deploy/questlayer-mainnet.service`, own database and keys) and is not started yet; the owner runbook §7 has the one-command deploy and the 10 November state.",
           "Backups at 03:20 UTC, after Prague midnight publication. After a restore, days whose chain count is ahead refuse new claims (`NATIVE_RECONCILING`) until they end.",
           "Capacity depends on the build and workload. Dated load-test measurements are recorded in the performance report; physical-phone acceptance is a separate check.",
           "Phone budget: welcome-screen JS and CSS are capped; every big screen, this wiki included, loads lazily.",
