@@ -181,3 +181,49 @@ hash it does not pin and answers vault creation with 503 (fail closed). The stan
 vault `questlayer-vault-20261101b.testnet` (v2, operator key) is not touched by this script.
 Rollback: redeploy the backed-up WASM to the factory while it still has created no position and
 revert the manifest commit.
+
+### First v3 position smoke test (prepared 10 November 2026, not yet run)
+
+On 10 November the factory runs the pinned v3 build (`5mn94vZF…`, embedded vault `357c3b57…`,
+code hash `4bnUo5Bn…`) with `created: 0`; the record is commit `bc8331e6`. The manifest on the
+operator's checkout must carry that record (and the app must serve it) before the smoke test, or
+the server answers the position with 503.
+
+`scripts/smoke-vault-v3-position-testnet.mjs` (dry run by default, `--execute` to send,
+`--network testnet` required) does what the app does for a player, from a dedicated sub-account
+of the operator (`vault-smoke-v3.<operator>`, key in `.data/vault-smoke-v3.json`, chmod 600,
+created before the account and never printed):
+
+1. Read-only checks: factory code and embedded vault equal `contracts/wasm-sha256.json`, the
+   manifest factory record equals both, the factory points at the rewards account, capacity is
+   left, the setup deposit equals the manifest, and the pool passes the server's readiness check.
+2. Creates the sub-account with 3.621 test NEAR (exact setup deposit 3.52 + minimum stake 0.001 +
+   0.1 for gas), or tops it up.
+3. `create_position(pool_id, contribution_bps)` with the setup deposit and 280 TGas. It summarizes
+   the receipts: the child's first receipt (create, transfer, deploy, `new` with 25 TGas) and the
+   rewards `register_factory_vault` receipt must succeed. A position left `created` is registered
+   with `register_position`, as the app retries.
+4. Checks the child: pinned vault code hash, no access keys, factory state `ready`, and
+   `get_state` with version 2, the v3 fields (`busy_since`, `recoverable_at_epoch`, `min_harvest`,
+   `next_harvest_epoch`, `recovery_policy` …`-v3`), owner, pool, rewards and contribution.
+5. `deposit_and_stake` with 0.001 test NEAR (`--stake`, `--no-stake`), then principal and staked
+   equal the stake and the stage is idle.
+6. Signs in to the server as the smoke account (NEP-413; creates one explorer there) and requires
+   `GET /api/native/vaults?account=` to list the child `ready` with its state. `--no-server` skips it.
+
+A rerun with the same `--label` verifies the existing position instead of creating another. The
+result goes to `output/qa/vault-v3-smoke/`.
+
+Exit and cost: `request_exit` (1 yocto), about 4 epochs of pool unlock, `advance` until
+`owner_credit > 0`, then `withdraw_owner` (1 yocto) returns the stake to the smoke account. The
+3.5 test NEAR child reserve stays in the keyless child (no key, no delete method), 0.02 stays with
+the factory, and the position keeps one of the factory's 32 slots. Delete the smoke account only
+after the stake is withdrawn, if at all.
+
+```
+node scripts/smoke-vault-v3-position-testnet.mjs --network testnet
+node scripts/smoke-vault-v3-position-testnet.mjs --network testnet --execute
+```
+
+The rewards contract upgrade that goes with PR #240 is a separate script; see
+"Rewards-only M4 upgrade" in `docs/DAILY-PAYOUTS.md`.
