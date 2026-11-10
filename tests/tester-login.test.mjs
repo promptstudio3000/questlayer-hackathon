@@ -49,7 +49,7 @@ test("faucet cleanup removes only the old demo credit and keeps the tester", (t)
     fresh = createPlayer(db, "Fresh");
   history(db, earner, "coin", "Coin", 5_000, {});
   db.close();
-  const run = (...args) => JSON.parse(execFileSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8" }));
+  const run = (...args) => JSON.parse(execFileSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8", env: { ...process.env, NEAR_NETWORK: "testnet" } }));
   const dry = run("remove-faucet", "--database", file, "--keep-name", "coinmandeer");
   assert.equal(dry.applied, false);
   assert.equal(dry.changed, 2);
@@ -65,7 +65,7 @@ test("faucet cleanup removes only the old demo credit and keeps the tester", (t)
   assert.equal(db.prepare("SELECT gold_u FROM history WHERE player_id=? AND kind='welcome'").get(earner).gold_u, 0);
   db.close();
   assert.equal(run("remove-faucet", "--database", file, "--keep-name", "coinmandeer", "--apply").changed, 0, "runs once");
-  const secret = execFileSync(process.execPath, [SCRIPT, "hash"], { input: "owner-pass\n", encoding: "utf8" }).trim();
+  const secret = execFileSync(process.execPath, [SCRIPT, "hash"], { input: "owner-pass\n", encoding: "utf8", env: { ...process.env, NEAR_NETWORK: "testnet" } }).trim();
   assert.equal(run("set-login", "--database", file, "--name", "coinmandeer", "--secret", secret, "--apply").player, owner);
   assert.equal(run("remove-faucet", "--database", file).changed, 0, "the tester login is always kept");
   db = openDatabase(file);
