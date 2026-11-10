@@ -81,3 +81,9 @@
 /* Wearable pickups live in the Wardrobe: say so where players look first. */
 .inv-wearable-hint { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; margin: 0 0 8px; padding: 8px 12px; border: 1px solid var(--control-border); border-radius: 12px; background: var(--surface-soft); color: var(--ink); font-size: 14px; line-height: 1.4; text-align: start; }
 .inv-wearable-hint > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* Wardrobe grid: Aavegotchi wearables sit next to the Auras. */
+.inventory-experience .inv-cell .inv-wearable-art,
+.inv-detail-art .inv-wearable-art { width: 72%; height: 72%; object-fit: contain; image-rendering: pixelated; }
+.inventory-experience .inv-cell .inv-cell-badge { position: absolute; bottom: 4px; left: 4px; }
+.inventory-experience .inv-cell .clone-badge.inv-cell-badge { font-size: 10px; padding: 0 4px; }
+.inventory-experience .inv-chip-count { margin-inline-start: 2px; }

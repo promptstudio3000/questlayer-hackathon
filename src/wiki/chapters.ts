@@ -371,14 +371,15 @@ export const CHAPTERS: Chapter[] = [
     title: "Auras and collectibles",
     summary: `${EDITIONS.length} Aura editions, ${SUPPLY_PER_EDITION} per edition, minted on NEAR and secured automatically.`,
     status: "live",
-    updated: "2026-11-07",
-    sources: ["docs/NATIVE-AURA-CLAIMS.md", "docs/COLLECTIBLES-REVIEW.md", "docs/ASSET-CATALOG.md", "server/data/aura-catalog.json", "server/earned-editions.mjs", "src/Inventory.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx"],
+    updated: "2026-11-10",
+    sources: ["docs/NATIVE-AURA-CLAIMS.md", "docs/COLLECTIBLES-REVIEW.md", "docs/ASSET-CATALOG.md", "server/data/aura-catalog.json", "server/earned-editions.mjs", "src/Inventory.tsx", "src/MarketBoard.tsx", "src/GoldShop.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx"],
     blocks: [
       { p: "Confirmed Aura results present the awarded item and one equipment or map action first. Matched catalog editions show their set, serial and configured edition limit; that limit is never labelled as remaining stock. Full receipts, ownership refresh, optional secure/share actions and outfit previews remain under Learn more. Newly collected wearable clones have a separate short live pickup moment, with the original-network distinction and proof available in its details. Neither a result preview nor zone entry changes ownership or claims another reward." },
       {
         p: "Auras are wearable effects in two slots (above and below the character). Each edition is capped on chain. The catalog in `server/data/aura-catalog.json` is the single source for the server, the client and this page.",
       },
-      { p: "Inventory puts owned Auras and the two equipped slots first. Unowned editions remain available in a separate expandable catalog; catalog art does not imply ownership or current reward availability. Character details retain progression and the optional 3D preview. Item actions still wait for the existing server confirmation." },
+      { p: "Inventory has two tabs in one tab style: **Wardrobe** and **Shop**. Wardrobe shows the character with its two Aura slots, then one grid of everything owned: game Auras, Auras already secured on NEAR (wallet badge) and Aavegotchi wearables (Clone tag or gold check), worn items first, filterable by All, Auras, Wearables and Worn. Tapping an item opens Try it on / Take it off and Sell. Sell asks for a price in test NEAR and lists the Aura in Shop → Market (a game Aura is secured first); a worn secured Aura must be taken off first, and secured Auras need the secured explorer before they can be worn. Unowned editions remain in a separate expandable catalog; catalog art does not imply ownership or current reward availability. The original Aavegotchi look, the NEAR collection tools and display settings sit in closed sections under the grid. Item actions still wait for the existing server or chain confirmation." },
+      { p: "**Shop** has two sub-tabs. Items shows everything GOLD buys as illustrated cards (emotes, marker frames, lures, premium gear sold by traders), explanations behind i buttons; every purchase still burns GOLD. Market lists every Aura for sale as a card (art, name, rarity, price the buyer pays), from the NEAR Intents order book including NPC traders and from the market contract. Filters: All, Above, Below, Mine; sort by newest, name, rarity or price. A card opens a large preview with the seller and one Buy button (Cancel listing for your own market-contract listing). Buying signs with the explorer account (no wallet popup); prices shown on cards are rounded up to 4 decimals. Older trading panels (Intents withdrawals, signed orders, your trade history) stay under More trading tools." },
       { viz: "aura-catalog" },
       {
         table: {
@@ -419,7 +420,7 @@ export const CHAPTERS: Chapter[] = [
     sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx"],
     blocks: [
       {
-        p: "About one street find in three becomes a **wearable find** (at most 12 per world): a free in-game clone of the official Aavegotchi wearable catalogue. The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. The find card shows that official pixel art inside the same rarity ring as its map marker, with the rarity named; if the art cannot be read, the marker shows a sparkle and the card a discovery picture instead of a broken image. Picking one up is a normal street coin claim (GPS check, travel guard, XP caps), logged like any street find. The clone is a database row, never an NFT, and lands in **Inventory → Wardrobe**, not in the Aura grid: the pickup moment's See it in your Wardrobe opens it there, and the backpack points to the Wardrobe too.",
+        p: "About one street find in three becomes a **wearable find** (at most 12 per world): a free in-game clone of the official Aavegotchi wearable catalogue. The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. The find card shows that official pixel art inside the same rarity ring as its map marker, with the rarity named; if the art cannot be read, the marker shows a sparkle and the card a discovery picture instead of a broken image. Picking one up is a normal street coin claim (GPS check, travel guard, XP caps), logged like any street find. The clone is a database row, never an NFT, and lands in **Inventory → Wardrobe** next to the Auras: the pickup moment's See it in your Wardrobe opens the grid filtered to wearables. Wearables cannot be sold there: clones are not NFTs and originals stay in the wallet.",
       },
       {
         table: {
@@ -968,7 +969,7 @@ export const CHAPTERS: Chapter[] = [
           "Fee: 20,000 pips (2 %) on the buyer's wNEAR leg, collected for the treasury.",
           "NPC traders keep their stock and purse inside the verifier; a fill pairs the player's signed diff with a server-signed trader intent.",
           "The solver's gas counts against the game's shared daily sponsorship budget, like every relayed action. When that budget is used up, fills and withdrawals wait for the next day (`SUBSIDY_BUDGET`); signed orders stay in the book.",
-          "Proof: every settled trade and withdrawal is a History row for both explorers with the settlement transaction, so History and Settings → On chain link it; Market → Offers lists your own Intents trades with the same link. Aavegotchi wearables are never traded (originals stay in the wallet, map clones are not NFTs).",
+          "Proof: every settled trade and withdrawal is a History row for both explorers with the settlement transaction, so History and Settings → On chain link it; Shop → Market → More trading tools lists your own Intents trades with the same link. Aavegotchi wearables are never traded (originals stay in the wallet, map clones are not NFTs).",
           "Signed market-v2 orders (NEP-413) remain as a fallback. The old practice GOLD market is closed (`410 MARKET_ON_CHAIN`).",
           "Mainnet `intents.near` is planned; it needs the owner's go.",
         ],

@@ -83,19 +83,12 @@ export function WearableTile({
 }
 
 /**
- * Wardrobe section: Aavegotchi wearable clones found on the map, plus the
- * originals a linked Base wallet holds (gold check). Wearing one puts it on
- * your character on the map, where nearby explorers can see it.
+ * Aavegotchi wearable clones found on the map, plus the originals a linked
+ * Base wallet holds (gold check). Wearing one puts it on your character on
+ * the map, where nearby explorers can see it. The Inventory wardrobe grid
+ * shows them next to the Auras.
  */
-export function GotchiWardrobe({
-  onPlayer,
-  onLink,
-  linking,
-}: {
-  onPlayer: (player: Player) => void;
-  onLink: () => void;
-  linking?: boolean;
-}) {
+export function useWardrobeWearables(onPlayer: (player: Player) => void) {
   const [state, setState] = useState<WardrobeState | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<number | null>(null);
@@ -118,74 +111,13 @@ export function GotchiWardrobe({
       setState(r);
       onPlayer(r.player);
       setError("");
+      return true;
     } catch (e) {
       setError((e as Error).message);
+      return false;
     } finally {
       setBusy(null);
     }
   }
-  const items = state?.items || [];
-  const verified = items.filter((i) => i.verified).length;
-  return (
-    <section className="gotchi-wardrobe" aria-labelledby="gotchi-wardrobe-title">
-      <h3 id="gotchi-wardrobe-title">{tr("Aavegotchi wearables")}</h3>
-      <p>
-        {tr("Find wearables on the map: they float in a coloured ring. Each find gives you a free in-game clone to wear. Own the real one? Link your wallet and it gets a gold check.")}
-      </p>
-      <p className="wearable-legend">
-        <span>
-          <i className="verified-check" aria-hidden="true" /> {tr("Verified original in your wallet")}
-        </span>
-        <span>
-          <span className="clone-badge">{tr("Clone")}</span> {tr("In-game copy")}
-        </span>
-      </p>
-      {error && (
-        <p className="inventory-error" role="alert">
-          {error}
-        </p>
-      )}
-      {state && !items.length && (
-        <p>{tr("No wearables yet. Walk to a wearable find on the map to pick up your first one.")}</p>
-      )}
-      {!!items.length && (
-        <>
-          <p role="status">
-            {tr("{0} of {1} wearables", { 0: items.length, 1: state?.catalogSize || 0 })}
-            {verified ? ` · ${tr("{0} verified", { 0: verified })}` : ""}
-          </p>
-          <div className="wearable-grid">
-            {items.map((item) => (
-              <WearableTile
-                key={item.id}
-                item={item}
-                disabled={busy !== null}
-                onClick={() => void toggle(item)}
-                detail={item.equipped ? tr("Wearing · tap to take off") : tr("Tap to wear")}
-              />
-            ))}
-          </div>
-        </>
-      )}
-      {state && !state.linked && (
-        <button className="inventory-secondary" onClick={onLink} disabled={linking}>
-          {tr("Link wallet to verify originals")}
-        </button>
-      )}
-      {state?.linked && (
-        <p>
-          {state.verifiedAt
-            ? tr("Wallet checked {0}. Checks older than a day lose the gold check until you check again.", {
-                0: new Date(state.verifiedAt).toLocaleString("en-GB", {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-              })
-            : tr("Check your originals below to verify the wearables you own.")}
-        </p>
-      )}
-    </section>
-  );
+  return { state, error, busy, toggle, reload: load };
 }

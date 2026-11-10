@@ -103,6 +103,7 @@ export const NativeMarketPanel = lazyNamed(
   () => import("./NativeMarketPanel"),
   "NativeMarketPanel",
 );
+export const MarketBoard = lazyNamed(() => import("./MarketBoard"), "MarketBoard");
 export const NativeExpeditions = lazyNamed(
   () => import("./NativeExpeditions"),
   "NativeExpeditions",

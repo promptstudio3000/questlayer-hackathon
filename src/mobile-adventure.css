@@ -70,10 +70,10 @@
 .game-dialog-encounter .find-details-art img { width: 128px; height: 128px; }
 .game-dialog-encounter .find-details h2 { font-size: 28px; font-weight: 500; line-height: 1.2; }
 .game-dialog-encounter .find-details p { font-size: 16px; color: var(--ink-secondary); }
-.app-shell[data-screen="inventory"] .screen-tabs-primary { background: transparent; border: 0; border-bottom: 1px solid var(--decorative-border); border-radius: 0; padding: 0; box-shadow: none; }
-.app-shell[data-screen="inventory"] .screen-tabs-primary button { background: transparent; border-radius: 0; min-height: 48px; font-size: 16px; box-shadow: none; }
-.app-shell[data-screen="inventory"] .screen-tabs-primary button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -3px 0 var(--action); }
-.app-shell[data-screen="inventory"] .screen-tabs-primary .screen-tab-icon { display: none; }
+
+
+
+
 /* phone-map.css owns control anchors for both expanded and collapsed movement. */
 @media (max-width: 390px) {
   .app-shell[data-screen] .hud-xp-text .hud-player-name { max-width: 60px; font-size: 14px; }
