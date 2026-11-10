@@ -92,8 +92,8 @@ generations (`questlayer-dev-20261031`, `auratrail-dev-20261030`), so their acco
 
 ## Testnet now, mainnet honestly
 
-Everything runs on **testnet** today and nothing here has monetary value. GOLD on the map is practice GOLD unless
-the server publishes a funded day (then **Today's pot** shows the amounts and their source). Mainnet is a
+Everything runs on **testnet** today and nothing here has monetary value. In GPS play every map coin carries backed
+testnet QGOLD from the daily budget; the city demo earns XP only ([docs/MAP-REWARDS.md](docs/MAP-REWARDS.md)). Mainnet is a
 deliberate, gated step: [docs/MAINNET-PLAN.md](docs/MAINNET-PLAN.md) defines a minimal slice (collectibles,
 sponsored accounts and gas with daily caps, NEAR Social) behind `NEAR_NETWORK=mainnet` and `MAINNET_FEATURES`,
 with a go/no-go gate on 9 November 2026. The rewards treasury, vaults, market and creator money stay on testnet
