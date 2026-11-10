@@ -3081,5 +3081,11 @@
  "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "Personne de ce genre n'est près de toi pour l'instant. Les personnages se promènent entre 07:00 et 22:00.",
  "Show me": "Montre-moi",
  "Player task": "Tâche de joueur",
- "Report back": "Rapport"
+ "Report back": "Rapport",
+ "{0} XP": "{0} XP",
+ "Exploring since": "Explore depuis",
+ "A demo bot from the test world. It walks the map so you can see how other explorers look.": "Un bot de démo du monde de test. Il se promène sur la carte pour montrer à quoi ressemblent les autres explorateurs.",
+ "Messages are coming soon.": "Les messages arrivent bientôt.",
+ "Write a message": "Écrire un message",
+ "You · open your profile": "Vous · ouvrir votre profil"
 }
