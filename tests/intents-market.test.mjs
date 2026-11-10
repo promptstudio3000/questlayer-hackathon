@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { KeyPair } from "near-api-js";
 import { createPlayer, openDatabase } from "../server/database.mjs";
 import { chainFeed } from "../server/native/chain-feed.mjs";
+import { NETWORK } from "../server/native/network.mjs";
 import { IntentsMarket, createIntentsRoutes } from "../server/native/intents-market.mjs";
 import { SubsidyBudget } from "../server/relayer/subsidy-budget.mjs";
 import {
@@ -159,8 +160,9 @@ test("a settled trade and a withdrawal land in both explorers' History with the 
   const [sold] = rows(seller),
     [bought] = rows(buyer);
   assert.equal(sold.kind, "intents-trade");
-  assert.equal(sold.title, "Sold Northern Lights #1 for 0.010 test NEAR");
-  assert.equal(bought.title, "Bought Northern Lights #1 for 0.010 test NEAR");
+  const unit = NETWORK === "mainnet" ? "NEAR" : "test NEAR";
+  assert.equal(sold.title, `Sold Northern Lights #1 for 0.010 ${unit}`);
+  assert.equal(bought.title, `Bought Northern Lights #1 for 0.010 ${unit}`);
   for (const [row, account, side] of [[sold, "alice.testnet", "sell"], [bought, "bob.testnet", "buy"]]) {
     const meta = JSON.parse(row.meta);
     assert.equal(meta.txHash, filled.transactionHash);
