@@ -3498,7 +3498,10 @@ export default function App() {
           globe={globe}
           equipped={equipped}
           others={others}
-          onPlayer={setCardPlayer}
+          onPlayer={(id) =>
+            id === player?.id ? setTab("settings") : setCardPlayer(id)
+          }
+          onSelf={() => setTab("settings")}
           wearables={nativePlay ? undefined : player?.wearables}
           onWearableFind={(id) => {
             const coin = world?.coins.find((c) => c.id === id);
@@ -5077,6 +5080,17 @@ export default function App() {
           onClose={() => setCardPlayer(null)}
           onBlocked={() =>
             setOthers((list) => list.filter((p) => p.id !== cardPlayer))
+          }
+          // The encrypted inbox (src/inbox/Inbox.tsx) opens the conversation.
+          onMessage={
+            invisible.signer?.kind === "managed"
+              ? (playerId, name) => {
+                  setCardPlayer(null);
+                  window.dispatchEvent(
+                    new CustomEvent("questlayer:inbox-open", { detail: { playerId, name } }),
+                  );
+                }
+              : undefined
           }
         />
       )}

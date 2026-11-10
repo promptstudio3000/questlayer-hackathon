@@ -53,6 +53,10 @@ function ensureWavesSchema(db) {
 
 const validPlayerId = (value) =>
   typeof value === "string" && /^player_[a-f0-9-]{36}$/.test(value);
+// Test-world bots (TEST_SEED=1, server/test-seed) walk the map with "seed-"
+// ids. Their card is the same dialog, labelled "demo-bot"; no waves, no block.
+export const isDemoBot = (value) =>
+  typeof value === "string" && /^seed-[a-z0-9-]{1,60}$/.test(value);
 
 function sharing(db, player, now) {
   return db
@@ -67,22 +71,38 @@ function sharing(db, player, now) {
  * look the map uses (colors only). No wallet address, account or inventory.
  */
 export function playerCard(db, viewer, target, appearance, now = Date.now()) {
-  assert(validPlayerId(target), "Invalid explorer.", 400);
+  assert(validPlayerId(target) || isDemoBot(target), "Invalid explorer.", 400);
   const self = viewer === target;
+  const demoBot = isDemoBot(target);
   const theirs = sharing(db, target, now);
   assert(
     self || (theirs && !isSocialBlocked(db, viewer, target)),
     "This explorer is no longer sharing their position.",
     404,
   );
-  const row = db.prepare("SELECT id,name,xp FROM players WHERE id=?").get(target);
+  const row = db
+    .prepare("SELECT id,name,xp,created_at FROM players WHERE id=?")
+    .get(target);
   assert(row, "This explorer is no longer sharing their position.", 404);
-  const { level } = demoProgression(db, target, row);
-  const mine = !self && sharing(db, viewer, now);
+  const { level, availableXp } = demoProgression(db, target, row);
+  const mine = !self && !demoBot && sharing(db, viewer, now);
+  const count = (sql) => {
+    try {
+      return db.prepare(sql).get(target)?.n || 0;
+    } catch {
+      return 0; // table not created yet on this database
+    }
+  };
   return {
     id: row.id,
     name: row.name,
     level,
+    xp: availableXp,
+    demoBot,
+    joinedAt: row.created_at,
+    badges:
+      count("SELECT COUNT(*) AS n FROM place_badge_awards WHERE player_id=?") +
+      count("SELECT COUNT(*) AS n FROM user_badge_claims WHERE player_id=?"),
     self,
     wearables: wornWearables(db, target, now),
     auras: {
@@ -91,7 +111,7 @@ export function playerCard(db, viewer, target, appearance, now = Date.now()) {
     },
     original: !!appearance?.skinTokenId,
     canWave: !self && !!mine && mine.arena === theirs?.arena,
-    waveHint: self
+    waveHint: self || demoBot
       ? null
       : mine
         ? mine.arena === theirs?.arena

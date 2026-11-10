@@ -88,6 +88,8 @@ export type GameMapProps = {
   others: NearbyExplorer[];
   /** Tap another explorer: open their card (what they wear, waves). */
   onPlayer?: (playerId: string) => void;
+  /** Tapping your own explorer opens your profile overview. */
+  onSelf?: () => void;
   /** Aavegotchi wearable clones the player wears (drawn on the starter). */
   wearables?: WornWearable[];
   /** Tap a wearable find: head there. */
@@ -411,6 +413,21 @@ export function GameMap(props: GameMapProps) {
     const marker = document.createElement("div");
     marker.className = "player-marker";
     marker.innerHTML = starterMarkerMarkup();
+    // A button: tapping your own explorer opens your profile overview.
+    marker.setAttribute("role", "button");
+    marker.tabIndex = 0;
+    marker.setAttribute("aria-label", tr("You · open your profile"));
+    const openSelf = (event: Event) => {
+      event.stopPropagation();
+      latest.current.onSelf?.();
+    };
+    marker.addEventListener("click", openSelf);
+    marker.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openSelf(event);
+      }
+    });
     avatar.current = new maplibregl.Marker({
       element: marker,
       anchor: "bottom",

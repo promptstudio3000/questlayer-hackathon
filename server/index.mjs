@@ -109,7 +109,7 @@ import {
   wardrobe,
   wornWearables,
 } from "./gotchi-wearables.mjs";
-import { playerCard, sendWave, takeWaves } from "./player-waves.mjs";
+import { isDemoBot, playerCard, sendWave, takeWaves } from "./player-waves.mjs";
 import { PlayerInbox, socialInboxReader } from "./inbox/service.mjs";
 import { createInboxRoutes } from "./inbox/routes.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
@@ -3281,7 +3281,7 @@ async function api(req, res, url) {
     limit("player-card", player, 60, "Please wait before opening more explorer cards.");
     const target = url.searchParams.get("playerId");
     let look = null;
-    if (/^player_[a-f0-9-]{36}$/.test(target || "")) {
+    if (/^player_[a-f0-9-]{36}$/.test(target || "") || isDemoBot(target)) {
       const row = db
         .prepare(
           "SELECT id,appearance,native_outfit,native_account FROM players WHERE id=?",
