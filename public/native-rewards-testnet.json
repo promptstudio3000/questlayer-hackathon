@@ -162,6 +162,14 @@
       {
         "hash": "GSjfp1xjeXkpj8o5tqxwXARxeTgDd3yRT2HZ7QPBAYJx",
         "signerId": "questlayer-rewards-20261101b.testnet"
+      },
+      {
+        "hash": "GfSe2X8D7PhDAaHgc5HRYHpGdfUrjPsJtfhvhH2kfDQs",
+        "signerId": "questlayer-rewards-20261101b.testnet"
+      },
+      {
+        "hash": "GpRStW6fMr464me5Yx7paufP7MtHzTr2Md6PNHBup8Hn",
+        "signerId": "questlayer-rewards-20261101b.testnet"
       }
     ],
     "fundingRpcUrl": "https://archival-rpc.testnet.near.org"
