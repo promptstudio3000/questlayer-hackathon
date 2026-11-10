@@ -93,7 +93,7 @@ export function NativeProfilePanel({
           disabled={!!busy}
           onClick={() => void onConnect()}
         >
-          {tr("Connect NEAR wallet")}</button>
+          {tr("Activate my account")}</button>
       ) : (
         <>
           {accounts.length > 1 ? (

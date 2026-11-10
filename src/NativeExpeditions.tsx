@@ -383,7 +383,7 @@ export function NativeExpeditions({
         {!account && (
           <button className="text-button" onClick={onConnect}>
             <Wallet size={20} />
-            {tr("Link account to confirm visits")}</button>
+            {tr("Activate my account")}</button>
         )}
         {account && state?.enrolled && !gpsReady && (
           <button className="text-button" onClick={onLocate}>
@@ -725,7 +725,7 @@ export function NativeExpeditions({
           {!account && (view === "wallet" || chosenCoin !== null) ? (
             <button className="secondary-button" onClick={onConnect}>
               <Wallet size={22} />
-              {tr("Link NEAR account")}</button>
+              {tr("Activate my account")}</button>
           ) : player.wallets.length > 1 ? (
             <label className="play-field">
               {tr("Receiving account")}<select

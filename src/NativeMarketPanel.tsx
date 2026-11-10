@@ -213,7 +213,7 @@ export function NativeMarketPanel({
               disabled={!!busy}
               onClick={() => void onConnect()}
             >
-              {tr("Link a NEAR account to trade")}</button>
+              {tr("Activate my account")}</button>
           ) : (
             <div className="native-market-wallet">
               <label>

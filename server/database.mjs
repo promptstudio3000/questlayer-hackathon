@@ -252,12 +252,24 @@ export function playerView(db, playerId) {
         )
         .all(playerId),
     ),
-    wallets: db
-      .prepare(
-        "SELECT account_id,verified_at FROM wallet_links WHERE player_id=?",
-      )
-      .all(playerId),
+    wallets: linkedWallets(db, playerId),
   };
+}
+// The explorer's own (managed) account comes first: every screen defaults to the
+// first linked account, and that account signs without a wallet popup.
+export function linkedWallets(db, playerId) {
+  const managed = db
+    .prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='managed_accounts'",
+    )
+    .get();
+  return db
+    .prepare(
+      managed
+        ? "SELECT w.account_id,w.verified_at FROM wallet_links w LEFT JOIN managed_accounts m ON m.account_id=w.account_id AND m.player_id=w.player_id AND m.state='ready' WHERE w.player_id=? ORDER BY (m.account_id IS NULL), w.rowid"
+        : "SELECT account_id,verified_at FROM wallet_links WHERE player_id=? ORDER BY rowid",
+    )
+    .all(playerId);
 }
 // Existing commitments survive publication shutdown. This read creates no creator
 // tables and changes neither cumulative earned XP nor inventory/reward grants.

@@ -100,6 +100,7 @@ import { walletSigner, type NativeSigner } from "./native-signer";
 import type { MarketFunding } from "./NearbyMarket";
 import { setQgoldBurner, type QgoldBurnCall } from "./qgold-burn";
 import { useInvisibleAccount } from "./useInvisibleAccount";
+import { explorerAccountMessage } from "./explorer-account";
 import "./map-notes.css";
 import { useNativeGame } from "./useNativeGame";
 import { useNativeAutoCollect } from "./useNativeAutoCollect";
@@ -2050,25 +2051,49 @@ export default function App() {
       notify(tr("Your explorer is secured with a passkey."));
     });
   }
-  async function resolveSigner(): Promise<{
+  // In-game "activate" buttons prepare the explorer's own account instead of
+  // asking for a wallet app; linking another NEAR wallet stays in Profile.
+  async function activateExplorer() {
+    let walletOnly = false;
+    await action("explorer-account", async () => {
+      const { signer, reason } = await explorerSigner();
+      // A host without player accounts keeps the wallet route.
+      if (!signer && reason === "unavailable") return void (walletOnly = true);
+      if (!signer) throw Error(explorerAccountMessage(reason));
+      await me();
+      notify(tr("Your account is active. Actions now sign on their own."));
+    });
+    if (walletOnly) await connectNear();
+  }
+  // Every in-game action signs with the explorer's own account (created with
+  // the explorer, key kept on this device): no wallet popup. A wallet app is
+  // asked only when the player picked another linked NEAR account on purpose.
+  async function explorerSigner() {
+    if (invisible.signer)
+      return { signer: invisible.signer, reason: "ready" as const };
+    return invisible.ensureSigner();
+  }
+  async function resolveSigner(expected?: string): Promise<{
     signer: NativeSigner;
     accountId: string;
   }> {
-    const managed = invisible.signer;
-    if (managed && (!playAccount || playAccount === managed.accountId))
+    const { signer: managed, reason } = await explorerSigner();
+    const own = managed?.accountId ?? invisible.accountId;
+    if (managed && (!expected || expected === managed.accountId))
       return { signer: managed, accountId: managed.accountId };
+    const otherLinked =
+      !!expected &&
+      expected !== own &&
+      !!player?.wallets.some((w) => w.account_id === expected);
+    if (!otherLinked && reason !== "unavailable")
+      throw Error(explorerAccountMessage(reason));
     const { wallet, accountId } = await chooseNearAccount();
     return { signer: walletSigner(wallet, accountId), accountId };
   }
   // Public profile and note records name their account up front: the
   // explorer account signs without a popup, any other linked one uses a wallet.
   async function signerForAccount(account: string) {
-    const managed = invisible.signer;
-    if (managed && managed.accountId === account)
-      return { signer: managed, accountId: managed.accountId };
-    if (!managed && !playAccount) return resolveSigner();
-    const { wallet, accountId } = await chooseNearAccount();
-    return { signer: walletSigner(wallet, accountId), accountId };
+    return resolveSigner(account || undefined);
   }
   async function chooseNearAccount() {
     if (!nearConnector.current) {
@@ -2288,7 +2313,7 @@ export default function App() {
   });
   async function tradeNative(request: NativeTradeRequest): Promise<boolean> {
     const result = await action("native-market", async () => {
-      const { signer, accountId } = await resolveSigner();
+      const { signer, accountId } = await resolveSigner(request.accountId);
       if (
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -2410,7 +2435,7 @@ export default function App() {
             invisible.signer!.accountId,
           ),
         )
-      : player?.wallets[0]
+      : player?.wallets[0] && player.wallets[0].account_id !== invisible.accountId
         ? walletOrderSigner(
             player.wallets[0].account_id,
             async () =>
@@ -2444,6 +2469,8 @@ export default function App() {
               playerId: player.id,
             })) || null
           );
+        if (accountId === invisible.accountId)
+          throw Error(explorerAccountMessage(invisible.status));
         const { wallet, accountId: chosen } = await chooseNearAccount();
         if (chosen !== accountId)
           throw Error(`Choose the wallet for ${accountId} to sign this trade.`);
@@ -2464,7 +2491,7 @@ export default function App() {
     contractId: string,
   ): Promise<boolean> {
     const result = await action("native-withdrawal", async () => {
-      const { signer, accountId } = await resolveSigner();
+      const { signer, accountId } = await resolveSigner(expectedAccount);
       if (
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -2500,7 +2527,7 @@ export default function App() {
   }
   async function operateNativeVault(request: VaultRequest): Promise<boolean> {
     const result = await action("native-staking", async () => {
-      const { signer, accountId } = await resolveSigner();
+      const { signer, accountId } = await resolveSigner(request.accountId);
       if (
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -2559,7 +2586,7 @@ export default function App() {
   }
   async function operateNativeTask(request: TaskRequest): Promise<boolean> {
     const result = await action("native-task", async () => {
-      const { signer, accountId } = await resolveSigner();
+      const { signer, accountId } = await resolveSigner(request.accountId);
       if (
         accountId !== request.accountId ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -2845,7 +2872,7 @@ export default function App() {
     milestone: NativeMilestone,
   ) {
     const ok = await action("native-level", async () => {
-      const { signer, accountId } = await resolveSigner();
+      const { signer, accountId } = await resolveSigner(expectedAccount);
       if (
         accountId !== expectedAccount ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -2995,7 +3022,7 @@ export default function App() {
     slot?: "above" | "below",
   ) {
     await action("native-transaction", async () => {
-      const { signer, accountId } = await resolveSigner();
+      const { signer, accountId } = await resolveSigner(account);
       if (
         accountId !== account ||
         !player?.wallets.some((w) => w.account_id === accountId)
@@ -4227,7 +4254,7 @@ export default function App() {
                       data={nativeWardrobe}
                       error={nativeError}
                       busy={busy}
-                      onConnect={connectNear}
+                      onConnect={activateExplorer}
                       onRefresh={() => void refreshNative(true).catch(() => {})}
                       onMint={(account) =>
                         nativeTransaction("mint_avatar", account)
@@ -4250,7 +4277,7 @@ export default function App() {
                       player={player}
                       account={playAccount}
                       onAccount={setPlayAccount}
-                      onConnect={connectNear}
+                      onConnect={activateExplorer}
                       busy={busy}
                       onMint={mintNativeLevel}
                       onConfirm={checkNativeLevel}
@@ -4263,7 +4290,7 @@ export default function App() {
                       player={player}
                       enabled={!!nativeWardrobe?.claimsEnabled}
                       busy={busy}
-                      onConnect={connectNear}
+                      onConnect={activateExplorer}
                       onMint={mintEarnedAura}
                       onConfirm={checkAuraClaim}
                       onRestore={restoreDemoAura}
@@ -4271,7 +4298,7 @@ export default function App() {
                     <NativeProfilePanel
                       player={player}
                       busy={busy}
-                      onConnect={connectNear}
+                      onConnect={activateExplorer}
                       onPublish={publishNativeProfile}
                       managedAccountId={
                         invisible.status === "ready"
@@ -4396,7 +4423,7 @@ export default function App() {
                 fix={fix}
                 arena={arena}
                 position={position}
-                onConnect={connectNear}
+                onConnect={activateExplorer}
                 onLocate={() => void locate()}
                 onWithdraw={withdrawNativeReward}
                 onWallet={(showReceipts = false) => {
@@ -4442,7 +4469,7 @@ export default function App() {
               {walletView === "staking" ? (
                 <NativeStaking
                   player={player}
-                  onConnect={connectNear}
+                  onConnect={activateExplorer}
                   onTransaction={operateNativeVault}
                 />
               ) : (
@@ -4541,7 +4568,7 @@ export default function App() {
                   key={player.id}
                   fix={fix}
                   arena={arena}
-                  onConnectNear={() => void connectNear()}
+                  onConnectNear={() => void activateExplorer()}
                 />
               </div>
             </ScreenTabPanel>
@@ -4719,7 +4746,7 @@ export default function App() {
                 }
                 managed={invisible.status === "ready" && !!invisible.accountId}
                 cityName={world?.cityName}
-                onConnect={connectNear}
+                onConnect={activateExplorer}
                 onTransaction={operateNativeVault}
               />
               <button
@@ -4815,7 +4842,7 @@ export default function App() {
                     player={player}
                     wardrobe={nativeWardrobe}
                     busy={busy}
-                    onConnect={connectNear}
+                    onConnect={activateExplorer}
                     onTrade={tradeNative}
                     orderSigner={orderSigner}
                   />
@@ -4863,7 +4890,7 @@ export default function App() {
               {taskRealm === "near" ? (
                 <NativeTasks
                   player={player}
-                  onConnect={connectNear}
+                  onConnect={activateExplorer}
                   onTransaction={operateNativeTask}
                 />
               ) : (
