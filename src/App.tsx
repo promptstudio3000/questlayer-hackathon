@@ -294,6 +294,7 @@ import { advanceGpsFacing, initialGpsFacing } from "./gps-facing";
 import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
 import type { MapAction } from "./MapActions";
+import { useHudCard } from "./useHudCard";
 import { registerChainTrades } from "./chain-trades";
 import { tr } from "./i18n";
 
@@ -471,6 +472,7 @@ export default function App() {
       ? worldData
       : null;
   const navigation = useAppNavigation(player?.id);
+  useHudCard(!!player);
   const [creatorCapability, setCreatorCapability] = useState<{
     playerId: string;
     enabled: boolean;
