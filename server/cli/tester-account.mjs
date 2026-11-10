@@ -1,25 +1,26 @@
 #!/usr/bin/env node
 // Owner tester account and the old demo faucet (testnet only).
 //
-//   node scripts/tester-account.mjs hash            < password on stdin
+//   node server/cli/tester-account.mjs hash            < password on stdin
 //     Prints the salted scrypt secret. Run it locally; only the secret is
 //     passed on, never the password.
-//   node scripts/tester-account.mjs set-login --database DB --name NAME --secret SECRET [--player ID] [--apply]
+//   node server/cli/tester-account.mjs set-login --database DB --name NAME --secret SECRET [--player ID] [--apply]
 //     Lets the explorer NAME (or explorer ID) sign in at /?tester.
-//   node scripts/tester-account.mjs remove-faucet --database DB [--keep-name NAME]... [--apply]
+//   node server/cli/tester-account.mjs remove-faucet --database DB [--keep-name NAME]... [--apply]
 //     Explorers created before 10 Nov 2026 got a 120,000 GOLD "demo-faucet"
 //     credit. Removes only that credit (never below 0) from every explorer
 //     except the kept names, and zeroes the welcome history amount, so
 //     "QGOLD earned" shows only backed earnings.
 // Without --apply both mutating commands only print what they would do.
+import "../schema-catalog.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { atomic, history, openDatabase } from "../server/database.mjs";
+import { atomic, history, openDatabase } from "../database.mjs";
 import {
   hashTesterPassword,
   initializeTesterLogin,
   setTesterLogin,
-} from "../server/identity/test-login.mjs";
+} from "../identity/test-login.mjs";
 
 const GOLD = 1_000_000;
 const FAUCET_U = 120_000 * GOLD;
