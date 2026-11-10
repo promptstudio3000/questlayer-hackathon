@@ -635,9 +635,16 @@ export default function App() {
         ),
       );
   }
+  // Map coins pay QGOLD, so they are the default ledger. The NEAR test-network
+  // days only run when the player picked them in Settings or opened Expeditions;
+  // a saved "near" that the player never chose (older builds switched on sign-in)
+  // is dropped, because it hid the demo joystick and the map's objective.
   const [nativePlay, setNativePlay] = useState(() => {
     try {
-      return localStorage.getItem("questlayer-play-mode") === "near";
+      return (
+        localStorage.getItem("questlayer-play-mode") === "near" &&
+        localStorage.getItem("questlayer-play-mode-chosen") === "1"
+      );
     } catch {
       return false;
     }
@@ -685,25 +692,9 @@ export default function App() {
   }, [player?.id, player?.xp, invisibleStatus, invisibleEnsure]);
   useEffect(() => {
     // The managed account appears in the player's linked accounts once ready.
-    // When the host also attests native rewards, play moves to the real
-    // ledger automatically unless the player chose a ledger in Advanced.
+    // Play stays on map coins (QGOLD); the test-network ledger is opt-in.
     if (invisibleStatus !== "ready") return;
     void me();
-    let chosen = false;
-    try {
-      chosen = localStorage.getItem("questlayer-play-mode-chosen") === "1";
-    } catch {}
-    if (chosen) return;
-    void fetch("/api/health", { credentials: "same-origin" })
-      .then((r) => r.json())
-      .then((h) => {
-        if (
-          h?.nativeRewards?.status &&
-          h.nativeRewards.status !== "not-configured"
-        )
-          setNativePlay(true);
-      })
-      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invisibleStatus]);
   const setPlayAccount = nativeAccount.select;
@@ -2197,7 +2188,6 @@ export default function App() {
         },
       );
       setPlayer(r.player);
-      if (options.signIn) setNativePlay(true);
       notify(
         options.signIn
           ? r.returning
@@ -2231,7 +2221,6 @@ export default function App() {
       }
       const r = await evm.signInWithEthereum(choice, { name, link: !options.signIn });
       setPlayer(r.player);
-      if (options.signIn) setNativePlay(true);
       notify(
         options.signIn
           ? r.returning
@@ -3444,8 +3433,10 @@ export default function App() {
     receipt: !nativePlay && !!adventureResults.unread,
     notice: !!adventureNotice,
     coach: coachActive,
-    find: !!recommendedFind,
-    quest: !!recommended && !!recommendedZone,
+    // Street finds and quests of the map-coin day show only on that ledger;
+    // otherwise the folded card stayed as an empty bar on the map.
+    find: !nativePlay && !!recommendedFind,
+    quest: !nativePlay && !!recommended && !!recommendedZone,
   });
   const showObjective = (kind: typeof objective) => !sheetExpanded && objective === kind;
   const closeMapPanel = () => { setCatalogView(null); setSheetExpanded(false); };
