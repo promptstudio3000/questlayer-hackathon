@@ -19,7 +19,8 @@ import {
   Star,
   X,
 } from "@phosphor-icons/react";
-import { api, gold, GOLD } from "./api";
+import { api, gold, GOLD, meters } from "./api";
+import { InfoTip } from "./InfoTip";
 import { tr } from "./i18n";
 import { Dialog } from "./Dialog";
 import { EmptyState } from "./EmptyState";
@@ -170,6 +171,9 @@ function shareUrl(kind: "task" | "secret", id: string, k?: string | null) {
   return `${location.origin}/#${kind}=${encodeURIComponent(id)}${k ? `&k=${encodeURIComponent(k)}` : ""}`;
 }
 const feeOnTop = (v: number) => Math.ceil(v / 10);
+/** Community tasks (bounties) count as nearby within the same 5 km as player tasks. */
+const COMMUNITY_TASK_M = 5_000;
+type CommunityTask = { id: string; title: string; amount_u: number; lat: number; lng: number; state: string };
 const when = (ms: number) =>
   new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(ms);
 
@@ -181,6 +185,9 @@ export function NearbyMarket({
   fund,
   notify,
   onBalance,
+  openForm = "",
+  onFormOpened,
+  onCommunityTasks,
 }: {
   position: Point;
   /** Current GPS fix (or the demo position as a fix). */
@@ -190,6 +197,11 @@ export function NearbyMarket({
   notify: (text: string, error?: boolean) => void;
   /** Called after any change that moves the player's GOLD. */
   onBalance: () => void;
+  /** A create form the map's Actions button asked for. */
+  openForm?: "" | "task" | "secret";
+  onFormOpened?: () => void;
+  /** Opens Community tasks (seeded and player bounties). */
+  onCommunityTasks?: () => void;
 }) {
   const [data, setData] = useState<Nearby | null>(null);
   const [error, setError] = useState("");
@@ -197,6 +209,19 @@ export function NearbyMarket({
   const [openTask, setOpenTask] = useState<{ id: string; k?: string } | null>(null);
   const [openSecret, setOpenSecret] = useState<{ id: string; k?: string } | null>(null);
   const [form, setForm] = useState<"" | "task" | "secret" | "send">("");
+  const [bounties, setBounties] = useState<CommunityTask[]>([]);
+  useEffect(() => {
+    if (!openForm) return;
+    setForm(openForm);
+    onFormOpened?.();
+  }, [openForm, onFormOpened]);
+  useEffect(() => {
+    let live = true;
+    api<{ bounties: CommunityTask[] }>("/bounties")
+      .then((r) => { if (live) setBounties(r.bounties); })
+      .catch(() => { /* community tasks are optional here */ });
+    return () => { live = false; };
+  }, []);
   const lat = Math.round(position.lat * 2000) / 2000,
     lng = Math.round(position.lng * 2000) / 2000;
   const load = useCallback(async () => {
@@ -256,23 +281,14 @@ export function NearbyMarket({
   if (!data && !error) return <p className="nearby-loading" role="status">{tr("Looking around…")}</p>;
   if (!data) return <EmptyState art="place" title={tr("Nearby is unavailable")} status>{error}</EmptyState>;
   const active = [...data.taking, ...data.forMe.filter((t) => !data.taking.some((x) => x.id === t.id))];
+  const community = bounties
+    .filter((b) => b.state === "open" && Number.isFinite(b.lat) && Number.isFinite(b.lng))
+    .map((b) => ({ ...b, distanceM: meters(position, { lat: b.lat, lng: b.lng }) }))
+    .filter((b) => b.distanceM <= COMMUNITY_TASK_M)
+    .sort((x, y) => x.distanceM - y.distanceM)
+    .slice(0, 10);
   return (
     <div className="nearby-market">
-      <div className="nearby-actions">
-        <button className="secondary-button" onClick={() => setForm("task")}>
-          <Plus size={18} aria-hidden="true" /> {tr("Post a task")}
-        </button>
-        <button className="secondary-button" onClick={() => setForm("secret")}>
-          <LockKey size={18} aria-hidden="true" /> {tr("Hide a Secret")}
-        </button>
-        <button className="secondary-button" onClick={() => setForm("send")}>
-          <HandCoins size={18} aria-hidden="true" /> {tr("Send on a condition")}
-        </button>
-      </div>
-      <p className="nearby-note">
-        {tr("Real QGOLD from your account, held by the escrow contract until the task is done. Posting a task adds a 10 % fee on top; sends are free.")}
-        {data.wallet?.balance != null && ` ${tr("You hold {0} QGOLD.", { 0: gold(data.wallet.balance) })}`}
-      </p>
       {data.wallet?.registered === false && (
         <p className="nearby-note" role="status">
           {tr("Sends and refunds reach this account once its first QGOLD payout registers it on the token.")}
@@ -282,24 +298,45 @@ export function NearbyMarket({
       {active.length > 0 && (
         <TaskSection title={tr("Your active tasks")} tasks={active} onOpen={(t) => setOpenTask({ id: t.id })} />
       )}
-      {data.transfers.length > 0 && (
-        <section className="nearby-section">
-          <div className="section-label"><h2>{tr("Pending sends")}</h2><span>{data.transfers.length}</span></div>
-          {data.transfers.map((t) => (
-            <TransferCard key={t.id} t={t} busy={!!busy} act={(action) =>
-              run(`send:${t.id}`, () => api("/market/transfer/act", { transferId: t.id, action, fix: fix() }))
-            } />
-          ))}
-        </section>
-      )}
       <TaskSection
         title={tr("Tasks nearby")}
         tasks={data.tasks}
         onOpen={(t) => setOpenTask({ id: t.id })}
-        empty={tr("No open player tasks within 5 km. Post one and pay explorers to do it.")}
-      />
+        empty={community.length ? undefined : tr("No open player tasks within 5 km. Post one and pay explorers to do it.")}
+        info={
+          <InfoTip label={tr("Tasks nearby")}>
+            {tr("Real QGOLD from your account, held by the escrow contract until the task is done. Posting a task adds a 10 % fee on top; sends are free.")}
+            {data.wallet?.balance != null && ` ${tr("You hold {0} QGOLD.", { 0: gold(data.wallet.balance) })}`}
+          </InfoTip>
+        }
+        action={
+          <button type="button" className="nearby-add" onClick={() => setForm("task")}>
+            <Plus size={16} weight="bold" aria-hidden="true" /> {tr("Post a task")}
+          </button>
+        }
+      >
+        {community.map((b) => (
+          <button key={b.id} className="nearby-card community-task" onClick={onCommunityTasks}>
+            <span className="task-reward"><CoinIcon />{gold(b.amount_u)}</span>
+            <span className="nearby-card-body">
+              <strong>{b.title}</strong>
+              <small>{tr("Community task")}{" · "}{distanceLabel(b.distanceM)}</small>
+            </span>
+            <ArrowRight size={18} aria-hidden="true" />
+          </button>
+        ))}
+      </TaskSection>
       <section className="nearby-section">
-        <div className="section-label"><h2>{tr("Secrets")}</h2><span>{data.secrets.length}</span></div>
+        <SectionHead
+          title={tr("Secrets")}
+          count={data.secrets.length}
+          info={<InfoTip label={tr("Secrets")}>{tr("A Secret is a hidden place. Explorers see only a fog circle until they reveal it, then walk there to find it.")}</InfoTip>}
+          action={
+            <button type="button" className="nearby-add" onClick={() => setForm("secret")}>
+              <LockKey size={16} weight="bold" aria-hidden="true" /> {tr("Hide a Secret")}
+            </button>
+          }
+        />
         {data.secrets.length === 0 && <p className="nearby-empty">{tr("No Secrets hidden within 10 km yet.")}</p>}
         {data.secrets.map((s) => (
           <button key={s.id} className="nearby-card secret-card" onClick={() => setOpenSecret({ id: s.id })}>
@@ -320,6 +357,23 @@ export function NearbyMarket({
             </span>
             <ArrowRight size={18} aria-hidden="true" />
           </button>
+        ))}
+      </section>
+      <section className="nearby-section">
+        <SectionHead
+          title={tr("Sends")}
+          count={data.transfers.length}
+          action={
+            <button type="button" className="nearby-add" onClick={() => setForm("send")}>
+              <HandCoins size={16} weight="bold" aria-hidden="true" /> {tr("Send on a condition")}
+            </button>
+          }
+        />
+        {data.transfers.length === 0 && <p className="nearby-empty">{tr("Nothing waiting. Send GOLD that unlocks at a time or a place.")}</p>}
+        {data.transfers.map((t) => (
+          <TransferCard key={t.id} t={t} busy={!!busy} act={(action) =>
+            run(`send:${t.id}`, () => api("/market/transfer/act", { transferId: t.id, action, fix: fix() }))
+          } />
         ))}
       </section>
       {data.mine.length > 0 && (
@@ -382,11 +436,23 @@ export function NearbyMarket({
   );
 }
 
-function TaskSection({ title, tasks, onOpen, empty }: { title: string; tasks: MarketTask[]; onOpen: (t: MarketTask) => void; empty?: string }) {
+function SectionHead({ title, count, info, action }: { title: string; count: number; info?: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="section-label nearby-head">
+      <h2>{title}</h2>
+      <span className="nearby-count">{count}</span>
+      {info}
+      {action}
+    </div>
+  );
+}
+
+function TaskSection({ title, tasks, onOpen, empty, info, action, children }: { title: string; tasks: MarketTask[]; onOpen: (t: MarketTask) => void; empty?: string; info?: ReactNode; action?: ReactNode; children?: ReactNode[] }) {
+  const extra = children?.length ?? 0;
   return (
     <section className="nearby-section">
-      <div className="section-label"><h2>{title}</h2><span>{tasks.length}</span></div>
-      {tasks.length === 0 && empty && <p className="nearby-empty">{empty}</p>}
+      <SectionHead title={title} count={tasks.length + extra} info={info} action={action} />
+      {tasks.length === 0 && !extra && empty && <p className="nearby-empty">{empty}</p>}
       {tasks.map((t) => (
         <button key={t.id} className="nearby-card" onClick={() => onOpen(t)}>
           <span className="task-reward"><CoinIcon />{gold(t.reward)}</span>
@@ -402,6 +468,7 @@ function TaskSection({ title, tasks, onOpen, empty }: { title: string; tasks: Ma
           <ArrowRight size={18} aria-hidden="true" />
         </button>
       ))}
+      {children}
     </section>
   );
 }

@@ -276,7 +276,7 @@ async function cardOverlaps(page, where) {
         "top bar": document.querySelectorAll(".topbar"),
         "profile menu": document.querySelectorAll(".profile-menu"),
         "tab bar": document.querySelectorAll(".nav-rail"),
-        "map tools": document.querySelectorAll(".map-toolbar"),
+        "map tools": document.querySelectorAll(".map-settings, .map-actions-toggle"),
         "demo controls": document.querySelectorAll(".demo-pad"),
         "Market entry": [...document.querySelectorAll(".profile-tiles button")].filter((e) =>
           /^Market/.test(e.textContent.trim()),

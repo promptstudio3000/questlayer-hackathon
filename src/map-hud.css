@@ -1,0 +1,327 @@
+/* Map HUD (Lubos, 10 Nov 2026 phone pass): logo and today's board top left,
+   one avatar + GOLD bubble and the map settings gear top right, a demo
+   joystick bottom left, the Actions button bottom right and the tab bar fixed
+   to the bottom edge on phones. Imported last from GameMap.tsx, so these
+   rules win over phone-map.css and mobile-adventure.css. */
+
+:root { --hud-tabbar: 56px; --hud-gap: 12px; --hud-stick: 116px; }
+
+/* ---- Top bar ------------------------------------------------------------ */
+.app-shell[data-screen] .topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: calc(64px + env(safe-area-inset-top));
+}
+.app-shell[data-screen] .topbar .wordmark, .app-shell[data-screen] .topbar .realm-label { display: none; }
+.hud-left { display: flex; align-items: center; gap: 8px; min-width: 0; pointer-events: auto; }
+.hud-brand {
+  display: grid; place-items: center; flex: none; width: 48px; height: 48px; padding: 0;
+  border: 0; border-radius: 50%; background: var(--surface-raised); box-shadow: 0 2px 12px #1a033514;
+}
+.hud-brand .brand-logo, .hud-brand .brand-logo img, .hud-brand > svg { width: 34px; height: 34px; display: block; }
+.app-shell[data-screen] .topbar-right { width: auto; margin-inline-start: auto; align-items: center; gap: 8px; }
+.hud-bubble {
+  display: flex; align-items: center; gap: 0; min-height: 52px; padding: 2px 4px 2px 2px;
+  border-radius: 28px; background: var(--surface-raised); box-shadow: 0 2px 12px #1a033514; pointer-events: auto;
+}
+.app-shell[data-screen] .topbar .hud-bubble > .profile-pill,
+.app-shell[data-screen] .topbar .hud-bubble > .balance-pill {
+  min-height: 48px; margin: 0; border: 0; box-shadow: none; background: transparent;
+}
+.app-shell[data-screen] .topbar .hud-bubble > .profile-pill { order: 0; padding: 0 2px; border-radius: 24px; }
+.app-shell[data-screen] .topbar .hud-bubble > .balance-pill { padding: 0 10px 0 6px; gap: 6px; border-radius: 24px; }
+.app-shell[data-screen] .topbar .hud-bubble .hud-xp-text { display: none; }
+.app-shell[data-screen] .topbar .hud-bubble .balance-pill > span:not(.gold-icon) { display: none; }
+.app-shell[data-screen] .topbar .hud-bubble .balance-pill b { font-size: 16px; }
+.app-shell[data-screen] .topbar .daily-board-chip { min-height: 48px; }
+
+/* ---- Map settings (gear) ------------------------------------------------ */
+.map-settings { position: relative; pointer-events: auto; }
+.map-settings-toggle {
+  position: relative; display: grid; place-items: center; width: 48px; height: 48px; padding: 0;
+  border: 0; border-radius: 50%; background: var(--surface-raised); color: var(--ink); box-shadow: 0 2px 12px #1a033514;
+}
+.map-settings-toggle[aria-expanded="true"] { color: var(--action); }
+.map-settings-demo-dot {
+  position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--discovery, #ff1dff); box-shadow: 0 0 0 2px var(--surface-raised);
+}
+.map-settings-flyout {
+  position: absolute; top: 56px; right: 0; z-index: 40; width: min(300px, calc(100vw - 24px));
+  display: grid; gap: 2px; padding: 8px; border-radius: var(--radius-item, 16px);
+  background: var(--surface-raised); box-shadow: 0 8px 32px #1a033533; color: var(--ink);
+}
+.map-settings-mode {
+  display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 4px 4px 8px 8px;
+  border-bottom: 1px solid var(--decorative-border); margin-bottom: 4px; font-size: 14px;
+}
+.map-settings-mode .status-dot { flex: none; }
+.map-settings-status { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.map-settings-mode > button {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; flex: none;
+  border: 0; border-radius: var(--radius-control, 10px); background: var(--surface-soft); color: var(--action); font: inherit; font-weight: 600;
+}
+.map-settings-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 8px;
+  border: 0; border-radius: var(--radius-control, 10px); background: transparent; color: var(--ink);
+  font: inherit; font-size: 16px; text-align: start;
+}
+.map-settings-row > span:not(.map-settings-switch) { flex: 1; min-width: 0; }
+.map-settings-row:hover, .map-settings-row[aria-pressed="true"] { background: var(--surface-soft); }
+.map-settings-row > svg { flex: none; color: var(--ink-secondary); }
+.map-settings-switch {
+  position: relative; flex: none; width: 40px; height: 24px; border-radius: 12px; background: var(--control-border, #c9bde0);
+  transition: background 0.15s;
+}
+.map-settings-switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; transition: transform 0.15s;
+}
+.map-settings-row[aria-checked="true"] .map-settings-switch { background: var(--action); }
+.map-settings-row[aria-checked="true"] .map-settings-switch::after { transform: translateX(16px); }
+[dir="rtl"] .map-settings-row[aria-checked="true"] .map-settings-switch::after { transform: translateX(-16px); }
+.map-settings button:focus-visible, .map-actions button:focus-visible, .info-tip-button:focus-visible,
+.map-guide-close:focus-visible, .demo-stick button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---- Actions (bottom right) ---------------------------------------------- */
+.map-actions {
+  position: fixed; z-index: 26; right: var(--hud-gap);
+  bottom: calc(var(--hud-gap) + env(safe-area-inset-bottom));
+}
+.map-actions-toggle {
+  display: grid; place-items: center; width: 56px; height: 56px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--action); color: var(--on-action); box-shadow: 0 4px 16px #1a033540;
+}
+.map-actions.open .map-actions-toggle { background: var(--surface-raised); color: var(--ink); }
+.map-actions-list {
+  position: absolute; right: 4px; bottom: 68px; margin: 0; padding: 0; list-style: none;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+}
+.map-actions-list li { animation: map-action-in 0.16s ease-out both; animation-delay: calc(var(--i, 0) * 25ms); }
+.map-action {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0; border: 0;
+  background: none; color: var(--ink); font: inherit; cursor: pointer;
+}
+.map-action-label {
+  padding: 6px 12px; border-radius: 16px; background: var(--surface-raised); box-shadow: 0 2px 12px #1a033526;
+  font-size: 15px; font-weight: 600; white-space: nowrap;
+}
+.map-action-icon {
+  display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 50%;
+  background: var(--surface-raised); color: var(--action); box-shadow: 0 2px 12px #1a033526;
+}
+@keyframes map-action-in { from { opacity: 0; transform: translateY(12px) scale(0.85); } }
+@media (prefers-reduced-motion: reduce) { .map-actions-list li { animation: none; } }
+.app-shell .map-actions .emote-picker { top: auto; bottom: 68px; right: 0; }
+.app-shell.sheet-open .map-actions, .app-shell.map-full .map-actions { visibility: hidden; pointer-events: none; }
+
+/* ---- Demo joystick (bottom left) ----------------------------------------- */
+.app-shell[data-screen] .demo-pad {
+  display: block; width: var(--hud-stick); height: var(--hud-stick); padding: 0; transform: none;
+  border: 0; border-radius: 50%; background: none; box-shadow: none;
+  top: auto; right: auto; left: var(--hud-gap); bottom: calc(var(--hud-gap) + env(safe-area-inset-bottom));
+}
+.demo-stick {
+  position: relative; width: 100%; height: 100%; border-radius: 50%;
+  background: radial-gradient(circle, #ffffffe6 0 46%, #f3eefcd9 47% 100%);
+  border: 2px solid var(--control-border, #d6cceb); box-shadow: 0 4px 16px #1a033533;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+}
+.demo-stick[data-active] { cursor: grabbing; border-color: var(--action); }
+.demo-stick > button {
+  position: absolute; display: grid; place-items: center; width: 24px; height: 24px; padding: 0;
+  border: 0; border-radius: 50%; background: none; color: var(--ink-secondary); pointer-events: none;
+}
+.demo-stick > button[aria-pressed="true"] { color: var(--action); }
+.demo-stick > .demo-forward { top: 4px; left: calc(50% - 12px); }
+.demo-stick > .demo-back { bottom: 4px; left: calc(50% - 12px); }
+.demo-stick > .demo-left { left: 4px; top: calc(50% - 12px); }
+.demo-stick > .demo-right { right: 4px; top: calc(50% - 12px); }
+.demo-knob {
+  position: absolute; top: calc(50% - 26px); left: calc(50% - 26px); width: 52px; height: 52px; border-radius: 50%;
+  background: var(--action); box-shadow: 0 3px 10px #1a033566, inset 0 -4px 0 #0000002e; pointer-events: none;
+  transition: transform 0.12s ease-out;
+}
+.demo-stick[data-active] .demo-knob { transition: none; }
+.app-shell[data-screen] .demo-pad .demo-run, .app-shell[data-screen] .demo-pad .demo-pad-min {
+  position: absolute; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: var(--surface-raised); color: var(--ink); box-shadow: 0 2px 10px #1a033533;
+}
+.app-shell[data-screen] .demo-pad .demo-run { width: 44px; height: 44px; right: -30px; top: -10px; }
+.app-shell[data-screen] .demo-pad .demo-run[aria-pressed="true"] { background: var(--action); color: var(--on-action); }
+.app-shell[data-screen] .demo-pad .demo-pad-min { width: 32px; height: 32px; left: -4px; top: -6px; color: var(--ink-secondary); }
+.app-shell[data-screen] .demo-pad-open {
+  display: grid; place-items: center; width: 48px; height: 48px; min-width: 48px; padding: 0; transform: none;
+  border-radius: 50%; color: var(--action);
+  top: auto; right: auto; left: var(--hud-gap); bottom: calc(var(--hud-gap) + env(safe-area-inset-bottom));
+}
+.app-shell[data-screen] .demo-pad-open > span { display: none; }
+
+/* ---- Direction guide ---------------------------------------------------- */
+.app-shell .map-guide-key { pointer-events: auto; padding: 2px 2px 2px 10px; min-height: 44px; }
+.map-guide-close {
+  display: grid; place-items: center; flex: none; width: 40px; height: 40px; margin-inline-start: 2px; padding: 0;
+  border: 0; border-radius: 8px; background: transparent; color: inherit;
+}
+.map-guide-close:hover { background: #ede6ff; }
+
+/* ---- Info flyouts ------------------------------------------------------- */
+.info-tip { position: relative; display: inline-flex; vertical-align: middle; }
+.info-tip-button {
+  display: grid; place-items: center; width: 32px; height: 32px; padding: 0; margin: -4px 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--ink-secondary);
+}
+.info-tip-button:hover, .info-tip-button[aria-expanded="true"] { background: var(--surface-soft); color: var(--action); }
+.info-tip-flyout {
+  position: absolute; top: calc(100% + 6px); z-index: 45; width: min(280px, calc(100vw - 32px));
+  padding: 10px 12px; border-radius: 12px; background: var(--ink, #1a0335); color: var(--surface, #fff);
+  font-size: 14px; font-weight: 400; line-height: 1.45; text-align: start; box-shadow: 0 8px 24px #1a033540;
+  white-space: normal;
+}
+.info-tip-end .info-tip-flyout { right: -8px; }
+.info-tip-start .info-tip-flyout { left: -8px; }
+
+/* ---- Places today: compact two-line rows -------------------------------- */
+.app-shell[data-screen] .zone-list { display: grid; gap: 6px; }
+.app-shell[data-screen] .zone-list .zone-card.zone-row {
+  display: flex; align-items: center; gap: 12px; min-height: 64px; height: auto; padding: 8px 4px 8px 8px;
+  border-radius: 12px; text-align: start;
+}
+.zone-row-art { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 10px; background: var(--surface-soft); }
+.zone-row-art .quest-thumbnail, .zone-row-art img { max-width: 40px; max-height: 40px; }
+.zone-row-body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.zone-row-body strong { font-size: 16px; line-height: 1.3; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zone-row-body small { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 14px; color: var(--ink-secondary); line-height: 1.35; }
+.zone-row-body small .badge { padding: 1px 6px; font-size: 12px; }
+.zone-row-body small > span { display: inline-flex; align-items: center; gap: 4px; }
+.zone-row > svg { flex: none; color: var(--ink-secondary); }
+
+/* ---- Nearby discoveries: compact pot row ------------------------------- */
+.pot-row { display: grid; gap: 0; margin: 0 0 12px; border: 1px solid var(--decorative-border); border-radius: 12px; background: var(--surface-raised); }
+.pot-row-main { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 4px 4px 4px 10px; }
+.pot-row-main > .game-object-art { flex: none; }
+.pot-row-stat { display: grid; min-width: 0; line-height: 1.25; }
+.pot-row-stat b { font-size: 16px; white-space: nowrap; }
+.pot-row-stat small { font-size: 13px; color: var(--ink-secondary); white-space: nowrap; }
+.pot-row-scope {
+  display: inline-flex; align-items: center; gap: 4px; justify-self: start; min-height: 28px; margin: -4px 0; padding: 0;
+  border: 0; background: transparent; color: var(--action); font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.pot-row-sep { width: 1px; align-self: stretch; margin: 8px 2px; background: var(--decorative-border); flex: none; }
+.pot-row-spacer { flex: 1; }
+.pot-row-more {
+  display: grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px;
+  background: transparent; color: var(--ink-secondary);
+}
+.pot-row-more[aria-expanded="true"] svg { transform: rotate(180deg); }
+.pot-row-detail { padding: 0 8px 8px; }
+.pot-row-detail .todays-pot { margin: 0; }
+.app-shell[data-screen] .day-row { margin-bottom: 8px; }
+.places-head { display: flex; align-items: center; gap: 6px; }
+.places-head h2 { margin: 0; }
+.app-shell[data-screen] .places-head .places-count { margin-inline-start: auto; color: var(--ink-secondary); font-size: 14px; }
+
+/* ---- Nearby: create buttons sit in their own sections ------------------- */
+.nearby-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.nearby-head h2 { margin: 0; }
+.app-shell[data-screen] .nearby-head .nearby-count { color: var(--ink-secondary); font-size: 14px; align-self: center; }
+.nearby-add {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin-inline-start: auto; padding: 0 12px;
+  border: 1px solid var(--control-border); border-radius: 20px; background: var(--surface-raised); color: var(--action);
+  font: inherit; font-size: 14px; font-weight: 600;
+}
+.app-shell[data-screen] .nearby-market .nearby-card { min-height: 60px; padding-block: 8px; padding-inline-end: 8px; }
+.app-shell[data-screen] .nearby-market .nearby-card-body { min-width: 0; }
+.app-shell[data-screen] .nearby-market .nearby-card-body strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px; }
+.app-shell[data-screen] .nearby-market .nearby-card-body small { display: block; font-size: 14px; }
+
+/* ---- Close buttons hug the corner; arrows reach the edge ---------------- */
+.app-shell[data-screen] .panel-heading { align-items: center; }
+.app-shell[data-screen] .panel-heading .panel-close {
+  width: 44px; height: 44px; min-width: 44px; min-height: 44px; margin-inline-end: -8px; padding: 0;
+  display: grid; place-items: center; background: var(--surface-soft);
+}
+.app-shell[data-screen] .nearby-open { padding-inline-end: 8px; }
+.app-shell[data-screen] .nearby-open > svg { margin-inline-start: auto; }
+
+/* ---- Map chips under the top bar ---------------------------------------- */
+.app-shell[data-screen] .map-sky-chip { top: calc(70px + env(safe-area-inset-top)); left: 12px; }
+.app-shell[data-screen] .zone-presence { top: calc(112px + env(safe-area-inset-top)); }
+
+/* ---- Phones: tab bar on the bottom edge ---------------------------------- */
+@media (max-width: 600px) {
+  .app-shell[data-screen] .nav-rail { left: 0; right: 0; bottom: 0; }
+  .app-shell[data-screen] .nav-rail .rail-links {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0 4px env(safe-area-inset-bottom);
+    border: 0; border-top: 1px solid var(--decorative-border); border-radius: 0;
+    background: var(--surface-raised); box-shadow: 0 -2px 16px #1a033514;
+  }
+  .app-shell[data-screen] .rail-links button {
+    flex-direction: row; gap: 6px; min-height: var(--hud-tabbar); padding: 0 4px;
+    border-radius: 0; box-shadow: none; background: transparent;
+  }
+  .app-shell[data-screen] .rail-links button span { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .app-shell[data-screen] .rail-links button.active { background: transparent; color: var(--action); box-shadow: inset 0 3px 0 var(--action); }
+  .app-shell[data-screen] .rail-links button svg { width: 22px; height: 22px; flex: none; }
+  .app-shell[data-screen] .demo-pad,
+  .app-shell[data-screen] .demo-pad-open,
+  .map-actions { bottom: calc(var(--hud-tabbar) + var(--hud-gap) + env(safe-area-inset-bottom)); }
+  .app-shell[data-screen] .demo-pad { left: calc(var(--hud-gap) + 4px); }
+  /* The objective card sits above the joystick and the Actions button. */
+  .app-shell[data-screen] .main-panel.explore-panel.sheet-compact,
+  .app-shell[data-screen] .nearby-open {
+    bottom: calc(var(--hud-tabbar) + var(--hud-gap) * 2 + 56px + env(safe-area-inset-bottom));
+  }
+  .app-shell[data-screen]:has(.demo-pad) .main-panel.explore-panel.sheet-compact,
+  .app-shell[data-screen]:has(.demo-pad) .nearby-open {
+    bottom: calc(var(--hud-tabbar) + var(--hud-gap) * 2 + var(--hud-stick) + env(safe-area-inset-bottom));
+  }
+  .app-shell[data-screen] .main-panel.explore-panel.sheet-compact { max-height: min(26dvh, 200px); }
+  /* Map attribution: the free strip above the Actions button. */
+  body:has(.app-shell[data-screen]) .maplibregl-ctrl-bottom-right,
+  body:has(.app-shell[data-screen] .sheet-expanded) .maplibregl-ctrl-bottom-right {
+    bottom: calc(var(--hud-tabbar) + var(--hud-gap) + 64px + env(safe-area-inset-bottom)) !important; right: 18px !important;
+  }
+  .app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 112px); left: 60px; right: auto; max-width: calc(100% - 72px); }
+}
+/* Tablets and desktop: the menu floats bottom left, joystick beside it. */
+@media (min-width: 601px) {
+  .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open { left: 28px; bottom: 236px; }
+  body:has(.app-shell[data-screen]) .maplibregl-ctrl-bottom-right { right: 80px !important; }
+}
+@media (min-width: 601px) and (max-width: 1100px) and (min-height: 501px) {
+  .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open { bottom: 304px; }
+}
+@media (max-height: 500px) and (min-width: 600px) {
+  .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open { right: auto; left: 128px; bottom: 12px; }
+  .app-shell[data-screen] { --hud-stick: 96px; }
+}
+
+/* ---- Folded objective cards: icon, one-line title, one stats line ------- */
+.app-shell[data-screen] .main-panel.explore-panel.sheet-compact { padding: 8px 8px 8px 12px; }
+.app-shell[data-screen] .sheet-compact .compact-selection,
+.app-shell[data-screen] .sheet-compact .recommended-quest {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 44px 0 0; text-align: start;
+}
+.app-shell[data-screen] .sheet-compact .peek-art,
+.app-shell[data-screen] .sheet-compact .recommended-art {
+  display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 10px; background: var(--surface-soft);
+}
+.app-shell[data-screen] .sheet-compact .peek-body,
+.app-shell[data-screen] .sheet-compact .recommended-quest > span:nth-child(2) { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.app-shell[data-screen] .sheet-compact .peek-body strong,
+.app-shell[data-screen] .sheet-compact .recommended-quest strong {
+  display: block; font-size: 16px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.app-shell[data-screen] .sheet-compact .peek-body small,
+.app-shell[data-screen] .sheet-compact .recommended-quest > span:nth-child(2) > :not(strong) {
+  display: block; font-size: 14px; line-height: 1.35; color: var(--ink-secondary);
+}
+.app-shell[data-screen] .sheet-compact .compact-selection > svg,
+.app-shell[data-screen] .sheet-compact .recommended-quest > svg { flex: none; }
+.app-shell[data-screen] .sheet-compact .sheet-peek-hide,
+.app-shell[data-screen] .objective-dismiss {
+  width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 50%;
+}
+.app-shell[data-screen] .sheet-compact .sheet-peek { position: relative; }
+.app-shell[data-screen] .sheet-compact .sheet-peek-hide { position: absolute; top: 50%; right: 0; transform: translateY(-50%); }
+.app-shell[data-screen] .sheet-compact:has(.sheet-peek-hide) > .objective-dismiss-bar { display: none; }

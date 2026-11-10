@@ -26,7 +26,7 @@ import { join, resolve } from "node:path";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
 import { loadQuizBank } from "../server/actors/challenges/quiz.mjs";
-import { openScreen } from "./lib/e2e-nav.mjs";
+import { openScreen, openMapSettings } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const BASE = (process.env.E2E_BASE_URL || "https://questlayer.promptstudio3000.com").replace(/\/$/, "");
@@ -429,7 +429,7 @@ async function newPlayer(browser, device, name, spot, { account = false, cookie 
       (r) => r.url().endsWith("/api/world") && r.request().method() === "POST" && r.request().postDataJSON()?.arena === false,
       { timeout: 30_000 },
     );
-    await page.getByRole("button", { name: "Use GPS, my location" }).click();
+    await (await openMapSettings(page)).getByRole("button", { name: "Use GPS, my location" }).click();
     world = await (await gps).json();
     await page.waitForFunction(() => /GPS ±\d+ m/.test(document.body.innerText), null, { timeout: 15_000 });
   }

@@ -8,6 +8,7 @@ import { createServer } from "node:net";
 import assert from "node:assert/strict";
 import { chromium, webkit, devices } from "playwright";
 import { createRequire } from "node:module";
+import { openMapSettings } from "./lib/e2e-nav.mjs";
 const axeSource = createRequire(import.meta.url)("axe-core").source;
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -163,12 +164,12 @@ try {
       const cameraAfter=await page.locator(".player-marker").first().getAttribute("style");
       assert.equal(cameraAfter,cameraBefore,"Map camera remains stable across a content screen");
       await page.evaluate(()=>{navigator.geolocation.getCurrentPosition=(_ok,fail)=>fail({code:1,message:"denied"});});
-      await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+      await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();
       await page.getByText("Allow location access, or keep exploring in the city demo.",{exact:true}).first().waitFor();
       assert.ok(await page.locator(".map-status-chip.demo").count());
       await page.screenshot({path:join(SHOTS,"gps-denied.png")});
       await page.evaluate(()=>{navigator.geolocation.getCurrentPosition=ok=>ok({coords:{latitude:49.7384,longitude:13.3736,accuracy:999,heading:null,speed:0},timestamp:Date.now()});navigator.geolocation.watchPosition=()=>1;});
-      await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+      await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();
       await page.getByText("GPS ±999 m",{exact:true}).waitFor();
       assert.equal(await page.locator(".demo-pad").count(),0,"GPS play never offers manual movement");
       await page.screenshot({path:join(SHOTS,"gps-inaccurate.png")});

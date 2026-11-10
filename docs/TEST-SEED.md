@@ -36,6 +36,9 @@ npm run seed:test -- remove   [--db path]
   60,000 practice GOLD once it has been listed for 45 s, so selling can be tried.
 - **Tasks.** Three practice-GOLD tasks. The seed author approves the first
   submitted evidence after 30 s and the task is posted again.
+- **Secrets.** Three free place Secrets around the demo square (courtyard, mural,
+  riverside viewpoint), so Explore · Nearby always has something to reveal. Price 0
+  and no visit reward: revealing one moves no QGOLD.
 - **Creator quests.** Two public creator profiles and five approved quests (visit,
   trail, chest, a free story) with observation requirements. A completion submitted
   on a seed quest is accepted after 30 s by the configured completion authority.
