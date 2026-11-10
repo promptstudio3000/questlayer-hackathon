@@ -113,7 +113,7 @@ export type SecuredCollection = {
   items: NativeItem[];
 };
 type Entry = { key: string; name: string; rarity: string; worn: boolean } & (
-  | { type: "aura"; item: Item; count: number }
+  | { type: "aura"; item: Item; count: number; ids: string[] }
   | { type: "secured"; item: NativeItem; accountId: string; slot: "above" | "below"; avatarReady: boolean }
   | { type: "wearable"; item: WardrobeWearable }
 );
@@ -290,11 +290,12 @@ export function Inventory({
     .map(({ edition }) => edition);
   // One list of everything owned: game Auras, secured Auras, wearables.
   const entries: Entry[] = [
-    ...stacks.map(({ key, members }) => ({
+    ...stacks.map(({ members }) => ({
       type: "aura" as const,
-      key: `aura:${key}`,
+      key: `aura:${members[0].id}`,
       item: members[0],
       count: members.length,
+      ids: members.map((m) => m.id),
       name: members[0].name,
       rarity: members[0].rarity,
       worn: !!members[0].equipped,
@@ -357,7 +358,14 @@ export function Inventory({
   const lockedEdition = lockedId ? catalogEdition(lockedId) : null;
   // Resolve every action against current inventory: a removed or reserved item
   // must not stay actionable through an older selection.
-  const selected = entries.find((entry) => entry.key === selectedKey) || null;
+  // A worn Aura taken off joins its stack, so an Aura selection follows the
+  // item id rather than the stack.
+  const selected =
+    entries.find((entry) => entry.key === selectedKey) ||
+    entries.find(
+      (entry) => entry.type === "aura" && !!selectedKey && entry.ids.includes(selectedKey.slice(5)),
+    ) ||
+    null;
   const locked = !!busy || listingPending || wearables.busy !== null;
   const openItem = (key: string) => {
     setSelectedKey(key);
