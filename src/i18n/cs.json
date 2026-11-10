@@ -690,7 +690,7 @@
  "Every level opens something new to do or wear. Levels never change odds or payouts.": "Každá úroveň otevře něco nového k dělání nebo k nošení. Úrovně nikdy nemění šance ani výplaty.",
  "Every order you signed before now is cancelled on chain.": "Všechny příkazy, které jsi dosud podepsal, jsou v řetězci zrušené.",
  "Every place on the map is open to you.": "Každé místo na mapě je pro tebe otevřené.",
- "Every trade settles on NEAR. Cancel the listing any time in Market → Secured.": "Každý obchod se vypořádá na NEARu. Nabídku můžeš kdykoli zrušit v Trh → Zabezpečené.",
+ "Every trade settles on NEAR, and History links the proof. Find or cancel your listing in Market.": "Každý obchod se vypořádá na NEARu a Historie odkazuje na důkaz. Nabídku najdeš nebo zrušíš v Trhu.",
  "Every trail leads somewhere.": "Každá stezka někam vede.",
  "Everyone hits the same health bar. One hit every 10 minutes; damage comes from your level and skill only. Land": "Všichni útočí na stejný ukazatel zdraví. Jeden úder každých 10 minut; poškození závisí jen na úrovni a dovednosti. Zasáhni",
  "Everyone nearby": "Všichni poblíž",
@@ -3123,5 +3123,14 @@
  "Wearing {0}": "Máš na sobě {0}",
  "BRS {0}": "BRS {0}",
  "1 wearable in your wallet": "1 wearable v peněžence",
- "{0} wearables in your wallet": "{0} wearables v peněžence"
+ "{0} wearables in your wallet": "{0} wearables v peněžence",
+ "Aura trade on NEAR Intents": "Obchod s Aurou přes NEAR Intents",
+ "Withdrawn from NEAR Intents": "Výběr z NEAR Intents",
+ "Trade with a trader": "Obchod s obchodníkem",
+ "Sold for {0} wNEAR": "Prodáno za {0} wNEAR",
+ "Bought for {0} wNEAR": "Koupeno za {0} wNEAR",
+ "Listed for {0} wNEAR": "Nabízeno za {0} wNEAR",
+ "Settling on NEAR…": "Vypořádává se na NEARu…",
+ "Listing ended": "Nabídka skončila",
+ "Your Intents trades": "Tvoje obchody přes Intents"
 }

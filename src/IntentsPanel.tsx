@@ -8,16 +8,28 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { Details } from "./ScreenTabs";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
-import { auraTokenDiff, grossForNet, signIntents, type IntentsAccount, type IntentsConfig } from "./intents-order";
+import { auraTokenDiff, grossForNet, signIntents, type IntentOrder, type IntentsAccount, type IntentsConfig } from "./intents-order";
 import type { OrderSigner } from "./order-signers";
 import type { LinkedEvmWallet } from "./evm-wallet";
 import type { NativeItem } from "./types";
-import { EXPLORER_BASE } from "./near-network";
+import { ChainLink } from "./ChainLink";
 import { tr } from "./i18n";
 
 const GAS = "100000000000000",
   NFT_GAS = "200000000000000",
   WNEAR_STORAGE = "1250000000000000000000"; // 0.00125 NEAR, refunded if registered
+
+/** One of the explorer's own orders, as they would say it. */
+function ownOrderText(o: IntentOrder, accountId: string | null, feePips: number) {
+  const sold = o.side === "sell" ? o.maker === accountId : o.taker === accountId;
+  if (o.state === "filled")
+    return sold
+      ? tr("Sold for {0} wNEAR", { 0: formatNativeNear(o.price) })
+      : tr("Bought for {0} wNEAR", { 0: formatNativeNear(o.buyerPays ?? grossForNet(o.price, feePips)) });
+  if (o.state === "open") return tr("Listed for {0} wNEAR", { 0: formatNativeNear(o.price) });
+  if (o.state === "filling") return tr("Settling on NEAR…");
+  return tr("Listing ended");
+}
 
 export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner | null; owned: NativeItem[]; onEnabled?: (on: boolean) => void }) {
   const [config, setConfig] = useState<IntentsConfig | null>(null),
@@ -124,6 +136,8 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
 
   const others = c.orders.filter((o) => o.maker !== accountId && o.side === "sell");
   const held = (mine?.auras.length || 0) > 0 || BigInt(mine?.wnear || "0") > 0n;
+  // The explorer's own listings and trades, each settled one with its proof.
+  const own = (mine?.orders || []).slice(0, 10);
   return (
     <section className="signed-orders intents-panel" aria-labelledby="intents-title">
       <h3 id="intents-title">{tr("NEAR Intents (test)")}</h3>
@@ -134,12 +148,7 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
       {step && <p role="status">{step}</p>}
       {done && !step && (
         <p role="status" className="native-market-message">
-          {done.text}{" "}
-          {done.tx && (
-            <a href={`${EXPLORER_BASE}/txns/${done.tx}`} target="_blank" rel="noreferrer">
-              {done.tx.slice(0, 8)}…
-            </a>
-          )}
+          {done.text} {done.tx && <ChainLink label chain={{ tx: done.tx, status: "confirmed" }} />}
         </p>
       )}
       {canSign && evmWallets.length > 0 && (
@@ -209,6 +218,19 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
                 </li>
               ))}
             </ul>
+          )}
+          {own.length > 0 && (
+            <>
+              <h4>{tr("Your Intents trades")}</h4>
+              <ul className="signed-order-history">
+                {own.map((o) => (
+                  <li key={o.id}>
+                    <span>{o.tokenId}</span> <span>{ownOrderText(o, accountId, c.fee || 0)}</span>{" "}
+                    {o.settlementTx && <ChainLink label chain={{ tx: o.settlementTx, status: "confirmed" }} />}
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </>
       )}

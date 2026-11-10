@@ -690,7 +690,7 @@
  "Every level opens something new to do or wear. Levels never change odds or payouts.": "Каждый уровень открывает что-то новое, чем заняться или что надеть. Уровни никогда не меняют шансы или выплаты.",
  "Every order you signed before now is cancelled on chain.": "Все ордера, которые ты подписал до этого момента, отменены в блокчейне.",
  "Every place on the map is open to you.": "Тебе открыто каждое место на карте.",
- "Every trade settles on NEAR. Cancel the listing any time in Market → Secured.": "Каждая сделка проходит в NEAR. Отменить лот можно в любой момент: Рынок → Защищённые.",
+ "Every trade settles on NEAR, and History links the proof. Find or cancel your listing in Market.": "Каждая сделка проходит в NEAR, а в Истории есть ссылка на доказательство. Найти или отменить лот можно на Рынке.",
  "Every trail leads somewhere.": "Каждая тропа куда-то ведёт.",
  "Everyone hits the same health bar. One hit every 10 minutes; damage comes from your level and skill only. Land": "Все бьют по одной полосе здоровья. Один удар раз в 10 минут; урон зависит только от твоего уровня и навыка. Нанеси",
  "Everyone nearby": "Все поблизости",
@@ -3123,5 +3123,14 @@
  "Wearing {0}": "Сейчас: {0}",
  "BRS {0}": "BRS {0}",
  "1 wearable in your wallet": "1 предмет в кошельке",
- "{0} wearables in your wallet": "Предметов в кошельке: {0}"
+ "{0} wearables in your wallet": "Предметов в кошельке: {0}",
+ "Aura trade on NEAR Intents": "Сделка с аурой через NEAR Intents",
+ "Withdrawn from NEAR Intents": "Выведено из NEAR Intents",
+ "Trade with a trader": "Сделка с торговцем",
+ "Sold for {0} wNEAR": "Продано за {0} wNEAR",
+ "Bought for {0} wNEAR": "Куплено за {0} wNEAR",
+ "Listed for {0} wNEAR": "Выставлено за {0} wNEAR",
+ "Settling on NEAR…": "Проводится в NEAR…",
+ "Listing ended": "Лот закрыт",
+ "Your Intents trades": "Ваши сделки через Intents"
 }

@@ -690,7 +690,7 @@
  "Every level opens something new to do or wear. Levels never change odds or payouts.": "每个等级都会开放新的玩法或穿戴。等级绝不改变概率或收益。",
  "Every order you signed before now is cancelled on chain.": "你此前签署的所有订单都已在链上取消。",
  "Every place on the map is open to you.": "地图上的所有地点都向你开放。",
- "Every trade settles on NEAR. Cancel the listing any time in Market → Secured.": "每笔交易都在 NEAR 上结算。随时可在 市场 → 已保管 中取消挂单。",
+ "Every trade settles on NEAR, and History links the proof. Find or cancel your listing in Market.": "每笔交易都在 NEAR 上结算，历史中附有证明链接。可在 市场 中查看或取消挂单。",
  "Every trail leads somewhere.": "每条小路都通向某处。",
  "Everyone hits the same health bar. One hit every 10 minutes; damage comes from your level and skill only. Land": "所有人攻击同一条血条。每 10 分钟可攻击一次；伤害只取决于你的等级和技巧。命中",
  "Everyone nearby": "附近所有人",
@@ -3123,5 +3123,14 @@
  "Wearing {0}": "正在使用 {0}",
  "BRS {0}": "BRS {0}",
  "1 wearable in your wallet": "钱包里有 1 件可穿戴物品",
- "{0} wearables in your wallet": "钱包里有 {0} 件可穿戴物品"
+ "{0} wearables in your wallet": "钱包里有 {0} 件可穿戴物品",
+ "Aura trade on NEAR Intents": "NEAR Intents 上的光环交易",
+ "Withdrawn from NEAR Intents": "已从 NEAR Intents 提取",
+ "Trade with a trader": "与商人交易",
+ "Sold for {0} wNEAR": "以 {0} wNEAR 售出",
+ "Bought for {0} wNEAR": "以 {0} wNEAR 购入",
+ "Listed for {0} wNEAR": "以 {0} wNEAR 挂单中",
+ "Settling on NEAR…": "正在 NEAR 上结算…",
+ "Listing ended": "挂单已结束",
+ "Your Intents trades": "你的 Intents 交易"
 }

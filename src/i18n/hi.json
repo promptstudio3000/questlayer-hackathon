@@ -690,7 +690,7 @@
  "Every level opens something new to do or wear. Levels never change odds or payouts.": "हर लेवल करने या पहनने के लिए कुछ नया खोलता है। लेवल कभी संभावना या भुगतान नहीं बदलते।",
  "Every order you signed before now is cancelled on chain.": "अब से पहले साइन किया गया तुम्हारा हर ऑर्डर चेन पर कैंसल हो गया है।",
  "Every place on the map is open to you.": "मैप की हर जगह तुम्हारे लिए खुली है।",
- "Every trade settles on NEAR. Cancel the listing any time in Market → Secured.": "हर सौदा NEAR पर पूरा होता है। लिस्टिंग कभी भी बाज़ार → सुरक्षित में रद्द करो।",
+ "Every trade settles on NEAR, and History links the proof. Find or cancel your listing in Market.": "हर सौदा NEAR पर पूरा होता है, और इतिहास में सबूत का लिंक मिलता है। अपनी लिस्टिंग मार्केट में देखो या रद्द करो।",
  "Every trail leads somewhere.": "हर ट्रेल कहीं न कहीं ले जाती है।",
  "Everyone hits the same health bar. One hit every 10 minutes; damage comes from your level and skill only. Land": "सब एक ही हेल्थ बार पर वार करते हैं। हर 10 मिनट में एक हिट; डैमेज सिर्फ़ तुम्हारे लेवल और हुनर से आता है। लगाओ",
  "Everyone nearby": "आस-पास के सभी",
@@ -3123,5 +3123,14 @@
  "Wearing {0}": "{0} पहना है",
  "BRS {0}": "BRS {0}",
  "1 wearable in your wallet": "आपके वॉलेट में 1 वियरेबल",
- "{0} wearables in your wallet": "आपके वॉलेट में {0} वियरेबल"
+ "{0} wearables in your wallet": "आपके वॉलेट में {0} वियरेबल",
+ "Aura trade on NEAR Intents": "NEAR Intents पर ऑरा सौदा",
+ "Withdrawn from NEAR Intents": "NEAR Intents से निकाला गया",
+ "Trade with a trader": "व्यापारी के साथ सौदा",
+ "Sold for {0} wNEAR": "{0} wNEAR में बेचा",
+ "Bought for {0} wNEAR": "{0} wNEAR में खरीदा",
+ "Listed for {0} wNEAR": "{0} wNEAR में लिस्टेड",
+ "Settling on NEAR…": "NEAR पर पूरा हो रहा है…",
+ "Listing ended": "लिस्टिंग खत्म",
+ "Your Intents trades": "तुम्हारे Intents सौदे"
 }

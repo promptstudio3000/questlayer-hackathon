@@ -690,7 +690,7 @@
  "Every level opens something new to do or wear. Levels never change odds or payouts.": "Jedes Level öffnet etwas Neues zum Tun oder Tragen. Level ändern nie Chancen oder Auszahlungen.",
  "Every order you signed before now is cancelled on chain.": "Jeder Auftrag, den du bisher signiert hast, wird on-chain storniert.",
  "Every place on the map is open to you.": "Jeder Ort auf der Karte steht dir offen.",
- "Every trade settles on NEAR. Cancel the listing any time in Market → Secured.": "Jeder Handel wird auf NEAR abgewickelt. Du kannst das Angebot jederzeit unter Markt → Gesichert zurückziehen.",
+ "Every trade settles on NEAR, and History links the proof. Find or cancel your listing in Market.": "Jeder Handel wird auf NEAR abgewickelt, und der Verlauf verlinkt den Nachweis. Dein Angebot findest oder ziehst du im Markt zurück.",
  "Every trail leads somewhere.": "Jeder Pfad führt irgendwohin.",
  "Everyone hits the same health bar. One hit every 10 minutes; damage comes from your level and skill only. Land": "Alle treffen denselben Lebensbalken. Ein Treffer alle 10 Minuten; Schaden hängt nur von Level und Können ab. Lande",
  "Everyone nearby": "Alle in der Nähe",
@@ -3123,5 +3123,14 @@
  "Wearing {0}": "Du trägst {0}",
  "BRS {0}": "BRS {0}",
  "1 wearable in your wallet": "1 Wearable in deiner Wallet",
- "{0} wearables in your wallet": "{0} Wearables in deiner Wallet"
+ "{0} wearables in your wallet": "{0} Wearables in deiner Wallet",
+ "Aura trade on NEAR Intents": "Aura-Handel über NEAR Intents",
+ "Withdrawn from NEAR Intents": "Aus NEAR Intents abgehoben",
+ "Trade with a trader": "Handel mit einem Händler",
+ "Sold for {0} wNEAR": "Verkauft für {0} wNEAR",
+ "Bought for {0} wNEAR": "Gekauft für {0} wNEAR",
+ "Listed for {0} wNEAR": "Angeboten für {0} wNEAR",
+ "Settling on NEAR…": "Wird auf NEAR abgewickelt…",
+ "Listing ended": "Angebot beendet",
+ "Your Intents trades": "Deine Intents-Trades"
 }
