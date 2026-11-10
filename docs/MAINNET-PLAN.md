@@ -178,8 +178,13 @@ Lubos's explicit go, after phone testing, at the very end of development.
 | Vault factory v3 (stuck-operation recovery, harvest limits, settled basis) | live in place on `questlayer-vaults-20261101b.testnet`: `5mn94vZF…` = pin `46e7579d…18c4`, embedded vault `357c3b57…535b` (`4bnUo5Bn…`), `created: 0` (record `bc8331e6`). The first v3 position smoke test is prepared, not run | Stays testnet with rewards (`vaults` requires `rewards`). The standalone treasury vault `questlayer-vault-20261101b` is still v2 |
 | QGOLD timelock upgrade | proposal **4** on `questlayer-qgold-vault-20261104.testnet`: `Upgrade` to `3734e361…bf49` (= pin `questlayer_qgold`), 1 of 1 approvals, `executable_at` 1794441121203 = **11 Nov 2026 23:52:01 UTC**, not done. `public/native-qgold-vault-testnet.json` still shows the superseded proposal 2 under `pendingWorldUpgrade` | Stays testnet. A mainnet QGOLD would ship this build from the start, with the 48 h `TIMELOCK_MS` default (24–48 h bounds off `.testnet`, never 10 min) and a real multisig council instead of the single testnet operator. The QGOLD vault and token, `qgold-escrow`, `ledger` and `soulbound-ft` are all out of the slice and need the same external review |
 | Encrypted player inbox (`docs/PLAYER-INBOX.md`) | live on testnet: X25519 keys and XChaCha20 ciphertext under the sender's own NEAR Social account; each message is one sponsored relay op (SocialDB `set`, `RELAY_SOCIAL_SHAPE`, ≤ 4 KiB) | Needs no contract: it uses `social.near`, which the slice already pins. It is a relayer load question: on mainnet each message spends real gas and up to ~0.035 NEAR of SocialDB storage from the float |
-| Relayer subsidy | testnet subsidy 2 NEAR/day (`SUBSIDY_DAILY_YOCTO`); Lubos chose 500 ops/day (`SUBSIDY_DAILY_OPERATIONS`) on 10 Nov for the inbox, applied in the testnet runtime.env by the deploy thread | The mainnet unit has no subsidy values, so sponsorship fails closed (the server's default is 0). Before a mainnet inbox, the owner writes all three (`SUBSIDY_DAILY_YOCTO`, `SUBSIDY_DAILY_OPERATIONS`, `SUBSIDY_GAS_RESERVE_YOCTO`) and decides whether to keep `RELAY_MAX_JOBS_PER_DAY=40` per account. 500 ops at up to 0.035 NEAR is up to ~17.5 NEAR/day of storage worst case, so the testnet 2 NEAR cap is the binding limit and the right mainnet starting point. Raise the §1 float (10 NEAR, alert at 3) accordingly |
+| Relayer subsidy | testnet subsidy 2 NEAR/day (`SUBSIDY_DAILY_YOCTO`); Lubos chose 500 ops/day (`SUBSIDY_DAILY_OPERATIONS`) on 10 Nov for the inbox, applied in the testnet runtime.env by the deploy thread | **Decided 10 Nov (Lubos): 2 NEAR/day on mainnet too.** `deploy/questlayer-mainnet.service` now sets `SUBSIDY_DAILY_YOCTO=2 NEAR`, `SUBSIDY_DAILY_OPERATIONS=500` and `SUBSIDY_GAS_RESERVE_YOCTO=0.01 NEAR` (an estimate per delegated SocialDB set; tune from mainnet receipts). 500 ops at up to 0.035 NEAR of storage would be ~17.5 NEAR, so the 2 NEAR cap binds first. `RELAY_MAX_JOBS_PER_DAY=40` per account stays. Size the §1 float for at least a few days of the cap |
 | Collectibles NEP-199 royalties (2 % on Aura resales) | live on testnet: `nfts.questlayer-dev-20261101.testnet` runs `6aikiFP7…` = `52edcff4…6a16`, which `contracts/collectibles/WASM_SHA256` and `public/native-editions-testnet.json` record | Already covered by §6: the slice deploys this build; the royalty stays off until a separate `set_royalty` go |
+
+Decision, 10 November (Lubos): everything goes to mainnet once the base game is finished, not only the §1 slice.
+So rewards, vaults, QGOLD (vault, token, escrow), ledger and soulbound-ft are planned for mainnet too, after the
+base is done and with his explicit go. The external review §1 asks for stays a recommendation for the contracts
+that hold other players' money; the order and the go remain his.
 
 Still blocked or open before any mainnet go:
 
@@ -193,5 +198,6 @@ Still blocked or open before any mainnet go:
    `public/native-qgold-vault-testnet.json` (and drop the superseded proposal 2 record), and mark the rewards M4
    section in `docs/DAILY-PAYOUTS.md` as run.
 
-Mainnet slice, unchanged: collectibles (with editions and royalties), player factory and relayer, NEAR Social
-records; opt-in badges, NPC games and stNEAR treasury. Everything else in this table stays on testnet.
+What the one command deploys today: collectibles (with editions and royalties), player factory and relayer, NEAR
+Social records; opt-in badges, NPC games and stNEAR treasury. Rewards, vaults, QGOLD, ledger and the yield vault
+have no mainnet deploy path in it yet; adding them is the next step once the base game is finished.
