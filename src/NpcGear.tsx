@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Storefront } from "@phosphor-icons/react";
+import { Sparkle, Storefront } from "@phosphor-icons/react";
 import { gold, GOLD } from "./api";
 import { tr } from "./i18n";
 import { goldGear, goldShop, type Shop } from "./gold-spend-client";
@@ -42,6 +42,9 @@ export function NpcGear({ actorId, encounter }: { actorId: string; encounter: st
             }
           }}
         >
+          <span className="npc-action-icon">
+            <Sparkle weight="duotone" />
+          </span>
           <span className="npc-action-label">{g.name}</span>
           <small>
             {tr("{0} GOLD", { 0: g.price })}

@@ -75,6 +75,9 @@ function Portrait({ model, label, emote }: { model: string; label: string; emote
   );
 }
 
+const roomyDialog = () =>
+  typeof matchMedia === "function" && matchMedia("(min-width: 901px) and (min-height: 700px)").matches;
+
 export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onClose, onQuest }: { onQuest?: (questId: string) => void; playerId: string; draftRealm: string; actorId: string; encounter: ActorEncounter; onClose: () => void }) {
   const t = npcStrings();
   const learning = useLearning(playerId);
@@ -93,7 +96,9 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
   const [flow, setFlow] = useState<"greeting" | "choices" | "offer" | "accepted">("greeting");
   const [selectedOffer, setSelectedOffer] = useState<ActorOffer | null>(null);
   const flowHost = useRef<HTMLDivElement>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  // A desktop dialog has room for the services, so it opens with them shown;
+  // a phone keeps the short greeting and folds them under "Learn more".
+  const [detailsOpen, setDetailsOpen] = useState(roomyDialog);
   useEffect(() => {
     if (flow === "greeting") return;
     const frame = requestAnimationFrame(() => flowHost.current?.querySelector<HTMLElement>(".npc-story-step h3, .npc-continue")?.focus({ preventScroll: true }));

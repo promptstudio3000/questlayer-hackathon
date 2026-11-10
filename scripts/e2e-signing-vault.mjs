@@ -11,6 +11,11 @@
 //      sends it to the sponsored relayer.
 //   3. After a reload the vault still holds the key: no new account, the same
 //      device key, the Devices list shows this device.
+//   5. Encrypted inbox (docs/PLAYER-INBOX.md): the vault creates the X25519
+//      inbox key, the account publishes it through the relayer, a message is
+//      sealed in the vault against the peer key it reads from (stubbed) NEAR
+//      Social and decrypts in Node with the peer's secret; the peer's reply,
+//      sealed in Node, opens in the vault and shows in the conversation.
 //   4. Storage blocked inside the vault frame (indexedDB/localStorage throw,
 //      as in a browser that blocks third-party site data): the player sees a
 //      clear "Secure account unavailable" message with Try again, no account
@@ -45,6 +50,13 @@ import { closeOpenSheet } from "./lib/e2e-nav.mjs";
 import { createSigningVaultServer } from "../server/signing-vault.mjs";
 import { decodeSignedDelegate, verifySignedDelegate } from "../server/relayer/delegate.mjs";
 import { validateDelegate, SOCIAL_CONTRACT, STORAGE_DEPOSIT } from "../server/relayer/policy.mjs";
+import {
+  generateInboxKey,
+  openInboxMessage,
+  sealInboxMessage,
+  toBase64Url,
+  validInboxRecord,
+} from "../server/inbox/crypto.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS_ROOT = resolve(process.env.E2E_SHOTS || join(ROOT, "output/qa/2026-11-signing-vault"));
@@ -160,14 +172,38 @@ async function startServers() {
 
 // Network-layer stand-ins for the account factory, the relayer, NEAR Social
 // reads and the RPC. Everything they saw is recorded in `log`.
-async function stubChain(context, { appOrigin, vaultOrigin }) {
-  const log = { creates: [], accessKeyQueries: [], prepares: [], relayed: [], profilePrepares: 0, rejected: [] };
-  const state = { account: null, playerName: null, published: false, jobs: new Map() };
+async function stubChain(context, { appOrigin, vaultOrigin }, { inbox = null } = {}) {
+  const log = { creates: [], accessKeyQueries: [], prepares: [], relayed: [], profilePrepares: 0, rejected: [], inboxSends: [] };
+  const state = { account: null, playerName: null, published: false, jobs: new Map(), social: {}, messages: [] };
+  // NEAR Social as a nested object: every relayed `set` is merged in.
+  const merge = (into, from) => {
+    for (const [k, v] of Object.entries(from)) {
+      if (v && typeof v === "object") merge((into[k] ??= {}), v);
+      else into[k] = v;
+    }
+  };
+  if (inbox) merge(state.social, { [inbox.peer.accountId]: { questlayer: { inbox_key: inbox.peer.keyRecord } } });
+  const socialGet = (keys) => {
+    const out = {};
+    for (const key of keys) {
+      const path = key.replace(/\/\*\*$/, "").split("/");
+      let v = state.social;
+      for (const part of path) v = v?.[part];
+      if (v === undefined) continue;
+      let o = out;
+      path.slice(0, -1).forEach((part) => (o = o[part] ??= {}));
+      o[path.at(-1)] = structuredClone(v);
+    }
+    return out;
+  };
+  const ownInboxKey = () => state.social[state.account?.accountId]?.questlayer?.inbox_key?.key ?? null;
   const json = (route, status, body) =>
     route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
   const accountView = () => ({ network: "testnet", enabled: true, factoryId: "play-e2e.testnet", account: state.account });
   await context.route(
-    (url) => url.origin === appOrigin && /^\/api\/(account|relay|me$|native\/profile)/.test(url.pathname),
+    (url) =>
+      url.origin === appOrigin &&
+      (/^\/api\/(account|relay|me$|native\/profile)/.test(url.pathname) || (!!inbox && url.pathname.startsWith("/api/inbox"))),
     async (route) => {
       const req = route.request(),
         url = new URL(req.url()),
@@ -235,6 +271,7 @@ async function stubChain(context, { appOrigin, vaultOrigin }) {
           };
           state.jobs.set(job.id, job);
           log.relayed.push({ ...call, delegateHash: decoded.delegateHash, preview: body.preview });
+          if (call.receiverId === SOCIAL_CONTRACT) merge(state.social, call.args.data);
           return json(route, 202, job);
         }
         const jobPath = /^\/api\/relay\/(relay_[a-f0-9-]{36})$/.exec(path);
@@ -282,6 +319,61 @@ async function stubChain(context, { appOrigin, vaultOrigin }) {
             args: { data: { [body.accountId]: { questlayer: { profile } } } },
           });
         }
+        if (inbox && path === "/api/inbox/summary") return json(route, 200, { unread: 0, requests: 0 });
+        if (inbox && path === "/api/inbox/key/prepare") {
+          const record = { schema: "questlayer.inbox-key/1", key: body.publicKey, created_at: String(Date.now()), mutation_id: `inboxkey_${randomUUID()}` };
+          return json(route, 200, {
+            receiverId: SOCIAL_CONTRACT,
+            accountId: state.account.accountId,
+            methodName: "set",
+            gas: "80000000000000",
+            deposit: "1",
+            record,
+            args: { data: { [state.account.accountId]: { questlayer: { inbox_key: record } } } },
+          });
+        }
+        if (inbox && path === "/api/inbox/key/sync") return json(route, 200, { published: !!ownInboxKey(), publicKey: ownInboxKey() });
+        if (inbox && path === "/api/inbox/thread")
+          return json(route, 200, {
+            peer: { id: inbox.peer.playerId, name: inbox.peer.name, accountId: inbox.peer.accountId, inbox: true },
+            state: "open",
+            muted: false,
+            messages: state.messages,
+          });
+        if (inbox && path === "/api/inbox/send") {
+          assert.equal(body.playerId, inbox.peer.playerId);
+          assert.ok(validInboxRecord(body.record), "the vault produced a valid inbox record");
+          assert.equal(body.record.from_key, ownInboxKey(), "sealed with the published inbox key");
+          assert.equal(body.record.to_key, inbox.peer.publicKey, "sealed to the peer key read from NEAR Social");
+          // The peer, holding only its own secret, reads the message.
+          const text = openInboxMessage({
+            secret: inbox.peer.secret,
+            accountId: inbox.peer.accountId,
+            senderAccountId: state.account.accountId,
+            recipientAccountId: inbox.peer.accountId,
+            messageId: body.messageId,
+            record: body.record,
+          });
+          log.inboxSends.push({ messageId: body.messageId, text, record: body.record });
+          state.messages.push({ id: body.messageId, mine: true, sender: state.account.accountId, recipient: inbox.peer.accountId, state: "pending", at: Date.now() });
+          return json(route, 200, {
+            receiverId: SOCIAL_CONTRACT,
+            accountId: state.account.accountId,
+            methodName: "set",
+            gas: "80000000000000",
+            deposit: "1",
+            messageId: body.messageId,
+            peer: { id: inbox.peer.playerId, name: inbox.peer.name },
+            args: { data: { [state.account.accountId]: { questlayer: { inbox: { [body.messageId]: body.record } } } } },
+          });
+        }
+        if (inbox && path === "/api/inbox/confirm") {
+          const m = state.messages.find((x) => x.id === body.messageId);
+          const onChain = state.social[state.account.accountId]?.questlayer?.inbox?.[body.messageId];
+          const sent = log.inboxSends.find((x) => x.messageId === body.messageId);
+          if (m && onChain && JSON.stringify(onChain) === JSON.stringify(sent.record)) m.state = "delivered";
+          return json(route, 200, { state: m?.state ?? "failed" });
+        }
         if (path === "/api/native/profile/confirm") {
           state.published = log.relayed.length > 0;
           return json(route, 200, { confirmed: state.published });
@@ -301,6 +393,11 @@ async function stubChain(context, { appOrigin, vaultOrigin }) {
     async (route) => {
       const rpc = JSON.parse(route.request().postData() || "{}");
       const p = rpc.params || {};
+      if (inbox && rpc.method === "query" && p.request_type === "call_function" && p.account_id === SOCIAL_CONTRACT && p.method_name === "get") {
+        const args = JSON.parse(Buffer.from(p.args_base64, "base64").toString());
+        const result = [...Buffer.from(JSON.stringify(socialGet(args.keys)))];
+        return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ jsonrpc: "2.0", id: rpc.id, result: { result, logs: [], block_height: CHAIN.blockHeight, block_hash: "11111111111111111111111111111111" } }) });
+      }
       if (rpc.method !== "query" || p.request_type !== "view_access_key")
         return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ jsonrpc: "2.0", id: rpc.id, error: { code: -32000, message: "unsupported in e2e", data: "unsupported" } }) });
       log.accessKeyQueries.push({ accountId: p.account_id, publicKey: p.public_key });
@@ -316,7 +413,7 @@ async function stubChain(context, { appOrigin, vaultOrigin }) {
       });
     },
   );
-  return { log, state };
+  return { log, state, merge };
 }
 
 // Mimics a browser that blocks third-party site data: inside the vault frame
@@ -490,6 +587,74 @@ async function runDevice(name, servers) {
         }
         await capture(page, "after-reload", again.locator(".account-devices"));
         assert.equal(log.relayed.length, 1, "the profile is published once");
+      }
+      assert.deepEqual(log.rejected, [], "every stubbed call was accepted");
+      if (pageErrors.length) report.pageErrors = pageErrors;
+      await context.close();
+    }
+
+    // 5: encrypted inbox between this explorer and a peer simulated in Node.
+    {
+      console.log("5. Encrypted inbox: key in the vault, seal against the chain key, open the reply");
+      const peerKey = generateInboxKey();
+      const peer = {
+        playerId: `player_${randomUUID()}`,
+        name: "Bob",
+        accountId: "bob.play-e2e.testnet",
+        secret: peerKey.secret,
+        publicKey: toBase64Url(peerKey.publicKey),
+        keyRecord: { schema: "questlayer.inbox-key/1", key: toBase64Url(peerKey.publicKey), created_at: "1794268800000", mutation_id: `inboxkey_${randomUUID()}` },
+      };
+      const context = await newContext();
+      const { log, state, merge } = await stubChain(context, servers, { inbox: { peer } });
+      const page = await context.newPage();
+      const pageErrors = [];
+      page.on("pageerror", (e) => pageErrors.push(e.message));
+      await dismissInstallCard(page);
+      await startPlaying(page, servers.appOrigin, `Mira inbox ${name}`);
+      await waitFor(async () => log.creates.length > 0 || (await page.getByText(STORAGE_BLOCKED).count()) > 0, "account creation or the storage message");
+      if (log.creates.length === 0) {
+        assert.equal(engine, webkit, "Chromium must give the vault frame (partitioned) storage");
+        report.scenarios.push({ name: "encrypted inbox", mechanism: "skipped: vault storage blocked by the engine" });
+      } else {
+        await waitFor(() => !!state.social[state.account.accountId]?.questlayer?.inbox_key, "the published inbox key", 60_000);
+        const keyCall = log.relayed.find((r) => r.args.data[state.account.accountId].questlayer.inbox_key);
+        assert.equal(keyCall.deposit, "1");
+        assert.equal(context.pages().length, 1, "publishing the inbox key opens no approval window");
+        const text = "Ahoj Bobe, jsem u kašny 🐉";
+        await page.evaluate(
+          (detail) => window.dispatchEvent(new CustomEvent("questlayer:inbox-open", { detail })),
+          { playerId: peer.playerId, name: peer.name },
+        );
+        const dialog = page.getByRole("dialog", { name: "Messages" });
+        await dialog.getByLabel("Message to Bob").fill(text);
+        await dialog.getByRole("button", { name: "Send" }).click();
+        await waitFor(() => log.inboxSends.length > 0, "the sealed message");
+        assert.equal(log.inboxSends[0].text, text, "the peer decrypts exactly what was typed");
+        await waitFor(() => state.messages[0]?.state === "delivered", "the message on chain");
+        // The reply, sealed outside the browser to the vault's published key.
+        const replyId = `msg_${randomUUID()}`;
+        const reply = "Vidím tě! Za minutu jsem tam.";
+        const record = sealInboxMessage({
+          secret: peer.secret,
+          accountId: peer.accountId,
+          peerAccountId: state.account.accountId,
+          peerPublicKey: Buffer.from(state.social[state.account.accountId].questlayer.inbox_key.key, "base64url"),
+          messageId: replyId,
+          text: reply,
+          createdAt: Date.now(),
+        });
+        merge(state.social, { [peer.accountId]: { questlayer: { inbox: { [replyId]: record } } } });
+        state.messages.push({ id: replyId, mine: false, sender: peer.accountId, recipient: state.account.accountId, state: "delivered", at: Date.now() });
+        await dialog.getByText(reply).waitFor({ timeout: 30_000 });
+        await dialog.getByText(text).waitFor();
+        assert.equal(
+          await page.evaluate(() => Object.keys(localStorage).some((k) => /inbox|secret/i.test(k + (localStorage.getItem(k) || "")))),
+          false,
+          "the game origin stores no inbox secret",
+        );
+        await capture(page, "inbox-conversation", dialog);
+        report.scenarios.push({ name: "encrypted inbox", sent: log.inboxSends[0].messageId, received: replyId });
       }
       assert.deepEqual(log.rejected, [], "every stubbed call was accepted");
       if (pageErrors.length) report.pageErrors = pageErrors;

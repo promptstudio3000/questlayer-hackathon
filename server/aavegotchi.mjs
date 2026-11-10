@@ -35,7 +35,7 @@ export function defaultGotchi(gotchis=[]){
  return [...gotchis].filter((g)=>g.claimed!==false&&g.svg!==null).sort((a,b)=>(b.brs??-1)-(a.brs??-1)||Number(a.tokenId)-Number(b.tokenId))[0]||null;
 }
 export async function readGotchiItemSvg(itemId){
- const client=createPublicClient({chain:base,transport:http(process.env.BASE_RPC_URL||'https://mainnet.base.org',{timeout:4000,retryCount:0})});
+ const client=createPublicClient({chain:base,transport:http(process.env.BASE_RPC_URL||'https://mainnet.base.org',{timeout:4000,retryCount:1})});
  return client.readContract({address:AAVEGOTCHI,abi:AAVEGOTCHI_ABI,functionName:'getItemSvg',args:[BigInt(itemId)]});
 }
 export async function readGotchis(address,{limit=50}={}){

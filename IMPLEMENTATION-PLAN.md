@@ -61,7 +61,7 @@ The planned **Community** section combines nearby player-authored quests, follow
 
 ## NEAR and AI
 
-Native game contract: independently conserved coin/zone buckets, funded batches, exactly-once claims, profiles, XP and retryable reward withdrawal. NFT contract: limited Auras, ownership, approval, enumeration and transfer-safe equipment. Staking vault and Intents Verifier are separate integrations, not implied by the existence of game/NFT contracts.
+Native game contract (`contracts/game`, retired on 10 November 2026; the live game never called it): independently conserved coin/zone buckets, funded batches, exactly-once claims, profiles, XP and retryable reward withdrawal. NFT contract: limited Auras, ownership, approval, enumeration and transfer-safe equipment. Staking vault and Intents Verifier are separate integrations, not implied by the existence of game/NFT contracts.
 
 An NPC guide may use NEAR AI Cloud. Autonomous publication requires a separate bounded capability: approved templates/locations, fixed reward choices, daily/local caps and no access to player principal. AI does not judge physical truth or authorize arbitrary transfers. If AI is unavailable, deterministic templates keep the game playable.
 

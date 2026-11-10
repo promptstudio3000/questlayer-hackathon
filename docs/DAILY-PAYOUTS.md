@@ -252,3 +252,50 @@ need no additional signing permissions. This repair does not run or alter deploy
 scripts, keys or WASM hashes. The release requires the contract and worker together,
 reviewed bytecode pins and reconciliation of any already published days before
 upgrade. A pre-change pending callback must not be crossed blindly by an upgrade.
+
+## Rewards-only M4 upgrade (prepared 10 November 2026, not yet run)
+
+`scripts/deploy-qgold-testnet.mjs` deploys rewards only together with a QGOLD upgrade, so the PR #240
+build (`questlayer_rewards` `3e6e8be9…`, code hash `5Ci3cxE7KL9QnNRomx1ddrajeDKGdbwQygX5DadH1q1h`)
+has its own code-only path: `scripts/upgrade-rewards-m4-testnet.mjs` (dry run by default,
+`--execute` to send, `--network testnet` required). It needs the reproducible WASM
+(`npm run contracts:docker` or the CI artifact via `--wasm-dir`) and a checkout whose manifest
+carries the factory v3 record (`bc8331e6`).
+
+Pre-flight (every check is read-only; the dry run lists all blockers and exits 1):
+
+- WASM equals the pin; the live code hash equals the manifest; no method is dropped; the M4
+  methods are new; the account can pay storage for the new code and the world budget's liquid
+  backing stays non-negative; the three new storage prefixes are empty.
+- No mint callback in flight. `claim_payout` and `withdraw` both add the minted amount to
+  `get_treasury().pending` and only `on_payout`/`on_withdraw` take it out, so `pending == "0"`
+  proves that no payout leaf and no withdrawal is outstanding, for every day and account. Per-day
+  `pending_leaves` must agree. The server must also be quiet: no queued native claim, no reward
+  worker error, a verified distribution audit with nothing reconciling, no payout day still sending,
+  and not 00:00–00:59 Europe/Prague (the nightly payout run). `--no-server` relies on the chain
+  proof alone. `pending` is read again right before the deploy.
+- A snapshot to `output/qa/rewards-m4-upgrade/`: `get_config`, `get_treasury`, `get_payout_config`,
+  `get_world_budget`, every open city and map day, payout days and their progress, world days and
+  date totals around today, and the raw `STATE` bytes.
+
+With `--execute` it backs up the live WASM to `.data/contract-backups/`, deploys (signed by the
+rewards account with the operator key), and requires the new snapshot to equal the old one except
+`get_payout_config` (`max_batch` 10 → 8, new `mint_tgas` 15, `callback_tgas` 10,
+`reconcile_after_ms` 86400000) and the balance-derived world-budget fields. It then moves the old
+record to `previousDeployments` in `public/native-rewards-testnet.json`, writes the new hashes
+(also `globalRewards.rewardsCodeHash`) and a `callbackRecoveryUpgrade` record, and moves the
+`testnetDeploymentsNotFromThisBuild` entry to the history path so `scripts/check-wasm-hashes.mjs`
+stays green. The worker key is not changed.
+
+```
+node scripts/upgrade-rewards-m4-testnet.mjs --network testnet
+node scripts/upgrade-rewards-m4-testnet.mjs --network testnet --execute
+```
+
+After it: commit both files and deploy the app (until then native collection sees a code hash it
+does not pin), then set `REWARDS_CODE` in the VPS cron copy of `sync-world-funding.py` to the
+printed code hash; that script asserts manifest `codeHash` = `globalRewards.rewardsCodeHash` =
+`REWARDS_CODE`. A run that stopped after the deploy is finished with `--deploy-tx <hash>`.
+Rollback: redeploy the backup while `pending` is 0 and revert the manifest commit. The old code
+neither reads nor clears attempt records, so roll back only before any payout claim or withdrawal
+under the new code.

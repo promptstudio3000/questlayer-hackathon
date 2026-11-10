@@ -101,16 +101,10 @@ explore together?", "There is a find near here.", "Thanks!", "See you around!").
 - Delivered through the existing presence poll (every 8 s) as a toast, read once,
   deleted after an hour. A block drops unread waves.
 
-**Proposed next (not built): short chat between explorers who waved back.**
-
-1. Opens only after both sides waved at each other (mutual consent).
-2. Text up to 200 characters, links and digit runs (phone numbers) refused,
-   the same NEAR AI / Ollama safety filter as quest texts screens each message.
-3. Report button with the W10 report flow; three reports from different
-   players mute the sender until an operator reviews.
-4. No photos, no location in messages, history kept 24 hours.
-5. Under-age safety: chat stays off for accounts younger than a day and can be
-   switched off entirely in Settings.
+**Built 10 November 2026: private messages.** The card's Write a message button
+opens the encrypted player inbox (docs/PLAYER-INBOX.md): end-to-end encrypted
+messages of up to 500 characters stored on NEAR Social, open after a mutual wave
+or an accepted request, with Block and Report. It stays off for demo bots.
 
 ## Evidence
 
