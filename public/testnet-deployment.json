@@ -2,6 +2,8 @@
   "network": "testnet",
   "verifiedAt": "2026-11-01T09:28:42.998Z",
   "gameContract": "game.questlayer-dev-20261101.testnet",
+  "gameContractStatus": "retired",
+  "gameContractNote": "First-alpha game contract (contracts/game), retired on 10 November 2026. The live game never called it; its account is being paused and deleted. Its transactions below are historical.",
   "collectiblesContract": "nfts.questlayer-dev-20261101.testnet",
   "operator": "questlayer-dev-20261101.testnet",
   "smokeAccount": "explorer.questlayer-dev-20261101.testnet",

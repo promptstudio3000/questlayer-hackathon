@@ -208,14 +208,6 @@ export function FundPanel() {
           <p>
             {tr("Earned Auras can be secured to your NEAR account, traded in Market and shown on a public profile. Staking and GOLD rewards stay practice-only.")}</p>
           <a
-            href={`${EXPLORER_BASE}/address/${proof.gameContract}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {tr("Standalone settlement proof")}{" "}<ArrowUpRight size={14} />
-            <small>{proof.gameContract}</small>
-          </a>
-          <a
             href={`${EXPLORER_BASE}/address/${proof.collectiblesContract}`}
             target="_blank"
             rel="noreferrer"
@@ -225,9 +217,9 @@ export function FundPanel() {
           </a>
           {proof.transactions
             ?.filter(
-              (x: any) =>
-                x.label.includes("withdraw") ||
-                x.label.includes("transfer NFT"),
+              // The first-alpha game contract (coin batches, withdraw_reward) is
+              // retired; only the collectibles proofs are still linked.
+              (x: any) => x.label.includes("transfer NFT"),
             )
             .map((x: any) => (
               <a
