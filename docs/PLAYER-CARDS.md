@@ -93,8 +93,13 @@ others see only what is worn; the header shows finds and stats.
   longer owned. The art comes from the diamond's `previewAavegotchi(hauntId,
   collateral, traits, wearables)` view on Base, cached per gotchi + outfit;
   plain art when Base fails. Nothing changes on chain. The skin URLs carry
-  `look`/`skinVersion` so caches refresh; the 3D model answers 409 for a
-  restyled gotchi and the 2D art shows. With the starter ghost the picker
+  `look`/`skinVersion` so caches refresh. In 3D the outfit swaps slots 0-6
+  in the official renderer hash (`GotchiModels.describe({ outfit })`): a look
+  already rendered loads at once; a missing one is requested from
+  `aavegotchi.com/api/renderer/batch` (`force:true`, at most once per 15 min
+  per look, 40 looks an hour) and the 2D art shows meanwhile. On 10 Nov 2026
+  the renderer's kickoff answered 502, so new combinations stayed 2D; looks it
+  had drawn (e.g. every slot empty) worked in 3D. With the starter ghost the picker
   equips clones (`/api/wearables/equip`). Others still see only what is worn.
 - Plan for the next phases (Badges, Messages): https://claude.ai/artifact/7ugX6XYGdTWUaz4k1Qzjpt
 
