@@ -17,6 +17,17 @@ Two compositions were considered: keep a permanent composer above every note, or
 | There were no social removal or safety controls. | Own-note removal, reasoned reporting, bilateral block/unblock and root presence refresh. | A player has useful control without report-count censorship. |
 | No named modal confirmation existed for removal/blocking. | Existing native `Dialog` provides cancel/Escape/focus return, with explicit destructive action labels. | The player can understand and reverse the navigation safely. |
 
+## Compact Local chat and quick create (10 November 2026)
+
+Owner feedback: creating a note hid the map on desktop and opened the whole Community screen on a phone, and every note carried a "Location details" row. Now:
+
+- **Quick create dialogs.** The map's Actions button offers Leave a note, Open a topic and Add a place. Each opens a small dialog over the map: an illustration of a message pinned into the ground, the text field, one small switch and one button. Write a note in Community · Local chat opens the same dialog. The note dialog has the photo button, the optional exact-GPS attachment (GPS mode only) and a one-line public disclosure naming the pin coordinates; pressing **Leave the note here** is the public consent the server requires.
+- **How long a note stays.** 1 day, 1 week (default) or Keep (until the author removes it). The server stores the end time in `social_note_expiry` (module `social-note-expiry`); expired notes leave every list. A note without a row stays, so old receipts replay unchanged.
+- **Compact rows.** Author, time and time left on one line, the text, then the GPS line (`src/PinLine.tsx`): pin coordinates and distance. Tapping the GPS line opens `src/MapPeek.tsx`, a full-screen plain map with only the pin, your position and an X back to the list. An attached author GPS shows as a small "GPS attached" tag whose title holds its coordinates and accuracy.
+- **Edit own notes.** The author's menu has Edit note (`PATCH /api/messages/:id {text}`); the pin, photo and time stay. Remove, report and block are unchanged.
+- **Local chat has two sub tabs:** Notes (free map notes) and Shouts & topics (paid place messages, `src/PlaceMessages.tsx`). Tapping a shout or topic pin on the map opens it there.
+- **Places** lists community places (`server/community-places.mjs`): free recommendations of spots worth a visit, nearest first within 10 km, with a kind (view, nature, history, art, food & drink, hidden gem, walk & play), filter and sort (nearest, newest, A to Z). The author edits or removes a place; three different reports hide it. Text uses the place-message screen (no links, contacts or private addresses). No GOLD or XP moves. API: `GET/POST /api/community-places`, `PATCH/DELETE /api/community-places/:id`, `POST /api/community-places/:id/report`.
+
 ## Integration
 
 `MapNotes` takes `playerId`, `position`, `fix`, `arena`, optional `notify` and optional `onBlockChange`. Key the component by player ID; internal response guards additionally bind player and mode. `onBlockChange` tells the root to clear/refresh map presence immediately. Drafts are in memory only. A player/mode change clears draft, photo, dialogs and pending interface state, while a saved operation ID is recovered only under its original player/mode key.

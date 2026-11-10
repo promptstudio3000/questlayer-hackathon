@@ -11,6 +11,9 @@ import { GOLD } from "../domain.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { DAILY_BOARD_SCHEMA } from "../daily-board/schema.mjs";
 import { ensureMarketSchema, fogCentre } from "../market/service.mjs";
+import { ensureGoldSpend } from "../gold-spend/ledger.mjs";
+import { COMMUNITY_PLACES_SCHEMA } from "../community-places.mjs";
+import { latLngToCell } from "h3-js";
 import {
   SEED_VERSION,
   SEED_PREFIX,
@@ -21,6 +24,8 @@ import {
   BUYER_DELAY_MS,
   REVIEW_DELAY_MS,
   SEED_NOTES,
+  SEED_COMMUNITY_PLACES,
+  SEED_PLACE_THREADS,
   SEED_LISTINGS,
   SEED_BOUNTIES,
   SEED_SECRETS,
@@ -56,6 +61,7 @@ const REFERENCE_COLUMNS = [
   "quest_id",
   "note_id",
   "bounty_id",
+  "thread_id",
   "submission_id",
   "operation_id",
 ];
@@ -200,6 +206,42 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     });
   }
 
+  function applyCommunityPlaces(now) {
+    ensureModuleVersion(db, COMMUNITY_PLACES_SCHEMA);
+    atomic(db, () => {
+      for (const p of SEED_COMMUNITY_PLACES)
+        for (const arena of [1, 0])
+          db.prepare(
+            "INSERT OR IGNORE INTO community_places(id,author,name,note,kind,lat,lng,arena,state,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,'published',?,?)",
+          ).run(`seed-cp-${p.slug}-${arena ? "a" : "g"}`, p.author, p.name, p.note, p.kind, p.at.lat, p.at.lng, arena, now, now);
+    });
+  }
+
+  function applyPlaceThreads(now) {
+    ensureGoldSpend(db);
+    atomic(db, () => {
+      for (const t of SEED_PLACE_THREADS) {
+        const threadId = `seed-pt-${t.slug}`;
+        const replies = t.replies || [];
+        const authors = new Set([t.author, ...replies.map((r) => r.author)]).size;
+        db.prepare(
+          "INSERT OR IGNORE INTO place_threads(id,kind,author,title,text,lat,lng,cell,place,paid_until,free_forever,state,posts,authors,reads,paid_u,last_post_at,last_read_at,created_at) VALUES(?,?,?,?,?,?,?,?,'',?,?,'published',?,?,0,0,?,?,?)",
+        ).run(threadId, t.kind, t.author, t.title || "", t.text, t.at.lat, t.at.lng, latLngToCell(t.at.lat, t.at.lng, 7), now + 7 * DAY, t.kind === "topic" ? 1 : 0, replies.length, authors, now, now, now);
+        // Shouts lapse after their paid days; the seed keeps them on the map.
+        db.prepare("UPDATE place_threads SET paid_until=MAX(paid_until,?),last_read_at=? WHERE id=? AND state='published'").run(now + 7 * DAY, now, threadId);
+        replies.forEach((r, i) =>
+          db.prepare("INSERT OR IGNORE INTO place_posts(id,thread_id,author,text,state,created_at) VALUES(?,?,?,?,'published',?)").run(
+            `seed-pp-${t.slug}-${i}`,
+            threadId,
+            r.author,
+            r.text,
+            now + i + 1,
+          ),
+        );
+      }
+    });
+  }
+
   function ensureListings(now) {
     let created = 0;
     atomic(db, () => {
@@ -314,6 +356,8 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     const now = clock();
     applyPlayers(now);
     applyNotes(now);
+    applyCommunityPlaces(now);
+    applyPlaceThreads(now);
     ensureListings(now);
     ensureBounties(now);
     ensureSecrets(now);
@@ -514,6 +558,8 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return {
       players: n("SELECT count(*) n FROM players WHERE substr(id,1,5)='seed-'"),
       notes: n("SELECT count(*) n FROM messages WHERE substr(id,1,5)='seed-'"),
+      communityPlaces: has("community_places") ? n("SELECT count(*) n FROM community_places WHERE substr(id,1,5)='seed-'") : 0,
+      placeThreads: has("place_threads") ? n("SELECT count(*) n FROM place_threads WHERE substr(id,1,5)='seed-'") : 0,
       openListings: n("SELECT count(*) n FROM listings WHERE substr(id,1,5)='seed-' AND state='open'"),
       openBounties: n("SELECT count(*) n FROM bounties WHERE substr(id,1,5)='seed-' AND state='open'"),
       secrets: has("mk_secrets") ? n("SELECT count(*) n FROM mk_secrets WHERE substr(id,1,5)='seed-' AND state='open'") : 0,
