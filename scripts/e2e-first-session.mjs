@@ -426,8 +426,12 @@ async function runDevice(name, server) {
       "system reduced motion reaches the page",
     );
     // Deterministic teaching is visible before moving and requires no AI reply.
-    await page.locator(".first-session-hint").waitFor();
-    assert.match(await page.locator(".first-session-hint").innerText(), /Use the pad|sparkling find/);
+    // When the day's world has a street find in reach, the one-tap nearby
+    // card stands in for the coach (src/map-objective.ts).
+    await page.locator(".first-session-hint:visible, .nearby-open:visible").first().waitFor();
+    if (await page.locator(".first-session-hint").isVisible())
+      assert.match(await page.locator(".first-session-hint").innerText(), /Use the pad|sparkling find/);
+    else assert.match(await page.locator(".nearby-open").innerText(), /Open /);
     await capture(page, "coach-nearest-find");
     await assertNoChainWords(page, "find step");
     await scan(page, "map-coach");
@@ -438,8 +442,17 @@ async function runDevice(name, server) {
       if (title !== STEP_TITLES.find && title !== STEP_TITLES.coin) break;
       // A street find already in reach replaces the coach with its one-tap
       // card (src/map-objective.ts); whether one is depends on the day's world.
+      // Wait until one of them is ready: the world loads in the background
+      // and can swap a busy coach for the card a moment later.
       const nearby = page.locator(".nearby-open");
-      if (!(await page.locator(".first-session-action").isVisible()) && (await nearby.isVisible())) {
+      const action = page.locator(".first-session-action:not([disabled])");
+      await page.waitForFunction(() => {
+        const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
+        const a = document.querySelector(".first-session-action:not([disabled])");
+        return shown(a) || shown(document.querySelector(".nearby-open"));
+      }, null, { timeout: 30_000 });
+      await page.waitForTimeout(800);
+      if (!(await action.isVisible()) && (await nearby.isVisible())) {
         await nearby.click();
         await page.getByRole("button", { name: "Point me there", exact: true }).click();
       } else await page.locator(".first-session-action").click();
