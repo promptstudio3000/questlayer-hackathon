@@ -24,6 +24,7 @@ for (const relative of [
   "./map-read-indexes.mjs",
   "./hot-path-indexes.mjs",
   "./identity/schema.mjs",
+  "./identity/test-login.mjs",
   "./creators/completion.mjs",
   "./moderation.mjs",
   "./native/creator-money.mjs",

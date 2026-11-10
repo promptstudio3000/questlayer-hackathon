@@ -1,4 +1,9 @@
 {
+ "Tester name": "Jméno testera",
+ "Tester password": "Heslo testera",
+ "Password": "Heslo",
+ "Tester sign-in": "Přihlášení testera",
+ "Signing in…": "Přihlašuji…",
  "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "Toto místo potřebuje Tier {0}: {1} NEAR dozrálého stake ve vaultu. Volná místa poblíž jsou otevřená všem.",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (nejvýš {0} denně pro všechny; potom losování dává zaručenou výhru)",
  " (create one above first).": " (nejdřív ho výše vytvoř).",

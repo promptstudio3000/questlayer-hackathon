@@ -5319,7 +5319,22 @@ function Welcome({
   onPlayer: (p: Player) => void;
 }) {
   const [name, setName] = useState(""),
-    [existing, setExisting] = useState(false);
+    [existing, setExisting] = useState(false),
+    [testerPassword, setTesterPassword] = useState("");
+  // Owner tester sign-in (testnet only), shown at /?tester.
+  const tester = new URLSearchParams(location.search).has("tester");
+  async function testerSignIn(e: FormEvent) {
+    e.preventDefault();
+    await action("tester", async () => {
+      const r = await api<{ player: Player }>("/auth/tester", {
+        name: name.trim(),
+        password: testerPassword,
+      });
+      setTesterPassword("");
+      window.history.replaceState(null, "", location.pathname + location.hash);
+      onPlayer(r.player);
+    });
+  }
   async function start(e?: FormEvent) {
     e?.preventDefault();
     await action("welcome", async () => {
@@ -5425,6 +5440,28 @@ function Welcome({
             ? tr("Restoring your explorer…")
             : tr("Restore with a recovery passkey")}
         </button>
+        {tester && (
+          <form className="welcome-tester" onSubmit={(e) => void testerSignIn(e)}>
+            <input
+              aria-label={tr("Tester name")}
+              autoComplete="username"
+              placeholder={tr("Tester name")}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <input
+              aria-label={tr("Tester password")}
+              type="password"
+              autoComplete="current-password"
+              placeholder={tr("Password")}
+              value={testerPassword}
+              onChange={(e) => setTesterPassword(e.target.value)}
+            />
+            <button className="passkey-button" disabled={!!busy || !name.trim() || !testerPassword}>
+              <Key size={18} /> {busy === "tester" ? tr("Signing in…") : tr("Tester sign-in")}
+            </button>
+          </form>
+        )}
         <details className="welcome-advanced">
           <summary>{tr("Advanced")}</summary>
           <button

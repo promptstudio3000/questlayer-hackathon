@@ -1,4 +1,9 @@
 {
+ "Tester name": "टेस्टर नाम",
+ "Tester password": "टेस्टर पासवर्ड",
+ "Password": "पासवर्ड",
+ "Tester sign-in": "टेस्टर साइन-इन",
+ "Signing in…": "साइन इन हो रहा है…",
  "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "इस जगह के लिए टियर {0} चाहिए: वॉल्ट में {1} NEAR का परिपक्व स्टेक। पास की मुफ़्त जगहें सबके लिए खुली हैं।",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (सबके लिए दिन में ज़्यादा से ज़्यादा {0}; उसके बाद रोल पक्का इनाम देता है)",
  " (create one above first).": " (पहले ऊपर एक बनाओ)।",

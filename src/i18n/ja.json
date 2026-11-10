@@ -1,4 +1,9 @@
 {
+ "Tester name": "テスター名",
+ "Tester password": "テスターのパスワード",
+ "Password": "パスワード",
+ "Tester sign-in": "テスターのサインイン",
+ "Signing in…": "サインイン中…",
  "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "この場所にはティア{0}が必要です：ボールトで成熟した{1} NEARのステーク。近くの無料の場所は誰でも利用できます。",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " （全員合計で1日最大{0}回。それ以降の抽選は確定賞品になります）",
  " (create one above first).": " （先に上で作成してください）。",
