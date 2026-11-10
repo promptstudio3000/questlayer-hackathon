@@ -3118,5 +3118,10 @@
  "{0} characters left": "المتبقي {0} حرفًا",
  "{0} declined your request.": "رفض {0} طلبك.",
  "{0} new": "{0} جديدة",
- "{0} wants to message you.": "يريد {0} مراسلتك."
+ "{0} wants to message you.": "يريد {0} مراسلتك.",
+ "Your Aavegotchis": "Aavegotchi الخاصة بك",
+ "Wearing {0}": "ترتدي {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "قطعة واحدة في محفظتك",
+ "{0} wearables in your wallet": "{0} قطعة في محفظتك"
 }

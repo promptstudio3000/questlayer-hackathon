@@ -3118,5 +3118,10 @@
  "{0} characters left": "Noch {0} Zeichen",
  "{0} declined your request.": "{0} hat deine Anfrage abgelehnt.",
  "{0} new": "{0} neu",
- "{0} wants to message you.": "{0} möchte dir schreiben."
+ "{0} wants to message you.": "{0} möchte dir schreiben.",
+ "Your Aavegotchis": "Deine Aavegotchis",
+ "Wearing {0}": "Du trägst {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "1 Wearable in deiner Wallet",
+ "{0} wearables in your wallet": "{0} Wearables in deiner Wallet"
 }
