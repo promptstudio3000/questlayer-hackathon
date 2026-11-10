@@ -3081,5 +3081,11 @@
  "Nobody like that is out near you right now. Characters walk between 07:00 and 22:00.": "لا أحد من هذا النوع بالقرب منك الآن. تتجول الشخصيات بين 07:00 و22:00.",
  "Show me": "أرني",
  "Player task": "مهمة لاعب",
- "Report back": "قدّم التقرير"
+ "Report back": "قدّم التقرير",
+ "{0} XP": "{0} XP",
+ "Exploring since": "يستكشف منذ",
+ "A demo bot from the test world. It walks the map so you can see how other explorers look.": "روبوت تجريبي من عالم الاختبار. يتجول على الخريطة لترى كيف يبدو المستكشفون الآخرون.",
+ "Messages are coming soon.": "الرسائل قادمة قريبًا.",
+ "Write a message": "اكتب رسالة",
+ "You · open your profile": "أنت · افتح ملفك الشخصي"
 }

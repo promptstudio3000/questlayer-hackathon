@@ -414,7 +414,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Wearables and explorer cards",
     summary: "Free Aavegotchi wearable clones on the map, a gold check for owned originals, and explorer cards with waves.",
     status: "live",
-    updated: "2026-11-07",
+    updated: "2026-11-10",
     sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx"],
     blocks: [
       {
@@ -436,7 +436,10 @@ export const CHAPTERS: Chapter[] = [
       { h: "Explorer cards and waves" },
       {
         list: [
-          "Tapping another explorer opens a card with name, level, worn wearables, verified flags and Aura colours. It works only while that explorer shares their position and neither side blocked the other.",
+          "Tapping any explorer on the map opens a dialog with name, level, XP, badges, the day they started, worn wearables, verified flags and Aura colours. It works only while that explorer shares their position and neither side blocked the other.",
+          "Tapping **your own** explorer opens your profile overview (the same panel as the profile button in the top bar).",
+          "**Demo bots:** the test world (TEST_SEED=1) keeps a few bots walking the map. Their dialog is the same, with a **demo-bot** tag after the name; they take no waves and cannot be blocked.",
+          "The dialog shows a **Write a message** button that is not active yet: player messages wait for the inbox design (on-chain, encrypted or integrated).",
           "Waves are six ready phrases, no free text. Limits: one per pair per minute, 20 sent and 30 received per hour; delivered by the presence poll and deleted after an hour.",
           "Block hides presence, notes, waves and the card both ways. Direct player chat is only a proposal. The Local chat tab is the existing public nearby-note feed, with the same publication consent, reporting and blocking rules.",
         ],

@@ -153,3 +153,31 @@ test("starter markup layers wearables by slot at their canvas place and rejects 
   assert.ok(!svg.includes("/art/3.svg"), "out-of-canvas dims are dropped");
   assert.ok(!characterMarkerMarkup({ wearables: [{ id: 1, slot: "head", dims: [1, 1, 1, 1] }], skinUrl: "/api/aavegotchi/skin?tokenId=5" }).includes("/art/1.svg"));
 });
+
+test("explorer card shows XP and badges; test-world bots get a demo-bot card without waves", () => {
+  const db = openDatabase(":memory:");
+  const a = createPlayer(db, "Alice", now),
+    b = createPlayer(db, "Bob", now);
+  db.prepare("UPDATE players SET xp=? WHERE id=?").run(340, b);
+  share(db, a);
+  share(db, b);
+  const card = playerCard(db, a, b, null, now);
+  assert.equal(card.xp, 340);
+  assert.equal(card.demoBot, false);
+  assert.equal(card.joinedAt, now);
+  assert.equal(typeof card.badges, "number");
+  // A seed bot walking the map (server/test-seed).
+  const bot = "seed-p-vera";
+  db.prepare("INSERT INTO players(id,name,gold_u,xp,appearance,created_at) VALUES (?,?,?,?,?,?)").run(bot, "Vera", 0, 900, "{}", now);
+  db.prepare(
+    "INSERT OR REPLACE INTO presence(player_id,lat,lng,expires_at,updated_at,arena,lease_id) VALUES(?,?,?,?,?,?,'seed')",
+  ).run(bot, HOME.lat, HOME.lng, now + 900_000, now, 1);
+  const botCard = playerCard(db, a, bot, null, now);
+  assert.equal(botCard.demoBot, true);
+  assert.equal(botCard.name, "Vera");
+  assert.equal(botCard.xp, 900);
+  assert.equal(botCard.canWave, false);
+  assert.equal(botCard.waveHint, null);
+  assert.throws(() => sendWave(db, a, bot, "hello", now), /Invalid explorer/);
+  assert.throws(() => playerCard(db, a, "seed-'; DROP", null, now), /Invalid explorer/);
+});
