@@ -3676,8 +3676,8 @@ export default function App() {
                   >
                     <Character
                       items={appearanceItems}
-                      originTokenId={player.appearance.originTokenId}
-                    look={player.appearance.look}
+                      // originTokenId and look (outfit tag) of the worn original.
+                    {...player.appearance}
                       compact
                     />
                     <span className="sr-only">{tr(", explorer profile")}</span>
@@ -3686,8 +3686,8 @@ export default function App() {
                   <>
                     <Character
                       items={appearanceItems}
-                      originTokenId={player.appearance.originTokenId}
-                    look={player.appearance.look}
+                      // originTokenId and look (outfit tag) of the worn original.
+                    {...player.appearance}
                       compact
                     />
                     <span>
@@ -4473,8 +4473,8 @@ export default function App() {
                 avatar={
                   <Character
                     items={appearanceItems}
-                    originTokenId={player.appearance.originTokenId}
-                    look={player.appearance.look}
+                    // originTokenId and look (outfit tag) of the worn original.
+                    {...player.appearance}
                   />
                 }
                 name={player.name}

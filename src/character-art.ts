@@ -79,8 +79,8 @@ export function characterMarkerMarkup({
     skin =
       skinUrl &&
       // &v= is the outfit tag (digits, dots and dashes), so a new outfit skips the cache.
-      (/^\/api\/aavegotchi\/skin\?tokenId=\d{1,24}(&v=[0-9.-]{1,80})?$/.test(skinUrl) ||
-        /^\/api\/(presence|players)\/skin\?playerId=player_[a-f0-9-]{36}(&v=[0-9.-]{1,80})?$/.test(skinUrl))
+      (/^\/api\/aavegotchi\/skin\?tokenId=\d{1,24}(&v=[\d.-]+)?$/.test(skinUrl) ||
+        /^\/api\/(presence|players)\/skin\?playerId=player_[a-f0-9-]{36}(&v=[\d.-]+)?$/.test(skinUrl))
         ? skinUrl
         : null;
   const sprite = (slot: "above" | "below", color: string, edition?: string | null) =>
