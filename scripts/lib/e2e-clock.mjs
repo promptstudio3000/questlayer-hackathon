@@ -43,3 +43,30 @@ export function daytimeOffset(timeZone = "Europe/Prague", now = Date.now()) {
     ((hour * 60 + Number(parts.minute)) * 60 + Number(parts.second)) * 1000;
   return 11 * 3_600_000 - sinceMidnight;
 }
+
+/**
+ * The day's world (coins, street finds, quests) is generated from the date,
+ * so a journey that walks the Plzeň demo start changes with every calendar
+ * day (on 10 Nov 2026 a street find within 60 m replaces the first-steps
+ * coach). Journeys pinned to this instant see the same world on every run;
+ * time still flows from there. 11:00 Prague, inside every play window.
+ */
+export const E2E_FIXED_NOW = Date.parse("2026-11-09T10:00:00Z");
+
+/** Offset that moves "now" to E2E_FIXED_NOW (0 for a remote E2E_BASE_URL). */
+export function fixedDayOffset(now = Date.now()) {
+  return process.env.E2E_BASE_URL ? 0 : E2E_FIXED_NOW - now;
+}
+
+/** Same shift for every page of a Playwright browser context. */
+export async function shiftBrowserClock(context, offset) {
+  if (!offset) return;
+  await context.addInitScript((ms) => {
+    const RealDate = Date;
+    const realNow = RealDate.now.bind(RealDate);
+    globalThis.Date = class extends RealDate {
+      constructor(...args) { super(...(args.length ? args : [realNow() + ms])); }
+      static now() { return realNow() + ms; }
+    };
+  }, offset);
+}
