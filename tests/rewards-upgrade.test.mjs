@@ -141,6 +141,17 @@ test("manifest record: old rewards build to previousDeployments, pins stay consi
   const newSha = pins.contracts.questlayer_rewards;
   const newCodeHash = base58Hex(newSha);
   const oldEntry = pins.testnetDeploymentsNotFromThisBuild[`${file}:wasmSha256`];
+  if (manifest.wasmSha256 === newSha) {
+    // The M4 upgrade is recorded: the live record matches the build, and the
+    // pre-M4 build is kept under previousDeployments as a listed exception.
+    assert.equal(oldEntry, undefined);
+    assert.equal(manifest.codeHash, newCodeHash);
+    assert.equal(manifest.globalRewards.rewardsCodeHash, newCodeHash);
+    const prev = manifest.previousDeployments.at(-1);
+    assert.equal(base58Hex(prev.wasmSha256), prev.codeHash);
+    assert.equal(pins.testnetDeploymentsNotFromThisBuild[`${file}:previousDeployments.${manifest.previousDeployments.length - 1}.wasmSha256`]?.sha256, prev.wasmSha256);
+    return;
+  }
   // The live record still pins the pre-M4 build, listed as an exception.
   assert.equal(oldEntry?.sha256, manifest.wasmSha256);
   const recorded = recordReplacedDeployment({
