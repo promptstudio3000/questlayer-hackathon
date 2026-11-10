@@ -3457,17 +3457,13 @@ async function api(req, res, url) {
         "Refresh original ownership before opening its 3D look.",
         403,
       );
-      // The 3D SDK draws only the gotchi's real gear; an in-game outfit stays 2D.
-      assert(
-        !Object.keys(ownedOutfit(db, player, appearance.outfit)).length,
-        "This outfit shows in 2D.",
-        409,
-      );
+      // An in-game outfit swaps slots 0-6 in the official renderer's look.
       return respond(
         res,
         await gotchiModels.describe({
           tokenId: appearance.originTokenId,
           expectedWearables: gotchi.equipped,
+          outfit: ownedOutfit(db, player, appearance.outfit),
         }),
       );
     }

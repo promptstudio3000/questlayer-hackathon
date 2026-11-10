@@ -105,6 +105,20 @@ try {
       await page.keyboard.press("Escape");
       await sleep(3000);
       await page.screenshot({ path: join(OUT, "08-dressed-map-390.png") });
+      const model = () => page.evaluate(async () => {
+        const r = await fetch("/api/character/model");
+        const j = await r.json();
+        return `${r.status} ${j.hash || j.error}`;
+      });
+      console.log("3D with the new outfit:", await model());
+      // A look the renderer already drew: every slot empty.
+      for (const slot of ["body", "face", "eyes", "head", "handLeft", "handRight", "pet"])
+        await page.evaluate((slot) => fetch("/api/aavegotchi/outfit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot, itemId: 0 }) }), slot);
+      console.log("3D with every slot empty:", await model());
+      await page.reload();
+      await page.locator(".maplibregl-canvas").waitFor();
+      await sleep(8000);
+      await page.screenshot({ path: join(OUT, "09-empty-outfit-3d-map-390.png") });
     }
   }
   await browser.close();

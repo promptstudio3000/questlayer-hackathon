@@ -24,7 +24,7 @@ The prototype attributes the SDK in the dressing room. It does not imply an offi
 
 The actual available GLB `Eth-Common2-Common-0-0-0-0-0-0-0` has SHA-256 `19ddddacbb2045b6ecbae5d14f96f017063d8e1de9c06ae23c928ece9d960d7d` at this probe. It is 664,092 bytes with 5,275 declared vertices, 9 meshes, 64 nodes, 4 materials and three embedded 1024×1024 JPEG textures (about 12 MiB decoded RGBA). It has no animation clips or external buffers/images. This modest preview did not require an optimization pipeline. It does not establish the cost or coverage of every outfit or of many concurrent 3D map players.
 
-The observed direct CDN response did not provide browser CORS permission. The game therefore fetches only requested assets through a fixed-source, bounded same-origin cache. It does not mirror the full dataset. Renderer requests use `verify:true, force:false`; missing generated models remain unavailable and do not start render jobs.
+The observed direct CDN response did not provide browser CORS permission. The game therefore fetches only requested assets through a fixed-source, bounded same-origin cache. It does not mirror the full dataset. Renderer requests use `verify:true, force:false`. Since 10 Nov 2026 (Lubos asked for outfits in 3D) a missing look is requested once with `force:true, verify:false`, the way the official render skill does it, at most once per 15 minutes per look and 40 looks an hour; until it exists the 2D look shows.
 
 ## Loading and safety budgets
 
