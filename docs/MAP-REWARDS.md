@@ -6,7 +6,7 @@ Policy id: `map-rewards-v1` (`server/map-rewards/policy.mjs`). Numbers are tunin
 policy id so a published day never changes meaning.
 
 Since policy `map-rewards-v2` (5 Nov 2026, Lubos) there is no practice money on the map: **every coin is
-backed QGOLD and all coins of a day are worth the same**. The demo arena gives XP only and cells outside the
+backed QGOLD and all coins of a day are worth the same**. Since 10 Nov 2026 the city demo (demo arena) pays the same backed coins, and cells outside the
 plan (outside Czechia) get no coins. Plzeň's native NEAR days (`server/native/`) are unchanged.
 
 ## 1. One plan per day for all of Czechia
@@ -59,7 +59,7 @@ writes its rewards once (`map_cell_drops`):
    The demo arena has no waves (remote visitors in any time zone). `MAP_COIN_WAVES=1..12|off`.
 4. **Pioneer:** a cell nobody visited for 30 days (`map_cell_visits`) shows gold fog. Its first drop of the
    day pays two shares per coin and adds a pioneer chest (XP, Aura while edition supply lasts).
-5. The demo arena (no GPS) places coins worth 0: XP only. Outside Czechia a cell gets no coins until more
+5. The demo arena (no GPS, arrow keys) places a fixed number of coins per cell at the same backed value as the map; payout rounds pay them in QGOLD (Lubos, 10 Nov 2026: the demo behaves like reality, only movement differs). Outside Czechia a cell gets no coins until more
    countries have a plan; its POI quests still give XP.
 
 ## 3. On the map
@@ -80,12 +80,12 @@ bigger. The sky chip shows the time of the next coin wave.
   collected in GPS worlds as `claim_map` (leaf fields, proof, coin or zone index, attestor signature;
   at most 240 a day), and closes the day after one day of grace (`server/map-rewards/chain.mjs`).
   It needs the rewards upgrade with `map_days.rs` and a worker key that allows the three map
-  methods next to the four native ones. The demo arena gives XP only, so it never goes on chain. Status:
+  methods next to the four native ones. The demo arena never sends `claim_map`; its coins are paid by payout rounds. Status:
   `chain` in `GET /api/map/rewards/day`. Every published day (city or map) holds 256 receipt slots
   (about 2.6 NEAR of storage) until it closes, so the contract needs about five days of separate storage
   reserve; `node scripts/topup-rewards-storage.mjs [--send]` tops it up from the operator. Without it
   `publish_map_day` traps ("Top up separate storage and gas funding before publication").
-- `MAP_PAYOUTS=1`: map coins and cell zones are paid by the nightly payout (docs/DAILY-PAYOUTS.md), one
+- `MAP_PAYOUTS=1`: map coins and cell zones (GPS and the city demo) are paid by payout rounds every few minutes (docs/DAILY-PAYOUTS.md), one
   leaf per account per day, and `claim_map` is no longer sent (the map day worker only records the budget).
 - **Caps grow with the treasury.** The rewards contract caps each date at max(0.1 NEAR, 10 % of each
   bucket's funding) (`date_cap`). City days together take at most max(0.006 NEAR, 4 % of a bucket's

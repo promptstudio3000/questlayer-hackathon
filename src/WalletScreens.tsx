@@ -497,7 +497,7 @@ export function QgoldWallet({ player }: { player: Player }) {
         <small>
           {pending.awaitingAccount
             ? tr("{0} QGOLD collected waits for your NEAR account.", { 0: gold(pending.units, 6) })
-            : tr("+{0} QGOLD arrives with the payout after midnight.", { 0: gold(pending.units, 6) })}
+            : tr("+{0} QGOLD arrives with the next payout, within minutes.", { 0: gold(pending.units, 6) })}
         </small>
       )}
     </div>

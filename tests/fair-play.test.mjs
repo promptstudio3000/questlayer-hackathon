@@ -115,7 +115,8 @@ test("a GPS coin claim far from the last accepted fix is refused; arena coins sk
     const arena = await ensureWorld(db, HOME, true, NOW);
     const coin = worldView(db, arena.id, player, { now: NOW }).coins[0];
     const r = claimCoin(db, player, coin.id, fix(coin, t + 3000, 0), t + 3000);
-    assert.equal(r.value, 0, "demo arena coins give XP only");
+    // The city demo pays the same backed coins as the map (only movement differs).
+    assert.ok(r.value > 0 && r.value === coin.value_u, "demo arena coins are backed");
   } finally {
     db.close();
   }

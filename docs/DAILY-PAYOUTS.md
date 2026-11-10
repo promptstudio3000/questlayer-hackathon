@@ -89,9 +89,16 @@ Atlas adapter; their absence is never displayed as a funded promise.
 Runs inside the reward worker when `MAP_PAYOUTS=1` (testnet) and the worker key
 holds all 10 methods. Each pass:
 
-1. **Prepare** yesterday's day once (`payout_days`, local Europe/Prague date):
-   every claimed map coin (`map_coin_meta`) and funded cell-zone prize
-   (`cellZone` quests) of a GPS world, collected before midnight, with a value,
+1. **Prepare** a payout round. With `PAYOUT_ROUND_MINUTES` > 0 (testnet
+   default 5) a round runs once that many minutes have passed since the last
+   stored one, for everything collected up to one minute ago; its `payout_days.date`
+   holds the local cutoff (`YYYY-MM-DDTHH:MM`) and its contract id is the next
+   free `payout-<date>-v<n>`. A round with no leaf over the minimum writes
+   nothing and the rewards wait for a later round. With `PAYOUT_ROUND_MINUTES=0`
+   it is yesterday's day once after midnight (local Europe/Prague date). A round
+   or day takes every claimed map coin (`map_coin_meta`) and funded cell-zone
+   prize (`cellZone` quests), of a GPS world or of the city demo (the demo pays
+   the same backed coins; only movement differs), collected before the cutoff, with a value,
    not in `payout_items` and not already sent as `claim_map`, by a player with a
    `wallet_links` account. Each is priced at `value_u × R / 10⁶` yoctoNEAR, R
    being the rate its map day was planned with (`summary.budget.rateYocto`).

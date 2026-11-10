@@ -2159,8 +2159,8 @@ export default function App() {
         options.signIn
           ? r.returning
             ? tr("Welcome back, explorer. Your account restored your progress.")
-            : tr("Your explorer is ready. Coins you collect are paid in QGOLD to your NEAR account after midnight.")
-          : tr("Account linked. Coins you collect are paid in QGOLD to this NEAR account after midnight."),
+            : tr("Your explorer is ready. Coins you collect are paid in QGOLD to your NEAR account within minutes.")
+          : tr("Account linked. Coins you collect are paid in QGOLD to this NEAR account within minutes."),
       );
     });
   }
@@ -2193,7 +2193,7 @@ export default function App() {
         options.signIn
           ? r.returning
             ? tr("Welcome back, explorer. Your account restored your progress.")
-            : tr("Your explorer is ready. Coins you collect are paid in QGOLD to your NEAR account after midnight.")
+            : tr("Your explorer is ready. Coins you collect are paid in QGOLD to your NEAR account within minutes.")
           : tr("Ethereum wallet linked. It can sign NEAR Intents trades for your explorer."),
       );
     });
