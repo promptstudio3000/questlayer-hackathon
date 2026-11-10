@@ -126,7 +126,7 @@ Suggested records: `CreatorProfile`, `CreatorFollow`, `CreatorAllocationPreferen
 
 All economic mutations bind the authenticated actor, stable operation ID and policy/content version. Funding sources remain attributable. Balances distinguish available, reserved, awarded, withdrawal-pending and paid; conservation includes creator obligations, access settlement and refunds. Demo values never flow into a native payout.
 
-Extend the native game contract's conservation invariant and storage migration explicitly before activating a third funding bucket. Adding a dashboard bucket alone is not an integration. Follow updates, content publication and money transfers can fail independently; retry them without repeating a charge, award or XP lock. No raw location history or private evidence goes on chain.
+Extend the conservation invariant and storage migration of the contract that holds the live reward buckets explicitly before activating a third funding bucket (the first-alpha `contracts/game` contract was retired on 10 November 2026 and is not that contract). Adding a dashboard bucket alone is not an integration. Follow updates, content publication and money transfers can fail independently; retry them without repeating a charge, award or XP lock. No raw location history or private evidence goes on chain.
 
 ## Delivery sequence
 

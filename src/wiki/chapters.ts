@@ -785,7 +785,7 @@ export const CHAPTERS: Chapter[] = [
     title: "What is on chain",
     summary: "Contracts, proof icons, the QXP ledger and how private location stays private.",
     status: "partial",
-    updated: "2026-11-05",
+    updated: "2026-11-10",
     sources: ["docs/CHAIN-PROOF.md", "docs/CHAIN-LEDGER.md", "docs/NEAR-INTEGRATION-STATUS.md", "docs/MAINNET-PLAN.md", "contracts/wasm-sha256.json", "src/ChainLink.tsx"],
     blocks: [
       { viz: "chain-split" },
@@ -807,6 +807,9 @@ export const CHAPTERS: Chapter[] = [
             ["Creators", "`questlayer-creators-20261101b.testnet`", "Creator money rounds"],
           ],
         },
+      },
+      {
+        note: "Retired: the first-alpha game contract `game.questlayer-dev-20261101.testnet` (coin batches, quests, `withdraw_reward`) was retired on 10 November 2026. The live game never called it; its account is being paused and deleted. Its source and WASM pin stay in the repository as history.",
       },
       { h: "The proof icon" },
       { p: "One cube icon follows every on-chain action through four stages." },

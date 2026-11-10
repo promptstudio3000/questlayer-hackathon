@@ -17,7 +17,7 @@ instead of the source; developers change the value here and in the pointed file 
 | Rule | Value | Source |
 | --- | --- | --- |
 | Income that may fund rewards | only realized, received, attributable yield or explicit sponsor funding | `contracts/rewards`, `docs/NATIVE-REWARDS-AND-VAULT.md` |
-| Split of each eligible receipt | 50 % street coins / 50 % zones; odd unit to zones | `contracts/game/src/lib.rs` `fund_rewards`, `server/game.mjs` |
+| Split of each eligible receipt | 50 % street coins / 50 % zones; odd unit to zones | `server/game.mjs` (`contracts/game` `fund_rewards` is retired on 10 November 2026) |
 | Proposed creator share (not live) | 10 % creators, then 45 / 45 | `CREATOR-ECONOMY-PLAN.md` |
 | Unclaimed backing after expiry | returns to the same bucket, never to players | `server/world.mjs`, rewards contract |
 
