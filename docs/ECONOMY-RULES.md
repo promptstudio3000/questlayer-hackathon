@@ -62,7 +62,7 @@ instead of the source; developers change the value here and in the pointed file 
 
 | Rule | Value | Source |
 | --- | --- | --- |
-| Welcome credit | 120,000 GOLD in the practice ledger | `server/database.mjs:249-255` |
+| Welcome credit | none: a new explorer starts with 0 GOLD (the 120,000 practice faucet was removed 10 Nov 2026) | `server/database.mjs` `createPlayer` |
 | Practice quest examples | 1,000 / 5,000 GOLD prizes | `server/world.mjs:179` |
 | QA creator commitment | 200 XP, test fixtures only | `docs/CREATOR-INTEGRATION-2026-10-31.md` |
 

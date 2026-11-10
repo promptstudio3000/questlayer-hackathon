@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { DatabaseSync } from "node:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -160,6 +161,15 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
     b = await request("/session", { name: "HTTP Bob" });
   assert.equal(a.status, 201);
   assert.equal(b.status, 201);
+  // New explorers start with 0 GOLD; the local practice paths below (bounty)
+  // need a balance, so the fixture tops Alice up directly in the database.
+  assert.equal(a.data.player.gold_u, 0);
+  {
+    const fixture = new DatabaseSync(join(dir, "db.sqlite"));
+    fixture.exec("PRAGMA busy_timeout=5000");
+    fixture.prepare("UPDATE players SET gold_u=gold_u+? WHERE id=?").run(100_000_000, a.data.player.id);
+    fixture.close();
+  }
   assert.ok(a.cookie);
   assert.equal((await request("/me")).status, 401);
   assert.equal(

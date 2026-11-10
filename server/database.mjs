@@ -294,15 +294,10 @@ export function createPlayer(db, name, now = Date.now()) {
   const player = id("player");
   db.prepare(
     "INSERT INTO players(id,name,gold_u,created_at) VALUES (?,?,?,?)",
-  ).run(player, name, 120_000 * GOLD, now);
-  history(
-    db,
-    player,
-    "welcome",
-    "Welcome to your first adventure",
-    120_000 * GOLD,
-    { source: "demo-faucet", network: "demo" },
-  );
+  ).run(player, name, 0, now);
+  // A new explorer starts with no GOLD: every GOLD in the game is backed
+  // QGOLD earned on the map (no practice faucet).
+  history(db, player, "welcome", "Welcome to your first adventure", 0, {});
   db.prepare("INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?,?)").run(
     id("item"),
     player,
