@@ -1,6 +1,6 @@
 // Creates and tracks the player's invisible NEAR account: a device key in this
 // browser plus a sponsored sub-account created by the server factory.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "./api";
 import {
   bindAccount,
@@ -33,14 +33,24 @@ export type ManagedAccountView = {
   } | null;
 };
 export type InvisibleAccountStatus =
-  "idle" | "unavailable" | "creating" | "ready" | "needs-recovery" | "error";
+  | "idle"
+  | "unavailable"
+  /** A new explorer earns the account with the first find or quest. */
+  | "play-first"
+  | "creating"
+  | "ready"
+  | "needs-recovery"
+  | "error";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function useInvisibleAccount(
   playerId: string | null | undefined,
-  store: KeyStore = indexedDbKeyStore(),
+  storeOverride?: KeyStore,
 ) {
+  // One store per hook: a new default on every render made ensure() change
+  // identity each render, which re-ran the effects that call it.
+  const store = useMemo(() => storeOverride ?? indexedDbKeyStore(), [storeOverride]);
   const [status, setStatus] = useState<InvisibleAccountStatus>("idle");
   const [accountId, setAccountId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,8 +137,9 @@ export function useInvisibleAccount(
       } catch (e) {
         if (e instanceof ApiError && e.code === "ACCOUNT_PLAY_FIRST") {
           // Not an error: the account is earned with the first find or quest.
-          // The caller runs ensure() again once the explorer has XP.
-          setStatus("idle");
+          // The caller runs ensure() again once the explorer's XP changes;
+          // "idle" here made every render ask again (a 403 loop).
+          setStatus("play-first");
           return;
         }
         setError(e instanceof ApiError ? e.message : (e as Error).message);
