@@ -83,6 +83,11 @@ try {
   await page.locator(".maplibregl-canvas").waitFor();
   await sleep(4000);
   await page.screenshot({ path: join(OUT, "04-map-after-390.png") });
+  // Own profile: tap your explorer on the map.
+  await page.locator(".player-marker").first().click({ force: true });
+  await page.locator(".player-card h2").first().waitFor();
+  await sleep(2500);
+  await page.screenshot({ path: join(OUT, "05-own-profile-390.png") });
   await browser.close();
   console.log("shots in", OUT);
 } finally {
