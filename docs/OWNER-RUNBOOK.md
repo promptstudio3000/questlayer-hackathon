@@ -86,6 +86,10 @@ secret scan over the history, verify the README steps on a fresh clone, then sub
 
 ## 7. Mainnet slice: one command (needs Lubos's go, see `docs/MAINNET-PLAN.md` §5)
 
+State on 10 November (rewards M4, vault factory v3, QGOLD proposal 4, the encrypted inbox, relayer subsidy, the
+retired game contract): `docs/MAINNET-PLAN.md` §7. Before a mainnet inbox, write the three `SUBSIDY_*` values
+into the mainnet runtime.env; without them sponsorship fails closed.
+
 Nothing here has run on mainnet. `scripts/deploy-mainnet-slice.mjs` deploys the minimal slice from
 `docs/MAINNET-PLAN.md` §1: the collectibles contract (create, deploy and `new` in one transaction, then
 `set_award_signer`), the player factory and relayer accounts with their key files, and a check that `social.near`
