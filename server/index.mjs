@@ -211,6 +211,7 @@ import { createDailyBoard } from "./daily-board/service.mjs";
 import { createDailyBoardRoutes } from "./daily-board/routes.mjs";
 import { loadPlaceBadges } from "./badges/place-catalog.mjs";
 import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
+import { playerJourney } from "./player-journey.mjs";
 import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
 import { createBadgeRoutes } from "./badges/routes.mjs";
 import { createGoldSpend } from "./gold-spend/service.mjs";
@@ -3344,6 +3345,15 @@ async function api(req, res, url) {
     assert(auth(req) === player, "Please sign in again.", 401);
     const result = equipWearable(db, player, i.itemId, !!i.equipped);
     return respond(res, { ...result, player: profile(player) });
+  }
+  if (path === "/api/me/journey" && method === "GET") {
+    limit("journey", player, 30, "Please wait a moment before refreshing your story.");
+    return respond(
+      res,
+      playerJourney(db, player, {
+        placeBadgeName: (id) => badgeService?.catalog?.byId?.get(id)?.name || null,
+      }),
+    );
   }
   if (path === "/api/players/card" && method === "GET") {
     limit("player-card", player, 60, "Please wait before opening more explorer cards.");

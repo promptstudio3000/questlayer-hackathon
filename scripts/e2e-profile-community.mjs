@@ -81,16 +81,23 @@ try {
       assert.deepEqual(sizes.filter(s => s.width < 47.9 || s.height < 47.9), [], "Profile tabs have 48px targets");
       assert.ok(await page.locator(".profile-hero-avatar").evaluate(el => el.querySelector(".profile-hero-source").getBoundingClientRect().bottom <= el.querySelector(".character-composition").getBoundingClientRect().top), "Appearance disclosure does not overlap the character");
     }
-    for (const section of ["Badges", "Stake", "Rewards", "Settings"]) {
+    // Badges are a chapter of Character; Stake holds Stake and Earnings behind one switch.
+    await page.locator(".badge-medal").first().waitFor();
+    await page.getByRole("button", { name: /^Badges/ }).click();
+    await capture("profile-badges");
+    for (const section of ["Stake", "Settings"]) {
       await page.getByRole("tab", { name: section, exact: true }).click();
-      if (section === "Badges") await page.locator(".badge-medal").first().waitFor();
       if (section === "Stake") await page.locator(".fuel").waitFor();
       await page.waitForTimeout(250);
       await capture("profile-" + section.toLowerCase());
+      if (section === "Stake") {
+        await page.getByRole("button", { name: "Earnings", exact: true }).click();
+        await page.locator(".earn-hero").waitFor();
+        await capture("profile-earnings");
+      }
     }
     await page.getByRole("tab", { name: "Character", exact: true }).click();
-    await page.locator(".profile-tiles").getByRole("button", { name: /Wardrobe/ }).click();
-    await page.locator(".inventory-experience").waitFor();
+    await page.locator(".journey").waitFor();
     await close();
     await openProfile();
     if (width === 390) {
@@ -164,7 +171,7 @@ try {
     await page.getByRole("dialog").getByRole("button", { name: "Remove note", exact: true }).click();
     await page.locator(".map-note").waitFor({ state: "detached" });
     assert.deepEqual(faults, [], "No browser errors");
-    report.viewports.push({ name, width, height, scans, faults, checks: ["All profile routes", "Wardrobe action", "Creator capability and all Community routes", "Public consent", "Draft restoration", "Local publication", "Removal cancellation"] });
+    report.viewports.push({ name, width, height, scans, faults, checks: ["All profile routes", "Character story", "Creator capability and all Community routes", "Public consent", "Draft restoration", "Local publication", "Removal cancellation"] });
     writeFileSync(join(shots, "report.json"), JSON.stringify(report, null, 2));
     await context.close();
     console.log(`${name}: Profile, Community and public-note interactions passed`);
