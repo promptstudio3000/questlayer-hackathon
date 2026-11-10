@@ -1,4 +1,9 @@
 {
+ "Tester name": "Nombre de tester",
+ "Tester password": "Contraseña de tester",
+ "Password": "Contraseña",
+ "Tester sign-in": "Acceso de tester",
+ "Signing in…": "Accediendo…",
  "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "Este lugar necesita el nivel {0}: {1} NEAR de stake madurado en la bóveda. Los lugares libres cercanos están abiertos para todos.",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (como máximo {0} al día para todos; después, la tirada paga el premio garantizado)",
  " (create one above first).": " (primero crea uno arriba).",

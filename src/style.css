@@ -4038,3 +4038,16 @@ a.settings-row:hover {
 }
 /* One loading message at a time: while the world loads, its message replaces the map's. */
 .app-shell:has(.world-loading) .map-loading:not(.map-failure) { display: none; }
+/* Owner tester sign-in (/?tester, testnet only). */
+.welcome-tester {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+.welcome-tester input {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #d0cfe0);
+  font: inherit;
+}

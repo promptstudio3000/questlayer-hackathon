@@ -172,6 +172,20 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
   }
   assert.ok(a.cookie);
   assert.equal((await request("/me")).status, 401);
+  {
+    // Tester sign-in: only a hash set by scripts/tester-account.mjs signs in.
+    const { hashTesterPassword, setTesterLogin, initializeTesterLogin } = await import("../server/identity/test-login.mjs");
+    const fixture = new DatabaseSync(join(dir, "db.sqlite"));
+    fixture.exec("PRAGMA busy_timeout=5000");
+    initializeTesterLogin(fixture);
+    setTesterLogin(fixture, { name: "http-tester", playerId: b.data.player.id, secret: hashTesterPassword("tester-pass") });
+    fixture.close();
+    assert.equal((await request("/auth/tester", { name: "http-tester", password: "nope-nope" })).status, 401);
+    const signed = await request("/auth/tester", { name: "HTTP-Tester", password: "tester-pass" });
+    assert.equal(signed.status, 200);
+    assert.equal(signed.data.player.id, b.data.player.id);
+    assert.equal((await request("/me", undefined, signed.cookie)).status, 200);
+  }
   assert.equal(
     (
       await request(
