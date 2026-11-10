@@ -51,7 +51,13 @@ export function useInvisibleAccount(
   // One store per hook: a new default on every render made ensure() change
   // identity each render, which re-ran the effects that call it.
   const store = useMemo(() => storeOverride ?? indexedDbKeyStore(), [storeOverride]);
-  const [status, setStatus] = useState<InvisibleAccountStatus>("idle");
+  const [status, setStatusState] = useState<InvisibleAccountStatus>("idle");
+  // The latest status, readable right after ensure() resolves (state lags a render).
+  const statusRef = useRef<InvisibleAccountStatus>("idle");
+  const setStatus = useCallback((next: InvisibleAccountStatus) => {
+    statusRef.current = next;
+    setStatusState(next);
+  }, []);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [keys, setKeys] = useState<
@@ -150,7 +156,7 @@ export function useInvisibleAccount(
     })();
     running.current = work;
     return work;
-  }, [playerId, store]);
+  }, [playerId, store, setStatus]);
 
   useEffect(() => {
     if (!playerId) {
@@ -159,7 +165,21 @@ export function useInvisibleAccount(
       keyRef.current = null;
       owner.current = null;
     }
-  }, [playerId]);
+  }, [playerId, setStatus]);
+
+  // Prepares the explorer account when needed and returns its signer, so an
+  // action signs silently instead of asking for a wallet. Null means the
+  // account is not usable yet; `reason` says why (play-first, needs-recovery…).
+  const ensureSigner = useCallback(async (): Promise<{
+    signer: NativeSigner | null;
+    reason: InvisibleAccountStatus;
+  }> => {
+    if (!keyRef.current?.accountId) await ensure();
+    const key = keyRef.current;
+    return key?.accountId
+      ? { signer: managedSigner(key, key.accountId), reason: "ready" }
+      : { signer: null, reason: statusRef.current };
+  }, [ensure]);
 
   // Re-reads the device list without re-running account creation.
   const refresh = useCallback(async () => {
@@ -177,6 +197,7 @@ export function useInvisibleAccount(
     accountId,
     error,
     ensure,
+    ensureSigner,
     signer,
     publicKey: keyRef.current?.publicKey ?? null,
     deviceKey: status === "ready" ? keyRef.current : null,

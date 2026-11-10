@@ -288,7 +288,7 @@ export function FuelTheCity({
               <>
                 <p>{tr("Your explorer account is still being prepared.")}</p>
                 <button className="secondary-button" onClick={onConnect}>
-                  {tr("Link a NEAR account instead")}</button>
+                  {tr("Activate my account")}</button>
               </>
             ) : (
               <>

@@ -689,7 +689,7 @@ export function NativeTasks({
           <ArrowClockwise />
         </button>
       </div>
-      {player.wallets.length > 0 ? (
+      {player.wallets.length > 1 ? (
         <label className="task-wallet">
           {tr("Task wallet")}<select
             value={account}
@@ -704,11 +704,11 @@ export function NativeTasks({
             ))}
           </select>
         </label>
-      ) : (
+      ) : !player.wallets.length ? (
         <button className="secondary-button" onClick={onConnect}>
           <Wallet />
-          {tr("Connect NEAR wallet")}</button>
-      )}
+          {tr("Activate my account")}</button>
+      ) : null}
       {error && (
         <p className="task-alert" role="alert">
           <WarningCircle />
@@ -930,7 +930,7 @@ export function NativeTasks({
                 {tr("Closed to new evidence. Earlier submissions keep their review and appeal rights.")}</p>
             )}
             {!account && task.status === "open" && (
-              <p>{tr("Connect a NEAR wallet to submit evidence. Browsing is free.")}</p>
+              <p>{tr("Activate your account to submit evidence. Browsing is free.")}</p>
             )}
             {caps?.submit ||
             (caps?.appealSubmissionId !== null &&

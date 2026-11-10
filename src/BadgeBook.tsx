@@ -409,10 +409,10 @@ function PlayerBadges({
       </p>
       {!u.account && (
         <p className="badge-warn">
-          {tr("Link a NEAR account to create or collect player badges.")}{" "}
+          {tr("Activate your account to create or collect player badges.")}{" "}
           {onConnectNear && (
             <button onClick={onConnectNear}>
-              {tr("Link NEAR")}</button>
+              {tr("Activate my account")}</button>
           )}
         </p>
       )}
