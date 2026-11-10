@@ -48,12 +48,6 @@ export const MARKET_TABS: readonly ScreenTab<MarketView>[] = [
   { id: "offers", get label() { return tr("Offers"); }, icon: Signature },
 ];
 
-export type ExploreTab = "discoveries" | "nearby";
-export const EXPLORE_TABS: readonly ScreenTab<ExploreTab>[] = [
-  { id: "discoveries", get label() { return tr("Discoveries"); }, icon: Compass },
-  { id: "nearby", get label() { return tr("Nearby"); }, icon: MapPinArea },
-];
-
 export type BagTab = "items" | "shop" | "market";
 export const BAG_TABS: readonly ScreenTab<BagTab>[] = [
   { id: "items", get label() { return tr("Items"); }, icon: Backpack },

@@ -59,7 +59,7 @@ import {
   preloadPanels,
   ActorSheet,
   BadgeBook,
-  NearbyMarket,
+  NearbyList,
   GoldShop,
   PlaceMessages,
   EmotePicker,
@@ -94,14 +94,14 @@ import {
   GameObjectArt,
   questObjectPresentation,
   zoneObjectPresentation,
-  representativeZoneQuest,
 } from "./game-object-art";
 import { makeNativeObjective } from "./native-objective";
 import { useAdventureSelection } from "./useAdventureSelection";
-import { activityLabel, activityProgress, activityRequirement, questsInZone } from "./activity-view";
+import { activityProgress, activityRequirement, questsInZone } from "./activity-view";
 import { useNativeObjective, useNativePlayAccount } from "./useNativeObjective";
 import { walletSigner, type NativeSigner } from "./native-signer";
 import type { MarketFunding } from "./NearbyMarket";
+import type { NearbyFilter } from "./nearby-list";
 import { setQgoldBurner, type QgoldBurnCall } from "./qgold-burn";
 import { useInvisibleAccount } from "./useInvisibleAccount";
 import { explorerAccountMessage } from "./explorer-account";
@@ -243,7 +243,6 @@ import {
   profileTabOf,
   type CommunityTab,
   type ProfileTab,
-  EXPLORE_TABS,
 } from "./screens";
 // Passkey helpers load on first use, outside the welcome screen's first load.
 const webauthn = () => import("@simplewebauthn/browser");
@@ -367,10 +366,10 @@ export default function App() {
     [worldData, setWorld] = useState<World | null>(null),
     [position, setPosition] = useState<Point>(HOME),
     [fix, setFix] = useState<Fix | null>(null),
-    // Explorer sheet: today's discoveries, or player tasks and Secrets nearby.
-    // A #task= / #secret= share link opens Nearby directly.
-    [exploreView, setExploreView] = useState<"discoveries" | "nearby">(() =>
-      /^#(task|secret)=/.test(location.hash) ? "nearby" : "discoveries",
+    // Explorer sheet (Nearby): which kind of map content the list shows.
+    // A #task= / #secret= share link opens the Community filter directly.
+    [nearbyFilter, setNearbyFilter] = useState<NearbyFilter>(() =>
+      /^#(task|secret)=/.test(location.hash) ? "community" : "all",
     ),
     // Visual course from a moving GPS fix, or reliable successive positions.
     [gpsCourse, setGpsCourse] = useState<number | null>(null),
@@ -1195,6 +1194,14 @@ export default function App() {
     }
   }
   const clearPlaceOpen = useCallback(() => setPlaceOpenId(null), []);
+  // A #task= / #secret= share link at load opens Nearby, where its dialog lives.
+  useEffect(() => {
+    if (!player?.id || nativePlay) return;
+    if (!/^#(task|secret)=/.test(location.hash)) return;
+    setTab("explore");
+    setSheetExpanded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id, nativePlay]);
   useEffect(() => {
     if (!player?.id) return;
     void refreshGoldMap();
@@ -3316,13 +3323,6 @@ export default function App() {
     : player?.inventory || [];
   const equipped = appearanceItems.filter((x) => !!x.equipped);
   const zonePresence = !nativePlay && online ? currentZone(world, position, fix, arena, player?.tier || 1, now) : null;
-  const activeZones = world?.zones.filter((z) => z.closesAt > now) || [];
-  const nearbyZones = [...activeZones].sort(
-    (a, b) =>
-      Number(a.tier > (player?.tier || 1)) -
-        Number(b.tier > (player?.tier || 1)) ||
-      meters(position, a) - meters(position, b),
-  );
   const recommendation = world
     ? nearestDiscovery({
         position,
@@ -3468,7 +3468,7 @@ export default function App() {
     setMapFull(false);
     setSelected(null);
     setTab("explore");
-    setExploreView("nearby");
+    setNearbyFilter("community");
     setSheetExpanded(true);
     setMarketForm(form);
   };
@@ -3496,7 +3496,7 @@ export default function App() {
     tab === "explore"
       ? nativePlay
         ? tr("Nearby walks")
-        : tr("Nearby discoveries")
+        : tr("Nearby")
       : showProfileTabs
         ? tr("Profile")
         : showCommunityTabs
@@ -3635,7 +3635,7 @@ export default function App() {
           marketPins={!!player && !arena && !nativePlay}
           onMarketPin={() => {
             setTab("explore");
-            setExploreView("nearby");
+            setNearbyFilter("community");
             setSheetExpanded(true);
             setFollow(false);
           }}
@@ -3945,7 +3945,7 @@ export default function App() {
           )}
           <div className="panel-heading">
             {tab === "explore" && detailZone ? (
-              <button className="panel-back" aria-label={tr("All discoveries")} onClick={openDiscoveries}><ArrowLeft size={20} aria-hidden="true" /></button>
+              <button className="panel-back" aria-label={tr("Back to Nearby")} onClick={openDiscoveries}><ArrowLeft size={20} aria-hidden="true" /></button>
             ) : tab === "fund" ? (
               <button
                 className="panel-back"
@@ -4048,37 +4048,6 @@ export default function App() {
             </ScreenTabPanel>
           )}
           {tab === "explore" && !detailZone && !nativePlay && (
-            <ScreenTabs
-              label={tr("Explore")}
-              idBase="explore"
-              tabs={EXPLORE_TABS}
-              value={exploreView}
-              withPanel={exploreView === "nearby"}
-              onChange={(next) => {
-                setExploreView(next);
-                setSheetExpanded(true);
-              }}
-            />
-          )}
-          {tab === "explore" && !detailZone && !nativePlay && exploreView === "nearby" && player && (
-            <ScreenTabPanel idBase="explore" value="nearby">
-              <NearbyMarket
-                position={position}
-                fix={() =>
-                  arena || !fix
-                    ? { ...position, accuracy: 0, timestamp: Date.now() }
-                    : fix
-                }
-                fund={fundMarketEscrow}
-                notify={notify}
-                onBalance={() => void me()}
-                openForm={marketForm}
-                onFormOpened={clearMarketForm}
-                onCommunityTasks={() => setTab("bounties")}
-              />
-            </ScreenTabPanel>
-          )}
-          {tab === "explore" && !detailZone && !nativePlay && exploreView === "discoveries" && (
             <>
               {!world?.zones.length &&
                 !recommendation &&
@@ -4168,15 +4137,11 @@ export default function App() {
                   <Clock size={13} /> {" "}{tr("Refresh in")}{" "}
                   {world ? remaining(world.endsAt) : "…"}
                 </span>
-              </div>
-              {!world?.globalPreparation && <PotRow worldId={world?.id ?? null} position={position} onOpen={() => setTab("funding")} />}
-              <div className="section-label places-head">
-                <h2>{tr("Places today")}</h2>
                 {world?.quality && world.cityStatus !== "auto" && !world.globalPreparation && (
                   <InfoTip label={tr("About this map")} align="start">{world.quality.notice}</InfoTip>
                 )}
-                <span className="places-count">{world?.cityZoneCount ?? activeZones.length}</span>
               </div>
+              {!world?.globalPreparation && <PotRow worldId={world?.id ?? null} position={position} onOpen={() => setTab("funding")} />}
               {world?.quality && (world.cityStatus === "auto" || world.globalPreparation) && (
                 <details
                   className="coverage-note unverified"
@@ -4194,70 +4159,36 @@ export default function App() {
                     : world.quality.notice}</p>
                 </details>
               )}
-              <div className="zone-list">
-                {nearbyZones.map((z, i) => {
-                  const q = representativeZoneQuest(z, world?.quests || [], {
-                    now,
-                    playerTier: player.tier,
-                  });
-                  const activityArt = q
-                    ? questObjectPresentation(q, {
-                        now,
-                        playerTier: player.tier,
-                      })
-                    : null;
-                  return (
-                    <button
-                      className="zone-card zone-row"
-                      data-zone-id={z.id}
-                      key={z.id}
-                      onClick={() => selectZone(z)}
-                    >
-                      <span className={`zone-row-art art-${z.kind}`} aria-hidden="true">
-                        <QuestThumbnail quest={q} now={now} playerTier={player.tier} size={40} />
-                      </span>
-                      <span className="zone-row-body">
-                        <strong>{z.name}</strong>
-                        <small>
-                          <Badge tone={z.tier === 1 ? "green" : "purple"}>
-                            {z.tier === 1 ? tr("FREE") : tr("TIER {0}", { 0: z.tier })}
-                          </Badge>
-                          <span>{distanceLabel(meters(position, z))}</span>
-                          {z.opensAt > now ? (
-                            <span>{tr("Opens in")}{" "}{remaining(z.opensAt)}</span>
-                          ) : (
-                            <span>
-                              {!q
-                                ? tr("See what's here")
-                                : q.completed
-                                  ? tr("Completed")
-                                  : activityArt?.state === "locked"
-                                    ? activityArt.label
-                                    : q.kind === "chest" && q.itemAvailable === true
-                                      ? tr("Aura chest")
-                                      : activityLabel(q)}
-                            </span>
-                          )}
-                          {q && !q.completed && (
-                            q.gold_u && !q.claimant ? (
-                              <span><CoinIcon />{gold(q.gold_u)}</span>
-                            ) : (
-                              <span><Sparkle size={12} aria-hidden="true" />{q.xp} XP</span>
-                            )
-                          )}
-                        </small>
-                      </span>
-                      <ArrowRight size={18} aria-hidden="true" />
-                    </button>
-                  );
-                })}
-              </div>
-              <button
-                className="subtle-link"
-                onClick={() => setTab("bounties")}
-              >
-                {tr("Community tasks")}{" "}<ArrowRight size={15} />
-              </button>
+              {sheetExpanded && world && player && (
+                <NearbyList
+                  world={world}
+                  position={position}
+                  now={now}
+                  playerTier={player.tier}
+                  arena={arena}
+                  filter={nearbyFilter}
+                  onFilter={setNearbyFilter}
+                  onZone={(z, questId) => selectZone(z, questId)}
+                  onActor={(actor, distanceM) => {
+                    if (distanceM <= 35) setActorOpen(actor);
+                    else showActor({ actorId: actor.id });
+                  }}
+                  onPlace={(id) => { setPlaceOpenId(id); setTab("places"); }}
+                  onNotes={() => { setNotesView("browse"); setTab("messages"); }}
+                  onCommunityTasks={() => setTab("bounties")}
+                  market={{
+                    fix: () =>
+                      arena || !fix
+                        ? { ...position, accuracy: 0, timestamp: Date.now() }
+                        : fix,
+                    fund: fundMarketEscrow,
+                    notify,
+                    onBalance: () => void me(),
+                    openForm: marketForm,
+                    onFormOpened: clearMarketForm,
+                  }}
+                />
+              )}
             </>
           )}
           {tab === "explore" && detailZone && (

@@ -1,0 +1,49 @@
+/* Explore · Nearby: one filterable list of map content around the explorer. */
+.nearby-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
+.nearby-filters {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  margin: 0 -2px; padding: 4px 2px 8px;
+  background: var(--surface, #fffdfa);
+}
+.nearby-chips {
+  display: flex; gap: 6px; flex: 1; min-width: 0;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.nearby-chips::-webkit-scrollbar { display: none; }
+.nearby-chips button {
+  display: inline-flex; align-items: center; gap: 5px; flex: none;
+  min-height: 40px; padding: 0 12px;
+  border: 1px solid var(--control-border, #d8cfe6); border-radius: 20px;
+  background: var(--surface-raised, #fff); color: var(--ink, #1a0335);
+  font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap;
+}
+.nearby-chips button[aria-pressed="true"] {
+  border-color: var(--action, #6f2bd9); background: var(--action, #6f2bd9); color: #fff;
+}
+.nearby-chip-count { font-size: 12px; font-weight: 600; opacity: 0.7; }
+.nearby-sort { position: relative; flex: none; display: inline-flex; align-items: center; color: var(--action, #6f2bd9); }
+.nearby-sort > svg { position: absolute; right: 0; pointer-events: none; }
+/* Beats .game-dialog :is(input:not(...), select) (0,4,1) from dialog-polish.css. */
+.app-shell .nearby-list .nearby-filters .nearby-sort select.nearby-sort-select {
+  -webkit-appearance: none; appearance: none;
+  width: auto; min-width: 0; max-width: 140px; min-height: 40px; margin: 0; padding: 0 18px 0 2px;
+  border: 0; border-radius: 8px; background: transparent; box-shadow: none;
+  color: var(--action, #6f2bd9); font-weight: 600;
+}
+.nearby-create { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.nearby-create .nearby-add { margin-inline-start: 0; }
+.app-shell[data-screen] .nearby-rows .nearby-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 8px 4px 8px 8px;
+  border: 1px solid var(--decorative-border, #ebe5dc); border-radius: 12px;
+  background: var(--surface-raised, #fffdfa); color: var(--ink, #1a0335); text-align: start; font: inherit;
+}
+.nearby-row > svg { flex: none; color: var(--ink-secondary); }
+.nearby-row .secret-fog { flex: none; }
+.nearby-portrait { overflow: hidden; }
+.nearby-portrait img { width: 44px; height: 44px; object-fit: cover; }
+.nearby-icon { color: var(--action, #6f2bd9); }
+.nearby-icon-task, .nearby-icon-bounty { color: #a86b00; }
+.nearby-more { justify-self: center; }
+.nearby-list .nearby-market { margin-top: 6px; }
+.nearby-place-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
