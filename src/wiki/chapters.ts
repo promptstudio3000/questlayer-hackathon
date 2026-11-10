@@ -211,7 +211,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "Practice mode, NEAR mode and other explorers" },
       {
         list: [
-          "Explore has two ledgers. The default map pays backed QGOLD for every coin and zone prize: it waits as \"on its way\" in Profile · Rewards and the next payout round mints it to the player's NEAR account (created automatically at sign-in). The test network ledger instead projects the funded Plzeň NEAR day onto the map and collects as you walk with fresh GPS, one request at a time, showing only confirmed results.",
+          "Explore has two ledgers. The default map pays backed QGOLD for every coin and zone prize: it waits as \"on its way\" in Profile · Rewards and the next payout round mints it to the player's NEAR account (created automatically at sign-in). The test network ledger instead projects the funded Plzeň NEAR day onto the map and collects as you walk with fresh GPS, one request at a time, showing only confirmed results. Map coins stay the ledger after any sign-in (NEAR or Ethereum wallet); the test network ledger runs only when the player picks it in Settings or opens Expeditions.",
           "Other explorers appear only if they opt in: sharing publishes a name, look and position for at most 15 minutes and stops when the tab is hidden. Wallets, balances and inventory are never exposed.",
         ],
       },
@@ -441,11 +441,35 @@ export const CHAPTERS: Chapter[] = [
           "Tapping any explorer on the map opens their **profile**: name, level and XP bar, the original Aavegotchi they wear with its rarity score (BRS), play stats (finds, quests, monsters won, wearables found, badges, month they started) and the equipment slots in Aavegotchi order (body, face, eyes, head, left and right hand, pet, Auras above and below) with what they wear now. A gold seal marks an original their wallet holds.",
           "A profile is public: it opens without either side sharing a position and never shows one. Others see only what is worn, never the wallet address or the rest of the collection; a block hides it both ways.",
           "Tapping **your own** explorer opens your own profile, with **Change outfit** leading to the Inventory.",
-          "On your own profile, tap a slot to dress it. While you wear one of your Aavegotchis you can restyle it with anything you own: wearables you found on the map as clones and originals your linked wallet holds now. A slot can also stay empty or go back to the gotchi's own gear. The outfit is only a look in the game and changes nothing on Base; items you no longer own drop out of it. Others see the outfit on the map and on your profile, but not the rest of your collection. In 3D the restyled gotchi uses the official Aavegotchi renderer: a look it has already drawn shows right away; a new combination is requested from the renderer and the 2D look shows until it is ready.",
+          "On your own profile, tap a slot to dress it. While you wear one of your Aavegotchis you can restyle it with anything you own: wearables you found on the map as clones and originals your linked wallet holds now. A slot can also stay empty or go back to the gotchi's own gear. The outfit is only a look in the game and changes nothing on Base; items you no longer own drop out of it. Others see the outfit on the map and on your profile, but not the rest of your collection. In 3D the restyled gotchi uses the official Aavegotchi renderer: a look it has already drawn shows right away; a new combination is requested from the renderer and the 2D look shows until it is ready. Official renders of fully dressed gotchis can carry over 100 megapixels of textures; the server shrinks them to 512 px per texture before sending, so every owned gotchi fits a phone.",
           "**Demo bots:** the test world (TEST_SEED=1) keeps a few bots walking the map. Their dialog is the same, with a **demo-bot** tag after the name; they take no waves and cannot be blocked.",
           "**Write a message** opens the encrypted inbox (see the Encrypted player inbox chapter); it stays off for demo bots and for explorers whose account is not ready yet.",
           "Waves are six ready phrases, no free text. Limits: one per pair per minute, 20 sent and 30 received per hour; delivered by the presence poll and deleted after an hour.",
-          "Block hides presence, notes, waves, messages and the card both ways. The Local chat tab is the existing public nearby-note feed, with the same publication consent, reporting and blocking rules.",
+          "Block hides presence, notes, waves, messages and the card both ways. The Local chat tab holds the public nearby notes and the shouts and topics, with the same publication consent, reporting and blocking rules (see the Community chapter).",
+        ],
+      },
+    ],
+  },
+  {
+    id: "community-local",
+    group: "play",
+    title: "Community: local chat and places",
+    summary: "Free map notes that fade after a day or a week, shouts and topics, and community places, all created from small dialogs over the map.",
+    status: "live",
+    updated: "2026-11-10",
+    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/MapNotes.tsx", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
+    blocks: [
+      {
+        p: "The **Actions** button on the map opens three small create dialogs: **Leave a note**, **Open a topic** and **Add a place**. Each shows a message pinned into the ground, a text field, one small switch and one button; the map stays where it was. Community holds the lists: **Local chat** (sub tabs Notes, and Shouts & topics) and **Places**.",
+      },
+      {
+        list: [
+          "**Map notes** are free. The author picks how long a note stays: 1 day, 1 week (default) or Keep until removed. Expired notes leave every list. The author can edit the text of their own note; the pin, photo and time stay.",
+          "Every row shows author, time and time left, the text, and a **GPS line** with the pin coordinates and distance. Tapping it shows the spot on a plain map with only the pin, your position and an X back to the list.",
+          "**Shouts and topics** are the paid place messages (see Fees and spending): a shout is a short bubble for up to 7 days; a topic is a discussion that becomes free for good once 6 different players wrote in it.",
+          "**Community places** are free recommendations of spots worth a visit, nearest first within 10 km, with a kind (view, nature, history, art, food & drink, hidden gem, walk & play), a kind filter and sorting (nearest, newest, A to Z). The author edits or removes a place; three different reports hide it until a moderator looks. No links, contacts or private addresses. No GOLD or XP moves.",
+          "Blocks hide notes, shouts, topics and places both ways. Demo maps and the real GPS map keep separate notes and places.",
+          "The test world (TEST_SEED=1) seeds notes, community places, two shouts and two topics with replies around náměstí Republiky in Plzeň.",
         ],
       },
       { h: "Your own profile" },

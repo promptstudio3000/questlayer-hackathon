@@ -28,6 +28,7 @@ import { NoteMedia } from "./note-media.mjs";
 import { TaskEvidence, evidenceTaskView } from "./task-evidence.mjs";
 import { Moderation } from "./moderation.mjs";
 import { SocialContent, isSocialBlocked } from "./social-content.mjs";
+import { createCommunityPlaces } from "./community-places.mjs";
 import { NativeProgression } from "./native/progression.mjs";
 import { NativeTasks, TASK_CONTRACT } from "./native/tasks.mjs";
 import { updatePresence, readNearbyPresence } from "./presence.mjs";
@@ -269,6 +270,7 @@ const testSeedMode = readTestSeedMode(process.env, NETWORK);
 const testSeedKit = process.env.TEST_SEED_KIT === "1";
 const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
+const communityPlaces = createCommunityPlaces(db);
 const noteMedia = new NoteMedia();
 // Private sponsored-task photos and the shared report intake. Operator
 // decisions are made only through server/cli/moderate.mjs.
@@ -3092,7 +3094,7 @@ async function api(req, res, url) {
     emit("market", {});
     return respond(res, r);
   }
-  if (path.startsWith("/api/messages") || path.startsWith("/api/social/")) {
+  if (path.startsWith("/api/messages") || path.startsWith("/api/social/") || path.startsWith("/api/community-places")) {
     const key = `social:${player}:${Math.floor(Date.now() / 60000)}`;
     const count = (rates.get(key) || 0) + 1;
     rates.set(key, count);
@@ -3148,10 +3150,49 @@ async function api(req, res, url) {
     emit("message", {});
     return respond(res, { id: result.id, state: result.state });
   }
+  if (noteAction && method === "PATCH" && !noteAction[2]) {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const result = socialContent.edit(player, noteAction[1], input);
+    emit("message", {});
+    return respond(res, result);
+  }
   if (noteAction?.[2] === "report" && method === "POST") {
     const input = await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
     return respond(res, socialContent.report(player, noteAction[1], input));
+  }
+  if (path === "/api/community-places" && method === "GET")
+    return respond(
+      res,
+      communityPlaces.list(player, {
+        lat: Number(url.searchParams.get("lat") ?? HOME.lat),
+        lng: Number(url.searchParams.get("lng") ?? HOME.lng),
+        arena: url.searchParams.get("arena") !== "0",
+      }),
+    );
+  if (path === "/api/community-places" && method === "POST") {
+    limit("community-places", player, 20, "Please wait before adding another place.");
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const result = communityPlaces.create(player, input);
+    emit("message", {});
+    return respond(res, result, 201);
+  }
+  const communityPlace = path.match(/^\/api\/community-places\/([a-z0-9_-]{1,60})(?:\/(report))?$/);
+  if (communityPlace) {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const [, placeId, sub] = communityPlace;
+    if (sub === "report" && method === "POST")
+      return respond(res, communityPlaces.report(player, placeId, input));
+    if (!sub && method === "PATCH") return respond(res, communityPlaces.edit(player, placeId, input));
+    if (!sub && method === "DELETE") {
+      const result = communityPlaces.remove(player, placeId);
+      emit("message", {});
+      return respond(res, result);
+    }
+    assert(false, "Method not allowed.", 405);
   }
   if (path === "/api/social/blocks" && method === "GET")
     return respond(res, socialContent.blocks(player));

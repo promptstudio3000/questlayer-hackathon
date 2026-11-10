@@ -6,7 +6,10 @@ import { optimizeModelTextures } from "./model-textures.mjs";
 export const MODEL_CDN = "https://dzqjok0x69zbl.cloudfront.net";
 export const STARTER_MODEL = "Eth-Common2-Common-0-0-0-0-0-0-0";
 export const MAX_MODEL_BYTES = 6 * 1024 * 1024;
-export const MAX_SOURCE_MODEL_BYTES = 12 * 1024 * 1024;
+// Official renders of fully dressed originals reach ~11 MB and ~115 Mpx of
+// 2048 px textures; they are shrunk to the mobile budget before serving.
+export const MAX_SOURCE_MODEL_BYTES = 16 * 1024 * 1024;
+const MAX_SOURCE_TEXTURE_PIXELS = 256 * 1024 * 1024;
 const RENDERER = "https://www.aavegotchi.com/api/renderer/batch";
 // A missing look (e.g. an in-game outfit nobody wore before) is asked from the
 // official renderer at most once per 15 minutes per look, 40 looks an hour.
@@ -275,7 +278,7 @@ export async function inspectGlb(bytes, { source = false } = {}) {
     );
     texturePixels += meta.width * meta.height;
     assert(
-      texturePixels <= (source ? 67108864 : 8388608),
+      texturePixels <= (source ? MAX_SOURCE_TEXTURE_PIXELS : 8388608),
       "This model exceeds the total mobile texture budget.",
       503,
     );

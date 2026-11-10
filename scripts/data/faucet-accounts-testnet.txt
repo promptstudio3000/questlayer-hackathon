@@ -1,0 +1,13 @@
+# Testnet faucet accounts keyed with the operator public key (10 test NEAR each, created 10 Nov 2026).
+ql-faucet-probe-1794351043.testnet
+ql-faucet-1794351069-1.testnet
+ql-faucet-1794351075-2.testnet
+ql-faucet-1794351079-3.testnet
+ql-faucet-1794351084-4.testnet
+ql-faucet-1794351089-5.testnet
+ql-faucet-1794351093-6.testnet
+ql-faucet-1794351097-7.testnet
+ql-faucet-1794351102-8.testnet
+ql-faucet-1794351106-9.testnet
+ql-faucet-1794351110-10.testnet
+ql-faucet-1794351116-11.testnet

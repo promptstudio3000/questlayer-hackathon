@@ -171,6 +171,9 @@ export const PlaceMessages = lazyNamed(
   () => import("./PlaceMessages"),
   "PlaceMessages",
 );
+export const PlaceCompose = lazyNamed(() => import("./PlaceMessages"), "PlaceCompose");
+export const CommunityPlaces = lazyNamed(() => import("./CommunityPlaces"), "CommunityPlaces");
+export const AddPlaceDialog = lazyNamed(() => import("./CommunityPlaces"), "AddPlaceDialog");
 export const EmotePicker = lazyNamed(
   () => import("./EmotePicker"),
   "EmotePicker",

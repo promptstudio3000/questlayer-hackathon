@@ -31,6 +31,8 @@ npm run seed:test -- remove   [--db path]
   in the practice map (arena). Ondra stays about 30 m from the most recently active
   real explorer, in the same map mode, so shared presence shows up wherever you are.
 - **Map notes** at six places, in both the practice and the GPS map.
+- **Community places** (Community · Places): seven recommended spots around the square, in both maps.
+- **Shouts and topics** (Community · Local chat): two shouts kept on the map for the next 7 days on every start, and two topics with replies that stay free for good.
 - **Practice market.** Four Auras from seed explorers are always on sale; a sold
   one is restocked within 30 s. Marek buys anything a real explorer lists for up to
   60,000 practice GOLD once it has been listed for 45 s, so selling can be tried.
