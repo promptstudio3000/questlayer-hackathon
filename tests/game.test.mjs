@@ -72,11 +72,12 @@ test("simultaneous activation shares a single world and one cell drop", async ()
   ]);
   assert.equal(w1.id, w2.id);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM worlds").get().n, 1);
-  // Map rewards: one cell drop. The demo arena's coins give XP only, so no
-  // money is reserved anywhere.
+  // Map rewards: one cell drop. The demo arena's coins are backed by the
+  // day's on-chain budget like map coins, so the database treasury reserves
+  // nothing.
   const c = db.prepare("SELECT COUNT(*) n,COALESCE(SUM(value_u),0) v FROM coins").get();
   assert.ok(c.n > 0);
-  assert.equal(c.v, 0);
+  assert.ok(c.v > 0);
   assert.equal(
     db.prepare("SELECT reserved_u FROM treasury WHERE bucket='coins'").get()
       .reserved_u,
@@ -98,9 +99,10 @@ test("shared coin pays one player once and cannot be farmed by retries", async (
     db.prepare("SELECT gold_u FROM players WHERE id=?").get(a).gold_u,
     start + coin.value_u,
   );
+  // Map coins are paid from the on-chain day budget, never the DB treasury.
   assert.equal(
     db.prepare("SELECT paid_u FROM treasury WHERE bucket='coins'").get().paid_u,
-    coin.value_u,
+    0,
   );
   db.close();
 });
@@ -122,7 +124,8 @@ test("expired coins cannot be collected and unclaimed backing rolls over once", 
   expireWorlds(db, w.endsAt + 2);
   const t = db.prepare("SELECT * FROM treasury WHERE bucket='coins'").get();
   assert.equal(t.reserved_u, 0);
-  assert.equal(t.available_u, initial - coin.value_u);
+  // Map coins never touch the DB treasury (backed by the on-chain day budget).
+  assert.equal(t.available_u, initial);
   db.close();
 });
 test("a solo player can complete a free quest and mint one bounded Aura", async () => {

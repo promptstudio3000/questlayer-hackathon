@@ -326,7 +326,8 @@ export async function runChecks({ args = {}, now = Date.now(), log = () => {} } 
       return;
     }
     const latest = d.payouts.map((p) => p.date).sort().at(-1);
-    const age = Math.round((Date.parse(d.day) - Date.parse(latest)) / 86400000);
+    // A payout round labels its date with the local cutoff (YYYY-MM-DDTHH:MM).
+    const age = Math.round((Date.parse(d.day) - Date.parse(latest.slice(0, 10))) / 86400000);
     add("latest payout day is recent", age <= 2 ? PASS : WARN, `latest ${latest}, map day ${d.day} (${age} d)`);
     let published = null;
     for (const p of d.payouts) {

@@ -25,7 +25,7 @@ import {
   runMapChainWorker,
 } from "../map-rewards/chain.mjs";
 import { PAYOUT_CHAIN_METHODS } from "../payouts/payout-tree.mjs";
-import { payoutsEnabled, runPayoutWorker } from "../payouts/worker.mjs";
+import { payoutRoundMs, payoutsEnabled, runPayoutWorker } from "../payouts/worker.mjs";
 import { WORLD_CHAIN_METHODS,runConfiguredGlobalRewards } from '../global-reward-worker.mjs';
 const METHODS = ["publish_day", "close_day", "claim", "maintain_vault"];
 // The key is the native set alone, the native set plus the map-day methods
@@ -493,6 +493,7 @@ export function startRewardWorker(
           await runPayoutWorker(native.db, {
             call: send,
             view: (method, args) => native.view(method, args, true),
+            roundMs: payoutRoundMs(),
           }).catch((error) =>
             console.error("Payout worker:", String(error.message).slice(0, 200)),
           );
