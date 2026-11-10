@@ -35,7 +35,8 @@ export type Player = {
   nativeOutfit?: boolean;
   nativeAccount?: string | null;
   coinsCollected?: number;
-  appearance: { originTokenId?: string };
+  /** look: changes with the gotchi outfit (art URLs carry it). */
+  appearance: { originTokenId?: string; look?: string };
   /** Aavegotchi wearable clones the player wears. */
   wearables?: WornWearable[];
   id: string;
@@ -416,6 +417,8 @@ export type NearbyExplorer = Point & {
     above: string | null;
     below: string | null;
     skinTokenId: string | null;
+    /** Changes with the gotchi outfit, so the art URL skips a stale cache. */
+    skinVersion?: string;
     source: "demo" | "native" | "unavailable";
     /** GOLD cosmetics: a marker frame and a live emote (server/gold-spend). */
     gold?: { frame?: string; emote?: string; emoteUntil?: number };

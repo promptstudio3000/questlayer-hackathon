@@ -84,8 +84,19 @@ others see only what is worn; the header shows finds and stats.
   while the explorer is offline; `/api/players/skin` serves its art without
   presence (blocks respected).
 - Own avatar on the map opens the own profile with **Change outfit**.
-- Plan for the next phases (Wearables tab with dressing the gotchi in owned
-  items and clones, Badges, Messages): https://claude.ai/artifact/7ugX6XYGdTWUaz4k1Qzjpt
+- Dressing (phase 2, Lubos 10 Nov: "wear whatever you own or found as a
+  clone"): on the own profile each slot opens a picker. With an original worn,
+  `POST /api/aavegotchi/outfit {slot, itemId}` (`server/gotchi-outfit.mjs`)
+  stores `appearance.outfit` (slot index -> item id, 0 = empty, missing = the
+  gotchi's real gear). Only clones found on the map and originals the linked
+  wallet holds (verified, at most a day old) fit; `ownedOutfit` drops items no
+  longer owned. The art comes from the diamond's `previewAavegotchi(hauntId,
+  collateral, traits, wearables)` view on Base, cached per gotchi + outfit;
+  plain art when Base fails. Nothing changes on chain. The skin URLs carry
+  `look`/`skinVersion` so caches refresh; the 3D model answers 409 for a
+  restyled gotchi and the 2D art shows. With the starter ghost the picker
+  equips clones (`/api/wearables/equip`). Others still see only what is worn.
+- Plan for the next phases (Badges, Messages): https://claude.ai/artifact/7ugX6XYGdTWUaz4k1Qzjpt
 
 ## Explorer card
 

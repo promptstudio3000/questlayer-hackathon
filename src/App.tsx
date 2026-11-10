@@ -3509,7 +3509,7 @@ export default function App() {
           }}
           skinUrl={
             player?.appearance?.originTokenId
-              ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
+              ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}${player.appearance.look ? `&v=${encodeURIComponent(player.appearance.look)}` : ""}`
               : undefined
           }
           facing={
@@ -3668,6 +3668,7 @@ export default function App() {
                     <Character
                       items={appearanceItems}
                       originTokenId={player.appearance.originTokenId}
+                    look={player.appearance.look}
                       compact
                     />
                     <span className="sr-only">{tr(", explorer profile")}</span>
@@ -3677,6 +3678,7 @@ export default function App() {
                     <Character
                       items={appearanceItems}
                       originTokenId={player.appearance.originTokenId}
+                    look={player.appearance.look}
                       compact
                     />
                     <span>
@@ -4463,6 +4465,7 @@ export default function App() {
                   <Character
                     items={appearanceItems}
                     originTokenId={player.appearance.originTokenId}
+                    look={player.appearance.look}
                   />
                 }
                 name={player.name}
@@ -5078,6 +5081,7 @@ export default function App() {
           key={cardPlayer}
           playerId={cardPlayer}
           onClose={() => setCardPlayer(null)}
+          onPlayer={setPlayer}
           onEdit={() => {
             setCardPlayer(null);
             setTab("inventory");

@@ -3125,5 +3125,9 @@
  "Right hand": "Правая рука",
  "Monsters": "Монстры",
  "Wearables": "Предметы",
- "Change outfit": "Сменить наряд"
+ "Change outfit": "Сменить наряд",
+ "Empty": "Пусто",
+ "Tap a slot to dress it.": "Нажми на слот, чтобы надеть вещь.",
+ "Gotchi's own gear": "Своя экипировка готчи",
+ "Nothing for this slot yet. Find wearables on the map or link the wallet that holds them.": "Для этого слота пока ничего нет. Найди вещи на карте или привяжи кошелёк, где они лежат."
 }

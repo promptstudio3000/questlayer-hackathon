@@ -3125,5 +3125,9 @@
  "Right hand": "Mano derecha",
  "Monsters": "Monstruos",
  "Wearables": "Wearables",
- "Change outfit": "Cambiar atuendo"
+ "Change outfit": "Cambiar atuendo",
+ "Empty": "Vacío",
+ "Tap a slot to dress it.": "Toca una ranura para equiparla.",
+ "Gotchi's own gear": "Equipo propio del gotchi",
+ "Nothing for this slot yet. Find wearables on the map or link the wallet that holds them.": "Aún no hay nada para esta ranura. Encuentra wearables en el mapa o vincula la cartera que los tiene."
 }
