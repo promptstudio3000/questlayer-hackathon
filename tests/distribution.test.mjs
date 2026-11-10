@@ -16,6 +16,7 @@ import { buildCityPlan } from "../server/world-planner.mjs";
 import { PLZEN } from "../server/spatial/city-pack.mjs";
 import { ACCOUNT_SUFFIX } from "../server/native/network.mjs";
 import { ensureMapChainSchema } from "../server/map-rewards/chain.mjs";
+import { ensurePayoutSchema } from "../server/payouts/worker.mjs";
 import { scaledBucketCap } from "../server/native/allocation.mjs";
 
 const NEAR = 10n ** 24n;
@@ -31,6 +32,7 @@ function chain({ funded = NEAR / 5n } = {}) {
     withdrawn: 0n,
     days: new Map(),
     mapDays: new Map(),
+    payoutDays: new Map(),
     dateTotals: new Map(),
     balance: funded + 3n * NEAR, // liquidity plus storage stake
     storageUsage: 200000, // bytes → 2 NEAR locked for storage
@@ -82,6 +84,7 @@ function chain({ funded = NEAR / 5n } = {}) {
       };
     if (method === "get_day") return c.days.get(args.day_id) ?? null;
     if (method === "get_map_day") return c.mapDays.get(args.day_id) ?? null;
+    if (method === "get_payout_day") return c.payoutDays.get(args.day_id) ?? null;
     if (method === "get_date_totals") {
       const t = c.dateTotals.get(args.date) ?? { coins: 0n, zones: 0n };
       return {
@@ -281,6 +284,37 @@ test("a published map day explains its reservations and its date total", async (
   const a = await auditDistribution(f.native);
   assert.equal(a.status, "verified", JSON.stringify(a.failed));
   assert.ok(a.days.some((d) => d.kind === "map" && d.chain === "open"));
+});
+
+test("a published payout round explains its reservations and its date total", async () => {
+  const f = fixture();
+  await f.publish("2026-11-04");
+  ensurePayoutSchema(f.db);
+  const coins = 2380868n * 10n ** 15n;
+  f.c.coins.available -= coins;
+  f.c.coins.reserved += coins;
+  const t = f.c.dateTotals.get("2026-11-04");
+  f.c.dateTotals.set("2026-11-04", { coins: t.coins + coins, zones: t.zones });
+  // Its one leaf is already minted: the reservation moved to awarded.
+  f.c.coins.reserved -= coins;
+  f.c.coins.awarded += coins;
+  f.c.owed += coins;
+  f.c.payoutDays.set("payout-2026-11-04-v1", {
+    coins_reserved: coins.toString(),
+    zones_reserved: "0",
+    coins_left: "0",
+    zones_left: "0",
+    paid_leaves: 1,
+    closed: false,
+  });
+  const before = await auditDistribution(f.native);
+  assert.equal(before.status, "drift", "a payout round this server does not know is drift");
+  f.db
+    .prepare("INSERT INTO payout_days VALUES(?,?,?,?,?,?,?,NULL,NULL,NULL,NULL,?,?)")
+    .run("payout-2026-11-04-v1", "2026-11-04T13:45", "root", "{}", coins.toString(), 1, "published", 1, 1);
+  const a = await auditDistribution(f.native);
+  assert.equal(a.status, "verified", JSON.stringify(a.failed));
+  assert.ok(a.days.some((d) => d.kind === "payout" && d.chain === "open"));
 });
 
 test("city day caps grow with funding and keep 0.006 NEAR on a small treasury", () => {

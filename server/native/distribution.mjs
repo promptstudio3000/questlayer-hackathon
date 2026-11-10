@@ -199,6 +199,41 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
         claimsAccepted: chain.claims,
       });
     }
+    // Payout days and rounds (contracts/rewards payouts.rs) reserve from the
+    // same buckets until paid and count in the same per-date totals.
+    let payoutRows = [];
+    try {
+      payoutRows = native.db
+        .prepare(
+          "SELECT day_id FROM payout_days WHERE state IN ('pending','published','closed') ORDER BY day_id",
+        )
+        .all();
+    } catch {
+      payoutRows = []; // payout schema not created on this host
+    }
+    for (const { day_id } of payoutRows) {
+      const chain = await native.view("get_payout_day", { day_id }, true);
+      if (!chain) continue;
+      const coinsLeft = chain.closed ? 0n : big(String(chain.coins_left)),
+        zonesLeft = chain.closed ? 0n : big(String(chain.zones_left));
+      coinOwed += coinsLeft;
+      zoneOwed += zonesLeft;
+      mapDays.push({
+        id: day_id,
+        date: day_id.match(/(\d{4}-\d{2}-\d{2})-v\d+$/)?.[1],
+        chain: chain.closed ? "closed" : "open",
+        coinsReserved: big(String(chain.coins_reserved)),
+        zonesReserved: big(String(chain.zones_reserved)),
+      });
+      days.push({
+        id: day_id,
+        kind: "payout",
+        chain: chain.closed ? "closed" : "open",
+        unclaimedCoins: coinsLeft.toString(),
+        unwonPrizes: zonesLeft.toString(),
+        claimsAccepted: chain.paid_leaves,
+      });
+    }
     check("coin-reservations-explained", coins.reserved === coinOwed, {
       reserved: coins.reserved.toString(),
       openDaysOwe: coinOwed.toString(),
@@ -214,7 +249,7 @@ export async function auditDistribution(native, { clock = Date.now } = {}) {
     const dates = [
       ...new Set(
         days
-          .filter((d) => d.chain === "open" && d.kind !== "map")
+          .filter((d) => d.chain === "open" && d.kind !== "map" && d.kind !== "payout")
           .map((d) => d.id.match(/(\d{4}-\d{2}-\d{2})-v\d+$/)?.[1])
           .filter(Boolean),
       ),
