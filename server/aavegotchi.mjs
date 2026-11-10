@@ -10,7 +10,7 @@ export const AAVEGOTCHI_ABI=parseAbi([
  'function getItemSvg(uint256 itemId) view returns (string)',
 ]);
 export async function readGotchiItemSvg(itemId){
- const client=createPublicClient({chain:base,transport:http(process.env.BASE_RPC_URL||'https://mainnet.base.org',{timeout:4000,retryCount:0})});
+ const client=createPublicClient({chain:base,transport:http(process.env.BASE_RPC_URL||'https://mainnet.base.org',{timeout:4000,retryCount:1})});
  return client.readContract({address:AAVEGOTCHI,abi:AAVEGOTCHI_ABI,functionName:'getItemSvg',args:[BigInt(itemId)]});
 }
 export async function readGotchis(address,{limit=50}={}){
