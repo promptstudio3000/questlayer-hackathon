@@ -3499,9 +3499,9 @@ export default function App() {
           equipped={equipped}
           others={others}
           onPlayer={(id) =>
-            id === player?.id ? setTab("settings") : setCardPlayer(id)
+            setCardPlayer(id)
           }
-          onSelf={() => setTab("settings")}
+          onSelf={() => player && setCardPlayer(player.id)}
           wearables={nativePlay ? undefined : player?.wearables}
           onWearableFind={(id) => {
             const coin = world?.coins.find((c) => c.id === id);
@@ -5078,6 +5078,10 @@ export default function App() {
           key={cardPlayer}
           playerId={cardPlayer}
           onClose={() => setCardPlayer(null)}
+          onEdit={() => {
+            setCardPlayer(null);
+            setTab("inventory");
+          }}
           onBlocked={() =>
             setOthers((list) => list.filter((p) => p.id !== cardPlayer))
           }
