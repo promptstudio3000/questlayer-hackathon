@@ -1017,6 +1017,7 @@ export function Inventory({
         <Character3D
           items={characterItems}
           originTokenId={player.appearance?.originTokenId}
+          look={player.appearance?.look}
           onClose={() => setShow3D(false)}
         />
       )}

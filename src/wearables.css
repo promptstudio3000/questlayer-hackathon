@@ -277,7 +277,22 @@ button.wearable-tile {
 .player-card-slots li.rarity-mythical { border-color: #ff96ff; }
 .player-card-slots li.rarity-godlike { border-color: #51ffa8; }
 .player-card-slots li.rarity-uncommon { border-color: #8ad0b0; }
-.player-card-slots img, .player-card-slots li > span { width: 44px; height: 44px; image-rendering: pixelated; }
+.player-card-slots img, .player-card-slots li > span, .player-card-slots li > button > span { width: 44px; height: 44px; image-rendering: pixelated; }
+.player-card-slots li:has(> button) { padding: 0; }
+.player-card-slots li > button { display: grid; justify-items: center; gap: 4px; width: 100%; padding: 8px 4px 6px; border: 0; border-radius: 10px; background: none; font: inherit; color: inherit; cursor: pointer; }
+.player-card-slots li.picking { outline: 3px solid #7b5cd6; outline-offset: 1px; }
+.player-card-hint { margin: -4px 0 8px; font-size: 13px; color: #5b4a75; }
+.player-card-picker { margin-top: 10px; padding: 10px; border-radius: 12px; background: #f3edff; }
+.player-card-picker ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.player-card-picker button { position: relative; display: grid; justify-items: center; align-content: center; gap: 2px; width: 100%; min-height: 72px; padding: 6px 4px; border: 2px solid #e3d8fb; border-radius: 10px; background: #fff; font: inherit; font-size: 12px; color: #2d2340; cursor: pointer; }
+.player-card-picker button[aria-pressed="true"] { border-color: #7b5cd6; }
+.player-card-picker button.rarity-rare { border-color: #59bcff; }
+.player-card-picker button.rarity-legendary { border-color: #ffc36b; }
+.player-card-picker button.rarity-mythical { border-color: #ff96ff; }
+.player-card-picker button.rarity-godlike { border-color: #51ffa8; }
+.player-card-picker img { width: 36px; height: 36px; image-rendering: pixelated; }
+.player-card-picker button svg { position: absolute; top: 4px; right: 4px; color: #e0a100; }
+.player-card-picker p { margin: 6px 0 0; font-size: 13px; }
 .player-card-slots small { font-size: 12px; color: #5b4a75; }
 .player-card-verified { position: absolute; top: 4px; right: 4px; color: #e0a100; }
 .player-card-aura { display: block; border-radius: 50%; }

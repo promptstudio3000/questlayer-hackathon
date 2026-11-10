@@ -3518,7 +3518,7 @@ export default function App() {
           }}
           skinUrl={
             player?.appearance?.originTokenId
-              ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}`
+              ? `/api/aavegotchi/skin?tokenId=${encodeURIComponent(player.appearance.originTokenId)}${player.appearance.look ? `&v=${encodeURIComponent(player.appearance.look)}` : ""}`
               : undefined
           }
           facing={
@@ -3676,7 +3676,8 @@ export default function App() {
                   >
                     <Character
                       items={appearanceItems}
-                      originTokenId={player.appearance.originTokenId}
+                      // originTokenId and look (outfit tag) of the worn original.
+                    {...player.appearance}
                       compact
                     />
                     <span className="sr-only">{tr(", explorer profile")}</span>
@@ -3685,7 +3686,8 @@ export default function App() {
                   <>
                     <Character
                       items={appearanceItems}
-                      originTokenId={player.appearance.originTokenId}
+                      // originTokenId and look (outfit tag) of the worn original.
+                    {...player.appearance}
                       compact
                     />
                     <span>
@@ -4471,7 +4473,8 @@ export default function App() {
                 avatar={
                   <Character
                     items={appearanceItems}
-                    originTokenId={player.appearance.originTokenId}
+                    // originTokenId and look (outfit tag) of the worn original.
+                    {...player.appearance}
                   />
                 }
                 name={player.name}
@@ -5099,6 +5102,7 @@ export default function App() {
           key={cardPlayer}
           playerId={cardPlayer}
           onClose={() => setCardPlayer(null)}
+          onPlayer={setPlayer}
           onEdit={() => {
             setCardPlayer(null);
             setTab("inventory");

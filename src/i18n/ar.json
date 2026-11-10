@@ -3135,5 +3135,9 @@
  "Monsters": "الوحوش",
  "Wearables": "القطع",
  "Change outfit": "تغيير المظهر",
+ "Empty": "فارغ",
+ "Tap a slot to dress it.": "اضغط على خانة لتجهيزها.",
+ "Gotchi's own gear": "عتاد الغوتشي الأصلي",
+ "Nothing for this slot yet. Find wearables on the map or link the wallet that holds them.": "لا شيء لهذه الخانة بعد. اعثر على القطع في الخريطة أو اربط المحفظة التي تملكها.",
  "Private chats with explorers": "محادثات خاصة مع المستكشفين"
 }

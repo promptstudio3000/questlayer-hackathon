@@ -5,7 +5,7 @@ import { tr } from "./i18n";
 import { Dialog } from "./Dialog";
 import { characterMarkerMarkup } from "./character-art";
 import { levelProgress } from "./levels";
-import type { WornWearable } from "./types";
+import type { Player, WornWearable } from "./types";
 import "./wearables.css";
 
 /** The ready phrases, translated on this device (server keys → text). */
@@ -44,6 +44,10 @@ type Card = {
   gotchi: { name: string; brs: number | null } | null;
   stats: { finds: number; quests: number; monsters: number; wearables: number };
   slots: { slot: string; item: (WornWearable & { name: string; source: "original" | "clone" }) | null }[];
+  /** Outfit tag of the worn gotchi (changes the avatar URL). */
+  look: string;
+  /** Own profile: slots dress the worn gotchi, or the starter ghost's clones. */
+  dress: { gotchi: boolean; dressed: string[] } | null;
   canWave: boolean;
   waveHint: string | null;
   phrases: { key: string; text: string }[];
@@ -57,14 +61,20 @@ type Card = {
  * sharing a position and never showing one; only what is worn, no wallet
  * address and no inventory. Test-world bots carry a "demo-bot" tag.
  */
+type Owned = { id: number; name: string; slot: string; rarity: string; source: "find" | "original"; equipped: boolean; verified: boolean };
+const catalogSlot = (slot: string) => (slot === "handLeft" || slot === "handRight" ? "hand" : slot);
+
 export function PlayerCard({
   playerId,
   onClose,
   onBlocked,
   onMessage,
   onEdit,
+  onPlayer,
 }: {
   playerId: string;
+  /** Own profile: the explorer after an outfit change (map marker, Inventory). */
+  onPlayer?: (player: Player) => void;
   /** Own profile: opens the Inventory to change what is worn. */
   onEdit?: () => void;
   onClose: () => void;
@@ -77,6 +87,7 @@ export function PlayerCard({
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
+  const [reload, setReload] = useState(0);
   useEffect(() => {
     let live = true;
     api<Card>(`/players/card?playerId=${encodeURIComponent(playerId)}`)
@@ -85,7 +96,49 @@ export function PlayerCard({
     return () => {
       live = false;
     };
-  }, [playerId]);
+  }, [playerId, reload]);
+  // Own profile: tap a slot to dress it from what you found or your wallet holds.
+  const [picking, setPicking] = useState<string | null>(null);
+  const [owned, setOwned] = useState<Owned[] | null>(null);
+  useEffect(() => {
+    if (!picking || owned) return;
+    api<{ items: Owned[] }>("/wearables")
+      .then((r) => setOwned(r.items))
+      .catch((e: Error) => setStatus(e.message));
+  }, [picking, owned]);
+  async function dress(slot: string, itemId: number | null) {
+    if (!card?.dress) return;
+    setBusy(true);
+    try {
+      let r: { player: Player; items?: Owned[] };
+      if (card.dress.gotchi) r = await api("/aavegotchi/outfit", { slot, itemId });
+      else {
+        const current = card.slots.find((s) => s.slot === slot)?.item;
+        r = itemId
+          ? await api("/wearables/equip", { itemId, equipped: true })
+          : await api("/wearables/equip", { itemId: current?.id, equipped: false });
+      }
+      if (r.items) setOwned(r.items);
+      onPlayer?.(r.player);
+      setPicking(null);
+      setStatus("");
+      setReload((n) => n + 1);
+    } catch (e) {
+      setStatus((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const choices =
+    picking && owned && card?.dress
+      ? owned.filter(
+          (i) =>
+            i.slot === catalogSlot(picking) &&
+            // A gotchi wears map finds and originals the wallet holds now.
+            (!card.dress!.gotchi || i.source === "find" || i.verified),
+        )
+      : [];
+  const pickedItem = picking ? card?.slots.find((s) => s.slot === picking)?.item : null;
   async function wave(phrase: string) {
     setBusy(true);
     try {
@@ -148,7 +201,7 @@ export function PlayerCard({
                   above: card.auras.above,
                   below: card.auras.below,
                   skinUrl: card.original
-                    ? `/api/players/skin?playerId=${encodeURIComponent(card.id)}`
+                    ? `/api/players/skin?playerId=${encodeURIComponent(card.id)}${card.look ? `&v=${encodeURIComponent(card.look)}` : ""}`
                     : undefined,
                   wearables: card.wearables,
                 }),
@@ -251,20 +304,41 @@ export function PlayerCard({
               </div>
             )}
             <h3>{tr("Wearing")}</h3>
+            {card.dress && <p className="player-card-hint">{tr("Tap a slot to dress it.")}</p>}
             <ul className="player-card-slots">
-              {card.slots.map(({ slot, item }) => (
-                <li key={slot} className={item ? `filled rarity-${item.rarity || "common"}` : "empty"}>
-                  {item ? (
-                    <img src={`/api/wearables/art/${item.id}.svg`} alt={item.name} loading="lazy" />
-                  ) : (
-                    <span aria-hidden="true" />
-                  )}
-                  {item?.verified && (
-                    <SealCheck className="player-card-verified" size={18} weight="fill" aria-label={tr("Verified original")} />
-                  )}
-                  <small>{SLOT_LABEL[slot]?.() || slot}</small>
-                </li>
-              ))}
+              {card.slots.map(({ slot, item }) => {
+                const inner = (
+                  <>
+                    {item ? (
+                      <img src={`/api/wearables/art/${item.id}.svg`} alt={item.name} loading="lazy" />
+                    ) : (
+                      <span aria-hidden="true" />
+                    )}
+                    {item?.verified && (
+                      <SealCheck className="player-card-verified" size={18} weight="fill" aria-label={tr("Verified original")} />
+                    )}
+                    <small>{SLOT_LABEL[slot]?.() || slot}</small>
+                  </>
+                );
+                return (
+                  <li
+                    key={slot}
+                    className={`${item ? `filled rarity-${item.rarity || "common"}` : "empty"}${picking === slot ? " picking" : ""}`}
+                  >
+                    {card.dress ? (
+                      <button
+                        aria-expanded={picking === slot}
+                        aria-label={`${SLOT_LABEL[slot]?.() || slot}: ${item?.name || tr("Empty")}`}
+                        onClick={() => setPicking((p) => (p === slot ? null : slot))}
+                      >
+                        {inner}
+                      </button>
+                    ) : (
+                      inner
+                    )}
+                  </li>
+                );
+              })}
               {(["above", "below"] as const).map((slot) => {
                 const color = card.auras[slot];
                 return (
@@ -279,6 +353,47 @@ export function PlayerCard({
                 );
               })}
             </ul>
+            {picking && card.dress && (
+              <div className="player-card-picker" aria-label={SLOT_LABEL[picking]?.() || picking}>
+                {!owned ? (
+                  <p>{tr("Loading…")}</p>
+                ) : (
+                  <ul>
+                    {choices.map((i) => (
+                      <li key={i.id}>
+                        <button
+                          disabled={busy || pickedItem?.id === i.id}
+                          aria-pressed={pickedItem?.id === i.id}
+                          className={`rarity-${i.rarity}`}
+                          onClick={() => void dress(picking, i.id)}
+                        >
+                          <img src={`/api/wearables/art/${i.id}.svg`} alt="" loading="lazy" />
+                          <span>{i.name}</span>
+                          {i.verified && <SealCheck size={14} weight="fill" aria-label={tr("Verified original")} />}
+                        </button>
+                      </li>
+                    ))}
+                    {(card.dress.gotchi || pickedItem) && (
+                      <li>
+                        <button disabled={busy || (card.dress.gotchi && !pickedItem)} onClick={() => void dress(picking, card.dress!.gotchi ? 0 : null)}>
+                          <span>{tr("Empty")}</span>
+                        </button>
+                      </li>
+                    )}
+                    {card.dress.gotchi && card.dress.dressed.includes(picking) && (
+                      <li>
+                        <button disabled={busy} onClick={() => void dress(picking, null)}>
+                          <span>{tr("Gotchi's own gear")}</span>
+                        </button>
+                      </li>
+                    )}
+                  </ul>
+                )}
+                {owned && !choices.length && (
+                  <p>{tr("Nothing for this slot yet. Find wearables on the map or link the wallet that holds them.")}</p>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

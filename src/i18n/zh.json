@@ -3135,5 +3135,9 @@
  "Monsters": "怪物",
  "Wearables": "可穿戴物品",
  "Change outfit": "更换装扮",
+ "Empty": "空",
+ "Tap a slot to dress it.": "点按槽位来装扮。",
+ "Gotchi's own gear": "Gotchi 自己的装备",
+ "Nothing for this slot yet. Find wearables on the map or link the wallet that holds them.": "这个槽位还没有物品。在地图上寻找可穿戴物品，或关联持有它们的钱包。",
  "Private chats with explorers": "与探险者的私密聊天"
 }

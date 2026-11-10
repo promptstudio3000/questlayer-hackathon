@@ -1,5 +1,6 @@
 import { nativeItem } from "./native/collectibles.mjs";
 import { wornWearables } from "./gotchi-wearables.mjs";
+import { outfitVersion, ownedOutfit } from "./gotchi-outfit.mjs";
 const validColor = (value) =>
   typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : null;
 export async function publicAppearance(
@@ -38,8 +39,10 @@ export async function publicAppearance(
       JSON.parse(link.data).gotchis?.some(
         (g) => g.tokenId === appearance.originTokenId,
       )
-    )
+    ) {
       result.skinTokenId = appearance.originTokenId;
+      result.skinVersion = outfitVersion(ownedOutfit(db, player.id, appearance.outfit, now));
+    }
   }
   if (player.native_outfit) {
     result.source = "native";
@@ -102,6 +105,10 @@ export async function publicAppearances(db, players, native, options) {
 
 // A viewer must not need to own another consenting explorer's original skin.
 export function sharedOriginalSvg(db, playerId, now = Date.now()) {
+  return sharedOriginal(db, playerId, now)?.svg || null;
+}
+/** The shared original gotchi (with its art) of an explorer sharing presence. */
+export function sharedOriginal(db, playerId, now = Date.now()) {
   const player = db
     .prepare(
       "SELECT p.appearance FROM players p JOIN presence pr ON pr.player_id=p.id WHERE p.id=? AND pr.expires_at>? AND pr.updated_at>?",
@@ -121,6 +128,6 @@ export function sharedOriginalSvg(db, playerId, now = Date.now()) {
       (g) => g.tokenId === appearance.originTokenId,
     );
   return typeof gotchi?.svg === "string" && gotchi.svg.length <= 200000
-    ? gotchi.svg
+    ? gotchi
     : null;
 }

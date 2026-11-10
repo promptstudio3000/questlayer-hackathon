@@ -3135,5 +3135,9 @@
  "Monsters": "Monstra",
  "Wearables": "Wearables",
  "Change outfit": "Změnit oblečení",
+ "Empty": "Prázdné",
+ "Tap a slot to dress it.": "Klepnutím na slot ho oblékneš.",
+ "Gotchi's own gear": "Vlastní výbava gotchiho",
+ "Nothing for this slot yet. Find wearables on the map or link the wallet that holds them.": "Pro tento slot zatím nic nemáš. Najdi věci na mapě nebo propoj peněženku, která je drží.",
  "Private chats with explorers": "Soukromé rozhovory s průzkumníky"
 }
