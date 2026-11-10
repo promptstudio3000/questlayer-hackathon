@@ -62,6 +62,9 @@ import {
   NearbyMarket,
   GoldShop,
   PlaceMessages,
+  PlaceCompose,
+  CommunityPlaces,
+  AddPlaceDialog,
   EmotePicker,
 } from "./lazy-panels";
 import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
@@ -179,6 +182,7 @@ import {
   ChartDonut,
   Wallet,
   MapPin,
+  ChatsCircle,
   NavigationArrow,
   GlobeHemisphereWest,
   Crosshair,
@@ -232,6 +236,8 @@ import { Details, ScreenTabPanel, ScreenTabs } from "./ScreenTabs";
 import {
   BAG_TABS,
   COMMUNITY_TABS,
+  LOCAL_CHAT_TABS,
+  type LocalChatView,
   MARKET_TABS,
   PROFILE_TABS,
   ProfileHero,
@@ -392,6 +398,8 @@ export default function App() {
     [myFrame, setMyFrame] = useState<string | null>(null),
     [goldMapData, setGoldMapData] = useState<GoldMap | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
+    [chatView, setChatView] = useState<LocalChatView>("notes"),
+    [quickCreate, setQuickCreate] = useState<"note" | "topic" | "place" | null>(null),
     [emotePicker, setEmotePicker] = useState(false),
     // The camera turns with the explorer unless switched off in Map settings.
     [mapRotate, setMapRotate] = useState(() => {
@@ -3473,7 +3481,9 @@ export default function App() {
     setMarketForm(form);
   };
   const mapActions: MapAction[] = [
-    { id: "note", label: tr("Leave a note"), icon: NotePencil, onSelect: () => { setNotesView("compose"); setTab("messages"); } },
+    { id: "note", label: tr("Leave a note"), icon: NotePencil, onSelect: () => setQuickCreate("note") },
+    { id: "topic", label: tr("Open a topic"), icon: ChatsCircle, onSelect: () => setQuickCreate("topic") },
+    { id: "place", label: tr("Add a place"), icon: MapPin, onSelect: () => setQuickCreate("place") },
     { id: "mood", label: tr("Change mood"), icon: Smiley, onSelect: () => setEmotePicker(true) },
     ...(!nativePlay
       ? [
@@ -3626,7 +3636,8 @@ export default function App() {
           route={questRoute}
           onPlacePin={(id) => {
             setPlaceOpenId(id);
-            setTab("places");
+            setChatView("topics");
+            setTab("messages");
             setSheetExpanded(true);
           }}
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
@@ -4031,19 +4042,12 @@ export default function App() {
           )}
           {tab === "places" && (
             <ScreenTabPanel idBase="community" value="places">
-              <PlaceMessages
+              <CommunityPlaces
                 key={player.id}
                 position={position}
                 fix={fix}
                 arena={arena && !nativePlay}
                 notify={notify}
-                onSpent={() => {
-                  void me();
-                  void refreshGoldMap();
-                }}
-                openId={placeOpenId}
-                onOpened={clearPlaceOpen}
-                onPublish={recordAccount ? publishPlace : undefined}
               />
             </ScreenTabPanel>
           )}
@@ -4950,6 +4954,33 @@ export default function App() {
           )}
           {tab === "messages" && (
             <ScreenTabPanel idBase="community" value="notes">
+            <div className="local-chat">
+            <ScreenTabs
+              label={tr("Local chat")}
+              idBase="chat"
+              variant="sub"
+              sticky={false}
+              tabs={LOCAL_CHAT_TABS}
+              value={chatView}
+              onChange={setChatView}
+            />
+            <ScreenTabPanel idBase="chat" value={chatView}>
+            {chatView === "topics" ? (
+              <PlaceMessages
+                key={player.id}
+                position={position}
+                fix={fix}
+                arena={arena && !nativePlay}
+                notify={notify}
+                onSpent={() => {
+                  void me();
+                  void refreshGoldMap();
+                }}
+                openId={placeOpenId}
+                onOpened={clearPlaceOpen}
+                onPublish={recordAccount ? publishPlace : undefined}
+              />
+            ) : (
             <MapNotes
               key={player.id}
               playerId={player.id}
@@ -4966,6 +4997,9 @@ export default function App() {
                 window.dispatchEvent(new Event("questlayer:social-blocks"));
               }}
             />
+            )}
+            </ScreenTabPanel>
+            </div>
             </ScreenTabPanel>
           )}
           {tab === "bounties" && (
@@ -5091,6 +5125,43 @@ export default function App() {
                 />
               )}
             </MapActions>
+          )}
+          {quickCreate === "note" && (
+            <MapNotes
+              quick
+              playerId={player.id}
+              position={position}
+              fix={fix}
+              arena={arena}
+              notify={notify}
+              onDone={() => setQuickCreate(null)}
+            />
+          )}
+          {quickCreate === "topic" && (
+            <PlaceCompose
+              kind="topic"
+              position={position}
+              fix={fix}
+              arena={arena && !nativePlay}
+              notify={notify}
+              onClose={() => setQuickCreate(null)}
+              onCreated={(thread) => {
+                setQuickCreate(null);
+                void me();
+                void refreshGoldMap();
+                notify(tr("Your topic is on the map: {0}", { 0: thread.title }));
+              }}
+            />
+          )}
+          {quickCreate === "place" && (
+            <AddPlaceDialog
+              position={position}
+              fix={fix}
+              arena={arena && !nativePlay}
+              notify={notify}
+              onClose={() => setQuickCreate(null)}
+              onAdded={() => setQuickCreate(null)}
+            />
           )}
         </>
       )}

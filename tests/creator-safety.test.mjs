@@ -1071,6 +1071,7 @@ test("enabled-only additive safety initialization and private backup restore pre
       "creator-safety",
       "social-blocks",
       "social-content",
+      "social-note-expiry",
     ].map((name) => ({ name, version: 1 })),
   );
   for (const row of f.db

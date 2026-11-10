@@ -49,6 +49,46 @@ export const SEED_NOTES = Object.freeze([
   { slug: "radbuza", author: "seed-p-ondra", text: "Radbuza riverbank walk: three monsters spotted, bring friends for the boss.", at: near(-0.0042, -0.0085) },
 ]);
 
+// Community places (Community · Places): spots seed explorers recommend
+// around the square. Free; no QGOLD or XP moves.
+export const SEED_COMMUNITY_PLACES = Object.freeze([
+  { slug: "tower-view", author: "seed-p-vera", kind: "view", name: "St Bartholomew's tower", note: "The highest church tower in Czechia. On a clear day you see the Šumava hills from the top.", at: near(0.0001, 0.0002) },
+  { slug: "courtyard", author: "seed-p-jana", kind: "hidden", name: "Courtyard behind the bookshop", note: "A quiet passage off the square with a stone well. Nice place to sit down for a minute.", at: near(-0.0009, 0.0021) },
+  { slug: "kopecky", author: "seed-p-lucie", kind: "nature", name: "Kopecký park", note: "Shady benches, ducks in the pond and almost no traffic noise.", at: near(-0.0035, 0.0015) },
+  { slug: "synagogue", author: "seed-p-marek", kind: "history", name: "Great Synagogue", note: "The third largest synagogue in the world. The facade is worth a slow walk around.", at: near(-0.0012, -0.0068) },
+  { slug: "mural", author: "seed-p-tomas", kind: "art", name: "Purple ghost mural", note: "A tiny ghost painted under a window on the corner house. Look up!", at: near(0.0016, -0.0024) },
+  { slug: "coffee", author: "seed-p-ondra", kind: "food", name: "Coffee by the fountains", note: "Good flat white and a window seat with a view of the golden fountains.", at: near(-0.0005, -0.0012) },
+  { slug: "riverside", author: "seed-p-jana", kind: "play", name: "Radbuza riverside path", note: "Flat gravel path along the river, great for a walking hunt with friends.", at: near(-0.0042, -0.0085) },
+]);
+
+// Shouts and topics (Community · Local chat). Seed topics stay free for good;
+// seed shouts are kept on the map for the next 7 days on every start.
+export const SEED_PLACE_THREADS = Object.freeze([
+  { slug: "shout-fountain", kind: "shout", author: "seed-p-tomas", text: "Wisp spotted by the golden fountain right now! 👻", at: near(-0.0006, -0.0009) },
+  { slug: "shout-boss", kind: "shout", author: "seed-p-ondra", text: "Boss hunt at the Radbuza at 6 pm, who's in?", at: near(-0.0042, -0.0085) },
+  {
+    slug: "topic-routes",
+    kind: "topic",
+    author: "seed-p-vera",
+    title: "Best walking loop around the old town?",
+    text: "Share your favourite loop for a 30 minute evening walk. Mine starts at the square and ends in Kopecký park.",
+    at: near(0.0002, 0.0004),
+    replies: [
+      { author: "seed-p-jana", text: "Square, synagogue, then back along the park ring. Lots of coins on the way." },
+      { author: "seed-p-lucie", text: "I add the riverside path when the weather is good." },
+    ],
+  },
+  {
+    slug: "topic-trade",
+    kind: "topic",
+    author: "seed-p-marek",
+    title: "Aura swap meetup",
+    text: "Bring the Auras you want to swap. Saturday afternoon by the fountains.",
+    at: near(-0.0006, -0.0011),
+    replies: [{ author: "seed-p-tomas", text: "I have a spare Stormcrown, looking for Meadow Bloom." }],
+  },
+]);
+
 // Auras seed explorers keep listed on the practice market. Restocked when sold.
 export const SEED_LISTINGS = Object.freeze([
   { slug: "ember", seller: "seed-p-jana", aura: "Ember Wisp", price: 2_500 },
