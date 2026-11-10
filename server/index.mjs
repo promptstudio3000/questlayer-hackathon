@@ -110,6 +110,8 @@ import {
   wornWearables,
 } from "./gotchi-wearables.mjs";
 import { isDemoBot, playerCard, sendWave, takeWaves } from "./player-waves.mjs";
+import { PlayerInbox, socialInboxReader } from "./inbox/service.mjs";
+import { createInboxRoutes } from "./inbox/routes.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
@@ -125,6 +127,7 @@ import {
   featureEnabled,
   DEFAULT_RPC,
   manifestName,
+  SOCIAL_CONTRACT_ID,
 } from "./native/network.mjs";
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -907,6 +910,32 @@ const marketRoutes = createMarketRoutes({
       .some((w) => marketModerators.has(w.account_id));
   },
 });
+// Encrypted player inbox (docs/PLAYER-INBOX.md): ciphertext on NEAR Social,
+// written by the sender's own account through the relayer. INBOX_ENABLED=0
+// switches it off; moderators are the market/creator moderators.
+const playerInbox =
+  process.env.INBOX_ENABLED === "0"
+    ? null
+    : new PlayerInbox(db, socialInboxReader(new NativeContractReader(provider, SOCIAL_CONTRACT_ID)), {
+        isModerator: (player) =>
+          marketModerators.has(player) ||
+          db
+            .prepare("SELECT account_id FROM wallet_links WHERE player_id=?")
+            .all(player)
+            .some((w) => marketModerators.has(w.account_id)),
+      });
+const inboxRoutes = createInboxRoutes(playerInbox);
+if (playerInbox && !backgroundWorkersDisabled) {
+  let inboxBusy = false;
+  setInterval(() => {
+    if (inboxBusy) return;
+    inboxBusy = true;
+    playerInbox
+      .confirmPending()
+      .catch((error) => console.error("Inbox delivery:", String(error?.message || error).slice(0, 200)))
+      .finally(() => (inboxBusy = false));
+  }, 20_000).unref();
+}
 // Badges (docs/BADGES.md): place badges for notable places reached with GPS
 // (game database, cosmetic, never sellable) and POAP-like player badges on
 // the soulbound questlayer_badges contract. The contract id comes from
@@ -2087,6 +2116,8 @@ async function api(req, res, url) {
   if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await inboxRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await marketRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;

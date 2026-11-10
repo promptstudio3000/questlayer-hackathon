@@ -81,7 +81,8 @@ gas above `RELAY_MAX_GAS`, JSON arguments above 8 KiB, purchase prices, mainnet.
 - Daily budgets: `RELAY_MAX_JOBS_PER_DAY` submissions, `RELAY_MAX_DEPOSIT_YOCTO_PER_DAY` of attached storage deposits and `RELAY_TOPUP_CAP_YOCTO` per account. The deposit budget matters because a relayed call that fails refunds its deposit to the player's account, not to the relayer.
 - Admission checks against game and chain state, before any budget is reserved:
   - SocialDB `set` is sponsored only for the records the game quotes itself: exactly one
-    `<account>/questlayer/profile`, `questlayer/notes/<message id>` or `questlayer/places/<place|post id>`
+    `<account>/questlayer/profile`, `questlayer/notes/<message id>`, `questlayer/places/<place|post id>`,
+    `questlayer/inbox_key` or `questlayer/inbox/<msg id>` (encrypted inbox, docs/PLAYER-INBOX.md)
     record with its exact field set, at most 4 KiB of arguments (`RELAY_SOCIAL_SHAPE`). The 0.05 NEAR
     storage deposit is carried only while the account's SocialDB storage has less than 0.01 NEAR
     available (`RELAY_SOCIAL_STORAGE`); otherwise the record is signed with 1 yocto.

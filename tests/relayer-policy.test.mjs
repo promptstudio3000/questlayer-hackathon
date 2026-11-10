@@ -805,6 +805,48 @@ test("SocialDB writes are sponsored only for the game's own records and size", a
   await rejects(social(socialSet("profile", PROFILE, "bob.testnet")), "RELAY_ARGS");
 });
 
+test("encrypted inbox records are sponsored with their exact shape (docs/PLAYER-INBOX.md)", async () => {
+  const { generateInboxKey, sealInboxMessage, toBase64Url } = await import("../server/inbox/crypto.mjs");
+  const social = (args, deposit = 1n) =>
+    decoded({ receiverId: CONTRACTS.social, action: call("set", args, deposit) });
+  const a = generateInboxKey(),
+    b = generateInboxKey(),
+    id = "msg_0e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b";
+  const record = sealInboxMessage({
+    secret: a.secret,
+    accountId: SENDER,
+    peerAccountId: "bob.players.questlayer.testnet",
+    peerPublicKey: b.publicKey,
+    messageId: id,
+    text: "😀".repeat(500),
+    createdAt: 1794268800000,
+  });
+  // The largest possible message still fits the sponsored argument cap.
+  assert.equal(
+    validateDelegate(await social(socialSet("inbox", { [id]: record }), STORAGE_DEPOSIT), ctx()).methodName,
+    "set",
+  );
+  const key = {
+    schema: "questlayer.inbox-key/1",
+    key: toBase64Url(a.publicKey),
+    created_at: "1794268800000",
+    mutation_id: "inboxkey_0e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+  };
+  assert.equal(validateDelegate(await social(socialSet("inbox_key", key)), ctx()).methodName, "set");
+  for (const args of [
+    socialSet("inbox", { [id]: { ...record, extra: "x" } }),
+    socialSet("inbox", { [id]: { ...record, to: SENDER } }),
+    socialSet("inbox", { [id]: { ...record, box: "x".repeat(4000) } }),
+    socialSet("inbox", { [id]: record, ["msg_1e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b"]: record }),
+    socialSet("inbox", { "free-key": record }),
+    socialSet("inbox", record),
+    socialSet("inbox_key", { ...key, key: "not-a-key" }),
+    socialSet("inbox_key", { ...key, note: "x" }),
+  ])
+    await rejects(social(args), "RELAY_SOCIAL_SHAPE");
+  await rejects(social(socialSet("inbox", { [id]: record }, "bob.testnet")), "RELAY_ARGS");
+});
+
 test("redeem_aura is sponsored only with the exact voucher argument shape", async () => {
   const redeem = (args) =>
     decoded({ action: call("redeem_aura", args, STORAGE_DEPOSIT) });
