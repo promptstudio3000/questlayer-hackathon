@@ -64,6 +64,7 @@ const GotchiWardrobe = lazy(() =>
 import "./inventory-game.css";
 import "./inventory-polish.css";
 import { tr } from "./i18n";
+import { OwnedGotchis } from "./OwnedGotchis";
 
 const rarityNames: Record<string, string> = {
   get common() { return tr("Common"); },
@@ -84,7 +85,7 @@ export type OriginalInventory = {
   verifiedAt?: number;
   truncated?: boolean;
   wearables?: OriginalItem[];
-  gotchis?: { tokenId: string; name: string; hasImage: boolean }[];
+  gotchis?: { tokenId: string; name: string; hasImage: boolean; brs?: number | null; claimed?: boolean }[];
 };
 const readOriginals = (refresh: boolean) =>
   api<OriginalInventory>(`/aavegotchi${refresh ? "?refresh=1" : ""}`);
@@ -435,7 +436,9 @@ export function Inventory({
               <Check size={14} aria-hidden="true" />
             )}
             {player.nativeOutfit ? tr("Secured outfit") : tr("Game outfit")} ·{" "}
-            {player.appearance?.originTokenId ? tr("Original") : tr("Starter ghost")}
+            {player.appearance?.originTokenId
+              ? origin?.gotchis?.find((g) => g.tokenId === player.appearance?.originTokenId)?.name || tr("Original")
+              : tr("Starter ghost")}
           </span>
         </div>
         <div className="inv-hero-stage">
@@ -594,10 +597,20 @@ export function Inventory({
                   ? tr("{0} still to find", { 0: lockedEditions.length })
                   : tr("Catalog complete")}
           </p>
-          <button type="button" className="inv-wearable-hint" onClick={() => setTab("wardrobe")}>
-            <TShirt size={18} aria-hidden="true" />
-            <span>{tr("Wearables you pick up on the map are in your Wardrobe.")}</span>
-          </button>
+          {origin?.linked && origin.status === "verified" && (origin.gotchis?.length || origin.wearables?.length) ? (
+            <OwnedGotchis
+              origin={origin}
+              wearing={player.appearance?.originTokenId}
+              locked={locked}
+              onWear={(id) => void onSkin(id)}
+              onWardrobe={() => setTab("wardrobe")}
+            />
+          ) : (
+            <button type="button" className="inv-wearable-hint" onClick={() => setTab("wardrobe")}>
+              <TShirt size={18} aria-hidden="true" />
+              <span>{tr("Wearables you pick up on the map are in your Wardrobe.")}</span>
+            </button>
+          )}
           <div className="inv-chips" role="group" aria-label={tr("Filter Auras")}>
             {(["all", "above", "below"] as const).map((slot) => (
               <button

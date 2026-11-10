@@ -3087,5 +3087,11 @@
  "A demo bot from the test world. It walks the map so you can see how other explorers look.": "Un bot de démo du monde de test. Il se promène sur la carte pour montrer à quoi ressemblent les autres explorateurs.",
  "Messages are coming soon.": "Les messages arrivent bientôt.",
  "Write a message": "Écrire un message",
- "You · open your profile": "Vous · ouvrir votre profil"
+ "You · open your profile": "Vous · ouvrir votre profil",
+ "Your Aavegotchis": "Tes Aavegotchis",
+ "Wearing {0}": "Tu portes {0}",
+ "Wear {0}": "Porter {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "1 wearable dans ton portefeuille",
+ "{0} wearables in your wallet": "{0} wearables dans ton portefeuille"
 }

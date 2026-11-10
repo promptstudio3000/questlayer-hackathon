@@ -3087,5 +3087,11 @@
  "A demo bot from the test world. It walks the map so you can see how other explorers look.": "टेस्ट दुनिया का एक डेमो बॉट। यह नक्शे पर चलता है ताकि आप देख सकें कि दूसरे खोजी कैसे दिखते हैं।",
  "Messages are coming soon.": "संदेश जल्द आ रहे हैं।",
  "Write a message": "संदेश लिखें",
- "You · open your profile": "आप · अपनी प्रोफ़ाइल खोलें"
+ "You · open your profile": "आप · अपनी प्रोफ़ाइल खोलें",
+ "Your Aavegotchis": "आपके Aavegotchi",
+ "Wearing {0}": "{0} पहना है",
+ "Wear {0}": "{0} पहनें",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "आपके वॉलेट में 1 वियरेबल",
+ "{0} wearables in your wallet": "आपके वॉलेट में {0} वियरेबल"
 }

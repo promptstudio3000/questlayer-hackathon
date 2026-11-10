@@ -45,7 +45,11 @@ npm run seed:test -- remove   [--db path]
 - **Daily board.** Vera, Tomas and Jana finish today's board 7, 11 and 16 hours
   into each world day, so the "explorers finished today" count moves
   (`docs/DAILY-BOARD.md`). No XP for them.
-- **Starter kit for every real explorer**, once, on sign-up or the next app load,
+- **Starter kit (opt-in, `TEST_SEED_KIT=1`)**. Off by default since 10 Nov 2026:
+  players read the kit Auras as their own finds. While it is off, every start
+  takes earlier kits back (`revertKits`: kit Auras, kit XP and shards; bots,
+  notes, quests and listings stay). With `TEST_SEED_KIT=1` every real explorer
+  gets it once, on sign-up or the next app load,
   so the Inventory backpack grid is full and the level bar is part filled:
   - Nine practice Auras across every rarity and both slots: Northern Lights
     (can be secured as a NEAR Aura and sold on the signed-order market), Ember

@@ -237,3 +237,27 @@ test("starter kit never replaces an Aura the explorer already wears", () => {
     db.close();
   }
 });
+
+test("revertKits takes kits back and keeps the rest of the test world", () => {
+  const now = 1_800_000_000_000;
+  const { db, seed } = world(() => now);
+  try {
+    seed.apply();
+    const me = createPlayer(db, "Kit", now);
+    db.prepare("INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?,?)").run(
+      "own-aura", me, "aura", "Pilgrim's Path", "rare", "below", "#c9a35a", 0, null, now,
+    );
+    assert.equal(seed.grantKit(me, now), true);
+    const bots = db.prepare("SELECT COUNT(*) n FROM players WHERE substr(id,1,5)='seed-'").get().n;
+    assert.ok(seed.revertKits().removed > 0);
+    assert.deepEqual(
+      db.prepare("SELECT id FROM inventory WHERE player_id=? AND kind='aura'").all(me).map((r) => r.id),
+      ["own-aura"],
+    );
+    assert.equal(demoProgression(db, me).earnedXp, 0);
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM players WHERE substr(id,1,5)='seed-'").get().n, bots);
+    assert.equal(seed.revertKits().removed, 0);
+  } finally {
+    db.close();
+  }
+});

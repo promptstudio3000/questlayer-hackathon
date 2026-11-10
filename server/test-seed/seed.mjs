@@ -518,6 +518,21 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
   /** Removes every seed row and reverts starter kits. One transaction; a failure changes nothing. */
   function purge() {
     if (!present()) return { removed: 0 };
+    return removeRows("seed-", { marker: true });
+  }
+
+  /**
+   * Takes starter kits back from real explorers (Auras, kit XP and shards) and
+   * leaves the rest of the test world. Runs on every start while kits are off
+   * (TEST_SEED_KIT unset), so a kit granted earlier does not linger.
+   */
+  function revertKits() {
+    if (!db.prepare("SELECT 1 FROM history WHERE substr(id,1,9)='seed-kit-' LIMIT 1").get()) return { removed: 0 };
+    return removeRows("seed-kit-", { marker: false });
+  }
+
+  function removeRows(prefix, { marker }) {
+    const like = (column) => `substr(${column},1,${prefix.length})='${prefix}'`;
     const fkKey = (r) => `${r.table}:${r.rowid}`;
     const baseline = new Set(db.prepare("PRAGMA foreign_key_check").all().map(fkKey));
     return atomic(db, () => {
@@ -551,11 +566,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
           .map((c) => c.name)
           .filter((c) => REFERENCE_COLUMNS.includes(c));
         if (!columns.length) continue;
-        const where = columns.map((c) => `substr(${quote(c)},1,5)='seed-'`).join(" OR ");
+        const where = columns.map((c) => like(quote(c))).join(" OR ");
         removed += Number(db.prepare(`DELETE FROM ${quote(table)} WHERE ${where}`).run().changes);
       }
       // Creator money jobs name quests only inside their JSON arguments.
-      if (tableExists(db, "creator_money_jobs"))
+      if (marker && tableExists(db, "creator_money_jobs"))
         removed += Number(
           db
             .prepare(
@@ -573,10 +588,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
         for (const r of orphans)
           removed += Number(db.prepare(`DELETE FROM ${quote(r.table)} WHERE rowid=?`).run(r.rowid).changes);
       }
-      db.prepare("DELETE FROM daily_jobs WHERE substr(job_key,1,?)=?").run(MARKER_PREFIX.length, MARKER_PREFIX);
+      if (marker)
+        db.prepare("DELETE FROM daily_jobs WHERE substr(job_key,1,?)=?").run(MARKER_PREFIX.length, MARKER_PREFIX);
       return { removed };
     });
   }
 
-  return { apply, purge, status, grantKit, tickPresence, tickEconomy, tickBoards };
+  return { apply, purge, revertKits, status, grantKit, tickPresence, tickEconomy, tickBoards };
 }

@@ -103,6 +103,7 @@ import { startGlobalActivityLoader, globalActivityStatus } from "./global-activi
 import { startFlavourWorker } from "./ai/flavour-batch.mjs";
 import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
+import { createOriginSync, dressDefault } from "./origin-sync.mjs";
 import {
   WEARABLES,
   equipWearable,
@@ -258,6 +259,7 @@ ensureMapReadIndexes(db);
 ensureHotPathIndexes(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
+const testSeedKit = process.env.TEST_SEED_KIT === "1";
 const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
 const noteMedia = new NoteMedia();
@@ -984,9 +986,15 @@ const testSeed = createTestSeed(db, {
   log: (message) => console.log(message),
 });
 try {
-  if (testSeedMode === "apply")
+  if (testSeedMode === "apply") {
     console.log("Test seed applied:", JSON.stringify(testSeed.apply()));
-  else {
+    // Starter kits (9 Auras + XP for every real explorer) are opt-in: players
+    // read kit Auras as their own finds. Off takes earlier kits back.
+    if (!testSeedKit) {
+      const reverted = testSeed.revertKits();
+      if (reverted.removed) console.log("Test seed kits reverted:", JSON.stringify(reverted));
+    }
+  } else {
     const purged = testSeed.purge();
     if (purged.removed) console.log("Test seed removed:", JSON.stringify(purged));
   }
@@ -994,6 +1002,9 @@ try {
   console.error("Test seed failed:", error?.code || error?.message || error);
 }
 const testSeedActive = testSeedMode === "apply";
+const grantTestKit = (player) => {
+  if (testSeedActive && testSeedKit) testSeed.grantKit(player);
+};
 const challengeRoutes = createChallengeRoutes(
   createMonsterChallenges(db, actorService, {
     levelOf: (player) => demoProgression(db, player).level,
@@ -1152,6 +1163,7 @@ async function refreshOriginals(address) {
     originalLookups.delete(address);
   }
 }
+const originSync = createOriginSync(db, { read: refreshOriginals, log: (m) => console.warn(m) });
 const readPublicDistribution = publicDistribution(nativeRewards, auditDistribution);
 const listeners = new Set(),
   rates = new RateWindows();
@@ -1565,7 +1577,7 @@ async function api(req, res, url) {
     const input = await body(req);
     const result = game.session(db, input.name);
     identitySessions.record(result.token, "guest");
-    if (testSeedActive) testSeed.grantKit(result.player.id);
+    grantTestKit(result.player.id);
     return respond(res, { player: profile(result.player.id) }, 201, {
       "Set-Cookie": cookie(result.token),
     });
@@ -1913,6 +1925,10 @@ async function api(req, res, url) {
         returning: !!existing,
       };
     });
+    // Read the wallet's Aavegotchis now, so the explorer arrives dressed in
+    // their best one and sees its wearables (server/origin-sync.mjs).
+    originSync.touch(result.player, { force: true });
+    await originSync.settle(result.player, 6000);
     return respond(
       res,
       {
@@ -2075,6 +2091,7 @@ async function api(req, res, url) {
   }
   const player = auth(req);
   req.questlayerPlayer = player;
+  originSync.touch(player);
   if (workshopRoutes && (await workshopRoutes.handle(req, res, url, { player, body, respond, assert }))) return;
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
@@ -2832,7 +2849,10 @@ async function api(req, res, url) {
     return respond(res, { player: profile(player) });
   }
   if (path === "/api/me") {
-    if (testSeedActive) testSeed.grantKit(player);
+    grantTestKit(player);
+    // A just-linked wallet: answer with the dressed original when Base is quick.
+    originSync.touch(player, { force: true });
+    await originSync.settle(player, 4000);
     return respond(res, { player: profile(player) });
   }
   if (path === "/api/events" && method === "GET") {
@@ -3235,6 +3255,8 @@ async function api(req, res, url) {
         0,
       );
     });
+    originSync.touch(player, { force: true });
+    await originSync.settle(player, 6000);
     return respond(res, { address: c.address, verified: true });
   }
   if (path === "/api/wearables" && method === "GET")
@@ -3292,6 +3314,7 @@ async function api(req, res, url) {
         db.prepare(
           "UPDATE external_links SET data=?,verified_at=? WHERE address=?",
         ).run(JSON.stringify(data), data.verifiedAt, link.address);
+        dressDefault(db, player, link.address, data);
       } catch {
         return respond(res, {
           linked: true,
@@ -3326,8 +3349,9 @@ async function api(req, res, url) {
   if (path === "/api/aavegotchi/equip" && method === "POST") {
     const i = await body(req);
     if (i.tokenId === null) {
+      // Remember the choice, so the default original is not put back on.
       db.prepare("UPDATE players SET appearance=? WHERE id=?").run(
-        "{}",
+        '{"starter":true}',
         player,
       );
       return respond(res, { player: profile(player) });

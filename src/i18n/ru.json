@@ -3087,5 +3087,11 @@
  "A demo bot from the test world. It walks the map so you can see how other explorers look.": "Демо-бот из тестового мира. Он ходит по карте, чтобы вы видели, как выглядят другие исследователи.",
  "Messages are coming soon.": "Сообщения скоро появятся.",
  "Write a message": "Написать сообщение",
- "You · open your profile": "Вы · открыть профиль"
+ "You · open your profile": "Вы · открыть профиль",
+ "Your Aavegotchis": "Твои Aavegotchi",
+ "Wearing {0}": "Сейчас: {0}",
+ "Wear {0}": "Выбрать {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "1 предмет в кошельке",
+ "{0} wearables in your wallet": "Предметов в кошельке: {0}"
 }

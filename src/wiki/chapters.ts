@@ -415,7 +415,7 @@ export const CHAPTERS: Chapter[] = [
     summary: "Free Aavegotchi wearable clones on the map, a gold check for owned originals, and explorer cards with waves.",
     status: "live",
     updated: "2026-11-10",
-    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx"],
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx"],
     blocks: [
       {
         p: "About one street find in three becomes a **wearable find** (at most 12 per world): a free in-game clone of the official Aavegotchi wearable catalogue. The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. Picking one up is a normal street coin claim (GPS check, travel guard, XP caps), logged like any street find. The clone is a database row, never an NFT, and lands in **Inventory → Wardrobe**, not in the Aura grid: the pickup moment's See it in your Wardrobe opens it there, and the backpack points to the Wardrobe too.",
@@ -431,6 +431,7 @@ export const CHAPTERS: Chapter[] = [
           "A clone is a cosmetic row: not an NFT, not tradable, no GOLD value. Rewards, XP and the economy do not change.",
           "One item per slot (head, face, eyes, body, hand, pet), drawn on the character at its official canvas place.",
           "**Verified originals:** a player who links a Base wallet with a signed message gets a gold check on every clone whose original sits in that wallet. The check lasts 24 hours after the last wallet read. Other players see only \"verified\", never the address.",
+          "**Owned Aavegotchis:** signing in with an ETH wallet (or linking one) reads its Aavegotchis on Base right away. The explorer is dressed in the owned gotchi with the highest rarity score (BRS with its wearables; portals are skipped) unless they chose the starter ghost. The backpack lists the owned gotchis, best first, to switch with one tap, and the wallet's wearables open in the Wardrobe. While the explorer plays, the wallet is re-read every few minutes; a gotchi that left the wallet is taken off.",
         ],
       },
       { h: "Explorer cards and waves" },
@@ -988,7 +989,7 @@ export const CHAPTERS: Chapter[] = [
           "Capacity depends on the build and workload. Dated load-test measurements are recorded in the performance report; physical-phone acceptance is a separate check.",
           "Phone budget: welcome-screen JS and CSS are capped; every big screen, this wiki included, loads lazily.",
           "English is the default language; other languages are opt-in dictionaries, checked on 390 px phones in CI.",
-          "The testnet runs a removable test seed (bots, quests, starter kit); every seeded row has a `seed-` id.",
+          "The testnet runs a removable test seed (bots, quests); every seeded row has a `seed-` id. The starter kit of Auras and XP for real explorers is off unless `TEST_SEED_KIT=1`, and earlier kits are taken back on start, so a new explorer starts with an empty backpack.",
           "A deploy reinstalls the separate signing-vault origin by itself whenever its code or contract list changed.",
         ],
       },

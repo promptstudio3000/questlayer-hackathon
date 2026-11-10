@@ -3087,5 +3087,11 @@
  "A demo bot from the test world. It walks the map so you can see how other explorers look.": "روبوت تجريبي من عالم الاختبار. يتجول على الخريطة لترى كيف يبدو المستكشفون الآخرون.",
  "Messages are coming soon.": "الرسائل قادمة قريبًا.",
  "Write a message": "اكتب رسالة",
- "You · open your profile": "أنت · افتح ملفك الشخصي"
+ "You · open your profile": "أنت · افتح ملفك الشخصي",
+ "Your Aavegotchis": "Aavegotchi الخاصة بك",
+ "Wearing {0}": "ترتدي {0}",
+ "Wear {0}": "ارتدِ {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "قطعة واحدة في محفظتك",
+ "{0} wearables in your wallet": "{0} قطعة في محفظتك"
 }

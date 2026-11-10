@@ -3087,5 +3087,11 @@
  "A demo bot from the test world. It walks the map so you can see how other explorers look.": "来自测试世界的演示机器人。它在地图上行走，让你看到其他探索者的样子。",
  "Messages are coming soon.": "消息功能即将推出。",
  "Write a message": "写消息",
- "You · open your profile": "你 · 打开个人资料"
+ "You · open your profile": "你 · 打开个人资料",
+ "Your Aavegotchis": "你的 Aavegotchi",
+ "Wearing {0}": "正在使用 {0}",
+ "Wear {0}": "使用 {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "钱包里有 1 件可穿戴物品",
+ "{0} wearables in your wallet": "钱包里有 {0} 件可穿戴物品"
 }

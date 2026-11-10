@@ -47,6 +47,26 @@ Built 4 November 2026. Code: `server/gotchi-wearables.mjs`, `server/player-waves
 - Public data never includes the wallet address: other players see only
   "verified" per item.
 
+### Owned Aavegotchis by default (10 Nov 2026)
+
+Before, the snapshot was read only when the Wardrobe opened, so an owner who
+signed in with an ETH wallet saw the starter ghost and no wearables.
+
+- `server/origin-sync.mjs`: ETH sign-in, linking an address and `GET /api/me`
+  read a stale or empty snapshot at once (up to 4 to 6 s, then in the
+  background); any signed-in request refreshes a snapshot older than 4 minutes,
+  at most once a minute per explorer, so looks (5-minute window) stay on while
+  the explorer plays.
+- `readGotchis` (`server/aavegotchi.mjs`) adds each gotchi's name, rarity score
+  (`modifiedTraitsAndRarityScore`, BRS with wearables) and `claimed`; unopened
+  portals revert there and get no look. Gotchis come best first.
+- The first snapshot dresses the explorer in the best gotchi (highest BRS, then
+  lowest id) unless they wear an original already or chose the starter ghost
+  (`appearance.starter`, set by "Back to starter ghost").
+- Inventory → Items shows the owned gotchis as a row (tap to wear) and a peek at
+  the wallet's wearables that opens the Wardrobe (`src/OwnedGotchis.tsx`).
+- QA: `node scripts/qa-gotchi-owner.mjs [outDir] [address]` (needs Base RPC).
+
 ## Explorer card
 
 `GET /api/players/card?playerId=` (60 per minute). Available only while the

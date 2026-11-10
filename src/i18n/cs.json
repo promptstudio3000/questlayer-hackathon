@@ -3087,5 +3087,11 @@
  "A demo bot from the test world. It walks the map so you can see how other explorers look.": "Demo bot z testovacího světa. Chodí po mapě, abyste viděli, jak vypadají ostatní hráči.",
  "Messages are coming soon.": "Zprávy brzy přibudou.",
  "Write a message": "Napsat zprávu",
- "You · open your profile": "Vy · otevřít profil"
+ "You · open your profile": "Vy · otevřít profil",
+ "Your Aavegotchis": "Tvoji Aavegotchi",
+ "Wearing {0}": "Máš na sobě {0}",
+ "Wear {0}": "Obléct {0}",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "1 wearable v peněžence",
+ "{0} wearables in your wallet": "{0} wearables v peněžence"
 }

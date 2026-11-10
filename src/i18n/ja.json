@@ -3087,5 +3087,11 @@
  "A demo bot from the test world. It walks the map so you can see how other explorers look.": "テストワールドのデモボットです。他の探検者の見た目がわかるようにマップを歩いています。",
  "Messages are coming soon.": "メッセージはまもなく使えます。",
  "Write a message": "メッセージを書く",
- "You · open your profile": "あなた · プロフィールを開く"
+ "You · open your profile": "あなた · プロフィールを開く",
+ "Your Aavegotchis": "あなたの Aavegotchi",
+ "Wearing {0}": "{0} を着用中",
+ "Wear {0}": "{0} を着る",
+ "BRS {0}": "BRS {0}",
+ "1 wearable in your wallet": "ウォレットにウェアラブル 1 個",
+ "{0} wearables in your wallet": "ウォレットにウェアラブル {0} 個"
 }
