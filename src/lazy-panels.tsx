@@ -79,6 +79,7 @@ export const CommunityBonusVote = lazyNamed(
 );
 export const MapNotes = lazyNamed(() => import("./MapNotes"), "MapNotes");
 export const PlayerCard = lazyNamed(() => import("./PlayerCard"), "PlayerCard");
+export const Inbox = lazyNamed(() => import("./inbox/Inbox"), "Inbox");
 export const NativeCollectionControl = lazyNamed(
   () => import("./NativeCollectionControl"),
   "NativeCollectionControl",

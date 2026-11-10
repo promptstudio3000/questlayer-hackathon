@@ -443,6 +443,43 @@ export const CHAPTERS: Chapter[] = [
       },
     ],
   },
+  {
+    id: "player-inbox",
+    group: "play",
+    title: "Encrypted player inbox",
+    summary: "Private messages between explorers, end-to-end encrypted on the device and stored on NEAR Social as ciphertext.",
+    status: "live",
+    updated: "2026-11-10",
+    sources: ["docs/PLAYER-INBOX.md", "server/inbox/crypto.mjs", "src/signing-vault/inbox.ts", "server/inbox/service.mjs", "server/inbox/routes.mjs", "src/inbox/Inbox.tsx"],
+    blocks: [
+      {
+        p: "Explorers can write short private messages (1–500 characters). Each message is encrypted on the sender's device and written by the sender's own NEAR account to NEAR Social, so it lives on chain, but only the two explorers can read it: not other players, not the network and not the QuestLayer server.",
+      },
+      { h: "Who may write" },
+      {
+        list: [
+          "A conversation opens after both explorers **waved at each other** within the last hour, or after one tapped **Ask to message** and the other accepted. A declined request stays declined for the one who asked.",
+          "**Block** stops requests, messages and delivery both ways. Demo explorers cannot write or receive.",
+          "Limits: 10 new requests a day (20 unanswered at most), 30 messages an hour and 150 a day per sender, 120 received an hour, one message every 2 seconds per pair.",
+          "**Report** on a received message discloses the key of that one message only; the server checks it opens the on-chain record, and moderators read exactly that text. Three different reporters within 7 days pause the sender until a moderator decides.",
+        ],
+      },
+      { h: "How the encryption works" },
+      {
+        list: [
+          "Every explorer account has an X25519 **inbox key** generated in the separate secure signing origin; the secret never leaves it. The public key is published at `<account>/questlayer/inbox_key`.",
+          "A message is sealed with X25519 + HKDF-SHA256 + XChaCha20-Poly1305 (the NaCl box idea) using a fresh key per message, and written to `<sender>/questlayer/inbox/msg_<id>`. The text is padded to 128-byte steps so its length tells little.",
+          "On chain anyone sees that the sender wrote a message, when and roughly how long. The recipient appears only as a tag that only the two explorers can compute, never as an account.",
+          "The signing origin reads keys and records from NEAR Social itself, never from the game server, so the server cannot swap a key or forge a message. It only keeps the delivery index: who writes to whom and when.",
+          "A message counts as delivered only once the server reads the exact record from chain; the relayer sponsors the gas and the small storage deposit (under 0.01 NEAR for a short message).",
+        ],
+      },
+      {
+        note: "The inbox key lives in one browser. A new device can take over for new messages, but older messages stay readable only on the device that received them. A wallet-based key backup is proposed, not built.",
+        tone: "warn",
+      },
+    ],
+  },
   // ----------------------------------------------------------------- world
   {
     id: "gotchiverse-test-app",
@@ -878,7 +915,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Accounts, wallets and the relayer",
     summary: "Play without a wallet: an invisible NEAR account with a key that never leaves the device, and gas paid by the game.",
     status: "live",
-    updated: "2026-11-08",
+    updated: "2026-11-10",
     sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs"],
     blocks: [
       { viz: "account-seq" },
@@ -889,7 +926,7 @@ export const CHAPTERS: Chapter[] = [
           "Game actions are signed as NEP-366 meta-transactions. The relayer checks a strict policy (one action, allowed receiver + method + deposit, nonce, expiry, gas) and pays the gas.",
           "Attached deposits retain the per-account cap. The security candidate also reserves one service-wide budget for new accounts, relays and topups. Unknown payments retain their reservation across restarts and midnight; refunds are not counted as new allowance. A reservation for an action that never reached the chain is released back to the day's budget. Free solo play remains available without sponsorship.",
           "A saved sponsored transaction that a later one of the same service key overtook is signed again only after the network has rejected the exact bytes by nonce, does not know the transaction, and confirms the key nonce passed it, twice over at least 30 seconds. Nothing is paid twice.",
-          "Some sponsored calls are checked against game and chain state first, so the relayer never pays for a call that only leaks its budget. NEAR Social writes are sponsored only for the game's own profile, map-note and place records (at most 4 KiB), and the 0.05 NEAR storage deposit only while the account's Social storage is short. `redeem_aura` is sponsored only for a voucher the game signed for that account, still valid and not yet redeemed. Cancelling one signed market order is sponsored only for your own open order in the game's book, at most 4 a day per account (16 across the game); Cancel all orders has no such limit.",
+          "Some sponsored calls are checked against game and chain state first, so the relayer never pays for a call that only leaks its budget. NEAR Social writes are sponsored only for the game's own profile, map-note, place and encrypted inbox records (at most 4 KiB), and the 0.05 NEAR storage deposit only while the account's Social storage is short. `redeem_aura` is sponsored only for a voucher the game signed for that account, still valid and not yet redeemed. Cancelling one signed market order is sponsored only for your own open order in the game's book, at most 4 a day per account (16 across the game); Cancel all orders has no such limit.",
           "Adding a sign-in method to a secured explorer requires a recent sign-in with an existing method. Ordinary play uses the game session. A NEAR wallet links with a NEP-413 signature; MetaMask or Rabby sign in with SIWE and can sign Intents trades (erc191). A SocialDB profile is published once per account.",
           "Passkeys sign in to the game identity; they are not NEAR keys. Recovery restores the explorer by signing again with the linked wallet.",
           "A wallet transaction counts only after the server reads it as FINAL and matches it against the terms reviewed before signing. Unresolved transactions survive reloads in a local journal so a retry never signs twice.",

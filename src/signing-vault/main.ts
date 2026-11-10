@@ -31,6 +31,7 @@ import {
   type VaultConfig,
 } from "./policy.ts";
 import { localVaultKeyStore, vaultRecord, vaultRequests } from "./store.ts";
+import { inboxKey, inboxOpen, inboxReveal, inboxSeal } from "./inbox.ts";
 const config: VaultConfig = validateVaultOrigins(
   await (await fetch("/vault-config.json")).json(),
 );
@@ -295,6 +296,12 @@ async function execute(request: Request) {
     hash: base64(result.delegateHash),
   };
 }
+const INBOX_METHODS: Record<string, ((ctx: Parameters<typeof inboxKey>[0], input: Record<string, unknown>) => Promise<unknown>) | undefined> = {
+  inboxKey: (ctx, input) => inboxKey(ctx, { rotate: input.rotate === true }),
+  inboxSeal,
+  inboxOpen,
+  inboxReveal,
+};
 async function receive(request: Request) {
   const i = request.input;
   need(
@@ -339,6 +346,30 @@ async function receive(request: Request) {
       await store.put(DEVICE_KEY, { ...old!, accountId: String(i.accountId) });
       return publicRecord(await store.get(DEVICE_KEY));
     });
+  }
+  if (typeof request.method === "string" && Object.hasOwn(INBOX_METHODS, request.method)) {
+    // Encryption only: nothing is signed or moved, so no approval window.
+    const key = await store.get(DEVICE_KEY);
+    need(key?.accountId, "No secure account is bound on this device.");
+    need(config.contracts.social, "The inbox is not configured.");
+    const provider = new JsonRpcProvider({ url: config.rpcUrl });
+    return INBOX_METHODS[request.method]!(
+      {
+        accountId: key!.accountId!,
+        socialContract: config.contracts.social!,
+        view: async (args) => {
+          const r = (await provider.query({
+            request_type: "call_function",
+            account_id: config.contracts.social!,
+            method_name: "get",
+            args_base64: base64(new TextEncoder().encode(JSON.stringify(args))),
+            finality: "final",
+          })) as unknown as { result: number[] };
+          return JSON.parse(new TextDecoder().decode(Uint8Array.from(r.result)));
+        },
+      },
+      i,
+    );
   }
   const record = await store.get(DEVICE_KEY);
   const review =

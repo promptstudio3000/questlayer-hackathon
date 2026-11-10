@@ -33,6 +33,7 @@ import {
   CommunityBonusVote,
   MapNotes,
   PlayerCard,
+  Inbox,
   NativeCollectionControl,
   NativeTasks,
   Inventory,
@@ -5060,6 +5061,10 @@ export default function App() {
       <RewardBursts bursts={bursts} />
       {invisible.signer && player && (
         <AutoSocialProfile signer={invisible.signer} player={player} />
+      )}
+      {/* Encrypted player inbox (docs/PLAYER-INBOX.md). */}
+      {invisible.signer?.kind === "managed" && player && (
+        <Inbox signer={invisible.signer} player={player} />
       )}
       {busy === "world" && (
         <div className="world-loading">
