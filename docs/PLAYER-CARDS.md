@@ -51,10 +51,22 @@ Built 4 November 2026. Code: `server/gotchi-wearables.mjs`, `server/player-waves
 
 `GET /api/players/card?playerId=` (60 per minute). Available only while the
 other explorer shares their position (the existing 15-minute opt-in) and neither
-side blocked the other. It returns name, level, worn wearables with verified
-flags and Aura colours. No address, account, inventory, balance or history.
-The card offers waves and Block (the existing bilateral block from W10, which
-also hides presence, notes and waves).
+side blocked the other. It returns name, level, XP (available XP, the same
+number levels use), badge count, the day the explorer started, worn wearables
+with verified flags and Aura colours. No address, account, inventory, balance
+or history. The card offers waves and Block (the existing bilateral block from
+W10, which also hides presence, notes and waves).
+
+Since 10 November 2026 every explorer on the map opens this card as a dialog:
+
+- Tapping your own explorer opens your profile overview instead (the same
+  panel as the profile button in the top bar; a centred card on desktop).
+- Test-world bots (`TEST_SEED=1`, ids starting with `seed-`) stay on for the
+  first test weeks. Their card is the same dialog with a `demo-bot` tag after the
+  name and a short note. Bots take no waves and have no Block button.
+- A **Write a message** button sits in the dialog. It stays disabled
+  ("Messages are coming soon.") until the app passes `onMessage(playerId, name)`
+  to `PlayerCard`; the inbox plugs in there. Demo bots never get it.
 
 ## Messages: what is built and what is proposed
 
