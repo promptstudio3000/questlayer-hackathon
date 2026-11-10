@@ -111,7 +111,7 @@ export function NativeWardrobe({
           disabled={!!busy}
           onClick={() => void onConnect()}
         >
-          <Wallet size={20} aria-hidden="true" /> {" "}{tr("Connect a NEAR wallet")}</button>
+          <Wallet size={20} aria-hidden="true" /> {" "}{tr("Activate my account")}</button>
       ) : (
         <>
           <button
