@@ -648,12 +648,21 @@ export default function App() {
         ? { accountId: player.wallets[0].account_id, managed: false }
         : null;
   const invisibleEnsure = invisible.ensure,
-    invisibleStatus = invisible.status;
+    invisibleStatus = invisible.status,
+    playFirstXp = useRef<number | null>(null);
   useEffect(() => {
     // Prepare the invisible account in the background; play never waits for it.
     // A new explorer earns it with the first find or quest, so try again when XP
     // arrives while the account is still not prepared.
-    if (player?.id && invisibleStatus === "idle") void invisibleEnsure();
+    if (!player?.id) return;
+    const xp = player.xp ?? 0;
+    if (invisibleStatus === "idle") {
+      playFirstXp.current = xp;
+      void invisibleEnsure();
+    } else if (invisibleStatus === "play-first" && playFirstXp.current !== xp) {
+      playFirstXp.current = xp;
+      void invisibleEnsure();
+    }
   }, [player?.id, player?.xp, invisibleStatus, invisibleEnsure]);
   useEffect(() => {
     // The managed account appears in the player's linked accounts once ready.
@@ -4501,6 +4510,18 @@ export default function App() {
                   hint={tr("Trade Auras")}
                   onClick={() => setTab("market")}
                 />
+                {invisible.signer?.kind === "managed" && (
+                  // The inbox pill shows only with new messages; this opens
+                  // older conversations too (src/inbox/Inbox.tsx).
+                  <ProfileTile
+                    icon={ChatCircle}
+                    label={tr("Messages")}
+                    hint={tr("Private chats with explorers")}
+                    onClick={() =>
+                      window.dispatchEvent(new CustomEvent("questlayer:inbox-open", { detail: {} }))
+                    }
+                  />
+                )}
               </div>
               <p className="fine-print">
                 {nativePlay
