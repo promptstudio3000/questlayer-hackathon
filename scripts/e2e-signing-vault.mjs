@@ -12,10 +12,14 @@
 //   3. After a reload the vault still holds the key: no new account, the same
 //      device key, the Devices list shows this device.
 //   5. Encrypted inbox (docs/PLAYER-INBOX.md): the vault creates the X25519
-//      inbox key, the account publishes it through the relayer, a message is
-//      sealed in the vault against the peer key it reads from (stubbed) NEAR
-//      Social and decrypts in Node with the peer's secret; the peer's reply,
-//      sealed in Node, opens in the vault and shows in the conversation.
+//      inbox key, the account publishes it through the relayer. The explorer
+//      shares their position, taps the peer standing next to them, and on
+//      the peer's card chooses "Write a message"; the message is sealed in
+//      the vault against the peer key it reads from (stubbed) NEAR Social and
+//      decrypts in Node with the peer's secret. The peer's reply, sealed in
+//      Node, opens in the vault and shows in the conversation; after closing,
+//      the envelope badge ("Messages: 1 new") leads to the list and back into
+//      the conversation, which is then read.
 //   4. Storage blocked inside the vault frame (indexedDB/localStorage throw,
 //      as in a browser that blocks third-party site data): the player sees a
 //      clear "Secure account unavailable" message with Try again, no account
@@ -47,6 +51,7 @@ import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
 import { build } from "vite";
 import { closeOpenSheet } from "./lib/e2e-nav.mjs";
+import { serveBlankMapStyle } from "./lib/e2e-map-style.mjs";
 import { createSigningVaultServer } from "../server/signing-vault.mjs";
 import { decodeSignedDelegate, verifySignedDelegate } from "../server/relayer/delegate.mjs";
 import { validateDelegate, SOCIAL_CONTRACT, STORAGE_DEPOSIT } from "../server/relayer/policy.mjs";
@@ -174,7 +179,8 @@ async function startServers() {
 // reads and the RPC. Everything they saw is recorded in `log`.
 async function stubChain(context, { appOrigin, vaultOrigin }, { inbox = null } = {}) {
   const log = { creates: [], accessKeyQueries: [], prepares: [], relayed: [], profilePrepares: 0, rejected: [], inboxSends: [] };
-  const state = { account: null, playerName: null, published: false, jobs: new Map(), social: {}, messages: [] };
+  // unread: the peer's reply until the list is opened after the badge saw it.
+  const state = { account: null, playerName: null, published: false, jobs: new Map(), social: {}, messages: [], unread: 0, unreadSeen: false };
   // NEAR Social as a nested object: every relayed `set` is merged in.
   const merge = (into, from) => {
     for (const [k, v] of Object.entries(from)) {
@@ -319,7 +325,24 @@ async function stubChain(context, { appOrigin, vaultOrigin }, { inbox = null } =
             args: { data: { [body.accountId]: { questlayer: { profile } } } },
           });
         }
-        if (inbox && path === "/api/inbox/summary") return json(route, 200, { unread: 0, requests: 0 });
+        if (inbox && path === "/api/inbox/summary") {
+          if (state.unread) state.unreadSeen = true;
+          return json(route, 200, { unread: state.unread, requests: 0 });
+        }
+        if (inbox && path === "/api/inbox") {
+          const last = state.messages.at(-1);
+          return json(route, 200, {
+            enabled: true,
+            accountId: state.account?.accountId ?? null,
+            publicKey: ownInboxKey(),
+            unread: state.unread,
+            requests: 0,
+            incoming: [],
+            conversations: last
+              ? [{ playerId: inbox.peer.playerId, name: inbox.peer.name, state: "open", unread: state.unread, lastAt: last.at, lastMine: last.mine }]
+              : [],
+          });
+        }
         if (inbox && path === "/api/inbox/key/prepare") {
           const record = { schema: "questlayer.inbox-key/1", key: body.publicKey, created_at: String(Date.now()), mutation_id: `inboxkey_${randomUUID()}` };
           return json(route, 200, {
@@ -333,13 +356,16 @@ async function stubChain(context, { appOrigin, vaultOrigin }, { inbox = null } =
           });
         }
         if (inbox && path === "/api/inbox/key/sync") return json(route, 200, { published: !!ownInboxKey(), publicKey: ownInboxKey() });
-        if (inbox && path === "/api/inbox/thread")
+        if (inbox && path === "/api/inbox/thread") {
+          // Opening the conversation marks it read, once the badge counted it.
+          if (state.unreadSeen) state.unread = 0;
           return json(route, 200, {
             peer: { id: inbox.peer.playerId, name: inbox.peer.name, accountId: inbox.peer.accountId, inbox: true },
             state: "open",
             muted: false,
             messages: state.messages,
           });
+        }
         if (inbox && path === "/api/inbox/send") {
           assert.equal(body.playerId, inbox.peer.playerId);
           assert.ok(validInboxRecord(body.record), "the vault produced a valid inbox record");
@@ -434,6 +460,58 @@ function blockVaultStorage(vaultOrigin) {
   } catch {}
 }
 
+/**
+ * Bob, the simulated peer, stands next to the explorer once they share their
+ * position: the real presence answer gets him added, and his card is served.
+ */
+async function placePeerNearby(context, appOrigin, peer) {
+  let at = null;
+  await context.route(
+    (url) => url.origin === appOrigin && (url.pathname === "/api/presence" || url.pathname === "/api/players/card"),
+    async (route) => {
+      const req = route.request(),
+        url = new URL(req.url());
+      if (url.pathname === "/api/players/card") {
+        if (url.searchParams.get("playerId") !== peer.playerId) return route.continue();
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: peer.playerId, name: peer.name, level: 3, xp: 420, demoBot: false, joinedAt: Date.now() - 86_400_000,
+            badges: 1, self: false, wearables: [], auras: { above: null, below: null }, original: false,
+            canWave: true, waveHint: null, phrases: [{ key: "hello", text: "Hello!" }],
+          }),
+        });
+      }
+      if (req.method() === "POST") {
+        const body = JSON.parse(req.postData() || "{}");
+        if (body.enabled && Number.isFinite(body.lat)) at = { lat: body.lat, lng: body.lng };
+        return route.continue();
+      }
+      const response = await route.fetch();
+      const data = await response.json();
+      if (at)
+        data.players = [
+          ...(data.players || []),
+          { id: peer.playerId, name: peer.name, color: "#2fa36b", lat: at.lat + 0.00008, lng: at.lng + 0.00008,
+            appearance: { color: "#2fa36b", above: null, below: null, skinTokenId: null, source: "demo" } },
+        ];
+      return route.fulfill({ response, json: data });
+    },
+  );
+}
+async function sharePosition(page) {
+  const tabs = page.getByRole("tablist", { name: "Profile", exact: true });
+  if (!(await tabs.isVisible().catch(() => false))) {
+    await closeOpenSheet(page);
+    await page.locator(".topbar .profile-pill").click();
+    await tabs.waitFor();
+  }
+  await page.getByRole("tab", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: /Share my position for 15 min/ }).click();
+  await page.getByRole("button", { name: /Stop sharing my position/ }).waitFor();
+  await closeOpenSheet(page);
+}
 async function startPlaying(page, url, name) {
   await page.goto(url);
   await page.getByPlaceholder("Your explorer name").fill(name);
@@ -490,6 +568,8 @@ async function runDevice(name, servers) {
     const context = await browser.newContext({ ...profile, reducedMotion: "reduce", locale: "en-GB", serviceWorkers: "block" });
     // Unrelated hosts (map tiles, fonts) stay offline; the journey is loopback only.
     await context.route((url) => !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname), (r) => r.abort());
+    // ...except the map style, served blank so the map (and explorers on it) loads offline.
+    await serveBlankMapStyle(context);
     return context;
   };
   const dismissInstallCard = (page) =>
@@ -607,6 +687,7 @@ async function runDevice(name, servers) {
       };
       const context = await newContext();
       const { log, state, merge } = await stubChain(context, servers, { inbox: { peer } });
+      await placePeerNearby(context, servers.appOrigin, peer);
       const page = await context.newPage();
       const pageErrors = [];
       page.on("pageerror", (e) => pageErrors.push(e.message));
@@ -622,12 +703,21 @@ async function runDevice(name, servers) {
         assert.equal(keyCall.deposit, "1");
         assert.equal(context.pages().length, 1, "publishing the inbox key opens no approval window");
         const text = "Ahoj Bobe, jsem u kašny 🐉";
-        await page.evaluate(
-          (detail) => window.dispatchEvent(new CustomEvent("questlayer:inbox-open", { detail })),
-          { playerId: peer.playerId, name: peer.name },
-        );
+        // The way a player starts a conversation: share the position, tap Bob
+        // standing nearby, "Write a message" on his card.
+        await sharePosition(page);
+        const bob = page.getByRole("button", { name: /^Bob · nearby explorer/ });
+        await bob.waitFor({ timeout: 30_000 });
+        await bob.click();
+        const card = page.getByRole("dialog", { name: peer.name });
+        await card.getByText(/Level \d+/).first().waitFor();
+        await capture(page, "inbox-player-card", card);
+        await card.getByRole("button", { name: "Write a message" }).click();
         const dialog = page.getByRole("dialog", { name: "Messages" });
-        await dialog.getByLabel("Message to Bob").fill(text);
+        await dialog.getByLabel("Message to Bob").fill(text).catch(async (e) => {
+          await capture(page, "inbox-compose-missing");
+          throw Error(`no compose field; the dialog says: ${(await dialog.innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 400)}`, { cause: e });
+        });
         await dialog.getByRole("button", { name: "Send" }).click();
         await waitFor(() => log.inboxSends.length > 0, "the sealed message");
         assert.equal(log.inboxSends[0].text, text, "the peer decrypts exactly what was typed");
@@ -654,7 +744,25 @@ async function runDevice(name, servers) {
           "the game origin stores no inbox secret",
         );
         await capture(page, "inbox-conversation", dialog);
-        report.scenarios.push({ name: "encrypted inbox", sent: log.inboxSends[0].messageId, received: replyId });
+        // Unread reply → the envelope badge → the list → the conversation.
+        state.unread = 1;
+        await dialog.getByRole("button", { name: "Close" }).first().click();
+        await dialog.waitFor({ state: "hidden" });
+        const pill = page.getByRole("button", { name: "Messages: 1 new" });
+        await pill.waitFor({ timeout: 40_000 });
+        await capture(page, "inbox-badge");
+        await pill.click();
+        const list = page.getByRole("dialog", { name: "Messages" });
+        const row = list.locator(".inbox-row", { hasText: peer.name });
+        await row.getByText("1 new").waitFor();
+        await capture(page, "inbox-list", list);
+        await row.click();
+        await list.getByText(reply).waitFor({ timeout: 30_000 });
+        await list.getByRole("button", { name: "All messages" }).click();
+        await list.locator(".inbox-row", { hasText: peer.name }).waitFor();
+        assert.equal(await list.locator(".inbox-row", { hasText: "1 new" }).count(), 0, "the conversation is read");
+        await list.getByRole("button", { name: "Close" }).first().click();
+        report.scenarios.push({ name: "encrypted inbox", sent: log.inboxSends[0].messageId, received: replyId, via: "player card → Write a message; badge → list → conversation" });
       }
       assert.deepEqual(log.rejected, [], "every stubbed call was accepted");
       if (pageErrors.length) report.pageErrors = pageErrors;

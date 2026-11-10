@@ -62,6 +62,12 @@ jobs:
       - run: npm run e2e:signing-vault -- --device=${{ matrix.device }}
         env:
           E2E_SHOTS: ${{ runner.temp }}/first-session/signing-vault
+      # Ethereum sign-in → Aavegotchis in the Backpack (wallet key made at run
+      # time, Base RPC stubbed locally), your own avatar → Profile, and the
+      # player dialog with a wave between two explorers, on every device row.
+      - run: npm run e2e:social-profile -- --device=${{ matrix.device }}
+        env:
+          E2E_SHOTS: ${{ runner.temp }}/first-session/social-profile
       - uses: actions/upload-artifact@v4
         if: always()
         with:
