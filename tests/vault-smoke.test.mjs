@@ -37,15 +37,15 @@ test("NEAR amounts parse without floats", () => {
   assert.equal(yoctoToNear(0n), "0");
 });
 
-test("funding: setup deposit + stake + margin, top-up only what is missing", () => {
+test("funding: setup deposit + stake + margin + prepaid gas, top-up only what is missing", () => {
   const setupDeposit = "3520000000000000000000000";
   const f = smokeFunding({ setupDeposit });
-  assert.equal(f.fund, nearToYocto("3.621"));
+  assert.equal(f.fund, nearToYocto("3.901"));
   assert.equal(f.topUp, f.fund);
   assert.equal(smokeFunding({ setupDeposit, balance: nearToYocto("5") }).topUp, 0n);
-  assert.equal(smokeFunding({ setupDeposit, balance: nearToYocto("3.6") }).topUp, nearToYocto("0.021"));
+  assert.equal(smokeFunding({ setupDeposit, balance: nearToYocto("3.6") }).topUp, nearToYocto("0.301"));
   // A resumed run with the position already created needs no new setup deposit.
-  assert.equal(smokeFunding({ setupDeposit, positionExists: true, balance: nearToYocto("0.2") }).topUp, 0n);
+  assert.equal(smokeFunding({ setupDeposit, positionExists: true, balance: nearToYocto("0.4") }).topUp, 0n);
 });
 
 test("own position: one live position, failed ones ignored, several refused", () => {

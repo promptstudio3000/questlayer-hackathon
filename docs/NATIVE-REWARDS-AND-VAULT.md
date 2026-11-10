@@ -197,8 +197,8 @@ created before the account and never printed):
 1. Read-only checks: factory code and embedded vault equal `contracts/wasm-sha256.json`, the
    manifest factory record equals both, the factory points at the rewards account, capacity is
    left, the setup deposit equals the manifest, and the pool passes the server's readiness check.
-2. Creates the sub-account with 3.621 test NEAR (exact setup deposit 3.52 + minimum stake 0.001 +
-   0.1 for gas), or tops it up.
+2. Creates the sub-account with 3.901 test NEAR (exact setup deposit 3.52 + minimum stake 0.001 +
+   0.1 margin + 0.28 that NEAR locks for 280 TGas prepaid at the pessimistic gas price), or tops it up.
 3. `create_position(pool_id, contribution_bps)` with the setup deposit and 280 TGas. It summarizes
    the receipts: the child's first receipt (create, transfer, deploy, `new` with 25 TGas) and the
    rewards `register_factory_vault` receipt must succeed. A position left `created` is registered
