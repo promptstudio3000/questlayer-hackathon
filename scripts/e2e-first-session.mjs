@@ -34,7 +34,8 @@ const SHOTS_ROOT = resolve(
   process.env.E2E_SHOTS || join(ROOT, "output/qa/2026-11-first-session"),
 );
 // Against a live server (E2E_BASE_URL) every explorer the journey makes is
-// named "test ..." so bot accounts are easy to find and clean up.
+// named "test ..." so bot accounts are easy to find and clean up, and gets no
+// sponsored NEAR account unless E2E_ACCOUNTS=1.
 const TAG = process.env.E2E_NAME_PREFIX ?? (process.env.E2E_BASE_URL ? "test " : "");
 const CHAIN =
   /\b(wallet|testnet|transaction|NEAR|mint(ed)?|NFT|on-chain|contract|blockchain|demo GOLD)\b/i;
@@ -221,6 +222,18 @@ async function newExplorerContext(browser, profile) {
     locale: "en-GB",
   });
   await shiftBrowserClock(context, CLOCK_OFFSET_MS);
+  // Against a live server a new explorer's invisible NEAR account is paid
+  // from the shared daily sponsorship budget (about 0.12 test NEAR each).
+  // Test explorers skip it unless E2E_ACCOUNTS=1, so a test run never uses
+  // up the budget real explorers need.
+  if (process.env.E2E_BASE_URL && process.env.E2E_ACCOUNTS !== "1")
+    await context.route("**/api/account/create", (route) =>
+      route.fulfill({
+        status: 429,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Skipped for a test explorer.", code: "SUBSIDY_BUDGET" }),
+      }),
+    );
   // Record vibration calls; headless browsers have no vibration motor.
   await context.addInitScript(() => {
     window.__vibrations = [];
