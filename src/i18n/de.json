@@ -3135,5 +3135,9 @@
  "Monsters": "Monster",
  "Wearables": "Wearables",
  "Change outfit": "Outfit ändern",
+ "Empty": "Leer",
+ "Tap a slot to dress it.": "Tippe auf einen Platz, um ihn auszustatten.",
+ "Gotchi's own gear": "Eigene Ausrüstung des Gotchi",
+ "Nothing for this slot yet. Find wearables on the map or link the wallet that holds them.": "Noch nichts für diesen Platz. Finde Wearables auf der Karte oder verknüpfe die Wallet, die sie hält.",
  "Private chats with explorers": "Private Chats mit Entdeckern"
 }

@@ -15,7 +15,8 @@
 import { assert, id } from "./domain.mjs";
 import { demoProgression } from "./database.mjs";
 import { isSocialBlocked } from "./social-content.mjs";
-import { wornWearables, publicWearable, VERIFIED_FOR_MS, WEARABLES } from "./gotchi-wearables.mjs";
+import { wornWearables, publicWearable, verifiedItemIds, VERIFIED_FOR_MS, WEARABLES } from "./gotchi-wearables.mjs";
+import { outfitEquipped, outfitVersion, ownedOutfit } from "./gotchi-outfit.mjs";
 import {
   ensureModuleVersion,
   registerModuleSchema,
@@ -121,6 +122,15 @@ export function playerCard(db, viewer, target, appearance, now = Date.now()) {
       below: appearance?.below || null,
     },
     original: !!(appearance?.skinTokenId || original),
+    // Changes when the outfit does, so the avatar art is fetched again.
+    look: outfitVersion(original?.outfit),
+    // Own profile only: whether slots dress the gotchi, and which differ from its real gear.
+    dress: self
+      ? {
+          gotchi: !!original,
+          dressed: PROFILE_SLOTS.filter((_, i) => Object.hasOwn(original?.outfit || {}, String(i))),
+        }
+      : null,
     // Name and rarity score of the worn original; never the token's wallet.
     gotchi: original ? { name: original.name, brs: original.brs } : null,
     canWave: !self && !!mine && mine.arena === theirs?.arena,
@@ -144,7 +154,11 @@ export function profileSlots(worn, original) {
   if (original) {
     PROFILE_SLOTS.forEach((slot, index) => {
       const item = WEARABLES.get(original.equipped?.[index]);
-      if (item) slots[slot] = { ...publicWearable(item), verified: true, source: "original" };
+      if (!item) return;
+      // Real gear is the gotchi's own; an outfit item is gold only when the wallet holds it.
+      const dressed = Object.hasOwn(original.outfit || {}, String(index));
+      const verified = !dressed || !!original.verified?.has(item.id);
+      slots[slot] = { ...publicWearable(item), verified, source: verified ? "original" : "clone" };
     });
   } else {
     for (const w of worn) {
@@ -170,11 +184,15 @@ export function profileOriginal(db, player, now = Date.now()) {
       .get(player, appearance.address, now - VERIFIED_FOR_MS);
     const g = link && JSON.parse(link.data).gotchis?.find((x) => x.tokenId === appearance.originTokenId);
     if (!g || typeof g.svg !== "string" || g.svg.length > 200000) return null;
+    const outfit = ownedOutfit(db, player, appearance.outfit, now);
     return {
       name: String(g.name || "").slice(0, 40),
       brs: Number.isFinite(g.brs) ? g.brs : null,
       svg: g.svg,
-      equipped: Array.isArray(g.equipped) ? g.equipped.map(Number) : [],
+      equipped: outfitEquipped(g, outfit),
+      gotchi: g,
+      outfit,
+      verified: verifiedItemIds(db, player, now),
     };
   } catch {
     return null;

@@ -88,6 +88,25 @@ try {
   await page.locator(".player-card h2").first().waitFor();
   await sleep(2500);
   await page.screenshot({ path: join(OUT, "05-own-profile-390.png") });
+  // Dress the gotchi: open the head slot and put on the first owned hat.
+  const head = page.locator(".player-card-slots button").filter({ hasText: "Head" }).first();
+  if (await head.isVisible().catch(() => false)) {
+    await head.click();
+    await page.locator(".player-card-picker").waitFor();
+    await sleep(1500);
+    await page.locator(".player-card").evaluate((n) => n.closest("[role=dialog]")?.scrollTo?.(0, 9999));
+    await page.screenshot({ path: join(OUT, "06-slot-picker-390.png") });
+    const pick = page.locator(".player-card-picker li button:not([disabled]) img").first();
+    if (await pick.isVisible().catch(() => false)) {
+      await pick.click();
+      await sleep(6000);
+      await page.locator(".player-card").evaluate((n) => n.closest("[role=dialog]")?.scrollTo?.(0, 0));
+      await page.screenshot({ path: join(OUT, "07-dressed-profile-390.png") });
+      await page.keyboard.press("Escape");
+      await sleep(3000);
+      await page.screenshot({ path: join(OUT, "08-dressed-map-390.png") });
+    }
+  }
   await browser.close();
   console.log("shots in", OUT);
 } finally {
