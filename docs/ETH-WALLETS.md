@@ -84,3 +84,11 @@ through `intents.near`. It has no testnet. Plan for the mainnet launch:
    with QGOLD live, the next step is "deposit into the QGOLD vault" at R + 1 %.
 
 Needs Lubos's explicit go, a mainnet deployment and a small proof (about 5 USDC).
+
+## Browser journey
+
+`npm run build && npm run e2e:social-profile -- --device=all` signs in with an injected EIP-1193 wallet whose
+`personal_sign` is answered by a throwaway viem key, against a local Base RPC stub that serves two Aavegotchis.
+It checks the explorer arrives in the higher-BRS gotchi, the Backpack lists both and wearing the other works,
+your own avatar opens Profile with the wallet under Settings → Account and devices → Ethereum wallets, and the
+player dialog (tap another explorer, wave). CI runs it on phone-390, iPhone 15 WebKit and Pixel 7.

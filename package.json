@@ -31,6 +31,7 @@
     "e2e:first-session": "node scripts/e2e-first-session.mjs",
     "e2e:bonus-vote": "node scripts/e2e-bonus-vote.mjs",
     "e2e:signing-vault": "node scripts/e2e-signing-vault.mjs",
+    "e2e:social-profile": "node scripts/e2e-social-profile.mjs",
     "e2e:world": "node scripts/e2e-world-journeys.mjs",
     "e2e:live": "node scripts/e2e-live-journeys.mjs",
     "pilot:city": "node scripts/rehearse-city-pilot.mjs",

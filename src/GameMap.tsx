@@ -1219,10 +1219,12 @@ export function GameMap(props: GameMapProps) {
       bottom = props.equipped.find((i) => i.slot === "below");
     const element = avatar.current.getElement(),
       modelHost = element.querySelector(".map-character-model");
-    element.setAttribute("role", "img");
+    // Still the button that opens your profile (set where the marker is
+    // made); the label adds what you look like.
+    element.setAttribute("role", "button");
     element.setAttribute(
       "aria-label",
-      `${props.skinUrl ? tr("Your linked Aavegotchi") : tr("Your Aavegotchi starter")}${top ? `; ${top.name} above` : ""}${bottom ? `; ${bottom.name} below` : ""}`,
+      `${tr("You · open your profile")}: ${props.skinUrl ? tr("Your linked Aavegotchi") : tr("Your Aavegotchi starter")}${top ? `; ${top.name} above` : ""}${bottom ? `; ${bottom.name} below` : ""}`,
     );
     element.innerHTML =
       characterMarkerMarkup({
