@@ -878,7 +878,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Daily QGOLD payouts",
     summary: "One Merkle root per day of what every account earned, paid straight into the QGOLD vault with no daily claim limit.",
     status: "live",
-    updated: "2026-11-09",
+    updated: "2026-11-10",
     sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "contracts/rewards/src/reconcile.rs", "contracts/rewards/src/world_days.rs", "contracts/qgold/src/lib.rs", "server/global-rewards.mjs", "server/global-reward-worker.mjs", "server/map-rewards/global-plan.mjs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
     blocks: [
       {
@@ -909,7 +909,7 @@ export const CHAPTERS: Chapter[] = [
           "After local midnight (Europe/Prague) the reward worker collects every backed map coin and cell-zone prize of GPS worlds that is not paid yet, prices it in NEAR at the rate its day was planned with, sums it per account and publishes the day.",
           "Then it submits `claim_payout` in batches of 8. Submission is not payment: finalized per-leaf chain status confirms each receipt. Failed mints restore the same reservation for retry. Restart recovery reconciles pending leaves before sending new ones; an exclusive fenced lease prevents overlapping workers from changing the same payout. A fully paid day may close after the grace period.",
           "A player without a NEAR account yet keeps their coins waiting; they join the first payout after the account exists. `GET /api/qgold/pending` shows what is still on its way (in micro-QGOLD `units`, with `awaitingAccount` for coins collected before an account existed).",
-          "Profile · Rewards shows the QGOLD balance on the linked NEAR account and the amount the next payout brings. Pickup messages count QGOLD; there is no practice GOLD. The old practice stake is closed (its fake yield could have become real QGOLD). Tier 2 and Tier 3 places on the map are open to everyone until launch; after that they can be gated by the real vault tier (50 / 100 NEAR matured).",
+          "Profile · Rewards shows the QGOLD balance on the linked NEAR account and the amount the next payout brings. Pickup messages count QGOLD; there is no practice GOLD, and a new explorer starts at 0 GOLD (no welcome credit). The old practice stake is closed (its fake yield could have become real QGOLD). Tier 2 and Tier 3 places on the map are open to everyone until launch; after that they can be gated by the real vault tier (50 / 100 NEAR matured).",
           "While payouts are on, map days no longer send `claim_map`, so a coin is never paid twice. The demo arena gives XP only and never pays.",
         ],
       },

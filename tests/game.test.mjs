@@ -1,7 +1,7 @@
 import test from "node:test";
 import { latLngToCell, cellToLatLng } from "h3-js";
 import assert from "node:assert/strict";
-import { openDatabase, createPlayer, atomic } from "../server/database.mjs";
+import { openDatabase, createPlayer as newPlayer, atomic } from "../server/database.mjs";
 import {
   GOLD,
   COIN_VALUE,
@@ -31,6 +31,15 @@ import {
   contribution,
   harvestDemo,
 } from "../server/game.mjs";
+
+// New explorers start with 0 GOLD (no practice faucet). These tests exercise
+// the local practice paths, so each explorer gets a practice wallet here.
+const PRACTICE_WALLET_U = 120_000 * 1_000_000;
+function createPlayer(db, name, now) {
+  const p = newPlayer(db, name, now);
+  db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(PRACTICE_WALLET_U, p);
+  return p;
+}
 const now = Date.parse("2026-11-02T12:00:00Z");
 function setup() {
   const db = openDatabase(":memory:");
