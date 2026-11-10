@@ -176,6 +176,7 @@ import {
   HOME,
   ensureWorld,
   worldView,
+  coinCounts,
   expireWorlds,
   retryStreetWorlds,
 } from "./world.mjs";
@@ -2994,6 +2995,13 @@ async function api(req, res, url) {
     assert(w, "This area could not be found. Refresh the map.", 404);
     viewWorld(player, w.id);
     return respondCached(req, res, { ...w, layerId: DEFAULT_LAYER.id });
+  }
+  if (path === "/api/world/coin-counts" && method === "GET") {
+    limit("world-read", player, 240, "Please wait before refreshing the map again.");
+    const lat = Number(url.searchParams.get("lat")),
+      lng = Number(url.searchParams.get("lng"));
+    const at = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
+    return respond(res, coinCounts(db, url.searchParams.get("id") || null, at));
   }
   if (path === "/api/coins/claim" && method === "POST") {
     limit("coin", player, 240, "Please slow down collecting coins.");

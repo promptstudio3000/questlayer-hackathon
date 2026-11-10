@@ -720,3 +720,45 @@ export function expireWorlds(db, now = Date.now()) {
     }
   });
 }
+
+// Coins still on the map for the compact "Today's pot" row: unclaimed coins of
+// this world within 10 km of the explorer, and across every open world. Later
+// map-reward waves stay hidden until they open, so they are not counted.
+export const COIN_COUNT_RADIUS_M = 10_000;
+const globalCoinCache = { at: 0, value: 0 };
+function mapCoinMetaExists(db) {
+  return !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='map_coin_meta'").get();
+}
+export function coinCounts(db, worldId, at, now = Date.now()) {
+  const meta = mapCoinMetaExists(db);
+  const visible = meta
+    ? "AND NOT EXISTS(SELECT 1 FROM map_coin_meta m WHERE m.coin_id=c.id AND m.opens_at>?)"
+    : "";
+  let near = null;
+  if (worldId && at && Number.isFinite(at.lat) && Number.isFinite(at.lng)) {
+    const dLat = COIN_COUNT_RADIUS_M / 111320,
+      cosLat = Math.max(0.01, Math.cos((at.lat * Math.PI) / 180)),
+      dLng = dLat / cosLat;
+    const rows = db
+      .prepare(
+        `SELECT c.lat,c.lng FROM coins c WHERE c.world_id=? AND c.claimant IS NULL AND c.lat BETWEEN ? AND ? AND c.lng BETWEEN ? AND ? ${visible}`,
+      )
+      .all(worldId, at.lat - dLat, at.lat + dLat, at.lng - dLng, at.lng + dLng, ...(meta ? [now] : []));
+    near = rows.filter(
+      (c) =>
+        ((c.lat - at.lat) * 111320) ** 2 + ((c.lng - at.lng) * 111320 * cosLat) ** 2 <=
+        COIN_COUNT_RADIUS_M ** 2,
+    ).length;
+  }
+  // Every open world: one cached count a minute, the map polls far more often.
+  if (now - globalCoinCache.at > 60_000 || globalCoinCache.db !== db) {
+    globalCoinCache.value = db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM coins c WHERE c.claimant IS NULL ${visible} AND NOT EXISTS(SELECT 1 FROM daily_jobs j WHERE j.job_key='expire:'||c.world_id)`,
+      )
+      .get(...(meta ? [now] : [])).n;
+    globalCoinCache.at = now;
+    globalCoinCache.db = db;
+  }
+  return { radiusM: COIN_COUNT_RADIUS_M, near, global: globalCoinCache.value };
+}

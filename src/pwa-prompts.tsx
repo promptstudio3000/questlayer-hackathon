@@ -76,7 +76,7 @@ function useBarAnchors(active: boolean) {
     if (!active) return;
     const measure = () => {
       const next: Record<string, string> = {};
-      const topEdges = [...document.querySelectorAll(".topbar, .map-toolbar, .map-status-chip")].filter(el => (el as HTMLElement).checkVisibility()).map(el => el.getBoundingClientRect().bottom);
+      const topEdges = [...document.querySelectorAll(".topbar")].filter(el => (el as HTMLElement).checkVisibility()).map(el => el.getBoundingClientRect().bottom);
       if (topEdges.length) next["--pwa-top"] = `${Math.round(Math.max(...topEdges)) + 8}px`;
       const railEl = document.querySelector(".nav-rail");
       const rail = railEl?.getBoundingClientRect();
@@ -86,7 +86,7 @@ function useBarAnchors(active: boolean) {
         ? new DOMMatrix(getComputedStyle(railEl).transform === "none" ? undefined : getComputedStyle(railEl).transform).m42
         : 0;
       const railTop = rail ? rail.top - shift : 0;
-      const controlTops = [railTop, ...[...document.querySelectorAll(".demo-pad, .demo-pad-open, .main-panel.sheet-compact:not([hidden]), .nearby-open")].filter(el => (el as HTMLElement).checkVisibility()).map(el => el.getBoundingClientRect().top)]
+      const controlTops = [railTop, ...[...document.querySelectorAll(".demo-pad, .demo-pad-open, .map-actions-toggle, .main-panel.sheet-compact:not([hidden]), .nearby-open")].filter(el => (el as HTMLElement).checkVisibility()).map(el => el.getBoundingClientRect().top)]
         .filter(top => top > window.innerHeight / 2);
       if (controlTops.length)
         next["--pwa-bottom"] = `${Math.round(window.innerHeight - Math.min(...controlTops)) + 8}px`;
@@ -98,7 +98,7 @@ function useBarAnchors(active: boolean) {
     const bars = new ResizeObserver(measure);
     let watched: Element[] = [];
     const observe = () => {
-      const now = [...document.querySelectorAll(".topbar, .nav-rail, .demo-pad, .demo-pad-open, .map-toolbar, .map-status-chip, .main-panel.sheet-compact:not([hidden]), .nearby-open")];
+      const now = [...document.querySelectorAll(".topbar, .nav-rail, .demo-pad, .demo-pad-open, .map-actions-toggle, .main-panel.sheet-compact:not([hidden]), .nearby-open")];
       if (
         now.length === watched.length &&
         now.every((el, i) => el === watched[i])

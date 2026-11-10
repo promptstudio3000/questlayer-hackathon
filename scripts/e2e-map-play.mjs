@@ -13,6 +13,7 @@ import {chromium,webkit} from "playwright";
 import {daytimeOffset} from "./lib/e2e-clock.mjs";
 import {metersBetween,headingTo,stepFrom} from "../src/map-motion.ts";
 import {containsPoint} from "../server/poi/geo.mjs";
+import { openMapSettings } from "./lib/e2e-nav.mjs";
 
 const root=resolve(import.meta.dirname,".."),dir=mkdtempSync(join(tmpdir(),"questlayer-map-play-"));
 const before=process.env.E2E_PHASE==="before",engine=process.env.E2E_BROWSER==="webkit"?webkit:chromium;
@@ -129,7 +130,7 @@ try{
 
  if(!before){
   const gpsContext=await context("reduce");await api(gpsContext,"/session",{name:"GPS camera explorer"});await api(gpsContext,"/world",{arena:true,location:home});const gpsPage=await gpsContext.newPage();await ready(gpsPage);
-  await gpsPage.evaluate(p=>window.__gps(p,90,1.4),home);await gpsPage.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+  await gpsPage.evaluate(p=>window.__gps(p,90,1.4),home);await (await openMapSettings(gpsPage)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();
   const bearing=async h=>gpsPage.waitForFunction(h=>Math.abs(((window.__testMap.getBearing()-h+540)%360)-180)<1,h,{timeout:15000});
   await bearing(90);await pause(1000);const west=stepFrom(home,270,2);
   await gpsPage.evaluate(p=>window.__gps(p,270,1.4),west);await bearing(270);await pause(1000);const north=stepFrom(west,0,4);
@@ -152,7 +153,7 @@ try{
  const page=await routeContext.newPage();page.setDefaultTimeout(30000);
  if(before)await api(routeContext,"/quests/checkpoint",{questId:route.id,checkpoint:0,fix:route.nextPoint});
  await ready(page);
- if(!before){await page.evaluate(p=>window.__gps(p,null,0),targets[0]);await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();await page.locator(".world-loading").waitFor({state:"hidden",timeout:60000});}
+ if(!before){await page.evaluate(p=>window.__gps(p,null,0),targets[0]);await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();await page.locator(".world-loading").waitFor({state:"hidden",timeout:60000});}
  await selectRoute(page,zone,route);
  if(before){await page.getByRole("button",{name:"Close panel",exact:true}).click();await page.screenshot({path:join(shots,"390-checkpoint-after-first.png")});report.checks.push({name:"checkpoint-numbering-after-first",markers:await page.locator(".quest-route-stop").allTextContents()});}
  else{

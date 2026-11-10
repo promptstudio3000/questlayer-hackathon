@@ -10,6 +10,7 @@ import { initSocialContent } from "../social-content.mjs";
 import { GOLD } from "../domain.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { DAILY_BOARD_SCHEMA } from "../daily-board/schema.mjs";
+import { ensureMarketSchema, fogCentre } from "../market/service.mjs";
 import {
   SEED_VERSION,
   SEED_PREFIX,
@@ -22,6 +23,7 @@ import {
   SEED_NOTES,
   SEED_LISTINGS,
   SEED_BOUNTIES,
+  SEED_SECRETS,
   SEED_CREATORS,
   SEED_CREATOR_QUESTS,
   STARTER_KIT,
@@ -218,6 +220,26 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return created;
   }
 
+  function ensureSecrets(now) {
+    ensureMarketSchema(db);
+    let created = 0;
+    atomic(db, () => {
+      for (const s of SEED_SECRETS) {
+        const id = `seed-s-${s.slug}`;
+        const radius = 600,
+          fog = fogCentre(id, s.at.lat, s.at.lng, radius);
+        created += Number(
+          db
+            .prepare(
+              "INSERT OR IGNORE INTO mk_secrets(id,creator,kind,title,teaser,reveal,lat,lng,route,fog_lat,fog_lng,fog_radius_m,price_u,link_key,visit_reward_u,visits_left,held_u,fee_held_u,currency,state,created_at,updated_at) VALUES (?,?,'place',?,?,?,?,?,'[]',?,?,?,0,NULL,0,0,0,0,'qgold','open',?,?)",
+            )
+            .run(id, s.creator, s.title, s.teaser, s.reveal, s.at.lat, s.at.lng, fog.lat, fog.lng, radius, now, now).changes,
+        );
+      }
+    });
+    return created;
+  }
+
   function ensureBounties(now) {
     let created = 0;
     atomic(db, () => {
@@ -294,6 +316,7 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     applyNotes(now);
     ensureListings(now);
     ensureBounties(now);
+    ensureSecrets(now);
     let creatorResult;
     try {
       creatorResult = applyCreators();
@@ -493,6 +516,7 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
       notes: n("SELECT count(*) n FROM messages WHERE substr(id,1,5)='seed-'"),
       openListings: n("SELECT count(*) n FROM listings WHERE substr(id,1,5)='seed-' AND state='open'"),
       openBounties: n("SELECT count(*) n FROM bounties WHERE substr(id,1,5)='seed-' AND state='open'"),
+      secrets: has("mk_secrets") ? n("SELECT count(*) n FROM mk_secrets WHERE substr(id,1,5)='seed-' AND state='open'") : 0,
       creatorQuests: has("creator_quests")
         ? n("SELECT count(*) n FROM creator_quests WHERE substr(id,1,5)='seed-' AND state='published'")
         : 0,

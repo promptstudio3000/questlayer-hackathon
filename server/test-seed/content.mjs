@@ -65,6 +65,14 @@ export const SEED_BOUNTIES = Object.freeze([
   { slug: "bench", creator: "seed-p-jana", title: "Find the bench with the brass plaque", description: "Somewhere in the park is a bench with a brass plaque. What does it say?", reward: 1_200, at: near(-0.0035, 0.0015) },
 ]);
 
+// Free Secrets around the demo square, so the Nearby list is never empty.
+// Price 0 and no visit reward: revealing one moves no QGOLD.
+export const SEED_SECRETS = Object.freeze([
+  { slug: "courtyard", creator: "seed-p-vera", title: "The quiet courtyard", teaser: "A hidden courtyard a few steps off the square.", reveal: "Walk through the passage next to the bookshop: the courtyard behind it has a stone well and a bench in the shade.", at: near(-0.0009, 0.0021) },
+  { slug: "mural", creator: "seed-p-tomas", title: "Ghost mural", teaser: "Somebody painted a friendly ghost on a wall nearby.", reveal: "Look up at the side wall of the corner house: a small purple ghost is painted under the window.", at: near(0.0016, -0.0024) },
+  { slug: "viewpoint", creator: "seed-p-jana", title: "Riverside viewpoint", teaser: "The best view of the river bend, if you know where to stand.", reveal: "Stand on the low wall at the end of the riverside path: you see both bridges and the cathedral tower at once.", at: near(-0.0038, -0.0079) },
+]);
+
 export const SEED_CREATORS = Object.freeze([
   { player: "seed-p-vera", displayName: "Vera's Walks", bio: "Test creator. Short walks around the old town." },
   { player: "seed-p-tomas", displayName: "Tomas the Tinkerer", bio: "Test creator. Puzzles, trails and chests." },

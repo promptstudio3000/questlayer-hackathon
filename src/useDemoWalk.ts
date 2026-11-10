@@ -49,10 +49,12 @@ export function useDemoWalk({
     // the toggle) walks for the last few metres.
     [run, setRun] = useState(true),
     [shift, setShift] = useState(false),
-    [engaged, setEngaged] = useState(false);
+    [engaged, setEngaged] = useState(false),
+    // Joystick vector, x right and y forward, each -1..1 (null when released).
+    [stick, setStick] = useState<{ x: number; y: number } | null>(null);
   const running = shift ? !run : run;
-  const live = useRef({ enabled, heading, held, run: running, onWalk });
-  live.current = { enabled, heading, held, run: running, onWalk };
+  const live = useRef({ enabled, heading, held, run: running, onWalk, stick });
+  live.current = { enabled, heading, held, run: running, onWalk, stick };
   const sources = useRef(new Map<string, DemoControl>());
   const shiftKeys = useRef(new Set<string>());
 
@@ -65,7 +67,19 @@ export function useDemoWalk({
     live.current.held = next;
     setHeld(next);
   }, []);
+  /** Joystick input; null releases it. A tiny push is ignored (dead zone). */
+  const steer = useCallback((vector: { x: number; y: number } | null) => {
+    const next =
+      vector && Math.hypot(vector.x, vector.y) > 0.18 && live.current.enabled &&
+      !document.querySelector("dialog[open],[role=dialog][aria-modal=true]")
+        ? vector
+        : null;
+    live.current.stick = next;
+    setStick((current) => (!current && !next ? current : next));
+  }, []);
   const release = useCallback(() => {
+    live.current.stick = null;
+    setStick(null);
     sources.current.clear();
     shiftKeys.current.clear();
     live.current.held = new Set();
@@ -121,7 +135,7 @@ export function useDemoWalk({
     };
   }, [enabled, press, release]);
 
-  const active = enabled && held.size > 0;
+  const active = enabled && (held.size > 0 || !!stick);
   useEffect(() => {
     if (!active) return;
     // The first tick counts as a full one, so a quick tap still takes a step.
@@ -135,13 +149,14 @@ export function useDemoWalk({
       const now = performance.now(),
         seconds = Math.min(0.25, (now - last) / 1000);
       last = now;
-      const { heading: from, held: keys, run: running } = live.current;
+      const { heading: from, held: keys, run: running, stick: vector } = live.current;
       const input: DemoInput = {
         forward: keys.has("forward"),
         back: keys.has("back"),
         left: keys.has("left"),
         right: keys.has("right"),
         run: running,
+        ...(vector ? { turn: vector.x, walk: vector.y } : {}),
       };
       const step = demoTick({ lat: 0, lng: 0 }, from, input, seconds);
       if (step.heading !== from) {
@@ -170,5 +185,5 @@ export function useDemoWalk({
     }
   }, []);
 
-  return { heading, held, run, setRun, running, press, release, face, engaged };
+  return { heading, held, run, setRun, running, press, release, steer, stick, face, engaged };
 }
