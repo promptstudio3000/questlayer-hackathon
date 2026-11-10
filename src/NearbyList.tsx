@@ -11,6 +11,7 @@ import {
   Flag,
   HandCoins,
   LockKey,
+  MapPin,
   Megaphone,
   NotePencil,
   Plus,
@@ -31,6 +32,7 @@ import { questDisplayTitle } from "./quest-copy";
 import { actorPositionAt } from "./actor-position";
 import type { ActorView, ActorsResponse } from "./actor-types";
 import type { PlaceThread } from "./gold-spend-client";
+import type { CommunityPlace } from "./community-places-client";
 import type { MapNote } from "./MapNotes";
 import type { Point, Quest, World, Zone } from "./types";
 import {
@@ -54,7 +56,7 @@ const SORT_KEY = "questlayer.nearbySort";
 type Bounty = { id: string; title: string; amount_u: number; lat: number; lng: number; state: string };
 type CommunityItem = {
   id: string;
-  type: "task" | "bounty" | "secret" | "topic" | "shout" | "note";
+  type: "task" | "bounty" | "secret" | "topic" | "shout" | "note" | "spot";
   title: string;
   detail: string;
   distanceM: number;
@@ -82,6 +84,7 @@ const COMMUNITY_LABEL: Record<CommunityItem["type"], () => string> = {
   topic: () => tr("Topic"),
   shout: () => tr("Shout"),
   note: () => tr("Map note"),
+  spot: () => tr("Community place"),
 };
 
 function readSort(): NearbySort {
@@ -105,6 +108,7 @@ export function NearbyList({
   onZone,
   onActor,
   onPlace,
+  onSpot,
   onNotes,
   onCommunityTasks,
   market,
@@ -123,6 +127,8 @@ export function NearbyList({
   onActor: (actor: ActorView, distanceM: number) => void;
   /** Opens a place shout or topic. */
   onPlace: (id: string) => void;
+  /** Opens Community · Places (spots explorers recommend). */
+  onSpot: () => void;
   /** Opens the map notes (local chat). */
   onNotes: () => void;
   /** Opens every community task. */
@@ -141,6 +147,7 @@ export function NearbyList({
   const [bounties, setBounties] = useState<Bounty[]>([]);
   const [places, setPlaces] = useState<PlaceThread[]>([]);
   const [notes, setNotes] = useState<MapNote[]>([]);
+  const [spots, setSpots] = useState<CommunityPlace[]>([]);
   const setSort = (next: NearbySort) => {
     setSortState(next);
     setLimit(PAGE);
@@ -174,6 +181,8 @@ export function NearbyList({
       .then((r) => { if (live) setPlaces(r.items); }, ignore);
     api<{ messages: MapNote[] }>(`/messages?lat=${lat.toFixed(2)}&lng=${lng.toFixed(2)}&arena=${arena ? 1 : 0}`)
       .then((r) => { if (live) setNotes(r.messages); }, ignore);
+    api<{ places: CommunityPlace[] }>(`/community-places?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}&arena=${arena ? 1 : 0}`)
+      .then((r) => { if (live) setSpots(r.places); }, ignore);
     api<{ bounties: Bounty[] }>("/bounties")
       .then((r) => { if (live) setBounties(r.bounties); }, ignore);
     return () => { live = false; };
@@ -202,8 +211,10 @@ export function NearbyList({
         items.push({ id: p.id, type: p.kind, title: short(p.kind === "topic" ? p.title || p.text : p.text), detail: p.author.name, distanceM: distanceTo(position, p), reward: 0 });
     for (const n of notes)
       items.push({ id: n.id, type: "note", title: short(n.text), detail: n.author, distanceM: distanceTo(position, n), reward: 0 });
+    for (const sp of spots)
+      items.push({ id: sp.id, type: "spot", title: sp.name, detail: sp.author.name, distanceM: sp.distanceM ?? distanceTo(position, sp), reward: 0 });
     return items;
-  }, [marketData, bounties, places, notes, position]);
+  }, [marketData, bounties, places, notes, spots, position]);
 
   const zones = world.zones.filter((z) => z.closesAt > now);
   const zoneById = new Map(zones.map((z) => [z.id, z]));
@@ -330,8 +341,9 @@ export function NearbyList({
         : c.type === "secret" ? () => openMarket("secret", c.id)
           : c.type === "bounty" ? onCommunityTasks
             : c.type === "note" ? onNotes
+              : c.type === "spot" ? onSpot
               : () => onPlace(c.id);
-    const Icon = c.type === "task" || c.type === "bounty" ? Flag : c.type === "topic" ? ChatsCircle : c.type === "shout" ? Megaphone : NotePencil;
+    const Icon = c.type === "task" || c.type === "bounty" ? Flag : c.type === "topic" ? ChatsCircle : c.type === "shout" ? Megaphone : c.type === "spot" ? MapPin : NotePencil;
     return (
       <button className="nearby-row" data-kind={c.type} key={e.key} onClick={open}>
         {c.type === "secret" ? (

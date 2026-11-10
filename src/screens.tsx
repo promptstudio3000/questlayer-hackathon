@@ -5,7 +5,9 @@ import type { ReactNode } from "react";
 import {
   Backpack,
   ChatCircle,
-  Megaphone,
+  ChatsCircle,
+  MapPin,
+  NotePencil,
   Sparkle,
   Flag,
   Flame,
@@ -60,8 +62,14 @@ export const COMMUNITY_TABS: readonly ScreenTab<CommunityTab>[] = [
   { id: "quests", get label() { return tr("Quests"); }, icon: Scroll },
   { id: "tasks", get label() { return tr("Tasks"); }, icon: Flag },
   { id: "notes", get label() { return tr("Local chat"); }, icon: ChatCircle },
-  { id: "places", get label() { return tr("Places"); }, icon: Megaphone },
+  { id: "places", get label() { return tr("Places"); }, icon: MapPin },
   { id: "creators", get label() { return tr("Creators"); }, icon: PencilSimpleLine },
+];
+/** Local chat: free map notes, and paid shouts and topics (Lubos, 10 Nov 2026). */
+export type LocalChatView = "notes" | "topics";
+export const LOCAL_CHAT_TABS: readonly ScreenTab<LocalChatView>[] = [
+  { id: "notes", get label() { return tr("Notes"); }, icon: NotePencil },
+  { id: "topics", get label() { return tr("Shouts & topics"); }, icon: ChatsCircle },
 ];
 const CREATOR_PAGES = new Set([
   "creators",
