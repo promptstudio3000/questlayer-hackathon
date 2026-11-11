@@ -40,12 +40,12 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # The Ubuntu apt mirrors sometimes fail to resolve on the runners. Retry once,
-      # then fall back to the browser alone: the runner image already has most
-      # system libraries, and a truly missing one still fails the tests below.
+      # The Ubuntu apt mirrors sometimes fail to resolve on the runners, and apt
+      # then retries for many minutes. Give the system packages 4 minutes, then
+      # fall back to the browser alone: the runner image already has most system
+      # libraries, and a truly missing one still fails the tests below.
       - run: |
-          npx playwright install --with-deps ${{ matrix.browser }} \
-            || (sleep 30 && npx playwright install --with-deps ${{ matrix.browser }}) \
+          timeout 240 npx playwright install --with-deps ${{ matrix.browser }} \
             || npx playwright install ${{ matrix.browser }}
       - run: npm run build
       - run: npm run e2e:first-session -- --device=${{ matrix.device }}
@@ -92,12 +92,12 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # The Ubuntu apt mirrors sometimes fail to resolve on the runners. Retry once,
-      # then fall back to the browser alone: the runner image already has most
-      # system libraries, and a truly missing one still fails the tests below.
+      # The Ubuntu apt mirrors sometimes fail to resolve on the runners, and apt
+      # then retries for many minutes. Give the system packages 4 minutes, then
+      # fall back to the browser alone: the runner image already has most system
+      # libraries, and a truly missing one still fails the tests below.
       - run: |
-          npx playwright install --with-deps chromium \
-            || (sleep 30 && npx playwright install --with-deps chromium) \
+          timeout 240 npx playwright install --with-deps chromium \
             || npx playwright install chromium
       - run: npm run build
       - run: npm run e2e:languages
