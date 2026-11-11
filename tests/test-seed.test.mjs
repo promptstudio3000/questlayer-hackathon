@@ -15,10 +15,12 @@ import {
 import {
   SEED_PLAYERS,
   SEED_CREATOR_QUESTS,
+  SEED_TASKS,
   SEED_BUYER,
   STARTER_KIT,
 } from "../server/test-seed/content.mjs";
 import { GOLD } from "../server/domain.mjs";
+import { reserveTask } from "../server/market/service.mjs";
 
 const ENV = {
   CREATOR_COMMUNITY_ENABLED: "1",
@@ -75,7 +77,7 @@ test("apply builds the whole test world idempotently", () => {
     assert.equal(first.players, SEED_PLAYERS.length);
     assert.equal(first.creatorQuests, SEED_CREATOR_QUESTS.length);
     assert.equal(first.openListings, 4);
-    assert.equal(first.openBounties, 3);
+    assert.equal(first.openTasks, SEED_TASKS.length);
     assert.equal(first.notes, 24);
     now += 1000;
     assert.deepEqual(
@@ -88,7 +90,7 @@ test("apply builds the whole test world idempotently", () => {
     const walkers = db
       .prepare("SELECT count(*) n FROM presence WHERE substr(player_id,1,5)='seed-'")
       .get().n;
-    assert.equal(walkers, SEED_PLAYERS.length);
+    assert.equal(walkers, SEED_PLAYERS.filter((p) => p.walk || p.companion).length);
   } finally {
     db.close();
   }
@@ -137,18 +139,10 @@ test("starter kit, bots and purge leave no seed trace", () => {
       goldBefore + 5_000 * GOLD,
     );
 
-    // Tasks: submit evidence, the seed author approves, the task is reposted.
-    const bounty = db
-      .prepare("SELECT * FROM bounties WHERE substr(id,1,7)='seed-b-' AND state='open' LIMIT 1")
-      .get();
-    db.prepare(
-      "INSERT INTO bounty_submissions(bounty_id,player_id,evidence,created_at) VALUES (?,?,?,?)",
-    ).run(bounty.id, me, "There were five bells.", now);
-    now += 31_000;
-    const step = seed.tickEconomy(now);
-    assert.equal(step.approved, 1);
-    assert.equal(step.bounties, 1);
-    assert.equal(db.prepare("SELECT state FROM bounties WHERE id=?").get(bounty.id).state, "paid");
+    // Tasks: demo-bot examples are listed with their poster but cannot be taken.
+    const task = db.prepare("SELECT * FROM mk_tasks WHERE substr(id,1,7)='seed-t-' LIMIT 1").get();
+    assert.equal(task.held_u, 0);
+    assert.throws(() => reserveTask(db, me, task.id, {}, now), /example task from a demo bot/);
 
     // Creator quest: start, submit, the seed validator accepts.
     const { lifecycle, completion, community } = runtime.services;
