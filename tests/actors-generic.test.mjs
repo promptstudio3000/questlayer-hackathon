@@ -126,7 +126,7 @@ test("a cell without a cached path snapshot has no actors and makes no map reque
   assert.deepEqual(list.actors, []);
 });
 
-test("the test-only all-day switch keeps a street cast out at night; production keeps opening hours", () => {
+test("generic NPCs walk around the clock; the test-only all-day switch stays testnet-only", () => {
   const night = dayStart + 2 * 3600_000; // 02:00 Prague
   const live = (options) => {
     const db = new DatabaseSync(":memory:");
@@ -134,7 +134,7 @@ test("the test-only all-day switch keeps a street cast out at night; production 
     const plan = service.planFor(cellWorld(db));
     return plan.instances.filter((i) => i.segments.some((s) => s.from <= night && s.to > night));
   };
-  assert.equal(live({}).length, 0, "generic hours 07:00-22:00 by default");
+  assert.ok(live({}).length > 0, "generic hours 00:00-23:59 by default");
   assert.ok(live({ allDay: true }).length > 0, "all-day plan has actors out at 02:00");
   assert.equal(actorsAllDay({ ACTORS_ALL_DAY: "1" }, "testnet"), true);
   assert.equal(actorsAllDay({ ACTORS_ALL_DAY: "1" }, "mainnet"), false, "never on mainnet");
