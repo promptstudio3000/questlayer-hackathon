@@ -3246,5 +3246,7 @@
   "Start with a new account": "用新账户开始",
   "Starting over…": "正在重新开始…",
   "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "仅限测试网。你的探索者、XP、发现和物品都会保留。此设备上会创建一个新的 NEAR 账户；旧账户中的 QGOLD 和代币留在那里，游戏不再使用它。",
-  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "此设备尚未关联你的探索者账户，因此无法收发消息。请用恢复通行密钥添加它，或在这里用新账户开始。"
+  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "此设备尚未关联你的探索者账户，因此无法收发消息。请用恢复通行密钥添加它，或在这里用新账户开始。",
+  "Closed · new zones tomorrow": "已关闭 · 明天有新区域",
+  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "你的账户仅在创建时获得一次初始 NEAR。添加你自己的 NEAR：从任意钱包或交易所发送到 {0}。"
 }

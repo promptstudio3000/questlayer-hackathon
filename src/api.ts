@@ -1,9 +1,12 @@
 import { tr } from "./i18n.ts";
-export const GOLD=1_000_000;
-// Map coins are backed QGOLD split over every coin of the day, so one coin
-// can be a few micro-QGOLD: amounts under 0.01 show up to 6 decimals.
-export const gold=(value:number,decimals=2)=>new Intl.NumberFormat('en-US',{maximumFractionDigits:value&&Math.abs(value)<GOLD/100?Math.max(decimals,6):decimals}).format(value/GOLD);
-export const near=(value:number)=>new Intl.NumberFormat('en-US',{maximumFractionDigits:4}).format(value/GOLD/1000);
+import { formatGold, QGOLD_UNITS } from "./gold-units.ts";
+// Amounts are kept in micro-QGOLD; 1 in-game GOLD is one of those units
+// (src/gold-units.ts), so every GOLD amount is a whole number.
+export const GOLD=1;
+// The second argument is kept for older call sites; GOLD has no decimals.
+export const gold=(value:number,_decimals?:number)=>formatGold(value/GOLD);
+// NEAR value of GOLD at the vault's starting rate (0.001 NEAR per QGOLD).
+export const near=(value:number)=>new Intl.NumberFormat('en-US',{maximumFractionDigits:4}).format(value/QGOLD_UNITS/1000);
 export class ApiError extends Error {code:string;status:number;details?:Record<string,unknown>;constructor(message:string,code:string,status:number,details?:Record<string,unknown>){super(message);this.code=code;this.status=status;this.details=details;}}
 export async function api<T=Record<string,unknown>>(path:string,data?:unknown,options?:{signal?:AbortSignal;purchaseId?:string}):Promise<T>{const r=await fetch(`/api${path}`,{signal:options?.signal,method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json',...(options?.purchaseId?{'X-Questlayer-Purchase':options.purchaseId}:{})},credentials:'same-origin',...(data===undefined?{}:{body:JSON.stringify(data)})});const result=await r.json();if(!r.ok)throw new ApiError(result.error||'Could not connect to the game.',result.code,r.status,result.details);return result as T;}
 export function meters(a:{lat:number;lng:number},b:{lat:number;lng:number}){const r=Math.PI/180;const x=(b.lng-a.lng)*r*Math.cos((a.lat+b.lat)*r/2),y=(b.lat-a.lat)*r;return Math.sqrt(x*x+y*y)*6371000;}

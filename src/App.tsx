@@ -262,6 +262,7 @@ import {
 // Passkey helpers load on first use, outside the welcome screen's first load.
 const webauthn = () => import("@simplewebauthn/browser");
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
+import { goldFromYocto } from "./gold-units.ts";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
 import { DeferredGameMap as GameMap, gameMapLoaded, preloadGameMap } from "./DeferredGameMap";
@@ -3944,12 +3945,7 @@ export default function App() {
                   <b>
                     {nativePlay
                       ? nativeGame.state?.balance
-                        ? (
-                            Number(
-                              BigInt(nativeGame.state.balance.credit) /
-                                1000000000000000n,
-                            ) / 1e6
-                          ).toLocaleString("en-US", { maximumFractionDigits: 3 })
+                        ? goldFromYocto(nativeGame.state.balance.credit)
                         : "—"
                       : gold(player.gold_u)}
                   </b>

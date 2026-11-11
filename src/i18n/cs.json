@@ -3246,5 +3246,7 @@
   "Start with a new account": "Začít s novým účtem",
   "Starting over…": "Začínám znovu…",
   "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Jen na testovací síti. Tvůj průzkumník, XP, nálezy a předměty zůstanou. Na tomto zařízení vznikne nový NEAR účet; QGOLD a tokeny na starém účtu tam zůstanou a hra ho přestane používat.",
-  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Toto zařízení ještě není propojené s tvým účtem průzkumníka, takže nemůže posílat ani číst zprávy. Přidej ho záložním passkey, nebo tady začni s novým účtem."
+  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Toto zařízení ještě není propojené s tvým účtem průzkumníka, takže nemůže posílat ani číst zprávy. Přidej ho záložním passkey, nebo tady začni s novým účtem.",
+  "Closed · new zones tomorrow": "Zavřeno · nové zóny zítra",
+  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Váš účet dostal startovní NEAR jen jednou, při založení. Přidejte vlastní NEAR: pošlete ho z libovolné peněženky nebo burzy na {0}."
 }

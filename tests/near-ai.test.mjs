@@ -9,7 +9,7 @@ import {
   nearAiStatus,
   verifyEd25519,
 } from "../server/ai/near-ai.mjs";
-import { npcConfiguration, npcProviderFor, createFallbackNpcProvider } from "../server/npc/talk.mjs";
+import { npcConfiguration, npcProviderFor } from "../server/npc/talk.mjs";
 import { guideConfiguration } from "../server/ai/guide.mjs";
 import { flavourConfiguration, flavourProvider } from "../server/ai/flavour-batch.mjs";
 
@@ -71,23 +71,24 @@ test("NEAR AI stays off unless NEAR_AI_ENABLED=1 and a key exist", () => {
 });
 
 test("NPCs, guide and flavour pick NEAR AI only behind the switch", () => {
-  const ollama = { GUIDE_AI_PROVIDER: "ollama", OLLAMA_API_KEY: "o" };
-  // Key present but switch off: unchanged Ollama behaviour, even when asked for.
-  assert.equal(npcConfiguration({ ...ollama, NEAR_AI_API_KEY: KEY }).provider, "ollama");
-  assert.equal(npcConfiguration({ ...ollama, NEAR_AI_API_KEY: KEY, NPC_AI_PROVIDER: "near-ai" }).provider, "ollama");
+  // Key present but switch off: template replies, even when asked for.
+  assert.equal(npcConfiguration({ NEAR_AI_API_KEY: KEY }).provider, "template");
+  assert.equal(npcConfiguration({ NEAR_AI_API_KEY: KEY, NPC_AI_PROVIDER: "near-ai" }).provider, "template");
   assert.equal(guideConfiguration({ NEAR_AI_API_KEY: KEY, NEAR_AI_MODEL: "x" }).provider, "template");
   assert.equal(guideConfiguration({ GUIDE_AI_PROVIDER: "near-ai", NEAR_AI_API_KEY: KEY }).provider, "template");
   assert.equal(flavourProvider(flavourConfiguration({ FLAVOUR_AI_PROVIDER: "near-ai", NEAR_AI_API_KEY: KEY }), { NEAR_AI_API_KEY: KEY }), null);
-  // Switch on: NPCs go to NEAR AI first with Ollama as fallback.
-  const env = { ...ollama, NEAR_AI_ENABLED: "1", NEAR_AI_API_KEY: KEY };
+  // Switch on: NPCs go to NEAR AI (the only model provider).
+  const env = { NEAR_AI_ENABLED: "1", NEAR_AI_API_KEY: KEY };
   const config = npcConfiguration(env);
   assert.equal(config.provider, "near-ai");
-  assert.equal(config.ollama.apiKey, "o");
+  assert.equal(config.ollama, undefined);
   const provider = npcProviderFor(config);
   assert.equal(provider.name, "near-ai");
   assert.equal(provider.withMeta, true);
-  // NPC_AI_PROVIDER=ollama still pins Ollama.
-  assert.equal(npcConfiguration({ ...env, NPC_AI_PROVIDER: "ollama" }).provider, "ollama");
+  // Ollama was removed: an old "ollama" setting runs on NEAR AI instead.
+  assert.equal(npcConfiguration({ ...env, NPC_AI_PROVIDER: "ollama" }).provider, "near-ai");
+  assert.equal(guideConfiguration({ ...env, GUIDE_AI_PROVIDER: "ollama" }).provider, "near-ai");
+  assert.equal(guideConfiguration({ GUIDE_AI_PROVIDER: "ollama" }).provider, "template");
   assert.equal(guideConfiguration({ ...env, GUIDE_AI_PROVIDER: "near-ai" }).provider, "near-ai");
 });
 
@@ -146,11 +147,11 @@ test("verifier accepts an enclave signature over our exact bytes and rejects the
   assert.equal((await createNearAiVerifier({ apiKey: KEY, fetcher: cloud.fetcher }).check({})).reason, "no-chat-id");
 });
 
-test("NPC provider falls back to Ollama when NEAR AI is down", async () => {
+test("NEAR AI being down rejects, so the NPC answers with its template line", async () => {
   const signer = keypair();
   const down = fakeCloud({ signer, status: 503 });
-  const config = npcConfiguration({ NEAR_AI_ENABLED: "1", NEAR_AI_API_KEY: KEY, OLLAMA_API_KEY: "o", GUIDE_AI_PROVIDER: "ollama" });
-  const near = npcProviderFor({ ...config, ollama: null });
+  const config = npcConfiguration({ NEAR_AI_ENABLED: "1", NEAR_AI_API_KEY: KEY });
+  const near = npcProviderFor(config);
   const persona = { name: "Ráda", voice: "v", backstory: "b" };
   const args = { persona, facts: [], menu: [], memory: [], message: "hi" };
   const original = globalThis.fetch;
@@ -160,12 +161,6 @@ test("NPC provider falls back to Ollama when NEAR AI is down", async () => {
   } finally {
     globalThis.fetch = original;
   }
-  const fallback = { name: "ollama", model: "m", reply: async () => ({ say: "Hi.", factIds: [], offer: null, emote: "wave" }) };
-  const failing = { name: "near-ai", model: "x", withMeta: true, reply: async () => { throw Error("provider-unavailable (503)"); } };
-  const res = await createFallbackNpcProvider(failing, fallback).reply(args);
-  assert.equal(res.source, "ollama");
-  assert.equal(res.output.say, "Hi.");
-  assert.equal(res.primaryReason, "provider-unavailable (503)");
 });
 
 test("NPC talk on NEAR AI returns a chat id and records the attestation", async (t) => {

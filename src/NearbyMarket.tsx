@@ -917,7 +917,7 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
       </>}
       {step === 1 && <>
         <div className="market-form-row">
-          <Field label={tr("Reward (GOLD)")}><input autoFocus inputMode="decimal" required value={v.reward} onChange={set("reward")} /></Field>
+          <Field label={tr("Reward (GOLD)")}><input autoFocus inputMode="numeric" required value={v.reward} onChange={set("reward")} /></Field>
           <Field label={tr("Completions")}><input type="number" min={1} max={50} value={v.slots} onChange={set("slots")} /></Field>
           {v.type === "recurring" ? (
             <>
@@ -953,8 +953,8 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
         {short && <p role="alert">{tr("Not enough QGOLD in your account.")}</p>}
       </>}
       {step < 2
-        ? <button disabled={step === 1 && reward < 0.01 * GOLD}>{tr("Continue")}</button>
-        : <button disabled={busy || short || reward < 0.01 * GOLD}>{tr("Post and hold the reward")}</button>}
+        ? <button disabled={step === 1 && reward < 100 * GOLD}>{tr("Continue")}</button>
+        : <button disabled={busy || short || reward < 100 * GOLD}>{tr("Post and hold the reward")}</button>}
     </FormShell>
   );
 }
@@ -1023,7 +1023,7 @@ function SendForm({ position, busy, onClose, submit }: { position: Point; busy: 
       ...(v.condition === "gps" ? { place: { lat: position.lat, lng: position.lng } } : {}),
     })}>
       <Field label={tr("To (player id or NEAR account)")}><input required value={v.to} onChange={set("to")} /></Field>
-      <Field label={tr("Amount (GOLD)")}><input inputMode="decimal" required value={v.amount} onChange={set("amount")} /></Field>
+      <Field label={tr("Amount (GOLD)")}><input inputMode="numeric" required value={v.amount} onChange={set("amount")} /></Field>
       <Field label={tr("Released when")}>
         <select value={v.condition} onChange={set("condition")}>
           <option value="both_confirm">{tr("You both confirm")}</option>

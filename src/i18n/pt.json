@@ -3246,5 +3246,7 @@
   "Start with a new account": "Começar com uma conta nova",
   "Starting over…": "A recomeçar…",
   "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Só na rede de testes. O teu explorador, XP, descobertas e itens ficam. É criada uma nova conta NEAR neste dispositivo; o QGOLD e os tokens da conta antiga ficam lá e o jogo deixa de a usar.",
-  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Este dispositivo ainda não está ligado à tua conta de explorador, por isso não pode enviar nem ler mensagens. Adiciona-o com a tua passkey de recuperação ou começa aqui com uma conta nova."
+  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Este dispositivo ainda não está ligado à tua conta de explorador, por isso não pode enviar nem ler mensagens. Adiciona-o com a tua passkey de recuperação ou começa aqui com uma conta nova.",
+  "Closed · new zones tomorrow": "Fechado · novas zonas amanhã",
+  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Sua conta recebeu o NEAR inicial uma única vez, ao ser criada. Adicione seu próprio NEAR: envie de qualquer carteira ou corretora para {0}."
 }

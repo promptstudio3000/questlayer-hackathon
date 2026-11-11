@@ -3246,5 +3246,7 @@
   "Start with a new account": "ابدأ بحساب جديد",
   "Starting over…": "جارٍ البدء من جديد…",
   "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "على شبكة الاختبار فقط. يبقى مستكشفك ونقاط الخبرة والاكتشافات والعناصر. يُنشأ حساب NEAR جديد على هذا الجهاز؛ يبقى QGOLD والرموز في الحساب القديم ولن تستخدمه اللعبة بعد الآن.",
-  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "هذا الجهاز غير مرتبط بحساب المستكشف بعد، لذا لا يمكنه إرسال الرسائل أو قراءتها. أضفه بمفتاح المرور الاحتياطي أو ابدأ هنا بحساب جديد."
+  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "هذا الجهاز غير مرتبط بحساب المستكشف بعد، لذا لا يمكنه إرسال الرسائل أو قراءتها. أضفه بمفتاح المرور الاحتياطي أو ابدأ هنا بحساب جديد.",
+  "Closed · new zones tomorrow": "مغلق · مناطق جديدة غدًا",
+  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "حصل حسابك على NEAR الابتدائي مرة واحدة عند إنشائه. أضف NEAR الخاص بك: أرسله من أي محفظة أو منصة تداول إلى {0}."
 }

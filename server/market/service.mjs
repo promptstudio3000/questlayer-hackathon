@@ -16,7 +16,7 @@
 //   paid or refunded; `marketInvariant` checks the sum.
 import { publicLook } from "../public-look.mjs";
 import { randomBytes, createHash } from "node:crypto";
-import { assert, distance, id, point, DAY, GOLD } from "../domain.mjs";
+import { assert, distance, id, point, DAY } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
 import { MARKET_FEE_BPS, SECRET_RELEASE_MS } from "./funding.mjs";
 export { MARKET_FEE_BPS, SECRET_RELEASE_MS } from "./funding.mjs";
@@ -106,6 +106,8 @@ const text = (value, min, max, message) => {
   assert(typeof value === "string" && value.trim().length >= min && value.length <= max, message);
   return value.trim();
 };
+// 1 in-game GOLD is the smallest QGOLD unit (owner, 11 Nov 2026).
+const GOLD_U = 1;
 const int = (value, min, max, message) => {
   assert(Number.isSafeInteger(value) && value >= min && value <= max, message);
   return value;
@@ -214,7 +216,7 @@ export function createTask(db, poster, input, now = Date.now()) {
   assert(VISIBILITIES.includes(visibility), "Choose who can see the task.");
   point(input);
   const radius = int(input.radiusM ?? 50, 20, 500, "The place radius must be 20–500 m.");
-  const reward = int(input.reward, 0.01 * GOLD, 100_000 * GOLD, "Set a reward between 0.01 and 100,000 GOLD.");
+  const reward = int(input.reward, 100 * GOLD_U, 1_000_000_000 * GOLD_U, "Set a reward between 100 and 1,000,000,000 GOLD.");
   const slots = int(input.slots ?? 1, 1, 50, "A task can pay 1–50 completions.");
   const rounds = type === "recurring" ? int(input.rounds ?? 4, 2, 12, "A recurring task runs 2–12 rounds.") : 1;
   const everyMs =
@@ -659,13 +661,13 @@ export function createSecret(db, creator, input, now = Date.now()) {
   // The creator stands at the hidden place (or the route's start) when hiding it.
   atPlace(input.fix, kind === "route" ? route[0] : target, 150, now);
   const radius = int(input.fogRadiusM ?? 700, 500, 1000, "The fog circle is 500–1000 m.");
-  const price = kind === "sponsored" ? 0 : int(input.price ?? 0, 0, 10_000 * GOLD, "Set a price up to 10,000 GOLD.");
+  const price = kind === "sponsored" ? 0 : int(input.price ?? 0, 0, 100_000_000 * GOLD_U, "Set a price up to 100,000,000 GOLD.");
   let visitReward = 0,
     visits = 0,
     held = 0,
     feeHeld = 0;
   if (kind === "sponsored") {
-    visitReward = int(input.visitReward, 0.01 * GOLD, 1_000 * GOLD, "Set a visit reward between 0.01 and 1,000 GOLD.");
+    visitReward = int(input.visitReward, 10 * GOLD_U, 10_000_000 * GOLD_U, "Set a visit reward between 10 and 10,000,000 GOLD.");
     visits = int(input.visits ?? 10, 1, MAX_ESCROW_SLOTS, "Fund 1–50 visits.");
     held = visitReward * visits;
     feeHeld = feeOnTop(held);
@@ -861,7 +863,7 @@ export function createTransfer(db, sender, input, now = Date.now()) {
   ensureMarketSchema(db);
   const receiver = resolvePlayer(db, input.to);
   assert(receiver && receiver !== sender, "Choose another player to send to.");
-  const amountU = int(input.amount, 0.01 * GOLD, 100_000 * GOLD, "Send between 0.01 and 100,000 GOLD.");
+  const amountU = int(input.amount, 1 * GOLD_U, 1_000_000_000 * GOLD_U, "Send between 1 and 1,000,000,000 GOLD.");
   const condition = input.condition ?? "both_confirm";
   assert(TRANSFER_CONDITIONS.includes(condition), "Choose when the GOLD is released.");
   const expires = now + int(input.days ?? 7, 1, 60, "A conditional send lasts 1–60 days.") * DAY;

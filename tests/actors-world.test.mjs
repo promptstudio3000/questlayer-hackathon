@@ -23,11 +23,14 @@ test("Plzeň NPCs walk around the clock (owner decision 11 Nov 2026)", () => {
 });
 
 // The schedule mechanics below are checked against a shorter opening window.
+// NPCs ignore opening hours in code too (npcAroundTheClock), so these checks
+// plan each definition as a monster, which keeps them.
 const SHORT_HOURS = ["07:00", "22:00"];
+const timed = (def) => ({ ...def, kind: "monster" });
 
 test("day plans are deterministic, contiguous and stay on mapped paths", () => {
   const g = pathGraph(PLZEN);
-  for (const def of city.actors.filter((a) => a.home && a.enabled)) {
+  for (const def of city.actors.filter((a) => a.home && a.enabled).map(timed)) {
     const a = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS });
     const b = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS });
     assert.deepEqual(a, b, def.id);
@@ -44,12 +47,14 @@ test("day plans are deterministic, contiguous and stay on mapped paths", () => {
       assert.ok(m / ((s.to - s.from) / 1000) <= def.speedMps + 0.01, def.id);
     }
   }
-  const other = planDay(city.actors[1], PLZEN, "seed", "2026-11-03", { dayStart, hours: SHORT_HOURS });
-  assert.notDeepEqual(other.map((s) => s.path), planDay(city.actors[1], PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS }).map((s) => s.path));
+  const other = planDay(timed(city.actors[1]), PLZEN, "seed", "2026-11-03", { dayStart, hours: SHORT_HOURS });
+  assert.notDeepEqual(other.map((s) => s.path), planDay(timed(city.actors[1]), PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS }).map((s) => s.path));
 });
 
 test("positions interpolate inside segments and are null outside hours", () => {
-  const def = city.actors.find((a) => a.id === "kupec-vojtech");
+  const trader = city.actors.find((a) => a.id === "kupec-vojtech");
+  assert.ok(positionAt(planDay(trader, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS }), dayStart + 3600_000), "NPCs ignore opening hours");
+  const def = timed(trader);
   const segs = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS });
   assert.equal(positionAt(segs, dayStart + 3600_000), null);
   const walk = segs.find((s) => !s.dwell);
@@ -103,7 +108,8 @@ test("encounters need range, a fresh precise fix and plausible speed", async () 
   now += 2000;
   // 5 km in 2 seconds: teleport.
   await assert.rejects(service.encounter({ player: "p1", actorId: trader.id, worldId: gps.id, location: fix({ lat: spot.lat + 0.045, lng: spot.lng }) }), (e) => e.code === "IMPLAUSIBLE_MOVE");
-  now += 600_000;
+  // Walking back 5 km at the ~15 km/h cap takes at least 20 minutes.
+  now += 1_800_000;
   const ok = await service.encounter({ player: "p1", actorId: trader.id, worldId: gps.id, location: fix(spot) });
   assert.match(ok.encounter, /^enc_/);
   assert.equal(ok.actor.id, trader.id);

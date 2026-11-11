@@ -434,6 +434,7 @@ const managedAccounts = relayConfig.factoryAccount
       factoryId: relayConfig.factoryAccount,
       fundYocto: relayConfig.fundYocto,
       topupCapYocto: relayConfig.topupCapYocto,
+      refuel: relayConfig.refuel,
       subsidyBudget: new SubsidyBudget(db, { dailyYocto: relayConfig.subsidyDailyYocto, dailyOperations: relayConfig.subsidyDailyOperations, gasReserveYocto: relayConfig.subsidyGasReserveYocto }),
     })
   : null;
@@ -621,8 +622,8 @@ function warmActorPlan(world) {
     } catch {}
   });
 }
-// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
-// Ollama setup; the key stays in the runtime environment only.
+// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset uses NEAR AI Cloud
+// when it is on; the key stays in the runtime environment only.
 // NEAR → EUR reference for "Stake 2 NEAR (~5 €)" labels (server/near-price.mjs).
 const nearPrice = createNearPrice({ env: process.env });
 const npcRoutes = createNpcRoutes(

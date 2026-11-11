@@ -3246,5 +3246,7 @@
   "Start with a new account": "新しいアカウントで始める",
   "Starting over…": "やり直しています…",
   "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "テストネットのみ。探検者、XP、発見、アイテムはそのままです。このデバイスに新しいNEARアカウントが作られます。古いアカウントのQGOLDとトークンはそこに残り、ゲームでは使われなくなります。",
-  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "このデバイスはまだ探検者アカウントと連携していないため、メッセージを送受信できません。復旧用パスキーで追加するか、ここで新しいアカウントを始めてください。"
+  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "このデバイスはまだ探検者アカウントと連携していないため、メッセージを送受信できません。復旧用パスキーで追加するか、ここで新しいアカウントを始めてください。",
+  "Closed · new zones tomorrow": "閉鎖中 · 新しいゾーンは明日",
+  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "アカウント作成時に一度だけ初期NEARが付与されました。自分のNEARを追加するには、任意のウォレットや取引所から {0} に送ってください。"
 }
