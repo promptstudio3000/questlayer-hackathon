@@ -283,7 +283,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "**Map coins (default):** every coin and zone prize is backed QGOLD. It shows as on its way in Profile → Stake → Earnings and the next payout round mints it to your NEAR account, created automatically. This stays the ledger after any wallet sign-in.",
           "**Test network ledger:** projects the funded Plzeň NEAR day onto the map and collects with fresh GPS, one request at a time. It runs only when you pick it in Settings → Developer or open Expeditions.",
-          "Other explorers appear only if they opt in: a name, look and position for at most 15 minutes, stopped when the tab is hidden. Wallets, balances and inventory are never shown.",
+          "Other explorers within about 1.5 km appear live on the map (name, look, position) while their game is open on screen; Settings → Show me to nearby explorers turns it off. GPS and demo players see only their own kind. Profiles never show a position; wallets, balances and inventory are never shown.",
         ],
       },
     ],

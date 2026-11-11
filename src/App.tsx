@@ -329,6 +329,14 @@ type Tab =
   | "shop"
   | "places";
 const HOME = { lat: 49.74745, lng: 13.3774 };
+const SHARE_POSITION_KEY = "questlayer.sharePosition";
+function readSharePosition() {
+  try {
+    return localStorage.getItem(SHARE_POSITION_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
 /** A searched spot stands for its H3 res-7 cell (≈1.2 km edge) on the server. */
 const SEARCH_SPACING_M = 650;
 const nav = [
@@ -395,8 +403,13 @@ export default function App() {
     [busy, setBusy] = useState(""),
     [toast, setToast] = useState<{ text: string; error: boolean } | null>(null),
     [online, setOnline] = useState(navigator.onLine),
-    [presence, setPresence] = useState(false),
-    [presenceUntil, setPresenceUntil] = useState(0),
+    // Being seen by nearby explorers is on unless the explorer switched it
+    // off in Settings (Lubos 11 Nov: three players on one VPS never saw each
+    // other because sharing was a hidden 15-minute opt-in).
+    [sharePosition, setSharePosition] = useState(readSharePosition),
+    [pageVisible, setPageVisible] = useState(
+      () => document.visibilityState === "visible",
+    ),
     [others, setOthers] = useState<NearbyExplorer[]>([]),
     [cardPlayer, setCardPlayer] = useState<string | null>(null),
     [showNpc, setShowNpc] = useState(false),
@@ -564,8 +577,24 @@ export default function App() {
       });
   }
   useEffect(() => {
-    if (tab === "layer") { setPresence(false); setOthers([]); }
+    if (tab === "layer") setOthers([]);
   }, [tab]);
+  useEffect(() => {
+    const seen = () => setPageVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", seen);
+    return () => document.removeEventListener("visibilitychange", seen);
+  }, []);
+  // Shared while the explorer plays on the map with the page in front; a
+  // hidden tab, the Layer screen or the Settings switch stops it.
+  const presence = !!player && sharePosition && pageVisible && tab !== "layer";
+  function changeSharePosition(next: boolean) {
+    setSharePosition(next);
+    try {
+      localStorage.setItem(SHARE_POSITION_KEY, next ? "1" : "0");
+    } catch {
+      /* private mode: the choice lasts until the page closes */
+    }
+  }
   // Locked staker chips (src/LockedChip.tsx) open the stake screen.
   useEffect(() => {
     const open = () => setTab("fuel");
@@ -1386,8 +1415,6 @@ export default function App() {
     gpsResumeOnMovement.current = false;
     setPosition(HOME);
     setArena(true);
-    setPresence(false);
-    setPresenceUntil(0);
     setOthers([]);
     setBusy("");
     setToast(null);
@@ -1628,7 +1655,6 @@ export default function App() {
     return () => clearInterval(collect);
   }, [player?.id]);
   useEffect(() => {
-    setPresence(false);
     setOthers([]);
   }, [arena]);
   useEffect(() => {
@@ -1678,15 +1704,15 @@ export default function App() {
   }, [player?.id]);
   useEffect(() => {
     if (!presence || !player) return;
-    if (document.visibilityState !== "visible") {
-      setPresence(false);
-      return;
-    }
     const leaseId = crypto.randomUUID();
-    setPresenceUntil(0);
     let active = true;
-    const send = (renew = false) => {
-      if (!active || document.visibilityState !== "visible") return;
+    // The server holds a lease for 15 minutes; it is renewed a few minutes
+    // before it runs out, and again whenever the server no longer has it
+    // (a restart, a missed first request), so sharing never just ends.
+    let expiresAt = 0;
+    const send = () => {
+      if (!active) return;
+      const renew = Date.now() > expiresAt - 3 * 60_000;
       return api<{ enabled: boolean; expiresAt?: number }>("/presence", {
         enabled: true,
         leaseId,
@@ -1696,26 +1722,16 @@ export default function App() {
       })
         .then((r) => {
           if (!active) return;
-          if (!r.enabled) {
-            setPresence(false);
-            notify(tr("Position sharing ended. Share again to stay visible."));
-          } else if (r.expiresAt) setPresenceUntil(r.expiresAt);
+          if (!r.enabled) expiresAt = 0;
+          else if (r.expiresAt) expiresAt = r.expiresAt;
         })
         .catch(() => {
-          // The first lease decides whether sharing started at all; a missed
-          // renewal is retried on the next tick.
-          if (!active || !renew) return;
-          setPresence(false);
-          notify(
-            tr("Your position could not be shared. Check your connection and try again."),
-            true,
-          );
+          // Offline or rate limited: the next tick tries again.
         });
     };
-    void send(true);
-    const t = setInterval(() => send(false), 10_000);
-    const stop = () => {
-      if (!active) return;
+    void send();
+    const t = setInterval(send, 10_000);
+    return () => {
       active = false;
       clearInterval(t);
       void fetch("/api/presence", {
@@ -1726,20 +1742,15 @@ export default function App() {
         body: JSON.stringify({ enabled: false, leaseId }),
       }).catch(() => {});
     };
-    const visibility = () => {
-      if (document.visibilityState !== "visible") {
-        stop();
-        setPresence(false);
-      }
-    };
-    document.addEventListener("visibilitychange", visibility);
+  }, [presence, player?.id, arena]);
+  useEffect(() => {
+    if (!presence) return;
+    // A closed page cannot run the effect cleanup; its position goes stale
+    // on the server after 30 seconds anyway.
+    const stop = () => setPageVisible(false);
     window.addEventListener("pagehide", stop);
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", visibility);
-      window.removeEventListener("pagehide", stop);
-    };
-  }, [presence, player?.id]);
+    return () => window.removeEventListener("pagehide", stop);
+  }, [presence]);
   useEffect(
     () => () => {
       if (gps.current !== null) navigator.geolocation.clearWatch(gps.current);
@@ -4682,10 +4693,14 @@ export default function App() {
               >
                 <h2 id="settings-game-title"><GameController size={20} aria-hidden="true" />{tr("Game")}</h2>
                 <div className="settings-row-with-tip">
-                  <button className="settings-row" onClick={() => setPresence(value => !value)}>
-                    {presence ? <EyeSlash /> : <Eye />}<span>{presence ? tr("Stop sharing my position") : tr("Share my position for 15 min")}</span>
-                  </button>
-                  <InfoTip label={tr("Location sharing")}>{tr("Sharing shows your name, look and map position to nearby explorers for up to 15 minutes while this tab is open. Players you blocked never see you, and you never see them.")}</InfoTip>
+                  <SettingsSwitch
+                    icon={sharePosition ? Eye : EyeSlash}
+                    label={tr("Show me to nearby explorers")}
+                    hint={tr("Live on the map within about 1.5 km")}
+                    checked={sharePosition}
+                    onChange={changeSharePosition}
+                  />
+                  <InfoTip label={tr("Location sharing")}>{tr("While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.")}</InfoTip>
                 </div>
                 <LanguageSetting />
                 <SettingsSwitch
@@ -4797,7 +4812,7 @@ export default function App() {
                 </div>
               </details>
               <button className="settings-row" onClick={() => void action("logout", async () => {
-                await api("/logout", {}); setPlayer(null); setWorld(null); setPresence(false);
+                await api("/logout", {}); setPlayer(null); setWorld(null);
               })}><SignOut /><span>{tr("Sign out")}</span></button>
                             {/* The public pages are reference reading: one quiet row at the bottom. */}
               <nav className="settings-links" aria-label={tr("How it works")}>
@@ -5017,15 +5032,14 @@ export default function App() {
       </button>}
       {player && (
         <>
-          {presence && (
+          {presence && others.length > 0 && (
             <button
               className="presence-chip"
-              onClick={() => setPresence(false)}
+              aria-label={tr("Stop showing me to nearby explorers")}
+              onClick={() => changeSharePosition(false)}
             >
               <Eye size={14} />{" "}
-              {presenceUntil > Date.now()
-                ? tr("Visible · {0}", { 0: remaining(presenceUntil) })
-                : tr("Going visible…")}{" "}
+              {tr("Visible nearby · {0} near", { 0: others.length })}{" "}
               <X size={12} />
             </button>
           )}
