@@ -49,18 +49,15 @@ Delete the `Environment=DEMO_ZONES=plzen-compact` line (or set
 their rarity windows. `/api/health` shows `demoZones: "off"`. Mainnet refuses
 to start with the flag.
 
-## Demo and the rest of Czechia (11 Nov 2026)
+## Start where you are (11 Nov 2026)
 
-The compact layout only changes Plzeň. Everywhere else in Czechia the GPS world
-is the normal one: POI quests, funded cell zones and backed coins of the day's
-map plan for every street cell (`ensureWorld` in `server/world.mjs`).
+The compact layout only changes Plzeň. Everywhere else the GPS world is the
+normal one: POI quests, funded cell zones and backed coins of the day's map
+plan for every street cell (`ensureWorld` in `server/world.mjs`; the plan
+covers Czechia for now).
 
-The app opens in the Plzeň city demo, which shows only Plzeň wherever the
-player stands. `src/play-here.ts` joins the two without any new permission
-prompt:
-
-- Use GPS is remembered (`questlayer.gpsMode` in localStorage). The next launch
-  resumes GPS when the browser still grants location; Demo clears it.
-- A demo player whose browser already grants location and who is more than
-  12 km from the Plzeň demo centre sees a **Play where you are** map card
-  (map objective `away`), which switches to GPS.
+The game starts in that world (`src/play-here.ts`): after sign-in it asks for
+location and loads the player's own cell right away. The Plzeň city demo is the
+fallback when location is refused or unavailable, and when the player picks
+Demo in Map settings (`questlayer.playMode=demo` in localStorage, kept until
+they pick Use GPS again). A refused start-up request shows no warning.

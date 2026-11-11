@@ -3198,7 +3198,5 @@
  "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "Chat de demonstração: {0} responde com frases prontas. Nada é guardado nem enviado para a cadeia; exploradores reais usam a caixa de mensagens cifrada.",
  "{0} is typing…": "{0} está a escrever…",
  "Write to {0}…": "Escreve a {0}…",
- "Messages need your explorer account. Sign in with it to write.": "As mensagens precisam da tua conta de explorador. Entra com ela para escrever.",
- "Play where you are": "Jogar onde você está",
- "This is the Plzeň demo. Quests and coins are waiting around you too.": "Esta é a demo de Pilsen. Missões e moedas também esperam por você ao seu redor."
+ "Messages need your explorer account. Sign in with it to write.": "As mensagens precisam da tua conta de explorador. Entra com ela para escrever."
 }
