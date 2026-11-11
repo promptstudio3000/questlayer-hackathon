@@ -1,6 +1,8 @@
 import { ensurePurchases, existingPurchaseRelay } from "../gold-spend/purchases.mjs";
 import { ensureRelaySubmissions } from "./submissions.mjs";
 import { actions } from "near-api-js";
+import { createPublicKey, verify as verifySignature } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { atomic } from "../database.mjs";
 import { assert, dayKey, id } from "../domain.mjs";
 import { nearAccountId } from "../identity/near.mjs";
@@ -15,8 +17,10 @@ import {
 import {
   RelayPolicyError,
   SOCIAL_CONTRACT,
+  STORAGE_DEPOSIT,
   validateDelegate,
 } from "./policy.mjs";
+import { awardMessage } from "../native/award-vouchers.mjs";
 import { initializeManagedAccounts } from "./schema.mjs";
 import { relayTransport } from "./key-transport.mjs";
 import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
@@ -28,10 +32,42 @@ export const backoff = (attempts) =>
 // Sender-side headroom for the account's own state when a sponsored deposit is attached.
 const STATE_MARGIN = 10n ** 22n; // 0.01 NEAR
 const integer = (value) => Number.isSafeInteger(value) && value > 0;
+// A voucher must outlive admission plus the relayer's first send.
+const CLAIM_MARGIN_MS = 60000;
+// SocialDB storage the game already considers enough for a 1 yocto write
+// (server/native/social-profile.mjs quotes 0.05 NEAR only below it).
+const SOCIAL_STORAGE_FLOOR = 10n ** 22n;
+const ED25519_SPKI = Buffer.from("302a300506032b6570032100", "hex");
+function awardSignatureValid(publicKeyBase64, message, signatureBase64) {
+  try {
+    const raw = Buffer.from(publicKeyBase64, "base64"),
+      signature = Buffer.from(signatureBase64, "base64");
+    if (raw.length !== 32 || signature.length !== 64) return false;
+    const key = createPublicKey({
+      key: Buffer.concat([ED25519_SPKI, raw]),
+      format: "der",
+      type: "spki",
+    });
+    return verifySignature(null, Buffer.from(message), key, signature);
+  } catch {
+    return false;
+  }
+}
 const missing = (error) =>
   /does not exist|UNKNOWN_TRANSACTION|UnknownTransaction/i.test(
     `${error?.name}: ${rpcErrorText(error)}`,
   );
+// The node refused the outer transaction itself (InvalidTxError::InvalidNonce):
+// its signing key already has a nonce at or above the transaction's.
+const invalidNonce = (error) =>
+  /^InvalidNonceError\b|InvalidTxError.*InvalidNonce|Invalid nonce \(ak:/i.test(
+    `${error?.name}: ${rpcErrorText(error)}`,
+  );
+// A saved transaction is re-signed only after the same evidence (hash unknown
+// to RPC, nonce rejected, key nonce confirmed past it) is seen twice this far apart.
+export const SUPERSEDED_CONFIRM_MS = 30000;
+const reservationId = (jobId, attempt) =>
+  attempt === 1 ? jobId : `${jobId}:attempt:${attempt}`;
 function jobView(row) {
   if (!row) return null;
   const call = JSON.parse(row.call);
@@ -77,6 +113,12 @@ export class Relayer {
       // So storage deposits are a per-account daily budget too (0.5 NEAR =
       // ten 0.05 NEAR storage deposits), not only the job count.
       maxDepositYoctoPerDay = 500000000000000000000000n,
+      // Each sponsored cancel_order takes one of the market v2's 1024 nonce
+      // slots until the order's deadline (up to 30 days), and fills need those
+      // slots too. Capped per account and service-wide (16 a day keeps
+      // sponsored cancels below half the table); cancel_all_orders uses none.
+      maxCancelsPerDay = 4,
+      maxCancelsGlobalPerDay = 16,
       policyContext = null,
       vaults = null,
       factorySetupDeposit = null,
@@ -94,7 +136,11 @@ export class Relayer {
       503,
     );
     assert(
-      integer(blockTtl) && blockTtl <= 1000 && integer(maxJobsPerDay),
+      integer(blockTtl) &&
+        blockTtl <= 1000 &&
+        integer(maxJobsPerDay) &&
+        integer(maxCancelsPerDay) &&
+        integer(maxCancelsGlobalPerDay),
       "Invalid relayer limits.",
       503,
     );
@@ -118,6 +164,8 @@ export class Relayer {
     this.maxJobsPerDay = maxJobsPerDay;
     this.maxGas = BigInt(maxGas);
     this.maxDepositYoctoPerDay = BigInt(maxDepositYoctoPerDay);
+    this.maxCancelsPerDay = maxCancelsPerDay;
+    this.maxCancelsGlobalPerDay = maxCancelsGlobalPerDay;
     this.customContext = policyContext;
     initializeManagedAccounts(db);
     ensurePurchases(db);
@@ -259,6 +307,183 @@ export class Relayer {
       ? await this.customContext(base, { playerId, publicKey: key })
       : base;
   }
+  async chainView(contractId, method, args) {
+    try {
+      const r = await this.provider.query({
+        request_type: "call_function",
+        account_id: contractId,
+        method_name: method,
+        args_base64: Buffer.from(JSON.stringify(args)).toString("base64"),
+        finality: "final",
+      });
+      return JSON.parse(Buffer.from(r.result).toString());
+    } catch {
+      assert(
+        false,
+        `${NETWORK_LABEL} is unavailable. Try again shortly.`,
+        503,
+        "RPC_UNAVAILABLE",
+      );
+    }
+  }
+  /**
+   * Chain checks for calls whose attached deposit the relayer would carry and
+   * a failed or no-op call would refund to the player (NEP-366: the refund
+   * goes to the delegate's sender). Runs before any budget is reserved.
+   */
+  async admit(call) {
+    if (call.kind !== "call") return;
+    if (
+      call.receiverId === this.contracts.collectibles &&
+      call.methodName === "redeem_aura"
+    )
+      await this.admitClaim(call);
+    else if (
+      call.receiverId === this.contracts.social &&
+      call.deposit === STORAGE_DEPOSIT.toString()
+    ) {
+      const balance = await this.chainView(
+        this.contracts.social,
+        "storage_balance_of",
+        { account_id: call.senderId },
+      );
+      assert(
+        !balance ||
+          (/^\d{1,39}$/.test(String(balance.available)) &&
+            BigInt(balance.available) < SOCIAL_STORAGE_FLOOR),
+        "Your NEAR Social storage already covers this record. Prepare it again.",
+        409,
+        "RELAY_SOCIAL_STORAGE",
+      );
+    } else if (
+      this.contracts.qgoldEscrow &&
+      call.receiverId === this.contracts.qgoldEscrow &&
+      call.methodName === "storage_deposit"
+    ) {
+      // The market server sizes the deposit as the shortfall for one
+      // agreement; a deposit the escrow already covers is not sponsored twice.
+      const balance = await this.chainView(
+        this.contracts.qgoldEscrow,
+        "storage_balance_of",
+        { account_id: call.senderId },
+      );
+      assert(
+        !balance ||
+          (/^\d{1,39}$/.test(String(balance.available)) &&
+            BigInt(balance.available) < BigInt(call.deposit)),
+        "Your escrow storage deposit already covers this agreement. Prepare it again.",
+        409,
+        "RELAY_ESCROW_STORAGE",
+      );
+    }
+  }
+  /** Only a real, unredeemed, unexpired award voucher for this account. */
+  async admitClaim(call) {
+    const a = call.args,
+      contractId = this.contracts.collectibles;
+    assert(
+      a.expires_at_ms > this.clock() + CLAIM_MARGIN_MS,
+      "This Aura claim has expired. Secure the Aura again.",
+      409,
+      "RELAY_CLAIM_EXPIRED",
+    );
+    const [signer, claim, minted] = await Promise.all([
+      this.chainView(contractId, "get_award_signer", {}),
+      this.chainView(contractId, "get_claim", { claim_id: a.claim_id }),
+      this.chainView(contractId, "edition_minted", { edition: a.edition }),
+    ]);
+    assert(
+      typeof signer === "string" &&
+        awardSignatureValid(
+          signer,
+          awardMessage(contractId, {
+            claim_id: a.claim_id,
+            receiver_id: a.receiver_id,
+            edition: a.edition,
+            expires_at: a.expires_at_ms,
+          }),
+          a.signature,
+        ),
+      "This Aura claim was not issued by the game.",
+      403,
+      "RELAY_CLAIM_SIGNATURE",
+    );
+    assert(
+      claim == null,
+      "This Aura is already secured on NEAR.",
+      409,
+      "RELAY_CLAIM_USED",
+    );
+    assert(
+      Number.isSafeInteger(minted) && minted < 256,
+      "This Aura edition is fully minted on NEAR.",
+      409,
+      "RELAY_CLAIM_SUPPLY",
+    );
+  }
+  /** Admission that must hold inside the submit transaction (no awaits). */
+  admitLocked(call, senderId, day) {
+    if (call.kind !== "call") return;
+    if (
+      call.receiverId === this.contracts.collectibles &&
+      call.methodName === "redeem_aura"
+    )
+      assert(
+        !this.db
+          .prepare(
+            "SELECT 1 FROM relay_jobs WHERE account_id=? AND method_name='redeem_aura' AND state!='failed' AND json_extract(call,'$.args.claim_id')=?",
+          )
+          .get(senderId, call.args.claim_id),
+        "This Aura is already being secured.",
+        409,
+        "RELAY_CLAIM_PENDING",
+      );
+    else if (
+      call.receiverId === this.contracts.market &&
+      call.methodName === "cancel_order"
+    ) {
+      const order = call.args.order,
+        indexed = this.db
+          .prepare(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='signed_market_orders'",
+          )
+          .get();
+      const row = indexed
+        ? this.db
+            .prepare(
+              "SELECT signed_order,deadline_ms FROM signed_market_orders WHERE market=? AND maker=? AND nonce=? AND state='open'",
+            )
+            .get(this.contracts.market, senderId, String(order.nonce))
+        : null;
+      assert(
+        row &&
+          row.deadline_ms > this.clock() &&
+          isDeepStrictEqual(JSON.parse(row.signed_order), order),
+        "Only an open order in the game's order book can be cancelled through the relayer. Cancel all orders instead.",
+        409,
+        "RELAY_ORDER_UNKNOWN",
+      );
+      const start = Date.parse(`${day}T00:00:00Z`),
+        cancels = this.db
+          .prepare(
+            "SELECT COUNT(*) AS total, COALESCE(SUM(account_id=?),0) AS mine, COALESCE(SUM(account_id=? AND state!='failed' AND json_extract(call,'$.args.order.nonce')=?),0) AS same FROM relay_jobs WHERE method_name='cancel_order' AND created_at>=? AND created_at<?",
+          )
+          .get(senderId, senderId, String(order.nonce), start, start + 86400000);
+      assert(
+        cancels.same === 0,
+        "This order is already being cancelled.",
+        409,
+        "RELAY_ORDER_PENDING",
+      );
+      assert(
+        cancels.mine < this.maxCancelsPerDay &&
+          cancels.total < this.maxCancelsGlobalPerDay,
+        "Today's sponsored single-order cancellations are used up. Cancel all orders instead, or let the order expire.",
+        429,
+        "RELAY_CANCEL_BUDGET",
+      );
+    }
+  }
   async prepare(
     playerId,
     { accountId, receiverId, methodName, publicKey } = {},
@@ -343,6 +568,7 @@ export class Relayer {
         "RELAY_PREVIEW_MISMATCH",
       );
     }
+    await this.admit(call);
     const now = this.clock(),
       day = dayKey(now, "UTC"),
       jobId = id("relay");
@@ -364,6 +590,7 @@ export class Relayer {
       const purchase = call.methodName === "ft_burn" && call.receiverId === this.contracts.qgold
         ? existingPurchaseRelay(this.db, playerId, call) : null;
       if (purchase?.job) return purchase.job;
+      this.admitLocked(call, senderId, day);
       this.accounts.subsidyBudget.reserve(jobId, { kind: "relay", accountId: senderId, principal: call.deposit });
       const used =
         this.db
@@ -541,6 +768,11 @@ export class Relayer {
               );
               // Later actions of this account were signed with following nonces; they
               // cannot execute anymore and would only consume the player's day budget.
+              const cascade = db
+                .prepare(
+                  `SELECT id,kind FROM relay_jobs WHERE account_id=? AND kind='relay' AND state IN ${OPEN} AND seq>?`,
+                )
+                .all(job.account_id, job.seq);
               db.prepare(
                 `UPDATE relay_jobs SET state='failed',error_code='RELAY_BLOCKED',last_error=?,updated_at=? WHERE account_id=? AND kind='relay' AND state IN ${OPEN} AND seq>?`,
               ).run(
@@ -549,6 +781,11 @@ export class Relayer {
                 job.account_id,
                 job.seq,
               );
+              // A job that ends without ever signing a transaction spent nothing:
+              // its sponsorship reservation returns to the shared budget. Jobs with
+              // signed bytes keep their conservative carry-over until a FINAL receipt.
+              for (const ended of [job, ...cascade])
+                if (!this.signedAttempt(ended)) this.accounts.subsidyBudget.release(ended.id);
               if (job.kind === "create-account")
                 this.accounts.markFailed(job.account_id, verdict, {
                   write: (work) => work(),
@@ -589,6 +826,66 @@ export class Relayer {
   }
   async finalizeAccount(job, { write }) {
     return this.accounts.finalize(job, { write });
+  }
+  /** Has this job ever persisted signed transaction bytes? */
+  signedAttempt(job) {
+    return job.kind === "create-account"
+      ? !!this.accounts.funding.latest(job.id)
+      : !!this.db
+          .prepare("SELECT 1 FROM relay_submissions WHERE job_id=?")
+          .get(job.id);
+  }
+  // A saved outer transaction can become impossible to include: its send failed
+  // transiently, another job of this service key landed with a higher nonce, and
+  // NEAR access-key nonces only increase. Replaying the exact bytes then fails
+  // forever. Re-signing is allowed only when (1) the RPC does not know the hash
+  // (checked before every replay), (2) the node rejects the bytes with
+  // InvalidNonce, (3) the key's final nonce on chain is at or past the saved
+  // nonce, and (4) the same evidence was already recorded at least
+  // SUPERSEDED_CONFIRM_MS earlier. Then the attempt is `rejected`, its unspent
+  // reservation released, and the next pass signs a fresh attempt.
+  async supersededSubmission(job, submission, signed, error, write) {
+    if (!invalidNonce(error) || typeof signed?.nonce !== "bigint") return false;
+    if (typeof this.transport.keyNonce !== "function") return false;
+    let keyNonce;
+    try {
+      keyNonce = BigInt(await this.transport.keyNonce());
+    } catch {
+      return false;
+    }
+    if (keyNonce < signed.nonce) return false;
+    const now = this.clock();
+    let seen = null;
+    try {
+      seen = JSON.parse(submission.outcome ?? "null")?.superseded ?? null;
+    } catch {
+      seen = null;
+    }
+    const observation = {
+      superseded: {
+        firstAt: seen?.firstAt ?? now,
+        lastAt: now,
+        count: (seen?.count ?? 0) + 1,
+        keyNonce: keyNonce.toString(),
+        txNonce: signed.nonce.toString(),
+        error: rpcErrorText(error).slice(0, 160),
+      },
+    };
+    const proven = seen && now - seen.firstAt >= SUPERSEDED_CONFIRM_MS;
+    write(() => {
+      const current = this.db
+        .prepare("SELECT state FROM relay_submissions WHERE job_id=? AND hash=?")
+        .get(job.id, submission.hash);
+      assert(current?.state === "prepared", "Saved relay submission changed.", 503, "RELAY_RECOVERY");
+      this.db
+        .prepare("UPDATE relay_submissions SET state=?,outcome=? WHERE job_id=? AND hash=? AND state='prepared'")
+        .run(proven ? "rejected" : "prepared", JSON.stringify(observation), job.id, submission.hash);
+      if (proven) {
+        this.db.prepare("UPDATE relay_jobs SET transaction_hash=NULL WHERE id=?").run(job.id);
+        this.accounts.subsidyBudget.release(reservationId(job.id, submission.attempt));
+      }
+    });
+    return !!proven;
   }
   async relay(job, { renew, write }) {
     this.requireEnabled();
@@ -633,7 +930,10 @@ export class Relayer {
       try {
         outcome = await signed.send("FINAL");
       } catch (error) {
-        throw retryLater("RELAY_NETWORK", rpcErrorText(error).slice(0, 160));
+        // `submission` is set only for replayed bytes whose hash RPC did not know.
+        if (submission && (await this.supersededSubmission(job, submission, signed, error, write)))
+          throw retryLater("RELAY_RESIGN", "The saved transaction was superseded by a later nonce; it will be signed again.");
+        throw retryLater(submission && invalidNonce(error) ? "RELAY_NONCE_CHECK" : "RELAY_NETWORK", rpcErrorText(error).slice(0, 160));
       }
       renew();
     }

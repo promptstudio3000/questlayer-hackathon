@@ -10,6 +10,10 @@ import { initSocialContent } from "../social-content.mjs";
 import { GOLD } from "../domain.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { DAILY_BOARD_SCHEMA } from "../daily-board/schema.mjs";
+import { ensureMarketSchema, fogCentre } from "../market/service.mjs";
+import { ensureGoldSpend } from "../gold-spend/ledger.mjs";
+import { COMMUNITY_PLACES_SCHEMA } from "../community-places.mjs";
+import { latLngToCell } from "h3-js";
 import {
   SEED_VERSION,
   SEED_PREFIX,
@@ -20,8 +24,11 @@ import {
   BUYER_DELAY_MS,
   REVIEW_DELAY_MS,
   SEED_NOTES,
+  SEED_COMMUNITY_PLACES,
+  SEED_PLACE_THREADS,
   SEED_LISTINGS,
   SEED_BOUNTIES,
+  SEED_SECRETS,
   SEED_CREATORS,
   SEED_CREATOR_QUESTS,
   STARTER_KIT,
@@ -54,6 +61,7 @@ const REFERENCE_COLUMNS = [
   "quest_id",
   "note_id",
   "bounty_id",
+  "thread_id",
   "submission_id",
   "operation_id",
 ];
@@ -198,6 +206,42 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     });
   }
 
+  function applyCommunityPlaces(now) {
+    ensureModuleVersion(db, COMMUNITY_PLACES_SCHEMA);
+    atomic(db, () => {
+      for (const p of SEED_COMMUNITY_PLACES)
+        for (const arena of [1, 0])
+          db.prepare(
+            "INSERT OR IGNORE INTO community_places(id,author,name,note,kind,lat,lng,arena,state,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,'published',?,?)",
+          ).run(`seed-cp-${p.slug}-${arena ? "a" : "g"}`, p.author, p.name, p.note, p.kind, p.at.lat, p.at.lng, arena, now, now);
+    });
+  }
+
+  function applyPlaceThreads(now) {
+    ensureGoldSpend(db);
+    atomic(db, () => {
+      for (const t of SEED_PLACE_THREADS) {
+        const threadId = `seed-pt-${t.slug}`;
+        const replies = t.replies || [];
+        const authors = new Set([t.author, ...replies.map((r) => r.author)]).size;
+        db.prepare(
+          "INSERT OR IGNORE INTO place_threads(id,kind,author,title,text,lat,lng,cell,place,paid_until,free_forever,state,posts,authors,reads,paid_u,last_post_at,last_read_at,created_at) VALUES(?,?,?,?,?,?,?,?,'',?,?,'published',?,?,0,0,?,?,?)",
+        ).run(threadId, t.kind, t.author, t.title || "", t.text, t.at.lat, t.at.lng, latLngToCell(t.at.lat, t.at.lng, 7), now + 7 * DAY, t.kind === "topic" ? 1 : 0, replies.length, authors, now, now, now);
+        // Shouts lapse after their paid days; the seed keeps them on the map.
+        db.prepare("UPDATE place_threads SET paid_until=MAX(paid_until,?),last_read_at=? WHERE id=? AND state='published'").run(now + 7 * DAY, now, threadId);
+        replies.forEach((r, i) =>
+          db.prepare("INSERT OR IGNORE INTO place_posts(id,thread_id,author,text,state,created_at) VALUES(?,?,?,?,'published',?)").run(
+            `seed-pp-${t.slug}-${i}`,
+            threadId,
+            r.author,
+            r.text,
+            now + i + 1,
+          ),
+        );
+      }
+    });
+  }
+
   function ensureListings(now) {
     let created = 0;
     atomic(db, () => {
@@ -213,6 +257,26 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
           "INSERT INTO listings(id,item_id,seller,price_u,created_at) VALUES (?,?,?,?,?)",
         ).run(`seed-l-${l.slug}-${n}`, item, l.seller, l.price * GOLD, now);
         created++;
+      }
+    });
+    return created;
+  }
+
+  function ensureSecrets(now) {
+    ensureMarketSchema(db);
+    let created = 0;
+    atomic(db, () => {
+      for (const s of SEED_SECRETS) {
+        const id = `seed-s-${s.slug}`;
+        const radius = 600,
+          fog = fogCentre(id, s.at.lat, s.at.lng, radius);
+        created += Number(
+          db
+            .prepare(
+              "INSERT OR IGNORE INTO mk_secrets(id,creator,kind,title,teaser,reveal,lat,lng,route,fog_lat,fog_lng,fog_radius_m,price_u,link_key,visit_reward_u,visits_left,held_u,fee_held_u,currency,state,created_at,updated_at) VALUES (?,?,'place',?,?,?,?,?,'[]',?,?,?,0,NULL,0,0,0,0,'qgold','open',?,?)",
+            )
+            .run(id, s.creator, s.title, s.teaser, s.reveal, s.at.lat, s.at.lng, fog.lat, fog.lng, radius, now, now).changes,
+        );
       }
     });
     return created;
@@ -292,8 +356,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     const now = clock();
     applyPlayers(now);
     applyNotes(now);
+    applyCommunityPlaces(now);
+    applyPlaceThreads(now);
     ensureListings(now);
     ensureBounties(now);
+    ensureSecrets(now);
     let creatorResult;
     try {
       creatorResult = applyCreators();
@@ -491,8 +558,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return {
       players: n("SELECT count(*) n FROM players WHERE substr(id,1,5)='seed-'"),
       notes: n("SELECT count(*) n FROM messages WHERE substr(id,1,5)='seed-'"),
+      communityPlaces: has("community_places") ? n("SELECT count(*) n FROM community_places WHERE substr(id,1,5)='seed-'") : 0,
+      placeThreads: has("place_threads") ? n("SELECT count(*) n FROM place_threads WHERE substr(id,1,5)='seed-'") : 0,
       openListings: n("SELECT count(*) n FROM listings WHERE substr(id,1,5)='seed-' AND state='open'"),
       openBounties: n("SELECT count(*) n FROM bounties WHERE substr(id,1,5)='seed-' AND state='open'"),
+      secrets: has("mk_secrets") ? n("SELECT count(*) n FROM mk_secrets WHERE substr(id,1,5)='seed-' AND state='open'") : 0,
       creatorQuests: has("creator_quests")
         ? n("SELECT count(*) n FROM creator_quests WHERE substr(id,1,5)='seed-' AND state='published'")
         : 0,
@@ -518,6 +588,21 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
   /** Removes every seed row and reverts starter kits. One transaction; a failure changes nothing. */
   function purge() {
     if (!present()) return { removed: 0 };
+    return removeRows("seed-", { marker: true });
+  }
+
+  /**
+   * Takes starter kits back from real explorers (Auras, kit XP and shards) and
+   * leaves the rest of the test world. Runs on every start while kits are off
+   * (TEST_SEED_KIT unset), so a kit granted earlier does not linger.
+   */
+  function revertKits() {
+    if (!db.prepare("SELECT 1 FROM history WHERE substr(id,1,9)='seed-kit-' LIMIT 1").get()) return { removed: 0 };
+    return removeRows("seed-kit-", { marker: false });
+  }
+
+  function removeRows(prefix, { marker }) {
+    const like = (column) => `substr(${column},1,${prefix.length})='${prefix}'`;
     const fkKey = (r) => `${r.table}:${r.rowid}`;
     const baseline = new Set(db.prepare("PRAGMA foreign_key_check").all().map(fkKey));
     return atomic(db, () => {
@@ -551,11 +636,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
           .map((c) => c.name)
           .filter((c) => REFERENCE_COLUMNS.includes(c));
         if (!columns.length) continue;
-        const where = columns.map((c) => `substr(${quote(c)},1,5)='seed-'`).join(" OR ");
+        const where = columns.map((c) => like(quote(c))).join(" OR ");
         removed += Number(db.prepare(`DELETE FROM ${quote(table)} WHERE ${where}`).run().changes);
       }
       // Creator money jobs name quests only inside their JSON arguments.
-      if (tableExists(db, "creator_money_jobs"))
+      if (marker && tableExists(db, "creator_money_jobs"))
         removed += Number(
           db
             .prepare(
@@ -573,10 +658,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
         for (const r of orphans)
           removed += Number(db.prepare(`DELETE FROM ${quote(r.table)} WHERE rowid=?`).run(r.rowid).changes);
       }
-      db.prepare("DELETE FROM daily_jobs WHERE substr(job_key,1,?)=?").run(MARKER_PREFIX.length, MARKER_PREFIX);
+      if (marker)
+        db.prepare("DELETE FROM daily_jobs WHERE substr(job_key,1,?)=?").run(MARKER_PREFIX.length, MARKER_PREFIX);
       return { removed };
     });
   }
 
-  return { apply, purge, status, grantKit, tickPresence, tickEconomy, tickBoards };
+  return { apply, purge, revertKits, status, grantKit, tickPresence, tickEconomy, tickBoards };
 }

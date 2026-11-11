@@ -87,6 +87,7 @@ export function relayTransport(service) {
   const digest = signed => baseEncode(createHash("sha256").update(encodeTransaction(signed.transaction)).digest());
   const wrap = signedTx => ({
     hash: digest(signedTx), signedTx: Buffer.from(signedTx.encode()).toString("base64"),
+    nonce: BigInt(signedTx.transaction.nonce),
     async send(waitUntil = "FINAL") {
       try { return await provider.sendTransactionUntil(signedTx, waitUntil); }
       catch (error) {
@@ -120,6 +121,17 @@ export function relayTransport(service) {
         accountId,
         waitUntil: "NONE",
       });
+    },
+    // The service key's current nonce on chain (final). A saved transaction
+    // whose nonce is at or below it can only be included if it already was.
+    async keyNonce() {
+      const key = await provider.query({
+        request_type: "view_access_key",
+        account_id: accountId,
+        public_key: publicKey,
+        finality: "final",
+      });
+      return BigInt(key.nonce);
     },
   };
 }

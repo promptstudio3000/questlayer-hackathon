@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { X } from "@phosphor-icons/react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { ChatCircleText, HandWaving, Prohibit, SealCheck, X } from "@phosphor-icons/react";
 import { api } from "./api";
 import { tr } from "./i18n";
 import { Dialog } from "./Dialog";
 import { characterMarkerMarkup } from "./character-art";
-import { WearableTile } from "./GotchiWardrobe";
-import type { WornWearable } from "./types";
+import { levelProgress } from "./levels";
+import type { Player, WornWearable } from "./types";
 import "./wearables.css";
 
 /** The ready phrases, translated on this device (server keys → text). */
@@ -18,39 +18,76 @@ export const WAVE_TEXT: Record<string, () => string> = {
   "see-you": () => tr("See you around!"),
 };
 const waveText = (key: string, fallback: string) => WAVE_TEXT[key]?.() || fallback;
+const SLOT_LABEL: Record<string, () => string> = {
+  body: () => tr("Body"),
+  face: () => tr("Face"),
+  eyes: () => tr("Eyes"),
+  head: () => tr("Head"),
+  handLeft: () => tr("Left hand"),
+  handRight: () => tr("Right hand"),
+  pet: () => tr("Pet"),
+};
 
 type Card = {
   id: string;
   name: string;
   level: number;
+  xp: number;
+  /** A test-world bot (TEST_SEED) walking the map, not a real explorer. */
+  demoBot: boolean;
+  joinedAt: number;
+  badges: number;
   self: boolean;
   wearables: (WornWearable & { name: string })[];
   auras: { above: string | null; below: string | null };
   original: boolean;
+  gotchi: { name: string; brs: number | null } | null;
+  stats: { finds: number; quests: number; monsters: number; wearables: number };
+  slots: { slot: string; item: (WornWearable & { name: string; source: "original" | "clone" }) | null }[];
+  /** Outfit tag of the worn gotchi (changes the avatar URL). */
+  look: string;
+  /** Own profile: slots dress the worn gotchi, or the starter ghost's clones. */
+  dress: { gotchi: boolean; dressed: string[] } | null;
   canWave: boolean;
   waveHint: string | null;
   phrases: { key: string; text: string }[];
 };
 
 /**
- * Another explorer, tapped on the map: what they wear (gold check = their
- * wallet holds the original), their level, ready-phrase waves and Block.
- * Only while they share their position; no wallet address, no inventory.
+ * An explorer's public profile (docs/PLAYER-CARDS.md): name, level and XP,
+ * the worn original and its rarity score, play stats, and the equipment slots
+ * with what they wear now (gold seal = their wallet holds the original).
+ * Message, ready-phrase waves and Block for other explorers. Visible without
+ * sharing a position and never showing one; only what is worn, no wallet
+ * address and no inventory. Test-world bots carry a "demo-bot" tag.
  */
+type Owned = { id: number; name: string; slot: string; rarity: string; source: "find" | "original"; equipped: boolean; verified: boolean };
+const catalogSlot = (slot: string) => (slot === "handLeft" || slot === "handRight" ? "hand" : slot);
+
 export function PlayerCard({
   playerId,
   onClose,
   onBlocked,
+  onMessage,
+  onEdit,
+  onPlayer,
 }: {
   playerId: string;
+  /** Own profile: the explorer after an outfit change (map marker, Inventory). */
+  onPlayer?: (player: Player) => void;
+  /** Own profile: opens the Inventory to change what is worn. */
+  onEdit?: () => void;
   onClose: () => void;
   onBlocked?: () => void;
+  /** Opens a conversation with this explorer; the button is disabled without it. */
+  onMessage?: (playerId: string, name: string) => void;
 }) {
   const [card, setCard] = useState<Card | null>(null);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
+  const [reload, setReload] = useState(0);
   useEffect(() => {
     let live = true;
     api<Card>(`/players/card?playerId=${encodeURIComponent(playerId)}`)
@@ -59,7 +96,49 @@ export function PlayerCard({
     return () => {
       live = false;
     };
-  }, [playerId]);
+  }, [playerId, reload]);
+  // Own profile: tap a slot to dress it from what you found or your wallet holds.
+  const [picking, setPicking] = useState<string | null>(null);
+  const [owned, setOwned] = useState<Owned[] | null>(null);
+  useEffect(() => {
+    if (!picking || owned) return;
+    api<{ items: Owned[] }>("/wearables")
+      .then((r) => setOwned(r.items))
+      .catch((e: Error) => setStatus(e.message));
+  }, [picking, owned]);
+  async function dress(slot: string, itemId: number | null) {
+    if (!card?.dress) return;
+    setBusy(true);
+    try {
+      let r: { player: Player; items?: Owned[] };
+      if (card.dress.gotchi) r = await api("/aavegotchi/outfit", { slot, itemId });
+      else {
+        const current = card.slots.find((s) => s.slot === slot)?.item;
+        r = itemId
+          ? await api("/wearables/equip", { itemId, equipped: true })
+          : await api("/wearables/equip", { itemId: current?.id, equipped: false });
+      }
+      if (r.items) setOwned(r.items);
+      onPlayer?.(r.player);
+      setPicking(null);
+      setStatus("");
+      setReload((n) => n + 1);
+    } catch (e) {
+      setStatus((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const choices =
+    picking && owned && card?.dress
+      ? owned.filter(
+          (i) =>
+            i.slot === catalogSlot(picking) &&
+            // A gotchi wears map finds and originals the wallet holds now.
+            (!card.dress!.gotchi || i.source === "find" || i.verified),
+        )
+      : [];
+  const pickedItem = picking ? card?.slots.find((s) => s.slot === picking)?.item : null;
   async function wave(phrase: string) {
     setBusy(true);
     try {
@@ -90,7 +169,24 @@ export function PlayerCard({
       setBusy(false);
     }
   }
-  const verified = card?.wearables.filter((w) => w.verified).length || 0;
+  const [waving, setWaving] = useState(false);
+  const progress = card ? levelProgress(card.xp) : null;
+  const ratio = progress
+    ? Math.min(1, (card!.xp - progress.levelStartXp) / Math.max(1, progress.nextLevelXp - progress.levelStartXp))
+    : 0;
+  const stats = card
+    ? [
+        [tr("Finds"), card.stats.finds],
+        [tr("Quests"), card.stats.quests],
+        [tr("Monsters"), card.stats.monsters],
+        [tr("Wearables"), card.stats.wearables],
+        [tr("Badges"), card.badges],
+        [
+          tr("Exploring since"),
+          new Date(card.joinedAt).toLocaleDateString(undefined, { month: "short", year: "numeric" }),
+        ],
+      ]
+    : [];
   return (
     <Dialog label={card ? card.name : tr("Explorer")} onClose={onClose}>
       <div className="player-card">
@@ -105,20 +201,41 @@ export function PlayerCard({
                   above: card.auras.above,
                   below: card.auras.below,
                   skinUrl: card.original
-                    ? `/api/presence/skin?playerId=${encodeURIComponent(card.id)}`
+                    ? `/api/players/skin?playerId=${encodeURIComponent(card.id)}${card.look ? `&v=${encodeURIComponent(card.look)}` : ""}`
                     : undefined,
                   wearables: card.wearables,
                 }),
               }}
             />
           )}
-          <div>
-            <h2>{card?.name || tr("Explorer")}</h2>
-            {card && (
-              <p>
-                {tr("Level {0}", { 0: card.level })}
-                {verified ? ` · ${tr("{0} verified", { 0: verified })}` : ""}
-              </p>
+          <div className="player-card-who">
+            <h2>
+              {card?.name || tr("Explorer")}
+              {card?.demoBot && <span className="player-card-bot">{"demo-bot"}</span>}
+            </h2>
+            {card && progress && (
+              <>
+                <p>
+                  {tr("Level {0}", { 0: card.level })} · {tr("{0} XP", { 0: card.xp.toLocaleString("en-US") })}
+                </p>
+                <div
+                  className="player-card-xp"
+                  role="progressbar"
+                  aria-label={tr("Level {0} progress", { 0: card.level })}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(ratio * 100)}
+                >
+                  <span style={{ width: `${Math.round(ratio * 100)}%` }} />
+                </div>
+                {card.gotchi && (
+                  <p className="player-card-gotchi">
+                    <SealCheck size={16} weight="fill" aria-hidden="true" />
+                    {card.gotchi.name || tr("Aavegotchi")}
+                    {card.gotchi.brs != null && <> · {tr("BRS {0}", { 0: card.gotchi.brs })}</>}
+                  </p>
+                )}
+              </>
             )}
           </div>
           <button className="player-card-close" onClick={onClose} aria-label={tr("Close")}>
@@ -128,54 +245,154 @@ export function PlayerCard({
         {error && <p role="alert">{error}</p>}
         {card && (
           <>
-            <h3>{tr("Wearing")}</h3>
-            {card.wearables.length ? (
-              <div className="wearable-grid">
-                {card.wearables.map((w) => (
-                  <WearableTile key={w.id} item={w} />
-                ))}
-              </div>
-            ) : (
-              <p>{tr("No Aavegotchi wearables on right now.")}</p>
-            )}
-            {card.original && <p>{tr("Wearing an original Aavegotchi from their wallet.")}</p>}
-            {!card.self && (
-              <>
-                <h3>{tr("Wave")}</h3>
-                {card.canWave ? (
-                  <div className="player-card-waves">
-                    {card.phrases.map((p) => (
-                      <button key={p.key} disabled={busy} onClick={() => void wave(p.key)}>
-                        {waveText(p.key, p.text)}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p>
-                    {card.waveHint === "You are in a different realm."
-                      ? tr("You are in a different realm.")
-                      : tr("Share your position to wave.")}
-                  </p>
-                )}
-                <p>
-                  <small>{tr("Waves are ready phrases only. No chat, no personal details.")}</small>
-                </p>
-                {status && <p role="status">{status}</p>}
-                <div className="player-card-actions">
-                  {confirmBlock ? (
-                    <>
-                      <button className="danger" disabled={busy} onClick={() => void block()}>
-                        {tr("Block {0}", { 0: card.name })}
-                      </button>
-                      <button onClick={() => setConfirmBlock(false)}>{tr("Cancel")}</button>
-                    </>
-                  ) : (
-                    <button className="danger" onClick={() => setConfirmBlock(true)}>
-                      {tr("Block")}
-                    </button>
-                  )}
+            <dl className="player-card-stats">
+              {stats.map(([label, value]) => (
+                <div key={String(label)}>
+                  <dt>{label}</dt>
+                  <dd>{typeof value === "number" ? value.toLocaleString("en-US") : value}</dd>
                 </div>
-              </>
+              ))}
+            </dl>
+            {card.demoBot && (
+              <p className="player-card-bot-note">
+                {tr("A demo bot from the test world. It walks the map so you can see how other explorers look.")}
+              </p>
+            )}
+            {!card.self && !card.demoBot && (
+              <div className="player-card-actions">
+                <button disabled={!onMessage} onClick={() => onMessage?.(card.id, card.name)}>
+                  <ChatCircleText size={18} aria-hidden="true" /> {tr("Message")}
+                </button>
+                <button aria-expanded={waving} onClick={() => setWaving((v) => !v)}>
+                  <HandWaving size={18} aria-hidden="true" /> {tr("Wave")}
+                </button>
+                {confirmBlock ? (
+                  <>
+                    <button className="danger" disabled={busy} onClick={() => void block()}>
+                      {tr("Block {0}", { 0: card.name })}
+                    </button>
+                    <button onClick={() => setConfirmBlock(false)}>{tr("Cancel")}</button>
+                  </>
+                ) : (
+                  <button className="danger" aria-label={tr("Block")} title={tr("Block")} onClick={() => setConfirmBlock(true)}>
+                    <Prohibit size={18} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            )}
+            {waving && !card.self && !card.demoBot && (
+              card.canWave ? (
+                <div className="player-card-waves">
+                  {card.phrases.map((p) => (
+                    <button key={p.key} disabled={busy} onClick={() => void wave(p.key)}>
+                      {waveText(p.key, p.text)}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p>
+                  {card.waveHint === "You are in a different realm."
+                    ? tr("You are in a different realm.")
+                    : tr("Share your position to wave.")}
+                </p>
+              )
+            )}
+            {status && <p role="status">{status}</p>}
+            {card.self && onEdit && (
+              <div className="player-card-actions">
+                <button onClick={onEdit}>{tr("Change outfit")}</button>
+              </div>
+            )}
+            <h3>{tr("Wearing")}</h3>
+            {card.dress && <p className="player-card-hint">{tr("Tap a slot to dress it.")}</p>}
+            <ul className="player-card-slots">
+              {card.slots.map(({ slot, item }) => {
+                const inner = (
+                  <>
+                    {item ? (
+                      <img src={`/api/wearables/art/${item.id}.svg`} alt={item.name} loading="lazy" />
+                    ) : (
+                      <span aria-hidden="true" />
+                    )}
+                    {item?.verified && (
+                      <SealCheck className="player-card-verified" size={18} weight="fill" aria-label={tr("Verified original")} />
+                    )}
+                    <small>{SLOT_LABEL[slot]?.() || slot}</small>
+                  </>
+                );
+                return (
+                  <li
+                    key={slot}
+                    className={`${item ? `filled rarity-${item.rarity || "common"}` : "empty"}${picking === slot ? " picking" : ""}`}
+                  >
+                    {card.dress ? (
+                      <button
+                        aria-expanded={picking === slot}
+                        aria-label={`${SLOT_LABEL[slot]?.() || slot}: ${item?.name || tr("Empty")}`}
+                        onClick={() => setPicking((p) => (p === slot ? null : slot))}
+                      >
+                        {inner}
+                      </button>
+                    ) : (
+                      inner
+                    )}
+                  </li>
+                );
+              })}
+              {(["above", "below"] as const).map((slot) => {
+                const color = card.auras[slot];
+                return (
+                  <li key={slot} className={color ? "filled" : "empty"}>
+                    <span
+                      className="player-card-aura"
+                      aria-label={color ? tr("Aura") : undefined}
+                      style={color ? ({ "--aura": color } as CSSProperties) : undefined}
+                    />
+                    <small>{slot === "above" ? tr("Above") : tr("Below")}</small>
+                  </li>
+                );
+              })}
+            </ul>
+            {picking && card.dress && (
+              <div className="player-card-picker" aria-label={SLOT_LABEL[picking]?.() || picking}>
+                {!owned ? (
+                  <p>{tr("Loading…")}</p>
+                ) : (
+                  <ul>
+                    {choices.map((i) => (
+                      <li key={i.id}>
+                        <button
+                          disabled={busy || pickedItem?.id === i.id}
+                          aria-pressed={pickedItem?.id === i.id}
+                          className={`rarity-${i.rarity}`}
+                          onClick={() => void dress(picking, i.id)}
+                        >
+                          <img src={`/api/wearables/art/${i.id}.svg`} alt="" loading="lazy" />
+                          <span>{i.name}</span>
+                          {i.verified && <SealCheck size={14} weight="fill" aria-label={tr("Verified original")} />}
+                        </button>
+                      </li>
+                    ))}
+                    {(card.dress.gotchi || pickedItem) && (
+                      <li>
+                        <button disabled={busy || (card.dress.gotchi && !pickedItem)} onClick={() => void dress(picking, card.dress!.gotchi ? 0 : null)}>
+                          <span>{tr("Empty")}</span>
+                        </button>
+                      </li>
+                    )}
+                    {card.dress.gotchi && card.dress.dressed.includes(picking) && (
+                      <li>
+                        <button disabled={busy} onClick={() => void dress(picking, null)}>
+                          <span>{tr("Gotchi's own gear")}</span>
+                        </button>
+                      </li>
+                    )}
+                  </ul>
+                )}
+                {owned && !choices.length && (
+                  <p>{tr("Nothing for this slot yet. Find wearables on the map or link the wallet that holds them.")}</p>
+                )}
+              </div>
             )}
           </>
         )}

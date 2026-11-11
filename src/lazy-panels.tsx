@@ -79,6 +79,7 @@ export const CommunityBonusVote = lazyNamed(
 );
 export const MapNotes = lazyNamed(() => import("./MapNotes"), "MapNotes");
 export const PlayerCard = lazyNamed(() => import("./PlayerCard"), "PlayerCard");
+export const Inbox = lazyNamed(() => import("./inbox/Inbox"), "Inbox");
 export const NativeCollectionControl = lazyNamed(
   () => import("./NativeCollectionControl"),
   "NativeCollectionControl",
@@ -94,6 +95,10 @@ export const AccountSessions = lazyNamed(
 );
 export const DeviceKeys = lazyNamed(() => import("./DeviceKeys"), "DeviceKeys");
 export const BadgeBook = lazyNamed(() => import("./BadgeBook"), "BadgeBook");
+export const CharacterJourney = lazyNamed(() => import("./CharacterJourney"), "CharacterJourney");
+const stakeEarn = () => import("./StakeEarn");
+export const StakeEarnSwitch = lazyNamed(stakeEarn, "StakeEarnSwitch", true);
+export const EarningsPanel = lazyNamed(stakeEarn, "EarningsPanel");
 export const NativeLevelRewards = lazyNamed(
   () => import("./NativeLevelRewards"),
   "NativeLevelRewards",
@@ -102,6 +107,7 @@ export const NativeMarketPanel = lazyNamed(
   () => import("./NativeMarketPanel"),
   "NativeMarketPanel",
 );
+export const MarketBoard = lazyNamed(() => import("./MarketBoard"), "MarketBoard");
 export const NativeExpeditions = lazyNamed(
   () => import("./NativeExpeditions"),
   "NativeExpeditions",
@@ -113,6 +119,11 @@ export const NativeEconomyPanel = lazyNamed(
 const rewardFunding = () => import("./RewardFunding");
 export const RewardFundingPage = lazyNamed(rewardFunding, "RewardFundingPage");
 export const TodaysPot = lazyNamed(rewardFunding, "TodaysPot");
+export const PotRow = lazyNamed(() => import("./PotRow"), "PotRow");
+const mapHud = () => import("./map-hud-controls");
+export const MapSettings = lazyNamed(mapHud, "MapSettings", true);
+export const MapActions = lazyNamed(mapHud, "MapActions", true);
+export const InfoTip = lazyNamed(mapHud, "InfoTip", true);
 export const SecureAndShare = lazyNamed(
   () => import("./SecureAndShare"),
   "SecureAndShare",
@@ -155,12 +166,15 @@ export const WalletPanel = lazyNamed(walletScreens, "WalletPanel");
 export const FundPanel = lazyNamed(walletScreens, "FundPanel");
 export const Bounties = lazyNamed(walletScreens, "Bounties");
 // Explorer · Nearby: player tasks, Secrets and conditional sends.
-export const NearbyMarket = lazyNamed(() => import("./NearbyMarket"), "NearbyMarket");
+export const NearbyList = lazyNamed(() => import("./NearbyList"), "NearbyList");
 export const GoldShop = lazyNamed(() => import("./GoldShop"), "GoldShop");
 export const PlaceMessages = lazyNamed(
   () => import("./PlaceMessages"),
   "PlaceMessages",
 );
+export const PlaceCompose = lazyNamed(() => import("./PlaceMessages"), "PlaceCompose");
+export const CommunityPlaces = lazyNamed(() => import("./CommunityPlaces"), "CommunityPlaces");
+export const AddPlaceDialog = lazyNamed(() => import("./CommunityPlaces"), "AddPlaceDialog");
 export const EmotePicker = lazyNamed(
   () => import("./EmotePicker"),
   "EmotePicker",
@@ -181,3 +195,9 @@ export const SeasonCard = lazyNamed(() => import("./Season"), "SeasonCard");
 export const LandmarkClue = lazyNamed(() => import("./LandmarkClue"), "default");
 
 export const FindDetails = lazyNamed(() => import("./FindDetails"), "FindDetails");
+
+// Gotchiverse-test-app (docs/GOTCHIVERSE.md), shown only when the server enables it.
+const LazyGotchiverse = lazy(() => import("./Gotchiverse").then((m) => ({ default: m.Gotchiverse })));
+export function Gotchiverse(props: ComponentProps<typeof import("./Gotchiverse").Gotchiverse>) {
+  return <PanelBoundary><Suspense fallback={<EmptyState title={tr("Opening Gotchiverse…")} status />}><LazyGotchiverse {...props} /></Suspense></PanelBoundary>;
+}

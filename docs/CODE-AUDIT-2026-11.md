@@ -131,6 +131,8 @@ and equip are idempotent. Fix: accept `clientRequestId` and store it in `history
   (`contracts/game/src/lib.rs`) is deployed by `scripts/deploy-testnet.mjs:34` and shown as
   `proof.gameContract`, but no server module calls it; the demo economy is the SQLite ledger
   (`gameEconomy:'separate-demo-ledger'`). Mark it experimental in docs or delete it.
+  Resolved 10 November 2026: the contract is retired, the wallet proof link is removed and
+  `scripts/deploy-testnet.mjs` refuses to run; source and WASM pin stay for history.
 - **L3. `server/native/exit-scheduler.mjs` and `treasury-model.mjs`** are imported only by
   `tests/staking-foundation.test.mjs` and `scripts/simulate-native-funding.mjs`. They are
   "executable specifications", not runtime. Move to `server/spec/` or document.

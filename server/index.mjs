@@ -1,3 +1,5 @@
+import { createWorkshopStore } from "./gotchiverse/store.mjs";
+import { createWorkshopRoutes } from "./gotchiverse/routes.mjs";
 import { defaultDatabasePath } from "./state-path.mjs";
 import {
   cellProof,
@@ -26,6 +28,7 @@ import { NoteMedia } from "./note-media.mjs";
 import { TaskEvidence, evidenceTaskView } from "./task-evidence.mjs";
 import { Moderation } from "./moderation.mjs";
 import { SocialContent, isSocialBlocked } from "./social-content.mjs";
+import { createCommunityPlaces } from "./community-places.mjs";
 import { NativeProgression } from "./native/progression.mjs";
 import { NativeTasks, TASK_CONTRACT } from "./native/tasks.mjs";
 import { updatePresence, readNearbyPresence } from "./presence.mjs";
@@ -39,7 +42,7 @@ import {
 import {
   publicAppearance,
   publicAppearances,
-  sharedOriginalSvg,
+  sharedOriginal,
 } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
 import {
@@ -58,7 +61,7 @@ import { allocationSettings } from "./native/allocation.mjs";
 import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
-import { ManagedAccounts } from "./relayer/accounts.mjs";
+import { ManagedAccounts, hasPlayedFirstAdventure } from "./relayer/accounts.mjs";
 import { SubsidyBudget } from "./relayer/subsidy-budget.mjs";
 import { signingVaultOrigin, vaultCors } from "./signing-vault-cors.mjs";
 import { Relayer, startRelayWorker } from "./relayer/relay.mjs";
@@ -101,13 +104,17 @@ import { startGlobalActivityLoader, globalActivityStatus } from "./global-activi
 import { startFlavourWorker } from "./ai/flavour-batch.mjs";
 import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
+import { createOriginSync, dressDefault } from "./origin-sync.mjs";
+import { GotchiOutfitArt, ownedOutfit, setOutfitSlot, outfitVersion } from "./gotchi-outfit.mjs";
 import {
   WEARABLES,
   equipWearable,
   wardrobe,
   wornWearables,
 } from "./gotchi-wearables.mjs";
-import { playerCard, sendWave, takeWaves } from "./player-waves.mjs";
+import { isDemoBot, playerCard, profileOriginal, sendWave, takeWaves } from "./player-waves.mjs";
+import { PlayerInbox, socialInboxReader } from "./inbox/service.mjs";
+import { createInboxRoutes } from "./inbox/routes.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
@@ -123,6 +130,7 @@ import {
   featureEnabled,
   DEFAULT_RPC,
   manifestName,
+  SOCIAL_CONTRACT_ID,
 } from "./native/network.mjs";
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -147,6 +155,7 @@ import {
 } from "./identity/near.mjs";
 import { createNearProvider } from "./near-provider.mjs";
 import { IdentitySessions } from "./identity/sessions.mjs";
+import { initializeTesterLogin, testerLogin } from "./identity/test-login.mjs";
 import {
   evmAddress,
   evmChainId,
@@ -168,6 +177,7 @@ import {
   HOME,
   ensureWorld,
   worldView,
+  coinCounts,
   expireWorlds,
   retryStreetWorlds,
 } from "./world.mjs";
@@ -176,6 +186,7 @@ import * as game from "./game.mjs";
 import { createActorRoutes } from "./actors/routes.mjs";
 import { actorsAllDay, actorsEnabled, createActorService } from "./actors/service.mjs";
 import { testSeedMode as readTestSeedMode } from "./test-seed/config.mjs";
+import { demoZoneMode } from "./demo-zones.mjs";
 import { createTestSeed } from "./test-seed/seed.mjs";
 import "./npc/menu-builder.mjs";
 import { createNpcService } from "./npc/service.mjs";
@@ -202,6 +213,7 @@ import { createDailyBoard } from "./daily-board/service.mjs";
 import { createDailyBoardRoutes } from "./daily-board/routes.mjs";
 import { loadPlaceBadges } from "./badges/place-catalog.mjs";
 import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
+import { playerJourney } from "./player-journey.mjs";
 import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
 import { createBadgeRoutes } from "./badges/routes.mjs";
 import { createGoldSpend } from "./gold-spend/service.mjs";
@@ -219,6 +231,7 @@ import { createSeasonRoutes } from "./season/routes.mjs";
 import { ensureFairPlaySchema, guardTravel } from "./fair-play.mjs";
 import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
 import { poiWorldStatus } from "./poi/coverage.mjs";
+import { placeTier } from "./staker-gates.mjs";
 import {
   GOLD,
   DAY,
@@ -226,7 +239,6 @@ import {
   id,
   hash,
   point,
-  tierFor,
   positionTier,
 } from "./domain.mjs";
 
@@ -236,12 +248,32 @@ const nativeAttestationsDisabled =
 const backgroundWorkersDisabled =
   process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
+// Gotchiverse-test-app (docs/GOTCHIVERSE.md): a nonfinancial private workshop,
+// off unless GOTCHIVERSE_TEST_APP=1. Its JSON files live next to the database.
+const gotchiverseTestApp = process.env.GOTCHIVERSE_TEST_APP === "1";
+const workshopRoutes = gotchiverseTestApp
+  ? createWorkshopRoutes({
+      store: createWorkshopStore({
+        directory: resolve(dirname(db.prepare("PRAGMA database_list").get().file), "gotchiverse"),
+      }),
+      authenticate: auth,
+      actorFor: (playerId) => {
+        const row = db.prepare("SELECT name FROM players WHERE id=?").get(playerId);
+        assert(row, "Please sign in again.", 401);
+        return { id: playerId, name: row.name };
+      },
+    })
+  : null;
 ensureMapReadIndexes(db);
 ensureHotPathIndexes(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
+// Compact always-open demo zones (docs/DEMO-ZONES.md); throws on mainnet.
+const demoZones = demoZoneMode(process.env, NETWORK);
+const testSeedKit = process.env.TEST_SEED_KIT === "1";
 const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
+const communityPlaces = createCommunityPlaces(db);
 const noteMedia = new NoteMedia();
 // Private sponsored-task photos and the shared report intake. Operator
 // decisions are made only through server/cli/moderate.mjs.
@@ -263,6 +295,7 @@ const rpc = process.env.NEAR_RPC_URL || DEFAULT_RPC;
 const browserRpc = publicRpcUrl(process.env.PUBLIC_NEAR_RPC_URL, DEFAULT_RPC);
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
+initializeTesterLogin(db);
 const deploymentManifestPath = existsSync(
   resolve(APP_ROOT, `public/${NETWORK}-deployment.json`),
 )
@@ -468,6 +501,8 @@ const relayer = managedAccounts
         blockTtl: relayConfig.blockTtl,
         maxJobsPerDay: relayConfig.maxJobsPerDay,
         maxDepositYoctoPerDay: relayConfig.maxDepositYoctoPerDay,
+        maxCancelsPerDay: relayConfig.maxCancelsPerDay,
+        maxCancelsGlobalPerDay: relayConfig.maxCancelsGlobalPerDay,
         maxGas: relayConfig.maxGas,
         vaults: nativeVaults,
         factorySetupDeposit: rewardsConfig?.factory?.setupDeposit ?? null,
@@ -489,12 +524,19 @@ const intentsMarket =
         nftContract: intentsManifest.nftContract || nativeMarket.nfts.contractId,
         wnear: intentsManifest.wnear,
         solver: relayerService,
+        // Solver gas counts against the service-wide sponsorship budget.
+        subsidyBudget: managedAccounts?.subsidyBudget ?? null,
         manifest: intentsManifest,
       })
     : null;
 const intentsRoutes = createIntentsRoutes(intentsMarket);
 const relayerRoutes = createRelayerRoutes({
   authorizeEnrollment: req => allowEnrollment(req, identitySessions.authenticate(sessionToken(req))),
+  authorizeAccountCreation: req => {
+    const current = identitySessions.authenticate(sessionToken(req));
+    allowEnrollment(req, current);
+    allowAccountCreation(req, current);
+  },
   relayer,
   accounts: managedAccounts,
 });
@@ -612,6 +654,18 @@ if (PRACTICE_MARKET_ON_CHAIN) {
     .prepare("UPDATE listings SET state='cancelled' WHERE state='open'")
     .run().changes;
   if (closed) console.log(`Practice market moved on chain: closed ${closed} database listing(s).`);
+}
+// Simulated staking (practice GOLD positions) is closed: since 5 Nov all GOLD
+// is real QGOLD, and its fake yield fed the coin and zone budgets that payouts
+// turn into QGOLD. SIMULATED_STAKING=1 brings it back for local tests only.
+const SIMULATED_STAKING = process.env.SIMULATED_STAKING === "1";
+function assertSimulatedStakingOpen() {
+  assert(
+    SIMULATED_STAKING,
+    "Practice staking has closed. Tier places open with a real stake in the vault.",
+    410,
+    "SIMULATED_STAKING_CLOSED",
+  );
 }
 function assertPracticeMarketOpen() {
   assert(
@@ -840,6 +894,8 @@ if (escrowManifest && process.env.QGOLD_ESCROW_WORKER !== "0") {
       }
       await runEscrowWorker(db, {
         view: marketEscrowView,
+        // Sends and refunds wait until the token knows their recipient.
+        tokenView: escrowView(provider, escrowManifest.tokenId),
         call: send || (async () => { throw Error("Escrow publisher key is not installed."); }),
         activate: marketActivate,
         drop: marketDrop,
@@ -866,6 +922,32 @@ const marketRoutes = createMarketRoutes({
       .some((w) => marketModerators.has(w.account_id));
   },
 });
+// Encrypted player inbox (docs/PLAYER-INBOX.md): ciphertext on NEAR Social,
+// written by the sender's own account through the relayer. INBOX_ENABLED=0
+// switches it off; moderators are the market/creator moderators.
+const playerInbox =
+  process.env.INBOX_ENABLED === "0"
+    ? null
+    : new PlayerInbox(db, socialInboxReader(new NativeContractReader(provider, SOCIAL_CONTRACT_ID)), {
+        isModerator: (player) =>
+          marketModerators.has(player) ||
+          db
+            .prepare("SELECT account_id FROM wallet_links WHERE player_id=?")
+            .all(player)
+            .some((w) => marketModerators.has(w.account_id)),
+      });
+const inboxRoutes = createInboxRoutes(playerInbox);
+if (playerInbox && !backgroundWorkersDisabled) {
+  let inboxBusy = false;
+  setInterval(() => {
+    if (inboxBusy) return;
+    inboxBusy = true;
+    playerInbox
+      .confirmPending()
+      .catch((error) => console.error("Inbox delivery:", String(error?.message || error).slice(0, 200)))
+      .finally(() => (inboxBusy = false));
+  }, 20_000).unref();
+}
 // Badges (docs/BADGES.md): place badges for notable places reached with GPS
 // (game database, cosmetic, never sellable) and POAP-like player badges on
 // the soulbound questlayer_badges contract. The contract id comes from
@@ -943,9 +1025,15 @@ const testSeed = createTestSeed(db, {
   log: (message) => console.log(message),
 });
 try {
-  if (testSeedMode === "apply")
+  if (testSeedMode === "apply") {
     console.log("Test seed applied:", JSON.stringify(testSeed.apply()));
-  else {
+    // Starter kits (9 Auras + XP for every real explorer) are opt-in: players
+    // read kit Auras as their own finds. Off takes earlier kits back.
+    if (!testSeedKit) {
+      const reverted = testSeed.revertKits();
+      if (reverted.removed) console.log("Test seed kits reverted:", JSON.stringify(reverted));
+    }
+  } else {
     const purged = testSeed.purge();
     if (purged.removed) console.log("Test seed removed:", JSON.stringify(purged));
   }
@@ -953,6 +1041,9 @@ try {
   console.error("Test seed failed:", error?.code || error?.message || error);
 }
 const testSeedActive = testSeedMode === "apply";
+const grantTestKit = (player) => {
+  if (testSeedActive && testSeedKit) testSeed.grantKit(player);
+};
 const challengeRoutes = createChallengeRoutes(
   createMonsterChallenges(db, actorService, {
     levelOf: (player) => demoProgression(db, player).level,
@@ -1111,6 +1202,19 @@ async function refreshOriginals(address) {
     originalLookups.delete(address);
   }
 }
+const outfitArt = new GotchiOutfitArt();
+/** An explorer's original as drawn in the game: its own art, or the in-game outfit. */
+async function wornOriginalSvg(playerId, gotchi) {
+  if (!gotchi) return null;
+  const row = db.prepare("SELECT appearance FROM players WHERE id=?").get(playerId);
+  let appearance = {};
+  try {
+    appearance = JSON.parse(row?.appearance || "{}");
+  } catch {}
+  if (appearance.originTokenId !== gotchi.tokenId) return gotchi.svg || null;
+  return outfitArt.svg(gotchi, ownedOutfit(db, playerId, appearance.outfit));
+}
+const originSync = createOriginSync(db, { read: refreshOriginals, log: (m) => console.warn(m) });
 const readPublicDistribution = publicDistribution(nativeRewards, auditDistribution);
 const listeners = new Set(),
   rates = new RateWindows();
@@ -1237,6 +1341,31 @@ function allowEnrollment(req, current) {
   assert(grant?.purpose === "credential-management" && grant.sessionHash === tokenHash,
     "Sign in again with an existing passkey or wallet before adding a sign-in method.", 403, "ACCOUNT_REAUTH_REQUIRED");
 }
+// A sponsored, funded NEAR account is the most expensive thing the game gives a
+// new explorer (factory transfer plus gas), and a guest cookie costs nothing. The
+// account is prepared once the explorer has finished a first adventure step on the
+// map (any XP: a GPS-verified find, coin or quest), and creations from one network
+// address are bounded per UTC day on top of the shared sponsorship budget. A retry
+// after a failed creation passed this bar already.
+const ACCOUNT_CREATIONS_PER_IP_PER_DAY = 20;
+function allowAccountCreation(req, current) {
+  if (managedAccounts?.row(current.playerId)) return;
+  assert(hasPlayedFirstAdventure(db, current.playerId),
+    "Finish your first find or quest on the map; your explorer account is prepared right after.", 403, "ACCOUNT_PLAY_FIRST");
+  if (req.questlayerCreationCounted) return;
+  req.questlayerCreationCounted = true;
+  limitDaily("account-create", clientAddress(req, process.env.TRUST_PROXY === "loopback"), ACCOUNT_CREATIONS_PER_IP_PER_DAY,
+    "Too many new explorer accounts from this network today. Your progress is saved; try again tomorrow.");
+}
+// Per-UTC-day counters share the minute-keyed windows: the key ends with the day's
+// last minute, so pruning keeps it until the day is over.
+function limitDaily(scope, who, max, message) {
+  const day = Math.floor(Date.now() / 86_400_000),
+    key = `${scope}:${who}:${(day + 1) * 1440 - 1}`,
+    n = (rates.get(key) || 0) + 1;
+  rates.set(key, n);
+  assert(n <= max, message, 429, "RATE_LIMITED");
+}
 async function body(req) {
   let size = 0;
   const chunks = [];
@@ -1300,6 +1429,7 @@ function profile(player) {
       )
     )
       p.appearance = {};
+    else p.appearance = { ...p.appearance, look: outfitVersion(ownedOutfit(db, player, p.appearance.outfit)) };
   }
   return {
     ...p,
@@ -1310,7 +1440,7 @@ function profile(player) {
       .prepare("SELECT COUNT(*) AS n FROM coins WHERE claimant=?")
       .get(player).n,
     level: p.level,
-    tier: tierFor(p.positions.reduce((s, x) => s + positionTier(x), 0)),
+    tier: placeTier(db, player),
     weighted_u: p.positions.reduce((s, x) => s + positionTier(x), 0),
   };
 }
@@ -1389,6 +1519,7 @@ async function api(req, res, url) {
         ? socialRecords.workerStatus()
         : { status: "not-configured" },
       testSeed: testSeedActive ? testSeed.status() : { status: "off" },
+      demoZones: demoZones || "off",
       npcRolls: npcRolls
         ? {
             status: (await npcRolls.readiness()).ok ? "ready" : "off",
@@ -1468,6 +1599,7 @@ async function api(req, res, url) {
       network: NETWORK,
       signingVaultOrigin: secureSigningOrigin,
       features: ENABLED_FEATURES,
+      gotchiverseTestApp,
       rpcUrl: browserRpc,
       coinValue: 0.01,
       coinSplit: 50,
@@ -1498,9 +1630,31 @@ async function api(req, res, url) {
     const input = await body(req);
     const result = game.session(db, input.name);
     identitySessions.record(result.token, "guest");
-    if (testSeedActive) testSeed.grantKit(result.player.id);
+    grantTestKit(result.player.id);
     return respond(res, { player: profile(result.player.id) }, 201, {
       "Set-Cookie": cookie(result.token),
+    });
+  }
+  if (path === "/api/auth/tester" && method === "POST") {
+    // Testnet tester sign-in (server/identity/test-login.mjs): name + the
+    // password the owner chose, stored only as a salted scrypt hash.
+    assert(NETWORK !== "mainnet", "Not found.", 404);
+    limit(
+      "tester-login",
+      clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      5,
+      "Please wait a minute before trying again.",
+    );
+    const input = await body(req);
+    const player = testerLogin(db, {
+      network: NETWORK,
+      name: input.name,
+      password: input.password,
+    });
+    assert(player, "That name and password do not match.", 401);
+    const token = newSession(player, "guest");
+    return respond(res, { player: profile(player), returning: true }, 200, {
+      "Set-Cookie": cookie(token),
     });
   }
   if (path === "/api/logout" && method === "POST") {
@@ -1846,6 +2000,10 @@ async function api(req, res, url) {
         returning: !!existing,
       };
     });
+    // Read the wallet's Aavegotchis now, so the explorer arrives dressed in
+    // their best one and sees its wearables (server/origin-sync.mjs).
+    originSync.touch(result.player, { force: true });
+    await originSync.settle(result.player, 6000);
     return respond(
       res,
       {
@@ -2008,6 +2166,8 @@ async function api(req, res, url) {
   }
   const player = auth(req);
   req.questlayerPlayer = player;
+  originSync.touch(player);
+  if (workshopRoutes && (await workshopRoutes.handle(req, res, url, { player, body, respond, assert }))) return;
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
   )
@@ -2019,6 +2179,8 @@ async function api(req, res, url) {
   if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await inboxRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await marketRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
@@ -2764,7 +2926,10 @@ async function api(req, res, url) {
     return respond(res, { player: profile(player) });
   }
   if (path === "/api/me") {
-    if (testSeedActive) testSeed.grantKit(player);
+    grantTestKit(player);
+    // A just-linked wallet: answer with the dressed original when Base is quick.
+    originSync.touch(player, { force: true });
+    await originSync.settle(player, 4000);
     return respond(res, { player: profile(player) });
   }
   if (path === "/api/events" && method === "GET") {
@@ -2838,6 +3003,13 @@ async function api(req, res, url) {
     viewWorld(player, w.id);
     return respondCached(req, res, { ...w, layerId: DEFAULT_LAYER.id });
   }
+  if (path === "/api/world/coin-counts" && method === "GET") {
+    limit("world-read", player, 240, "Please wait before refreshing the map again.");
+    const lat = Number(url.searchParams.get("lat")),
+      lng = Number(url.searchParams.get("lng"));
+    const at = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
+    return respond(res, coinCounts(db, url.searchParams.get("id") || null, at));
+  }
   if (path === "/api/coins/claim" && method === "POST") {
     limit("coin", player, 240, "Please slow down collecting coins.");
     const input = await body(req),
@@ -2870,11 +3042,13 @@ async function api(req, res, url) {
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/stake" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     const result = game.stake(db, player, i.amount, i.contribution, i.pool);
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/contribution" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     return respond(res, {
       ...game.contribution(db, player, i.positionId, i.contribution),
@@ -2882,6 +3056,7 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/unstake" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     return respond(res, {
       ...game.unstake(db, player, i.positionId),
@@ -2889,6 +3064,7 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/withdraw" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     return respond(res, {
       ...game.redeem(db, player, i.withdrawalId),
@@ -2922,7 +3098,7 @@ async function api(req, res, url) {
     emit("market", {});
     return respond(res, r);
   }
-  if (path.startsWith("/api/messages") || path.startsWith("/api/social/")) {
+  if (path.startsWith("/api/messages") || path.startsWith("/api/social/") || path.startsWith("/api/community-places")) {
     const key = `social:${player}:${Math.floor(Date.now() / 60000)}`;
     const count = (rates.get(key) || 0) + 1;
     rates.set(key, count);
@@ -2978,10 +3154,49 @@ async function api(req, res, url) {
     emit("message", {});
     return respond(res, { id: result.id, state: result.state });
   }
+  if (noteAction && method === "PATCH" && !noteAction[2]) {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const result = socialContent.edit(player, noteAction[1], input);
+    emit("message", {});
+    return respond(res, result);
+  }
   if (noteAction?.[2] === "report" && method === "POST") {
     const input = await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
     return respond(res, socialContent.report(player, noteAction[1], input));
+  }
+  if (path === "/api/community-places" && method === "GET")
+    return respond(
+      res,
+      communityPlaces.list(player, {
+        lat: Number(url.searchParams.get("lat") ?? HOME.lat),
+        lng: Number(url.searchParams.get("lng") ?? HOME.lng),
+        arena: url.searchParams.get("arena") !== "0",
+      }),
+    );
+  if (path === "/api/community-places" && method === "POST") {
+    limit("community-places", player, 20, "Please wait before adding another place.");
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const result = communityPlaces.create(player, input);
+    emit("message", {});
+    return respond(res, result, 201);
+  }
+  const communityPlace = path.match(/^\/api\/community-places\/([a-z0-9_-]{1,60})(?:\/(report))?$/);
+  if (communityPlace) {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const [, placeId, sub] = communityPlace;
+    if (sub === "report" && method === "POST")
+      return respond(res, communityPlaces.report(player, placeId, input));
+    if (!sub && method === "PATCH") return respond(res, communityPlaces.edit(player, placeId, input));
+    if (!sub && method === "DELETE") {
+      const result = communityPlaces.remove(player, placeId);
+      emit("message", {});
+      return respond(res, result);
+    }
+    assert(false, "Method not allowed.", 405);
   }
   if (path === "/api/social/blocks" && method === "GET")
     return respond(res, socialContent.blocks(player));
@@ -3163,6 +3378,8 @@ async function api(req, res, url) {
         0,
       );
     });
+    originSync.touch(player, { force: true });
+    await originSync.settle(player, 6000);
     return respond(res, { address: c.address, verified: true });
   }
   if (path === "/api/wearables" && method === "GET")
@@ -3174,11 +3391,20 @@ async function api(req, res, url) {
     const result = equipWearable(db, player, i.itemId, !!i.equipped);
     return respond(res, { ...result, player: profile(player) });
   }
+  if (path === "/api/me/journey" && method === "GET") {
+    limit("journey", player, 30, "Please wait a moment before refreshing your story.");
+    return respond(
+      res,
+      playerJourney(db, player, {
+        placeBadgeName: (id) => badgeService?.catalog?.byId?.get(id)?.name || null,
+      }),
+    );
+  }
   if (path === "/api/players/card" && method === "GET") {
     limit("player-card", player, 60, "Please wait before opening more explorer cards.");
     const target = url.searchParams.get("playerId");
     let look = null;
-    if (/^player_[a-f0-9-]{36}$/.test(target || "")) {
+    if (/^player_[a-f0-9-]{36}$/.test(target || "") || isDemoBot(target)) {
       const row = db
         .prepare(
           "SELECT id,appearance,native_outfit,native_account FROM players WHERE id=?",
@@ -3220,6 +3446,7 @@ async function api(req, res, url) {
         db.prepare(
           "UPDATE external_links SET data=?,verified_at=? WHERE address=?",
         ).run(JSON.stringify(data), data.verifiedAt, link.address);
+        dressDefault(db, player, link.address, data);
       } catch {
         return respond(res, {
           linked: true,
@@ -3251,11 +3478,19 @@ async function api(req, res, url) {
       status: "verified",
     });
   }
+  if (path === "/api/aavegotchi/outfit" && method === "POST") {
+    limit("gotchi-outfit", player, 60, "Please wait before changing the outfit again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    setOutfitSlot(db, player, String(i.slot || ""), i.itemId ?? null);
+    return respond(res, { player: profile(player) });
+  }
   if (path === "/api/aavegotchi/equip" && method === "POST") {
     const i = await body(req);
     if (i.tokenId === null) {
+      // Remember the choice, so the default original is not put back on.
       db.prepare("UPDATE players SET appearance=? WHERE id=?").run(
-        "{}",
+        '{"starter":true}',
         player,
       );
       return respond(res, { player: profile(player) });
@@ -3309,11 +3544,13 @@ async function api(req, res, url) {
         "Refresh original ownership before opening its 3D look.",
         403,
       );
+      // An in-game outfit swaps slots 0-6 in the official renderer's look.
       return respond(
         res,
         await gotchiModels.describe({
           tokenId: appearance.originTokenId,
           expectedWearables: gotchi.equipped,
+          outfit: ownedOutfit(db, player, appearance.outfit),
         }),
       );
     }
@@ -3336,6 +3573,25 @@ async function api(req, res, url) {
     });
     return res.end(asset.bytes);
   }
+  if (path === "/api/players/skin" && method === "GET") {
+    // The original on an explorer's public profile; no presence needed.
+    const explorer = url.searchParams.get("playerId");
+    assert(explorer && /^player_[a-f0-9-]{36}$/.test(explorer), "Invalid explorer.");
+    assert(
+      explorer === player || !isSocialBlocked(db, player, explorer),
+      "This appearance is not available.",
+      404,
+    );
+    const svg = await wornOriginalSvg(explorer, profileOriginal(db, explorer)?.gotchi);
+    assert(svg, "This appearance is not available.", 404);
+    res.writeHead(200, {
+      "Content-Type": "image/svg+xml",
+      "Content-Security-Policy":
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+      "Cache-Control": "private,no-cache",
+    });
+    return res.end(svg);
+  }
   if (path === "/api/presence/skin" && method === "GET") {
     const explorer = url.searchParams.get("playerId");
     assert(
@@ -3347,7 +3603,7 @@ async function api(req, res, url) {
       "This shared appearance is no longer available.",
       404,
     );
-    const svg = sharedOriginalSvg(db, explorer);
+    const svg = await wornOriginalSvg(explorer, sharedOriginal(db, explorer));
     assert(svg, "This shared appearance is no longer available.", 404);
     res.writeHead(200, {
       "Content-Type": "image/svg+xml",
@@ -3423,13 +3679,14 @@ async function api(req, res, url) {
       (g) => g.tokenId === token,
     );
     assert(gotchi?.svg, "The appearance is unavailable.", 404);
+    const svg = (await wornOriginalSvg(player, gotchi)) || gotchi.svg;
     res.writeHead(200, {
       "Content-Type": "image/svg+xml",
       "Content-Security-Policy":
         "default-src 'none'; style-src 'unsafe-inline'; sandbox",
-      "Cache-Control": "private,max-age=60",
+      "Cache-Control": "private,no-cache",
     });
-    return res.end(gotchi.svg);
+    return res.end(svg);
   }
   if (path === "/api/guide/hint" && method === "POST") {
     // First-session coach: one grounded sentence for the player's current
@@ -3827,7 +4084,7 @@ const maintenance = setInterval(() => {
   if (backgroundWorkersDisabled) return;
   try {
     expireWorlds(db);
-    game.harvestDemo(db);
+    if (SIMULATED_STAKING) game.harvestDemo(db);
     db.prepare("DELETE FROM presence WHERE expires_at<? OR updated_at<?").run(
       Date.now(),
       Date.now() - 30_000,

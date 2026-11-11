@@ -323,3 +323,45 @@ test("SIGKILL inside activation rolls back, and two restarted workers settle onc
     assert.equal(recovered.prepare("SELECT COUNT(*) n FROM mk_chain_ops").get().n, 2);
   } finally { recovered.close(); }
 });
+
+// ------------------------------------------------ funder storage deposits (M6 follow-up)
+const RESERVE = { entry_bytes: 256, record_bytes: 1024, pair_growth_bytes: 4608, one_slot_task_growth_bytes: 5888, storage_byte_cost_yocto: "10000000000000000000" };
+const COST = 10n ** 19n;
+
+test("the funding response names the escrow storage deposit the funder still needs", async (t) => {
+  // Growth mirrors contracts/qgold-escrow task_growth / PAIR_GROWTH.
+  assert.equal(chain.escrowGrowthBytes({ kind: "task", slots: 1 }, RESERVE), 5888);
+  assert.equal(chain.escrowGrowthBytes({ kind: "task", slots: 50 }, RESERVE), (50 + 100) * 256 + 4096);
+  assert.equal(chain.escrowGrowthBytes({ kind: "task", slots: 10 }, RESERVE), (10 + 24) * 256 + 4096);
+  assert.equal(chain.escrowGrowthBytes({ kind: "secret" }, RESERVE), 4608);
+  assert.equal(chain.escrowGrowthBytes({ kind: "transfer" }, RESERVE), 4608);
+  // No deposit yet: the whole growth plus the deposit record itself.
+  assert.equal(chain.escrowStorageShortfall({ kind: "transfer" }, RESERVE, null), (4608n + 256n) * COST);
+  // A partial deposit: only the difference. Enough: nothing.
+  assert.equal(chain.escrowStorageShortfall({ kind: "transfer" }, RESERVE, { available: (1000n * COST).toString() }), 3608n * COST);
+  assert.equal(chain.escrowStorageShortfall({ kind: "transfer" }, RESERVE, { available: (4608n * COST).toString() }), 0n);
+  const f = fixture(t), task = f.task();
+  const balances = new Map();
+  const view = async (method, args) => method === "get_storage_reserve" ? RESERVE : balances.get(args.account_id) ?? null;
+  const funding = await chain.withStorageDeposit(task.funding, view);
+  assert.equal(funding.methodName, "ft_transfer_call", "the funding call is unchanged");
+  // 0.0614 NEAR short, rounded up to the relayed 0.05 NEAR ladder; the rest stays the funder's grant.
+  assert.deepEqual(funding.storageDeposit, {
+    signerId: "alice.testnet", receiverId: "escrow.testnet", methodName: "storage_deposit",
+    args: { account_id: "alice.testnet", grant: true }, gas: chain.STORAGE_DEPOSIT_GAS,
+    deposit: (2n * chain.STORAGE_DEPOSIT_STEP).toString(), near: "0.1000 NEAR", sponsored: true,
+  });
+  assert.equal(chain.storageDepositAmount(1n), chain.STORAGE_DEPOSIT_STEP);
+  assert.equal(chain.storageDepositAmount(chain.STORAGE_DEPOSIT_STEP), chain.STORAGE_DEPOSIT_STEP);
+  assert.equal(chain.storageDepositAmount(0n), 0n);
+  // A 50-slot task (~0.43 NEAR) still fits the ladder; a larger shortfall is self-paid.
+  assert.equal(chain.storageDepositAmount(BigInt(chain.escrowGrowthBytes({ kind: "task", slots: 50 }, RESERVE)) * COST), 9n * chain.STORAGE_DEPOSIT_STEP);
+  assert.equal(chain.storageDepositAmount(chain.STORAGE_DEPOSIT_MAX + 1n) > chain.STORAGE_DEPOSIT_MAX, true);
+  balances.set("alice.testnet", { available: (5888n * COST).toString() });
+  assert.equal((await chain.withStorageDeposit(task.funding, view)).storageDeposit, null, "a covered funder signs only the funding");
+  // The escrow out of reach is a clear 503, not a blind funding.
+  await assert.rejects(chain.withStorageDeposit(task.funding, async () => { throw Error("rpc"); }), (e) => e.status === 503 && /escrow cannot be reached/.test(e.message));
+  assert.equal(await chain.withStorageDeposit(task.funding, null), task.funding, "no escrow view: the plain call");
+  // An escrow without the reserve view (an older deployment) needs no funder deposit.
+  assert.equal((await chain.withStorageDeposit(task.funding, async () => null)).storageDeposit, null);
+});

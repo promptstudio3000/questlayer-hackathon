@@ -15,11 +15,41 @@ export function ensureEscrowDeliverySchema(db) {
 }
 const errorText = (e) => String(e?.message ?? e).slice(0, 300);
 const sameOp = (a, b) => b?.state === "queued" && ["id", "seq", "escrow_id", "method", "args"].every((k) => a[k] === b[k]);
+// Due work: queued operations, plus `failed` rows whose outcome is still unknown
+// (legacy rows without a journal entry, or a prepared attempt). A `failed` row
+// whose latest attempt records a proved FINAL rejection is terminal: it stays
+// for the operator and never blocks or starves unrelated operations.
+const DUE_OPS = `SELECT o.* FROM mk_chain_ops o WHERE o.state='queued' OR (o.state='failed' AND COALESCE(
+  (SELECT a.state FROM mk_delivery_attempts a WHERE a.op_id=o.id ORDER BY a.attempt DESC LIMIT 1),'')!='retry') ORDER BY o.seq LIMIT ?`;
+// A contract that rejected an escrow-bound publisher call will reject the same
+// call again: the server's view of that agreement drifted from the chain (for
+// example the poster cancelled on chain before approve_task was sent). Retrying
+// it forever would hold every later withdraw_for behind its backoff window.
+// withdraw_for pushes one recipient's credit and depends on nothing in the queue,
+// so its rejections (escrow reserve, unregistered recipient) keep the capped retry.
+const terminalRejection = (op, proof) =>
+  proof.state === "retry" && proof.reason === "final_contract_rejection" && op.method !== "withdraw_for";
+
+// The escrow sponsors the token registration only of payees who earned a task
+// or Secret payout. A send or refund to an account the token does not know
+// yet would fail its ft_transfer and burn retries, so it waits here instead:
+// the account is registered by its first QGOLD payout, or by the player.
+export const REGISTRATION_WAIT_MS = 15 * 60_000;
+export const RECIPIENT_UNREGISTERED = "recipient_unregistered";
+/** True when `withdraw_for(account)` would push to an account the token cannot credit yet. */
+export async function awaitsRegistration(view, tokenView, account) {
+  if (!tokenView) return false;
+  const [earned, registered] = await Promise.all([
+    view("is_earned", { account_id: account }).catch(() => false),
+    tokenView("storage_balance_of", { account_id: account }),
+  ]);
+  return earned !== true && !registered;
+}
 
 /** One durable publisher lease, immutable signed attempts, and receipt-based acknowledgement. */
-export async function runEscrowDelivery(db, { call, view, now, maxOps, clock }) {
+export async function runEscrowDelivery(db, { call, view, now, maxOps, clock, tokenView = null }) {
   ensureEscrowDeliverySchema(db);
-  const result = { sent: 0, failed: 0, pending: 0 };
+  const result = { sent: 0, failed: 0, rejected: 0, pending: 0, deferred: 0 };
   if (!maxOps || !call?.prepare || !call?.send || !call?.status || !call?.verify) return result;
   const start = Date.now(), tick = clock ?? (() => now + Date.now() - start), owner = randomUUID(), scope = call.scope;
   const claim = db.prepare(`INSERT INTO mk_delivery_lease VALUES(?,?,?) ON CONFLICT(scope)
@@ -47,12 +77,12 @@ export async function runEscrowDelivery(db, { call, view, now, maxOps, clock }) 
   try {
     const blocked = new Set();
     let processed = 0;
-    for (const op of db.prepare("SELECT * FROM mk_chain_ops WHERE state IN ('queued','failed') ORDER BY seq LIMIT ?").all(maxOps * 3)) {
+    for (const op of db.prepare(DUE_OPS).all(maxOps * 3)) {
       if (processed >= maxOps) break;
       if (op.escrow_id && blocked.has(op.escrow_id)) continue;
       if (!op.escrow_id && blocked.size) break;
-      // Legacy exhausted rows have no reliable receipt proof. Do not let a
-      // higher publisher nonce replace an unresolved older transaction.
+      // Legacy exhausted rows and prepared attempts have no proof of the outcome.
+      // Do not let a higher publisher nonce replace an unresolved older transaction.
       if (op.state === "failed") { result.pending++; break; }
       if (op.run_after > now) {
         if (latest(op.id)?.state === "prepared") { result.pending++; break; }
@@ -74,6 +104,12 @@ export async function runEscrowDelivery(db, { call, view, now, maxOps, clock }) 
               }); result.sent++; continue;
             }
             if (typeof credit !== "string" || !/^[1-9][0-9]{0,38}$/.test(credit)) throw Error("Invalid escrow credit view");
+            if (await awaitsRegistration(view, tokenView, JSON.parse(op.args).account_id)) {
+              current(op, attempt);
+              atomic(db, () => { current(op, attempt);
+                db.prepare("UPDATE mk_chain_ops SET last_error=?,run_after=? WHERE id=?").run(RECIPIENT_UNREGISTERED, now + REGISTRATION_WAIT_MS, op.id);
+              }); result.deferred++; continue;
+            }
           }
           const prepared = await call.prepare(op); fence();
           call.verify(prepared, op);
@@ -94,7 +130,7 @@ export async function runEscrowDelivery(db, { call, view, now, maxOps, clock }) 
         try { response = await call.status(attempt); } catch { /* Exact-byte rebroadcast remains safe after an unavailable status. */ }
         current(op, attempt);
         if (!response) { response = await call.send(attempt); current(op, attempt); }
-        const proof = assessEscrowDelivery(attempt, response);
+        const proof = assessEscrowDelivery(attempt, response), terminal = terminalRejection(op, proof);
         atomic(db, () => {
           fence();
           if (!sameOp(op, db.prepare("SELECT * FROM mk_chain_ops WHERE id=?").get(op.id)) || latest(op.id)?.tx !== attempt.tx)
@@ -103,11 +139,16 @@ export async function runEscrowDelivery(db, { call, view, now, maxOps, clock }) 
             .run(proof.state === "pending" ? "prepared" : proof.state, JSON.stringify(response), tick(), op.id, attempt.attempt);
           const retryAt = now + Math.min(3_600_000, 15_000 * 2 ** Math.min(attempt.attempt, 8));
           db.prepare("UPDATE mk_chain_ops SET state=?,last_error=?,run_after=? WHERE id=?")
-            .run(proof.state === "delivered" ? "sent" : "queued", proof.state === "delivered" ? null : proof.reason,
-              proof.state === "retry" ? retryAt : now, op.id);
+            .run(proof.state === "delivered" ? "sent" : terminal ? "failed" : "queued", proof.state === "delivered" ? null : proof.reason,
+              proof.state === "retry" && !terminal ? retryAt : now, op.id);
         });
         if (proof.state === "delivered") result.sent++;
-        else if (proof.state === "retry") { result.failed++; if (op.escrow_id) blocked.add(op.escrow_id); }
+        else if (terminal) {
+          // Recorded with its FINAL receipt; an operator re-queues it (state='queued')
+          // after reconciling the agreement. Unrelated operations continue.
+          result.rejected++;
+          console.error(`Market escrow: ${op.method} for ${op.escrow_id ?? "-"} was rejected on chain (tx ${attempt.tx}); operator reconciliation required.`);
+        } else if (proof.state === "retry") { result.failed++; if (op.escrow_id) blocked.add(op.escrow_id); }
         else { result.pending++; break; } // No higher nonce may replace an unknown outcome.
       } catch (e) {
         if (lost) break;

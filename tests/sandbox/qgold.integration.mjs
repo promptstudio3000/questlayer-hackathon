@@ -18,7 +18,7 @@ assert.ok(sandboxModule && wasmDirectory && reportPath, "arguments: sandbox modu
 const { Sandbox, GenesisAccount } = await import(pathToFileURL(resolve(sandboxModule)));
 const NEAR = 10n ** 24n, UNIT = 10n ** 15n;
 const keys = new Map();
-const ids = ["owner", "rewards", "qgold", "withdrawal", ...Array.from({ length: 10 }, (_, i) => `player${i}`)];
+const ids = ["owner", "guardian", "rewards", "qgold", "withdrawal", ...Array.from({ length: 10 }, (_, i) => `player${i}`)];
 const accounts = ids.map((name) => {
   const id = `${name}.testnet`, key = KeyPair.fromRandom("ed25519");
   keys.set(id, key);
@@ -143,11 +143,18 @@ try {
   }
   await call("new", { owner_id: "owner.testnet", publisher_id: "owner.testnet", attestor: Buffer.from(attestor.getPublicKey().data).toString("base64") });
   await call("new", {
-    council: ["owner.testnet"], threshold: 1, guardian_id: "owner.testnet", treasury_id: "owner.testnet",
+    council: ["owner.testnet"], threshold: 1, guardian_id: "guardian.testnet", treasury_id: "owner.testnet",
     minters: ["rewards.testnet"], initial_rate: String(10n ** 21n),
     metadata: { spec: "ft-1.0.0", name: "Sandbox QGOLD", symbol: "QGOLD", decimals: 6 },
   }, 0n, "qgold.testnet");
   await call("set_qgold_vault", { account_id: "qgold.testnet" });
+  // QGOLD lets one account pause once per PAUSE_COOLDOWN_MS: the council
+  // member and the guardian take turns, as separate real keys would.
+  const guardian = await transport("guardian.testnet");
+  const pauseGold = async () => {
+    try { return await call("pause", {}, 0n, "qgold.testnet"); }
+    catch { return call("pause", {}, 0n, "qgold.testnet", guardian); }
+  };
   await call("fund_rewards", { source: "sponsor", receipt_id: "sandbox-funding" }, 10n * NEAR + 5n * 10n ** 21n);
 
   // Earn through the real attested gameplay path, with no state patching.
@@ -185,7 +192,7 @@ try {
   passed("withdrawal: real U128 callback clears credit; repeated withdrawal and receipt cannot pay twice");
 
   await earn(1);
-  await call("pause", {}, 0n, "qgold.testnet");
+  await pauseGold();
   const beforeFail = await gold("get_state");
   const failedWithdrawal = await call("withdraw", {}, 1n, "rewards.testnet", player);
   assert.ok(failedWithdrawal.receipts_outcome.some((r) => r.outcome.executor_id === "qgold.testnet" && r.outcome.status.Failure));
@@ -200,11 +207,11 @@ try {
   assert.equal((await view("get_account", { account_id: "withdrawal.testnet" })).credit, "0");
   passed("withdrawal: actual mint failure restores credit, continued earning and retry pay exactly once");
 
-  const crash = fixture("crash-after-mint", 10);
+  const crash = fixture("crash-after-mint", 8);
   const before = await gold("get_state");
   await worker(crash.dbPath, { stopAfter: "claim_payout" });
   const progress = await view("get_payout_progress", { day_id: crash.tree.dayId, indexes: crash.tree.claims.map((c) => c.index) });
-  assert.deepEqual(progress.statuses, Array(10).fill("paid"));
+  assert.deepEqual(progress.statuses, Array(8).fill("paid"));
   inspectDb(crash.dbPath, (db) => {
     assert.equal(db.prepare("SELECT COUNT(*) n FROM payout_confirmations").get().n, 0);
     assert.ok(BigInt(pendingPayout(db, "player-0").yocto) > 0n);
@@ -212,7 +219,7 @@ try {
   const recovered = await worker(crash.dbPath, { clockOffset: 180_000 });
   assert.equal(recovered.filter((m) => m.type === "transaction" && m.method === "claim_payout").length, 0);
   inspectDb(crash.dbPath, (db) => {
-    assert.equal(db.prepare("SELECT COUNT(*) n FROM payout_confirmations").get().n, 10);
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM payout_confirmations").get().n, 8);
     assert.equal(pendingPayout(db, "player-0").yocto, "0");
   });
   assert.equal(BigInt((await gold("get_state")).minted_total) - BigInt(before.minted_total), crash.tree.total / UNIT);
@@ -220,10 +227,10 @@ try {
   await call("claim_payout", { day_id: crash.tree.dayId, claims: crash.tree.claims });
   assert.equal(BigInt((await gold("get_state")).minted_total) - BigInt(before.minted_total), crash.tree.total / UNIT);
   for (const c of crash.tree.claims) assert.equal(await balance(c.account_id), String(BigInt(c.amount_yocto) / UNIT));
-  passed("nightly: SIGKILL after a ten-leaf mint, restart and direct replay cause exactly ten payments");
+  passed("nightly: SIGKILL after a full eight-leaf batch, restart and direct replay cause exactly eight payments");
 
   const failed = fixture("failed-mint", 2, { date: "2026-11-04", coinsShare: 15n * 10n ** 17n });
-  await call("pause", {}, 0n, "qgold.testnet");
+  await pauseGold();
   const mintBeforeFailure = await gold("get_state");
   await worker(failed.dbPath, { stopAfter: "claim_payout" });
   assert.equal((await gold("get_state")).minted_total, mintBeforeFailure.minted_total);
@@ -346,7 +353,7 @@ try {
   await call('move_world_to_payout',move);await call('move_world_to_payout',move);
   assert.deepEqual(await view('get_date_totals',{date:worldDate}),dateCap);
   assert.deepEqual(await view('get_treasury'),closedWorld);
-  await call('pause',{},0n,'qgold.testnet');await call('claim_payout',{day_id:worldTree.dayId,claims:worldTree.claims});
+  await pauseGold();await call('claim_payout',{day_id:worldTree.dayId,claims:worldTree.claims});
   assert.deepEqual((await view('get_payout_progress',{day_id:worldTree.dayId,indexes:[0,1]})).statuses,['unclaimed','unclaimed']);
   assert.deepEqual(await view('get_treasury'),closedWorld);
   await call('unpause',{},0n,'qgold.testnet');

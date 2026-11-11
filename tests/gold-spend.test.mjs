@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { openDatabase, createPlayer } from "../server/database.mjs";
+import { openDatabase, createPlayer as newPlayer } from "../server/database.mjs";
 import { GOLD, distance } from "../server/domain.mjs";
 import { localDateStart } from "../server/spatial/calendar.mjs";
 import { createActorService } from "../server/actors/service.mjs";
@@ -11,6 +11,15 @@ import { createGoldSpend, lureHoursOpen, PREMIUM_EMOTES, GEAR } from "../server/
 import { createPlaces, placeText, PLACES } from "../server/gold-spend/places.mjs";
 import { placeRecord } from "../server/gold-spend/social.mjs";
 import { burnTotals, priceU, altarFee } from "../server/gold-spend/ledger.mjs";
+
+// New explorers start with 0 GOLD (no practice faucet). These tests exercise
+// the local practice paths, so each explorer gets a practice wallet here.
+const PRACTICE_WALLET_U = 120_000 * 1_000_000;
+function createPlayer(db, name, now) {
+  const p = newPlayer(db, name, now);
+  db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(PRACTICE_WALLET_U, p);
+  return p;
+}
 
 const DAY = "2026-11-02",
   dayStart = localDateStart(DAY, "Europe/Prague"),

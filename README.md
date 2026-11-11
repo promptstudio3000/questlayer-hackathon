@@ -53,11 +53,15 @@ Every account below is on NEAR **testnet**, existed on 3 November 2026 (checked 
 `rpc.testnet.near.org`) and matches the manifests in `public/native-*-testnet.json` and
 `public/testnet-deployment.json`. Click an id to open it on NearBlocks.
 
+The first-alpha game contract (`game.questlayer-dev-20261101.testnet`, source [contracts/game](contracts/game):
+coin batches, quests, `withdraw_reward`) was retired on 10 November 2026. The live game never called it; its account is
+being paused and deleted, so it is no longer linked. Its 1 November deployment transactions stay recorded in
+`public/testnet-deployment.json` as history.
+
 | Piece | Account (explorer link) | What to look for |
 | --- | --- | --- |
 | Player account factory (parent of every explorer) | [`play-20261101.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/play-20261101.questlayer-dev-20261101.testnet) | Your explorer is `<name-slug>.play-20261101.questlayer-dev-20261101.testnet`, shown in Profile → Advanced. Created after step 1, key held only by your device ([docs/RELAYER.md](docs/RELAYER.md)). |
 | Auras and avatars, NEP-171 ([contracts/collectibles](contracts/collectibles)) | [`nfts.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/nfts.questlayer-dev-20261101.testnet) | The mint from step 5 to your account, and equip calls. |
-| Game contract ([contracts/game](contracts/game)) | [`game.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/game.questlayer-dev-20261101.testnet) | Coin/zone buckets and claim batches (`public/testnet-deployment.json`). |
 | Gas sponsor, NEP-366 relayer | [`relay-20261101.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/relay-20261101.questlayer-dev-20261101.testnet) | Meta-transactions relayed for players. It never carries money. |
 | Rewards treasury: coins, zone prizes, XP ([contracts/rewards](contracts/rewards)) | [`questlayer-rewards-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-rewards-20261101b.testnet) | Published days and claims. Live books check: `/api/native/distribution` returns `status: verified`. |
 | Vault factory ([contracts/vault-factory](contracts/vault-factory)) | [`questlayer-vaults-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-vaults-20261101b.testnet) | Created the staking vault below. |
@@ -88,8 +92,8 @@ generations (`questlayer-dev-20261031`, `auratrail-dev-20261030`), so their acco
 
 ## Testnet now, mainnet honestly
 
-Everything runs on **testnet** today and nothing here has monetary value. GOLD on the map is practice GOLD unless
-the server publishes a funded day (then **Today's pot** shows the amounts and their source). Mainnet is a
+Everything runs on **testnet** today and nothing here has monetary value. In GPS play every map coin carries backed
+testnet QGOLD from the daily budget; the city demo earns XP only ([docs/MAP-REWARDS.md](docs/MAP-REWARDS.md)). Mainnet is a
 deliberate, gated step: [docs/MAINNET-PLAN.md](docs/MAINNET-PLAN.md) defines a minimal slice (collectibles,
 sponsored accounts and gas with daily caps, NEAR Social) behind `NEAR_NETWORK=mainnet` and `MAINNET_FEATURES`,
 with a go/no-go gate on 9 November 2026. The rewards treasury, vaults, market and creator money stay on testnet

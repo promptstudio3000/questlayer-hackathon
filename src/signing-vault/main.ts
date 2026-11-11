@@ -21,6 +21,7 @@ import {
   signOutOtherSessions,
 } from "../account-recovery.ts";
 import {
+  describeReview,
   needsProtection,
   trustedVaultMessage,
   validateVaultCall,
@@ -30,6 +31,7 @@ import {
   type VaultConfig,
 } from "./policy.ts";
 import { localVaultKeyStore, vaultRecord, vaultRequests } from "./store.ts";
+import { inboxKey, inboxOpen, inboxReveal, inboxSeal } from "./inbox.ts";
 const config: VaultConfig = validateVaultOrigins(
   await (await fetch("/vault-config.json")).json(),
 );
@@ -194,7 +196,6 @@ async function reviewed(request: Request, record: PlayerKeyRecord) {
     call,
     config,
     (memo) => api(`/gold/burn/intent?memo=${encodeURIComponent(memo)}`),
-    (id) => api(`/market/funding-intent?id=${encodeURIComponent(id)}`),
   );
   return { protected: protectedAction, review: call };
 }
@@ -295,6 +296,12 @@ async function execute(request: Request) {
     hash: base64(result.delegateHash),
   };
 }
+const INBOX_METHODS: Record<string, ((ctx: Parameters<typeof inboxKey>[0], input: Record<string, unknown>) => Promise<unknown>) | undefined> = {
+  inboxKey: (ctx, input) => inboxKey(ctx, { rotate: input.rotate === true }),
+  inboxSeal,
+  inboxOpen,
+  inboxReveal,
+};
 async function receive(request: Request) {
   const i = request.input;
   need(
@@ -339,6 +346,30 @@ async function receive(request: Request) {
       await store.put(DEVICE_KEY, { ...old!, accountId: String(i.accountId) });
       return publicRecord(await store.get(DEVICE_KEY));
     });
+  }
+  if (typeof request.method === "string" && Object.hasOwn(INBOX_METHODS, request.method)) {
+    // Encryption only: nothing is signed or moved, so no approval window.
+    const key = await store.get(DEVICE_KEY);
+    need(key?.accountId, "No secure account is bound on this device.");
+    need(config.contracts.social, "The inbox is not configured.");
+    const provider = new JsonRpcProvider({ url: config.rpcUrl });
+    return INBOX_METHODS[request.method]!(
+      {
+        accountId: key!.accountId!,
+        socialContract: config.contracts.social!,
+        view: async (args) => {
+          const r = (await provider.query({
+            request_type: "call_function",
+            account_id: config.contracts.social!,
+            method_name: "get",
+            args_base64: base64(new TextEncoder().encode(JSON.stringify(args))),
+            finality: "final",
+          })) as unknown as { result: number[] };
+          return JSON.parse(new TextDecoder().decode(Uint8Array.from(r.result)));
+        },
+      },
+      i,
+    );
   }
   const record = await store.get(DEVICE_KEY);
   const review =
@@ -416,79 +447,25 @@ if (location.pathname === "/approve") {
     intro.textContent =
       "Review the account, destination and amount. Approve only the action you started in QuestLayer.";
     const review = document.createElement("section"),
-      data = pending.review as Partial<VaultCall> & {
-        account?: string;
-        operation?: string;
-        keyToRemove?: string;
-        recipient?: string;
-        authorization?: string;
-      };
+      view = describeReview(pending.review, config);
+    if (view.warnings.length) {
+      const warnings = document.createElement("ul");
+      warnings.className = "warnings";
+      warnings.setAttribute("role", "alert");
+      for (const warning of view.warnings) {
+        const item = document.createElement("li");
+        item.textContent = warning;
+        warnings.append(item);
+      }
+      review.append(warnings);
+    }
     const fields = document.createElement("dl");
-    const pair = (label: string, value: string) => {
+    for (const [label, value] of view.lines) {
       const term = document.createElement("dt"),
         description = document.createElement("dd");
       term.textContent = label;
       description.textContent = value;
       fields.append(term, description);
-    };
-    const units = (value: string, decimals: number) => {
-      if (!/^[0-9]{1,39}$/.test(value)) return value;
-      const digits = value.padStart(decimals + 1, "0"),
-        fraction = digits.slice(-decimals).replace(/0+$/, "");
-      return `${digits.slice(0, -decimals)}${fraction ? `.${fraction}` : ""}`;
-    };
-    pair(
-      "Your account",
-      data.accountId ?? data.account ?? "Selected recovery passkey",
-    );
-    const action = data.actions?.[0];
-    if (action?.kind === "functionCall") {
-      const labels: Record<string, string> = {
-        ft_transfer: "Transfer tokens",
-        ft_transfer_call: "Fund a contract",
-        redeem: "Withdraw QGOLD",
-        withdraw: "Withdraw funds",
-        claim_exit: "Collect queued withdrawal",
-        nft_transfer: "Transfer collectible",
-        nft_approve: "Authorize collectible transfer",
-      };
-      pair(
-        "Action",
-        labels[action.methodName] ?? `Contract action: ${action.methodName}`,
-      );
-      pair("Contract", data.receiverId!);
-      if (typeof action.args.receiver_id === "string")
-        pair("Recipient", action.args.receiver_id);
-      if (typeof action.args.amount === "string")
-        pair(
-          "Amount",
-          data.receiverId === config.contracts.qgold
-            ? `${units(action.args.amount, 6)} QGOLD`
-            : `${action.args.amount} token base units`,
-        );
-      if (action.deposit !== "0" && action.deposit !== "1")
-        pair("Attached NEAR", units(action.deposit, 24));
-      if (typeof action.args.token_id === "string")
-        pair("Collectible", action.args.token_id);
-    } else if (action) {
-      pair(
-        "Action",
-        action.kind === "addKey" ? "Add account key" : "Remove account key",
-      );
-      pair("Public key", action.publicKey);
-    } else {
-      const labels: Record<string, string> = {
-        setupRecovery: "Create recovery passkey",
-        restoreRecovery: "Recover account",
-        revokeKey: "Remove device key",
-        revokeSessions: "Sign out other game sessions",
-      };
-      pair(
-        "Action",
-        labels[data.operation ?? ""] ?? "Authorize signed message",
-      );
-      if (data.keyToRemove) pair("Public key to remove", data.keyToRemove);
-      if (data.recipient) pair("Authorization recipient", data.recipient);
     }
     const details = document.createElement("details"),
       summary = document.createElement("summary"),

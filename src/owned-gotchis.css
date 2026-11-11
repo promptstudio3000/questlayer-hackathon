@@ -1,0 +1,15 @@
+/* Linked Aavegotchi wallet in the backpack (src/OwnedGotchis.tsx). */
+.owned-gotchis { display: grid; gap: 8px; margin: 0 0 12px; }
+.owned-gotchis h3 { margin: 0; font-size: 15px; display: flex; gap: 6px; align-items: baseline; }
+.owned-gotchis h3 span { color: var(--ink-secondary); font-weight: 600; font-size: 13px; }
+.owned-gotchi-row { display: flex; gap: 8px; margin: 0; padding: 0 0 4px; list-style: none; overflow-x: auto; scrollbar-width: thin; }
+.owned-gotchi-row button { display: grid; justify-items: center; gap: 2px; width: 84px; padding: 6px 4px; border: 1px solid var(--control-border); border-radius: 12px; background: var(--surface-soft); color: var(--ink); font: inherit; }
+.owned-gotchi-row button.selected { border: 2px solid var(--action); padding: 5px 3px; }
+.owned-gotchi-row button:disabled { opacity: 1; cursor: default; }
+.owned-gotchi-row img { width: 56px; height: 56px; border-radius: 8px; image-rendering: pixelated; }
+.owned-gotchi-row strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.owned-gotchi-row small { font-size: 11px; color: var(--ink-secondary); }
+.owned-gotchi-wearables { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 12px; border: 1px solid var(--control-border); border-radius: 12px; background: var(--surface-soft); color: var(--ink); font: inherit; font-size: 14px; text-align: start; }
+.owned-gotchi-wearables > span:nth-child(2) { flex: 1; min-width: 0; }
+.owned-gotchi-peek { display: flex; }
+.owned-gotchi-peek img { width: 28px; height: 28px; margin-inline-end: -6px; border-radius: 6px; background: var(--surface-raised); border: 1px solid var(--control-border); image-rendering: pixelated; }

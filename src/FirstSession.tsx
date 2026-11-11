@@ -159,7 +159,8 @@ export function FirstSessionCoach({
       <p className="sr-only" role="status" aria-live="polite">
         {celebration}
       </p>
-      {celebration && (
+      {/* After the last step the card already congratulates; a second banner repeated it. */}
+      {celebration && current && (
         <p className="first-session-celebration" aria-hidden="true">
           <Check size={16} weight="bold" /> {celebration}
         </p>

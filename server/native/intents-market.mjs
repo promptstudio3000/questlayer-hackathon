@@ -12,7 +12,12 @@ import {
   registerModuleSchema,
   ensureModuleVersion,
 } from "../schema-compatibility.mjs";
-import { assert } from "../domain.mjs";
+import { actions } from "near-api-js";
+import { assert, id } from "../domain.mjs";
+import { history } from "../database.mjs";
+import { AURA_CATALOG } from "../aura-catalog.mjs";
+import { editionOf, formatNear } from "../npc/trader-pricing.mjs";
+import { NETWORK } from "./network.mjs";
 import {
   auraOrderTerms,
   checkWithdrawal,
@@ -67,13 +72,21 @@ const txHash = (r) => r?.transaction?.hash || r?.transaction_outcome?.id || null
 const failed = (r) =>
   Boolean(r?.status?.Failure) ||
   (r?.receipts_outcome || []).some((o) => o.outcome?.status?.Failure);
+const UNIT = NETWORK === "mainnet" ? "NEAR" : "test NEAR";
+const auraLabel = (tokenId) => {
+  const edition = editionOf(tokenId);
+  const name = AURA_CATALOG.find((e) => e.id === edition)?.name || edition || "Aura";
+  return `${name} #${String(tokenId).split(":")[2] ?? "?"}`;
+};
 
 export class IntentsMarket {
   /**
    * @param verifier NativeContractReader for the verifier account
    * @param solver   service account ({account, accountId}) that pays gas, or null
+   * @param subsidyBudget the service-wide SubsidyBudget (server/relayer/subsidy-budget.mjs);
+   *                 every solver transaction reserves from it and is refused once it is used up
    */
-  constructor(db, { verifier, nftContract, wnear, solver = null, manifest = {}, now = () => Date.now() }) {
+  constructor(db, { verifier, nftContract, wnear, solver = null, subsidyBudget = null, manifest = {}, now = () => Date.now() }) {
     ensureModuleVersion(db, INTENTS_MARKET_SCHEMA);
     this.db = db;
     this.verifier = verifier;
@@ -81,6 +94,7 @@ export class IntentsMarket {
     this.nftContract = nftContract;
     this.wnear = wnear;
     this.solver = solver;
+    this.subsidyBudget = subsidyBudget;
     this.manifest = manifest;
     this.now = now;
     this.locks = new Set();
@@ -234,21 +248,34 @@ export class IntentsMarket {
 
   async execute(signedList, gas) {
     assert(this.solver, "The intents solver is not configured on this host.", 503);
+    assert(this.subsidyBudget, "The intents solver has no sponsorship budget on this host.", 503, "SUBSIDY_DISABLED");
     const simulation = await this.verifier.view("simulate_intents", { signed: signedList }, true);
     assert(
       !simulation.invariant_violated,
       "The verifier would not settle this trade (unmatched amounts).",
       409,
     );
-    const result = await this.solver.account.callFunctionRaw({
-      contractId: this.verifierId,
-      methodName: "execute_intents",
-      args: { signed: signedList },
-      gas,
-      deposit: 0n,
-      waitUntil: "FINAL",
-    });
+    // The solver's gas is treasury spend like any relayed action: reserve it
+    // from the shared daily budget (throws SUBSIDY_BUDGET once used up). An
+    // unknown outcome keeps its reservation; a final one is settled at its fees.
+    // Signing happens before anything is sent: if it fails, nothing reached
+    // the chain and the reservation goes back to the day's budget.
+    const reservation = id("intents");
+    this.subsidyBudget.reserve(reservation, { kind: "intents", accountId: this.solver.accountId, principal: "0" });
+    const { account } = this.solver;
+    let signedTx;
+    try {
+      signedTx = await account.createSignedTransaction({
+        receiverId: this.verifierId,
+        actions: [actions.functionCall("execute_intents", { signed: signedList }, BigInt(gas), 0n)],
+      });
+    } catch (error) {
+      this.subsidyBudget.release(reservation);
+      throw error;
+    }
+    const result = await account.provider.sendTransactionUntil(signedTx, "FINAL");
     const hash = txHash(result);
+    this.subsidyBudget.settle(reservation, hash, result);
     assert(!failed(result), `The verifier rejected the intents (transaction ${hash}).`, 409);
     return hash;
   }
@@ -271,6 +298,33 @@ export class IntentsMarket {
         }),
         this.now(),
       );
+  }
+
+  /**
+   * A History row for the explorer behind a verifier account, so a trade the
+   * solver settled shows in History and the On chain feed with its
+   * transaction. Accounts no explorer has linked (NPC traders, outside
+   * wallets) get none. Booking never undoes a settlement that already
+   * happened on chain.
+   */
+  bookFor(accountId, kind, title, meta) {
+    try {
+      const link = this.db.prepare("SELECT player_id FROM wallet_links WHERE account_id=?").get(accountId);
+      if (link) history(this.db, link.player_id, kind, title, 0, { ...meta, accountId, venue: "near-intents", network: NETWORK });
+    } catch {
+      /* the trade stands; only its History line is missing */
+    }
+  }
+  /** The seller's and the buyer's History rows for one settled book trade. */
+  bookTrade(hash, { maker, taker, makerTerms, takerTerms, orderId }) {
+    const sells = makerTerms.side === "sell";
+    const seller = sells ? maker.signerId : taker.signerId,
+      buyer = sells ? taker.signerId : maker.signerId,
+      gross = sells ? takerTerms.gross : makerTerms.gross,
+      label = auraLabel(makerTerms.tokenId);
+    const meta = { txHash: hash, orderId, tokenId: makerTerms.tokenId, price: makerTerms.price };
+    this.bookFor(seller, "intents-trade", `Sold ${label} for ${formatNear(makerTerms.price)} ${UNIT}`, { ...meta, side: "sell" });
+    this.bookFor(buyer, "intents-trade", `Bought ${label} for ${formatNear(gross)} ${UNIT}`, { ...meta, side: "buy", paid: String(gross) });
   }
 
   /** Verifies two signed Aura token_diffs and checks they are exact opposites. */
@@ -311,6 +365,7 @@ export class IntentsMarket {
         .prepare("UPDATE intents_orders SET state='filled', settlement_tx=?, closed_at=?, checked_at=? WHERE id=?")
         .run(hash, now, now, row.id);
       this.recordTrade(hash, { ...p, orderId: row.id });
+      this.bookTrade(hash, { ...p, orderId: row.id });
       return { ...this.view(this.row(row.id)), transactionHash: hash };
     } finally {
       this.locks.delete(row.id);
@@ -339,6 +394,10 @@ export class IntentsMarket {
     this.db
       .prepare("INSERT OR IGNORE INTO intents_settlements(tx_hash,verifier,kind,accounts,detail,recorded_at) VALUES(?,?,'withdraw',?,?,?)")
       .run(hash, this.verifierId, JSON.stringify([body.signerId]), JSON.stringify({ intents }), this.now());
+    const auras = intents.filter((i) => i.intent === "nft_withdraw").length;
+    const near = intents.filter((i) => i.intent !== "nft_withdraw").reduce((sum, i) => sum + BigInt(i.amount), 0n);
+    const parts = [auras ? `${auras} Aura${auras === 1 ? "" : "s"}` : null, near ? `${formatNear(near)} ${UNIT}` : null].filter(Boolean);
+    this.bookFor(body.signerId, "intents-withdraw", `Withdrew ${parts.join(" and ")} from NEAR Intents`, { txHash: hash, auras, amount: near.toString() });
     // Withdrawing a listed Aura closes its open orders.
     void this.reconcile({ maker: body.signerId }).catch(() => {});
     return { transactionHash: hash };

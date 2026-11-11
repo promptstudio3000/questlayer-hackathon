@@ -21,7 +21,8 @@ import { burnGold, ensureGoldSpend, GOLD_SPEND, priceU } from "./ledger.mjs";
 
 const DAY = 86_400_000;
 export const PLACES = GOLD_SPEND.places;
-const THREAD_ID = /^place_[a-f0-9-]{36}$/;
+// Test-world topics and shouts (server/test-seed) carry "seed-pt-" ids.
+const THREAD_ID = /^(?:place_[a-f0-9-]{36}|seed-pt-[a-z0-9-]{1,40})$/;
 const POST_ID = /^post_[a-f0-9-]{36}$/;
 const REPORT_REASONS = ["spam", "harassment", "unsafe-place", "privacy", "other"];
 // A Czech house number ("Husova 1234/12"), a flat or a "street + number"

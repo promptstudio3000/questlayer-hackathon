@@ -252,12 +252,24 @@ export function playerView(db, playerId) {
         )
         .all(playerId),
     ),
-    wallets: db
-      .prepare(
-        "SELECT account_id,verified_at FROM wallet_links WHERE player_id=?",
-      )
-      .all(playerId),
+    wallets: linkedWallets(db, playerId),
   };
+}
+// The explorer's own (managed) account comes first: every screen defaults to the
+// first linked account, and that account signs without a wallet popup.
+export function linkedWallets(db, playerId) {
+  const managed = db
+    .prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='managed_accounts'",
+    )
+    .get();
+  return db
+    .prepare(
+      managed
+        ? "SELECT w.account_id,w.verified_at FROM wallet_links w LEFT JOIN managed_accounts m ON m.account_id=w.account_id AND m.player_id=w.player_id AND m.state='ready' WHERE w.player_id=? ORDER BY (m.account_id IS NULL), w.rowid"
+        : "SELECT account_id,verified_at FROM wallet_links WHERE player_id=? ORDER BY rowid",
+    )
+    .all(playerId);
 }
 // Existing commitments survive publication shutdown. This read creates no creator
 // tables and changes neither cumulative earned XP nor inventory/reward grants.
@@ -294,15 +306,10 @@ export function createPlayer(db, name, now = Date.now()) {
   const player = id("player");
   db.prepare(
     "INSERT INTO players(id,name,gold_u,created_at) VALUES (?,?,?,?)",
-  ).run(player, name, 120_000 * GOLD, now);
-  history(
-    db,
-    player,
-    "welcome",
-    "Welcome to your first adventure",
-    120_000 * GOLD,
-    { source: "demo-faucet", network: "demo" },
-  );
+  ).run(player, name, 0, now);
+  // A new explorer starts with no GOLD: every GOLD in the game is backed
+  // QGOLD earned on the map (no practice faucet).
+  history(db, player, "welcome", "Welcome to your first adventure", 0, {});
   db.prepare("INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?,?)").run(
     id("item"),
     player,

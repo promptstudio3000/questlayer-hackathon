@@ -1,0 +1,220 @@
+/* Encrypted player inbox (src/inbox/Inbox.tsx), inside the shared game dialog. */
+.inbox {
+  width: min(440px, calc(100vw - 48px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inbox-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inbox-header h2 {
+  margin: 0;
+  font-size: 20px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inbox-icon {
+  min-width: 48px;
+  min-height: 48px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.inbox h3 {
+  margin: 12px 0 4px;
+  font-size: 16px;
+}
+.inbox p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+.inbox-note {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  color: #5b3a8c;
+}
+.inbox-note svg {
+  flex: none;
+  margin-top: 2px;
+}
+.inbox-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inbox-rows li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inbox-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 2px solid #e2d4ff;
+  background: #fff;
+  color: #2c0a56;
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+.inbox-row span {
+  font-size: 14px;
+  color: #6b4fa0;
+}
+.inbox-messages {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(48vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.inbox-messages li {
+  max-width: 82%;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: #f1eaff;
+  color: #2c0a56;
+  align-self: flex-start;
+}
+.inbox-messages li.mine {
+  align-self: flex-end;
+  background: #8348ff;
+  color: #fff;
+}
+.inbox-messages li p {
+  margin: 0;
+  font-size: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.inbox-messages li small {
+  font-size: 12px;
+  color: inherit;
+  opacity: 0.85;
+}
+.inbox-messages li.mine small {
+  color: #fff;
+}
+.inbox-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inbox-compose label {
+  font-size: 14px;
+}
+.inbox-compose textarea {
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid #c9b3ff;
+  resize: vertical;
+  min-height: 72px;
+}
+.inbox-compose .over {
+  color: #b00060;
+}
+.inbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.inbox button.primary,
+.inbox-actions button,
+.inbox-callout button,
+.inbox-report button {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 2px solid #8348ff;
+  background: #fff;
+  color: #2c0a56;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.inbox button.primary {
+  background: #8348ff;
+  color: #fff;
+}
+.inbox button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.inbox button.danger {
+  border-color: #c82ac2;
+}
+.inbox-callout {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f6f0ff;
+}
+.inbox-report {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.inbox-link {
+  margin-left: 12px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.inbox-footer {
+  margin-top: 8px;
+  justify-content: flex-start;
+}
+.inbox-pill {
+  position: fixed;
+  z-index: 40;
+  top: calc(env(safe-area-inset-top, 0px) + 72px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: #8348ff;
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(44, 10, 86, 0.35);
+  cursor: pointer;
+}

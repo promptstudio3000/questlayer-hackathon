@@ -88,10 +88,41 @@ be registered on the token (`storage_deposit`); the game server pre-registers
 players, creators and the treasury.
 
 `withdraw_for(account_id)` — anyone, no deposit, ≥ 60 Tgas: pushes that account's whole credit
-to it. The escrow first calls `storage_deposit(account_id, registration_only)` on the token from
-its own NEAR balance (the token refunds it when the account is registered already), then
-`ft_transfer`, then `on_withdraw`. The tokens can only go to the credit's owner; the game server
-calls it after every payout.
+to it. For a worker or creator who earned a task or Secret payout the escrow first calls
+`storage_deposit_sponsored(account_id)` on the token with the 0.0025 NEAR lifetime grant from its
+own NEAR balance (the token refunds it when the account is registered or granted already), then
+`ft_transfer`, then `on_withdraw`. Refunds and conditional sends are pushed with a plain
+`ft_transfer`: their recipient registers on the token themself (the game pre-registers its players),
+so a send to a fresh id cannot spend the escrow's NEAR. The tokens can only go to the credit's
+owner; the game server calls it after every payout.
+
+## Native storage deposits (funders pay for their agreements)
+
+The funder of a task, Secret or send holds a native NEAR deposit on the escrow:
+
+- `storage_deposit({account_id?, grant?})` + NEAR — anyone may top up anyone. A deposit made by
+  someone else, or with `grant: true`, is a **grant**: it pays for agreements but is never
+  withdrawable. The game's relayer sponsors players' deposits with `grant: true` (a relayed
+  NEP-366 call arrives with the player as predecessor), on a ladder of 0.05 NEAR steps up to
+  0.5 NEAR (`server/relayer/policy.mjs`), only for the signer's own account and only while the
+  escrow does not already cover the amount; so sponsoring storage never hands out NEAR. The first
+  deposit of an account also pays 256 bytes for its own record.
+- `storage_withdraw({amount?})` with 1 yocto — returns what is the account's own and not locked
+  (`withdrawable`); works while paused.
+- `storage_balance_of(account_id)` → `total`, `available`, `withdrawable`, `granted`, `locked`,
+  `locked_bytes`.
+- `is_earned(account_id)` → whether `withdraw_for` registers this account on the token (paid as a
+  worker or a Secret creator). The market worker holds sends and refunds to accounts the token does
+  not know yet (`recipient_unregistered`, re-checked every 15 min) instead of burning retries.
+
+Opening an agreement needs its whole storage headroom available in the funder's deposit (a one-slot
+task about 5.9 KB ≈ 0.059 NEAR, a Secret or send 4.6 KB ≈ 0.046 NEAR at 1e19 yocto per byte;
+`get_storage_reserve()` prints the numbers). Of that, 1 KiB (`RECORD_BYTES`, ≈ 0.01 NEAR) is consumed
+for good because the record is permanent, 256 bytes more (`ENTRY_BYTES`) for every paid worker and
+every dispute entry, and the rest is locked until the agreement closes and then becomes available
+again. The escrow's own balance therefore no longer pays for other people's agreements: sixty
+one-unit, 365-day sends from three sybils cost them about 3 NEAR of deposits and 0.6 NEAR for good,
+instead of blocking every new task for free.
 
 ## Safety invariants
 
@@ -102,7 +133,7 @@ calls it after every payout.
 - Funds only move to the funder (refund) or the named counterparty/treasury per the rules above.
 - Paused blocks every call except views, admin calls and the `on_withdraw` callback; deposits are refunded.
 - Bounds: id ≤ 64 bytes, ≤ 50 slots, disputes plus resolved disputes per task ≤ 2 × slots + 4 (at most 100), ≤ 20 open escrows per funding account, deadlines ≤ 365 days.
-- Storage reserve: each open agreement reserves native storage headroom sized by what it can still add (a one-slot task about 5.9 KB, a Secret or send 4.6 KB, a 50-slot task 42.5 KB); the sum is kept under its own key and released on close. A new agreement is refused (the token refunds it) while the escrow's NEAR balance cannot cover current storage plus all reservations. Monitor `get_storage_reserve().free_yocto` and top up before it nears zero.
+- Storage reserve: each open agreement reserves native storage headroom sized by what it can still add (a one-slot task about 5.9 KB, a Secret or send 4.6 KB, a 50-slot task 42.5 KB), taken from the funder's own native deposit (see "Native storage deposits"); the locked sum is kept under its own key and released on close. A new agreement is refused (the token refunds it) while its funder's deposit cannot cover it. The escrow's balance must still cover current storage, the locked headroom, the funders' unlocked deposits and the sponsored registration of each payout; monitor `get_storage_reserve().free_yocto` and top up before it nears zero.
 - QGOLD sent with plain `ft_transfer` (not `ft_transfer_call`) is not accounted and cannot be recovered.
 
 ## Views
@@ -127,4 +158,8 @@ operator) and `questlayer-escrow-pub-20261105.testnet` (publisher = moderator = 
 registers the escrow on QGOLD, gives the publisher account a function-call key for the escrow's
 release/refund methods only (`.data/escrow-publisher.json`), deletes every escrow access key, and
 smoke-tests fund → publisher release → `withdraw_for`. The escrow keeps ~3 NEAR for its own storage
-and for registering new payees on the token.
+and for registering earning payees on the token (0.0025 NEAR each). The smoke test gives the operator
+a native `storage_deposit` on the escrow before its send and registers the publisher on the token
+(a send recipient is not registered by the escrow). In the game the market adds the funder's missing
+storage deposit to every funding response (`docs/TASK-MARKET.md`). This candidate has not been
+deployed; the release hash comes from the reproducible CI build.

@@ -1,7 +1,10 @@
 import { getOrPrepareCityPlan } from "./world-planner.mjs";
+import { demoWorldSuffix } from "./demo-zones.mjs";
+import { placeTier, playerStakeTier } from "./staker-gates.mjs";
 import { preparedActivityWorld, assertGlobalActivityReady } from "./global-activities.mjs";
 import { decorateGlobalRewardWorld,globalPrizeForQuest } from './global-rewards.mjs';
 import { localDateBounds } from "./spatial/calendar.mjs";
+import { isInCzechia } from "./map-rewards/czechia.mjs";
 import tzLookup from "tz-lookup";
 import { latLngToCell, cellToLatLng, cellToBoundary } from "h3-js";
 import {
@@ -11,8 +14,6 @@ import {
   GOLD,
   assert,
   dayKey,
-  positionTier,
-  tierFor,
   levelFor,
 } from "./domain.mjs";
 import { chestAuraAvailable } from "./aura-catalog.mjs";
@@ -225,12 +226,27 @@ export async function ensureWorld(
   location = HOME,
   arena = true,
   now = Date.now(),
-  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR } = {},
+  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR, czechiaFallback = process.env.GLOBAL_CZECHIA_FALLBACK !== "off" } = {},
 ) {
   // An installed global day is read-only on player arrival. Plzen retains its
   // reviewed citywide six-slot world; the arena remains its existing simulation.
-  if (globalActivities && !arena && cityFor(location)?.id !== "plzen")
-    return preparedActivityWorld(db, cellAt || location, now);
+  if (globalActivities && !arena && cityFor(location)?.id !== "plzen") {
+    const at = cellAt || location;
+    try {
+      return preparedActivityWorld(db, at, now);
+    } catch (error) {
+      // Czechia keeps its street world (POI quests, landmark clues, errand
+      // targets, coins) whenever no ready prepared day covers the spot, so a
+      // missed daily manifest never empties the country. Elsewhere the
+      // prepared catalog stays the only source (docs/GLOBAL-WORLD-PREPARATION.md).
+      if (
+        error?.code !== "GLOBAL_COVERAGE_UNAVAILABLE" ||
+        !czechiaFallback ||
+        !isInCzechia(at.lat, at.lng)
+      )
+        throw error;
+    }
+  }
   const world = await ensureBaseWorld(db, location, arena, now, { mapData });
   if (!world.cityId && arena) return world;
   // A searched spot must lie in the same city; otherwise the player's own cell.
@@ -276,7 +292,9 @@ async function ensureBaseWorld(
       : latLngToCell(location.lat, location.lng, 7);
   const timezone = city?.timezone || tzLookup(...cellToLatLng(region)),
     day = dayKey(now, timezone),
-    worldId = `demo:${arena ? "arena-" : ""}${region}:${day}:v2`;
+    // A compact demo day (DEMO_ZONES) is its own world, never today's
+    // citywide one with different zones.
+    worldId = `demo:${arena ? "arena-" : ""}${region}:${day}:v2${city ? demoWorldSuffix(city.id) : ""}`;
   const found = db
     .prepare("SELECT manifest FROM worlds WHERE id=?")
     .get(worldId);
@@ -325,6 +343,7 @@ async function ensureBaseWorld(
       id: worldId,
       version: 2,
       blueprintId: plan?.id || null,
+      ...(plan?.demoZones ? { demoZones: plan.demoZones } : {}),
       day,
       region,
       cityId: city?.id || null,
@@ -555,14 +574,7 @@ export function worldView(db, id, player = null, options = {}) {
     visibleZones = zones.filter((z) => zoneInBounds(z, query.bounds)),
     visibleIds = new Set(visibleZones.map((z) => z.id)),
     zoneById = new Map(zones.map((z) => [z.id, z]));
-  const tier = player
-    ? tierFor(
-        db
-          .prepare("SELECT * FROM positions WHERE player_id=?")
-          .all(player)
-          .reduce((n, p) => n + positionTier(p, now), 0),
-      )
-    : 1;
+  const tier = placeTier(db, player);
   const eligible = new Set(
     quests
       .filter(
@@ -626,7 +638,7 @@ export function worldView(db, id, player = null, options = {}) {
     cityZoneCount: zones.length,
     visibleZoneCount: visibleZones.length,
     openEligibleCount: eligible.size,
-    playerTier: tier,
+    playerTier: playerStakeTier(db, player),
     ...(paused.day ? { operatorPause: { reason: paused.day.reason } } : {}),
     coins: (paused.day ? [] : page)
       .filter((p) => !pointClosed(closed, p))
@@ -711,4 +723,46 @@ export function expireWorlds(db, now = Date.now()) {
       db.prepare("INSERT INTO daily_jobs VALUES (?,?)").run(key, now);
     }
   });
+}
+
+// Coins still on the map for the compact "Today's pot" row: unclaimed coins of
+// this world within 10 km of the explorer, and across every open world. Later
+// map-reward waves stay hidden until they open, so they are not counted.
+export const COIN_COUNT_RADIUS_M = 10_000;
+const globalCoinCache = { at: 0, value: 0 };
+function mapCoinMetaExists(db) {
+  return !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='map_coin_meta'").get();
+}
+export function coinCounts(db, worldId, at, now = Date.now()) {
+  const meta = mapCoinMetaExists(db);
+  const visible = meta
+    ? "AND NOT EXISTS(SELECT 1 FROM map_coin_meta m WHERE m.coin_id=c.id AND m.opens_at>?)"
+    : "";
+  let near = null;
+  if (worldId && at && Number.isFinite(at.lat) && Number.isFinite(at.lng)) {
+    const dLat = COIN_COUNT_RADIUS_M / 111320,
+      cosLat = Math.max(0.01, Math.cos((at.lat * Math.PI) / 180)),
+      dLng = dLat / cosLat;
+    const rows = db
+      .prepare(
+        `SELECT c.lat,c.lng FROM coins c WHERE c.world_id=? AND c.claimant IS NULL AND c.lat BETWEEN ? AND ? AND c.lng BETWEEN ? AND ? ${visible}`,
+      )
+      .all(worldId, at.lat - dLat, at.lat + dLat, at.lng - dLng, at.lng + dLng, ...(meta ? [now] : []));
+    near = rows.filter(
+      (c) =>
+        ((c.lat - at.lat) * 111320) ** 2 + ((c.lng - at.lng) * 111320 * cosLat) ** 2 <=
+        COIN_COUNT_RADIUS_M ** 2,
+    ).length;
+  }
+  // Every open world: one cached count a minute, the map polls far more often.
+  if (now - globalCoinCache.at > 60_000 || globalCoinCache.db !== db) {
+    globalCoinCache.value = db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM coins c WHERE c.claimant IS NULL ${visible} AND NOT EXISTS(SELECT 1 FROM daily_jobs j WHERE j.job_key='expire:'||c.world_id)`,
+      )
+      .get(...(meta ? [now] : [])).n;
+    globalCoinCache.at = now;
+    globalCoinCache.db = db;
+  }
+  return { radiusM: COIN_COUNT_RADIUS_M, near, global: globalCoinCache.value };
 }

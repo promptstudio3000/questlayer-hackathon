@@ -1,8 +1,8 @@
 // Map rewards in a world (docs/MAP-REWARDS.md): when the first player opens
 // an H3 cell on a day, its coins, zone prizes and pioneer bonus are drawn
 // from the day plan and written once. Every coin is backed QGOLD of the same
-// value (pioneer coins count twice). The demo arena gives XP only, and cells
-// outside the plan (outside Czechia) get no coins.
+// value (pioneer coins count twice). The city demo pays the same backed
+// coins, and cells outside the plan (outside Czechia) get no coins.
 import { mapChainEnabled, mapChainStatus } from "./chain.mjs";
 import {
   latLngToCell,
@@ -244,13 +244,13 @@ export async function materializeCellRewards(
       .prepare("SELECT 1 FROM map_cell_drops WHERE day=? AND cell=?")
       .get(day, cell);
     const pioneer = !!leaf?.pioneer && firstToday && !current.arena;
-    // Backed coins only: the demo arena gives XP-only coins, a cell outside
-    // the plan gets none.
+    // Backed coins only: a cell outside the plan gets none. The city demo
+    // behaves like the real map (only movement differs): its coins carry the
+    // same backed value and are paid in QGOLD, at a fixed count per cell.
     const count = current.arena ? CELL_COINS : leaf?.coins || 0;
-    const valueU =
-      current.arena || !leaf
-        ? 0
-        : (plan.summary.coinValueU || 0) * (pioneer ? PIONEER_MULT : 1);
+    const valueU = !leaf
+      ? 0
+      : (plan.summary.coinValueU || 0) * (pioneer ? PIONEER_MULT : 1);
     // Zones first, so coins gather around them.
     const zoneIds = promoteCellZones(
       db,

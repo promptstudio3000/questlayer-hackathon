@@ -25,7 +25,7 @@ import {
   runMapChainWorker,
 } from "../map-rewards/chain.mjs";
 import { PAYOUT_CHAIN_METHODS } from "../payouts/payout-tree.mjs";
-import { payoutsEnabled, runPayoutWorker } from "../payouts/worker.mjs";
+import { payoutRoundMs, payoutsEnabled, runPayoutWorker } from "../payouts/worker.mjs";
 import { WORLD_CHAIN_METHODS,runConfiguredGlobalRewards } from '../global-reward-worker.mjs';
 const METHODS = ["publish_day", "close_day", "claim", "maintain_vault"];
 // The key is the native set alone, the native set plus the map-day methods
@@ -373,13 +373,22 @@ export async function runRewardWorker(
           ) {
             if (BigInt(state.game_credit) > 0n) action = "flush_game";
             else if (state.exit_requested) action = "advance";
-            else if (BigInt(state.principal) > 0n)
-              action =
-                BigInt(state.staked) + BigInt(state.unstaked) >
-                  BigInt(state.high_water_basis) + 10n ** 18n &&
-                state.contribution_bps > 0
-                  ? "harvest"
-                  : "refresh";
+            else if (BigInt(state.principal) > 0n) {
+              // v3 vaults harvest only a fee of at least `min_harvest` and
+              // only after their cooldown; older states carry neither field.
+              const gain =
+                BigInt(state.staked) +
+                BigInt(state.unstaked) -
+                BigInt(state.high_water_basis);
+              const fee =
+                (gain * BigInt(state.contribution_bps)) / 10000n;
+              const worthIt =
+                gain > 10n ** 18n &&
+                state.contribution_bps > 0 &&
+                fee >= BigInt(state.min_harvest ?? "0") &&
+                BigInt(state.epoch) >= BigInt(state.next_harvest_epoch ?? "0");
+              action = worthIt ? "harvest" : "refresh";
+            }
           }
           if (action) {
             const transactionHash = await sendOwned("maintain_vault", {
@@ -484,6 +493,7 @@ export function startRewardWorker(
           await runPayoutWorker(native.db, {
             call: send,
             view: (method, args) => native.view(method, args, true),
+            roundMs: payoutRoundMs(),
           }).catch((error) =>
             console.error("Payout worker:", String(error.message).slice(0, 200)),
           );

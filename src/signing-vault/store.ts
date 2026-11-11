@@ -1,10 +1,21 @@
 import type { KeyStore, PlayerKeyRecord } from "../player-key.ts";
+// The game recognises this exact text (src/DeviceKeys.tsx) and shows the
+// player how to continue instead of failing silently.
+export const STORAGE_BLOCKED = "Secure account storage is blocked in this browser.";
 function database(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("questlayer-secure-account", 1);
+    // A browser that blocks third-party site data throws on access (Safari:
+    // SecurityError) or fails the open request.
+    let request: IDBOpenDBRequest;
+    try {
+      request = indexedDB.open("questlayer-secure-account", 1);
+    } catch {
+      reject(Error(STORAGE_BLOCKED));
+      return;
+    }
     request.onupgradeneeded = () => request.result.createObjectStore("records");
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => reject(Error(STORAGE_BLOCKED));
   });
 }
 export async function vaultRecord<T>(

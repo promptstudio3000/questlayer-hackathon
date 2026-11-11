@@ -49,10 +49,11 @@ new allowlist, a review and Lubos's go.
 
 | Call | What it does |
 | --- | --- |
-| `rebalance(token_id)` | Stables. Supplies idle above the buffer target (queue + `buffer_bps`, default 20 %) to Rhea if Rhea accepts deposits and utilization < `max_util_bps` (default and maximum 95 %, same as `RHEA_MAX_UTILIZATION`). Otherwise withdraws from Rhea up to Rhea's free liquidity to refill the buffer. With the Rhea strategy off, it drains Rhea. |
+| `rebalance(token_id)` | Stables. Supplies idle above the buffer target (queue + `buffer_bps`, default 20 %) to Rhea if Rhea accepts deposits and utilization < `max_util_bps` (default and maximum 95 %, same as `RHEA_MAX_UTILIZATION`). Otherwise withdraws from Rhea up to Rhea's free liquidity to refill the buffer. With the Rhea strategy off, it drains Rhea. It never supplies while a Rhea withdrawal is still inbound: `confirm_inbound` judges that withdrawal from our Rhea supply, and a supply of half the amount or more would make a real transfer look bounced and strand it. |
 | `confirm_inbound(token_id)` | After 30 blocks, reads our Rhea supply: if it is still below the pre-withdrawal level minus half the amount, Rhea's transfer went through and the tokens are credited; if it is back up, the transfer bounced and nothing is credited. Our own token balance is never used (donations and refunds distort it). |
 | `advance(token_id)` | Pays up to 5 queued withdrawals, oldest first. |
 | `harvest(token_id)` | Sends the surplus above principal + `safety_bps` (default 0.1 %) to the treasury. LSTs: by today's price; stables: idle + Rhea supply, paid from idle only and never from money the queue needs. |
+| `reconcile_idle(token_id)` | Safety net for tokens the contract holds but the accounting lost (a transfer sent without `msg`, or a Rhea withdrawal once misjudged). Reads the token's `ft_balance_of(vault)` and can only raise `idle` up to it, so lost tokens become payable principal first and surplus second. It runs only while nothing is in flight (no keeper operation, no outgoing payout, no inbound Rhea transfer), and a deposit or a payout that settles during the read cancels it because the read is stale. |
 | `reset_op(token_id)` | Frees a keeper slot whose callback never ran, after 15 min. |
 
 One keeper operation runs per token at a time; each read callback checks its nonce. Payment callbacks settle the
@@ -74,9 +75,53 @@ reviewed upgrade path).
 
 - Unaudited; small caps (LST 100 NEAR per token, 10 per account; stables 10 000 per token, 1 000 per account).
 - Rhea risk (bad debt, paused withdrawals) can delay or reduce stable principal. The queue waits for liquidity.
-- At most 1 000 positions in total (the contract pays their storage, about 2 NEAR); after that new accounts are
-  refunded. A NEP-145 storage deposit replaces this before mainnet.
+- At most 1 000 positions in total; the contract pays their storage. A full position (16 tranches) measures
+  about 550 B with its key and trie overhead and its queue entry up to 180 B, so the reserve is about 0.007 NEAR
+  per position and 1 000 positions need about 7 NEAR (the earlier "200 B, about 2 NEAR" estimate was wrong;
+  the unit test `position_storage_estimate_covers_a_full_position` pins the measured size). `get_config`
+  reports `position_bytes`, `queue_entry_bytes` and `storage_reserve_ok`. When the balance can no longer pay
+  for one more full position and every open position's queue entry, deposits are refused and refunded
+  ("Vault storage reserve exhausted") until the operator tops the account up; withdrawals keep working. A
+  NEP-145 storage deposit replaces this before mainnet.
+- A position record is kept (empty) while its payout is in flight and removed only when the payout succeeds,
+  so a failed payout restores the player's balance into existing storage and never has to allocate inside a
+  callback; `get_position` hides such records.
 - If a keeper slot is reset while a Rhea withdrawal callback is pending, two withdrawals can share one
   `confirm_inbound`; the stricter threshold is kept. This needs a callback delayed over 15 minutes.
-- Tokens sent without `msg = "deposit"` (plain `ft_transfer`) are not tracked and stay in the contract.
+- Tokens sent without `msg = "deposit"` (plain `ft_transfer`) are not tracked until someone calls
+  `reconcile_idle`; they then count as idle (backing principal first, surplus second) and are never
+  attributed to a player.
 - LST surplus is skimmed in full; the player gets the deposit's NEAR value back, not the LST growth.
+
+## Upgrading the live vault (prepared 9 November 2026, not yet run)
+
+`questlayer-yield-20261102.testnet` holds live stNEAR and USDC deposits. The 9 November fixes (H4, M5)
+are a code-only upgrade: the contract has no `migrate` method, and the Borsh layouts of `YieldVault`,
+`Token`, `Position` and `QueueEntry` are unchanged (`reconcile_idle` reuses `op` with a new value).
+`scripts/upgrade-yield-vault-testnet.mjs` proves this on the account instead of assuming it. Dry run
+by default, `--execute` to send, testnet only (`--network testnet` required):
+
+1. **Pre-flight.** The WASM equals the pin in `contracts/wasm-sha256.json` (Docker build or
+   `--wasm-dir` with the CI artifact), drops no method of the live code and exports no `migrate`;
+   the live code hash equals the manifest; no token has a keeper operation, outgoing payout, inbound
+   Rhea withdrawal or pending LST read; token principal and queued equal the sum of the positions;
+   the balance still meets the new storage reserve rule with the new code size.
+2. **Snapshot** (one block height, written to `output/qa/yield-vault-upgrade/`): the whole raw
+   storage and its digest, decoded with the source layout (every byte consumed, unknown keys fail),
+   `get_config`, `get_tokens`, `get_position` of every holder (found from the raw position keys),
+   `get_queue` of every token, the vault's balance on each token and its Rhea supply shares.
+3. **Pause** deposits with `set_deposits_paused(true)` (withdrawals never pause); only that flag may
+   differ from the first snapshot.
+4. **Deploy** after backing up the live WASM to `.data/contract-backups/<account>-<codeHash>.wasm`.
+5. **Post-check.** Storage must be byte-identical to the paused snapshot; every view, balance and
+   share must match, except the three new `get_config` fields (`storage_reserve_ok` must be true).
+6. **Resume** deposits if they were open, then the final snapshot must equal the first one.
+7. **Record** the new hashes in `public/native-yield-vault-testnet.json`, the old ones under
+   `previousDeployments`, and update `contracts/wasm-sha256.json` exceptions.
+
+Any failed check stops with deposits still paused and prints the rollback command:
+`--rollback .data/contract-backups/<account>-<oldCodeHash>.wasm --execute` runs the same checks and
+redeploys the old code without touching the manifest. A rollback after the new code ran is safe for
+the stored layout, but a reconcile started under the new code (`op` 4) is unknown to the old code
+until `reset_op` frees it after 15 minutes. Do not run the upgrade while the 06:30 stNEAR harvest and
+treasury-mix LaunchAgent is due; it calls this vault.

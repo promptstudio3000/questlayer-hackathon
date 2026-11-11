@@ -3,62 +3,54 @@
 // passed in by App so economy and transaction logic stay where they were.
 import type { ReactNode } from "react";
 import {
-  Backpack,
   ChatCircle,
-  Megaphone,
+  ChatsCircle,
+  MapPin,
+  NotePencil,
   Sparkle,
   Flag,
   Flame,
   GearSix,
   PencilSimpleLine,
   Scroll,
-  Signature,
   Storefront,
-  Trophy,
-  Medal,
+  Tag,
+  TShirt,
   UserCircle,
-  ShieldCheck,
   Coins,
   Translate,
-  Compass,
-  MapPinArea,
   type Icon,
 } from "@phosphor-icons/react";
 import type { ScreenTab } from "./ScreenTabs";
 import { ArrowRight } from "./dir-icons";
 import type { CreatorCommunityView } from "./creator-community-types";
-import type { MarketView, ProfileView } from "./app-navigation";
+import type { ProfileView } from "./app-navigation";
 import { lang, LANGS, setLang, tr, type Lang } from "./i18n";
 
-export type ProfileTab = ProfileView | "stake" | "rewards";
+export type ProfileTab = "character" | "stake" | "settings";
+// Badges live inside Character; Stake holds staking and earnings behind one
+// switch (owner request, 10 Nov 2026).
 export const PROFILE_TABS: readonly ScreenTab<ProfileTab>[] = [
   { id: "character", get label() { return tr("Character"); }, icon: UserCircle },
-  { id: "badges", get label() { return tr("Badges"); }, icon: Medal },
   { id: "stake", get label() { return tr("Stake"); }, icon: Flame },
-  { id: "rewards", get label() { return tr("Rewards"); }, icon: Trophy },
   { id: "settings", get label() { return tr("Settings"); }, icon: GearSix },
 ];
 /** Profile sub-tab for the current app tab ("fuel" and "wallet" keep their routes). */
 export function profileTabOf(tab: string, view: ProfileView): ProfileTab {
-  return tab === "fuel" ? "stake" : tab === "wallet" ? "rewards" : view;
+  return tab === "fuel" || tab === "wallet" ? "stake" : view === "settings" ? "settings" : "character";
 }
 
-export const MARKET_TABS: readonly ScreenTab<MarketView>[] = [
-  { id: "secured", get label() { return tr("Secured"); }, icon: ShieldCheck },
-  { id: "offers", get label() { return tr("Offers"); }, icon: Signature },
-];
-
-export type ExploreTab = "discoveries" | "nearby";
-export const EXPLORE_TABS: readonly ScreenTab<ExploreTab>[] = [
-  { id: "discoveries", get label() { return tr("Discoveries"); }, icon: Compass },
-  { id: "nearby", get label() { return tr("Nearby"); }, icon: MapPinArea },
-];
-
-export type BagTab = "items" | "shop" | "market";
+/** Inventory: what you own and wear, then everything you can buy. */
+export type BagTab = "wardrobe" | "shop";
 export const BAG_TABS: readonly ScreenTab<BagTab>[] = [
-  { id: "items", get label() { return tr("Items"); }, icon: Backpack },
-  { id: "shop", get label() { return tr("Shop"); }, icon: Sparkle },
-  { id: "market", get label() { return tr("Market"); }, icon: Storefront },
+  { id: "wardrobe", get label() { return tr("Wardrobe"); }, icon: TShirt },
+  { id: "shop", get label() { return tr("Shop"); }, icon: Storefront },
+];
+/** Shop sub-tabs: GOLD items from the game, and Auras other explorers sell. */
+export type ShopTab = "items" | "market";
+export const SHOP_TABS: readonly ScreenTab<ShopTab>[] = [
+  { id: "items", get label() { return tr("Items"); }, icon: Sparkle },
+  { id: "market", get label() { return tr("Market"); }, icon: Tag },
 ];
 
 export type CommunityTab = "quests" | "tasks" | "notes" | "places" | "creators";
@@ -66,8 +58,14 @@ export const COMMUNITY_TABS: readonly ScreenTab<CommunityTab>[] = [
   { id: "quests", get label() { return tr("Quests"); }, icon: Scroll },
   { id: "tasks", get label() { return tr("Tasks"); }, icon: Flag },
   { id: "notes", get label() { return tr("Local chat"); }, icon: ChatCircle },
-  { id: "places", get label() { return tr("Places"); }, icon: Megaphone },
+  { id: "places", get label() { return tr("Places"); }, icon: MapPin },
   { id: "creators", get label() { return tr("Creators"); }, icon: PencilSimpleLine },
+];
+/** Local chat: free map notes, and paid shouts and topics (Lubos, 10 Nov 2026). */
+export type LocalChatView = "notes" | "topics";
+export const LOCAL_CHAT_TABS: readonly ScreenTab<LocalChatView>[] = [
+  { id: "notes", get label() { return tr("Notes"); }, icon: NotePencil },
+  { id: "topics", get label() { return tr("Shouts & topics"); }, icon: ChatsCircle },
 ];
 const CREATOR_PAGES = new Set([
   "creators",

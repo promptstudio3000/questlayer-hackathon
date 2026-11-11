@@ -1,5 +1,9 @@
 import{readFileSync,writeFileSync,existsSync}from'node:fs';
 import{Account,KeyPairSigner,JsonRpcProvider,actions}from'near-api-js';
+// Retired 10 November 2026: this script creates and smoke-tests the first-alpha game
+// contract (contracts/game), which the live game never used and whose account is being
+// deleted. It would recreate that account, so it refuses to run. Kept as history.
+throw new Error('Retired: the first-alpha game contract is no longer deployed. See docs/HOW-TO-TRY.md.');
 const operator=JSON.parse(readFileSync('.data/near-operator.json','utf8'));
 if(operator.network!=='testnet'||!operator.accountId.endsWith('.testnet'))throw new Error('Testnet only.');
 const provider=new JsonRpcProvider({url:'https://test.rpc.fastnear.com'}),signer=KeyPairSigner.fromSecretKey(operator.secretKey),root=new Account(operator.accountId,provider,signer);

@@ -32,13 +32,23 @@ export function qgoldVaultSettings(env = process.env, manifest = null) {
  */
 export function assessVault(state, audit) {
   const issues = [];
-  if (!state || !audit) return { status: "unknown", issues: ["unreadable"] };
+  if (!state || !audit) return { status: "unknown", issues: ["unreadable"], warnings: [] };
   if (big(audit.shortfall) > 0n) issues.push("balance-short");
   if (big(state.supply) > 0n && big(state.rate) < big(state.r_peak)) issues.push("rate-below-peak");
   if (audit.backing_covers_supply_at_peak === false) issues.push("backing-below-supply-at-peak");
   if (big(state.supply) > 0n && big(state.backing) === 0n) issues.push("no-backing");
+  // Warnings do not impair the vault: the operating balance pays for
+  // contract-sponsored storage (a player's first coin, conversion receipts).
+  // Below the contract's minimum those mints wait for fund_operating(); below
+  // twice the minimum it is time to fund it.
+  const warnings = [];
+  if (audit.operating_slack !== undefined && audit.min_operating_slack !== undefined) {
+    const slack = big(audit.operating_slack), min = big(audit.min_operating_slack);
+    if (slack < min) warnings.push("operating-slack-exhausted");
+    else if (slack < 2n * min) warnings.push("operating-slack-low");
+  }
   const status = issues.length ? "impaired" : state.paused ? "paused" : "ok";
-  return { status, issues };
+  return { status, issues, warnings };
 }
 
 export function createQgoldVaultReader({ provider, settings, clock = Date.now, log = () => {} }) {
@@ -63,6 +73,7 @@ export function createQgoldVaultReader({ provider, settings, clock = Date.now, l
       last = { at: clock(), value };
       lastError = null;
       if (value.assessment.status === "impaired") log("qgold-vault-impaired", value.assessment);
+      else if (value.assessment.warnings.length) log("qgold-vault-warning", value.assessment);
       return value;
     } catch (e) {
       lastError = String(e?.message || e).slice(0, 200);
@@ -97,6 +108,9 @@ export function createQgoldVaultReader({ provider, settings, clock = Date.now, l
     return {
       status: assessment.status,
       issues: assessment.issues,
+      warnings: assessment.warnings ?? [],
+      operatingSlack: last.value.audit?.operating_slack,
+      minOperatingSlack: last.value.audit?.min_operating_slack,
       contract: settings.contract,
       rate: state.rate,
       supply: state.supply,

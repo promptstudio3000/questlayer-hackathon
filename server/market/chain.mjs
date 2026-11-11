@@ -143,6 +143,80 @@ export function pendingFunding(db, escrowId, player) {
   return f && configured ? fundingCall(configured, { id: f.id, account: f.account, amount: f.amount_u, msg: f.msg }) : null;
 }
 
+// ----------------------------------------------- funder storage deposits
+// The escrow admits an agreement only when its funder holds the agreement's
+// native storage growth in a deposit on the escrow (contracts/qgold-escrow
+// `storage_deposit`). The player signs that deposit before the funding call;
+// the relayer carries the NEAR (within its daily deposit budget) and the escrow
+// books it as a grant the player can spend on agreements but never withdraw.
+export const STORAGE_DEPOSIT_GAS = "30000000000000";
+/** The relayer sponsors fixed storage-class amounts: 0.05 NEAR steps (server/relayer/policy.mjs). */
+export const STORAGE_DEPOSIT_STEP = 50_000_000_000_000_000_000_000n;
+export const STORAGE_DEPOSIT_MAX = 10n * STORAGE_DEPOSIT_STEP;
+/** Pure: the shortfall rounded up to the relayed ladder (the excess stays the funder's grant for later agreements). */
+export function storageDepositAmount(shortfall) {
+  if (shortfall <= 0n) return 0n;
+  const steps = (shortfall + STORAGE_DEPOSIT_STEP - 1n) / STORAGE_DEPOSIT_STEP;
+  return steps * STORAGE_DEPOSIT_STEP;
+}
+/** Pure: bytes the escrow reserves for this agreement message (its `task_growth` / `PAIR_GROWTH`). */
+export function escrowGrowthBytes(msg, reserve) {
+  const entry = Number(reserve.entry_bytes), pair = Number(reserve.pair_growth_bytes), one = Number(reserve.one_slot_task_growth_bytes);
+  if (msg.kind !== "task") return pair;
+  const slots = Math.max(1, Math.min(50, Number(msg.slots ?? 1) || 1));
+  // task_growth(slots) = (slots + min(2·slots + 4, 100)) · ENTRY_BYTES + FIXED_BYTES; one_slot = 7 · ENTRY + FIXED.
+  return one - 7 * entry + (slots + Math.min(2 * slots + 4, 100)) * entry;
+}
+/** Pure: yoctoNEAR the funder must still deposit (0n when the deposit covers the agreement). */
+export function escrowStorageShortfall(msg, reserve, balance) {
+  const cost = BigInt(reserve.storage_byte_cost_yocto);
+  const need = BigInt(escrowGrowthBytes(msg, reserve)) * cost;
+  const available = balance && /^\d{1,39}$/.test(String(balance.available)) ? BigInt(balance.available) : 0n;
+  if (available >= need) return 0n;
+  // A first deposit also pays ENTRY_BYTES for its own record.
+  return need - available + (balance ? 0n : BigInt(reserve.entry_bytes) * cost);
+}
+const nearText = (yocto) => `${(Number(yocto / 10n ** 20n) / 10_000).toFixed(4)} NEAR`;
+/**
+ * The storage deposit the funder has to sign before `funding`, or null when
+ * the escrow already holds enough for this agreement. Throws a clear 503 when
+ * the escrow cannot be read: funding blind would only strand the payment.
+ */
+export async function storageDepositCall(funding, view) {
+  const c = requireEscrow();
+  let reserve, balance;
+  try {
+    [reserve, balance] = await Promise.all([
+      view("get_storage_reserve", {}),
+      view("storage_balance_of", { account_id: funding.signerId }),
+    ]);
+  } catch {
+    assert(false, "The escrow cannot be reached right now. Try again in a moment.", 503, "ESCROW_UNAVAILABLE");
+  }
+  // An escrow without the reserve view (an older deployment) sizes nothing:
+  // its admission does not need a funder deposit either.
+  if (!reserve || !/^\d{1,39}$/.test(String(reserve.storage_byte_cost_yocto))) return null;
+  const short = escrowStorageShortfall(JSON.parse(funding.args.msg), reserve, balance);
+  if (short === 0n) return null;
+  const amount = storageDepositAmount(short);
+  return {
+    signerId: funding.signerId,
+    receiverId: c.contractId,
+    methodName: "storage_deposit",
+    args: { account_id: funding.signerId, grant: true },
+    gas: STORAGE_DEPOSIT_GAS,
+    deposit: amount.toString(),
+    near: nearText(amount),
+    // Above the relayed ladder the player's own account pays the deposit.
+    sponsored: amount <= STORAGE_DEPOSIT_MAX,
+  };
+}
+/** A funding response with its storage deposit (null when none is needed). */
+export async function withStorageDeposit(funding, view) {
+  if (!funding || !view) return funding;
+  return { ...funding, storageDeposit: await storageDepositCall(funding, view) };
+}
+
 /** Pure: does the escrow view match what this funding asked for? */
 export function fundingMatches(f, view) {
   return fundingAssessment(f, view) !== null;
@@ -222,7 +296,7 @@ export function release(db, escrowId, account) {
  * `view(method, args)` reads the escrow; `call` prepares, replays and queries
  * durable signed transactions. A hash-only sender cannot deliver money safely.
  */
-export async function runEscrowWorker(db, { view, call, activate, drop, now = Date.now(), maxOps = 20, maxChecks = 20 }) {
+export async function runEscrowWorker(db, { view, call, activate, drop, now = Date.now(), maxOps = 20, maxChecks = 20, tokenView = null }) {
   ensureMarketChainSchema(db);
   const result = { funded: 0, dropped: 0, fundingFailed: 0, sent: 0, failed: 0 };
   for (const f of db
@@ -249,7 +323,7 @@ export async function runEscrowWorker(db, { view, call, activate, drop, now = Da
       result.fundingFailed++;
     }
   }
-  Object.assign(result, await runEscrowDelivery(db, { call, view, now, maxOps }));
+  Object.assign(result, await runEscrowDelivery(db, { call, view, now, maxOps, tokenView }));
   return result;
 }
 /** The player says they signed: check that one funding right away. */
@@ -276,6 +350,18 @@ export function escrowHealth(db) {
     waitingFunding: n("SELECT COUNT(*) AS n FROM mk_fundings WHERE state='waiting'"),
     queued: n("SELECT COUNT(*) AS n FROM mk_chain_ops WHERE state='queued'"),
     failed: n("SELECT COUNT(*) AS n FROM mk_chain_ops WHERE state='failed'"),
+    // Sends and refunds whose recipient the token does not know yet: they wait
+    // for the account's first QGOLD payout (or its own registration).
+    awaitingRegistration: n("SELECT COUNT(*) AS n FROM mk_chain_ops WHERE state='queued' AND method='withdraw_for' AND last_error='recipient_unregistered'"),
+    // Operator surface: publisher calls the contract rejected with a FINAL
+    // receipt. They never block other operations; re-queue one after
+    // reconciling its agreement (UPDATE mk_chain_ops SET state='queued').
+    rejected: db
+      .prepare(`SELECT o.id,o.method,o.escrow_id,o.tx,o.last_error,o.attempts,o.created_at FROM mk_chain_ops o
+        WHERE o.state='failed' AND (SELECT a.state FROM mk_delivery_attempts a WHERE a.op_id=o.id ORDER BY a.attempt DESC LIMIT 1)='retry'
+        ORDER BY o.seq LIMIT 20`)
+      .all()
+      .map((o) => ({ id: o.id, method: o.method, escrowId: o.escrow_id, tx: o.tx, reason: o.last_error, attempts: o.attempts, createdAt: o.created_at })),
   };
 }
 

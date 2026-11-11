@@ -34,6 +34,8 @@ import type { ActorView } from "./actor-types";
 import type { ActorsLayer } from "./actors-layer";
 import type { MapRewardsLayer } from "./map-rewards-layer";
 import { useEffect, useRef, useState } from "react";
+import { api } from "./api";
+import { distanceLabel } from "./app-bits";
 import * as maplibregl from "maplibre-gl";
 import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 maplibregl.setWorkerUrl(mapWorkerUrl);
@@ -43,7 +45,7 @@ import "./art-world";
 import type { Point, World, Zone, Item } from "./types";
 import { prefersReducedMotion } from "./feedback";
 import { paintMapSky, skyFor, skyLabel } from "./map-sky";
-import { Coins, MoonStars, Sun, SunHorizon } from "@phosphor-icons/react";
+import { Coins, MoonStars, Sun, SunHorizon, X } from "@phosphor-icons/react";
 import "./map-sky.css";
 // Phone map-first layout; lazy with the map, so the welcome screen skips it.
 import "./phone-map.css";
@@ -57,6 +59,7 @@ import { mapKitUrl, questPinKind, questPinMarkup, mapGuidePoints } from "./map-k
 import { representativeZoneQuest } from "./game-object-art-data";
 import type { ZoneAltarLayer } from "./zone-altar-layer";
 import "./map-kit.css";
+import "./map-hud.css";
 import { questStopMarkers } from "./quest-route";
 type PawnScene = ReturnType<
   typeof import("./character-3d-scene").createCharacterScene
@@ -86,6 +89,8 @@ export type GameMapProps = {
   others: NearbyExplorer[];
   /** Tap another explorer: open their card (what they wear, waves). */
   onPlayer?: (playerId: string) => void;
+  /** Tapping your own explorer opens your profile overview. */
+  onSelf?: () => void;
   /** Aavegotchi wearable clones the player wears (drawn on the starter). */
   wearables?: WornWearable[];
   /** Tap a wearable find: head there. */
@@ -118,6 +123,28 @@ export type GameMapProps = {
   onPlacePin?: (id: string) => void;
   /** A multi-stop walk: drawn from the explorer to the next stop and on. */
   route?: QuestRoute | null;
+  /** NPCs waiting for the player's report (every step of their line done). */
+  actorReports?: readonly string[];
+  /** "Show me": pan to the nearest matching character (any distance). */
+  actorFocus?: { revision: number; match: ActorFocusMatch } | null;
+  /** The "show me" result as player text; `found` false is a notice, not an error. */
+  onActorFocus?: (text: string, found: boolean) => void;
+  /** Draw player tasks and Secrets near the explorer (GPS play); tap opens them in Nearby. */
+  marketPins?: boolean;
+  onMarketPin?: (pin: MarketMapPin) => void;
+};
+export type ActorFocusMatch =
+  | { actorId: string }
+  | { kinds: readonly string[] };
+export type MarketMapPin = {
+  kind: "task" | "secret";
+  id: string;
+  title: string;
+  lat: number;
+  lng: number;
+  radiusM: number;
+  /** Share key of a private task or Secret, so the tap can open it. */
+  k?: string | null;
 };
 export type CreatorMapPlace = {
   questId: string;
@@ -269,7 +296,9 @@ export function GameMap(props: GameMapProps) {
     props.world?.quests.map((q) => questObjectPresentation(q, objectContext)),
   );
   const [ready, setReady] = useState(false),
-    [error, setError] = useState(false);
+    [error, setError] = useState(false),
+    // Target key of a direction guide the explorer closed with its X.
+    [hiddenGuide, setHiddenGuide] = useState("");
   // Real day and night at the player's position; re-checked every minute.
   const [skyTick, setSkyTick] = useState(() => Date.now());
   useEffect(() => {
@@ -387,6 +416,21 @@ export function GameMap(props: GameMapProps) {
     const marker = document.createElement("div");
     marker.className = "player-marker";
     marker.innerHTML = starterMarkerMarkup();
+    // A button: tapping your own explorer opens your profile overview.
+    marker.setAttribute("role", "button");
+    marker.tabIndex = 0;
+    marker.setAttribute("aria-label", tr("You · open your profile"));
+    const openSelf = (event: Event) => {
+      event.stopPropagation();
+      latest.current.onSelf?.();
+    };
+    marker.addEventListener("click", openSelf);
+    marker.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openSelf(event);
+      }
+    });
     avatar.current = new maplibregl.Marker({
       element: marker,
       anchor: "bottom",
@@ -734,6 +778,11 @@ export function GameMap(props: GameMapProps) {
       img.alt = "";
       img.draggable = false;
       img.loading = "lazy";
+      // A failed art read leaves a sparkle in the ring, never a broken image.
+      img.onerror = () => {
+        img.remove();
+        node.classList.add("art-missing");
+      };
       node.append(img);
       node.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -914,7 +963,7 @@ export function GameMap(props: GameMapProps) {
         above: look?.above,
         below: look?.below,
         skinUrl: look?.skinTokenId
-          ? `/api/presence/skin?playerId=${encodeURIComponent(p.id)}`
+          ? `/api/presence/skin?playerId=${encodeURIComponent(p.id)}${look.skinVersion ? `&v=${encodeURIComponent(look.skinVersion)}` : ""}`
           : undefined,
         wearables: look?.wearables,
       });
@@ -1004,6 +1053,7 @@ export function GameMap(props: GameMapProps) {
           worldId: p.actorsWorldId || null,
           position: p.position,
           visible: !p.globe,
+          reports: p.actorReports,
         });
       })
       .catch(() => {});
@@ -1013,13 +1063,102 @@ export function GameMap(props: GameMapProps) {
       actorsLayer.current = null;
     };
   }, [ready, actorsEnabled]);
+  const reportsKey = (props.actorReports || []).join(",");
   useEffect(() => {
     actorsLayer.current?.update({
       worldId: props.actorsWorldId || null,
       position: props.position,
       visible: !props.globe,
+      reports: props.actorReports,
     });
-  }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe]);
+  }, [props.actorsWorldId, props.position.lat, props.position.lng, props.globe, reportsKey]);
+  useEffect(() => {
+    const request = props.actorFocus;
+    if (!ready || !request) return;
+    const { match } = request;
+    // The layer may still be attaching or loading the cast (e.g. right after a
+    // sheet closed): retry for a few seconds before saying nobody is out.
+    let tries = 0, timer = 0;
+    const attempt = () => {
+      const m = map.current;
+      if (!m) return;
+      const found = actorsLayer.current?.find((a) =>
+        "actorId" in match ? a.id === match.actorId : match.kinds.includes(a.archetype),
+      );
+      if (!found && ++tries < 12) {
+        timer = window.setTimeout(attempt, 500);
+        return;
+      }
+      latest.current.onActorFocus?.(
+        found
+          ? tr("{0}: {1}. Marked on the map.", { 0: found.actor.name, 1: distanceLabel(found.distanceM) })
+          : "actorId" in match
+            ? tr("They are not out right now. Characters walk between 07:00 and 22:00.")
+            : tr("Nobody like that is out near you right now. Characters walk between 07:00 and 22:00."),
+        !!found,
+      );
+      if (!found) return;
+      latest.current.onPan();
+      m.easeTo({
+        center: [found.lng, found.lat],
+        zoom: Math.max(m.getZoom(), 16),
+        duration: prefersReducedMotion() ? 0 : 900,
+      });
+    };
+    attempt();
+    return () => window.clearTimeout(timer);
+    // Only the revision triggers a new "show me".
+  }, [props.actorFocus?.revision, ready]);
+  // Player tasks and Secrets around the explorer (~55 m steps, like Nearby).
+  const [marketPins, setMarketPins] = useState<MarketMapPin[]>([]);
+  const marketLat = Math.round(props.position.lat * 2000) / 2000,
+    marketLng = Math.round(props.position.lng * 2000) / 2000,
+    marketOn = !!props.marketPins && !props.globe;
+  useEffect(() => {
+    if (!marketOn) { setMarketPins([]); return; }
+    const controller = new AbortController();
+    type Near = { lat: number; lng: number; id: string; title: string; state: string; radiusM: number; linkKey?: string | null };
+    api<{ tasks: Near[]; forMe: Near[]; taking: Near[]; secrets: (Omit<Near, "lat" | "lng" | "radiusM"> & { fog: Point & { radiusM: number } })[] }>(
+      `/market/nearby?lat=${marketLat}&lng=${marketLng}`, undefined, { signal: controller.signal },
+    )
+      .then((r) => {
+        const tasks = new Map<string, MarketMapPin>();
+        for (const t of [...r.taking, ...r.forMe, ...r.tasks])
+          if (t.state === "open" && !tasks.has(t.id))
+            tasks.set(t.id, { kind: "task", id: t.id, title: t.title, lat: t.lat, lng: t.lng, radiusM: t.radiusM, k: t.linkKey });
+        setMarketPins([
+          ...tasks.values(),
+          ...r.secrets.filter((x) => x.state === "open").map((x) => ({ kind: "secret" as const, id: x.id, title: x.title, lat: x.fog.lat, lng: x.fog.lng, radiusM: x.fog.radiusM, k: x.linkKey })),
+        ].slice(0, 40));
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [marketOn, marketLat, marketLng]);
+  const marketKey = JSON.stringify(marketPins);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || props.globe || !marketPins.length) return;
+    const markers = marketPins.map((pin) => {
+      const node = document.createElement("button");
+      const kindLabel = pin.kind === "task" ? tr("Player task") : tr("Secret");
+      node.className = `quest-map-pin game-object-map-pin market-map-pin market-map-pin-${pin.kind}`;
+      node.setAttribute("aria-label", `${pin.title} · ${kindLabel}`);
+      node.title = `${pin.title} · ${kindLabel}`;
+      paintQuestPin(node, pin.kind === "task" ? "task" : "clue", { kind: "place" });
+      node.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const hash = `${pin.kind}=${encodeURIComponent(pin.id)}${pin.k ? `&k=${encodeURIComponent(pin.k)}` : ""}`;
+        // The same pin twice: the hash does not change, so announce it again.
+        if (location.hash === `#${hash}`) dispatchEvent(new HashChangeEvent("hashchange"));
+        else location.hash = hash;
+        latest.current.onMarketPin?.(pin);
+      });
+      return new maplibregl.Marker({ element: node, anchor: "bottom" })
+        .setLngLat([pin.lng, pin.lat])
+        .addTo(m);
+    });
+    return () => markers.forEach((x) => x.remove());
+  }, [ready, props.globe, marketKey]);
   function cameraOffset(): [number, number] {
     // Leave room ahead; overlay height never changes this framing.
     return props.follow && Number.isFinite(props.followBearing) ? [0, Math.min(72, (el.current?.clientHeight || 0) * 0.1)] : [0, 0];
@@ -1083,10 +1222,12 @@ export function GameMap(props: GameMapProps) {
       bottom = props.equipped.find((i) => i.slot === "below");
     const element = avatar.current.getElement(),
       modelHost = element.querySelector(".map-character-model");
-    element.setAttribute("role", "img");
+    // Still the button that opens your profile (set where the marker is
+    // made); the label adds what you look like.
+    element.setAttribute("role", "button");
     element.setAttribute(
       "aria-label",
-      `${props.skinUrl ? tr("Your linked Aavegotchi") : tr("Your Aavegotchi starter")}${top ? `; ${top.name} above` : ""}${bottom ? `; ${bottom.name} below` : ""}`,
+      `${tr("You · open your profile")}: ${props.skinUrl ? tr("Your linked Aavegotchi") : tr("Your Aavegotchi starter")}${top ? `; ${top.name} above` : ""}${bottom ? `; ${bottom.name} below` : ""}`,
     );
     element.innerHTML =
       characterMarkerMarkup({
@@ -1169,7 +1310,7 @@ export function GameMap(props: GameMapProps) {
     window.addEventListener("focus", reveal);
     document.addEventListener("visibilitychange", reveal);
     void (async () => {
-      const original = props.skinUrl?.match(/tokenId=(\d+)$/)?.[1];
+      const original = props.skinUrl?.match(/tokenId=(\d+)/)?.[1];
       const [{ descriptor, bytes }, module] = await Promise.all([
         loadCharacterModel(original, controller.signal, { forMap: true }),
         import("./character-3d-scene"),
@@ -1318,11 +1459,14 @@ export function GameMap(props: GameMapProps) {
     props.panelMode,
     viewportRevision,
   ]);
-  const guidePoints = props.globe ? [] : mapGuidePoints({
+  const allGuidePoints = props.globe ? [] : mapGuidePoints({
     position: props.position, route: props.route, target: props.nativeTarget, selectedQuestId: props.selectedQuestId,
     zone: props.focusZone || props.world?.zones.find((z) => z.id === props.nextZoneId),
     quests: props.world?.quests || [], now: objectContext.now, playerTier: props.playerTier,
   });
+  // The guide's X hides the line until the guide points somewhere else.
+  const guideTargetKey = JSON.stringify(allGuidePoints.slice(1));
+  const guidePoints = hiddenGuide === guideTargetKey ? [] : allGuidePoints;
   const routeKey = JSON.stringify(guidePoints);
   useEffect(() => {
     const m = map.current;
@@ -1487,9 +1631,18 @@ export function GameMap(props: GameMapProps) {
         </div>
       )}
       {!props.globe && guidePoints.length > 1 && (
-        <div className="map-guide-key" role="note">
+        <div className="map-guide-key" role="note" title={tr("Straight-line direction, not a walking route")}>
           <img src={mapKitUrl("navigation/arrow-forward.png")} width="24" height="24" alt="" aria-hidden />
-          <span>{tr("Direction guide · not a walking route")}</span>
+          <span>{tr("Direction guide")}</span>
+          <button
+            type="button"
+            className="map-guide-close"
+            aria-label={tr("Hide direction guide")}
+            title={tr("Hide direction guide")}
+            onClick={() => setHiddenGuide(guideTargetKey)}
+          >
+            <X size={16} weight="bold" aria-hidden />
+          </button>
         </div>
       )}
       {!ready && (

@@ -105,3 +105,125 @@ All funding, including approved realized-yield deposits, also checks actual stor
   `set_contribution({contribution_bps})` with exactly those arguments and 1 yocto, and the
   confirmation also requires live state version 2. A returned `false` is shown as not
   completed (for example, a change that waits on a fee that cannot be unstaked yet).
+
+## v3 vault (9 November 2026): stuck-operation recovery, harvest limits, settled basis
+
+Review findings H5 and M1–M3 of the November contract review. `get_state.version` stays 2
+(the app keys partial exit and contribution change on it); the new fields are additive.
+
+- **Recovery (H5).** `recover_stuck()` (anyone, no deposit) settles an operation whose
+  callback never ran, once it has been pending for 2 epochs (`recoverable_at_epoch` in
+  `get_state`; `busy_since` records the start of every operation and payout). Nothing is
+  paid by it. A lost owner payout, game flush or pool deposit is judged from the account
+  balance against the floor recorded when it was issued: back at the floor plus the amount
+  means refunded (credit restored), at the floor means delivered (`owner_paid`/`game_paid`/
+  stake recorded, the tranche dated now). A lost pool read returns to its origin stage, a
+  lost unstake goes to `unlocking` for 4 epochs and a lost `withdraw_all` to `awaiting_cash`;
+  the next pool read then re-derives the truth: the "withdraw" read sends a position whose
+  `withdraw_all` already ran to the cash check, ends an operation whose unstake never ran,
+  and the "cash" read re-issues a `withdraw_all` the pool still shows as unstaked. The late
+  callback, if it ever runs, fails its nonce or stage check and changes nothing. `unlocking`
+  and `awaiting_cash` are not stuck states and stay with `advance`. Payout callbacks now get
+  30 TGas instead of 15.
+- **Harvest limits (M2).** A permissionless `harvest` unstakes only a fee of at least
+  0.001 test NEAR (`min_harvest`) and starts no earlier than 4 epochs after the previous
+  harvest cashed (`next_harvest_epoch`); it returns `false` otherwise. Exits, partial exits
+  and contribution changes settle any amount. The reward worker reads both fields.
+- **Settled basis (M1).** At cash the basis advances only by the gain whose fee the cash
+  actually settled (`settled = min(gain, ceil(game_share / contribution))`), then drops by
+  the cash taken out. Gain that grew during the unlock stays chargeable at the next harvest
+  instead of being forgiven; fees, rates and tiers are unchanged.
+- **Empty position (M3).** When the pool reports zero staked and zero unstaked for a vault
+  with principal (a loss took the rest), the exit closes the position at once instead of
+  waiting for cash forever; `request_partial_exit` is measured against the observed stake
+  as well as principal, so it can no longer unstake everything.
+- **Storage.** `Vault` keeps its deployed layout byte for byte; the new fields live in the
+  `vault-ext-v2` record, which reads both the v2 and the v3 layout
+  (`v2_extension_record_reads_with_the_new_fields`). A standalone vault with an operator
+  key is upgraded by a plain code deploy.
+- **Keyless children cannot be upgraded.** Factory children have no access keys and no
+  upgrade method; the factory embeds the vault WASM at build time. Existing children keep
+  the code they were deployed with (v1 or v2) and cannot receive these fixes. New children
+  get them only from a factory that embeds this vault. The reproducible WASM hashes in
+  `contracts/wasm-sha256.json` are pinned from the CI build.
+
+### Factory v3 rollout (prepared 9 November 2026, not yet run)
+
+Rewards does not hold a configurable factory: `register_factory_vault` on
+`questlayer-rewards-<gen>` accepts children only from `questlayer-vaults-<gen>`, derived from its
+own account name, and no owner call repoints it. A factory under a new account name would create
+children that can never register (they stay `created`; the server lists only `ready` ones). So
+the v3 generation reuses the pinned account `questlayer-vaults-20261101b.testnet`: it still has
+its operator key, it has created **0** positions (read on 9 November) and the factory source and
+state layout are unchanged, so its code is replaced in place. The rewards contract needs no call;
+new children register exactly as before and start on vault v3. If the factory has created any
+position by then, the script stops: a v3 generation would then need a new rewards generation or a
+reviewed rewards change, because the server pins one vault code hash per factory.
+
+`scripts/rollout-vault-factory-v3-testnet.mjs` (dry run by default, `--execute` to send, testnet
+only, `--network testnet` required):
+
+1. Checks the vault and factory WASM against `contracts/wasm-sha256.json` (Docker build or the CI
+   artifact via `--wasm-dir`) and that the factory bytes embed the vault bytes.
+2. Checks the binding (rewards name ⇒ factory name, factory `rewards`), the live rewards and
+   factory code hashes against `public/native-rewards-testnet.json`, `created == 0` and the
+   factory balance for the new code.
+3. With `--execute`: backs up the deployed factory WASM to `.data/contract-backups/`, checks
+   `created` again, deploys, and requires `get_config` to be unchanged except `vault_sha256`, which
+   must equal the pinned vault build.
+4. Moves the old factory record to `factoryHistory` in `public/native-rewards-testnet.json`
+   (kept, never deleted), writes the new `codeHash`, `wasmSha256`, `vaultCodeHash` and
+   `vaultWasmSha256`, and moves the matching `testnetDeploymentsNotFromThisBuild` entries in
+   `contracts/wasm-sha256.json` to the history paths so `scripts/check-wasm-hashes.mjs` stays green.
+
+Between the deploy and the app deploy carrying the new manifest, the server sees a factory code
+hash it does not pin and answers vault creation with 503 (fail closed). The standalone treasury
+vault `questlayer-vault-20261101b.testnet` (v2, operator key) is not touched by this script.
+Rollback: redeploy the backed-up WASM to the factory while it still has created no position and
+revert the manifest commit.
+
+### First v3 position smoke test (prepared 10 November 2026, not yet run)
+
+On 10 November the factory runs the pinned v3 build (`5mn94vZF…`, embedded vault `357c3b57…`,
+code hash `4bnUo5Bn…`) with `created: 0`; the record is commit `bc8331e6`. The manifest on the
+operator's checkout must carry that record (and the app must serve it) before the smoke test, or
+the server answers the position with 503.
+
+`scripts/smoke-vault-v3-position-testnet.mjs` (dry run by default, `--execute` to send,
+`--network testnet` required) does what the app does for a player, from a dedicated sub-account
+of the operator (`vault-smoke-v3.<operator>`, key in `.data/vault-smoke-v3.json`, chmod 600,
+created before the account and never printed):
+
+1. Read-only checks: factory code and embedded vault equal `contracts/wasm-sha256.json`, the
+   manifest factory record equals both, the factory points at the rewards account, capacity is
+   left, the setup deposit equals the manifest, and the pool passes the server's readiness check.
+2. Creates the sub-account with 3.621 test NEAR (exact setup deposit 3.52 + minimum stake 0.001 +
+   0.1 for gas), or tops it up.
+3. `create_position(pool_id, contribution_bps)` with the setup deposit and 280 TGas. It summarizes
+   the receipts: the child's first receipt (create, transfer, deploy, `new` with 25 TGas) and the
+   rewards `register_factory_vault` receipt must succeed. A position left `created` is registered
+   with `register_position`, as the app retries.
+4. Checks the child: pinned vault code hash, no access keys, factory state `ready`, and
+   `get_state` with version 2, the v3 fields (`busy_since`, `recoverable_at_epoch`, `min_harvest`,
+   `next_harvest_epoch`, `recovery_policy` …`-v3`), owner, pool, rewards and contribution.
+5. `deposit_and_stake` with 0.001 test NEAR (`--stake`, `--no-stake`), then principal and staked
+   equal the stake and the stage is idle.
+6. Signs in to the server as the smoke account (NEP-413; creates one explorer there) and requires
+   `GET /api/native/vaults?account=` to list the child `ready` with its state. `--no-server` skips it.
+
+A rerun with the same `--label` verifies the existing position instead of creating another. The
+result goes to `output/qa/vault-v3-smoke/`.
+
+Exit and cost: `request_exit` (1 yocto), about 4 epochs of pool unlock, `advance` until
+`owner_credit > 0`, then `withdraw_owner` (1 yocto) returns the stake to the smoke account. The
+3.5 test NEAR child reserve stays in the keyless child (no key, no delete method), 0.02 stays with
+the factory, and the position keeps one of the factory's 32 slots. Delete the smoke account only
+after the stake is withdrawn, if at all.
+
+```
+node scripts/smoke-vault-v3-position-testnet.mjs --network testnet
+node scripts/smoke-vault-v3-position-testnet.mjs --network testnet --execute
+```
+
+The rewards contract upgrade that goes with PR #240 is a separate script; see
+"Rewards-only M4 upgrade" in `docs/DAILY-PAYOUTS.md`.

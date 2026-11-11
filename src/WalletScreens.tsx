@@ -24,234 +24,10 @@ export function WalletPanel({
   onNear: () => Promise<void>;
   notify: (s: string, e?: boolean) => void;
 }) {
-  const [deposit, setDeposit] = useState("100000"),
-    [share, setShare] = useState(100),
-    [pool, setPool] = useState("meadow"),
-    [balance, setBalance] = useState<string | null>(null),
-    [contributions, setContributions] = useState<Record<string, number>>({});
-  const pools = [
-    {
-      id: "meadow",
-      name: tr("Meadow pool"),
-      detail: tr("Practice pool"),
-      fee: "5% APR · simulation",
-    },
-    {
-      id: "river",
-      name: tr("River pool"),
-      detail: tr("Second practice pool"),
-      fee: "5% APR · simulation",
-    },
-    {
-      id: "mountain",
-      name: tr("Mountain pool"),
-      detail: tr("Third practice pool"),
-      fee: "5% APR · simulation",
-    },
-  ];
-  const staked = player.positions.reduce((s, p) => s + p.active_u, 0);
-  const weighted = Math.floor((units(deposit) * share) / 100);
+  const [balance, setBalance] = useState<string | null>(null);
   return (
     <>
       <QgoldWallet player={player} />
-      <details className="play-details">
-        <summary>{tr("Zone tier stake (simulation)")}</summary>
-      <div className="two-stats">
-        <div>
-          <small>{tr("Practice stake")}</small>
-          <b>{gold(staked)} GOLD</b>
-        </div>
-        <div>
-          <small>{tr("Weighted for tier")}</small>
-          <b>{gold(player.weighted_u)} GOLD</b>
-        </div>
-      </div>
-      <section className="form-section">
-        <h2>{tr("Try practice staking")}</h2>
-        <p>{tr("Staked GOLD helps fund rewards for everyone. Nothing real moves.")}</p>
-        <label>
-          {tr("How much practice GOLD to stake?")}<div className="input-suffix">
-            <input
-              value={deposit}
-              onChange={(e) => setDeposit(e.target.value)}
-              inputMode="decimal"
-            />
-            <span>GOLD</span>
-          </div>
-        </label>
-        <div className="range-heading">
-          <label>{tr("Yield contributed to the game")}</label>
-          <b>{share} %</b>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={share}
-          onChange={(e) => setShare(Number(e.target.value))}
-        />
-        <div className="range-endpoints">
-          <span>{100 - share} {" "}{tr("% for you")}</span>
-          <span>{share} {" "}{tr("% for the game")}</span>
-        </div>
-        <div className="contribution-preview">
-          <Leaf />
-          <span>
-            {tr("Weighted stake")}{" "}<b>{gold(weighted)} GOLD</b>
-          </span>
-          <Badge>
-            {weighted >= 100_000 * GOLD
-              ? tr("TIER 3")
-              : weighted >= 50_000 * GOLD
-                ? tr("TIER 2")
-                : tr("FREE")}
-          </Badge>
-        </div>
-        <label>{tr("Choose a pool")}</label>
-        <div className="pool-list">
-          {pools.map((p) => (
-            <button
-              className={pool === p.id ? "selected" : ""}
-              key={p.id}
-              onClick={() => setPool(p.id)}
-            >
-              <span className="pool-symbol">
-                <Leaf weight="duotone" />
-              </span>
-              <span>
-                <b>{p.name}</b>
-                <small>{p.detail}</small>
-              </span>
-              <small>{p.fee}</small>
-              <span className="radio-dot" />
-            </button>
-          ))}
-        </div>
-        <button
-          className="primary-button"
-          disabled={
-            !!busy || units(deposit) <= 0 || units(deposit) > player.gold_u
-          }
-          onClick={() =>
-            void action("stake", async () => {
-              const r = await api<{ player: Player }>("/stake", {
-                amount: units(deposit),
-                contribution: share,
-                pool,
-              });
-              onPlayer(r.player);
-              notify(tr("Stake placed. Your tier activates in 30 seconds."));
-            })
-          }
-        >
-          {tr("Stake practice GOLD")}{" "}<ArrowRight />
-        </button>
-        <p className="fine-print">
-          {tr("Practice mode is fast: tiers activate in 30 seconds and withdrawals unlock in 60. Real staking would take days.")}</p>
-      </section>
-      <section className="form-section">
-        <h2>{tr("Your stake")}</h2>
-        {!staked && <p>{tr("You have no stake yet.")}</p>}
-        {player.positions
-          .filter((p) => p.active_u > 0)
-          .map((p) => (
-            <div className="position-row" key={p.id}>
-              <div>
-                <b>{pools.find((x) => x.id === p.pool)?.name}</b>
-                <small>
-                  {p.contribution}{tr("% yield for the game")}{" "}
-                  {p.matures_at > Date.now()
-                    ? tr("· active in {0}", { 0: remaining(p.matures_at) })
-                    : tr("· tier active")}
-                </small>
-                <strong>{gold(p.active_u)} GOLD</strong>
-                <label className="position-contribution">
-                  {tr("Game yield:")}{" "}{contributions[p.id] ?? p.contribution}%
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={contributions[p.id] ?? p.contribution}
-                    onChange={(e) =>
-                      setContributions((v) => ({
-                        ...v,
-                        [p.id]: Number(e.target.value),
-                      }))
-                    }
-                  />
-                </label>
-                {contributions[p.id] !== undefined &&
-                  contributions[p.id] !== p.contribution && (
-                    <button
-                      className="text-button"
-                      disabled={!!busy}
-                      onClick={() =>
-                        void action("contribution", async () => {
-                          const r = await api<{ player: Player }>(
-                            "/contribution",
-                            {
-                              positionId: p.id,
-                              contribution: contributions[p.id],
-                            },
-                          );
-                          onPlayer(r.player);
-                          notify(
-                            tr("Contribution saved. Your current tier stays."),
-                          );
-                        })
-                      }
-                    >
-                      {tr("Save contribution")}</button>
-                  )}
-              </div>
-              <button
-                className="secondary-button"
-                disabled={!!busy}
-                onClick={() =>
-                  void action("unstake", async () => {
-                    const r = await api<{ player: Player }>("/unstake", {
-                      positionId: p.id,
-                    });
-                    onPlayer(r.player);
-                    notify(
-                      tr("Withdrawal queued. Your GOLD unlocks in 60 seconds."),
-                    );
-                  })
-                }
-              >
-                {tr("Unstake")}</button>
-            </div>
-          ))}
-        {player.withdrawals
-          .filter((w) => w.state === "pending")
-          .map((w) => (
-            <div className="position-row" key={w.id}>
-              <div>
-                <b>{tr("Withdrawal")}{" "}{gold(w.amount_u)} GOLD</b>
-                <small>
-                  {w.ready_at > Date.now()
-                    ? tr("Ready in {0}", { 0: remaining(w.ready_at) })
-                    : tr("Ready to collect")}
-                </small>
-              </div>
-              <button
-                className="secondary-button"
-                disabled={!!busy || w.ready_at > Date.now()}
-                onClick={() =>
-                  void action("withdraw", async () => {
-                    const r = await api<{ player: Player }>("/withdraw", {
-                      withdrawalId: w.id,
-                    });
-                    onPlayer(r.player);
-                    notify(tr("Your practice GOLD is back in your balance."));
-                  })
-                }
-              >
-                {tr("Collect")}</button>
-            </div>
-          ))}
-      </section>
-      </details>
       <section className="form-section">
         <div className="section-label">
           <h2>{tr("NEAR account")}</h2>
@@ -432,14 +208,6 @@ export function FundPanel() {
           <p>
             {tr("Earned Auras can be secured to your NEAR account, traded in Market and shown on a public profile. Staking and GOLD rewards stay practice-only.")}</p>
           <a
-            href={`${EXPLORER_BASE}/address/${proof.gameContract}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {tr("Standalone settlement proof")}{" "}<ArrowUpRight size={14} />
-            <small>{proof.gameContract}</small>
-          </a>
-          <a
             href={`${EXPLORER_BASE}/address/${proof.collectiblesContract}`}
             target="_blank"
             rel="noreferrer"
@@ -449,9 +217,9 @@ export function FundPanel() {
           </a>
           {proof.transactions
             ?.filter(
-              (x: any) =>
-                x.label.includes("withdraw") ||
-                x.label.includes("transfer NFT"),
+              // The first-alpha game contract (coin batches, withdraw_reward) is
+              // retired; only the collectibles proofs are still linked.
+              (x: any) => x.label.includes("transfer NFT"),
             )
             .map((x: any) => (
               <a
@@ -729,7 +497,7 @@ export function QgoldWallet({ player }: { player: Player }) {
         <small>
           {pending.awaitingAccount
             ? tr("{0} QGOLD collected waits for your NEAR account.", { 0: gold(pending.units, 6) })
-            : tr("+{0} QGOLD arrives with the payout after midnight.", { 0: gold(pending.units, 6) })}
+            : tr("+{0} QGOLD arrives with the next payout, within minutes.", { 0: gold(pending.units, 6) })}
         </small>
       )}
     </div>

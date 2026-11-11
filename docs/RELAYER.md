@@ -79,6 +79,27 @@ gas above `RELAY_MAX_GAS`, JSON arguments above 8 KiB, purchase prices, mainnet.
   `RELAY_INSUFFICIENT_BALANCE` (one margin-funded retry for state storage), `RELAY_SELF_PAID`, `RELAY_CONTRACT_FAILED`,
   `RELAY_OUTCOME`; network errors retry with `min(300 s, 5 s·2^min(attempts,6))`.
 - Daily budgets: `RELAY_MAX_JOBS_PER_DAY` submissions, `RELAY_MAX_DEPOSIT_YOCTO_PER_DAY` of attached storage deposits and `RELAY_TOPUP_CAP_YOCTO` per account. The deposit budget matters because a relayed call that fails refunds its deposit to the player's account, not to the relayer.
+- Admission checks against game and chain state, before any budget is reserved:
+  - SocialDB `set` is sponsored only for the records the game quotes itself: exactly one
+    `<account>/questlayer/profile`, `questlayer/notes/<message id>`, `questlayer/places/<place|post id>`,
+    `questlayer/inbox_key` or `questlayer/inbox/<msg id>` (encrypted inbox, docs/PLAYER-INBOX.md)
+    record with its exact field set, at most 4 KiB of arguments (`RELAY_SOCIAL_SHAPE`). The 0.05 NEAR
+    storage deposit is carried only while the account's SocialDB storage has less than 0.01 NEAR
+    available (`RELAY_SOCIAL_STORAGE`); otherwise the record is signed with 1 yocto.
+  - `redeem_aura` is sponsored only for a voucher signed by the collection's award key
+    (`get_award_signer`) for this account, unexpired for at least another minute, not yet redeemed
+    (`get_claim`), with edition supply left and no other open job for the same claim
+    (`RELAY_CLAIM_SIGNATURE`, `RELAY_CLAIM_EXPIRED`, `RELAY_CLAIM_USED`, `RELAY_CLAIM_SUPPLY`,
+    `RELAY_CLAIM_PENDING`). A fake or repeated claim would otherwise refund the relayer-carried
+    0.05 NEAR to the player.
+  - Market v2 `cancel_order` is sponsored only for the sender's own open, unexpired order in the game's
+    order book (`signed_market_orders`, exact signed body; `RELAY_ORDER_UNKNOWN`, `RELAY_ORDER_PENDING`),
+    at most `RELAY_MAX_CANCELS_PER_DAY` per account and `RELAY_MAX_CANCELS_GLOBAL_PER_DAY` service-wide
+    per UTC day (`RELAY_CANCEL_BUDGET`). Each cancel takes one of the market's 1024 nonce slots until
+    the order's deadline (up to 30 days), which fills need too; `cancel_all_orders` uses none and stays
+    sponsored.
+- The NEAR Intents solver (the relayer account) reserves every `execute_intents` transaction from the
+  same service-wide sponsorship budget (docs/NEAR-INTENTS-MARKET.md).
 
 ## Provisioning
 
@@ -94,6 +115,8 @@ mode `0600`; both keys must be full-access keys of their account on testnet.
 | `RELAY_TOPUP_CAP_YOCTO`       | Max sponsored top-up per account per day                 | `2e23`                |
 | `RELAY_MAX_JOBS_PER_DAY`      | Max submissions per account per day                      | `40`                  |
 | `RELAY_MAX_DEPOSIT_YOCTO_PER_DAY` | Max attached deposits the relayer carries per account per UTC day | `0.5 NEAR` |
+| `RELAY_MAX_CANCELS_PER_DAY`   | Max sponsored market v2 `cancel_order` per account per UTC day | `4`             |
+| `RELAY_MAX_CANCELS_GLOBAL_PER_DAY` | Max sponsored `cancel_order` across all accounts per UTC day | `16`          |
 | `RELAY_MAX_GAS`               | Max gas per delegated action                             | `300000000000000`     |
 | `RELAY_BLOCK_TTL`             | Max blocks a delegate may stay valid                     | `120`                 |
 | `DISABLE_RELAYER`             | `1` disables accounts and relaying                       | unset                 |
@@ -171,13 +194,36 @@ permits a replacement payment. Account creation and native topups have the same
 durable journal; balance changes are not proof that another transfer is owed.
 Writes and sends are fenced by the worker lease.
 
+A saved transaction can become impossible to include: its send failed transiently,
+a later job of the same service key landed with a higher nonce, and access-key
+nonces only increase. Such an attempt is re-signed only on proof of non-inclusion:
+the RPC does not know its hash, the node rejects the exact bytes with
+`InvalidTxError::InvalidNonce`, the key's final nonce on chain is at or past the
+saved nonce, and the same evidence recurs at least 30 s after it was first recorded
+(`RELAY_NONCE_CHECK` / `FUNDING_PENDING` while observing). Then the attempt is
+`rejected`, its unspent reservation released, and the next pass signs a fresh
+attempt (`RELAY_RESIGN` / `FUNDING_RESIGN`). An attempt whose hash RPC knows is
+acknowledged, never replaced.
+
 A shared SQLite reservation budget covers initial account funding, attached
 deposits, gas reserves and topups across all players. Configure
 `SUBSIDY_DAILY_YOCTO`, `SUBSIDY_DAILY_OPERATIONS` and
 `SUBSIDY_GAS_RESERVE_YOCTO` from the operator's actual reserve/workload; defaults
-disable sponsorship. Unknown reservations carry across UTC midnight. Final
-refunds are not recycled into new allowances. A verified retry consumes another
-reservation. Observed receipt fees above their reserve trigger a persistent
+disable sponsorship. Unknown reservations (signed bytes without a FINAL receipt)
+carry across UTC midnight. A reservation whose job ends terminally before any
+transaction was signed (`RELAY_BLOCKED` cascade, pre-send `ACCOUNT_TAKEN`, policy
+refusal) or whose signed attempt is proved superseded is `released` and returns to
+the day's budget; nothing left the treasury. Final refunds are not recycled into
+new allowances. A verified retry consumes another reservation.
+
+`POST /api/account/create` is the costliest sponsored action (factory transfer plus
+gas) and a guest cookie is free, so it requires proof of play: the explorer must
+have earned XP on the map (a GPS-verified find, coin or quest; the test seed kit
+grants it too), answered otherwise with `403 ACCOUNT_PLAY_FIRST`. Creations are also
+capped at 20 per network address per UTC day (`429 RATE_LIMITED`). The client
+treats `ACCOUNT_PLAY_FIRST` as "not yet" and asks again when XP arrives, so a new
+explorer plays the first steps solo and finds the account prepared by the time the
+first Aura needs it. A retry after a failed creation is not gated again. Observed receipt fees above their reserve trigger a persistent
 `SUBSIDY_GAS_OVERRUN` breaker; existing signed submissions can still reconcile.
 The estimate is not a protocol gas-price cap: keep a bounded service-account
 balance and monitor it. The first overrun/in-flight operations can exceed the

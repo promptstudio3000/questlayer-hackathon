@@ -69,6 +69,11 @@ export function chain() {
           block_height: state.height,
         };
       }
+      if (q.request_type === "call_function" && state.view) {
+        const args = JSON.parse(Buffer.from(q.args_base64, "base64").toString());
+        const value = await state.view(q.account_id, q.method_name, args);
+        return { result: [...Buffer.from(JSON.stringify(value ?? null))], block_height: state.height };
+      }
       throw Error(`unsupported ${q.request_type}`);
     },
     async viewBlock() {
@@ -85,11 +90,13 @@ export function fakeFactory(state, { fail = null } = {}) {
   const factory = {
     accountId: FACTORY,
     calls, fail,
+    // Final nonce of the factory key on the fake chain (bumped by landed fundings).
+    keyNonceValue: 0n,
     async signAndSendTransaction({ receiverId, actions: list, transactionHash }) {
       const hash = transactionHash ?? `F${++n}`;
       if (outcomes.has(hash)) return outcomes.get(hash);
       calls.push({ receiverId, actions: list });
-      const failure = factory.fail?.(receiverId, list, calls.length);
+      const failure = factory.fail?.(receiverId, list, calls.length, hash);
       if (failure instanceof Error) throw failure;
       const ok = {
         final_execution_status: "FINAL",
@@ -128,12 +135,23 @@ export function fakeFactory(state, { fail = null } = {}) {
     },
     fundingTransport(request) {
       const list = request.kind === "create-account" ? [actions.createAccount(), actions.transfer(BigInt(request.principal)), actions.addFullAccessKey(PublicKey.fromString(request.publicKey))] : [actions.transfer(BigInt(request.principal))];
+      const saved = (row) => JSON.parse(row.signed_tx);
       return {
         identity: "synthetic-factory",
-        async prepare() { const hash = `F${++n}`; return { hash, identity: "synthetic-factory", signed_tx: JSON.stringify({ hash, request }) }; },
-        verify(row) { if (row.signed_tx !== JSON.stringify({ hash: row.hash, request })) throw Error("Synthetic funding request changed"); },
+        async prepare() { const hash = `F${++n}`; return { hash, identity: "synthetic-factory", signed_tx: JSON.stringify({ hash, nonce: n, request }) }; },
+        verify(row) {
+          const s = saved(row);
+          if (s.hash !== row.hash || JSON.stringify(s.request) !== JSON.stringify(request)) throw Error("Synthetic funding request changed");
+        },
+        nonce: (row) => BigInt(saved(row).nonce),
+        async keyNonce() { return factory.keyNonceValue; },
         async status(row) { if (!outcomes.has(row.hash)) throw Error("UNKNOWN_TRANSACTION"); return outcomes.get(row.hash); },
-        send: row => factory.signAndSendTransaction({ receiverId: request.accountId, actions: list, transactionHash: row.hash }),
+        async send(row) {
+          const out = await factory.signAndSendTransaction({ receiverId: request.accountId, actions: list, transactionHash: row.hash });
+          const nonce = BigInt(saved(row).nonce);
+          if (!out.status?.Failure && nonce > factory.keyNonceValue) factory.keyNonceValue = nonce;
+          return out;
+        },
       };
     },
   };
@@ -244,19 +262,25 @@ export function fakeTransport(state) {
     onStatus: async () => {
       throw Error("UNKNOWN_TRANSACTION");
     },
+    // Final nonce of the relayer key on the fake chain; the n-th signed outer
+    // transaction carries nonce n, and a landed default send advances it.
+    keyNonceValue: 0n,
+    async keyNonce() {
+      return transport.keyNonceValue;
+    },
     async sign({ receiverId, actions: list }) {
       const hash = `T${++n}`;
-      return transport.restore({ hash, signed_tx: JSON.stringify({ hash, receiverId, delegate: Buffer.from(encodeSignedDelegate(list[0].signedDelegate)).toString("base64") }) });
+      return transport.restore({ hash, signed_tx: JSON.stringify({ hash, nonce: n, receiverId, delegate: Buffer.from(encodeSignedDelegate(list[0].signedDelegate)).toString("base64") }) });
     },
     restore(row) {
-      const { hash, receiverId, delegate } = JSON.parse(row.signed_tx);
+      const { hash, nonce, receiverId, delegate } = JSON.parse(row.signed_tx);
       return {
-        hash, signedTx: row.signed_tx,
+        hash, nonce: BigInt(nonce ?? 0), signedTx: row.signed_tx,
         send: async () => {
           const signedDelegate = decodeSignedDelegate(delegate).signedDelegate;
           transport.sends.push({ hash, receiverId, signedDelegate });
           if (transport.onSend)
-            return transport.onSend({ hash, receiverId, signedDelegate });
+            return transport.onSend({ hash, receiverId, signedDelegate, nonce: BigInt(nonce ?? 0) });
           const account = state.accounts.get(
             signedDelegate.delegateAction.senderId,
           );
@@ -264,6 +288,7 @@ export function fakeTransport(state) {
             keyString(signedDelegate.delegateAction.publicKey),
           );
           if (key) key.nonce = Number(signedDelegate.delegateAction.nonce);
+          if (BigInt(nonce ?? 0) > transport.keyNonceValue) transport.keyNonceValue = BigInt(nonce);
           return outcomeFor(signedDelegate, { hash });
         },
       };
@@ -279,6 +304,7 @@ export function fixture({
   maxDepositYoctoPerDay,
   factoryOptions,
   subsidyLimits = {},
+  relayerOptions = {},
 } = {}) {
   const db = openDatabase(":memory:"),
     state = chain(),
@@ -302,6 +328,7 @@ export function fixture({
     blockTtl: 120,
     maxJobsPerDay,
     ...(maxDepositYoctoPerDay === undefined ? {} : { maxDepositYoctoPerDay }),
+    ...relayerOptions,
   });
   return {
     db,

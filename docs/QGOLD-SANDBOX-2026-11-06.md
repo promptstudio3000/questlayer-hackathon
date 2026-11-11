@@ -1,5 +1,12 @@
 # QGOLD repairs: actual-WASM sandbox evidence
 
+> Follow-up, 9 November 2026: the callback gas allowances were raised and the claim
+> batch reduced from 10 to 8 leaves (see `docs/DAILY-PAYOUTS.md`, "Gas" and
+> "Callback recovery"). The harness now runs an eight-leaf batch and pauses QGOLD
+> alternately as council member and guardian, because QGOLD's pause cooldown no
+> longer lets one account pause twice in seven days. The table below is the
+> original 6 November record.
+
 Verified locally on 6 November 2026. Both prepared repairs were applied together
 to base `e9160028637cda7785cae02acd9ea3e299525c17` on isolated branch
 `weekend/security-qgold-sandbox`. No public deployment, production state, real

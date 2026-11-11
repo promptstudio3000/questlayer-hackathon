@@ -17,7 +17,7 @@ instead of the source; developers change the value here and in the pointed file 
 | Rule | Value | Source |
 | --- | --- | --- |
 | Income that may fund rewards | only realized, received, attributable yield or explicit sponsor funding | `contracts/rewards`, `docs/NATIVE-REWARDS-AND-VAULT.md` |
-| Split of each eligible receipt | 50 % street coins / 50 % zones; odd unit to zones | `contracts/game/src/lib.rs` `fund_rewards`, `server/game.mjs` |
+| Split of each eligible receipt | 50 % street coins / 50 % zones; odd unit to zones | `server/game.mjs` (`contracts/game` `fund_rewards` is retired on 10 November 2026) |
 | Proposed creator share (not live) | 10 % creators, then 45 / 45 | `CREATOR-ECONOMY-PLAN.md` |
 | Unclaimed backing after expiry | returns to the same bucket, never to players | `server/world.mjs`, rewards contract |
 
@@ -62,7 +62,7 @@ instead of the source; developers change the value here and in the pointed file 
 
 | Rule | Value | Source |
 | --- | --- | --- |
-| Welcome credit | 120,000 GOLD in the practice ledger | `server/database.mjs:249-255` |
+| Welcome credit | none: a new explorer starts with 0 GOLD (the 120,000 practice faucet was removed 10 Nov 2026) | `server/database.mjs` `createPlayer` |
 | Practice quest examples | 1,000 / 5,000 GOLD prizes | `server/world.mjs:179` |
 | QA creator commitment | 200 XP, test fixtures only | `docs/CREATOR-INTEGRATION-2026-10-31.md` |
 

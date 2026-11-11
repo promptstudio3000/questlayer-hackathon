@@ -215,3 +215,7 @@ An intentional re-extraction first restores those originals from their verified
 receipts. Raw PBFs, complete selected geometry, audit evidence and prior published
 days remain intact. This is storage maintenance, not a change to public access or
 safety classification.
+
+## Czechia fallback
+
+Inside Czechia, `/api/world` falls back to the normal street world (POI quests, landmark clues, NPC errand targets, coins) whenever no ready prepared region covers the spot, for example after the daily manifest was not supplied. Outside Czechia the prepared catalog stays the only source and a missing day still returns `GLOBAL_COVERAGE_UNAVAILABLE`. Set `GLOBAL_CZECHIA_FALLBACK=off` to restore the strict behaviour. Test: `tests/global-czechia-fallback.test.mjs`.

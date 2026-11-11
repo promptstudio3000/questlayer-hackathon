@@ -22,9 +22,15 @@ export const GUARDIAN_CHEST_RADIUS_M = 40;
  * `finds` are today's street finds ({id, lat, lng}); lurkers hide next to a
  * seeded subset of them, or on seeded path points when there are none.
  */
-export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = [], finds = [], pois = null, cap = null } = {}) {
+export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = [], finds = [], pois = null, cap = null, homeArea = null } = {}) {
   const g = pathGraph(pack, closed);
   if (!g.nodes.length) return [];
+  // `homeArea` ({ center, radiusM }, the compact demo layout) keeps seeded
+  // homes near the centre; without enough nodes there the whole graph is used.
+  const near = homeArea
+    ? g.nodes.filter((i) => distance({ lat: g.lat[i], lng: g.lng[i] }, homeArea.center) <= homeArea.radiusM)
+    : [];
+  const homeNodes = near.length >= 20 ? near : g.nodes;
   const out = [],
     monsters = [],
     npcHomes = [],
@@ -120,7 +126,7 @@ export function planSpawns(city, pack, worldSeed, dayId, { zones = [], closed = 
     const spacing = def.archetype === "roamer" ? ROAMER_SPACING_M : MONSTER_SPACING_M;
     const mine = [];
     for (let tries = 0, n = 1; n <= count && tries < 400; tries++) {
-      const p = node(g.nodes[Math.floor(rng() * g.nodes.length)]);
+      const p = node(homeNodes[Math.floor(rng() * homeNodes.length)]);
       if (!spaced(p, spacing, mine)) continue;
       if (def.kind === "monster" && !spaced(p, MONSTER_SPACING_M, monsters)) continue;
       mine.push(p);

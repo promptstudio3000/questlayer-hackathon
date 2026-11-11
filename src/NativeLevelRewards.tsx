@@ -112,7 +112,7 @@ export function NativeLevelRewards({
           <p className="play-hint">
             {tr("Collect street coins and finish walks with a linked account. Each level unlocks an Aura.")}</p>
           <button className="secondary-button" onClick={onConnect}>
-            {tr("Link NEAR account")}</button>
+            {tr("Activate my account")}</button>
         </>
       ) : (
         <>

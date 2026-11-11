@@ -15,3 +15,13 @@ export async function openScreen(page, name) {
     .first()
     .click();
 }
+
+// The play mode switch (city demo or GPS) lives in Map settings behind the
+// gear top right (src/MapSettings.tsx). Opens it and returns the page, so a
+// journey can write `(await openMapSettings(page)).getByRole(...)`.
+export async function openMapSettings(page) {
+  const toggle = page.locator(".map-settings-toggle");
+  await toggle.waitFor({ timeout: 60_000 });
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  return page;
+}

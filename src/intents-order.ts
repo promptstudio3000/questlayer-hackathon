@@ -36,6 +36,7 @@ export type IntentOrder = {
   buyerPays?: string;
   deadlineMs: number;
   state: string;
+  taker?: string | null;
   settlementTx: string | null;
 };
 export type IntentsAccount = {
@@ -152,4 +153,38 @@ export async function sellAuraOnIntents(signer: IntentsSigner, tokenId: string, 
   const signed = await signIntents(signer.key, config, [auraTokenDiff("sell", config.nftContract, tokenId, priceYocto, config.wnear)]);
   await api("/native/intents/orders", { signed });
   return "listed";
+}
+
+/**
+ * Buy one open Intents sell order with the explorer's device key: turn on the
+ * key at the verifier when needed, wrap and deposit the missing wNEAR (price
+ * plus the verifier fee) from the explorer's own account, then sign the buy
+ * token_diff that the solver pairs with the seller's intent.
+ */
+export async function buyAuraOnIntents(
+  signer: IntentsSigner,
+  order: Pick<IntentOrder, "id" | "tokenId" | "price">,
+): Promise<{ transactionHash: string }> {
+  const config = await api<IntentsConfig>("/native/intents");
+  if (!config.enabled || !signer.key) throw Error("Trades through Intents need the explorer's device key.");
+  const publicKey = signer.knownPublicKey() || "";
+  const state = await api<IntentsAccount>(
+    `/native/intents/account?account=${encodeURIComponent(signer.accountId)}&publicKey=${encodeURIComponent(publicKey)}`,
+  );
+  const call = (receiverId: string, methodName: string, args: Record<string, unknown>, deposit: string) =>
+    signer.call({ receiverId, methodName, args, deposit, gas: "100000000000000" });
+  if (!state.keyRegistered) await call(config.verifier, "add_public_key", { public_key: publicKey }, "1");
+  let missing = BigInt(grossForNet(order.price, config.fee || 0)) - BigInt(state.wnear || "0");
+  // A 0.05 NEAR deposit would look like a storage deposit and be routed to
+  // the relayer, which refuses wrapping; wrap 1 yocto more instead.
+  if (missing === 50000000000000000000000n) missing += 1n;
+  if (missing > 0n) {
+    await call(config.wnear, "storage_deposit", { account_id: signer.accountId, registration_only: true }, "1250000000000000000000");
+    await call(config.wnear, "near_deposit", {}, missing.toString());
+    await call(config.wnear, "ft_transfer_call", { receiver_id: config.verifier, amount: missing.toString(), msg: "" }, "1");
+  }
+  const signed = await signIntents(signer.key, config, [
+    auraTokenDiff("buy", config.nftContract, order.tokenId, order.price, config.wnear, config.fee || 0),
+  ]);
+  return api<{ transactionHash: string }>("/native/intents/fill", { orderId: order.id, signed });
 }

@@ -1,35 +1,21 @@
 #!/usr/bin/env node
-// Protected-paths guard for pull requests (docs/HANDOFF-WEEKEND.md).
+// Protected-paths guard for pull requests.
 //
-// Fails when a pull request changes contracts, deploy and signing scripts,
-// chain/money server code, economy numbers, deployment records, CI or
-// dependencies, unless the owner added the `owner-approved` label. Also fails
-// when added lines look like a private key or a secret file is committed.
-//
-// Pull requests from `claude/` branches are the owner's Claude project threads,
-// which work under the owner's standing rules; they skip the path rule but not
-// the secret scan. The branch name is a convention, not an identity, so the
-// guard's own files, CI and agent rules are never exempt: changing them always
-// needs the owner's label.
-//
-// CI runs this script from the BASE commit (guard.yml, pull_request_target),
-// so a pull request cannot weaken the guard that checks it.
+// Lists the protected paths a pull request touches (contracts, deploy and
+// signing scripts, chain/money server code, economy numbers, deployment
+// records, CI, dependencies) so the reviewer sees them. It fails only when a
+// secret or state file is committed or an added line looks like a private key
+// or API key. No approval label is needed: the owner dropped the
+// `owner-approved` requirement on 9 Nov 2026.
 //
 // Usage (CI sets these):
-//   BASE_SHA=<base> HEAD_SHA=<head> HEAD_REF=<branch> PR_LABELS='["a","b"]' \
-//     node .github/scripts/protected-paths.mjs
+//   BASE_SHA=<base> HEAD_SHA=<head> HEAD_REF=<branch> node .github/scripts/protected-paths.mjs
 // Local check before opening a PR:
 //   node .github/scripts/protected-paths.mjs --base origin/claude/upbeat-gauss-5czir7
 
 import { execFileSync } from "node:child_process";
 
-const APPROVAL_LABEL = "owner-approved";
-const EXEMPT_BRANCH_PREFIX = "claude/";
-
-// Each rule: a test on the repo-relative path and the reason shown on failure.
-// Paths that need the label even on `claude/` branches.
-const NEVER_EXEMPT = (p) =>
-  p.startsWith(".github/") || ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "docs/HANDOFF-WEEKEND.md"].includes(p);
+// Each rule: a test on the repo-relative path and the reason shown in the log.
 
 const RULES = [
   [(p) => p.startsWith("contracts/") || p === "rust-toolchain.toml", "smart contracts, WASM hashes and the Rust toolchain"],
@@ -102,12 +88,6 @@ if (!base) {
   process.exit(2);
 }
 const headRef = process.env.HEAD_REF || git("rev-parse", "--abbrev-ref", "HEAD").trim();
-let labels = [];
-try {
-  labels = JSON.parse(process.env.PR_LABELS || "[]");
-} catch {
-  labels = [];
-}
 
 const range = `${base}...${head}`;
 const changed = git("diff", "--name-only", "--no-renames", range).split("\n").filter(Boolean);
@@ -132,27 +112,15 @@ for (const line of added) {
   }
 }
 
-const exemptBranch = headRef.startsWith(EXEMPT_BRANCH_PREFIX);
-const approved = labels.includes(APPROVAL_LABEL);
 const protectedHits = [];
-let touchesNeverExempt = false;
 for (const p of paths) {
   const rule = RULES.find(([test]) => test(p));
   if (rule) protectedHits.push(`${p}  (${rule[1]})`);
-  if (NEVER_EXEMPT(p)) touchesNeverExempt = true;
 }
-const exempt = exemptBranch && !touchesNeverExempt;
 
-console.log(`Branch ${headRef}, ${paths.length} changed files, labels: ${labels.join(", ") || "none"}.`);
+console.log(`Branch ${headRef}, ${paths.length} changed files.`);
 if (protectedHits.length) {
-  console.log(`\nProtected paths touched:\n  ${protectedHits.join("\n  ")}`);
-  if (approved) console.log(`\nLabel "${APPROVAL_LABEL}" present: allowed by the owner.`);
-  else if (exempt) console.log(`\n(${EXEMPT_BRANCH_PREFIX} branch: owner's Claude thread, path rule skipped.)`);
-  else
-    problems.push(
-      `this PR changes protected paths. Only the owner may allow that by adding the "${APPROVAL_LABEL}" label. ` +
-        `Agents: revert these files, or stop and ask the owner. See docs/HANDOFF-WEEKEND.md.`,
-    );
+  console.log(`\nProtected paths touched (review these, no label needed):\n  ${protectedHits.join("\n  ")}`);
 }
 
 if (problems.length) {

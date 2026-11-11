@@ -58,6 +58,10 @@ Expected: `network: testnet`, `relayer.enabled: true`, `distribution.status: ver
 `socialRecords.contractId` set and `nativeRewards.last_error: null`. The release archive includes `public/*.json`
 because the server reads the network manifests from there.
 
+A testnet deploy then reinstalls the signing vault (`scripts/install-signing-vault-vps.sh`) on its own when
+`scripts/signing-vault-fingerprint.sh` (vault sources, its server, the installer and the contract manifests)
+differs from the installed release; `SKIP_SIGNING_VAULT=1` leaves the vault as it is.
+
 ## 5. Optional: reuse MapOS credentials
 
 The map works without keys (OpenFreeMap). Only if a keyed provider is wanted later, read the MapOS runtime
@@ -74,6 +78,10 @@ ssh -o IdentitiesOnly=yes root@72.61.188.39 'ls /opt/ps3000/apps/mapos* 2>/dev/n
 secret scan over the history, verify the README steps on a fresh clone, then submit once.
 
 ## 7. Mainnet slice: one command (needs Lubos's go, see `docs/MAINNET-PLAN.md` §5)
+
+State on 10 November (rewards M4, vault factory v3, QGOLD proposal 4, the encrypted inbox, relayer subsidy, the
+retired game contract): `docs/MAINNET-PLAN.md` §7. Before a mainnet inbox, write the three `SUBSIDY_*` values
+into the mainnet runtime.env; without them sponsorship fails closed.
 
 Nothing here has run on mainnet. `scripts/deploy-mainnet-slice.mjs` deploys the minimal slice from
 `docs/MAINNET-PLAN.md` §1: the collectibles contract (create, deploy and `new` in one transaction, then

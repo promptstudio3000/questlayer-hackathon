@@ -9,14 +9,14 @@
     "questlayer_ledger": "3c4df45cdfa8854dc37553fc13be261fef09acd00a283d4c7fac0aa26704ffa5",
     "questlayer_market": "1642a65af521b17b9d46786d66d1606c223cbf68d6a53cd90d620ce8ce225435",
     "questlayer_npc_games": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
-    "questlayer_qgold": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f",
-    "questlayer_qgold_escrow": "2030dbd135d22f397be6d9e951c37eacff60556c1fdebd88a2ed7af14fa4a298",
-    "questlayer_rewards": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+    "questlayer_qgold": "3734e361148e880ff1717edde0f774e541b8761fd8837bec690bde93ec49bf49",
+    "questlayer_qgold_escrow": "ac68d5750d96fae0e087be5881f3fd9f394aba07fdd659b3a4abcadab5b76876",
+    "questlayer_rewards": "3e6e8be931b0887a39b9ad038efd11ef015c879b896e37a2ddb97bd2f7a2faa8",
     "questlayer_soulbound_ft": "2746a77ec1de90c9b9a8054769922d0a2027cec8c15f743fcd66b89b3c572293",
     "questlayer_tasks": "055954f30c81b4dfd56b3bd9a88c469aeb74c50d5eb4eb83f9aeb5b8bbc51751",
-    "questlayer_vault": "9bc4ffa8d4b7c2f403efa7ebb2cc1bc20e086039d5c690fdbdd82aaff93347d5",
-    "questlayer_vault_factory": "b459ef272d62077540a617feb35bfff71b71d8c88bb6e171ae7a448728a06f0b",
-    "questlayer_yield_vault": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700"
+    "questlayer_vault": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b",
+    "questlayer_vault_factory": "46e7579d5a542cb9980e92dfd4578b57b2ec6e8dbe8db9ef263b96fb953818c4",
+    "questlayer_yield_vault": "5110565f1f24df4746ad3ca6ba8180bbe0170ea693534f6bf49a9512ce347989"
   },
   "testnetDeploymentsNotFromThisBuild": {
     "about": "Testnet records whose deployed WASM was built before reproducible builds (or from older source) and so cannot match today's build. Each entry pins the exact recorded hash: a new deployment record must either match the reproducible build or be added here on purpose. Mainnet deploys must never appear here.",
@@ -71,6 +71,16 @@
     "public/native-qgold-escrow-testnet.json:wasmSha256": {
       "contract": "questlayer_qgold_escrow",
       "sha256": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da"
+    },
+    "public/native-yield-vault-testnet.json:wasmSha256": {
+      "contract": "questlayer_yield_vault",
+      "sha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
+      "note": "Live yield vault before the 9 Nov H4/M5 fixes; redeploy and update the record to remove this entry."
+    },
+    "public/native-rewards-testnet.json:wasmSha256": {
+      "contract": "questlayer_rewards",
+      "sha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+      "note": "Live rewards before the 9 Nov M4 gas/reconcile fix; upgrading rewards and updating the record removes this entry."
     }
   }
 }

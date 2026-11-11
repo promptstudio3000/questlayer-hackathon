@@ -1219,7 +1219,7 @@ svg {
   gap: 9px;
   justify-content: center;
   align-items: center;
-  color: #9882a7;
+  color: #6c5785;
   background: none;
   border: 1px solid #e6ddec;
   border-radius: 10px;
@@ -2685,6 +2685,9 @@ input[type="range"] {
   height: 59px;
   position: relative;
   filter: drop-shadow(0 4px 4px #47345225);
+  /* In front of your own (larger, z-index 2) marker: an explorer standing
+     right where you are stays tappable; you still reach yours around it. */
+  z-index: 3;
 }
 .other-player-marker > svg {
   width: 44px;
@@ -4032,4 +4035,19 @@ a.settings-row:hover {
   display: block;
   height: 40px;
   width: auto;
+}
+/* One loading message at a time: while the world loads, its message replaces the map's. */
+.app-shell:has(.world-loading) .map-loading:not(.map-failure) { display: none; }
+/* Owner tester sign-in (/?tester, testnet only). */
+.welcome-tester {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+.welcome-tester input {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #d0cfe0);
+  font: inherit;
 }
