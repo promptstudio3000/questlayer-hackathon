@@ -24,6 +24,7 @@ import type { Player } from "./types";
 import "./fuel-the-city.css";
 import "./fuel-stake.css";
 import { tr } from "./i18n";
+import { Dialog } from "./Dialog";
 
 type StakerGates = { minNear: string; suggestNear: string; priceEur: number | null; access: { step: string; staker: boolean } };
 
@@ -135,9 +136,11 @@ export function stakePhase(positions: FuelPosition[]): StakePhase {
  */
 export function FuelTheCity({
   player,
-  account,
-  managed,
+  account: explorerAccount,
+  managed: explorerManaged,
+  explorerStatus,
   onConnect,
+  onLinkWallet,
   onTransaction,
 }: {
   player: Player;
@@ -145,10 +148,32 @@ export function FuelTheCity({
   account: string;
   /** True when the account is the invisible one, so nothing pops up. */
   managed: boolean;
+  /** Why the explorer account is not ready yet (play-first, creating, needs-recovery, ...). */
+  explorerStatus?: string;
   cityName?: string;
   onConnect: () => void;
+  /** Links a NEAR wallet the player already has (wallet picker + signed message). */
+  onLinkWallet?: () => Promise<void> | void;
   onTransaction: (r: VaultRequest) => Promise<boolean>;
 }) {
+  // Stake from the explorer account by default, or from a linked NEAR wallet.
+  const payOptions = [...new Set([explorerAccount, ...player.wallets.map((w) => w.account_id)].filter(Boolean))];
+  const [chosen, setChosen] = useState("");
+  const account = chosen && payOptions.includes(chosen) ? chosen : payOptions[0] || "";
+  const managed = explorerManaged && account === explorerAccount;
+  const [helpOpen, setHelpOpen] = useState(false);
+  // A wallet linked from the help dialog becomes the one that pays.
+  const knownWallets = useRef(player.wallets.map((w) => w.account_id).join());
+  useEffect(() => {
+    const ids = player.wallets.map((w) => w.account_id);
+    const before = knownWallets.current.split(",");
+    const added = ids.find((id) => !before.includes(id) && id !== explorerAccount);
+    knownWallets.current = ids.join();
+    if (added) {
+      setChosen(added);
+      setHelpOpen(false);
+    }
+  }, [player.wallets, explorerAccount]);
   const [vaults, setVaults] = useState<VaultSnapshot | null>(null),
     [city, setCity] = useState<CityStaking | null>(null),
     [readError, setReadError] = useState(""),
@@ -246,7 +271,7 @@ export function FuelTheCity({
 
   /** One tap: set up the vault when there is none, then stake. */
   async function stake() {
-    if (!account) return onConnect();
+    if (!account || short) return setHelpOpen(true);
     let deposit: string;
     try {
       deposit = parseTestNear(amount);
@@ -410,34 +435,33 @@ export function FuelTheCity({
           <>
             <button
               className="primary-button fuel-stake-button"
-              disabled={busy || !!short || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
+              disabled={busy || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
               onClick={() => void stake()}
             >
               {busy && outcome.kind === "pending" ? outcome.text : tr("Stake {0} NEAR", { 0: amount })}
               {eur && !busy ? <small>{eur}</small> : null}
               <Flame size={20} aria-hidden="true" />
             </button>
-            {short && (
-              <div className="fuel-short" role="status">
-                <p>
-                  {tr("You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.", {
-                    0: fmt(nearOf(balance!.toString()), 2),
-                    1: fmt(nearOf(needYocto.toString()), 2),
-                  })}
-                </p>
-                <code>{account}</code>
-                <div className="fuel-short-buttons">
-                  <button type="button" className="secondary-button" onClick={() => void copyAccount()}>
-                    {copied ? tr("Copied") : tr("Copy address")}
-                  </button>
-                  <a className="secondary-button" href={TEST_NEAR_FAUCET} target="_blank" rel="noreferrer">
-                    {tr("Get test NEAR")}
-                  </a>
-                  <button type="button" className="secondary-button" onClick={() => void readBalance(account).then(setBalance)}>
-                    <ArrowsClockwise size={18} aria-hidden="true" /> {tr("Check again")}
-                  </button>
-                </div>
-              </div>
+            {payOptions.length > 1 && (
+              <label className="fuel-payfrom">
+                <span>{tr("Pay from")}</span>
+                <select value={account} disabled={busy} onChange={(e) => setChosen(e.target.value)}>
+                  {payOptions.map((id) => (
+                    <option key={id} value={id}>
+                      {id === explorerAccount ? tr("Explorer account") + " · " : ""}
+                      {id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {(short || !account) && (
+              <button type="button" className="fuel-why" onClick={() => setHelpOpen(true)}>
+                <WarningCircle size={18} aria-hidden="true" />
+                {!account
+                  ? tr("Your account isn't ready to stake yet. What can I do?")
+                  : tr("Not enough test NEAR yet. What can I do?")}
+              </button>
             )}
             <p className="fuel-paid">
               {tr("One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.")}{" "}
@@ -569,6 +593,21 @@ export function FuelTheCity({
 
       {!canStake && <StakeToday />}
 
+      {helpOpen && (
+        <StakeHelp
+          account={account}
+          explorerAccount={explorerAccount}
+          explorerStatus={explorerStatus}
+          haveNear={balance === null ? null : nearOf(balance.toString())}
+          needNear={nearOf(needYocto.toString())}
+          copied={copied}
+          onCopy={() => void copyAccount()}
+          onRecheck={() => void readBalance(account).then(setBalance)}
+          onLinkWallet={onLinkWallet}
+          onClose={() => setHelpOpen(false)}
+        />
+      )}
+
       <details className="play-details fuel-advanced">
         <summary>
           <ArrowsClockwise size={18} aria-hidden="true" /> {tr("Vault details")}
@@ -576,5 +615,108 @@ export function FuelTheCity({
         <NativeStaking player={player} onConnect={onConnect} onTransaction={onTransaction} />
       </details>
     </section>
+  );
+}
+
+const NEAR_WALLETS = [
+  { name: "Meteor Wallet", href: "https://wallet.meteorwallet.app/" },
+  { name: "HOT Wallet", href: "https://hot-labs.org/wallet/" },
+  { name: "MyNearWallet (testnet)", href: "https://testnet.mynearwallet.com/" },
+];
+
+/**
+ * Shown instead of an error when a stake can't go through yet (owner request,
+ * 11 Nov 2026): why, and what the explorer can do about it.
+ */
+function StakeHelp({
+  account,
+  explorerAccount,
+  explorerStatus,
+  haveNear,
+  needNear,
+  copied,
+  onCopy,
+  onRecheck,
+  onLinkWallet,
+  onClose,
+}: {
+  account: string;
+  explorerAccount: string;
+  explorerStatus?: string;
+  haveNear: number | null;
+  needNear: number;
+  copied: boolean;
+  onCopy: () => void;
+  onRecheck: () => void;
+  onLinkWallet?: () => Promise<void> | void;
+  onClose: () => void;
+}) {
+  const reason = !account
+    ? explorerStatus === "play-first"
+      ? tr("Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.")
+      : tr("Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.")
+    : tr("{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).", {
+        0: account === explorerAccount ? tr("Your explorer account") : account,
+        1: haveNear === null ? "?" : fmt(haveNear, 2),
+        2: fmt(needNear, 2),
+      });
+  return (
+    <Dialog label={tr("Why you can't stake yet")} onClose={onClose}>
+      <section className="stake-help">
+        <h2>{tr("Why you can't stake yet")}</h2>
+        <p className="stake-help-reason">{reason}</p>
+        <ol className="stake-help-options">
+          {account && (
+            <li>
+              <b>{tr("Send test NEAR to this account")}</b>
+              <code>{account}</code>
+              <div className="fuel-short-buttons">
+                <button type="button" className="secondary-button" onClick={onCopy}>
+                  {copied ? tr("Copied") : tr("Copy address")}
+                </button>
+                <a className="secondary-button" href={TEST_NEAR_FAUCET} target="_blank" rel="noreferrer">
+                  {tr("Get test NEAR")}
+                </a>
+                <button type="button" className="secondary-button" onClick={onRecheck}>
+                  <ArrowsClockwise size={18} aria-hidden="true" /> {tr("Check again")}
+                </button>
+              </div>
+            </li>
+          )}
+          {onLinkWallet && (
+            <li>
+              <b>{tr("Use a NEAR wallet you already have")}</b>
+              <span>{tr("Connect it and stake from it; your wallet asks you to approve each step.")}</span>
+              <button type="button" className="secondary-button" onClick={() => void onLinkWallet()}>
+                {tr("Connect a NEAR wallet")}
+              </button>
+            </li>
+          )}
+          <li>
+            <b>{tr("No NEAR wallet yet?")}</b>
+            <span>{tr("Install one, create an account, then come back and connect it.")}</span>
+            <div className="fuel-short-buttons">
+              {NEAR_WALLETS.map((w) => (
+                <a key={w.href} className="secondary-button" href={w.href} target="_blank" rel="noreferrer">
+                  {w.name}
+                </a>
+              ))}
+            </div>
+          </li>
+          <li>
+            <b>{tr("Pay from another crypto wallet")}</b>
+            <span>
+              {tr("With NEAR Intents you will pay in ETH, SOL, BTC or USDC from any wallet. Intents run on NEAR mainnet only, so this opens with the mainnet launch.")}
+            </span>
+            <button type="button" className="secondary-button" disabled>
+              {tr("Pay with NEAR Intents · at mainnet")}
+            </button>
+          </li>
+        </ol>
+        <button type="button" className="primary-button" onClick={onClose}>
+          {tr("Close")}
+        </button>
+      </section>
+    </Dialog>
   );
 }
