@@ -3147,6 +3147,7 @@ async function api(req, res, url) {
         lat: Number(url.searchParams.get("lat") ?? HOME.lat),
         lng: Number(url.searchParams.get("lng") ?? HOME.lng),
         arena: url.searchParams.get("arena") !== "0",
+        radiusKm: url.searchParams.has("radiusKm") ? Number(url.searchParams.get("radiusKm")) : null,
       }),
     );
   if (path === "/api/messages" && method === "POST") {

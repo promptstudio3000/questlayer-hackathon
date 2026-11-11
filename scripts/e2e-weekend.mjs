@@ -120,7 +120,7 @@ try {
         }
         if (screen === "Community") {
           await page.getByRole("tab", { name:"Local chat", exact:true }).click();
-          await page.getByRole("button", { name:"Write a note", exact:true }).click();
+          await page.getByRole("button", { name:"Write a message", exact:true }).click();
           await page.locator("#map-note-text").fill("A draft kept through returning to the map.");
           await page.setViewportSize({width,height:420});
           await page.locator("#map-note-text").focus();

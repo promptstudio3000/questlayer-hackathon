@@ -172,9 +172,9 @@ export const Bounties = lazyNamed(walletScreens, "Bounties");
 // Explorer · Nearby: player tasks, Secrets and conditional sends.
 export const NearbyList = lazyNamed(() => import("./NearbyList"), "NearbyList");
 export const GoldShop = lazyNamed(() => import("./GoldShop"), "GoldShop");
-export const PlaceMessages = lazyNamed(
-  () => import("./PlaceMessages"),
-  "PlaceMessages",
+export const LocalChat = lazyNamed(
+  () => import("./LocalChat"),
+  "LocalChat",
 );
 export const PlaceCompose = lazyNamed(() => import("./PlaceMessages"), "PlaceCompose");
 export const CommunityPlaces = lazyNamed(() => import("./CommunityPlaces"), "CommunityPlaces");

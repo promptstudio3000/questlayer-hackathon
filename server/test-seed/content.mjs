@@ -40,13 +40,22 @@ const near = (dLat, dLng) => ({
   lng: Math.round((SEED_CENTER.lng + dLng) * 1e5) / 1e5,
 });
 
+// Local chat messages. `ago` is minutes before the first seed run, so the
+// chat reads like a conversation; some come from towns 15–85 km away so the
+// distance filter (1–100 km) has something to show.
 export const SEED_NOTES = Object.freeze([
-  { slug: "cathedral", author: "seed-p-vera", text: "The tower of St Bartholomew is open today, 301 steps to the top. Worth it!", at: near(0.0001, 0.0002) },
-  { slug: "fountain", author: "seed-p-tomas", text: "Golden fountain on the square: a wisp was hanging around here at noon.", at: near(-0.0006, -0.0009) },
-  { slug: "brewery", author: "seed-p-jana", text: "Coins near the brewery gate are easy, watch out for the guardian by the river.", at: near(-0.0011, 0.0098) },
-  { slug: "park", author: "seed-p-lucie", text: "Kopecký park is quiet, good place to read the chronicler's stories.", at: near(-0.0035, 0.0015) },
-  { slug: "synagogue", author: "seed-p-marek", text: "Buying Auras on the market today, list yours and I'll take a look.", at: near(-0.0012, -0.0068) },
-  { slug: "radbuza", author: "seed-p-ondra", text: "Radbuza riverbank walk: three monsters spotted, bring friends for the boss.", at: near(-0.0042, -0.0085) },
+  { slug: "praha", author: "seed-p-marek", text: "Prague crew here. Anyone from Plzeň coming to the Saturday Aura swap?", at: near(0.328, 1.0604), ago: 340 },
+  { slug: "radbuza", author: "seed-p-ondra", text: "Radbuza riverbank walk: three monsters spotted, bring friends for the boss.", at: near(-0.0042, -0.0085), ago: 300 },
+  { slug: "klatovy", author: "seed-p-lucie", text: "Klatovy catacombs are open again. Spooky and perfect for a ghost hunt.", at: near(-0.352, -0.0823), ago: 260 },
+  { slug: "park", author: "seed-p-lucie", text: "Kopecký park is quiet, good place to read the chronicler's stories.", at: near(-0.0035, 0.0015), ago: 210 },
+  { slug: "synagogue", author: "seed-p-marek", text: "Buying Auras on the market today, list yours and I'll take a look.", at: near(-0.0012, -0.0068), ago: 170 },
+  { slug: "rokycany", author: "seed-p-jana", text: "Rokycany square has two zones today. Took the train, 20 minutes from Plzeň.", at: near(-0.0048, 0.2171), ago: 130 },
+  { slug: "brewery", author: "seed-p-jana", text: "Coins near the brewery gate are easy, watch out for the guardian by the river.", at: near(-0.0011, 0.0098), ago: 95 },
+  { slug: "bory", author: "seed-p-tomas", text: "Bory park run done, 4 coins on the way and a wisp near the lake.", at: near(-0.0215, -0.0078), ago: 70 },
+  { slug: "fountain", author: "seed-p-tomas", text: "Golden fountain on the square: a wisp was hanging around here at noon.", at: near(-0.0006, -0.0009), ago: 45 },
+  { slug: "domazlice", author: "seed-p-vera", text: "Domažlice tower is 194 steps. Great view of the Chod hills from the top.", at: near(-0.307, -0.4477), ago: 30 },
+  { slug: "cathedral", author: "seed-p-vera", text: "The tower of St Bartholomew is open today, 301 steps to the top. Worth it!", at: near(0.0001, 0.0002), ago: 18 },
+  { slug: "coffee", author: "seed-p-ondra", text: "Who's on the square right now? Grabbing coffee by the fountains, say hi.", at: near(-0.0005, -0.0012), ago: 6 },
 ]);
 
 // Community places (Community · Places): spots seed explorers recommend
@@ -87,6 +96,21 @@ export const SEED_PLACE_THREADS = Object.freeze([
     at: near(-0.0006, -0.0011),
     replies: [{ author: "seed-p-tomas", text: "I have a spare Stormcrown, looking for Meadow Bloom." }],
   },
+  { slug: "shout-tower", kind: "shout", author: "seed-p-vera", text: "Sunset from the cathedral tower in 30 minutes, the view is unreal today.", at: near(0.0001, 0.0003) },
+  {
+    slug: "topic-rokycany",
+    kind: "topic",
+    author: "seed-p-jana",
+    title: "Day trips from Plzeň",
+    text: "Which nearby town has the best zones for a half-day trip? Rokycany was great.",
+    at: near(-0.0048, 0.2171),
+    replies: [
+      { author: "seed-p-lucie", text: "Klatovy, and the catacombs are a nice bonus." },
+      { author: "seed-p-vera", text: "Domažlice tower for the view." },
+      { author: "seed-p-ondra", text: "Plasy monastery if you have a car." },
+    ],
+  },
+  { slug: "shout-klatovy", kind: "shout", author: "seed-p-lucie", text: "Klatovy: boss spawned by the Black Tower, need two more players!", at: near(-0.352, -0.0823) },
 ]);
 
 // Auras seed explorers keep listed on the practice market. Restocked when sold.
