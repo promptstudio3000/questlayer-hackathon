@@ -3,7 +3,6 @@
 // passed in by App so economy and transaction logic stay where they were.
 import type { ReactNode } from "react";
 import {
-  Backpack,
   ChatCircle,
   ChatsCircle,
   MapPin,
@@ -14,20 +13,18 @@ import {
   GearSix,
   PencilSimpleLine,
   Scroll,
-  Signature,
   Storefront,
+  Tag,
+  TShirt,
   UserCircle,
-  ShieldCheck,
   Coins,
   Translate,
-  Compass,
-  MapPinArea,
   type Icon,
 } from "@phosphor-icons/react";
 import type { ScreenTab } from "./ScreenTabs";
 import { ArrowRight } from "./dir-icons";
 import type { CreatorCommunityView } from "./creator-community-types";
-import type { MarketView, ProfileView } from "./app-navigation";
+import type { ProfileView } from "./app-navigation";
 import { lang, LANGS, setLang, tr, type Lang } from "./i18n";
 
 export type ProfileTab = "character" | "stake" | "settings";
@@ -43,16 +40,17 @@ export function profileTabOf(tab: string, view: ProfileView): ProfileTab {
   return tab === "fuel" || tab === "wallet" ? "stake" : view === "settings" ? "settings" : "character";
 }
 
-export const MARKET_TABS: readonly ScreenTab<MarketView>[] = [
-  { id: "secured", get label() { return tr("Secured"); }, icon: ShieldCheck },
-  { id: "offers", get label() { return tr("Offers"); }, icon: Signature },
-];
-
-export type BagTab = "items" | "shop" | "market";
+/** Inventory: what you own and wear, then everything you can buy. */
+export type BagTab = "wardrobe" | "shop";
 export const BAG_TABS: readonly ScreenTab<BagTab>[] = [
-  { id: "items", get label() { return tr("Items"); }, icon: Backpack },
-  { id: "shop", get label() { return tr("Shop"); }, icon: Sparkle },
-  { id: "market", get label() { return tr("Market"); }, icon: Storefront },
+  { id: "wardrobe", get label() { return tr("Wardrobe"); }, icon: TShirt },
+  { id: "shop", get label() { return tr("Shop"); }, icon: Storefront },
+];
+/** Shop sub-tabs: GOLD items from the game, and Auras other explorers sell. */
+export type ShopTab = "items" | "market";
+export const SHOP_TABS: readonly ScreenTab<ShopTab>[] = [
+  { id: "items", get label() { return tr("Items"); }, icon: Sparkle },
+  { id: "market", get label() { return tr("Market"); }, icon: Tag },
 ];
 
 export type CommunityTab = "quests" | "tasks" | "notes" | "places" | "creators";

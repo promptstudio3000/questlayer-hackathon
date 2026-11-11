@@ -41,6 +41,7 @@ import {
   DeviceKeys,
   NativeLevelRewards,
   NativeMarketPanel,
+  MarketBoard,
   NativeExpeditions,
   NativeEconomyPanel,
   RewardFundingPage,
@@ -242,9 +243,9 @@ import { Details, ScreenTabPanel, ScreenTabs } from "./ScreenTabs";
 import {
   BAG_TABS,
   COMMUNITY_TABS,
+  SHOP_TABS,
   LOCAL_CHAT_TABS,
   type LocalChatView,
-  MARKET_TABS,
   PROFILE_TABS,
   ProfileHero,
   ProfileTile,
@@ -445,7 +446,7 @@ export default function App() {
   const [actorFocus, setActorFocus] = useState<{ revision: number; match: ActorFocusMatch } | null>(null);
 
   // A wearable pickup is a Wardrobe item: "see it" opens Inventory there.
-  const [inventoryStart, setInventoryStart] = useState<InventoryTab>("items");
+  const [inventoryStart, setInventoryStart] = useState<InventoryTab>("all");
   const [wearableMoment, setWearableMoment] = useState<{scope: string; id: number; name: string; detail: string; chain?: ChainRef | null} | null>(null);
   const [startedQuestKey, setStartedQuestKey] = useState("");
   const [catalogView, setCatalogView] = useState<{ scope: string; zoneId: string | null; questId: string | null } | null>(null);
@@ -525,13 +526,12 @@ export default function App() {
     setSheetExpanded = navigation.setter("sheetExpanded"),
     setTaskRealm = navigation.setter("taskRealm"),
     setNotesView = navigation.setter("notesView"),
-    setCreatorView = navigation.setter("creatorView"),
-    setMarketView = navigation.setter("marketView");
+    setCreatorView = navigation.setter("creatorView");
   useEffect(() => {
-    if (tab !== "inventory") setInventoryStart("items");
+    if (tab !== "inventory") setInventoryStart("all");
   }, [tab]);
   function openWardrobe() {
-    setInventoryStart("wardrobe");
+    setInventoryStart("wearables");
     setTab("inventory");
   }
   const profileTab = profileTabOf(tab, profileView);
@@ -2998,6 +2998,45 @@ export default function App() {
     }
     return false;
   }
+  /**
+   * Lists a secured Aura for sale. NEAR Intents is the default market: the
+   * device key lists the Aura there. Only a host without a deployed verifier
+   * falls back to the market contract.
+   */
+  async function listSecuredAura(
+    accountId: string,
+    tokenId: string,
+    priceYocto: string,
+  ): Promise<boolean> {
+    if (orderSigner?.key && orderSigner.accountId === accountId) {
+      // Loaded on demand to keep the first bundle small.
+      const { sellAuraOnIntents } = await import("./intents-order");
+      const viaIntents = await action("intents-sell", () =>
+        sellAuraOnIntents(orderSigner, tokenId, priceYocto),
+      );
+      if (viaIntents === undefined) return false;
+      if (viaIntents === "listed") {
+        await me();
+        notify(tr("Your Aura is on sale. Find it in Shop → Market."));
+        return true;
+      }
+    }
+    const market = await api<NativeMarketState>("/native/market");
+    if (!market.marketContract) return false;
+    const listed = await tradeNative({
+      kind: "list",
+      accountId,
+      marketId: market.marketContract,
+      nftContractId: market.nftContract,
+      tokenId,
+      price: priceYocto,
+    });
+    if (listed) {
+      await me();
+      notify(tr("Your Aura is on sale. Find it in Shop → Market."));
+    }
+    return listed;
+  }
   async function mintEarnedAura(item: Item): Promise<boolean> {
     const done = await action("native-claim", async () => {
       try {
@@ -3521,7 +3560,7 @@ export default function App() {
           gotchiverse: "Gotchiverse-test-app",
           expeditions: tr("Nearby walks"),
           inventory: tr("Inventory"),
-          market: tr("Market"),
+          market: tr("Inventory"),
           wallet: tr("Wallet"),
         }[tab] ||
         "QuestLayer";
@@ -4015,12 +4054,24 @@ export default function App() {
               label={tr("Inventory")}
               idBase="bag"
               tabs={BAG_TABS}
-              value={tab === "market" ? "market" : tab === "shop" ? "shop" : "items"}
-              onChange={(next) => setTab(next === "market" ? "market" : next === "shop" ? "shop" : "inventory")}
+              value={tab === "inventory" ? "wardrobe" : "shop"}
+              withPanel={tab === "inventory"}
+              onChange={(next) => setTab(next === "shop" ? "shop" : "inventory")}
+            />
+          )}
+          {(tab === "market" || tab === "shop") && (
+            <ScreenTabs
+              label={tr("Shop")}
+              idBase="shop"
+              variant="sub"
+              sticky={false}
+              tabs={SHOP_TABS}
+              value={tab === "market" ? "market" : "items"}
+              onChange={(next) => setTab(next === "market" ? "market" : "shop")}
             />
           )}
           {tab === "shop" && (
-            <ScreenTabPanel idBase="bag" value="shop">
+            <ScreenTabPanel idBase="shop" value="items">
               <GoldShop
                 key={player.id}
                 worldId={world?.id || null}
@@ -4254,7 +4305,7 @@ export default function App() {
             />
           )}
           {tab === "inventory" && (
-            <ScreenTabPanel idBase="bag" value="items">
+            <ScreenTabPanel idBase="bag" value="wardrobe">
               <Inventory
                 key={player.id}
                 onOriginalAppearance={(appearance) =>
@@ -4268,7 +4319,6 @@ export default function App() {
                 initialTab={inventoryStart}
                 map3D={map3D}
                 onMap3D={toggleMap3D}
-                initialCollection={nativePlay ? "near" : "demo"}
                 xp={hudXp === null ? null : Number(hudXp)}
                 onExplore={() => setTab("explore")}
                 characterItems={appearanceItems}
@@ -4384,53 +4434,37 @@ export default function App() {
                 }
                 onSell={async (item, priceYocto) => {
                   // Every Aura trade is on NEAR: secure the Aura as an NFT
-                  // (relayed, no fee), then list it on the market contract.
+                  // (relayed, no fee), then list it like a secured one.
                   if (!(await mintEarnedAura(item))) return false;
-                  const [claim, market] = await Promise.all([
-                    api<{ claim: NativeAuraClaim }>("/native/claims/confirm", {
-                      itemId: item.id,
-                    }),
-                    api<NativeMarketState>("/native/market"),
-                  ]);
+                  const claim = await api<{ claim: NativeAuraClaim }>(
+                    "/native/claims/confirm",
+                    { itemId: item.id },
+                  );
                   if (!claim.claim.token_id) return false;
-                  // NEAR Intents is the default market: the device key lists
-                  // the Aura there. Only a host without a deployed verifier
-                  // falls back to the market contract.
-                  if (
-                    orderSigner?.key &&
-                    orderSigner.accountId === claim.claim.receiver_id
-                  ) {
-                    // Loaded on demand to keep the first bundle small.
-                    const { sellAuraOnIntents } = await import("./intents-order");
-                    const viaIntents = await action("intents-sell", () =>
-                      sellAuraOnIntents(
-                        orderSigner,
-                        claim.claim.token_id!,
-                        priceYocto,
-                      ),
-                    );
-                    if (viaIntents === undefined) return false;
-                    if (viaIntents === "listed") {
-                      await me();
-                      notify(tr("Your Aura is listed through NEAR Intents. Find it in Market → Offers."));
-                      return true;
-                    }
-                  }
-                  if (!market.marketContract) return false;
-                  const listed = await tradeNative({
-                    kind: "list",
-                    accountId: claim.claim.receiver_id,
-                    marketId: market.marketContract,
-                    nftContractId: market.nftContract,
-                    tokenId: claim.claim.token_id,
-                    price: priceYocto,
-                  });
-                  if (listed) {
-                    await me();
-                    notify(tr("Your Aura is listed on NEAR. Find it in Market → Secured."));
-                  }
-                  return listed;
+                  return listSecuredAura(
+                    claim.claim.receiver_id,
+                    claim.claim.token_id,
+                    priceYocto,
+                  );
                 }}
+                secured={(nativeWardrobe?.accounts || []).map((account) => ({
+                  accountId: account.accountId,
+                  avatarReady: account.starterMinted && account.starterOwned,
+                  equipment: account.equipment,
+                  items: account.items,
+                }))}
+                onSecuredEquip={(account, item, slot) =>
+                  nativeTransaction(
+                    nativeWardrobe?.accounts.find((a) => a.accountId === account)
+                      ?.equipment[slot] === item.tokenId
+                      ? "unequip_aura"
+                      : "equip_aura",
+                    account,
+                    item,
+                    slot,
+                  )
+                }
+                onSecuredSell={listSecuredAura}
               />
             </ScreenTabPanel>
           )}
@@ -4805,28 +4839,30 @@ export default function App() {
             </ScreenTabPanel>
           )}
           {tab === "market" && (
-            <ScreenTabPanel idBase="bag" value="market">
-              <ScreenTabs
-                label={tr("Market")}
-                idBase="market"
-                variant="sub"
-                sticky={false}
-                tabs={MARKET_TABS}
-                value={marketView}
-                onChange={setMarketView}
+            <ScreenTabPanel idBase="shop" value="market">
+              <MarketBoard
+                key={player.id}
+                player={player}
+                orderSigner={orderSigner}
+                busy={busy}
+                onConnect={activateExplorer}
+                onTrade={tradeNative}
+                onBought={() => {
+                  void me();
+                  void refreshNative(true).catch(() => {});
+                }}
               />
-              <ScreenTabPanel idBase="market" value={marketView}>
-                  <NativeMarketPanel
-                    key={marketView}
-                    section={marketView}
-                    player={player}
-                    wardrobe={nativeWardrobe}
-                    busy={busy}
-                    onConnect={activateExplorer}
-                    onTrade={tradeNative}
-                    orderSigner={orderSigner}
-                  />
-              </ScreenTabPanel>
+              <Details summary={tr("More trading tools")}>
+                <NativeMarketPanel
+                  section="offers"
+                  player={player}
+                  wardrobe={nativeWardrobe}
+                  busy={busy}
+                  onConnect={activateExplorer}
+                  onTrade={tradeNative}
+                  orderSigner={orderSigner}
+                />
+              </Details>
             </ScreenTabPanel>
           )}
           {tab === "messages" && (
