@@ -134,6 +134,8 @@
   padding: 12px;
   background: var(--surface-soft, #f2ebff);
   border-left: 3px solid var(--action, #672eeb);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   font-size: 14px;
 }
 .native-tasks .task-back {

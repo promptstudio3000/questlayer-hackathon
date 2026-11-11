@@ -32,6 +32,20 @@ npm run wiki:check   # optional: the same check the test runs
 
 Only stamp after reading the chapter against the change. A stamp without a review defeats the point.
 
+## Chapter shape: short first
+
+Every chapter reads in three layers, so the page stays short and a reader gets the point without scrolling:
+
+1. **TL;DR** (`tldr`): one or two sentences, 60–320 characters, that say what the mechanism does for a player.
+2. **Key numbers** (`keyFacts`): two to four tiles of `[value, label]`, a value short enough for a tile
+   (≤ 24 characters) and a label of at most 60.
+3. **One picture** (`hero`): the diagram, animation or simulator that explains the mechanism best.
+
+Everything else is a detail block in `blocks`, folded under **More details** (native `<details>`, keyboard
+operable). Prefer short lists and tables to paragraphs there too. The top of the page carries the TL;DR of
+the whole game (`BigPicture` in `src/wiki/scenes.tsx`). Search opens the details of every matching chapter;
+**Open all details** unfolds the whole page. `tests/wiki.test.mjs` enforces the limits above.
+
 ## Content rules
 
 - Numbers that live in rules files are imported, never copied: the level table, staker gates, GOLD
@@ -42,6 +56,9 @@ Only stamp after reading the chapter against the change. A stamp without a revie
 - Never mention events or presentations, and never include secrets, keys, private hosts or file paths of
   key material. The test checks the copy for event words.
 - Markup inside chapter text is limited to `**bold**`, `` `code` `` and `[label](/path)`.
-- New pictures: add a `VizId` in `chapters.ts` and a component in `diagrams.tsx`, preferably built from
-  the primitives in `viz.tsx` (Flow, Sequence, LineChart, Bars, StackBar, Donut, Timeline24). Motion is
-  CSS only and stops under reduced motion.
+- New pictures: add a `VizId` in `chapters.ts` and register a component in `diagrams.tsx`, preferably built
+  from the primitives in `viz.tsx` (Flow, Sequence, LineChart, Bars, StackBar, Donut, Timeline24) or as an
+  authored scene in `scenes.tsx` (phone screen, screen map). Flow edges marked `flow` carry moving tokens.
+  Motion explains a flow or a state, uses CSS or SVG animation only, and stops under reduced motion (the
+  system setting and the game's own motion preference): `useMotion()` skips moving parts entirely.
+- Game objects (coin, chest, explorer) use the game's authored art; utility icons use Phosphor.

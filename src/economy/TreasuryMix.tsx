@@ -22,7 +22,7 @@ type Mix = {
   network: string;
   account: string;
   vault: string | null;
-  policy: { maxProtocolBps: number; maxUtilBps: number; maxMoveBps: number };
+  policy: { maxProtocolBps: number; maxUtilBps: number; maxMoveBps: number; driftBps?: number };
   total: string;
   buckets: Bucket[];
   exposure: { protocol: string; bps: number; overCap: boolean }[];
@@ -97,8 +97,12 @@ export default function TreasuryMix() {
               {mix.exposure.map((e, i) => (
                 <span key={e.protocol} className={e.overCap ? "eco-bad" : undefined}>
                   {i ? " · " : ""}
-                  {e.protocol} {pct(e.bps)}
-                  {e.overCap ? " (over the cap, being reduced)" : ""}
+                  {e.protocol} {e.overCap ? `${(e.bps / 100).toFixed(2)} %` : pct(e.bps)}
+                  {e.overCap
+                    ? mix.next.action === "rebalance"
+                      ? " (above the cap; the next run reduces it)"
+                      : ` (above the cap, within the ${(mix.policy.driftBps ?? 300) / 100}-point tolerance; nothing moves yet)`
+                    : ""}
                 </span>
               ))}
             </dd>

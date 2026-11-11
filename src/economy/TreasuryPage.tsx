@@ -3,6 +3,7 @@
 // parallel, draws where the money sits and how it moves, and lets anyone model
 // "what if" with the same rules the contracts and planners use. No sign-in.
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle, Warning } from "@phosphor-icons/react";
 import "./economy.css";
 import "./treasury.css";
 import "../public-polish.css";
@@ -85,6 +86,11 @@ function useJson<T>(url: string): Load<T> {
 const BUCKET_NAMES = { lst: "Liquid staking", stable: "Stablecoins on Rhea Lend", near: "NEAR reserve" } as const;
 const BUCKET_TONE = { lst: "tr-c1", stable: "tr-c2", near: "tr-c3" } as const;
 const pct = (bps: number) => `${(bps / 100).toLocaleString("en-GB", { maximumFractionDigits: 1 })} %`;
+/** Two decimals, so a share just over a cap never reads as equal to it ("40.02 %", not "40 %"). */
+const pctExact = (bps: number) => `${(bps / 100).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
+/** A tile value while its source is loading ("…") or could not be read ("—"). */
+const pendingValue = (load: Load<unknown>) => (load.error ? "—" : "…");
+const pendingNote = (load: Load<unknown>) => (load.error ? "not available on this host right now" : "reading…");
 
 /** Draw charts at their real width so labels stay readable on a phone. */
 function useWidth<T extends HTMLElement>(fallback = 640): [React.RefObject<T | null>, number] {
@@ -240,7 +246,7 @@ const FLOW_COPY: Record<FlowId, string> = {
   insurance: "A tenth of every fee goes to the insurance fund, kept apart from the treasury. It exists for a protocol failure, never for paying rewards.",
   yield: "Staking rewards and lending interest are the only money the map spends. The principal stays put: only the growth is harvested each morning.",
   budget: "The daily budget is spread over the whole map, cell by cell, by a public formula: community votes, recent player demand, a random draw, the area's potential and staking. Unclaimed money rolls into the next days.",
-  players: "Players earn QGOLD by walking to coins and winning zones. QXP (experience) is soulbound; QGOLD can be traded, sent or spent in the game.",
+  players: "Players earn QGOLD by walking to coins and winning zones; a payout round mints it to their own NEAR account within minutes. QXP (experience) is soulbound; QGOLD can be traded, sent or spent in the game.",
   vault: "Every QGOLD is fully backed by NEAR in the vault. R is the NEAR behind one QGOLD. Minting brings its own NEAR, so it never lowers R; spending in the game burns QGOLD and leaves its NEAR behind, so R rises for everyone.",
   market: "The Rhea pool lets anyone swap QGOLD and NEAR. A keeper sells only small, pre-committed amounts above R and buys back below it, so the market price stays near the backing.",
 };
@@ -300,6 +306,8 @@ function MixDonut({ mix }: { mix: Mix }) {
 
 function ExposureBars({ mix }: { mix: Mix }) {
   const cap = mix.policy.maxProtocolBps;
+  const driftPoints = (mix.policy.driftBps ?? 300) / 100;
+  const moving = mix.next.action === "rebalance";
   return (
     <div className="tr-bars" role="list" aria-label="Share of the treasury per protocol">
       {mix.exposure.map((e) => (
@@ -310,8 +318,14 @@ function ExposureBars({ mix }: { mix: Mix }) {
             <span className="tr-bar-cap" style={{ left: `${cap / 100}%` }} title={`cap ${pct(cap)}`} />
           </span>
           <span className="tr-bar-num">
-            {pct(e.bps)}
-            {e.overCap ? <em className="tr-warn"> ⚠ over the {pct(cap)} cap, being reduced</em> : null}
+            {e.overCap ? pctExact(e.bps) : pct(e.bps)}
+            {e.overCap ? (
+              <em className="tr-warn">
+                {" "}
+                <Warning size={16} weight="bold" aria-hidden="true" /> above the {pct(cap)} cap
+                {moving ? "; the next run reduces it" : `; within the ${driftPoints}-point tolerance, so nothing moves yet`}
+              </em>
+            ) : null}
           </span>
         </div>
       ))}
@@ -331,7 +345,7 @@ function BudgetChart({ rows }: { rows: Ledger["budget"] }) {
       const fromYield = Math.min(total, toNear(r.fromYield));
       return { date: r.date, total, fromYield, fromTreasury: total - fromYield };
     });
-  if (!data.length) return <p className="eco-muted">No daily budget is published yet.</p>;
+  if (!data.length) return <p className="eco-muted">No funded day is recorded on this host yet. Today's plan below shows how the map budget is split.</p>;
   const W = width,
     H = 220,
     L = 52,
@@ -695,7 +709,7 @@ function Simulator({ mix, q }: { mix: Mix | null; q: Qgold | null }) {
         <Tile label={`Sent to the map in ${k.days} days`} value={num(last.cumulativeYield, 3)} unit="NEAR" note="principal is never spent" />
         <Tile label={`R after ${k.days} days`} value={last.rate.toFixed(6)} unit="NEAR" note={`${(((last.rate - days[0].rate) / (days[0].rate || 1)) * 100).toFixed(1)} % from burns`} />
       </div>
-      <h3>Money sent to the map, cumulative</h3>
+      <h3>Money to the map and to insurance, cumulative</h3>
       <LineChart
         points={yieldPoints as never}
         label="Cumulative yield sent to the map and insurance fund over time"
@@ -873,20 +887,64 @@ export default function TreasuryPage() {
 
       <section className="eco-hero">
         <h1>Treasury</h1>
-        <p>
-          Where the game's money sits, how it earns, and how that yield becomes coins on the map. Live from the NEAR chain and the server's public records; the model at the bottom
-          shows what happens over time.
-        </p>
+        <p>Where the game's money sits, how it earns, and how that yield becomes coins on the map. Live from the NEAR chain and the server's public records.</p>
+        <div className="eco-tldr">
+          <span className="eco-tldr-tag">TL;DR</span>
+          <ol>
+            <li>
+              <b>The treasury holds NEAR-based assets</b> (staking tokens, lent stablecoins, NEAR) in the mix explorers vote on each week, and never spends them.
+            </li>
+            <li>
+              <b>Only yield is spent:</b> the treasury's own and the share stakers give from theirs (their principal stays theirs) become the daily map budget.
+            </li>
+            <li>
+              <b>Collected coins become QGOLD</b> in the player's own NEAR account within minutes, each backed by NEAR in the vault.
+            </li>
+            <li>
+              <b>Spending QGOLD burns it</b>, so the NEAR behind every remaining QGOLD (the rate R) can only stay or rise.
+            </li>
+          </ol>
+        </div>
         {network ? <span className="eco-chip">{network === "mainnet" ? "NEAR mainnet" : "NEAR testnet"}</span> : null}
+        <nav className="eco-jump" aria-label="On this page">
+          <a href="#tr-flow">Money flow</a>
+          <a href="#tr-mix">Mix</a>
+          <a href="#tr-dao">Who decides</a>
+          <a href="#tr-budget">Today's budget</a>
+          <a href="#tr-qgold">QGOLD backing</a>
+          <a href="#tr-model">Model</a>
+          <a href="#tr-fees">Fees</a>
+          <a href="#tr-safety">Safety</a>
+        </nav>
       </section>
 
-      <section className="tr-tiles" aria-label="Headline numbers">
-        <Tile label="Treasury" value={m ? shortNear(m.total, 3) : "…"} unit="NEAR" note={m ? `≈ ${num(toNear(m.total) * (Number(m.prices.nearUsdE8) / 1e8))} USD` : mix.error ? "not available" : null} />
-        <Tile label="Prize pool funded" value={l?.treasury.funded ? shortNear(l.treasury.funded, 4) : "…"} unit="NEAR" note={l?.treasury.awarded ? `${shortNear(l.treasury.awarded)} paid out` : null} />
-        <Tile label="QGOLD backing" value={v ? shortNear(v.backing, 3) : "…"} unit="NEAR" note={v ? `${num(toUnits(v.supply, 6), 0)} QGOLD in circulation` : null} />
-        <Tile label="Backing rate R" value={v ? rateNear(v.rate).toFixed(6) : "…"} unit="NEAR" note="NEAR behind one QGOLD" />
-        <Tile label="Insurance fund" value={v ? shortNear(v.insurance, 4) : "…"} unit="NEAR" note="10 % of fees" />
-        <Tile label="Yield realized" value={l?.realizedYield.paid ? shortNear(l.realizedYield.paid, 6) : "…"} unit="NEAR" note="staking yield paid into the prize pool" />
+      <section className="tr-tiles tr-tiles-head" aria-label="Headline numbers">
+        <Tile
+          label="Treasury"
+          value={m ? shortNear(m.total, 3) : pendingValue(mix)}
+          unit="NEAR"
+          note={m ? `≈ ${num(toNear(m.total) * (Number(m.prices.nearUsdE8) / 1e8))} USD` : pendingNote(mix)}
+        />
+        <Tile
+          label="Prize pool funded"
+          value={l?.treasury.funded ? shortNear(l.treasury.funded, 4) : l ? "—" : pendingValue(ledger)}
+          unit="NEAR"
+          note={l?.treasury.awarded ? `${shortNear(l.treasury.awarded)} paid out` : l ? (l.treasury.funded ? null : "not published on this host yet") : pendingNote(ledger)}
+        />
+        <Tile
+          label="QGOLD backing"
+          value={v ? shortNear(v.backing, 3) : q ? "—" : pendingValue(qgold)}
+          unit="NEAR"
+          note={v ? `${num(toUnits(v.supply, 6), 0)} QGOLD in circulation` : q ? "vault not readable right now" : pendingNote(qgold)}
+        />
+        <Tile label="Backing rate R" value={v ? rateNear(v.rate).toFixed(6) : q ? "—" : pendingValue(qgold)} unit="NEAR" note="NEAR behind one QGOLD" />
+        <Tile label="Insurance fund" value={v ? shortNear(v.insurance, 4) : q ? "—" : pendingValue(qgold)} unit="NEAR" note="10 % of fees, kept apart" />
+        <Tile
+          label="Yield realized"
+          value={l?.realizedYield.paid ? shortNear(l.realizedYield.paid, 6) : l ? "—" : pendingValue(ledger)}
+          unit="NEAR"
+          note={l?.realizedYield.paid ? "staking yield paid into the prize pool" : l ? "none recorded on this host yet" : pendingNote(ledger)}
+        />
       </section>
 
       <section className="eco-card" aria-labelledby="tr-flow">
@@ -913,7 +971,9 @@ export default function TreasuryPage() {
           })}
         </ol>
         <p className="tr-flow-copy" aria-live="polite">
-          {flow ? FLOW_COPY[flow] : "Fees and sponsors fill the treasury. Only its yield is spent: every morning the growth becomes the map budget, coins carry their NEAR into the QGOLD vault, and spending QGOLD in the game raises its backing."}
+          {flow
+            ? FLOW_COPY[flow]
+            : "Fees and sponsors fill the treasury. Only its yield is spent: the daily harvest becomes the map budget, every collected coin is minted as QGOLD with its NEAR in the vault, and spending QGOLD in the game burns it, so each remaining QGOLD is backed by more."}
         </p>
       </section>
 
@@ -936,7 +996,11 @@ export default function TreasuryPage() {
               </p>
               <p className="eco-small">
                 Next run:{" "}
-                {m.next.action === "rebalance" ? "rebalance toward the target." : m.next.reason === "within-drift" ? "nothing to do, within 3 points of the target." : (m.next.reason ?? m.next.action)}
+                {m.next.action === "rebalance"
+                  ? "rebalance toward the target."
+                  : m.next.reason === "within-drift"
+                    ? `nothing to do, within ${(m.policy.driftBps ?? 300) / 100} points of the target.`
+                    : (m.next.reason ?? m.next.action)}
               </p>
               {l?.stnear.status === "observed" ? (
                 <p className="eco-small eco-muted">
@@ -1056,7 +1120,7 @@ export default function TreasuryPage() {
             <ul className="tr-checks">
               {l.audit.checks.map((c) => (
                 <li key={c.name} className={c.ok ? "tr-ok" : "tr-warn"}>
-                  <span aria-hidden="true">{c.ok ? "✓" : "⚠"}</span> {CHECK_LABELS[c.name] ?? c.name}
+                  {c.ok ? <CheckCircle size={18} weight="bold" aria-hidden="true" /> : <Warning size={18} weight="bold" aria-hidden="true" />} {CHECK_LABELS[c.name] ?? c.name}
                   <span className="eco-muted"> · {c.ok ? "passes" : "under review"}</span>
                 </li>
               ))}

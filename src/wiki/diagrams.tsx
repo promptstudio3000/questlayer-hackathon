@@ -5,6 +5,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { VizId } from "./chapters";
 import { EDITIONS, GOLD, LEVELS, STAKER_GATES, STAKER_MIN_NEAR } from "./chapters";
 import { Bars, Donut, Flow, LineChart, Sequence, StackBar, Timeline24, type Tone } from "./viz";
+import { SCENES } from "./scenes";
+export { BigPicture } from "./scenes";
 
 const useJson = <T,>(url: string): T | null => {
   const [data, setData] = useState<T | null>(null);
@@ -65,7 +67,7 @@ function Architecture() {
 function MoneyModes() {
   return (
     <Flow
-      title="Every coin is backed: play earns QGOLD from the funded daily budget, the nightly payout mints it, spending burns it."
+      title="Every coin is backed: play earns QGOLD from the funded daily budget, a payout round every 5 minutes mints it, spending burns it."
       width={720}
       height={230}
       nodes={[
@@ -82,7 +84,7 @@ function MoneyModes() {
         { from: "play", to: "gold", flow: true, tone: "muted" },
         { from: "play", to: "near", flow: true, tone: "money" },
         { from: "near", to: "qgold", label: "Claim as QGOLD", flow: true, tone: "money" },
-        { from: "gold", to: "qgold", label: "Nightly payout", flow: true, tone: "money" },
+        { from: "gold", to: "qgold", label: "Payout round (5 min)", flow: true, tone: "money" },
         { from: "qgold", to: "burn", tone: "muted" },
         { from: "xp", to: "lvl", tone: "core" },
       ]}
@@ -119,13 +121,73 @@ function CoreLoop() {
 function MapCoins() {
   return (
     <Bars
-      title="Coin sizes in a cell, in units of the cell's coin value (0.01–0.2 GOLD per unit). Rare coins appear more often near zones."
+      title="Every coin of a day is worth the same share of the map budget; a pioneer coin (a cell nobody visited for 30 days) counts twice. Coin size on the map is only drawing."
       bars={[
-        { label: "Small", value: 1, tone: "muted", note: "× 1" },
-        { label: "Medium", value: 3, tone: "money", note: "× 3" },
-        { label: "Rare", value: 10, tone: "warn", note: "× 10" },
+        { label: "Normal coin", value: 1, tone: "money", note: "1 share" },
+        { label: "Pioneer coin", value: 2, tone: "warn", note: "2 shares" },
       ]}
-      format={(v) => `${v} unit${v > 1 ? "s" : ""}`}
+      max={2}
+      format={(v) => `× ${v}`}
+    />
+  );
+}
+
+function PayoutRound() {
+  return (
+    <Flow
+      title="From a picked-up coin to QGOLD in your account: one round every 5 minutes, one Merkle root per round, 8 accounts per transaction."
+      width={720}
+      height={250}
+      nodes={[
+        { id: "coin", x: 90, y: 60, label: "Coin confirmed", sub: "server receipt, exactly once", tone: "player", pulse: true },
+        { id: "way", x: 300, y: 60, label: "On its way", sub: "Profile · Stake · Earnings", tone: "money" },
+        { id: "round", x: 520, y: 60, w: 150, label: "Round every 5 min", sub: "sum per account → root", tone: "core" },
+        { id: "claim", x: 520, y: 190, w: 150, label: "claim_payout", sub: "8 leaves per transaction", tone: "chain" },
+        { id: "mint", x: 300, y: 190, label: "QGOLD vault", sub: "mint_for at rate R", tone: "chain", pulse: true },
+        { id: "you", x: 90, y: 190, label: "Your NEAR account", sub: "QGOLD balance", tone: "money" },
+      ]}
+      edges={[
+        { from: "coin", to: "way", flow: true, tone: "player" },
+        { from: "way", to: "round", label: "≥ 1 min old", flow: true, tone: "money" },
+        { from: "round", to: "claim", label: "publish_payout_day", flow: true, tone: "core" },
+        { from: "claim", to: "mint", flow: true, tone: "chain" },
+        { from: "mint", to: "you", flow: true, tone: "money" },
+      ]}
+    />
+  );
+}
+
+function WearableRarity() {
+  return (
+    <Bars
+      title="Share of wearable finds by rarity. A wearable find is a free in-game clone of an official Aavegotchi wearable: cosmetic, not an NFT, no GOLD value."
+      bars={[
+        { label: "Common", value: 40, tone: "muted" },
+        { label: "Uncommon", value: 26, tone: "world" },
+        { label: "Rare", value: 18, tone: "chain" },
+        { label: "Legendary", value: 10, tone: "money" },
+        { label: "Mythical", value: 5, tone: "player" },
+        { label: "Godlike", value: 1, tone: "core" },
+      ]}
+      max={40}
+      format={(v) => `${v} %`}
+    />
+  );
+}
+
+function InboxSeq() {
+  return (
+    <Sequence
+      title="A private message: sealed on the sender's device, stored on NEAR Social as ciphertext, opened only on the recipient's device."
+      lanes={["Sender device", "NEAR Social", "Game server", "Recipient device"]}
+      msgs={[
+        { from: 0, to: 1, label: "Read recipient's inbox key", tone: "player" },
+        { from: 0, to: 0, label: "Seal: X25519 + XChaCha20", tone: "player" },
+        { from: 0, to: 1, label: "Write ciphertext (relayer pays)", tone: "chain" },
+        { from: 2, to: 1, label: "Read exact record → delivered", tone: "core" },
+        { from: 3, to: 1, label: "Read the sealed record", tone: "player" },
+        { from: 3, to: 3, label: "Open with own secret key", tone: "player" },
+      ]}
     />
   );
 }
@@ -680,7 +742,7 @@ function GoldPrices() {
     { label: "NPC gear (epic)", value: GOLD.gear.price.epic, tone: "money" as Tone },
     { label: "Altar fee", value: GOLD.altar.default, tone: "muted" as Tone },
   ].sort((a, b) => b.value - a.value);
-  return <Bars title="QGOLD prices from server/data/gold-spend.json; a map coin is worth about 0.0004 QGOLD on testnet." bars={items} format={(v) => `${v} QGOLD`} />;
+  return <Bars title="QGOLD prices from server/data/gold-spend.json; every price is burned, never paid to anyone." bars={items} format={(v) => `${v} QGOLD`} />;
 }
 
 function StakerLadder() {
@@ -762,7 +824,7 @@ function ChainSplit() {
         { label: "Stake & yield vaults", value: 100, tone: "chain" },
         { label: "Funded city & map days", value: 100, tone: "money" },
         { label: "QGOLD mint / burn / exit", value: 100, tone: "money" },
-        { label: "Map coins & zone prizes", value: 100, tone: "money", note: "nightly payout" },
+        { label: "Map coins & zone prizes", value: 100, tone: "money", note: "payout rounds" },
         { label: "GOLD spending", value: 100, tone: "money", note: "ft_burn" },
         { label: "Task market & Secrets", value: 100, tone: "money", note: "QGOLD escrow" },
         { label: "XP", value: 30, tone: "core", note: "QXP ledger" },
@@ -856,7 +918,9 @@ function DailyJobs() {
         { label: "Database backup", spans: [{ from: 3.33, to: 3.6, tone: "core" }] },
         { label: "Harvest + mix (06:30 CET)", spans: [{ from: 5.5, to: 6, tone: "money" }] },
         { label: "Reward worker", spans: [{ from: 0, to: 24, label: "every 30 s", tone: "chain" }] },
-        { label: "Trader & QGOLD keepers", spans: [{ from: 0, to: 24, label: "every 10 min", tone: "money" }] },
+        { label: "QGOLD payout rounds", spans: [{ from: 0, to: 24, label: "every 5 min", tone: "money" }] },
+        { label: "QGOLD keeper", spans: [{ from: 0, to: 24, label: "every 5 min", tone: "money" }] },
+        { label: "Trader keeper", spans: [{ from: 0, to: 24, label: "every 10 min", tone: "ai" }] },
       ]}
     />
   );
@@ -912,6 +976,31 @@ function WikiLoop() {
   );
 }
 
+function DaoFlow() {
+  return (
+    <Flow
+      title="Who decides: explorers vote on the mix each week; the council approves each daily run only after checking it."
+      width={720}
+      height={250}
+      nodes={[
+        { id: "explorers", x: 95, y: 60, w: 150, label: "Explorers (L3+)", sub: "weekly mix vote, 1 : 1", tone: "player", pulse: true },
+        { id: "keeper", x: 330, y: 60, w: 150, label: "Keeper", sub: "files polls, results, runs", tone: "core" },
+        { id: "council", x: 590, y: 60, w: 170, label: "Council 2 of 3", sub: "approves after checks", tone: "chain", pulse: true },
+        { id: "mix", x: 590, y: 190, w: 170, label: "Adopted mix", sub: "e.g. 50 / 40 / 10", tone: "money" },
+        { id: "run", x: 330, y: 190, w: 150, label: "Daily run", sub: "≤ 25 % moved", tone: "money" },
+        { id: "treasury", x: 95, y: 190, w: 150, label: "Treasury", sub: "staking · stables · NEAR", tone: "world" },
+      ]}
+      edges={[
+        { from: "explorers", to: "keeper", label: "votes", flow: true, tone: "player" },
+        { from: "keeper", to: "council", label: "proposal", flow: true, tone: "core" },
+        { from: "council", to: "mix", label: "adopt", flow: true, tone: "chain" },
+        { from: "mix", to: "run", label: "target", flow: true, tone: "money" },
+        { from: "run", to: "treasury", label: "rebalance", flow: true, tone: "money" },
+      ]}
+    />
+  );
+}
+
 const VIZ: Record<VizId, () => React.ReactElement> = {
   architecture: Architecture,
   "money-modes": MoneyModes,
@@ -950,6 +1039,12 @@ const VIZ: Record<VizId, () => React.ReactElement> = {
   "daily-jobs": DailyJobs,
   "ci-gates": CiGates,
   "wiki-loop": WikiLoop,
+  "payout-round": PayoutRound,
+  "wearable-rarity": WearableRarity,
+  "inbox-seq": InboxSeq,
+  "phone-hud": SCENES["phone-hud"],
+  "screen-map": SCENES["screen-map"],
+  "dao-flow": DaoFlow,
 };
 
 export function Viz({ id }: { id: VizId }) {
