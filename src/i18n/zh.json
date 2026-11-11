@@ -3085,6 +3085,7 @@
  "You can build only on your own plot (gold border).": "你只能在自己的地块（金色边框）上建造。",
  "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "你的免费家园地块有金色边框。点“建造”，选一个方块，再点要放的位置。",
  "Your last blocks were not saved and were undone. Try again.": "你最近的方块没有保存，已撤销。请重试。",
+ "Connection problem. Your blocks are kept and will be saved when it is back.": "连接出现问题。你的方块已保留，连接恢复后会自动保存。",
  "Your plot": "你的地块",
  "{0} m": "{0} 米",
  "NEAR for your payments": "用于付款的 NEAR",

@@ -3085,6 +3085,7 @@
  "You can build only on your own plot (gold border).": "建てられるのは自分の区画（金色の枠）だけです。",
  "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "無料のホーム区画は金色の枠です。「建てる」をタップし、ブロックを選んで置きたい場所をタップします。",
  "Your last blocks were not saved and were undone. Try again.": "直前のブロックは保存されず、元に戻されました。もう一度お試しください。",
+ "Connection problem. Your blocks are kept and will be saved when it is back.": "接続に問題があります。ブロックは保持され、接続が戻ると保存されます。",
  "Your plot": "自分の区画",
  "{0} m": "{0} m",
  "NEAR for your payments": "支払い用のNEAR",
