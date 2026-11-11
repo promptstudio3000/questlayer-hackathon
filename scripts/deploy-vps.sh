@@ -30,7 +30,7 @@ if [[ "$TARGET" == mainnet ]]; then VITE_NEAR_NETWORK=mainnet npm run build; fi
 # Record the deployed commit for /api/health; an uncommitted tree stays unrecorded.
 if [[ -z "$(git status --porcelain --untracked-files=no)" ]]; then git rev-parse HEAD > build-id.txt
 else echo "Working tree has uncommitted changes; health will report development-unrecorded." >&2; : > build-id.txt; fi
-COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE_PATH" build-id.txt dist server public/*.json package.json package-lock.json "deploy/${APP_NAME}.service" deploy/retain-static-assets.py scripts/poi
+COPYFILE_DISABLE=1 tar --no-xattrs -czf "$ARCHIVE_PATH" build-id.txt dist server public/*.json package.json package-lock.json "deploy/${APP_NAME}.service" deploy/retain-static-assets.py scripts/poi scripts/treasury-worker-vps.sh scripts/stnear-treasury-testnet.mjs scripts/treasury-mix-testnet.mjs scripts/treasury-dao-testnet.mjs
 # Leave the testnet bundle in dist/ for the next testnet deploy or local run.
 if [[ "$TARGET" == mainnet ]]; then npm run build >/dev/null; fi
 scp -o BatchMode=yes -o ConnectTimeout=15 "$ARCHIVE_PATH" "${HOST_TARGET}:/tmp/${APP_NAME}-${RELEASE_TAG}.tgz"

@@ -7,7 +7,8 @@ How the daily budget is shared between cities is decided later by
 The sponsor treasury (the operator wallet `questlayer-dev-20261101.testnet`
 that funds reward days) holds its capital as **stNEAR** from Meta Pool
 (`meta-v2.pool.testnet`) instead of idle NEAR. stNEAR grows against NEAR every
-epoch. Once a day a worker on the owner's Mac sells **only that growth** and
+epoch. Once a day a worker on the VPS (docs/TREASURY-WORKERS-VPS.md, signed by the dedicated
+`treasury-ops` account since 11 Nov 2026) sells **only that growth** and
 funds the rewards contract with it.
 
 ## How a day works
@@ -59,7 +60,8 @@ node scripts/stnear-treasury-testnet.mjs harvest --dry-run
 node scripts/stnear-treasury-testnet.mjs harvest
 node scripts/stnear-treasury-testnet.mjs fund-pending           # retry funding after a failed step 5
 node scripts/stnear-treasury-testnet.mjs withdraw 1 [--dry-run]  # take principal back out
-bash scripts/install-stnear-harvest-mac.sh   # daily 06:30 LaunchAgent (--remove to undo)
+# daily 06:30: VPS timer questlayer-treasury-daily (docs/TREASURY-WORKERS-VPS.md);
+# the old Mac LaunchAgent is removed with bash scripts/install-stnear-harvest-mac.sh --remove
 ```
 
 Each command writes `public/stnear-treasury-testnet.json` (deposits, harvests
