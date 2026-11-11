@@ -3181,5 +3181,17 @@
  "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "У вашего бесплатного участка золотая рамка. Нажмите «Строить», выберите блок и нажмите, куда его поставить.",
  "Your last blocks were not saved and were undone. Try again.": "Последние блоки не сохранились и были отменены. Попробуйте ещё раз.",
  "Your plot": "Ваш участок",
- "{0} m": "{0} м"
+ "{0} m": "{0} м",
+ "NEAR for your payments": "NEAR для твоих платежей",
+ "Running low": "Заканчивается",
+ "The game pays the gas for every action. This small balance covers your account's storage and your own payments, such as buying an Aura.": "Игра оплачивает газ за каждое действие. Этот небольшой баланс покрывает хранилище твоего аккаунта и твои собственные платежи, например покупку Ауры.",
+ "Refuel to {0} NEAR": "Пополнить до {0} NEAR",
+ "Convert QGOLD to NEAR": "Обменять QGOLD на NEAR",
+ "Account name copied": "Имя аккаунта скопировано",
+ "Add your own NEAR": "Добавить свои NEAR",
+ "You already refuelled today. Tomorrow you can again.": "Сегодня ты уже пополнял. Завтра можно снова.",
+ "Refuel opens when your balance drops below {0} NEAR, once a day.": "Пополнение доступно раз в день, когда баланс опускается ниже {0} NEAR.",
+ "Add your own NEAR: send it from any wallet or exchange to {0}.": "Добавь свои NEAR: отправь их с любого кошелька или биржи на {0}.",
+ "Refuelled. Your account has NEAR for its next payments.": "Пополнено. На аккаунте есть NEAR для следующих платежей.",
+ "Could not refuel right now. Try again later.": "Сейчас пополнить не удалось. Попробуй позже."
 }

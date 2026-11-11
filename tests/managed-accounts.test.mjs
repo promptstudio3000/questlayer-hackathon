@@ -327,3 +327,30 @@ test("revocation during the account-name lookup prevents an account job or subsi
   assert.equal(f.rows("managed_accounts").length, 0);
   assert.equal(f.rows("relay_jobs").length, 0);
 });
+
+test("refuel tops a low explorer back to the starting amount once a UTC day, inside the cap", async (t) => {
+  const f = fixture({ fundYocto: 2n * 10n ** 22n, topupCapYocto: 5n * 10n ** 22n });
+  t.after(() => f.db.close());
+  const none = await f.accounts.fuel(f.player);
+  assert.deepEqual([none.canRefuel, none.reason], [false, "ACCOUNT_NOT_READY"]);
+  await assert.rejects(f.accounts.refuel(f.player), (e) => e.code === "ACCOUNT_NOT_READY");
+  const acct = f.ready(f.player, "alice-novakova", { amount: 15n * 10n ** 21n });
+  const full = await f.accounts.fuel(f.player);
+  assert.deepEqual([full.canRefuel, full.reason, full.targetYocto, full.belowYocto],
+    [false, "FUEL_NOT_LOW", (2n * 10n ** 22n).toString(), (10n ** 22n).toString()]);
+  await assert.rejects(f.accounts.refuel(f.player), (e) => e.code === "FUEL_NOT_LOW");
+  f.state.accounts.get(acct.accountId).amount = 3n * 10n ** 21n;
+  assert.equal((await f.accounts.fuel(f.player)).canRefuel, true);
+  const done = await f.accounts.refuel(f.player);
+  assert.equal(done.toppedUp, true);
+  assert.equal(done.amount, (17n * 10n ** 21n).toString());
+  assert.equal(f.state.accounts.get(acct.accountId).amount, 2n * 10n ** 22n);
+  // Spent again the same day: no second refuel.
+  f.state.accounts.get(acct.accountId).amount = 0n;
+  assert.equal((await f.accounts.fuel(f.player)).reason, "FUEL_REFUELED_TODAY");
+  await assert.rejects(f.accounts.refuel(f.player), (e) => e.code === "FUEL_REFUELED_TODAY");
+  // Next day it opens again, still under the per-account daily cap.
+  f.advance(86400000);
+  assert.equal((await f.accounts.refuel(f.player)).amount, (2n * 10n ** 22n).toString());
+  assert.equal(f.rows("managed_account_funding").filter((r) => r.kind === "topup").length, 2);
+});

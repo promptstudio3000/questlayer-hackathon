@@ -12,6 +12,7 @@ import { prefersReducedMotion } from "./feedback";
 import { tr } from "./i18n";
 import type { Journey } from "./CharacterJourney";
 import type { StakeCard } from "./StakeToday";
+import { FuelCard } from "./FuelCard";
 import "./profile-journey.css";
 
 export type StakeView = "stake" | "earnings";
@@ -254,6 +255,7 @@ export function EarningsPanel({
           </dd>
         </div>
       </dl>
+      <FuelCard refreshKey={refreshKey} />
       {children}
     </>
   );

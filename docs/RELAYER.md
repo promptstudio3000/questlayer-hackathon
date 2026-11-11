@@ -110,9 +110,9 @@ mode `0600`; both keys must be full-access keys of their account on testnet.
 | ----------------------------- | -------------------------------------------------------- | --------------------- |
 | `PLAYER_FACTORY_ACCOUNT`      | Parent of player accounts (`players.questlayer.testnet`) | required              |
 | `PLAYER_FACTORY_KEY_PATH`     | Factory full-access key file                             | required for accounts |
-| `PLAYER_FACTORY_FUND_YOCTO`   | Initial transfer to a new account                        | `1e23` (0.1 NEAR)     |
+| `PLAYER_FACTORY_FUND_YOCTO`   | Initial transfer to a new account (also the refuel target) | `2e22` (0.02 NEAR)  |
 | `RELAYER_KEY_PATH`            | Gas payer full-access key file                           | required for relaying |
-| `RELAY_TOPUP_CAP_YOCTO`       | Max sponsored top-up per account per day                 | `2e23`                |
+| `RELAY_TOPUP_CAP_YOCTO`       | Max sponsored top-up per account per day (storage + refuel) | `5e22` (0.05 NEAR) |
 | `RELAY_MAX_JOBS_PER_DAY`      | Max submissions per account per day                      | `40`                  |
 | `RELAY_MAX_DEPOSIT_YOCTO_PER_DAY` | Max attached deposits the relayer carries per account per UTC day | `0.5 NEAR` |
 | `RELAY_MAX_CANCELS_PER_DAY`   | Max sponsored market v2 `cancel_order` per account per UTC day | `4`             |
@@ -120,6 +120,22 @@ mode `0600`; both keys must be full-access keys of their account on testnet.
 | `RELAY_MAX_GAS`               | Max gas per delegated action                             | `300000000000000`     |
 | `RELAY_BLOCK_TTL`             | Max blocks a delegate may stay valid                     | `120`                 |
 | `DISABLE_RELAYER`             | `1` disables accounts and relaying                       | unset                 |
+
+### Fuel and refuel
+
+Gas is always sponsored. The starting transfer exists because a NEAR account must hold its own
+storage stake, and because money actions (Aura buys, `deposit_near`, stake deposits, creator
+payments) are self-paid by the player's key on purpose. Testnet and mainnet both start at 0.02 NEAR
+(owner decision, 11 Nov 2026).
+
+- `GET /api/account/fuel` returns the explorer's balance, the refuel target (`PLAYER_FACTORY_FUND_YOCTO`)
+  and threshold (half of it), and whether a refuel is open (`reason`: `ACCOUNT_NOT_READY`,
+  `FUEL_NOT_LOW`, `FUEL_REFUELED_TODAY`).
+- `POST /api/account/refuel` tops a ready account below the threshold back to the target, once per
+  UTC day (`topup:refuel:<account>:<day>` in the funding journal). It counts against
+  `RELAY_TOPUP_CAP_YOCTO` and the service-wide sponsorship budget like every other top-up.
+- Profile → Stake → Earnings shows the balance with Refuel, Convert QGOLD to NEAR (the vault redeem
+  on `/economy#qgold`) and Add your own NEAR (copies the account name).
 
 ### Creator money publisher (`server/native/creator-money.mjs`)
 
