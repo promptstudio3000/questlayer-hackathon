@@ -3193,5 +3193,10 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "Doplnění se otevře, když zůstatek klesne pod {0} NEAR, jednou denně.",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Přidej vlastní NEAR: pošli ho z libovolné peněženky nebo burzy na {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Doplněno. Tvůj účet má NEAR na další platby.",
- "Could not refuel right now. Try again later.": "Teď se doplnit nepodařilo. Zkus to později."
+ "Could not refuel right now. Try again later.": "Teď se doplnit nepodařilo. Zkus to později.",
+ "Chat with {0}": "Chat s {0}",
+ "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "Ukázkový chat: {0} odpovídá připravenými větami. Nic se neukládá ani neposílá na chain; skuteční hráči mají šifrovanou poštu.",
+ "{0} is typing…": "{0} píše…",
+ "Write to {0}…": "Napiš {0}…",
+ "Messages need your explorer account. Sign in with it to write.": "Zprávy potřebují tvůj účet průzkumníka. Přihlas se jím a piš."
 }
