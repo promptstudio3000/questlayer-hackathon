@@ -3219,5 +3219,19 @@
   "followers": "फ़ॉलोअर",
   "quest": "क्वेस्ट",
   "quests": "क्वेस्ट",
-  "{0} away": "{0} दूर"
+  "{0} away": "{0} दूर",
+  "Activities in {0} pay GOLD today.": "{0} की गतिविधियाँ आज GOLD देती हैं।",
+  "Done today: {0} of {1} activities": "आज पूरी हुईं: {1} में से {0} गतिविधियाँ",
+  "Everything here is done for today": "यहाँ आज के लिए सब पूरा हो गया",
+  "GOLD in this zone": "इस ज़ोन में GOLD",
+  "New activities and rewards at {0} (in {1})": "नई गतिविधियाँ और इनाम {0} बजे ({1} में)",
+  "Open now until {0} (in {1})": "{0} तक खुला ({1} बाकी)",
+  "Open now, all day": "पूरे दिन खुला",
+  "Opens at {0} (in {1})": "{0} बजे खुलेगा ({1} में)",
+  "Show zone activities": "ज़ोन की गतिविधियाँ दिखाएँ",
+  "Still to win today:": "आज अभी भी जीत सकते हैं:",
+  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "{0} के संदूक में आज यह ऑरा हो सकता है। इसे पाने के लिए वहाँ संदूक वाली गतिविधि खोलें।",
+  "Today in this zone": "आज इस ज़ोन में",
+  "chest Auras: {0}": "संदूक के ऑरा: {0}",
+  "{0} Aura": "{0} ऑरा"
 }
