@@ -273,7 +273,7 @@ export const CHAPTERS: Chapter[] = [
     title: "XP, levels, season and badges",
     summary: `A ${MAX_LEVEL}-level curve where every level unlocks something to do or wear, cosmetic season ranks and ${PLACE_BADGES} place badges.`,
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-11",
     sources: ["docs/LEVELS.md", "docs/GAME-LOOPS.md", "docs/NATIVE-PROGRESSION.md", "docs/SEASON.md", "docs/BADGES.md", "server/data/level-table.json", "server/data/place-badges.json", "src/levels.ts"],
     blocks: [
       {
@@ -677,6 +677,7 @@ export const CHAPTERS: Chapter[] = [
           "**No streaks, energy or loot purchases.** Spending only burns the player's own QGOLD (`ft_burn`) for cosmetics and conveniences; the backing stays in the vault, so every burn raises R for all holders.",
           "**No practice money.** Every map coin and zone prize is backed by the day's budget and paid as QGOLD by a payout round within minutes.",
           "**Players never fund the prizes.** Principal you stake stays yours; only the yield share you choose goes to the game.",
+          "**City days run on yield only** (`NATIVE_YIELD_BACKED_DAYS=1`, set in the testnet unit since 11 Nov 2026). A day may spend one seventh (`NATIVE_YIELD_DRIP_DAYS`) of the realized staking yield that is still free: what the vaults paid into the pool, minus what open yield days hold and what closed ones actually awarded. Yield arrives in lumps every few epochs, so the drip keeps every day funded, however small the coin. A date that cannot be funded shows in `/api/health` under `unfundedDays`. The map-wide coin budget is not bound by yield yet.",
           "Everything is published: [Economy](/economy) lists the treasury, audits and every payout with a transaction link; [Treasury](/treasury) shows the treasury dashboard.",
         ],
       },

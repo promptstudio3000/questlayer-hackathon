@@ -23,6 +23,7 @@ import {
 } from "./reward-manifest.mjs";
 import {
   allocateDailyBudget,
+  YIELD_DRIP_DAYS,
   scaledBucketCap,
   demandWeights,
   realizedYieldBacking,
@@ -39,7 +40,21 @@ export function yieldBackedManifests(db, contractId = null) {
   return db
     .prepare(`SELECT * FROM native_days d WHERE 1=1${onContract} ORDER BY day,id`)
     .all(...(onContract ? [contractId] : []))
-    .map(storedNativeManifest)
+    .map((row) => {
+      const manifest = storedNativeManifest(row);
+      if (manifest.funding !== "realized_yield" || row.state !== "closed")
+        return manifest;
+      // close_day returned everything unclaimed to the treasury, so a closed
+      // day keeps only its confirmed awards against the realized yield.
+      let awarded = 0n;
+      for (const claim of db
+        .prepare(
+          "SELECT amount FROM native_reward_claims WHERE day_id=? AND state='confirmed'",
+        )
+        .all(row.id))
+        awarded += /^\d{1,40}$/.test(claim.amount || "") ? BigInt(claim.amount) : 0n;
+      return { ...manifest, awarded: awarded.toString() };
+    })
     .filter((m) => m.funding === "realized_yield");
 }
 /** Realized yield paid by this contract's vaults versus yield-backed days. */
@@ -63,6 +78,7 @@ export async function readYieldBacking(native) {
       vaultStates,
       yieldDays: yieldBackedManifests(native.db, native.contractId),
       rewardsId: native.contractId,
+      dripDays: native.yieldDripDays ?? YIELD_DRIP_DAYS,
     }),
   };
 }
@@ -138,6 +154,7 @@ export async function publishNativeDays(
             vaults: backing.vaults,
             paid: backing.paid,
             committedBefore: backing.committed,
+            dripDays: backing.dripDays,
           },
         };
       }
@@ -173,7 +190,19 @@ export async function publishNativeDays(
           version: dayId.endsWith("-v2") ? 2 : 1,
         },
       );
-      if (!manifest) continue;
+      if (!manifest) {
+        // Nothing to place on the map for this date (in yield-backed mode: no
+        // free realized yield). Not an error, but never silent: health shows it.
+        native.unfundedDays = {
+          ...(native.unfundedDays || {}),
+          [day]: funding ? "no-free-yield" : "no-budget",
+        };
+        continue;
+      }
+      if (native.unfundedDays?.[day]) {
+        const { [day]: _funded, ...rest } = native.unfundedDays;
+        native.unfundedDays = rest;
+      }
       writeOwned(
         "INSERT OR IGNORE INTO native_days(id,day,body,hash,updated_at) VALUES(?,?,?,?,?)",
         manifest.id,
