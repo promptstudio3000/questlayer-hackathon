@@ -218,4 +218,4 @@ safety classification.
 
 ## Czechia fallback
 
-Inside Czechia, `/api/world` falls back to the normal street world (POI quests, landmark clues, NPC errand targets, coins) whenever no ready prepared region covers the spot, for example after the daily manifest was not supplied. Outside Czechia the prepared catalog stays the only source and a missing day still returns `GLOBAL_COVERAGE_UNAVAILABLE`. Set `GLOBAL_CZECHIA_FALLBACK=off` to restore the strict behaviour. Test: `tests/global-czechia-fallback.test.mjs`.
+Everywhere on Earth, `/api/world` falls back to the normal street world (POI quests, landmark clues, NPC errand targets, coins) whenever no ready prepared region covers the spot, for example after the daily manifest was not supplied (Lubos, 11 Nov 2026: open the whole world). Outside Czechia the street world takes its places live from OpenStreetMap (`server/poi/live-source.mjs`). `GLOBAL_STREET_FALLBACK=czechia` limits the fallback to Czechia and `GLOBAL_STREET_FALLBACK=off` (or the older `GLOBAL_CZECHIA_FALLBACK=off`) restores the strict behaviour. Test: `tests/global-czechia-fallback.test.mjs`.

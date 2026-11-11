@@ -53,7 +53,7 @@ try{
   browser=await chromium.launch();
   const bank=loadQuizBank();const results=[];
   for(const kind of ["npc","monster"]){
-    const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce"});
+    const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const page=await context.newPage();
     page.on("pageerror",e=>console.error("Browser:",e.message));
     page.on("response",async r=>{if(r.url().includes("/api/actors/")&&!r.ok())console.error("Actor API:",r.status(),await r.text());});

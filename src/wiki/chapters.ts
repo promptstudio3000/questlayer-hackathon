@@ -246,13 +246,14 @@ export const CHAPTERS: Chapter[] = [
     hero: "core-loop",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/map-motion.ts", "src/gps-facing.ts", "src/quest-route.ts", "src/QuestBrief.tsx", "src/GameMap.tsx", "src/RewardBursts.tsx"],
+    sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/play-here.ts", "server/poi/live-source.mjs", "src/map-motion.ts", "src/gps-facing.ts", "src/quest-route.ts", "src/QuestBrief.tsx", "src/GameMap.tsx", "src/RewardBursts.tsx"],
     blocks: [
       { h: "Movement" },
       {
         list: [
           "**GPS play:** no tap-to-walk anywhere. The character and the follow camera use your moving course; stationary jitter, stale or inaccurate fixes and big jumps never invent a turn. Manual panning pauses follow; My location or walking on restores it.",
           "**City demo:** a collapsible joystick (drag the knob: up walks the way you face, sideways turns, down steps back at 0.6× speed); arrows and WASD work too. A Run toggle, on by default, moves at 14 m/s; walking is 5 m/s. Both stay under the 15 m/s cap.",
+          "**Start where you are:** after sign-in the game asks for location and opens the world around you: POI quests and backed coins of your street cell anywhere on Earth (funded cell zones in Czechia). The Plzeň city demo is the fallback when location is refused or unavailable, or when you pick Demo in Map settings; that choice is remembered until you pick Use GPS again. A refused start-up request keeps the demo without a warning.",
           "Opening a dialog releases held movement; closing it never resumes an old key press.",
           "Quest buttons only turn the explorer toward the target; within 3 m the demo snaps onto it so thin path zones count.",
           "Multi-stop walks keep their stop numbers. Ordered walks accept only the server's next stop; any-order hunts say **Any order** and use the nearest remaining stop. Confirmation needs the 25 m range, the zone footprint and fresh GPS; the server alone advances progress.",
@@ -691,7 +692,7 @@ export const CHAPTERS: Chapter[] = [
     id: "world-and-places",
     group: "world",
     title: "Cities, cells and places",
-    tldr: `${cityNames} is the reviewed city; the reward map covers **all of Czechia**; prepared Atlas discoveries can open in other supplied regions with personal XP only. Every quest place sits on a public path and passes a safety filter.`,
+    tldr: `${cityNames} is the reviewed city; the reward map covers **all of Czechia** and street cells everywhere else get live OpenStreetMap quests and backed coins; prepared Atlas discoveries can open in other supplied regions with personal XP only. Every quest place sits on a public path and passes a safety filter.`,
     keyFacts: [
       [String(LIVE_CITIES.length), `reviewed live city (${cityNames})`],
       ["≈ 290,000", "places in the first Czech import"],
@@ -735,7 +736,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "With a connected geographic catalog, a background worker prepares mapped zones and Atlas quests for today and tomorrow before players load them. Only a completely imported UTC day opens; an interrupted import resumes without duplicates.",
-          "Inside Czechia the normal street world takes over whenever no prepared day covers the spot (`GLOBAL_CZECHIA_FALLBACK=off` disables this). Elsewhere missing regions stay unavailable.",
+          "Everywhere on Earth the normal street world takes over whenever no prepared day covers the spot. Outside Czechia its places come live from OpenStreetMap: one query per cell, the same taxonomy and safety filter as the import, kept for a week. `GLOBAL_STREET_FALLBACK=czechia` limits this to Czechia, `=off` disables it.",
           "Atlas visits and three-stop hunts use the normal GPS checks and give personal XP. Without a separately confirmed financial day they promise no money or item.",
           "The launch selection covers European and US extracts with national-capital footprints elsewhere (Russia, North Korea and Iran excluded). The first active phase is EU-only: all 27 member countries. Completing it never reports a complete planet.",
           "A bulk collector continues from verified map downloads to real polygon selection and isolated checks, and reports unsafe or oversized areas instead of dropping them. This is map-derived coverage, not field verification.",
@@ -774,7 +775,7 @@ export const CHAPTERS: Chapter[] = [
           "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD over 6.5–13 million shares, a few micro-QGOLD per coin. The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
-          "The city demo pays the same backed coins. Outside Czechia a cell gets no coins until more countries have a plan.",
+          "The city demo pays the same backed coins. Outside Czechia a street cell gets up to 400 coins of the same value, drawn from the day's unplaced coin budget until it is spent, and paid through the payout rounds (`MAP_WORLD_COINS=off` stops it). Funded cell zones and pioneer bonuses stay in Czechia.",
         ],
       },
       { viz: "map-coins" },
