@@ -1280,8 +1280,8 @@ export function GameMap(props: GameMapProps) {
         found
           ? tr("{0}: {1}. Marked on the map.", { 0: found.actor.name, 1: distanceLabel(found.distanceM) })
           : "actorId" in match
-            ? tr("They are not out right now. Characters walk between 07:00 and 22:00.")
-            : tr("Nobody like that is out near you right now. Characters walk between 07:00 and 22:00."),
+            ? tr("They are not out near you right now.")
+            : tr("Nobody like that is out near you right now."),
         !!found,
       );
       if (!found) return;
