@@ -40,7 +40,13 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      # The Ubuntu apt mirrors sometimes fail to resolve on the runners. Retry once,
+      # then fall back to the browser alone: the runner image already has most
+      # system libraries, and a truly missing one still fails the tests below.
+      - run: |
+          npx playwright install --with-deps ${{ matrix.browser }} \
+            || (sleep 30 && npx playwright install --with-deps ${{ matrix.browser }}) \
+            || npx playwright install ${{ matrix.browser }}
       - run: npm run build
       - run: npm run e2e:first-session -- --device=${{ matrix.device }}
         env:
@@ -86,7 +92,13 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # The Ubuntu apt mirrors sometimes fail to resolve on the runners. Retry once,
+      # then fall back to the browser alone: the runner image already has most
+      # system libraries, and a truly missing one still fails the tests below.
+      - run: |
+          npx playwright install --with-deps chromium \
+            || (sleep 30 && npx playwright install --with-deps chromium) \
+            || npx playwright install chromium
       - run: npm run build
       - run: npm run e2e:languages
         env:
