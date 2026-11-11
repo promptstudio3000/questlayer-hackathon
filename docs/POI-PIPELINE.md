@@ -143,3 +143,13 @@ The spec for a worker that builds the database for the whole world (schema contr
 `tests/poi-pipeline.test.mjs` runs the whole build on `tests/fixtures/poi/` without network: merge and fold rules,
 Wikidata enrichment, every exclusion reason, path snapping, partitions, a byte-identical rebuild, closures after a
 re-import and the query builders' input checks.
+
+## Outside the import (11 Nov 2026)
+
+The weekly import covers Czechia. A street cell anywhere else asks Overpass
+once for its places, public paths and grounds (`server/poi/live-source.mjs`),
+classifies them with the same `classifyPois` taxonomy and safety filter, and
+keeps the safe places with a path target in `geo_cache` under `poi:<cell>`
+for 7 days (failures retry after 10 minutes). The first visitor's world load
+waits up to 20 s for it; POI quests then use the rows like the imported file.
+`POI_LIVE=off` disables it, `POI_LIVE_URL` changes the Overpass endpoint.

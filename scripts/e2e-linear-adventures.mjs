@@ -33,7 +33,7 @@ let browser;
 async function gpsContext(point) {
   // Fault injection must reach page.route; a controlling service worker can
   // bypass interception. Normal service-worker behavior has first-session coverage.
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce", hasTouch: true, serviceWorkers: "block" });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce", hasTouch: true, serviceWorkers: "block" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
   await context.addInitScript(({ point, offset }) => {
     const RealDate = Date;
     window.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : [RealDate.now() + offset])); } static now() { return RealDate.now() + offset; } };

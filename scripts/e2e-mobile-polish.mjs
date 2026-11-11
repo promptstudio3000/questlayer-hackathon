@@ -39,7 +39,7 @@ try {
   browser = await engine.launch();
   for (const [name, width, height] of [["phone-360", 360, 780], ["phone-390", 390, 844], ["landscape", 844, 390], ["desktop", 1440, 900]]) {
     if (process.env.E2E_VIEWPORT && process.env.E2E_VIEWPORT !== name) continue;
-    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
+    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     await context.addInitScript(({ offset }) => {
       const RealDate = Date;
       class PreviewDate extends RealDate {

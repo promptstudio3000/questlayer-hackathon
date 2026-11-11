@@ -114,8 +114,14 @@ export function TierLadder({
   progress,
   next,
   numbers,
+  loading,
+  children,
 }: {
   step: StakerStep;
+  /** Values still loading: the card keeps its shape and shows placeholders. */
+  loading?: boolean;
+  /** Extra rows inside the card, e.g. the prize pool share of the yield. */
+  children?: ReactNode;
   /** 0..1 toward the next step. */
   progress: number;
   next: string;
@@ -125,10 +131,10 @@ export function TierLadder({
   const names = [tr("Free"), tr("Staker"), tr("Tier {0}", { 0: 2 }), tr("Tier {0}", { 0: 3 })];
   const fill = here >= 3 ? 100 : ((here + Math.max(0, Math.min(1, progress))) / 3) * 100;
   return (
-    <section className="tier-card" aria-labelledby="tier-card-title">
+    <section className="tier-card" aria-labelledby="tier-card-title" aria-busy={loading || undefined}>
       <div className="tier-card-head">
         <span id="tier-card-title">{tr("Your tier")}</span>
-        <b>{names[here]}</b>
+        {loading ? <b className="skeleton-text" aria-hidden="true">{names[1]}</b> : <b>{names[here]}</b>}
       </div>
       <div
         className="tier-ladder"
@@ -136,11 +142,11 @@ export function TierLadder({
         aria-label={tr("Your tier")}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(fill)}
+        aria-valuenow={loading ? 0 : Math.round(fill)}
         aria-valuetext={names[here]}
       >
         <span className="tier-ladder-track" />
-        <span className="tier-ladder-fill" style={{ width: `${fill}%` }} />
+        <span className="tier-ladder-fill" style={{ width: `${loading ? 0 : fill}%` }} />
         <ol aria-hidden="true">
           {names.map((n, i) => (
             <li key={n} className={i < here ? "on" : i === here ? "here" : ""} style={{ left: `${(i / 3) * 100}%` }}>
@@ -150,15 +156,16 @@ export function TierLadder({
           ))}
         </ol>
       </div>
-      <p className="tier-card-next">{next}</p>
+      <p className="tier-card-next">{loading ? <span className="skeleton-text">{next}</span> : next}</p>
       <dl className="tier-card-numbers">
         {numbers.map(([k, v]) => (
           <div key={k}>
             <dt>{k}</dt>
-            <dd>{v}</dd>
+            <dd>{loading ? <span className="skeleton-text" aria-label={tr("Loading…")}>0.000</span> : v}</dd>
           </div>
         ))}
       </dl>
+      {children}
     </section>
   );
 }
