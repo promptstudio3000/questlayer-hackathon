@@ -19,6 +19,8 @@ export type MapPalette = {
   textHalo: string;
   extrusion: string;
   extrusionOpacity: number;
+  /** Churches, castles and monuments that rise above the rooftops. */
+  landmark: string;
 };
 
 // "day" is the palette the map always had; dusk/dawn warm it, night is the
@@ -37,6 +39,7 @@ export const MAP_PALETTES: Record<SkyPhase, MapPalette> = {
     textHalo: "#ffffff",
     extrusion: "#d3c9d7",
     extrusionOpacity: 0.68,
+    landmark: "#e8d9b8",
   },
   dawn: {
     background: "#e3d3cf",
@@ -51,6 +54,7 @@ export const MAP_PALETTES: Record<SkyPhase, MapPalette> = {
     textHalo: "#fbefe9",
     extrusion: "#c4b0c9",
     extrusionOpacity: 0.72,
+    landmark: "#e2c6b4",
   },
   dusk: {
     background: "#cdb5c4",
@@ -65,6 +69,7 @@ export const MAP_PALETTES: Record<SkyPhase, MapPalette> = {
     textHalo: "#f0e2e6",
     extrusion: "#a58db8",
     extrusionOpacity: 0.76,
+    landmark: "#d2a98f",
   },
   night: {
     background: "#1d1a3a",
@@ -79,6 +84,7 @@ export const MAP_PALETTES: Record<SkyPhase, MapPalette> = {
     textHalo: "#1d1a3a",
     extrusion: "#3b3275",
     extrusionOpacity: 0.86,
+    landmark: "#6a5aa8",
   },
 };
 
@@ -118,6 +124,10 @@ export function paintMapSky(m: maplibregl.Map, phase: SkyPhase) {
   if (m.getLayer("aura-buildings")) {
     set("aura-buildings", "fill-extrusion-color", p.extrusion);
     set("aura-buildings", "fill-extrusion-opacity", p.extrusionOpacity);
+  }
+  if (m.getLayer("landmark-buildings")) {
+    set("landmark-buildings", "fill-extrusion-color", p.landmark);
+    set("landmark-buildings", "fill-extrusion-opacity", Math.min(0.92, p.extrusionOpacity + 0.08));
   }
 }
 

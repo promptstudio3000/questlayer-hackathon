@@ -608,6 +608,9 @@ export const CHAPTERS: Chapter[] = [
       {
         p: "The map follows the real sun at the city (day, dusk, dawn, night palettes), and actors have day, night or any-time casts.",
       },
+      {
+        p: "Buildings on the base map rise in 3D up to 16 m, so pins stay readable over the rooftops. Churches, castles and monuments are landmarks: they keep their real height from OpenStreetMap (St. Bartholomew in Plzeň stands at 102 m) or are lifted to at least 22–30 m, in a warmer colour, so you can find your way by them.",
+      },
     ],
   },
   {
