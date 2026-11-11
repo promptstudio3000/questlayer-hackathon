@@ -10,5 +10,6 @@ if command -v sha256sum >/dev/null; then sum() { sha256sum "$@"; }; else sum() {
   find src/signing-vault -type f
   printf '%s\n' server/signing-vault.mjs scripts/install-signing-vault-vps.sh \
     public/native-qgold-vault-testnet.json public/native-qgold-escrow-testnet.json \
-    public/native-claims-testnet.json public/native-npc-games-testnet.json
+    public/native-claims-testnet.json public/native-npc-games-testnet.json \
+    public/native-intents-testnet.json
 } | LC_ALL=C sort | while IFS= read -r f; do sum "$f"; done | sum | cut -d' ' -f1
