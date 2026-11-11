@@ -59,6 +59,7 @@ for (const relative of [
   "./creators/creator-xp.mjs",
   "./staker-gates.mjs",
   "./task-evidence.mjs",
+  "./native/treasury-history.mjs",
 ]) {
   const url = new URL(relative, import.meta.url);
   if (existsSync(url)) await import(url.href);
