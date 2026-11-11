@@ -24,7 +24,8 @@ import type { Player } from "./types";
 import "./fuel-the-city.css";
 import "./fuel-stake.css";
 import { tr } from "./i18n";
-import { Dialog } from "./Dialog";
+import { FundsHelp } from "./FundsHelp";
+import { GAS_HEADROOM, readNearBalance as readBalance, readQgoldCover, nearText, type QgoldCover } from "./funds-help";
 
 type StakerGates = { minNear: string; suggestNear: string; priceEur: number | null; access: { step: string; staker: boolean } };
 
@@ -61,31 +62,6 @@ const big = (v: unknown) => {
   }
 };
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-/** Gas headroom kept on top of the setup and the stake. */
-const GAS_HEADROOM = 5n * 10n ** 22n;
-const TEST_NEAR_FAUCET = "https://near-faucet.io/";
-
-/** The account's spendable balance in yoctoNEAR, read straight from the chain (null when unknown). */
-async function readBalance(accountId: string): Promise<bigint | null> {
-  try {
-    const config = await api<{ rpcUrl?: string }>("/config");
-    if (!config.rpcUrl) return null;
-    const r = await fetch(config.rpcUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: "balance",
-        method: "query",
-        params: { request_type: "view_account", finality: "final", account_id: accountId },
-      }),
-    });
-    const body = (await r.json()) as { result?: { amount?: string; locked?: string } };
-    return body.result?.amount ? BigInt(body.result.amount) : null;
-  } catch {
-    return null;
-  }
-}
 
 type Outcome =
   | { kind: "idle" }
@@ -182,7 +158,7 @@ export function FuelTheCity({
     [contribution, setContribution] = useState(50),
     [confirmExit, setConfirmExit] = useState(false),
     [balance, setBalance] = useState<bigint | null>(null),
-    [copied, setCopied] = useState(false),
+    [qgold, setQgold] = useState<QgoldCover | null>(null),
     [outcome, setOutcome] = useState<Outcome>({ kind: "idle" });
   const accountRef = useRef(account);
   accountRef.current = account;
@@ -201,6 +177,10 @@ export function FuelTheCity({
     }
   }
   // Each read fills its own part: the slow prize pool total never holds up the stake button.
+  // QGOLD that could be swapped to cover a shortfall, read when the help opens.
+  useEffect(() => {
+    if (helpOpen && account) void readQgoldCover(account).then(setQgold);
+  }, [helpOpen, account]);
   useEffect(() => {
     void readVaults();
     setBalance(null);
@@ -374,16 +354,6 @@ export function FuelTheCity({
   const needYocto =
     (phase.kind === "none" && vaults?.config ? big(vaults.config.setup_deposit) : 0n) + stakeYocto + GAS_HEADROOM;
   const short = canStake && account && balance !== null && balance < needYocto;
-  async function copyAccount() {
-    try {
-      await navigator.clipboard.writeText(account);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  }
-
   return (
     <section className="fuel" aria-labelledby="fuel-title">
       <h2 id="fuel-title" className="sr-only">{tr("Stake")}</h2>
@@ -594,14 +564,12 @@ export function FuelTheCity({
       {!canStake && <StakeToday />}
 
       {helpOpen && (
-        <StakeHelp
-          account={account}
+        <FundsHelp
+          title={tr("Why you can't stake yet")}
+          needLine={tr("Staking needs about {0} NEAR (vault setup, the stake and a little gas).", { 0: nearText(needYocto, 2) })}
+          funds={{ account, have: balance, need: needYocto, qgold }}
           explorerAccount={explorerAccount}
           explorerStatus={explorerStatus}
-          haveNear={balance === null ? null : nearOf(balance.toString())}
-          needNear={nearOf(needYocto.toString())}
-          copied={copied}
-          onCopy={() => void copyAccount()}
           onRecheck={() => void readBalance(account).then(setBalance)}
           onLinkWallet={onLinkWallet}
           onClose={() => setHelpOpen(false)}
@@ -615,108 +583,5 @@ export function FuelTheCity({
         <NativeStaking player={player} onConnect={onConnect} onTransaction={onTransaction} />
       </details>
     </section>
-  );
-}
-
-const NEAR_WALLETS = [
-  { name: "Meteor Wallet", href: "https://wallet.meteorwallet.app/" },
-  { name: "HOT Wallet", href: "https://hot-labs.org/wallet/" },
-  { name: "MyNearWallet (testnet)", href: "https://testnet.mynearwallet.com/" },
-];
-
-/**
- * Shown instead of an error when a stake can't go through yet (owner request,
- * 11 Nov 2026): why, and what the explorer can do about it.
- */
-function StakeHelp({
-  account,
-  explorerAccount,
-  explorerStatus,
-  haveNear,
-  needNear,
-  copied,
-  onCopy,
-  onRecheck,
-  onLinkWallet,
-  onClose,
-}: {
-  account: string;
-  explorerAccount: string;
-  explorerStatus?: string;
-  haveNear: number | null;
-  needNear: number;
-  copied: boolean;
-  onCopy: () => void;
-  onRecheck: () => void;
-  onLinkWallet?: () => Promise<void> | void;
-  onClose: () => void;
-}) {
-  const reason = !account
-    ? explorerStatus === "play-first"
-      ? tr("Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.")
-      : tr("Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.")
-    : tr("{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).", {
-        0: account === explorerAccount ? tr("Your explorer account") : account,
-        1: haveNear === null ? "?" : fmt(haveNear, 2),
-        2: fmt(needNear, 2),
-      });
-  return (
-    <Dialog label={tr("Why you can't stake yet")} onClose={onClose}>
-      <section className="stake-help">
-        <h2>{tr("Why you can't stake yet")}</h2>
-        <p className="stake-help-reason">{reason}</p>
-        <ol className="stake-help-options">
-          {account && (
-            <li>
-              <b>{tr("Send test NEAR to this account")}</b>
-              <code>{account}</code>
-              <div className="fuel-short-buttons">
-                <button type="button" className="secondary-button" onClick={onCopy}>
-                  {copied ? tr("Copied") : tr("Copy address")}
-                </button>
-                <a className="secondary-button" href={TEST_NEAR_FAUCET} target="_blank" rel="noreferrer">
-                  {tr("Get test NEAR")}
-                </a>
-                <button type="button" className="secondary-button" onClick={onRecheck}>
-                  <ArrowsClockwise size={18} aria-hidden="true" /> {tr("Check again")}
-                </button>
-              </div>
-            </li>
-          )}
-          {onLinkWallet && (
-            <li>
-              <b>{tr("Use a NEAR wallet you already have")}</b>
-              <span>{tr("Connect it and stake from it; your wallet asks you to approve each step.")}</span>
-              <button type="button" className="secondary-button" onClick={() => void onLinkWallet()}>
-                {tr("Connect a NEAR wallet")}
-              </button>
-            </li>
-          )}
-          <li>
-            <b>{tr("No NEAR wallet yet?")}</b>
-            <span>{tr("Install one, create an account, then come back and connect it.")}</span>
-            <div className="fuel-short-buttons">
-              {NEAR_WALLETS.map((w) => (
-                <a key={w.href} className="secondary-button" href={w.href} target="_blank" rel="noreferrer">
-                  {w.name}
-                </a>
-              ))}
-            </div>
-          </li>
-          <li>
-            <b>{tr("Pay from another crypto wallet")}</b>
-            <span>
-              {tr("With NEAR Intents you will pay in ETH, SOL, BTC or USDC from any wallet. Intents run on NEAR mainnet only, so this opens with the mainnet launch.")}
-            </span>
-            <button type="button" className="secondary-button" disabled>
-              {tr("Pay with NEAR Intents · at mainnet")}
-            </button>
-          </li>
-        </ol>
-        <button type="button" className="primary-button" onClick={onClose}>
-          {tr("Close")}
-        </button>
-      </section>
-    </Dialog>
   );
 }

@@ -148,28 +148,3 @@
   font-size: 14px;
   color: var(--ink);
 }
-.stake-help { display: grid; gap: 14px; padding: 20px; max-width: 480px; }
-.stake-help h2 { margin: 0; font-size: 20px; }
-.stake-help-reason { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink); }
-.stake-help-options { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.stake-help-options li {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--decorative-border);
-  border-radius: 14px;
-  background: var(--surface-raised);
-}
-.stake-help-options b { font-size: 15px; color: var(--ink); }
-.stake-help-options span { font-size: 13px; line-height: 1.45; color: var(--ink-secondary); }
-.stake-help-options code { font-size: 12px; word-break: break-all; color: var(--ink-secondary); }
-.stake-help-options .secondary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 44px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
