@@ -14,7 +14,7 @@ const axe=createRequire(import.meta.url)('axe-core').source;const report={engine
 try{browser=await engine.launch();
  for(const [name,width,height]of[['phone-360',360,780],['phone-390',390,844],['landscape',844,390],['desktop',1440,900]]){
   if(process.env.E2E_VIEWPORT&&process.env.E2E_VIEWPORT!==name)continue;
-  const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce'});const page=await context.newPage();const faults=[],checks=[];page.on('pageerror',e=>faults.push(e.message));
+  const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce'});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});const page=await context.newPage();const faults=[],checks=[];page.on('pageerror',e=>faults.push(e.message));
   await page.addInitScript(()=>{window.__secondaryFixture={player:{id:'local-fixture',name:'Mira',wallets:[],appearance:{},items:[],positions:[],gold_u:0,weighted_u:0,tier:1,level:1}};});
   const shot=async label=>{await page.screenshot({path:join(out,`${name}-${label}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,label+': page width');assert.equal(await page.locator('dialog[open]').evaluate(el=>el.scrollWidth>el.clientWidth+1),false,label+': dialog width');
    if(width===390){await page.addScriptTag({content:axe});const issues=await page.evaluate(async()=>(await window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}})).violations.map(v=>({id:v.id,impact:v.impact,targets:v.nodes.map(n=>n.target)})));checks.push({label,issues});assert.deepEqual(issues.filter(v=>['serious','critical'].includes(v.impact)),[],label+': accessibility');}};

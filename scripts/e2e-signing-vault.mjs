@@ -567,7 +567,7 @@ async function runDevice(name, servers) {
     // The game's service worker would answer API requests itself on WebKit,
     // where Playwright cannot route service-worker traffic; block it so the
     // stubs below see every request on every engine.
-    const context = await browser.newContext({ ...profile, reducedMotion: "reduce", locale: "en-GB", serviceWorkers: "block" });
+    const context = await browser.newContext({ ...profile, reducedMotion: "reduce", locale: "en-GB", serviceWorkers: "block" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     // Unrelated hosts (map tiles, fonts) stay offline; the journey is loopback only.
     await context.route((url) => !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname), (r) => r.abort());
     // ...except the map style, served blank so the map (and explorers on it) loads offline.
