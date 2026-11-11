@@ -3193,5 +3193,19 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "Doplnění se otevře, když zůstatek klesne pod {0} NEAR, jednou denně.",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Přidej vlastní NEAR: pošli ho z libovolné peněženky nebo burzy na {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Doplněno. Tvůj účet má NEAR na další platby.",
- "Could not refuel right now. Try again later.": "Teď se doplnit nepodařilo. Zkus to později."
+ "Could not refuel right now. Try again later.": "Teď se doplnit nepodařilo. Zkus to později.",
+ "Activities in {0} pay GOLD today.": "Aktivity v {0} dnes platí GOLD.",
+ "Done today: {0} of {1} activities": "Dnes hotovo: {0} z {1} aktivit",
+ "Everything here is done for today": "Pro dnešek je tu všechno hotové",
+ "GOLD in this zone": "GOLD v této zóně",
+ "New activities and rewards at {0} (in {1})": "Nové aktivity a odměny v {0} (za {1})",
+ "Open now until {0} (in {1})": "Otevřeno do {0} (ještě {1})",
+ "Open now, all day": "Otevřeno celý den",
+ "Opens at {0} (in {1})": "Otevře se v {0} (za {1})",
+ "Show zone activities": "Ukázat aktivity zóny",
+ "Still to win today:": "Dnes ještě můžeš získat:",
+ "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "Truhla v {0} dnes může obsahovat tuto Auru. Otevři tam aktivitu s truhlou a zkus ji získat.",
+ "Today in this zone": "Dnes v této zóně",
+ "chest Auras: {0}": "Aury z truhly: {0}",
+ "{0} Aura": "Aura {0}"
 }

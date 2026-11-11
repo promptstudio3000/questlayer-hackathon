@@ -3193,5 +3193,19 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "残高が{0} NEARを下回ると、1日1回補充できます。",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "自分のNEARを追加:任意のウォレットや取引所から{0}へ送ってください。",
  "Refuelled. Your account has NEAR for its next payments.": "補充しました。次の支払い用のNEARがあります。",
- "Could not refuel right now. Try again later.": "今は補充できませんでした。後でもう一度お試しください。"
+ "Could not refuel right now. Try again later.": "今は補充できませんでした。後でもう一度お試しください。",
+ "Activities in {0} pay GOLD today.": "{0}のアクティビティは今日GOLDがもらえます。",
+ "Done today: {0} of {1} activities": "今日の完了: {1}件中{0}件",
+ "Everything here is done for today": "今日はここのすべてが完了しました",
+ "GOLD in this zone": "このゾーンのGOLD",
+ "New activities and rewards at {0} (in {1})": "新しいアクティビティと報酬は{0}（あと{1}）",
+ "Open now until {0} (in {1})": "{0}まで開放中（あと{1}）",
+ "Open now, all day": "終日開放中",
+ "Opens at {0} (in {1})": "{0}に開放（あと{1}）",
+ "Show zone activities": "ゾーンのアクティビティを見る",
+ "Still to win today:": "今日まだ獲得できるもの:",
+ "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "{0}の宝箱には今日このオーラが入っている可能性があります。そこで宝箱のアクティビティを開いて挑戦しよう。",
+ "Today in this zone": "今日のこのゾーン",
+ "chest Auras: {0}": "宝箱のオーラ: {0}",
+ "{0} Aura": "{0}オーラ"
 }

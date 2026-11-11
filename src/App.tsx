@@ -4268,7 +4268,7 @@ export default function App() {
             </>
           )}
           {tab === "explore" && detailZone && (
-            <ZoneActivities zone={detailZone} quests={detailQuests} selectedQuest={detailQuest}
+            <ZoneActivities zone={detailZone} quests={detailQuests} selectedQuest={detailQuest} timezone={world?.timezone}
               playerTier={player.tier} position={position} now={now} busy={busy}
               choices={clueChoice} onChoose={chooseZoneQuest}
               onClue={(id, choice) => setClueChoice(all => ({ ...all, [id]: choice }))}

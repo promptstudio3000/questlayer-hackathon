@@ -1,8 +1,10 @@
 import { questDisplayTitle } from "./quest-copy";
 import { useEffect, useState, type ReactNode } from "react";
 import {
+  ArrowClockwise,
   ArrowRight,
   Check,
+  Clock,
   Flag,
   MapPin,
   NavigationArrow,
@@ -14,7 +16,54 @@ import { Badge, CoinIcon, distanceLabel } from "./app-bits";
 import { tr } from "./i18n";
 import LandmarkClue from "./LandmarkClue";
 import { QuestThumbnail } from "./QuestThumbnail";
+import { zoneSchedule } from "./zone-landmarks";
 import "./zone-activities.css";
+
+const at = (ms: number, timeZone?: string) => {
+  try {
+    return new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone });
+  } catch {
+    return new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }
+};
+
+/** Today in this zone: open window, progress, what is left and the reset. */
+export function ZoneSchedule({ zone, quests, now, timezone }: { zone: Zone; quests: Quest[]; now: number; timezone?: string }) {
+  const s = zoneSchedule(zone, quests, now, timezone);
+  const window =
+    s.phase === "upcoming"
+      ? tr("Opens at {0} (in {1})", { 0: at(s.opensAt, timezone), 1: remaining(s.opensAt) })
+      : s.phase === "open"
+        ? s.closesAt >= s.resetAt - 60000
+          ? tr("Open now, all day")
+          : tr("Open now until {0} (in {1})", { 0: at(s.closesAt, timezone), 1: remaining(s.closesAt) })
+        : s.phase === "done"
+          ? tr("Everything here is done for today")
+          : tr("Closed for today");
+  return (
+    <div className="zone-schedule" role="group" aria-label={tr("Today in this zone")}>
+      <p><Clock size={18} aria-hidden="true" /> <span>{window}</span></p>
+      <p><Flag size={18} aria-hidden="true" /> <span>{tr("Done today: {0} of {1} activities", { 0: s.done, 1: s.total })}</span></p>
+      {(s.xp > 0 || s.gold_u > 0 || s.loot.length > 0) && (
+        <p>
+          <Sparkle size={18} aria-hidden="true" />{" "}
+          <span>
+            {tr("Still to win today:")}{" "}
+            {[
+              s.xp > 0 ? tr("{0} XP", { 0: s.xp }) : "",
+              s.gold_u > 0 ? tr("{0} GOLD", { 0: gold(s.gold_u) }) : "",
+              s.loot.length ? tr("chest Auras: {0}", { 0: s.loot.map((l) => l.name).join(", ") }) : "",
+            ].filter(Boolean).join(" · ")}
+          </span>
+        </p>
+      )}
+      <p>
+        <ArrowClockwise size={18} aria-hidden="true" />{" "}
+        <span>{tr("New activities and rewards at {0} (in {1})", { 0: at(s.resetAt, timezone), 1: remaining(s.resetAt) })}</span>
+      </p>
+    </div>
+  );
+}
 
 export function ZoneActivities({
   zone,
@@ -31,7 +80,9 @@ export function ZoneActivities({
   onComplete,
   lockedContent,
   renderDetail,
+  timezone,
 }: {
+  timezone?: string;
   zone: Zone;
   quests: Quest[];
   selectedQuest?: Quest;
@@ -68,6 +119,7 @@ export function ZoneActivities({
         </Badge>
         <span>{tr("{0} activities", { 0: quests.length })}</span>
       </div>
+      <ZoneSchedule zone={zone} quests={quests} now={now} timezone={timezone} />
       {zone.tier > playerTier ? (
         lockedContent
       ) : (

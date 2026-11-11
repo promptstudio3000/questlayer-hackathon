@@ -3193,5 +3193,19 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "A recarga abre uma vez por dia quando o saldo desce abaixo de {0} NEAR.",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Adiciona os teus próprios NEAR: envia-os de qualquer carteira ou exchange para {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Recarregado. A tua conta tem NEAR para os próximos pagamentos.",
- "Could not refuel right now. Try again later.": "Não foi possível recarregar agora. Tenta mais tarde."
+ "Could not refuel right now. Try again later.": "Não foi possível recarregar agora. Tenta mais tarde.",
+ "Activities in {0} pay GOLD today.": "As atividades em {0} pagam GOLD hoje.",
+ "Done today: {0} of {1} activities": "Feito hoje: {0} de {1} atividades",
+ "Everything here is done for today": "Tudo aqui já está feito por hoje",
+ "GOLD in this zone": "GOLD nesta zona",
+ "New activities and rewards at {0} (in {1})": "Novas atividades e recompensas às {0} (em {1})",
+ "Open now until {0} (in {1})": "Aberto até às {0} (faltam {1})",
+ "Open now, all day": "Aberto o dia todo",
+ "Opens at {0} (in {1})": "Abre às {0} (em {1})",
+ "Show zone activities": "Ver atividades da zona",
+ "Still to win today:": "Ainda dá para ganhar hoje:",
+ "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "O baú em {0} pode conter esta Aura hoje. Abra a atividade do baú lá para tentar.",
+ "Today in this zone": "Hoje nesta zona",
+ "chest Auras: {0}": "Auras do baú: {0}",
+ "{0} Aura": "Aura {0}"
 }
