@@ -44,7 +44,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./art-world";
 import type { Point, World, Zone, Item } from "./types";
 import { prefersReducedMotion } from "./feedback";
-import { paintMapSky, skyFor, skyLabel } from "./map-sky";
+import { MAP_PALETTES, paintMapSky, skyFor, skyLabel } from "./map-sky";
+import { BUILDING_HEIGHT_CAP, LANDMARK_POI_CLASSES, geometryPolygons, landmarkFeatures } from "./map-landmarks";
 import { Coins, MoonStars, Sun, SunHorizon, X } from "@phosphor-icons/react";
 import "./map-sky.css";
 // Phone map-first layout; lazy with the map, so the welcome screen skips it.
@@ -381,6 +382,29 @@ export function GameMap(props: GameMapProps) {
     const m = new maplibregl.Map({
       container: el.current,
       style: "https://tiles.openfreemap.org/styles/positron",
+      // The poi labels end up hidden, and tiles only keep the source-layers
+      // some style layer uses when they load. One invisible layer keeps the
+      // landmark pois (churches, castles, monuments) in the tiles so the 3D
+      // landmarks can find them (src/map-landmarks.ts).
+      transformStyle: (_previous, next) => {
+        const vector = Object.entries(next.sources).find(([, s]) => s.type === "vector")?.[0];
+        if (!vector) return next;
+        return {
+          ...next,
+          layers: [
+            ...next.layers,
+            {
+              id: "landmark-pois",
+              type: "circle",
+              source: vector,
+              "source-layer": "poi",
+              minzoom: 14,
+              filter: ["in", ["get", "class"], ["literal", LANDMARK_POI_CLASSES]],
+              paint: { "circle-radius": 1, "circle-opacity": 0 },
+            },
+          ],
+        };
+      },
       center: [props.position.lng, props.position.lat],
       zoom: 16.9,
       pitch: 43,
@@ -531,12 +555,67 @@ export function GameMap(props: GameMapProps) {
             "fill-extrusion-color": "#d3c9d7",
             "fill-extrusion-height": [
               "min",
-              16,
+              BUILDING_HEIGHT_CAP,
               ["coalesce", ["get", "render_height"], 6],
             ],
             "fill-extrusion-opacity": 0.68,
           },
         });
+      // Churches, castles and monuments rise above the capped rooftops
+      // (src/map-landmarks.ts), drawn from the same tiles.
+      if (building && "source" in building) {
+        const tiles = building.source as string;
+        m.addSource("landmark-buildings", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: [] },
+        });
+        m.addLayer({
+          id: "landmark-buildings",
+          type: "fill-extrusion",
+          source: "landmark-buildings",
+          minzoom: 15,
+          paint: {
+            "fill-extrusion-color": MAP_PALETTES.day.landmark,
+            "fill-extrusion-height": ["get", "height"],
+            "fill-extrusion-base": ["get", "base"],
+            "fill-extrusion-opacity": MAP_PALETTES.day.extrusionOpacity,
+          },
+        });
+        let lastKey = "";
+        const refreshLandmarks = () => {
+          if (gone || m.getZoom() < 14.5) return;
+          const pois = m
+            .querySourceFeatures(tiles, {
+              sourceLayer: "poi",
+              filter: ["in", ["get", "class"], ["literal", LANDMARK_POI_CLASSES]],
+            })
+            .filter((f) => f.geometry.type === "Point")
+            .map((f) => {
+              const [lng, lat] = (f.geometry as { type: "Point"; coordinates: [number, number] }).coordinates;
+              return { class: f.properties?.class, subclass: f.properties?.subclass, lng, lat };
+            });
+          const key = pois
+            .map((p) => `${p.lng.toFixed(5)},${p.lat.toFixed(5)}`)
+            .sort()
+            .join(";");
+          if (key === lastKey) return;
+          const shapes = m
+            .querySourceFeatures(tiles, { sourceLayer: "building" })
+            .map((f) => ({
+              polygons: geometryPolygons(f.geometry as { type: string; coordinates?: unknown }),
+              height: f.properties?.render_height,
+              minHeight: f.properties?.render_min_height,
+              hide3d: f.properties?.hide_3d,
+            }));
+          if (!shapes.length) return;
+          lastKey = key;
+          (m.getSource("landmark-buildings") as GeoJSONSource | undefined)?.setData({
+            type: "FeatureCollection",
+            features: landmarkFeatures(pois, shapes),
+          } as Parameters<GeoJSONSource["setData"]>[0]);
+        };
+        m.on("idle", refreshLandmarks);
+      }
       // Day, dusk or night from the real sun at the player (src/map-sky.ts).
       paintMapSky(m, skyRef.current.phase);
       addObjectImage(m, "gold-coin", "coin");

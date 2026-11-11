@@ -11,7 +11,7 @@ export function createSigningVaultServer({
   validateVaultOrigins(config);
   const serialized = JSON.stringify({
     appOrigin: config.appOrigin, vaultOrigin: config.vaultOrigin, network: config.network, rpcUrl: config.rpcUrl,
-    contracts: Object.fromEntries(["qgold", "qgoldEscrow", "collectibles", "npcGames", "social", "treasuryDao"]
+    contracts: Object.fromEntries(["qgold", "qgoldEscrow", "collectibles", "npcGames", "social", "intents", "wnear", "treasuryDao"]
       .filter(name => typeof config.contracts?.[name] === "string").map(name => [name, config.contracts[name]])),
   });
   return createServer((req, res) => {

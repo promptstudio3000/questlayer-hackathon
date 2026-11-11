@@ -608,6 +608,9 @@ export const CHAPTERS: Chapter[] = [
       {
         p: "The map follows the real sun at the city (day, dusk, dawn, night palettes), and actors have day, night or any-time casts.",
       },
+      {
+        p: "Buildings on the base map rise in 3D up to 16 m, so pins stay readable over the rooftops. Churches, castles and monuments are landmarks: they keep their real height from OpenStreetMap (St. Bartholomew in Plzeň stands at 102 m) or are lifted to at least 22–30 m, in a warmer colour, so you can find your way by them.",
+      },
     ],
   },
   {
@@ -1005,7 +1008,7 @@ export const CHAPTERS: Chapter[] = [
     sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs"],
     blocks: [
       { viz: "account-seq" },
-      { p: "The local security candidate separates the signing key from the game page. Normal purchases, equipment and earned mini-games remain seamless. Withdrawals, asset transfers and account recovery require approval in a separate account window. This candidate has not been deployed or rotated into existing accounts." },
+      { p: "The secure account keeps the signing key on its own origin, away from the game page. Normal purchases, equipment, earned mini-games and getting ready to trade (turning this device's key on at the Intents verifier, moving your own Aura or NEAR into your own verifier account) sign silently. Anything that can pay someone else (a sale or purchase, a task, Secret or send, a withdrawal, an asset transfer) and account recovery ask one plain Yes / No question in a small separate window; the technical breakdown sits under Details. The window stays separate on purpose: a compromised game page cannot answer it." },
       {
         list: [
           "A new explorer gets `<name>.play-…testnet`, funded with 0.1 NEAR, once they have earned their first XP on the map (a find, coin or quest); the first steps play solo without it. Its only full-access key is generated on the device; the server never holds a player key. New accounts per network address are capped per day.",

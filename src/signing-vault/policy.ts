@@ -9,6 +9,9 @@ export type VaultConfig = {
     collectibles?: string;
     npcGames?: string;
     social?: string;
+    /** The NEAR Intents verifier and wNEAR: deposits into the player's own verifier account. */
+    intents?: string;
+    wnear?: string;
     treasuryDao?: string;
   };
 };
@@ -108,9 +111,12 @@ export async function needsProtection(
     memo: string;
     state: string;
   }>,
+  /** The vault's own device key for this account (never one the game names). */
+  devicePublicKey?: string,
 ) {
   const a = call.actions[0];
   if (a.kind !== "functionCall") return true;
+  if (selfCustody(call, a, config, devicePublicKey)) return false;
   if (
     call.receiverId === config.contracts.qgold &&
     a.methodName === "ft_burn"
@@ -200,6 +206,70 @@ export async function needsProtection(
       return false;
   }
   return true;
+}
+/**
+ * Setup steps that keep everything under the player's own control, so they
+ * sign silently: turning this device's key on at the Intents verifier and
+ * moving the player's own Aura or NEAR into the player's own verifier account.
+ * Nothing here can reach another account: the verifier credits the sender
+ * when `msg` is empty or names the sender, and only a key the vault holds can
+ * later sign an intent that moves it (that intent is still confirmed).
+ */
+function selfCustody(
+  call: VaultCall,
+  a: Extract<VaultAction, { kind: "functionCall" }>,
+  config: VaultConfig,
+  devicePublicKey?: string,
+) {
+  const { intents, wnear, collectibles } = config.contracts,
+    args = a.args,
+    keys = (...k: string[]) =>
+      Object.keys(args).length === k.length &&
+      Object.keys(args).every((x) => k.includes(x)),
+    toOwnVerifierAccount = (msg: unknown) =>
+      msg === "" || msg === call.accountId;
+  if (!intents) return false;
+  if (call.receiverId === intents)
+    return (
+      ["add_public_key", "remove_public_key"].includes(a.methodName) &&
+      a.deposit === "1" &&
+      keys("public_key") &&
+      // Only the device key the vault itself holds is turned on silently; a key
+      // named by the game (another device, a linked wallet) is confirmed.
+      (a.methodName === "remove_public_key" ||
+        (!!devicePublicKey && args.public_key === devicePublicKey))
+    );
+  if (
+    call.receiverId === collectibles &&
+    a.methodName === "nft_transfer_call" &&
+    a.deposit === "1" &&
+    keys("receiver_id", "token_id", "approval_id", "memo", "msg") &&
+    args.receiver_id === intents &&
+    typeof args.token_id === "string" &&
+    args.approval_id === null &&
+    args.memo === null
+  )
+    return toOwnVerifierAccount(args.msg);
+  if (wnear && call.receiverId === wnear) {
+    if (a.methodName === "near_deposit") return keys();
+    if (a.methodName === "storage_deposit")
+      return (
+        keys("account_id", "registration_only") &&
+        args.account_id === call.accountId &&
+        args.registration_only === true &&
+        BigInt(a.deposit) <= 1250000000000000000000n
+      );
+    if (a.methodName === "ft_transfer_call")
+      return (
+        a.deposit === "1" &&
+        keys("receiver_id", "amount", "msg") &&
+        args.receiver_id === intents &&
+        typeof args.amount === "string" &&
+        /^[1-9][0-9]{0,38}$/.test(args.amount) &&
+        toOwnVerifierAccount(args.msg)
+      );
+  }
+  return false;
 }
 export function trustedVaultMessage(
   event: { origin: string; source: unknown; data: unknown },
@@ -520,4 +590,92 @@ export function describeReview(
     callView(r as VaultCall, config, view);
   else messageView(r, config, view);
   return view;
+}
+
+// ---- The one plain question the approval window asks (yes / no). Built from
+// the same decoded request; the full breakdown stays under "Details".
+const auraName = (id: string) => {
+  const parts = id.split(":");
+  return parts[0] === "aura" && parts.length >= 2
+    ? `Aura ${parts.slice(1).join(" #")}`
+    : id;
+};
+const goldAmount = (v: unknown) =>
+  `${formatUnits(text(v), QGOLD_DECIMALS)} GOLD`;
+function tradeQuestion(intent: Record<string, unknown>, config: VaultConfig) {
+  const diff = Object.entries(plain(intent.diff) ?? {});
+  const nft = diff.find(([id]) => id.startsWith("nep171:")),
+    other = diff.find(([id]) => !id.startsWith("nep171:"));
+  if (!nft || !other) return null;
+  const [, , ...rest] = nft[0].split(":"),
+    item = auraName(rest.join(":")),
+    price = (v: unknown) => {
+      const [, contract] = other[0].split(":");
+      const raw = text(v).replace(/^-/, "");
+      return WNEAR.includes(contract)
+        ? `${formatUnits(raw, NEAR_DECIMALS)} NEAR`
+        : tokenAmount(contract, raw, config);
+    };
+  return text(nft[1]).startsWith("-")
+    ? `Sell your ${item} for ${price(other[1])}?`
+    : `Buy ${item} for ${price(other[1])}?`;
+}
+export function reviewQuestion(review: unknown, config: VaultConfig): string {
+  const r = (plain(review) ?? {}) as Partial<VaultCall> & MessageReview;
+  if (Array.isArray(r.actions) && typeof r.receiverId === "string") {
+    const a = r.actions[0];
+    if (!a) return "Allow this account action?";
+    if (a.kind !== "functionCall")
+      return a.kind === "addKey"
+        ? "Add a new key to your account?"
+        : "Remove a key from your account?";
+    const args = a.args ?? {},
+      to = text(args.receiver_id);
+    if (
+      a.methodName === "ft_transfer_call" &&
+      r.receiverId === config.contracts.qgold &&
+      to === config.contracts.qgoldEscrow
+    ) {
+      let msg: Record<string, unknown> | null = null;
+      try {
+        msg = plain(JSON.parse(String(args.msg)));
+      } catch {
+        msg = null;
+      }
+      if (msg?.kind === "task")
+        return `Pay ${goldAmount(args.amount)} to post this task?`;
+      if (msg?.kind === "secret")
+        return `Buy this Secret for ${goldAmount(msg.price)}?`;
+      if (msg?.kind === "transfer")
+        return `Send ${goldAmount(args.amount)} to ${text(msg.to)}?`;
+    }
+    if (a.methodName === "ft_transfer" || a.methodName === "ft_transfer_call")
+      return `Send ${tokenAmount(r.receiverId, args.amount, config)} to ${to}?`;
+    if (a.methodName === "nft_transfer" || a.methodName === "nft_transfer_call")
+      return `Give ${auraName(text(args.token_id))} to ${to}?`;
+    if (a.methodName === "nft_approve")
+      return `Let ${text(args.account_id)} move ${auraName(text(args.token_id))}?`;
+    if (a.deposit !== "0" && a.deposit !== "1")
+      return `Pay ${formatUnits(a.deposit, NEAR_DECIMALS)} NEAR for this action?`;
+    return "Allow this account action?";
+  }
+  if (r.operation !== undefined)
+    return `${OPERATION_LABELS[r.operation] ?? r.operation}?`;
+  let parsed: Record<string, unknown> | null = null;
+  try {
+    parsed = plain(JSON.parse(String(r.authorization)));
+  } catch {
+    parsed = null;
+  }
+  const intents = parsed && Array.isArray(parsed.intents) ? parsed.intents : [];
+  if (intents.length === 1) {
+    const p = plain(intents[0]);
+    if (p?.intent === "token_diff") {
+      const q = tradeQuestion(p, config);
+      if (q) return q;
+    }
+    if (p?.intent === "native_withdraw")
+      return `Move ${formatUnits(text(p.amount), NEAR_DECIMALS)} NEAR to ${text(p.receiver_id)}?`;
+  }
+  return "Allow this account action?";
 }
