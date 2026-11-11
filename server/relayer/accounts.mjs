@@ -5,6 +5,14 @@ import { assert, dayKey, id } from "../domain.mjs";
 import { nearAccountId } from "../identity/near.mjs";
 import { rpcErrorText } from "../near-provider.mjs";
 import { initializeManagedAccounts } from "./schema.mjs";
+import { ensureModuleVersion, registerModuleSchema } from "../schema-compatibility.mjs";
+
+// Testnet "start over" log (startOver below): once a day per explorer.
+export const START_OVER_SCHEMA = registerModuleSchema({
+  name: "managed-account-start-over",
+  version: 1,
+  sql: `CREATE TABLE IF NOT EXISTS managed_account_start_over(player_id TEXT NOT NULL REFERENCES players(id),day TEXT NOT NULL,old_account_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(player_id,day))`,
+});
 import { RelayJobError, retryLater, terminal } from "./errors.mjs";
 import { classifyFailure, relayFailure } from "./outcome.mjs";
 import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
@@ -71,6 +79,7 @@ export class ManagedAccounts {
     this.subsidyBudget = subsidyBudget ?? new SubsidyBudget(db, { clock });
     this.funding = new FundingJournal(db, factory, this.subsidyBudget, clock);
     initializeManagedAccounts(db);
+    ensureModuleVersion(db, START_OVER_SCHEMA);
   }
   /** NEAR account ids are at most 64 characters: slug + "." + factory. */
   get maxSlug() {
@@ -255,6 +264,65 @@ export class ManagedAccounts {
         );
     });
     return this.view(player);
+  }
+  /**
+   * Testnet only: whether this explorer may abandon an account no device can
+   * sign for any more (keys from before the signing vault, no recovery passkey).
+   */
+  canStartOver(row) {
+    return (
+      NETWORK === "testnet" &&
+      !!row &&
+      row.state === "ready" &&
+      !this.db
+        .prepare("SELECT 1 FROM managed_account_keys WHERE account_id=? AND kind='recovery' AND state='active'")
+        .get(row.account_id)
+    );
+  }
+  /**
+   * Testnet only (Lubos, 11 Nov 2026): an explorer whose account keys live on no
+   * device they still have, and who has no recovery passkey, starts a new
+   * account on this device. The old account stays on chain untouched (the
+   * service never held its keys); the game forgets it and creates a new one
+   * with `publicKey` as its first device key. Once a day per explorer.
+   */
+  async startOver(player, { publicKey, name, authorizeEnrollment = () => {} } = {}) {
+    assert(NETWORK === "testnet", "Starting over is only possible on testnet.", 403, "ACCOUNT_START_OVER_OFF");
+    const row = this.row(player);
+    assert(row, "You have no explorer account yet.", 404, "ACCOUNT_MISSING");
+    assert(this.canStartOver(row), "Use your recovery passkey to add this device.", 409, "ACCOUNT_HAS_RECOVERY");
+    const key = devicePublicKey(publicKey);
+    assert(
+      !this.keys(row.account_id, ["active", "pending"]).includes(key),
+      "This device can already use your explorer account.",
+      409,
+      "ACCOUNT_KEY_KNOWN",
+    );
+    const today = dayKey(this.clock());
+    assert(
+      !this.db
+        .prepare("SELECT 1 FROM managed_account_start_over WHERE player_id=? AND day=?")
+        .get(player, today),
+      "You already started over today. Try again tomorrow.",
+      429,
+      "ACCOUNT_START_OVER_LIMIT",
+    );
+    authorizeEnrollment();
+    atomic(this.db, () => {
+      const now = this.clock();
+      this.db
+        .prepare("INSERT INTO managed_account_start_over(player_id,day,old_account_id,created_at) VALUES(?,?,?,?)")
+        .run(player, today, row.account_id, now);
+      // The old account becomes "failed" so create() replaces it; the game no
+      // longer treats it as this explorer's own.
+      this.db
+        .prepare("UPDATE managed_accounts SET state='failed',error_code='DEVICE_KEY_LOST',last_error=?,updated_at=? WHERE account_id=?")
+        .run("Started over on a new device.", now, row.account_id);
+      this.db.prepare("DELETE FROM wallet_links WHERE account_id=? AND player_id=?").run(row.account_id, player);
+      if (this.db.prepare("PRAGMA table_info(players)").all().some((c) => c.name === "native_account"))
+        this.db.prepare("UPDATE players SET native_account=NULL WHERE id=? AND native_account=?").run(player, row.account_id);
+    });
+    return this.create(player, { publicKey: key, name, authorizeEnrollment });
   }
   async requestKey(player, { publicKey, kind = "device", label = null } = {}) {
     const row = this.row(player);
@@ -621,6 +689,8 @@ export class ManagedAccounts {
         errorCode: row.error_code,
         error: row.last_error,
         keys,
+        // Testnet: no recovery passkey, so a device without a key may start over.
+        canStartOver: this.canStartOver(row),
         creation: pending
           ? {
               jobId: pending.id,

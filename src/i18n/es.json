@@ -2903,7 +2903,6 @@
  "You · open your profile": "Tú · abrir tu perfil",
  "Accept": "Aceptar",
  "Ask to message": "Pedir permiso para escribir",
- "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "Pregunta primero a {0}. Decide si puedes escribirle. Si os saludáis mutuamente, puedes escribir enseguida.",
  "Conversations": "Conversaciones",
  "Encrypted on your device and stored on NEAR. Nobody else can read it, not even QuestLayer.": "Cifrado en tu dispositivo y guardado en NEAR. Nadie más puede leerlo, ni siquiera QuestLayer.",
  "End-to-end encrypted. Only you and the other explorer can read a message.": "Cifrado de extremo a extremo. Solo tú y el otro explorador podéis leer un mensaje.",
@@ -3222,5 +3221,12 @@
  "Messages open with your explorer account, which you get with your first find or quest.": "Los mensajes se abren con tu cuenta de explorador, que obtienes con tu primer hallazgo o misión.",
  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Este dispositivo aún no está vinculado a tu cuenta de explorador, así que no puede enviar ni leer mensajes. Añádelo con tu passkey de recuperación.",
  "Your explorer account is being set up. Messages open in a moment.": "Tu cuenta de explorador se está preparando. Los mensajes se abrirán en un momento.",
- "Your explorer account is not available on this device, so messages are off here.": "Tu cuenta de explorador no está disponible en este dispositivo, así que aquí los mensajes están desactivados."
+ "Your explorer account is not available on this device, so messages are off here.": "Tu cuenta de explorador no está disponible en este dispositivo, así que aquí los mensajes están desactivados.",
+ "A new explorer account is being made on this device.": "Se está creando una nueva cuenta de explorador en este dispositivo.",
+ "Ask {0} first. They decide whether you may write. When you are within 1 km of each other, you can write right away.": "Pregunta primero a {0}. Decide si puedes escribirle. Si estáis a menos de 1 km, puedes escribir enseguida.",
+ "Lost that device? Start with a new account here": "¿Perdiste ese dispositivo? Empieza aquí con una cuenta nueva",
+ "Start with a new account": "Empezar con una cuenta nueva",
+ "Starting over…": "Empezando de nuevo…",
+ "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Solo en la red de pruebas. Tu explorador, XP, hallazgos y objetos se mantienen. Se crea una nueva cuenta NEAR en este dispositivo; el QGOLD y los tokens de la cuenta antigua se quedan allí y el juego deja de usarla.",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Este dispositivo aún no está vinculado a tu cuenta de explorador, así que no puede enviar ni leer mensajes. Añádelo con tu passkey de recuperación o empieza aquí con una cuenta nueva."
 }

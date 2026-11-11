@@ -549,7 +549,9 @@ export default function App() {
     const status = invisible.status;
     if (status === "needs-recovery")
       return {
-        text: tr("This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey."),
+        text: invisible.canStartOver
+          ? tr("This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.")
+          : tr("This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey."),
         action: { label: tr("Link this device"), run: openAccountDevices },
       };
     if (status === "play-first")
@@ -2869,6 +2871,15 @@ export default function App() {
     });
     return ok === true;
   }
+  async function startOverHere() {
+    const ok = await action("start-over", async () => {
+      await invisible.startOver();
+      setPlayer((await api<{ player: Player }>("/me")).player);
+      notify(tr("A new explorer account is being made on this device."));
+      return true;
+    });
+    return ok === true;
+  }
   async function revokeGameSessions(expectedAccount: string) {
     const ok = await action("session-recovery", async () => {
       const { wallet, accountId } = await chooseNearAccount();
@@ -4803,6 +4814,7 @@ export default function App() {
                     onSetupRecovery={setupRecoveryPasskey}
                     onRevoke={revokeDevice}
                     onRestore={restoreThisDevice}
+                    onStartOver={invisible.canStartOver ? startOverHere : undefined}
                     error={invisible.error}
                     onRetry={() => void invisible.ensure()}
                   />

@@ -2903,7 +2903,6 @@
  "You · open your profile": "Du · Profil öffnen",
  "Accept": "Annehmen",
  "Ask to message": "Um Nachrichten bitten",
- "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "Frag zuerst {0}. Sie entscheiden, ob du schreiben darfst. Wenn ihr euch gegenseitig zuwinkt, kannst du sofort schreiben.",
  "Conversations": "Unterhaltungen",
  "Encrypted on your device and stored on NEAR. Nobody else can read it, not even QuestLayer.": "Auf deinem Gerät verschlüsselt und auf NEAR gespeichert. Niemand sonst kann es lesen, auch QuestLayer nicht.",
  "End-to-end encrypted. Only you and the other explorer can read a message.": "Ende-zu-Ende-verschlüsselt. Nur du und die andere Person können eine Nachricht lesen.",
@@ -3222,5 +3221,12 @@
  "Messages open with your explorer account, which you get with your first find or quest.": "Nachrichten öffnen sich mit deinem Entdecker-Konto, das du mit deinem ersten Fund oder Quest bekommst.",
  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Dieses Gerät ist noch nicht mit deinem Entdecker-Konto verbunden und kann keine Nachrichten senden oder lesen. Füge es mit deinem Wiederherstellungs-Passkey hinzu.",
  "Your explorer account is being set up. Messages open in a moment.": "Dein Entdecker-Konto wird eingerichtet. Nachrichten öffnen sich gleich.",
- "Your explorer account is not available on this device, so messages are off here.": "Dein Entdecker-Konto ist auf diesem Gerät nicht verfügbar, daher sind Nachrichten hier aus."
+ "Your explorer account is not available on this device, so messages are off here.": "Dein Entdecker-Konto ist auf diesem Gerät nicht verfügbar, daher sind Nachrichten hier aus.",
+ "A new explorer account is being made on this device.": "Auf diesem Gerät wird ein neues Entdecker-Konto erstellt.",
+ "Ask {0} first. They decide whether you may write. When you are within 1 km of each other, you can write right away.": "Frag {0} zuerst. Sie entscheiden, ob du schreiben darfst. Seid ihr höchstens 1 km voneinander entfernt, kannst du sofort schreiben.",
+ "Lost that device? Start with a new account here": "Gerät verloren? Hier mit einem neuen Konto beginnen",
+ "Start with a new account": "Mit neuem Konto beginnen",
+ "Starting over…": "Neustart…",
+ "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Nur im Testnetz. Dein Entdecker, XP, Funde und Gegenstände bleiben. Auf diesem Gerät wird ein neues NEAR-Konto erstellt; QGOLD und Tokens auf dem alten Konto bleiben dort und das Spiel nutzt es nicht mehr.",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Dieses Gerät ist noch nicht mit deinem Entdecker-Konto verbunden und kann keine Nachrichten senden oder lesen. Füge es mit deinem Wiederherstellungs-Passkey hinzu oder beginne hier mit einem neuen Konto."
 }

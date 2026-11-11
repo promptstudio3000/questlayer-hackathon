@@ -2903,7 +2903,6 @@
  "You · open your profile": "Вы · открыть профиль",
  "Accept": "Принять",
  "Ask to message": "Попросить переписку",
- "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "Сначала спроси {0}. Он решит, можно ли тебе писать. Если вы помашете друг другу, писать можно сразу.",
  "Conversations": "Переписки",
  "Encrypted on your device and stored on NEAR. Nobody else can read it, not even QuestLayer.": "Зашифровано на твоём устройстве и хранится в NEAR. Никто другой не сможет прочитать, даже QuestLayer.",
  "End-to-end encrypted. Only you and the other explorer can read a message.": "Сквозное шифрование. Сообщение можете прочитать только ты и собеседник.",
@@ -3222,5 +3221,12 @@
  "Messages open with your explorer account, which you get with your first find or quest.": "Сообщения откроются с твоим аккаунтом исследователя, который ты получишь с первой находкой или заданием.",
  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Это устройство ещё не привязано к твоему аккаунту исследователя, поэтому не может отправлять и читать сообщения. Добавь его с помощью резервного passkey.",
  "Your explorer account is being set up. Messages open in a moment.": "Твой аккаунт исследователя готовится. Сообщения откроются через минуту.",
- "Your explorer account is not available on this device, so messages are off here.": "Твой аккаунт исследователя недоступен на этом устройстве, поэтому сообщения здесь выключены."
+ "Your explorer account is not available on this device, so messages are off here.": "Твой аккаунт исследователя недоступен на этом устройстве, поэтому сообщения здесь выключены.",
+ "A new explorer account is being made on this device.": "На этом устройстве создаётся новый аккаунт исследователя.",
+ "Ask {0} first. They decide whether you may write. When you are within 1 km of each other, you can write right away.": "Сначала спроси {0}. Он или она решит, можно ли тебе писать. Если вы в пределах 1 км друг от друга, писать можно сразу.",
+ "Lost that device? Start with a new account here": "Потерял то устройство? Начни здесь с новым аккаунтом",
+ "Start with a new account": "Начать с новым аккаунтом",
+ "Starting over…": "Начинаю заново…",
+ "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Только в тестовой сети. Твой исследователь, XP, находки и предметы сохранятся. На этом устройстве создаётся новый аккаунт NEAR; QGOLD и токены на старом аккаунте останутся там, и игра перестанет его использовать.",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Это устройство ещё не привязано к твоему аккаунту исследователя, поэтому не может отправлять и читать сообщения. Добавь его резервным passkey или начни здесь с новым аккаунтом."
 }
