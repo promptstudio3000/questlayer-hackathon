@@ -26,17 +26,14 @@ import {
   ChainSettings,
   WalletPanel,
   FundPanel,
-  Bounties,
   AutoSocialProfile,
   ChainLink,
   CreatorCommunity,
-  CommunityBonusVote,
   TreasuryVote,
   MapNotes,
   PlayerCard,
   Inbox,
   NativeCollectionControl,
-  NativeTasks,
   Inventory,
   AccountSessions,
   DeviceKeys,
@@ -62,6 +59,7 @@ import {
   ActorSheet,
   BadgeBook,
   NearbyList,
+  NearbyMarket,
   GoldShop,
   PlaceMessages,
   PlaceCompose,
@@ -73,6 +71,7 @@ import {
   EarningsPanel,
 } from "./lazy-panels";
 import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
+import type { NotePin } from "./gold-map-layer";
 import type { RollCall } from "./WispRolls";
 import type { InventoryTab } from "./Inventory";
 // Styles of the split-off screens stay in the main stylesheet, in their old
@@ -405,6 +404,8 @@ export default function App() {
     [myEmote, setMyEmote] = useState<{ id: string; until: number } | null>(null),
     [myFrame, setMyFrame] = useState<string | null>(null),
     [goldMapData, setGoldMapData] = useState<GoldMap | null>(null),
+    [mapNotes, setMapNotes] = useState<NotePin[]>([]),
+    [noteOpenId, setNoteOpenId] = useState<string | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
     [chatView, setChatView] = useState<LocalChatView>("notes"),
     [quickCreate, setQuickCreate] = useState<"note" | "topic" | "place" | null>(null),
@@ -1193,6 +1194,22 @@ export default function App() {
     }
   }
   const clearPlaceOpen = useCallback(() => setPlaceOpenId(null), []);
+  const clearNoteOpen = useCallback(() => setNoteOpenId(null), []);
+  // Free map notes near the player, drawn on the map (same area as Local chat · Notes).
+  const noteRead = useRef(0);
+  async function refreshMapNotes() {
+    if (!player) return;
+    const version = ++noteRead.current;
+    try {
+      const { messages } = await api<{ messages: NotePin[] }>(
+        `/messages?lat=${position.lat.toFixed(2)}&lng=${position.lng.toFixed(2)}&arena=${arena ? 1 : 0}`,
+      );
+      if (version === noteRead.current)
+        setMapNotes(messages.map(({ id, text, lat, lng, own }) => ({ id, text, lat, lng, own })));
+    } catch {
+      /* The map keeps the last notes; the next tick retries. */
+    }
+  }
   // A #task= / #secret= share link at load opens Nearby, where its dialog lives.
   useEffect(() => {
     if (!player?.id || nativePlay) return;
@@ -1208,6 +1225,16 @@ export default function App() {
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player?.id, goldSpot]);
+  useEffect(() => {
+    if (!player?.id) {
+      setMapNotes([]);
+      return;
+    }
+    void refreshMapNotes();
+    const timer = setInterval(() => void refreshMapNotes(), 30_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id, goldSpot, arena]);
   useEffect(() => {
     if (player?.id) void readGoldLook();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3699,6 +3726,14 @@ export default function App() {
             setTab("messages");
             setSheetExpanded(true);
           }}
+          notes={mapNotes}
+          onNotePin={(id) => {
+            setNoteOpenId(id);
+            setNotesView("browse");
+            setChatView("notes");
+            setTab("messages");
+            setSheetExpanded(true);
+          }}
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
           actorFocus={actorFocus}
           onActorFocus={(text, found) => notify(text, !found)}
@@ -4268,7 +4303,7 @@ export default function App() {
             </>
           )}
           {tab === "explore" && detailZone && (
-            <ZoneActivities zone={detailZone} quests={detailQuests} selectedQuest={detailQuest}
+            <ZoneActivities zone={detailZone} quests={detailQuests} selectedQuest={detailQuest} timezone={world?.timezone}
               playerTier={player.tier} position={position} now={now} busy={busy}
               choices={clueChoice} onChoose={chooseZoneQuest}
               onClue={(id, choice) => setClueChoice(all => ({ ...all, [id]: choice }))}
@@ -4815,21 +4850,6 @@ export default function App() {
           )}
           {tab === "community" && (
             <ScreenTabPanel idBase="community" value={communityTab}>
-              {communityTab === "quests" && (
-                <TreasuryVote
-                  key={`treasury-${player.id}`}
-                  account={invisible.status === "ready" ? invisible.accountId || null : null}
-                  vote={voteTreasury}
-                  notify={notify}
-                />
-              )}
-              {communityTab === "creators" && (
-                <CommunityBonusVote
-                  key={`bonus-${player.id}`}
-                  playerId={player.id}
-                  notify={notify}
-                />
-              )}
               <CreatorCommunity
                 key={player.id}
                 section={communityTab === "creators" ? "creators" : "quests"}
@@ -4937,6 +4957,9 @@ export default function App() {
               onViewChange={setNotesView}
               recordAccount={recordAccount}
               onRecord={recordNote}
+              onChange={() => void refreshMapNotes()}
+              openId={noteOpenId}
+              onOpened={clearNoteOpen}
               onBlockChange={() => {
                 setOthers([]);
                 window.dispatchEvent(new Event("questlayer:social-blocks"));
@@ -4949,37 +4972,19 @@ export default function App() {
           )}
           {tab === "bounties" && (
             <ScreenTabPanel idBase="community" value="tasks">
-              <div
-                className="play-mode-switch"
-                role="group"
-                aria-label={tr("Task board")}
-              >
-                <button
-                  aria-pressed={taskRealm === "near"}
-                  onClick={() => setTaskRealm("near")}
-                >
-                  {tr("Sponsored tasks")}</button>
-                <button
-                  aria-pressed={taskRealm === "demo"}
-                  onClick={() => setTaskRealm("demo")}
-                >
-                  {tr("Practice tasks")}</button>
-              </div>
-              {taskRealm === "near" ? (
-                <NativeTasks
-                  player={player}
-                  onConnect={activateExplorer}
-                  onTransaction={operateNativeTask}
-                />
-              ) : (
-                <Bounties
-                  position={position}
-                  player={player}
-                  action={action}
-                  onPlayer={setPlayer}
-                  notify={notify}
-                />
-              )}
+              <NearbyMarket
+                key={player.id}
+                variant="board"
+                position={position}
+                fix={() =>
+                  arena || !fix
+                    ? { ...position, accuracy: 0, timestamp: Date.now() }
+                    : fix
+                }
+                fund={fundMarketEscrow}
+                notify={notify}
+                onBalance={() => void me()}
+              />
             </ScreenTabPanel>
           )}
         </main>
@@ -5079,6 +5084,7 @@ export default function App() {
               fix={fix}
               arena={arena}
               notify={notify}
+              onChange={() => void refreshMapNotes()}
               onDone={() => setQuickCreate(null)}
             />
           )}

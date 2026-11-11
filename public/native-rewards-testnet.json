@@ -28,6 +28,27 @@
       "pool": "stakely_v2.pool.f863973.m0",
       "codeHash": "4bnUo5Bn5MJqME8o5SrK9YfacYjzwmqFGPfQ4gxp3TbY",
       "wasmSha256": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b"
+    },
+    {
+      "accountId": "stake-20261111-b.questlayer-dev-20261101.testnet",
+      "beneficiary": "questlayer-dev-20261101.testnet",
+      "pool": "ts.pool.f863973.m0",
+      "codeHash": "4bnUo5Bn5MJqME8o5SrK9YfacYjzwmqFGPfQ4gxp3TbY",
+      "wasmSha256": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b"
+    },
+    {
+      "accountId": "stake-20261111-c.questlayer-dev-20261101.testnet",
+      "beneficiary": "questlayer-dev-20261101.testnet",
+      "pool": "aurora.pool.f863973.m0",
+      "codeHash": "4bnUo5Bn5MJqME8o5SrK9YfacYjzwmqFGPfQ4gxp3TbY",
+      "wasmSha256": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b"
+    },
+    {
+      "accountId": "stake-20261111-d.questlayer-dev-20261101.testnet",
+      "beneficiary": "questlayer-dev-20261101.testnet",
+      "pool": "stakely_v2.pool.f863973.m0",
+      "codeHash": "4bnUo5Bn5MJqME8o5SrK9YfacYjzwmqFGPfQ4gxp3TbY",
+      "wasmSha256": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b"
     }
   ],
   "funding": "explicit sponsor; realized staking yield not yet demonstrated",

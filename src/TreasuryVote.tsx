@@ -34,13 +34,13 @@ export type DaoView = {
   rule: { minLevel: number; activeDays: number };
   weeklyMix?: DaoPoll | null;
   extras?: DaoPoll[];
-  adopted?: { option: string; targets: { lst: number; stable: number; near: number } } | null;
+  adopted?: { option: string; targets: { staked?: number; lst: number; stable: number; near: number } } | null;
   me?: { account: string; member: boolean } | null;
 };
 
 const pct = (bps: number) => Math.round(bps / 100);
-export const mixLabel = (t: { lst: number; stable: number; near: number }) =>
-  `${pct(t.lst)} / ${pct(t.stable)} / ${pct(t.near)}`;
+export const mixLabel = (t: { staked?: number; lst: number; stable: number; near: number }) =>
+  `${pct((t.staked ?? 0) + t.lst)} / ${pct(t.stable)} / ${pct(t.near)}`;
 
 export function TreasuryVote({
   account,

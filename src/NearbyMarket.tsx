@@ -7,17 +7,29 @@
 // the price after a visit or 7 days without a dispute; sends carry no fee.
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
+  ArrowClockwise,
   ArrowRight,
+  ArrowsClockwise,
+  Basket,
+  Camera,
+  CalendarStar,
   ChatCircle,
   CheckCircle,
   Copy,
   Eye,
   HandCoins,
+  LinkSimple,
   LockKey,
   MapPin,
+  Package,
+  PaintBrush,
+  Plus,
+  Question,
   Star,
+  UsersThree,
   X,
 } from "@phosphor-icons/react";
+import { BotTag, CommunityRow, ExplorerAvatar, FilterChips, type PublicLook } from "./CommunityCards";
 import { api, gold, GOLD } from "./api";
 import { tr } from "./i18n";
 import { Dialog } from "./Dialog";
@@ -26,7 +38,7 @@ import { Badge, CoinIcon, distanceLabel, units } from "./app-bits";
 import type { Fix, Point } from "./types";
 import "./nearby-market.css";
 
-type Who = { id: string; name: string; rating?: { count: number; average: number } | null };
+type Who = { id: string; name: string; rating?: { count: number; average: number } | null; look?: PublicLook };
 type Claim = {
   id: string;
   worker: Who;
@@ -57,6 +69,8 @@ export type MarketTask = {
   state: string;
   deadline: number;
   mine: boolean;
+  /** A demo bot's example in the test world: shown, never funded or taken. */
+  demo?: boolean;
   myClaim: Claim | null;
   linkKey?: string | null;
   claims?: Claim[];
@@ -146,6 +160,18 @@ const TYPE_LABEL: Record<string, () => string> = {
   chain: () => tr("Next chain step"),
 };
 const GPS_TYPES = new Set(["go", "meet", "collect", "event", "deliver"]);
+const TYPE_ICON: Record<string, ReactNode> = {
+  go: <MapPin size={13} weight="bold" />,
+  photo: <Camera size={13} weight="bold" />,
+  deliver: <Package size={13} weight="bold" />,
+  meet: <UsersThree size={13} weight="bold" />,
+  collect: <Basket size={13} weight="bold" />,
+  event: <CalendarStar size={13} weight="bold" />,
+  answer: <Question size={13} weight="bold" />,
+  create: <PaintBrush size={13} weight="bold" />,
+  recurring: <ArrowsClockwise size={13} weight="bold" />,
+  chain: <LinkSimple size={13} weight="bold" />,
+};
 const STATE_LABEL: Record<string, () => string> = {
   reserved: () => tr("Taken by you"),
   offered: () => tr("Counteroffer sent"),
@@ -183,6 +209,7 @@ export function NearbyMarket({
   openForm = "",
   onFormOpened,
   listed = true,
+  variant = "nearby",
   onData,
 }: {
   position: Point;
@@ -198,6 +225,8 @@ export function NearbyMarket({
   onFormOpened?: () => void;
   /** False: only the task and Secret dialogs and the create forms (Nearby lists the rows). */
   listed?: boolean;
+  /** "board": Community · Tasks, every player task in one filtered list. */
+  variant?: "nearby" | "board";
   /** Called with every fresh read of the tasks and Secrets around the explorer. */
   onData?: (data: { tasks: MarketTask[]; active: MarketTask[]; secrets: MarketSecret[] }) => void;
 }) {
@@ -337,6 +366,18 @@ export function NearbyMarket({
   );
   const active = [...data.taking, ...data.forMe.filter((t) => !data.taking.some((x) => x.id === t.id))];
   if (!listed) return <>{dialogs}</>;
+  if (variant === "board")
+    return (
+      <TaskBoard
+        data={data}
+        busy={!!busy}
+        onOpen={(t) => setOpenTask({ id: t.id })}
+        onPost={() => setForm("task")}
+        onRefresh={() => void load()}
+      >
+        {dialogs}
+      </TaskBoard>
+    );
   return (
     <div className="nearby-market">
       {data.wallet?.registered === false && (
@@ -370,6 +411,109 @@ export function NearbyMarket({
       )}
 
       {dialogs}
+    </div>
+  );
+}
+
+type BoardFilter = "all" | "taking" | "mine";
+/**
+ * Community · Tasks (Lubos, 11 Nov 2026): one list of tasks explorers post and
+ * pay QGOLD for, filtered by who it is for and by type, with who posted it.
+ */
+function TaskBoard({
+  data,
+  busy,
+  onOpen,
+  onPost,
+  onRefresh,
+  children,
+}: {
+  data: Nearby;
+  busy: boolean;
+  onOpen: (t: MarketTask) => void;
+  onPost: () => void;
+  onRefresh: () => void;
+  children: ReactNode;
+}) {
+  const [filter, setFilter] = useState<BoardFilter>("all");
+  const [type, setType] = useState("");
+  const active = [...data.taking, ...data.forMe.filter((t) => !data.taking.some((x) => x.id === t.id))];
+  const open = [...data.forMe.filter((t) => !data.tasks.some((x) => x.id === t.id)), ...data.tasks];
+  const list = (filter === "taking" ? active : filter === "mine" ? data.mine : open).filter(
+    (t) => !type || t.type === type,
+  );
+  const types = [...new Set([...open, ...active, ...data.mine].map((t) => t.type))];
+  return (
+    <div className="nearby-market task-board">
+      <FilterChips
+        label={tr("Task board")}
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { id: "all", label: tr("Open nearby"), count: open.length },
+          { id: "taking", label: tr("Taking"), count: active.length },
+          { id: "mine", label: tr("Posted by me"), count: data.mine.length },
+        ]}
+      />
+      <div className="cl-filters">
+        <select className="cl-select" aria-label={tr("Task type")} value={type} onChange={(e) => setType(e.target.value)}>
+          <option value="">{tr("All types")}</option>
+          {types.map((t) => (
+            <option key={t} value={t}>{TYPE_LABEL[t]?.() ?? t}</option>
+          ))}
+        </select>
+        <span style={{ flex: 1 }} />
+        <button type="button" className="cl-icon-button" aria-label={tr("Refresh tasks")} title={tr("Refresh tasks")} disabled={busy} onClick={onRefresh}>
+          <ArrowClockwise size={20} />
+        </button>
+        <button type="button" className="cl-add" onClick={onPost}>
+          <Plus size={18} weight="bold" aria-hidden="true" /> {tr("Post a task")}
+        </button>
+      </div>
+      {data.wallet?.registered === false && (
+        <p className="nearby-note" role="status">
+          {tr("Sends and refunds reach this account once its first QGOLD payout registers it on the token.")}
+        </p>
+      )}
+      {list.length === 0 ? (
+        <p className="cl-empty">
+          {filter === "taking"
+            ? tr("You are not working on any task. Open one and take it.")
+            : filter === "mine"
+              ? tr("Post a task and pay QGOLD to the explorer who completes it.")
+              : tr("No open tasks within 5 km. Post the first one.")}
+        </p>
+      ) : (
+        <ul className="cl-list">
+          {list.map((t) => (
+            <li key={t.id}>
+              <CommunityRow
+                art="task"
+                glyph={TYPE_ICON[t.type]}
+                title={t.title}
+                author={t.poster.name}
+                look={t.poster.look}
+                meta={[
+                  TYPE_LABEL[t.type]?.() ?? t.type,
+                  t.myClaim ? STATE_LABEL[t.myClaim.state]?.() ?? t.myClaim.state : null,
+                  t.mine ? tr("{0} of {1} paid", { 0: t.paidSlots, 1: t.slots * t.rounds }) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                where={t.distanceM !== undefined ? distanceLabel(t.distanceM) : null}
+                reward={
+                  <>
+                    <span className="cl-gold"><CoinIcon />{gold(t.reward)}</span>
+                    {t.remaining > 0 && <small>{t.remaining === 1 ? tr("1 place left") : tr("{0} places left", { 0: t.remaining })}</small>}
+                  </>
+                }
+                onOpen={() => onOpen(t)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+      {children}
     </div>
   );
 }
@@ -454,16 +598,24 @@ function TaskDialog({ id, k, fix, busy, run, onClose }: { id: string; k?: string
               {task.visibility !== "public" && <Badge tone="purple"><LockKey size={12} /> {tr("Invite only")}</Badge>}
             </div>
             {task.description && <p>{task.description}</p>}
-            <p className="market-meta">
+            <p className="market-poster-line">
+              <ExplorerAvatar look={task.poster.look} size={28} />
               {tr("Posted by {0}", { 0: task.poster.name })}
+              <BotTag look={task.poster.look} />
               {task.poster.rating && <> · <Star size={12} weight="fill" /> {task.poster.rating.average} ({task.poster.rating.count})</>}
-              {" · "}{tr("Open until {0}", { 0: when(task.deadline) })}
+            </p>
+            <p className="market-meta">
+              {tr("Open until {0}", { 0: when(task.deadline) })}
               {" · "}{tr("{0} places left", { 0: task.remaining })}
               {task.rounds > 1 && ` · ${tr("Repeats every {0} days", { 0: task.everyDays })}`}
             </p>
             {GPS_TYPES.has(task.type) && <p className="market-meta"><MapPin size={14} /> {tr("Be within {0} m of the pinned place to complete it.", { 0: task.radiusM })}</p>}
 
-            {task.mine ? (
+            {task.demo ? (
+              <p className="nearby-note" role="status">
+                {tr("An example from a demo bot in the test world. Real tasks from explorers hold their QGOLD in escrow and can be taken.")}
+              </p>
+            ) : task.mine ? (
               <PosterControls task={task} busy={busy} act={act} />
             ) : !claim || !mineOpen ? (
               task.state === "open" && (

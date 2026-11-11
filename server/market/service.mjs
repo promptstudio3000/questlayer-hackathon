@@ -14,6 +14,7 @@
 // - Conditional P2P transfers carry no fee.
 // - Every GOLD that leaves a player sits in exactly one escrow row until it is
 //   paid or refunded; `marketInvariant` checks the sum.
+import { publicLook } from "../public-look.mjs";
 import { randomBytes, createHash } from "node:crypto";
 import { assert, distance, id, point, DAY, GOLD } from "../domain.mjs";
 import { atomic, history } from "../database.mjs";
@@ -330,6 +331,8 @@ export function reserveTask(db, worker, taskId, { linkKey, offer } = {}, now = D
     assert(task && canSeeTask(db, worker, task, linkKey), "This task is not available.", 404);
     assert(task.state === "open" && task.deadline > now, "This task is closed.");
     assert(task.poster !== worker, "You cannot take your own task.");
+    // Test-world examples (server/test-seed) have no QGOLD in escrow.
+    assert(!task.id.startsWith("seed-"), "This is an example task from a demo bot. Real tasks from explorers pay QGOLD.", 409);
     assert(parentDone(db, task, worker), "Finish the previous step of this chain first.");
     requireAccount(db, worker);
     // The escrow pays each account once per task, also across rounds.
@@ -529,7 +532,9 @@ function taskView(db, viewer, task, now, { full = false } = {}) {
     description: task.description,
     type: task.type,
     visibility: task.visibility,
-    poster: { id: task.poster, name: name(db, task.poster), rating: ratingOf(db, task.poster) },
+    poster: { id: task.poster, name: name(db, task.poster), rating: ratingOf(db, task.poster), look: publicLook(db, task.poster, now) },
+    // A demo bot's example in the test world: shown, never funded or taken.
+    demo: task.id.startsWith("seed-"),
     lat: task.lat,
     lng: task.lng,
     radiusM: task.radius_m,
