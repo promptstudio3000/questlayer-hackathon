@@ -3177,5 +3177,14 @@
   "Passwords work for test explorers only.": "पासवर्ड केवल टेस्ट एक्सप्लोरर के लिए काम करते हैं।",
   "Continue with a passkey": "पासकी से जारी रखें",
   "Recovery": "रिकवरी",
-  "Ethereum": "एथेरियम"
+  "Ethereum": "एथेरियम",
+  "The treasury vote is on another network.": "ट्रेज़री वोट किसी दूसरे नेटवर्क पर है।",
+  "Vote saved on chain.": "वोट चेन पर सहेजा गया।",
+  "Treasury vote": "ट्रेज़री वोट",
+  "Explorers choose how the shared treasury is held. The council carries out the result.": "खोजकर्ता चुनते हैं कि साझा ट्रेज़री कैसे रखी जाए। परिषद परिणाम लागू करती है।",
+  "In force now: {0}": "अभी लागू: {0}",
+  "Reach level 3 and play this week to vote. New voters join once a day.": "वोट देने के लिए स्तर 3 तक पहुँचें और इस सप्ताह खेलें। नए मतदाता दिन में एक बार जुड़ते हैं।",
+  "Other votes this week": "इस सप्ताह के अन्य वोट",
+  "{0} votes": "{0} वोट",
+  "See the treasury DAO": "ट्रेज़री DAO देखें"
 }

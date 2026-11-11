@@ -54,7 +54,7 @@ test("treasury page reads only public endpoints and keeps copy neutral", () => {
   assert.doesNotMatch(page, /hackathon|judge|demo day|pitch/i);
   assert.doesNotMatch(page, /city pot|city share|guaranteed|profit/i);
   const urls = [...page.matchAll(/useJson<\w+>\("([^"]+)"\)/g)].map((m) => m[1]).sort();
-  assert.deepEqual(urls, ["/api/economy/ledger", "/api/economy/qgold", "/api/map/rewards/day", "/api/treasury/mix"]);
+  assert.deepEqual(urls, ["/api/economy/ledger", "/api/economy/qgold", "/api/map/rewards/day", "/api/treasury/dao", "/api/treasury/mix"]);
   const main = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
   assert.match(main, /lazy\(\(\) => import\("\.\/economy\/TreasuryPage"\)\)/);
 });

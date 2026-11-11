@@ -40,3 +40,10 @@ Read in parallel, each section degrades on its own when an endpoint is off:
 - Never mention the hackathon or judges on the page; QGOLD is a game currency,
   not an investment (tests/treasury-page.test.mjs enforces copy and endpoints).
 - Charts are inline SVG drawn at their real width; no chart library.
+
+## Who decides (11 Nov 2026)
+
+Section `#dao` reads `GET /api/treasury/dao`: the Sputnik DAO account, council size and threshold, Explorer voters,
+the mix in force, today's run, this week's mix vote with approvals per option, extra votes and the decision log
+([TREASURY-DAO.md](TREASURY-DAO.md)).
+

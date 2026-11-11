@@ -3177,5 +3177,14 @@
   "Passwords work for test explorers only.": "パスワードはテスト用の探検家だけが使えます。",
   "Continue with a passkey": "パスキーで続ける",
   "Recovery": "復元",
-  "Ethereum": "イーサリアム"
+  "Ethereum": "イーサリアム",
+  "The treasury vote is on another network.": "トレジャリー投票は別のネットワークにあります。",
+  "Vote saved on chain.": "投票をチェーンに保存しました。",
+  "Treasury vote": "トレジャリー投票",
+  "Explorers choose how the shared treasury is held. The council carries out the result.": "探検者が共有トレジャリーの運用方法を選びます。結果は評議会が実行します。",
+  "In force now: {0}": "現在の設定: {0}",
+  "Reach level 3 and play this week to vote. New voters join once a day.": "レベル3に到達し、今週プレイすると投票できます。新しい投票者は1日1回追加されます。",
+  "Other votes this week": "今週のその他の投票",
+  "{0} votes": "{0}票",
+  "See the treasury DAO": "トレジャリーDAOを見る"
 }

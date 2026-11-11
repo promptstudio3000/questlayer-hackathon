@@ -731,6 +731,41 @@ export const CHAPTERS: Chapter[] = [
     ],
   },
   {
+    id: "treasury-dao",
+    group: "economy",
+    title: "Who decides: the treasury DAO",
+    summary: "Explorers vote every week on how the treasury is held; a Sputnik DAO council approves every daily run.",
+    status: "live",
+    updated: "2026-11-11",
+    sources: ["docs/TREASURY-DAO.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "src/TreasuryVote.tsx"],
+    blocks: [
+      {
+        p: "The treasury follows a **Sputnik DAO v2** on NEAR, `questlayer-treasury.sputnik-v2.testnet`, with the role names Trezu uses: a keeper that only files proposals (Requestor), a council of three that approves with **2 of 3** (Admin, Approver), and **Explorers**, the players who may vote.",
+      },
+      {
+        table: {
+          head: ["Step", "Who", "On chain"],
+          rows: [
+            ["Weekly mix vote opens (Monday)", "keeper", "one `Vote` proposal per option, the recommended option gets one automatic vote"],
+            ["Explorers vote", "players at level 3+ who played in the last 7 days", "`act_proposal(VoteApprove)` from the explorer account, sponsored, no popup"],
+            ["Tally (next Monday)", "keeper files the result, council approves", "an approved \"Adopt treasury mix\" proposal with the counts"],
+            ["Every morning", "keeper files the day's run, two council keys approve", "the run happens only once it is approved"],
+          ],
+        },
+      },
+      {
+        list: [
+          "**Options**: Balanced 50 / 40 / 10 (recommended), More staking 70 / 20 / 10, Bigger reserve 40 / 30 / 30 (liquid staking / stablecoins / NEAR reserve). Every option stays inside the treasury limits.",
+          "**One explorer, one vote.** XP is soulbound, so a vote cannot be bought. New voters join the DAO once a day.",
+          "**Automatic approval, checked.** The council keys approve a daily run only when its target is the adopted mix and it moves at most 25 % of the treasury.",
+          "**Extra votes** of the week appear under the mix vote and are counted the same way.",
+          "Custody stays with the operator on testnet for now; the DAO decides the target and approves every run. The QGOLD vault council moves to the DAO next.",
+        ],
+      },
+      { p: "Vote in Community → Quests → **Treasury vote**. The live tally and the decision log are on the [Treasury](/treasury#dao) page." },
+    ],
+  },
+  {
     id: "qgold",
     group: "economy",
     title: "QGOLD token and vault",

@@ -3177,5 +3177,14 @@
   "Passwords work for test explorers only.": "Las contraseñas solo funcionan para exploradores de prueba.",
   "Continue with a passkey": "Continuar con una llave de acceso",
   "Recovery": "Recuperación",
-  "Ethereum": "Ethereum"
+  "Ethereum": "Ethereum",
+  "The treasury vote is on another network.": "La votación del tesoro está en otra red.",
+  "Vote saved on chain.": "Voto guardado en la cadena.",
+  "Treasury vote": "Votación del tesoro",
+  "Explorers choose how the shared treasury is held. The council carries out the result.": "Los exploradores deciden cómo se guarda el tesoro común. El consejo ejecuta el resultado.",
+  "In force now: {0}": "Vigente ahora: {0}",
+  "Reach level 3 and play this week to vote. New voters join once a day.": "Llega al nivel 3 y juega esta semana para votar. Los nuevos votantes se añaden una vez al día.",
+  "Other votes this week": "Otras votaciones de esta semana",
+  "{0} votes": "{0} votos",
+  "See the treasury DAO": "Ver la DAO del tesoro"
 }

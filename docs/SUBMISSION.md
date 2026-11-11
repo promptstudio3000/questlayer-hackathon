@@ -35,7 +35,7 @@ Optional tags: @NearLegion @NearBuilders. End with a question, e.g. "Which city 
   "leadName": "<owner name>",
   "email": "<owner email>",
   "size": "1",
-  "tracks": ["games", "open"],
+  "tracks": ["games", "social", "open"],
   "nearAddress": "<mainnet payout account, e.g. team.near>",
   "projectUrl": "https://github.com/promptstudio3000/questlayer-hackathon",
   "demoUrl": "https://x.com/<owner>/status/<id>",
@@ -43,6 +43,10 @@ Optional tags: @NearLegion @NearBuilders. End with a question, e.g. "Which city 
   "consent": true
 }
 ```
+
+Track `social` (Social Money, 11 Nov 2026, Lubos): the treasury decides on a stock Sputnik DAO v2 with Trezu's role
+names; explorers vote weekly on the mix from their own accounts, the council approves every run
+([TREASURY-DAO.md](TREASURY-DAO.md)).
 
 Checklist before sending: repository public, LICENSE file present, no secrets in history (run a secret scan),
 README "do X, see Y" steps verified on a fresh clone, demo post live, `tracks` reviewed, payout account verified.

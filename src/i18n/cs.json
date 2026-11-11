@@ -3177,5 +3177,14 @@
   "Passwords work for test explorers only.": "Hesla fungují jen pro testovací průzkumníky.",
   "Continue with a passkey": "Pokračovat přístupovým klíčem",
   "Recovery": "Obnova",
-  "Ethereum": "Ethereum"
+  "Ethereum": "Ethereum",
+  "The treasury vote is on another network.": "Hlasování o treasury je na jiné síti.",
+  "Vote saved on chain.": "Hlas je uložen na blockchainu.",
+  "Treasury vote": "Hlasování o treasury",
+  "Explorers choose how the shared treasury is held. The council carries out the result.": "Průzkumníci rozhodují, jak je společná treasury uložená. Rada výsledek provede.",
+  "In force now: {0}": "Nyní platí: {0}",
+  "Reach level 3 and play this week to vote. New voters join once a day.": "Dosáhni úrovně 3 a hraj tento týden, abys mohl hlasovat. Noví voliči přibývají jednou denně.",
+  "Other votes this week": "Další hlasování tento týden",
+  "{0} votes": "{0} hlasů",
+  "See the treasury DAO": "Zobrazit DAO treasury"
 }
